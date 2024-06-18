@@ -5,9 +5,13 @@
   "scripts": {},
   "private": true,
   "dependencies": {
+    "@tamagui/config": "^1.100.5",
+    "@tamagui/next-plugin": "^1.100.5",
+    "@tamagui/next-theme": "^1.100.5",
     "next": "14.2.3",
     "react": "18.3.1",
     "react-dom": "18.3.1",
+    "tamagui": "^1.100.5",
     "tslib": "^2.3.0"
   },
   "devDependencies": {
@@ -18,9 +22,11 @@
     "@nx/js": "19.3.0",
     "@nx/next": "19.3.0",
     "@nx/playwright": "19.3.0",
+    "@nx/react": "19.3.0",
     "@nx/workspace": "19.3.0",
     "@playwright/test": "^1.36.0",
     "@swc-node/register": "~1.9.1",
+    "@swc/cli": "~0.3.12",
     "@swc/core": "~1.5.7",
     "@swc/helpers": "~0.5.11",
     "@types/jest": "^29.4.0",
