@@ -1,0 +1,22 @@
+{
+  "name": "api-contract",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/api-contract/src",
+  "projectType": "library",
+  "tags": [],
+  "// targets": "to see all targets run: nx show project api-contract --web",
+  "targets": {
+    "generate:ts": {
+      "command": "kubb --config kubb.config.ts",
+      "options": {
+        "cwd": "libs/api-contract"
+      }
+    },
+    "generate:go": {
+      "command": "openapi-generator-cli generate -g go -o src/__generated__/go -i src/api.yaml",
+      "options": {
+        "cwd": "libs/api-contract"
+      }
+    }
+  }
+}

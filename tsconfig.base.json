@@ -15,6 +15,7 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
+      "@gatherloop-pos/api-contract": ["libs/api-contract/src/index.ts"],
       "@gatherloop-pos/ui": ["libs/ui/src/index.ts"]
     }
   },
