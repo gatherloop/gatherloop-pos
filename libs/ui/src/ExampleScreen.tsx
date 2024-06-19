@@ -5,8 +5,8 @@ export const ExampleScreen = () => {
   return (
     <YStack>
       <Heading>Example Screen</Heading>
-      <Paragraph>Lorem Ipsum Dolor Sit Amet</Paragraph>
-      <Button>Action</Button>
+      <Paragraph>Watch it change!</Paragraph>
+      <Button>Click Me</Button>
     </YStack>
   );
 };
