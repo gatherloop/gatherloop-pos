@@ -13,7 +13,7 @@
       }
     },
     "generate:go": {
-      "command": "openapi-generator-cli generate -g go -o src/__generated__/go -i src/api.yaml",
+      "command": "rm -rf src/__generated__/go && openapi-generator-cli generate -g go -o src/__generated__/go -i src/api.yaml --additional-properties=packageName=apiContract",
       "options": {
         "cwd": "libs/api-contract"
       }

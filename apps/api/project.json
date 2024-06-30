@@ -15,7 +15,13 @@
       "executor": "@nx-go/nx-go:serve",
       "options": {
         "main": "{projectRoot}/main.go"
-      }
+      },
+      "dependsOn": [
+        {
+          "projects": "api-contract",
+          "target": "generate:go"
+        }
+      ]
     },
     "test": {
       "executor": "@nx-go/nx-go:test"
