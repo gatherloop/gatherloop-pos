@@ -1,5 +1,5 @@
 'use client';
 
-import { ExampleScreen } from '@gatherloop-pos/ui';
+import { CategoryListScreen } from '@gatherloop-pos/ui';
 
-export default ExampleScreen;
+export default CategoryListScreen;

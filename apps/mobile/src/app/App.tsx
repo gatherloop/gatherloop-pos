@@ -1,12 +1,14 @@
-import { ExampleScreen, tamaguiConfig } from '@gatherloop-pos/ui';
+import { CategoryListScreen, tamaguiConfig } from '@gatherloop-pos/ui';
 import { SafeAreaView } from 'react-native';
-import { TamaguiProvider } from 'tamagui';
+import { ScrollView, TamaguiProvider } from 'tamagui';
 
 export const App = () => {
   return (
     <SafeAreaView>
       <TamaguiProvider config={tamaguiConfig}>
-        <ExampleScreen />
+        <ScrollView>
+          <CategoryListScreen />
+        </ScrollView>
       </TamaguiProvider>
     </SafeAreaView>
   );

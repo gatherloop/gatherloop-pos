@@ -2,3 +2,4 @@
 
 export * from './config';
 export * from './ExampleScreen';
+export * from './categories';
