@@ -13,19 +13,11 @@ const nextConfig = {
     // See: https://github.com/gregberge/svgr
     svgr: false,
   },
-  // webpack: (config) => {
-  //   config?.resolve?.plugins = [
-  //     ...(config?.resolve?.plugins ?? []),
-  //     new TsconfigPathsPlugin(),
-  //   ]
-  //   return config
-  // }
 };
 
 const tamaguiPlugin = withTamagui({
   config: './tamagui.config.ts',
   components: ['tamagui'],
-  appDir: true,
 });
 
 const plugins = [

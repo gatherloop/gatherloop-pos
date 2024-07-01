@@ -29,12 +29,11 @@ export const Sidebar = () => {
     <>
       <YGroup
         width={240}
-        marginLeft={isShown ? 0 : -240}
-        opacity={isShown ? 1 : 0}
         $xs={{ position: 'absolute', top: 0, bottom: 0, zIndex: '$5' }}
         backgroundColor="$gray3"
         borderRadius="$0"
         animation="quick"
+        style={{ marginLeft: isShown ? 0 : -240 }}
       >
         <YStack padding="$5">
           <H3>Gatherloop POS</H3>

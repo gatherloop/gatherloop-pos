@@ -1,28 +1,28 @@
+'use client';
+
 import { H2, Paragraph, XStack, YStack } from 'tamagui';
 import { Navbar, Sidebar, ListItem } from '../../base';
+// eslint-disable-next-line @nx/enforce-module-boundaries
+import {
+  CategoryListQueryResponse,
+  categoryList,
+  useCategoryList,
+} from '../../../../api-contract/src';
 
-const categories = [
-  {
-    name: 'Food',
-    description: 'Lorem Ipsum Dolor Sit Amet',
-    imageUrl:
-      'https://d1vbn70lmn1nqe.cloudfront.net/prod/wp-content/uploads/2023/03/03032538/Resep-Sehat-Bahan-Burger-Rendah-Kalori-dan-Cocok-untuk-Diet.png.webp',
-  },
-  {
-    name: 'Beverage',
-    description: 'Lorem Ipsum Dolor Sit Amet',
-    imageUrl:
-      'https://d1vbn70lmn1nqe.cloudfront.net/prod/wp-content/uploads/2023/03/03032538/Resep-Sehat-Bahan-Burger-Rendah-Kalori-dan-Cocok-untuk-Diet.png.webp',
-  },
-  {
-    name: 'Board Game',
-    description: 'Lorem Ipsum Dolor Sit Amet',
-    imageUrl:
-      'https://d1vbn70lmn1nqe.cloudfront.net/prod/wp-content/uploads/2023/03/03032538/Resep-Sehat-Bahan-Burger-Rendah-Kalori-dan-Cocok-untuk-Diet.png.webp',
-  },
-];
+export const getCategoryListScreenInitialProps =
+  async (): Promise<CategoryListScreenProps> => {
+    const categoryListQueryResponse = await categoryList();
+    return { categoryListQueryResponse };
+  };
 
-export const CategoryListScreen = () => {
+export type CategoryListScreenProps = {
+  categoryListQueryResponse?: CategoryListQueryResponse;
+};
+
+export const CategoryListScreen = (props: CategoryListScreenProps) => {
+  const { data } = useCategoryList({
+    query: { initialData: props.categoryListQueryResponse },
+  });
   return (
     <XStack flex={1}>
       <Sidebar />
@@ -32,7 +32,7 @@ export const CategoryListScreen = () => {
           <H2>Categories</H2>
           <Paragraph>Manage your product category</Paragraph>
           <XStack gap="$3" flexWrap="wrap">
-            {categories.map((category, index) => (
+            {data?.data.map((category, index) => (
               <ListItem
                 key={index}
                 title={category.name}

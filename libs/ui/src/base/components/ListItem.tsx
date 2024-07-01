@@ -6,23 +6,30 @@ export type ListItemProps = {
   thumbnailSrc?: string;
 } & XStackProps;
 
-export const ListItem = (props: ListItemProps) => {
+export const ListItem = ({
+  title,
+  subtitle,
+  thumbnailSrc,
+  ...xStackProps
+}: ListItemProps) => {
   return (
     <XStack
       gap="$4"
       padding="$2"
       borderRadius="$5"
       alignItems="center"
-      flex={1}
       elevation="$1"
       backgroundColor="$gray1"
       justifyContent="space-between"
-      {...props}
+      {...xStackProps}
     >
       <XStack alignItems="center" gap="$4" flex={1}>
-        {props.thumbnailSrc && (
+        {thumbnailSrc && (
           <Image
-            src={props.thumbnailSrc}
+            src={thumbnailSrc}
+            defaultSource={{
+              uri: thumbnailSrc,
+            }}
             width={100}
             height={100}
             borderRadius="$5"
@@ -30,8 +37,8 @@ export const ListItem = (props: ListItemProps) => {
         )}
 
         <YStack padding="$3" flex={1}>
-          <H4 ellipse>{props.title}</H4>
-          <H5 ellipse>{props.subtitle}</H5>
+          <H4 ellipse>{title}</H4>
+          <H5 ellipse>{subtitle}</H5>
         </YStack>
       </XStack>
     </XStack>

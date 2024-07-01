@@ -7,7 +7,7 @@
   "// targets": "to see all targets run: nx show project api-contract --web",
   "targets": {
     "generate:ts": {
-      "command": "kubb --config kubb.config.ts",
+      "command": "rm -rf src/__generated__/ts && kubb --config kubb.config.ts",
       "options": {
         "cwd": "libs/api-contract"
       }
