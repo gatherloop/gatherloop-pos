@@ -17,7 +17,7 @@ func NewCategoryHandler(usecase Usecase) Handler {
 func (handler Handler) GetCategoryList(w http.ResponseWriter, r *http.Request) {
 	categories, err := handler.usecase.GetCategoryList()
 	if err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: 500, Message: err.Error()})
+		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		w.WriteHeader(500)
 		w.Write(response)
 		return

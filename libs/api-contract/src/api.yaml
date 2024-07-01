@@ -72,7 +72,11 @@ components:
         - message
       properties:
         code:
-          type: integer
-          format: int32
+          $ref: '#/components/schemas/ErrorCode'
         message:
           type: string
+    ErrorCode:
+      type: string
+      enum:
+        - server_error
+        - validation_error
