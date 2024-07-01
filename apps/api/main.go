@@ -30,15 +30,7 @@ func main() {
 	}
 
 	router := mux.NewRouter().StrictSlash(true)
-
-	categoryRepository := categories.NewCategoryRepository(db)
-	categoryUsecase := categories.NewCategoryUsecase(categoryRepository)
-	categoryHandler := categories.NewCategoryHandler(categoryUsecase)
-
-	router.HandleFunc("/categories", categoryHandler.GetCategoryList).Methods("GET")
-	router.HandleFunc("/categories/{categoryId}", categoryHandler.GetCategoryById).Methods("GET")
-	router.HandleFunc("/categories/{categoryId}", categoryHandler.UpdateCategoryById).Methods("PUT")
-	router.HandleFunc("/categories", categoryHandler.CreateCategory).Methods("POST")
+	categories.AddCategoryRouters(router, db)
 
 	http.ListenAndServe(":8000", router)
 }
