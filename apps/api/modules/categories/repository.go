@@ -30,3 +30,8 @@ func (repo Repository) CreateCategory(categoryRequest apiContract.CategoryReques
 	result := repo.db.Table("categories").Create(categoryRequest)
 	return result.Error
 }
+
+func (repo Repository) UpdateCategoryById(categoryRequest apiContract.CategoryRequest, id int64) error {
+	result := repo.db.Table("categories").Where(apiContract.Category{Id: id}).Updates(categoryRequest)
+	return result.Error
+}

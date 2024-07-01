@@ -23,3 +23,7 @@ func (usecase Usecase) GetCategoryById(id int64) (apiContract.Category, error) {
 func (usecase Usecase) CreateCategory(categoryRequest apiContract.CategoryRequest) error {
 	return usecase.repository.CreateCategory(categoryRequest)
 }
+
+func (usecase Usecase) UpdateCategoryById(categoryRequest apiContract.CategoryRequest, id int64) error {
+	return usecase.repository.UpdateCategoryById(categoryRequest, id)
+}

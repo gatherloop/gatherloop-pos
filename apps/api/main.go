@@ -37,6 +37,7 @@ func main() {
 
 	router.HandleFunc("/categories", categoryHandler.GetCategoryList).Methods("GET")
 	router.HandleFunc("/categories/{categoryId}", categoryHandler.GetCategoryById).Methods("GET")
+	router.HandleFunc("/categories/{categoryId}", categoryHandler.UpdateCategoryById).Methods("PUT")
 	router.HandleFunc("/categories", categoryHandler.CreateCategory).Methods("POST")
 
 	http.ListenAndServe(":8000", router)
