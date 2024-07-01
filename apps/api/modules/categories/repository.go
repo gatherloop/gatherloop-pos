@@ -20,6 +20,12 @@ func (repo Repository) GetCategoryList() ([]apiContract.Category, error) {
 	return categories, result.Error
 }
 
+func (repo Repository) GetCategoryById(id int64) (apiContract.Category, error) {
+	var category apiContract.Category
+	result := repo.db.Table("categories").Where(apiContract.Category{Id: id}).Find(&category)
+	return category, result.Error
+}
+
 func (repo Repository) CreateCategory(categoryRequest apiContract.CategoryRequest) error {
 	result := repo.db.Table("categories").Create(categoryRequest)
 	return result.Error

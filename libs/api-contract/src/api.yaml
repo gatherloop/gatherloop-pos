@@ -59,6 +59,36 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /categories/{categoryId}:
+    get:
+      summary: Get category by id
+      operationId: categoryFindById
+      tags:
+        - category
+      parameters:
+        - name: categoryId
+          in: path
+          schema:
+            type: integer
+          required: true
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Category'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 components:
   schemas:
     Category:
@@ -105,6 +135,7 @@ components:
       enum:
         - server_error
         - validation_error
+        - data_not_found
     SuccessResponse:
       type: object
       required:

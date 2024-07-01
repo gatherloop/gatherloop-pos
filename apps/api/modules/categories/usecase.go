@@ -16,6 +16,10 @@ func (usecase Usecase) GetCategoryList() ([]apiContract.Category, error) {
 	return usecase.repository.GetCategoryList()
 }
 
+func (usecase Usecase) GetCategoryById(id int64) (apiContract.Category, error) {
+	return usecase.repository.GetCategoryById(id)
+}
+
 func (usecase Usecase) CreateCategory(categoryRequest apiContract.CategoryRequest) error {
 	return usecase.repository.CreateCategory(categoryRequest)
 }

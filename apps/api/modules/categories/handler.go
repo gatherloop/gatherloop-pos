@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	apiContract "libs/api-contract"
 	"net/http"
+	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
 type Handler struct {
@@ -24,6 +27,36 @@ func (handler Handler) GetCategoryList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response, _ := json.Marshal(apiContract.CategoryList200Response{Data: categories})
+	w.Write(response)
+}
+
+func (handler Handler) GetCategoryById(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	idParam := vars["categoryId"]
+	id, err := strconv.ParseInt(idParam, 10, 32)
+	if err != nil {
+		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
+		w.WriteHeader(500)
+		w.Write(response)
+		return
+	}
+
+	category, err := handler.usecase.GetCategoryById(id)
+	if err != nil {
+		response, _ := json.Marshal(apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
+		w.WriteHeader(404)
+		w.Write(response)
+		return
+	}
+
+	response, err := json.Marshal(apiContract.CategoryFindById200Response{Data: category})
+	if err != nil {
+		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
+		w.WriteHeader(500)
+		w.Write(response)
+		return
+	}
+
 	w.Write(response)
 }
 
