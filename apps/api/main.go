@@ -23,6 +23,7 @@ func main() {
 	dbName := os.Getenv("DB_NAME")
 	dbHost := os.Getenv("DB_HOST")
 	dbPort := os.Getenv("DB_PORT")
+	port := os.Getenv("PORT")
 
 	db, err := gorm.Open(mysql.Open(fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", dbUsername, dbPassword, dbHost, dbPort, dbName)))
 	if err != nil {
@@ -32,5 +33,5 @@ func main() {
 	router := mux.NewRouter().StrictSlash(true)
 	categories.AddCategoryRouters(router, db)
 
-	http.ListenAndServe(":8000", router)
+	http.ListenAndServe(fmt.Sprintf(":%s", port), router)
 }
