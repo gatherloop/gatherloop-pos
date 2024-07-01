@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -28,11 +29,14 @@ func main() {
 		panic("failed to connect database")
 	}
 
+	router := mux.NewRouter().StrictSlash(true)
+
 	categoryRepository := categories.NewCategoryRepository(db)
 	categoryUsecase := categories.NewCategoryUsecase(categoryRepository)
 	categoryHandler := categories.NewCategoryHandler(categoryUsecase)
 
-	http.HandleFunc("/categories", categoryHandler.GetCategoryList)
+	router.HandleFunc("/categories", categoryHandler.GetCategoryList).Methods("GET")
+	router.HandleFunc("/categories", categoryHandler.CreateCategory).Methods("POST")
 
-	http.ListenAndServe(":8000", nil)
+	http.ListenAndServe(":8000", router)
 }

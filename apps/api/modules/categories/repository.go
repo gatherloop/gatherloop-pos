@@ -16,6 +16,11 @@ func NewCategoryRepository(db *gorm.DB) Repository {
 
 func (repo Repository) GetCategoryList() ([]apiContract.Category, error) {
 	var categories []apiContract.Category
-	result := repo.db.Model(apiContract.Category{}).Find(&categories)
+	result := repo.db.Table("categories").Find(&categories)
 	return categories, result.Error
+}
+
+func (repo Repository) CreateCategory(categoryRequest apiContract.CategoryRequest) error {
+	result := repo.db.Table("categories").Create(categoryRequest)
+	return result.Error
 }
