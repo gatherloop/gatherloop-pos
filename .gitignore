@@ -119,3 +119,6 @@ yarn-error.log
 
 __generated__
 .env
+
+# react-native-config codegen
+ios/tmp.xcconfig
