@@ -33,7 +33,7 @@ export const Sidebar = () => {
         backgroundColor="$gray3"
         borderRadius="$0"
         animation="quick"
-        style={{ marginLeft: isShown ? 0 : -240 }}
+        marginLeft={isShown ? 0 : -240}
       >
         <YStack padding="$5">
           <H3>Gatherloop POS</H3>
