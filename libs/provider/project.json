@@ -1,0 +1,9 @@
+{
+  "name": "provider",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/provider/src",
+  "projectType": "library",
+  "tags": [],
+  "// targets": "to see all targets run: nx show project provider --web",
+  "targets": {}
+}

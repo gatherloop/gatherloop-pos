@@ -4,12 +4,7 @@ import { NextThemeProvider, useRootTheme } from '@tamagui/next-theme';
 import { AppProps } from 'next/app';
 import Head from 'next/head';
 import React, { useMemo } from 'react';
-import { TamaguiProvider } from 'tamagui';
-
-import tamaguiConfig from '../../tamagui.config';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-
-const queryClient = new QueryClient();
+import { RootProvider } from '@gatherloop-pos/provider';
 
 export default function App({ Component, pageProps }: AppProps) {
   const [theme, setTheme] = useRootTheme();
@@ -26,16 +21,15 @@ export default function App({ Component, pageProps }: AppProps) {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <NextThemeProvider onChangeTheme={setTheme as any}>
-        <QueryClientProvider client={queryClient}>
-          <TamaguiProvider
-            config={tamaguiConfig}
-            disableInjectCSS
-            disableRootThemeClass
-            defaultTheme={theme}
-          >
-            {contents}
-          </TamaguiProvider>
-        </QueryClientProvider>
+        <RootProvider
+          tamaguiProviderProps={{
+            disableInjectCSS: true,
+            disableRootThemeClass: true,
+            defaultTheme: theme,
+          }}
+        >
+          {contents}
+        </RootProvider>
       </NextThemeProvider>
     </>
   );

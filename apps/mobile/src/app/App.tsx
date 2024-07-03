@@ -1,14 +1,7 @@
-import {
-  tamaguiConfig,
-  CategoryListScreen,
-  CategoryCreateScreen,
-} from '@gatherloop-pos/ui';
-import { TamaguiProvider } from 'tamagui';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { CategoryListScreen, CategoryCreateScreen } from '@gatherloop-pos/ui';
+import { RootProvider } from '@gatherloop-pos/provider';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-
-const queryClient = new QueryClient();
 
 const Stack = createNativeStackNavigator<{
   home: undefined;
@@ -31,25 +24,23 @@ export const App = () => {
         },
       }}
     >
-      <TamaguiProvider config={tamaguiConfig}>
-        <QueryClientProvider client={queryClient}>
-          <Stack.Navigator
-            initialRouteName="home"
-            screenOptions={{ header: () => null }}
-          >
-            <Stack.Screen
-              name="home"
-              component={CategoryListScreen}
-              options={{ title: 'Home' }}
-            />
-            <Stack.Screen name="categoryList" component={CategoryListScreen} />
-            <Stack.Screen
-              name="categoryCreate"
-              component={CategoryCreateScreen}
-            />
-          </Stack.Navigator>
-        </QueryClientProvider>
-      </TamaguiProvider>
+      <RootProvider>
+        <Stack.Navigator
+          initialRouteName="home"
+          screenOptions={{ header: () => null }}
+        >
+          <Stack.Screen
+            name="home"
+            component={CategoryListScreen}
+            options={{ title: 'Home' }}
+          />
+          <Stack.Screen name="categoryList" component={CategoryListScreen} />
+          <Stack.Screen
+            name="categoryCreate"
+            component={CategoryCreateScreen}
+          />
+        </Stack.Navigator>
+      </RootProvider>
     </NavigationContainer>
   );
 };
