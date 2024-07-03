@@ -6,8 +6,13 @@ import { AppProps } from 'next/app';
 import Head from 'next/head';
 import React, { useMemo } from 'react';
 import { RootProvider } from '@gatherloop-pos/provider';
+import { DehydratedState, HydrationBoundary } from '@tanstack/react-query';
 
-export default function App({ Component, pageProps }: AppProps) {
+export type PageProps = {
+  dehydratedState: DehydratedState;
+};
+
+export default function App({ Component, pageProps }: AppProps<PageProps>) {
   const [theme, setTheme] = useRootTheme();
 
   const contents = useMemo(() => {
@@ -29,7 +34,9 @@ export default function App({ Component, pageProps }: AppProps) {
             defaultTheme: theme,
           }}
         >
-          {contents}
+          <HydrationBoundary state={pageProps.dehydratedState}>
+            {contents}
+          </HydrationBoundary>
         </RootProvider>
       </NextThemeProvider>
     </>

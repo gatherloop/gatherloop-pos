@@ -1,15 +1,16 @@
 import {
   CategoryListScreen,
   CategoryListScreenProps,
-  getCategoryListScreenInitialProps,
+  getCategoryListScreenDehydratedState,
 } from '@gatherloop-pos/ui';
+import { DehydratedState } from '@tanstack/react-query';
 import { GetServerSideProps } from 'next';
 
 export const getServerSideProps: GetServerSideProps<
-  CategoryListScreenProps
+  CategoryListScreenProps & { dehydratedState: DehydratedState }
 > = async (_ctx) => {
-  const props = await getCategoryListScreenInitialProps();
-  return { props };
+  const dehydratedState = await getCategoryListScreenDehydratedState();
+  return { props: { dehydratedState } };
 };
 
 export default CategoryListScreen;

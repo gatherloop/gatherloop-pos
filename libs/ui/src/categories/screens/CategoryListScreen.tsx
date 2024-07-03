@@ -4,15 +4,23 @@ import { Navbar, Sidebar } from '../../base';
 import {
   CategoryListQueryResponse,
   categoryList,
+  categoryListQueryKey,
 } from '../../../../api-contract/src';
 import { CategoryList } from '../components';
 import { Link } from 'solito/link';
 import { Plus } from '@tamagui/lucide-icons';
+import { DehydratedState, QueryClient, dehydrate } from '@tanstack/react-query';
 
-export const getCategoryListScreenInitialProps =
-  async (): Promise<CategoryListScreenProps> => {
-    const categoryListQueryResponse = await categoryList();
-    return { categoryListQueryResponse };
+export const getCategoryListScreenDehydratedState =
+  async (): Promise<DehydratedState> => {
+    const queryClient = new QueryClient();
+
+    await queryClient.prefetchQuery({
+      queryKey: categoryListQueryKey(),
+      queryFn: categoryList,
+    });
+
+    return dehydrate(queryClient);
   };
 
 export type CategoryListScreenProps = {

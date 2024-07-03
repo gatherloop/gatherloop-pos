@@ -1,15 +1,16 @@
 import {
   CategoryListScreen,
   CategoryListScreenProps,
-  getCategoryListScreenInitialProps,
+  getCategoryListScreenDehydratedState,
 } from '@gatherloop-pos/ui';
 import { GetServerSideProps } from 'next';
+import { PageProps } from '../_app';
 
 export const getServerSideProps: GetServerSideProps<
-  CategoryListScreenProps
+  CategoryListScreenProps & PageProps
 > = async (_ctx) => {
-  const props = await getCategoryListScreenInitialProps();
-  return { props };
+  const dehydratedState = await getCategoryListScreenDehydratedState();
+  return { props: { dehydratedState } };
 };
 
 export default CategoryListScreen;
