@@ -1,4 +1,5 @@
 import '@tamagui/core/reset.css';
+import './global.css';
 
 import { NextThemeProvider, useRootTheme } from '@tamagui/next-theme';
 import { AppProps } from 'next/app';

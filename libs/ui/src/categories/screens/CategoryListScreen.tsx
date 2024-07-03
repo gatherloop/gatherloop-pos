@@ -1,4 +1,4 @@
-import { Button, H2, Paragraph, XStack, YStack } from 'tamagui';
+import { Button, H3, Paragraph, ScrollView, XStack, YStack } from 'tamagui';
 import { Navbar, Sidebar } from '../../base';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import {
@@ -6,7 +6,8 @@ import {
   categoryList,
 } from '../../../../api-contract/src';
 import { CategoryList } from '../components';
-import { useRouter } from 'solito/router';
+import { Link } from 'solito/link';
+import { Plus } from '@tamagui/lucide-icons';
 
 export const getCategoryListScreenInitialProps =
   async (): Promise<CategoryListScreenProps> => {
@@ -19,23 +20,24 @@ export type CategoryListScreenProps = {
 };
 
 export const CategoryListScreen = (props: CategoryListScreenProps) => {
-  const router = useRouter();
   return (
     <XStack flex={1}>
       <Sidebar />
       <YStack flex={1}>
         <Navbar />
-        <YStack padding="$5" gap="$3">
-          <XStack>
+        <YStack padding="$5" gap="$3" flex={1}>
+          <XStack justifyContent="space-between" alignItems="center">
             <YStack>
-              <H2>Categories</H2>
+              <H3>Categories</H3>
               <Paragraph>Manage your product category</Paragraph>
             </YStack>
-            <Button onPress={() => router.push('/categories/create')}>
-              Create Category
-            </Button>
+            <Link href="/categories/create">
+              <Button size="$3" icon={Plus} variant="outlined" disabled />
+            </Link>
           </XStack>
-          <CategoryList />
+          <ScrollView>
+            <CategoryList />
+          </ScrollView>
         </YStack>
       </YStack>
     </XStack>
