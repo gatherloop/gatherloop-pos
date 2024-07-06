@@ -1,9 +1,13 @@
 import { FormikProvider } from 'formik';
 import { Field, Form, Input, SubmitButton } from '../../../base';
-import { useCategoryFormState } from './state';
+import { UseCategoryFormStateProps, useCategoryFormState } from './state';
 
-export const CategoryForm = () => {
-  const { formik } = useCategoryFormState();
+export type CategoryFormProps = {
+  variant: UseCategoryFormStateProps['variant'];
+};
+
+export const CategoryForm = ({ variant }: CategoryFormProps) => {
+  const { formik } = useCategoryFormState({ variant });
   return (
     <FormikProvider value={formik}>
       <Form>

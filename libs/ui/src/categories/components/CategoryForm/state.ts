@@ -3,23 +3,42 @@ import {
   CategoryRequest,
   categoryRequestSchema,
   useCategoryCreate,
+  useCategoryFindById,
+  useCategoryUpdateById,
 } from '../../../../../api-contract/src';
 import { useFormik } from 'formik';
 import { toFormikValidationSchema } from 'zod-formik-adapter';
-import { useRouter } from 'solito/router'
+import { useRouter } from 'solito/router';
 
-export const useCategoryFormState = () => {
-  const router = useRouter()
+export type UseCategoryFormStateProps = {
+  variant: { type: 'create' } | { type: 'update'; categoryId: number };
+};
 
-  const { mutateAsync } = useCategoryCreate();
+export const useCategoryFormState = ({
+  variant,
+}: UseCategoryFormStateProps) => {
+  const router = useRouter();
+
+  const categoryId = variant.type === 'update' ? variant.categoryId : -1;
+
+  const category = useCategoryFindById(categoryId, {
+    query: { enabled: variant.type === 'update' },
+  });
+
+  const createCategoryMutation = useCategoryCreate();
+  const updateCategoryMutation = useCategoryUpdateById(categoryId);
+  const mutation =
+    variant.type === 'create' ? createCategoryMutation : updateCategoryMutation;
 
   const formik = useFormik<CategoryRequest>({
     initialValues: {
-      name: '',
-      description: '',
-      imageUrl: '',
+      name: category.data?.data.name ?? '',
+      description: category.data?.data.description ?? '',
+      imageUrl: category.data?.data.imageUrl ?? '',
     },
-    onSubmit: (values) => mutateAsync(values).then(() => router.push('/categories')),
+    enableReinitialize: true,
+    onSubmit: (values) =>
+      mutation.mutateAsync(values).then(() => router.push('/categories')),
     validationSchema: toFormikValidationSchema(categoryRequestSchema),
   });
 

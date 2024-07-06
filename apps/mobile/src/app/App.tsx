@@ -1,4 +1,8 @@
-import { CategoryListScreen, CategoryCreateScreen } from '@gatherloop-pos/ui';
+import {
+  CategoryListScreen,
+  CategoryCreateScreen,
+  CategoryUpdateScreen,
+} from '@gatherloop-pos/ui';
 import { RootProvider } from '@gatherloop-pos/provider';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -7,6 +11,7 @@ const Stack = createNativeStackNavigator<{
   home: undefined;
   categoryList: undefined;
   categoryCreate: undefined;
+  categoryUpdate: { categoryId: number };
 }>();
 
 export const App = () => {
@@ -20,6 +25,12 @@ export const App = () => {
             home: '',
             categoryList: 'categories',
             categoryCreate: 'categories/create',
+            categoryUpdate: {
+              path: 'categories/:categoryId',
+              parse: {
+                categoryId: (categoryId) => parseInt(categoryId),
+              },
+            },
           },
         },
       }}
@@ -38,6 +49,10 @@ export const App = () => {
           <Stack.Screen
             name="categoryCreate"
             component={CategoryCreateScreen}
+          />
+          <Stack.Screen
+            name="categoryUpdate"
+            component={CategoryUpdateScreen}
           />
         </Stack.Navigator>
       </RootProvider>

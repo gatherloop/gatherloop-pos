@@ -9,6 +9,7 @@ import { CategoryList } from '../components';
 import { Link } from 'solito/link';
 import { Plus } from '@tamagui/lucide-icons';
 import { DehydratedState, QueryClient, dehydrate } from '@tanstack/react-query';
+import { useRouter } from 'solito/router';
 
 export const getCategoryListScreenDehydratedState =
   async (): Promise<DehydratedState> => {
@@ -23,6 +24,7 @@ export const getCategoryListScreenDehydratedState =
   };
 
 export const CategoryListScreen = () => {
+  const router = useRouter();
   return (
     <Layout>
       <XStack justifyContent="space-between" alignItems="center">
@@ -35,7 +37,9 @@ export const CategoryListScreen = () => {
         </Link>
       </XStack>
       <ScrollView>
-        <CategoryList />
+        <CategoryList
+          onItemPress={(category) => router.push(`/categories/${category.id}`)}
+        />
       </ScrollView>
     </Layout>
   );
