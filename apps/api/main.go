@@ -1,6 +1,7 @@
 package main
 
 import (
+	"apps/api/middlewares"
 	"apps/api/modules/categories"
 	"fmt"
 	"net/http"
@@ -30,8 +31,8 @@ func main() {
 		panic("failed to connect database")
 	}
 
-	router := mux.NewRouter().StrictSlash(true)
+	router := mux.NewRouter()
+	router.Use(middlewares.EnableCORS)
 	categories.AddCategoryRouters(router, db)
-
 	http.ListenAndServe(fmt.Sprintf(":%s", port), router)
 }

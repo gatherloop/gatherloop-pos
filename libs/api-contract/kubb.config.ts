@@ -3,6 +3,7 @@ import { pluginOas } from '@kubb/plugin-oas';
 import { pluginTanstackQuery } from '@kubb/swagger-tanstack-query';
 import { pluginTs } from '@kubb/swagger-ts';
 import { pluginClient } from '@kubb/swagger-client';
+import { pluginZod } from '@kubb/swagger-zod';
 
 export default defineConfig(() => {
   return [
@@ -25,6 +26,11 @@ export default defineConfig(() => {
         pluginClient({
           client: {
             importPath: '../../../client',
+          },
+        }),
+        pluginZod({
+          output: {
+            path: './zod',
           },
         }),
       ],
