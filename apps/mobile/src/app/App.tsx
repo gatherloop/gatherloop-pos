@@ -11,6 +11,9 @@ import {
   ProductListScreen,
   ProductCreateScreen,
   ProductUpdateScreen,
+  BudgetListScreen,
+  BudgetCreateScreen,
+  BudgetUpdateScreen,
 } from '@gatherloop-pos/ui';
 import { RootProvider } from '@gatherloop-pos/provider';
 import { NavigationContainer } from '@react-navigation/native';
@@ -30,6 +33,9 @@ const Stack = createNativeStackNavigator<{
   productList: undefined;
   productCreate: undefined;
   productUpdate: { productId: number };
+  budgetList: undefined;
+  budgetCreate: undefined;
+  budgetUpdate: { budgetId: number };
 }>();
 
 export const App = () => {
@@ -73,6 +79,14 @@ export const App = () => {
                 productId: (productId) => parseInt(productId),
               },
             },
+            budgetList: 'budgets',
+            budgetCreate: 'budgets/create',
+            budgetUpdate: {
+              path: 'budgets/:budgetId',
+              parse: {
+                budgetId: (budgetId) => parseInt(budgetId),
+              },
+            },
           },
         },
       }}
@@ -111,6 +125,9 @@ export const App = () => {
           <Stack.Screen name="productList" component={ProductListScreen} />
           <Stack.Screen name="productCreate" component={ProductCreateScreen} />
           <Stack.Screen name="productUpdate" component={ProductUpdateScreen} />
+          <Stack.Screen name="budgetList" component={BudgetListScreen} />
+          <Stack.Screen name="budgetCreate" component={BudgetCreateScreen} />
+          <Stack.Screen name="budgetUpdate" component={BudgetUpdateScreen} />
         </Stack.Navigator>
       </RootProvider>
     </NavigationContainer>

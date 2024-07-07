@@ -5,3 +5,4 @@ export * from './categories';
 export * from './materials';
 export * from './wallets';
 export * from './products';
+export * from './budgets';

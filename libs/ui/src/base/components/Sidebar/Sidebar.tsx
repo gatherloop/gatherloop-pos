@@ -15,6 +15,7 @@ const items: { title: string; icon: NamedExoticComponent; path: string }[] = [
   { title: 'Products', icon: FileBox, path: '/products' },
   { title: 'Materials', icon: Box, path: '/materials' },
   { title: 'Wallets', icon: Wallet, path: '/wallets' },
+  { title: 'Budgets', icon: Wallet, path: '/budgets' },
 ];
 
 export const Sidebar = () => {
