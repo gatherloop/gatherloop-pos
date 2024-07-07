@@ -1,4 +1,4 @@
-import { H3, Paragraph, ScrollView, YStack } from 'tamagui';
+import { ScrollView } from 'tamagui';
 import { Layout } from '../../../base';
 import { CategoryForm } from '../../components';
 import { useCategoryUpdateScreenState } from './CategoryUpdateScreen.state';
@@ -12,11 +12,7 @@ export const CategoryUpdateScreen = (props: CategoryUpdateScreenProps) => {
     categoryId: props.categoryId,
   });
   return (
-    <Layout>
-      <YStack>
-        <H3>Update Category</H3>
-        <Paragraph>Update your existing category</Paragraph>
-      </YStack>
+    <Layout title="Update Category" showBackButton>
       <ScrollView>
         <CategoryForm
           variant={{ type: 'update', categoryId }}

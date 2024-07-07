@@ -1,4 +1,4 @@
-import { H3, Paragraph, ScrollView, YStack } from 'tamagui';
+import { ScrollView } from 'tamagui';
 import { Layout } from '../../../base';
 import { BudgetForm } from '../../components';
 import { useBudgetUpdateScreenState } from './BudgetUpdateScreen.state';
@@ -12,11 +12,7 @@ export const BudgetUpdateScreen = (props: BudgetUpdateScreenProps) => {
     budgetId: props.budgetId,
   });
   return (
-    <Layout>
-      <YStack>
-        <H3>Update Budget</H3>
-        <Paragraph>Update your existing Budget</Paragraph>
-      </YStack>
+    <Layout title="Update Budget" showBackButton>
       <ScrollView>
         <BudgetForm
           variant={{ type: 'update', budgetId }}

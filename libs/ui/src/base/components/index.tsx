@@ -1,4 +1,4 @@
-export * from './Navbar';
+export * from './Navbar/Navbar';
 export * from './Sidebar';
 export * from './ListItem';
 export * from './LoadingView';

@@ -1,4 +1,4 @@
-import { H3, Paragraph, ScrollView, YStack } from 'tamagui';
+import { ScrollView } from 'tamagui';
 import { Layout } from '../../../base';
 import { MaterialForm } from '../../components';
 import { useMaterialUpdateScreenState } from './MaterialUpdateScreen.state';
@@ -12,11 +12,7 @@ export const MaterialUpdateScreen = (props: MaterialUpdateScreenProps) => {
     materialId: props.materialId,
   });
   return (
-    <Layout>
-      <YStack>
-        <H3>Update Material</H3>
-        <Paragraph>Update your existing material</Paragraph>
-      </YStack>
+    <Layout title="Update Material" showBackButton>
       <ScrollView>
         <MaterialForm
           variant={{ type: 'update', materialId }}

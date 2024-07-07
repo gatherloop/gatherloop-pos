@@ -1,4 +1,4 @@
-import { H3, Paragraph, ScrollView, YStack } from 'tamagui';
+import { ScrollView } from 'tamagui';
 import { Layout } from '../../../base';
 import { ProductForm } from '../../components';
 import { useProductUpdateScreenState } from './ProductUpdateScreen.state';
@@ -12,11 +12,7 @@ export const ProductUpdateScreen = (props: ProductUpdateScreenProps) => {
     productId: props.productId,
   });
   return (
-    <Layout>
-      <YStack>
-        <H3>Update Product</H3>
-        <Paragraph>Update your existing Product</Paragraph>
-      </YStack>
+    <Layout title="Update Product" showBackButton>
       <ScrollView>
         <ProductForm
           variant={{ type: 'update', productId }}

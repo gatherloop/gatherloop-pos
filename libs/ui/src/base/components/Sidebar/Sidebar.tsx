@@ -57,7 +57,7 @@ export const Sidebar = () => {
         size="$3"
         borderTopLeftRadius="$0"
         borderBottomLeftRadius="$0"
-        top="$3"
+        bottom="$5"
         borderWidth="$0"
       ></Button>
     </>

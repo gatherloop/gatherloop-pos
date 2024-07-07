@@ -1,4 +1,4 @@
-import { Button, H3, Paragraph, ScrollView, XStack, YStack } from 'tamagui';
+import { Button, ScrollView, XStack } from 'tamagui';
 import { Layout } from '../../../base';
 import { CategoryList, CategoryDeleteAlert } from '../../components';
 import { Link } from 'solito/link';
@@ -16,14 +16,12 @@ export const CategoryListScreen = () => {
   } = useCategoryListScreenState();
 
   return (
-    <Layout>
-      <XStack justifyContent="space-between" alignItems="center">
-        <YStack>
-          <H3>Categories</H3>
-          <Paragraph>Manage your product category</Paragraph>
-        </YStack>
+    <Layout title="Categories">
+      <XStack justifyContent="flex-end">
         <Link href="/categories/create">
-          <Button size="$3" icon={Plus} variant="outlined" disabled />
+          <Button size="$3" icon={Plus} variant="outlined" disabled>
+            Create
+          </Button>
         </Link>
       </XStack>
       <ScrollView>

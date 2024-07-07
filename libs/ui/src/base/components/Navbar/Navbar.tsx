@@ -1,5 +1,15 @@
-import { LogOut, User } from '@tamagui/lucide-icons';
-import { Avatar, H6, ListItem, Popover, XStack, YGroup } from 'tamagui';
+import { ArrowLeft, LogOut, User } from '@tamagui/lucide-icons';
+import {
+  Avatar,
+  Button,
+  H4,
+  H6,
+  ListItem,
+  Popover,
+  XStack,
+  YGroup,
+} from 'tamagui';
+import { useNavbarState } from './Navbar.state';
 
 const ProfileMenu = () => {
   return (
@@ -47,14 +57,32 @@ const ProfileMenu = () => {
   );
 };
 
-export const Navbar = () => {
+export type NavbarProps = {
+  title: string;
+  showBackButton?: boolean;
+};
+
+export const Navbar = ({ title, showBackButton }: NavbarProps) => {
+  const { onBackButtonPress } = useNavbarState();
   return (
     <XStack
       padding="$3"
-      justifyContent="flex-end"
+      justifyContent="space-between"
       elevation="$1"
       backgroundColor="$gray1"
     >
+      <XStack alignItems="center" gap="$3">
+        {showBackButton && (
+          <Button
+            icon={ArrowLeft}
+            variant="outlined"
+            circular
+            onPress={onBackButtonPress}
+            size="$3"
+          />
+        )}
+        <H4>{title}</H4>
+      </XStack>
       <ProfileMenu />
     </XStack>
   );

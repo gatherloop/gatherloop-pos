@@ -1,4 +1,4 @@
-import { Button, H3, Paragraph, ScrollView, XStack, YStack } from 'tamagui';
+import { Button, ScrollView, XStack } from 'tamagui';
 import { Layout } from '../../../base';
 import { ProductList } from '../../components';
 import { Link } from 'solito/link';
@@ -17,14 +17,12 @@ export const ProductListScreen = () => {
   } = useProductListScreenState();
 
   return (
-    <Layout>
-      <XStack justifyContent="space-between" alignItems="center">
-        <YStack>
-          <H3>Products</H3>
-          <Paragraph>Manage your product</Paragraph>
-        </YStack>
+    <Layout title="Products">
+      <XStack justifyContent="flex-end">
         <Link href="/products/create">
-          <Button size="$3" icon={Plus} variant="outlined" disabled />
+          <Button size="$3" icon={Plus} variant="outlined" disabled>
+            Create
+          </Button>
         </Link>
       </XStack>
       <ScrollView>

@@ -1,4 +1,4 @@
-import { H3, Paragraph, ScrollView, YStack } from 'tamagui';
+import { ScrollView } from 'tamagui';
 import { Layout } from '../../../base';
 import { WalletForm } from '../../components';
 import { useWalletUpdateScreenState } from './WalletUpdateScreen.state';
@@ -12,11 +12,7 @@ export const WalletUpdateScreen = (props: WalletUpdateScreenProps) => {
     walletId: props.walletId,
   });
   return (
-    <Layout>
-      <YStack>
-        <H3>Update Wallet</H3>
-        <Paragraph>Update your existing wallet</Paragraph>
-      </YStack>
+    <Layout title="Update Wallet" showBackButton>
       <ScrollView>
         <WalletForm
           variant={{ type: 'update', walletId }}

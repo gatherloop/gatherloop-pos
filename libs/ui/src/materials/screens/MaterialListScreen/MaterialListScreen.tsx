@@ -1,4 +1,4 @@
-import { Button, H3, Paragraph, ScrollView, XStack, YStack } from 'tamagui';
+import { Button, ScrollView, XStack } from 'tamagui';
 import { Layout } from '../../../base';
 import { MaterialList } from '../../components';
 import { Link } from 'solito/link';
@@ -17,14 +17,12 @@ export const MaterialListScreen = () => {
   } = useMaterialListScreenState();
 
   return (
-    <Layout>
-      <XStack justifyContent="space-between" alignItems="center">
-        <YStack>
-          <H3>Materials</H3>
-          <Paragraph>Manage your product material</Paragraph>
-        </YStack>
+    <Layout title="Materials">
+      <XStack justifyContent="flex-end">
         <Link href="/materials/create">
-          <Button size="$3" icon={Plus} variant="outlined" disabled />
+          <Button size="$3" icon={Plus} variant="outlined" disabled>
+            Create
+          </Button>
         </Link>
       </XStack>
       <ScrollView>
