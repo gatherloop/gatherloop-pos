@@ -301,6 +301,152 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /wallets:
+    get:
+      summary: List all wallets
+      operationId: walletList
+      tags:
+        - wallet
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Wallet'
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Create wallet
+      operationId: walletCreate
+      tags:
+        - wallet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WalletRequest'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '403':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /wallets/{walletId}:
+    get:
+      summary: Get wallet by id
+      operationId: walletFindById
+      tags:
+        - wallet
+      parameters:
+        - name: walletId
+          in: path
+          schema:
+            type: integer
+          required: true
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Wallet'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Update wallet by id
+      operationId: walletUpdateById
+      tags:
+        - wallet
+      parameters:
+        - name: walletId
+          in: path
+          schema:
+            type: integer
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WalletRequest'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Delete wallet by id
+      operationId: walletDeleteById
+      tags:
+        - wallet
+      parameters:
+        - name: walletId
+          in: path
+          schema:
+            type: integer
+          required: true
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 components:
   schemas:
     Category:
@@ -370,6 +516,43 @@ components:
           format: int64
         unit:
           type: string
+    Wallet:
+      type: object
+      required:
+        - id
+        - name
+        - balance
+        - costPercentage
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        balance:
+          type: integer
+          format: int64
+        costPercentage:
+          type: integer
+          format: int64
+        deletedAt:
+          type: string
+          format: date-time
+    WalletRequest:
+      type: object
+      required:
+        - name
+        - balance
+        - costPercentage
+      properties:
+        name:
+          type: string
+        balance:
+          type: integer
+          format: int64
+        costPercentage:
+          type: integer
+          format: int64
     Error:
       type: object
       required:

@@ -1,4 +1,5 @@
 import {
+  Box,
   ChevronsLeft,
   ChevronsRight,
   Tag,
@@ -10,7 +11,8 @@ import { NamedExoticComponent } from 'react';
 
 const items: { title: string; icon: NamedExoticComponent; path: string }[] = [
   { title: 'Categories', icon: Tag, path: '/categories' },
-  { title: 'Materials', icon: Wallet, path: '/materials' },
+  { title: 'Materials', icon: Box, path: '/materials' },
+  { title: 'Wallets', icon: Wallet, path: '/wallets' },
 ];
 
 export const Sidebar = () => {

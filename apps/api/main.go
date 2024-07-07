@@ -4,6 +4,7 @@ import (
 	"apps/api/middlewares"
 	"apps/api/modules/categories"
 	"apps/api/modules/materials"
+	"apps/api/modules/wallets"
 	"fmt"
 	"net/http"
 	"os"
@@ -32,9 +33,10 @@ func main() {
 		panic("failed to connect database")
 	}
 
-	router := mux.NewRouter()
+	router := mux.NewRouter().StrictSlash(true)
 	router.Use(middlewares.EnableCORS)
 	categories.AddRouters(router, db)
 	materials.AddRouters(router, db)
+	wallets.AddRouters(router, db)
 	http.ListenAndServe(fmt.Sprintf(":%s", port), router)
 }
