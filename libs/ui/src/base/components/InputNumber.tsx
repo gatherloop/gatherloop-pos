@@ -13,8 +13,18 @@ export const InputNumber = (props: InputNumberProps) => {
 
   const onChangeText = (text: string) => {
     const numberValue = parseInt(text);
-    helpers.setValue(numberValue);
+    if (!isNaN(numberValue)) {
+      helpers.setValue(numberValue);
+      helpers.setTouched(true);
+    }
   };
 
-  return <Input {...field} id={fieldName} onChangeText={onChangeText} />;
+  return (
+    <Input
+      value={field.value}
+      onBlur={field.onBlur}
+      id={fieldName}
+      onChangeText={onChangeText}
+    />
+  );
 };
