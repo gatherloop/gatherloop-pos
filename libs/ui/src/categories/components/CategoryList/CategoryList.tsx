@@ -21,8 +21,6 @@ export const CategoryList = ({ itemMenus, onItemPress }: CategoryListProps) => {
             <ListItem
               key={category.id}
               title={category.name}
-              subtitle={category.description}
-              thumbnailSrc={category.imageUrl}
               $xs={{ flexBasis: '100%' }}
               $sm={{ flexBasis: '40%' }}
               flexBasis="30%"

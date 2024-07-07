@@ -21,6 +21,9 @@ export const MaterialList = ({ itemMenus, onItemPress }: MaterialListProps) => {
             <ListItem
               key={material.id}
               title={material.name}
+              subtitle={`Rp. ${material.price.toLocaleString('id')} per ${
+                material.unit
+              }`}
               $xs={{ flexBasis: '100%' }}
               $sm={{ flexBasis: '40%' }}
               flexBasis="30%"

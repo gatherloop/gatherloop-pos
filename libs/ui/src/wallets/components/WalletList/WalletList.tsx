@@ -21,6 +21,7 @@ export const WalletList = ({ itemMenus, onItemPress }: WalletListProps) => {
             <ListItem
               key={wallet.id}
               title={wallet.name}
+              subtitle={`Rp. ${wallet.balance.toLocaleString('id')}`}
               $xs={{ flexBasis: '100%' }}
               $sm={{ flexBasis: '40%' }}
               flexBasis="30%"

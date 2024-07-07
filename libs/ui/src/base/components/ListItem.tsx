@@ -1,6 +1,5 @@
 import { MoreVertical } from '@tamagui/lucide-icons';
 import {
-  H4,
   H5,
   Image,
   Popover,
@@ -10,6 +9,7 @@ import {
   YStack,
   ListItem as TamaguiListItem,
   Button,
+  Paragraph,
 } from 'tamagui';
 
 type Menu = {
@@ -56,8 +56,8 @@ export const ListItem = ({
         )}
 
         <YStack padding="$3" flex={1}>
-          <H4 ellipse>{title}</H4>
-          {subtitle && <H5 ellipse>{subtitle}</H5>}
+          <H5 ellipse>{title}</H5>
+          {subtitle && <Paragraph ellipse>{subtitle}</Paragraph>}
         </YStack>
 
         {menus.length > 0 && (

@@ -746,17 +746,11 @@ components:
       required:
         - id
         - name
-        - description
-        - imageUrl
       properties:
         id:
           type: integer
           format: int64
         name:
-          type: string
-        description:
-          type: string
-        imageUrl:
           type: string
         deletedAt:
           type: string
@@ -764,14 +758,8 @@ components:
     CategoryRequest:
       required:
         - name
-        - description
-        - imageUrl
       properties:
         name:
-          type: string
-        description:
-          type: string
-        imageUrl:
           type: string
     Material:
       type: object
