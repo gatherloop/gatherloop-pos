@@ -14,6 +14,7 @@ func AddCategoryRouters(router *mux.Router, db *gorm.DB) {
 
 	router.HandleFunc("/categories", categoryHandler.GetCategoryList).Methods(http.MethodGet)
 	router.HandleFunc("/categories/{categoryId}", categoryHandler.GetCategoryById).Methods(http.MethodGet)
+	router.HandleFunc("/categories/{categoryId}", categoryHandler.DeleteCategoryById).Methods(http.MethodDelete)
 	router.HandleFunc("/categories/{categoryId}", categoryHandler.UpdateCategoryById).Methods(http.MethodPut, http.MethodOptions)
 	router.HandleFunc("/categories", categoryHandler.CreateCategory).Methods(http.MethodPost, http.MethodOptions)
 }

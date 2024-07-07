@@ -3,5 +3,10 @@ import { useCategoryList } from '../../../../../api-contract/src';
 
 export const useCategoryListState = () => {
   const { data, status, error, refetch } = useCategoryList();
-  return { categories: data?.data ?? [], status, error, refetch };
+  return {
+    categories: data?.data ?? [],
+    status,
+    error,
+    refetch,
+  };
 };

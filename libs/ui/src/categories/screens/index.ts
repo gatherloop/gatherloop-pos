@@ -1,3 +1,3 @@
 export * from './CategoryListScreen';
-export * from './CategoryCreateScreen';
-export * from './CategoryUpdateScreen';
+export * from './CategoryCreateScreen/CategoryCreateScreen';
+export * from './CategoryUpdateScreen/CategoryUpdateScreen';

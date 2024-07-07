@@ -5,10 +5,11 @@ import { useCategoryListState } from './state';
 import { Category } from '../../../../../api-contract/src';
 
 export type CategoryListProps = {
-  onItemPress?: (category: Category) => void;
+  itemMenus: { title: string; onPress: (category: Category) => void }[];
+  onItemPress: (category: Category) => void;
 };
 
-export const CategoryList = ({ onItemPress }: CategoryListProps) => {
+export const CategoryList = ({ itemMenus, onItemPress }: CategoryListProps) => {
   const { categories, refetch, status } = useCategoryListState();
   return (
     <XStack gap="$3" flexWrap="wrap">
@@ -25,7 +26,11 @@ export const CategoryList = ({ onItemPress }: CategoryListProps) => {
               $xs={{ flexBasis: '100%' }}
               $sm={{ flexBasis: '40%' }}
               flexBasis="30%"
-              onPress={() => onItemPress && onItemPress(category)}
+              onPress={() => onItemPress(category)}
+              menus={itemMenus.map((itemMenu) => ({
+                ...itemMenu,
+                onPress: () => itemMenu.onPress(category),
+              }))}
             />
           ))
         ) : (

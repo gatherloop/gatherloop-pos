@@ -27,3 +27,7 @@ func (usecase Usecase) CreateCategory(categoryRequest apiContract.CategoryReques
 func (usecase Usecase) UpdateCategoryById(categoryRequest apiContract.CategoryRequest, id int64) error {
 	return usecase.repository.UpdateCategoryById(categoryRequest, id)
 }
+
+func (usecase Usecase) DeleteCategoryById(id int64) error {
+	return usecase.repository.DeleteCategoryById(id)
+}

@@ -125,6 +125,36 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+    delete:
+      summary: Delete category by id
+      operationId: categoryDeleteById
+      tags:
+        - category
+      parameters:
+        - name: categoryId
+          in: path
+          schema:
+            type: integer
+          required: true
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 components:
   schemas:
     Category:
@@ -144,6 +174,9 @@ components:
           type: string
         imageUrl:
           type: string
+        deletedAt:
+          type: string
+          format: date-time
     CategoryRequest:
       required:
         - name
