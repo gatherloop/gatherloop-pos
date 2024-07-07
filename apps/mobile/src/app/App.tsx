@@ -2,6 +2,9 @@ import {
   CategoryListScreen,
   CategoryCreateScreen,
   CategoryUpdateScreen,
+  MaterialListScreen,
+  MaterialCreateScreen,
+  MaterialUpdateScreen,
 } from '@gatherloop-pos/ui';
 import { RootProvider } from '@gatherloop-pos/provider';
 import { NavigationContainer } from '@react-navigation/native';
@@ -12,6 +15,9 @@ const Stack = createNativeStackNavigator<{
   categoryList: undefined;
   categoryCreate: undefined;
   categoryUpdate: { categoryId: number };
+  materialList: undefined;
+  materialCreate: undefined;
+  materialUpdate: { materialId: number };
 }>();
 
 export const App = () => {
@@ -29,6 +35,14 @@ export const App = () => {
               path: 'categories/:categoryId',
               parse: {
                 categoryId: (categoryId) => parseInt(categoryId),
+              },
+            },
+            materialList: 'materials',
+            materialCreate: 'materials/create',
+            materialUpdate: {
+              path: 'materials/:materialId',
+              parse: {
+                materialId: (materialId) => parseInt(materialId),
               },
             },
           },
@@ -53,6 +67,15 @@ export const App = () => {
           <Stack.Screen
             name="categoryUpdate"
             component={CategoryUpdateScreen}
+          />
+          <Stack.Screen name="materialList" component={MaterialListScreen} />
+          <Stack.Screen
+            name="materialCreate"
+            component={MaterialCreateScreen}
+          />
+          <Stack.Screen
+            name="materialUpdate"
+            component={MaterialUpdateScreen}
           />
         </Stack.Navigator>
       </RootProvider>

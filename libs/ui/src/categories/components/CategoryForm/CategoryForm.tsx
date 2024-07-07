@@ -1,5 +1,5 @@
 import { FormikProvider } from 'formik';
-import { Field, Form, Input, SubmitButton } from '../../../base';
+import { Field, Form, InputText, SubmitButton } from '../../../base';
 import {
   UseCategoryFormStateProps,
   useCategoryFormState,
@@ -16,13 +16,13 @@ export const CategoryForm = ({ variant, onSuccess }: CategoryFormProps) => {
     <FormikProvider value={formik}>
       <Form>
         <Field name="name" label="Name">
-          <Input />
+          <InputText />
         </Field>
         <Field name="description" label="Description">
-          <Input />
+          <InputText />
         </Field>
         <Field name="imageUrl" label="Image URL">
-          <Input />
+          <InputText />
         </Field>
         <SubmitButton>Submit</SubmitButton>
       </Form>

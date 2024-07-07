@@ -155,6 +155,152 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /materials:
+    get:
+      summary: List all materials
+      operationId: materialList
+      tags:
+        - material
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Material'
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Create material
+      operationId: materialCreate
+      tags:
+        - material
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MaterialRequest'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '403':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /materials/{materialId}:
+    get:
+      summary: Get material by id
+      operationId: materialFindById
+      tags:
+        - material
+      parameters:
+        - name: materialId
+          in: path
+          schema:
+            type: integer
+          required: true
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Material'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Update material by id
+      operationId: materialUpdateById
+      tags:
+        - material
+      parameters:
+        - name: materialId
+          in: path
+          schema:
+            type: integer
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MaterialRequest'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Delete material by id
+      operationId: materialDeleteById
+      tags:
+        - material
+      parameters:
+        - name: materialId
+          in: path
+          schema:
+            type: integer
+          required: true
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 components:
   schemas:
     Category:
@@ -188,6 +334,41 @@ components:
         description:
           type: string
         imageUrl:
+          type: string
+    Material:
+      type: object
+      required:
+        - id
+        - name
+        - price
+        - unit
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        price:
+          type: integer
+          format: int64
+        unit:
+          type: string
+        deletedAt:
+          type: string
+          format: date-time
+    MaterialRequest:
+      type: object
+      required:
+        - name
+        - price
+        - unit
+      properties:
+        name:
+          type: string
+        price:
+          type: integer
+          format: int64
+        unit:
           type: string
     Error:
       type: object

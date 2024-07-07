@@ -1,16 +1,14 @@
 import { useField as useFormikField } from 'formik';
-import { Input as TamaguiInput } from 'tamagui';
+import { Input } from 'tamagui';
 import { useFieldContext } from './Field';
 
-export type InputProps = {
+export type InputTextProps = {
   name?: string;
 };
 
-export const Input = (props: InputProps) => {
+export const InputText = (props: InputTextProps) => {
   const { name } = useFieldContext();
   const fieldName = name ?? props.name ?? '';
   const [field, _meta, helpers] = useFormikField(fieldName);
-  return (
-    <TamaguiInput {...field} id={fieldName} onChangeText={helpers.setValue} />
-  );
+  return <Input {...field} id={fieldName} onChangeText={helpers.setValue} />;
 };

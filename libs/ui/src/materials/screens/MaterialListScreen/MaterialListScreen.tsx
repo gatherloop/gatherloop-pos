@@ -1,33 +1,34 @@
 import { Button, H3, Paragraph, ScrollView, XStack, YStack } from 'tamagui';
 import { Layout } from '../../../base';
-import { CategoryList, CategoryDeleteAlert } from '../../components';
+import { MaterialList } from '../../components';
 import { Link } from 'solito/link';
 import { Plus } from '@tamagui/lucide-icons';
-import { useCategoryListScreenState } from './CategoryListScreen.state';
+import { MaterialDeleteAlert } from '../../components/MaterialDeleteAlert';
+import { useMaterialListScreenState } from './MaterialListScreen.state';
 
-export const CategoryListScreen = () => {
+export const MaterialListScreen = () => {
   const {
     onItemPress,
     onEditMenuPress,
     onDeleteMenuPress,
     onDeleteSuccess,
     onDeleteCancel,
-    categoryDeleteId,
-  } = useCategoryListScreenState();
+    materialDeleteId,
+  } = useMaterialListScreenState();
 
   return (
     <Layout>
       <XStack justifyContent="space-between" alignItems="center">
         <YStack>
-          <H3>Categories</H3>
-          <Paragraph>Manage your product category</Paragraph>
+          <H3>Materials</H3>
+          <Paragraph>Manage your product material</Paragraph>
         </YStack>
-        <Link href="/categories/create">
+        <Link href="/materials/create">
           <Button size="$3" icon={Plus} variant="outlined" disabled />
         </Link>
       </XStack>
       <ScrollView>
-        <CategoryList
+        <MaterialList
           onItemPress={onItemPress}
           itemMenus={[
             { title: 'Edit', onPress: onEditMenuPress },
@@ -35,9 +36,9 @@ export const CategoryListScreen = () => {
           ]}
         />
       </ScrollView>
-      {typeof categoryDeleteId === 'number' && (
-        <CategoryDeleteAlert
-          categoryId={categoryDeleteId}
+      {typeof materialDeleteId === 'number' && (
+        <MaterialDeleteAlert
+          materialId={materialDeleteId}
           onSuccess={onDeleteSuccess}
           onCancel={onDeleteCancel}
         />

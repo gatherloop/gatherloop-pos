@@ -1,4 +1,4 @@
-package categories
+package materials
 
 import (
 	"encoding/json"
@@ -17,8 +17,8 @@ func NewHandler(usecase Usecase) Handler {
 	return Handler{usecase: usecase}
 }
 
-func (handler Handler) GetCategoryList(w http.ResponseWriter, r *http.Request) {
-	categories, err := handler.usecase.GetCategoryList()
+func (handler Handler) GetMaterialList(w http.ResponseWriter, r *http.Request) {
+	categories, err := handler.usecase.GetMaterialList()
 	if err != nil {
 		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		w.WriteHeader(500)
@@ -26,13 +26,13 @@ func (handler Handler) GetCategoryList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, _ := json.Marshal(apiContract.CategoryList200Response{Data: categories})
+	response, _ := json.Marshal(apiContract.MaterialList200Response{Data: categories})
 	w.Write(response)
 }
 
-func (handler Handler) GetCategoryById(w http.ResponseWriter, r *http.Request) {
+func (handler Handler) GetMaterialById(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	idParam := vars["categoryId"]
+	idParam := vars["materialId"]
 	id, err := strconv.ParseInt(idParam, 10, 32)
 	if err != nil {
 		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
@@ -41,7 +41,7 @@ func (handler Handler) GetCategoryById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	category, err := handler.usecase.GetCategoryById(id)
+	Material, err := handler.usecase.GetMaterialById(id)
 	if err != nil {
 		response, _ := json.Marshal(apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		w.WriteHeader(404)
@@ -49,7 +49,7 @@ func (handler Handler) GetCategoryById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, err := json.Marshal(apiContract.CategoryFindById200Response{Data: category})
+	response, err := json.Marshal(apiContract.MaterialFindById200Response{Data: Material})
 	if err != nil {
 		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		w.WriteHeader(500)
@@ -60,16 +60,16 @@ func (handler Handler) GetCategoryById(w http.ResponseWriter, r *http.Request) {
 	w.Write(response)
 }
 
-func (handler Handler) CreateCategory(w http.ResponseWriter, r *http.Request) {
-	var categoryRequest apiContract.CategoryRequest
-	if err := json.NewDecoder(r.Body).Decode(&categoryRequest); err != nil {
+func (handler Handler) CreateMaterial(w http.ResponseWriter, r *http.Request) {
+	var MaterialRequest apiContract.MaterialRequest
+	if err := json.NewDecoder(r.Body).Decode(&MaterialRequest); err != nil {
 		response, _ := json.Marshal(apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
 		w.WriteHeader(403)
 		w.Write(response)
 		return
 	}
 
-	if err := handler.usecase.CreateCategory(categoryRequest); err != nil {
+	if err := handler.usecase.CreateMaterial(MaterialRequest); err != nil {
 		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		w.WriteHeader(500)
 		w.Write(response)
@@ -80,9 +80,9 @@ func (handler Handler) CreateCategory(w http.ResponseWriter, r *http.Request) {
 	w.Write(response)
 }
 
-func (handler Handler) UpdateCategoryById(w http.ResponseWriter, r *http.Request) {
+func (handler Handler) UpdateMaterialById(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	idParam := vars["categoryId"]
+	idParam := vars["materialId"]
 	id, err := strconv.ParseInt(idParam, 10, 32)
 	if err != nil {
 		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
@@ -91,15 +91,15 @@ func (handler Handler) UpdateCategoryById(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	var categoryRequest apiContract.CategoryRequest
-	if err := json.NewDecoder(r.Body).Decode(&categoryRequest); err != nil {
+	var MaterialRequest apiContract.MaterialRequest
+	if err := json.NewDecoder(r.Body).Decode(&MaterialRequest); err != nil {
 		response, _ := json.Marshal(apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
 		w.WriteHeader(403)
 		w.Write(response)
 		return
 	}
 
-	if err := handler.usecase.UpdateCategoryById(categoryRequest, id); err != nil {
+	if err := handler.usecase.UpdateMaterialById(MaterialRequest, id); err != nil {
 		response, _ := json.Marshal(apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		w.WriteHeader(404)
 		w.Write(response)
@@ -117,9 +117,9 @@ func (handler Handler) UpdateCategoryById(w http.ResponseWriter, r *http.Request
 	w.Write(response)
 }
 
-func (handler Handler) DeleteCategoryById(w http.ResponseWriter, r *http.Request) {
+func (handler Handler) DeleteMaterialById(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	idParam := vars["categoryId"]
+	idParam := vars["materialId"]
 	id, err := strconv.ParseInt(idParam, 10, 32)
 	if err != nil {
 		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
@@ -128,7 +128,7 @@ func (handler Handler) DeleteCategoryById(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if err := handler.usecase.DeleteCategoryById(id); err != nil {
+	if err := handler.usecase.DeleteMaterialById(id); err != nil {
 		response, _ := json.Marshal(apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		w.WriteHeader(404)
 		w.Write(response)

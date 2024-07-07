@@ -1,30 +1,20 @@
 import {
-  Box,
   ChevronsLeft,
   ChevronsRight,
-  CreditCard,
-  DollarSign,
-  LayoutDashboard,
   Tag,
-  User,
   Wallet,
 } from '@tamagui/lucide-icons';
 import { Button, H3, ListItem, YGroup, YStack } from 'tamagui';
 import { useSidebarState } from './Sidebar.state';
 import { NamedExoticComponent } from 'react';
 
-const items: { title: string; icon: NamedExoticComponent }[] = [
-  { title: 'Dashboard', icon: LayoutDashboard },
-  { title: 'Products', icon: Box },
-  { title: 'Categories', icon: Tag },
-  { title: 'Transactions', icon: DollarSign },
-  { title: 'Expenses', icon: CreditCard },
-  { title: 'Wallets', icon: Wallet },
-  { title: 'Users', icon: User },
+const items: { title: string; icon: NamedExoticComponent; path: string }[] = [
+  { title: 'Categories', icon: Tag, path: '/categories' },
+  { title: 'Materials', icon: Wallet, path: '/materials' },
 ];
 
 export const Sidebar = () => {
-  const { isShown, toggleShown } = useSidebarState();
+  const { isShown, onToggleButtonPress, onMenuItemPress } = useSidebarState();
   return (
     <>
       <YGroup
@@ -44,6 +34,7 @@ export const Sidebar = () => {
               backgroundColor="$colorTransparent"
               hoverTheme
               icon={item.icon}
+              onPress={() => onMenuItemPress(item.path)}
             >
               {item.title}
             </ListItem>
@@ -53,7 +44,7 @@ export const Sidebar = () => {
 
       <Button
         icon={isShown ? ChevronsLeft : ChevronsRight}
-        onPress={toggleShown}
+        onPress={onToggleButtonPress}
         position="absolute"
         left={isShown ? 240 : 0}
         zIndex={999}

@@ -7,14 +7,14 @@ import (
 	"gorm.io/gorm"
 )
 
-func AddCategoryRouters(router *mux.Router, db *gorm.DB) {
-	categoryRepository := NewCategoryRepository(db)
-	categoryUsecase := NewCategoryUsecase(categoryRepository)
-	categoryHandler := NewCategoryHandler(categoryUsecase)
+func AddRouters(router *mux.Router, db *gorm.DB) {
+	repository := NewRepository(db)
+	usecase := NewUsecase(repository)
+	handler := NewHandler(usecase)
 
-	router.HandleFunc("/categories", categoryHandler.GetCategoryList).Methods(http.MethodGet)
-	router.HandleFunc("/categories/{categoryId}", categoryHandler.GetCategoryById).Methods(http.MethodGet)
-	router.HandleFunc("/categories/{categoryId}", categoryHandler.DeleteCategoryById).Methods(http.MethodDelete)
-	router.HandleFunc("/categories/{categoryId}", categoryHandler.UpdateCategoryById).Methods(http.MethodPut, http.MethodOptions)
-	router.HandleFunc("/categories", categoryHandler.CreateCategory).Methods(http.MethodPost, http.MethodOptions)
+	router.HandleFunc("/categories", handler.GetCategoryList).Methods(http.MethodGet)
+	router.HandleFunc("/categories/{categoryId}", handler.GetCategoryById).Methods(http.MethodGet)
+	router.HandleFunc("/categories/{categoryId}", handler.DeleteCategoryById).Methods(http.MethodDelete)
+	router.HandleFunc("/categories/{categoryId}", handler.UpdateCategoryById).Methods(http.MethodPut, http.MethodOptions)
+	router.HandleFunc("/categories", handler.CreateCategory).Methods(http.MethodPost, http.MethodOptions)
 }

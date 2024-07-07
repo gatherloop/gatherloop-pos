@@ -8,7 +8,7 @@ type Usecase struct {
 	repository Repository
 }
 
-func NewCategoryUsecase(repository Repository) Usecase {
+func NewUsecase(repository Repository) Usecase {
 	return Usecase{repository: repository}
 }
 

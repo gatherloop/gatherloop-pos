@@ -19,7 +19,7 @@ type Menu = {
 
 export type ListItemProps = {
   title: string;
-  subtitle: string;
+  subtitle?: string;
   thumbnailSrc?: string;
   menus: Menu[];
 } & XStackProps;
@@ -57,7 +57,7 @@ export const ListItem = ({
 
         <YStack padding="$3" flex={1}>
           <H4 ellipse>{title}</H4>
-          <H5 ellipse>{subtitle}</H5>
+          {subtitle && <H5 ellipse>{subtitle}</H5>}
         </YStack>
 
         {menus.length > 0 && (
@@ -88,15 +88,15 @@ export const ListItem = ({
                 {menus.map((menu, index) => (
                   <YGroup.Item key={index}>
                     <Popover.Close asChild>
-                    <TamaguiListItem
-                      hoverTheme
-                      onPress={(event) => {
-                        event.stopPropagation();
-                        menu.onPress();
-                      }}
-                    >
-                      {menu.title}
-                    </TamaguiListItem>
+                      <TamaguiListItem
+                        hoverTheme
+                        onPress={(event) => {
+                          event.stopPropagation();
+                          menu.onPress();
+                        }}
+                      >
+                        {menu.title}
+                      </TamaguiListItem>
                     </Popover.Close>
                   </YGroup.Item>
                 ))}

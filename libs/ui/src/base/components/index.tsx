@@ -6,6 +6,7 @@ export * from './EmptyView';
 export * from './ErrorView';
 export * from './Layout';
 export * from './Form';
-export * from './Input';
+export * from './InputText';
+export * from './InputNumber';
 export * from './Field';
 export * from './SubmitButton';

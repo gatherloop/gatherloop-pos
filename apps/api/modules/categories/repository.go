@@ -11,7 +11,7 @@ type Repository struct {
 	db *gorm.DB
 }
 
-func NewCategoryRepository(db *gorm.DB) Repository {
+func NewRepository(db *gorm.DB) Repository {
 	return Repository{db: db}
 }
 
