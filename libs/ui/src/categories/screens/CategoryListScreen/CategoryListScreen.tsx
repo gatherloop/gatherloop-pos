@@ -1,4 +1,4 @@
-import { Button, ScrollView, XStack } from 'tamagui';
+import { Button, ScrollView } from 'tamagui';
 import { Layout } from '../../../base';
 import { CategoryList, CategoryDeleteAlert } from '../../components';
 import { Link } from 'solito/link';
@@ -16,14 +16,14 @@ export const CategoryListScreen = () => {
   } = useCategoryListScreenState();
 
   return (
-    <Layout title="Categories">
-      <XStack justifyContent="flex-end">
+    <Layout
+      title="Categories"
+      rightActionItem={
         <Link href="/categories/create">
-          <Button size="$3" icon={Plus} variant="outlined" disabled>
-            Create
-          </Button>
+          <Button size="$3" icon={Plus} variant="outlined" disabled />
         </Link>
-      </XStack>
+      }
+    >
       <ScrollView>
         <CategoryList
           onItemPress={onItemPress}

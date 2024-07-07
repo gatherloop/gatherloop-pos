@@ -1,4 +1,4 @@
-import { Button, ScrollView, XStack } from 'tamagui';
+import { Button, ScrollView } from 'tamagui';
 import { Layout } from '../../../base';
 import { MaterialList } from '../../components';
 import { Link } from 'solito/link';
@@ -17,14 +17,14 @@ export const MaterialListScreen = () => {
   } = useMaterialListScreenState();
 
   return (
-    <Layout title="Materials">
-      <XStack justifyContent="flex-end">
+    <Layout
+      title="Materials"
+      rightActionItem={
         <Link href="/materials/create">
-          <Button size="$3" icon={Plus} variant="outlined" disabled>
-            Create
-          </Button>
+          <Button size="$3" icon={Plus} variant="outlined" disabled />
         </Link>
-      </XStack>
+      }
+    >
       <ScrollView>
         <MaterialList
           onItemPress={onItemPress}
