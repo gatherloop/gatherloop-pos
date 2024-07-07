@@ -1,4 +1,4 @@
-package materials
+package products
 
 import (
 	"encoding/json"
@@ -17,8 +17,8 @@ func NewHandler(usecase Usecase) Handler {
 	return Handler{usecase: usecase}
 }
 
-func (handler Handler) GetMaterialList(w http.ResponseWriter, r *http.Request) {
-	materials, err := handler.usecase.GetMaterialList()
+func (handler Handler) GetProductList(w http.ResponseWriter, r *http.Request) {
+	products, err := handler.usecase.GetProductList()
 	if err != nil {
 		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		w.WriteHeader(500)
@@ -26,13 +26,13 @@ func (handler Handler) GetMaterialList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, _ := json.Marshal(apiContract.MaterialList200Response{Data: materials})
+	response, _ := json.Marshal(apiContract.ProductList200Response{Data: products})
 	w.Write(response)
 }
 
-func (handler Handler) GetMaterialById(w http.ResponseWriter, r *http.Request) {
+func (handler Handler) GetProductById(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	idParam := vars["materialId"]
+	idParam := vars["productId"]
 	id, err := strconv.ParseInt(idParam, 10, 32)
 	if err != nil {
 		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
@@ -41,7 +41,7 @@ func (handler Handler) GetMaterialById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	Material, err := handler.usecase.GetMaterialById(id)
+	product, err := handler.usecase.GetProductById(id)
 	if err != nil {
 		response, _ := json.Marshal(apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		w.WriteHeader(404)
@@ -49,7 +49,7 @@ func (handler Handler) GetMaterialById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, err := json.Marshal(apiContract.MaterialFindById200Response{Data: Material})
+	response, err := json.Marshal(apiContract.ProductFindById200Response{Data: product})
 	if err != nil {
 		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		w.WriteHeader(500)
@@ -60,16 +60,16 @@ func (handler Handler) GetMaterialById(w http.ResponseWriter, r *http.Request) {
 	w.Write(response)
 }
 
-func (handler Handler) CreateMaterial(w http.ResponseWriter, r *http.Request) {
-	var materialRequest apiContract.MaterialRequest
-	if err := json.NewDecoder(r.Body).Decode(&materialRequest); err != nil {
+func (handler Handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
+	var productRequest apiContract.ProductRequest
+	if err := json.NewDecoder(r.Body).Decode(&productRequest); err != nil {
 		response, _ := json.Marshal(apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
 		w.WriteHeader(403)
 		w.Write(response)
 		return
 	}
 
-	if err := handler.usecase.CreateMaterial(materialRequest); err != nil {
+	if err := handler.usecase.CreateProduct(productRequest); err != nil {
 		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		w.WriteHeader(500)
 		w.Write(response)
@@ -80,9 +80,9 @@ func (handler Handler) CreateMaterial(w http.ResponseWriter, r *http.Request) {
 	w.Write(response)
 }
 
-func (handler Handler) UpdateMaterialById(w http.ResponseWriter, r *http.Request) {
+func (handler Handler) UpdateProductById(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	idParam := vars["materialId"]
+	idParam := vars["productId"]
 	id, err := strconv.ParseInt(idParam, 10, 32)
 	if err != nil {
 		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
@@ -91,15 +91,15 @@ func (handler Handler) UpdateMaterialById(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	var materialRequest apiContract.MaterialRequest
-	if err := json.NewDecoder(r.Body).Decode(&materialRequest); err != nil {
+	var productRequest apiContract.ProductRequest
+	if err := json.NewDecoder(r.Body).Decode(&productRequest); err != nil {
 		response, _ := json.Marshal(apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
 		w.WriteHeader(403)
 		w.Write(response)
 		return
 	}
 
-	if err := handler.usecase.UpdateMaterialById(materialRequest, id); err != nil {
+	if err := handler.usecase.UpdateProductById(productRequest, id); err != nil {
 		response, _ := json.Marshal(apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		w.WriteHeader(404)
 		w.Write(response)
@@ -117,9 +117,9 @@ func (handler Handler) UpdateMaterialById(w http.ResponseWriter, r *http.Request
 	w.Write(response)
 }
 
-func (handler Handler) DeleteMaterialById(w http.ResponseWriter, r *http.Request) {
+func (handler Handler) DeleteProductById(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	idParam := vars["materialId"]
+	idParam := vars["productId"]
 	id, err := strconv.ParseInt(idParam, 10, 32)
 	if err != nil {
 		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
@@ -128,7 +128,7 @@ func (handler Handler) DeleteMaterialById(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if err := handler.usecase.DeleteMaterialById(id); err != nil {
+	if err := handler.usecase.DeleteProductById(id); err != nil {
 		response, _ := json.Marshal(apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		w.WriteHeader(404)
 		w.Write(response)

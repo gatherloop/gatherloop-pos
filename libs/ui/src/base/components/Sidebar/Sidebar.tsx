@@ -2,6 +2,7 @@ import {
   Box,
   ChevronsLeft,
   ChevronsRight,
+  FileBox,
   Tag,
   Wallet,
 } from '@tamagui/lucide-icons';
@@ -11,6 +12,7 @@ import { NamedExoticComponent } from 'react';
 
 const items: { title: string; icon: NamedExoticComponent; path: string }[] = [
   { title: 'Categories', icon: Tag, path: '/categories' },
+  { title: 'Products', icon: FileBox, path: '/products' },
   { title: 'Materials', icon: Box, path: '/materials' },
   { title: 'Wallets', icon: Wallet, path: '/wallets' },
 ];

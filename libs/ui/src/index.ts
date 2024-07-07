@@ -4,3 +4,4 @@ export * from './config';
 export * from './categories';
 export * from './materials';
 export * from './wallets';
+export * from './products';

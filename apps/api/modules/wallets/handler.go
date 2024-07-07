@@ -18,7 +18,7 @@ func NewHandler(usecase Usecase) Handler {
 }
 
 func (handler Handler) GetWalletList(w http.ResponseWriter, r *http.Request) {
-	categories, err := handler.usecase.GetWalletList()
+	wallets, err := handler.usecase.GetWalletList()
 	if err != nil {
 		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		w.WriteHeader(500)
@@ -26,7 +26,7 @@ func (handler Handler) GetWalletList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, _ := json.Marshal(apiContract.WalletList200Response{Data: categories})
+	response, _ := json.Marshal(apiContract.WalletList200Response{Data: wallets})
 	w.Write(response)
 }
 

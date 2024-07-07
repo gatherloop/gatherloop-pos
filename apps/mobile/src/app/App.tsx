@@ -8,6 +8,9 @@ import {
   WalletListScreen,
   WalletCreateScreen,
   WalletUpdateScreen,
+  ProductListScreen,
+  ProductCreateScreen,
+  ProductUpdateScreen,
 } from '@gatherloop-pos/ui';
 import { RootProvider } from '@gatherloop-pos/provider';
 import { NavigationContainer } from '@react-navigation/native';
@@ -24,6 +27,9 @@ const Stack = createNativeStackNavigator<{
   walletList: undefined;
   walletCreate: undefined;
   walletUpdate: { walletId: number };
+  productList: undefined;
+  productCreate: undefined;
+  productUpdate: { productId: number };
 }>();
 
 export const App = () => {
@@ -57,6 +63,14 @@ export const App = () => {
               path: 'wallets/:walletId',
               parse: {
                 walletId: (walletId) => parseInt(walletId),
+              },
+            },
+            productList: 'products',
+            productCreate: 'products/create',
+            productUpdate: {
+              path: 'products/:productId',
+              parse: {
+                productId: (productId) => parseInt(productId),
               },
             },
           },
@@ -94,6 +108,9 @@ export const App = () => {
           <Stack.Screen name="walletList" component={WalletListScreen} />
           <Stack.Screen name="walletCreate" component={WalletCreateScreen} />
           <Stack.Screen name="walletUpdate" component={WalletUpdateScreen} />
+          <Stack.Screen name="productList" component={ProductListScreen} />
+          <Stack.Screen name="productCreate" component={ProductCreateScreen} />
+          <Stack.Screen name="productUpdate" component={ProductUpdateScreen} />
         </Stack.Navigator>
       </RootProvider>
     </NavigationContainer>

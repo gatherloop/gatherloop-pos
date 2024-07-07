@@ -4,6 +4,7 @@ import (
 	"apps/api/middlewares"
 	"apps/api/modules/categories"
 	"apps/api/modules/materials"
+	"apps/api/modules/products"
 	"apps/api/modules/wallets"
 	"fmt"
 	"net/http"
@@ -38,5 +39,6 @@ func main() {
 	categories.AddRouters(router, db)
 	materials.AddRouters(router, db)
 	wallets.AddRouters(router, db)
+	products.AddRouters(router, db)
 	http.ListenAndServe(fmt.Sprintf(":%s", port), router)
 }
