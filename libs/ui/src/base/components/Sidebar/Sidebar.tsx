@@ -27,7 +27,7 @@ export const Sidebar = () => {
         $xs={{ position: 'absolute', top: 0, bottom: 0, zIndex: '$5' }}
         backgroundColor="$gray3"
         borderRadius="$0"
-        animation="quick"
+        animation={'quick'}
         marginLeft={isShown ? 0 : -240}
       >
         <YStack padding="$5">
