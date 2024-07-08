@@ -852,6 +852,8 @@ components:
         price:
           type: integer
           format: int64
+        category:
+          $ref: '#/components/schemas/Category'
         deletedAt:
           type: string
           format: date-time
