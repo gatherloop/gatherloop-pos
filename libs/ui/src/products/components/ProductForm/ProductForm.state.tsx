@@ -2,6 +2,7 @@
 import {
   ProductRequest,
   productRequestSchema,
+  useCategoryList,
   useProductCreate,
   useProductFindById,
   useProductUpdateById,
@@ -18,6 +19,8 @@ export const useProductFormState = ({
   variant,
   onSuccess,
 }: UseProductFormStateProps) => {
+  const categories = useCategoryList();
+
   const productId = variant.type === 'update' ? variant.productId : -1;
 
   const product = useProductFindById(productId, {
@@ -32,7 +35,7 @@ export const useProductFormState = ({
   const formik = useFormik<ProductRequest>({
     initialValues: {
       name: product.data?.data.name ?? '',
-      categoryId: product.data?.data.categoryId ?? -1,
+      categoryId: product.data?.data.categoryId ?? NaN,
       price: product.data?.data.price ?? 0,
     },
     enableReinitialize: true,
@@ -40,5 +43,5 @@ export const useProductFormState = ({
     validationSchema: toFormikValidationSchema(productRequestSchema),
   });
 
-  return { formik };
+  return { formik, categories: categories.data?.data ?? [] };
 };

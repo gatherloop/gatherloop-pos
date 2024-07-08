@@ -5,6 +5,7 @@ import {
   InputText,
   InputNumber,
   SubmitButton,
+  Select,
 } from '../../../base';
 import {
   UseProductFormStateProps,
@@ -17,7 +18,7 @@ export type ProductFormProps = {
 };
 
 export const ProductForm = ({ variant, onSuccess }: ProductFormProps) => {
-  const { formik } = useProductFormState({ variant, onSuccess });
+  const { formik, categories } = useProductFormState({ variant, onSuccess });
   return (
     <FormikProvider value={formik}>
       <Form>
@@ -25,7 +26,14 @@ export const ProductForm = ({ variant, onSuccess }: ProductFormProps) => {
           <InputText />
         </Field>
         <Field name="categoryId" label="Category">
-          <InputNumber />
+          <Select
+            items={categories.map((category) => ({
+              label: category.name,
+              value: String(category.id),
+            }))}
+            parseInputToFieldValue={parseInt}
+            parseFieldToInputValue={String}
+          />
         </Field>
         <Field name="price" label="Price">
           <InputNumber />
