@@ -447,6 +447,69 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /wallets/{walletId}/transfers:
+    get:
+      summary: List all wallet transfers
+      operationId: walletTransferList
+      tags:
+        - wallet
+      parameters:
+        - name: walletId
+          in: path
+          schema:
+            type: integer
+          required: true
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WalletTransfer'
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Create wallet transfer
+      operationId: walletTransferCreate
+      tags:
+        - wallet
+      parameters:
+        - name: walletId
+          in: path
+          schema:
+            type: integer
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WalletTransferRequest'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '403':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /products:
     get:
       summary: List all products
@@ -802,7 +865,7 @@ components:
         - id
         - name
         - balance
-        - costPercentage
+        - paymentCostPercentage
       properties:
         id:
           type: integer
@@ -812,9 +875,9 @@ components:
         balance:
           type: integer
           format: int64
-        costPercentage:
-          type: integer
-          format: int64
+        paymentCostPercentage:
+          type: number
+          format: float
         deletedAt:
           type: string
           format: date-time
@@ -823,14 +886,59 @@ components:
       required:
         - name
         - balance
-        - costPercentage
+        - paymentCostPercentage
       properties:
         name:
           type: string
         balance:
           type: integer
           format: int64
-        costPercentage:
+        paymentCostPercentage:
+          type: number
+          format: float
+    WalletTransfer:
+      type: object
+      required:
+        - id
+        - createdAt
+        - amount
+        - fromWalletId
+        - fromWallet
+        - toWalletId
+        - toWallet
+      properties:
+        id:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        amount:
+          type: integer
+          format: int64
+        fromWalletId:
+          type: integer
+          format: int64
+        fromWallet:
+          $ref: '#/components/schemas/Wallet'
+        toWalletId:
+          type: integer
+          format: int64
+        toWallet:
+          $ref: '#/components/schemas/Wallet'
+        deletedAt:
+          type: string
+          format: date-time
+    WalletTransferRequest:
+      type: object
+      required:
+        - amount
+        - toWalletId
+      properties:
+        amount:
+          type: integer
+          format: int64
+        toWalletId:
           type: integer
           format: int64
     Product:

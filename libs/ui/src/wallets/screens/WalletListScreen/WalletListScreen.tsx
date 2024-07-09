@@ -13,6 +13,7 @@ export const WalletListScreen = () => {
     onDeleteMenuPress,
     onDeleteSuccess,
     onDeleteCancel,
+    onTransferMenuPress,
     walletDeleteId,
   } = useWalletListScreenState();
 
@@ -30,6 +31,7 @@ export const WalletListScreen = () => {
           onItemPress={onItemPress}
           itemMenus={[
             { title: 'Edit', onPress: onEditMenuPress },
+            { title: 'Transfer', onPress: onTransferMenuPress },
             { title: 'Delete', onPress: onDeleteMenuPress },
           ]}
         />

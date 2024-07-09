@@ -42,3 +42,20 @@ func (repo Repository) DeleteWalletById(id int64) error {
 	result := repo.db.Table("wallets").Where(apiContract.Wallet{Id: id}).Update("deleted_at", currentTime)
 	return result.Error
 }
+
+func (repo Repository) GetWalletTransferList(walletId int64) ([]apiContract.WalletTransfer, error) {
+	var walletTransfers []apiContract.WalletTransfer
+	result := repo.db.Table("wallet_transfers").Where("deleted_at is NULL AND from_wallet_id = ?", walletId).Find(&walletTransfers)
+	return walletTransfers, result.Error
+}
+
+func (repo Repository) CreateWalletTransfer(walletTransferRequest apiContract.WalletTransferRequest, fromWalletId int64) error {
+	walletTransfer := apiContract.WalletTransfer{
+		CreatedAt:    time.Now(),
+		Amount:       walletTransferRequest.Amount,
+		ToWalletId:   walletTransferRequest.ToWalletId,
+		FromWalletId: fromWalletId,
+	}
+	result := repo.db.Table("wallet_transfers").Create(&walletTransfer)
+	return result.Error
+}

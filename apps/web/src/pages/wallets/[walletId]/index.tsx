@@ -4,7 +4,7 @@ import {
   getWalletUpdateScreenDehydratedState,
 } from '@gatherloop-pos/ui';
 import { GetServerSideProps } from 'next';
-import { PageProps } from '../_app';
+import { PageProps } from '../../_app';
 
 export const getServerSideProps: GetServerSideProps<
   PageProps & WalletUpdateScreenProps,

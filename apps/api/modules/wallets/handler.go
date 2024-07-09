@@ -145,3 +145,70 @@ func (handler Handler) DeleteWalletById(w http.ResponseWriter, r *http.Request) 
 
 	w.Write(response)
 }
+
+func (handler Handler) GetWalletTransferList(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	walletIdParam := vars["walletId"]
+	walletId, err := strconv.ParseInt(walletIdParam, 10, 32)
+	if err != nil {
+		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
+		w.WriteHeader(500)
+		w.Write(response)
+		return
+	}
+
+	walletTransfers, err := handler.usecase.GetWalletTransferList(walletId)
+	if err != nil {
+		response, _ := json.Marshal(apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
+		w.WriteHeader(404)
+		w.Write(response)
+		return
+	}
+
+	response, err := json.Marshal(apiContract.WalletTransferList200Response{Data: walletTransfers})
+	if err != nil {
+		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
+		w.WriteHeader(500)
+		w.Write(response)
+		return
+	}
+
+	w.Write(response)
+}
+
+func (handler Handler) CreateWalletTransfer(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	walletIdParam := vars["walletId"]
+	walletId, err := strconv.ParseInt(walletIdParam, 10, 32)
+	if err != nil {
+		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
+		w.WriteHeader(500)
+		w.Write(response)
+		return
+	}
+
+	var walletTransferRequest apiContract.WalletTransferRequest
+	if err := json.NewDecoder(r.Body).Decode(&walletTransferRequest); err != nil {
+		response, _ := json.Marshal(apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
+		w.WriteHeader(403)
+		w.Write(response)
+		return
+	}
+
+	if err := handler.usecase.CreateWalletTransfer(walletTransferRequest, walletId); err != nil {
+		response, _ := json.Marshal(apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
+		w.WriteHeader(404)
+		w.Write(response)
+		return
+	}
+
+	response, err := json.Marshal(apiContract.SuccessResponse{Success: true})
+	if err != nil {
+		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
+		w.WriteHeader(500)
+		w.Write(response)
+		return
+	}
+
+	w.Write(response)
+}

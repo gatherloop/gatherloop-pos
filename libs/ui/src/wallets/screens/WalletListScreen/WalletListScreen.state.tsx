@@ -29,6 +29,10 @@ export const useWalletListScreenState = () => {
     router.push(`/wallets/${wallet.id}`);
   };
 
+  const onTransferMenuPress = (wallet: Wallet) => {
+    router.push(`/wallets/${wallet.id}/transfers`);
+  };
+
   const onDeleteMenuPress = (wallet: Wallet) => {
     setWalletDeleteId(wallet.id);
   };
@@ -48,5 +52,6 @@ export const useWalletListScreenState = () => {
     onDeleteMenuPress,
     onDeleteSuccess,
     onDeleteCancel,
+    onTransferMenuPress,
   };
 };

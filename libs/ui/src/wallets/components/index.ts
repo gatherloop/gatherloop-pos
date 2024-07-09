@@ -1,3 +1,4 @@
 export * from './WalletList';
 export * from './WalletForm';
 export * from './WalletDeleteAlert';
+export * from './WalletTransferForm';
