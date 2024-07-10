@@ -1,3 +1,4 @@
+import { useToastController } from '@tamagui/toast';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import {
   BudgetRequest,
@@ -29,6 +30,8 @@ export const useBudgetFormState = ({
   const mutation =
     variant.type === 'create' ? createBudgetMutation : updateBudgetMutation;
 
+  const toast = useToastController();
+
   const formik = useFormik<BudgetRequest>({
     initialValues: {
       name: budget.data?.data.name ?? '',
@@ -36,7 +39,24 @@ export const useBudgetFormState = ({
       percentage: budget.data?.data.percentage ?? 0,
     },
     enableReinitialize: true,
-    onSubmit: (values) => mutation.mutateAsync(values).then(onSuccess),
+    onSubmit: (values) =>
+      mutation
+        .mutateAsync(values)
+        .then(() => {
+          const message =
+            variant.type === 'create'
+              ? 'Budget created successfuly'
+              : 'Budget updated successfully';
+          toast.show(message);
+        })
+        .then(onSuccess)
+        .catch(() => {
+          const message =
+            variant.type === 'create'
+              ? 'Failed to create budget'
+              : 'Failed to update budget';
+          toast.show(message);
+        }),
     validationSchema: toFormikValidationSchema(budgetRequestSchema),
   });
 

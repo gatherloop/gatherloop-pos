@@ -1,3 +1,4 @@
+import { useToastController } from '@tamagui/toast';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import {
   WalletRequest,
@@ -29,14 +30,33 @@ export const useWalletFormState = ({
   const mutation =
     variant.type === 'create' ? createWalletMutation : updateWalletMutation;
 
+  const toast = useToastController();
+
   const formik = useFormik<WalletRequest>({
     initialValues: {
       name: wallet.data?.data.name ?? '',
       balance: wallet.data?.data.balance ?? 0,
-      costPercentage: wallet.data?.data.costPercentage ?? 0,
+      paymentCostPercentage: wallet.data?.data.paymentCostPercentage ?? 0,
     },
     enableReinitialize: true,
-    onSubmit: (values) => mutation.mutateAsync(values).then(onSuccess),
+    onSubmit: (values) =>
+      mutation
+        .mutateAsync(values)
+        .then(() => {
+          const message =
+            variant.type === 'create'
+              ? 'Wallet created successfuly'
+              : 'Wallet updated successfully';
+          toast.show(message);
+        })
+        .then(onSuccess)
+        .catch(() => {
+          const message =
+            variant.type === 'create'
+              ? 'Failed to create wallet'
+              : 'Failed to update wallet';
+          toast.show(message);
+        }),
     validationSchema: toFormikValidationSchema(walletRequestSchema),
   });
 

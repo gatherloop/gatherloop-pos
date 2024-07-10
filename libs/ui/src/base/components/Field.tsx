@@ -15,15 +15,15 @@ export type FieldProps = {
 };
 
 export const Field = (props: FieldProps) => {
-  const [_field, meta] = useField(props.name)
+  const [_field, meta] = useField(props.name);
   return (
     <Context.Provider value={{ name: props.name }}>
       <YStack gap="$3">
-        <Label htmlFor={props.name} width={90}>
-          {props.label}
-        </Label>
+        <Label htmlFor={props.name}>{props.label}</Label>
         {props.children}
-        {meta.touched && meta.error && <Paragraph color="$red10">{meta.error}</Paragraph>}
+        {meta.touched && meta.error && (
+          <Paragraph color="$red10">{meta.error}</Paragraph>
+        )}
       </YStack>
     </Context.Provider>
   );

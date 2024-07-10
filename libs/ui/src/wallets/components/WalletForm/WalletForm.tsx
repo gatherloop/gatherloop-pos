@@ -27,7 +27,7 @@ export const WalletForm = ({ variant, onSuccess }: WalletFormProps) => {
         <Field name="balance" label="Balance">
           <InputNumber />
         </Field>
-        <Field name="costPercentage" label="Cost Percentage">
+        <Field name="paymentCostPercentage" label="Payment Cost Percentage">
           <InputNumber />
         </Field>
         <SubmitButton>Submit</SubmitButton>

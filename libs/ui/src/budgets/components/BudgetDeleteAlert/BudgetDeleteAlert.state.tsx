@@ -1,5 +1,6 @@
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { useBudgetDeleteById } from '../../../../../api-contract/src';
+import { useToastController } from '@tamagui/toast';
 
 export type UseBudgetDeleteAlertStateProps = {
   budgetId: number;
@@ -11,9 +12,13 @@ export const useBudgetDeleteAlertState = ({
   onSuccess,
 }: UseBudgetDeleteAlertStateProps) => {
   const { status, mutateAsync } = useBudgetDeleteById(budgetId);
+  const toast = useToastController();
 
   const onButtonConfirmPress = () => {
-    mutateAsync({}).then(onSuccess);
+    mutateAsync({})
+      .then(() => toast.show('Budget deleted successfully'))
+      .then(onSuccess)
+      .catch(() => toast.show('Failed to delete budget'));
   };
 
   return { status, onButtonConfirmPress };

@@ -1,3 +1,4 @@
+import { useToastController } from '@tamagui/toast';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import {
   MaterialRequest,
@@ -29,6 +30,8 @@ export const useMaterialFormState = ({
   const mutation =
     variant.type === 'create' ? createMaterialMutation : updateMaterialMutation;
 
+  const toast = useToastController();
+
   const formik = useFormik<MaterialRequest>({
     initialValues: {
       name: material.data?.data.name ?? '',
@@ -36,7 +39,24 @@ export const useMaterialFormState = ({
       unit: material.data?.data.unit ?? '',
     },
     enableReinitialize: true,
-    onSubmit: (values) => mutation.mutateAsync(values).then(onSuccess),
+    onSubmit: (values) =>
+      mutation
+        .mutateAsync(values)
+        .then(() => {
+          const message =
+            variant.type === 'create'
+              ? 'Material created successfuly'
+              : 'Material updated successfully';
+          toast.show(message);
+        })
+        .then(onSuccess)
+        .catch(() => {
+          const message =
+            variant.type === 'create'
+              ? 'Failed to create material'
+              : 'Failed to update material';
+          toast.show(message);
+        }),
     validationSchema: toFormikValidationSchema(materialRequestSchema),
   });
 

@@ -18,12 +18,6 @@ export const CategoryForm = ({ variant, onSuccess }: CategoryFormProps) => {
         <Field name="name" label="Name">
           <InputText />
         </Field>
-        <Field name="description" label="Description">
-          <InputText />
-        </Field>
-        <Field name="imageUrl" label="Image URL">
-          <InputText />
-        </Field>
         <SubmitButton>Submit</SubmitButton>
       </Form>
     </FormikProvider>

@@ -1,3 +1,4 @@
+import { useToastController } from '@tamagui/toast';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import {
   WalletTransferRequest,
@@ -19,13 +20,19 @@ export const useWalletTransferFormState = ({
 
   const createWalletTransfer = useWalletTransferCreate(walletId);
 
+  const toast = useToastController();
   const formik = useFormik<WalletTransferRequest>({
     initialValues: {
       amount: 0,
       toWalletId: -1,
     },
     onSubmit: (values) =>
-      createWalletTransfer.mutateAsync(values).then(onSuccess),
+      createWalletTransfer
+        .mutateAsync(values)
+        .then(onSuccess)
+        .then(() => toast.show('Transfer success'))
+        .then(onSuccess)
+        .catch(() => toast.show('Transfer failed')),
   });
 
   return {
