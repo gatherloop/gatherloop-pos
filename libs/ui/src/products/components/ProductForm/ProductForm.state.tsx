@@ -56,8 +56,8 @@ export const useProductFormState = ({
         .catch(() => {
           const message =
             variant.type === 'create'
-              ? 'Failed to create wallet'
-              : 'Failed to update wallet';
+              ? 'Failed to create product'
+              : 'Failed to update product';
           toast.show(message);
         }),
     validationSchema: toFormikValidationSchema(productRequestSchema),

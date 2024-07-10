@@ -31,3 +31,23 @@ func (usecase Usecase) UpdateProductById(productRequest apiContract.ProductReque
 func (usecase Usecase) DeleteProductById(id int64) error {
 	return usecase.repository.DeleteProductById(id)
 }
+
+func (usecase Usecase) GetProductMaterialList(productId int64) ([]apiContract.ProductMaterial, error) {
+	return usecase.repository.GetProductMaterialList(productId)
+}
+
+func (usecase Usecase) GetProductMaterialById(productMaterialId int64) (apiContract.ProductMaterial, error) {
+	return usecase.repository.GetProductMaterialById(productMaterialId)
+}
+
+func (usecase Usecase) CreateProductMaterial(productMaterialRequest apiContract.ProductMaterialRequest, productId int64) error {
+	return usecase.repository.CreateProductMaterial(productMaterialRequest, productId)
+}
+
+func (usecase Usecase) UpdateProductMaterialById(productMaterialRequest apiContract.ProductMaterialRequest, id int64) error {
+	return usecase.repository.UpdateProductMaterialById(productMaterialRequest, id)
+}
+
+func (usecase Usecase) DeleteProductMaterialById(productMaterialId int64) error {
+	return usecase.repository.DeleteProductMaterialById(productMaterialId)
+}
