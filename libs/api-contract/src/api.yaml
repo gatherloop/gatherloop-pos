@@ -66,11 +66,7 @@ paths:
       tags:
         - category
       parameters:
-        - name: categoryId
-          in: path
-          schema:
-            type: integer
-          required: true
+        - $ref: '#/components/parameters/CategoryId'
       responses:
         '200':
           description: success response
@@ -95,11 +91,7 @@ paths:
       tags:
         - category
       parameters:
-        - name: categoryId
-          in: path
-          schema:
-            type: integer
-          required: true
+        - $ref: '#/components/parameters/CategoryId'
       requestBody:
         required: true
         content:
@@ -131,11 +123,7 @@ paths:
       tags:
         - category
       parameters:
-        - name: categoryId
-          in: path
-          schema:
-            type: integer
-          required: true
+        - $ref: '#/components/parameters/CategoryId'
       requestBody:
         required: false
         content:
@@ -212,11 +200,7 @@ paths:
       tags:
         - material
       parameters:
-        - name: materialId
-          in: path
-          schema:
-            type: integer
-          required: true
+        - $ref: '#/components/parameters/MaterialId'
       responses:
         '200':
           description: success response
@@ -241,11 +225,7 @@ paths:
       tags:
         - material
       parameters:
-        - name: materialId
-          in: path
-          schema:
-            type: integer
-          required: true
+        - $ref: '#/components/parameters/MaterialId'
       requestBody:
         required: true
         content:
@@ -277,11 +257,7 @@ paths:
       tags:
         - material
       parameters:
-        - name: materialId
-          in: path
-          schema:
-            type: integer
-          required: true
+        - $ref: '#/components/parameters/MaterialId'
       requestBody:
         required: false
         content:
@@ -358,11 +334,7 @@ paths:
       tags:
         - wallet
       parameters:
-        - name: walletId
-          in: path
-          schema:
-            type: integer
-          required: true
+        - $ref: '#/components/parameters/WalletId'
       responses:
         '200':
           description: success response
@@ -387,11 +359,7 @@ paths:
       tags:
         - wallet
       parameters:
-        - name: walletId
-          in: path
-          schema:
-            type: integer
-          required: true
+        - $ref: '#/components/parameters/WalletId'
       requestBody:
         required: true
         content:
@@ -423,11 +391,7 @@ paths:
       tags:
         - wallet
       parameters:
-        - name: walletId
-          in: path
-          schema:
-            type: integer
-          required: true
+        - $ref: '#/components/parameters/WalletId'
       requestBody:
         required: false
         content:
@@ -454,11 +418,7 @@ paths:
       tags:
         - wallet
       parameters:
-        - name: walletId
-          in: path
-          schema:
-            type: integer
-          required: true
+        - $ref: '#/components/parameters/WalletId'
       responses:
         '200':
           description: success response
@@ -485,11 +445,7 @@ paths:
       tags:
         - wallet
       parameters:
-        - name: walletId
-          in: path
-          schema:
-            type: integer
-          required: true
+        - $ref: '#/components/parameters/WalletId'
       requestBody:
         required: true
         content:
@@ -509,7 +465,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
   /products:
     get:
       summary: List all products
@@ -567,11 +522,7 @@ paths:
       tags:
         - product
       parameters:
-        - name: productId
-          in: path
-          schema:
-            type: integer
-          required: true
+        - $ref: '#/components/parameters/ProductId'
       responses:
         '200':
           description: success response
@@ -596,11 +547,7 @@ paths:
       tags:
         - product
       parameters:
-        - name: productId
-          in: path
-          schema:
-            type: integer
-          required: true
+        - $ref: '#/components/parameters/ProductId'
       requestBody:
         required: true
         content:
@@ -632,11 +579,7 @@ paths:
       tags:
         - product
       parameters:
-        - name: productId
-          in: path
-          schema:
-            type: integer
-          required: true
+        - $ref: '#/components/parameters/ProductId'
       requestBody:
         required: false
         content:
@@ -663,11 +606,7 @@ paths:
       tags:
         - product
       parameters:
-        - name: productId
-          in: path
-          schema:
-            type: integer
-          required: true
+        - $ref: '#/components/parameters/ProductId'
       responses:
         '200':
           description: success response
@@ -694,11 +633,7 @@ paths:
       tags:
         - product
       parameters:
-        - name: productId
-          in: path
-          schema:
-            type: integer
-          required: true
+        - $ref: '#/components/parameters/ProductId'
       requestBody:
         required: true
         content:
@@ -725,16 +660,8 @@ paths:
       tags:
         - product
       parameters:
-        - name: productId
-          in: path
-          schema:
-            type: integer
-          required: true
-        - name: productMaterialId
-          in: path
-          schema:
-            type: integer
-          required: true
+        - $ref: '#/components/parameters/ProductId'
+        - $ref: '#/components/parameters/ProductMaterialId'
       responses:
         '200':
           description: success response
@@ -759,16 +686,8 @@ paths:
       tags:
         - product
       parameters:
-        - name: productId
-          in: path
-          schema:
-            type: integer
-          required: true
-        - name: productMaterialId
-          in: path
-          schema:
-            type: integer
-          required: true
+        - $ref: '#/components/parameters/ProductId'
+        - $ref: '#/components/parameters/ProductMaterialId'
       requestBody:
         required: true
         content:
@@ -800,16 +719,8 @@ paths:
       tags:
         - product
       parameters:
-        - name: productId
-          in: path
-          schema:
-            type: integer
-          required: true
-        - name: productMaterialId
-          in: path
-          schema:
-            type: integer
-          required: true
+        - $ref: '#/components/parameters/ProductId'
+        - $ref: '#/components/parameters/ProductMaterialId'
       requestBody:
         required: false
         content:
@@ -886,11 +797,7 @@ paths:
       tags:
         - budget
       parameters:
-        - name: budgetId
-          in: path
-          schema:
-            type: integer
-          required: true
+        - $ref: '#/components/parameters/BudgetId'
       responses:
         '200':
           description: success response
@@ -915,11 +822,7 @@ paths:
       tags:
         - budget
       parameters:
-        - name: budgetId
-          in: path
-          schema:
-            type: integer
-          required: true
+        - $ref: '#/components/parameters/BudgetId'
       requestBody:
         required: true
         content:
@@ -951,11 +854,7 @@ paths:
       tags:
         - budget
       parameters:
-        - name: budgetId
-          in: path
-          schema:
-            type: integer
-          required: true
+        - $ref: '#/components/parameters/BudgetId'
       requestBody:
         required: false
         content:
@@ -1250,3 +1149,40 @@ components:
       properties:
         success:
           type: boolean
+  parameters:
+    CategoryId:
+      name: categoryId
+      in: path
+      schema:
+        type: integer
+      required: true
+    MaterialId:
+      name: materialId
+      in: path
+      schema:
+        type: integer
+      required: true
+    WalletId:
+      name: walletId
+      in: path
+      schema:
+        type: integer
+      required: true
+    ProductId:
+      name: productId
+      in: path
+      schema:
+        type: integer
+      required: true
+    ProductMaterialId:
+      name: productMaterialId
+      in: path
+      schema:
+        type: integer
+      required: true
+    BudgetId:
+      name: budgetId
+      in: path
+      schema:
+        type: integer
+      required: true
