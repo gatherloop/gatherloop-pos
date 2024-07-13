@@ -1,4 +1,5 @@
-import { useProductFindById } from '@gatherloop-pos/api-contract';
+// eslint-disable-next-line @nx/enforce-module-boundaries
+import { useProductFindById } from '../../../../../api-contract/src';
 
 export type UseProductDetailStateProps = {
   productId: number;

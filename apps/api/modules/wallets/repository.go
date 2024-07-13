@@ -45,7 +45,7 @@ func (repo Repository) DeleteWalletById(id int64) error {
 
 func (repo Repository) GetWalletTransferList(walletId int64) ([]apiContract.WalletTransfer, error) {
 	var walletTransfers []apiContract.WalletTransfer
-	result := repo.db.Table("wallet_transfers").Where("deleted_at is NULL AND from_wallet_id = ?", walletId).Find(&walletTransfers)
+	result := repo.db.Table("wallet_transfers").Preload("FromWallet").Preload("ToWallet").Where("deleted_at is NULL AND from_wallet_id = ?", walletId).Find(&walletTransfers)
 	return walletTransfers, result.Error
 }
 

@@ -7,7 +7,7 @@ export type WalletUpdateScreenParams = {
 
 const { useParam } = createParam<WalletUpdateScreenParams>();
 
-export const useWalletTransferScreenState = (
+export const useWalletTransferCreateScreenState = (
   props: WalletUpdateScreenParams
 ) => {
   const [walletId] = useParam('walletId', {
@@ -23,8 +23,8 @@ export const useWalletTransferScreenState = (
   const router = useRouter();
 
   const onSuccess = () => {
-    router.push(`/wallets`);
+    router.push(`/wallets/${walletId}/transfers`);
   };
 
-  return { walletId, onSuccess };
+  return { onSuccess, walletId };
 };

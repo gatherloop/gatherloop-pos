@@ -4,6 +4,7 @@ import { useWalletListState } from './WalletList.state';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { Wallet } from '../../../../../api-contract/src';
 import { MinusSquare } from '@tamagui/lucide-icons';
+import { WalletCard } from '../WalletCard';
 
 export type WalletListProps = {
   itemMenus: { title: string; onPress: (wallet: Wallet) => void }[];
@@ -19,22 +20,16 @@ export const WalletList = ({ itemMenus, onItemPress }: WalletListProps) => {
       ) : status === 'success' ? (
         wallets.length > 0 ? (
           wallets.map((wallet) => (
-            <ListItem
+            <WalletCard
               key={wallet.id}
-              title={wallet.name}
-              subtitle={`Rp. ${wallet.balance.toLocaleString('id')}`}
-              thumbnailSrc="https://picsum.photos/200/300"
-              onPress={() => onItemPress(wallet)}
+              name={wallet.name}
+              balance={wallet.balance}
+              paymentCostPercentage={wallet.paymentCostPercentage}
               menus={itemMenus.map((itemMenu) => ({
                 ...itemMenu,
                 onPress: () => itemMenu.onPress(wallet),
               }))}
-              footerItems={[
-                {
-                  value: `${wallet.paymentCostPercentage}%`,
-                  icon: MinusSquare,
-                },
-              ]}
+              onPress={() => onItemPress(wallet)}
             />
           ))
         ) : (
