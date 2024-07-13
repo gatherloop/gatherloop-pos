@@ -18,9 +18,7 @@ func NewHandler(usecase Usecase) Handler {
 func (handler Handler) GetBudgetList(w http.ResponseWriter, r *http.Request) {
 	budgets, err := handler.usecase.GetBudgetList()
 	if err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
-		w.WriteHeader(500)
-		w.Write(response)
+		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
 
@@ -51,8 +49,8 @@ func (handler Handler) GetBudgetById(w http.ResponseWriter, r *http.Request) {
 }
 
 func (handler Handler) CreateBudget(w http.ResponseWriter, r *http.Request) {
-	var budgetRequest apiContract.BudgetRequest
-	if err := json.NewDecoder(r.Body).Decode(&budgetRequest); err != nil {
+	budgetRequest, err := GetBudgetRequest(w, r)
+	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
 		return
 	}
@@ -73,8 +71,8 @@ func (handler Handler) UpdateBudgetById(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	var budgetRequest apiContract.BudgetRequest
-	if err := json.NewDecoder(r.Body).Decode(&budgetRequest); err != nil {
+	budgetRequest, err := GetBudgetRequest(w, r)
+	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
 		return
 	}
