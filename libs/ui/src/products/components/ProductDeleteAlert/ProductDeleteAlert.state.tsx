@@ -1,5 +1,8 @@
 // eslint-disable-next-line @nx/enforce-module-boundaries
-import { useProductDeleteById } from '../../../../../api-contract/src';
+import {
+  useProductDeleteById,
+  useProductFindById,
+} from '../../../../../api-contract/src';
 import { useToastController } from '@tamagui/toast';
 
 export type UseProductDeleteAlertStateProps = {
@@ -12,6 +15,7 @@ export const useProductDeleteAlertState = ({
   onSuccess,
 }: UseProductDeleteAlertStateProps) => {
   const { status, mutateAsync } = useProductDeleteById(productId);
+  const { data } = useProductFindById(productId);
 
   const toast = useToastController();
 
@@ -22,5 +26,5 @@ export const useProductDeleteAlertState = ({
       .catch(() => toast.show('Failed to delete product'));
   };
 
-  return { status, onButtonConfirmPress };
+  return { status, onButtonConfirmPress, productName: data?.data.name ?? "" };
 };

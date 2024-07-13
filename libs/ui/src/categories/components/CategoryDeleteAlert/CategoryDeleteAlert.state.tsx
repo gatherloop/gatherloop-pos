@@ -1,5 +1,8 @@
 // eslint-disable-next-line @nx/enforce-module-boundaries
-import { useCategoryDeleteById } from '../../../../../api-contract/src';
+import {
+  useCategoryDeleteById,
+  useCategoryFindById,
+} from '../../../../../api-contract/src';
 import { useToastController } from '@tamagui/toast';
 
 export type UseCategoryDeleteAlertStateProps = {
@@ -12,6 +15,7 @@ export const useCategoryDeleteAlertState = ({
   onSuccess,
 }: UseCategoryDeleteAlertStateProps) => {
   const { status, mutateAsync } = useCategoryDeleteById(categoryId);
+  const { data } = useCategoryFindById(categoryId);
 
   const toast = useToastController();
 
@@ -22,5 +26,5 @@ export const useCategoryDeleteAlertState = ({
       .catch(() => toast.show('Failed to delete category'));
   };
 
-  return { status, onButtonConfirmPress };
+  return { status, onButtonConfirmPress, categoryName: data?.data.name };
 };

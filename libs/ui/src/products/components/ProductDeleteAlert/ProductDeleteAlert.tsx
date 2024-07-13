@@ -12,10 +12,11 @@ export const ProductDeleteAlert = ({
   onSuccess,
   onCancel,
 }: ProductDeleteAlertProps) => {
-  const { onButtonConfirmPress, status } = useProductDeleteAlertState({
-    productId,
-    onSuccess,
-  });
+  const { onButtonConfirmPress, status, productName } =
+    useProductDeleteAlertState({
+      productId,
+      onSuccess,
+    });
   return (
     <AlertDialog native open onOpenChange={onCancel} modal>
       <AlertDialog.Portal>
@@ -46,9 +47,9 @@ export const ProductDeleteAlert = ({
           y={0}
         >
           <YStack gap="$3">
-            <AlertDialog.Title>Delete Product</AlertDialog.Title>
+            <AlertDialog.Title>Delete {productName}</AlertDialog.Title>
             <AlertDialog.Description>
-              Are you sure want to delete the product ?
+              Are you sure want to delete it ?
             </AlertDialog.Description>
 
             <XStack gap="$3" justifyContent="flex-end">

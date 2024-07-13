@@ -12,7 +12,7 @@ export const MaterialDeleteAlert = ({
   onSuccess,
   onCancel,
 }: MaterialDeleteAlertProps) => {
-  const { onButtonConfirmPress, status } = useMaterialDeleteAlertState({
+  const { onButtonConfirmPress, status, materialName } = useMaterialDeleteAlertState({
     materialId,
     onSuccess,
   });
@@ -46,9 +46,9 @@ export const MaterialDeleteAlert = ({
           y={0}
         >
           <YStack gap="$3">
-            <AlertDialog.Title>Delete Material</AlertDialog.Title>
+            <AlertDialog.Title>Delete {materialName}</AlertDialog.Title>
             <AlertDialog.Description>
-              Are you sure want to delete the material ?
+              Are you sure want to delete it ?
             </AlertDialog.Description>
 
             <XStack gap="$3" justifyContent="flex-end">

@@ -12,10 +12,11 @@ export const CategoryDeleteAlert = ({
   onSuccess,
   onCancel,
 }: CategoryDeleteAlertProps) => {
-  const { onButtonConfirmPress, status } = useCategoryDeleteAlertState({
-    categoryId,
-    onSuccess,
-  });
+  const { onButtonConfirmPress, status, categoryName } =
+    useCategoryDeleteAlertState({
+      categoryId,
+      onSuccess,
+    });
   return (
     <AlertDialog native open onOpenChange={onCancel} modal>
       <AlertDialog.Portal>
@@ -46,9 +47,9 @@ export const CategoryDeleteAlert = ({
           y={0}
         >
           <YStack gap="$3">
-            <AlertDialog.Title>Delete Category</AlertDialog.Title>
+            <AlertDialog.Title>Delete {categoryName}</AlertDialog.Title>
             <AlertDialog.Description>
-              Are you sure want to delete the category ?
+              Are you sure want to delete it ?
             </AlertDialog.Description>
 
             <XStack gap="$3" justifyContent="flex-end">

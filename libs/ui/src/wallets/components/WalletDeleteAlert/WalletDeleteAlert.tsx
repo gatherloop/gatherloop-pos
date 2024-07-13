@@ -12,10 +12,11 @@ export const WalletDeleteAlert = ({
   onSuccess,
   onCancel,
 }: WalletDeleteAlertProps) => {
-  const { onButtonConfirmPress, status } = useWalletDeleteAlertState({
-    walletId,
-    onSuccess,
-  });
+  const { onButtonConfirmPress, status, walletName } =
+    useWalletDeleteAlertState({
+      walletId,
+      onSuccess,
+    });
   return (
     <AlertDialog native open onOpenChange={onCancel} modal>
       <AlertDialog.Portal>
@@ -46,9 +47,9 @@ export const WalletDeleteAlert = ({
           y={0}
         >
           <YStack gap="$3">
-            <AlertDialog.Title>Delete Wallet</AlertDialog.Title>
+            <AlertDialog.Title>Delete {walletName}</AlertDialog.Title>
             <AlertDialog.Description>
-              Are you sure want to delete the wallet ?
+              Are you sure want to delete it ?
             </AlertDialog.Description>
 
             <XStack gap="$3" justifyContent="flex-end">

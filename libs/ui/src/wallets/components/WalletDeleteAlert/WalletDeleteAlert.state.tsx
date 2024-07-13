@@ -1,5 +1,8 @@
 // eslint-disable-next-line @nx/enforce-module-boundaries
-import { useWalletDeleteById } from '../../../../../api-contract/src';
+import {
+  useWalletDeleteById,
+  useWalletFindById,
+} from '../../../../../api-contract/src';
 import { useToastController } from '@tamagui/toast';
 
 export type UseWalletDeleteAlertStateProps = {
@@ -12,8 +15,9 @@ export const useWalletDeleteAlertState = ({
   onSuccess,
 }: UseWalletDeleteAlertStateProps) => {
   const { status, mutateAsync } = useWalletDeleteById(walletId);
+  const { data } = useWalletFindById(walletId);
 
-  const toast = useToastController()
+  const toast = useToastController();
 
   const onButtonConfirmPress = () => {
     mutateAsync({})
@@ -22,5 +26,5 @@ export const useWalletDeleteAlertState = ({
       .catch(() => toast.show('Failed to delete wallet'));
   };
 
-  return { status, onButtonConfirmPress };
+  return { status, onButtonConfirmPress, walletName: data?.data.name ?? '' };
 };

@@ -12,10 +12,11 @@ export const BudgetDeleteAlert = ({
   onSuccess,
   onCancel,
 }: BudgetDeleteAlertProps) => {
-  const { onButtonConfirmPress, status } = useBudgetDeleteAlertState({
-    budgetId,
-    onSuccess,
-  });
+  const { onButtonConfirmPress, status, budgetName } =
+    useBudgetDeleteAlertState({
+      budgetId,
+      onSuccess,
+    });
   return (
     <AlertDialog native open onOpenChange={onCancel} modal>
       <AlertDialog.Portal>
@@ -46,9 +47,9 @@ export const BudgetDeleteAlert = ({
           y={0}
         >
           <YStack gap="$3">
-            <AlertDialog.Title>Delete Budget</AlertDialog.Title>
+            <AlertDialog.Title>Delete {budgetName}</AlertDialog.Title>
             <AlertDialog.Description>
-              Are you sure want to delete the budget ?
+              Are you sure want to delete it ?
             </AlertDialog.Description>
 
             <XStack gap="$3" justifyContent="flex-end">
