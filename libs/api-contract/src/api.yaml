@@ -874,6 +874,173 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /transactions:
+    get:
+      summary: List all transactions
+      operationId: transactionList
+      tags:
+        - transaction
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Transaction'
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Create transaction
+      operationId: transactionCreate
+      tags:
+        - transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionRequest'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '403':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /transactions/{transactionId}:
+    get:
+      summary: Get transaction by id
+      operationId: transactionFindById
+      tags:
+        - transaction
+      parameters:
+        - $ref: '#/components/parameters/TransactionId'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Transaction'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Update transaction by id
+      operationId: transactionUpdateById
+      tags:
+        - transaction
+      parameters:
+        - $ref: '#/components/parameters/TransactionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionRequest'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Delete transaction by id
+      operationId: transactionDeleteById
+      tags:
+        - transaction
+      parameters:
+        - $ref: '#/components/parameters/TransactionId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /transactions/{transactionId}/pay:
+    put:
+      summary: pay transaction by id
+      operationId: transactionPayById
+      tags:
+        - transaction
+      parameters:
+        - $ref: '#/components/parameters/TransactionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionPayRequest'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 components:
   schemas:
     Category:
@@ -1126,6 +1293,100 @@ components:
         balance:
           type: integer
           format: int64
+    Transaction:
+      type: object
+      required:
+        - id
+        - createdAt
+        - name
+        - total
+        - items
+      properties:
+        id:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        name:
+          type: string
+        walletId:
+          type: integer
+          format: int64
+        wallet:
+          $ref: '#/components/schemas/Wallet'
+        total:
+          type: integer
+          format: int64
+        transactionItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransactionItem'
+        paidAt:
+          type: string
+          format: date-time
+    TransactionRequest:
+      type: object
+      required:
+        - name
+        - items
+      properties:
+        name:
+          type: string
+        transactionItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransactionItemRequest'
+    TransactionItem:
+      type: object
+      required:
+        - id
+        - transactionId
+        - productId
+        - amount
+        - price
+        - subtotal
+      properties:
+        id:
+          type: integer
+          format: int64
+        transactionId:
+          type: integer
+          format: int64
+        productId:
+          type: integer
+          format: int64
+        product:
+          $ref: '#/components/schemas/Product'
+        amount:
+          type: integer
+          format: int64
+        price:
+          type: integer
+          format: int64
+        subtotal:
+          type: integer
+          format: int64
+    TransactionItemRequest:
+      type: object
+      required:
+        - productId
+        - amount
+      properties:
+        productId:
+          type: integer
+          format: int64
+        amount:
+          type: integer
+          format: int64
+    TransactionPayRequest:
+      type: object
+      required:
+        - walletId
+      properties:
+        walletId:
+          type: integer
+          format: int64
     Error:
       type: object
       required:
@@ -1182,6 +1443,12 @@ components:
       required: true
     BudgetId:
       name: budgetId
+      in: path
+      schema:
+        type: integer
+      required: true
+    TransactionId:
+      name: transactionId
       in: path
       schema:
         type: integer
