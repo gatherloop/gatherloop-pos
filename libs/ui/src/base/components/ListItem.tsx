@@ -14,12 +14,12 @@ import {
   H5,
 } from 'tamagui';
 
-type Menu = {
+export type ListItemMenu = {
   title: string;
   onPress: () => void;
 };
 
-type FooterItem = {
+export type ListItemFooterItem = {
   label?: string;
   icon?: NamedExoticComponent<{ size: string; color: string }>;
   value: string;
@@ -29,8 +29,8 @@ export type ListItemProps = {
   title: string;
   subtitle?: string;
   thumbnailSrc?: string;
-  menus?: Menu[];
-  footerItems?: FooterItem[];
+  menus?: ListItemMenu[];
+  footerItems?: ListItemFooterItem[];
 } & XStackProps;
 
 export const ListItem = ({

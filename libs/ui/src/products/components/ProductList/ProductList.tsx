@@ -1,9 +1,9 @@
-import { EmptyView, ErrorView, ListItem, LoadingView } from '../../../base';
+import { EmptyView, ErrorView, LoadingView } from '../../../base';
 import { YStack } from 'tamagui';
 import { useProductListState } from './ProductList.state';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { Product } from '../../../../../api-contract/src';
-import { Tag } from '@tamagui/lucide-icons';
+import { ProductCard } from '../ProductCard';
 
 export type ProductListProps = {
   itemMenus: { title: string; onPress: (product: Product) => void }[];
@@ -19,22 +19,16 @@ export const ProductList = ({ itemMenus, onItemPress }: ProductListProps) => {
       ) : status === 'success' ? (
         products.length > 0 ? (
           products.map((product) => (
-            <ListItem
+            <ProductCard
               key={product.id}
-              title={product.name}
-              subtitle={`Rp. ${product.price.toLocaleString('id')}`}
-              thumbnailSrc="https://picsum.photos/500/300"
-              onPress={() => onItemPress(product)}
+              categoryName={product.category?.name ?? ''}
+              name={product.name}
+              price={product.price}
               menus={itemMenus.map((itemMenu) => ({
                 ...itemMenu,
                 onPress: () => itemMenu.onPress(product),
               }))}
-              footerItems={[
-                {
-                  value: product.category?.name ?? '',
-                  icon: Tag,
-                },
-              ]}
+              onPress={() => onItemPress(product)}
             />
           ))
         ) : (
