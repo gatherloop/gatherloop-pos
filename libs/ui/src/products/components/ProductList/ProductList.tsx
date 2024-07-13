@@ -1,8 +1,9 @@
 import { EmptyView, ErrorView, ListItem, LoadingView } from '../../../base';
-import { XStack } from 'tamagui';
+import { YStack } from 'tamagui';
 import { useProductListState } from './ProductList.state';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { Product } from '../../../../../api-contract/src';
+import { Tag } from '@tamagui/lucide-icons';
 
 export type ProductListProps = {
   itemMenus: { title: string; onPress: (product: Product) => void }[];
@@ -12,7 +13,7 @@ export type ProductListProps = {
 export const ProductList = ({ itemMenus, onItemPress }: ProductListProps) => {
   const { products, refetch, status } = useProductListState();
   return (
-    <XStack gap="$3" flexWrap="wrap">
+    <YStack gap="$3">
       {status === 'pending' ? (
         <LoadingView title="Fetching Products..." />
       ) : status === 'success' ? (
@@ -22,14 +23,18 @@ export const ProductList = ({ itemMenus, onItemPress }: ProductListProps) => {
               key={product.id}
               title={product.name}
               subtitle={`Rp. ${product.price.toLocaleString('id')}`}
-              $xs={{ flexBasis: '100%' }}
-              $sm={{ flexBasis: '40%' }}
-              flexBasis="30%"
+              thumbnailSrc="https://picsum.photos/500/300"
               onPress={() => onItemPress(product)}
               menus={itemMenus.map((itemMenu) => ({
                 ...itemMenu,
                 onPress: () => itemMenu.onPress(product),
               }))}
+              footerItems={[
+                {
+                  value: product.category?.name ?? '',
+                  icon: Tag,
+                },
+              ]}
             />
           ))
         ) : (
@@ -45,6 +50,6 @@ export const ProductList = ({ itemMenus, onItemPress }: ProductListProps) => {
           onRetryButtonPress={refetch}
         />
       )}
-    </XStack>
+    </YStack>
   );
 };

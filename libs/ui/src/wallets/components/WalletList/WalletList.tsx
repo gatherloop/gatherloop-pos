@@ -1,8 +1,9 @@
 import { EmptyView, ErrorView, ListItem, LoadingView } from '../../../base';
-import { XStack } from 'tamagui';
+import { YStack } from 'tamagui';
 import { useWalletListState } from './WalletList.state';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { Wallet } from '../../../../../api-contract/src';
+import { MinusSquare } from '@tamagui/lucide-icons';
 
 export type WalletListProps = {
   itemMenus: { title: string; onPress: (wallet: Wallet) => void }[];
@@ -12,7 +13,7 @@ export type WalletListProps = {
 export const WalletList = ({ itemMenus, onItemPress }: WalletListProps) => {
   const { wallets, refetch, status } = useWalletListState();
   return (
-    <XStack gap="$3" flexWrap="wrap">
+    <YStack gap="$3">
       {status === 'pending' ? (
         <LoadingView title="Fetching Wallets..." />
       ) : status === 'success' ? (
@@ -22,14 +23,18 @@ export const WalletList = ({ itemMenus, onItemPress }: WalletListProps) => {
               key={wallet.id}
               title={wallet.name}
               subtitle={`Rp. ${wallet.balance.toLocaleString('id')}`}
-              $xs={{ flexBasis: '100%' }}
-              $sm={{ flexBasis: '40%' }}
-              flexBasis="30%"
+              thumbnailSrc="https://picsum.photos/200/300"
               onPress={() => onItemPress(wallet)}
               menus={itemMenus.map((itemMenu) => ({
                 ...itemMenu,
                 onPress: () => itemMenu.onPress(wallet),
               }))}
+              footerItems={[
+                {
+                  value: `${wallet.paymentCostPercentage}%`,
+                  icon: MinusSquare,
+                },
+              ]}
             />
           ))
         ) : (
@@ -45,6 +50,6 @@ export const WalletList = ({ itemMenus, onItemPress }: WalletListProps) => {
           onRetryButtonPress={refetch}
         />
       )}
-    </XStack>
+    </YStack>
   );
 };

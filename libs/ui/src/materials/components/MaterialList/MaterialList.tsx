@@ -1,8 +1,9 @@
 import { EmptyView, ErrorView, ListItem, LoadingView } from '../../../base';
-import { XStack } from 'tamagui';
+import { YStack } from 'tamagui';
 import { useMaterialListState } from './MaterialList.state';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { Material } from '../../../../../api-contract/src';
+import { Box } from '@tamagui/lucide-icons';
 
 export type MaterialListProps = {
   itemMenus: { title: string; onPress: (material: Material) => void }[];
@@ -12,7 +13,7 @@ export type MaterialListProps = {
 export const MaterialList = ({ itemMenus, onItemPress }: MaterialListProps) => {
   const { materials, refetch, status } = useMaterialListState();
   return (
-    <XStack gap="$3" flexWrap="wrap">
+    <YStack gap="$3">
       {status === 'pending' ? (
         <LoadingView title="Fetching Materials..." />
       ) : status === 'success' ? (
@@ -21,17 +22,14 @@ export const MaterialList = ({ itemMenus, onItemPress }: MaterialListProps) => {
             <ListItem
               key={material.id}
               title={material.name}
-              subtitle={`Rp. ${material.price.toLocaleString('id')} per ${
-                material.unit
-              }`}
-              $xs={{ flexBasis: '100%' }}
-              $sm={{ flexBasis: '40%' }}
-              flexBasis="30%"
+              subtitle={`Rp. ${material.price.toLocaleString('id')}`}
+              thumbnailSrc="https://picsum.photos/200/300"
               onPress={() => onItemPress(material)}
               menus={itemMenus.map((itemMenu) => ({
                 ...itemMenu,
                 onPress: () => itemMenu.onPress(material),
               }))}
+              footerItems={[{ value: material.unit, icon: Box }]}
             />
           ))
         ) : (
@@ -47,6 +45,6 @@ export const MaterialList = ({ itemMenus, onItemPress }: MaterialListProps) => {
           onRetryButtonPress={refetch}
         />
       )}
-    </XStack>
+    </YStack>
   );
 };

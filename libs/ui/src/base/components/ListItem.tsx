@@ -1,6 +1,6 @@
 import { MoreVertical } from '@tamagui/lucide-icons';
+import { NamedExoticComponent } from 'react';
 import {
-  H5,
   Image,
   Popover,
   XStack,
@@ -10,6 +10,8 @@ import {
   ListItem as TamaguiListItem,
   Button,
   Paragraph,
+  H4,
+  H5,
 } from 'tamagui';
 
 type Menu = {
@@ -17,24 +19,31 @@ type Menu = {
   onPress: () => void;
 };
 
+type FooterItem = {
+  label?: string;
+  icon?: NamedExoticComponent<{ size: string; color: string }>;
+  value: string;
+};
+
 export type ListItemProps = {
   title: string;
   subtitle?: string;
   thumbnailSrc?: string;
-  menus: Menu[];
+  menus?: Menu[];
+  footerItems?: FooterItem[];
 } & XStackProps;
 
 export const ListItem = ({
   title,
   subtitle,
   thumbnailSrc,
-  menus,
+  menus = [],
+  footerItems = [],
   ...xStackProps
 }: ListItemProps) => {
   return (
     <XStack
       gap="$4"
-      padding="$2"
       borderRadius="$5"
       alignItems="center"
       elevation="$1"
@@ -49,21 +58,46 @@ export const ListItem = ({
             defaultSource={{
               uri: thumbnailSrc,
             }}
-            width={100}
-            height={100}
-            borderRadius="$5"
+            width={120}
+            height={120}
+            borderTopLeftRadius="$5"
+            borderBottomLeftRadius="$5"
+            $xs={{ display: 'none' }}
           />
         )}
 
-        <YStack padding="$3" flex={1}>
-          <H5 ellipse>{title}</H5>
-          {subtitle && <Paragraph ellipse>{subtitle}</Paragraph>}
+        <YStack padding="$3" flex={1} gap="$3">
+          <YStack>
+            <H4 ellipse>{title}</H4>
+            {subtitle && (
+              <H5 textTransform="none" ellipse>
+                {subtitle}
+              </H5>
+            )}
+          </YStack>
+
+          <XStack gap="$3" flexWrap="wrap">
+            {footerItems.map((footerItem) => (
+              <XStack gap="$2" alignItems="center">
+                {footerItem.icon && (
+                  <footerItem.icon size="$1" color="$gray11" />
+                )}
+                <Paragraph color="$gray11">{footerItem.value}</Paragraph>
+              </XStack>
+            ))}
+          </XStack>
         </YStack>
 
         {menus.length > 0 && (
           <Popover>
             <Popover.Trigger onPress={(event) => event.stopPropagation()}>
-              <Button icon={MoreVertical} size="$2" variant="outlined" />
+              <Button
+                icon={MoreVertical}
+                size="$2"
+                marginTop="$3"
+                marginRight="$3"
+                variant="outlined"
+              />
             </Popover.Trigger>
 
             <Popover.Content

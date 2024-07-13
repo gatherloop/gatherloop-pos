@@ -1,5 +1,5 @@
 import { EmptyView, ErrorView, ListItem, LoadingView } from '../../../base';
-import { XStack } from 'tamagui';
+import { YStack } from 'tamagui';
 import { useCategoryListState } from './CategoryList.state';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { Category } from '../../../../../api-contract/src';
@@ -12,7 +12,7 @@ export type CategoryListProps = {
 export const CategoryList = ({ itemMenus, onItemPress }: CategoryListProps) => {
   const { categories, refetch, status } = useCategoryListState();
   return (
-    <XStack gap="$3" flexWrap="wrap">
+    <YStack gap="$3">
       {status === 'pending' ? (
         <LoadingView title="Fetching Categories..." />
       ) : status === 'success' ? (
@@ -21,9 +21,8 @@ export const CategoryList = ({ itemMenus, onItemPress }: CategoryListProps) => {
             <ListItem
               key={category.id}
               title={category.name}
-              $xs={{ flexBasis: '100%' }}
-              $sm={{ flexBasis: '40%' }}
-              flexBasis="30%"
+              subtitle="Lorem ipsum dolor sit amet"
+              thumbnailSrc="https://picsum.photos/200/300"
               onPress={() => onItemPress(category)}
               menus={itemMenus.map((itemMenu) => ({
                 ...itemMenu,
@@ -44,6 +43,6 @@ export const CategoryList = ({ itemMenus, onItemPress }: CategoryListProps) => {
           onRetryButtonPress={refetch}
         />
       )}
-    </XStack>
+    </YStack>
   );
 };
