@@ -1041,6 +1041,140 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /expenses:
+    get:
+      summary: List all expenses
+      operationId: expenseList
+      tags:
+        - expense
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Expense'
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Create expense
+      operationId: expenseCreate
+      tags:
+        - expense
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpenseRequest'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '403':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /expenses/{expenseId}:
+    get:
+      summary: Get expense by id
+      operationId: expenseFindById
+      tags:
+        - expense
+      parameters:
+        - $ref: '#/components/parameters/ExpenseId'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Expense'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Update expense by id
+      operationId: expenseUpdateById
+      tags:
+        - expense
+      parameters:
+        - $ref: '#/components/parameters/ExpenseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpenseRequest'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Delete expense by id
+      operationId: expenseDeleteById
+      tags:
+        - expense
+      parameters:
+        - $ref: '#/components/parameters/ExpenseId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 components:
   schemas:
     Category:
@@ -1326,6 +1460,9 @@ components:
         paidAt:
           type: string
           format: date-time
+        deletedAt:
+          type: string
+          format: date-time
     TransactionRequest:
       type: object
       required:
@@ -1387,6 +1524,109 @@ components:
         - walletId
       properties:
         walletId:
+          type: integer
+          format: int64
+    Expense:
+      type: object
+      required:
+        - id
+        - createdAt
+        - walletId
+        - wallet
+        - budgetId
+        - budget
+        - total
+        - expenseItems
+      properties:
+        id:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        deletedAt:
+          type: string
+          format: date-time
+        walletId:
+          type: integer
+          format: int64
+        wallet:
+          $ref: '#/components/schemas/Wallet'
+        budgetId:
+          type: integer
+          format: int64
+        budget:
+          $ref: '#/components/schemas/Budget'
+        total:
+          type: integer
+          format: int64
+        expenseItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExpenseItem'
+    ExpenseItem:
+      type: object
+      required:
+        - id
+        - name
+        - unit
+        - price
+        - amount
+        - subtotal
+        - expenseId
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        unit:
+          type: string
+        price:
+          type: integer
+          format: int64
+        amount:
+          type: integer
+          format: int64
+        subtotal:
+          type: integer
+          format: int64
+        expenseId:
+          type: integer
+          format: int64
+    ExpenseRequest:
+      type: object
+      required:
+        - walletId
+        - budgetId
+        - expenseItems
+      properties:
+        walletId:
+          type: integer
+          format: int64
+        budgetId:
+          type: integer
+          format: int64
+        expenseItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExpenseItemRequest'
+    ExpenseItemRequest:
+      type: object
+      required:
+        - name
+        - unit
+        - price
+        - amount
+      properties:
+        name:
+          type: string
+        unit:
+          type: string
+        price:
+          type: integer
+          format: int64
+        amount:
           type: integer
           format: int64
     Error:
@@ -1451,6 +1691,12 @@ components:
       required: true
     TransactionId:
       name: transactionId
+      in: path
+      schema:
+        type: integer
+      required: true
+    ExpenseId:
+      name: expenseId
       in: path
       schema:
         type: integer

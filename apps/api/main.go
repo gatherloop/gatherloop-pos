@@ -4,6 +4,7 @@ import (
 	"apps/api/middlewares"
 	"apps/api/modules/budgets"
 	"apps/api/modules/categories"
+	"apps/api/modules/expenses"
 	"apps/api/modules/materials"
 	"apps/api/modules/products"
 	"apps/api/modules/transactions"
@@ -44,5 +45,6 @@ func main() {
 	products.AddRouters(router, db)
 	budgets.AddRouters(router, db)
 	transactions.AddRouters(router, db)
+	expenses.AddRouters(router, db)
 	http.ListenAndServe(fmt.Sprintf(":%s", port), router)
 }
