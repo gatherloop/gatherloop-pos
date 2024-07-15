@@ -19,6 +19,7 @@ import {
   TransactionListScreen,
   TransactionCreateScreen,
   TransactionUpdateScreen,
+  TransactionDetailScreen,
 } from '@gatherloop-pos/ui';
 import { RootProvider } from '@gatherloop-pos/provider';
 import { NavigationContainer } from '@react-navigation/native';
@@ -46,6 +47,7 @@ const Stack = createNativeStackNavigator<{
   transactionList: undefined;
   transactionCreate: undefined;
   transactionUpdate: { transactionId: number };
+  transactionDetail: { transactionId: number };
 }>();
 
 export const App = () => {
@@ -117,6 +119,12 @@ export const App = () => {
                 transactionId: (transactionId) => parseInt(transactionId),
               },
             },
+            transactionDetail: {
+              path: 'transactions/:transactionId/detail',
+              parse: {
+                transactionId: (transactionId) => parseInt(transactionId),
+              },
+            },
           },
         },
       }}
@@ -177,6 +185,10 @@ export const App = () => {
           <Stack.Screen
             name="transactionUpdate"
             component={TransactionUpdateScreen}
+          />
+          <Stack.Screen
+            name="transactionDetail"
+            component={TransactionDetailScreen}
           />
         </Stack.Navigator>
       </RootProvider>

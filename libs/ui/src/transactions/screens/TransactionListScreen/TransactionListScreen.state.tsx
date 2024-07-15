@@ -40,7 +40,10 @@ export const useTransactionListScreenState = () => {
   const router = useRouter();
 
   const onItemPress = (transaction: Transaction) => {
-    router.push(`/transactions/${transaction.id}`);
+    const targetPath = transaction.paidAt
+      ? `/transactions/${transaction.id}/detail`
+      : `/transactions/${transaction.id}`;
+    router.push(targetPath);
   };
 
   const onEditMenuPress = (transaction: Transaction) => {
