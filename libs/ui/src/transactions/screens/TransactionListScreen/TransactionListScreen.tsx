@@ -1,9 +1,12 @@
 import { Button, ScrollView } from 'tamagui';
 import { Layout } from '../../../base';
-import { TransactionList } from '../../components';
+import {
+  TransactionList,
+  TransactionDeleteAlert,
+  TransactionPaymentAlert,
+} from '../../components';
 import { Link } from 'solito/link';
 import { Plus } from '@tamagui/lucide-icons';
-import { TransactionDeleteAlert } from '../../components/TransactionDeleteAlert';
 import { useTransactionListScreenState } from './TransactionListScreen.state';
 
 export const TransactionListScreen = () => {
@@ -14,6 +17,10 @@ export const TransactionListScreen = () => {
     onDeleteSuccess,
     onDeleteCancel,
     transactionDeleteId,
+    onPaymentMenuPress,
+    onPaymentSuccess,
+    onPaymentCancel,
+    transactionPaymentId,
   } = useTransactionListScreenState();
 
   return (
@@ -29,8 +36,21 @@ export const TransactionListScreen = () => {
         <TransactionList
           onItemPress={onItemPress}
           itemMenus={[
-            { title: 'Edit', onPress: onEditMenuPress },
-            { title: 'Delete', onPress: onDeleteMenuPress },
+            {
+              title: 'Edit',
+              onPress: onEditMenuPress,
+              isShown: ({ paidAt }) => paidAt === undefined,
+            },
+            {
+              title: 'Pay',
+              onPress: onPaymentMenuPress,
+              isShown: ({ paidAt }) => paidAt === undefined,
+            },
+            {
+              title: 'Delete',
+              onPress: onDeleteMenuPress,
+              isShown: ({ paidAt }) => paidAt === undefined,
+            },
           ]}
         />
       </ScrollView>
@@ -39,6 +59,13 @@ export const TransactionListScreen = () => {
           transactionId={transactionDeleteId}
           onSuccess={onDeleteSuccess}
           onCancel={onDeleteCancel}
+        />
+      )}
+      {typeof transactionPaymentId === 'number' && (
+        <TransactionPaymentAlert
+          transactionId={transactionPaymentId}
+          onSuccess={onPaymentSuccess}
+          onCancel={onPaymentCancel}
         />
       )}
     </Layout>

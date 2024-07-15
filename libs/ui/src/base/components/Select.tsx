@@ -1,5 +1,9 @@
 import { Check, ChevronDown, ChevronUp } from '@tamagui/lucide-icons';
-import { Select as TamaguiSelect, YStack } from 'tamagui';
+import {
+  Select as TamaguiSelect,
+  SelectTriggerProps as TamaguiSelectTriggerProps,
+  YStack,
+} from 'tamagui';
 import { LinearGradient } from 'tamagui/linear-gradient';
 import { useFieldContext } from './Field';
 import { useField as useFormikField } from 'formik';
@@ -9,16 +13,22 @@ export type SelectProps<FieldValue> = {
   items: { label: string; value: FieldValue }[];
   parseInputToFieldValue: (inputValue: string) => FieldValue;
   parseFieldToInputValue: (fieldValue: FieldValue) => string;
-};
+} & TamaguiSelectTriggerProps;
 
-export const Select = <FieldValue,>(props: SelectProps<FieldValue>) => {
-  const { name } = useFieldContext();
-  const fieldName = name ?? props.name ?? '';
+export const Select = <FieldValue,>({
+  name,
+  items,
+  parseFieldToInputValue,
+  parseInputToFieldValue,
+  ...selectProps
+}: SelectProps<FieldValue>) => {
+  const fieldContext = useFieldContext();
+  const fieldName = fieldContext.name ?? name ?? '';
 
   const [field, _meta, helpers] = useFormikField(fieldName);
 
   const onValueChange = (value: string) => {
-    helpers.setValue(props.parseInputToFieldValue(value));
+    helpers.setValue(parseInputToFieldValue(value));
     helpers.setTouched(true);
   };
 
@@ -26,11 +36,11 @@ export const Select = <FieldValue,>(props: SelectProps<FieldValue>) => {
     <TamaguiSelect
       id={fieldName}
       name={fieldName}
-      value={props.parseFieldToInputValue(field.value)}
+      value={parseFieldToInputValue(field.value)}
       onValueChange={onValueChange}
       disablePreventBodyScroll
     >
-      <TamaguiSelect.Trigger iconAfter={ChevronDown}>
+      <TamaguiSelect.Trigger iconAfter={ChevronDown} {...selectProps}>
         <TamaguiSelect.Value />
       </TamaguiSelect.Trigger>
 
@@ -62,11 +72,11 @@ export const Select = <FieldValue,>(props: SelectProps<FieldValue>) => {
           minWidth={200}
         >
           <TamaguiSelect.Group>
-            {props.items.map((item, i) => (
+            {items.map((item, i) => (
               <TamaguiSelect.Item
                 index={i}
-                key={props.parseFieldToInputValue(item.value)}
-                value={props.parseFieldToInputValue(item.value)}
+                key={parseFieldToInputValue(item.value)}
+                value={parseFieldToInputValue(item.value)}
               >
                 <TamaguiSelect.ItemText>{item.label}</TamaguiSelect.ItemText>
                 <TamaguiSelect.ItemIndicator marginLeft="auto">

@@ -5,7 +5,11 @@ import { useTransactionListState } from './TransactionList.state';
 import { Transaction } from '../../../../../api-contract/src';
 
 export type TransactionListProps = {
-  itemMenus: { title: string; onPress: (transaction: Transaction) => void }[];
+  itemMenus: {
+    title: string;
+    onPress: (transaction: Transaction) => void;
+    isShown?: (transaction: Transaction) => boolean;
+  }[];
   onItemPress: (transaction: Transaction) => void;
 };
 
@@ -29,6 +33,8 @@ export const TransactionList = ({
               menus={itemMenus.map((itemMenu) => ({
                 ...itemMenu,
                 onPress: () => itemMenu.onPress(transaction),
+                isShown: () =>
+                  itemMenu.isShown ? itemMenu.isShown(transaction) : true,
               }))}
             />
           ))

@@ -5,20 +5,37 @@ import { useRouter } from 'solito/router';
 
 export type TransactionListScreenParams = {
   transactionDeleteId?: number;
+  transactionPaymentId?: number;
 };
 
 const { useParam } = createParam<TransactionListScreenParams>();
 
 export const useTransactionListScreenState = () => {
-  const [transactionDeleteId, setTransactionDeleteId] = useParam('transactionDeleteId', {
-    initial: undefined,
-    parse: (value) =>
-      Array.isArray(value)
-        ? parseInt(value[0])
-        : typeof value === 'string'
-        ? parseInt(value)
-        : undefined,
-  });
+  const [transactionDeleteId, setTransactionDeleteId] = useParam(
+    'transactionDeleteId',
+    {
+      initial: undefined,
+      parse: (value) =>
+        Array.isArray(value)
+          ? parseInt(value[0])
+          : typeof value === 'string'
+          ? parseInt(value)
+          : undefined,
+    }
+  );
+
+  const [transactionPaymentId, setTransactionPaymentId] = useParam(
+    'transactionPaymentId',
+    {
+      initial: undefined,
+      parse: (value) =>
+        Array.isArray(value)
+          ? parseInt(value[0])
+          : typeof value === 'string'
+          ? parseInt(value)
+          : undefined,
+    }
+  );
 
   const router = useRouter();
 
@@ -42,12 +59,28 @@ export const useTransactionListScreenState = () => {
     setTransactionDeleteId(undefined);
   };
 
+  const onPaymentMenuPress = (transaction: Transaction) => {
+    setTransactionPaymentId(transaction.id);
+  };
+
+  const onPaymentSuccess = () => {
+    router.replace('/transactions');
+  };
+
+  const onPaymentCancel = () => {
+    setTransactionPaymentId(undefined);
+  };
+
   return {
     transactionDeleteId,
+    transactionPaymentId,
     onItemPress,
     onEditMenuPress,
     onDeleteMenuPress,
     onDeleteSuccess,
     onDeleteCancel,
+    onPaymentMenuPress,
+    onPaymentSuccess,
+    onPaymentCancel,
   };
 };

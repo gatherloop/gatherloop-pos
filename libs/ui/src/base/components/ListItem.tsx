@@ -17,6 +17,7 @@ import {
 export type ListItemMenu = {
   title: string;
   onPress: () => void;
+  isShown?: () => void;
 };
 
 export type ListItemFooterItem = {
@@ -41,6 +42,9 @@ export const ListItem = ({
   footerItems = [],
   ...xStackProps
 }: ListItemProps) => {
+  const shownMenus = menus.filter(({ isShown }) =>
+    isShown ? isShown() : true
+  );
   return (
     <XStack
       gap="$4"
@@ -88,7 +92,7 @@ export const ListItem = ({
           </XStack>
         </YStack>
 
-        {menus.length > 0 && (
+        {shownMenus.length > 0 && (
           <Popover>
             <Popover.Trigger onPress={(event) => event.stopPropagation()}>
               <Button
@@ -119,7 +123,7 @@ export const ListItem = ({
               <Popover.Arrow borderWidth={1} borderColor="$borderColor" />
 
               <YGroup alignSelf="flex-start" bordered width={240} size="$4">
-                {menus.map((menu, index) => (
+                {shownMenus.map((menu, index) => (
                   <YGroup.Item key={index}>
                     <Popover.Close asChild>
                       <TamaguiListItem
