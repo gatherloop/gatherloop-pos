@@ -6,7 +6,7 @@ import { useField as useFormikField } from 'formik';
 
 export type SelectProps<FieldValue> = {
   name?: string;
-  items: { label: string; value: string }[];
+  items: { label: string; value: FieldValue }[];
   parseInputToFieldValue: (inputValue: string) => FieldValue;
   parseFieldToInputValue: (fieldValue: FieldValue) => string;
 };
@@ -63,7 +63,11 @@ export const Select = <FieldValue,>(props: SelectProps<FieldValue>) => {
         >
           <TamaguiSelect.Group>
             {props.items.map((item, i) => (
-              <TamaguiSelect.Item index={i} key={item.value} value={item.value}>
+              <TamaguiSelect.Item
+                index={i}
+                key={props.parseFieldToInputValue(item.value)}
+                value={props.parseFieldToInputValue(item.value)}
+              >
                 <TamaguiSelect.ItemText>{item.label}</TamaguiSelect.ItemText>
                 <TamaguiSelect.ItemIndicator marginLeft="auto">
                   <Check size={16} />

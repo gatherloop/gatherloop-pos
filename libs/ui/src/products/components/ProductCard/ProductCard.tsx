@@ -1,5 +1,6 @@
 import { Tag } from '@tamagui/lucide-icons';
 import { ListItem, ListItemMenu } from '../../../base';
+import { XStackProps } from 'tamagui';
 
 export type ProductCardProps = {
   name: string;
@@ -7,7 +8,7 @@ export type ProductCardProps = {
   categoryName: string;
   onPress?: () => void;
   menus?: ListItemMenu[];
-};
+} & XStackProps;
 
 export const ProductCard = ({
   name,
@@ -15,6 +16,7 @@ export const ProductCard = ({
   categoryName,
   menus,
   onPress,
+  ...xStackProps
 }: ProductCardProps) => {
   return (
     <ListItem
@@ -24,6 +26,7 @@ export const ProductCard = ({
       onPress={onPress}
       menus={menus}
       footerItems={[{ value: categoryName, icon: Tag }]}
+      {...xStackProps}
     />
   );
 };

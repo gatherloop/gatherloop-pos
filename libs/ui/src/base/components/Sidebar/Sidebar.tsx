@@ -14,6 +14,7 @@ const items: { title: string; icon: NamedExoticComponent; path: string }[] = [
   { title: 'Categories', icon: Tag, path: '/categories' },
   { title: 'Products', icon: FileBox, path: '/products' },
   { title: 'Materials', icon: Box, path: '/materials' },
+  { title: 'Transactions', icon: Box, path: '/transactions' },
   { title: 'Wallets', icon: Wallet, path: '/wallets' },
   { title: 'Budgets', icon: Wallet, path: '/budgets' },
 ];

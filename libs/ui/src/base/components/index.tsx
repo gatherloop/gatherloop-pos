@@ -11,3 +11,4 @@ export * from './InputNumber';
 export * from './Field';
 export * from './SubmitButton';
 export * from './Select';
+export * from './Sheet';

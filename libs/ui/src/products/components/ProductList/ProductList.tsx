@@ -6,11 +6,14 @@ import { Product } from '../../../../../api-contract/src';
 import { ProductCard } from '../ProductCard';
 
 export type ProductListProps = {
-  itemMenus: { title: string; onPress: (product: Product) => void }[];
+  itemMenus?: { title: string; onPress: (product: Product) => void }[];
   onItemPress: (product: Product) => void;
 };
 
-export const ProductList = ({ itemMenus, onItemPress }: ProductListProps) => {
+export const ProductList = ({
+  itemMenus = [],
+  onItemPress,
+}: ProductListProps) => {
   const { products, refetch, status } = useProductListState();
   return (
     <YStack gap="$3">

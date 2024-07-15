@@ -16,6 +16,9 @@ import {
   BudgetUpdateScreen,
   WalletTransferListScreen,
   WalletTransferCreateScreen,
+  TransactionListScreen,
+  TransactionCreateScreen,
+  TransactionUpdateScreen,
 } from '@gatherloop-pos/ui';
 import { RootProvider } from '@gatherloop-pos/provider';
 import { NavigationContainer } from '@react-navigation/native';
@@ -40,6 +43,9 @@ const Stack = createNativeStackNavigator<{
   budgetList: undefined;
   budgetCreate: undefined;
   budgetUpdate: { budgetId: number };
+  transactionList: undefined;
+  transactionCreate: undefined;
+  transactionUpdate: { transactionId: number };
 }>();
 
 export const App = () => {
@@ -103,6 +109,14 @@ export const App = () => {
                 budgetId: (budgetId) => parseInt(budgetId),
               },
             },
+            transactionList: 'transactions',
+            transactionCreate: 'transactions/create',
+            transactionUpdate: {
+              path: 'transactions/:transactionId',
+              parse: {
+                transactionId: (transactionId) => parseInt(transactionId),
+              },
+            },
           },
         },
       }}
@@ -152,6 +166,18 @@ export const App = () => {
           <Stack.Screen name="budgetList" component={BudgetListScreen} />
           <Stack.Screen name="budgetCreate" component={BudgetCreateScreen} />
           <Stack.Screen name="budgetUpdate" component={BudgetUpdateScreen} />
+          <Stack.Screen
+            name="transactionList"
+            component={TransactionListScreen}
+          />
+          <Stack.Screen
+            name="transactionCreate"
+            component={TransactionCreateScreen}
+          />
+          <Stack.Screen
+            name="transactionUpdate"
+            component={TransactionUpdateScreen}
+          />
         </Stack.Navigator>
       </RootProvider>
     </NavigationContainer>
