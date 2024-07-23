@@ -51,7 +51,12 @@ export const useProductMaterialListScreenState = (
   };
 
   const onDeleteSuccess = () => {
-    router.replace(`/products/${productId}/materials`);
+    router.replace(`/products/${productId}/materials`, undefined, {
+      experimental: {
+        nativeBehavior: 'stack-replace',
+        isNestedNavigator: false,
+      },
+    });
   };
 
   const onDeleteCancel = () => {

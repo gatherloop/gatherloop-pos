@@ -1,7 +1,10 @@
 import {
   Box,
+  Calculator,
   ChevronsLeft,
   ChevronsRight,
+  CircleDollarSign,
+  CreditCard,
   FileBox,
   Tag,
   Wallet,
@@ -14,10 +17,10 @@ const items: { title: string; icon: NamedExoticComponent; path: string }[] = [
   { title: 'Categories', icon: Tag, path: '/categories' },
   { title: 'Products', icon: FileBox, path: '/products' },
   { title: 'Materials', icon: Box, path: '/materials' },
-  { title: 'Transactions', icon: Box, path: '/transactions' },
-  { title: 'Expenses', icon: Box, path: '/expenses' },
+  { title: 'Transactions', icon: CircleDollarSign, path: '/transactions' },
+  { title: 'Expenses', icon: CreditCard, path: '/expenses' },
   { title: 'Wallets', icon: Wallet, path: '/wallets' },
-  { title: 'Budgets', icon: Wallet, path: '/budgets' },
+  { title: 'Budgets', icon: Calculator, path: '/budgets' },
 ];
 
 export const Sidebar = () => {
@@ -27,9 +30,10 @@ export const Sidebar = () => {
       <YGroup
         width={240}
         $xs={{ position: 'absolute', top: 0, bottom: 0, zIndex: '$5' }}
+        elevation="$1"
         backgroundColor="$gray3"
         borderRadius="$0"
-        animation={'quick'}
+        animation="fast"
         marginLeft={isShown ? 0 : -240}
       >
         <YStack padding="$5">
@@ -55,7 +59,7 @@ export const Sidebar = () => {
         position="absolute"
         left={isShown ? 240 : 0}
         zIndex={999}
-        animation="quick"
+        animation="fast"
         size="$3"
         borderTopLeftRadius="$0"
         borderBottomLeftRadius="$0"

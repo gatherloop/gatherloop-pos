@@ -4,6 +4,7 @@ import {
   UseCategoryFormStateProps,
   useCategoryFormState,
 } from './CategoryForm.state';
+import { Card } from 'tamagui';
 
 export type CategoryFormProps = {
   variant: UseCategoryFormStateProps['variant'];

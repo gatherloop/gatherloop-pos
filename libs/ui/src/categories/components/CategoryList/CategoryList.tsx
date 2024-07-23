@@ -1,11 +1,20 @@
-import { EmptyView, ErrorView, ListItem, LoadingView } from '../../../base';
+import {
+  EmptyView,
+  ErrorView,
+  ListItem,
+  ListItemMenu,
+  LoadingView,
+} from '../../../base';
 import { YStack } from 'tamagui';
 import { useCategoryListState } from './CategoryList.state';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { Category } from '../../../../../api-contract/src';
 
 export type CategoryListProps = {
-  itemMenus: { title: string; onPress: (category: Category) => void }[];
+  itemMenus: (Omit<ListItemMenu, 'onPress' | 'isShown'> & {
+    onPress: (category: Category) => void;
+    isShown?: (category: Category) => void;
+  })[];
   onItemPress: (category: Category) => void;
 };
 
@@ -21,12 +30,13 @@ export const CategoryList = ({ itemMenus, onItemPress }: CategoryListProps) => {
             <ListItem
               key={category.id}
               title={category.name}
-              subtitle="Lorem ipsum dolor sit amet"
-              thumbnailSrc="https://picsum.photos/200/300"
+              thumbnailSrc="https://placehold.jp/120x120.png"
               onPress={() => onItemPress(category)}
               menus={itemMenus.map((itemMenu) => ({
                 ...itemMenu,
                 onPress: () => itemMenu.onPress(category),
+                isShown: () =>
+                  itemMenu.isShown ? itemMenu.isShown(category) : true,
               }))}
             />
           ))

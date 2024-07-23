@@ -38,7 +38,12 @@ export const useWalletListScreenState = () => {
   };
 
   const onDeleteSuccess = () => {
-    router.replace('/wallets');
+    router.replace('/wallets', undefined, {
+      experimental: {
+        nativeBehavior: 'stack-replace',
+        isNestedNavigator: false,
+      },
+    });
   };
 
   const onDeleteCancel = () => {

@@ -12,10 +12,37 @@ import {
   Paragraph,
   H4,
   H5,
+  usePopoverContext,
 } from 'tamagui';
+
+export type PopoverMenuProps = {
+  menus: ListItemMenu[];
+};
+
+export const PopoverMenu = ({ menus }: PopoverMenuProps) => {
+  const { onOpenChange } = usePopoverContext();
+  return (
+    <YGroup width={240} size="$3">
+      {menus.map((menu, index) => (
+        <YGroup.Item key={index}>
+          <TamaguiListItem
+            icon={menu.icon}
+            title={menu.title}
+            onPress={() => {
+              menu.onPress();
+              onOpenChange(false, 'press');
+            }}
+            backgroundColor="$white"
+          />
+        </YGroup.Item>
+      ))}
+    </YGroup>
+  );
+};
 
 export type ListItemMenu = {
   title: string;
+  icon?: NamedExoticComponent;
   onPress: () => void;
   isShown?: () => void;
 };
@@ -24,6 +51,7 @@ export type ListItemFooterItem = {
   label?: string;
   icon?: NamedExoticComponent<{ size: string; color: string }>;
   value: string;
+  isShown?: () => void;
 };
 
 export type ListItemProps = {
@@ -45,12 +73,14 @@ export const ListItem = ({
   const shownMenus = menus.filter(({ isShown }) =>
     isShown ? isShown() : true
   );
+  const shownFooterItems = footerItems.filter(({ isShown }) =>
+    isShown ? isShown() : true
+  );
   return (
     <XStack
       gap="$4"
       borderRadius="$5"
       alignItems="center"
-      elevation="$1"
       backgroundColor="$gray1"
       justifyContent="space-between"
       {...xStackProps}
@@ -71,7 +101,7 @@ export const ListItem = ({
         )}
 
         <YStack padding="$3" flex={1} gap="$3">
-          <YStack>
+          <YStack flex={1} justifyContent="center">
             <H4 ellipse>{title}</H4>
             {subtitle && (
               <H5 textTransform="none" ellipse>
@@ -81,8 +111,8 @@ export const ListItem = ({
           </YStack>
 
           <XStack gap="$3" flexWrap="wrap">
-            {footerItems.map((footerItem) => (
-              <XStack gap="$2" alignItems="center">
+            {shownFooterItems.map((footerItem, index) => (
+              <XStack gap="$2" alignItems="center" key={index}>
                 {footerItem.icon && (
                   <footerItem.icon size="$1" color="$gray11" />
                 )}
@@ -93,8 +123,8 @@ export const ListItem = ({
         </YStack>
 
         {shownMenus.length > 0 && (
-          <Popover>
-            <Popover.Trigger onPress={(event) => event.stopPropagation()}>
+          <Popover keepChildrenMounted placement="left-start">
+            <Popover.Trigger asChild>
               <Button
                 icon={MoreVertical}
                 size="$2"
@@ -112,7 +142,7 @@ export const ListItem = ({
               elevate
               padding="$0"
               animation={[
-                'quick',
+                'fast',
                 {
                   opacity: {
                     overshootClamping: true,
@@ -121,24 +151,7 @@ export const ListItem = ({
               ]}
             >
               <Popover.Arrow borderWidth={1} borderColor="$borderColor" />
-
-              <YGroup alignSelf="flex-start" bordered width={240} size="$4">
-                {shownMenus.map((menu, index) => (
-                  <YGroup.Item key={index}>
-                    <Popover.Close asChild>
-                      <TamaguiListItem
-                        hoverTheme
-                        onPress={(event) => {
-                          event.stopPropagation();
-                          menu.onPress();
-                        }}
-                      >
-                        {menu.title}
-                      </TamaguiListItem>
-                    </Popover.Close>
-                  </YGroup.Item>
-                ))}
-              </YGroup>
+              <PopoverMenu menus={shownMenus} />
             </Popover.Content>
           </Popover>
         )}

@@ -39,7 +39,12 @@ export const useProductListScreenState = () => {
   };
 
   const onDeleteSuccess = () => {
-    router.replace('/products');
+    router.replace('/products', undefined, {
+      experimental: {
+        nativeBehavior: 'stack-replace',
+        isNestedNavigator: false,
+      },
+    });
   };
 
   const onDeleteCancel = () => {

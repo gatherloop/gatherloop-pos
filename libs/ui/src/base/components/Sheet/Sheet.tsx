@@ -24,13 +24,7 @@ export const Sheet = ({ isOpen, onOpenChange, children }: SheetProps) => {
         exitStyle={{ opacity: 0 }}
       />
       <TamaguiSheet.Handle />
-      <TamaguiSheet.Frame
-        padding="$4"
-        justifyContent="center"
-        alignItems="center"
-      >
-        {children}
-      </TamaguiSheet.Frame>
+      <TamaguiSheet.Frame>{children}</TamaguiSheet.Frame>
     </TamaguiSheet>
   );
 };

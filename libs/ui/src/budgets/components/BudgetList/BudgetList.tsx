@@ -1,4 +1,10 @@
-import { EmptyView, ErrorView, ListItem, LoadingView } from '../../../base';
+import {
+  EmptyView,
+  ErrorView,
+  ListItem,
+  ListItemMenu,
+  LoadingView,
+} from '../../../base';
 import { YStack } from 'tamagui';
 import { useBudgetListState } from './BudgetList.state';
 // eslint-disable-next-line @nx/enforce-module-boundaries
@@ -6,14 +12,17 @@ import { Budget } from '../../../../../api-contract/src';
 import { PercentSquare } from '@tamagui/lucide-icons';
 
 export type BudgetListProps = {
-  itemMenus: { title: string; onPress: (budget: Budget) => void }[];
+  itemMenus: (Omit<ListItemMenu, 'onPress' | 'isShown'> & {
+    onPress: (budget: Budget) => void;
+    isShown?: (budget: Budget) => void;
+  })[];
   onItemPress: (budget: Budget) => void;
 };
 
 export const BudgetList = ({ itemMenus, onItemPress }: BudgetListProps) => {
   const { budgets, refetch, status } = useBudgetListState();
   return (
-    <YStack gap="$3" flexWrap="wrap">
+    <YStack gap="$3">
       {status === 'pending' ? (
         <LoadingView title="Fetching Budgets..." />
       ) : status === 'success' ? (
@@ -23,11 +32,13 @@ export const BudgetList = ({ itemMenus, onItemPress }: BudgetListProps) => {
               key={budget.id}
               title={budget.name}
               subtitle={`Rp. ${budget.balance.toLocaleString('id')}`}
-              thumbnailSrc="https://picsum.photos/200/300"
+              thumbnailSrc="https://placehold.jp/120x120.png"
               onPress={() => onItemPress(budget)}
               menus={itemMenus.map((itemMenu) => ({
                 ...itemMenu,
                 onPress: () => itemMenu.onPress(budget),
+                isShown: () =>
+                  itemMenu.isShown ? itemMenu.isShown(budget) : true,
               }))}
               footerItems={[
                 { value: `${budget.percentage}%`, icon: PercentSquare },

@@ -6,7 +6,7 @@ import {
   TransactionPaymentAlert,
 } from '../../components';
 import { Link } from 'solito/link';
-import { Plus } from '@tamagui/lucide-icons';
+import { DollarSign, Pencil, Plus, Trash } from '@tamagui/lucide-icons';
 import { useTransactionListScreenState } from './TransactionListScreen.state';
 
 export const TransactionListScreen = () => {
@@ -37,17 +37,20 @@ export const TransactionListScreen = () => {
           onItemPress={onItemPress}
           itemMenus={[
             {
-              title: 'Edit',
-              onPress: onEditMenuPress,
-              isShown: ({ paidAt }) => paidAt === undefined,
-            },
-            {
               title: 'Pay',
+              icon: DollarSign,
               onPress: onPaymentMenuPress,
               isShown: ({ paidAt }) => paidAt === undefined,
             },
             {
+              title: 'Edit',
+              icon: Pencil,
+              onPress: onEditMenuPress,
+              isShown: ({ paidAt }) => paidAt === undefined,
+            },
+            {
               title: 'Delete',
+              icon: Trash,
               onPress: onDeleteMenuPress,
               isShown: ({ paidAt }) => paidAt === undefined,
             },

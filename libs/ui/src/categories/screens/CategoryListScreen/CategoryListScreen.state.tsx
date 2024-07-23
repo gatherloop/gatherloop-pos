@@ -34,7 +34,12 @@ export const useCategoryListScreenState = () => {
   };
 
   const onDeleteSuccess = () => {
-    router.replace('/categories');
+    router.replace('/categories', undefined, {
+      experimental: {
+        nativeBehavior: 'stack-replace',
+        isNestedNavigator: false,
+      },
+    });
   };
 
   const onDeleteCancel = () => {

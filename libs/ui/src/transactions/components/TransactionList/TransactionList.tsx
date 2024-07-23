@@ -1,15 +1,22 @@
-import { EmptyView, ErrorView, ListItem, LoadingView } from '../../../base';
+import {
+  EmptyView,
+  ErrorView,
+  ListItem,
+  ListItemMenu,
+  LoadingView,
+} from '../../../base';
 import { YStack } from 'tamagui';
 import { useTransactionListState } from './TransactionList.state';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { Transaction } from '../../../../../api-contract/src';
+import { Calendar, Clock, DollarSign, Wallet } from '@tamagui/lucide-icons';
+import dayjs from 'dayjs';
 
 export type TransactionListProps = {
-  itemMenus: {
-    title: string;
+  itemMenus: (Omit<ListItemMenu, 'onPress' | 'isShown'> & {
     onPress: (transaction: Transaction) => void;
-    isShown?: (transaction: Transaction) => boolean;
-  }[];
+    isShown?: (transaction: Transaction) => void;
+  })[];
   onItemPress: (transaction: Transaction) => void;
 };
 
@@ -19,7 +26,7 @@ export const TransactionList = ({
 }: TransactionListProps) => {
   const { transactions, refetch, status } = useTransactionListState();
   return (
-    <YStack gap="$3" flexWrap="wrap">
+    <YStack gap="$3">
       {status === 'pending' ? (
         <LoadingView title="Fetching Transactions..." />
       ) : status === 'success' ? (
@@ -36,6 +43,26 @@ export const TransactionList = ({
                 isShown: () =>
                   itemMenu.isShown ? itemMenu.isShown(transaction) : true,
               }))}
+              footerItems={[
+                {
+                  icon: Calendar,
+                  value: dayjs(transaction.createdAt).format('DD/MM/YYYY'),
+                },
+                {
+                  icon: Clock,
+                  value: dayjs(transaction.createdAt).format('HH:mm'),
+                },
+                {
+                  icon: DollarSign,
+                  value: transaction.paidAt ? 'Paid' : 'Unpaid',
+                  isShown: () => typeof transaction.paidAt === 'string',
+                },
+                {
+                  icon: Wallet,
+                  value: transaction.wallet?.name ?? '',
+                  isShown: () => typeof transaction.wallet?.name === 'string',
+                },
+              ]}
             />
           ))
         ) : (

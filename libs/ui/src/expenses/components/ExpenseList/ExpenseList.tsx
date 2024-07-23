@@ -1,11 +1,22 @@
-import { EmptyView, ErrorView, ListItem, LoadingView } from '../../../base';
+import {
+  EmptyView,
+  ErrorView,
+  ListItem,
+  ListItemMenu,
+  LoadingView,
+} from '../../../base';
 import { YStack } from 'tamagui';
 import { useExpenseListState } from './ExpenseList.state';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { Expense } from '../../../../../api-contract/src';
+import dayjs from 'dayjs';
+import { Calendar, Clock, Wallet } from '@tamagui/lucide-icons';
 
 export type ExpenseListProps = {
-  itemMenus: { title: string; onPress: (expense: Expense) => void }[];
+  itemMenus: (Omit<ListItemMenu, 'onPress' | 'isShown'> & {
+    onPress: (expense: Expense) => void;
+    isShown?: (expense: Expense) => void;
+  })[];
   onItemPress: (expense: Expense) => void;
 };
 
@@ -20,13 +31,29 @@ export const ExpenseList = ({ itemMenus, onItemPress }: ExpenseListProps) => {
           expenses.map((expense) => (
             <ListItem
               key={expense.id}
-              title={expense.createdAt}
+              title={expense.budget.name}
               subtitle={`Rp. ${expense.total.toLocaleString('id')}`}
               onPress={() => onItemPress(expense)}
               menus={itemMenus.map((itemMenu) => ({
                 ...itemMenu,
                 onPress: () => itemMenu.onPress(expense),
+                isShown: () =>
+                  itemMenu.isShown ? itemMenu.isShown(expense) : true,
               }))}
+              footerItems={[
+                {
+                  icon: Calendar,
+                  value: dayjs(expense.createdAt).format('DD/MM/YYYY'),
+                },
+                {
+                  icon: Clock,
+                  value: dayjs(expense.createdAt).format('HH:mm'),
+                },
+                {
+                  icon: Wallet,
+                  value: expense.wallet.name,
+                },
+              ]}
             />
           ))
         ) : (

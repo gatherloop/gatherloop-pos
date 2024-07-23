@@ -2,7 +2,7 @@ import { Button, ScrollView } from 'tamagui';
 import { Layout } from '../../../base';
 import { ExpenseList, ExpenseDeleteAlert } from '../../components';
 import { Link } from 'solito/link';
-import { Plus } from '@tamagui/lucide-icons';
+import { Pencil, Plus, Trash } from '@tamagui/lucide-icons';
 import { useExpenseListScreenState } from './ExpenseListScreen.state';
 
 export const ExpenseListScreen = () => {
@@ -28,8 +28,8 @@ export const ExpenseListScreen = () => {
         <ExpenseList
           onItemPress={onItemPress}
           itemMenus={[
-            { title: 'Edit', onPress: onEditMenuPress },
-            { title: 'Delete', onPress: onDeleteMenuPress },
+            { title: 'Edit', icon: Pencil, onPress: onEditMenuPress },
+            { title: 'Delete', icon: Trash, onPress: onDeleteMenuPress },
           ]}
         />
       </ScrollView>

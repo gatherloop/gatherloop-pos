@@ -1,4 +1,4 @@
-import { ScrollView } from 'tamagui';
+import { Card, ScrollView } from 'tamagui';
 import { Layout } from '../../../base';
 import { WalletForm } from '../../components';
 import { useWalletUpdateScreenState } from './WalletUpdateScreen.state';
@@ -14,10 +14,14 @@ export const WalletUpdateScreen = (props: WalletUpdateScreenProps) => {
   return (
     <Layout title="Update Wallet" showBackButton>
       <ScrollView>
-        <WalletForm
-          variant={{ type: 'update', walletId }}
-          onSuccess={onSuccess}
-        />
+        <Card maxWidth={500}>
+          <Card.Header>
+            <WalletForm
+              variant={{ type: 'update', walletId }}
+              onSuccess={onSuccess}
+            />
+          </Card.Header>
+        </Card>
       </ScrollView>
     </Layout>
   );

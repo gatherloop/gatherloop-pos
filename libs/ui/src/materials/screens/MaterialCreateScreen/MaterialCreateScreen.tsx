@@ -1,4 +1,4 @@
-import { ScrollView } from 'tamagui';
+import { Card, ScrollView } from 'tamagui';
 import { Layout } from '../../../base';
 import { MaterialForm } from '../../components';
 import { useMaterialCreateScreenState } from './MaterialCreateScreen.state';
@@ -8,7 +8,11 @@ export const MaterialCreateScreen = () => {
   return (
     <Layout title="Create Material" showBackButton>
       <ScrollView>
-        <MaterialForm variant={{ type: 'create' }} onSuccess={onSuccess} />
+        <Card maxWidth={500}>
+          <Card.Header>
+            <MaterialForm variant={{ type: 'create' }} onSuccess={onSuccess} />
+          </Card.Header>
+        </Card>
       </ScrollView>
     </Layout>
   );

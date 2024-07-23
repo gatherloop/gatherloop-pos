@@ -21,11 +21,11 @@ export const ProductMaterialDeleteAlert = ({
       onSuccess,
     });
   return (
-    <AlertDialog native open onOpenChange={onCancel} modal>
+    <AlertDialog open onOpenChange={onCancel} modal>
       <AlertDialog.Portal>
         <AlertDialog.Overlay
           key="overlay"
-          animation="quick"
+          animation="fast"
           opacity={0.5}
           enterStyle={{ opacity: 0 }}
           exitStyle={{ opacity: 0 }}
@@ -35,7 +35,7 @@ export const ProductMaterialDeleteAlert = ({
           elevate
           key="content"
           animation={[
-            'quick',
+            'fast',
             {
               opacity: {
                 overshootClamping: true,

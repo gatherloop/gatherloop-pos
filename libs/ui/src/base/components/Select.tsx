@@ -1,5 +1,6 @@
 import { Check, ChevronDown, ChevronUp } from '@tamagui/lucide-icons';
 import {
+  Adapt,
   Select as TamaguiSelect,
   SelectTriggerProps as TamaguiSelectTriggerProps,
   YStack,
@@ -7,6 +8,7 @@ import {
 import { LinearGradient } from 'tamagui/linear-gradient';
 import { useFieldContext } from './Field';
 import { useField as useFormikField } from 'formik';
+import { Sheet } from 'tamagui';
 
 export type SelectProps<FieldValue> = {
   name?: string;
@@ -44,6 +46,30 @@ export const Select = <FieldValue,>({
         <TamaguiSelect.Value />
       </TamaguiSelect.Trigger>
 
+      <Adapt platform="touch">
+        <Sheet
+          modal
+          dismissOnSnapToBottom
+          animationConfig={{
+            type: 'spring',
+            damping: 20,
+            mass: 1.2,
+            stiffness: 250,
+          }}
+        >
+          <Sheet.Frame>
+            <Sheet.ScrollView>
+              <Adapt.Contents />
+            </Sheet.ScrollView>
+          </Sheet.Frame>
+          <Sheet.Overlay
+            animation="lazy"
+            enterStyle={{ opacity: 0 }}
+            exitStyle={{ opacity: 0 }}
+          />
+        </Sheet>
+      </Adapt>
+
       <TamaguiSelect.Content zIndex={200000}>
         <TamaguiSelect.ScrollUpButton
           alignItems="center"
@@ -65,7 +91,7 @@ export const Select = <FieldValue,>({
         </TamaguiSelect.ScrollUpButton>
 
         <TamaguiSelect.Viewport
-          animation="quick"
+          animation="fast"
           animateOnly={['transform', 'opacity']}
           enterStyle={{ o: 0, y: -10 }}
           exitStyle={{ o: 0, y: 10 }}

@@ -2,7 +2,7 @@ import { Button, H4, ScrollView, XStack } from 'tamagui';
 import { Layout } from '../../../base';
 import { ProductDetail, ProductMaterialList } from '../../components';
 import { Link } from 'solito/link';
-import { Plus } from '@tamagui/lucide-icons';
+import { Pencil, Plus, Trash } from '@tamagui/lucide-icons';
 import { ProductMaterialDeleteAlert } from '../../components/ProductMaterialDeleteAlert';
 import { useProductMaterialListScreenState } from './ProductMaterialListScreen.state';
 
@@ -37,8 +37,8 @@ export const ProductMaterialListScreen = (
           productId={productId}
           onItemPress={onItemPress}
           itemMenus={[
-            { title: 'Edit', onPress: onEditMenuPress },
-            { title: 'Delete', onPress: onDeleteMenuPress },
+            { title: 'Edit', icon: Pencil, onPress: onEditMenuPress },
+            { title: 'Delete', icon: Trash, onPress: onDeleteMenuPress },
           ]}
         />
       </ScrollView>

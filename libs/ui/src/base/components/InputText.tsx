@@ -10,12 +10,18 @@ export const InputText = ({ name, ...inputProps }: InputTextProps) => {
   const fieldContext = useFieldContext();
   const fieldName = fieldContext.name ?? name ?? '';
   const [field, _meta, helpers] = useFormikField(fieldName);
+
+  const onChangeText = (text: string) => {
+    helpers.setValue(text);
+    helpers.setTouched(true);
+  };
+
   return (
     <Input
-      {...field}
-      id={fieldName}
-      onChangeText={helpers.setValue}
       {...inputProps}
+      id={fieldName}
+      onChangeText={onChangeText}
+      value={field.value}
     />
   );
 };

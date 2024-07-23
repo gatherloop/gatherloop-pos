@@ -7,6 +7,7 @@ export const SubmitButton = (props: ButtonProps) => {
     <Button
       onPress={() => formik.submitForm()}
       disabled={formik.isSubmitting}
+      theme="blue"
       {...props}
     >
       {props.children}

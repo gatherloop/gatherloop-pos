@@ -11,7 +11,7 @@ import {
   UseTransactionFormStateProps,
   useTransactionFormState,
 } from './TransactionForm.state';
-import { Button, H3, H5, Paragraph, XStack, YStack } from 'tamagui';
+import { Button, H3, H5, Paragraph, ScrollView, XStack, YStack } from 'tamagui';
 import { H4 } from 'tamagui';
 import { Plus, Trash } from '@tamagui/lucide-icons';
 import { ProductCard, ProductList } from '../../../products';
@@ -51,14 +51,16 @@ export const TransactionForm = ({
                     isOpen={isProductSheetOpen}
                     onOpenChange={setIsProductSheetOpen}
                   >
-                    <YStack gap="$3">
+                    <YStack gap="$3" flex={1} padding="$5">
                       <YStack>
-                        <H4 textAlign="center">Choose Product</H4>
+                        <H4 textAlign="center">Choose Products</H4>
                         <Paragraph textAlign="center">
                           Product will automatically added to transaction
                         </Paragraph>
                       </YStack>
-                      <ProductList onItemPress={onAddItem} />
+                      <ScrollView flex={1}>
+                        <ProductList onItemPress={onAddItem} />
+                      </ScrollView>
                     </YStack>
                   </Sheet>
 
@@ -116,14 +118,13 @@ export const TransactionForm = ({
                                   circular
                                   disabled={isFormDisabled}
                                 />
-                                <YStack maxWidth={150}>
-                                  <InputNumber
-                                    name={`transactionItems[${index}].amount`}
-                                    min={1}
-                                    max={10}
-                                    disabled={isFormDisabled}
-                                  />
-                                </YStack>
+                                <InputNumber
+                                  name={`transactionItems[${index}].amount`}
+                                  min={1}
+                                  max={10}
+                                  disabled={isFormDisabled}
+                                  maxWidth={50}
+                                />
                               </XStack>
                             </YStack>
                           </XStack>

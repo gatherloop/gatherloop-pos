@@ -1,4 +1,4 @@
-import { ScrollView } from 'tamagui';
+import { Card, ScrollView } from 'tamagui';
 import { Layout } from '../../../base';
 import { ExpenseForm } from '../../components';
 import { useExpenseUpdateScreenState } from './ExpenseUpdateScreen.state';

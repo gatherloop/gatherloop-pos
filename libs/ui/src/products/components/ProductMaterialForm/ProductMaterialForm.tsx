@@ -1,12 +1,5 @@
 import { FormikProvider } from 'formik';
-import {
-  Field,
-  Form,
-  InputText,
-  InputNumber,
-  SubmitButton,
-  Select,
-} from '../../../base';
+import { Field, Form, InputNumber, SubmitButton, Select } from '../../../base';
 import {
   UseProductMaterialFormStateProps,
   useProductMaterialFormState,

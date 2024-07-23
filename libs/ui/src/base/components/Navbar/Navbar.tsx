@@ -19,7 +19,6 @@ export const Navbar = ({
     <XStack
       padding="$3"
       justifyContent="space-between"
-      elevation="$1"
       backgroundColor="$gray1"
     >
       <XStack alignItems="center" gap="$3">

@@ -55,7 +55,12 @@ export const useTransactionListScreenState = () => {
   };
 
   const onDeleteSuccess = () => {
-    router.replace('/transactions');
+    router.replace('/transactions', undefined, {
+      experimental: {
+        nativeBehavior: 'stack-replace',
+        isNestedNavigator: false,
+      },
+    });
   };
 
   const onDeleteCancel = () => {
@@ -67,7 +72,12 @@ export const useTransactionListScreenState = () => {
   };
 
   const onPaymentSuccess = () => {
-    router.replace('/transactions');
+    router.replace('/transactions', undefined, {
+      experimental: {
+        nativeBehavior: 'stack-replace',
+        isNestedNavigator: false,
+      },
+    });
   };
 
   const onPaymentCancel = () => {

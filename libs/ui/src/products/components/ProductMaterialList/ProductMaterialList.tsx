@@ -1,4 +1,10 @@
-import { EmptyView, ErrorView, ListItem, LoadingView } from '../../../base';
+import {
+  EmptyView,
+  ErrorView,
+  ListItem,
+  ListItemMenu,
+  LoadingView,
+} from '../../../base';
 import { YStack } from 'tamagui';
 import { useProductMaterialListState } from './ProductMaterialList.state';
 // eslint-disable-next-line @nx/enforce-module-boundaries
@@ -6,7 +12,10 @@ import { ProductMaterial } from '../../../../../api-contract/src';
 import { Box } from '@tamagui/lucide-icons';
 
 export type ProductMaterialListProps = {
-  itemMenus: { title: string; onPress: (product: ProductMaterial) => void }[];
+  itemMenus: (Omit<ListItemMenu, 'onPress' | 'isShown'> & {
+    onPress: (productMaterial: ProductMaterial) => void;
+    isShown?: (productMaterial: ProductMaterial) => void;
+  })[];
   onItemPress: (product: ProductMaterial) => void;
   productId: number;
 };
@@ -31,10 +40,12 @@ export const ProductMaterialList = ({
               title={`${productMaterial.material?.name}`}
               subtitle={`${productMaterial.amount} ${productMaterial.material?.unit}`}
               onPress={() => onItemPress(productMaterial)}
-              thumbnailSrc="https://picsum.photos/200/300"
+              thumbnailSrc="https://placehold.jp/120x120.png"
               menus={itemMenus.map((itemMenu) => ({
                 ...itemMenu,
                 onPress: () => itemMenu.onPress(productMaterial),
+                isShown: () =>
+                  itemMenu.isShown ? itemMenu.isShown(productMaterial) : true,
               }))}
               footerItems={[
                 {

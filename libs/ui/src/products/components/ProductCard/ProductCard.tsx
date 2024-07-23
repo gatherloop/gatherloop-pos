@@ -22,7 +22,7 @@ export const ProductCard = ({
     <ListItem
       title={name}
       subtitle={`Rp. ${price.toLocaleString('id')}`}
-      thumbnailSrc="https://picsum.photos/500/300"
+      thumbnailSrc="https://placehold.jp/120x120.png"
       onPress={onPress}
       menus={menus}
       footerItems={[{ value: categoryName, icon: Tag }]}

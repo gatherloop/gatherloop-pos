@@ -1,4 +1,4 @@
-import { ScrollView } from 'tamagui';
+import { Card, ScrollView } from 'tamagui';
 import { Layout } from '../../../base';
 import { BudgetForm } from '../../components';
 import { useBudgetUpdateScreenState } from './BudgetUpdateScreen.state';
@@ -14,10 +14,14 @@ export const BudgetUpdateScreen = (props: BudgetUpdateScreenProps) => {
   return (
     <Layout title="Update Budget" showBackButton>
       <ScrollView>
-        <BudgetForm
-          variant={{ type: 'update', budgetId }}
-          onSuccess={onSuccess}
-        />
+        <Card maxWidth={500}>
+          <Card.Header>
+            <BudgetForm
+              variant={{ type: 'update', budgetId }}
+              onSuccess={onSuccess}
+            />
+          </Card.Header>
+        </Card>
       </ScrollView>
     </Layout>
   );

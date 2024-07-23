@@ -20,7 +20,7 @@ export const WalletCard = ({
     <ListItem
       title={name}
       subtitle={`Rp. ${balance.toLocaleString('id')}`}
-      thumbnailSrc="https://picsum.photos/200/300"
+      thumbnailSrc="https://placehold.jp/120x120.png"
       onPress={onPress}
       menus={menus}
       footerItems={[{ value: `${paymentCostPercentage}%`, icon: MinusSquare }]}

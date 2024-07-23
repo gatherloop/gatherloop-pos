@@ -1,4 +1,10 @@
-import { EmptyView, ErrorView, ListItem, LoadingView } from '../../../base';
+import {
+  EmptyView,
+  ErrorView,
+  ListItem,
+  ListItemMenu,
+  LoadingView,
+} from '../../../base';
 import { YStack } from 'tamagui';
 import { useMaterialListState } from './MaterialList.state';
 // eslint-disable-next-line @nx/enforce-module-boundaries
@@ -6,7 +12,10 @@ import { Material } from '../../../../../api-contract/src';
 import { Box } from '@tamagui/lucide-icons';
 
 export type MaterialListProps = {
-  itemMenus: { title: string; onPress: (material: Material) => void }[];
+  itemMenus: (Omit<ListItemMenu, 'onPress' | 'isShown'> & {
+    onPress: (material: Material) => void;
+    isShown?: (material: Material) => void;
+  })[];
   onItemPress: (material: Material) => void;
 };
 
@@ -23,11 +32,13 @@ export const MaterialList = ({ itemMenus, onItemPress }: MaterialListProps) => {
               key={material.id}
               title={material.name}
               subtitle={`Rp. ${material.price.toLocaleString('id')}`}
-              thumbnailSrc="https://picsum.photos/200/300"
+              thumbnailSrc="https://placehold.jp/120x120.png"
               onPress={() => onItemPress(material)}
               menus={itemMenus.map((itemMenu) => ({
                 ...itemMenu,
                 onPress: () => itemMenu.onPress(material),
+                isShown: () =>
+                  itemMenu.isShown ? itemMenu.isShown(material) : true,
               }))}
               footerItems={[{ value: material.unit, icon: Box }]}
             />

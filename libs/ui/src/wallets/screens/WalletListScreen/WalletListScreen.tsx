@@ -2,7 +2,7 @@ import { Button, ScrollView } from 'tamagui';
 import { Layout } from '../../../base';
 import { WalletList } from '../../components';
 import { Link } from 'solito/link';
-import { Plus } from '@tamagui/lucide-icons';
+import { CreditCard, Pencil, Plus, Trash } from '@tamagui/lucide-icons';
 import { WalletDeleteAlert } from '../../components/WalletDeleteAlert';
 import { useWalletListScreenState } from './WalletListScreen.state';
 
@@ -30,9 +30,13 @@ export const WalletListScreen = () => {
         <WalletList
           onItemPress={onItemPress}
           itemMenus={[
-            { title: 'Edit', onPress: onEditMenuPress },
-            { title: 'Transfer', onPress: onTransferMenuPress },
-            { title: 'Delete', onPress: onDeleteMenuPress },
+            {
+              title: 'Transfer',
+              icon: CreditCard,
+              onPress: onTransferMenuPress,
+            },
+            { title: 'Edit', icon: Pencil, onPress: onEditMenuPress },
+            { title: 'Delete', icon: Trash, onPress: onDeleteMenuPress },
           ]}
         />
       </ScrollView>

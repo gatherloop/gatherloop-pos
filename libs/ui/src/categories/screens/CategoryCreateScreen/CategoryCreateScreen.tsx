@@ -1,4 +1,4 @@
-import { ScrollView } from 'tamagui';
+import { Card, ScrollView } from 'tamagui';
 import { Layout } from '../../../base';
 import { CategoryForm } from '../../components';
 import { useCategoryCreateScreenState } from './CategoryCreateScreen.state';
@@ -8,7 +8,11 @@ export const CategoryCreateScreen = () => {
   return (
     <Layout title="Create Category" showBackButton>
       <ScrollView>
-        <CategoryForm variant={{ type: 'create' }} onSuccess={onSuccess} />
+        <Card maxWidth={500}>
+          <Card.Header>
+            <CategoryForm variant={{ type: 'create' }} onSuccess={onSuccess} />
+          </Card.Header>
+        </Card>
       </ScrollView>
     </Layout>
   );

@@ -35,7 +35,12 @@ export const useBudgetListScreenState = () => {
   };
 
   const onDeleteSuccess = () => {
-    router.replace('/budgets');
+    router.replace('/budgets', undefined, {
+      experimental: {
+        nativeBehavior: 'stack-replace',
+        isNestedNavigator: false,
+      },
+    });
   };
 
   const onDeleteCancel = () => {

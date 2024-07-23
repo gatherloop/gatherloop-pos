@@ -1,4 +1,4 @@
-import { EmptyView, ErrorView, LoadingView } from '../../../base';
+import { EmptyView, ErrorView, ListItemMenu, LoadingView } from '../../../base';
 import { YStack } from 'tamagui';
 import { useProductListState } from './ProductList.state';
 // eslint-disable-next-line @nx/enforce-module-boundaries
@@ -6,7 +6,10 @@ import { Product } from '../../../../../api-contract/src';
 import { ProductCard } from '../ProductCard';
 
 export type ProductListProps = {
-  itemMenus?: { title: string; onPress: (product: Product) => void }[];
+  itemMenus?: (Omit<ListItemMenu, 'onPress' | 'isShown'> & {
+    onPress: (product: Product) => void;
+    isShown?: (product: Product) => void;
+  })[];
   onItemPress: (product: Product) => void;
 };
 
@@ -30,6 +33,8 @@ export const ProductList = ({
               menus={itemMenus.map((itemMenu) => ({
                 ...itemMenu,
                 onPress: () => itemMenu.onPress(product),
+                isShown: () =>
+                  itemMenu.isShown ? itemMenu.isShown(product) : true,
               }))}
               onPress={() => onItemPress(product)}
             />

@@ -1,4 +1,4 @@
-import { ScrollView } from 'tamagui';
+import { Card, ScrollView } from 'tamagui';
 import { Layout } from '../../../base';
 import { MaterialForm } from '../../components';
 import { useMaterialUpdateScreenState } from './MaterialUpdateScreen.state';
@@ -14,10 +14,14 @@ export const MaterialUpdateScreen = (props: MaterialUpdateScreenProps) => {
   return (
     <Layout title="Update Material" showBackButton>
       <ScrollView>
-        <MaterialForm
-          variant={{ type: 'update', materialId }}
-          onSuccess={onSuccess}
-        />
+        <Card maxWidth={500}>
+          <Card.Header>
+            <MaterialForm
+              variant={{ type: 'update', materialId }}
+              onSuccess={onSuccess}
+            />
+          </Card.Header>
+        </Card>
       </ScrollView>
     </Layout>
   );

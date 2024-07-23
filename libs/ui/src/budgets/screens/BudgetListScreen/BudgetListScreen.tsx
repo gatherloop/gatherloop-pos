@@ -2,7 +2,7 @@ import { Button, ScrollView } from 'tamagui';
 import { Layout } from '../../../base';
 import { BudgetList } from '../../components';
 import { Link } from 'solito/link';
-import { Plus } from '@tamagui/lucide-icons';
+import { Pencil, Plus, Trash } from '@tamagui/lucide-icons';
 import { BudgetDeleteAlert } from '../../components/BudgetDeleteAlert';
 import { useBudgetListScreenState } from './BudgetListScreen.state';
 
@@ -29,8 +29,8 @@ export const BudgetListScreen = () => {
         <BudgetList
           onItemPress={onItemPress}
           itemMenus={[
-            { title: 'Edit', onPress: onEditMenuPress },
-            { title: 'Delete', onPress: onDeleteMenuPress },
+            { title: 'Edit', icon: Pencil, onPress: onEditMenuPress },
+            { title: 'Delete', icon: Trash, onPress: onDeleteMenuPress },
           ]}
         />
       </ScrollView>

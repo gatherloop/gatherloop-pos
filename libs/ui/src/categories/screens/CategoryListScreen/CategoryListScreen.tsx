@@ -2,7 +2,7 @@ import { Button, ScrollView } from 'tamagui';
 import { Layout } from '../../../base';
 import { CategoryList, CategoryDeleteAlert } from '../../components';
 import { Link } from 'solito/link';
-import { Plus } from '@tamagui/lucide-icons';
+import { Pencil, Plus, Trash } from '@tamagui/lucide-icons';
 import { useCategoryListScreenState } from './CategoryListScreen.state';
 
 export const CategoryListScreen = () => {
@@ -28,8 +28,8 @@ export const CategoryListScreen = () => {
         <CategoryList
           onItemPress={onItemPress}
           itemMenus={[
-            { title: 'Edit', onPress: onEditMenuPress },
-            { title: 'Delete', onPress: onDeleteMenuPress },
+            { title: 'Edit', icon: Pencil, onPress: onEditMenuPress },
+            { title: 'Delete', icon: Trash, onPress: onDeleteMenuPress },
           ]}
         />
       </ScrollView>
@@ -38,6 +38,7 @@ export const CategoryListScreen = () => {
           categoryId={categoryDeleteId}
           onSuccess={onDeleteSuccess}
           onCancel={onDeleteCancel}
+          key={categoryDeleteId}
         />
       )}
     </Layout>

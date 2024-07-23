@@ -11,6 +11,7 @@ import {
   UseProductFormStateProps,
   useProductFormState,
 } from './ProductForm.state';
+import { Card } from 'tamagui';
 
 export type ProductFormProps = {
   variant: UseProductFormStateProps['variant'];

@@ -35,6 +35,7 @@ export const InputNumber = ({
     if (typeof min === 'undefined' || field.value > min) {
       const newValue = field.value - 1;
       helpers.setValue(newValue);
+      helpers.setTouched(true);
     }
   };
 
@@ -42,6 +43,7 @@ export const InputNumber = ({
     if (typeof max === 'undefined' || field.value < max) {
       const newValue = field.value + 1;
       helpers.setValue(newValue);
+      helpers.setTouched(true);
     }
   };
 
@@ -56,11 +58,11 @@ export const InputNumber = ({
         disabled={inputProps.disabled}
       />
       <Input
-        value={field.value}
-        onBlur={field.onBlur}
+        {...inputProps}
         id={fieldName}
         onChangeText={onChangeText}
-        {...inputProps}
+        value={JSON.stringify(field.value)}
+        flex={1}
       />
       <Button
         icon={Plus}

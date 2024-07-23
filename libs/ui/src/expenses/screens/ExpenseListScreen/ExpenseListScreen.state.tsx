@@ -34,7 +34,12 @@ export const useExpenseListScreenState = () => {
   };
 
   const onDeleteSuccess = () => {
-    router.replace('/expenses');
+    router.replace('/expenses', undefined, {
+      experimental: {
+        nativeBehavior: 'stack-replace',
+        isNestedNavigator: false,
+      },
+    });
   };
 
   const onDeleteCancel = () => {

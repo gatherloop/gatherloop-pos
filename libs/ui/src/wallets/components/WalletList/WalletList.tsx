@@ -1,13 +1,15 @@
-import { EmptyView, ErrorView, ListItem, LoadingView } from '../../../base';
+import { EmptyView, ErrorView, ListItemMenu, LoadingView } from '../../../base';
 import { YStack } from 'tamagui';
 import { useWalletListState } from './WalletList.state';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { Wallet } from '../../../../../api-contract/src';
-import { MinusSquare } from '@tamagui/lucide-icons';
 import { WalletCard } from '../WalletCard';
 
 export type WalletListProps = {
-  itemMenus: { title: string; onPress: (wallet: Wallet) => void }[];
+  itemMenus: (Omit<ListItemMenu, 'onPress' | 'isShown'> & {
+    onPress: (wallet: Wallet) => void;
+    isShown?: (wallet: Wallet) => void;
+  })[];
   onItemPress: (wallet: Wallet) => void;
 };
 
@@ -28,6 +30,8 @@ export const WalletList = ({ itemMenus, onItemPress }: WalletListProps) => {
               menus={itemMenus.map((itemMenu) => ({
                 ...itemMenu,
                 onPress: () => itemMenu.onPress(wallet),
+                isShown: () =>
+                  itemMenu.isShown ? itemMenu.isShown(wallet) : true,
               }))}
               onPress={() => onItemPress(wallet)}
             />

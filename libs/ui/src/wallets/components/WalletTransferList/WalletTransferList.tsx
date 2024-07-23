@@ -13,7 +13,7 @@ export const WalletTransferList = ({ walletId }: WalletTransferListProps) => {
     walletId,
   });
   return (
-    <YStack gap="$3" flexWrap="wrap">
+    <YStack gap="$3">
       {status === 'pending' ? (
         <LoadingView title="Fetching Transfer Histories..." />
       ) : status === 'success' ? (

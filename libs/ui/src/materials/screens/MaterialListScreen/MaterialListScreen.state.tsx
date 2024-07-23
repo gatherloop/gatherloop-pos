@@ -34,7 +34,12 @@ export const useMaterialListScreenState = () => {
   };
 
   const onDeleteSuccess = () => {
-    router.replace('/materials');
+    router.replace('/materials', undefined, {
+      experimental: {
+        nativeBehavior: 'stack-replace',
+        isNestedNavigator: false,
+      },
+    });
   };
 
   const onDeleteCancel = () => {

@@ -1,4 +1,4 @@
-import { ScrollView } from 'tamagui';
+import { Card, ScrollView } from 'tamagui';
 import { Layout } from '../../../base';
 import { WalletForm } from '../../components';
 import { useWalletCreateScreenState } from './WalletCreateScreen.state';
@@ -8,7 +8,11 @@ export const WalletCreateScreen = () => {
   return (
     <Layout title="Create Wallet" showBackButton>
       <ScrollView>
-        <WalletForm variant={{ type: 'create' }} onSuccess={onSuccess} />
+        <Card maxWidth={500}>
+          <Card.Header>
+            <WalletForm variant={{ type: 'create' }} onSuccess={onSuccess} />
+          </Card.Header>
+        </Card>
       </ScrollView>
     </Layout>
   );

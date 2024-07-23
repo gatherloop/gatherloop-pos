@@ -1,4 +1,4 @@
-import { ScrollView } from 'tamagui';
+import { Card, ScrollView } from 'tamagui';
 import { Layout } from '../../../base';
 import { CategoryForm } from '../../components';
 import { useCategoryUpdateScreenState } from './CategoryUpdateScreen.state';
@@ -14,10 +14,14 @@ export const CategoryUpdateScreen = (props: CategoryUpdateScreenProps) => {
   return (
     <Layout title="Update Category" showBackButton>
       <ScrollView>
-        <CategoryForm
-          variant={{ type: 'update', categoryId }}
-          onSuccess={onSuccess}
-        />
+        <Card maxWidth={500}>
+          <Card.Header>
+            <CategoryForm
+              variant={{ type: 'update', categoryId }}
+              onSuccess={onSuccess}
+            />
+          </Card.Header>
+        </Card>
       </ScrollView>
     </Layout>
   );
