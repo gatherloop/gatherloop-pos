@@ -30,10 +30,6 @@ export const useProductListScreenState = () => {
     router.push(`/products/${product.id}`);
   };
 
-  const onMaterialMenuPress = (product: Product) => {
-    router.push(`/products/${product.id}/materials`);
-  };
-
   const onDeleteMenuPress = (product: Product) => {
     setProductDeleteId(product.id);
   };
@@ -58,6 +54,5 @@ export const useProductListScreenState = () => {
     onDeleteMenuPress,
     onDeleteSuccess,
     onDeleteCancel,
-    onMaterialMenuPress,
   };
 };

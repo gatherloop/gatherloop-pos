@@ -13,7 +13,6 @@ export const ProductListScreen = () => {
     onDeleteMenuPress,
     onDeleteSuccess,
     onDeleteCancel,
-    onMaterialMenuPress,
     productDeleteId,
   } = useProductListScreenState();
 
@@ -30,7 +29,6 @@ export const ProductListScreen = () => {
         <ProductList
           onItemPress={onItemPress}
           itemMenus={[
-            { title: 'Materials', icon: Box, onPress: onMaterialMenuPress },
             { title: 'Edit', icon: Pencil, onPress: onEditMenuPress },
             { title: 'Delete', icon: Trash, onPress: onDeleteMenuPress },
           ]}

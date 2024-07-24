@@ -124,7 +124,10 @@ export const ListItem = ({
 
         {shownMenus.length > 0 && (
           <Popover keepChildrenMounted placement="left-start">
-            <Popover.Trigger asChild>
+            <Popover.Trigger
+              asChild
+              onPress={(event) => event.stopPropagation()}
+            >
               <Button
                 icon={MoreVertical}
                 size="$2"

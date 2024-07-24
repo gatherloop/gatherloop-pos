@@ -14,14 +14,10 @@ export const ProductUpdateScreen = (props: ProductUpdateScreenProps) => {
   return (
     <Layout title="Update Product" showBackButton>
       <ScrollView>
-        <Card maxWidth={500}>
-          <Card.Header>
-            <ProductForm
-              variant={{ type: 'update', productId }}
-              onSuccess={onSuccess}
-            />
-          </Card.Header>
-        </Card>
+        <ProductForm
+          variant={{ type: 'update', productId }}
+          onSuccess={onSuccess}
+        />
       </ScrollView>
     </Layout>
   );
