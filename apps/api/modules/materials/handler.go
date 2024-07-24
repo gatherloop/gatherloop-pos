@@ -1,12 +1,10 @@
 package materials
 
 import (
+	"apps/api/modules/base"
 	"encoding/json"
 	apiContract "libs/api-contract"
 	"net/http"
-	"strconv"
-
-	"github.com/gorilla/mux"
 )
 
 type Handler struct {
@@ -20,128 +18,76 @@ func NewHandler(usecase Usecase) Handler {
 func (handler Handler) GetMaterialList(w http.ResponseWriter, r *http.Request) {
 	materials, err := handler.usecase.GetMaterialList()
 	if err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
-		w.WriteHeader(500)
-		w.Write(response)
+		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
 
-	response, _ := json.Marshal(apiContract.MaterialList200Response{Data: materials})
-	w.Write(response)
+	json.NewEncoder(w).Encode(apiContract.MaterialList200Response{Data: materials})
 }
 
 func (handler Handler) GetMaterialById(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	idParam := vars["materialId"]
-	id, err := strconv.ParseInt(idParam, 10, 32)
+	id, err := GetMaterialId(r)
 	if err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
-		w.WriteHeader(500)
-		w.Write(response)
+		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
 
 	Material, err := handler.usecase.GetMaterialById(id)
 	if err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
-		w.WriteHeader(404)
-		w.Write(response)
+		base.WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		return
 	}
 
-	response, err := json.Marshal(apiContract.MaterialFindById200Response{Data: Material})
-	if err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
-		w.WriteHeader(500)
-		w.Write(response)
-		return
-	}
-
-	w.Write(response)
+	json.NewEncoder(w).Encode(apiContract.MaterialFindById200Response{Data: Material})
 }
 
 func (handler Handler) CreateMaterial(w http.ResponseWriter, r *http.Request) {
-	var materialRequest apiContract.MaterialRequest
-	if err := json.NewDecoder(r.Body).Decode(&materialRequest); err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
-		w.WriteHeader(403)
-		w.Write(response)
+	materialRequest, err := GetMaterialRequest(r)
+	if err != nil {
+		base.WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
 		return
 	}
 
 	if err := handler.usecase.CreateMaterial(materialRequest); err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
-		w.WriteHeader(500)
-		w.Write(response)
+		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
 
-	response, _ := json.Marshal(apiContract.SuccessResponse{Success: true})
-	w.Write(response)
+	json.NewEncoder(w).Encode(apiContract.SuccessResponse{Success: true})
 }
 
 func (handler Handler) UpdateMaterialById(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	idParam := vars["materialId"]
-	id, err := strconv.ParseInt(idParam, 10, 32)
+	id, err := GetMaterialId(r)
 	if err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
-		w.WriteHeader(500)
-		w.Write(response)
+		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
 
-	var materialRequest apiContract.MaterialRequest
-	if err := json.NewDecoder(r.Body).Decode(&materialRequest); err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
-		w.WriteHeader(403)
-		w.Write(response)
+	materialRequest, err := GetMaterialRequest(r)
+	if err != nil {
+		base.WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
 		return
 	}
 
 	if err := handler.usecase.UpdateMaterialById(materialRequest, id); err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
-		w.WriteHeader(404)
-		w.Write(response)
+		base.WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		return
 	}
 
-	response, err := json.Marshal(apiContract.SuccessResponse{Success: true})
-	if err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
-		w.WriteHeader(500)
-		w.Write(response)
-		return
-	}
-
-	w.Write(response)
+	json.NewEncoder(w).Encode(apiContract.SuccessResponse{Success: true})
 }
 
 func (handler Handler) DeleteMaterialById(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	idParam := vars["materialId"]
-	id, err := strconv.ParseInt(idParam, 10, 32)
+	id, err := GetMaterialId(r)
 	if err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
-		w.WriteHeader(500)
-		w.Write(response)
+		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
 
 	if err := handler.usecase.DeleteMaterialById(id); err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
-		w.WriteHeader(404)
-		w.Write(response)
+		base.WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		return
 	}
 
-	response, err := json.Marshal(apiContract.SuccessResponse{Success: true})
-	if err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
-		w.WriteHeader(500)
-		w.Write(response)
-		return
-	}
-
-	w.Write(response)
+	json.NewEncoder(w).Encode(apiContract.SuccessResponse{Success: true})
 }

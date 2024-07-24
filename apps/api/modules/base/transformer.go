@@ -7,7 +7,7 @@ import (
 )
 
 func WriteError(w http.ResponseWriter, err apiContract.Error) {
-	response, _ := json.Marshal(err)
-	w.WriteHeader(500)
-	w.Write(response)
+	// TODO: need to map http status code based on error type
+	w.WriteHeader(http.StatusInternalServerError)
+	json.NewEncoder(w).Encode(err)
 }

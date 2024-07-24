@@ -22,12 +22,11 @@ func (handler Handler) GetBudgetList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, _ := json.Marshal(apiContract.BudgetList200Response{Data: budgets})
-	w.Write(response)
+	json.NewEncoder(w).Encode(apiContract.BudgetList200Response{Data: budgets})
 }
 
 func (handler Handler) GetBudgetById(w http.ResponseWriter, r *http.Request) {
-	id, err := GetBudgetId(w, r)
+	id, err := GetBudgetId(r)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
 		return
@@ -39,17 +38,11 @@ func (handler Handler) GetBudgetById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, err := json.Marshal(apiContract.BudgetFindById200Response{Data: Budget})
-	if err != nil {
-		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
-		return
-	}
-
-	w.Write(response)
+	json.NewEncoder(w).Encode(apiContract.BudgetFindById200Response{Data: Budget})
 }
 
 func (handler Handler) CreateBudget(w http.ResponseWriter, r *http.Request) {
-	budgetRequest, err := GetBudgetRequest(w, r)
+	budgetRequest, err := GetBudgetRequest(r)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
 		return
@@ -60,18 +53,17 @@ func (handler Handler) CreateBudget(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, _ := json.Marshal(apiContract.SuccessResponse{Success: true})
-	w.Write(response)
+	json.NewEncoder(w).Encode(apiContract.SuccessResponse{Success: true})
 }
 
 func (handler Handler) UpdateBudgetById(w http.ResponseWriter, r *http.Request) {
-	id, err := GetBudgetId(w, r)
+	id, err := GetBudgetId(r)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
 		return
 	}
 
-	budgetRequest, err := GetBudgetRequest(w, r)
+	budgetRequest, err := GetBudgetRequest(r)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
 		return
@@ -82,17 +74,11 @@ func (handler Handler) UpdateBudgetById(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	response, err := json.Marshal(apiContract.SuccessResponse{Success: true})
-	if err != nil {
-		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
-		return
-	}
-
-	w.Write(response)
+	json.NewEncoder(w).Encode(apiContract.SuccessResponse{Success: true})
 }
 
 func (handler Handler) DeleteBudgetById(w http.ResponseWriter, r *http.Request) {
-	id, err := GetBudgetId(w, r)
+	id, err := GetBudgetId(r)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
 		return
@@ -103,11 +89,5 @@ func (handler Handler) DeleteBudgetById(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	response, err := json.Marshal(apiContract.SuccessResponse{Success: true})
-	if err != nil {
-		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
-		return
-	}
-
-	w.Write(response)
+	json.NewEncoder(w).Encode(apiContract.SuccessResponse{Success: true})
 }

@@ -1,12 +1,10 @@
 package products
 
 import (
+	"apps/api/modules/base"
 	"encoding/json"
 	apiContract "libs/api-contract"
 	"net/http"
-	"strconv"
-
-	"github.com/gorilla/mux"
 )
 
 type Handler struct {
@@ -20,277 +18,165 @@ func NewHandler(usecase Usecase) Handler {
 func (handler Handler) GetProductList(w http.ResponseWriter, r *http.Request) {
 	products, err := handler.usecase.GetProductList()
 	if err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
-		w.WriteHeader(500)
-		w.Write(response)
+		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
 
-	response, _ := json.Marshal(apiContract.ProductList200Response{Data: products})
-	w.Write(response)
+	json.NewEncoder(w).Encode(apiContract.ProductList200Response{Data: products})
 }
 
 func (handler Handler) GetProductById(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	idParam := vars["productId"]
-	id, err := strconv.ParseInt(idParam, 10, 32)
+	id, err := GetProductId(r)
 	if err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
-		w.WriteHeader(500)
-		w.Write(response)
+		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
 
 	product, err := handler.usecase.GetProductById(id)
 	if err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
-		w.WriteHeader(404)
-		w.Write(response)
+		base.WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		return
 	}
 
-	response, err := json.Marshal(apiContract.ProductFindById200Response{Data: product})
-	if err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
-		w.WriteHeader(500)
-		w.Write(response)
-		return
-	}
-
-	w.Write(response)
+	json.NewEncoder(w).Encode(apiContract.ProductFindById200Response{Data: product})
 }
 
 func (handler Handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
-	var productRequest apiContract.ProductRequest
-	if err := json.NewDecoder(r.Body).Decode(&productRequest); err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
-		w.WriteHeader(403)
-		w.Write(response)
+	productRequest, err := GetProductRequest(r)
+	if err != nil {
+		base.WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
 		return
 	}
 
 	if err := handler.usecase.CreateProduct(productRequest); err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
-		w.WriteHeader(500)
-		w.Write(response)
+		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
 
-	response, _ := json.Marshal(apiContract.SuccessResponse{Success: true})
-	w.Write(response)
+	json.NewEncoder(w).Encode(apiContract.SuccessResponse{Success: true})
 }
 
 func (handler Handler) UpdateProductById(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	idParam := vars["productId"]
-	id, err := strconv.ParseInt(idParam, 10, 32)
+	id, err := GetProductId(r)
 	if err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
-		w.WriteHeader(500)
-		w.Write(response)
+		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
 
-	var productRequest apiContract.ProductRequest
-	if err := json.NewDecoder(r.Body).Decode(&productRequest); err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
-		w.WriteHeader(403)
-		w.Write(response)
+	productRequest, err := GetProductRequest(r)
+	if err != nil {
+		base.WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
 		return
 	}
 
 	if err := handler.usecase.UpdateProductById(productRequest, id); err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
-		w.WriteHeader(404)
-		w.Write(response)
+		base.WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		return
 	}
 
-	response, err := json.Marshal(apiContract.SuccessResponse{Success: true})
-	if err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
-		w.WriteHeader(500)
-		w.Write(response)
-		return
-	}
-
-	w.Write(response)
+	json.NewEncoder(w).Encode(apiContract.SuccessResponse{Success: true})
 }
 
 func (handler Handler) DeleteProductById(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	idParam := vars["productId"]
-	id, err := strconv.ParseInt(idParam, 10, 32)
+	id, err := GetProductId(r)
 	if err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
-		w.WriteHeader(500)
-		w.Write(response)
+		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
 
 	if err := handler.usecase.DeleteProductById(id); err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
-		w.WriteHeader(404)
-		w.Write(response)
+		base.WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		return
 	}
 
-	response, err := json.Marshal(apiContract.SuccessResponse{Success: true})
-	if err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
-		w.WriteHeader(500)
-		w.Write(response)
-		return
-	}
-
-	w.Write(response)
+	json.NewEncoder(w).Encode(apiContract.SuccessResponse{Success: true})
 }
 
 func (handler Handler) GetProductMaterialList(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	idParam := vars["productId"]
-	productId, err := strconv.ParseInt(idParam, 10, 32)
+	productId, err := GetProductId(r)
 	if err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
-		w.WriteHeader(500)
-		w.Write(response)
+		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
 
 	productMaterials, err := handler.usecase.GetProductMaterialList(productId)
 	if err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
-		w.WriteHeader(500)
-		w.Write(response)
+		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
 
-	response, _ := json.Marshal(apiContract.ProductMaterialList200Response{Data: productMaterials})
-	w.Write(response)
+	json.NewEncoder(w).Encode(apiContract.ProductMaterialList200Response{Data: productMaterials})
 }
 
 func (handler Handler) GetProductMaterialById(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	idParam := vars["productMaterialId"]
-	productMaterialId, err := strconv.ParseInt(idParam, 10, 32)
+	productMaterialId, err := GetProductMaterialId(r)
 	if err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
-		w.WriteHeader(500)
-		w.Write(response)
+		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
 
 	productMaterial, err := handler.usecase.GetProductMaterialById(productMaterialId)
 	if err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
-		w.WriteHeader(404)
-		w.Write(response)
+		base.WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		return
 	}
 
-	response, err := json.Marshal(apiContract.ProductMaterialFindById200Response{Data: productMaterial})
-	if err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
-		w.WriteHeader(500)
-		w.Write(response)
-		return
-	}
-
-	w.Write(response)
+	json.NewEncoder(w).Encode(apiContract.ProductMaterialFindById200Response{Data: productMaterial})
 }
 
 func (handler Handler) CreateProductMaterial(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	idParam := vars["productId"]
-	productId, err := strconv.ParseInt(idParam, 10, 32)
+	productId, err := GetProductId(r)
 	if err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
-		w.WriteHeader(500)
-		w.Write(response)
+		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
 
-	var productMaterialRequest apiContract.ProductMaterialRequest
-	if err := json.NewDecoder(r.Body).Decode(&productMaterialRequest); err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
-		w.WriteHeader(403)
-		w.Write(response)
+	productMaterialRequest, err := GetProductMaterialRequest(r)
+	if err != nil {
+		base.WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
 		return
 	}
 
 	if err := handler.usecase.CreateProductMaterial(productMaterialRequest, productId); err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
-		w.WriteHeader(500)
-		w.Write(response)
+		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
 
-	response, _ := json.Marshal(apiContract.SuccessResponse{Success: true})
-	w.Write(response)
+	json.NewEncoder(w).Encode(apiContract.SuccessResponse{Success: true})
 }
 
 func (handler Handler) UpdateProductMaterialById(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	idParam := vars["productMaterialId"]
-	productMaterialId, err := strconv.ParseInt(idParam, 10, 32)
+	productMaterialId, err := GetProductMaterialId(r)
 	if err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
-		w.WriteHeader(500)
-		w.Write(response)
+		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
 
-	var productMaterialRequest apiContract.ProductMaterialRequest
-	if err := json.NewDecoder(r.Body).Decode(&productMaterialRequest); err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
-		w.WriteHeader(403)
-		w.Write(response)
+	productMaterialRequest, err := GetProductMaterialRequest(r)
+	if err != nil {
+		base.WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
 		return
 	}
 
 	if err := handler.usecase.UpdateProductMaterialById(productMaterialRequest, productMaterialId); err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
-		w.WriteHeader(404)
-		w.Write(response)
+		base.WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		return
 	}
 
-	response, err := json.Marshal(apiContract.SuccessResponse{Success: true})
-	if err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
-		w.WriteHeader(500)
-		w.Write(response)
-		return
-	}
-
-	w.Write(response)
+	json.NewEncoder(w).Encode(apiContract.SuccessResponse{Success: true})
 }
 
 func (handler Handler) DeleteProductMaterialById(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	idParam := vars["productMaterialId"]
-	productMaterialId, err := strconv.ParseInt(idParam, 10, 32)
+	productMaterialId, err := GetProductMaterialId(r)
 	if err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
-		w.WriteHeader(500)
-		w.Write(response)
+		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
 
 	if err := handler.usecase.DeleteProductMaterialById(productMaterialId); err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
-		w.WriteHeader(404)
-		w.Write(response)
+		base.WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		return
 	}
 
-	response, err := json.Marshal(apiContract.SuccessResponse{Success: true})
-	if err != nil {
-		response, _ := json.Marshal(apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
-		w.WriteHeader(500)
-		w.Write(response)
-		return
-	}
-
-	w.Write(response)
+	json.NewEncoder(w).Encode(apiContract.SuccessResponse{Success: true})
 }
