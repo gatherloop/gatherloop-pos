@@ -139,7 +139,10 @@ func (usecase Usecase) PayTransaction(transactionPayRequest apiContract.Transact
 		return err
 	}
 
-	if err := usecase.walletRepository.UpdateWalletById(apiContract.WalletRequest{Balance: wallet.Balance + transaction.Total}, transactionPayRequest.WalletId); err != nil {
+	paymentCost := transaction.Total * int64(wallet.PaymentCostPercentage) / 100
+	newBalance := wallet.Balance + transaction.Total - paymentCost
+
+	if err := usecase.walletRepository.UpdateWalletById(apiContract.WalletRequest{Balance: newBalance}, transactionPayRequest.WalletId); err != nil {
 		return err
 	}
 
