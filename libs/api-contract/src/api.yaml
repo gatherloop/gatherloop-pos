@@ -599,147 +599,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  /products/{productId}/materials:
-    get:
-      summary: List all product materials
-      operationId: productMaterialList
-      tags:
-        - product
-      parameters:
-        - $ref: '#/components/parameters/ProductId'
-      responses:
-        '200':
-          description: success response
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - data
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/ProductMaterial'
-        '500':
-          description: server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-    post:
-      summary: Create product material
-      operationId: productMaterialCreate
-      tags:
-        - product
-      parameters:
-        - $ref: '#/components/parameters/ProductId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ProductMaterialRequest'
-      responses:
-        '200':
-          description: success response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SuccessResponse'
-        '403':
-          description: validation error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-  /products/{productId}/materials/{productMaterialId}:
-    get:
-      summary: Get product material by id
-      operationId: productMaterialFindById
-      tags:
-        - product
-      parameters:
-        - $ref: '#/components/parameters/ProductId'
-        - $ref: '#/components/parameters/ProductMaterialId'
-      responses:
-        '200':
-          description: success response
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - data
-                properties:
-                  data:
-                    $ref: '#/components/schemas/ProductMaterial'
-        '404':
-          description: not found error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-    put:
-      summary: Update product material by id
-      operationId: productMaterialUpdateById
-      tags:
-        - product
-      parameters:
-        - $ref: '#/components/parameters/ProductId'
-        - $ref: '#/components/parameters/ProductMaterialId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ProductMaterialRequest'
-      responses:
-        '200':
-          description: success response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SuccessResponse'
-        '404':
-          description: not found error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: validation error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-    delete:
-      summary: Delete product material by id
-      operationId: productMaterialDeleteById
-      tags:
-        - product
-      parameters:
-        - $ref: '#/components/parameters/ProductId'
-        - $ref: '#/components/parameters/ProductMaterialId'
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
-      responses:
-        '200':
-          description: success response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SuccessResponse'
-        '404':
-          description: not found error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
   /budgets:
     get:
       summary: List all budgets
@@ -1322,6 +1181,7 @@ components:
         - category
         - name
         - price
+        - materials
       properties:
         id:
           type: integer
@@ -1336,6 +1196,10 @@ components:
           format: int64
         category:
           $ref: '#/components/schemas/Category'
+        materials:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductMaterial'
         deletedAt:
           type: string
           format: date-time
@@ -1345,6 +1209,7 @@ components:
         - categoryId
         - name
         - price
+        - materials
       properties:
         categoryId:
           type: integer
@@ -1354,12 +1219,17 @@ components:
         price:
           type: integer
           format: int64
+        materials:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductMaterialRequest'
     ProductMaterial:
       type: object
       required:
         - id
         - productId
         - materialId
+        - material
         - amount
       properties:
         id:
@@ -1673,12 +1543,6 @@ components:
       required: true
     ProductId:
       name: productId
-      in: path
-      schema:
-        type: integer
-      required: true
-    ProductMaterialId:
-      name: productMaterialId
       in: path
       schema:
         type: integer

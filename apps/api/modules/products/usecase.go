@@ -21,33 +21,49 @@ func (usecase Usecase) GetProductById(id int64) (apiContract.Product, error) {
 }
 
 func (usecase Usecase) CreateProduct(productRequest apiContract.ProductRequest) error {
-	return usecase.repository.CreateProduct(productRequest)
+	product := apiContract.Product{
+		Name:       productRequest.Name,
+		CategoryId: productRequest.CategoryId,
+		Price:      productRequest.Price,
+	}
+
+	if err := usecase.repository.CreateProduct(&product); err != nil {
+		return err
+	}
+
+	for _, productMaterialRequest := range productRequest.Materials {
+		if err := usecase.repository.CreateProductMaterial(productMaterialRequest, product.Id); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (usecase Usecase) UpdateProductById(productRequest apiContract.ProductRequest, id int64) error {
-	return usecase.repository.UpdateProductById(productRequest, id)
+	product := apiContract.Product{
+		Name:       productRequest.Name,
+		CategoryId: productRequest.CategoryId,
+		Price:      productRequest.Price,
+	}
+
+	if err := usecase.repository.UpdateProductById(&product, id); err != nil {
+		return err
+	}
+
+	if err := usecase.repository.DeleteProductMaterials(id); err != nil {
+		return err
+	}
+
+	for _, productMaterialRequest := range productRequest.Materials {
+		if err := usecase.repository.CreateProductMaterial(productMaterialRequest, id); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (usecase Usecase) DeleteProductById(id int64) error {
 	return usecase.repository.DeleteProductById(id)
-}
-
-func (usecase Usecase) GetProductMaterialList(productId int64) ([]apiContract.ProductMaterial, error) {
-	return usecase.repository.GetProductMaterialList(productId)
-}
-
-func (usecase Usecase) GetProductMaterialById(productMaterialId int64) (apiContract.ProductMaterial, error) {
-	return usecase.repository.GetProductMaterialById(productMaterialId)
-}
-
-func (usecase Usecase) CreateProductMaterial(productMaterialRequest apiContract.ProductMaterialRequest, productId int64) error {
-	return usecase.repository.CreateProductMaterial(productMaterialRequest, productId)
-}
-
-func (usecase Usecase) UpdateProductMaterialById(productMaterialRequest apiContract.ProductMaterialRequest, id int64) error {
-	return usecase.repository.UpdateProductMaterialById(productMaterialRequest, id)
-}
-
-func (usecase Usecase) DeleteProductMaterialById(productMaterialId int64) error {
-	return usecase.repository.DeleteProductMaterialById(productMaterialId)
 }

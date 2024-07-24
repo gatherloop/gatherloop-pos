@@ -17,23 +17,23 @@ func NewRepository(db *gorm.DB) Repository {
 
 func (repo Repository) GetProductList() ([]apiContract.Product, error) {
 	var products []apiContract.Product
-	result := repo.db.Model(&apiContract.Product{}).Preload("Category").Where("deleted_at", nil).Find(&products)
+	result := repo.db.Model(&apiContract.Product{}).Preload("Category").Preload("Materials").Preload("Materials.Material").Where("deleted_at", nil).Find(&products)
 	return products, result.Error
 }
 
 func (repo Repository) GetProductById(id int64) (apiContract.Product, error) {
 	var product apiContract.Product
-	result := repo.db.Model(&apiContract.Product{}).Preload("Category").Where("id = ?", id).Find(&product)
+	result := repo.db.Model(&apiContract.Product{}).Preload("Category").Preload("Materials").Preload("Materials.Material").Where("id = ?", id).Find(&product)
 	return product, result.Error
 }
 
-func (repo Repository) CreateProduct(productRequest apiContract.ProductRequest) error {
-	result := repo.db.Table("products").Create(productRequest)
+func (repo Repository) CreateProduct(product *apiContract.Product) error {
+	result := repo.db.Table("products").Create(product)
 	return result.Error
 }
 
-func (repo Repository) UpdateProductById(productRequest apiContract.ProductRequest, id int64) error {
-	result := repo.db.Table("products").Where(apiContract.Product{Id: id}).Updates(productRequest)
+func (repo Repository) UpdateProductById(product *apiContract.Product, id int64) error {
+	result := repo.db.Table("products").Where(apiContract.Product{Id: id}).Updates(product)
 	return result.Error
 }
 
@@ -41,18 +41,6 @@ func (repo Repository) DeleteProductById(id int64) error {
 	currentTime := time.Now()
 	result := repo.db.Table("products").Where(apiContract.Product{Id: id}).Update("deleted_at", currentTime)
 	return result.Error
-}
-
-func (repo Repository) GetProductMaterialList(productId int64) ([]apiContract.ProductMaterial, error) {
-	var productMaterials []apiContract.ProductMaterial
-	result := repo.db.Model(&apiContract.ProductMaterial{}).Preload("Material").Where("product_id = ? AND deleted_at is NULL", productId).Find(&productMaterials)
-	return productMaterials, result.Error
-}
-
-func (repo Repository) GetProductMaterialById(id int64) (apiContract.ProductMaterial, error) {
-	var productMaterial apiContract.ProductMaterial
-	result := repo.db.Model(&apiContract.ProductMaterial{}).Preload("Material").Where("id = ?", id).Find(&productMaterial)
-	return productMaterial, result.Error
 }
 
 func (repo Repository) CreateProductMaterial(productMaterialRequest apiContract.ProductMaterialRequest, productId int64) error {
@@ -65,13 +53,7 @@ func (repo Repository) CreateProductMaterial(productMaterialRequest apiContract.
 	return result.Error
 }
 
-func (repo Repository) UpdateProductMaterialById(productMaterialRequest apiContract.ProductMaterialRequest, productMaterialId int64) error {
-	result := repo.db.Table("product_materials").Where(apiContract.Product{Id: productMaterialId}).Updates(productMaterialRequest)
-	return result.Error
-}
-
-func (repo Repository) DeleteProductMaterialById(productMaterialId int64) error {
-	currentTime := time.Now()
-	result := repo.db.Table("product_materials").Where(apiContract.Product{Id: productMaterialId}).Update("deleted_at", currentTime)
+func (repo Repository) DeleteProductMaterials(productId int64) error {
+	result := repo.db.Table("product_materials").Where("product_id = ?", productId).Delete(apiContract.ProductMaterial{})
 	return result.Error
 }
