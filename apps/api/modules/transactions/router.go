@@ -1,6 +1,7 @@
 package transactions
 
 import (
+	"apps/api/modules/budgets"
 	"apps/api/modules/products"
 	"apps/api/modules/wallets"
 	"net/http"
@@ -13,8 +14,9 @@ func AddRouters(router *mux.Router, db *gorm.DB) {
 	repository := NewRepository(db)
 	productRepository := products.NewRepository(db)
 	walletRepository := wallets.NewRepository(db)
+	budgetRepository := budgets.NewRepository(db)
 
-	usecase := NewUsecase(repository, productRepository, walletRepository)
+	usecase := NewUsecase(repository, productRepository, walletRepository, budgetRepository)
 	handler := NewHandler(usecase)
 
 	router.HandleFunc("/transactions", handler.GetTransactionList).Methods(http.MethodGet)

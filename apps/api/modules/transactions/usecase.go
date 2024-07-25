@@ -1,6 +1,7 @@
 package transactions
 
 import (
+	"apps/api/modules/budgets"
 	"apps/api/modules/products"
 	"apps/api/modules/wallets"
 	"errors"
@@ -12,13 +13,15 @@ type Usecase struct {
 	repository        Repository
 	productRepository products.Repository
 	walletRepository  wallets.Repository
+	budgetRepository  budgets.Repository
 }
 
-func NewUsecase(repository Repository, productRepository products.Repository, walletRepository wallets.Repository) Usecase {
+func NewUsecase(repository Repository, productRepository products.Repository, walletRepository wallets.Repository, budgetRepository budgets.Repository) Usecase {
 	return Usecase{
 		repository:        repository,
 		productRepository: productRepository,
 		walletRepository:  walletRepository,
+		budgetRepository:  budgetRepository,
 	}
 }
 
@@ -144,6 +147,33 @@ func (usecase Usecase) PayTransaction(transactionPayRequest apiContract.Transact
 
 	if err := usecase.walletRepository.UpdateWalletById(apiContract.WalletRequest{Balance: newBalance}, transactionPayRequest.WalletId); err != nil {
 		return err
+	}
+
+	productMaterials := []apiContract.ProductMaterial{}
+
+	for _, item := range transaction.TransactionItems {
+		productMaterials = append(productMaterials, item.Product.Materials...)
+	}
+
+	var foodCost int64
+	for _, productMaterial := range productMaterials {
+		foodCost += productMaterial.Amount * productMaterial.Material.Price
+	}
+
+	totalIncome := transaction.Total - paymentCost - foodCost
+
+	budgets, err := usecase.budgetRepository.GetBudgetList()
+	if err != nil {
+		return err
+	}
+
+	for _, budget := range budgets {
+		addition := totalIncome * budget.Percentage / 100
+		newBalance := budget.Balance + addition
+
+		if err := usecase.budgetRepository.UpdateBudgetById(apiContract.BudgetRequest{Balance: newBalance}, budget.Id); err != nil {
+			return err
+		}
 	}
 
 	return usecase.repository.PayTransaction(transactionPayRequest.WalletId, time.Now(), id)
