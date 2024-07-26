@@ -1047,12 +1047,16 @@ components:
       required:
         - id
         - name
+        - createdAt
       properties:
         id:
           type: integer
           format: int64
         name:
           type: string
+        createdAt:
+          type: string
+          format: date-time
         deletedAt:
           type: string
           format: date-time
@@ -1069,6 +1073,7 @@ components:
         - name
         - price
         - unit
+        - createdAt
       properties:
         id:
           type: integer
@@ -1081,6 +1086,9 @@ components:
         unit:
           type: string
         deletedAt:
+          type: string
+          format: date-time
+        createdAt:
           type: string
           format: date-time
     MaterialRequest:
@@ -1104,6 +1112,7 @@ components:
         - name
         - balance
         - paymentCostPercentage
+        - createdAt
       properties:
         id:
           type: integer
@@ -1117,6 +1126,9 @@ components:
           type: number
           format: float
         deletedAt:
+          type: string
+          format: date-time
+        createdAt:
           type: string
           format: date-time
     WalletRequest:
@@ -1188,6 +1200,7 @@ components:
         - name
         - price
         - materials
+        - createdAt
       properties:
         id:
           type: integer
@@ -1207,6 +1220,9 @@ components:
           items:
             $ref: '#/components/schemas/ProductMaterial'
         deletedAt:
+          type: string
+          format: date-time
+        createdAt:
           type: string
           format: date-time
     ProductRequest:
@@ -1237,6 +1253,7 @@ components:
         - materialId
         - material
         - amount
+        - createdAt
       properties:
         id:
           type: integer
@@ -1253,6 +1270,9 @@ components:
           type: integer
           format: int64
         deletedAt:
+          type: string
+          format: date-time
+        createdAt:
           type: string
           format: date-time
     ProductMaterialRequest:
@@ -1274,6 +1294,7 @@ components:
         - name
         - percentage
         - balance
+        - createdAt
       properties:
         id:
           type: integer
@@ -1287,6 +1308,9 @@ components:
           type: integer
           format: int64
         deletedAt:
+          type: string
+          format: date-time
+        createdAt:
           type: string
           format: date-time
     BudgetRequest:
