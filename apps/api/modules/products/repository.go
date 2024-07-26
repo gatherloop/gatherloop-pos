@@ -1,6 +1,7 @@
 package products
 
 import (
+	"fmt"
 	apiContract "libs/api-contract"
 	"time"
 
@@ -15,9 +16,28 @@ func NewRepository(db *gorm.DB) Repository {
 	return Repository{db: db}
 }
 
-func (repo Repository) GetProductList() ([]apiContract.Product, error) {
+func (repo Repository) GetProductList(query string, sortBy string, order string, skip int, limit int) ([]apiContract.Product, error) {
 	var products []apiContract.Product
-	result := repo.db.Model(&apiContract.Product{}).Preload("Category").Preload("Materials").Preload("Materials.Material").Where("deleted_at", nil).Find(&products)
+	result := repo.db.Model(&apiContract.Product{}).Preload("Category").Preload("Materials").Preload("Materials.Material").Where("deleted_at", nil)
+
+	if sortBy != "" && order != "" {
+		result = result.Order(fmt.Sprintf("%s %s", sortBy, order))
+	}
+
+	if query != "" {
+		result = result.Where("name LIKE ?", "%"+query+"%")
+	}
+
+	if skip > 0 {
+		result = result.Offset(skip)
+	}
+
+	if limit > 0 {
+		result = result.Limit(limit)
+	}
+
+	result = result.Find(&products)
+
 	return products, result.Error
 }
 

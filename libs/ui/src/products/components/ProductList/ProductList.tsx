@@ -1,5 +1,5 @@
 import { EmptyView, ErrorView, ListItemMenu, LoadingView } from '../../../base';
-import { YStack } from 'tamagui';
+import { Input, YStack } from 'tamagui';
 import { useProductListState } from './ProductList.state';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { Product } from '../../../../../api-contract/src';
@@ -17,9 +17,15 @@ export const ProductList = ({
   itemMenus = [],
   onItemPress,
 }: ProductListProps) => {
-  const { products, refetch, status } = useProductListState();
+  const { products, refetch, status, searchInputValue, setSearchInputValue } =
+    useProductListState();
   return (
     <YStack gap="$3">
+      <Input
+        placeholder="Search Products by Name"
+        value={searchInputValue}
+        onChangeText={setSearchInputValue}
+      />
       {status === 'pending' ? (
         <LoadingView title="Fetching Products..." />
       ) : status === 'success' ? (

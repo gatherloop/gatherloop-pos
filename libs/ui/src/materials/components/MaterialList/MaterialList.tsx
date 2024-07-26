@@ -25,7 +25,6 @@ export const MaterialList = ({
         placeholder="Search Materials by Name"
         value={searchInputValue}
         onChangeText={setSearchInputValue}
-        clearButtonMode="always"
       />
       {status === 'pending' ? (
         <LoadingView title="Fetching Materials..." />

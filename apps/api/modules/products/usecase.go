@@ -12,8 +12,8 @@ func NewUsecase(repository Repository) Usecase {
 	return Usecase{repository: repository}
 }
 
-func (usecase Usecase) GetProductList() ([]apiContract.Product, error) {
-	return usecase.repository.GetProductList()
+func (usecase Usecase) GetProductList(query string, sortBy string, order string, skip int, limit int) ([]apiContract.Product, error) {
+	return usecase.repository.GetProductList(query, sortBy, order, skip, limit)
 }
 
 func (usecase Usecase) GetProductById(id int64) (apiContract.Product, error) {

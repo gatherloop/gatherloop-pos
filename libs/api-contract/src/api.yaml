@@ -477,6 +477,12 @@ paths:
       operationId: productList
       tags:
         - product
+      parameters:
+        - $ref: '#/components/parameters/Query'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/Order'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Skip'
       responses:
         '200':
           description: success response
