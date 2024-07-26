@@ -149,6 +149,12 @@ paths:
       operationId: materialList
       tags:
         - material
+      parameters:
+        - $ref: '#/components/parameters/Query'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/Order'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Skip'
       responses:
         '200':
           description: success response
@@ -1565,3 +1571,33 @@ components:
       schema:
         type: integer
       required: true
+    Query:
+      name: query
+      in: query
+      schema:
+        type: string
+    SortBy:
+      name: sortBy
+      in: query
+      schema:
+        type: string
+    Order:
+      name: order
+      in: query
+      schema:
+        type: string
+        enum:
+          - asc
+          - desc
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        format: int64
+    Skip:
+      name: skip
+      in: query
+      schema:
+        type: integer
+        format: int64

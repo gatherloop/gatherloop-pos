@@ -1,6 +1,7 @@
 package materials
 
 import (
+	"fmt"
 	apiContract "libs/api-contract"
 	"time"
 
@@ -15,9 +16,28 @@ func NewRepository(db *gorm.DB) Repository {
 	return Repository{db: db}
 }
 
-func (repo Repository) GetMaterialList() ([]apiContract.Material, error) {
+func (repo Repository) GetMaterialList(query string, sortBy string, order string, skip int, limit int) ([]apiContract.Material, error) {
 	var categories []apiContract.Material
-	result := repo.db.Table("materials").Where("deleted_at", nil).Find(&categories)
+	result := repo.db.Table("materials").Where("deleted_at", nil)
+
+	if sortBy != "" && order != "" {
+		result = result.Order(fmt.Sprintf("%s %s", sortBy, order))
+	}
+
+	if query != "" {
+		result = result.Where("name LIKE ?", "%"+query+"%")
+	}
+
+	if skip > 0 {
+		result = result.Offset(skip)
+	}
+
+	if limit > 0 {
+		result = result.Limit(limit)
+	}
+
+	result = result.Find(&categories)
+
 	return categories, result.Error
 }
 

@@ -16,7 +16,23 @@ func NewHandler(usecase Usecase) Handler {
 }
 
 func (handler Handler) GetMaterialList(w http.ResponseWriter, r *http.Request) {
-	materials, err := handler.usecase.GetMaterialList()
+	query := base.GetQuery(r)
+	sortBy := base.GetSortBy(r)
+	order := base.GetOrder(r)
+
+	skip, err := base.GetSkip(r)
+	if err != nil {
+		base.WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
+		return
+	}
+
+	limit, err := base.GetLimit(r)
+	if err != nil {
+		base.WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
+		return
+	}
+
+	materials, err := handler.usecase.GetMaterialList(query, sortBy, order, skip, limit)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return

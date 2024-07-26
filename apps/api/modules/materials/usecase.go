@@ -12,8 +12,8 @@ func NewUsecase(repository Repository) Usecase {
 	return Usecase{repository: repository}
 }
 
-func (usecase Usecase) GetMaterialList() ([]apiContract.Material, error) {
-	return usecase.repository.GetMaterialList()
+func (usecase Usecase) GetMaterialList(query string, sortBy string, order string, skip int, limit int) ([]apiContract.Material, error) {
+	return usecase.repository.GetMaterialList(query, sortBy, order, skip, limit)
 }
 
 func (usecase Usecase) GetMaterialById(id int64) (apiContract.Material, error) {
