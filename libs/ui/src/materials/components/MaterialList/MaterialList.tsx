@@ -1,5 +1,5 @@
 import { EmptyView, ErrorView, ListItemMenu, LoadingView } from '../../../base';
-import { YStack } from 'tamagui';
+import { Input, YStack } from 'tamagui';
 import { useMaterialListState } from './MaterialList.state';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { Material } from '../../../../../api-contract/src';
@@ -17,9 +17,16 @@ export const MaterialList = ({
   itemMenus = [],
   onItemPress,
 }: MaterialListProps) => {
-  const { materials, refetch, status } = useMaterialListState();
+  const { materials, refetch, status, searchInputValue, setSearchInputValue } =
+    useMaterialListState();
   return (
     <YStack gap="$3">
+      <Input
+        placeholder="Search Materials by Name"
+        value={searchInputValue}
+        onChangeText={setSearchInputValue}
+        clearButtonMode="always"
+      />
       {status === 'pending' ? (
         <LoadingView title="Fetching Materials..." />
       ) : status === 'success' ? (
@@ -42,7 +49,7 @@ export const MaterialList = ({
         ) : (
           <EmptyView
             title="Oops, Material is Empty"
-            subtitle="Please create a new material"
+            subtitle="The material you are looking for is not found"
           />
         )
       ) : (

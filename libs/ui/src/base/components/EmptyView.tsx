@@ -12,10 +12,8 @@ export const ErrorView = (props: ErrorViewProps) => {
     <YStack flex={1} alignItems="center" justifyContent="center" gap="$3">
       <AlertCircle size="$5" color="$red10" />
       <YStack>
-        <H4 textAlign="center">Oops, Failed to Get Categories</H4>
-        <Paragraph textAlign="center">
-          Please click the retry button to refetch data
-        </Paragraph>
+        <H4 textAlign="center">{props.title}</H4>
+        <Paragraph textAlign="center">{props.subtitle}</Paragraph>
       </YStack>
       <Button onPress={props.onRetryButtonPress}>Retry</Button>
     </YStack>
