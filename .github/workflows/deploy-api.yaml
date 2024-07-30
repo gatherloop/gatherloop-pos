@@ -25,5 +25,5 @@ jobs:
           passphrase: ${{ secrets.SSH_KEY_PASSPHRASE }}
           script: |
             docker pull gatherloop/gatherloop-pos-api
-            docker stop gatherloop/gatherloop-pos-api
-            docker start gatherloop/gatherloop-pos-api
+            docker stop gatherloop-pos-api
+            docker start gatherloop-pos-api
