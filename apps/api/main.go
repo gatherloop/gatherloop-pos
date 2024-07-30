@@ -21,8 +21,8 @@ import (
 
 func main() {
 	err := godotenv.Load()
-	if err != nil {
-		panic("Error loading .env file")
+	if err == nil {
+		fmt.Println("Loading .env file")
 	}
 
 	dbUsername := os.Getenv("DB_USERNAME")

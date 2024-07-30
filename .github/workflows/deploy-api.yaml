@@ -1,0 +1,27 @@
+name: Deploy API
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - run: npx nx run api:build
+      - run: npx nx run api:image:build
+      - run: npx nx run api:image:push
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            docker pull gatherloop/gatherloop-pos-api
+            docker stop gatherloop/gatherloop-pos-api
+            docker start gatherloop/gatherloop-pos-api

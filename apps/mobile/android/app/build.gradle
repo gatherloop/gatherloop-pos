@@ -90,6 +90,12 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+            storeFile file('release.keystore')
+            storePassword System.in.newReader().readLine()
+            keyAlias System.in.newReader().readLine()
+            keyPassword System.in.newReader().readLine()
+        }
     }
     buildTypes {
         debug {

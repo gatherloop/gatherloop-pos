@@ -8,7 +8,30 @@
     "build": {
       "executor": "@nx-go/nx-go:build",
       "options": {
-        "main": "{projectRoot}/main.go"
+        "main": "{projectRoot}/main.go",
+        "outputPath": "{projectRoot}/dist/api",
+        "env": {
+          "GOOS": "linux",
+          "GOARCH": "amd64"
+        }
+      },
+      "dependsOn": [
+        {
+          "projects": "api-contract",
+          "target": "generate:go"
+        }
+      ]
+    },
+    "image:build": {
+      "command": "docker build -t gatherloop/gatherloop-pos-api --platform linux/amd64 .",
+      "options": {
+        "cwd": "apps/api"
+      }
+    },
+    "image:push": {
+      "command": "docker push gatherloop/gatherloop-pos-api",
+      "options": {
+        "cwd": "apps/api"
       }
     },
     "serve": {
