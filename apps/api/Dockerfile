@@ -1,6 +1,11 @@
-FROM golang:1.19
-
+FROM node:22-alpine AS build
 WORKDIR /app
+COPY . .
+RUN apk add openjdk21-jre go
 
-COPY dist/api ./
+RUN npm install
+RUN npx nx run api:build
+
+FROM scratch
+COPY --from=build apps/api/dist/api ./
 CMD ["./api"]
