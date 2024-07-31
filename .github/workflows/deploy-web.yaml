@@ -25,5 +25,5 @@ jobs:
           script: |
             docker pull gatherloop/gatherloop-pos-web
             docker stop gatherloop-pos-web
-            docker start gatherloop-pos-web
+            docker run --name gatherloop-pos-web -e NEXT_PUBLIC_API_BASE_URL=${{ secrets.API_BASE_URL }} -d gatherloop/gatherloop-pos-web
             docker image prune -a
