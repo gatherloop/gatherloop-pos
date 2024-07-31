@@ -8,4 +8,4 @@ RUN npx nx run web:build
 FROM node:22-alpine
 COPY --from=build /app/apps/web/.next ./
 COPY --from=build /app/node_modules ./
-CMD ["npx next start"]
+CMD ["npx", "next", "start"]
