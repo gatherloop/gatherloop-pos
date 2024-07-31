@@ -24,7 +24,7 @@ jobs:
           passphrase: ${{ secrets.SSH_KEY_PASSPHRASE }}
           script: |
             docker pull gatherloop/gatherloop-pos-api
-            docker stop gatherloop-pos-api
-            docker remove gatherloop-pos-api 
+            docker container stop gatherloop-pos-api
+            docker container remove gatherloop-pos-api 
             docker run --name gatherloop-pos-api --network gatherloop-pos-network -e DB_USERNAME=${{ secrets.DB_USERNAME }} -e "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" -e DB_NAME=${{ secrets.DB_NAME }} -e DB_HOST=${{ secrets.DB_HOST }} -e DB_PORT=${{ secrets.DB_PORT }} -e PORT=${{ secrets.API_PORT }} -d gatherloop/gatherloop-pos-api
             docker image prune -a
