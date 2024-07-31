@@ -4,7 +4,6 @@ import {
   useProductList,
   useRefetchOnFocus,
 } from '../../../../../api-contract/src';
-import axios from 'axios';
 
 export const useProductListState = () => {
   const [query, setQuery] = useState('');
