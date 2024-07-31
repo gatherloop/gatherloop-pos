@@ -7,5 +7,6 @@ RUN npm install
 RUN npx nx run api:build
 
 FROM scratch
+WORKDIR /app
 COPY --from=build apps/api/dist/api ./
 CMD ["./api"]
