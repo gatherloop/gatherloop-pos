@@ -8,8 +8,7 @@
     "build": {
       "executor": "@nx-go/nx-go:build",
       "options": {
-        "main": "{projectRoot}/main.go",
-        "outputPath": "{projectRoot}/dist/api"
+        "main": "{projectRoot}/main.go"
       },
       "dependsOn": [
         {
