@@ -7,5 +7,5 @@ RUN npm install
 RUN npx nx run api:build
 
 FROM golang:1.22
-COPY --from=build /app/apps/api/dist/api ./app/api
-CMD ["./go/app/api"]
+COPY --from=build /app/apps/api/dist/api /api
+CMD ["/api"]
