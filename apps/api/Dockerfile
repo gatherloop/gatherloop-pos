@@ -6,6 +6,6 @@ RUN apk add openjdk21-jre go
 RUN npm install
 RUN npx nx run api:build
 
-FROM scratch
+FROM golang:1.22
 COPY --from=build /app/apps/api/dist/api ./app/api
 CMD ["./app/api"]
