@@ -9,4 +9,4 @@ RUN npx nx run api:build
 FROM scratch
 WORKDIR /app
 COPY --from=build /app/apps/api/dist/api ./api
-CMD ["./api"]
+CMD ["./app/api"]
