@@ -8,4 +8,4 @@ RUN npx nx run api:build
 
 FROM golang
 COPY --from=build /app/dist/apps/api /api
-CMD ["/api"]
+CMD ["top"]
