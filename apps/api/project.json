@@ -8,7 +8,10 @@
     "build": {
       "executor": "@nx-go/nx-go:build",
       "options": {
-        "main": "{projectRoot}/main.go"
+        "main": "{projectRoot}/main.go",
+        "env": {
+          "CGO_ENABLED": 0
+        }
       },
       "dependsOn": [
         {
