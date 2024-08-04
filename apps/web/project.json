@@ -21,12 +21,6 @@
           "target": "generate:ts"
         }
       ]
-    },
-    "image:build": {
-      "command": "docker build -t gatherloop/gatherloop-pos-web -f apps/web/Dockerfile ."
-    },
-    "image:push": {
-      "command": "docker push gatherloop/gatherloop-pos-web"
     }
   }
 }

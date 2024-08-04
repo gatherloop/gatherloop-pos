@@ -1,4 +1,8 @@
 FROM node:22-alpine AS build
+
+ARG API_BASE_URL
+ENV NEXT_PUBLIC_API_BASE_URL=$API_BASE_URL
+
 WORKDIR /app
 COPY . .
 RUN apk add openjdk21-jre
