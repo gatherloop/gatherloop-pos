@@ -20,12 +20,6 @@
         }
       ]
     },
-    "image:build": {
-      "command": "docker build -t gatherloop/gatherloop-pos-api -f apps/api/Dockerfile ."
-    },
-    "image:push": {
-      "command": "docker push gatherloop/gatherloop-pos-api"
-    },
     "serve": {
       "executor": "@nx-go/nx-go:serve",
       "options": {
