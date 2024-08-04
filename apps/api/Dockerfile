@@ -4,6 +4,7 @@ COPY . .
 RUN apk add openjdk21-jre go
 
 RUN npm install
+RUN cd apps/api && go mod download
 RUN npx nx run api:build
 
 FROM golang
