@@ -4,9 +4,7 @@ COPY . .
 RUN apk add openjdk21-jre go
 
 RUN npm install
-RUN npx nx run api-contract:generate:go
-RUN cd apps/api && go mod download
-RUN npx nx run api:build
+RUN nx run api:build
 
 FROM golang
 COPY --from=build /app/dist/apps/api /go/bin/api
