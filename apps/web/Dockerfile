@@ -1,6 +1,6 @@
 FROM node:22-alpine AS build
 
-ARG API_BASE_URL
+ARG API_BASE_URL=http://188.166.250.3:8000
 RUN echo "The ARG variable value is $API_BASE_URL"
 ENV NEXT_PUBLIC_API_BASE_URL=$API_BASE_URL
 
