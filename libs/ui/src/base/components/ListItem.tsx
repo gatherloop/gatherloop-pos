@@ -28,7 +28,8 @@ export const PopoverMenu = ({ menus }: PopoverMenuProps) => {
           <TamaguiListItem
             icon={menu.icon}
             title={menu.title}
-            onPress={() => {
+            onPress={(event) => {
+              event.stopPropagation();
               menu.onPress();
               onOpenChange(false, 'press');
             }}
