@@ -6,12 +6,14 @@ import {
   CircleDollarSign,
   CreditCard,
   FileBox,
+  Fullscreen,
   Tag,
   Wallet,
 } from '@tamagui/lucide-icons';
-import { Button, H3, ListItem, YGroup, YStack } from 'tamagui';
+import { Button, H3, ListItem, XStack, YGroup, YStack } from 'tamagui';
 import { useSidebarState } from './Sidebar.state';
 import { NamedExoticComponent } from 'react';
+import { Platform } from 'react-native';
 
 const items: { title: string; icon: NamedExoticComponent; path: string }[] = [
   { title: 'Categories', icon: Tag, path: '/categories' },
@@ -25,6 +27,14 @@ const items: { title: string; icon: NamedExoticComponent; path: string }[] = [
 
 export const Sidebar = () => {
   const { isShown, onToggleButtonPress, onMenuItemPress } = useSidebarState();
+
+  const onFullScreenButtonPress = () => {
+    const app = document.getElementById('__next');
+    if (app?.requestFullscreen) {
+      app.requestFullscreen();
+    }
+  };
+
   return (
     <>
       <YGroup
@@ -36,21 +46,28 @@ export const Sidebar = () => {
         animation="fast"
         marginLeft={isShown ? 0 : -240}
       >
-        <YStack padding="$5">
-          <H3>Gatherloop POS</H3>
+        <YStack flex={1} justifyContent="space-between">
+          <YStack>
+            <YStack padding="$5">
+              <H3>Gatherloop POS</H3>
+            </YStack>
+            {items.map((item, index) => (
+              <YGroup.Item key={index}>
+                <ListItem
+                  backgroundColor="$colorTransparent"
+                  hoverTheme
+                  icon={item.icon}
+                  onPress={() => onMenuItemPress(item.path)}
+                >
+                  {item.title}
+                </ListItem>
+              </YGroup.Item>
+            ))}
+          </YStack>
+          {Platform.OS === 'web' && (
+            <Button icon={Fullscreen} onPress={onFullScreenButtonPress} />
+          )}
         </YStack>
-        {items.map((item, index) => (
-          <YGroup.Item key={index}>
-            <ListItem
-              backgroundColor="$colorTransparent"
-              hoverTheme
-              icon={item.icon}
-              onPress={() => onMenuItemPress(item.path)}
-            >
-              {item.title}
-            </ListItem>
-          </YGroup.Item>
-        ))}
       </YGroup>
 
       <Button
