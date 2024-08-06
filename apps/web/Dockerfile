@@ -6,9 +6,8 @@ ENV NEXT_PUBLIC_API_BASE_URL=$API_BASE_URL
 WORKDIR /app
 COPY . .
 RUN apk add openjdk21-jre
-RUN npm install -g @nrwl/cli
 RUN npm install
-RUN nx run web:build
+RUN npx nx@v19.3.0 run web:build
 
 FROM node:22-alpine
 WORKDIR /app
