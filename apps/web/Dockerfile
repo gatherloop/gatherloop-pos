@@ -1,6 +1,7 @@
 FROM node:22-alpine AS build
 
 ARG API_BASE_URL
+RUN echo "The ARG variable value is $API_BASE_URL"
 ENV NEXT_PUBLIC_API_BASE_URL=$API_BASE_URL
 
 WORKDIR /app
