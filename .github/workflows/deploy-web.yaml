@@ -20,7 +20,8 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.SSH_KEY_PASSPHRASE }}
           script: |
-            docker pull gatherloop/gatherloop-pos-web
             docker container stop gatherloop-pos-web
             docker container remove gatherloop-pos-web
+            docker rmi $(docker images --format '{{.Repository}}:{{.Tag}}' | grep 'gatherloop/gatherloop-pos-web')
+            docker pull gatherloop/gatherloop-pos-web
             docker run --name gatherloop-pos-web -p 3000:3000 -d gatherloop/gatherloop-pos-web
