@@ -5,6 +5,8 @@ import {
 import axios, { AxiosError } from 'axios';
 import Config from 'react-native-config';
 
+console.log('process env', process.env['NEXT_PUBLIC_API_BASE_URL']);
+
 export const axiosInstance = axios.create({
   baseURL: process.env['NEXT_PUBLIC_API_BASE_URL'] ?? Config['API_BASE_URL'],
 });
