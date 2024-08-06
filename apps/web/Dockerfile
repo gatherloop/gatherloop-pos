@@ -7,7 +7,7 @@ WORKDIR /app
 COPY . .
 RUN apk add openjdk21-jre
 RUN npm install
-RUN npx nx@v19.3.0 run web:build
+RUN npx nx@v19.3.0 run web:build --verbose
 
 FROM node:22-alpine
 WORKDIR /app
