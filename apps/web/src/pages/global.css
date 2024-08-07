@@ -1,5 +1,5 @@
 body {
   overflow: hidden;
   position: fixed;
-  height: 100%;
+  height: 100dvh;
 }
