@@ -1087,8 +1087,7 @@ components:
         name:
           type: string
         price:
-          type: integer
-          format: int64
+          type: number
         unit:
           type: string
         deletedAt:
@@ -1107,8 +1106,7 @@ components:
         name:
           type: string
         price:
-          type: integer
-          format: int64
+          type: number
         unit:
           type: string
     Wallet:
@@ -1273,8 +1271,7 @@ components:
         material:
           $ref: '#/components/schemas/Material'
         amount:
-          type: integer
-          format: int64
+          type: number
         deletedAt:
           type: string
           format: date-time
@@ -1291,8 +1288,7 @@ components:
           type: integer
           format: int64
         amount:
-          type: integer
-          format: int64
+          type: number
     Budget:
       type: object
       required:

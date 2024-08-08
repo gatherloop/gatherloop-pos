@@ -7,12 +7,14 @@ export type InputNumberProps = {
   name?: string;
   min?: number;
   max?: number;
+  fractionDigit?: number;
 } & InputProps;
 
 export const InputNumber = ({
   name,
   min,
   max,
+  fractionDigit = 0,
   ...inputProps
 }: InputNumberProps) => {
   const fieldContext = useFieldContext();
@@ -61,7 +63,7 @@ export const InputNumber = ({
         {...inputProps}
         id={fieldName}
         onChangeText={onChangeText}
-        value={JSON.stringify(field.value)}
+        value={parseFloat(field.value).toFixed(fractionDigit)}
         flex={1}
       />
       <Button
