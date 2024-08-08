@@ -25,7 +25,7 @@ export const MaterialForm = ({ variant, onSuccess }: MaterialFormProps) => {
           <InputText />
         </Field>
         <Field name="price" label="Price">
-          <InputNumber fractionDigit={2} />
+          <InputNumber />
         </Field>
         <Field name="unit" label="Unit">
           <InputText />
