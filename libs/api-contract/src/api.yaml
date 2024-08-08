@@ -1124,8 +1124,7 @@ components:
         name:
           type: string
         balance:
-          type: integer
-          format: int64
+          type: number
         paymentCostPercentage:
           type: number
           format: float
@@ -1145,8 +1144,7 @@ components:
         name:
           type: string
         balance:
-          type: integer
-          format: int64
+          type: number
         paymentCostPercentage:
           type: number
           format: float
@@ -1168,8 +1166,7 @@ components:
           type: string
           format: date-time
         amount:
-          type: integer
-          format: int64
+          type: number
         fromWalletId:
           type: integer
           format: int64
@@ -1190,8 +1187,7 @@ components:
         - toWalletId
       properties:
         amount:
-          type: integer
-          format: int64
+          type: number
         toWalletId:
           type: integer
           format: int64
@@ -1215,8 +1211,7 @@ components:
         name:
           type: string
         price:
-          type: integer
-          format: int64
+          type: number
         category:
           $ref: '#/components/schemas/Category'
         materials:
@@ -1243,8 +1238,7 @@ components:
         name:
           type: string
         price:
-          type: integer
-          format: int64
+          type: number
         materials:
           type: array
           items:
@@ -1304,11 +1298,9 @@ components:
         name:
           type: string
         percentage:
-          type: integer
-          format: int64
+          type: number
         balance:
-          type: integer
-          format: int64
+          type: number
         deletedAt:
           type: string
           format: date-time
@@ -1325,11 +1317,9 @@ components:
         name:
           type: string
         percentage:
-          type: integer
-          format: int64
+          type: number
         balance:
-          type: integer
-          format: int64
+          type: number
     Transaction:
       type: object
       required:
@@ -1353,8 +1343,7 @@ components:
         wallet:
           $ref: '#/components/schemas/Wallet'
         total:
-          type: integer
-          format: int64
+          type: number
         transactionItems:
           type: array
           items:
@@ -1400,14 +1389,11 @@ components:
         product:
           $ref: '#/components/schemas/Product'
         amount:
-          type: integer
-          format: int64
+          type: number
         price:
-          type: integer
-          format: int64
+          type: number
         subtotal:
-          type: integer
-          format: int64
+          type: number
     TransactionItemRequest:
       type: object
       required:
@@ -1418,8 +1404,7 @@ components:
           type: integer
           format: int64
         amount:
-          type: integer
-          format: int64
+          type: number
     TransactionPayRequest:
       type: object
       required:
@@ -1460,8 +1445,7 @@ components:
         budget:
           $ref: '#/components/schemas/Budget'
         total:
-          type: integer
-          format: int64
+          type: number
         expenseItems:
           type: array
           items:
@@ -1485,14 +1469,11 @@ components:
         unit:
           type: string
         price:
-          type: integer
-          format: int64
+          type: number
         amount:
-          type: integer
-          format: int64
+          type: number
         subtotal:
-          type: integer
-          format: int64
+          type: number
         expenseId:
           type: integer
           format: int64
@@ -1526,11 +1507,9 @@ components:
         unit:
           type: string
         price:
-          type: integer
-          format: int64
+          type: number
         amount:
-          type: integer
-          format: int64
+          type: number
     Error:
       type: object
       required:

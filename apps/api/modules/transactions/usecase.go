@@ -142,7 +142,7 @@ func (usecase Usecase) PayTransaction(transactionPayRequest apiContract.Transact
 		return err
 	}
 
-	paymentCost := transaction.Total * int64(wallet.PaymentCostPercentage) / 100
+	paymentCost := transaction.Total * wallet.PaymentCostPercentage / 100
 	newBalance := wallet.Balance + transaction.Total - paymentCost
 
 	if err := usecase.walletRepository.UpdateWalletById(apiContract.WalletRequest{Balance: newBalance}, transactionPayRequest.WalletId); err != nil {
@@ -155,7 +155,7 @@ func (usecase Usecase) PayTransaction(transactionPayRequest apiContract.Transact
 		productMaterials = append(productMaterials, item.Product.Materials...)
 	}
 
-	var foodCost int64
+	var foodCost float32
 	for _, productMaterial := range productMaterials {
 		foodCost += productMaterial.Amount * productMaterial.Material.Price
 	}
