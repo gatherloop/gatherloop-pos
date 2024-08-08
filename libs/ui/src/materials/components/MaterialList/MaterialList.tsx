@@ -11,11 +11,13 @@ export type MaterialListProps = {
     isShown?: (material: Material) => void;
   })[];
   onItemPress: (material: Material) => void;
+  isSearchAutoFocus?: boolean;
 };
 
 export const MaterialList = ({
   itemMenus = [],
   onItemPress,
+  isSearchAutoFocus,
 }: MaterialListProps) => {
   const { materials, refetch, status, searchInputValue, setSearchInputValue } =
     useMaterialListState();
@@ -25,6 +27,7 @@ export const MaterialList = ({
         placeholder="Search Materials by Name"
         value={searchInputValue}
         onChangeText={setSearchInputValue}
+        autoFocus={isSearchAutoFocus}
       />
       {status === 'pending' ? (
         <LoadingView title="Fetching Materials..." />

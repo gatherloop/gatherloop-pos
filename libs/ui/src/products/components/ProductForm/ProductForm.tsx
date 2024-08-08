@@ -78,7 +78,7 @@ export const ProductForm = ({ variant, onSuccess }: ProductFormProps) => {
               </Paragraph>
             </YStack>
             <ScrollView flex={1}>
-              <MaterialList onItemPress={onAddMaterial} />
+              <MaterialList onItemPress={onAddMaterial} isSearchAutoFocus />
             </ScrollView>
           </YStack>
         </Sheet>

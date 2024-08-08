@@ -59,7 +59,10 @@ export const TransactionForm = ({
                         </Paragraph>
                       </YStack>
                       <ScrollView flex={1}>
-                        <ProductList onItemPress={onAddItem} />
+                        <ProductList
+                          onItemPress={onAddItem}
+                          isSearchAutoFocus
+                        />
                       </ScrollView>
                     </YStack>
                   </Sheet>

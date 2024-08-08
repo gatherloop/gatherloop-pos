@@ -11,11 +11,13 @@ export type ProductListProps = {
     isShown?: (product: Product) => void;
   })[];
   onItemPress: (product: Product) => void;
+  isSearchAutoFocus?: boolean;
 };
 
 export const ProductList = ({
   itemMenus = [],
   onItemPress,
+  isSearchAutoFocus,
 }: ProductListProps) => {
   const { products, refetch, status, searchInputValue, setSearchInputValue } =
     useProductListState();
@@ -25,6 +27,7 @@ export const ProductList = ({
         placeholder="Search Products by Name"
         value={searchInputValue}
         onChangeText={setSearchInputValue}
+        autoFocus={isSearchAutoFocus}
       />
       {status === 'pending' ? (
         <LoadingView title="Fetching Products..." />
