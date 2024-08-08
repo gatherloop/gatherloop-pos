@@ -143,7 +143,7 @@ export const ProductForm = ({ variant, onSuccess }: ProductFormProps) => {
                       />
                       <InputNumber
                         name={`materials[${index}].amount`}
-                        maxWidth={50}
+                        maxWidth={100}
                         fractionDigit={2}
                       />
                     </XStack>
