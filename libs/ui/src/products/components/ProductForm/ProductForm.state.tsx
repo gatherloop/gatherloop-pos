@@ -49,7 +49,12 @@ export const useProductFormState = ({
       name: product.data?.data.name ?? '',
       categoryId: product.data?.data.categoryId ?? NaN,
       price: product.data?.data.price ?? 0,
-      materials: product.data?.data.materials ?? [],
+      materials:
+        product.data?.data.materials.map((productMaterial) => ({
+          materialId: productMaterial.material.id,
+          amount: productMaterial.amount,
+          material: productMaterial.material,
+        })) ?? [],
     },
     enableReinitialize: true,
     onSubmit: (values) =>
