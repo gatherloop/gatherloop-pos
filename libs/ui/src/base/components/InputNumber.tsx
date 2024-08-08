@@ -7,12 +7,14 @@ export type InputNumberProps = {
   name?: string;
   min?: number;
   max?: number;
+  fractionDigit?: number;
 } & InputProps;
 
 export const InputNumber = ({
   name,
   min,
   max,
+  fractionDigit = 0,
   ...inputProps
 }: InputNumberProps) => {
   const fieldContext = useFieldContext();
@@ -20,7 +22,7 @@ export const InputNumber = ({
   const [field, _meta, helpers] = useFormikField(fieldName);
 
   const onChangeText = (text: string) => {
-    const numberValue = text.trim() === '' ? min ?? 0 : parseInt(text);
+    const numberValue = text.trim() === '' ? min ?? 0 : parseFloat(text);
     if (
       !isNaN(numberValue) &&
       (typeof min === 'undefined' || numberValue >= min) &&
@@ -61,7 +63,7 @@ export const InputNumber = ({
         {...inputProps}
         id={fieldName}
         onChangeText={onChangeText}
-        value={JSON.stringify(field.value)}
+        value={parseFloat(field.value).toFixed(fractionDigit)}
         flex={1}
       />
       <Button
