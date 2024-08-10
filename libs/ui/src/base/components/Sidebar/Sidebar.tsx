@@ -6,12 +6,14 @@ import {
   CircleDollarSign,
   CreditCard,
   FileBox,
+  Fullscreen,
   Tag,
   Wallet,
 } from '@tamagui/lucide-icons';
 import { Button, H3, ListItem, YGroup, YStack } from 'tamagui';
 import { useSidebarState } from './Sidebar.state';
 import { NamedExoticComponent } from 'react';
+import { Platform } from 'react-native';
 
 const items: { title: string; icon: NamedExoticComponent; path: string }[] = [
   { title: 'Categories', icon: Tag, path: '/categories' },
@@ -25,6 +27,13 @@ const items: { title: string; icon: NamedExoticComponent; path: string }[] = [
 
 export const Sidebar = () => {
   const { isShown, onToggleButtonPress, onMenuItemPress } = useSidebarState();
+  const onToggleFullScreenButtonPress = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+    } else if (document.exitFullscreen) {
+      document.exitFullscreen();
+    }
+  };
   return (
     <>
       <YGroup
@@ -53,6 +62,18 @@ export const Sidebar = () => {
                 </ListItem>
               </YGroup.Item>
             ))}
+
+            {Platform.OS === 'web' && (
+              <YStack padding="$5">
+                <Button
+                  onPress={onToggleFullScreenButtonPress}
+                  icon={Fullscreen}
+                  theme="blue"
+                >
+                  Toggle Full Screen
+                </Button>
+              </YStack>
+            )}
           </YStack>
         </YStack>
       </YGroup>
