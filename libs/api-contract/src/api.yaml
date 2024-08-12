@@ -751,6 +751,12 @@ paths:
       operationId: transactionList
       tags:
         - transaction
+      parameters:
+        - $ref: '#/components/parameters/Query'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/Order'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Skip'
       responses:
         '200':
           description: success response
@@ -918,6 +924,11 @@ paths:
       operationId: expenseList
       tags:
         - expense
+      parameters:
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/Order'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Skip'
       responses:
         '200':
           description: success response

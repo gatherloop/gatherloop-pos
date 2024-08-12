@@ -16,7 +16,22 @@ func NewHandler(usecase Usecase) Handler {
 }
 
 func (handler Handler) GetExpenseList(w http.ResponseWriter, r *http.Request) {
-	expenses, err := handler.usecase.GetExpenseList()
+	sortBy := base.GetSortBy(r)
+	order := base.GetOrder(r)
+
+	skip, err := base.GetSkip(r)
+	if err != nil {
+		base.WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
+		return
+	}
+
+	limit, err := base.GetLimit(r)
+	if err != nil {
+		base.WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
+		return
+	}
+
+	expenses, err := handler.usecase.GetExpenseList(sortBy, order, skip, limit)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return

@@ -1,6 +1,7 @@
 package expenses
 
 import (
+	"fmt"
 	apiContract "libs/api-contract"
 	"time"
 
@@ -15,9 +16,24 @@ func NewRepository(db *gorm.DB) Repository {
 	return Repository{db: db}
 }
 
-func (repo Repository) GetExpenseList() ([]apiContract.Expense, error) {
+func (repo Repository) GetExpenseList(sortBy string, order string, skip int, limit int) ([]apiContract.Expense, error) {
 	var expenses []apiContract.Expense
-	result := repo.db.Table("expenses").Where("deleted_at is NULL").Preload("ExpenseItems").Preload("Wallet").Preload("Budget").Find(&expenses)
+	result := repo.db.Table("expenses").Where("deleted_at is NULL").Preload("ExpenseItems").Preload("Wallet").Preload("Budget")
+
+	if sortBy != "" && order != "" {
+		result = result.Order(fmt.Sprintf("%s %s", sortBy, order))
+	}
+
+	if skip > 0 {
+		result = result.Offset(skip)
+	}
+
+	if limit > 0 {
+		result = result.Limit(limit)
+	}
+
+	result = result.Find(&expenses)
+
 	return expenses, result.Error
 }
 

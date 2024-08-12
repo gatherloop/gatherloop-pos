@@ -1,6 +1,7 @@
 package transactions
 
 import (
+	"fmt"
 	apiContract "libs/api-contract"
 	"time"
 
@@ -15,9 +16,28 @@ func NewRepository(db *gorm.DB) Repository {
 	return Repository{db: db}
 }
 
-func (repo Repository) GetTransactionList() ([]apiContract.Transaction, error) {
+func (repo Repository) GetTransactionList(query string, sortBy string, order string, skip int, limit int) ([]apiContract.Transaction, error) {
 	var transactions []apiContract.Transaction
-	result := repo.db.Table("transactions").Where("deleted_at is NULL").Preload("TransactionItems").Preload("Wallet").Find(&transactions)
+	result := repo.db.Table("transactions").Where("deleted_at is NULL").Preload("TransactionItems").Preload("Wallet")
+
+	if sortBy != "" && order != "" {
+		result = result.Order(fmt.Sprintf("%s %s", sortBy, order))
+	}
+
+	if query != "" {
+		result = result.Where("name LIKE ?", "%"+query+"%")
+	}
+
+	if skip > 0 {
+		result = result.Offset(skip)
+	}
+
+	if limit > 0 {
+		result = result.Limit(limit)
+	}
+
+	result = result.Find(&transactions)
+
 	return transactions, result.Error
 }
 

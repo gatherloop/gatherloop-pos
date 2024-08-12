@@ -16,7 +16,23 @@ func NewHandler(usecase Usecase) Handler {
 }
 
 func (handler Handler) GetTransactionList(w http.ResponseWriter, r *http.Request) {
-	transactions, err := handler.usecase.GetTransactionList()
+	query := base.GetQuery(r)
+	sortBy := base.GetSortBy(r)
+	order := base.GetOrder(r)
+
+	skip, err := base.GetSkip(r)
+	if err != nil {
+		base.WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
+		return
+	}
+
+	limit, err := base.GetLimit(r)
+	if err != nil {
+		base.WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
+		return
+	}
+
+	transactions, err := handler.usecase.GetTransactionList(query, sortBy, order, skip, limit)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return

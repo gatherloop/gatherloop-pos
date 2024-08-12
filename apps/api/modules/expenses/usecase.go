@@ -22,8 +22,8 @@ func NewUsecase(repository Repository, budgetRepository budgets.Repository, wall
 	}
 }
 
-func (usecase Usecase) GetExpenseList() ([]apiContract.Expense, error) {
-	return usecase.repository.GetExpenseList()
+func (usecase Usecase) GetExpenseList(sortBy string, order string, skip int, limit int) ([]apiContract.Expense, error) {
+	return usecase.repository.GetExpenseList(sortBy, order, skip, limit)
 }
 
 func (usecase Usecase) GetExpenseById(id int64) (apiContract.Expense, error) {
