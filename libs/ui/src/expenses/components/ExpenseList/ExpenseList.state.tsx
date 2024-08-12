@@ -5,7 +5,10 @@ import {
 } from '../../../../../api-contract/src';
 
 export const useExpenseListState = () => {
-  const { data, status, error, refetch } = useExpenseList();
+  const { data, status, error, refetch } = useExpenseList({
+    sortBy: 'created_at',
+    order: 'desc',
+  });
   useRefetchOnFocus(refetch);
   return {
     expenses: data?.data ?? [],

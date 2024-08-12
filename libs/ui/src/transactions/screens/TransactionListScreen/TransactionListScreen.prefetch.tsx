@@ -11,7 +11,7 @@ export const getTransactionListScreenDehydratedState =
 
     await queryClient.prefetchQuery({
       queryKey: transactionListQueryKey(),
-      queryFn: transactionList,
+      queryFn: () => transactionList({ sortBy: 'created_at', order: 'desc' }),
     });
 
     return dehydrate(queryClient);

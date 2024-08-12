@@ -5,7 +5,7 @@ import {
   ListItemMenu,
   LoadingView,
 } from '../../../base';
-import { YStack } from 'tamagui';
+import { Input, YStack } from 'tamagui';
 import { useTransactionListState } from './TransactionList.state';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { Transaction } from '../../../../../api-contract/src';
@@ -24,9 +24,20 @@ export const TransactionList = ({
   itemMenus,
   onItemPress,
 }: TransactionListProps) => {
-  const { transactions, refetch, status } = useTransactionListState();
+  const {
+    transactions,
+    refetch,
+    status,
+    searchInputValue,
+    setSearchInputValue,
+  } = useTransactionListState();
   return (
     <YStack gap="$3">
+      <Input
+        placeholder="Search Transaction by Customer Name"
+        value={searchInputValue}
+        onChangeText={setSearchInputValue}
+      />
       {status === 'pending' ? (
         <LoadingView title="Fetching Transactions..." />
       ) : status === 'success' ? (

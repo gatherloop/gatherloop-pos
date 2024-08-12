@@ -11,7 +11,7 @@ export const getExpenseListScreenDehydratedState =
 
     await queryClient.prefetchQuery({
       queryKey: expenseListQueryKey(),
-      queryFn: expenseList,
+      queryFn: () => expenseList({ sortBy: 'created_at', order: 'desc' }),
     });
 
     return dehydrate(queryClient);
