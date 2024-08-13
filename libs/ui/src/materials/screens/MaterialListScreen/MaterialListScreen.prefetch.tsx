@@ -10,8 +10,18 @@ export const getMaterialListScreenDehydratedState =
     const queryClient = new QueryClient();
 
     await queryClient.prefetchQuery({
-      queryKey: materialListQueryKey(),
-      queryFn: () => materialList({ sortBy: 'created_at', order: 'desc' }),
+      queryKey: materialListQueryKey({
+        sortBy: 'created_at',
+        order: 'desc',
+        query: '',
+      }),
+      queryFn: ({ queryKey }) => {
+        return materialList({
+          sortBy: queryKey[1].sortBy,
+          order: queryKey[1].order,
+          query: queryKey[1].query,
+        });
+      },
     });
 
     return dehydrate(queryClient);

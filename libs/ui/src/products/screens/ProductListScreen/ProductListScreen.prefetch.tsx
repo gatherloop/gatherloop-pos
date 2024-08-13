@@ -10,8 +10,18 @@ export const getProductListScreenDehydratedState =
     const queryClient = new QueryClient();
 
     await queryClient.prefetchQuery({
-      queryKey: productListQueryKey(),
-      queryFn: () => productList({ sortBy: 'created_at', order: 'desc' }),
+      queryKey: productListQueryKey({
+        sortBy: 'created_at',
+        order: 'desc',
+        query: '',
+      }),
+      queryFn: ({ queryKey }) => {
+        return productList({
+          sortBy: queryKey[1].sortBy,
+          order: queryKey[1].order,
+          query: queryKey[1].query,
+        });
+      },
     });
 
     return dehydrate(queryClient);
