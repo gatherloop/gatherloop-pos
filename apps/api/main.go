@@ -9,30 +9,28 @@ import (
 	"apps/api/modules/products"
 	"apps/api/modules/transactions"
 	"apps/api/modules/wallets"
+	"apps/api/utils"
 	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/gorilla/mux"
-	"github.com/joho/godotenv"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
 )
 
 func main() {
-	err := godotenv.Load()
+	err := utils.LoadEnv()
 	if err == nil {
 		fmt.Println("Loading .env file")
 	}
 
-	dbUsername := os.Getenv("DB_USERNAME")
-	dbPassword := os.Getenv("DB_PASSWORD")
-	dbName := os.Getenv("DB_NAME")
-	dbHost := os.Getenv("DB_HOST")
-	dbPort := os.Getenv("DB_PORT")
-	port := os.Getenv("PORT")
+	env := utils.GetEnv()
 
-	db, err := gorm.Open(mysql.Open(fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", dbUsername, dbPassword, dbHost, dbPort, dbName)))
+	db, err := utils.ConnectDB(utils.ConnectDBParams{
+		DbUsername: env.DbUsername,
+		DbPassword: env.DbPassword,
+		DbHost:     env.DbHost,
+		DbPort:     env.DbPort,
+		DbName:     env.DbName,
+	})
 	if err != nil {
 		panic("failed to connect database")
 	}
@@ -46,5 +44,5 @@ func main() {
 	budgets.AddRouters(router, db)
 	transactions.AddRouters(router, db)
 	expenses.AddRouters(router, db)
-	http.ListenAndServe(fmt.Sprintf(":%s", port), router)
+	http.ListenAndServe(fmt.Sprintf(":%s", env.Port), router)
 }
