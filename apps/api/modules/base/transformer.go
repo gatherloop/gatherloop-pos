@@ -8,8 +8,19 @@ import (
 )
 
 func WriteError(w http.ResponseWriter, err apiContract.Error) {
-	// TODO: need to map http status code based on error type
-	w.WriteHeader(http.StatusInternalServerError)
+	var httpStatus int
+	switch err.Code {
+	case apiContract.SERVER_ERROR:
+		httpStatus = http.StatusInternalServerError
+	case apiContract.DATA_NOT_FOUND:
+		httpStatus = http.StatusBadRequest
+	case apiContract.VALIDATION_ERROR:
+		httpStatus = http.StatusBadRequest
+	default:
+		httpStatus = http.StatusInternalServerError
+	}
+
+	w.WriteHeader(httpStatus)
 	json.NewEncoder(w).Encode(err)
 }
 
