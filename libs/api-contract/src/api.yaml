@@ -1338,6 +1338,7 @@ components:
         - createdAt
         - name
         - total
+        - totalIncome
         - transactionItems
       properties:
         id:
@@ -1354,6 +1355,8 @@ components:
         wallet:
           $ref: '#/components/schemas/Wallet'
         total:
+          type: number
+        totalIncome:
           type: number
         transactionItems:
           type: array

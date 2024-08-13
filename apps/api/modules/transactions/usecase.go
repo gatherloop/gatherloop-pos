@@ -162,6 +162,10 @@ func (usecase Usecase) PayTransaction(transactionPayRequest apiContract.Transact
 
 	totalIncome := transaction.Total - paymentCost - foodCost
 
+	if err := usecase.repository.UpdateTransactionById(&apiContract.Transaction{TotalIncome: totalIncome}, id); err != nil {
+		return err
+	}
+
 	budgets, err := usecase.budgetRepository.GetBudgetList()
 	if err != nil {
 		return err
