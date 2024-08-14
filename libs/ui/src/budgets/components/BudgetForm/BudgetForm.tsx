@@ -25,10 +25,10 @@ export const BudgetForm = ({ variant, onSuccess }: BudgetFormProps) => {
           <InputText />
         </Field>
         <Field name="percentage" label="Percentage">
-          <InputNumber />
+          <InputNumber fractionDigit={2} />
         </Field>
         <Field name="balance" label="Balance">
-          <InputNumber />
+          <InputNumber fractionDigit={2} />
         </Field>
         <SubmitButton>Submit</SubmitButton>
       </Form>
