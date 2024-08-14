@@ -5,8 +5,7 @@ export const SubmitButton = (props: ButtonProps) => {
   const formik = useFormikContext();
   return (
     <Button
-      onPress={() => formik.submitForm()}
-      disabled={formik.isSubmitting}
+      onPress={formik.submitForm}
       theme="blue"
       {...props}
     >

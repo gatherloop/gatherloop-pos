@@ -17,7 +17,7 @@ export type BudgetFormProps = {
 };
 
 export const BudgetForm = ({ variant, onSuccess }: BudgetFormProps) => {
-  const { formik } = useBudgetFormState({ variant, onSuccess });
+  const { formik,isSubmitDisabled } = useBudgetFormState({ variant, onSuccess });
   return (
     <FormikProvider value={formik}>
       <Form>
@@ -30,7 +30,7 @@ export const BudgetForm = ({ variant, onSuccess }: BudgetFormProps) => {
         <Field name="balance" label="Balance">
           <InputNumber fractionDigit={2} />
         </Field>
-        <SubmitButton>Submit</SubmitButton>
+        <SubmitButton disabled={isSubmitDisabled}>Submit</SubmitButton>
       </Form>
     </FormikProvider>
   );

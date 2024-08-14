@@ -14,10 +14,12 @@ export const TransactionPaymentAlert = ({
   onSuccess,
   onCancel,
 }: TransactionPaymentAlertProps) => {
-  const { formik, status, wallets } = useTransactionPaymentAlertState({
-    transactionId,
-    onSuccess,
-  });
+  const { formik, isSubmitDisabled, wallets } = useTransactionPaymentAlertState(
+    {
+      transactionId,
+      onSuccess,
+    }
+  );
   return (
     <AlertDialog open onOpenChange={onCancel} modal>
       <AlertDialog.Portal>
@@ -67,9 +69,9 @@ export const TransactionPaymentAlert = ({
 
               <XStack gap="$3" justifyContent="flex-end">
                 <AlertDialog.Cancel asChild>
-                  <Button disabled={status === 'pending'}>No</Button>
+                  <Button disabled={isSubmitDisabled}>No</Button>
                 </AlertDialog.Cancel>
-                <SubmitButton theme="active" disabled={status === 'pending'}>
+                <SubmitButton theme="active" disabled={isSubmitDisabled}>
                   Yes
                 </SubmitButton>
               </XStack>

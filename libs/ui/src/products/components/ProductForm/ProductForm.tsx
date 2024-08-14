@@ -39,6 +39,7 @@ export const ProductForm = ({ variant, onSuccess }: ProductFormProps) => {
     onAddMaterial,
     foodCostPercentage,
     totalFoodCost,
+    isSubmitDisabled,
   } = useProductFormState({ variant, onSuccess });
   return (
     <FormikProvider value={formik}>
@@ -150,7 +151,7 @@ export const ProductForm = ({ variant, onSuccess }: ProductFormProps) => {
                   </YStack>
                 </XStack>
               ))}
-              <SubmitButton>Submit</SubmitButton>
+              <SubmitButton disabled={isSubmitDisabled}>Submit</SubmitButton>
             </YStack>
           )}
         </FieldArray>

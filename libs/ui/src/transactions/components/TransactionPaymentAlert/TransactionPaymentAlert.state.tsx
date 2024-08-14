@@ -35,9 +35,11 @@ export const useTransactionPaymentAlertState = ({
     validationSchema: toFormikValidationSchema(transactionPayRequestSchema),
   });
 
+  const isSubmitDisabled = status === 'pending' || status === 'success';
+
   return {
-    status,
     formik,
     wallets: wallets.data?.data ?? [],
+    isSubmitDisabled,
   };
 };

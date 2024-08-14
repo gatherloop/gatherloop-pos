@@ -60,5 +60,8 @@ export const useMaterialFormState = ({
     validationSchema: toFormikValidationSchema(materialRequestSchema),
   });
 
-  return { formik };
+  const isSubmitDisabled =
+    mutation.status === 'pending' || mutation.status === 'success';
+
+  return { formik, isSubmitDisabled };
 };

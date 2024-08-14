@@ -116,6 +116,9 @@ export const useTransactionFormState = ({
 
   const isFormDisabled = transaction.data?.data.paidAt !== undefined;
 
+  const isSubmitDisabled =
+    mutation.status === 'pending' || mutation.status === 'success';
+
   return {
     formik,
     total,
@@ -123,5 +126,6 @@ export const useTransactionFormState = ({
     setIsProductSheetOpen,
     onAddItem,
     isFormDisabled,
+    isSubmitDisabled,
   };
 };

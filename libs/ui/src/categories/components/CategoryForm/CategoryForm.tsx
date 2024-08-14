@@ -4,7 +4,6 @@ import {
   UseCategoryFormStateProps,
   useCategoryFormState,
 } from './CategoryForm.state';
-import { Card } from 'tamagui';
 
 export type CategoryFormProps = {
   variant: UseCategoryFormStateProps['variant'];
@@ -12,14 +11,17 @@ export type CategoryFormProps = {
 };
 
 export const CategoryForm = ({ variant, onSuccess }: CategoryFormProps) => {
-  const { formik } = useCategoryFormState({ variant, onSuccess });
+  const { formik, isSubmitDisabled } = useCategoryFormState({
+    variant,
+    onSuccess,
+  });
   return (
     <FormikProvider value={formik}>
       <Form>
         <Field name="name" label="Name">
           <InputText />
         </Field>
-        <SubmitButton>Submit</SubmitButton>
+        <SubmitButton disabled={isSubmitDisabled}>Submit</SubmitButton>
       </Form>
     </FormikProvider>
   );

@@ -117,6 +117,9 @@ export const useProductFormState = ({
   const foodCostPercentage =
     formik.values.price > 0 ? (totalFoodCost / formik.values.price) * 100 : 0;
 
+  const isSubmitDisabled =
+    mutation.status === 'pending' || mutation.status === 'success';
+
   return {
     formik,
     categories: categories.data?.data ?? [],
@@ -125,5 +128,6 @@ export const useProductFormState = ({
     onAddMaterial,
     totalFoodCost,
     foodCostPercentage,
+    isSubmitDisabled,
   };
 };

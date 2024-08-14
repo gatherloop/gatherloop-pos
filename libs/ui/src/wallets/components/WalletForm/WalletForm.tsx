@@ -17,7 +17,10 @@ export type WalletFormProps = {
 };
 
 export const WalletForm = ({ variant, onSuccess }: WalletFormProps) => {
-  const { formik } = useWalletFormState({ variant, onSuccess });
+  const { formik, isSubmitDisabled } = useWalletFormState({
+    variant,
+    onSuccess,
+  });
   return (
     <FormikProvider value={formik}>
       <Form>
@@ -30,7 +33,7 @@ export const WalletForm = ({ variant, onSuccess }: WalletFormProps) => {
         <Field name="paymentCostPercentage" label="Payment Cost Percentage">
           <InputNumber fractionDigit={2} />
         </Field>
-        <SubmitButton>Submit</SubmitButton>
+        <SubmitButton disabled={isSubmitDisabled}>Submit</SubmitButton>
       </Form>
     </FormikProvider>
   );

@@ -60,5 +60,9 @@ export const useWalletFormState = ({
     validationSchema: toFormikValidationSchema(walletRequestSchema),
   });
 
-  return { formik };
+  const isSubmitDisabled =
+    mutation.status === 'pending' || mutation.status === 'success';
+
+
+  return { formik, isSubmitDisabled };
 };

@@ -20,7 +20,7 @@ export type ExpenseFormProps = {
 };
 
 export const ExpenseForm = ({ variant, onSuccess }: ExpenseFormProps) => {
-  const { formik, budgets, wallets } = useExpenseFormState({
+  const { formik, budgets, wallets, isSubmitDisabled } = useExpenseFormState({
     variant,
     onSuccess,
   });
@@ -150,7 +150,7 @@ export const ExpenseForm = ({ variant, onSuccess }: ExpenseFormProps) => {
           </YStack>
         </YStack>
 
-        <SubmitButton>Submit</SubmitButton>
+        <SubmitButton disabled={isSubmitDisabled}>Submit</SubmitButton>
       </Form>
     </FormikProvider>
   );

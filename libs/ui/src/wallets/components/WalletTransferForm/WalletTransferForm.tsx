@@ -11,7 +11,7 @@ export const WalletTransferForm = ({
   walletId,
   onSuccess,
 }: WalletTransferFormProps) => {
-  const { wallets, formik } = useWalletTransferFormState({
+  const { wallets, formik, isSubmitDisabled } = useWalletTransferFormState({
     walletId,
     onSuccess,
   });
@@ -31,7 +31,7 @@ export const WalletTransferForm = ({
         <Field name="amount" label="Amount">
           <InputNumber />
         </Field>
-        <SubmitButton>Submit</SubmitButton>
+        <SubmitButton disabled={isSubmitDisabled}>Submit</SubmitButton>
       </Form>
     </FormikProvider>
   );

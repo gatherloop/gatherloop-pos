@@ -30,7 +30,7 @@ export const useCategoryFormState = ({
   const mutation =
     variant.type === 'create' ? createCategoryMutation : updateCategoryMutation;
 
-  const toast = useToastController()
+  const toast = useToastController();
 
   const formik = useFormik<CategoryRequest>({
     initialValues: {
@@ -59,5 +59,8 @@ export const useCategoryFormState = ({
     validationSchema: toFormikValidationSchema(categoryRequestSchema),
   });
 
-  return { formik };
+  const isSubmitDisabled =
+    mutation.status === 'pending' || mutation.status === 'success';
+
+  return { formik, isSubmitDisabled };
 };

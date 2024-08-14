@@ -72,9 +72,13 @@ export const useExpenseFormState = ({
     validationSchema: toFormikValidationSchema(expenseRequestSchema),
   });
 
+  const isSubmitDisabled =
+    mutation.status === 'pending' || mutation.status === 'success';
+
   return {
     formik,
     wallets: wallets.data?.data ?? [],
     budgets: budgets.data?.data ?? [],
+    isSubmitDisabled,
   };
 };

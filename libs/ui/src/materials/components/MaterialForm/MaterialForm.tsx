@@ -17,7 +17,10 @@ export type MaterialFormProps = {
 };
 
 export const MaterialForm = ({ variant, onSuccess }: MaterialFormProps) => {
-  const { formik } = useMaterialFormState({ variant, onSuccess });
+  const { formik, isSubmitDisabled } = useMaterialFormState({
+    variant,
+    onSuccess,
+  });
   return (
     <FormikProvider value={formik}>
       <Form>
@@ -30,7 +33,7 @@ export const MaterialForm = ({ variant, onSuccess }: MaterialFormProps) => {
         <Field name="unit" label="Unit">
           <InputText />
         </Field>
-        <SubmitButton>Submit</SubmitButton>
+        <SubmitButton disabled={isSubmitDisabled}>Submit</SubmitButton>
       </Form>
     </FormikProvider>
   );

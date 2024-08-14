@@ -32,6 +32,7 @@ export const TransactionForm = ({
     setIsProductSheetOpen,
     onAddItem,
     isFormDisabled,
+    isSubmitDisabled,
   } = useTransactionFormState({
     variant,
     onSuccess,
@@ -140,7 +141,10 @@ export const TransactionForm = ({
             </FieldArray>
           </YStack>
           <XStack justifyContent="space-between">
-            <SubmitButton disabled={isFormDisabled} theme="blue">
+            <SubmitButton
+              disabled={isFormDisabled || isSubmitDisabled}
+              theme="blue"
+            >
               Submit
             </SubmitButton>
             <YStack alignItems="flex-end">

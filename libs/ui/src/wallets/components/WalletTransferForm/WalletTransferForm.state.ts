@@ -35,8 +35,13 @@ export const useWalletTransferFormState = ({
         .catch(() => toast.show('Transfer failed')),
   });
 
+  const isSubmitDisabled =
+    createWalletTransfer.status === 'pending' ||
+    createWalletTransfer.status === 'success';
+
   return {
     formik,
     wallets: wallets.data?.data.filter(({ id }) => id !== walletId) ?? [],
+    isSubmitDisabled,
   };
 };

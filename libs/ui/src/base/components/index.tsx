@@ -1,4 +1,4 @@
-export * from './Navbar/Navbar';
+export * from './Navbar';
 export * from './Sidebar';
 export * from './ListItem';
 export * from './LoadingView';
@@ -6,9 +6,4 @@ export * from './EmptyView';
 export * from './ErrorView';
 export * from './Layout';
 export * from './Form';
-export * from './InputText';
-export * from './InputNumber';
-export * from './Field';
-export * from './SubmitButton';
-export * from './Select';
 export * from './Sheet';

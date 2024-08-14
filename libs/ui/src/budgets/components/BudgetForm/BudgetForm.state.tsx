@@ -60,5 +60,8 @@ export const useBudgetFormState = ({
     validationSchema: toFormikValidationSchema(budgetRequestSchema),
   });
 
-  return { formik };
+  const isSubmitDisabled =
+    mutation.status === 'pending' || mutation.status === 'success';
+
+  return { formik, isSubmitDisabled };
 };
