@@ -43,7 +43,7 @@ func (repo Repository) GetTransactionList(query string, sortBy string, order str
 
 func (repo Repository) GetTransactionById(id int64) (apiContract.Transaction, error) {
 	var transaction apiContract.Transaction
-	result := repo.db.Table("transactions").Where("id = ?", id).Preload("TransactionItems").Preload("Wallet").Preload("TransactionItems.Product").Preload("TransactionItems.Product.Category").Find(&transaction)
+	result := repo.db.Table("transactions").Where("id = ?", id).Preload("TransactionItems").Preload("Wallet").Preload("TransactionItems.Product").Preload("TransactionItems.Product.Materials").Preload("TransactionItems.Product.Materials.Material").Preload("TransactionItems.Product.Category").Find(&transaction)
 	return transaction, result.Error
 }
 
