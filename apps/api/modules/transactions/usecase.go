@@ -172,13 +172,20 @@ func (usecase Usecase) PayTransaction(transactionPayRequest apiContract.Transact
 	}
 
 	for _, budget := range budgets {
-		addition := totalIncome * budget.Percentage / 100
-		newBalance := budget.Balance + addition
+		var restockBudgetId int64 = 4
+
+		var newBalance float32
+
+		if budget.Id == restockBudgetId {
+			newBalance = budget.Balance + foodCost
+		} else {
+			addition := totalIncome * budget.Percentage / 100
+			newBalance = budget.Balance + addition
+		}
 
 		if err := usecase.budgetRepository.UpdateBudgetById(apiContract.BudgetRequest{Balance: newBalance}, budget.Id); err != nil {
 			return err
 		}
 	}
-
 	return usecase.repository.PayTransaction(transactionPayRequest.WalletId, time.Now(), id)
 }

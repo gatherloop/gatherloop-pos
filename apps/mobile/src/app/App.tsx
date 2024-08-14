@@ -12,8 +12,6 @@ import {
   ProductCreateScreen,
   ProductUpdateScreen,
   BudgetListScreen,
-  BudgetCreateScreen,
-  BudgetUpdateScreen,
   WalletTransferListScreen,
   WalletTransferCreateScreen,
   TransactionListScreen,
@@ -110,13 +108,6 @@ export const App = () => {
               },
             },
             budgetList: 'budgets',
-            budgetCreate: 'budgets/create',
-            budgetUpdate: {
-              path: 'budgets/:budgetId',
-              parse: {
-                budgetId: (budgetId) => parseInt(budgetId),
-              },
-            },
             transactionList: 'transactions',
             transactionCreate: 'transactions/create',
             transactionUpdate: {
@@ -186,8 +177,6 @@ export const App = () => {
           <Stack.Screen name="productCreate" component={ProductCreateScreen} />
           <Stack.Screen name="productUpdate" component={ProductUpdateScreen} />
           <Stack.Screen name="budgetList" component={BudgetListScreen} />
-          <Stack.Screen name="budgetCreate" component={BudgetCreateScreen} />
-          <Stack.Screen name="budgetUpdate" component={BudgetUpdateScreen} />
           <Stack.Screen
             name="transactionList"
             component={TransactionListScreen}
