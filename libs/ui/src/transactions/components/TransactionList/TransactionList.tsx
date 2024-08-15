@@ -47,6 +47,7 @@ export const TransactionList = ({
               key={transaction.id}
               title={transaction.name}
               subtitle={`Rp. ${transaction.total.toLocaleString('id')}`}
+              backgroundColor={transaction.paidAt ? '$gray1' : '$red3'}
               onPress={() => onItemPress(transaction)}
               menus={itemMenus.map((itemMenu) => ({
                 ...itemMenu,

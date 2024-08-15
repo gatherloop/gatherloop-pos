@@ -115,9 +115,9 @@ export const ListItem = ({
             {shownFooterItems.map((footerItem, index) => (
               <XStack gap="$2" alignItems="center" key={index}>
                 {footerItem.icon && (
-                  <footerItem.icon size="$1" color="$gray11" />
+                  <footerItem.icon size="$1" color="$gray12" />
                 )}
-                <Paragraph color="$gray11">{footerItem.value}</Paragraph>
+                <Paragraph color="$gray12">{footerItem.value}</Paragraph>
               </XStack>
             ))}
           </XStack>
