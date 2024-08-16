@@ -33,12 +33,12 @@ func (repo Repository) CreateBudget(budgetRequest apiContract.BudgetRequest) err
 }
 
 func (repo Repository) UpdateBudgetById(budgetRequest apiContract.BudgetRequest, id int64) error {
-	result := repo.db.Table("budgets").Where(apiContract.Budget{Id: id}).Updates(budgetRequest)
+	result := repo.db.Table("budgets").Where("id = ?", id).Updates(budgetRequest)
 	return result.Error
 }
 
 func (repo Repository) DeleteBudgetById(id int64) error {
 	currentTime := time.Now()
-	result := repo.db.Table("budgets").Where(apiContract.Budget{Id: id}).Update("deleted_at", currentTime)
+	result := repo.db.Table("budgets").Where("id = ?", id).Update("deleted_at", currentTime)
 	return result.Error
 }

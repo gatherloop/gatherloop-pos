@@ -18,7 +18,7 @@ func NewRepository(db *gorm.DB) Repository {
 
 func (repo Repository) GetProductList(query string, sortBy string, order string, skip int, limit int) ([]apiContract.Product, error) {
 	var products []apiContract.Product
-	result := repo.db.Model(&apiContract.Product{}).Preload("Category").Preload("Materials").Preload("Materials.Material").Where("deleted_at", nil)
+	result := repo.db.Table("products").Preload("Category").Preload("Materials").Preload("Materials.Material").Where("deleted_at", nil)
 
 	if sortBy != "" && order != "" {
 		result = result.Order(fmt.Sprintf("%s %s", sortBy, order))
@@ -43,7 +43,7 @@ func (repo Repository) GetProductList(query string, sortBy string, order string,
 
 func (repo Repository) GetProductById(id int64) (apiContract.Product, error) {
 	var product apiContract.Product
-	result := repo.db.Model(&apiContract.Product{}).Preload("Category").Preload("Materials").Preload("Materials.Material").Where("id = ?", id).First(&product)
+	result := repo.db.Table("products").Preload("Category").Preload("Materials").Preload("Materials.Material").Where("id = ?", id).First(&product)
 	return product, result.Error
 }
 
@@ -53,13 +53,13 @@ func (repo Repository) CreateProduct(product *apiContract.Product) error {
 }
 
 func (repo Repository) UpdateProductById(product *apiContract.Product, id int64) error {
-	result := repo.db.Table("products").Where(apiContract.Product{Id: id}).Updates(product)
+	result := repo.db.Table("products").Where("id = ?", id).Updates(product)
 	return result.Error
 }
 
 func (repo Repository) DeleteProductById(id int64) error {
 	currentTime := time.Now()
-	result := repo.db.Table("products").Where(apiContract.Product{Id: id}).Update("deleted_at", currentTime)
+	result := repo.db.Table("products").Where("id = ?", id).Update("deleted_at", currentTime)
 	return result.Error
 }
 

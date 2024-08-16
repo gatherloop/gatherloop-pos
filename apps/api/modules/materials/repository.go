@@ -53,12 +53,12 @@ func (repo Repository) CreateMaterial(materialRequest apiContract.MaterialReques
 }
 
 func (repo Repository) UpdateMaterialById(materialRequest apiContract.MaterialRequest, id int64) error {
-	result := repo.db.Table("materials").Where(apiContract.Material{Id: id}).Updates(materialRequest)
+	result := repo.db.Table("materials").Where("id = ?", id).Updates(materialRequest)
 	return result.Error
 }
 
 func (repo Repository) DeleteMaterialById(id int64) error {
 	currentTime := time.Now()
-	result := repo.db.Table("materials").Where(apiContract.Material{Id: id}).Update("deleted_at", currentTime)
+	result := repo.db.Table("materials").Where("id = ?", id).Update("deleted_at", currentTime)
 	return result.Error
 }

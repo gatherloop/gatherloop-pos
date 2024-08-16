@@ -33,12 +33,12 @@ func (repo Repository) CreateCategory(categoryRequest apiContract.CategoryReques
 }
 
 func (repo Repository) UpdateCategoryById(categoryRequest apiContract.CategoryRequest, id int64) error {
-	result := repo.db.Table("categories").Where(apiContract.Category{Id: id}).Updates(categoryRequest)
+	result := repo.db.Table("categories").Where("id = ?", id).Updates(categoryRequest)
 	return result.Error
 }
 
 func (repo Repository) DeleteCategoryById(id int64) error {
 	currentTime := time.Now()
-	result := repo.db.Table("categories").Where(apiContract.Category{Id: id}).Update("deleted_at", currentTime)
+	result := repo.db.Table("categories").Where("id = ?", id).Update("deleted_at", currentTime)
 	return result.Error
 }

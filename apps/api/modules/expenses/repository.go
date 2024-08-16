@@ -49,13 +49,13 @@ func (repo Repository) CreateExpense(expense *apiContract.Expense) error {
 }
 
 func (repo Repository) UpdateExpenseById(expense *apiContract.Expense, id int64) error {
-	result := repo.db.Table("expenses").Where(apiContract.Expense{Id: id}).Updates(expense)
+	result := repo.db.Table("expenses").Where("id = ?", id).Updates(expense)
 	return result.Error
 }
 
 func (repo Repository) DeleteExpenseById(id int64) error {
 	currentTime := time.Now()
-	result := repo.db.Table("expenses").Where(apiContract.Expense{Id: id}).Update("deleted_at", currentTime)
+	result := repo.db.Table("expenses").Where("id = ?", id).Update("deleted_at", currentTime)
 	return result.Error
 }
 

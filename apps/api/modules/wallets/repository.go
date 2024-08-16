@@ -33,13 +33,13 @@ func (repo Repository) CreateWallet(walletRequest apiContract.WalletRequest) err
 }
 
 func (repo Repository) UpdateWalletById(walletRequest apiContract.WalletRequest, id int64) error {
-	result := repo.db.Table("wallets").Where(apiContract.Wallet{Id: id}).Updates(walletRequest)
+	result := repo.db.Table("wallets").Where("id = ?", id).Updates(walletRequest)
 	return result.Error
 }
 
 func (repo Repository) DeleteWalletById(id int64) error {
 	currentTime := time.Now()
-	result := repo.db.Table("wallets").Where(apiContract.Wallet{Id: id}).Update("deleted_at", currentTime)
+	result := repo.db.Table("wallets").Where("id = ?", id).Update("deleted_at", currentTime)
 	return result.Error
 }
 

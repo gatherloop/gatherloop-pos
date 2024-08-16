@@ -53,13 +53,13 @@ func (repo Repository) CreateTransaction(transaction *apiContract.Transaction) e
 }
 
 func (repo Repository) UpdateTransactionById(transaction *apiContract.Transaction, id int64) error {
-	result := repo.db.Table("transactions").Where(apiContract.Transaction{Id: id}).Updates(transaction)
+	result := repo.db.Table("transactions").Where("id = ?", id).Updates(transaction)
 	return result.Error
 }
 
 func (repo Repository) DeleteTranscationById(id int64) error {
 	currentTime := time.Now()
-	result := repo.db.Table("transactions").Where(apiContract.Transaction{Id: id}).Update("deleted_at", currentTime)
+	result := repo.db.Table("transactions").Where("id = ?", id).Update("deleted_at", currentTime)
 	return result.Error
 }
 
@@ -74,6 +74,6 @@ func (repo Repository) CreateTransactionItem(transactionItem *apiContract.Transa
 }
 
 func (repo Repository) PayTransaction(walletId int64, paidAt time.Time, id int64) error {
-	result := repo.db.Table("transactions").Where(apiContract.Transaction{Id: id}).Updates(apiContract.Transaction{WalletId: &walletId, PaidAt: &paidAt})
+	result := repo.db.Table("transactions").Where("id = ?", id).Updates(apiContract.Transaction{WalletId: &walletId, PaidAt: &paidAt})
 	return result.Error
 }
