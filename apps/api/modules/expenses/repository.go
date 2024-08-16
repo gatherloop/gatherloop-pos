@@ -39,7 +39,7 @@ func (repo Repository) GetExpenseList(sortBy string, order string, skip int, lim
 
 func (repo Repository) GetExpenseById(id int64) (apiContract.Expense, error) {
 	var expense apiContract.Expense
-	result := repo.db.Table("expenses").Where("id = ?", id).Preload("ExpenseItems").Preload("Wallet").Preload("Budget").Find(&expense)
+	result := repo.db.Table("expenses").Where("id = ?", id).Preload("ExpenseItems").Preload("Wallet").Preload("Budget").First(&expense)
 	return expense, result.Error
 }
 

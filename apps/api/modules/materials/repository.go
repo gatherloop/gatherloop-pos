@@ -43,7 +43,7 @@ func (repo Repository) GetMaterialList(query string, sortBy string, order string
 
 func (repo Repository) GetMaterialById(id int64) (apiContract.Material, error) {
 	var material apiContract.Material
-	result := repo.db.Table("materials").Where("id = ?", id).Find(&material)
+	result := repo.db.Table("materials").Where("id = ?", id).First(&material)
 	return material, result.Error
 }
 

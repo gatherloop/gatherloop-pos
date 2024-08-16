@@ -23,7 +23,7 @@ func (repo Repository) GetCategoryList() ([]apiContract.Category, error) {
 
 func (repo Repository) GetCategoryById(id int64) (apiContract.Category, error) {
 	var category apiContract.Category
-	result := repo.db.Table("categories").Where("id = ?", id).Find(&category)
+	result := repo.db.Table("categories").Where("id = ?", id).First(&category)
 	return category, result.Error
 }
 

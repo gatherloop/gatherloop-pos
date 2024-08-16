@@ -43,7 +43,7 @@ func (repo Repository) GetProductList(query string, sortBy string, order string,
 
 func (repo Repository) GetProductById(id int64) (apiContract.Product, error) {
 	var product apiContract.Product
-	result := repo.db.Model(&apiContract.Product{}).Preload("Category").Preload("Materials").Preload("Materials.Material").Where("id = ?", id).Find(&product)
+	result := repo.db.Model(&apiContract.Product{}).Preload("Category").Preload("Materials").Preload("Materials.Material").Where("id = ?", id).First(&product)
 	return product, result.Error
 }
 

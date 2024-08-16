@@ -23,7 +23,7 @@ func (repo Repository) GetWalletList() ([]apiContract.Wallet, error) {
 
 func (repo Repository) GetWalletById(id int64) (apiContract.Wallet, error) {
 	var wallet apiContract.Wallet
-	result := repo.db.Table("wallets").Where("id = ?", id).Find(&wallet)
+	result := repo.db.Table("wallets").Where("id = ?", id).First(&wallet)
 	return wallet, result.Error
 }
 

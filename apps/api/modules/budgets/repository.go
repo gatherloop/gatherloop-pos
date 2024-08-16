@@ -23,7 +23,7 @@ func (repo Repository) GetBudgetList() ([]apiContract.Budget, error) {
 
 func (repo Repository) GetBudgetById(id int64) (apiContract.Budget, error) {
 	var budget apiContract.Budget
-	result := repo.db.Table("budgets").Where("id = ?", id).Find(&budget)
+	result := repo.db.Table("budgets").Where("id = ?", id).First(&budget)
 	return budget, result.Error
 }
 
