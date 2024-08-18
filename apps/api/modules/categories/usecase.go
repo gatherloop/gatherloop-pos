@@ -1,6 +1,7 @@
 package categories
 
 import (
+	"context"
 	apiContract "libs/api-contract"
 )
 
@@ -12,22 +13,22 @@ func NewUsecase(repository Repository) Usecase {
 	return Usecase{repository: repository}
 }
 
-func (usecase Usecase) GetCategoryList() ([]apiContract.Category, error) {
-	return usecase.repository.GetCategoryList()
+func (usecase Usecase) GetCategoryList(ctx context.Context) ([]apiContract.Category, error) {
+	return usecase.repository.GetCategoryList(ctx)
 }
 
-func (usecase Usecase) GetCategoryById(id int64) (apiContract.Category, error) {
-	return usecase.repository.GetCategoryById(id)
+func (usecase Usecase) GetCategoryById(ctx context.Context, id int64) (apiContract.Category, error) {
+	return usecase.repository.GetCategoryById(ctx, id)
 }
 
-func (usecase Usecase) CreateCategory(categoryRequest apiContract.CategoryRequest) error {
-	return usecase.repository.CreateCategory(categoryRequest)
+func (usecase Usecase) CreateCategory(ctx context.Context, categoryRequest apiContract.CategoryRequest) error {
+	return usecase.repository.CreateCategory(ctx, categoryRequest)
 }
 
-func (usecase Usecase) UpdateCategoryById(categoryRequest apiContract.CategoryRequest, id int64) error {
-	return usecase.repository.UpdateCategoryById(categoryRequest, id)
+func (usecase Usecase) UpdateCategoryById(ctx context.Context, categoryRequest apiContract.CategoryRequest, id int64) error {
+	return usecase.repository.UpdateCategoryById(ctx, categoryRequest, id)
 }
 
-func (usecase Usecase) DeleteCategoryById(id int64) error {
-	return usecase.repository.DeleteCategoryById(id)
+func (usecase Usecase) DeleteCategoryById(ctx context.Context, id int64) error {
+	return usecase.repository.DeleteCategoryById(ctx, id)
 }

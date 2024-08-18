@@ -1,6 +1,8 @@
 package expenses
 
 import (
+	"apps/api/utils"
+	"context"
 	"fmt"
 	apiContract "libs/api-contract"
 	"time"
@@ -16,7 +18,11 @@ func NewRepository(db *gorm.DB) Repository {
 	return Repository{db: db}
 }
 
-func (repo Repository) GetExpenseList(sortBy string, order string, skip int, limit int) ([]apiContract.Expense, error) {
+func (repo Repository) BeginTransaction(ctx context.Context, callback func(ctxWithTx context.Context) error) error {
+	return utils.BeginDbTransaction(ctx, repo.db, callback)
+}
+
+func (repo Repository) GetExpenseList(ctx context.Context, sortBy string, order string, skip int, limit int) ([]apiContract.Expense, error) {
 	var expenses []apiContract.Expense
 	result := repo.db.Table("expenses").Where("deleted_at is NULL").Preload("ExpenseItems").Preload("Wallet").Preload("Budget")
 
@@ -37,34 +43,40 @@ func (repo Repository) GetExpenseList(sortBy string, order string, skip int, lim
 	return expenses, result.Error
 }
 
-func (repo Repository) GetExpenseById(id int64) (apiContract.Expense, error) {
+func (repo Repository) GetExpenseById(ctx context.Context, id int64) (apiContract.Expense, error) {
+	db := utils.GetDbFromCtx(ctx, repo.db)
 	var expense apiContract.Expense
-	result := repo.db.Table("expenses").Where("id = ?", id).Preload("ExpenseItems").Preload("Wallet").Preload("Budget").First(&expense)
+	result := db.Table("expenses").Where("id = ?", id).Preload("ExpenseItems").Preload("Wallet").Preload("Budget").First(&expense)
 	return expense, result.Error
 }
 
-func (repo Repository) CreateExpense(expense *apiContract.Expense) error {
-	result := repo.db.Table("expenses").Create(expense)
+func (repo Repository) CreateExpense(ctx context.Context, expense *apiContract.Expense) error {
+	db := utils.GetDbFromCtx(ctx, repo.db)
+	result := db.Table("expenses").Create(expense)
 	return result.Error
 }
 
-func (repo Repository) UpdateExpenseById(expense *apiContract.Expense, id int64) error {
-	result := repo.db.Table("expenses").Where("id = ?", id).Updates(expense)
+func (repo Repository) UpdateExpenseById(ctx context.Context, expense *apiContract.Expense, id int64) error {
+	db := utils.GetDbFromCtx(ctx, repo.db)
+	result := db.Table("expenses").Where("id = ?", id).Updates(expense)
 	return result.Error
 }
 
-func (repo Repository) DeleteExpenseById(id int64) error {
+func (repo Repository) DeleteExpenseById(ctx context.Context, id int64) error {
+	db := utils.GetDbFromCtx(ctx, repo.db)
 	currentTime := time.Now()
-	result := repo.db.Table("expenses").Where("id = ?", id).Update("deleted_at", currentTime)
+	result := db.Table("expenses").Where("id = ?", id).Update("deleted_at", currentTime)
 	return result.Error
 }
 
-func (repo Repository) DeleteExpenseItems(expenseId int64) error {
-	result := repo.db.Table("expense_items").Where("expense_id = ?", expenseId).Delete(apiContract.ExpenseItem{})
+func (repo Repository) DeleteExpenseItems(ctx context.Context, expenseId int64) error {
+	db := utils.GetDbFromCtx(ctx, repo.db)
+	result := db.Table("expense_items").Where("expense_id = ?", expenseId).Delete(apiContract.ExpenseItem{})
 	return result.Error
 }
 
-func (repo Repository) CreateExpenseItems(expenseItems []apiContract.ExpenseItem) error {
-	result := repo.db.Table("expense_items").Create(expenseItems)
+func (repo Repository) CreateExpenseItems(ctx context.Context, expenseItems []apiContract.ExpenseItem) error {
+	db := utils.GetDbFromCtx(ctx, repo.db)
+	result := db.Table("expense_items").Create(expenseItems)
 	return result.Error
 }

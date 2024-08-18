@@ -16,7 +16,9 @@ func NewHandler(usecase Usecase) Handler {
 }
 
 func (handler Handler) GetBudgetList(w http.ResponseWriter, r *http.Request) {
-	budgets, err := handler.usecase.GetBudgetList()
+	ctx := r.Context()
+
+	budgets, err := handler.usecase.GetBudgetList(ctx)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
@@ -26,13 +28,15 @@ func (handler Handler) GetBudgetList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (handler Handler) GetBudgetById(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	id, err := GetBudgetId(r)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
 		return
 	}
 
-	Budget, err := handler.usecase.GetBudgetById(id)
+	Budget, err := handler.usecase.GetBudgetById(ctx, id)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		return
@@ -42,13 +46,15 @@ func (handler Handler) GetBudgetById(w http.ResponseWriter, r *http.Request) {
 }
 
 func (handler Handler) CreateBudget(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	budgetRequest, err := GetBudgetRequest(r)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
 		return
 	}
 
-	if err := handler.usecase.CreateBudget(budgetRequest); err != nil {
+	if err := handler.usecase.CreateBudget(ctx, budgetRequest); err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
@@ -57,6 +63,8 @@ func (handler Handler) CreateBudget(w http.ResponseWriter, r *http.Request) {
 }
 
 func (handler Handler) UpdateBudgetById(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	id, err := GetBudgetId(r)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
@@ -69,7 +77,7 @@ func (handler Handler) UpdateBudgetById(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if err := handler.usecase.UpdateBudgetById(budgetRequest, id); err != nil {
+	if err := handler.usecase.UpdateBudgetById(ctx, budgetRequest, id); err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		return
 	}
@@ -78,13 +86,15 @@ func (handler Handler) UpdateBudgetById(w http.ResponseWriter, r *http.Request) 
 }
 
 func (handler Handler) DeleteBudgetById(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	id, err := GetBudgetId(r)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
 		return
 	}
 
-	if err := handler.usecase.DeleteBudgetById(id); err != nil {
+	if err := handler.usecase.DeleteBudgetById(ctx, id); err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		return
 	}

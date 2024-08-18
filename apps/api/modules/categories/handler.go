@@ -16,7 +16,9 @@ func NewHandler(usecase Usecase) Handler {
 }
 
 func (handler Handler) GetCategoryList(w http.ResponseWriter, r *http.Request) {
-	categories, err := handler.usecase.GetCategoryList()
+	ctx := r.Context()
+
+	categories, err := handler.usecase.GetCategoryList(ctx)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
@@ -25,13 +27,15 @@ func (handler Handler) GetCategoryList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (handler Handler) GetCategoryById(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	id, err := GetCategoryId(r)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
 
-	category, err := handler.usecase.GetCategoryById(id)
+	category, err := handler.usecase.GetCategoryById(ctx, id)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		return
@@ -41,13 +45,15 @@ func (handler Handler) GetCategoryById(w http.ResponseWriter, r *http.Request) {
 }
 
 func (handler Handler) CreateCategory(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	categoryRequest, err := GetCategoryRequest(r)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
 		return
 	}
 
-	if err := handler.usecase.CreateCategory(categoryRequest); err != nil {
+	if err := handler.usecase.CreateCategory(ctx, categoryRequest); err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
@@ -56,6 +62,8 @@ func (handler Handler) CreateCategory(w http.ResponseWriter, r *http.Request) {
 }
 
 func (handler Handler) UpdateCategoryById(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	id, err := GetCategoryId(r)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
@@ -68,7 +76,7 @@ func (handler Handler) UpdateCategoryById(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if err := handler.usecase.UpdateCategoryById(categoryRequest, id); err != nil {
+	if err := handler.usecase.UpdateCategoryById(ctx, categoryRequest, id); err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		return
 	}
@@ -77,13 +85,15 @@ func (handler Handler) UpdateCategoryById(w http.ResponseWriter, r *http.Request
 }
 
 func (handler Handler) DeleteCategoryById(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	id, err := GetCategoryId(r)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
 
-	if err := handler.usecase.DeleteCategoryById(id); err != nil {
+	if err := handler.usecase.DeleteCategoryById(ctx, id); err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		return
 	}

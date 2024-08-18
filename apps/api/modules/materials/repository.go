@@ -1,6 +1,8 @@
 package materials
 
 import (
+	"apps/api/utils"
+	"context"
 	"fmt"
 	apiContract "libs/api-contract"
 	"time"
@@ -16,9 +18,14 @@ func NewRepository(db *gorm.DB) Repository {
 	return Repository{db: db}
 }
 
-func (repo Repository) GetMaterialList(query string, sortBy string, order string, skip int, limit int) ([]apiContract.Material, error) {
+func (repo Repository) BeginTransaction(ctx context.Context, callback func(ctxWithTx context.Context) error) error {
+	return utils.BeginDbTransaction(ctx, repo.db, callback)
+}
+
+func (repo Repository) GetMaterialList(ctx context.Context, query string, sortBy string, order string, skip int, limit int) ([]apiContract.Material, error) {
+	db := utils.GetDbFromCtx(ctx, repo.db)
 	var categories []apiContract.Material
-	result := repo.db.Table("materials").Where("deleted_at", nil)
+	result := db.Table("materials").Where("deleted_at", nil)
 
 	if sortBy != "" && order != "" {
 		result = result.Order(fmt.Sprintf("%s %s", sortBy, order))
@@ -41,24 +48,28 @@ func (repo Repository) GetMaterialList(query string, sortBy string, order string
 	return categories, result.Error
 }
 
-func (repo Repository) GetMaterialById(id int64) (apiContract.Material, error) {
+func (repo Repository) GetMaterialById(ctx context.Context, id int64) (apiContract.Material, error) {
+	db := utils.GetDbFromCtx(ctx, repo.db)
 	var material apiContract.Material
-	result := repo.db.Table("materials").Where("id = ?", id).First(&material)
+	result := db.Table("materials").Where("id = ?", id).First(&material)
 	return material, result.Error
 }
 
-func (repo Repository) CreateMaterial(materialRequest apiContract.MaterialRequest) error {
-	result := repo.db.Table("materials").Create(materialRequest)
+func (repo Repository) CreateMaterial(ctx context.Context, materialRequest apiContract.MaterialRequest) error {
+	db := utils.GetDbFromCtx(ctx, repo.db)
+	result := db.Table("materials").Create(materialRequest)
 	return result.Error
 }
 
-func (repo Repository) UpdateMaterialById(materialRequest apiContract.MaterialRequest, id int64) error {
-	result := repo.db.Table("materials").Where("id = ?", id).Updates(materialRequest)
+func (repo Repository) UpdateMaterialById(ctx context.Context, materialRequest apiContract.MaterialRequest, id int64) error {
+	db := utils.GetDbFromCtx(ctx, repo.db)
+	result := db.Table("materials").Where("id = ?", id).Updates(materialRequest)
 	return result.Error
 }
 
-func (repo Repository) DeleteMaterialById(id int64) error {
+func (repo Repository) DeleteMaterialById(ctx context.Context, id int64) error {
+	db := utils.GetDbFromCtx(ctx, repo.db)
 	currentTime := time.Now()
-	result := repo.db.Table("materials").Where("id = ?", id).Update("deleted_at", currentTime)
+	result := db.Table("materials").Where("id = ?", id).Update("deleted_at", currentTime)
 	return result.Error
 }

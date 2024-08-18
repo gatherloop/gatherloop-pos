@@ -16,7 +16,9 @@ func NewHandler(usecase Usecase) Handler {
 }
 
 func (handler Handler) GetWalletList(w http.ResponseWriter, r *http.Request) {
-	wallets, err := handler.usecase.GetWalletList()
+	ctx := r.Context()
+
+	wallets, err := handler.usecase.GetWalletList(ctx)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
@@ -26,13 +28,15 @@ func (handler Handler) GetWalletList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (handler Handler) GetWalletById(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	id, err := GetWalletId(r)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
 
-	wallet, err := handler.usecase.GetWalletById(id)
+	wallet, err := handler.usecase.GetWalletById(ctx, id)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		return
@@ -42,13 +46,15 @@ func (handler Handler) GetWalletById(w http.ResponseWriter, r *http.Request) {
 }
 
 func (handler Handler) CreateWallet(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	walletRequest, err := GetWalletRequest(r)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
 		return
 	}
 
-	if err := handler.usecase.CreateWallet(walletRequest); err != nil {
+	if err := handler.usecase.CreateWallet(ctx, walletRequest); err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
@@ -57,6 +63,8 @@ func (handler Handler) CreateWallet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (handler Handler) UpdateWalletById(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	id, err := GetWalletId(r)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
@@ -69,7 +77,7 @@ func (handler Handler) UpdateWalletById(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if err := handler.usecase.UpdateWalletById(walletRequest, id); err != nil {
+	if err := handler.usecase.UpdateWalletById(ctx, walletRequest, id); err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		return
 	}
@@ -78,13 +86,15 @@ func (handler Handler) UpdateWalletById(w http.ResponseWriter, r *http.Request) 
 }
 
 func (handler Handler) DeleteWalletById(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	id, err := GetWalletId(r)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
 
-	if err := handler.usecase.DeleteWalletById(id); err != nil {
+	if err := handler.usecase.DeleteWalletById(ctx, id); err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		return
 	}
@@ -93,13 +103,15 @@ func (handler Handler) DeleteWalletById(w http.ResponseWriter, r *http.Request) 
 }
 
 func (handler Handler) GetWalletTransferList(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	walletId, err := GetWalletId(r)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
 
-	walletTransfers, err := handler.usecase.GetWalletTransferList(walletId)
+	walletTransfers, err := handler.usecase.GetWalletTransferList(ctx, walletId)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		return
@@ -109,6 +121,8 @@ func (handler Handler) GetWalletTransferList(w http.ResponseWriter, r *http.Requ
 }
 
 func (handler Handler) CreateWalletTransfer(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	walletId, err := GetWalletId(r)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
@@ -121,7 +135,7 @@ func (handler Handler) CreateWalletTransfer(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if err := handler.usecase.CreateWalletTransfer(walletTransferRequest, walletId); err != nil {
+	if err := handler.usecase.CreateWalletTransfer(ctx, walletTransferRequest, walletId); err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		return
 	}

@@ -16,6 +16,8 @@ func NewHandler(usecase Usecase) Handler {
 }
 
 func (handler Handler) GetMaterialList(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	query := base.GetQuery(r)
 	sortBy := base.GetSortBy(r)
 	order := base.GetOrder(r)
@@ -32,7 +34,7 @@ func (handler Handler) GetMaterialList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	materials, err := handler.usecase.GetMaterialList(query, sortBy, order, skip, limit)
+	materials, err := handler.usecase.GetMaterialList(ctx, query, sortBy, order, skip, limit)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
@@ -42,13 +44,15 @@ func (handler Handler) GetMaterialList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (handler Handler) GetMaterialById(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	id, err := GetMaterialId(r)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
 
-	Material, err := handler.usecase.GetMaterialById(id)
+	Material, err := handler.usecase.GetMaterialById(ctx, id)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		return
@@ -58,13 +62,15 @@ func (handler Handler) GetMaterialById(w http.ResponseWriter, r *http.Request) {
 }
 
 func (handler Handler) CreateMaterial(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	materialRequest, err := GetMaterialRequest(r)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
 		return
 	}
 
-	if err := handler.usecase.CreateMaterial(materialRequest); err != nil {
+	if err := handler.usecase.CreateMaterial(ctx, materialRequest); err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
@@ -73,6 +79,8 @@ func (handler Handler) CreateMaterial(w http.ResponseWriter, r *http.Request) {
 }
 
 func (handler Handler) UpdateMaterialById(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	id, err := GetMaterialId(r)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
@@ -85,7 +93,7 @@ func (handler Handler) UpdateMaterialById(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if err := handler.usecase.UpdateMaterialById(materialRequest, id); err != nil {
+	if err := handler.usecase.UpdateMaterialById(ctx, materialRequest, id); err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		return
 	}
@@ -94,13 +102,15 @@ func (handler Handler) UpdateMaterialById(w http.ResponseWriter, r *http.Request
 }
 
 func (handler Handler) DeleteMaterialById(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	id, err := GetMaterialId(r)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
 
-	if err := handler.usecase.DeleteMaterialById(id); err != nil {
+	if err := handler.usecase.DeleteMaterialById(ctx, id); err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		return
 	}

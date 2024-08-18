@@ -16,6 +16,8 @@ func NewHandler(usecase Usecase) Handler {
 }
 
 func (handler Handler) GetProductList(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	query := base.GetQuery(r)
 	sortBy := base.GetSortBy(r)
 	order := base.GetOrder(r)
@@ -32,7 +34,7 @@ func (handler Handler) GetProductList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	products, err := handler.usecase.GetProductList(query, sortBy, order, skip, limit)
+	products, err := handler.usecase.GetProductList(ctx, query, sortBy, order, skip, limit)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
@@ -42,13 +44,15 @@ func (handler Handler) GetProductList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (handler Handler) GetProductById(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	id, err := GetProductId(r)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
 
-	product, err := handler.usecase.GetProductById(id)
+	product, err := handler.usecase.GetProductById(ctx, id)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		return
@@ -58,13 +62,15 @@ func (handler Handler) GetProductById(w http.ResponseWriter, r *http.Request) {
 }
 
 func (handler Handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	productRequest, err := GetProductRequest(r)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
 		return
 	}
 
-	if err := handler.usecase.CreateProduct(productRequest); err != nil {
+	if err := handler.usecase.CreateProduct(ctx, productRequest); err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
@@ -73,6 +79,8 @@ func (handler Handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 }
 
 func (handler Handler) UpdateProductById(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	id, err := GetProductId(r)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
@@ -85,7 +93,7 @@ func (handler Handler) UpdateProductById(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if err := handler.usecase.UpdateProductById(productRequest, id); err != nil {
+	if err := handler.usecase.UpdateProductById(ctx, productRequest, id); err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		return
 	}
@@ -94,13 +102,15 @@ func (handler Handler) UpdateProductById(w http.ResponseWriter, r *http.Request)
 }
 
 func (handler Handler) DeleteProductById(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	id, err := GetProductId(r)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
 
-	if err := handler.usecase.DeleteProductById(id); err != nil {
+	if err := handler.usecase.DeleteProductById(ctx, id); err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		return
 	}

@@ -16,6 +16,8 @@ func NewHandler(usecase Usecase) Handler {
 }
 
 func (handler Handler) GetExpenseList(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	sortBy := base.GetSortBy(r)
 	order := base.GetOrder(r)
 
@@ -31,7 +33,7 @@ func (handler Handler) GetExpenseList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	expenses, err := handler.usecase.GetExpenseList(sortBy, order, skip, limit)
+	expenses, err := handler.usecase.GetExpenseList(ctx, sortBy, order, skip, limit)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
@@ -41,13 +43,15 @@ func (handler Handler) GetExpenseList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (handler Handler) GetExpenseById(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	id, err := GetExpenseId(r)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
 
-	expense, err := handler.usecase.GetExpenseById(id)
+	expense, err := handler.usecase.GetExpenseById(ctx, id)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		return
@@ -57,13 +61,15 @@ func (handler Handler) GetExpenseById(w http.ResponseWriter, r *http.Request) {
 }
 
 func (handler Handler) CreateExpense(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	expenseRequest, err := GetExpenseRequest(r)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
 		return
 	}
 
-	if err := handler.usecase.CreateExpense(expenseRequest); err != nil {
+	if err := handler.usecase.CreateExpense(ctx, expenseRequest); err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
@@ -72,6 +78,8 @@ func (handler Handler) CreateExpense(w http.ResponseWriter, r *http.Request) {
 }
 
 func (handler Handler) UpdateExpenseById(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	id, err := GetExpenseId(r)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
@@ -84,7 +92,7 @@ func (handler Handler) UpdateExpenseById(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if err := handler.usecase.UpdateExpenseById(expenseRequest, id); err != nil {
+	if err := handler.usecase.UpdateExpenseById(ctx, expenseRequest, id); err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		return
 	}
@@ -93,13 +101,15 @@ func (handler Handler) UpdateExpenseById(w http.ResponseWriter, r *http.Request)
 }
 
 func (handler Handler) DeleteExpenseById(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	id, err := GetExpenseId(r)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
 
-	if err := handler.usecase.DeleteExpenseById(id); err != nil {
+	if err := handler.usecase.DeleteExpenseById(ctx, id); err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		return
 	}

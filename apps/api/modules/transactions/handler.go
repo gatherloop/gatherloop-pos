@@ -16,6 +16,8 @@ func NewHandler(usecase Usecase) Handler {
 }
 
 func (handler Handler) GetTransactionList(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	query := base.GetQuery(r)
 	sortBy := base.GetSortBy(r)
 	order := base.GetOrder(r)
@@ -32,7 +34,7 @@ func (handler Handler) GetTransactionList(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	transactions, err := handler.usecase.GetTransactionList(query, sortBy, order, skip, limit)
+	transactions, err := handler.usecase.GetTransactionList(ctx, query, sortBy, order, skip, limit)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
@@ -42,13 +44,15 @@ func (handler Handler) GetTransactionList(w http.ResponseWriter, r *http.Request
 }
 
 func (handler Handler) GetTransactionById(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	id, err := GetTransactionId(r)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
 
-	transaction, err := handler.usecase.GetTransactionById(id)
+	transaction, err := handler.usecase.GetTransactionById(ctx, id)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		return
@@ -58,13 +62,15 @@ func (handler Handler) GetTransactionById(w http.ResponseWriter, r *http.Request
 }
 
 func (handler Handler) CreateTransaction(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	transactionRequest, err := GetTransactionRequest(r)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
 		return
 	}
 
-	if err := handler.usecase.CreateTransaction(transactionRequest); err != nil {
+	if err := handler.usecase.CreateTransaction(ctx, transactionRequest); err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
@@ -73,6 +79,8 @@ func (handler Handler) CreateTransaction(w http.ResponseWriter, r *http.Request)
 }
 
 func (handler Handler) UpdateTransactionById(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	id, err := GetTransactionId(r)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
@@ -85,7 +93,7 @@ func (handler Handler) UpdateTransactionById(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if err := handler.usecase.UpdateTransactionById(transactionRequest, id); err != nil {
+	if err := handler.usecase.UpdateTransactionById(ctx, transactionRequest, id); err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		return
 	}
@@ -94,13 +102,15 @@ func (handler Handler) UpdateTransactionById(w http.ResponseWriter, r *http.Requ
 }
 
 func (handler Handler) DeleteTransactionById(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	id, err := GetTransactionId(r)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
 
-	if err := handler.usecase.DeleteTransactionById(id); err != nil {
+	if err := handler.usecase.DeleteTransactionById(ctx, id); err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		return
 	}
@@ -109,6 +119,8 @@ func (handler Handler) DeleteTransactionById(w http.ResponseWriter, r *http.Requ
 }
 
 func (handler Handler) PayTransaction(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	id, err := GetTransactionId(r)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
@@ -121,7 +133,7 @@ func (handler Handler) PayTransaction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := handler.usecase.PayTransaction(transactionPayRequest, id); err != nil {
+	if err := handler.usecase.PayTransaction(ctx, transactionPayRequest, id); err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
