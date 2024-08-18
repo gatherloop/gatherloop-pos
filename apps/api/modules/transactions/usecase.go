@@ -45,6 +45,8 @@ func (usecase Usecase) CreateTransaction(transactionRequest apiContract.Transact
 		return err
 	}
 
+	var transactionItems []apiContract.TransactionItem
+
 	for _, item := range transactionRequest.TransactionItems {
 		product, err := usecase.productRepository.GetProductById(item.ProductId)
 		if err != nil {
@@ -62,9 +64,11 @@ func (usecase Usecase) CreateTransaction(transactionRequest apiContract.Transact
 			Price:         product.Price,
 		}
 
-		if err := usecase.repository.CreateTransactionItem(&transactionItem); err != nil {
-			return err
-		}
+		transactionItems = append(transactionItems, transactionItem)
+	}
+
+	if err := usecase.repository.CreateTransactionItems(transactionItems); err != nil {
+		return err
 	}
 
 	return usecase.repository.UpdateTransactionById(&apiContract.Transaction{Total: transaction.Total}, transaction.Id)
@@ -89,6 +93,8 @@ func (usecase Usecase) UpdateTransactionById(transactionRequest apiContract.Tran
 		return err
 	}
 
+	var transactionItems []apiContract.TransactionItem
+
 	for _, item := range transactionRequest.TransactionItems {
 		product, err := usecase.productRepository.GetProductById(item.ProductId)
 		if err != nil {
@@ -106,9 +112,11 @@ func (usecase Usecase) UpdateTransactionById(transactionRequest apiContract.Tran
 			Price:         product.Price,
 		}
 
-		if err := usecase.repository.CreateTransactionItem(&transactionItem); err != nil {
-			return err
-		}
+		transactionItems = append(transactionItems, transactionItem)
+	}
+
+	if err := usecase.repository.CreateTransactionItems(transactionItems); err != nil {
+		return err
 	}
 
 	return usecase.repository.UpdateTransactionById(&transaction, id)

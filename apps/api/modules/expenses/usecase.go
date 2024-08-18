@@ -43,6 +43,8 @@ func (usecase Usecase) CreateExpense(expenseRequest apiContract.ExpenseRequest) 
 		return err
 	}
 
+	var expenseItems []apiContract.ExpenseItem
+
 	for _, item := range expenseRequest.ExpenseItems {
 		subTotal := item.Price * item.Amount
 		expense.Total += subTotal
@@ -56,9 +58,11 @@ func (usecase Usecase) CreateExpense(expenseRequest apiContract.ExpenseRequest) 
 			ExpenseId: expense.Id,
 		}
 
-		if err := usecase.repository.CreateExpenseItem(&expenseItem); err != nil {
-			return err
-		}
+		expenseItems = append(expenseItems, expenseItem)
+	}
+
+	if err := usecase.repository.CreateExpenseItems(expenseItems); err != nil {
+		return err
 	}
 
 	budget, err := usecase.budgetRepository.GetBudgetById(expense.BudgetId)
@@ -125,6 +129,8 @@ func (usecase Usecase) UpdateExpenseById(expenseRequest apiContract.ExpenseReque
 		return err
 	}
 
+	var expenseItems []apiContract.ExpenseItem
+
 	for _, item := range expenseRequest.ExpenseItems {
 		subTotal := item.Price * item.Amount
 		expense.Total += subTotal
@@ -138,9 +144,11 @@ func (usecase Usecase) UpdateExpenseById(expenseRequest apiContract.ExpenseReque
 			ExpenseId: id,
 		}
 
-		if err := usecase.repository.CreateExpenseItem(&expenseItem); err != nil {
-			return err
-		}
+		expenseItems = append(expenseItems, expenseItem)
+	}
+
+	if err := usecase.repository.CreateExpenseItems(expenseItems); err != nil {
+		return err
 	}
 
 	budget, err = usecase.budgetRepository.GetBudgetById(expense.BudgetId)

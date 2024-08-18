@@ -64,7 +64,7 @@ func (repo Repository) DeleteExpenseItems(expenseId int64) error {
 	return result.Error
 }
 
-func (repo Repository) CreateExpenseItem(expenseItem *apiContract.ExpenseItem) error {
-	result := repo.db.Table("expense_items").Create(expenseItem)
+func (repo Repository) CreateExpenseItems(expenseItems []apiContract.ExpenseItem) error {
+	result := repo.db.Table("expense_items").Create(expenseItems)
 	return result.Error
 }

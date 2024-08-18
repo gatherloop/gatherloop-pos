@@ -68,8 +68,8 @@ func (repo Repository) DeleteTransactionItems(transactionId int64) error {
 	return result.Error
 }
 
-func (repo Repository) CreateTransactionItem(transactionItem *apiContract.TransactionItem) error {
-	result := repo.db.Table("transaction_items").Create(transactionItem)
+func (repo Repository) CreateTransactionItems(transactionItems []apiContract.TransactionItem) error {
+	result := repo.db.Table("transaction_items").Create(transactionItems)
 	return result.Error
 }
 
