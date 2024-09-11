@@ -1,4 +1,4 @@
-import { Button, ScrollView } from 'tamagui';
+import { Button } from 'tamagui';
 import { Layout } from '../../../base';
 import { MaterialList } from '../../components';
 import { Link } from 'solito/link';
@@ -25,15 +25,13 @@ export const MaterialListScreen = () => {
         </Link>
       }
     >
-      <ScrollView>
-        <MaterialList
-          onItemPress={onItemPress}
-          itemMenus={[
-            { title: 'Edit', icon: Pencil, onPress: onEditMenuPress },
-            { title: 'Delete', icon: Trash, onPress: onDeleteMenuPress },
-          ]}
-        />
-      </ScrollView>
+      <MaterialList
+        onItemPress={onItemPress}
+        itemMenus={[
+          { title: 'Edit', icon: Pencil, onPress: onEditMenuPress },
+          { title: 'Delete', icon: Trash, onPress: onDeleteMenuPress },
+        ]}
+      />
       {typeof materialDeleteId === 'number' && (
         <MaterialDeleteAlert
           materialId={materialDeleteId}

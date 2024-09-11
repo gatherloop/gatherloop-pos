@@ -1,4 +1,4 @@
-import { Button, ScrollView } from 'tamagui';
+import { Button } from 'tamagui';
 import { Layout } from '../../../base';
 import { CategoryList, CategoryDeleteAlert } from '../../components';
 import { Link } from 'solito/link';
@@ -24,15 +24,13 @@ export const CategoryListScreen = () => {
         </Link>
       }
     >
-      <ScrollView>
-        <CategoryList
-          onItemPress={onItemPress}
-          itemMenus={[
-            { title: 'Edit', icon: Pencil, onPress: onEditMenuPress },
-            { title: 'Delete', icon: Trash, onPress: onDeleteMenuPress },
-          ]}
-        />
-      </ScrollView>
+      <CategoryList
+        onItemPress={onItemPress}
+        itemMenus={[
+          { title: 'Edit', icon: Pencil, onPress: onEditMenuPress },
+          { title: 'Delete', icon: Trash, onPress: onDeleteMenuPress },
+        ]}
+      />
       {typeof categoryDeleteId === 'number' && (
         <CategoryDeleteAlert
           categoryId={categoryDeleteId}

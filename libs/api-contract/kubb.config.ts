@@ -22,6 +22,10 @@ export default defineConfig(() => {
           client: {
             importPath: '../../../client',
           },
+          query: {
+            importPath: '../../../useQuery',
+          },
+          suspense: false,
         }),
         pluginClient({
           client: {

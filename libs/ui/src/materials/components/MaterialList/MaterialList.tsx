@@ -4,6 +4,7 @@ import { useMaterialListState } from './MaterialList.state';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { Material } from '../../../../../api-contract/src';
 import { MaterialCard } from '../MaterialCard';
+import { FlatList } from 'react-native';
 
 export type MaterialListProps = {
   itemMenus?: (Omit<ListItemMenu, 'onPress' | 'isShown'> & {
@@ -33,21 +34,24 @@ export const MaterialList = ({
         <LoadingView title="Fetching Materials..." />
       ) : status === 'success' ? (
         materials.length > 0 ? (
-          materials.map((material) => (
-            <MaterialCard
-              key={material.id}
-              name={material.name}
-              price={material.price}
-              unit={material.unit}
-              onPress={() => onItemPress(material)}
-              menus={itemMenus.map((itemMenu) => ({
-                ...itemMenu,
-                onPress: () => itemMenu.onPress(material),
-                isShown: () =>
-                  itemMenu.isShown ? itemMenu.isShown(material) : true,
-              }))}
-            />
-          ))
+          <FlatList
+            data={materials}
+            renderItem={({ item: material }) => (
+              <MaterialCard
+                name={material.name}
+                price={material.price}
+                unit={material.unit}
+                onPress={() => onItemPress(material)}
+                menus={itemMenus.map((itemMenu) => ({
+                  ...itemMenu,
+                  onPress: () => itemMenu.onPress(material),
+                  isShown: () =>
+                    itemMenu.isShown ? itemMenu.isShown(material) : true,
+                }))}
+              />
+            )}
+            keyExtractor={(item) => item.id.toString()}
+          />
         ) : (
           <EmptyView
             title="Oops, Material is Empty"

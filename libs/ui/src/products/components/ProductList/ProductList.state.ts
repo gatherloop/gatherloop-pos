@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react';
 // eslint-disable-next-line @nx/enforce-module-boundaries
-import {
-  useProductList,
-  useRefetchOnFocus,
-} from '../../../../../api-contract/src';
+import { useProductList } from '../../../../../api-contract/src';
 
 export const useProductListState = () => {
   const [query, setQuery] = useState('');
@@ -13,7 +10,6 @@ export const useProductListState = () => {
     order: 'desc',
     query,
   });
-  useRefetchOnFocus(refetch);
 
   const [searchInputValue, setSearchInputValue] = useState('');
 

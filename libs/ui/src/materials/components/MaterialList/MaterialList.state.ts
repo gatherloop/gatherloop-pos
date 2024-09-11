@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react';
 // eslint-disable-next-line @nx/enforce-module-boundaries
-import {
-  useMaterialList,
-  useRefetchOnFocus,
-} from '../../../../../api-contract/src';
+import { useMaterialList } from '../../../../../api-contract/src';
 
 export const useMaterialListState = () => {
   const [query, setQuery] = useState('');
@@ -13,8 +10,6 @@ export const useMaterialListState = () => {
     order: 'desc',
     query,
   });
-
-  useRefetchOnFocus(refetch);
 
   const [searchInputValue, setSearchInputValue] = useState('');
 
