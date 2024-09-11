@@ -4,6 +4,7 @@ import { useWalletListState } from './WalletList.state';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { Wallet } from '../../../../../api-contract/src';
 import { WalletCard } from '../WalletCard';
+import { FlatList } from 'react-native';
 
 export type WalletListProps = {
   itemMenus: (Omit<ListItemMenu, 'onPress' | 'isShown'> & {
@@ -21,21 +22,27 @@ export const WalletList = ({ itemMenus, onItemPress }: WalletListProps) => {
         <LoadingView title="Fetching Wallets..." />
       ) : status === 'success' ? (
         wallets.length > 0 ? (
-          wallets.map((wallet) => (
-            <WalletCard
-              key={wallet.id}
-              name={wallet.name}
-              balance={wallet.balance}
-              paymentCostPercentage={wallet.paymentCostPercentage}
-              menus={itemMenus.map((itemMenu) => ({
-                ...itemMenu,
-                onPress: () => itemMenu.onPress(wallet),
-                isShown: () =>
-                  itemMenu.isShown ? itemMenu.isShown(wallet) : true,
-              }))}
-              onPress={() => onItemPress(wallet)}
-            />
-          ))
+          <FlatList
+          nestedScrollEnabled
+            data={wallets}
+            renderItem={({ item: wallet }) => (
+              <WalletCard
+                key={wallet.id}
+                name={wallet.name}
+                balance={wallet.balance}
+                paymentCostPercentage={wallet.paymentCostPercentage}
+                menus={itemMenus.map((itemMenu) => ({
+                  ...itemMenu,
+                  onPress: () => itemMenu.onPress(wallet),
+                  isShown: () =>
+                    itemMenu.isShown ? itemMenu.isShown(wallet) : true,
+                }))}
+                onPress={() => onItemPress(wallet)}
+              />
+            )}
+            keyExtractor={(item) => item.id.toString()}
+            ItemSeparatorComponent={() => <YStack height="$1" />}
+          />
         ) : (
           <EmptyView
             title="Oops, Wallet is Empty"

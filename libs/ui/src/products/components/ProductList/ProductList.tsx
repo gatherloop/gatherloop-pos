@@ -4,6 +4,7 @@ import { useProductListState } from './ProductList.state';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { Product } from '../../../../../api-contract/src';
 import { ProductCard } from '../ProductCard';
+import { FlatList } from 'react-native';
 
 export type ProductListProps = {
   itemMenus?: (Omit<ListItemMenu, 'onPress' | 'isShown'> & {
@@ -33,21 +34,26 @@ export const ProductList = ({
         <LoadingView title="Fetching Products..." />
       ) : status === 'success' ? (
         products.length > 0 ? (
-          products.map((product) => (
-            <ProductCard
-              key={product.id}
-              categoryName={product.category?.name ?? ''}
-              name={product.name}
-              price={product.price}
-              menus={itemMenus.map((itemMenu) => ({
-                ...itemMenu,
-                onPress: () => itemMenu.onPress(product),
-                isShown: () =>
-                  itemMenu.isShown ? itemMenu.isShown(product) : true,
-              }))}
-              onPress={() => onItemPress(product)}
-            />
-          ))
+          <FlatList
+          nestedScrollEnabled
+            data={products}
+            renderItem={({ item: product }) => (
+              <ProductCard
+                categoryName={product.category?.name ?? ''}
+                name={product.name}
+                price={product.price}
+                menus={itemMenus.map((itemMenu) => ({
+                  ...itemMenu,
+                  onPress: () => itemMenu.onPress(product),
+                  isShown: () =>
+                    itemMenu.isShown ? itemMenu.isShown(product) : true,
+                }))}
+                onPress={() => onItemPress(product)}
+              />
+            )}
+            keyExtractor={(item) => item.id.toString()}
+            ItemSeparatorComponent={() => <YStack height="$1" />}
+          />
         ) : (
           <EmptyView
             title="Oops, Product is Empty"

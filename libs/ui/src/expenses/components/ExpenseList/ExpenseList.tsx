@@ -11,6 +11,7 @@ import { useExpenseListState } from './ExpenseList.state';
 import { Expense } from '../../../../../api-contract/src';
 import dayjs from 'dayjs';
 import { Calendar, Clock, Wallet } from '@tamagui/lucide-icons';
+import { FlatList } from 'react-native';
 
 export type ExpenseListProps = {
   itemMenus: (Omit<ListItemMenu, 'onPress' | 'isShown'> & {
@@ -28,34 +29,39 @@ export const ExpenseList = ({ itemMenus, onItemPress }: ExpenseListProps) => {
         <LoadingView title="Fetching Expenses..." />
       ) : status === 'success' ? (
         expenses.length > 0 ? (
-          expenses.map((expense) => (
-            <ListItem
-              key={expense.id}
-              title={expense.budget.name}
-              subtitle={`Rp. ${expense.total.toLocaleString('id')}`}
-              onPress={() => onItemPress(expense)}
-              menus={itemMenus.map((itemMenu) => ({
-                ...itemMenu,
-                onPress: () => itemMenu.onPress(expense),
-                isShown: () =>
-                  itemMenu.isShown ? itemMenu.isShown(expense) : true,
-              }))}
-              footerItems={[
-                {
-                  icon: Calendar,
-                  value: dayjs(expense.createdAt).format('DD/MM/YYYY'),
-                },
-                {
-                  icon: Clock,
-                  value: dayjs(expense.createdAt).format('HH:mm'),
-                },
-                {
-                  icon: Wallet,
-                  value: expense.wallet.name,
-                },
-              ]}
-            />
-          ))
+          <FlatList
+            nestedScrollEnabled
+            data={expenses}
+            renderItem={({ item: expense }) => (
+              <ListItem
+                title={expense.budget.name}
+                subtitle={`Rp. ${expense.total.toLocaleString('id')}`}
+                onPress={() => onItemPress(expense)}
+                menus={itemMenus.map((itemMenu) => ({
+                  ...itemMenu,
+                  onPress: () => itemMenu.onPress(expense),
+                  isShown: () =>
+                    itemMenu.isShown ? itemMenu.isShown(expense) : true,
+                }))}
+                footerItems={[
+                  {
+                    icon: Calendar,
+                    value: dayjs(expense.createdAt).format('DD/MM/YYYY'),
+                  },
+                  {
+                    icon: Clock,
+                    value: dayjs(expense.createdAt).format('HH:mm'),
+                  },
+                  {
+                    icon: Wallet,
+                    value: expense.wallet.name,
+                  },
+                ]}
+              />
+            )}
+            keyExtractor={(item) => item.id.toString()}
+            ItemSeparatorComponent={() => <YStack height="$1" />}
+          />
         ) : (
           <EmptyView
             title="Oops, Expense is Empty"

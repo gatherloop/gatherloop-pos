@@ -35,6 +35,7 @@ export const MaterialList = ({
       ) : status === 'success' ? (
         materials.length > 0 ? (
           <FlatList
+            nestedScrollEnabled
             data={materials}
             renderItem={({ item: material }) => (
               <MaterialCard
@@ -51,6 +52,7 @@ export const MaterialList = ({
               />
             )}
             keyExtractor={(item) => item.id.toString()}
+            ItemSeparatorComponent={() => <YStack height="$1" />}
           />
         ) : (
           <EmptyView

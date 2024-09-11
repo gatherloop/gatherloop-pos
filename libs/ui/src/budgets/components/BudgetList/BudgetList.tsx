@@ -3,6 +3,7 @@ import { YStack } from 'tamagui';
 import { useBudgetListState } from './BudgetList.state';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { PercentSquare } from '@tamagui/lucide-icons';
+import { FlatList } from 'react-native';
 
 export const BudgetList = () => {
   const { budgets, refetch, status } = useBudgetListState();
@@ -12,19 +13,24 @@ export const BudgetList = () => {
         <LoadingView title="Fetching Budgets..." />
       ) : status === 'success' ? (
         budgets.length > 0 ? (
-          budgets.map((budget) => (
-            <ListItem
-              key={budget.id}
-              title={budget.name}
-              subtitle={`Rp. ${budget.balance.toLocaleString('id')}`}
-              thumbnailSrc="https://placehold.jp/120x120.png"
-              footerItems={
-                budget.id === 4
-                  ? []
-                  : [{ value: `${budget.percentage}%`, icon: PercentSquare }]
-              }
-            />
-          ))
+          <FlatList
+            nestedScrollEnabled
+            data={budgets}
+            renderItem={({ item: budget }) => (
+              <ListItem
+                title={budget.name}
+                subtitle={`Rp. ${budget.balance.toLocaleString('id')}`}
+                thumbnailSrc="https://placehold.jp/120x120.png"
+                footerItems={
+                  budget.id === 4
+                    ? []
+                    : [{ value: `${budget.percentage}%`, icon: PercentSquare }]
+                }
+              />
+            )}
+            keyExtractor={(item) => item.id.toString()}
+            ItemSeparatorComponent={() => <YStack height="$1" />}
+          />
         ) : (
           <EmptyView
             title="Oops, Budget is Empty"
