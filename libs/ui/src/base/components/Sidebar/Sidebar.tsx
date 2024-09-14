@@ -14,6 +14,7 @@ import { Button, H3, ListItem, YGroup, YStack } from 'tamagui';
 import { useSidebarState } from './Sidebar.state';
 import { NamedExoticComponent } from 'react';
 import { Platform } from 'react-native';
+import { Link } from 'solito/link';
 
 const items: { title: string; icon: NamedExoticComponent; path: string }[] = [
   { title: 'Categories', icon: Tag, path: '/categories' },
@@ -26,7 +27,7 @@ const items: { title: string; icon: NamedExoticComponent; path: string }[] = [
 ];
 
 export const Sidebar = () => {
-  const { isShown, onToggleButtonPress, onMenuItemPress } = useSidebarState();
+  const { isShown, onToggleButtonPress } = useSidebarState();
   const onToggleFullScreenButtonPress = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen();
@@ -42,7 +43,7 @@ export const Sidebar = () => {
         elevation="$1"
         backgroundColor="$gray3"
         borderRadius="$0"
-        animation="fast"
+        // animation="fast"
         marginLeft={isShown ? 0 : -240}
       >
         <YStack flex={1} justifyContent="space-between">
@@ -52,14 +53,15 @@ export const Sidebar = () => {
             </YStack>
             {items.map((item, index) => (
               <YGroup.Item key={index}>
-                <ListItem
-                  backgroundColor="$colorTransparent"
-                  hoverTheme
-                  icon={item.icon}
-                  onPress={() => onMenuItemPress(item.path)}
-                >
-                  {item.title}
-                </ListItem>
+                <Link href={item.path}>
+                  <ListItem
+                    backgroundColor="$colorTransparent"
+                    hoverTheme
+                    icon={item.icon}
+                  >
+                    {item.title}
+                  </ListItem>
+                </Link>
               </YGroup.Item>
             ))}
 

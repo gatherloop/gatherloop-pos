@@ -26,20 +26,18 @@ export const WalletListScreen = () => {
         </Link>
       }
     >
-      <ScrollView>
-        <WalletList
-          onItemPress={onItemPress}
-          itemMenus={[
-            {
-              title: 'Transfer',
-              icon: CreditCard,
-              onPress: onTransferMenuPress,
-            },
-            { title: 'Edit', icon: Pencil, onPress: onEditMenuPress },
-            { title: 'Delete', icon: Trash, onPress: onDeleteMenuPress },
-          ]}
-        />
-      </ScrollView>
+      <WalletList
+        onItemPress={onItemPress}
+        itemMenus={[
+          {
+            title: 'Transfer',
+            icon: CreditCard,
+            onPress: onTransferMenuPress,
+          },
+          { title: 'Edit', icon: Pencil, onPress: onEditMenuPress },
+          { title: 'Delete', icon: Trash, onPress: onDeleteMenuPress },
+        ]}
+      />
       {typeof walletDeleteId === 'number' && (
         <WalletDeleteAlert
           walletId={walletDeleteId}

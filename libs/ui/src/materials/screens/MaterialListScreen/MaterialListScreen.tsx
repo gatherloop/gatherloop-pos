@@ -25,15 +25,13 @@ export const MaterialListScreen = () => {
         </Link>
       }
     >
-      <ScrollView>
-        <MaterialList
-          onItemPress={onItemPress}
-          itemMenus={[
-            { title: 'Edit', icon: Pencil, onPress: onEditMenuPress },
-            { title: 'Delete', icon: Trash, onPress: onDeleteMenuPress },
-          ]}
-        />
-      </ScrollView>
+      <MaterialList
+        onItemPress={onItemPress}
+        itemMenus={[
+          { title: 'Edit', icon: Pencil, onPress: onEditMenuPress },
+          { title: 'Delete', icon: Trash, onPress: onDeleteMenuPress },
+        ]}
+      />
       {typeof materialDeleteId === 'number' && (
         <MaterialDeleteAlert
           materialId={materialDeleteId}

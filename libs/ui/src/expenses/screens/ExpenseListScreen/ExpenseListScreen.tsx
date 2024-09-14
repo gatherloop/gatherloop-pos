@@ -24,15 +24,13 @@ export const ExpenseListScreen = () => {
         </Link>
       }
     >
-      <ScrollView>
-        <ExpenseList
-          onItemPress={onItemPress}
-          itemMenus={[
-            { title: 'Edit', icon: Pencil, onPress: onEditMenuPress },
-            { title: 'Delete', icon: Trash, onPress: onDeleteMenuPress },
-          ]}
-        />
-      </ScrollView>
+      <ExpenseList
+        onItemPress={onItemPress}
+        itemMenus={[
+          { title: 'Edit', icon: Pencil, onPress: onEditMenuPress },
+          { title: 'Delete', icon: Trash, onPress: onDeleteMenuPress },
+        ]}
+      />
       {typeof expenseDeleteId === 'number' && (
         <ExpenseDeleteAlert
           expenseId={expenseDeleteId}

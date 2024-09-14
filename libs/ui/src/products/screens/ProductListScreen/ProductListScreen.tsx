@@ -25,15 +25,13 @@ export const ProductListScreen = () => {
         </Link>
       }
     >
-      <ScrollView>
-        <ProductList
-          onItemPress={onItemPress}
-          itemMenus={[
-            { title: 'Edit', icon: Pencil, onPress: onEditMenuPress },
-            { title: 'Delete', icon: Trash, onPress: onDeleteMenuPress },
-          ]}
-        />
-      </ScrollView>
+      <ProductList
+        onItemPress={onItemPress}
+        itemMenus={[
+          { title: 'Edit', icon: Pencil, onPress: onEditMenuPress },
+          { title: 'Delete', icon: Trash, onPress: onDeleteMenuPress },
+        ]}
+      />
       {typeof productDeleteId === 'number' && (
         <ProductDeleteAlert
           productId={productDeleteId}

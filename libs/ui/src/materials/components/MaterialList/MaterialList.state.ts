@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { useMaterialList } from '../../../../../api-contract/src';
+import { useDebounce } from '../../../base';
 
 export const useMaterialListState = () => {
   const [query, setQuery] = useState('');
@@ -11,22 +12,17 @@ export const useMaterialListState = () => {
     query,
   });
 
-  const [searchInputValue, setSearchInputValue] = useState('');
+  const debounce = useDebounce();
 
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      setQuery(searchInputValue);
-    }, 400);
-
-    return () => clearTimeout(timeout);
-  }, [searchInputValue]);
+  const handleSearchInputChange = (text: string) => {
+    debounce(() => setQuery(text), 600);
+  };
 
   return {
     materials: data?.data ?? [],
     status,
     error,
     refetch,
-    searchInputValue,
-    setSearchInputValue,
+    handleSearchInputChange
   };
 };

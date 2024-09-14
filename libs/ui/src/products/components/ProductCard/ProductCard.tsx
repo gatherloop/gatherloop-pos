@@ -24,8 +24,8 @@ export const ProductCard = ({
       subtitle={`Rp. ${price.toLocaleString('id')}`}
       thumbnailSrc="https://placehold.jp/120x120.png"
       onPress={onPress}
-      menus={menus}
-      footerItems={[{ value: categoryName, icon: Tag }]}
+      // menus={menus}
+      // footerItems={[{ value: categoryName, icon: Tag }]}
       {...xStackProps}
     />
   );

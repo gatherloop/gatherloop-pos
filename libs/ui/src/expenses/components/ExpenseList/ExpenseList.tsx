@@ -24,7 +24,7 @@ export type ExpenseListProps = {
 export const ExpenseList = ({ itemMenus, onItemPress }: ExpenseListProps) => {
   const { expenses, refetch, status } = useExpenseListState();
   return (
-    <YStack gap="$3">
+    <YStack gap="$3" flex={1}>
       {status === 'pending' ? (
         <LoadingView title="Fetching Expenses..." />
       ) : status === 'success' ? (

@@ -8,7 +8,7 @@ import { FlatList } from 'react-native';
 export const BudgetList = () => {
   const { budgets, refetch, status } = useBudgetListState();
   return (
-    <YStack gap="$3">
+    <YStack gap="$3" flex={1}>
       {status === 'pending' ? (
         <LoadingView title="Fetching Budgets..." />
       ) : status === 'success' ? (

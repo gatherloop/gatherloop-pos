@@ -17,13 +17,13 @@ export type WalletListProps = {
 export const WalletList = ({ itemMenus, onItemPress }: WalletListProps) => {
   const { wallets, refetch, status } = useWalletListState();
   return (
-    <YStack gap="$3">
+    <YStack gap="$3" flex={1}>
       {status === 'pending' ? (
         <LoadingView title="Fetching Wallets..." />
       ) : status === 'success' ? (
         wallets.length > 0 ? (
           <FlatList
-          nestedScrollEnabled
+            nestedScrollEnabled
             data={wallets}
             renderItem={({ item: wallet }) => (
               <WalletCard

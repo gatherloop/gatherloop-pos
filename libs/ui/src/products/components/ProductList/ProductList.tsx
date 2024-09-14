@@ -20,22 +20,23 @@ export const ProductList = ({
   onItemPress,
   isSearchAutoFocus,
 }: ProductListProps) => {
-  const { products, refetch, status, searchInputValue, setSearchInputValue } =
+  const { products, refetch, status, handleSearchInputChange } =
     useProductListState();
   return (
-    <YStack gap="$3">
-      <Input
-        placeholder="Search Products by Name"
-        value={searchInputValue}
-        onChangeText={setSearchInputValue}
-        autoFocus={isSearchAutoFocus}
-      />
+    <YStack gap="$3" flex={1}>
+      <YStack>
+        <Input
+          placeholder="Search Products by Name"
+          onChangeText={handleSearchInputChange}
+          autoFocus={isSearchAutoFocus}
+        />
+      </YStack>
       {status === 'pending' ? (
         <LoadingView title="Fetching Products..." />
       ) : status === 'success' ? (
         products.length > 0 ? (
           <FlatList
-          nestedScrollEnabled
+            nestedScrollEnabled
             data={products}
             renderItem={({ item: product }) => (
               <ProductCard

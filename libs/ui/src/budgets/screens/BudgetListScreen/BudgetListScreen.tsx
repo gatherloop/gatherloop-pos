@@ -5,9 +5,7 @@ import { BudgetList } from '../../components';
 export const BudgetListScreen = () => {
   return (
     <Layout title="Budgets">
-      <ScrollView>
-        <BudgetList />
-      </ScrollView>
+      <BudgetList />
     </Layout>
   );
 };

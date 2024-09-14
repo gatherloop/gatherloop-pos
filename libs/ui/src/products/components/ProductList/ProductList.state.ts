@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { useProductList } from '../../../../../api-contract/src';
+import { useDebounce } from '../../../base';
 
 export const useProductListState = () => {
   const [query, setQuery] = useState('');
@@ -11,22 +12,17 @@ export const useProductListState = () => {
     query,
   });
 
-  const [searchInputValue, setSearchInputValue] = useState('');
+  const debounce = useDebounce();
 
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      setQuery(searchInputValue);
-    }, 400);
-
-    return () => clearTimeout(timeout);
-  }, [searchInputValue]);
+  const handleSearchInputChange = (text: string) => {
+    debounce(() => setQuery(text), 600);
+  };
 
   return {
     products: data?.data ?? [],
     status,
     error,
     refetch,
-    setSearchInputValue,
-    searchInputValue,
+    handleSearchInputChange,
   };
 };

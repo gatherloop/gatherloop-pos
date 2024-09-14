@@ -24,9 +24,7 @@ export const WalletTransferListScreen = (
               <Button size="$3" icon={Plus} variant="outlined" disabled />
             </Link>
           </XStack>
-          <ScrollView>
-            <WalletTransferList walletId={walletId} />
-          </ScrollView>
+          <WalletTransferList walletId={walletId} />
         </YStack>
       </YStack>
     </Layout>

@@ -25,26 +25,21 @@ export const TransactionList = ({
   itemMenus,
   onItemPress,
 }: TransactionListProps) => {
-  const {
-    transactions,
-    refetch,
-    status,
-    searchInputValue,
-    setSearchInputValue,
-  } = useTransactionListState();
+  const { transactions, refetch, status, handleSearchInputChange } =
+    useTransactionListState();
   return (
-    <YStack gap="$3">
-      <Input
-        placeholder="Search Transaction by Customer Name"
-        value={searchInputValue}
-        onChangeText={setSearchInputValue}
-      />
+    <YStack gap="$3" flex={1}>
+      <YStack>
+        <Input
+          placeholder="Search Transaction by Customer Name"
+          onChangeText={handleSearchInputChange}
+        />
+      </YStack>
       {status === 'pending' ? (
         <LoadingView title="Fetching Transactions..." />
       ) : status === 'success' ? (
         transactions.length > 0 ? (
           <FlatList
-          nestedScrollEnabled
             data={transactions}
             renderItem={({ item: transaction }) => (
               <ListItem

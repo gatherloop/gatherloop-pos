@@ -14,13 +14,13 @@ export const WalletTransferList = ({ walletId }: WalletTransferListProps) => {
     walletId,
   });
   return (
-    <YStack gap="$3">
+    <YStack gap="$3" flex={1}>
       {status === 'pending' ? (
         <LoadingView title="Fetching Transfer Histories..." />
       ) : status === 'success' ? (
         walletTransfers.length > 0 ? (
           <FlatList
-          nestedScrollEnabled
+            nestedScrollEnabled
             data={walletTransfers}
             renderItem={({ item: walletTransfer }) => (
               <ListItem

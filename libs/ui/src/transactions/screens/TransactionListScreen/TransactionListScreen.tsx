@@ -32,31 +32,29 @@ export const TransactionListScreen = () => {
         </Link>
       }
     >
-      <ScrollView>
-        <TransactionList
-          onItemPress={onItemPress}
-          itemMenus={[
-            {
-              title: 'Pay',
-              icon: DollarSign,
-              onPress: onPaymentMenuPress,
-              isShown: ({ paidAt }) => paidAt === undefined,
-            },
-            {
-              title: 'Edit',
-              icon: Pencil,
-              onPress: onEditMenuPress,
-              isShown: ({ paidAt }) => paidAt === undefined,
-            },
-            {
-              title: 'Delete',
-              icon: Trash,
-              onPress: onDeleteMenuPress,
-              isShown: ({ paidAt }) => paidAt === undefined,
-            },
-          ]}
-        />
-      </ScrollView>
+      <TransactionList
+        onItemPress={onItemPress}
+        itemMenus={[
+          {
+            title: 'Pay',
+            icon: DollarSign,
+            onPress: onPaymentMenuPress,
+            isShown: ({ paidAt }) => paidAt === undefined,
+          },
+          {
+            title: 'Edit',
+            icon: Pencil,
+            onPress: onEditMenuPress,
+            isShown: ({ paidAt }) => paidAt === undefined,
+          },
+          {
+            title: 'Delete',
+            icon: Trash,
+            onPress: onDeleteMenuPress,
+            isShown: ({ paidAt }) => paidAt === undefined,
+          },
+        ]}
+      />
       {typeof transactionDeleteId === 'number' && (
         <TransactionDeleteAlert
           transactionId={transactionDeleteId}

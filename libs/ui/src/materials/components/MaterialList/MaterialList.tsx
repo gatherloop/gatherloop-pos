@@ -20,16 +20,17 @@ export const MaterialList = ({
   onItemPress,
   isSearchAutoFocus,
 }: MaterialListProps) => {
-  const { materials, refetch, status, searchInputValue, setSearchInputValue } =
+  const { materials, refetch, status, handleSearchInputChange } =
     useMaterialListState();
   return (
-    <YStack gap="$3">
-      <Input
-        placeholder="Search Materials by Name"
-        value={searchInputValue}
-        onChangeText={setSearchInputValue}
-        autoFocus={isSearchAutoFocus}
-      />
+    <YStack gap="$3" flex={1}>
+      <YStack>
+        <Input
+          placeholder="Search Materials by Name"
+          onChangeText={handleSearchInputChange}
+          autoFocus={isSearchAutoFocus}
+        />
+      </YStack>
       {status === 'pending' ? (
         <LoadingView title="Fetching Materials..." />
       ) : status === 'success' ? (
