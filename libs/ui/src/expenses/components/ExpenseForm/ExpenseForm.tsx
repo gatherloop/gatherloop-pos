@@ -89,6 +89,15 @@ export const ExpenseForm = ({ variant, onSuccess }: ExpenseFormProps) => {
                             <InputText />
                           </Field>
                           <Field
+                            name={`expenseItems[${index}].amount`}
+                            label="Amount"
+                            flexBasis="22%"
+                            $md={{ flexBasis: '45%' }}
+                            $xs={{ flexBasis: '100%' }}
+                          >
+                            <InputNumber min={1} />
+                          </Field>
+                          <Field
                             name={`expenseItems[${index}].unit`}
                             label="Unit"
                             flexBasis="22%"
@@ -105,15 +114,6 @@ export const ExpenseForm = ({ variant, onSuccess }: ExpenseFormProps) => {
                             $xs={{ flexBasis: '100%' }}
                           >
                             <InputNumber min={0} />
-                          </Field>
-                          <Field
-                            name={`expenseItems[${index}].amount`}
-                            label="Amount"
-                            flexBasis="22%"
-                            $md={{ flexBasis: '45%' }}
-                            $xs={{ flexBasis: '100%' }}
-                          >
-                            <InputNumber min={1} />
                           </Field>
 
                           <Button
