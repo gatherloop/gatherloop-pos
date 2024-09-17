@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { useTransactionList } from '../../../../../api-contract/src';
-import { useDebounce } from '../../../base';
+import { PostMessageEvent, useDebounce, usePostMessage } from '../../../base';
+import { useRouter } from 'solito/router';
 
 export const useTransactionListState = () => {
+  const router = useRouter();
+
   const [query, setQuery] = useState('');
 
   const { data, status, error, refetch } = useTransactionList({
@@ -11,6 +14,20 @@ export const useTransactionListState = () => {
     order: 'desc',
     query,
   });
+
+  const onReceiveMessage = useCallback(
+    (event: PostMessageEvent) => {
+      if (
+        event.type === 'TransactionPaySuccess' ||
+        event.type === 'TransactionDeleteSuccess'
+      ) {
+        refetch();
+      }
+    },
+    [refetch]
+  );
+
+  const { postMessage } = usePostMessage(onReceiveMessage);
 
   const debounce = useDebounce();
 
@@ -24,5 +41,7 @@ export const useTransactionListState = () => {
     error,
     refetch,
     handleSearchInputChange,
+    postMessage,
+    router,
   };
 };

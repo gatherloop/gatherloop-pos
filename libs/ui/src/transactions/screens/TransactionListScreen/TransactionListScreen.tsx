@@ -1,4 +1,4 @@
-import { Button, ScrollView } from 'tamagui';
+import { Button } from 'tamagui';
 import { Layout } from '../../../base';
 import {
   TransactionList,
@@ -6,23 +6,9 @@ import {
   TransactionPaymentAlert,
 } from '../../components';
 import { Link } from 'solito/link';
-import { DollarSign, Pencil, Plus, Trash } from '@tamagui/lucide-icons';
-import { useTransactionListScreenState } from './TransactionListScreen.state';
+import { Plus } from '@tamagui/lucide-icons';
 
 export const TransactionListScreen = () => {
-  const {
-    onItemPress,
-    onEditMenuPress,
-    onDeleteMenuPress,
-    onDeleteSuccess,
-    onDeleteCancel,
-    transactionDeleteId,
-    onPaymentMenuPress,
-    onPaymentSuccess,
-    onPaymentCancel,
-    transactionPaymentId,
-  } = useTransactionListScreenState();
-
   return (
     <Layout
       title="Transactions"
@@ -32,43 +18,9 @@ export const TransactionListScreen = () => {
         </Link>
       }
     >
-      <TransactionList
-        onItemPress={onItemPress}
-        itemMenus={[
-          {
-            title: 'Pay',
-            icon: DollarSign,
-            onPress: onPaymentMenuPress,
-            isShown: ({ paidAt }) => paidAt === undefined,
-          },
-          {
-            title: 'Edit',
-            icon: Pencil,
-            onPress: onEditMenuPress,
-            isShown: ({ paidAt }) => paidAt === undefined,
-          },
-          {
-            title: 'Delete',
-            icon: Trash,
-            onPress: onDeleteMenuPress,
-            isShown: ({ paidAt }) => paidAt === undefined,
-          },
-        ]}
-      />
-      {typeof transactionDeleteId === 'number' && (
-        <TransactionDeleteAlert
-          transactionId={transactionDeleteId}
-          onSuccess={onDeleteSuccess}
-          onCancel={onDeleteCancel}
-        />
-      )}
-      {typeof transactionPaymentId === 'number' && (
-        <TransactionPaymentAlert
-          transactionId={transactionPaymentId}
-          onSuccess={onPaymentSuccess}
-          onCancel={onPaymentCancel}
-        />
-      )}
+      <TransactionList />
+      <TransactionDeleteAlert />
+      <TransactionPaymentAlert />
     </Layout>
   );
 };

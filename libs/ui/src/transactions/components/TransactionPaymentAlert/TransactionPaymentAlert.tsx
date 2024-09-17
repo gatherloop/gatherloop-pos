@@ -3,25 +3,11 @@ import { useTransactionPaymentAlertState } from './TransactionPaymentAlert.state
 import { FormikProvider } from 'formik';
 import { Field, Select, SubmitButton } from '../../../base';
 
-export type TransactionPaymentAlertProps = {
-  transactionId: number;
-  onSuccess: () => void;
-  onCancel: () => void;
-};
-
-export const TransactionPaymentAlert = ({
-  transactionId,
-  onSuccess,
-  onCancel,
-}: TransactionPaymentAlertProps) => {
-  const { formik, isSubmitDisabled, wallets } = useTransactionPaymentAlertState(
-    {
-      transactionId,
-      onSuccess,
-    }
-  );
+export const TransactionPaymentAlert = () => {
+  const { formik, isSubmitDisabled, wallets, isOpen, onCancel } =
+    useTransactionPaymentAlertState();
   return (
-    <AlertDialog open onOpenChange={onCancel} modal>
+    <AlertDialog open={isOpen} onOpenChange={onCancel} modal>
       <AlertDialog.Portal>
         <AlertDialog.Overlay
           key="overlay"

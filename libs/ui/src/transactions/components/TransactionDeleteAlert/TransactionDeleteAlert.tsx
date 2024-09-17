@@ -1,23 +1,11 @@
 import { AlertDialog, Button, XStack, YStack } from 'tamagui';
 import { useTransactionDeleteAlertState } from './TransactionDeleteAlert.state';
 
-export type TransactionDeleteAlertProps = {
-  transactionId: number;
-  onSuccess: () => void;
-  onCancel: () => void;
-};
-
-export const TransactionDeleteAlert = ({
-  transactionId,
-  onSuccess,
-  onCancel,
-}: TransactionDeleteAlertProps) => {
-  const { onButtonConfirmPress, status } = useTransactionDeleteAlertState({
-    transactionId,
-    onSuccess,
-  });
+export const TransactionDeleteAlert = () => {
+  const { onButtonConfirmPress, status, isOpen, onCancel } =
+    useTransactionDeleteAlertState();
   return (
-    <AlertDialog open onOpenChange={onCancel} modal>
+    <AlertDialog open={isOpen} onOpenChange={onCancel} modal>
       <AlertDialog.Portal>
         <AlertDialog.Overlay
           key="overlay"

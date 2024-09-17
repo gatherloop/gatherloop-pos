@@ -1,32 +1,18 @@
-import {
-  EmptyView,
-  ErrorView,
-  ListItem,
-  ListItemMenu,
-  LoadingView,
-} from '../../../base';
+import { EmptyView, ErrorView, LoadingView } from '../../../base';
 import { Input, YStack } from 'tamagui';
 import { useTransactionListState } from './TransactionList.state';
-// eslint-disable-next-line @nx/enforce-module-boundaries
-import { Transaction } from '../../../../../api-contract/src';
-import { Calendar, Clock, DollarSign, Wallet } from '@tamagui/lucide-icons';
-import dayjs from 'dayjs';
 import { FlatList } from 'react-native';
+import { TransactionListItem } from '../TransactionListItem';
 
-export type TransactionListProps = {
-  itemMenus: (Omit<ListItemMenu, 'onPress' | 'isShown'> & {
-    onPress: (transaction: Transaction) => void;
-    isShown?: (transaction: Transaction) => void;
-  })[];
-  onItemPress: (transaction: Transaction) => void;
-};
-
-export const TransactionList = ({
-  itemMenus,
-  onItemPress,
-}: TransactionListProps) => {
-  const { transactions, refetch, status, handleSearchInputChange } =
-    useTransactionListState();
+export const TransactionList = () => {
+  const {
+    transactions,
+    refetch,
+    status,
+    handleSearchInputChange,
+    postMessage,
+    router,
+  } = useTransactionListState();
   return (
     <YStack gap="$3" flex={1}>
       <YStack>
@@ -42,37 +28,27 @@ export const TransactionList = ({
           <FlatList
             data={transactions}
             renderItem={({ item: transaction }) => (
-              <ListItem
-                title={transaction.name}
-                subtitle={`Rp. ${transaction.total.toLocaleString('id')}`}
-                backgroundColor={transaction.paidAt ? '$gray1' : '$red3'}
-                onPress={() => onItemPress(transaction)}
-                menus={itemMenus.map((itemMenu) => ({
-                  ...itemMenu,
-                  onPress: () => itemMenu.onPress(transaction),
-                  isShown: () =>
-                    itemMenu.isShown ? itemMenu.isShown(transaction) : true,
-                }))}
-                footerItems={[
-                  {
-                    icon: Calendar,
-                    value: dayjs(transaction.createdAt).format('DD/MM/YYYY'),
-                  },
-                  {
-                    icon: Clock,
-                    value: dayjs(transaction.createdAt).format('HH:mm'),
-                  },
-                  {
-                    icon: DollarSign,
-                    value: transaction.paidAt ? 'Paid' : 'Unpaid',
-                    isShown: () => typeof transaction.paidAt === 'string',
-                  },
-                  {
-                    icon: Wallet,
-                    value: transaction.wallet?.name ?? '',
-                    isShown: () => typeof transaction.wallet?.name === 'string',
-                  },
-                ]}
+              <TransactionListItem
+                name={transaction.name}
+                total={transaction.total}
+                createdAt={transaction.createdAt}
+                paidAt={transaction.paidAt}
+                walletName={transaction.wallet?.name}
+                onDeleteMenuPress={() =>
+                  postMessage({
+                    type: 'TransactionDeleteConfirmation',
+                    transactionId: transaction.id,
+                  })
+                }
+                onEditMenuPress={() =>
+                  router.push(`/transaction/${transaction.id}`)
+                }
+                onPayMenuPress={() =>
+                  postMessage({
+                    type: 'TransactionPayConfirmation',
+                    transactionId: transaction.id,
+                  })
+                }
               />
             )}
             keyExtractor={(item) => item.id.toString()}
