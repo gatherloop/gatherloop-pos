@@ -16,8 +16,6 @@ export const useTransactionPaymentAlertState = () => {
 
   const [transactionId, setTransactionId] = useState<number>();
 
-  console.log(transactionId);
-
   const { status, mutateAsync } = useTransactionPayById(transactionId ?? NaN);
 
   const toast = useToastController();

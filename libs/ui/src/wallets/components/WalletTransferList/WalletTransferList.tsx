@@ -20,7 +20,6 @@ export const WalletTransferList = ({ walletId }: WalletTransferListProps) => {
       ) : status === 'success' ? (
         walletTransfers.length > 0 ? (
           <FlatList
-            nestedScrollEnabled
             data={walletTransfers}
             renderItem={({ item: walletTransfer }) => (
               <ListItem
