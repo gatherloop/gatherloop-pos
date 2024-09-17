@@ -8,6 +8,7 @@ import {
 } from '@tamagui/lucide-icons';
 import { ListItem } from '../../../base';
 import dayjs from 'dayjs';
+import { XStackProps } from 'tamagui';
 
 export type TransactionListItemProps = {
   name: string;
@@ -18,7 +19,7 @@ export type TransactionListItemProps = {
   onPayMenuPress: () => void;
   onEditMenuPress: () => void;
   onDeleteMenuPress: () => void;
-};
+} & XStackProps;
 
 export const TransactionListItem = ({
   name,
@@ -29,6 +30,7 @@ export const TransactionListItem = ({
   onPayMenuPress,
   onEditMenuPress,
   onDeleteMenuPress,
+  ...xStackProps
 }: TransactionListItemProps) => {
   return (
     <ListItem
@@ -75,6 +77,7 @@ export const TransactionListItem = ({
           isShown: () => typeof walletName === 'string',
         },
       ]}
+      {...xStackProps}
     />
   );
 };

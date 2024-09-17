@@ -49,6 +49,7 @@ export const TransactionList = () => {
                     transactionId: transaction.id,
                   })
                 }
+                onPress={() => router.push(`/transactions/${transaction.id}`)}
               />
             )}
             keyExtractor={(item) => item.id.toString()}

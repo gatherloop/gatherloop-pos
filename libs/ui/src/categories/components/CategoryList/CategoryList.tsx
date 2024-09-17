@@ -20,6 +20,7 @@ export const CategoryList = () => {
             name={category.name}
             onDeleteMenuPress={() => onDeleteMenuPress(category)}
             onEditMenuPress={() => onEditMenuPress(category)}
+            onPress={() => onEditMenuPress(category)}
           />
         )}
         keyExtractor={(item) => item.id.toString()}
