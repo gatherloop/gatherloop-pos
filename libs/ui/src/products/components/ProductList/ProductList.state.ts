@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { Product, useProductList } from '../../../../../api-contract/src';
 import { PostMessageEvent, useDebounce, usePostMessage } from '../../../base';
@@ -15,11 +15,14 @@ export const useProductListState = () => {
     query,
   });
 
-  const onReceiveMessage = (event: PostMessageEvent) => {
-    if (event.type === 'ProductDeleteSuccess') {
-      refetch();
-    }
-  };
+  const onReceiveMessage = useCallback(
+    (event: PostMessageEvent) => {
+      if (event.type === 'ProductDeleteSuccess') {
+        refetch();
+      }
+    },
+    [refetch]
+  );
 
   const { postMessage } = usePostMessage(onReceiveMessage);
 

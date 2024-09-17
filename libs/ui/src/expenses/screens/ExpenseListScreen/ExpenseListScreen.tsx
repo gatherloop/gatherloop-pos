@@ -1,20 +1,10 @@
-import { Button, ScrollView } from 'tamagui';
+import { Button } from 'tamagui';
 import { Layout } from '../../../base';
 import { ExpenseList, ExpenseDeleteAlert } from '../../components';
 import { Link } from 'solito/link';
-import { Pencil, Plus, Trash } from '@tamagui/lucide-icons';
-import { useExpenseListScreenState } from './ExpenseListScreen.state';
+import { Plus } from '@tamagui/lucide-icons';
 
 export const ExpenseListScreen = () => {
-  const {
-    onItemPress,
-    onEditMenuPress,
-    onDeleteMenuPress,
-    onDeleteSuccess,
-    onDeleteCancel,
-    expenseDeleteId,
-  } = useExpenseListScreenState();
-
   return (
     <Layout
       title="Expenses"
@@ -24,20 +14,8 @@ export const ExpenseListScreen = () => {
         </Link>
       }
     >
-      <ExpenseList
-        onItemPress={onItemPress}
-        itemMenus={[
-          { title: 'Edit', icon: Pencil, onPress: onEditMenuPress },
-          { title: 'Delete', icon: Trash, onPress: onDeleteMenuPress },
-        ]}
-      />
-      {typeof expenseDeleteId === 'number' && (
-        <ExpenseDeleteAlert
-          expenseId={expenseDeleteId}
-          onSuccess={onDeleteSuccess}
-          onCancel={onDeleteCancel}
-        />
-      )}
+      <ExpenseList />
+      <ExpenseDeleteAlert />
     </Layout>
   );
 };

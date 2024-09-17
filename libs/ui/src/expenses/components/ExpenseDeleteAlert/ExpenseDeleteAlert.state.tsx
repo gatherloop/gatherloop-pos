@@ -1,30 +1,36 @@
 // eslint-disable-next-line @nx/enforce-module-boundaries
-import {
-  useExpenseDeleteById,
-  useExpenseFindById,
-} from '../../../../../api-contract/src';
+import { useExpenseDeleteById } from '../../../../../api-contract/src';
+import { useCallback, useState } from 'react';
 import { useToastController } from '@tamagui/toast';
+import { PostMessageEvent, usePostMessage } from '../../../base';
 
-export type UseExpenseDeleteAlertStateProps = {
-  expenseId: number;
-  onSuccess: () => void;
-};
+export const useExpenseDeleteAlertState = () => {
+  const [expenseId, setExpenseId] = useState<number>();
+  const { status, mutateAsync } = useExpenseDeleteById(expenseId ?? NaN);
 
-export const useExpenseDeleteAlertState = ({
-  expenseId,
-  onSuccess,
-}: UseExpenseDeleteAlertStateProps) => {
-  const { status, mutateAsync } = useExpenseDeleteById(expenseId);
-  const { data } = useExpenseFindById(expenseId);
+  const onReceiveMessage = useCallback((event: PostMessageEvent) => {
+    if (event.type === 'ExpenseDeleteConfirmation') {
+      setExpenseId(event.expenseId);
+    }
+  }, []);
+
+  const { postMessage } = usePostMessage(onReceiveMessage);
 
   const toast = useToastController();
 
   const onButtonConfirmPress = () => {
     mutateAsync({})
-      .then(() => toast.show('Expense deleted successfully'))
-      .then(onSuccess)
+      .then(() => {
+        toast.show('Expense deleted successfully');
+        postMessage({ type: 'ExpenseDeleteSuccess' });
+        setExpenseId(undefined);
+      })
       .catch(() => toast.show('Failed to delete expense'));
   };
 
-  return { status, onButtonConfirmPress };
+  const isOpen = typeof expenseId === 'number';
+
+  const onCancel = () => setExpenseId(undefined);
+
+  return { status, onButtonConfirmPress, isOpen, onCancel };
 };

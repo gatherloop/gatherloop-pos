@@ -42,19 +42,19 @@ export const TransactionListItem = ({
           title: 'Pay',
           icon: DollarSign,
           onPress: onPayMenuPress,
-          isShown: () => paidAt === undefined,
+          isShown: paidAt === undefined,
         },
         {
           title: 'Edit',
           icon: Pencil,
           onPress: onEditMenuPress,
-          isShown: () => paidAt === undefined,
+          isShown: paidAt === undefined,
         },
         {
           title: 'Delete',
           icon: Trash,
           onPress: onDeleteMenuPress,
-          isShown: () => paidAt === undefined,
+          isShown: paidAt === undefined,
         },
       ]}
       footerItems={[
@@ -69,12 +69,12 @@ export const TransactionListItem = ({
         {
           icon: DollarSign,
           value: paidAt ? 'Paid' : 'Unpaid',
-          isShown: () => typeof paidAt === 'string',
+          isShown: typeof paidAt === 'string',
         },
         {
           icon: Wallet,
           value: walletName ?? '',
-          isShown: () => typeof walletName === 'string',
+          isShown: typeof walletName === 'string',
         },
       ]}
       {...xStackProps}
