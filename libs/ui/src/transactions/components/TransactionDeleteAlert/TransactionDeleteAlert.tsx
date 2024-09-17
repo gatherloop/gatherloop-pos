@@ -43,15 +43,13 @@ export const TransactionDeleteAlert = () => {
               <AlertDialog.Cancel asChild>
                 <Button disabled={status === 'pending'}>No</Button>
               </AlertDialog.Cancel>
-              <AlertDialog.Action asChild>
-                <Button
-                  theme="active"
-                  onPress={onButtonConfirmPress}
-                  disabled={status === 'pending'}
-                >
-                  Yes
-                </Button>
-              </AlertDialog.Action>
+              <Button
+                theme="active"
+                onPress={onButtonConfirmPress}
+                disabled={status === 'pending'}
+              >
+                Yes
+              </Button>
             </XStack>
           </YStack>
         </AlertDialog.Content>

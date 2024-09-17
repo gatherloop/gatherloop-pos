@@ -1,24 +1,11 @@
 import { AlertDialog, Button, XStack, YStack } from 'tamagui';
 import { useCategoryDeleteAlertState } from './CategoryDeleteAlert.state';
 
-export type CategoryDeleteAlertProps = {
-  categoryId: number;
-  onSuccess: () => void;
-  onCancel: () => void;
-};
-
-export const CategoryDeleteAlert = ({
-  categoryId,
-  onSuccess,
-  onCancel,
-}: CategoryDeleteAlertProps) => {
-  const { onButtonConfirmPress, status, categoryName } =
-    useCategoryDeleteAlertState({
-      categoryId,
-      onSuccess,
-    });
+export const CategoryDeleteAlert = () => {
+  const { onButtonConfirmPress, status, categoryName, isOpen, onCancel } =
+    useCategoryDeleteAlertState();
   return (
-    <AlertDialog open onOpenChange={onCancel} modal>
+    <AlertDialog open={isOpen} onOpenChange={onCancel} modal>
       <AlertDialog.Portal>
         <AlertDialog.Overlay
           key="overlay"
@@ -56,15 +43,13 @@ export const CategoryDeleteAlert = ({
               <AlertDialog.Cancel asChild>
                 <Button disabled={status === 'pending'}>No</Button>
               </AlertDialog.Cancel>
-              <AlertDialog.Action asChild>
-                <Button
-                  theme="active"
-                  onPress={onButtonConfirmPress}
-                  disabled={status === 'pending'}
-                >
-                  Yes
-                </Button>
-              </AlertDialog.Action>
+              <Button
+                theme="active"
+                onPress={onButtonConfirmPress}
+                disabled={status === 'pending'}
+              >
+                Yes
+              </Button>
             </XStack>
           </YStack>
         </AlertDialog.Content>

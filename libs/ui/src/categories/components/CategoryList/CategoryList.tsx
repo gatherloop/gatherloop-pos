@@ -1,26 +1,13 @@
-import {
-  EmptyView,
-  ErrorView,
-  ListItem,
-  ListItemMenu,
-  LoadingView,
-} from '../../../base';
+import { EmptyView, ErrorView, LoadingView } from '../../../base';
 import { YStack } from 'tamagui';
 import { useCategoryListState } from './CategoryList.state';
-// eslint-disable-next-line @nx/enforce-module-boundaries
-import { Category } from '../../../../../api-contract/src';
+
 import { FlatList } from 'react-native';
+import { CategoryListItem } from '../CategoryListItem';
 
-export type CategoryListProps = {
-  itemMenus: (Omit<ListItemMenu, 'onPress' | 'isShown'> & {
-    onPress: (category: Category) => void;
-    isShown?: (category: Category) => void;
-  })[];
-  onItemPress: (category: Category) => void;
-};
-
-export const CategoryList = ({ itemMenus, onItemPress }: CategoryListProps) => {
-  const { categories, refetch, status } = useCategoryListState();
+export const CategoryList = () => {
+  const { categories, refetch, status, onDeleteMenuPress, onEditMenuPress } =
+    useCategoryListState();
   return status === 'pending' ? (
     <LoadingView title="Fetching Categories..." />
   ) : status === 'success' ? (
@@ -29,16 +16,10 @@ export const CategoryList = ({ itemMenus, onItemPress }: CategoryListProps) => {
         nestedScrollEnabled
         data={categories}
         renderItem={({ item: category }) => (
-          <ListItem
-            title={category.name}
-            thumbnailSrc="https://placehold.jp/120x120.png"
-            onPress={() => onItemPress(category)}
-            menus={itemMenus.map((itemMenu) => ({
-              ...itemMenu,
-              onPress: () => itemMenu.onPress(category),
-              isShown: () =>
-                itemMenu.isShown ? itemMenu.isShown(category) : true,
-            }))}
+          <CategoryListItem
+            name={category.name}
+            onDeleteMenuPress={() => onDeleteMenuPress(category)}
+            onEditMenuPress={() => onEditMenuPress(category)}
           />
         )}
         keyExtractor={(item) => item.id.toString()}
