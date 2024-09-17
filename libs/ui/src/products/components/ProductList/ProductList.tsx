@@ -1,27 +1,28 @@
-import { EmptyView, ErrorView, ListItemMenu, LoadingView } from '../../../base';
+import { EmptyView, ErrorView, LoadingView } from '../../../base';
 import { Input, YStack } from 'tamagui';
 import { useProductListState } from './ProductList.state';
+import { ProductListItem } from '../ProductListItem';
+import { FlatList } from 'react-native';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { Product } from '../../../../../api-contract/src';
-import { ProductCard } from '../ProductCard';
-import { FlatList } from 'react-native';
 
 export type ProductListProps = {
-  itemMenus?: (Omit<ListItemMenu, 'onPress' | 'isShown'> & {
-    onPress: (product: Product) => void;
-    isShown?: (product: Product) => void;
-  })[];
-  onItemPress: (product: Product) => void;
   isSearchAutoFocus?: boolean;
+  onItemPress?: (product: Product) => void;
 };
 
 export const ProductList = ({
-  itemMenus = [],
-  onItemPress,
   isSearchAutoFocus,
+  onItemPress,
 }: ProductListProps) => {
-  const { products, refetch, status, handleSearchInputChange } =
-    useProductListState();
+  const {
+    products,
+    refetch,
+    status,
+    handleSearchInputChange,
+    onDeleteMenuPress,
+    onEditMenuPress,
+  } = useProductListState();
   return (
     <YStack gap="$3" flex={1}>
       <YStack>
@@ -39,17 +40,19 @@ export const ProductList = ({
             nestedScrollEnabled
             data={products}
             renderItem={({ item: product }) => (
-              <ProductCard
-                categoryName={product.category?.name ?? ''}
+              <ProductListItem
+                categoryName={product.category.name}
                 name={product.name}
                 price={product.price}
-                menus={itemMenus.map((itemMenu) => ({
-                  ...itemMenu,
-                  onPress: () => itemMenu.onPress(product),
-                  isShown: () =>
-                    itemMenu.isShown ? itemMenu.isShown(product) : true,
-                }))}
-                onPress={() => onItemPress(product)}
+                onDeleteMenuPress={() => onDeleteMenuPress(product)}
+                onEditMenuPress={() => onEditMenuPress(product)}
+                onPress={() => {
+                  if (onItemPress) {
+                    onItemPress(product);
+                  } else {
+                    onEditMenuPress(product);
+                  }
+                }}
               />
             )}
             keyExtractor={(item) => item.id.toString()}

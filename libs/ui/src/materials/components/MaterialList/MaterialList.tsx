@@ -3,12 +3,15 @@ import { Input, YStack } from 'tamagui';
 import { useMaterialListState } from './MaterialList.state';
 import { MaterialListItem } from '../MaterialListItem';
 import { FlatList } from 'react-native';
+// eslint-disable-next-line @nx/enforce-module-boundaries
+import { Material } from '../../../../../api-contract/src';
 
 export type MaterialListProps = {
   isSearchAutoFocus?: boolean;
+  onItemPress: (material: Material) => void
 };
 
-export const MaterialList = ({ isSearchAutoFocus }: MaterialListProps) => {
+export const MaterialList = ({ isSearchAutoFocus, onItemPress }: MaterialListProps) => {
   const {
     materials,
     refetch,
@@ -38,7 +41,13 @@ export const MaterialList = ({ isSearchAutoFocus }: MaterialListProps) => {
                 name={material.name}
                 price={material.price}
                 unit={material.unit}
-                onPress={() => onEditMenuPress(material)}
+                onPress={() => {
+                  if (onItemPress) {
+                    onItemPress(material)
+                  } else {
+                    onEditMenuPress(material)
+                  }
+                }}
                 onEditMenuPress={() => onEditMenuPress(material)}
                 onDeleteMenuPress={() => onDeleteMenuPress(material)}
               />

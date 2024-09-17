@@ -23,7 +23,7 @@ import {
   YStack,
 } from 'tamagui';
 import { Plus, Trash } from '@tamagui/lucide-icons';
-import { MaterialCard, MaterialList } from '../../../materials/components';
+import { MaterialListItem, MaterialList } from '../../../materials/components';
 
 export type ProductFormProps = {
   variant: UseProductFormStateProps['variant'];
@@ -119,7 +119,7 @@ export const ProductForm = ({ variant, onSuccess }: ProductFormProps) => {
                   key={material.id}
                   $sm={{ flexDirection: 'column' }}
                 >
-                  <MaterialCard
+                  <MaterialListItem
                     name={material.name}
                     price={material.price}
                     unit={material.unit}

@@ -14,7 +14,7 @@ import {
 import { Button, H3, H5, Paragraph, ScrollView, XStack, YStack } from 'tamagui';
 import { H4 } from 'tamagui';
 import { Plus, Trash } from '@tamagui/lucide-icons';
-import { ProductCard, ProductList } from '../../../products';
+import { ProductListItem, ProductList } from '../../../products';
 
 export type TransactionFormProps = {
   variant: UseTransactionFormStateProps['variant'];
@@ -88,7 +88,7 @@ export const TransactionForm = ({
                             gap="$5"
                             $sm={{ flexDirection: 'column' }}
                           >
-                            <ProductCard
+                            <ProductListItem
                               flex={1}
                               name={product.name}
                               price={product.price}

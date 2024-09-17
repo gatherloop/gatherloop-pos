@@ -3,28 +3,46 @@ import {
   useProductDeleteById,
   useProductFindById,
 } from '../../../../../api-contract/src';
+import { useCallback, useState } from 'react';
 import { useToastController } from '@tamagui/toast';
+import { PostMessageEvent, usePostMessage } from '../../../base';
 
-export type UseProductDeleteAlertStateProps = {
-  productId: number;
-  onSuccess: () => void;
-};
+export const useProductDeleteAlertState = () => {
+  const [productId, setProductId] = useState<number>();
+  const { status, mutateAsync } = useProductDeleteById(productId ?? NaN);
+  const { data } = useProductFindById(productId ?? NaN, {
+    query: { enabled: typeof productId === 'number' },
+  });
 
-export const useProductDeleteAlertState = ({
-  productId,
-  onSuccess,
-}: UseProductDeleteAlertStateProps) => {
-  const { status, mutateAsync } = useProductDeleteById(productId);
-  const { data } = useProductFindById(productId);
+  const onReceiveMessage = useCallback((event: PostMessageEvent) => {
+    if (event.type === 'ProductDeleteConfirmation') {
+      setProductId(event.productId);
+    }
+  }, []);
+
+  const { postMessage } = usePostMessage(onReceiveMessage);
 
   const toast = useToastController();
 
   const onButtonConfirmPress = () => {
     mutateAsync({})
-      .then(() => toast.show('Product deleted successfully'))
-      .then(onSuccess)
+      .then(() => {
+        toast.show('Product deleted successfully');
+        postMessage({ type: 'ProductDeleteSuccess' });
+        setProductId(undefined);
+      })
       .catch(() => toast.show('Failed to delete product'));
   };
 
-  return { status, onButtonConfirmPress, productName: data?.data.name ?? "" };
+  const isOpen = typeof productId === 'number';
+
+  const onCancel = () => setProductId(undefined);
+
+  return {
+    status,
+    onButtonConfirmPress,
+    productName: data?.data.name ?? '',
+    isOpen,
+    onCancel,
+  };
 };

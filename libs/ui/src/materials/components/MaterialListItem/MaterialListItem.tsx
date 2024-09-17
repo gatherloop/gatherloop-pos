@@ -6,8 +6,8 @@ export type MaterialListItemProps = {
   name: string;
   price: number;
   unit: string;
-  onEditMenuPress: () => void;
-  onDeleteMenuPress: () => void;
+  onEditMenuPress?: () => void;
+  onDeleteMenuPress?: () => void;
 } & XStackProps;
 
 export function MaterialListItem({
@@ -24,8 +24,8 @@ export function MaterialListItem({
       subtitle={`Rp. ${price.toLocaleString('id')}`}
       thumbnailSrc="https://placehold.jp/120x120.png"
       menus={[
-        { title: 'Edit', icon: Pencil, onPress: onEditMenuPress },
-        { title: 'Delete', icon: Trash, onPress: onDeleteMenuPress },
+        { title: 'Edit', icon: Pencil, onPress: () => onEditMenuPress && onEditMenuPress(), isShown: () => typeof onEditMenuPress === "function" },
+        { title: 'Delete', icon: Trash, onPress: () => onDeleteMenuPress && onDeleteMenuPress(), isShown: () => typeof onDeleteMenuPress === "function" },
       ]}
       footerItems={[{ value: unit, icon: Box }]}
       {...xStackProps}

@@ -1,7 +1,7 @@
 import { Card, H3, H4, Paragraph, XStack, YStack } from 'tamagui';
 import { useTransactionDetailState } from './TransactionDetail.state';
 import dayjs from 'dayjs';
-import { ProductCard } from '../../../products';
+import { ProductListItem } from '../../../products';
 import { Calendar, CreditCard, User, Wallet } from '@tamagui/lucide-icons';
 import { H5 } from 'tamagui';
 
@@ -79,7 +79,7 @@ export const TransactionDetail = ({
         {transaction.data?.data.transactionItems.map(
           ({ price, product, amount, productId }) => (
             <YStack key={productId} gap="$3">
-              <ProductCard
+              <ProductListItem
                 categoryName={product.category.name}
                 name={product.name}
                 price={price}
