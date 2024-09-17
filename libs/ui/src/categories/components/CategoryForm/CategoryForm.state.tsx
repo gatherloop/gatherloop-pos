@@ -62,5 +62,5 @@ export const useCategoryFormState = ({
   const isSubmitDisabled =
     mutation.status === 'pending' || mutation.status === 'success';
 
-  return { formik, isSubmitDisabled };
+  return { formik, isSubmitDisabled, category };
 };

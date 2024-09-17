@@ -80,5 +80,6 @@ export const useExpenseFormState = ({
     wallets: wallets.data?.data ?? [],
     budgets: budgets.data?.data ?? [],
     isSubmitDisabled,
+    expense,
   };
 };

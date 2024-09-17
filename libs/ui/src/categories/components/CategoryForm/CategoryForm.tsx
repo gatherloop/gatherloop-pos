@@ -1,5 +1,12 @@
 import { FormikProvider } from 'formik';
-import { Field, Form, InputText, SubmitButton } from '../../../base';
+import {
+  ErrorView,
+  Field,
+  Form,
+  InputText,
+  LoadingView,
+  SubmitButton,
+} from '../../../base';
 import {
   UseCategoryFormStateProps,
   useCategoryFormState,
@@ -11,11 +18,12 @@ export type CategoryFormProps = {
 };
 
 export const CategoryForm = ({ variant, onSuccess }: CategoryFormProps) => {
-  const { formik, isSubmitDisabled } = useCategoryFormState({
+  const { formik, isSubmitDisabled, category } = useCategoryFormState({
     variant,
     onSuccess,
   });
-  return (
+
+  return category.status === 'success' || variant.type === 'create' ? (
     <FormikProvider value={formik}>
       <Form>
         <Field name="name" label="Name">
@@ -24,5 +32,13 @@ export const CategoryForm = ({ variant, onSuccess }: CategoryFormProps) => {
         <SubmitButton disabled={isSubmitDisabled}>Submit</SubmitButton>
       </Form>
     </FormikProvider>
+  ) : category.status === 'pending' ? (
+    <LoadingView title="Fetching Category..." />
+  ) : (
+    <ErrorView
+      title="Failed to Fetch Category"
+      subtitle="Please click the retry button to refetch data"
+      onRetryButtonPress={category.refetch}
+    />
   );
 };

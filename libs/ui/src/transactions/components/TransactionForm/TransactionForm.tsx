@@ -1,9 +1,11 @@
 import { FieldArray, FormikProvider } from 'formik';
 import {
+  ErrorView,
   Field,
   Form,
   InputNumber,
   InputText,
+  LoadingView,
   Sheet,
   SubmitButton,
 } from '../../../base';
@@ -33,11 +35,13 @@ export const TransactionForm = ({
     onAddItem,
     isFormDisabled,
     isSubmitDisabled,
+    transaction,
   } = useTransactionFormState({
     variant,
     onSuccess,
   });
-  return (
+
+  return transaction.status === 'success' || variant.type === 'create' ? (
     <YStack>
       <FormikProvider value={formik}>
         <Form>
@@ -155,5 +159,13 @@ export const TransactionForm = ({
         </Form>
       </FormikProvider>
     </YStack>
+  ) : transaction.status === 'pending' ? (
+    <LoadingView title="Fetching Transaction..." />
+  ) : (
+    <ErrorView
+      title="Failed to Fetch Transaction"
+      subtitle="Please click the retry button to refetch data"
+      onRetryButtonPress={transaction.refetch}
+    />
   );
 };

@@ -7,6 +7,8 @@ import {
   Select,
   Sheet,
   SubmitButton,
+  LoadingView,
+  ErrorView,
 } from '../../../base';
 import {
   UseProductFormStateProps,
@@ -40,8 +42,10 @@ export const ProductForm = ({ variant, onSuccess }: ProductFormProps) => {
     foodCostPercentage,
     totalFoodCost,
     isSubmitDisabled,
+    product,
   } = useProductFormState({ variant, onSuccess });
-  return (
+
+  return product.status === 'success' || variant.type === 'create' ? (
     <FormikProvider value={formik}>
       <Form>
         <Card>
@@ -157,5 +161,13 @@ export const ProductForm = ({ variant, onSuccess }: ProductFormProps) => {
         </FieldArray>
       </Form>
     </FormikProvider>
+  ) : product.status === 'pending' ? (
+    <LoadingView title="Fetching Product..." />
+  ) : (
+    <ErrorView
+      title="Failed to Fetch Product"
+      subtitle="Please click the retry button to refetch data"
+      onRetryButtonPress={product.refetch}
+    />
   );
 };

@@ -1,9 +1,11 @@
 import { FieldArray, FormikProvider } from 'formik';
 import {
+  ErrorView,
   Field,
   Form,
   InputNumber,
   InputText,
+  LoadingView,
   Select,
   SubmitButton,
 } from '../../../base';
@@ -20,11 +22,13 @@ export type ExpenseFormProps = {
 };
 
 export const ExpenseForm = ({ variant, onSuccess }: ExpenseFormProps) => {
-  const { formik, budgets, wallets, isSubmitDisabled } = useExpenseFormState({
-    variant,
-    onSuccess,
-  });
-  return (
+  const { formik, budgets, wallets, isSubmitDisabled, expense } =
+    useExpenseFormState({
+      variant,
+      onSuccess,
+    });
+
+  return expense.status === 'success' || variant.type === 'create' ? (
     <FormikProvider value={formik}>
       <Form>
         <YStack gap="$3">
@@ -153,5 +157,13 @@ export const ExpenseForm = ({ variant, onSuccess }: ExpenseFormProps) => {
         <SubmitButton disabled={isSubmitDisabled}>Submit</SubmitButton>
       </Form>
     </FormikProvider>
+  ) : expense.status === 'pending' ? (
+    <LoadingView title="Fetching Expense..." />
+  ) : (
+    <ErrorView
+      title="Failed to Fetch Expense"
+      subtitle="Please click the retry button to refetch data"
+      onRetryButtonPress={expense.refetch}
+    />
   );
 };

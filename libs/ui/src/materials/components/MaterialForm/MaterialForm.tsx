@@ -5,6 +5,8 @@ import {
   InputText,
   InputNumber,
   SubmitButton,
+  LoadingView,
+  ErrorView,
 } from '../../../base';
 import {
   UseMaterialFormStateProps,
@@ -17,11 +19,12 @@ export type MaterialFormProps = {
 };
 
 export const MaterialForm = ({ variant, onSuccess }: MaterialFormProps) => {
-  const { formik, isSubmitDisabled } = useMaterialFormState({
+  const { formik, isSubmitDisabled, material } = useMaterialFormState({
     variant,
     onSuccess,
   });
-  return (
+
+  return material.status === 'success' || variant.type === 'create' ? (
     <FormikProvider value={formik}>
       <Form>
         <Field name="name" label="Name">
@@ -36,5 +39,13 @@ export const MaterialForm = ({ variant, onSuccess }: MaterialFormProps) => {
         <SubmitButton disabled={isSubmitDisabled}>Submit</SubmitButton>
       </Form>
     </FormikProvider>
+  ) : material.status === 'pending' ? (
+    <LoadingView title="Fetching Material..." />
+  ) : (
+    <ErrorView
+      title="Failed to Fetch Material"
+      subtitle="Please click the retry button to refetch data"
+      onRetryButtonPress={material.refetch}
+    />
   );
 };

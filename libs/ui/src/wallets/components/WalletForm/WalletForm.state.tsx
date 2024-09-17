@@ -63,6 +63,5 @@ export const useWalletFormState = ({
   const isSubmitDisabled =
     mutation.status === 'pending' || mutation.status === 'success';
 
-
-  return { formik, isSubmitDisabled };
+  return { formik, isSubmitDisabled, wallet };
 };

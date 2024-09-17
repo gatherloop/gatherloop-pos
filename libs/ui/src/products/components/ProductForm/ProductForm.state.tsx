@@ -129,5 +129,6 @@ export const useProductFormState = ({
     totalFoodCost,
     foodCostPercentage,
     isSubmitDisabled,
+    product
   };
 };

@@ -5,6 +5,8 @@ import {
   InputText,
   InputNumber,
   SubmitButton,
+  LoadingView,
+  ErrorView,
 } from '../../../base';
 import {
   UseWalletFormStateProps,
@@ -17,11 +19,11 @@ export type WalletFormProps = {
 };
 
 export const WalletForm = ({ variant, onSuccess }: WalletFormProps) => {
-  const { formik, isSubmitDisabled } = useWalletFormState({
+  const { formik, isSubmitDisabled, wallet } = useWalletFormState({
     variant,
     onSuccess,
   });
-  return (
+  return wallet.status === 'success' || variant.type === 'create' ? (
     <FormikProvider value={formik}>
       <Form>
         <Field name="name" label="Name">
@@ -36,5 +38,13 @@ export const WalletForm = ({ variant, onSuccess }: WalletFormProps) => {
         <SubmitButton disabled={isSubmitDisabled}>Submit</SubmitButton>
       </Form>
     </FormikProvider>
+  ) : wallet.status === 'pending' ? (
+    <LoadingView title="Fetching Wallet..." />
+  ) : (
+    <ErrorView
+      title="Failed to Fetch Wallet"
+      subtitle="Please click the retry button to refetch data"
+      onRetryButtonPress={wallet.refetch}
+    />
   );
 };

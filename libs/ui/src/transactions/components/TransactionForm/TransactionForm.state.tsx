@@ -127,5 +127,6 @@ export const useTransactionFormState = ({
     onAddItem,
     isFormDisabled,
     isSubmitDisabled,
+    transaction,
   };
 };
