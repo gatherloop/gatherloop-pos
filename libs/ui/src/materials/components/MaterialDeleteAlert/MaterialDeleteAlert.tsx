@@ -1,24 +1,11 @@
 import { AlertDialog, Button, XStack, YStack } from 'tamagui';
 import { useMaterialDeleteAlertState } from './MaterialDeleteAlert.state';
 
-export type MaterialDeleteAlertProps = {
-  materialId: number;
-  onSuccess: () => void;
-  onCancel: () => void;
-};
-
-export const MaterialDeleteAlert = ({
-  materialId,
-  onSuccess,
-  onCancel,
-}: MaterialDeleteAlertProps) => {
-  const { onButtonConfirmPress, status, materialName } =
-    useMaterialDeleteAlertState({
-      materialId,
-      onSuccess,
-    });
+export const MaterialDeleteAlert = () => {
+  const { onButtonConfirmPress, status, materialName, isOpen, onCancel } =
+    useMaterialDeleteAlertState();
   return (
-    <AlertDialog open onOpenChange={onCancel} modal>
+    <AlertDialog open={isOpen} onOpenChange={onCancel} modal>
       <AlertDialog.Portal>
         <AlertDialog.Overlay
           key="overlay"
@@ -56,15 +43,13 @@ export const MaterialDeleteAlert = ({
               <AlertDialog.Cancel asChild>
                 <Button disabled={status === 'pending'}>No</Button>
               </AlertDialog.Cancel>
-              <AlertDialog.Action asChild>
-                <Button
-                  theme="active"
-                  onPress={onButtonConfirmPress}
-                  disabled={status === 'pending'}
-                >
-                  Yes
-                </Button>
-              </AlertDialog.Action>
+              <Button
+                theme="active"
+                onPress={onButtonConfirmPress}
+                disabled={status === 'pending'}
+              >
+                Yes
+              </Button>
             </XStack>
           </YStack>
         </AlertDialog.Content>

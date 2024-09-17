@@ -1,21 +1,11 @@
-import { Button, ScrollView } from 'tamagui';
+import { Button } from 'tamagui';
 import { Layout } from '../../../base';
 import { MaterialList } from '../../components';
 import { Link } from 'solito/link';
-import { Pencil, Plus, Trash } from '@tamagui/lucide-icons';
+import { Plus } from '@tamagui/lucide-icons';
 import { MaterialDeleteAlert } from '../../components/MaterialDeleteAlert';
-import { useMaterialListScreenState } from './MaterialListScreen.state';
 
 export const MaterialListScreen = () => {
-  const {
-    onItemPress,
-    onEditMenuPress,
-    onDeleteMenuPress,
-    onDeleteSuccess,
-    onDeleteCancel,
-    materialDeleteId,
-  } = useMaterialListScreenState();
-
   return (
     <Layout
       title="Materials"
@@ -25,20 +15,8 @@ export const MaterialListScreen = () => {
         </Link>
       }
     >
-      <MaterialList
-        onItemPress={onItemPress}
-        itemMenus={[
-          { title: 'Edit', icon: Pencil, onPress: onEditMenuPress },
-          { title: 'Delete', icon: Trash, onPress: onDeleteMenuPress },
-        ]}
-      />
-      {typeof materialDeleteId === 'number' && (
-        <MaterialDeleteAlert
-          materialId={materialDeleteId}
-          onSuccess={onDeleteSuccess}
-          onCancel={onDeleteCancel}
-        />
-      )}
+      <MaterialList />
+      <MaterialDeleteAlert />
     </Layout>
   );
 };

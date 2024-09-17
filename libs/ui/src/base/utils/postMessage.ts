@@ -6,7 +6,9 @@ export type PostMessageEvent =
   | { type: 'TransactionDeleteConfirmation'; transactionId: number }
   | { type: 'TransactionDeleteSuccess' }
   | { type: 'CategoryDeleteConfirmation'; categoryId: number }
-  | { type: 'CategoryDeleteSuccess' };
+  | { type: 'CategoryDeleteSuccess' }
+  | { type: 'MaterialDeleteConfirmation'; materialId: number }
+  | { type: 'MaterialDeleteSuccess' };
 
 export const usePostMessage = (
   onReceiveMessage?: (event: PostMessageEvent) => void

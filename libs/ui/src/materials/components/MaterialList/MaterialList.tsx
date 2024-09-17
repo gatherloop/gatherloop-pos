@@ -1,27 +1,22 @@
-import { EmptyView, ErrorView, ListItemMenu, LoadingView } from '../../../base';
+import { EmptyView, ErrorView, LoadingView } from '../../../base';
 import { Input, YStack } from 'tamagui';
 import { useMaterialListState } from './MaterialList.state';
-// eslint-disable-next-line @nx/enforce-module-boundaries
-import { Material } from '../../../../../api-contract/src';
-import { MaterialCard } from '../MaterialCard';
+import { MaterialListItem } from '../MaterialListItem';
 import { FlatList } from 'react-native';
 
 export type MaterialListProps = {
-  itemMenus?: (Omit<ListItemMenu, 'onPress' | 'isShown'> & {
-    onPress: (material: Material) => void;
-    isShown?: (material: Material) => void;
-  })[];
-  onItemPress: (material: Material) => void;
   isSearchAutoFocus?: boolean;
 };
 
-export const MaterialList = ({
-  itemMenus = [],
-  onItemPress,
-  isSearchAutoFocus,
-}: MaterialListProps) => {
-  const { materials, refetch, status, handleSearchInputChange } =
-    useMaterialListState();
+export const MaterialList = ({ isSearchAutoFocus }: MaterialListProps) => {
+  const {
+    materials,
+    refetch,
+    status,
+    handleSearchInputChange,
+    onDeleteMenuPress,
+    onEditMenuPress,
+  } = useMaterialListState();
   return (
     <YStack gap="$3" flex={1}>
       <YStack>
@@ -39,17 +34,13 @@ export const MaterialList = ({
             nestedScrollEnabled
             data={materials}
             renderItem={({ item: material }) => (
-              <MaterialCard
+              <MaterialListItem
                 name={material.name}
                 price={material.price}
                 unit={material.unit}
-                onPress={() => onItemPress(material)}
-                menus={itemMenus.map((itemMenu) => ({
-                  ...itemMenu,
-                  onPress: () => itemMenu.onPress(material),
-                  isShown: () =>
-                    itemMenu.isShown ? itemMenu.isShown(material) : true,
-                }))}
+                onPress={() => onEditMenuPress(material)}
+                onEditMenuPress={() => onEditMenuPress(material)}
+                onDeleteMenuPress={() => onDeleteMenuPress(material)}
               />
             )}
             keyExtractor={(item) => item.id.toString()}

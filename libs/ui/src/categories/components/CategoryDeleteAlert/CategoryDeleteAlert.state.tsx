@@ -9,10 +9,11 @@ import { PostMessageEvent, usePostMessage } from '../../../base';
 
 export const useCategoryDeleteAlertState = () => {
   const [categoryId, setCategoryId] = useState<number>();
-  console.log(categoryId);
 
   const { status, mutateAsync } = useCategoryDeleteById(categoryId ?? NaN);
-  const { data } = useCategoryFindById(categoryId ?? NaN);
+  const { data } = useCategoryFindById(categoryId ?? NaN, {
+    query: { enabled: typeof categoryId === 'number' },
+  });
 
   const toast = useToastController();
 

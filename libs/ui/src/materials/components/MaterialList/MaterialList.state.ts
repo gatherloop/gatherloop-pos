@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 // eslint-disable-next-line @nx/enforce-module-boundaries
-import { useMaterialList } from '../../../../../api-contract/src';
-import { useDebounce } from '../../../base';
+import { Material, useMaterialList } from '../../../../../api-contract/src';
+import { PostMessageEvent, useDebounce, usePostMessage } from '../../../base';
+import { useRouter } from 'solito/router';
 
 export const useMaterialListState = () => {
+  const router = useRouter();
+
   const [query, setQuery] = useState('');
 
   const { data, status, error, refetch } = useMaterialList({
@@ -11,6 +14,25 @@ export const useMaterialListState = () => {
     order: 'desc',
     query,
   });
+
+  const onReceiveMessage = (event: PostMessageEvent) => {
+    if (event.type === 'MaterialDeleteSuccess') {
+      refetch();
+    }
+  };
+
+  const { postMessage } = usePostMessage(onReceiveMessage);
+
+  const onDeleteMenuPress = (material: Material) => {
+    postMessage({
+      type: 'MaterialDeleteConfirmation',
+      materialId: material.id,
+    });
+  };
+
+  const onEditMenuPress = (material: Material) => {
+    router.push(`/materials/${material.id}`);
+  };
 
   const debounce = useDebounce();
 
@@ -23,6 +45,8 @@ export const useMaterialListState = () => {
     status,
     error,
     refetch,
-    handleSearchInputChange
+    handleSearchInputChange,
+    onDeleteMenuPress,
+    onEditMenuPress,
   };
 };
