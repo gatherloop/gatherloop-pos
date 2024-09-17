@@ -8,10 +8,13 @@ import { Material } from '../../../../../api-contract/src';
 
 export type MaterialListProps = {
   isSearchAutoFocus?: boolean;
-  onItemPress: (material: Material) => void
+  onItemPress?: (material: Material) => void;
 };
 
-export const MaterialList = ({ isSearchAutoFocus, onItemPress }: MaterialListProps) => {
+export const MaterialList = ({
+  isSearchAutoFocus,
+  onItemPress,
+}: MaterialListProps) => {
   const {
     materials,
     refetch,
@@ -43,9 +46,9 @@ export const MaterialList = ({ isSearchAutoFocus, onItemPress }: MaterialListPro
                 unit={material.unit}
                 onPress={() => {
                   if (onItemPress) {
-                    onItemPress(material)
+                    onItemPress(material);
                   } else {
-                    onEditMenuPress(material)
+                    onEditMenuPress(material);
                   }
                 }}
                 onEditMenuPress={() => onEditMenuPress(material)}
