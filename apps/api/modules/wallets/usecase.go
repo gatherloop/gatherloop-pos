@@ -34,8 +34,8 @@ func (usecase Usecase) DeleteWalletById(ctx context.Context, id int64) error {
 	return usecase.repository.DeleteWalletById(ctx, id)
 }
 
-func (usecase Usecase) GetWalletTransferList(ctx context.Context, walletId int64) ([]apiContract.WalletTransfer, error) {
-	return usecase.repository.GetWalletTransferList(ctx, walletId)
+func (usecase Usecase) GetWalletTransferList(ctx context.Context, walletId int64, sortBy string, order string, skip int, limit int) ([]apiContract.WalletTransfer, error) {
+	return usecase.repository.GetWalletTransferList(ctx, walletId, sortBy, order, skip, limit)
 }
 
 func (usecase Usecase) CreateWalletTransfer(ctx context.Context, walletTransferRequest apiContract.WalletTransferRequest, fromWalletId int64) error {

@@ -3,6 +3,7 @@ package wallets
 import (
 	"apps/api/utils"
 	"context"
+	"fmt"
 	apiContract "libs/api-contract"
 	"time"
 
@@ -54,10 +55,26 @@ func (repo Repository) DeleteWalletById(ctx context.Context, id int64) error {
 	return result.Error
 }
 
-func (repo Repository) GetWalletTransferList(ctx context.Context, walletId int64) ([]apiContract.WalletTransfer, error) {
+func (repo Repository) GetWalletTransferList(ctx context.Context, walletId int64, sortBy string, order string, skip int, limit int) ([]apiContract.WalletTransfer, error) {
 	db := utils.GetDbFromCtx(ctx, repo.db)
 	var walletTransfers []apiContract.WalletTransfer
-	result := db.Table("wallet_transfers").Preload("FromWallet").Preload("ToWallet").Where("deleted_at is NULL AND from_wallet_id = ?", walletId).Find(&walletTransfers)
+
+	result := db.Table("wallet_transfers").Preload("FromWallet").Preload("ToWallet").Where("deleted_at is NULL AND from_wallet_id = ?", walletId)
+
+	if sortBy != "" && order != "" {
+		result = result.Order(fmt.Sprintf("%s %s", sortBy, order))
+	}
+
+	if skip > 0 {
+		result = result.Offset(skip)
+	}
+
+	if limit > 0 {
+		result = result.Limit(limit)
+	}
+
+	result = result.Find(&walletTransfers)
+
 	return walletTransfers, result.Error
 }
 

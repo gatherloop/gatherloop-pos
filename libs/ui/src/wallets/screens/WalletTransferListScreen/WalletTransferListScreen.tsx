@@ -17,7 +17,7 @@ export const WalletTransferListScreen = (
     <Layout title="Wallet Transfer" showBackButton>
       <YStack gap="$4" flex={1}>
         <WalletDetail walletId={walletId} />
-        <YStack flex={1}>
+        <YStack flex={1} gap="$3">
           <XStack gap="$3" justifyContent="space-between">
             <H4>Transfer Histories</H4>
             <Link href={`/wallets/${walletId}/transfers/create`}>

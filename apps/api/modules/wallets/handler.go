@@ -111,7 +111,22 @@ func (handler Handler) GetWalletTransferList(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	walletTransfers, err := handler.usecase.GetWalletTransferList(ctx, walletId)
+	sortBy := base.GetSortBy(r)
+	order := base.GetOrder(r)
+
+	skip, err := base.GetSkip(r)
+	if err != nil {
+		base.WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
+		return
+	}
+
+	limit, err := base.GetLimit(r)
+	if err != nil {
+		base.WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
+		return
+	}
+
+	walletTransfers, err := handler.usecase.GetWalletTransferList(ctx, walletId, sortBy, order, skip, limit)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
 		return
