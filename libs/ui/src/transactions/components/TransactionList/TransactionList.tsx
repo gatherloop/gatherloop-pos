@@ -41,7 +41,7 @@ export const TransactionList = () => {
                   })
                 }
                 onEditMenuPress={() =>
-                  router.push(`/transaction/${transaction.id}`)
+                  router.push(`/transactions/${transaction.id}`)
                 }
                 onPayMenuPress={() =>
                   postMessage({
