@@ -1,29 +1,37 @@
-import { Pencil, Tag, Trash } from '@tamagui/lucide-icons';
+import { CreditCard, MinusSquare, Pencil, Trash } from '@tamagui/lucide-icons';
 import { ListItem } from '../../../base';
 import { XStackProps } from 'tamagui';
 
-export type ProductListItemProps = {
+export type WalletListItemProps = {
   name: string;
-  price: number;
-  categoryName: string;
+  balance: number;
+  paymentCostPercentage: number;
+  onTransferMenuPress?: () => void;
   onEditMenuPress?: () => void;
   onDeleteMenuPress?: () => void;
 } & XStackProps;
 
-export const ProductListItem = ({
+export const WalletListItem = ({
   name,
-  price,
-  categoryName,
+  balance,
+  paymentCostPercentage,
+  onTransferMenuPress,
   onEditMenuPress,
   onDeleteMenuPress,
   ...xStackProps
-}: ProductListItemProps) => {
+}: WalletListItemProps) => {
   return (
     <ListItem
       title={name}
-      subtitle={`Rp. ${price.toLocaleString('id')}`}
+      subtitle={`Rp. ${balance.toLocaleString('id')}`}
       thumbnailSrc="https://placehold.jp/120x120.png"
       menus={[
+        {
+          title: 'Transfer',
+          icon: CreditCard,
+          onPress: onTransferMenuPress,
+          isShown: typeof onTransferMenuPress === 'function',
+        },
         {
           title: 'Edit',
           icon: Pencil,
@@ -37,7 +45,7 @@ export const ProductListItem = ({
           isShown: typeof onDeleteMenuPress === 'function',
         },
       ]}
-      footerItems={[{ value: categoryName, icon: Tag }]}
+      footerItems={[{ value: `${paymentCostPercentage}%`, icon: MinusSquare }]}
       {...xStackProps}
     />
   );

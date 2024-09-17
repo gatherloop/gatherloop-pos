@@ -1,4 +1,3 @@
-import { ScrollView } from 'tamagui';
 import { Layout } from '../../../base';
 import { BudgetList } from '../../components';
 

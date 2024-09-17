@@ -24,8 +24,18 @@ export function MaterialListItem({
       subtitle={`Rp. ${price.toLocaleString('id')}`}
       thumbnailSrc="https://placehold.jp/120x120.png"
       menus={[
-        { title: 'Edit', icon: Pencil, onPress: () => onEditMenuPress && onEditMenuPress(), isShown: () => typeof onEditMenuPress === "function" },
-        { title: 'Delete', icon: Trash, onPress: () => onDeleteMenuPress && onDeleteMenuPress(), isShown: () => typeof onDeleteMenuPress === "function" },
+        {
+          title: 'Edit',
+          icon: Pencil,
+          onPress: onEditMenuPress,
+          isShown: typeof onEditMenuPress === 'function',
+        },
+        {
+          title: 'Delete',
+          icon: Trash,
+          onPress: onDeleteMenuPress,
+          isShown: typeof onDeleteMenuPress === 'function',
+        },
       ]}
       footerItems={[{ value: unit, icon: Box }]}
       {...xStackProps}

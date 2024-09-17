@@ -30,7 +30,7 @@ export const PopoverMenu = ({ menus }: PopoverMenuProps) => {
             title={menu.title}
             onPress={(event) => {
               event.stopPropagation();
-              menu.onPress();
+              if (menu.onPress) menu.onPress();
               onOpenChange(false, 'press');
             }}
             backgroundColor="$white"
@@ -44,15 +44,15 @@ export const PopoverMenu = ({ menus }: PopoverMenuProps) => {
 export type ListItemMenu = {
   title: string;
   icon?: NamedExoticComponent;
-  onPress: () => void;
-  isShown?: () => void;
+  onPress?: () => void;
+  isShown?: boolean;
 };
 
 export type ListItemFooterItem = {
   label?: string;
   icon?: NamedExoticComponent<{ size: string; color: string }>;
   value: string;
-  isShown?: () => void;
+  isShown?: boolean;
 };
 
 export type ListItemProps = {
@@ -71,12 +71,8 @@ export const ListItem = ({
   footerItems = [],
   ...xStackProps
 }: ListItemProps) => {
-  const shownMenus = menus.filter(({ isShown }) =>
-    isShown ? isShown() : true
-  );
-  const shownFooterItems = footerItems.filter(({ isShown }) =>
-    isShown ? isShown() : true
-  );
+  const shownMenus = menus.filter(({ isShown }) => isShown ?? true);
+  const shownFooterItems = footerItems.filter(({ isShown }) => isShown ?? true);
   return (
     <XStack
       gap="$4"
