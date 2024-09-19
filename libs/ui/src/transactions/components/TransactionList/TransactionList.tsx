@@ -10,7 +10,7 @@ export const TransactionList = () => {
     refetch,
     status,
     handleSearchInputChange,
-    postMessage,
+    emit,
     router,
   } = useTransactionListState();
   return (
@@ -35,7 +35,7 @@ export const TransactionList = () => {
                 paidAt={transaction.paidAt}
                 walletName={transaction.wallet?.name}
                 onDeleteMenuPress={() =>
-                  postMessage({
+                  emit({
                     type: 'TransactionDeleteConfirmation',
                     transactionId: transaction.id,
                   })
@@ -44,7 +44,7 @@ export const TransactionList = () => {
                   router.push(`/transactions/${transaction.id}`)
                 }
                 onPayMenuPress={() =>
-                  postMessage({
+                  emit({
                     type: 'TransactionPayConfirmation',
                     transactionId: transaction.id,
                   })

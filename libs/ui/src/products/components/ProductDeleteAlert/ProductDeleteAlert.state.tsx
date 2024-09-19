@@ -3,9 +3,9 @@ import {
   useProductDeleteById,
   useProductFindById,
 } from '../../../../../api-contract/src';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useToastController } from '@tamagui/toast';
-import { PostMessageEvent, usePostMessage } from '../../../base';
+import { Event, Listener, useEventEmitter } from '../../../base';
 
 export const useProductDeleteAlertState = () => {
   const [productId, setProductId] = useState<number>();
@@ -14,13 +14,23 @@ export const useProductDeleteAlertState = () => {
     query: { enabled: typeof productId === 'number' },
   });
 
-  const onReceiveMessage = useCallback((event: PostMessageEvent) => {
+  const onReceiveMessage = useCallback((event: Event) => {
     if (event.type === 'ProductDeleteConfirmation') {
       setProductId(event.productId);
     }
   }, []);
 
-  const { postMessage } = usePostMessage(onReceiveMessage);
+  const listeners = useMemo<Listener<Event['type']>[]>(
+    () => [
+      {
+        type: 'ProductDeleteConfirmation',
+        callback: (event) => setProductId(event.productId),
+      },
+    ],
+    []
+  );
+
+  const { emit } = useEventEmitter(listeners);
 
   const toast = useToastController();
 
@@ -28,7 +38,7 @@ export const useProductDeleteAlertState = () => {
     mutateAsync({})
       .then(() => {
         toast.show('Product deleted successfully');
-        postMessage({ type: 'ProductDeleteSuccess' });
+        emit({ type: 'ProductDeleteSuccess' });
         setProductId(undefined);
       })
       .catch(() => toast.show('Failed to delete product'));

@@ -1,2 +1,2 @@
 export * from './debounce';
-export * from './postMessage';
+export * from './eventEmitter';

@@ -25,6 +25,7 @@
     "axios": "^1.7.2",
     "burnt": "^0.12.2",
     "dayjs": "^1.11.11",
+    "eventemitter3": "^5.0.1",
     "expo-linear-gradient": "^13.0.2",
     "formik": "^2.4.6",
     "next": "14.2.3",

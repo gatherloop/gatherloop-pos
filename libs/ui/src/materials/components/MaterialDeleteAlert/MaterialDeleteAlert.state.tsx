@@ -1,11 +1,11 @@
-import { useCallback, useState } from 'react';
+import { useMemo, useState } from 'react';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import {
   useMaterialDeleteById,
   useMaterialFindById,
 } from '../../../../../api-contract/src';
 import { useToastController } from '@tamagui/toast';
-import { PostMessageEvent, usePostMessage } from '../../../base';
+import { Event, Listener, useEventEmitter } from '../../../base';
 
 export const useMaterialDeleteAlertState = () => {
   const [materialId, setMaterialId] = useState<number>();
@@ -14,13 +14,17 @@ export const useMaterialDeleteAlertState = () => {
     query: { enabled: typeof materialId === 'number' },
   });
 
-  const onReceiveMessage = useCallback((event: PostMessageEvent) => {
-    if (event.type === 'MaterialDeleteConfirmation') {
-      setMaterialId(event.materialId);
-    }
-  }, []);
+  const listeners = useMemo<Listener<Event['type']>[]>(
+    () => [
+      {
+        type: 'MaterialDeleteConfirmation',
+        callback: (event) => setMaterialId(event.materialId),
+      },
+    ],
+    []
+  );
 
-  const { postMessage } = usePostMessage(onReceiveMessage);
+  const { emit } = useEventEmitter(listeners);
 
   const toast = useToastController();
 
@@ -28,7 +32,7 @@ export const useMaterialDeleteAlertState = () => {
     mutateAsync({})
       .then(() => {
         toast.show('Material deleted successfully');
-        postMessage({ type: 'MaterialDeleteSuccess' });
+        emit({ type: 'MaterialDeleteSuccess' });
         setMaterialId(undefined);
       })
       .catch(() => toast.show('Failed to delete material'));

@@ -1,7 +1,7 @@
-import { useCallback, useState } from 'react';
+import { useMemo, useState } from 'react';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { Product, useProductList } from '../../../../../api-contract/src';
-import { PostMessageEvent, useDebounce, usePostMessage } from '../../../base';
+import { Event, Listener, useDebounce, useEventEmitter } from '../../../base';
 import { useRouter } from 'solito/router';
 
 export const useProductListState = () => {
@@ -15,16 +15,17 @@ export const useProductListState = () => {
     query,
   });
 
-  const onReceiveMessage = useCallback(
-    (event: PostMessageEvent) => {
-      if (event.type === 'ProductDeleteSuccess') {
-        refetch();
-      }
-    },
+  const listeners = useMemo<Listener<Event['type']>[]>(
+    () => [
+      {
+        type: 'ProductDeleteSuccess',
+        callback: () => refetch(),
+      },
+    ],
     [refetch]
   );
 
-  const { postMessage } = usePostMessage(onReceiveMessage);
+  const { emit } = useEventEmitter(listeners);
 
   const debounce = useDebounce();
 
@@ -33,7 +34,7 @@ export const useProductListState = () => {
   };
 
   const onDeleteMenuPress = (product: Product) => {
-    postMessage({
+    emit({
       type: 'ProductDeleteConfirmation',
       productId: product.id,
     });

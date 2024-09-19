@@ -1,8 +1,8 @@
-import { PostMessageEvent, usePostMessage } from '../../../base';
+import { Event, Listener, useEventEmitter } from '../../../base';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { useTransactionDeleteById } from '../../../../../api-contract/src';
 import { useToastController } from '@tamagui/toast';
-import { useCallback, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 export const useTransactionDeleteAlertState = () => {
   const [transactionId, setTransactionId] = useState<number>();
@@ -13,19 +13,23 @@ export const useTransactionDeleteAlertState = () => {
 
   const toast = useToastController();
 
-  const onReceiveMessage = useCallback((event: PostMessageEvent) => {
-    if (event.type === 'TransactionDeleteConfirmation') {
-      setTransactionId(event.transactionId);
-    }
-  }, []);
+  const listeners = useMemo<Listener<Event['type']>[]>(
+    () => [
+      {
+        type: 'TransactionDeleteConfirmation',
+        callback: (event) => setTransactionId(event.transactionId),
+      },
+    ],
+    []
+  );
 
-  const { postMessage } = usePostMessage(onReceiveMessage);
+  const { emit } = useEventEmitter(listeners);
 
   const onButtonConfirmPress = () => {
     mutateAsync({})
       .then(() => {
         toast.show('Transaction deleted successfully');
-        postMessage({ type: 'TransactionDeleteSuccess' });
+        emit({ type: 'TransactionDeleteSuccess' });
         setTransactionId(undefined);
       })
       .catch(() => toast.show('Failed to delete transaction'));

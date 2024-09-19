@@ -3,9 +3,9 @@ import {
   useCategoryDeleteById,
   useCategoryFindById,
 } from '../../../../../api-contract/src';
-import { useCallback, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useToastController } from '@tamagui/toast';
-import { PostMessageEvent, usePostMessage } from '../../../base';
+import { Listener, Event, useEventEmitter } from '../../../base';
 
 export const useCategoryDeleteAlertState = () => {
   const [categoryId, setCategoryId] = useState<number>();
@@ -17,19 +17,23 @@ export const useCategoryDeleteAlertState = () => {
 
   const toast = useToastController();
 
-  const onReceiveMessage = useCallback((event: PostMessageEvent) => {
-    if (event.type === 'CategoryDeleteConfirmation') {
-      setCategoryId(event.categoryId);
-    }
-  }, []);
+  const listeners = useMemo<Listener<Event['type']>[]>(
+    () => [
+      {
+        type: 'CategoryDeleteConfirmation',
+        callback: (event) => setCategoryId(event.categoryId),
+      },
+    ],
+    []
+  );
 
-  const { postMessage } = usePostMessage(onReceiveMessage);
+  const { emit } = useEventEmitter(listeners);
 
   const onButtonConfirmPress = () => {
     mutateAsync({})
       .then(() => {
         toast.show('Category deleted successfully');
-        postMessage({ type: 'CategoryDeleteSuccess' });
+        emit({ type: 'CategoryDeleteSuccess' });
         setCategoryId(undefined);
       })
       .catch(() => toast.show('Failed to delete category'));

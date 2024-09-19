@@ -1,20 +1,24 @@
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { useExpenseDeleteById } from '../../../../../api-contract/src';
-import { useCallback, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useToastController } from '@tamagui/toast';
-import { PostMessageEvent, usePostMessage } from '../../../base';
+import { Event, Listener, useEventEmitter } from '../../../base';
 
 export const useExpenseDeleteAlertState = () => {
   const [expenseId, setExpenseId] = useState<number>();
   const { status, mutateAsync } = useExpenseDeleteById(expenseId ?? NaN);
 
-  const onReceiveMessage = useCallback((event: PostMessageEvent) => {
-    if (event.type === 'ExpenseDeleteConfirmation') {
-      setExpenseId(event.expenseId);
-    }
-  }, []);
+  const listeners = useMemo<Listener<Event['type']>[]>(
+    () => [
+      {
+        type: 'ExpenseDeleteConfirmation',
+        callback: (event) => setExpenseId(event.expenseId),
+      },
+    ],
+    []
+  );
 
-  const { postMessage } = usePostMessage(onReceiveMessage);
+  const { emit } = useEventEmitter(listeners);
 
   const toast = useToastController();
 
@@ -22,7 +26,7 @@ export const useExpenseDeleteAlertState = () => {
     mutateAsync({})
       .then(() => {
         toast.show('Expense deleted successfully');
-        postMessage({ type: 'ExpenseDeleteSuccess' });
+        emit({ type: 'ExpenseDeleteSuccess' });
         setExpenseId(undefined);
       })
       .catch(() => toast.show('Failed to delete expense'));

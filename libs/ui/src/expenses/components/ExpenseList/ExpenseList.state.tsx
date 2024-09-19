@@ -1,8 +1,8 @@
 import { useRouter } from 'solito/router';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { Expense, useExpenseList } from '../../../../../api-contract/src';
-import { PostMessageEvent, usePostMessage } from '../../../base';
-import { useCallback } from 'react';
+import { Event, Listener, useEventEmitter } from '../../../base';
+import { useMemo } from 'react';
 
 export const useExpenseListState = () => {
   const router = useRouter();
@@ -12,19 +12,20 @@ export const useExpenseListState = () => {
     order: 'desc',
   });
 
-  const onReceiveMessage = useCallback(
-    (event: PostMessageEvent) => {
-      if (event.type === 'ExpenseDeleteSuccess') {
-        refetch();
-      }
-    },
+  const listeners = useMemo<Listener<Event['type']>[]>(
+    () => [
+      {
+        type: 'ExpenseDeleteSuccess',
+        callback: () => refetch(),
+      },
+    ],
     [refetch]
   );
 
-  const { postMessage } = usePostMessage(onReceiveMessage);
+  const { emit } = useEventEmitter(listeners);
 
   const onDeleteMenuPress = (expense: Expense) => {
-    postMessage({
+    emit({
       type: 'ExpenseDeleteConfirmation',
       expenseId: expense.id,
     });

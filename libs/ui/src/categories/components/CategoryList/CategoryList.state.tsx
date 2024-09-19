@@ -1,7 +1,7 @@
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { Category, useCategoryList } from '../../../../../api-contract/src';
-import { useCallback } from 'react';
-import { PostMessageEvent, usePostMessage } from '../../../base';
+import { useMemo } from 'react';
+import { Listener, Event, useEventEmitter } from '../../../base';
 import { useRouter } from 'solito/router';
 
 export const useCategoryListState = () => {
@@ -9,19 +9,20 @@ export const useCategoryListState = () => {
 
   const { data, status, error, refetch } = useCategoryList();
 
-  const onReceiveMessage = useCallback(
-    (event: PostMessageEvent) => {
-      if (event.type === 'CategoryDeleteSuccess') {
-        refetch();
-      }
-    },
+  const listeners = useMemo<Listener<Event['type']>[]>(
+    () => [
+      {
+        type: 'CategoryDeleteSuccess',
+        callback: () => refetch(),
+      },
+    ],
     [refetch]
   );
 
-  const { postMessage } = usePostMessage(onReceiveMessage);
+  const { emit } = useEventEmitter(listeners);
 
   const onDeleteMenuPress = (category: Category) => {
-    postMessage({
+    emit({
       type: 'CategoryDeleteConfirmation',
       categoryId: category.id,
     });

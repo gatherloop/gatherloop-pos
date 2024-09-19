@@ -1,7 +1,7 @@
-import { useCallback, useState } from 'react';
+import { useMemo, useState } from 'react';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { useTransactionList } from '../../../../../api-contract/src';
-import { PostMessageEvent, useDebounce, usePostMessage } from '../../../base';
+import { Event, Listener, useDebounce, useEventEmitter } from '../../../base';
 import { useRouter } from 'solito/router';
 
 export const useTransactionListState = () => {
@@ -15,19 +15,21 @@ export const useTransactionListState = () => {
     query,
   });
 
-  const onReceiveMessage = useCallback(
-    (event: PostMessageEvent) => {
-      if (
-        event.type === 'TransactionPaySuccess' ||
-        event.type === 'TransactionDeleteSuccess'
-      ) {
-        refetch();
-      }
-    },
+  const listeners = useMemo<Listener<Event['type']>[]>(
+    () => [
+      {
+        type: 'TransactionDeleteSuccess',
+        callback: () => refetch(),
+      },
+      {
+        type: 'TransactionPaySuccess',
+        callback: () => refetch(),
+      },
+    ],
     [refetch]
   );
 
-  const { postMessage } = usePostMessage(onReceiveMessage);
+  const { emit } = useEventEmitter(listeners);
 
   const debounce = useDebounce();
 
@@ -41,7 +43,7 @@ export const useTransactionListState = () => {
     error,
     refetch,
     handleSearchInputChange,
-    postMessage,
+    emit,
     router,
   };
 };

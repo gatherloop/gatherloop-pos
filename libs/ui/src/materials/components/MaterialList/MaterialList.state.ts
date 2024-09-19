@@ -1,7 +1,7 @@
-import { useCallback, useState } from 'react';
+import { useMemo, useState } from 'react';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { Material, useMaterialList } from '../../../../../api-contract/src';
-import { PostMessageEvent, useDebounce, usePostMessage } from '../../../base';
+import { Event, Listener, useDebounce, useEventEmitter } from '../../../base';
 import { useRouter } from 'solito/router';
 
 export const useMaterialListState = () => {
@@ -15,19 +15,20 @@ export const useMaterialListState = () => {
     query,
   });
 
-  const onReceiveMessage = useCallback(
-    (event: PostMessageEvent) => {
-      if (event.type === 'MaterialDeleteSuccess') {
-        refetch();
-      }
-    },
+  const listeners = useMemo<Listener<Event['type']>[]>(
+    () => [
+      {
+        type: 'MaterialDeleteSuccess',
+        callback: () => refetch(),
+      },
+    ],
     [refetch]
   );
 
-  const { postMessage } = usePostMessage(onReceiveMessage);
+  const { emit } = useEventEmitter(listeners);
 
   const onDeleteMenuPress = (material: Material) => {
-    postMessage({
+    emit({
       type: 'MaterialDeleteConfirmation',
       materialId: material.id,
     });
