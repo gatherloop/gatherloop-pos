@@ -49,6 +49,20 @@ func (repo Repository) GetTransactionList(ctx context.Context, query string, sor
 	return transactions, result.Error
 }
 
+func (repo Repository) GetTransactionListTotal(ctx context.Context, query string) (int64, error) {
+	db := utils.GetDbFromCtx(ctx, repo.db)
+	var count int64
+	result := db.Table("transactions").Where("deleted_at", nil)
+
+	if query != "" {
+		result = result.Where("name LIKE ?", "%"+query+"%")
+	}
+
+	result = result.Count(&count)
+
+	return count, result.Error
+}
+
 func (repo Repository) GetTransactionById(ctx context.Context, id int64) (apiContract.Transaction, error) {
 	db := utils.GetDbFromCtx(ctx, repo.db)
 

@@ -27,6 +27,7 @@ export const Pagination = ({
       />
       {Array.from(Array(totalPage)).map((_, index) => (
         <Button
+          key={index}
           size="$2"
           onPress={() => onChangePage(index + 1)}
           disabled={currentPage === index + 1}

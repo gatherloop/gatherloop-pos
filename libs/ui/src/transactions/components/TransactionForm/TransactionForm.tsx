@@ -63,7 +63,7 @@ export const TransactionForm = ({
                           Product will automatically added to transaction
                         </Paragraph>
                       </YStack>
-                      <ProductList onItemPress={onAddItem} isSearchAutoFocus />
+                      <ProductList onItemPress={onAddItem} />
                     </YStack>
                   </Sheet>
 

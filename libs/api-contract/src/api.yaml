@@ -773,11 +773,14 @@ paths:
                 type: object
                 required:
                   - data
+                  - meta
                 properties:
                   data:
                     type: array
                     items:
                       $ref: '#/components/schemas/Transaction'
+                  meta:
+                    $ref: '#/components/schemas/MetaPage'
         '500':
           description: server error
           content:

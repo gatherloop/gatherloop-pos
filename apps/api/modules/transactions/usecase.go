@@ -26,8 +26,18 @@ func NewUsecase(repository Repository, productRepository products.Repository, wa
 	}
 }
 
-func (usecase Usecase) GetTransactionList(ctx context.Context, query string, sortBy string, order string, skip int, limit int) ([]apiContract.Transaction, error) {
-	return usecase.repository.GetTransactionList(ctx, query, sortBy, order, skip, limit)
+func (usecase Usecase) GetTransactionList(ctx context.Context, query string, sortBy string, order string, skip int, limit int) ([]apiContract.Transaction, int64, error) {
+	transactions, err := usecase.repository.GetTransactionList(ctx, query, sortBy, order, skip, limit)
+	if err != nil {
+		return []apiContract.Transaction{}, 0, err
+	}
+
+	total, err := usecase.repository.GetTransactionListTotal(ctx, query)
+	if err != nil {
+		return []apiContract.Transaction{}, 0, err
+	}
+
+	return transactions, total, nil
 }
 
 func (usecase Usecase) GetTransactionById(ctx context.Context, id int64) (apiContract.Transaction, error) {

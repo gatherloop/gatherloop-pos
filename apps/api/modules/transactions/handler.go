@@ -34,13 +34,13 @@ func (handler Handler) GetTransactionList(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	transactions, err := handler.usecase.GetTransactionList(ctx, query, sortBy, order, skip, limit)
+	transactions, total, err := handler.usecase.GetTransactionList(ctx, query, sortBy, order, skip, limit)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
 
-	json.NewEncoder(w).Encode(apiContract.TransactionList200Response{Data: transactions})
+	json.NewEncoder(w).Encode(apiContract.TransactionList200Response{Data: transactions, Meta: apiContract.MetaPage{total}})
 }
 
 func (handler Handler) GetTransactionById(w http.ResponseWriter, r *http.Request) {
