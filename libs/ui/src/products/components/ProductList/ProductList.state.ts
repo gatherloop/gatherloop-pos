@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { Product, useProductList } from '../../../../../api-contract/src';
-import { Event, Listener, useDebounce, useEventEmitter } from '../../../base';
+import { Event, Listener, useEventEmitter } from '../../../base';
 import { useRouter } from 'solito/router';
 
 const LIMIT = 8;
@@ -9,7 +9,15 @@ const LIMIT = 8;
 export const useProductListState = () => {
   const router = useRouter();
 
+  const [searchValue, setSearhValue] = useState('');
+
   const [query, setQuery] = useState('');
+
+  useEffect(() => {
+    setPage(1);
+    const timeout = setTimeout(() => setQuery(searchValue), 600);
+    return () => clearTimeout(timeout);
+  }, [searchValue]);
 
   const [page, setPage] = useState(1);
 
@@ -33,13 +41,6 @@ export const useProductListState = () => {
 
   const { emit } = useEventEmitter(listeners);
 
-  const debounce = useDebounce();
-
-  const handleSearchInputChange = (text: string) => {
-    setPage(1);
-    debounce(() => setQuery(text), 600);
-  };
-
   const onDeleteMenuPress = (product: Product) => {
     emit({
       type: 'ProductDeleteConfirmation',
@@ -56,7 +57,8 @@ export const useProductListState = () => {
     status,
     error,
     refetch,
-    handleSearchInputChange,
+    searchValue,
+    setSearhValue,
     onDeleteMenuPress,
     onEditMenuPress,
     page,

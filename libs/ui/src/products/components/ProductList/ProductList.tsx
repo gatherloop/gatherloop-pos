@@ -19,7 +19,8 @@ export const ProductList = ({
     products,
     refetch,
     status,
-    handleSearchInputChange,
+    setSearhValue,
+    searchValue,
     onDeleteMenuPress,
     onEditMenuPress,
     page,
@@ -32,7 +33,8 @@ export const ProductList = ({
       <YStack>
         <Input
           placeholder="Search Products by Name"
-          onChangeText={handleSearchInputChange}
+          value={searchValue}
+          onChangeText={setSearhValue}
           autoFocus={isSearchAutoFocus}
         />
       </YStack>
@@ -57,6 +59,7 @@ export const ProductList = ({
                     } else {
                       onEditMenuPress(product);
                     }
+                    setSearhValue('');
                   }}
                 />
               )}
