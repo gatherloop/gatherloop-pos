@@ -10,7 +10,6 @@ export type SheetProps = {
 export const Sheet = ({ isOpen, onOpenChange, children }: SheetProps) => {
   return (
     <TamaguiSheet
-      forceRemoveScrollEnabled={true}
       modal={true}
       open={isOpen}
       onOpenChange={onOpenChange}
