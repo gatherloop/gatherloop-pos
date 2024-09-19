@@ -16,7 +16,9 @@ export const useTransactionPaymentAlertState = () => {
 
   const [transactionId, setTransactionId] = useState<number>();
 
-  const { status, mutateAsync } = useTransactionPayById(transactionId ?? NaN);
+  const { status, mutateAsync, reset } = useTransactionPayById(
+    transactionId ?? NaN
+  );
 
   const toast = useToastController();
 
@@ -42,6 +44,8 @@ export const useTransactionPaymentAlertState = () => {
           toast.show('Transaction payment success');
           emit({ type: 'TransactionPaySuccess' });
           setTransactionId(undefined);
+          formik.resetForm();
+          reset();
         })
         .catch(() => toast.show('Failed to pay transaction')),
     validationSchema: toFormikValidationSchema(transactionPayRequestSchema),
