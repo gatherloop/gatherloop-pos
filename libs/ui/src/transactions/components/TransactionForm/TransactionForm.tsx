@@ -13,7 +13,7 @@ import {
   UseTransactionFormStateProps,
   useTransactionFormState,
 } from './TransactionForm.state';
-import { Button, H3, H5, Paragraph, ScrollView, XStack, YStack } from 'tamagui';
+import { Button, H3, H5, Paragraph, XStack, YStack } from 'tamagui';
 import { H4 } from 'tamagui';
 import { Plus, Trash } from '@tamagui/lucide-icons';
 import { ProductListItem, ProductList } from '../../../products';
@@ -63,12 +63,7 @@ export const TransactionForm = ({
                           Product will automatically added to transaction
                         </Paragraph>
                       </YStack>
-                      <ScrollView flex={1}>
-                        <ProductList
-                          onItemPress={onAddItem}
-                          isSearchAutoFocus
-                        />
-                      </ScrollView>
+                      <ProductList onItemPress={onAddItem} isSearchAutoFocus />
                     </YStack>
                   </Sheet>
 

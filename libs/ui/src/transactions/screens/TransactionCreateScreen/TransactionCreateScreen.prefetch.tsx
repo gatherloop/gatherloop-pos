@@ -2,23 +2,14 @@
 import {
   productList,
   productListQueryKey,
-  transactionFindById,
-  transactionFindByIdQueryKey,
 } from '../../../../../api-contract/src';
 import { DehydratedState, QueryClient, dehydrate } from '@tanstack/react-query';
 
-export const getTransactionUpdateScreenDehydratedState = async (
-  transactionId: number
-): Promise<DehydratedState> => {
-  const queryClient = new QueryClient();
+export const getTransactionCreateScreenDehydratedState =
+  async (): Promise<DehydratedState> => {
+    const queryClient = new QueryClient();
 
-  await Promise.all([
-    queryClient.prefetchQuery({
-      queryKey: transactionFindByIdQueryKey(transactionId),
-      queryFn: (ctx) =>
-        transactionFindById(ctx.queryKey[0].params.transactionId),
-    }),
-    queryClient.prefetchQuery({
+    await queryClient.prefetchQuery({
       queryKey: productListQueryKey({
         sortBy: 'created_at',
         order: 'desc',
@@ -35,8 +26,7 @@ export const getTransactionUpdateScreenDehydratedState = async (
           skip: queryKey[1].skip,
         });
       },
-    }),
-  ]);
+    });
 
-  return dehydrate(queryClient);
-};
+    return dehydrate(queryClient);
+  };

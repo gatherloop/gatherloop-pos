@@ -49,6 +49,20 @@ func (repo Repository) GetProductList(ctx context.Context, query string, sortBy 
 	return products, result.Error
 }
 
+func (repo Repository) GetProductListTotal(ctx context.Context, query string) (int64, error) {
+	db := utils.GetDbFromCtx(ctx, repo.db)
+	var count int64
+	result := db.Table("products").Where("deleted_at", nil)
+
+	if query != "" {
+		result = result.Where("name LIKE ?", "%"+query+"%")
+	}
+
+	result = result.Count(&count)
+
+	return count, result.Error
+}
+
 func (repo Repository) GetProductById(ctx context.Context, id int64) (apiContract.Product, error) {
 	db := utils.GetDbFromCtx(ctx, repo.db)
 	var product apiContract.Product

@@ -496,11 +496,14 @@ paths:
                 type: object
                 required:
                   - data
+                  - meta
                 properties:
                   data:
                     type: array
                     items:
                       $ref: '#/components/schemas/Product'
+                  meta:
+                    $ref: '#/components/schemas/MetaPage'
         '500':
           description: server error
           content:
@@ -1551,6 +1554,14 @@ components:
       properties:
         success:
           type: boolean
+    MetaPage:
+      type: object
+      required:
+        - total
+      properties:
+        total:
+          type: integer
+          format: int64
   parameters:
     CategoryId:
       name: categoryId

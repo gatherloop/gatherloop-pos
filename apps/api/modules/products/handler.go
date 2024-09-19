@@ -34,13 +34,13 @@ func (handler Handler) GetProductList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	products, err := handler.usecase.GetProductList(ctx, query, sortBy, order, skip, limit)
+	products, total, err := handler.usecase.GetProductList(ctx, query, sortBy, order, skip, limit)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
 
-	json.NewEncoder(w).Encode(apiContract.ProductList200Response{Data: products})
+	json.NewEncoder(w).Encode(apiContract.ProductList200Response{Data: products, Meta: apiContract.MetaPage{Total: total}})
 }
 
 func (handler Handler) GetProductById(w http.ResponseWriter, r *http.Request) {

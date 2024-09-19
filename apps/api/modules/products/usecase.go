@@ -13,8 +13,18 @@ func NewUsecase(repository Repository) Usecase {
 	return Usecase{repository: repository}
 }
 
-func (usecase Usecase) GetProductList(ctx context.Context, query string, sortBy string, order string, skip int, limit int) ([]apiContract.Product, error) {
-	return usecase.repository.GetProductList(ctx, query, sortBy, order, skip, limit)
+func (usecase Usecase) GetProductList(ctx context.Context, query string, sortBy string, order string, skip int, limit int) ([]apiContract.Product, int64, error) {
+	products, err := usecase.repository.GetProductList(ctx, query, sortBy, order, skip, limit)
+	if err != nil {
+		return []apiContract.Product{}, 0, err
+	}
+
+	total, err := usecase.repository.GetProductListTotal(ctx, query)
+	if err != nil {
+		return []apiContract.Product{}, 0, err
+	}
+
+	return products, total, nil
 }
 
 func (usecase Usecase) GetProductById(ctx context.Context, id int64) (apiContract.Product, error) {

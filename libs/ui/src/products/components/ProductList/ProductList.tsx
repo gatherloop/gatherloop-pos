@@ -1,4 +1,4 @@
-import { EmptyView, ErrorView, LoadingView } from '../../../base';
+import { EmptyView, ErrorView, LoadingView, Pagination } from '../../../base';
 import { Input, YStack } from 'tamagui';
 import { useProductListState } from './ProductList.state';
 import { ProductListItem } from '../ProductListItem';
@@ -22,6 +22,10 @@ export const ProductList = ({
     handleSearchInputChange,
     onDeleteMenuPress,
     onEditMenuPress,
+    page,
+    setPage,
+    totalItem,
+    itemPerPage,
   } = useProductListState();
   return (
     <YStack gap="$3" flex={1}>
@@ -36,28 +40,36 @@ export const ProductList = ({
         <LoadingView title="Fetching Products..." />
       ) : status === 'success' ? (
         products.length > 0 ? (
-          <FlatList
-            nestedScrollEnabled
-            data={products}
-            renderItem={({ item: product }) => (
-              <ProductListItem
-                categoryName={product.category.name}
-                name={product.name}
-                price={product.price}
-                onDeleteMenuPress={() => onDeleteMenuPress(product)}
-                onEditMenuPress={() => onEditMenuPress(product)}
-                onPress={() => {
-                  if (onItemPress) {
-                    onItemPress(product);
-                  } else {
-                    onEditMenuPress(product);
-                  }
-                }}
-              />
-            )}
-            keyExtractor={(item) => item.id.toString()}
-            ItemSeparatorComponent={() => <YStack height="$1" />}
-          />
+          <>
+            <FlatList
+              nestedScrollEnabled
+              data={products}
+              renderItem={({ item: product }) => (
+                <ProductListItem
+                  categoryName={product.category.name}
+                  name={product.name}
+                  price={product.price}
+                  onDeleteMenuPress={() => onDeleteMenuPress(product)}
+                  onEditMenuPress={() => onEditMenuPress(product)}
+                  onPress={() => {
+                    if (onItemPress) {
+                      onItemPress(product);
+                    } else {
+                      onEditMenuPress(product);
+                    }
+                  }}
+                />
+              )}
+              keyExtractor={(item) => item.id.toString()}
+              ItemSeparatorComponent={() => <YStack height="$1" />}
+            />
+            <Pagination
+              currentPage={page}
+              onChangePage={setPage}
+              totalItem={totalItem}
+              itemPerPage={itemPerPage}
+            />
+          </>
         ) : (
           <EmptyView
             title="Oops, Product is Empty"
