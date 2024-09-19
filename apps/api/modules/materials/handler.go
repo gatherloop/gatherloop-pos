@@ -34,13 +34,13 @@ func (handler Handler) GetMaterialList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	materials, err := handler.usecase.GetMaterialList(ctx, query, sortBy, order, skip, limit)
+	materials, total, err := handler.usecase.GetMaterialList(ctx, query, sortBy, order, skip, limit)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
 	}
 
-	json.NewEncoder(w).Encode(apiContract.MaterialList200Response{Data: materials})
+	json.NewEncoder(w).Encode(apiContract.MaterialList200Response{Data: materials, Meta: apiContract.MetaPage{Total: total}})
 }
 
 func (handler Handler) GetMaterialById(w http.ResponseWriter, r *http.Request) {

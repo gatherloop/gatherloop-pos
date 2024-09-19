@@ -40,7 +40,7 @@ func (handler Handler) GetTransactionList(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	json.NewEncoder(w).Encode(apiContract.TransactionList200Response{Data: transactions, Meta: apiContract.MetaPage{total}})
+	json.NewEncoder(w).Encode(apiContract.TransactionList200Response{Data: transactions, Meta: apiContract.MetaPage{Total: total}})
 }
 
 func (handler Handler) GetTransactionById(w http.ResponseWriter, r *http.Request) {

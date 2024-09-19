@@ -48,6 +48,20 @@ func (repo Repository) GetMaterialList(ctx context.Context, query string, sortBy
 	return categories, result.Error
 }
 
+func (repo Repository) GetMaterialListTotal(ctx context.Context, query string) (int64, error) {
+	db := utils.GetDbFromCtx(ctx, repo.db)
+	var count int64
+	result := db.Table("materials").Where("deleted_at", nil)
+
+	if query != "" {
+		result = result.Where("name LIKE ?", "%"+query+"%")
+	}
+
+	result = result.Count(&count)
+
+	return count, result.Error
+}
+
 func (repo Repository) GetMaterialById(ctx context.Context, id int64) (apiContract.Material, error) {
 	db := utils.GetDbFromCtx(ctx, repo.db)
 	var material apiContract.Material

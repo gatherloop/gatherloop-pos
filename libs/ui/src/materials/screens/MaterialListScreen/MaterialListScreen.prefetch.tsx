@@ -14,12 +14,16 @@ export const getMaterialListScreenDehydratedState =
         sortBy: 'created_at',
         order: 'desc',
         query: '',
+        limit: 10,
+        skip: 0,
       }),
       queryFn: ({ queryKey }) => {
         return materialList({
           sortBy: queryKey[1].sortBy,
           order: queryKey[1].order,
           query: queryKey[1].query,
+          limit: queryKey[1].limit,
+          skip: queryKey[1].skip,
         });
       },
     });
