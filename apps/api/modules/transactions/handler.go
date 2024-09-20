@@ -140,3 +140,17 @@ func (handler Handler) PayTransaction(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(apiContract.SuccessResponse{Success: true})
 }
+
+func (handler Handler) GetTransactionStatistics(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	groupBy := base.GetGroupBy(r)
+
+	transactionStatistics, err := handler.usecase.GetTransactionStatistics(ctx, groupBy)
+	if err != nil {
+		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
+		return
+	}
+
+	json.NewEncoder(w).Encode(apiContract.TransactionStatistics200Response{Data: transactionStatistics})
+}

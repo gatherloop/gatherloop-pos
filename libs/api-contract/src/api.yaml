@@ -931,6 +931,37 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /transactions/statistics:
+    get:
+      summary: Get transactions statistics
+      operationId: transactionStatistics
+      tags:
+        - transactions
+      parameters: 
+        - name: groupBy
+          in: query
+          schema: 
+            type: string
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TransactionStatistic'
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /expenses:
     get:
       summary: List all expenses
@@ -1440,6 +1471,19 @@ components:
         walletId:
           type: integer
           format: int64
+    TransactionStatistic:
+      type: object
+      required:
+        - date
+        - total
+        - totalIncome
+      properties:
+        date:
+          type: string
+        total:
+          type: integer
+        totalIncome:
+          type: number
     Expense:
       type: object
       required:

@@ -36,6 +36,10 @@ func GetQuery(r *http.Request) string {
 	return r.URL.Query().Get("query")
 }
 
+func GetGroupBy(r *http.Request) string {
+	return r.URL.Query().Get("groupBy")
+}
+
 func GetLimit(r *http.Request) (int, error) {
 	limitQuery := r.URL.Query().Get("limit")
 	if limitQuery == "" {

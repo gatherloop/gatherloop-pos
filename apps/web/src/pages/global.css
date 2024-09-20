@@ -2,4 +2,5 @@ body {
   overflow: hidden;
   position: fixed;
   height: 100dvh;
+  font-family: 'Inter';
 }

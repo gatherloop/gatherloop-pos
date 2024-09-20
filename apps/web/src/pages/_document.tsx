@@ -26,7 +26,12 @@ export default class Document extends NextDocument {
           />
           <style
             dangerouslySetInnerHTML={{
-              __html: tamaguiConfig.getCSS(),
+              __html: tamaguiConfig.getCSS({
+                exclude:
+                  process.env.NODE_ENV === 'production'
+                    ? 'design-system'
+                    : null,
+              }),
             }}
           />
         </>

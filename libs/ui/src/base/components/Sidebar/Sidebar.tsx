@@ -7,6 +7,7 @@ import {
   CreditCard,
   FileBox,
   Fullscreen,
+  LayoutDashboard,
   Tag,
   Wallet,
 } from '@tamagui/lucide-icons';
@@ -17,6 +18,7 @@ import { Platform } from 'react-native';
 import { Link } from 'solito/link';
 
 const items: { title: string; icon: NamedExoticComponent; path: string }[] = [
+  { title: 'Dashboard', icon: LayoutDashboard, path: '/' },
   { title: 'Categories', icon: Tag, path: '/categories' },
   { title: 'Products', icon: FileBox, path: '/products' },
   { title: 'Materials', icon: Box, path: '/materials' },

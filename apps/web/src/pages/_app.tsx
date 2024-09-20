@@ -12,6 +12,10 @@ export type PageProps = {
   dehydratedState: DehydratedState;
 };
 
+if (process.env.NODE_ENV === 'production') {
+  require('../../public/tamagui.css');
+}
+
 export default function App({ Component, pageProps }: AppProps<PageProps>) {
   const [theme, setTheme] = useRootTheme();
 

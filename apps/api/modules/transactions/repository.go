@@ -107,3 +107,20 @@ func (repo Repository) PayTransaction(ctx context.Context, walletId int64, paidA
 	result := db.Table("transactions").Where("id = ?", id).Updates(apiContract.Transaction{WalletId: &walletId, PaidAt: &paidAt})
 	return result.Error
 }
+
+func (repo Repository) GetTransactionStatistics(ctx context.Context, groupBy string) ([]apiContract.TransactionStatistic, error) {
+	db := utils.GetDbFromCtx(ctx, repo.db)
+
+	dateFormat := ""
+
+	if groupBy == "" || groupBy == "date" {
+		dateFormat = "%d-%m-%Y"
+	} else {
+		dateFormat = "%m-%Y"
+	}
+
+	var transactionStatistics []apiContract.TransactionStatistic
+	result := db.Table("transactions").Select(fmt.Sprintf("DATE_FORMAT(created_at, '%s') as date, SUM(total) as total, SUM(total_income) as total_income", dateFormat)).Where("deleted_at is NULL").Group(fmt.Sprintf("DATE_FORMAT(created_at, '%s')", dateFormat)).Find(&transactionStatistics)
+
+	return transactionStatistics, result.Error
+}

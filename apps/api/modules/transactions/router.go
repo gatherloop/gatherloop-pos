@@ -20,6 +20,7 @@ func AddRouters(router *mux.Router, db *gorm.DB) {
 	handler := NewHandler(usecase)
 
 	router.HandleFunc("/transactions", handler.GetTransactionList).Methods(http.MethodGet)
+	router.HandleFunc("/transactions/statistics", handler.GetTransactionStatistics).Methods(http.MethodGet)
 	router.HandleFunc("/transactions/{transactionId}", handler.GetTransactionById).Methods(http.MethodGet)
 	router.HandleFunc("/transactions/{transactionId}", handler.UpdateTransactionById).Methods(http.MethodPut, http.MethodOptions)
 	router.HandleFunc("/transactions/{transactionId}", handler.DeleteTransactionById).Methods(http.MethodDelete)

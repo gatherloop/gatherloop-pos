@@ -217,3 +217,7 @@ func (usecase Usecase) PayTransaction(ctx context.Context, transactionPayRequest
 		return usecase.repository.PayTransaction(ctxWithTx, transactionPayRequest.WalletId, time.Now(), id)
 	})
 }
+
+func (usecase Usecase) GetTransactionStatistics(ctx context.Context, groupBy string) ([]apiContract.TransactionStatistic, error) {
+	return usecase.repository.GetTransactionStatistics(ctx, groupBy)
+}

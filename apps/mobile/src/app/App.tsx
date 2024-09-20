@@ -21,13 +21,14 @@ import {
   ExpenseListScreen,
   ExpenseCreateScreen,
   ExpenseUpdateScreen,
+  TransactionStatisticScreen,
 } from '@gatherloop-pos/ui';
 import { RootProvider } from '@gatherloop-pos/provider';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 const Stack = createNativeStackNavigator<{
-  home: undefined;
+  dashboard: undefined;
   categoryList: undefined;
   categoryCreate: undefined;
   categoryUpdate: { categoryId: number };
@@ -136,13 +137,13 @@ export const App = () => {
     >
       <RootProvider>
         <Stack.Navigator
-          initialRouteName="home"
+          initialRouteName="dashboard"
           screenOptions={{ header: () => null }}
         >
           <Stack.Screen
-            name="home"
-            component={CategoryListScreen}
-            options={{ title: 'Home' }}
+            name="dashboard"
+            component={TransactionStatisticScreen}
+            options={{ title: 'Dashboard' }}
           />
           <Stack.Screen name="categoryList" component={CategoryListScreen} />
           <Stack.Screen
