@@ -65,7 +65,7 @@ export const Pagination = ({
           disabled={currentPage === page}
           theme={page === currentPage ? 'blue' : undefined}
         >
-          {page}
+          {page.toString()}
         </Button>
       ))}
 

@@ -6,6 +6,7 @@ import {
   VictoryScatter,
   VictoryAxis,
   VictoryLegend,
+  VictoryZoomContainer,
 } from 'victory';
 import { useTransactionStatisticState } from './TransactionStatistic.state';
 import { ErrorView, LoadingView } from '../../../base';
@@ -43,6 +44,7 @@ export const TransactionStatistic = () => {
         width={600}
         height={300}
         padding={{ top: 50, bottom: 50, left: 80, right: 50 }}
+        containerComponent={<VictoryZoomContainer />}
       >
         <VictoryLine
           style={{
