@@ -1,7 +1,7 @@
 import {
   ProductUpdateScreen,
-  ProductUpdateScreenProps,
   getProductUpdateScreenDehydratedState,
+  ProductUpdateScreenProps,
 } from '@gatherloop-pos/ui';
 import { GetServerSideProps } from 'next';
 import { PageProps } from '../_app';

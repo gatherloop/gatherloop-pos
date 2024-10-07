@@ -5,7 +5,9 @@ import {
 import { GetServerSideProps } from 'next';
 import { PageProps } from './_app';
 
-export const getServerSideProps: GetServerSideProps<PageProps> = async (_ctx) => {
+export const getServerSideProps: GetServerSideProps<PageProps> = async (
+  _ctx
+) => {
   const dehydratedState = await getTransactionStatisticScreenDehydratedState();
   return { props: { dehydratedState } };
 };
