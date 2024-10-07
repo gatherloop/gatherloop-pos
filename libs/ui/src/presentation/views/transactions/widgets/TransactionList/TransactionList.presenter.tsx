@@ -58,14 +58,8 @@ export const TransactionList = ({
     onEditMenuPress: () => onEditMenuPress(transaction),
     onPayMenuPress: () => onPayMenuPress(transaction),
     onPress: () => onItemPress(transaction),
-    paidAt:
-      transaction.status.type === 'paid'
-        ? transaction.status.paidAt
-        : undefined,
-    walletName:
-      transaction.status.type === 'paid'
-        ? transaction.status.wallet.name
-        : undefined,
+    paidAt: transaction.paidAt,
+    walletName: transaction.wallet?.name,
   }));
 
   return (

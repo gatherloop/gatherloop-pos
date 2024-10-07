@@ -42,10 +42,9 @@ const Content = () => {
   };
 
   const onEditMenuPress = (transaction: Transaction) => {
-    const targetPath =
-      transaction.status.type === 'paid'
-        ? `/transactions/${transaction.id}/detail`
-        : `/transactions/${transaction.id}`;
+    const targetPath = transaction.paidAt
+      ? `/transactions/${transaction.id}/detail`
+      : `/transactions/${transaction.id}`;
     router.push(targetPath);
   };
 
