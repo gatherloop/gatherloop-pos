@@ -1,14 +1,13 @@
 package main
 
 import (
-	"apps/api/middlewares"
-	"apps/api/modules/budgets"
-	"apps/api/modules/categories"
-	"apps/api/modules/expenses"
-	"apps/api/modules/materials"
-	"apps/api/modules/products"
-	"apps/api/modules/transactions"
-	"apps/api/modules/wallets"
+	budgets_http "apps/api/presentation/http/budgets"
+	categories_http "apps/api/presentation/http/categories"
+	expenses_http "apps/api/presentation/http/expenses"
+	materials_http "apps/api/presentation/http/materials"
+	products_http "apps/api/presentation/http/products"
+	transactions_http "apps/api/presentation/http/transactions"
+	wallets_http "apps/api/presentation/http/wallets"
 	"apps/api/utils"
 	"fmt"
 	"net/http"
@@ -36,13 +35,13 @@ func main() {
 	}
 
 	router := mux.NewRouter().StrictSlash(true)
-	router.Use(middlewares.EnableCORS)
-	categories.AddRouters(router, db)
-	materials.AddRouters(router, db)
-	wallets.AddRouters(router, db)
-	products.AddRouters(router, db)
-	budgets.AddRouters(router, db)
-	transactions.AddRouters(router, db)
-	expenses.AddRouters(router, db)
+	router.Use(utils.EnableCORS)
+	categories_http.AddRouters(router, db)
+	materials_http.AddRouters(router, db)
+	wallets_http.AddRouters(router, db)
+	products_http.AddRouters(router, db)
+	budgets_http.AddRouters(router, db)
+	transactions_http.AddRouters(router, db)
+	expenses_http.AddRouters(router, db)
 	http.ListenAndServe(fmt.Sprintf(":%s", env.Port), router)
 }
