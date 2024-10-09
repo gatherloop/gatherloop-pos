@@ -62,10 +62,12 @@ export class OpenAPIExpenseRepository implements ExpenseRepository {
 
   getExpenseList: ExpenseRepository['getExpenseList'] = () => {
     const res = this.client.getQueryState<ExpenseList200>(
-      expenseListQueryKey()
+      expenseListQueryKey({ sortBy: 'created_at', order: 'desc' })
     )?.data;
 
-    this.client.removeQueries({ queryKey: expenseListQueryKey() });
+    this.client.removeQueries({
+      queryKey: expenseListQueryKey({ sortBy: 'created_at', order: 'desc' }),
+    });
 
     return res?.data.map(transformers.expense) ?? [];
   };
@@ -73,8 +75,8 @@ export class OpenAPIExpenseRepository implements ExpenseRepository {
   fetchExpenseList: ExpenseRepository['fetchExpenseList'] = () => {
     return this.client
       .fetchQuery({
-        queryKey: expenseListQueryKey(),
-        queryFn: () => expenseList(),
+        queryKey: expenseListQueryKey({ sortBy: 'created_at', order: 'desc' }),
+        queryFn: () => expenseList({ sortBy: 'created_at', order: 'desc' }),
       })
       .then((data) => data.data.map(transformers.expense));
   };

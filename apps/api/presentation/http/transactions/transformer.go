@@ -38,6 +38,9 @@ func ToApiTransaction(transaction transactions.Transaction) apiContract.Transact
 			TransactionId: item.TransactionId,
 			ProductId:     item.ProductId,
 			Product:       products_http.ToApiProduct(item.Product),
+			Amount:        item.Amount,
+			Price:         item.Price,
+			Subtotal:      item.Subtotal,
 		})
 	}
 
