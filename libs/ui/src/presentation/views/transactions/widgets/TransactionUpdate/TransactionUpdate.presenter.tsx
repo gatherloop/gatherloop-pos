@@ -6,7 +6,7 @@ import {
   TransactionUpdateViewProps,
 } from './TransactionUpdate.view';
 import { useTransactionUpdateController } from '../../../../controllers';
-import { TransactionForm } from '../../../../../domain';
+import { Product, TransactionForm } from '../../../../../domain';
 import { match, P } from 'ts-pattern';
 import { z } from 'zod';
 
@@ -34,28 +34,28 @@ export const TransactionUpdate = () => {
     0
   );
 
-  // const onAddItem = (newProduct: Product) => {
-  //   const itemIndex = formik.values.transactionItems?.findIndex(
-  //     ({ product }) => product.id === newProduct.id
-  //   );
-  //   const isItemExist = itemIndex !== -1;
-  //   const newTransactionItems = isItemExist
-  //     ? formik.values.transactionItems.map((transactionItem, index) =>
-  //         index === itemIndex
-  //           ? {
-  //               ...transactionItem,
-  //               amount: transactionItem.amount + 1,
-  //             }
-  //           : transactionItem
-  //       )
-  //     : [
-  //         ...formik.values.transactionItems,
-  //         { productId: newProduct.id, amount: 1, product: newProduct },
-  //       ];
+  const onAddItem = (newProduct: Product) => {
+    const itemIndex = formik.values.transactionItems?.findIndex(
+      ({ product }) => product.id === newProduct.id
+    );
+    const isItemExist = itemIndex !== -1;
+    const newTransactionItems = isItemExist
+      ? formik.values.transactionItems.map((transactionItem, index) =>
+          index === itemIndex
+            ? {
+                ...transactionItem,
+                amount: transactionItem.amount + 1,
+              }
+            : transactionItem
+        )
+      : [
+          ...formik.values.transactionItems,
+          { productId: newProduct.id, amount: 1, product: newProduct },
+        ];
 
-  //   formik.setFieldValue('transactionItems', newTransactionItems);
-  //   setIsProductSheetOpen(false);
-  // };
+    formik.setFieldValue('transactionItems', newTransactionItems);
+    setIsProductSheetOpen(false);
+  };
 
   const onRetryButtonPress = () => dispatch({ type: 'FETCH' });
 
@@ -79,6 +79,7 @@ export const TransactionUpdate = () => {
       onProductSheetOpenChange={setIsProductSheetOpen}
       onRetryButtonPress={onRetryButtonPress}
       variant={variant}
+      onAddItem={onAddItem}
     />
   );
 };

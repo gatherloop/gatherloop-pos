@@ -12,8 +12,8 @@ import {
 import { Button, H3, H5, Paragraph, XStack, YStack } from 'tamagui';
 import { H4 } from 'tamagui';
 import { Plus, Trash } from '@tamagui/lucide-icons';
-import { ProductListItem } from '../../../products';
-import { TransactionForm } from '../../../../../domain';
+import { ProductList, ProductListItem } from '../../../products';
+import { Product, TransactionForm } from '../../../../../domain';
 
 export type TransactionUpdateViewProps = {
   variant: { type: 'loading' } | { type: 'loaded' } | { type: 'error' };
@@ -23,6 +23,7 @@ export type TransactionUpdateViewProps = {
   onRetryButtonPress: () => void;
   isSubmitDisabled: boolean;
   total: number;
+  onAddItem: (product: Product) => void;
 };
 
 export const TransactionUpdateView = ({
@@ -32,6 +33,7 @@ export const TransactionUpdateView = ({
   isSubmitDisabled,
   onProductSheetOpenChange,
   onRetryButtonPress,
+  onAddItem,
   total,
 }: TransactionUpdateViewProps) => {
   return variant.type === 'loaded' ? (
@@ -56,7 +58,7 @@ export const TransactionUpdateView = ({
                           Product will automatically added to transaction
                         </Paragraph>
                       </YStack>
-                      {/* <ProductList /> */}
+                      <ProductList onItemPress={onAddItem} />
                     </YStack>
                   </Sheet>
 
