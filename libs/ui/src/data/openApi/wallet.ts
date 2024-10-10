@@ -31,11 +31,17 @@ export class OpenAPIWalletRepository implements WalletRepository {
     walletId
   ) => {
     const res = this.client.getQueryState<WalletTransferList200>(
-      walletTransferListQueryKey(walletId)
+      walletTransferListQueryKey(walletId, {
+        sortBy: 'created_at',
+        order: 'desc',
+      })
     )?.data;
 
     this.client.removeQueries({
-      queryKey: walletTransferListQueryKey(walletId),
+      queryKey: walletTransferListQueryKey(walletId, {
+        sortBy: 'created_at',
+        order: 'desc',
+      }),
     });
 
     return res?.data.map(transformers.walletTransfer) ?? [];
@@ -46,8 +52,15 @@ export class OpenAPIWalletRepository implements WalletRepository {
   ) => {
     return this.client
       .fetchQuery({
-        queryKey: walletTransferListQueryKey(walletId),
-        queryFn: () => walletTransferList(walletId),
+        queryKey: walletTransferListQueryKey(walletId, {
+          sortBy: 'created_at',
+          order: 'desc',
+        }),
+        queryFn: () =>
+          walletTransferList(walletId, {
+            sortBy: 'created_at',
+            order: 'desc',
+          }),
       })
       .then((data) => data.data.map(transformers.walletTransfer));
   };

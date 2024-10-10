@@ -24,8 +24,15 @@ export async function getWalletTransferListScreenDehydratedState(
       queryFn: () => walletFindById(walletId),
     }),
     client.prefetchQuery({
-      queryKey: walletTransferListQueryKey(walletId),
-      queryFn: () => walletTransferList(walletId),
+      queryKey: walletTransferListQueryKey(walletId, {
+        sortBy: 'created_at',
+        order: 'desc',
+      }),
+      queryFn: () =>
+        walletTransferList(walletId, {
+          sortBy: 'created_at',
+          order: 'desc',
+        }),
     }),
   ]);
 

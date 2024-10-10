@@ -14,6 +14,7 @@ export type TransactionPayState = (
   | { type: 'shown' }
   | { type: 'paying' }
   | { type: 'payingSuccess' }
+  | { type: 'payingError' }
 ) &
   Context;
 
@@ -23,7 +24,8 @@ export type TransactionPayAction =
   | { type: 'HIDE_CONFIRMATION' }
   | { type: 'PAY'; walletId: number }
   | { type: 'PAY_SUCCESS' }
-  | { type: 'PAY_ERROR' };
+  | { type: 'PAY_ERROR' }
+  | { type: 'PAY_CANCEL' };
 
 export class TransactionPayUsecase extends Usecase<
   TransactionPayState,
@@ -87,6 +89,10 @@ export class TransactionPayUsecase extends Usecase<
       }))
       .with([{ type: 'paying' }, { type: 'PAY_ERROR' }], ([state]) => ({
         ...state,
+        type: 'payingError',
+      }))
+      .with([{ type: 'payingError' }, { type: 'PAY_CANCEL' }], ([state]) => ({
+        ...state,
         type: 'shown',
       }))
       .with([{ type: 'paying' }, { type: 'PAY_SUCCESS' }], ([state]) => ({
@@ -127,6 +133,9 @@ export class TransactionPayUsecase extends Usecase<
       })
       .with({ type: 'payingSuccess' }, () => {
         dispatch({ type: 'HIDE_CONFIRMATION' });
+      })
+      .with({ type: 'payingError' }, () => {
+        dispatch({ type: 'PAY_CANCEL' });
       })
       .otherwise(() => {
         // TODO: IMPLEMENT SOMETHING

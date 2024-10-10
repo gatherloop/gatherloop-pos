@@ -12,8 +12,15 @@ import { dehydrate, QueryClient, useQueryClient } from '@tanstack/react-query';
 export async function getExpenseListScreenDehydratedState() {
   const client = new QueryClient();
   await client.prefetchQuery({
-    queryKey: expenseListQueryKey(),
-    queryFn: () => expenseList(),
+    queryKey: expenseListQueryKey({
+      sortBy: 'created_at',
+      order: 'desc',
+    }),
+    queryFn: () =>
+      expenseList({
+        sortBy: 'created_at',
+        order: 'desc',
+      }),
   });
   return dehydrate(client);
 }
