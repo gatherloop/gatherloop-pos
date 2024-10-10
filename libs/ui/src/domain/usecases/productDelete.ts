@@ -11,6 +11,7 @@ export type ProductDeleteState = (
   | { type: 'shown' }
   | { type: 'deleting' }
   | { type: 'deletingSuccess' }
+  | { type: 'deletingError' }
 ) &
   Context;
 
@@ -19,7 +20,8 @@ export type ProductDeleteAction =
   | { type: 'HIDE_CONFIRMATION' }
   | { type: 'DELETE' }
   | { type: 'DELETE_SUCCESS' }
-  | { type: 'DELETE_ERROR' };
+  | { type: 'DELETE_ERROR' }
+  | { type: 'DELETE_CANCEL' };
 
 export class ProductDeleteUsecase extends Usecase<
   ProductDeleteState,
@@ -58,8 +60,15 @@ export class ProductDeleteUsecase extends Usecase<
       }))
       .with([{ type: 'deleting' }, { type: 'DELETE_ERROR' }], ([state]) => ({
         ...state,
-        type: 'shown',
+        type: 'deletingError',
       }))
+      .with(
+        [{ type: 'deletingError' }, { type: 'DELETE_CANCEL' }],
+        ([state]) => ({
+          ...state,
+          type: 'shown',
+        })
+      )
       .with([{ type: 'deleting' }, { type: 'DELETE_SUCCESS' }], ([state]) => ({
         ...state,
         type: 'deletingSuccess',
@@ -87,6 +96,9 @@ export class ProductDeleteUsecase extends Usecase<
       })
       .with({ type: 'deletingSuccess' }, () => {
         dispatch({ type: 'HIDE_CONFIRMATION' });
+      })
+      .with({ type: 'deletingError' }, () => {
+        dispatch({ type: 'DELETE_CANCEL' });
       })
       .otherwise(() => {
         // TODO: IMPLEMENT SOMETHING

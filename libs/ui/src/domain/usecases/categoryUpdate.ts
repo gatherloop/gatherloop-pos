@@ -15,6 +15,7 @@ export type CategoryUpdateState = (
   | { type: 'error' }
   | { type: 'submitting' }
   | { type: 'submitSuccess' }
+  | { type: 'submitError' }
 ) &
   Context;
 
@@ -24,7 +25,8 @@ export type CategoryUpdateAction =
   | { type: 'FETCH_ERROR'; errorMessage: string }
   | { type: 'SUBMIT'; values: CategoryForm }
   | { type: 'SUBMIT_SUCCESS' }
-  | { type: 'SUBMIT_ERROR'; errorMessage: string };
+  | { type: 'SUBMIT_ERROR'; errorMessage: string }
+  | { type: 'SUBMIT_CANCEL' };
 
 export class CategoryUpdateUsecase extends Usecase<
   CategoryUpdateState,
@@ -100,8 +102,15 @@ export class CategoryUpdateUsecase extends Usecase<
         [{ type: 'submitting' }, { type: 'SUBMIT_ERROR' }],
         ([state, { errorMessage }]) => ({
           ...state,
-          type: 'loaded',
+          type: 'submitError',
           errorMessage,
+        })
+      )
+      .with(
+        [{ type: 'submitError' }, { type: 'SUBMIT_CANCEL' }],
+        ([state]) => ({
+          ...state,
+          type: 'loaded',
         })
       )
       .otherwise(() => state);
@@ -142,6 +151,9 @@ export class CategoryUpdateUsecase extends Usecase<
           .catch(() =>
             dispatch({ type: 'SUBMIT_ERROR', errorMessage: 'Submit failed' })
           );
+      })
+      .with({ type: 'submitError' }, () => {
+        dispatch({ type: 'SUBMIT_CANCEL' });
       })
       .otherwise(() => {
         // TODO: IMPLEMENT SOMETHING

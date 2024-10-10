@@ -41,7 +41,7 @@ func (handler Handler) GetTransactionList(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	var apiTransactions []apiContract.Transaction
+	apiTransactions := []apiContract.Transaction{}
 	for _, transaction := range transactions {
 		apiTransactions = append(apiTransactions, ToApiTransaction(transaction))
 	}
@@ -158,7 +158,7 @@ func (handler Handler) GetTransactionStatistics(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	var apiTransactionStatistics []apiContract.TransactionStatistic
+	apiTransactionStatistics := []apiContract.TransactionStatistic{}
 	for _, transactionStatistic := range transactionStatistics {
 		apiTransactionStatistics = append(apiTransactionStatistics, toApiTransactionStatistic(transactionStatistic))
 	}

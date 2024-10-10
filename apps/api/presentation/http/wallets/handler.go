@@ -25,7 +25,7 @@ func (handler Handler) GetWalletList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var apiWallets []apiContract.Wallet
+	apiWallets := []apiContract.Wallet{}
 	for _, wallet := range wallets {
 		apiWallets = append(apiWallets, ToApiWallet(wallet))
 	}
@@ -138,7 +138,7 @@ func (handler Handler) GetWalletTransferList(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	var apiWalletTransfers []apiContract.WalletTransfer
+	apiWalletTransfers := []apiContract.WalletTransfer{}
 	for _, walletTransfer := range walletTransfers {
 		apiWalletTransfers = append(apiWalletTransfers, ToApiWalletTransfer(walletTransfer))
 	}

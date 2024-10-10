@@ -15,6 +15,7 @@ export type MaterialUpdateState = (
   | { type: 'error' }
   | { type: 'submitting' }
   | { type: 'submitSuccess' }
+  | { type: 'submitError' }
 ) &
   Context;
 
@@ -24,7 +25,8 @@ export type MaterialUpdateAction =
   | { type: 'FETCH_ERROR'; errorMessage: string }
   | { type: 'SUBMIT'; values: MaterialForm }
   | { type: 'SUBMIT_SUCCESS' }
-  | { type: 'SUBMIT_ERROR'; errorMessage: string };
+  | { type: 'SUBMIT_ERROR'; errorMessage: string }
+  | { type: 'SUBMIT_CANCEL' };
 
 export class MaterialUpdateUsecase extends Usecase<
   MaterialUpdateState,
@@ -103,8 +105,15 @@ export class MaterialUpdateUsecase extends Usecase<
         [{ type: 'submitting' }, { type: 'SUBMIT_ERROR' }],
         ([state, { errorMessage }]) => ({
           ...state,
-          type: 'loaded',
+          type: 'submitError',
           errorMessage,
+        })
+      )
+      .with(
+        [{ type: 'submitError' }, { type: 'SUBMIT_CANCEL' }],
+        ([state]) => ({
+          ...state,
+          type: 'loaded',
         })
       )
       .otherwise(() => state);
@@ -147,6 +156,9 @@ export class MaterialUpdateUsecase extends Usecase<
           .catch(() =>
             dispatch({ type: 'SUBMIT_ERROR', errorMessage: 'Submit failed' })
           );
+      })
+      .with({ type: 'submitError' }, () => {
+        dispatch({ type: 'SUBMIT_CANCEL' });
       })
       .otherwise(() => {
         // TODO: IMPLEMENT SOMETHING

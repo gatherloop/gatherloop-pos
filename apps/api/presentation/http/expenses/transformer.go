@@ -24,7 +24,7 @@ func GetExpenseRequest(r *http.Request) (apiContract.ExpenseRequest, error) {
 }
 
 func ToApiExpense(expense expenses.Expense) apiContract.Expense {
-	var apiExpenseItems []apiContract.ExpenseItem
+	apiExpenseItems := []apiContract.ExpenseItem{}
 	for _, expenseItem := range expense.ExpenseItems {
 		apiExpenseItems = append(apiExpenseItems, apiContract.ExpenseItem{
 			Id:        expenseItem.Id,
@@ -51,7 +51,7 @@ func ToApiExpense(expense expenses.Expense) apiContract.Expense {
 }
 
 func ToExpenseRequest(expenseRequest apiContract.ExpenseRequest) expenses.ExpenseRequest {
-	var expenseItemRequests []expenses.ExpenseItemRequest
+	expenseItemRequests := []expenses.ExpenseItemRequest{}
 	for _, expenseItem := range expenseRequest.ExpenseItems {
 		expenseItemRequests = append(expenseItemRequests, expenses.ExpenseItemRequest{
 			Name:   expenseItem.Name,

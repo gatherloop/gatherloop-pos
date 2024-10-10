@@ -10,11 +10,13 @@ import { toFormikValidationSchema } from 'zod-formik-adapter';
 
 export const WalletUpdate = () => {
   const controller = useWalletUpdateController();
-  const toast = useToastController();
 
+  const toast = useToastController();
   useEffect(() => {
     if (controller.state.type === 'submitSuccess')
-      toast.show('Wallet Submitted Successfully');
+      toast.show('Update Wallet Success');
+    else if (controller.state.type === 'submitError')
+      toast.show('Update Wallet Error');
   }, [toast, controller.state.type]);
 
   const formik = useFormik<WalletForm>({
@@ -46,7 +48,14 @@ export const WalletUpdate = () => {
           type: 'loading',
         }))
         .with(
-          { type: P.union('loaded', 'submitSuccess', 'submitting') },
+          {
+            type: P.union(
+              'loaded',
+              'submitSuccess',
+              'submitting',
+              'submitError'
+            ),
+          },
           () => ({
             type: 'loaded',
           })

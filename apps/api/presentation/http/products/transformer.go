@@ -49,7 +49,7 @@ func ToApiProductMaterial(productMaterial products.ProductMaterial) apiContract.
 }
 
 func ToApiProduct(product products.Product) apiContract.Product {
-	var apiMaterials []apiContract.ProductMaterial
+	apiMaterials := []apiContract.ProductMaterial{}
 
 	for _, productMaterial := range product.Materials {
 		apiMaterials = append(apiMaterials, ToApiProductMaterial(productMaterial))
@@ -68,7 +68,7 @@ func ToApiProduct(product products.Product) apiContract.Product {
 }
 
 func ToProductRequest(productRequest apiContract.ProductRequest) products.ProductRequest {
-	var productMaterials []products.ProductMaterialRequest
+	productMaterials := []products.ProductMaterialRequest{}
 	for _, productMaterial := range productRequest.Materials {
 		productMaterials = append(productMaterials, products.ProductMaterialRequest{
 			MaterialId: productMaterial.MaterialId,

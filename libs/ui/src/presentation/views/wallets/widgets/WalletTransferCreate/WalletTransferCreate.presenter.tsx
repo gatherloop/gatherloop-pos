@@ -11,11 +11,10 @@ export const WalletTransferCreate = () => {
   const { state, dispatch } = useWalletTransferCreateController();
 
   const toast = useToastController();
-
   useEffect(() => {
-    if (state.type === 'submitSuccess')
-      toast.show('Wallet Transfer Created Successfully');
-  }, [state.type, toast]);
+    if (state.type === 'submitSuccess') toast.show('Transfer Success');
+    else if (state.type === 'submitError') toast.show('Transfer Error');
+  }, [toast, state.type]);
 
   const formik = useFormik<WalletTransferForm>({
     initialValues: state.values,

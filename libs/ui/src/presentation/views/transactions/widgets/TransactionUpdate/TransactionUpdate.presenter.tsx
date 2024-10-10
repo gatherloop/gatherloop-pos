@@ -1,6 +1,6 @@
 import { useFormik } from 'formik';
 import { toFormikValidationSchema } from 'zod-formik-adapter';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   TransactionUpdateView,
   TransactionUpdateViewProps,
@@ -9,11 +9,20 @@ import { useTransactionUpdateController } from '../../../../controllers';
 import { Product, TransactionForm } from '../../../../../domain';
 import { match, P } from 'ts-pattern';
 import { z } from 'zod';
+import { useToastController } from '@tamagui/toast';
 
 export const TransactionUpdate = () => {
   const [isProductSheetOpen, setIsProductSheetOpen] = useState<boolean>(false);
 
   const { state, dispatch } = useTransactionUpdateController();
+
+  const toast = useToastController();
+  useEffect(() => {
+    if (state.type === 'submitSuccess')
+      toast.show('Update Transaction Success');
+    else if (state.type === 'submitError')
+      toast.show('Update Transaction Error');
+  }, [toast, state.type]);
 
   const formik = useFormik<TransactionForm>({
     initialValues: state.values,
@@ -64,9 +73,12 @@ export const TransactionUpdate = () => {
   const variant = match(state)
     .returnType<TransactionUpdateViewProps['variant']>()
     .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))
-    .with({ type: P.union('loaded', 'submitting', 'submitSuccess') }, () => ({
-      type: 'loaded',
-    }))
+    .with(
+      { type: P.union('loaded', 'submitting', 'submitError', 'submitSuccess') },
+      () => ({
+        type: 'loaded',
+      })
+    )
     .with({ type: 'error' }, () => ({ type: 'error' }))
     .exhaustive();
 

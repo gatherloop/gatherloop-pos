@@ -12,13 +12,15 @@ export type CategoryCreateState = (
   | { type: 'loaded' }
   | { type: 'submitting' }
   | { type: 'submitSuccess' }
+  | { type: 'submitError' }
 ) &
   Context;
 
 export type CategoryCreateAction =
   | { type: 'SUBMIT'; values: CategoryForm }
   | { type: 'SUBMIT_SUCCESS' }
-  | { type: 'SUBMIT_ERROR'; errorMessage: string };
+  | { type: 'SUBMIT_ERROR'; errorMessage: string }
+  | { type: 'SUBMIT_CANCEL' };
 
 export class CategoryCreateUsecase extends Usecase<
   CategoryCreateState,
@@ -66,8 +68,15 @@ export class CategoryCreateUsecase extends Usecase<
         [{ type: 'submitting' }, { type: 'SUBMIT_ERROR' }],
         ([state, { errorMessage }]) => ({
           ...state,
-          type: 'loaded',
+          type: 'submitError',
           errorMessage,
+        })
+      )
+      .with(
+        [{ type: 'submitError' }, { type: 'SUBMIT_CANCEL' }],
+        ([state]) => ({
+          ...state,
+          type: 'loaded',
         })
       )
       .otherwise(() => state);
@@ -85,6 +94,9 @@ export class CategoryCreateUsecase extends Usecase<
           .catch(() =>
             dispatch({ type: 'SUBMIT_ERROR', errorMessage: 'Submit failed' })
           );
+      })
+      .with({ type: 'submitError' }, () => {
+        dispatch({ type: 'SUBMIT_CANCEL' });
       })
       .otherwise(() => {
         // TODO: IMPLEMENT SOMETHING

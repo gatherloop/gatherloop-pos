@@ -16,10 +16,11 @@ export const ProductCreate = () => {
   const [isMaterialSheetOpen, setIsMaterialSheetOpen] = useState(false);
 
   const toast = useToastController();
-
   useEffect(() => {
     if (controller.state.type === 'submitSuccess')
-      toast.show('Product Submitted Successfully');
+      toast.show('Create Product Success');
+    else if (controller.state.type === 'submitError')
+      toast.show('Create Product Error');
   }, [toast, controller.state.type]);
 
   const formik = useFormik<ProductForm>({
@@ -95,7 +96,14 @@ export const ProductCreate = () => {
           type: 'loading',
         }))
         .with(
-          { type: P.union('loaded', 'submitSuccess', 'submitting') },
+          {
+            type: P.union(
+              'loaded',
+              'submitSuccess',
+              'submitError',
+              'submitting'
+            ),
+          },
           () => ({
             type: 'loaded',
           })

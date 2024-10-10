@@ -21,6 +21,7 @@ export type ExpenseUpdateState = (
   | { type: 'error' }
   | { type: 'submitting' }
   | { type: 'submitSuccess' }
+  | { type: 'submitError' }
 ) &
   Context;
 
@@ -35,7 +36,8 @@ export type ExpenseUpdateAction =
   | { type: 'FETCH_ERROR'; errorMessage: string }
   | { type: 'SUBMIT'; values: ExpenseForm }
   | { type: 'SUBMIT_SUCCESS' }
-  | { type: 'SUBMIT_ERROR'; errorMessage: string };
+  | { type: 'SUBMIT_ERROR'; errorMessage: string }
+  | { type: 'SUBMIT_CANCEL' };
 
 export class ExpenseUpdateUsecase extends Usecase<
   ExpenseUpdateState,
@@ -130,8 +132,15 @@ export class ExpenseUpdateUsecase extends Usecase<
         [{ type: 'submitting' }, { type: 'SUBMIT_ERROR' }],
         ([state, { errorMessage }]) => ({
           ...state,
-          type: 'loaded',
+          type: 'submitError',
           errorMessage,
+        })
+      )
+      .with(
+        [{ type: 'submitError' }, { type: 'SUBMIT_CANCEL' }],
+        ([state]) => ({
+          ...state,
+          type: 'loaded',
         })
       )
       .otherwise(() => state);
@@ -182,6 +191,9 @@ export class ExpenseUpdateUsecase extends Usecase<
           .catch(() =>
             dispatch({ type: 'SUBMIT_ERROR', errorMessage: 'Submit failed' })
           );
+      })
+      .with({ type: 'submitError' }, () => {
+        dispatch({ type: 'SUBMIT_CANCEL' });
       })
       .otherwise(() => {
         // TODO: IMPLEMENT SOMETHING

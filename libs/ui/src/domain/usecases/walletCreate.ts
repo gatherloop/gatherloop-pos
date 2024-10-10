@@ -12,13 +12,15 @@ export type WalletCreateState = (
   | { type: 'loaded' }
   | { type: 'submitting' }
   | { type: 'submitSuccess' }
+  | { type: 'submitError' }
 ) &
   Context;
 
 export type WalletCreateAction =
   | { type: 'SUBMIT'; values: WalletForm }
   | { type: 'SUBMIT_SUCCESS' }
-  | { type: 'SUBMIT_ERROR'; errorMessage: string };
+  | { type: 'SUBMIT_ERROR'; errorMessage: string }
+  | { type: 'SUBMIT_CANCEL' };
 
 export class WalletCreateUsecase extends Usecase<
   WalletCreateState,
@@ -68,8 +70,15 @@ export class WalletCreateUsecase extends Usecase<
         [{ type: 'submitting' }, { type: 'SUBMIT_ERROR' }],
         ([state, { errorMessage }]) => ({
           ...state,
-          type: 'loaded',
+          type: 'submitError',
           errorMessage,
+        })
+      )
+      .with(
+        [{ type: 'submitError' }, { type: 'SUBMIT_CANCEL' }],
+        ([state]) => ({
+          ...state,
+          type: 'loaded',
         })
       )
       .otherwise(() => state);
@@ -87,6 +96,9 @@ export class WalletCreateUsecase extends Usecase<
           .catch(() =>
             dispatch({ type: 'SUBMIT_ERROR', errorMessage: 'Submit failed' })
           );
+      })
+      .with({ type: 'submitError' }, () => {
+        dispatch({ type: 'SUBMIT_CANCEL' });
       })
       .otherwise(() => {
         // TODO: IMPLEMENT SOMETHING

@@ -25,7 +25,7 @@ func (handler Handler) GetCategoryList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var apiCategories []apiContract.Category
+	apiCategories := []apiContract.Category{}
 	for _, category := range categories {
 		apiCategories = append(apiCategories, ToApiCategory(category))
 	}

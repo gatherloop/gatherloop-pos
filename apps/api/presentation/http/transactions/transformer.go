@@ -31,7 +31,7 @@ func GetTransactionPayRequest(r *http.Request) (apiContract.TransactionPayReques
 }
 
 func ToApiTransaction(transaction transactions.Transaction) apiContract.Transaction {
-	var apiTransactionItems []apiContract.TransactionItem
+	apiTransactionItems := []apiContract.TransactionItem{}
 	for _, item := range transaction.TransactionItems {
 		apiTransactionItems = append(apiTransactionItems, apiContract.TransactionItem{
 			Id:            item.Id,
@@ -59,7 +59,7 @@ func ToApiTransaction(transaction transactions.Transaction) apiContract.Transact
 }
 
 func ToTransactionRequest(transactionRequest apiContract.TransactionRequest) transactions.TransactionRequest {
-	var transactionItemRequests []transactions.TransactionItemRequest
+	transactionItemRequests := []transactions.TransactionItemRequest{}
 	for _, item := range transactionRequest.TransactionItems {
 		transactionItemRequests = append(transactionItemRequests, transactions.TransactionItemRequest{
 			ProductId: item.ProductId,

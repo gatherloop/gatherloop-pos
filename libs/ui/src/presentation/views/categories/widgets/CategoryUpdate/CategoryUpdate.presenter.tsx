@@ -18,7 +18,9 @@ export const CategoryUpdate = () => {
 
   useEffect(() => {
     if (controller.state.type === 'submitSuccess')
-      toast.show('Category Submitted Successfully');
+      toast.show('Update Category Success');
+    else if (controller.state.type === 'submitError')
+      toast.show('Update Category Error');
   }, [toast, controller.state.type]);
 
   const formik = useFormik<CategoryForm>({
@@ -44,7 +46,14 @@ export const CategoryUpdate = () => {
           type: 'loading',
         }))
         .with(
-          { type: P.union('loaded', 'submitSuccess', 'submitting') },
+          {
+            type: P.union(
+              'loaded',
+              'submitError',
+              'submitSuccess',
+              'submitting'
+            ),
+          },
           () => ({
             type: 'loaded',
           })

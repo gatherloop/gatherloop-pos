@@ -84,7 +84,7 @@ export const ProductUpdateView = ({
               </Paragraph>
             </YStack>
             <ScrollView flex={1}>
-              {/* <MaterialList onItemPress={onAddMaterial} isSearchAutoFocus /> */}
+              <MaterialList onItemPress={onAddMaterial} isSearchAutoFocus />
             </ScrollView>
           </YStack>
         </Sheet>

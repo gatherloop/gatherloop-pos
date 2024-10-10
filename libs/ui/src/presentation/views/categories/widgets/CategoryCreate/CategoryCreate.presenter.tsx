@@ -14,7 +14,9 @@ export const CategoryCreate = () => {
 
   useEffect(() => {
     if (controller.state.type === 'submitSuccess')
-      toast.show('Category Submitted Successfully');
+      toast.show('Create Category Success');
+    else if (controller.state.type === 'submitError')
+      toast.show('Create Category Error');
   }, [toast, controller.state.type]);
 
   const formik = useFormik<CategoryForm>({
@@ -25,6 +27,7 @@ export const CategoryCreate = () => {
 
   const isSubmitDisabled =
     controller.state.type === 'submitting' ||
+    controller.state.type === 'submitError' ||
     controller.state.type === 'submitSuccess';
 
   return (

@@ -15,10 +15,11 @@ export const MaterialUpdate = () => {
   const controller = useMaterialUpdateController();
 
   const toast = useToastController();
-
   useEffect(() => {
     if (controller.state.type === 'submitSuccess')
-      toast.show('Material Submitted Successfully');
+      toast.show('Update Material Success');
+    else if (controller.state.type === 'submitError')
+      toast.show('Update Material Error');
   }, [toast, controller.state.type]);
 
   const formik = useFormik<MaterialForm>({
@@ -50,7 +51,14 @@ export const MaterialUpdate = () => {
           type: 'loading',
         }))
         .with(
-          { type: P.union('loaded', 'submitSuccess', 'submitting') },
+          {
+            type: P.union(
+              'loaded',
+              'submitSuccess',
+              'submitError',
+              'submitting'
+            ),
+          },
           () => ({
             type: 'loaded',
           })

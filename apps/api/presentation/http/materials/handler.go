@@ -41,7 +41,7 @@ func (handler Handler) GetMaterialList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var apiMaterials []apiContract.Material
+	apiMaterials := []apiContract.Material{}
 	for _, material := range materials {
 		apiMaterials = append(apiMaterials, ToApiMaterial(material))
 	}

@@ -40,7 +40,7 @@ func (handler Handler) GetExpenseList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var apiExpenses []apiContract.Expense
+	apiExpenses := []apiContract.Expense{}
 	for _, expense := range expenses {
 		apiExpenses = append(apiExpenses, ToApiExpense(expense))
 	}

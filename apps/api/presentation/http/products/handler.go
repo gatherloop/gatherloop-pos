@@ -41,7 +41,7 @@ func (handler Handler) GetProductList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var apiProducts []apiContract.Product
+	apiProducts := []apiContract.Product{}
 	for _, product := range products {
 		apiProducts = append(apiProducts, ToApiProduct(product))
 	}

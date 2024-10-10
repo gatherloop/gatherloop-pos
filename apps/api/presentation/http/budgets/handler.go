@@ -25,7 +25,7 @@ func (handler Handler) GetBudgetList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var apiBudgets []apiContract.Budget
+	apiBudgets := []apiContract.Budget{}
 
 	for _, budget := range budgets {
 		apiBudgets = append(apiBudgets, ToApiBudget(budget))

@@ -8,9 +8,17 @@ import { ExpenseForm } from '../../../../../domain';
 import { useExpenseCreateController } from '../../../../controllers';
 import { match, P } from 'ts-pattern';
 import { z } from 'zod';
+import { useToastController } from '@tamagui/toast';
+import { useEffect } from 'react';
 
 export const ExpenseCreate = () => {
   const { state, dispatch } = useExpenseCreateController();
+
+  const toast = useToastController();
+  useEffect(() => {
+    if (state.type === 'submitSuccess') toast.show('Create Expense Success');
+    else if (state.type === 'submitError') toast.show('Create Expense Error');
+  }, [toast, state.type]);
 
   const formik = useFormik<ExpenseForm>({
     initialValues: state.values,
@@ -52,9 +60,12 @@ export const ExpenseCreate = () => {
   const variant = match(state)
     .returnType<ExpenseCreateViewProps['variant']>()
     .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))
-    .with({ type: P.union('loaded', 'submitting', 'submitSuccess') }, () => ({
-      type: 'loaded',
-    }))
+    .with(
+      { type: P.union('loaded', 'submitting', 'submitSuccess', 'submitError') },
+      () => ({
+        type: 'loaded',
+      })
+    )
     .with({ type: 'error' }, () => ({ type: 'error' }))
     .exhaustive();
 

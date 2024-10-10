@@ -11,10 +11,11 @@ export const WalletCreate = () => {
   const controller = useWalletCreateController();
 
   const toast = useToastController();
-
   useEffect(() => {
     if (controller.state.type === 'submitSuccess')
-      toast.show('Wallet Submitted Successfully');
+      toast.show('Create Wallet Success');
+    else if (controller.state.type === 'submitError')
+      toast.show('Create Wallet Error');
   }, [toast, controller.state.type]);
 
   const formik = useFormik<WalletForm>({
