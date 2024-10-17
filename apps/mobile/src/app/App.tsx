@@ -61,9 +61,9 @@ export const App = () => {
       linking={{
         prefixes: ['/'],
         config: {
-          initialRouteName: 'home',
+          initialRouteName: 'dashboard',
           screens: {
-            home: '',
+            dashboard: '',
             categoryList: 'categories',
             categoryCreate: 'categories/create',
             categoryUpdate: {

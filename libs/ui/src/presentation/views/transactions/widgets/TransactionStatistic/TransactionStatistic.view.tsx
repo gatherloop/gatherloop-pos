@@ -1,4 +1,6 @@
 import {
+  ErrorView,
+  LoadingView,
   VictoryChart,
   VictoryTheme,
   VictoryLine,
@@ -6,9 +8,7 @@ import {
   VictoryScatter,
   VictoryAxis,
   VictoryLegend,
-  VictoryZoomContainer,
-} from 'victory';
-import { ErrorView, LoadingView } from '../../../base';
+} from '../../../base';
 import { Button, H6, XStack, YStack } from 'tamagui';
 
 type GroupBy = 'date' | 'month';
@@ -58,7 +58,6 @@ export const TransactionStatisticView = ({
         width={600}
         height={300}
         padding={{ top: 50, bottom: 50, left: 80, right: 50 }}
-        containerComponent={<VictoryZoomContainer />}
       >
         <VictoryLine
           style={{
@@ -72,30 +71,18 @@ export const TransactionStatisticView = ({
             data: { stroke: '#24c48e' },
             parent: { border: '1px solid #ccc' },
           }}
-          // data={statistics.map((statistic) => ({
-          //   y: statistic.totalIncome,
-          //   x: statistic.date,
-          // }))}
           data={totalIncomeStatistics}
         />
         <VictoryScatter
           style={{ data: { fill: '#3189c4' } }}
-          size={3}
-          // data={statistics.map((statistic) => ({
-          //   y: statistic.total,
-          //   x: statistic.date,
-          // }))}
+          size={6}
           data={totalStatistics}
           labels={({ datum }) => `[Total] Date: ${datum.x} Total: ${datum.y}`}
           labelComponent={<VictoryTooltip constrainToVisibleArea />}
         />
         <VictoryScatter
           style={{ data: { fill: '#24c48e' } }}
-          size={3}
-          // data={statistics.map((statistic) => ({
-          //   y: statistic.totalIncome,
-          //   x: statistic.date,
-          // }))}
+          size={6}
           data={totalIncomeStatistics}
           labels={({ datum }) => `[Income] Date: ${datum.x} Total: ${datum.y}`}
           labelComponent={<VictoryTooltip constrainToVisibleArea />}
