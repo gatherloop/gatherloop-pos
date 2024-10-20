@@ -40,13 +40,23 @@ The Budget Tracking feature helps monitor spending limits for various categories
 
 ### 3.1. Golang
 
+Go (Golang) is used for building the backend services of the POS system. Its efficiency in handling concurrent processes ensures high performance, making it ideal for managing tasks like transaction processing, budget tracking, and real-time financial calculations. Go’s simplicity and speed contribute to the system's scalability and reliability.
+
 ### 3.2. React
+
+React is used for building the web interface of the POS system, providing a dynamic and responsive user experience. Its component-based architecture allows for efficient rendering and seamless updates, making tasks like product management, transaction handling, and expense tracking intuitive and easy to navigate.
 
 ### 3.3. React Native
 
+React Native powers the mobile version of the POS system, enabling a consistent user experience across both iOS and Android platforms. With its reusable components and native performance, React Native ensures smooth navigation and real-time updates, allowing users to manage transactions, products, and expenses on the go.
+
 ### 3.4. Tamagui
 
+Tamagui is used for building a cross-platform UI in the POS system, allowing for consistent design and performance across web and mobile. It simplifies the development process by sharing components between platforms, ensuring a cohesive look and feel while maintaining speed and responsiveness.
+
 ### 3.5. Open API
+
+OpenAPI is used to define and document the POS system’s API, ensuring clear communication between the backend and frontend. It standardizes API endpoints, making integration more efficient and scalable while providing an easy-to-understand interface for developers to interact with the system’s features, such as transactions, product management, and budgeting.
 
 ## 4. Projects
 
