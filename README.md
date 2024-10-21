@@ -60,18 +60,128 @@ OpenAPI is used to define and document the POS system’s API, ensuring clear co
 
 ## 4. Projects
 
+This POS system is organized within an Nx monorepo, containing the following projects:
+
 ### 4.1. Web
+
+The web project is the frontend application built with React, providing an intuitive and dynamic interface for managing various aspects of the POS system, such as transactions, product listings, and financial tracking. This project uses reusable UI components shared through the UI library, ensuring consistency and responsiveness across the platform.
+
+To work on or run the web project in your local development environment, you can use the following commands:
+
+#### A. Development Mode
+
+```
+$ nx run web:dev
+```
+
+This starts the development server, enabling live reload and hot reloading for a smooth development experience.
+
+#### B. Build the Project
+
+```
+$ nx run web:build
+```
+
+This builds the web project for production, optimizing performance and bundling all assets.
+
+#### C. Run the Built Project
+
+```
+$ nx run web:start
+```
+
+This command runs the production-ready version of the web project after it has been built.
 
 ### 4.2. Mobile
 
+The mobile project is developed with React Native, providing a seamless user experience for managing the POS system on mobile devices. It shares UI components with the web project through the UI library, ensuring design consistency across platforms. This mobile app is compatible with both Android and iOS, allowing users to handle transactions, manage products, and monitor expenses from anywhere.
+
+To run and build the mobile project for development or production, use the following commands:
+
+#### A. Start React Native Development Server
+
+```
+$ nx run mobile:start
+```
+
+This launches the React Native development server, enabling live reload and debugging.
+
+#### B. Run on Android Device
+
+```
+$ nx run mobile:run-android
+```
+
+This command runs the mobile project on a connected Android device or emulator.
+
+#### C. Run on iOS Device
+
+```
+$ nx run mobile:run-ios
+```
+
+This runs the project on a connected iOS device or simulator.
+
+#### D. Build for Android
+
+```
+$ nx run mobile:build-android
+```
+
+This builds the Android version of the mobile project for production.
+
+#### E. Build for iOS
+
+```
+$ nx run mobile:build-ios
+```
+
+This builds the iOS version of the mobile project for production.
+
 ### 4.3. UI
+
+The UI project is a shared component library designed for both web and mobile platforms. Built with Tamagui, it ensures a consistent and responsive user interface across the POS system. This project contains reusable components that are optimized for performance and flexibility, allowing you to easily maintain and scale the design system for both React and React Native applications.
 
 ### 4.4. API
 
+The API project is the backend service of the POS system, built using Go (Golang). It handles core functionalities such as managing transactions, products, budgeting, and more, ensuring fast and reliable data processing. The API communicates with both the web and mobile applications through well-defined endpoints, documented via OpenAPI, making integration seamless and efficient.
+
+Running the API Project
+
+#### A. Run the Server
+
+```
+$ nx run api:serve
+```
+
+This command starts the Go server, allowing the API to handle requests from the web and mobile applications.
+
+#### B. Build the API Binary
+
+```
+$ nx run api:build
+```
+
+This compiles the Go code into a binary file, preparing it for deployment in production environments.
+
 ### 4.5. API Contract
 
-## 5. Architecture
+The API Contract project defines the specifications and types for the API endpoints, ensuring consistent communication between the backend and frontend applications. It serves as a bridge between the API and the client projects, generating type definitions that enhance type safety and reduce errors during development.
 
-### 5.1. Frontend
+Running the API Contract Project
 
-### 5.2. Backend
+#### A. Generate TypeScript Typings
+
+```
+$ nx run api-contract:generate:ts
+```
+
+This command generates TypeScript typings that will be used in both the web and mobile projects, ensuring type safety and improving developer experience.
+
+#### B. Generate Go Typings
+
+```
+$ nx run api-contract:generate:go
+```
+
+This command generates Go typings for the API project, aligning the backend data structures with the defined API specifications.
