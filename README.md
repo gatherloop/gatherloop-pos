@@ -185,3 +185,35 @@ $ nx run api-contract:generate:go
 ```
 
 This command generates Go typings for the API project, aligning the backend data structures with the defined API specifications.
+
+## 5. Clean Architecture
+
+This POS system is built using Clean Architecture principles for both the backend and frontend, promoting separation of concerns and enhancing testability. By structuring the application into distinct layers, Clean Architecture allows for easier maintenance, scalability, and independent testing of each component.
+
+### 5.1. Backend
+
+#### A. Domain Layer
+
+The Domain Layer is the core of the backend's Clean Architecture, housing entities that define the internal data structures used in business logic. These entities are utilized in use cases that implement the specific business rules, ensuring that the logic remains independent of the data layer (e.g., databases) and presentation layer (e.g., REST APIs). This design allows for communication through well-defined interfaces, enabling separation of concerns and making it easy to adapt or replace layers. Additionally, this separation facilitates testing, allowing use cases and entities to be validated in isolation without relying on external systems, enhancing overall maintainability and scalability.
+
+#### B. Data Layer
+
+The Data Layer implements the interfaces required by the use cases, allowing for flexibility in how data is sourced and managed. By adhering to these interfaces, the Data Layer can easily connect to various data sources, such as databases, mock data, or external APIs. This design promotes separation of concerns, enabling the backend's business logic to remain independent of the underlying data implementation. As a result, changes to the data source can be made without impacting the use cases, facilitating easier maintenance and testing.
+
+#### C. Presentation Layer
+
+The Presentation Layer consumes the use cases and maps the internal data structures from the entities to output formats, such as JSON for REST APIs. In this layer, the backend transforms the entity data into structures that align with the OpenAPI specification, ensuring that the frontend can seamlessly consume the data. By serving as an intermediary between the client and the business logic, the Presentation Layer decouples the API implementation from the underlying business rules, allowing for easier updates and maintenance without affecting core functionality.
+
+### 5.2. Frontend
+
+#### A. Domain Layer
+
+The Domain Layer in the frontend contains entities that define the internal data structures used in the business logic. It also includes use cases that implement the business logic, utilizing a finite state machine to map the current state to the next state based on received actions or events. Importantly, the use cases do not concern themselves with the data source, whether it comes from an API or mock data; they only recognize the interfaces. Additionally, this layer is agnostic to the frontend framework, ensuring that no framework-specific code (e.g., React) is present. Instead, the business logic is written purely in TypeScript, focusing on the finite state machine's functionality.
+
+#### B. Data Layer
+
+The Data Layer implements the interfaces used in the use case layer, allowing it to determine the data source, whether from an API or mock data. This design enables easy testing of the use cases using mock data without altering the underlying logic. Additionally, the Data Layer is responsible for transforming the OpenAPI data structures into the entity data structures utilized in the use cases, ensuring seamless integration between external data sources and the internal business logic.
+
+#### C. Presentation Layer
+
+The Presentation Layer consumes the finite state machine defined in the use case layer and integrates it into the framework's state management. For instance, in React, this is achieved using useReducer to manage state transitions and useEffect to handle side effects of the finite state machine. Additionally, this layer is responsible for mapping the data structures from the entities to the UI props used in the components, ensuring that the frontend displays the appropriate information in a user-friendly manner.
