@@ -1,5 +1,10 @@
 // eslint-disable-next-line @nx/enforce-module-boundaries
-import { categoryList, categoryListQueryKey } from '../../../api-contract/src';
+import {
+  categoryList,
+  categoryListQueryKey,
+  materialList,
+  materialListQueryKey,
+} from '../../../api-contract/src';
 import {
   OpenAPICategoryRepository,
   OpenAPIMaterialRepository,
@@ -20,10 +25,29 @@ import {
 
 export async function getProductCreateScreenDehydratedState(): Promise<DehydratedState> {
   const queryClient = new QueryClient();
-  await queryClient.prefetchQuery({
-    queryKey: categoryListQueryKey(),
-    queryFn: () => categoryList(),
-  });
+  await Promise.all([
+    queryClient.prefetchQuery({
+      queryKey: categoryListQueryKey(),
+      queryFn: () => categoryList(),
+    }),
+    queryClient.prefetchQuery({
+      queryKey: materialListQueryKey({
+        limit: 8,
+        skip: 0,
+        order: 'desc',
+        sortBy: 'created_at',
+        query: '',
+      }),
+      queryFn: () =>
+        materialList({
+          limit: 8,
+          skip: 0,
+          order: 'desc',
+          sortBy: 'created_at',
+          query: '',
+        }),
+    }),
+  ]);
 
   return dehydrate(queryClient);
 }

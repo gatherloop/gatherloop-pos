@@ -97,13 +97,6 @@ export class OpenAPIMaterialRepository implements MaterialRepository {
     this.client.removeQueries({ queryKey: materialListQueryKey(params) });
 
     return {
-      type: res?.data ? 'loaded' : 'idle',
-      page: 1,
-      itemPerPage: 8,
-      query: '',
-      sortBy: 'created_at',
-      orderBy: 'desc',
-      errorMessage: null,
       materials: res?.data.map(transformers.material) ?? [],
       totalItem: res?.meta.total ?? 0,
     };

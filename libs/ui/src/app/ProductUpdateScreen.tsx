@@ -3,6 +3,8 @@ import { createParam } from 'solito';
 import {
   categoryList,
   categoryListQueryKey,
+  materialList,
+  materialListQueryKey,
   productFindById,
   productFindByIdQueryKey,
 } from '../../../api-contract/src';
@@ -37,6 +39,23 @@ export async function getProductUpdateScreenDehydratedState(
     queryClient.prefetchQuery({
       queryKey: categoryListQueryKey(),
       queryFn: () => categoryList(),
+    }),
+    queryClient.prefetchQuery({
+      queryKey: materialListQueryKey({
+        limit: 8,
+        skip: 0,
+        order: 'desc',
+        sortBy: 'created_at',
+        query: '',
+      }),
+      queryFn: () =>
+        materialList({
+          limit: 8,
+          skip: 0,
+          order: 'desc',
+          sortBy: 'created_at',
+          query: '',
+        }),
     }),
   ]);
 
