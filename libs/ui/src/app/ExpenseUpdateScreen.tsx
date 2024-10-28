@@ -1,3 +1,4 @@
+import { createParam } from 'solito';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import {
   budgetList,
@@ -50,10 +51,16 @@ export type ExpenseUpdateScreenProps = {
   expenseId: number;
 };
 
+const { useParam } = createParam<ExpenseUpdateScreenProps>();
+
 export function ExpenseUpdateScreen({ expenseId }: ExpenseUpdateScreenProps) {
+  const [expenseIdParam] = useParam('expenseId', {
+    initial: expenseId ?? NaN,
+    parse: (value) => parseInt(Array.isArray(value) ? value[0] : value ?? ''),
+  });
   const client = useQueryClient();
   const expenseRepository = new OpenAPIExpenseRepository(client);
-  expenseRepository.expenseByIdServerParams = expenseId;
+  expenseRepository.expenseByIdServerParams = expenseIdParam;
   const budgetRepository = new OpenAPIBudgetRepository(client);
   const walletRepository = new OpenAPIWalletRepository(client);
   const usecase = new ExpenseUpdateUsecase(

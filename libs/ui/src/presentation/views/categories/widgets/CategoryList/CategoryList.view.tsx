@@ -21,7 +21,7 @@ export const CategoryListView = ({
     <YStack gap="$3" flex={1}>
       {match(variant)
         .with({ type: 'loading' }, () => (
-          <LoadingView title="Fetching Categorys..." />
+          <LoadingView title="Fetching Categories..." />
         ))
         .with({ type: 'empty' }, () => (
           <EmptyView
@@ -39,7 +39,7 @@ export const CategoryListView = ({
         ))
         .with({ type: 'error' }, () => (
           <ErrorView
-            title="Failed to Fetch Categorys"
+            title="Failed to Fetch Categories"
             subtitle="Please click the retry button to refetch data"
             onRetryButtonPress={onRetryButtonPress}
           />

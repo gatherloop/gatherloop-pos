@@ -1,3 +1,4 @@
+import { createParam } from 'solito';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import {
   categoryList,
@@ -46,10 +47,17 @@ export type ProductUpdateScreenProps = {
   productId: number;
 };
 
+const { useParam } = createParam<ProductUpdateScreenProps>();
+
 export function ProductUpdateScreen({ productId }: ProductUpdateScreenProps) {
+  const [productIdParam] = useParam('productId', {
+    initial: productId ?? NaN,
+    parse: (value) => parseInt(Array.isArray(value) ? value[0] : value ?? ''),
+  });
+
   const client = useQueryClient();
   const productRepository = new OpenAPIProductRepository(client);
-  productRepository.productByIdServerParams = productId;
+  productRepository.productByIdServerParams = productIdParam;
   const categoryRepository = new OpenAPICategoryRepository(client);
   const productUpdateUsecase = new ProductUpdateUsecase(
     productRepository,

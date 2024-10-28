@@ -15,6 +15,7 @@ import {
   QueryClient,
   useQueryClient,
 } from '@tanstack/react-query';
+import { createParam } from 'solito';
 
 export async function getCategoryUpdateScreenDehydratedState(
   categoryId: number
@@ -31,12 +32,18 @@ export type CategoryUpdateScreenProps = {
   categoryId: number;
 };
 
+const { useParam } = createParam<CategoryUpdateScreenProps>();
+
 export function CategoryUpdateScreen({
   categoryId,
 }: CategoryUpdateScreenProps) {
+  const [categoryIdParam] = useParam('categoryId', {
+    initial: categoryId ?? NaN,
+    parse: (value) => parseInt(Array.isArray(value) ? value[0] : value ?? ''),
+  });
   const client = useQueryClient();
   const repository = new OpenAPICategoryRepository(client);
-  repository.categoryByIdServerParams = categoryId;
+  repository.categoryByIdServerParams = categoryIdParam;
   const usecase = new CategoryUpdateUsecase(repository);
   return (
     <CategoryUpdateProvider usecase={usecase}>

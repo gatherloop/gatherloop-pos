@@ -23,6 +23,7 @@ export const MaterialUpdate = () => {
   }, [toast, controller.state.type]);
 
   const formik = useFormik<MaterialForm>({
+    enableReinitialize: true,
     initialValues: controller.state.values,
     validationSchema: toFormikValidationSchema(
       z.object({

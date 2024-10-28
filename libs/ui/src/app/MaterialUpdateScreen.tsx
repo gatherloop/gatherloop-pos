@@ -1,3 +1,4 @@
+import { createParam } from 'solito';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import {
   materialFindById,
@@ -31,12 +32,18 @@ export type MaterialUpdateScreenProps = {
   materialId: number;
 };
 
+const { useParam } = createParam<MaterialUpdateScreenProps>();
+
 export function MaterialUpdateScreen({
   materialId,
 }: MaterialUpdateScreenProps) {
+  const [materialIdParam] = useParam('materialId', {
+    initial: materialId ?? NaN,
+    parse: (value) => parseInt(Array.isArray(value) ? value[0] : value ?? ''),
+  });
   const client = useQueryClient();
   const repository = new OpenAPIMaterialRepository(client);
-  repository.materialByIdServerParams = materialId;
+  repository.materialByIdServerParams = materialIdParam;
   const usecase = new MaterialUpdateUsecase(repository);
   return (
     <MaterialUpdateProvider usecase={usecase}>

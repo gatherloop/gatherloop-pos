@@ -1,3 +1,4 @@
+import { createParam } from 'solito';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import {
   walletFindById,
@@ -31,10 +32,16 @@ export type WalletUpdateScreenProps = {
   walletId: number;
 };
 
+const { useParam } = createParam<WalletUpdateScreenProps>();
+
 export function WalletUpdateScreen({ walletId }: WalletUpdateScreenProps) {
+  const [walletIdParam] = useParam('walletId', {
+    initial: walletId ?? NaN,
+    parse: (value) => parseInt(Array.isArray(value) ? value[0] : value ?? ''),
+  });
   const client = useQueryClient();
   const repository = new OpenAPIWalletRepository(client);
-  repository.walletByIdServerParams = walletId;
+  repository.walletByIdServerParams = walletIdParam;
   const usecase = new WalletUpdateUsecase(repository);
   return (
     <WalletUpdateProvider usecase={usecase}>

@@ -24,6 +24,7 @@ export const CategoryUpdate = () => {
   }, [toast, controller.state.type]);
 
   const formik = useFormik<CategoryForm>({
+    enableReinitialize: true,
     initialValues: controller.state.values,
     validationSchema: toFormikValidationSchema(z.object({ name: z.string() })),
     onSubmit: (values) => controller.dispatch({ type: 'SUBMIT', values }),

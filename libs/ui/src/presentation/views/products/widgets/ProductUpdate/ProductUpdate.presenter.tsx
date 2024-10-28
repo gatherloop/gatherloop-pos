@@ -24,6 +24,7 @@ export const ProductUpdate = () => {
   }, [toast, controller.state.type]);
 
   const formik = useFormik<ProductForm>({
+    enableReinitialize: true,
     initialValues: controller.state.values,
     validationSchema: toFormikValidationSchema(
       z.object({

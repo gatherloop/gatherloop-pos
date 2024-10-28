@@ -1,3 +1,4 @@
+import { createParam } from 'solito';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import {
   productList,
@@ -56,12 +57,18 @@ export type TransactionUpdateScreenProps = {
   transactionId: number;
 };
 
+const { useParam } = createParam<TransactionUpdateScreenProps>();
+
 export function TransactionUpdateScreen({
   transactionId,
 }: TransactionUpdateScreenProps) {
+  const [transactionIdParam] = useParam('transactionId', {
+    initial: transactionId ?? NaN,
+    parse: (value) => parseInt(Array.isArray(value) ? value[0] : value ?? ''),
+  });
   const client = useQueryClient();
   const transactionRepository = new OpenAPITransactionRepository(client);
-  transactionRepository.transactionByIdServerParams = transactionId;
+  transactionRepository.transactionByIdServerParams = transactionIdParam;
   const transactionUsecase = new TransactionUpdateUsecase(
     transactionRepository
   );

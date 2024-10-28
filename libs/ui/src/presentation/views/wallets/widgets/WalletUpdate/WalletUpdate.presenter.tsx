@@ -20,6 +20,7 @@ export const WalletUpdate = () => {
   }, [toast, controller.state.type]);
 
   const formik = useFormik<WalletForm>({
+    enableReinitialize: true,
     initialValues: controller.state.values,
     validationSchema: toFormikValidationSchema(
       z.object({

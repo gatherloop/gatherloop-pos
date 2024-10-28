@@ -16,18 +16,16 @@ export const RootProvider = (props: RootProviderProps) => {
   return (
     <QueryClientProvider client={queryClient}>
       <TamaguiProvider config={tamaguiConfig} {...props.tamaguiProviderProps}>
-        <PortalProvider shouldAddRootHost>
-          <ToastProvider>
-            {props.children}
-            <CurrentToast />
-            <ToastViewport
-              flexDirection="column"
-              bottom={10}
-              left={0}
-              right={0}
-            />
-          </ToastProvider>
-        </PortalProvider>
+        <ToastProvider>
+          {props.children}
+          <CurrentToast />
+          <ToastViewport
+            flexDirection="column"
+            bottom={10}
+            left={0}
+            right={0}
+          />
+        </ToastProvider>
       </TamaguiProvider>
     </QueryClientProvider>
   );

@@ -12,6 +12,7 @@ const Context = createContext<ContextValue>(null);
 
 export const useMaterialListController = () => {
   const materialListController = useContext(Context);
+  console.log('materialListController', materialListController);
   if (materialListController === null) {
     throw new Error('useMaterialListController is called outside provider');
   }
@@ -29,5 +30,6 @@ export const MaterialListProvider = ({
   usecase,
 }: MaterialListProviderProps) => {
   const controller = useController(usecase);
+  console.log('controller', controller);
   return <Context.Provider value={controller}>{children}</Context.Provider>;
 };

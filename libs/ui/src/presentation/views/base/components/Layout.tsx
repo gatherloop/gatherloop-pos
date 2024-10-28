@@ -1,4 +1,4 @@
-import { XStack, YStack } from 'tamagui';
+import { PortalProvider, XStack, YStack } from 'tamagui';
 import { Sidebar } from './Sidebar';
 import { Navbar } from './Navbar/Navbar';
 import { ReactNode } from 'react';
@@ -17,18 +17,20 @@ export const Layout = ({
   rightActionItem,
 }: LayoutProps) => {
   return (
-    <XStack flex={1}>
-      <Sidebar />
-      <YStack flex={1}>
-        <Navbar
-          title={title}
-          showBackButton={showBackButton}
-          rightActionItem={rightActionItem}
-        />
-        <YStack padding="$5" gap="$3" flex={1}>
-          {children}
+    <PortalProvider shouldAddRootHost>
+      <XStack flex={1}>
+        <Sidebar />
+        <YStack flex={1}>
+          <Navbar
+            title={title}
+            showBackButton={showBackButton}
+            rightActionItem={rightActionItem}
+          />
+          <YStack padding="$5" gap="$3" flex={1}>
+            {children}
+          </YStack>
         </YStack>
-      </YStack>
-    </XStack>
+      </XStack>
+    </PortalProvider>
   );
 };
