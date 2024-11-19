@@ -22,6 +22,7 @@ import {
   ExpenseCreateScreen,
   ExpenseUpdateScreen,
   TransactionStatisticScreen,
+  TransactionPrintScreen,
 } from '@gatherloop-pos/ui';
 import { RootProvider } from '@gatherloop-pos/provider';
 import { NavigationContainer } from '@react-navigation/native';
@@ -50,6 +51,7 @@ const Stack = createNativeStackNavigator<{
   transactionCreate: undefined;
   transactionUpdate: { transactionId: number };
   transactionDetail: { transactionId: number };
+  transactionPrint: { transactionId: number };
   expenseList: undefined;
   expenseCreate: undefined;
   expenseUpdate: { expenseId: number };
@@ -119,6 +121,12 @@ export const App = () => {
             },
             transactionDetail: {
               path: 'transactions/:transactionId/detail',
+              parse: {
+                transactionId: (transactionId) => parseInt(transactionId),
+              },
+            },
+            transactionPrint: {
+              path: 'transactions/:transactionId/print',
               parse: {
                 transactionId: (transactionId) => parseInt(transactionId),
               },
@@ -193,6 +201,10 @@ export const App = () => {
           <Stack.Screen
             name="transactionDetail"
             component={TransactionDetailScreen}
+          />
+          <Stack.Screen
+            name="transactionPrint"
+            component={TransactionPrintScreen}
           />
           <Stack.Screen name="expenseList" component={ExpenseListScreen} />
           <Stack.Screen name="expenseCreate" component={ExpenseCreateScreen} />

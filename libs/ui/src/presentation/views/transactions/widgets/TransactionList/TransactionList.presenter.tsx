@@ -10,6 +10,7 @@ export type TransactionListProps = {
   onDeleteMenuPress: (transaction: Transaction) => void;
   onEditMenuPress: (transaction: Transaction) => void;
   onPayMenuPress: (transaction: Transaction) => void;
+  onPrintMenuPress: (transaction: Transaction) => void;
   onItemPress: (transaction: Transaction) => void;
 };
 
@@ -18,6 +19,7 @@ export const TransactionList = ({
   onEditMenuPress,
   onPayMenuPress,
   onItemPress,
+  onPrintMenuPress,
 }: TransactionListProps) => {
   const { state, dispatch } = useTransactionListController();
 
@@ -57,6 +59,7 @@ export const TransactionList = ({
     onDeleteMenuPress: () => onDeleteMenuPress(transaction),
     onEditMenuPress: () => onEditMenuPress(transaction),
     onPayMenuPress: () => onPayMenuPress(transaction),
+    onPrintMenuPress: () => onPrintMenuPress(transaction),
     onPress: () => onItemPress(transaction),
     paidAt: transaction.paidAt,
     walletName: transaction.wallet?.name,

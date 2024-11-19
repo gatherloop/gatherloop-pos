@@ -3,6 +3,7 @@ import {
   Clock,
   DollarSign,
   Pencil,
+  Printer,
   Trash,
   Wallet,
 } from '@tamagui/lucide-icons';
@@ -19,6 +20,7 @@ export type TransactionListItemProps = {
   onPayMenuPress: () => void;
   onEditMenuPress: () => void;
   onDeleteMenuPress: () => void;
+  onPrintMenuPress: () => void;
 } & XStackProps;
 
 export const TransactionListItem = ({
@@ -30,6 +32,7 @@ export const TransactionListItem = ({
   onPayMenuPress,
   onEditMenuPress,
   onDeleteMenuPress,
+  onPrintMenuPress,
   ...xStackProps
 }: TransactionListItemProps) => {
   return (
@@ -43,6 +46,12 @@ export const TransactionListItem = ({
           icon: DollarSign,
           onPress: onPayMenuPress,
           isShown: paidAt === undefined,
+        },
+        {
+          title: 'Print',
+          icon: Printer,
+          onPress: onPrintMenuPress,
+          isShown: paidAt !== undefined,
         },
         {
           title: 'Edit',

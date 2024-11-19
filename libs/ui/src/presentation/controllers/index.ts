@@ -22,6 +22,7 @@ export * from './ExpenseListController';
 export * from './ExpenseCreateController';
 export * from './ExpenseUpdateController';
 export * from './TransactionDeleteController';
+export * from './TransactionPrintController';
 export * from './TransactionListController';
 export * from './TransactionCreateController';
 export * from './TransactionUpdateController';

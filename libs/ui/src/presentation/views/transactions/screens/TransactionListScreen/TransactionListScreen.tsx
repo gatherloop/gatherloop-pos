@@ -55,6 +55,10 @@ const Content = () => {
     });
   };
 
+  const onPrintMenuPress = (transaction: Transaction) => {
+    router.push(`/transactions/${transaction.id}/print`);
+  };
+
   return (
     <>
       <TransactionList
@@ -62,6 +66,7 @@ const Content = () => {
         onEditMenuPress={onEditMenuPress}
         onPayMenuPress={onPayMenuPress}
         onItemPress={onEditMenuPress}
+        onPrintMenuPress={onPrintMenuPress}
       />
       <TransactionDeleteAlert />
       <TransactionPaymentAlert />
