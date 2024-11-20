@@ -1,7 +1,6 @@
-import { H5, H6, Paragraph, XStack, YStack } from 'tamagui';
+import { H5, Paragraph, XStack, YStack } from 'tamagui';
 import { Transaction } from '../../../../../domain';
 import dayjs from 'dayjs';
-import { Image } from 'tamagui';
 
 export type TransactionPrintViewProps = {
   name: string;
@@ -20,13 +19,7 @@ export const TransactionPrintView = ({
 }: TransactionPrintViewProps) => {
   return (
     <YStack gap="$3">
-      <Image
-        alignSelf="center"
-        width={200}
-        height={80}
-        resizeMode="contain"
-        src="https://gatherloop.co/assets/images/GatherloopLogoLightTheme.png"
-      />
+      <YStack borderWidth="$0.5" borderStyle="dashed" />
       <H5 textAlign="center">Gatherloop Cafe & Community</H5>
       <Paragraph textAlign="center">
         New Kraksaan Land, Blok G16, Karang Asem, Kebonagung, Kec. Kraksaan
