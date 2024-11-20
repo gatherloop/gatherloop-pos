@@ -103,7 +103,7 @@ export class TransactionPrintUsecase extends Usecase<
             })
           );
       })
-      .with({ type: 'loaded' }, () => window.print())
+      // .with({ type: 'loaded' }, () => window.print())
       .otherwise(() => {
         // TODO: IMPLEMENT SOMETHING
       });
