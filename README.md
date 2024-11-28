@@ -1,4 +1,4 @@
-# Gatherloop Pos
+# Gatherloop POS (Pint Of Sale)
 
 ## 1. Overview
 
@@ -9,6 +9,8 @@ Transaction Processing: Record customer transactions efficiently.
 Automated Calculations: Automatically calculate costs and profits for each transaction.
 Financial Management: Streamline operations by automating budget allocations for operational expenses, food costs, and profits.
 This POS system aims to provide a comprehensive solution for managing business operations more efficiently, reducing manual work and improving financial transparency.
+
+![screenshot of gatherloop POS](https://i.ibb.co.com/5KQJmMz/Screenshot-2024-11-28-at-14-39-36.png)
 
 ## 2. Features
 
@@ -40,21 +42,31 @@ The Budget Tracking feature helps monitor spending limits for various categories
 
 ### 3.1. Golang
 
+https://go.dev
+
 Go (Golang) is used for building the backend services of the POS system. Its efficiency in handling concurrent processes ensures high performance, making it ideal for managing tasks like transaction processing, budget tracking, and real-time financial calculations. Go’s simplicity and speed contribute to the system's scalability and reliability.
 
 ### 3.2. React
+
+https://react.dev
 
 React is used for building the web interface of the POS system, providing a dynamic and responsive user experience. Its component-based architecture allows for efficient rendering and seamless updates, making tasks like product management, transaction handling, and expense tracking intuitive and easy to navigate.
 
 ### 3.3. React Native
 
+https://reactnative.dev
+
 React Native powers the mobile version of the POS system, enabling a consistent user experience across both iOS and Android platforms. With its reusable components and native performance, React Native ensures smooth navigation and real-time updates, allowing users to manage transactions, products, and expenses on the go.
 
 ### 3.4. Tamagui
 
+https://tamagui.dev
+
 Tamagui is used for building a cross-platform UI in the POS system, allowing for consistent design and performance across web and mobile. It simplifies the development process by sharing components between platforms, ensuring a cohesive look and feel while maintaining speed and responsiveness.
 
 ### 3.5. Open API
+
+https://www.openapis.org
 
 OpenAPI is used to define and document the POS system’s API, ensuring clear communication between the backend and frontend. It standardizes API endpoints, making integration more efficient and scalable while providing an easy-to-understand interface for developers to interact with the system’s features, such as transactions, product management, and budgeting.
 
@@ -192,6 +204,8 @@ This POS system is built using Clean Architecture principles for both the backen
 
 ### 5.1. Backend
 
+![clean architecture backend](/docs/clean%20architecture%20be.png)
+
 #### A. Domain Layer
 
 The Domain Layer is the core of the backend's Clean Architecture, housing entities that define the internal data structures used in business logic. These entities are utilized in use cases that implement the specific business rules, ensuring that the logic remains independent of the data layer (e.g., databases) and presentation layer (e.g., REST APIs). This design allows for communication through well-defined interfaces, enabling separation of concerns and making it easy to adapt or replace layers. Additionally, this separation facilitates testing, allowing use cases and entities to be validated in isolation without relying on external systems, enhancing overall maintainability and scalability.
@@ -205,6 +219,8 @@ The Data Layer implements the interfaces required by the use cases, allowing for
 The Presentation Layer consumes the use cases and maps the internal data structures from the entities to output formats, such as JSON for REST APIs. In this layer, the backend transforms the entity data into structures that align with the OpenAPI specification, ensuring that the frontend can seamlessly consume the data. By serving as an intermediary between the client and the business logic, the Presentation Layer decouples the API implementation from the underlying business rules, allowing for easier updates and maintenance without affecting core functionality.
 
 ### 5.2. Frontend
+
+![clean architecture frontend](/docs/clean%20architecture%20fe.png)
 
 #### A. Domain Layer
 
