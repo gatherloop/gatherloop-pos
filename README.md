@@ -208,15 +208,21 @@ This POS system is built using Clean Architecture principles for both the backen
 
 #### A. Domain Layer
 
-The Domain Layer is the core of the backend's Clean Architecture, housing entities that define the internal data structures used in business logic. These entities are utilized in use cases that implement the specific business rules, ensuring that the logic remains independent of the data layer (e.g., databases) and presentation layer (e.g., REST APIs). This design allows for communication through well-defined interfaces, enabling separation of concerns and making it easy to adapt or replace layers. Additionally, this separation facilitates testing, allowing use cases and entities to be validated in isolation without relying on external systems, enhancing overall maintainability and scalability.
+The Domain layer is the core of the backend's clean architecture that define the data structure and business logic. There are some components in this layer :
+
+1. Entity, defining the data structure that used in the use cases
+2. Usecase, implementing the specific business rules
+3. Repository Interface, ensuring the business logic remains independent of the data layer (e.g., databases, external API, or mock data)
+
+This separation facilitates testing, allowing use cases and entities to be validated in isolation without relying on external systems, enhancing overall maintainability and scalability.
 
 #### B. Data Layer
 
-The Data Layer implements the interfaces required by the use cases, allowing for flexibility in how data is sourced and managed. By adhering to these interfaces, the Data Layer can easily connect to various data sources, such as databases, mock data, or external APIs. This design promotes separation of concerns, enabling the backend's business logic to remain independent of the underlying data implementation. As a result, changes to the data source can be made without impacting the use cases, facilitating easier maintenance and testing.
+The Data Layer implements the repository interfaces required by the use cases, allowing for flexibility in how data is sourced and managed. By following these interfaces, the Data Layer can easily connect to various data sources, such as databases, mock data, or external APIs. This design promotes separation of concerns, enabling the backend's business logic to remain independent of the underlying data implementation.
 
 #### C. Presentation Layer
 
-The Presentation Layer consumes the use cases and maps the internal data structures from the entities to output formats, such as JSON for REST APIs. In this layer, the backend transforms the entity data into structures that align with the OpenAPI specification, ensuring that the frontend can seamlessly consume the data. By serving as an intermediary between the client and the business logic, the Presentation Layer decouples the API implementation from the underlying business rules, allowing for easier updates and maintenance without affecting core functionality.
+The Presentation Layer consumes the use cases and maps the internal data structures from the entities to output formats, such as JSON for REST APIs. In this layer, the backend transforms the entity data into structures that align with the api specification, ensuring that the frontend can seamlessly consume the data.
 
 ### 5.2. Frontend
 
