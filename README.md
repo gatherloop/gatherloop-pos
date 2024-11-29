@@ -210,19 +210,19 @@ This POS system is built using Clean Architecture principles for both the backen
 
 The Domain layer is the core of the backend's clean architecture that define the data structure and business logic. There are some components in this layer :
 
-1. `Entity`, defining the data structure that used in the use cases
-2. `Usecase`, implementing the specific business rules
-3. `Repository Interface`, ensuring the business logic remains independent of the data layer (e.g., databases, external API, or mock data)
+1. `Entity`, defining the [data structure](https://github.com/gatherloop/gatherloop-pos/blob/3a42e3c6956871b779d1b0b085df746f402d1684/apps/api/domain/transactions/entity.go#L19-L30) that used in the use cases
+2. `Usecase`, implementing the specific [business logic](https://github.com/gatherloop/gatherloop-pos/blob/3a42e3c6956871b779d1b0b085df746f402d1684/apps/api/domain/transactions/usecase.go#L28-L40)
+3. `Repository Interface`, containing [interface](https://github.com/gatherloop/gatherloop-pos/blob/3a42e3c6956871b779d1b0b085df746f402d1684/apps/api/domain/transactions/repository.go) that ensure the business logic remains independent of the data layer (e.g., databases, external API, or mock data)
 
 This separation facilitates testing, allowing use cases and entities to be validated in isolation without relying on external systems, enhancing overall maintainability and scalability.
 
 #### B. Data Layer
 
-The Data Layer implements the repository interfaces required by the use cases, allowing for flexibility in how data is sourced and managed. By following these interfaces, the Data Layer can easily connect to various data sources, such as databases, mock data, or external APIs. This design promotes separation of concerns, enabling the backend's business logic to remain independent of the underlying data implementation.
+The Data Layer [implements the repository interfaces](https://github.com/gatherloop/gatherloop-pos/blob/3a42e3c6956871b779d1b0b085df746f402d1684/apps/api/data/mysql/transactions/repository.go) required by the use cases, allowing for flexibility in how data is sourced and managed. By following these interfaces, the Data Layer can easily connect to various data sources, such as databases, mock data, or external APIs. This design promotes separation of concerns, enabling the backend's business logic to remain independent of the underlying data implementation.
 
 #### C. Presentation Layer
 
-The Presentation Layer contain handler that consumes the use cases and maps the internal data structures from the entities to output formats, such as JSON for REST APIs. In this layer, the backend transforms the entity data into structures that align with the api specification, ensuring that the frontend can seamlessly consume the data.
+The Presentation Layer contain [handler](https://github.com/gatherloop/gatherloop-pos/blob/3a42e3c6956871b779d1b0b085df746f402d1684/apps/api/presentation/http/transactions/handler.go) that [consumes the use cases](https://github.com/gatherloop/gatherloop-pos/blob/3a42e3c6956871b779d1b0b085df746f402d1684/apps/api/presentation/http/transactions/handler.go#L38) and [maps the internal data structures](https://github.com/gatherloop/gatherloop-pos/blob/3a42e3c6956871b779d1b0b085df746f402d1684/apps/api/presentation/http/transactions/handler.go#L44-L47) from the entities to output formats, such as JSON for REST APIs. It also [map the request](https://github.com/gatherloop/gatherloop-pos/blob/3a42e3c6956871b779d1b0b085df746f402d1684/apps/api/presentation/http/transactions/handler.go#L22-L36) from HTTP API to internal data structure
 
 ### 5.2. Frontend
 
@@ -232,18 +232,18 @@ The Presentation Layer contain handler that consumes the use cases and maps the 
 
 The domain layer in frontend is similar like backend, it contains the following components :
 
-1. `Entity`, defining the internal data structures used in the business logic
-2. `Usecase`, implementing the business logic, utilizing a finite state machine to map the current state to the next state based on received actions or events. Importantly, the use cases do not concern themselves with the data source, whether it comes from an API or mock data; they only recognize the interfaces. Additionally, this layer is agnostic to the frontend framework, ensuring that no framework-specific code (e.g., React) is present. Instead, the business logic is written purely in TypeScript, focusing on the finite state machine's functionality.
-3. `Repository Interface`, containing interface that define the data source that used in the use case, for example fetch, create, update, and delete data.
+1. `Entity`, defining the [internal data structures](https://github.com/gatherloop/gatherloop-pos/blob/3a42e3c6956871b779d1b0b085df746f402d1684/libs/ui/src/domain/entities/Transaction.ts) used in the business logic
+2. `Usecase`, implementing the business logic, utilizing a [finite state machine](https://github.com/gatherloop/gatherloop-pos/blob/3a42e3c6956871b779d1b0b085df746f402d1684/libs/ui/src/domain/usecases/transactionList.ts#L80-L150) to map the current state to the next state based on received actions. Importantly, the use cases do not concern themselves with the data source, whether it comes from an API or mock data; they only [recognize the interfaces](https://github.com/gatherloop/gatherloop-pos/blob/3a42e3c6956871b779d1b0b085df746f402d1684/libs/ui/src/domain/usecases/transactionList.ts#L161-L162). Additionally, this layer is agnostic to the frontend framework, ensuring that no framework-specific code (e.g., React) is present.
+3. `Repository Interface`, containing [interface](https://github.com/gatherloop/gatherloop-pos/blob/3a42e3c6956871b779d1b0b085df746f402d1684/libs/ui/src/domain/repositories/transaction.ts) that define the data source that used in the use case, for example fetch, create, update, and delete data.
 
 #### B. Data Layer
 
-The Data Layer implements the interfaces used in the use case layer, allowing it to determine the data source, whether from an API or mock data. This design enables easy testing of the use cases using mock data without altering the underlying logic. Additionally, the Data Layer is responsible for transforming the API data structures into the entity data structures utilized in the use cases.
+The Data Layer [implements the interfaces](https://github.com/gatherloop/gatherloop-pos/blob/3a42e3c6956871b779d1b0b085df746f402d1684/libs/ui/src/data/openApi/transaction.ts) used in the use case layer, allowing it to determine the data source, whether from an API or mock data. This design enables easy testing of the use cases using mock data without altering the underlying logic. Additionally, the Data Layer is responsible for transforming the API data structures into the entity data structures utilized in the use cases.
 
 #### C. Presentation Layer
 
 Presentation layer will consumes the logic from usecase layer and output it to UI. It consist of the following components :
 
-1. `Controller`, consumes the finite state machine defined in the use case layer and integrates it into the framework's state management. For instance, in React, this is achieved using `useReducer` to manage state transitions and useEffect to handle side effects of the finite state machine.
-2. `Presentor`, this layer is responsible for mapping the data structures from the entities to the UI props used in the components, ensuring that the frontend displays the appropriate information in a user-friendly manner.
-3. `View`, this layer is responsible for defining the user interface, in React, it will contains JSX of the components
+1. `Controller`, consumes the finite state machine defined in the use case layer and [integrates it into the framework's state management](https://github.com/gatherloop/gatherloop-pos/blob/3a42e3c6956871b779d1b0b085df746f402d1684/libs/ui/src/presentation/controllers/controller.ts). For instance, in React, this is achieved using `useReducer` to manage state transitions and useEffect to handle side effects of the finite state machine.
+2. `Presenter`, this layer is responsible for [mapping the data structures](https://github.com/gatherloop/gatherloop-pos/blob/3a42e3c6956871b779d1b0b085df746f402d1684/libs/ui/src/presentation/views/transactions/widgets/TransactionList/TransactionList.presenter.tsx#L24) from the entities to the UI props used in the components, ensuring that the frontend displays the appropriate information in a user-friendly manner.
+3. `View`, this layer is responsible for [defining the user interface](https://github.com/gatherloop/gatherloop-pos/blob/3a42e3c6956871b779d1b0b085df746f402d1684/libs/ui/src/presentation/views/transactions/widgets/TransactionList/TransactionList.view.tsx), in React, it will contains JSX of the components
