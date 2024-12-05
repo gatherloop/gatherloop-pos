@@ -66,7 +66,7 @@ export const TransactionPrintView = ({
         Jangan lupa follow instagram kami untuk <b>melihat event terbaru</b> di
         @gatherloop
       </Paragraph>
-      <Paragraph textAlign="center" marginBottom="$5">
+      <Paragraph textAlign="center" marginBottom="$2">
         Terimakasih Kak {name}
       </Paragraph>
 
