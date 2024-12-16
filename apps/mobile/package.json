@@ -16,6 +16,7 @@
     "react-native-safe-area-context": "*",
     "react-native-screens": "*",
     "solito": "*",
-    "react-native-reanimated": "*"
+    "react-native-reanimated": "*",
+    "@react-native/gradle-plugin": "*"
   }
 }
