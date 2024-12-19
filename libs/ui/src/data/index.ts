@@ -1,2 +1,2 @@
 export * from './mock';
-export * from './openApi';
+export * from './api';
