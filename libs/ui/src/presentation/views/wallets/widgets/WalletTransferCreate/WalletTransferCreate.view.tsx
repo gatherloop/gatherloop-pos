@@ -1,33 +1,38 @@
-import { FormikContextType, FormikProvider } from 'formik';
-import { Field, Form, InputNumber, Select, SubmitButton } from '../../../base';
+import { Field, InputNumber, Select } from '../../../base';
 import { WalletTransferForm } from '../../../../../domain';
+import { FormProvider, UseFormReturn } from 'react-hook-form';
+import { Button, Form } from 'tamagui';
 
 export type WalletTransferCreateViewProps = {
-  formik: FormikContextType<WalletTransferForm>;
-  walletSelectOptions: { label: string; value: string }[];
+  form: UseFormReturn<WalletTransferForm>;
+  onSubmit: (values: WalletTransferForm) => void;
+  walletSelectOptions: { label: string; value: number }[];
   isSubmitDisabled: boolean;
 };
 
 export const WalletTransferCreateView = ({
-  formik,
+  form,
+  onSubmit,
   walletSelectOptions,
   isSubmitDisabled,
 }: WalletTransferCreateViewProps) => {
   return (
-    <FormikProvider value={formik}>
-      <Form>
+    <FormProvider {...form}>
+      <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
         <Field name="toWalletId" label="Transfer To">
-          <Select
-            items={walletSelectOptions}
-            parseInputToFieldValue={parseInt}
-            parseFieldToInputValue={String}
-          />
+          <Select items={walletSelectOptions} />
         </Field>
         <Field name="amount" label="Amount">
           <InputNumber />
         </Field>
-        <SubmitButton disabled={isSubmitDisabled}>Submit</SubmitButton>
+        <Button
+          disabled={isSubmitDisabled}
+          onPress={form.handleSubmit(onSubmit)}
+          theme="blue"
+        >
+          Submit
+        </Button>
       </Form>
-    </FormikProvider>
+    </FormProvider>
   );
 };

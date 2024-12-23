@@ -937,10 +937,10 @@ paths:
       operationId: transactionStatistics
       tags:
         - transactions
-      parameters: 
+      parameters:
         - name: groupBy
           in: query
-          schema: 
+          schema:
             type: string
       responses:
         '200':

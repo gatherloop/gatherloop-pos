@@ -1,4 +1,3 @@
-import { useFormik } from 'formik';
 import { CategoryForm } from '../../../../../domain';
 import {
   CategoryUpdateView,
@@ -9,7 +8,8 @@ import { useToastController } from '@tamagui/toast';
 import { match, P } from 'ts-pattern';
 import { useCategoryUpdateController } from '../../../../controllers';
 import { z } from 'zod';
-import { toFormikValidationSchema } from 'zod-formik-adapter';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
 
 export const CategoryUpdate = () => {
   const controller = useCategoryUpdateController();
@@ -23,12 +23,14 @@ export const CategoryUpdate = () => {
       toast.show('Update Category Error');
   }, [toast, controller.state.type]);
 
-  const formik = useFormik<CategoryForm>({
-    enableReinitialize: true,
-    initialValues: controller.state.values,
-    validationSchema: toFormikValidationSchema(z.object({ name: z.string() })),
-    onSubmit: (values) => controller.dispatch({ type: 'SUBMIT', values }),
+  const form = useForm({
+    defaultValues: controller.state.values,
+    resolver: zodResolver(z.object({ name: z.string().min(1) })),
   });
+
+  const onSubmit = (values: CategoryForm) => {
+    controller.dispatch({ type: 'SUBMIT', values });
+  };
 
   const isSubmitDisabled =
     controller.state.type === 'submitting' ||
@@ -39,7 +41,8 @@ export const CategoryUpdate = () => {
   return (
     <CategoryUpdateView
       isSubmitDisabled={isSubmitDisabled}
-      formik={formik}
+      form={form}
+      onSubmit={onSubmit}
       onRetryButtonPress={onRetryButtonPress}
       variant={match(controller.state)
         .returnType<CategoryUpdateViewProps['variant']>()

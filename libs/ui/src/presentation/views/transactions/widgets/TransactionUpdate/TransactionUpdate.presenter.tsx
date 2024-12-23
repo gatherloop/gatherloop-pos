@@ -1,15 +1,11 @@
-import { useFormik } from 'formik';
-import { toFormikValidationSchema } from 'zod-formik-adapter';
 import { useEffect, useState } from 'react';
-import {
-  TransactionUpdateView,
-  TransactionUpdateViewProps,
-} from './TransactionUpdate.view';
+import { TransactionUpdateView } from './TransactionUpdate.view';
 import { useTransactionUpdateController } from '../../../../controllers';
 import { Product, TransactionForm } from '../../../../../domain';
-import { match, P } from 'ts-pattern';
 import { z } from 'zod';
 import { useToastController } from '@tamagui/toast';
+import { useFieldArray, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 export const TransactionUpdate = () => {
   const [isProductSheetOpen, setIsProductSheetOpen] = useState<boolean>(false);
@@ -24,73 +20,54 @@ export const TransactionUpdate = () => {
       toast.show('Update Transaction Error');
   }, [toast, state.type]);
 
-  const formik = useFormik<TransactionForm>({
-    initialValues: state.values,
-    enableReinitialize: true,
-    onSubmit: (values) => dispatch({ type: 'SUBMIT', values }),
-    validationSchema: toFormikValidationSchema(
+  const form = useForm({
+    defaultValues: state.values,
+    resolver: zodResolver(
       z.object({
-        name: z.string(),
-        transactionItems: z.array(
-          z.lazy(() => z.object({ amount: z.number() }))
-        ),
-      })
+        name: z.string().min(1),
+        transactionItems: z
+          .array(z.lazy(() => z.object({ amount: z.number().min(1) })))
+          .min(1),
+      }),
+      {},
+      { raw: true }
     ),
   });
 
-  const total = formik.values.transactionItems.reduce(
-    (prev, curr) => prev + curr.amount * curr.product.price,
-    0
-  );
+  const onSubmit = (values: TransactionForm) =>
+    dispatch({ type: 'SUBMIT', values });
+
+  const { append, update, fields } = useFieldArray({
+    control: form.control,
+    name: 'transactionItems',
+  });
 
   const onAddItem = (newProduct: Product) => {
-    const itemIndex = formik.values.transactionItems?.findIndex(
-      ({ product }) => product.id === newProduct.id
+    const itemIndex = fields.findIndex(
+      ({ product }) => newProduct.id === product.id
     );
     const isItemExist = itemIndex !== -1;
-    const newTransactionItems = isItemExist
-      ? formik.values.transactionItems.map((transactionItem, index) =>
-          index === itemIndex
-            ? {
-                ...transactionItem,
-                amount: transactionItem.amount + 1,
-              }
-            : transactionItem
-        )
-      : [
-          ...formik.values.transactionItems,
-          { productId: newProduct.id, amount: 1, product: newProduct },
-        ];
+    if (isItemExist) {
+      update(itemIndex, {
+        ...fields[itemIndex],
+        amount: fields[itemIndex].amount + 1,
+      });
+    } else {
+      append({ amount: 1, product: newProduct });
+    }
 
-    formik.setFieldValue('transactionItems', newTransactionItems);
     setIsProductSheetOpen(false);
   };
 
-  const onRetryButtonPress = () => dispatch({ type: 'FETCH' });
-
   const isSubmitDisabled = state.type === 'submitting';
-
-  const variant = match(state)
-    .returnType<TransactionUpdateViewProps['variant']>()
-    .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))
-    .with(
-      { type: P.union('loaded', 'submitting', 'submitError', 'submitSuccess') },
-      () => ({
-        type: 'loaded',
-      })
-    )
-    .with({ type: 'error' }, () => ({ type: 'error' }))
-    .exhaustive();
 
   return (
     <TransactionUpdateView
-      formik={formik}
       isProductSheetOpen={isProductSheetOpen}
-      isSubmitDisabled={isSubmitDisabled}
-      total={total}
       onProductSheetOpenChange={setIsProductSheetOpen}
-      onRetryButtonPress={onRetryButtonPress}
-      variant={variant}
+      form={form}
+      onSubmit={onSubmit}
+      isSubmitDisabled={isSubmitDisabled}
       onAddItem={onAddItem}
     />
   );

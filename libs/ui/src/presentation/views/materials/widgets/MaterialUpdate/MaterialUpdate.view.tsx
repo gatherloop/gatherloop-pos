@@ -1,31 +1,22 @@
-import { FormikContextType, FormikProvider } from 'formik';
-import {
-  Field,
-  Form,
-  InputText,
-  InputNumber,
-  SubmitButton,
-  LoadingView,
-  ErrorView,
-} from '../../../base';
+import { Field, InputText, InputNumber } from '../../../base';
 import { MaterialForm } from '../../../../../domain';
+import { FormProvider, UseFormReturn } from 'react-hook-form';
+import { Button, Form } from 'tamagui';
 
 export type MaterialUpdateViewProps = {
-  variant: { type: 'loaded' } | { type: 'loading' } | { type: 'error' };
-  onRetryButtonPress: () => void;
-  formik: FormikContextType<MaterialForm>;
+  form: UseFormReturn<MaterialForm>;
+  onSubmit: (values: MaterialForm) => void;
   isSubmitDisabled: boolean;
 };
 
 export const MaterialUpdateView = ({
-  variant,
-  onRetryButtonPress,
-  formik,
+  form,
+  onSubmit,
   isSubmitDisabled,
 }: MaterialUpdateViewProps) => {
-  return variant.type === 'loaded' ? (
-    <FormikProvider value={formik}>
-      <Form>
+  return (
+    <FormProvider {...form}>
+      <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
         <Field name="name" label="Name">
           <InputText />
         </Field>
@@ -35,16 +26,14 @@ export const MaterialUpdateView = ({
         <Field name="unit" label="Unit">
           <InputText />
         </Field>
-        <SubmitButton disabled={isSubmitDisabled}>Submit</SubmitButton>
+        <Button
+          disabled={isSubmitDisabled}
+          onPress={form.handleSubmit(onSubmit)}
+          theme="blue"
+        >
+          Submit
+        </Button>
       </Form>
-    </FormikProvider>
-  ) : variant.type === 'loading' ? (
-    <LoadingView title="Fetching Material..." />
-  ) : variant.type === 'error' ? (
-    <ErrorView
-      title="Failed to Fetch Material"
-      subtitle="Please click the retry button to refetch data"
-      onRetryButtonPress={onRetryButtonPress}
-    />
-  ) : null;
+    </FormProvider>
+  );
 };

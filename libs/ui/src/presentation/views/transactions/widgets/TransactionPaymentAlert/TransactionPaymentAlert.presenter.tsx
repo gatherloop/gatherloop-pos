@@ -1,10 +1,10 @@
-import { useFormik } from 'formik';
-import { toFormikValidationSchema } from 'zod-formik-adapter';
 import { TransactionPaymentAlertView } from './TransactionPaymentAlert.view';
 import { useTransactionPayController } from '../../../../controllers';
 import { z } from 'zod';
 import { useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 export const TransactionPaymentAlert = () => {
   const { state, dispatch } = useTransactionPayController();
@@ -18,13 +18,13 @@ export const TransactionPaymentAlert = () => {
     }
   }, [state.type, toast]);
 
-  const formik = useFormik<{ walletId: number }>({
-    initialValues: { walletId: NaN },
-    onSubmit: ({ walletId }) => dispatch({ type: 'PAY', walletId }),
-    validationSchema: toFormikValidationSchema(
-      z.object({ walletId: z.number() })
-    ),
+  const form = useForm<{ walletId: number }>({
+    defaultValues: { walletId: NaN },
+    resolver: zodResolver(z.object({ walletId: z.number().min(1) })),
   });
+
+  const onSubmit = (values: { walletId: number }) =>
+    dispatch({ type: 'PAY', walletId: values.walletId });
 
   const isButtonDisabled =
     state.type === 'paying' ||
@@ -46,7 +46,8 @@ export const TransactionPaymentAlert = () => {
 
   return (
     <TransactionPaymentAlertView
-      formik={formik}
+      form={form}
+      onSubmit={onSubmit}
       isButtonDisabled={isButtonDisabled}
       isOpen={isOpen}
       onCancel={onCancel}

@@ -1,11 +1,11 @@
-import { useFormik } from 'formik';
-import { toFormikValidationSchema } from 'zod-formik-adapter';
 import { useEffect, useState } from 'react';
 import { TransactionCreateView } from './TransactionCreate.view';
 import { useTransactionCreateController } from '../../../../controllers';
 import { Product, TransactionForm } from '../../../../../domain';
 import { z } from 'zod';
 import { useToastController } from '@tamagui/toast';
+import { useFieldArray, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 export const TransactionCreate = () => {
   const [isProductSheetOpen, setIsProductSheetOpen] = useState<boolean>(false);
@@ -20,45 +20,42 @@ export const TransactionCreate = () => {
       toast.show('Create Transaction Error');
   }, [toast, state.type]);
 
-  const formik = useFormik<TransactionForm>({
-    initialValues: state.values,
-    enableReinitialize: true,
-    onSubmit: (values) => dispatch({ type: 'SUBMIT', values }),
-    validationSchema: toFormikValidationSchema(
+  const form = useForm({
+    defaultValues: state.values,
+    resolver: zodResolver(
       z.object({
-        name: z.string(),
-        transactionItems: z.array(
-          z.lazy(() => z.object({ amount: z.number() }))
-        ),
-      })
+        name: z.string().min(1),
+        transactionItems: z
+          .array(z.lazy(() => z.object({ amount: z.number().min(1) })))
+          .min(1),
+      }),
+      {},
+      { raw: true }
     ),
   });
 
-  const total = formik.values.transactionItems.reduce(
-    (prev, curr) => prev + curr.amount * curr.product.price,
-    0
-  );
+  const onSubmit = (values: TransactionForm) =>
+    dispatch({ type: 'SUBMIT', values });
+
+  const { append, update, fields } = useFieldArray({
+    control: form.control,
+    name: 'transactionItems',
+  });
 
   const onAddItem = (newProduct: Product) => {
-    const itemIndex = formik.values.transactionItems?.findIndex(
+    const itemIndex = fields.findIndex(
       ({ product }) => newProduct.id === product.id
     );
     const isItemExist = itemIndex !== -1;
-    const newTransactionItems = isItemExist
-      ? formik.values.transactionItems.map((transactionItem, index) =>
-          index === itemIndex
-            ? {
-                ...transactionItem,
-                amount: transactionItem.amount + 1,
-              }
-            : transactionItem
-        )
-      : [
-          ...formik.values.transactionItems,
-          { productId: newProduct.id, amount: 1, product: newProduct },
-        ];
+    if (isItemExist) {
+      update(itemIndex, {
+        ...fields[itemIndex],
+        amount: fields[itemIndex].amount + 1,
+      });
+    } else {
+      append({ amount: 1, product: newProduct });
+    }
 
-    formik.setFieldValue('transactionItems', newTransactionItems);
     setIsProductSheetOpen(false);
   };
 
@@ -68,9 +65,9 @@ export const TransactionCreate = () => {
     <TransactionCreateView
       isProductSheetOpen={isProductSheetOpen}
       onProductSheetOpenChange={setIsProductSheetOpen}
-      formik={formik}
+      form={form}
+      onSubmit={onSubmit}
       isSubmitDisabled={isSubmitDisabled}
-      total={total}
       onAddItem={onAddItem}
     />
   );

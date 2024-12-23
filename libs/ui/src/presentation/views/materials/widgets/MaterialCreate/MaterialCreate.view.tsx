@@ -1,25 +1,22 @@
-import { FormikContextType, FormikProvider } from 'formik';
-import {
-  Field,
-  Form,
-  InputText,
-  InputNumber,
-  SubmitButton,
-} from '../../../base';
+import { Field, InputText, InputNumber } from '../../../base';
 import { MaterialForm } from '../../../../../domain';
+import { FormProvider, UseFormReturn } from 'react-hook-form';
+import { Button, Form } from 'tamagui';
 
 export type MaterialCreateViewProps = {
-  formik: FormikContextType<MaterialForm>;
+  form: UseFormReturn<MaterialForm>;
+  onSubmit: (values: MaterialForm) => void;
   isSubmitDisabled: boolean;
 };
 
 export const MaterialCreateView = ({
-  formik,
+  form,
+  onSubmit,
   isSubmitDisabled,
 }: MaterialCreateViewProps) => {
   return (
-    <FormikProvider value={formik}>
-      <Form>
+    <FormProvider {...form}>
+      <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
         <Field name="name" label="Name">
           <InputText />
         </Field>
@@ -29,8 +26,14 @@ export const MaterialCreateView = ({
         <Field name="unit" label="Unit">
           <InputText />
         </Field>
-        <SubmitButton disabled={isSubmitDisabled}>Submit</SubmitButton>
+        <Button
+          disabled={isSubmitDisabled}
+          onPress={form.handleSubmit(onSubmit)}
+          theme="blue"
+        >
+          Submit
+        </Button>
       </Form>
-    </FormikProvider>
+    </FormProvider>
   );
 };

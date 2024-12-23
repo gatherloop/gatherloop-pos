@@ -1,15 +1,11 @@
-import { useFormik } from 'formik';
 import { MaterialForm } from '../../../../../domain';
-import {
-  MaterialUpdateView,
-  MaterialUpdateViewProps,
-} from './MaterialUpdate.view';
+import { MaterialUpdateView } from './MaterialUpdate.view';
 import { useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';
-import { match, P } from 'ts-pattern';
 import { useMaterialUpdateController } from '../../../../controllers';
 import { z } from 'zod';
-import { toFormikValidationSchema } from 'zod-formik-adapter';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 export const MaterialUpdate = () => {
   const controller = useMaterialUpdateController();
@@ -22,50 +18,31 @@ export const MaterialUpdate = () => {
       toast.show('Update Material Error');
   }, [toast, controller.state.type]);
 
-  const formik = useFormik<MaterialForm>({
-    enableReinitialize: true,
-    initialValues: controller.state.values,
-    validationSchema: toFormikValidationSchema(
+  const form = useForm({
+    defaultValues: controller.state.values,
+    resolver: zodResolver(
       z.object({
-        name: z.string(),
-        price: z.number(),
-        unit: z.string(),
+        name: z.string().min(1),
+        price: z.number().min(1),
+        unit: z.string().min(1),
       })
     ),
-    onSubmit: (values) => controller.dispatch({ type: 'SUBMIT', values }),
   });
+
+  const onSubmit = (values: MaterialForm) => {
+    controller.dispatch({ type: 'SUBMIT', values });
+  };
 
   const isSubmitDisabled =
     controller.state.type === 'submitting' ||
+    controller.state.type === 'submitError' ||
     controller.state.type === 'submitSuccess';
-
-  const onRetryButtonPress = () => controller.dispatch({ type: 'FETCH' });
 
   return (
     <MaterialUpdateView
       isSubmitDisabled={isSubmitDisabled}
-      formik={formik}
-      onRetryButtonPress={onRetryButtonPress}
-      variant={match(controller.state)
-        .returnType<MaterialUpdateViewProps['variant']>()
-        .with({ type: P.union('idle', 'loading') }, () => ({
-          type: 'loading',
-        }))
-        .with(
-          {
-            type: P.union(
-              'loaded',
-              'submitSuccess',
-              'submitError',
-              'submitting'
-            ),
-          },
-          () => ({
-            type: 'loaded',
-          })
-        )
-        .with({ type: 'error' }, () => ({ type: 'error' }))
-        .exhaustive()}
+      form={form}
+      onSubmit={onSubmit}
     />
   );
 };

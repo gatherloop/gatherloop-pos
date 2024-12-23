@@ -1,4 +1,3 @@
-import { useFormik } from 'formik';
 import { Material, ProductForm } from '../../../../../domain';
 import {
   ProductCreateView,
@@ -8,8 +7,9 @@ import { useEffect, useState } from 'react';
 import { useToastController } from '@tamagui/toast';
 import { match, P } from 'ts-pattern';
 import { useProductCreateController } from '../../../../controllers';
+import { useFieldArray, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { toFormikValidationSchema } from 'zod-formik-adapter';
 
 export const ProductCreate = () => {
   const controller = useProductCreateController();
@@ -23,9 +23,9 @@ export const ProductCreate = () => {
       toast.show('Create Product Error');
   }, [toast, controller.state.type]);
 
-  const formik = useFormik<ProductForm>({
-    initialValues: controller.state.values,
-    validationSchema: toFormikValidationSchema(
+  const form = useForm({
+    defaultValues: controller.state.values,
+    resolver: zodResolver(
       z.object({
         categoryId: z.number(),
         name: z.string(),
@@ -35,40 +35,42 @@ export const ProductCreate = () => {
         ),
       })
     ),
-    onSubmit: (values) => controller.dispatch({ type: 'SUBMIT', values }),
+  });
+
+  const onSubmit = (values: ProductForm) => {
+    controller.dispatch({ type: 'SUBMIT', values });
+  };
+
+  const { fields, append, update, remove } = useFieldArray({
+    control: form.control,
+    name: 'materials',
   });
 
   const onAddMaterial = (newMaterial: Material) => {
-    const itemIndex = formik.values.materials.findIndex(
+    const itemIndex = fields.findIndex(
       ({ material }) => material.id === newMaterial.id
     );
-
     const isItemExist = itemIndex !== -1;
-    const newMaterials = isItemExist
-      ? formik.values.materials.map((productMaterial, index) =>
-          index === itemIndex
-            ? {
-                ...productMaterial,
-                amount: productMaterial.amount + 1,
-              }
-            : productMaterial
-        )
-      : [
-          ...formik.values.materials,
-          { materialId: newMaterial.id, amount: 1, material: newMaterial },
-        ];
 
-    formik.setFieldValue('materials', newMaterials);
+    if (isItemExist) {
+      update(itemIndex, {
+        ...fields[itemIndex],
+        amount: fields[itemIndex].amount + 1,
+      });
+    } else {
+      append({ materialId: newMaterial.id, amount: 1, material: newMaterial });
+    }
+
     setIsMaterialSheetOpen(false);
   };
 
-  const totalFoodCost = formik.values.materials.reduce(
-    (prev, curr) => prev + curr.material.price * curr.amount,
-    0
-  );
-
-  const foodCostPercentage =
-    formik.values.price > 0 ? (totalFoodCost / formik.values.price) * 100 : 0;
+  const onRemoveMaterial = (newMaterial: Material) => {
+    const itemIndex = fields.findIndex(
+      ({ material }) => material.id === newMaterial.id
+    );
+    const isItemExist = itemIndex !== -1;
+    if (isItemExist) remove(itemIndex);
+  };
 
   const isSubmitDisabled =
     controller.state.type === 'submitting' ||
@@ -80,15 +82,15 @@ export const ProductCreate = () => {
     <ProductCreateView
       categorySelectOptions={controller.state.categories.map((category) => ({
         label: category.name,
-        value: category.id.toString(),
+        value: category.id,
       }))}
-      totalFoodCost={totalFoodCost}
-      foodCostPercentage={foodCostPercentage}
       isSubmitDisabled={isSubmitDisabled}
-      formik={formik}
+      form={form}
+      onSubmit={onSubmit}
       isMaterialSheetOpen={isMaterialSheetOpen}
       onMaterialSheetOpenChange={setIsMaterialSheetOpen}
       onAddMaterial={onAddMaterial}
+      onRemoveMaterial={onRemoveMaterial}
       onRetryButtonPress={onRetryButtonPress}
       variant={match(controller.state)
         .returnType<ProductCreateViewProps['variant']>()

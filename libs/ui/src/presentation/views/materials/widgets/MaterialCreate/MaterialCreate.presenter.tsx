@@ -1,11 +1,11 @@
-import { useFormik } from 'formik';
 import { MaterialForm } from '../../../../../domain';
 import { MaterialCreateView } from './MaterialCreate.view';
 import { useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';
 import { useMaterialCreateController } from '../../../../controllers';
 import { z } from 'zod';
-import { toFormikValidationSchema } from 'zod-formik-adapter';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 export const MaterialCreate = () => {
   const controller = useMaterialCreateController();
@@ -18,17 +18,20 @@ export const MaterialCreate = () => {
       toast.show('Create Material Error');
   }, [toast, controller.state.type]);
 
-  const formik = useFormik<MaterialForm>({
-    initialValues: controller.state.values,
-    validationSchema: toFormikValidationSchema(
+  const form = useForm({
+    defaultValues: controller.state.values,
+    resolver: zodResolver(
       z.object({
-        name: z.string(),
-        price: z.number(),
-        unit: z.string(),
+        name: z.string().min(1),
+        price: z.number().min(1),
+        unit: z.string().min(1),
       })
     ),
-    onSubmit: (values) => controller.dispatch({ type: 'SUBMIT', values }),
   });
+
+  const onSubmit = (values: MaterialForm) => {
+    controller.dispatch({ type: 'SUBMIT', values });
+  };
 
   const isSubmitDisabled =
     controller.state.type === 'submitting' ||
@@ -36,6 +39,10 @@ export const MaterialCreate = () => {
     controller.state.type === 'submitSuccess';
 
   return (
-    <MaterialCreateView isSubmitDisabled={isSubmitDisabled} formik={formik} />
+    <MaterialCreateView
+      isSubmitDisabled={isSubmitDisabled}
+      form={form}
+      onSubmit={onSubmit}
+    />
   );
 };

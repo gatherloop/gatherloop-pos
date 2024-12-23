@@ -1,4 +1,3 @@
-import { useFormik } from 'formik';
 import { WalletForm } from '../../../../../domain';
 import { WalletUpdateView, WalletUpdateViewProps } from './WalletUpdate.view';
 import { useEffect } from 'react';
@@ -6,7 +5,8 @@ import { useToastController } from '@tamagui/toast';
 import { match, P } from 'ts-pattern';
 import { useWalletUpdateController } from '../../../../controllers';
 import { z } from 'zod';
-import { toFormikValidationSchema } from 'zod-formik-adapter';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 export const WalletUpdate = () => {
   const controller = useWalletUpdateController();
@@ -19,18 +19,19 @@ export const WalletUpdate = () => {
       toast.show('Update Wallet Error');
   }, [toast, controller.state.type]);
 
-  const formik = useFormik<WalletForm>({
-    enableReinitialize: true,
-    initialValues: controller.state.values,
-    validationSchema: toFormikValidationSchema(
+  const form = useForm({
+    defaultValues: controller.state.values,
+    resolver: zodResolver(
       z.object({
-        name: z.string(),
+        name: z.string().min(1),
         balance: z.number(),
         paymentCostPercentage: z.number(),
       })
     ),
-    onSubmit: (values) => controller.dispatch({ type: 'SUBMIT', values }),
   });
+
+  const onSubmit = (values: WalletForm) =>
+    controller.dispatch({ type: 'SUBMIT', values });
 
   const isSubmitDisabled =
     controller.state.type === 'submitting' ||
@@ -41,7 +42,8 @@ export const WalletUpdate = () => {
   return (
     <WalletUpdateView
       isSubmitDisabled={isSubmitDisabled}
-      formik={formik}
+      form={form}
+      onSubmit={onSubmit}
       onRetryButtonPress={onRetryButtonPress}
       variant={match(controller.state)
         .returnType<WalletUpdateViewProps['variant']>()

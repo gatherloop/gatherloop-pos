@@ -67,9 +67,9 @@ export class OpenAPIProductRepository implements ProductRepository {
       name: formValues.name,
       categoryId: formValues.categoryId,
       price: formValues.price,
-      materials: formValues.materials.map(({ material, amount }) => ({
+      materials: formValues.materials.map(({ materialId, amount }) => ({
         amount,
-        materialId: material.id,
+        materialId: materialId,
       })),
     }).then();
   };
@@ -82,9 +82,9 @@ export class OpenAPIProductRepository implements ProductRepository {
       name: formValues.name,
       categoryId: formValues.categoryId,
       price: formValues.price,
-      materials: formValues.materials.map(({ material, amount }) => ({
+      materials: formValues.materials.map(({ materialId, amount }) => ({
         amount,
-        materialId: material.id,
+        materialId: materialId,
       })),
     }).then();
   };

@@ -1,17 +1,19 @@
 import { AlertDialog, Button, XStack, YStack } from 'tamagui';
-import { FormikContextType, FormikProvider } from 'formik';
-import { Field, Select, SubmitButton } from '../../../base';
+import { Field, Select } from '../../../base';
+import { FormProvider, UseFormReturn } from 'react-hook-form';
 
 export type TransactionPaymentAlertViewProps = {
   isOpen: boolean;
   onCancel: () => void;
-  formik: FormikContextType<{ walletId: number }>;
+  form: UseFormReturn<{ walletId: number }>;
+  onSubmit: (walletId: { walletId: number }) => void;
   walletSelectOptions: { label: string; value: number }[];
   isButtonDisabled: boolean;
 };
 
 export const TransactionPaymentAlertView = ({
-  formik,
+  form,
+  onSubmit,
   isOpen,
   onCancel,
   walletSelectOptions,
@@ -46,7 +48,7 @@ export const TransactionPaymentAlertView = ({
           opacity={1}
           y={0}
         >
-          <FormikProvider value={formik}>
+          <FormProvider {...form}>
             <YStack gap="$3">
               <AlertDialog.Title>Pay Transaction</AlertDialog.Title>
               <AlertDialog.Description>
@@ -54,23 +56,23 @@ export const TransactionPaymentAlertView = ({
               </AlertDialog.Description>
 
               <Field name="walletId" label="Wallet Name">
-                <Select
-                  items={walletSelectOptions}
-                  parseFieldToInputValue={JSON.stringify}
-                  parseInputToFieldValue={JSON.parse}
-                />
+                <Select items={walletSelectOptions} />
               </Field>
 
               <XStack gap="$3" justifyContent="flex-end">
                 <AlertDialog.Cancel asChild>
                   <Button disabled={isButtonDisabled}>No</Button>
                 </AlertDialog.Cancel>
-                <SubmitButton theme="active" disabled={isButtonDisabled}>
-                  Yes
-                </SubmitButton>
+                <Button
+                  disabled={isButtonDisabled}
+                  onPress={form.handleSubmit(onSubmit)}
+                  theme="active"
+                >
+                  Submit
+                </Button>
               </XStack>
             </YStack>
-          </FormikProvider>
+          </FormProvider>
         </AlertDialog.Content>
       </AlertDialog.Portal>
     </AlertDialog>

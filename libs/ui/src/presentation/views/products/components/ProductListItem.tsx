@@ -1,5 +1,5 @@
 import { Pencil, Tag, Trash } from '@tamagui/lucide-icons';
-import { ListItem } from '../../../base';
+import { ListItem } from '../../base';
 import { XStackProps } from 'tamagui';
 
 export type ProductListItemProps = {

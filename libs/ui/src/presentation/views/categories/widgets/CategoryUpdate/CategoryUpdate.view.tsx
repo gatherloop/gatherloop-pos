@@ -1,36 +1,38 @@
-import { FormikContextType, FormikProvider } from 'formik';
-import {
-  Field,
-  Form,
-  InputText,
-  SubmitButton,
-  LoadingView,
-  ErrorView,
-} from '../../../base';
+import { Field, InputText, LoadingView, ErrorView } from '../../../base';
 import { CategoryForm } from '../../../../../domain';
+import { FormProvider, UseFormReturn } from 'react-hook-form';
+import { Button, Form } from 'tamagui';
 
 export type CategoryUpdateViewProps = {
   variant: { type: 'loaded' } | { type: 'loading' } | { type: 'error' };
   onRetryButtonPress: () => void;
-  formik: FormikContextType<CategoryForm>;
+  form: UseFormReturn<CategoryForm>;
+  onSubmit: (values: CategoryForm) => void;
   isSubmitDisabled: boolean;
 };
 
 export const CategoryUpdateView = ({
   variant,
   onRetryButtonPress,
-  formik,
+  form,
+  onSubmit,
   isSubmitDisabled,
 }: CategoryUpdateViewProps) => {
   return variant.type === 'loaded' ? (
-    <FormikProvider value={formik}>
-      <Form>
+    <FormProvider {...form}>
+      <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
         <Field name="name" label="Name">
           <InputText />
         </Field>
-        <SubmitButton disabled={isSubmitDisabled}>Submit</SubmitButton>
+        <Button
+          disabled={isSubmitDisabled}
+          onPress={form.handleSubmit(onSubmit)}
+          theme="blue"
+        >
+          Submit
+        </Button>
       </Form>
-    </FormikProvider>
+    </FormProvider>
   ) : variant.type === 'loading' ? (
     <LoadingView title="Fetching Category..." />
   ) : variant.type === 'error' ? (

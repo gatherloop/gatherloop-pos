@@ -1,11 +1,11 @@
-import { useFormik } from 'formik';
 import { WalletForm } from '../../../../../domain';
 import { WalletCreateView } from './WalletCreate.view';
 import { useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';
 import { useWalletCreateController } from '../../../../controllers';
 import { z } from 'zod';
-import { toFormikValidationSchema } from 'zod-formik-adapter';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 export const WalletCreate = () => {
   const controller = useWalletCreateController();
@@ -18,23 +18,29 @@ export const WalletCreate = () => {
       toast.show('Create Wallet Error');
   }, [toast, controller.state.type]);
 
-  const formik = useFormik<WalletForm>({
-    initialValues: controller.state.values,
-    validationSchema: toFormikValidationSchema(
+  const form = useForm({
+    defaultValues: controller.state.values,
+    resolver: zodResolver(
       z.object({
-        name: z.string(),
+        name: z.string().min(1),
         balance: z.number(),
         paymentCostPercentage: z.number(),
       })
     ),
-    onSubmit: (values) => controller.dispatch({ type: 'SUBMIT', values }),
   });
+
+  const onSubmit = (values: WalletForm) =>
+    controller.dispatch({ type: 'SUBMIT', values });
 
   const isSubmitDisabled =
     controller.state.type === 'submitting' ||
     controller.state.type === 'submitSuccess';
 
   return (
-    <WalletCreateView isSubmitDisabled={isSubmitDisabled} formik={formik} />
+    <WalletCreateView
+      isSubmitDisabled={isSubmitDisabled}
+      form={form}
+      onSubmit={onSubmit}
+    />
   );
 };

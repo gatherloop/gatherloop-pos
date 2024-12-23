@@ -1,51 +1,45 @@
-import { FieldArray, FormikContextType, FormikProvider } from 'formik';
 import {
-  ErrorView,
   Field,
-  Form,
+  FieldArray,
+  FieldWatch,
   InputNumber,
   InputText,
-  LoadingView,
   Sheet,
-  SubmitButton,
 } from '../../../base';
-import { Button, H3, H5, Paragraph, XStack, YStack } from 'tamagui';
+import { Button, Form, H3, H5, Paragraph, XStack, YStack } from 'tamagui';
 import { H4 } from 'tamagui';
 import { Plus, Trash } from '@tamagui/lucide-icons';
 import { ProductList, ProductListItem } from '../../../products';
 import { Product, TransactionForm } from '../../../../../domain';
+import { FormProvider, UseFormReturn } from 'react-hook-form';
 
 export type TransactionUpdateViewProps = {
-  variant: { type: 'loading' } | { type: 'loaded' } | { type: 'error' };
-  formik: FormikContextType<TransactionForm>;
+  form: UseFormReturn<TransactionForm>;
+  onSubmit: (form: TransactionForm) => void;
   isProductSheetOpen: boolean;
   onProductSheetOpenChange: (isOpen: boolean) => void;
-  onRetryButtonPress: () => void;
-  isSubmitDisabled: boolean;
-  total: number;
   onAddItem: (product: Product) => void;
+  isSubmitDisabled: boolean;
 };
 
 export const TransactionUpdateView = ({
-  variant,
-  formik,
+  form,
+  onSubmit,
   isProductSheetOpen,
-  isSubmitDisabled,
   onProductSheetOpenChange,
-  onRetryButtonPress,
   onAddItem,
-  total,
+  isSubmitDisabled,
 }: TransactionUpdateViewProps) => {
-  return variant.type === 'loaded' ? (
+  return (
     <YStack>
-      <FormikProvider value={formik}>
-        <Form>
+      <FormProvider {...form}>
+        <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
           <Field name="name" label="Customer Name">
             <InputText />
           </Field>
           <YStack>
-            <FieldArray name="transactionItems">
-              {(fieldArray) => (
+            <FieldArray control={form.control} name="transactionItems">
+              {({ remove }) => (
                 <YStack gap="$3">
                   <Sheet
                     isOpen={isProductSheetOpen}
@@ -73,8 +67,9 @@ export const TransactionUpdateView = ({
                     />
                   </XStack>
                   <YStack gap="$3">
-                    {formik.values.transactionItems?.map(
-                      ({ product, amount }, index) => {
+                    {form
+                      .getValues('transactionItems')
+                      .map(({ product }, index) => {
                         return (
                           <XStack
                             key={product.id}
@@ -98,58 +93,71 @@ export const TransactionUpdateView = ({
                                 <Paragraph textAlign="right">
                                   Subtotal
                                 </Paragraph>
-                                <H4 textTransform="none" textAlign="right">
-                                  Rp.{' '}
-                                  {(product.price * amount).toLocaleString(
-                                    'id'
+                                <FieldWatch
+                                  control={form.control}
+                                  name={[`transactionItems.${index}`]}
+                                >
+                                  {([{ product, amount }]) => (
+                                    <H4 textTransform="none" textAlign="right">
+                                      Rp.{' '}
+                                      {(product.price * amount).toLocaleString(
+                                        'id'
+                                      )}
+                                    </H4>
                                   )}
-                                </H4>
+                                </FieldWatch>
                               </YStack>
                               <XStack gap="$3" alignItems="center">
                                 <Button
                                   icon={Trash}
                                   size="$2"
-                                  onPress={() => fieldArray.remove(index)}
+                                  onPress={() => remove(index)}
                                   theme="red"
                                   color="$red8"
                                   circular
                                 />
                                 <InputNumber
-                                  name={`transactionItems[${index}].amount`}
+                                  name={`transactionItems.${index}.amount`}
                                   min={1}
-                                  max={10}
                                   maxWidth={50}
                                 />
                               </XStack>
                             </YStack>
                           </XStack>
                         );
-                      }
-                    )}
+                      })}
                   </YStack>
                 </YStack>
               )}
             </FieldArray>
           </YStack>
           <XStack justifyContent="space-between">
-            <SubmitButton disabled={isSubmitDisabled} theme="blue">
+            <Button
+              disabled={isSubmitDisabled}
+              onPress={form.handleSubmit(onSubmit)}
+              theme="blue"
+            >
               Submit
-            </SubmitButton>
+            </Button>
             <YStack alignItems="flex-end">
               <H5 textTransform="none">Total</H5>
-              <H3>Rp. {total.toLocaleString('id')}</H3>
+              <FieldWatch control={form.control} name={['transactionItems']}>
+                {([transactionItems]) => (
+                  <H3>
+                    Rp.{' '}
+                    {transactionItems
+                      .reduce(
+                        (prev, curr) => prev + curr.amount * curr.product.price,
+                        0
+                      )
+                      .toLocaleString('id')}
+                  </H3>
+                )}
+              </FieldWatch>
             </YStack>
           </XStack>
         </Form>
-      </FormikProvider>
+      </FormProvider>
     </YStack>
-  ) : variant.type === 'loading' ? (
-    <LoadingView title="Fetching Transaction..." />
-  ) : variant.type === 'error' ? (
-    <ErrorView
-      title="Failed to Fetch Transaction"
-      subtitle="Please click the retry button to refetch data"
-      onRetryButtonPress={onRetryButtonPress}
-    />
-  ) : null;
+  );
 };

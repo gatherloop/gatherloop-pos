@@ -1,6 +1,6 @@
-import { useField as useFormikField } from 'formik';
 import { Input, InputProps } from 'tamagui';
 import { useFieldContext } from './Field';
+import { Controller } from 'react-hook-form';
 
 export type InputTextProps = {
   name?: string;
@@ -9,19 +9,12 @@ export type InputTextProps = {
 export const InputText = ({ name, ...inputProps }: InputTextProps) => {
   const fieldContext = useFieldContext();
   const fieldName = fieldContext.name ?? name ?? '';
-  const [field, _meta, helpers] = useFormikField(fieldName);
-
-  const onChangeText = (text: string) => {
-    helpers.setValue(text);
-    helpers.setTouched(true);
-  };
-
   return (
-    <Input
-      {...inputProps}
-      id={fieldName}
-      onChangeText={onChangeText}
-      value={field.value}
+    <Controller
+      name={fieldName}
+      render={({ field }) => (
+        <Input {...inputProps} {...field} onChangeText={field.onChange} />
+      )}
     />
   );
 };

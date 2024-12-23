@@ -1,22 +1,23 @@
-import { FieldArray, FormikContextType, FormikProvider } from 'formik';
 import {
   ErrorView,
   Field,
-  Form,
+  FieldArray,
+  FieldWatch,
   InputNumber,
   InputText,
   LoadingView,
   Select,
-  SubmitButton,
 } from '../../../base';
 
-import { Button, Card, H3, H4, Paragraph, XStack, YStack } from 'tamagui';
+import { Button, Card, Form, H3, H4, Paragraph, XStack, YStack } from 'tamagui';
 import { Plus, Trash } from '@tamagui/lucide-icons';
 import { ExpenseForm } from '../../../../../domain';
+import { FormProvider, UseFormReturn } from 'react-hook-form';
 
 export type ExpenseCreateViewProps = {
   variant: { type: 'loading' } | { type: 'loaded' } | { type: 'error' };
-  formik: FormikContextType<ExpenseForm>;
+  form: UseFormReturn<ExpenseForm>;
+  onSubmit: (values: ExpenseForm) => void;
   budgetSelectOptions: { label: string; value: number }[];
   walletSelectOptions: { label: string; value: number }[];
   isSubmitDisabled: boolean;
@@ -25,35 +26,28 @@ export type ExpenseCreateViewProps = {
 
 export const ExpenseCreateView = ({
   variant,
-  formik,
+  form,
+  onSubmit,
   budgetSelectOptions,
   walletSelectOptions,
   isSubmitDisabled,
   onRetryButtonPress,
 }: ExpenseCreateViewProps) => {
   return variant.type === 'loaded' ? (
-    <FormikProvider value={formik}>
-      <Form>
+    <FormProvider {...form}>
+      <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
         <YStack gap="$3">
           <XStack gap="$3" $xs={{ flexDirection: 'column' }}>
             <Field name="budgetId" label="Budget Name" flex={1}>
-              <Select
-                items={budgetSelectOptions}
-                parseFieldToInputValue={JSON.stringify}
-                parseInputToFieldValue={JSON.parse}
-              />
+              <Select items={budgetSelectOptions} />
             </Field>
             <Field name="walletId" label="Wallet Name" flex={1}>
-              <Select
-                items={walletSelectOptions}
-                parseFieldToInputValue={JSON.stringify}
-                parseInputToFieldValue={JSON.parse}
-              />
+              <Select items={walletSelectOptions} />
             </Field>
           </XStack>
 
-          <FieldArray name="expenseItems">
-            {(fieldArray) => (
+          <FieldArray control={form.control} name="expenseItems">
+            {({ append, fields, remove }) => (
               <>
                 <XStack justifyContent="space-between">
                   <H4>Expense Items</H4>
@@ -62,7 +56,7 @@ export const ExpenseCreateView = ({
                     variant="outlined"
                     circular
                     onPress={() =>
-                      fieldArray.push({
+                      append({
                         name: '',
                         unit: '',
                         price: 0,
@@ -71,13 +65,13 @@ export const ExpenseCreateView = ({
                     }
                   />
                 </XStack>
-                {formik.values.expenseItems.map((item, index) => (
+                {fields.map((_, index) => (
                   <Card>
                     <Card.Header>
                       <YStack>
                         <XStack gap="$3" key={index} flexWrap="wrap">
                           <Field
-                            name={`expenseItems[${index}].name`}
+                            name={`expenseItems.${index}.name`}
                             label="Item Name"
                             flexBasis="22%"
                             $md={{ flexBasis: '45%' }}
@@ -86,7 +80,7 @@ export const ExpenseCreateView = ({
                             <InputText />
                           </Field>
                           <Field
-                            name={`expenseItems[${index}].amount`}
+                            name={`expenseItems.${index}.amount`}
                             label="Amount"
                             flexBasis="22%"
                             $md={{ flexBasis: '45%' }}
@@ -95,7 +89,7 @@ export const ExpenseCreateView = ({
                             <InputNumber min={1} />
                           </Field>
                           <Field
-                            name={`expenseItems[${index}].unit`}
+                            name={`expenseItems.${index}.unit`}
                             label="Unit"
                             flexBasis="22%"
                             $md={{ flexBasis: '45%' }}
@@ -104,7 +98,7 @@ export const ExpenseCreateView = ({
                             <InputText />
                           </Field>
                           <Field
-                            name={`expenseItems[${index}].price`}
+                            name={`expenseItems.${index}.price`}
                             label="Price"
                             flexBasis="22%"
                             $md={{ flexBasis: '45%' }}
@@ -119,7 +113,7 @@ export const ExpenseCreateView = ({
                             circular
                             theme="red"
                             color="$red8"
-                            onPress={() => fieldArray.remove(index)}
+                            onPress={() => remove(index)}
                             position="absolute"
                             top="$1"
                             right="$1"
@@ -127,10 +121,20 @@ export const ExpenseCreateView = ({
                         </XStack>
                         <YStack justifyContent="flex-end" flex={1}>
                           <Paragraph textAlign="right">Subtotal</Paragraph>
-                          <H4 textAlign="right">
-                            Rp.{' '}
-                            {(item.price * item.amount).toLocaleString('id')}
-                          </H4>
+
+                          <FieldWatch
+                            control={form.control}
+                            name={[
+                              `expenseItems.${index}.price`,
+                              `expenseItems.${index}.amount`,
+                            ]}
+                          >
+                            {([price, amount]) => (
+                              <H4 textAlign="right">
+                                Rp. {(price * amount).toLocaleString('id')}
+                              </H4>
+                            )}
+                          </FieldWatch>
                         </YStack>
                       </YStack>
                     </Card.Header>
@@ -142,18 +146,28 @@ export const ExpenseCreateView = ({
 
           <YStack alignItems="flex-end">
             <Paragraph textAlign="right">Total</Paragraph>
-            <H3 textAlign="right">
-              Rp.{' '}
-              {formik.values.expenseItems
-                .reduce((prev, curr) => prev + curr.amount * curr.price, 0)
-                .toLocaleString('id')}
-            </H3>
+            <FieldWatch control={form.control} name={[`expenseItems`]}>
+              {([expenseItems]) => (
+                <H3 textAlign="right">
+                  Rp.{' '}
+                  {expenseItems
+                    .reduce((prev, curr) => prev + curr.amount * curr.price, 0)
+                    .toLocaleString('id')}
+                </H3>
+              )}
+            </FieldWatch>
           </YStack>
         </YStack>
 
-        <SubmitButton disabled={isSubmitDisabled}>Submit</SubmitButton>
+        <Button
+          disabled={isSubmitDisabled}
+          onPress={form.handleSubmit(onSubmit)}
+          theme="blue"
+        >
+          Submit
+        </Button>
       </Form>
-    </FormikProvider>
+    </FormProvider>
   ) : variant.type === 'loading' ? (
     <LoadingView title="Fetching Expense..." />
   ) : variant.type === 'error' ? (

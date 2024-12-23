@@ -1,5 +1,3 @@
-import { useFormik } from 'formik';
-import { toFormikValidationSchema } from 'zod-formik-adapter';
 import {
   ExpenseUpdateView,
   ExpenseUpdateViewProps,
@@ -10,6 +8,8 @@ import { match, P } from 'ts-pattern';
 import { z } from 'zod';
 import { useToastController } from '@tamagui/toast';
 import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 export const ExpenseUpdate = () => {
   const { state, dispatch } = useExpenseUpdateController();
@@ -20,27 +20,30 @@ export const ExpenseUpdate = () => {
     else if (state.type === 'submitError') toast.show('Update Expense Error');
   }, [toast, state.type]);
 
-  const formik = useFormik<ExpenseForm>({
-    initialValues: state.values,
-    enableReinitialize: true,
-    onSubmit: (values) => dispatch({ type: 'SUBMIT', values }),
-    validationSchema: toFormikValidationSchema(
+  const form = useForm({
+    defaultValues: state.values,
+    resolver: zodResolver(
       z.object({
         walletId: z.number(),
         budgetId: z.number(),
-        expenseItems: z.array(
-          z.lazy(() =>
-            z.object({
-              name: z.string(),
-              unit: z.string(),
-              price: z.number(),
-              amount: z.number(),
-            })
+        expenseItems: z
+          .array(
+            z.lazy(() =>
+              z.object({
+                name: z.string().min(1),
+                unit: z.string().min(1),
+                price: z.number().min(1),
+                amount: z.number().min(1),
+              })
+            )
           )
-        ),
+          .min(1),
       })
     ),
   });
+
+  const onSubmit = (values: ExpenseForm) =>
+    dispatch({ type: 'SUBMIT', values });
 
   const isSubmitDisabled =
     state.type === 'submitting' || state.type === 'submitSuccess';
@@ -75,7 +78,8 @@ export const ExpenseUpdate = () => {
       onRetryButtonPress={onRetryButtonPress}
       budgetSelectOptions={budgetSelectOptions}
       walletSelectOptions={walletSelectOptions}
-      formik={formik}
+      form={form}
+      onSubmit={onSubmit}
       variant={variant}
     />
   );

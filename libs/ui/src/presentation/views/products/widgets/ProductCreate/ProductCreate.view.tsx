@@ -1,18 +1,17 @@
-import { FieldArray, FormikContextType, FormikProvider } from 'formik';
 import {
   Field,
-  Form,
   InputText,
   InputNumber,
   Select,
   Sheet,
-  SubmitButton,
   LoadingView,
   ErrorView,
+  FieldWatch,
 } from '../../../base';
 import {
   Button,
   Card,
+  Form,
   H3,
   H4,
   Paragraph,
@@ -23,35 +22,36 @@ import {
 import { Plus, Trash } from '@tamagui/lucide-icons';
 import { MaterialListItem, MaterialList } from '../../../materials';
 import { Material, ProductForm } from '../../../../../domain';
+import { FormProvider, UseFormReturn } from 'react-hook-form';
 
 export type ProductCreateViewProps = {
   variant: { type: 'loaded' } | { type: 'loading' } | { type: 'error' };
   onRetryButtonPress: () => void;
-  formik: FormikContextType<ProductForm>;
-  categorySelectOptions: { label: string; value: string }[];
+  form: UseFormReturn<ProductForm>;
+  onSubmit: (values: ProductForm) => void;
+  categorySelectOptions: { label: string; value: number }[];
   isMaterialSheetOpen: boolean;
   onMaterialSheetOpenChange: (open: boolean) => void;
   onAddMaterial: (material: Material) => void;
+  onRemoveMaterial: (material: Material) => void;
   isSubmitDisabled: boolean;
-  totalFoodCost: number;
-  foodCostPercentage: number;
 };
 
 export const ProductCreateView = ({
   variant,
   onRetryButtonPress,
-  formik,
+  form,
+  onSubmit,
   categorySelectOptions,
   isMaterialSheetOpen,
   isSubmitDisabled,
   onMaterialSheetOpenChange,
   onAddMaterial,
-  totalFoodCost,
-  foodCostPercentage,
+  onRemoveMaterial,
 }: ProductCreateViewProps) => {
   return variant.type === 'loaded' ? (
-    <FormikProvider value={formik}>
-      <Form>
+    <FormProvider {...form}>
+      <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
         <Card>
           <Card.Header>
             <XStack gap="$3" $sm={{ flexDirection: 'column' }}>
@@ -59,11 +59,7 @@ export const ProductCreateView = ({
                 <InputText />
               </Field>
               <Field name="categoryId" label="Category" flex={1}>
-                <Select
-                  items={categorySelectOptions}
-                  parseInputToFieldValue={parseInt}
-                  parseFieldToInputValue={String}
-                />
+                <Select items={categorySelectOptions} />
               </Field>
               <Field name="price" label="Price" flex={1}>
                 <InputNumber min={0} />
@@ -93,13 +89,43 @@ export const ProductCreateView = ({
           <Card>
             <Card.Header>
               <Paragraph>Total Food Cost</Paragraph>
-              <H4>Rp. {totalFoodCost.toLocaleString('id')}</H4>
+              <FieldWatch control={form.control} name={['materials']}>
+                {([materials]) => (
+                  <H4>
+                    Rp.{' '}
+                    {materials
+                      .reduce(
+                        (prev, curr) =>
+                          prev + curr.material.price * curr.amount,
+                        0
+                      )
+                      .toLocaleString('id')}
+                  </H4>
+                )}
+              </FieldWatch>
             </Card.Header>
           </Card>
           <Card>
             <Card.Header>
               <Paragraph>Food Cost Percentage</Paragraph>
-              <H4>{foodCostPercentage.toFixed(1)}%</H4>
+
+              <FieldWatch control={form.control} name={['price', 'materials']}>
+                {([price, materials]) => (
+                  <H4>
+                    {(price > 0
+                      ? (materials.reduce(
+                          (prev, curr) =>
+                            prev + curr.material.price * curr.amount,
+                          0
+                        ) /
+                          price) *
+                        100
+                      : 0
+                    ).toFixed(1)}
+                    %
+                  </H4>
+                )}
+              </FieldWatch>
             </Card.Header>
           </Card>
         </XStack>
@@ -115,53 +141,62 @@ export const ProductCreateView = ({
           />
         </XStack>
 
-        <FieldArray name="materials">
-          {({ remove }) => (
-            <YStack gap="$3">
-              {formik.values.materials.map(({ material, amount }, index) => (
-                <XStack
-                  gap="$3"
-                  key={material.id}
-                  $sm={{ flexDirection: 'column' }}
-                >
-                  <MaterialListItem
-                    name={material.name}
-                    price={material.price}
-                    unit={material.unit}
-                    flex={1}
-                  />
-                  <YStack alignItems="flex-end" gap="$3">
-                    <YStack>
-                      <Paragraph>Subtotal</Paragraph>
+        <YStack gap="$3">
+          {form.getValues('materials').map(({ material }, index) => (
+            <XStack
+              gap="$3"
+              key={material.id}
+              $sm={{ flexDirection: 'column' }}
+            >
+              <MaterialListItem
+                name={material.name}
+                price={material.price}
+                unit={material.unit}
+                flex={1}
+              />
+              <YStack alignItems="flex-end" gap="$3">
+                <YStack>
+                  <Paragraph>Subtotal</Paragraph>
+                  <FieldWatch
+                    control={form.control}
+                    name={[`materials.${index}.amount`]}
+                  >
+                    {([amount]) => (
                       <H4>
                         Rp. {(material.price * amount).toLocaleString('id')}
                       </H4>
-                    </YStack>
+                    )}
+                  </FieldWatch>
+                </YStack>
 
-                    <XStack alignItems="center" gap="$3">
-                      <Button
-                        icon={Trash}
-                        circular
-                        size="$2"
-                        theme="red"
-                        color="$red8"
-                        onPress={() => remove(index)}
-                      />
-                      <InputNumber
-                        name={`materials[${index}].amount`}
-                        maxWidth={100}
-                        fractionDigit={2}
-                      />
-                    </XStack>
-                  </YStack>
+                <XStack alignItems="center" gap="$3">
+                  <Button
+                    icon={Trash}
+                    circular
+                    size="$2"
+                    theme="red"
+                    color="$red8"
+                    onPress={() => onRemoveMaterial(material)}
+                  />
+                  <InputNumber
+                    name={`materials.${index}.amount`}
+                    maxWidth={100}
+                    fractionDigit={2}
+                  />
                 </XStack>
-              ))}
-              <SubmitButton disabled={isSubmitDisabled}>Submit</SubmitButton>
-            </YStack>
-          )}
-        </FieldArray>
+              </YStack>
+            </XStack>
+          ))}
+          <Button
+            disabled={isSubmitDisabled}
+            onPress={form.handleSubmit(onSubmit)}
+            theme="blue"
+          >
+            Submit
+          </Button>
+        </YStack>
       </Form>
-    </FormikProvider>
+    </FormProvider>
   ) : variant.type === 'loading' ? (
     <LoadingView title="Fetching Product..." />
   ) : variant.type === 'error' ? (

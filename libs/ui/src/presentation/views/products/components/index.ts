@@ -1,2 +1,2 @@
 export * from './ProductListItem';
-export * from './ProductDetail';
+export * from './ProductFormView';

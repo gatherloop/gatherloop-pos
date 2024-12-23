@@ -1,5 +1,5 @@
-import { useField } from 'formik';
 import { ReactNode, createContext, useContext } from 'react';
+import { useFormContext } from 'react-hook-form';
 import { Label, Paragraph, YStack, YStackProps } from 'tamagui';
 
 type FieldContextValue = { name?: string };
@@ -20,14 +20,16 @@ export const Field = ({
   children,
   ...yStackProps
 }: FieldProps) => {
-  const [_field, meta] = useField(name);
+  const { formState } = useFormContext();
   return (
     <Context.Provider value={{ name }}>
       <YStack gap="$3" {...yStackProps}>
         <Label htmlFor={name}>{label}</Label>
         {children}
-        {meta.touched && meta.error && (
-          <Paragraph color="$red10">{meta.error}</Paragraph>
+        {formState.errors[name] && (
+          <Paragraph color="$red10">
+            {formState.errors[name]?.message}
+          </Paragraph>
         )}
       </YStack>
     </Context.Provider>

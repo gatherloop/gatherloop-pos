@@ -1,14 +1,4 @@
 import {
-  Field,
-  InputText,
-  InputNumber,
-  Select,
-  Sheet,
-  LoadingView,
-  ErrorView,
-  FieldWatch,
-} from '../../../base';
-import {
   Button,
   Card,
   Form,
@@ -19,14 +9,20 @@ import {
   XStack,
   YStack,
 } from 'tamagui';
-import { Plus, Trash } from '@tamagui/lucide-icons';
-import { MaterialListItem, MaterialList } from '../../../materials';
-import { Material, ProductForm } from '../../../../../domain';
+import { Material, ProductForm } from '../../../../domain';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
+import {
+  Field,
+  FieldWatch,
+  InputNumber,
+  InputText,
+  Select,
+  Sheet,
+} from '../../base';
+import { MaterialList, MaterialListItem } from '../../materials';
+import { Plus, Trash } from '@tamagui/lucide-icons';
 
-export type ProductUpdateViewProps = {
-  variant: { type: 'loaded' } | { type: 'loading' } | { type: 'error' };
-  onRetryButtonPress: () => void;
+export type ProductFormProps = {
   form: UseFormReturn<ProductForm>;
   onSubmit: (values: ProductForm) => void;
   categorySelectOptions: { label: string; value: number }[];
@@ -37,19 +33,17 @@ export type ProductUpdateViewProps = {
   isSubmitDisabled: boolean;
 };
 
-export const ProductUpdateView = ({
-  variant,
-  onRetryButtonPress,
+export const ProductFormView = ({
   categorySelectOptions,
+  form,
   isMaterialSheetOpen,
   isSubmitDisabled,
-  onMaterialSheetOpenChange,
   onAddMaterial,
-  form,
+  onMaterialSheetOpenChange,
   onRemoveMaterial,
   onSubmit,
-}: ProductUpdateViewProps) => {
-  return variant.type === 'loaded' ? (
+}: ProductFormProps) => {
+  return (
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
         <Card>
@@ -197,13 +191,5 @@ export const ProductUpdateView = ({
         </YStack>
       </Form>
     </FormProvider>
-  ) : variant.type === 'loading' ? (
-    <LoadingView title="Fetching Product..." />
-  ) : variant.type === 'error' ? (
-    <ErrorView
-      title="Failed to Fetch Product"
-      subtitle="Please click the retry button to refetch data"
-      onRetryButtonPress={onRetryButtonPress}
-    />
-  ) : null;
+  );
 };
