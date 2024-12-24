@@ -14,10 +14,7 @@ import {
   OpenAPIWalletRepository,
 } from '../data';
 import { ExpenseUpdateUsecase } from '../domain';
-import {
-  ExpenseUpdateProvider,
-  ExpenseUpdateScreen as ExpenseUpdateScreenView,
-} from '../presentation';
+import { ExpenseUpdateScreen as ExpenseUpdateScreenView } from '../presentation';
 import {
   dehydrate,
   DehydratedState,
@@ -68,9 +65,5 @@ export function ExpenseUpdateScreen({ expenseId }: ExpenseUpdateScreenProps) {
     budgetRepository,
     walletRepository
   );
-  return (
-    <ExpenseUpdateProvider usecase={usecase}>
-      <ExpenseUpdateScreenView />
-    </ExpenseUpdateProvider>
-  );
+  return <ExpenseUpdateScreenView expenseUpdateUsecase={usecase} />;
 }

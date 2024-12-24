@@ -1,33 +1,40 @@
-import { createContext, ReactNode, useContext } from 'react';
-import {
-  ExpenseDeleteAction,
-  ExpenseDeleteState,
-  ExpenseDeleteUsecase,
-} from '../../domain';
-import { Controller, useController } from './controller';
+import { useToastController } from '@tamagui/toast';
+import { ExpenseDeleteUsecase } from '../../domain';
+import { useController } from './controller';
+import { useEffect } from 'react';
+import { match, P } from 'ts-pattern';
 
-type ContextValue = Controller<ExpenseDeleteState, ExpenseDeleteAction> | null;
+export const useExpenseDeleteController = (usecase: ExpenseDeleteUsecase) => {
+  const { state, dispatch } = useController(usecase);
 
-const Context = createContext<ContextValue>(null);
+  const toast = useToastController();
+  useEffect(() => {
+    if (state.type === 'deletingSuccess') toast.show('Delete Expense Success');
+    else if (state.type === 'deletingError') toast.show('Delete Expense Error');
+  }, [state.type, toast]);
 
-export const useExpenseDeleteController = () => {
-  const expenseDeleteController = useContext(Context);
-  if (expenseDeleteController === null) {
-    throw new Error('useExpenseDeleteController is called outside provider');
-  }
+  const onButtonConfirmPress = () => {
+    dispatch({ type: 'DELETE' });
+  };
 
-  return expenseDeleteController;
-};
+  const isOpen = match(state.type)
+    .with(
+      P.union('shown', 'deleting', 'deletingError', 'deletingSuccess'),
+      () => true
+    )
+    .otherwise(() => false);
 
-export type ExpenseDeleteProviderProps = {
-  children: ReactNode;
-  usecase: ExpenseDeleteUsecase;
-};
+  const onCancel = () => dispatch({ type: 'HIDE_CONFIRMATION' });
 
-export const ExpenseDeleteProvider = ({
-  children,
-  usecase,
-}: ExpenseDeleteProviderProps) => {
-  const controller = useController(usecase);
-  return <Context.Provider value={controller}>{children}</Context.Provider>;
+  const isButtonDisabled =
+    state.type === 'deleting' || state.type === 'deletingSuccess';
+
+  return {
+    state,
+    dispatch,
+    onButtonConfirmPress,
+    isOpen,
+    onCancel,
+    isButtonDisabled,
+  };
 };

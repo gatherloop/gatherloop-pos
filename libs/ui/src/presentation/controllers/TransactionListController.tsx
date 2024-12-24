@@ -1,36 +1,51 @@
-import { createContext, ReactNode, useContext } from 'react';
-import {
-  TransactionListAction,
-  TransactionListState,
-  TransactionListUsecase,
-} from '../../domain';
-import { Controller, useController } from './controller';
+import { match, P } from 'ts-pattern';
+import { TransactionListUsecase } from '../../domain';
+import { useController } from './controller';
+import { TransactionListProps } from '../components';
 
-type ContextValue = Controller<
-  TransactionListState,
-  TransactionListAction
-> | null;
+export const useTransactionListController = (
+  usecase: TransactionListUsecase
+) => {
+  const { state, dispatch } = useController(usecase);
 
-const Context = createContext<ContextValue>(null);
+  const onSearchValueChange = (query: string) => {
+    dispatch({
+      type: 'CHANGE_PARAMS',
+      query,
+      page: 1,
+      fetchDebounceDelay: 600,
+    });
+  };
 
-export const useTransactionListController = () => {
-  const transactionListController = useContext(Context);
-  if (transactionListController === null) {
-    throw new Error('useTransactionListController is called outside provider');
-  }
+  const onPageChange = (page: number) => {
+    dispatch({ type: 'CHANGE_PARAMS', page });
+  };
 
-  return transactionListController;
-};
+  const onRetryButtonPress = () => {
+    dispatch({ type: 'FETCH' });
+  };
 
-export type TransactionListProviderProps = {
-  children: ReactNode;
-  usecase: TransactionListUsecase;
-};
+  const variant = match(state)
+    .returnType<TransactionListProps['variant']>()
+    .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))
+    .with(
+      { type: P.union('changingParams', 'loaded', 'revalidating') },
+      () => ({ type: 'loaded' })
+    )
+    .with({ type: 'error' }, () => ({ type: 'error' }))
+    .exhaustive();
 
-export const TransactionListProvider = ({
-  children,
-  usecase,
-}: TransactionListProviderProps) => {
-  const controller = useController(usecase);
-  return <Context.Provider value={controller}>{children}</Context.Provider>;
+  return {
+    state,
+    dispatch,
+    onSearchValueChange,
+    onPageChange,
+    onRetryButtonPress,
+    variant,
+    transactions: state.transactions,
+    searchValue: state.query,
+    currentPage: state.page,
+    totalItem: state.totalItem,
+    itemPerPage: state.itemPerPage,
+  };
 };

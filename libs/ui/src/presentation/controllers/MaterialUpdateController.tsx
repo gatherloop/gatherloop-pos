@@ -1,36 +1,45 @@
-import { createContext, ReactNode, useContext } from 'react';
-import {
-  MaterialUpdateAction,
-  MaterialUpdateState,
-  MaterialUpdateUsecase,
-} from '../../domain';
-import { Controller, useController } from './controller';
+import { useEffect } from 'react';
+import { MaterialForm, MaterialUpdateUsecase } from '../../domain';
+import { useController } from './controller';
+import { useToastController } from '@tamagui/toast';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 
-type ContextValue = Controller<
-  MaterialUpdateState,
-  MaterialUpdateAction
-> | null;
+export const useMaterialUpdateController = (usecase: MaterialUpdateUsecase) => {
+  const { state, dispatch } = useController(usecase);
 
-const Context = createContext<ContextValue>(null);
+  const toast = useToastController();
+  useEffect(() => {
+    if (state.type === 'submitSuccess') toast.show('Update Material Success');
+    else if (state.type === 'submitError') toast.show('Update Material Error');
+  }, [toast, state.type]);
 
-export const useMaterialUpdateController = () => {
-  const materialUpdateController = useContext(Context);
-  if (materialUpdateController === null) {
-    throw new Error('useMaterialUpdateController is called outside provider');
-  }
+  const form = useForm({
+    defaultValues: state.values,
+    resolver: zodResolver(
+      z.object({
+        name: z.string().min(1),
+        price: z.number().min(1),
+        unit: z.string().min(1),
+      })
+    ),
+  });
 
-  return materialUpdateController;
-};
+  const onSubmit = (values: MaterialForm) => {
+    dispatch({ type: 'SUBMIT', values });
+  };
 
-export type MaterialUpdateProviderProps = {
-  children: ReactNode;
-  usecase: MaterialUpdateUsecase;
-};
+  const isSubmitDisabled =
+    state.type === 'submitting' ||
+    state.type === 'submitError' ||
+    state.type === 'submitSuccess';
 
-export const MaterialUpdateProvider = ({
-  children,
-  usecase,
-}: MaterialUpdateProviderProps) => {
-  const controller = useController(usecase);
-  return <Context.Provider value={controller}>{children}</Context.Provider>;
+  return {
+    state,
+    dispatch,
+    form,
+    onSubmit,
+    isSubmitDisabled,
+  };
 };

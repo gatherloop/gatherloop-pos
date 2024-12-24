@@ -6,10 +6,7 @@ import {
 } from '../../../api-contract/src';
 import { OpenAPIMaterialRepository } from '../data';
 import { MaterialUpdateUsecase } from '../domain';
-import {
-  MaterialUpdateProvider,
-  MaterialUpdateScreen as MaterialUpdateScreenView,
-} from '../presentation';
+import { MaterialUpdateScreen as MaterialUpdateScreenView } from '../presentation';
 import {
   dehydrate,
   DehydratedState,
@@ -45,9 +42,5 @@ export function MaterialUpdateScreen({
   const repository = new OpenAPIMaterialRepository(client);
   repository.materialByIdServerParams = materialIdParam;
   const usecase = new MaterialUpdateUsecase(repository);
-  return (
-    <MaterialUpdateProvider usecase={usecase}>
-      <MaterialUpdateScreenView />
-    </MaterialUpdateProvider>
-  );
+  return <MaterialUpdateScreenView materialUpdateUsecase={usecase} />;
 }

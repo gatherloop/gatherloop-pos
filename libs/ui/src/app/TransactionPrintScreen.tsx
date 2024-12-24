@@ -5,10 +5,7 @@ import {
 } from '../../../api-contract/src';
 import { OpenAPITransactionRepository } from '../data';
 import { TransactionPrintUsecase } from '../domain';
-import {
-  TransactionPrintProvider,
-  TransactionPrintScreen as TransactionPrintScreenView,
-} from '../presentation';
+import { TransactionPrintScreen as TransactionPrintScreenView } from '../presentation';
 import {
   dehydrate,
   DehydratedState,
@@ -38,9 +35,5 @@ export function TransactionPrintScreen({
   const repository = new OpenAPITransactionRepository(client);
   repository.transactionByIdServerParams = transactionId;
   const usecase = new TransactionPrintUsecase(repository);
-  return (
-    <TransactionPrintProvider usecase={usecase}>
-      <TransactionPrintScreenView />
-    </TransactionPrintProvider>
-  );
+  return <TransactionPrintScreenView transactionPrintUsecase={usecase} />;
 }

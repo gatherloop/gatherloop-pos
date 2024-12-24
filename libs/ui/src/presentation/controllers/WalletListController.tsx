@@ -1,33 +1,37 @@
-import { createContext, ReactNode, useContext } from 'react';
-import {
-  WalletListAction,
-  WalletListState,
-  WalletListUsecase,
-} from '../../domain';
-import { Controller, useController } from './controller';
+import { useCallback } from 'react';
+import { WalletListUsecase } from '../../domain';
+import { useFocusEffect } from '../../utils';
+import { useController } from './controller';
+import { WalletListProps } from '../components';
+import { match, P } from 'ts-pattern';
 
-type ContextValue = Controller<WalletListState, WalletListAction> | null;
+export const useWalletListController = (usecase: WalletListUsecase) => {
+  const { state, dispatch } = useController(usecase);
 
-const Context = createContext<ContextValue>(null);
+  useFocusEffect(
+    useCallback(() => {
+      dispatch({ type: 'FETCH' });
+    }, [dispatch])
+  );
 
-export const useWalletListController = () => {
-  const walletListController = useContext(Context);
-  if (walletListController === null) {
-    throw new Error('useWalletListController is called outside provider');
-  }
+  const onRetryButtonPress = () => {
+    dispatch({ type: 'FETCH' });
+  };
 
-  return walletListController;
-};
+  const variant = match(state)
+    .returnType<WalletListProps['variant']>()
+    .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))
+    .with({ type: P.union('loaded', 'revalidating') }, ({ wallets }) => ({
+      type: wallets.length > 0 ? 'loaded' : 'empty',
+      items: wallets,
+    }))
+    .with({ type: 'error' }, () => ({ type: 'error' }))
+    .exhaustive();
 
-export type WalletListProviderProps = {
-  children: ReactNode;
-  usecase: WalletListUsecase;
-};
-
-export const WalletListProvider = ({
-  children,
-  usecase,
-}: WalletListProviderProps) => {
-  const controller = useController(usecase);
-  return <Context.Provider value={controller}>{children}</Context.Provider>;
+  return {
+    state,
+    dispatch,
+    onRetryButtonPress,
+    variant,
+  };
 };

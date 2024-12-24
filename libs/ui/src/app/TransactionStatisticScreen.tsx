@@ -5,10 +5,7 @@ import {
 } from '../../../api-contract/src';
 import { OpenAPITransactionRepository } from '../data';
 import { TransactionStatisticListUsecase } from '../domain';
-import {
-  TransactionStatisticListProvider,
-  TransactionStatisticScreen as TransactionStatisticScreenView,
-} from '../presentation';
+import { TransactionStatisticScreen as TransactionStatisticScreenView } from '../presentation';
 import {
   dehydrate,
   DehydratedState,
@@ -30,8 +27,6 @@ export function TransactionStatisticScreen() {
   const repository = new OpenAPITransactionRepository(client);
   const usecase = new TransactionStatisticListUsecase(repository);
   return (
-    <TransactionStatisticListProvider usecase={usecase}>
-      <TransactionStatisticScreenView />
-    </TransactionStatisticListProvider>
+    <TransactionStatisticScreenView transactionStatisticListUsecase={usecase} />
   );
 }

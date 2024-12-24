@@ -1,33 +1,63 @@
-import { createContext, ReactNode, useContext } from 'react';
-import {
-  WalletUpdateAction,
-  WalletUpdateState,
-  WalletUpdateUsecase,
-} from '../../domain';
-import { Controller, useController } from './controller';
+import { useEffect } from 'react';
+import { WalletForm, WalletUpdateUsecase } from '../../domain';
+import { useController } from './controller';
+import { useToastController } from '@tamagui/toast';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { match, P } from 'ts-pattern';
+import { WalletUpdateProps } from '../components';
 
-type ContextValue = Controller<WalletUpdateState, WalletUpdateAction> | null;
+export const useWalletUpdateController = (usecase: WalletUpdateUsecase) => {
+  const { state, dispatch } = useController(usecase);
 
-const Context = createContext<ContextValue>(null);
+  const toast = useToastController();
+  useEffect(() => {
+    if (state.type === 'submitSuccess') toast.show('Update Wallet Success');
+    else if (state.type === 'submitError') toast.show('Update Wallet Error');
+  }, [toast, state.type]);
 
-export const useWalletUpdateController = () => {
-  const walletUpdateController = useContext(Context);
-  if (walletUpdateController === null) {
-    throw new Error('useWalletUpdateController is called outside provider');
-  }
+  const form = useForm({
+    defaultValues: state.values,
+    resolver: zodResolver(
+      z.object({
+        name: z.string().min(1),
+        balance: z.number(),
+        paymentCostPercentage: z.number(),
+      })
+    ),
+  });
 
-  return walletUpdateController;
-};
+  const onSubmit = (values: WalletForm) => dispatch({ type: 'SUBMIT', values });
 
-export type WalletUpdateProviderProps = {
-  children: ReactNode;
-  usecase: WalletUpdateUsecase;
-};
+  const isSubmitDisabled =
+    state.type === 'submitting' || state.type === 'submitSuccess';
 
-export const WalletUpdateProvider = ({
-  children,
-  usecase,
-}: WalletUpdateProviderProps) => {
-  const controller = useController(usecase);
-  return <Context.Provider value={controller}>{children}</Context.Provider>;
+  const onRetryButtonPress = () => dispatch({ type: 'FETCH' });
+
+  const variant = match(state)
+    .returnType<WalletUpdateProps['variant']>()
+    .with({ type: P.union('idle', 'loading') }, () => ({
+      type: 'loading',
+    }))
+    .with(
+      {
+        type: P.union('loaded', 'submitSuccess', 'submitting', 'submitError'),
+      },
+      () => ({
+        type: 'loaded',
+      })
+    )
+    .with({ type: 'error' }, () => ({ type: 'error' }))
+    .exhaustive();
+
+  return {
+    state,
+    dispatch,
+    form,
+    onSubmit,
+    isSubmitDisabled,
+    onRetryButtonPress,
+    variant,
+  };
 };

@@ -1,33 +1,30 @@
-import { createContext, ReactNode, useContext } from 'react';
-import {
-  ProductDeleteAction,
-  ProductDeleteState,
-  ProductDeleteUsecase,
-} from '../../domain';
-import { Controller, useController } from './controller';
+import { useToastController } from '@tamagui/toast';
+import { ProductDeleteUsecase } from '../../domain';
+import { useController } from './controller';
+import { useEffect } from 'react';
+import { match, P } from 'ts-pattern';
 
-type ContextValue = Controller<ProductDeleteState, ProductDeleteAction> | null;
+export const useProductDeleteController = (usecase: ProductDeleteUsecase) => {
+  const { state, dispatch } = useController(usecase);
 
-const Context = createContext<ContextValue>(null);
+  const toast = useToastController();
+  useEffect(() => {
+    if (state.type === 'deletingSuccess') toast.show('Delete Product Success');
+    else if (state.type === 'deletingError') toast.show('Delete Product Error');
+  }, [state.type, toast]);
 
-export const useProductDeleteController = () => {
-  const productDeleteController = useContext(Context);
-  if (productDeleteController === null) {
-    throw new Error('useProductDeleteController is called outside provider');
-  }
+  const onConfirm = () => dispatch({ type: 'DELETE' });
 
-  return productDeleteController;
-};
+  const onCancel = () => dispatch({ type: 'HIDE_CONFIRMATION' });
 
-export type ProductDeleteProviderProps = {
-  children: ReactNode;
-  usecase: ProductDeleteUsecase;
-};
+  const isOpen = match(state.type)
+    .with(
+      P.union('shown', 'deleting', 'deletingError', 'deletingSuccess'),
+      () => true
+    )
+    .otherwise(() => false);
 
-export const ProductDeleteProvider = ({
-  children,
-  usecase,
-}: ProductDeleteProviderProps) => {
-  const controller = useController(usecase);
-  return <Context.Provider value={controller}>{children}</Context.Provider>;
+  const isButtonDisabled = state.type === 'deleting';
+
+  return { state, dispatch, onConfirm, onCancel, isOpen, isButtonDisabled };
 };

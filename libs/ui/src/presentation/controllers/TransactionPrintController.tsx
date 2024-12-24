@@ -1,36 +1,15 @@
-import { createContext, ReactNode, useContext } from 'react';
-import {
-  TransactionPrintAction,
-  TransactionPrintState,
-  TransactionPrintUsecase,
-} from '../../domain';
-import { Controller, useController } from './controller';
+import { TransactionPrintUsecase } from '../../domain';
+import { useController } from './controller';
 
-type ContextValue = Controller<
-  TransactionPrintState,
-  TransactionPrintAction
-> | null;
-
-const Context = createContext<ContextValue>(null);
-
-export const useTransactionPrintController = () => {
-  const transactionDetailController = useContext(Context);
-  if (transactionDetailController === null) {
-    throw new Error('useTransactionPrintController is called outside provider');
-  }
-
-  return transactionDetailController;
-};
-
-export type TransactionPrintProviderProps = {
-  children: ReactNode;
-  usecase: TransactionPrintUsecase;
-};
-
-export const TransactionPrintProvider = ({
-  children,
-  usecase,
-}: TransactionPrintProviderProps) => {
-  const controller = useController(usecase);
-  return <Context.Provider value={controller}>{children}</Context.Provider>;
+export const useTransactionPrintController = (
+  usecase: TransactionPrintUsecase
+) => {
+  const { state } = useController(usecase);
+  return {
+    name: state.transaction?.name ?? '',
+    createdAt: state.transaction?.createdAt ?? '',
+    paidAt: state.transaction?.paidAt ?? '',
+    total: state.transaction?.total ?? 0,
+    transactionItems: state.transaction?.transactionItems ?? [],
+  };
 };

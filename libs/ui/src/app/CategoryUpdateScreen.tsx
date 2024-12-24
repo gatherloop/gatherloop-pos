@@ -5,10 +5,7 @@ import {
 } from '../../../api-contract/src';
 import { OpenAPICategoryRepository } from '../data';
 import { CategoryUpdateUsecase } from '../domain';
-import {
-  CategoryUpdateProvider,
-  CategoryUpdateScreen as CategoryUpdateScreenView,
-} from '../presentation';
+import { CategoryUpdateScreen as CategoryUpdateScreenView } from '../presentation';
 import {
   dehydrate,
   DehydratedState,
@@ -45,9 +42,5 @@ export function CategoryUpdateScreen({
   const repository = new OpenAPICategoryRepository(client);
   repository.categoryByIdServerParams = categoryIdParam;
   const usecase = new CategoryUpdateUsecase(repository);
-  return (
-    <CategoryUpdateProvider usecase={usecase}>
-      <CategoryUpdateScreenView />
-    </CategoryUpdateProvider>
-  );
+  return <CategoryUpdateScreenView categoryUpdateUsecase={usecase} />;
 }

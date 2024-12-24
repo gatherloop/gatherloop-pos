@@ -5,11 +5,7 @@ import {
   OpenAPITransactionRepository,
 } from '../data';
 import { ProductListUsecase, TransactionCreateUsecase } from '../domain';
-import {
-  ProductListProvider,
-  TransactionCreateProvider,
-  TransactionCreateScreen as TransactionCreateScreenView,
-} from '../presentation';
+import { TransactionCreateScreen as TransactionCreateScreenView } from '../presentation';
 import {
   dehydrate,
   DehydratedState,
@@ -48,10 +44,9 @@ export function TransactionCreateScreen() {
   const productRepository = new OpenAPIProductRepository(client);
   const productListUsecase = new ProductListUsecase(productRepository);
   return (
-    <TransactionCreateProvider usecase={transactionCreateUsecase}>
-      <ProductListProvider usecase={productListUsecase}>
-        <TransactionCreateScreenView />
-      </ProductListProvider>
-    </TransactionCreateProvider>
+    <TransactionCreateScreenView
+      productListUsecase={productListUsecase}
+      transactionCreateUsecase={transactionCreateUsecase}
+    />
   );
 }

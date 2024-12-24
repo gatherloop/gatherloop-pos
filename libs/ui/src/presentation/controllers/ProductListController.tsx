@@ -1,33 +1,59 @@
-import { createContext, ReactNode, useContext } from 'react';
-import {
-  ProductListAction,
-  ProductListState,
-  ProductListUsecase,
-} from '../../domain';
-import { Controller, useController } from './controller';
+import { useCallback } from 'react';
+import { ProductListUsecase } from '../../domain';
+import { useFocusEffect } from '../../utils';
+import { useController } from './controller';
+import { match, P } from 'ts-pattern';
+import { ProductListProps } from '../components';
 
-type ContextValue = Controller<ProductListState, ProductListAction> | null;
+export const useProductListController = (usecase: ProductListUsecase) => {
+  const { state, dispatch } = useController(usecase);
 
-const Context = createContext<ContextValue>(null);
+  useFocusEffect(
+    useCallback(() => {
+      dispatch({ type: 'FETCH' });
+    }, [dispatch])
+  );
 
-export const useProductListController = () => {
-  const productListController = useContext(Context);
-  if (productListController === null) {
-    throw new Error('useProductListController is called outside provider');
-  }
+  const onSearchValueChange = (query: string) => {
+    dispatch({
+      type: 'CHANGE_PARAMS',
+      query,
+      page: 1,
+      fetchDebounceDelay: 600,
+    });
+  };
 
-  return productListController;
-};
+  const onPageChange = (page: number) => {
+    dispatch({ type: 'CHANGE_PARAMS', page });
+  };
 
-export type ProductListProviderProps = {
-  children: ReactNode;
-  usecase: ProductListUsecase;
-};
+  const onRetryButtonPress = () => {
+    dispatch({ type: 'FETCH' });
+  };
 
-export const ProductListProvider = ({
-  children,
-  usecase,
-}: ProductListProviderProps) => {
-  const controller = useController(usecase);
-  return <Context.Provider value={controller}>{children}</Context.Provider>;
+  const variant = match(state)
+    .returnType<ProductListProps['variant']>()
+    .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))
+    .with(
+      { type: P.union('changingParams', 'loaded', 'revalidating') },
+      ({ products }) => ({
+        type: products.length > 0 ? 'loaded' : 'empty',
+        items: products,
+      })
+    )
+    .with({ type: 'error' }, () => ({ type: 'error' }))
+    .exhaustive();
+
+  return {
+    state,
+    dispatch,
+    searchValue: state.query,
+    currentPage: state.page,
+    totalItem: state.totalItem,
+    itemPerPage: state.itemPerPage,
+    onSearchValueChange,
+    onPageChange,
+    onRetryButtonPress,
+    variant,
+  };
 };

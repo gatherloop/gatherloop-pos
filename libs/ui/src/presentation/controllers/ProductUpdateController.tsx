@@ -1,33 +1,113 @@
-import { createContext, ReactNode, useContext } from 'react';
-import {
-  ProductUpdateAction,
-  ProductUpdateState,
-  ProductUpdateUsecase,
-} from '../../domain';
-import { Controller, useController } from './controller';
+import { useEffect, useState } from 'react';
+import { Material, ProductForm, ProductUpdateUsecase } from '../../domain';
+import { useController } from './controller';
+import { useToastController } from '@tamagui/toast';
+import { useFieldArray, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { ProductUpdateProps } from '../components';
+import { match, P } from 'ts-pattern';
 
-type ContextValue = Controller<ProductUpdateState, ProductUpdateAction> | null;
+export const useProductUpdateController = (usecase: ProductUpdateUsecase) => {
+  const { state, dispatch } = useController(usecase);
 
-const Context = createContext<ContextValue>(null);
+  const [isMaterialSheetOpen, setIsMaterialSheetOpen] = useState(false);
 
-export const useProductUpdateController = () => {
-  const productUpdateController = useContext(Context);
-  if (productUpdateController === null) {
-    throw new Error('useProductUpdateController is called outside provider');
-  }
+  const onMaterialSheetOpenChange = setIsMaterialSheetOpen;
 
-  return productUpdateController;
-};
+  const toast = useToastController();
+  useEffect(() => {
+    if (state.type === 'submitSuccess') toast.show('Update Product Success');
+    else if (state.type === 'submitError') toast.show('Update Product Error');
+  }, [toast, state.type]);
 
-export type ProductUpdateProviderProps = {
-  children: ReactNode;
-  usecase: ProductUpdateUsecase;
-};
+  const form = useForm({
+    defaultValues: state.values,
+    resolver: zodResolver(
+      z.object({
+        categoryId: z.number(),
+        name: z.string(),
+        price: z.number(),
+        materials: z.array(
+          z.lazy(() => z.object({ materialId: z.number(), amount: z.number() }))
+        ),
+      })
+    ),
+  });
 
-export const ProductUpdateProvider = ({
-  children,
-  usecase,
-}: ProductUpdateProviderProps) => {
-  const controller = useController(usecase);
-  return <Context.Provider value={controller}>{children}</Context.Provider>;
+  const onSubmit = (values: ProductForm) => {
+    dispatch({ type: 'SUBMIT', values });
+  };
+
+  const { fields, append, update, remove } = useFieldArray({
+    control: form.control,
+    name: 'materials',
+  });
+
+  const onAddMaterial = (newMaterial: Material) => {
+    const itemIndex = fields.findIndex(
+      ({ material }) => material.id === newMaterial.id
+    );
+    const isItemExist = itemIndex !== -1;
+
+    if (isItemExist) {
+      update(itemIndex, {
+        ...fields[itemIndex],
+        amount: fields[itemIndex].amount + 1,
+      });
+    } else {
+      append({ materialId: newMaterial.id, amount: 1, material: newMaterial });
+    }
+
+    setIsMaterialSheetOpen(false);
+  };
+
+  const onRemoveMaterial = (newMaterial: Material) => {
+    const itemIndex = fields.findIndex(
+      ({ material }) => material.id === newMaterial.id
+    );
+    const isItemExist = itemIndex !== -1;
+    if (isItemExist) remove(itemIndex);
+  };
+
+  const isSubmitDisabled =
+    state.type === 'submitting' || state.type === 'submitSuccess';
+
+  const onRetryButtonPress = () => dispatch({ type: 'FETCH' });
+
+  const variant = match(state)
+    .returnType<ProductUpdateProps['variant']>()
+    .with({ type: P.union('idle', 'loading') }, () => ({
+      type: 'loading',
+    }))
+    .with(
+      {
+        type: P.union('loaded', 'submitSuccess', 'submitError', 'submitting'),
+      },
+      () => ({
+        type: 'loaded',
+      })
+    )
+    .with({ type: 'error' }, () => ({ type: 'error' }))
+    .exhaustive();
+
+  const categorySelectOptions = state.categories.map((category) => ({
+    label: category.name,
+    value: category.id,
+  }));
+
+  return {
+    state,
+    dispatch,
+    isMaterialSheetOpen,
+    onMaterialSheetOpenChange,
+    form,
+    onSubmit,
+    onAddMaterial,
+    onRemoveMaterial,
+    isSubmitDisabled,
+    onRetryButtonPress,
+    variant,
+    categorySelectOptions,
+  };
 };

@@ -1,38 +1,41 @@
-import { createContext, ReactNode, useContext } from 'react';
-import {
-  TransactionDeleteAction,
-  TransactionDeleteState,
-  TransactionDeleteUsecase,
-} from '../../domain';
-import { Controller, useController } from './controller';
+import { useToastController } from '@tamagui/toast';
+import { TransactionDeleteUsecase } from '../../domain';
+import { useController } from './controller';
+import { useEffect } from 'react';
+import { match, P } from 'ts-pattern';
 
-type ContextValue = Controller<
-  TransactionDeleteState,
-  TransactionDeleteAction
-> | null;
+export const useTransactionDeleteController = (
+  usecase: TransactionDeleteUsecase
+) => {
+  const { state, dispatch } = useController(usecase);
 
-const Context = createContext<ContextValue>(null);
+  const toast = useToastController();
+  useEffect(() => {
+    if (state.type === 'deletingSuccess')
+      toast.show('Delete Transaction Success');
+    else if (state.type === 'deletingError')
+      toast.show('Delete Transaction Error');
+  }, [state.type, toast]);
 
-export const useTransactionDeleteController = () => {
-  const transactionDeleteController = useContext(Context);
-  if (transactionDeleteController === null) {
-    throw new Error(
-      'useTransactionDeleteController is called outside provider'
-    );
-  }
+  const isButtonDisabled = state.type === 'deleting';
 
-  return transactionDeleteController;
-};
+  const isOpen = match(state.type)
+    .with(
+      P.union('shown', 'deleting', 'deletingError', 'deletingSuccess'),
+      () => true
+    )
+    .otherwise(() => false);
 
-export type TransactionDeleteProviderProps = {
-  children: ReactNode;
-  usecase: TransactionDeleteUsecase;
-};
+  const onButtonConfirmPress = () => dispatch({ type: 'DELETE' });
 
-export const TransactionDeleteProvider = ({
-  children,
-  usecase,
-}: TransactionDeleteProviderProps) => {
-  const controller = useController(usecase);
-  return <Context.Provider value={controller}>{children}</Context.Provider>;
+  const onCancel = () => dispatch({ type: 'HIDE_CONFIRMATION' });
+
+  return {
+    state,
+    dispatch,
+    isButtonDisabled,
+    isOpen,
+    onButtonConfirmPress,
+    onCancel,
+  };
 };

@@ -1,33 +1,13 @@
-import { createContext, ReactNode, useContext } from 'react';
-import {
-  WalletDetailAction,
-  WalletDetailState,
-  WalletDetailUsecase,
-} from '../../domain';
-import { Controller, useController } from './controller';
+import { WalletDetailUsecase } from '../../domain';
+import { useController } from './controller';
 
-type ContextValue = Controller<WalletDetailState, WalletDetailAction> | null;
-
-const Context = createContext<ContextValue>(null);
-
-export const useWalletDetailController = () => {
-  const walletDetailController = useContext(Context);
-  if (walletDetailController === null) {
-    throw new Error('useWalletDetailController is called outside provider');
-  }
-
-  return walletDetailController;
-};
-
-export type WalletDetailProviderProps = {
-  children: ReactNode;
-  usecase: WalletDetailUsecase;
-};
-
-export const WalletDetailProvider = ({
-  children,
-  usecase,
-}: WalletDetailProviderProps) => {
-  const controller = useController(usecase);
-  return <Context.Provider value={controller}>{children}</Context.Provider>;
+export const useWalletDetailController = (usecase: WalletDetailUsecase) => {
+  const { state, dispatch } = useController(usecase);
+  return {
+    state,
+    dispatch,
+    balance: state.wallet?.balance ?? 0,
+    name: state.wallet?.name ?? '',
+    paymentCostPercentage: state.wallet?.paymentCostPercentage ?? 0,
+  };
 };

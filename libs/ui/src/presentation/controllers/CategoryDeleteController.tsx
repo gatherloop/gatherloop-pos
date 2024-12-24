@@ -1,36 +1,38 @@
-import { createContext, ReactNode, useContext } from 'react';
-import {
-  CategoryDeleteAction,
-  CategoryDeleteState,
-  CategoryDeleteUsecase,
-} from '../../domain';
-import { Controller, useController } from './controller';
+import { useEffect } from 'react';
+import { CategoryDeleteUsecase } from '../../domain';
+import { useController } from './controller';
+import { useToastController } from '@tamagui/toast';
+import { match, P } from 'ts-pattern';
 
-type ContextValue = Controller<
-  CategoryDeleteState,
-  CategoryDeleteAction
-> | null;
+export const useCategoryDeleteController = (usecase: CategoryDeleteUsecase) => {
+  const { state, dispatch } = useController(usecase);
 
-const Context = createContext<ContextValue>(null);
+  const toast = useToastController();
+  useEffect(() => {
+    if (state.type === 'deletingSuccess') toast.show('Delete Category Success');
+    else if (state.type === 'deletingError')
+      toast.show('Delete Category Error');
+  }, [state.type, toast]);
 
-export const useCategoryDeleteController = () => {
-  const categoryDeleteController = useContext(Context);
-  if (categoryDeleteController === null) {
-    throw new Error('useCategoryDeleteController is called outside provider');
-  }
+  const onConfirm = () => dispatch({ type: 'DELETE' });
 
-  return categoryDeleteController;
-};
+  const onCancel = () => dispatch({ type: 'HIDE_CONFIRMATION' });
 
-export type CategoryDeleteProviderProps = {
-  children: ReactNode;
-  usecase: CategoryDeleteUsecase;
-};
+  const isOpen = match(state.type)
+    .with(
+      P.union('shown', 'deleting', 'deletingError', 'deletingSuccess'),
+      () => true
+    )
+    .otherwise(() => false);
 
-export const CategoryDeleteProvider = ({
-  children,
-  usecase,
-}: CategoryDeleteProviderProps) => {
-  const controller = useController(usecase);
-  return <Context.Provider value={controller}>{children}</Context.Provider>;
+  const isButtonDisabled = state.type === 'deleting';
+
+  return {
+    state,
+    dispatch,
+    onConfirm,
+    onCancel,
+    isOpen,
+    isButtonDisabled,
+  };
 };

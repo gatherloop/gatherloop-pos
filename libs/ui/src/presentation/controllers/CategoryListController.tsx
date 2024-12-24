@@ -1,33 +1,37 @@
-import { createContext, ReactNode, useContext } from 'react';
-import {
-  CategoryListAction,
-  CategoryListState,
-  CategoryListUsecase,
-} from '../../domain';
-import { Controller, useController } from './controller';
+import { useCallback } from 'react';
+import { CategoryListUsecase } from '../../domain';
+import { useController } from './controller';
+import { useFocusEffect } from '../../utils';
+import { match, P } from 'ts-pattern';
+import { CategoryListProps } from '../components';
 
-type ContextValue = Controller<CategoryListState, CategoryListAction> | null;
+export const useCategoryListController = (usecase: CategoryListUsecase) => {
+  const { state, dispatch } = useController(usecase);
 
-const Context = createContext<ContextValue>(null);
+  useFocusEffect(
+    useCallback(() => {
+      dispatch({ type: 'FETCH' });
+    }, [dispatch])
+  );
 
-export const useCategoryListController = () => {
-  const categoryListController = useContext(Context);
-  if (categoryListController === null) {
-    throw new Error('useCategoryListController is called outside provider');
-  }
+  const onRetryButtonPress = () => {
+    dispatch({ type: 'FETCH' });
+  };
 
-  return categoryListController;
-};
+  const variant = match(state)
+    .returnType<CategoryListProps['variant']>()
+    .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))
+    .with({ type: P.union('loaded', 'revalidating') }, ({ categories }) => ({
+      type: categories.length > 0 ? 'loaded' : 'empty',
+      categories,
+    }))
+    .with({ type: 'error' }, () => ({ type: 'error' }))
+    .exhaustive();
 
-export type CategoryListProviderProps = {
-  children: ReactNode;
-  usecase: CategoryListUsecase;
-};
-
-export const CategoryListProvider = ({
-  children,
-  usecase,
-}: CategoryListProviderProps) => {
-  const controller = useController(usecase);
-  return <Context.Provider value={controller}>{children}</Context.Provider>;
+  return {
+    state,
+    dispatch,
+    onRetryButtonPress,
+    variant,
+  };
 };

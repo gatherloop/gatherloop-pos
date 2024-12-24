@@ -6,10 +6,7 @@ import {
 } from '../../../api-contract/src';
 import { OpenAPIWalletRepository } from '../data';
 import { WalletUpdateUsecase } from '../domain';
-import {
-  WalletUpdateScreen as WalletUpdateScreenView,
-  WalletUpdateProvider,
-} from '../presentation';
+import { WalletUpdateScreen as WalletUpdateScreenView } from '../presentation';
 import {
   dehydrate,
   DehydratedState,
@@ -43,9 +40,5 @@ export function WalletUpdateScreen({ walletId }: WalletUpdateScreenProps) {
   const repository = new OpenAPIWalletRepository(client);
   repository.walletByIdServerParams = walletIdParam;
   const usecase = new WalletUpdateUsecase(repository);
-  return (
-    <WalletUpdateProvider usecase={usecase}>
-      <WalletUpdateScreenView />
-    </WalletUpdateProvider>
-  );
+  return <WalletUpdateScreenView walletUpdateUsecase={usecase} />;
 }

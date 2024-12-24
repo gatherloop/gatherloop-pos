@@ -1,36 +1,40 @@
-import { createContext, ReactNode, useContext } from 'react';
-import {
-  CategoryCreateAction,
-  CategoryCreateState,
-  CategoryCreateUsecase,
-} from '../../domain';
-import { Controller, useController } from './controller';
+import { useForm } from 'react-hook-form';
+import { CategoryCreateUsecase, CategoryForm } from '../../domain';
+import { useController } from './controller';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { useEffect } from 'react';
+import { useToastController } from '@tamagui/toast';
 
-type ContextValue = Controller<
-  CategoryCreateState,
-  CategoryCreateAction
-> | null;
+export const useCategoryCreateController = (usecase: CategoryCreateUsecase) => {
+  const { state, dispatch } = useController(usecase);
 
-const Context = createContext<ContextValue>(null);
+  const toast = useToastController();
 
-export const useCategoryCreateController = () => {
-  const categoryCreateController = useContext(Context);
-  if (categoryCreateController === null) {
-    throw new Error('useCategoryCreateController is called outside provider');
-  }
+  useEffect(() => {
+    if (state.type === 'submitSuccess') toast.show('Create Category Success');
+    else if (state.type === 'submitError') toast.show('Create Category Error');
+  }, [toast, state.type]);
 
-  return categoryCreateController;
-};
+  const form = useForm({
+    defaultValues: state.values,
+    resolver: zodResolver(z.object({ name: z.string().min(1) })),
+  });
 
-export type CategoryCreateProviderProps = {
-  children: ReactNode;
-  usecase: CategoryCreateUsecase;
-};
+  const onSubmit = (values: CategoryForm) => {
+    dispatch({ type: 'SUBMIT', values });
+  };
 
-export const CategoryCreateProvider = ({
-  children,
-  usecase,
-}: CategoryCreateProviderProps) => {
-  const controller = useController(usecase);
-  return <Context.Provider value={controller}>{children}</Context.Provider>;
+  const isSubmitDisabled =
+    state.type === 'submitting' ||
+    state.type === 'submitError' ||
+    state.type === 'submitSuccess';
+
+  return {
+    state,
+    dispatch,
+    form,
+    onSubmit,
+    isSubmitDisabled,
+  };
 };

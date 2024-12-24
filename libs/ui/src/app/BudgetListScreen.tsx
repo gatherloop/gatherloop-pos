@@ -2,10 +2,7 @@
 import { budgetList, budgetListQueryKey } from '../../../api-contract/src';
 import { OpenAPIBudgetRepository } from '../data';
 import { BudgetListUsecase } from '../domain';
-import {
-  BudgetListScreen as BudgetListScreenView,
-  BudgetListProvider,
-} from '../presentation';
+import { BudgetListScreen as BudgetListScreenView } from '../presentation';
 import { dehydrate, QueryClient, useQueryClient } from '@tanstack/react-query';
 
 export async function getBudgetListScreenDehydratedState() {
@@ -22,9 +19,5 @@ export function BudgetListScreen() {
   const client = useQueryClient();
   const repository = new OpenAPIBudgetRepository(client);
   const budgetListUsecase = new BudgetListUsecase(repository);
-  return (
-    <BudgetListProvider usecase={budgetListUsecase}>
-      <BudgetListScreenView />
-    </BudgetListProvider>
-  );
+  return <BudgetListScreenView budgetListUsecase={budgetListUsecase} />;
 }

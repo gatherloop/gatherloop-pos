@@ -11,11 +11,7 @@ import {
   OpenAPIProductRepository,
 } from '../data';
 import { MaterialListUsecase, ProductCreateUsecase } from '../domain';
-import {
-  MaterialListProvider,
-  ProductCreateProvider,
-  ProductCreateScreen as ProductCreateScreenView,
-} from '../presentation';
+import { ProductCreateScreen as ProductCreateScreenView } from '../presentation';
 import {
   dehydrate,
   DehydratedState,
@@ -65,10 +61,9 @@ export function ProductCreateScreen() {
   const materialListUsecase = new MaterialListUsecase(materialRepository);
 
   return (
-    <ProductCreateProvider usecase={productCreateUsecase}>
-      <MaterialListProvider usecase={materialListUsecase}>
-        <ProductCreateScreenView />
-      </MaterialListProvider>
-    </ProductCreateProvider>
+    <ProductCreateScreenView
+      materialListUsecase={materialListUsecase}
+      productCreateUsecase={productCreateUsecase}
+    />
   );
 }

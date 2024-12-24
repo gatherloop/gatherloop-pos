@@ -1,33 +1,41 @@
-import { createContext, ReactNode, useContext } from 'react';
-import {
-  WalletCreateAction,
-  WalletCreateState,
-  WalletCreateUsecase,
-} from '../../domain';
-import { Controller, useController } from './controller';
+import { useEffect } from 'react';
+import { WalletCreateUsecase, WalletForm } from '../../domain';
+import { useController } from './controller';
+import { useToastController } from '@tamagui/toast';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 
-type ContextValue = Controller<WalletCreateState, WalletCreateAction> | null;
+export const useWalletCreateController = (usecase: WalletCreateUsecase) => {
+  const { state, dispatch } = useController(usecase);
+  const toast = useToastController();
 
-const Context = createContext<ContextValue>(null);
+  useEffect(() => {
+    if (state.type === 'submitSuccess') toast.show('Create Wallet Success');
+    else if (state.type === 'submitError') toast.show('Create Wallet Error');
+  }, [toast, state.type]);
 
-export const useWalletCreateController = () => {
-  const walletCreateController = useContext(Context);
-  if (walletCreateController === null) {
-    throw new Error('useWalletCreateController is called outside provider');
-  }
+  const form = useForm({
+    defaultValues: state.values,
+    resolver: zodResolver(
+      z.object({
+        name: z.string().min(1),
+        balance: z.number(),
+        paymentCostPercentage: z.number(),
+      })
+    ),
+  });
 
-  return walletCreateController;
-};
+  const onSubmit = (values: WalletForm) => dispatch({ type: 'SUBMIT', values });
 
-export type WalletCreateProviderProps = {
-  children: ReactNode;
-  usecase: WalletCreateUsecase;
-};
+  const isSubmitDisabled =
+    state.type === 'submitting' || state.type === 'submitSuccess';
 
-export const WalletCreateProvider = ({
-  children,
-  usecase,
-}: WalletCreateProviderProps) => {
-  const controller = useController(usecase);
-  return <Context.Provider value={controller}>{children}</Context.Provider>;
+  return {
+    state,
+    dispatch,
+    form,
+    onSubmit,
+    isSubmitDisabled,
+  };
 };

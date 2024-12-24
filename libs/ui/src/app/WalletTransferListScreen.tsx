@@ -7,11 +7,7 @@ import {
 } from '../../../api-contract/src';
 import { OpenAPIWalletRepository } from '../data';
 import { WalletDetailUsecase, WalletTransferListUsecase } from '../domain';
-import {
-  WalletDetailProvider,
-  WalletTransferListProvider,
-  WalletTransferListScreen as WalletTransferListScreenView,
-} from '../presentation';
+import { WalletTransferListScreen as WalletTransferListScreenView } from '../presentation';
 import { dehydrate, QueryClient, useQueryClient } from '@tanstack/react-query';
 
 export async function getWalletTransferListScreenDehydratedState(
@@ -52,10 +48,10 @@ export function WalletTransferListScreen({
   const walletTransferListUsecase = new WalletTransferListUsecase(repository);
   const walletDetailUsecase = new WalletDetailUsecase(repository);
   return (
-    <WalletTransferListProvider usecase={walletTransferListUsecase}>
-      <WalletDetailProvider usecase={walletDetailUsecase}>
-        <WalletTransferListScreenView walletId={walletId} />
-      </WalletDetailProvider>
-    </WalletTransferListProvider>
+    <WalletTransferListScreenView
+      walletId={walletId}
+      walletDetailUsecase={walletDetailUsecase}
+      walletTransferListUsecase={walletTransferListUsecase}
+    />
   );
 }

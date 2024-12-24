@@ -1,33 +1,42 @@
-import { createContext, ReactNode, useContext } from 'react';
-import {
-  BudgetListAction,
-  BudgetListState,
-  BudgetListUsecase,
-} from '../../domain';
-import { Controller, useController } from './controller';
+import { useCallback } from 'react';
+import { BudgetListUsecase } from '../../domain';
+import { useFocusEffect } from '../../utils';
+import { useController } from './controller';
+import { BudgetListProps } from '../components/budgets';
+import { match, P } from 'ts-pattern';
 
-type ContextValue = Controller<BudgetListState, BudgetListAction> | null;
+export const useBudgetListController = (usecase: BudgetListUsecase) => {
+  const { state, dispatch } = useController(usecase);
 
-const Context = createContext<ContextValue>(null);
+  useFocusEffect(
+    useCallback(() => {
+      dispatch({ type: 'FETCH' });
+    }, [dispatch])
+  );
 
-export const useBudgetListController = () => {
-  const budgetListController = useContext(Context);
-  if (budgetListController === null) {
-    throw new Error('useBudgetListController is called outside provider');
-  }
+  const onRetryButtonPress = () => {
+    dispatch({ type: 'FETCH' });
+  };
 
-  return budgetListController;
-};
+  const variant = match(state)
+    .returnType<BudgetListProps['variant']>()
+    .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))
+    .with({ type: P.union('loaded', 'revalidating') }, ({ budgets }) => ({
+      type: budgets.length > 0 ? 'loaded' : 'empty',
+      items: budgets.map((budget) => ({
+        name: budget.name,
+        balance: budget.balance,
+        id: budget.id,
+        percentage: budget.percentage,
+      })),
+    }))
+    .with({ type: 'error' }, () => ({ type: 'error' }))
+    .exhaustive();
 
-export type BudgetListProviderProps = {
-  children: ReactNode;
-  usecase: BudgetListUsecase;
-};
-
-export const BudgetListProvider = ({
-  children,
-  usecase,
-}: BudgetListProviderProps) => {
-  const controller = useController(usecase);
-  return <Context.Provider value={controller}>{children}</Context.Provider>;
+  return {
+    state,
+    dispatch,
+    onRetryButtonPress,
+    variant,
+  };
 };

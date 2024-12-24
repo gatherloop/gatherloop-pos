@@ -1,38 +1,81 @@
-import { createContext, ReactNode, useContext } from 'react';
+import { useEffect, useState } from 'react';
 import {
-  TransactionUpdateAction,
-  TransactionUpdateState,
+  Product,
+  TransactionForm,
   TransactionUpdateUsecase,
 } from '../../domain';
-import { Controller, useController } from './controller';
+import { useController } from './controller';
+import { useToastController } from '@tamagui/toast';
+import { useFieldArray, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 
-type ContextValue = Controller<
-  TransactionUpdateState,
-  TransactionUpdateAction
-> | null;
+export const useTransactionUpdateController = (
+  usecase: TransactionUpdateUsecase
+) => {
+  const { state, dispatch } = useController(usecase);
 
-const Context = createContext<ContextValue>(null);
+  const [isProductSheetOpen, setIsProductSheetOpen] = useState<boolean>(false);
 
-export const useTransactionUpdateController = () => {
-  const transactionUpdateController = useContext(Context);
-  if (transactionUpdateController === null) {
-    throw new Error(
-      'useTransactionUpdateController is called outside provider'
+  const onProductSheetOpenChange = setIsProductSheetOpen;
+
+  const toast = useToastController();
+  useEffect(() => {
+    if (state.type === 'submitSuccess')
+      toast.show('Update Transaction Success');
+    else if (state.type === 'submitError')
+      toast.show('Update Transaction Error');
+  }, [toast, state.type]);
+
+  const form = useForm({
+    defaultValues: state.values,
+    resolver: zodResolver(
+      z.object({
+        name: z.string().min(1),
+        transactionItems: z
+          .array(z.lazy(() => z.object({ amount: z.number().min(1) })))
+          .min(1),
+      }),
+      {},
+      { raw: true }
+    ),
+  });
+
+  const onSubmit = (values: TransactionForm) =>
+    dispatch({ type: 'SUBMIT', values });
+
+  const { append, update, fields } = useFieldArray({
+    control: form.control,
+    name: 'transactionItems',
+  });
+
+  const onAddItem = (newProduct: Product) => {
+    const itemIndex = fields.findIndex(
+      ({ product }) => newProduct.id === product.id
     );
-  }
+    const isItemExist = itemIndex !== -1;
+    if (isItemExist) {
+      update(itemIndex, {
+        ...fields[itemIndex],
+        amount: fields[itemIndex].amount + 1,
+      });
+    } else {
+      append({ amount: 1, product: newProduct });
+    }
 
-  return transactionUpdateController;
-};
+    setIsProductSheetOpen(false);
+  };
 
-export type TransactionUpdateProviderProps = {
-  children: ReactNode;
-  usecase: TransactionUpdateUsecase;
-};
+  const isSubmitDisabled = state.type === 'submitting';
 
-export const TransactionUpdateProvider = ({
-  children,
-  usecase,
-}: TransactionUpdateProviderProps) => {
-  const controller = useController(usecase);
-  return <Context.Provider value={controller}>{children}</Context.Provider>;
+  return {
+    state,
+    dispatch,
+    isProductSheetOpen,
+    onProductSheetOpenChange,
+    form,
+    onSubmit,
+    onAddItem,
+    isSubmitDisabled,
+  };
 };

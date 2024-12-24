@@ -2,11 +2,7 @@
 import { productList, productListQueryKey } from '../../../api-contract/src';
 import { OpenAPIProductRepository } from '../data';
 import { ProductListUsecase, ProductDeleteUsecase } from '../domain';
-import {
-  ProductListScreen as ProductListScreenView,
-  ProductDeleteProvider,
-  ProductListProvider,
-} from '../presentation';
+import { ProductListScreen as ProductListScreenView } from '../presentation';
 import { dehydrate, QueryClient, useQueryClient } from '@tanstack/react-query';
 
 export async function getProductListScreenDehydratedState() {
@@ -38,10 +34,9 @@ export function ProductListScreen() {
   const productListUsecase = new ProductListUsecase(repository);
   const productDeleteUsecase = new ProductDeleteUsecase(repository);
   return (
-    <ProductListProvider usecase={productListUsecase}>
-      <ProductDeleteProvider usecase={productDeleteUsecase}>
-        <ProductListScreenView />
-      </ProductDeleteProvider>
-    </ProductListProvider>
+    <ProductListScreenView
+      productListUsecase={productListUsecase}
+      productDeleteUsecase={productDeleteUsecase}
+    />
   );
 }

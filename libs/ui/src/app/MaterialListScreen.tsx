@@ -2,11 +2,7 @@
 import { materialList, materialListQueryKey } from '../../../api-contract/src';
 import { OpenAPIMaterialRepository } from '../data';
 import { MaterialListUsecase, MaterialDeleteUsecase } from '../domain';
-import {
-  MaterialListScreen as MaterialListScreenView,
-  MaterialDeleteProvider,
-  MaterialListProvider,
-} from '../presentation';
+import { MaterialListScreen as MaterialListScreenView } from '../presentation';
 import { dehydrate, QueryClient, useQueryClient } from '@tanstack/react-query';
 
 export async function getMaterialListScreenDehydratedState() {
@@ -38,10 +34,9 @@ export function MaterialListScreen() {
   const materialListUsecase = new MaterialListUsecase(repository);
   const materialDeleteUsecase = new MaterialDeleteUsecase(repository);
   return (
-    <MaterialListProvider usecase={materialListUsecase}>
-      <MaterialDeleteProvider usecase={materialDeleteUsecase}>
-        <MaterialListScreenView />
-      </MaterialDeleteProvider>
-    </MaterialListProvider>
+    <MaterialListScreenView
+      materialDeleteUsecase={materialDeleteUsecase}
+      materialListUsecase={materialListUsecase}
+    />
   );
 }

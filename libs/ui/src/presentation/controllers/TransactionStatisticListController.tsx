@@ -1,38 +1,48 @@
-import { createContext, ReactNode, useContext } from 'react';
-import {
-  TransactionStatisticListAction,
-  TransactionStatisticListState,
-  TransactionStatisticListUsecase,
-} from '../../domain';
-import { Controller, useController } from './controller';
+import { match, P } from 'ts-pattern';
+import { TransactionStatisticListUsecase } from '../../domain';
+import { useController } from './controller';
+import { TransactionStatisticProps } from '../components';
 
-type ContextValue = Controller<
-  TransactionStatisticListState,
-  TransactionStatisticListAction
-> | null;
+export const useTransactionStatisticListController = (
+  usecase: TransactionStatisticListUsecase
+) => {
+  const { state, dispatch } = useController(usecase);
 
-const Context = createContext<ContextValue>(null);
+  const onGroupByChange = (groupBy: 'date' | 'month') => {
+    dispatch({ type: 'SET_GROUP_BY', groupBy });
+  };
 
-export const useTransactionStatisticListController = () => {
-  const transactionPayController = useContext(Context);
-  if (transactionPayController === null) {
-    throw new Error(
-      'useTransactionStatisticListController is called outside provider'
-    );
-  }
+  const onRetryButtonPress = () => {
+    dispatch({ type: 'FETCH' });
+  };
 
-  return transactionPayController;
-};
+  const variant = match(state)
+    .returnType<TransactionStatisticProps['variant']>()
+    .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))
+    .with({ type: 'loaded' }, () => ({ type: 'loaded' }))
+    .with({ type: 'error' }, () => ({ type: 'error' }))
+    .exhaustive();
 
-export type TransactionStatisticListProviderProps = {
-  children: ReactNode;
-  usecase: TransactionStatisticListUsecase;
-};
+  const totalIncomeStatistics = state.transactionStatistics.map(
+    (statistic) => ({
+      y: statistic.totalIncome,
+      x: statistic.date,
+    })
+  );
 
-export const TransactionStatisticListProvider = ({
-  children,
-  usecase,
-}: TransactionStatisticListProviderProps) => {
-  const controller = useController(usecase);
-  return <Context.Provider value={controller}>{children}</Context.Provider>;
+  const totalStatistics = state.transactionStatistics.map((statistic) => ({
+    y: statistic.total,
+    x: statistic.date,
+  }));
+
+  return {
+    state,
+    dispatch,
+    onGroupByChange,
+    onRetryButtonPress,
+    variant,
+    totalIncomeStatistics,
+    totalStatistics,
+    groupBy: state.groupBy,
+  };
 };

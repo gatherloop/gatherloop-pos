@@ -1,33 +1,27 @@
-import { createContext, ReactNode, useContext } from 'react';
-import {
-  ExpenseListAction,
-  ExpenseListState,
-  ExpenseListUsecase,
-} from '../../domain';
-import { Controller, useController } from './controller';
+import { match, P } from 'ts-pattern';
+import { ExpenseListUsecase } from '../../domain';
+import { useController } from './controller';
+import { ExpenseListProps } from '../components';
 
-type ContextValue = Controller<ExpenseListState, ExpenseListAction> | null;
+export const useExpenseListController = (usecase: ExpenseListUsecase) => {
+  const { state, dispatch } = useController(usecase);
 
-const Context = createContext<ContextValue>(null);
+  const onRetryButtonPress = () => dispatch({ type: 'FETCH' });
 
-export const useExpenseListController = () => {
-  const expenseListController = useContext(Context);
-  if (expenseListController === null) {
-    throw new Error('useExpenseListController is called outside provider');
-  }
+  const variant = match(state)
+    .returnType<ExpenseListProps['variant']>()
+    .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))
+    .with({ type: P.union('loaded', 'revalidating') }, ({ expenses }) => ({
+      type: 'loaded',
+      items: expenses,
+    }))
+    .with({ type: 'error' }, () => ({ type: 'error' }))
+    .exhaustive();
 
-  return expenseListController;
-};
-
-export type ExpenseListProviderProps = {
-  children: ReactNode;
-  usecase: ExpenseListUsecase;
-};
-
-export const ExpenseListProvider = ({
-  children,
-  usecase,
-}: ExpenseListProviderProps) => {
-  const controller = useController(usecase);
-  return <Context.Provider value={controller}>{children}</Context.Provider>;
+  return {
+    state,
+    dispatch,
+    onRetryButtonPress,
+    variant,
+  };
 };

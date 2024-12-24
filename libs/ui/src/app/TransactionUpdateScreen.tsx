@@ -11,11 +11,7 @@ import {
   OpenAPITransactionRepository,
 } from '../data';
 import { ProductListUsecase, TransactionUpdateUsecase } from '../domain';
-import {
-  ProductListProvider,
-  TransactionUpdateProvider,
-  TransactionUpdateScreen as TransactionUpdateScreenView,
-} from '../presentation';
+import { TransactionUpdateScreen as TransactionUpdateScreenView } from '../presentation';
 import {
   dehydrate,
   DehydratedState,
@@ -69,17 +65,16 @@ export function TransactionUpdateScreen({
   const client = useQueryClient();
   const transactionRepository = new OpenAPITransactionRepository(client);
   transactionRepository.transactionByIdServerParams = transactionIdParam;
-  const transactionUsecase = new TransactionUpdateUsecase(
+  const transactionUpdateUsecase = new TransactionUpdateUsecase(
     transactionRepository
   );
 
   const productRepository = new OpenAPIProductRepository(client);
   const productListUsecase = new ProductListUsecase(productRepository);
   return (
-    <TransactionUpdateProvider usecase={transactionUsecase}>
-      <ProductListProvider usecase={productListUsecase}>
-        <TransactionUpdateScreenView />
-      </ProductListProvider>
-    </TransactionUpdateProvider>
+    <TransactionUpdateScreenView
+      productListUsecase={productListUsecase}
+      transactionUpdateUsecase={transactionUpdateUsecase}
+    />
   );
 }

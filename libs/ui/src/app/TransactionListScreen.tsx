@@ -9,12 +9,7 @@ import {
   TransactionDeleteUsecase,
   TransactionPayUsecase,
 } from '../domain';
-import {
-  TransactionListScreen as TransactionListScreenView,
-  TransactionDeleteProvider,
-  TransactionListProvider,
-  TransactionPayProvider,
-} from '../presentation';
+import { TransactionListScreen as TransactionListScreenView } from '../presentation';
 import { dehydrate, QueryClient, useQueryClient } from '@tanstack/react-query';
 
 export async function getTransactionListScreenDehydratedState() {
@@ -55,12 +50,10 @@ export function TransactionListScreen() {
     walletRepository
   );
   return (
-    <TransactionListProvider usecase={transactionListUsecase}>
-      <TransactionDeleteProvider usecase={transactionDeleteUsecase}>
-        <TransactionPayProvider usecase={transactionPayUsecase}>
-          <TransactionListScreenView />
-        </TransactionPayProvider>
-      </TransactionDeleteProvider>
-    </TransactionListProvider>
+    <TransactionListScreenView
+      transactionDeleteUsecase={transactionDeleteUsecase}
+      transactionListUsecase={transactionListUsecase}
+      transactionPayUsecase={transactionPayUsecase}
+    />
   );
 }

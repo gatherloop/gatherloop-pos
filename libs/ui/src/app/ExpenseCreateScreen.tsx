@@ -11,10 +11,7 @@ import {
   OpenAPIWalletRepository,
 } from '../data';
 import { ExpenseCreateUsecase } from '../domain';
-import {
-  ExpenseCreateProvider,
-  ExpenseCreateScreen as ExpenseCreateScreenView,
-} from '../presentation';
+import { ExpenseCreateScreen as ExpenseCreateScreenView } from '../presentation';
 import {
   dehydrate,
   DehydratedState,
@@ -48,9 +45,5 @@ export function ExpenseCreateScreen() {
     budgetRepository,
     walletRepository
   );
-  return (
-    <ExpenseCreateProvider usecase={usecase}>
-      <ExpenseCreateScreenView />
-    </ExpenseCreateProvider>
-  );
+  return <ExpenseCreateScreenView expenseCreateUsecase={usecase} />;
 }

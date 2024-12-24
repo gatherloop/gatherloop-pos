@@ -1,33 +1,59 @@
-import { createContext, ReactNode, useContext } from 'react';
-import {
-  MaterialListAction,
-  MaterialListState,
-  MaterialListUsecase,
-} from '../../domain';
-import { Controller, useController } from './controller';
+import { useCallback } from 'react';
+import { MaterialListUsecase } from '../../domain';
+import { useController } from './controller';
+import { useFocusEffect } from '../../utils';
+import { match, P } from 'ts-pattern';
+import { MaterialListProps } from '../components';
 
-type ContextValue = Controller<MaterialListState, MaterialListAction> | null;
+export const useMaterialListController = (usecase: MaterialListUsecase) => {
+  const { state, dispatch } = useController(usecase);
 
-const Context = createContext<ContextValue>(null);
+  useFocusEffect(
+    useCallback(() => {
+      dispatch({ type: 'FETCH' });
+    }, [dispatch])
+  );
 
-export const useMaterialListController = () => {
-  const materialListController = useContext(Context);
-  if (materialListController === null) {
-    throw new Error('useMaterialListController is called outside provider');
-  }
+  const onSearchValueChange = (query: string) => {
+    dispatch({
+      type: 'CHANGE_PARAMS',
+      query,
+      page: 1,
+      fetchDebounceDelay: 600,
+    });
+  };
 
-  return materialListController;
-};
+  const onPageChange = (page: number) => {
+    dispatch({ type: 'CHANGE_PARAMS', page });
+  };
 
-export type MaterialListProviderProps = {
-  children: ReactNode;
-  usecase: MaterialListUsecase;
-};
+  const onRetryButtonPress = () => {
+    dispatch({ type: 'FETCH' });
+  };
 
-export const MaterialListProvider = ({
-  children,
-  usecase,
-}: MaterialListProviderProps) => {
-  const controller = useController(usecase);
-  return <Context.Provider value={controller}>{children}</Context.Provider>;
+  const variant = match(state)
+    .returnType<MaterialListProps['variant']>()
+    .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))
+    .with(
+      { type: P.union('changingParams', 'loaded', 'revalidating') },
+      ({ materials }) => ({
+        type: materials.length > 0 ? 'loaded' : 'empty',
+        items: materials,
+      })
+    )
+    .with({ type: 'error' }, () => ({ type: 'error' }))
+    .exhaustive();
+
+  return {
+    state,
+    dispatch,
+    searchValue: state.query,
+    currentPage: state.page,
+    totalItem: state.totalItem,
+    itemPerPage: state.itemPerPage,
+    onSearchValueChange,
+    onPageChange,
+    onRetryButtonPress,
+    variant,
+  };
 };

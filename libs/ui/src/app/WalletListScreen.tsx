@@ -2,10 +2,7 @@
 import { walletList, walletListQueryKey } from '../../../api-contract/src';
 import { OpenAPIWalletRepository } from '../data';
 import { WalletListUsecase } from '../domain';
-import {
-  WalletListScreen as WalletListScreenView,
-  WalletListProvider,
-} from '../presentation';
+import { WalletListScreen as WalletListScreenView } from '../presentation';
 import { dehydrate, QueryClient, useQueryClient } from '@tanstack/react-query';
 
 export async function getWalletListScreenDehydratedState() {
@@ -22,9 +19,5 @@ export function WalletListScreen() {
   const client = useQueryClient();
   const repository = new OpenAPIWalletRepository(client);
   const walletListUsecase = new WalletListUsecase(repository);
-  return (
-    <WalletListProvider usecase={walletListUsecase}>
-      <WalletListScreenView />
-    </WalletListProvider>
-  );
+  return <WalletListScreenView walletListUsecase={walletListUsecase} />;
 }

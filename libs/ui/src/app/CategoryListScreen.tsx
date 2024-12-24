@@ -2,11 +2,7 @@
 import { categoryList, categoryListQueryKey } from '../../../api-contract/src';
 import { OpenAPICategoryRepository } from '../data';
 import { CategoryListUsecase, CategoryDeleteUsecase } from '../domain';
-import {
-  CategoryListScreen as CategoryListScreenView,
-  CategoryDeleteProvider,
-  CategoryListProvider,
-} from '../presentation';
+import { CategoryListScreen as CategoryListScreenView } from '../presentation';
 import { dehydrate, QueryClient, useQueryClient } from '@tanstack/react-query';
 
 export async function getCategoryListScreenDehydratedState() {
@@ -24,10 +20,9 @@ export function CategoryListScreen() {
   const categoryListUsecase = new CategoryListUsecase(repository);
   const categoryDeleteUsecase = new CategoryDeleteUsecase(repository);
   return (
-    <CategoryListProvider usecase={categoryListUsecase}>
-      <CategoryDeleteProvider usecase={categoryDeleteUsecase}>
-        <CategoryListScreenView />
-      </CategoryDeleteProvider>
-    </CategoryListProvider>
+    <CategoryListScreenView
+      categoryDeleteUsecase={categoryDeleteUsecase}
+      categoryListUsecase={categoryListUsecase}
+    />
   );
 }

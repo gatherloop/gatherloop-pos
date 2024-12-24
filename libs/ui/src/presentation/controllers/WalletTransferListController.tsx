@@ -1,38 +1,37 @@
-import { createContext, ReactNode, useContext } from 'react';
-import {
-  WalletTransferListAction,
-  WalletTransferListState,
-  WalletTransferListUsecase,
-} from '../../domain';
-import { Controller, useController } from './controller';
+import { WalletTransferListUsecase } from '../../domain';
+import { useController } from './controller';
+import { match, P } from 'ts-pattern';
+import { WalletTransferListProps } from '../components';
 
-type ContextValue = Controller<
-  WalletTransferListState,
-  WalletTransferListAction
-> | null;
+export const useWalletTransferListController = (
+  usecase: WalletTransferListUsecase
+) => {
+  const { state, dispatch } = useController(usecase);
 
-const Context = createContext<ContextValue>(null);
+  const onRetryButtonPress = () => {
+    dispatch({ type: 'FETCH' });
+  };
 
-export const useWalletTransferListController = () => {
-  const walletListController = useContext(Context);
-  if (walletListController === null) {
-    throw new Error(
-      'useWalletTransferListController is called outside provider'
-    );
-  }
+  const variant = match(state)
+    .returnType<WalletTransferListProps['variant']>()
+    .with({ type: P.union('idle', 'loading') }, () => ({
+      type: 'loading',
+    }))
+    .with({ type: P.union('loaded', 'revalidating') }, (state) => ({
+      type: 'loaded',
+      items: state.walletTransfers.map((walletTransfer) => ({
+        amount: walletTransfer.amount,
+        createdAt: walletTransfer.createdAt,
+        toWalletName: walletTransfer.toWallet.name,
+      })),
+    }))
+    .with({ type: 'error' }, () => ({ type: 'error' }))
+    .exhaustive();
 
-  return walletListController;
-};
-
-export type WalletTransferListProviderProps = {
-  children: ReactNode;
-  usecase: WalletTransferListUsecase;
-};
-
-export const WalletTransferListProvider = ({
-  children,
-  usecase,
-}: WalletTransferListProviderProps) => {
-  const controller = useController(usecase);
-  return <Context.Provider value={controller}>{children}</Context.Provider>;
+  return {
+    state,
+    dispatch,
+    onRetryButtonPress,
+    variant,
+  };
 };
