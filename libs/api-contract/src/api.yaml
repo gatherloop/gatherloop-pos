@@ -767,6 +767,7 @@ paths:
         - $ref: '#/components/parameters/Order'
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Skip'
+        - $ref: '#/components/parameters/PaymentStatus'
       responses:
         '200':
           description: success response
@@ -1685,3 +1686,9 @@ components:
       schema:
         type: integer
         format: int64
+    PaymentStatus:
+      name: paymentStatus
+      in: query
+      schema:
+        type: string
+        enum: [paid, unpaid, all]

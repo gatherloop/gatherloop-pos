@@ -22,6 +22,7 @@ func (handler Handler) GetTransactionList(w http.ResponseWriter, r *http.Request
 	query := base.GetQuery(r)
 	sortBy := base.GetSortBy(r)
 	order := base.GetOrder(r)
+	paymentStatus := GetPaymentStatus(r)
 
 	skip, err := base.GetSkip(r)
 	if err != nil {
@@ -35,7 +36,7 @@ func (handler Handler) GetTransactionList(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	transactions, total, err := handler.usecase.GetTransactionList(ctx, query, sortBy, order, skip, limit)
+	transactions, total, err := handler.usecase.GetTransactionList(ctx, query, sortBy, order, skip, limit, paymentStatus)
 	if err != nil {
 		base.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
 		return
@@ -160,7 +161,7 @@ func (handler Handler) GetTransactionStatistics(w http.ResponseWriter, r *http.R
 
 	apiTransactionStatistics := []apiContract.TransactionStatistic{}
 	for _, transactionStatistic := range transactionStatistics {
-		apiTransactionStatistics = append(apiTransactionStatistics, toApiTransactionStatistic(transactionStatistic))
+		apiTransactionStatistics = append(apiTransactionStatistics, ToApiTransactionStatistic(transactionStatistic))
 	}
 
 	json.NewEncoder(w).Encode(apiContract.TransactionStatistics200Response{Data: apiTransactionStatistics})

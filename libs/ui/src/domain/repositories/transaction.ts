@@ -1,4 +1,5 @@
 import {
+  PaymentStatus,
   Transaction,
   TransactionForm,
   TransactionStatistic,
@@ -10,6 +11,7 @@ export type TransactionListParams = {
   query: string;
   sortBy: 'created_at';
   orderBy: 'asc' | 'desc';
+  paymentStatus: PaymentStatus;
 };
 
 export interface TransactionRepository {

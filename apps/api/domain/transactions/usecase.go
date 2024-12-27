@@ -25,13 +25,13 @@ func NewUsecase(repository Repository, productRepository products.Repository, wa
 	}
 }
 
-func (usecase Usecase) GetTransactionList(ctx context.Context, query string, sortBy string, order string, skip int, limit int) ([]Transaction, int64, error) {
-	transactions, err := usecase.repository.GetTransactionList(ctx, query, sortBy, order, skip, limit)
+func (usecase Usecase) GetTransactionList(ctx context.Context, query string, sortBy string, order string, skip int, limit int, paymentStatus PaymentStatus) ([]Transaction, int64, error) {
+	transactions, err := usecase.repository.GetTransactionList(ctx, query, sortBy, order, skip, limit, paymentStatus)
 	if err != nil {
 		return []Transaction{}, 0, err
 	}
 
-	total, err := usecase.repository.GetTransactionListTotal(ctx, query)
+	total, err := usecase.repository.GetTransactionListTotal(ctx, query, paymentStatus)
 	if err != nil {
 		return []Transaction{}, 0, err
 	}

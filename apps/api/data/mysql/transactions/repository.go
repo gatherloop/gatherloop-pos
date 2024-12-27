@@ -22,10 +22,10 @@ func (repo Repository) BeginTransaction(ctx context.Context, callback func(ctxWi
 	return utils.BeginDbTransaction(ctx, repo.db, callback)
 }
 
-func (repo Repository) GetTransactionList(ctx context.Context, query string, sortBy string, order string, skip int, limit int) ([]transactions.Transaction, error) {
+func (repo Repository) GetTransactionList(ctx context.Context, query string, sortBy string, order string, skip int, limit int, paymentStatus transactions.PaymentStatus) ([]transactions.Transaction, error) {
 	db := utils.GetDbFromCtx(ctx, repo.db)
 
-	var transactions []transactions.Transaction
+	var transactionResults []transactions.Transaction
 	result := db.Table("transactions").Where("deleted_at is NULL").Preload("TransactionItems").Preload("Wallet")
 
 	if sortBy != "" && order != "" {
@@ -44,18 +44,32 @@ func (repo Repository) GetTransactionList(ctx context.Context, query string, sor
 		result = result.Limit(limit)
 	}
 
-	result = result.Find(&transactions)
+	switch paymentStatus {
+	case transactions.Paid:
+		result = result.Where("paid_at IS NOT NULL")
+	case transactions.Unpaid:
+		result = result.Where("paid_at IS NULL")
+	}
 
-	return transactions, result.Error
+	result = result.Find(&transactionResults)
+
+	return transactionResults, result.Error
 }
 
-func (repo Repository) GetTransactionListTotal(ctx context.Context, query string) (int64, error) {
+func (repo Repository) GetTransactionListTotal(ctx context.Context, query string, paymentStatus transactions.PaymentStatus) (int64, error) {
 	db := utils.GetDbFromCtx(ctx, repo.db)
 	var count int64
 	result := db.Table("transactions").Where("deleted_at", nil)
 
 	if query != "" {
 		result = result.Where("name LIKE ?", "%"+query+"%")
+	}
+
+	switch paymentStatus {
+	case transactions.Paid:
+		result = result.Where("paid_at IS NOT NULL")
+	case transactions.Unpaid:
+		result = result.Where("paid_at IS NULL")
 	}
 
 	result = result.Count(&count)

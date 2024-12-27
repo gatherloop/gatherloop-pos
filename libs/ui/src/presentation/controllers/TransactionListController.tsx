@@ -1,5 +1,5 @@
 import { match, P } from 'ts-pattern';
-import { TransactionListUsecase } from '../../domain';
+import { PaymentStatus, TransactionListUsecase } from '../../domain';
 import { useController } from './controller';
 import { TransactionListProps } from '../components';
 
@@ -7,6 +7,15 @@ export const useTransactionListController = (
   usecase: TransactionListUsecase
 ) => {
   const { state, dispatch } = useController(usecase);
+
+  const onPaymentStatusChange = (paymentStatus: PaymentStatus) => {
+    dispatch({
+      type: 'CHANGE_PARAMS',
+      paymentStatus,
+      page: 1,
+      fetchDebounceDelay: 600,
+    });
+  };
 
   const onSearchValueChange = (query: string) => {
     dispatch({
@@ -39,6 +48,8 @@ export const useTransactionListController = (
     state,
     dispatch,
     onSearchValueChange,
+    paymentStatus: state.paymentStatus,
+    onPaymentStatusChange,
     onPageChange,
     onRetryButtonPress,
     variant,

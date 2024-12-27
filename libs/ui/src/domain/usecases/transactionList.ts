@@ -1,5 +1,5 @@
 import { match, P } from 'ts-pattern';
-import { Transaction } from '../entities';
+import { PaymentStatus, Transaction } from '../entities';
 import { TransactionRepository } from '../repositories';
 import { createDebounce } from '../../utils';
 import { Usecase } from './IUsecase';
@@ -11,6 +11,7 @@ type Context = {
   errorMessage: string | null;
   sortBy: 'created_at';
   orderBy: 'asc' | 'desc';
+  paymentStatus: PaymentStatus;
   itemPerPage: number;
   totalItem: number;
   fetchDebounceDelay: number;
@@ -35,6 +36,7 @@ export type TransactionListAction =
       page?: number;
       query?: string;
       fetchDebounceDelay?: number;
+      paymentStatus?: PaymentStatus;
     }
   | { type: 'REVALIDATE'; transactions: Transaction[]; totalItem: number }
   | {
@@ -66,6 +68,7 @@ export class TransactionListUsecase extends Usecase<
       totalItem,
       page: initialParams.page,
       query: initialParams.query,
+      paymentStatus: 'all',
       errorMessage: null,
       sortBy: initialParams.sortBy,
       orderBy: initialParams.orderBy,
@@ -157,9 +160,16 @@ export class TransactionListUsecase extends Usecase<
       .with({ type: 'idle' }, () => dispatch({ type: 'FETCH' }))
       .with(
         { type: 'loading' },
-        ({ page, itemPerPage, orderBy, query, sortBy }) => {
+        ({ page, itemPerPage, orderBy, query, sortBy, paymentStatus }) => {
           this.repository
-            .fetchTransactionList({ page, itemPerPage, orderBy, query, sortBy })
+            .fetchTransactionList({
+              page,
+              itemPerPage,
+              orderBy,
+              query,
+              sortBy,
+              paymentStatus,
+            })
             .then(({ transactions, totalItem }) =>
               dispatch({ type: 'FETCH_SUCCESS', transactions, totalItem })
             )
@@ -173,7 +183,15 @@ export class TransactionListUsecase extends Usecase<
       )
       .with(
         { type: 'changingParams' },
-        ({ page, itemPerPage, orderBy, query, sortBy, fetchDebounceDelay }) => {
+        ({
+          page,
+          itemPerPage,
+          orderBy,
+          query,
+          sortBy,
+          fetchDebounceDelay,
+          paymentStatus,
+        }) => {
           changeParamsDebounce(() => {
             const { transactions, totalItem } =
               this.repository.getTransactionList({
@@ -182,6 +200,7 @@ export class TransactionListUsecase extends Usecase<
                 orderBy,
                 query,
                 sortBy,
+                paymentStatus,
               });
 
             if (transactions.length > 0) {
@@ -200,6 +219,7 @@ export class TransactionListUsecase extends Usecase<
           orderBy,
           query,
           sortBy,
+          paymentStatus,
           transactions,
           totalItem,
         }) => {
@@ -210,6 +230,7 @@ export class TransactionListUsecase extends Usecase<
               orderBy,
               query,
               sortBy,
+              paymentStatus,
             })
             .then(({ transactions, totalItem }) =>
               dispatch({ type: 'REVALIDATE_FINISH', transactions, totalItem })

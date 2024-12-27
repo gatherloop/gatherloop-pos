@@ -16,6 +16,7 @@ import {
   transactionStatistics,
   TransactionStatistic as ApiTransactionStatistic,
   TransactionStatistics200,
+  TransactionListQueryParams,
 } from '../../../../api-contract/src';
 import {
   Transaction,
@@ -33,6 +34,7 @@ export class OpenAPITransactionRepository implements TransactionRepository {
     orderBy: 'desc',
     query: '',
     sortBy: 'created_at',
+    paymentStatus: 'all',
   };
 
   transactionByIdServerParams: number | null = null;
@@ -40,6 +42,7 @@ export class OpenAPITransactionRepository implements TransactionRepository {
   constructor(client: QueryClient) {
     this.client = client;
   }
+
   getTransactionListServerParams: TransactionRepository['getTransactionListServerParams'] =
     () => this.transactionListServerParams;
 
@@ -164,13 +167,15 @@ export class OpenAPITransactionRepository implements TransactionRepository {
     page,
     query,
     sortBy,
+    paymentStatus,
   }) => {
-    const params = {
+    const params: TransactionListQueryParams = {
       query,
       skip: (page - 1) * itemPerPage,
       limit: itemPerPage,
       order: orderBy,
       sortBy,
+      paymentStatus,
     };
     return this.client
       .fetchQuery({

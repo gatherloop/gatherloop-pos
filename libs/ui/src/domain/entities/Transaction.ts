@@ -29,3 +29,5 @@ export type TransactionForm = {
   name: string;
   transactionItems: TransactionItemForm[];
 };
+
+export type PaymentStatus = 'paid' | 'unpaid' | 'all';

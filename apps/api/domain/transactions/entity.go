@@ -48,3 +48,11 @@ type TransactionItemRequest struct {
 type TransactionPayRequest struct {
 	WalletId int64 `json:"walletId"`
 }
+
+type PaymentStatus int
+
+const (
+	Paid PaymentStatus = iota
+	Unpaid
+	All
+)

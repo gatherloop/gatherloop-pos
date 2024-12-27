@@ -30,6 +30,20 @@ func GetTransactionPayRequest(r *http.Request) (apiContract.TransactionPayReques
 	return transactionPayRequest, err
 }
 
+func GetPaymentStatus(r *http.Request) transactions.PaymentStatus {
+	paymentStatusQuery := r.URL.Query().Get("paymentStatus")
+	switch paymentStatusQuery {
+	case "paid":
+		return transactions.Paid
+	case "unpaid":
+		return transactions.Unpaid
+	case "all":
+		return transactions.All
+	default:
+		return transactions.All
+	}
+}
+
 func ToApiTransaction(transaction transactions.Transaction) apiContract.Transaction {
 	apiTransactionItems := []apiContract.TransactionItem{}
 	for _, item := range transaction.TransactionItems {
@@ -79,7 +93,7 @@ func ToTransactionPayRequest(transactionPayRequest apiContract.TransactionPayReq
 	}
 }
 
-func toApiTransactionStatistic(transactionStatistic transactions.TransactionStatistic) apiContract.TransactionStatistic {
+func ToApiTransactionStatistic(transactionStatistic transactions.TransactionStatistic) apiContract.TransactionStatistic {
 	return apiContract.TransactionStatistic{
 		Date:        transactionStatistic.Date,
 		Total:       transactionStatistic.Total,
