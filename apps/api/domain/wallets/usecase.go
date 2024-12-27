@@ -1,6 +1,7 @@
 package wallets
 
 import (
+	"apps/api/domain/base"
 	"context"
 	"errors"
 )
@@ -33,7 +34,7 @@ func (usecase Usecase) DeleteWalletById(ctx context.Context, id int64) error {
 	return usecase.repository.DeleteWalletById(ctx, id)
 }
 
-func (usecase Usecase) GetWalletTransferList(ctx context.Context, walletId int64, sortBy string, order string, skip int, limit int) ([]WalletTransfer, error) {
+func (usecase Usecase) GetWalletTransferList(ctx context.Context, walletId int64, sortBy base.SortBy, order base.Order, skip int, limit int) ([]WalletTransfer, error) {
 	return usecase.repository.GetWalletTransferList(ctx, walletId, sortBy, order, skip, limit)
 }
 

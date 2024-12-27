@@ -1,6 +1,8 @@
 package wallets_mysql
 
 import (
+	base_mysql "apps/api/data/mysql/base"
+	"apps/api/domain/base"
 	"apps/api/domain/wallets"
 	"apps/api/utils"
 	"context"
@@ -55,15 +57,11 @@ func (repo Repository) DeleteWalletById(ctx context.Context, id int64) error {
 	return result.Error
 }
 
-func (repo Repository) GetWalletTransferList(ctx context.Context, walletId int64, sortBy string, order string, skip int, limit int) ([]wallets.WalletTransfer, error) {
+func (repo Repository) GetWalletTransferList(ctx context.Context, walletId int64, sortBy base.SortBy, order base.Order, skip int, limit int) ([]wallets.WalletTransfer, error) {
 	db := utils.GetDbFromCtx(ctx, repo.db)
 	var walletTransfers []wallets.WalletTransfer
 
-	result := db.Table("wallet_transfers").Preload("FromWallet").Preload("ToWallet").Where("deleted_at is NULL AND from_wallet_id = ?", walletId)
-
-	if sortBy != "" && order != "" {
-		result = result.Order(fmt.Sprintf("%s %s", sortBy, order))
-	}
+	result := db.Table("wallet_transfers").Preload("FromWallet").Preload("ToWallet").Where("deleted_at is NULL AND from_wallet_id = ?", walletId).Order(fmt.Sprintf("%s %s", base_mysql.ToSortByColumn(sortBy), base_mysql.ToOrderColumn(order)))
 
 	if skip > 0 {
 		result = result.Offset(skip)

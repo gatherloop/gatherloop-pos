@@ -1,6 +1,7 @@
 package base
 
 import (
+	"apps/api/domain/base"
 	"encoding/json"
 	apiContract "libs/api-contract"
 	"net/http"
@@ -24,12 +25,26 @@ func WriteError(w http.ResponseWriter, err apiContract.Error) {
 	json.NewEncoder(w).Encode(err)
 }
 
-func GetSortBy(r *http.Request) string {
-	return r.URL.Query().Get("sortBy")
+func GetSortBy(r *http.Request) base.SortBy {
+	sortByQuery := r.URL.Query().Get("sortBy")
+	switch sortByQuery {
+	case "created_at":
+		return base.CreatedAt
+	default:
+		return base.CreatedAt
+	}
 }
 
-func GetOrder(r *http.Request) string {
-	return r.URL.Query().Get("order")
+func GetOrder(r *http.Request) base.Order {
+	orderQuery := r.URL.Query().Get("order")
+	switch orderQuery {
+	case "asc":
+		return base.Ascending
+	case "desc":
+		return base.Descending
+	default:
+		return base.Ascending
+	}
 }
 
 func GetQuery(r *http.Request) string {

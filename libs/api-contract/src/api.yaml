@@ -1666,6 +1666,8 @@ components:
       in: query
       schema:
         type: string
+        enum:
+          - created_at
     Order:
       name: order
       in: query

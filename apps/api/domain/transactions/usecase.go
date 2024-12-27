@@ -1,6 +1,7 @@
 package transactions
 
 import (
+	"apps/api/domain/base"
 	"apps/api/domain/budgets"
 	"apps/api/domain/products"
 	"apps/api/domain/wallets"
@@ -25,7 +26,7 @@ func NewUsecase(repository Repository, productRepository products.Repository, wa
 	}
 }
 
-func (usecase Usecase) GetTransactionList(ctx context.Context, query string, sortBy string, order string, skip int, limit int, paymentStatus PaymentStatus) ([]Transaction, int64, error) {
+func (usecase Usecase) GetTransactionList(ctx context.Context, query string, sortBy base.SortBy, order base.Order, skip int, limit int, paymentStatus PaymentStatus) ([]Transaction, int64, error) {
 	transactions, err := usecase.repository.GetTransactionList(ctx, query, sortBy, order, skip, limit, paymentStatus)
 	if err != nil {
 		return []Transaction{}, 0, err

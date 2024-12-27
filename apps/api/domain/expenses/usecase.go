@@ -1,6 +1,7 @@
 package expenses
 
 import (
+	"apps/api/domain/base"
 	"apps/api/domain/budgets"
 	"apps/api/domain/wallets"
 	"context"
@@ -22,7 +23,7 @@ func NewUsecase(repository Repository, budgetRepository budgets.Repository, wall
 	}
 }
 
-func (usecase Usecase) GetExpenseList(ctx context.Context, sortBy string, order string, skip int, limit int) ([]Expense, error) {
+func (usecase Usecase) GetExpenseList(ctx context.Context, sortBy base.SortBy, order base.Order, skip int, limit int) ([]Expense, error) {
 	return usecase.repository.GetExpenseList(ctx, sortBy, order, skip, limit)
 }
 

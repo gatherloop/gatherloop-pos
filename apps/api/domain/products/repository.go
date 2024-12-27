@@ -1,12 +1,13 @@
 package products
 
 import (
+	"apps/api/domain/base"
 	"context"
 )
 
 type Repository interface {
 	BeginTransaction(ctx context.Context, callback func(ctxWithTx context.Context) error) error
-	GetProductList(ctx context.Context, query string, sortBy string, order string, skip int, limit int) ([]Product, error)
+	GetProductList(ctx context.Context, query string, sortBy base.SortBy, order base.Order, skip int, limit int) ([]Product, error)
 	GetProductListTotal(ctx context.Context, query string) (int64, error)
 	GetProductById(ctx context.Context, id int64) (Product, error)
 	CreateProduct(ctx context.Context, product *Product) error

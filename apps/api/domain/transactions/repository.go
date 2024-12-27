@@ -1,13 +1,14 @@
 package transactions
 
 import (
+	"apps/api/domain/base"
 	"context"
 	"time"
 )
 
 type Repository interface {
 	BeginTransaction(ctx context.Context, callback func(ctxWithTx context.Context) error) error
-	GetTransactionList(ctx context.Context, query string, sortBy string, order string, skip int, limit int, paymentStatus PaymentStatus) ([]Transaction, error)
+	GetTransactionList(ctx context.Context, query string, sortBy base.SortBy, order base.Order, skip int, limit int, paymentStatus PaymentStatus) ([]Transaction, error)
 	GetTransactionListTotal(ctx context.Context, query string, paymentStatus PaymentStatus) (int64, error)
 	GetTransactionById(ctx context.Context, id int64) (Transaction, error)
 	CreateTransaction(ctx context.Context, transaction *Transaction) error

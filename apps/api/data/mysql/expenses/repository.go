@@ -1,6 +1,8 @@
 package expenses_mysql
 
 import (
+	base_mysql "apps/api/data/mysql/base"
+	"apps/api/domain/base"
 	"apps/api/domain/expenses"
 	"apps/api/utils"
 	"context"
@@ -22,13 +24,9 @@ func (repo Repository) BeginTransaction(ctx context.Context, callback func(ctxWi
 	return utils.BeginDbTransaction(ctx, repo.db, callback)
 }
 
-func (repo Repository) GetExpenseList(ctx context.Context, sortBy string, order string, skip int, limit int) ([]expenses.Expense, error) {
+func (repo Repository) GetExpenseList(ctx context.Context, sortBy base.SortBy, order base.Order, skip int, limit int) ([]expenses.Expense, error) {
 	var expenses []expenses.Expense
-	result := repo.db.Table("expenses").Where("deleted_at is NULL").Preload("ExpenseItems").Preload("Wallet").Preload("Budget")
-
-	if sortBy != "" && order != "" {
-		result = result.Order(fmt.Sprintf("%s %s", sortBy, order))
-	}
+	result := repo.db.Table("expenses").Where("deleted_at is NULL").Preload("ExpenseItems").Preload("Wallet").Preload("Budget").Order(fmt.Sprintf("%s %s", base_mysql.ToSortByColumn(sortBy), base_mysql.ToOrderColumn(order)))
 
 	if skip > 0 {
 		result = result.Offset(skip)

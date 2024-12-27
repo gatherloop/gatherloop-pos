@@ -1,6 +1,7 @@
 package products
 
 import (
+	"apps/api/domain/base"
 	"context"
 )
 
@@ -12,7 +13,7 @@ func NewUsecase(repository Repository) Usecase {
 	return Usecase{repository: repository}
 }
 
-func (usecase Usecase) GetProductList(ctx context.Context, query string, sortBy string, order string, skip int, limit int) ([]Product, int64, error) {
+func (usecase Usecase) GetProductList(ctx context.Context, query string, sortBy base.SortBy, order base.Order, skip int, limit int) ([]Product, int64, error) {
 	products, err := usecase.repository.GetProductList(ctx, query, sortBy, order, skip, limit)
 	if err != nil {
 		return []Product{}, 0, err

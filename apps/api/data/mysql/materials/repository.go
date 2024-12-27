@@ -1,6 +1,8 @@
 package materials_mysql
 
 import (
+	base_mysql "apps/api/data/mysql/base"
+	"apps/api/domain/base"
 	"apps/api/domain/materials"
 	"apps/api/utils"
 	"context"
@@ -22,14 +24,10 @@ func (repo Repository) BeginTransaction(ctx context.Context, callback func(ctxWi
 	return utils.BeginDbTransaction(ctx, repo.db, callback)
 }
 
-func (repo Repository) GetMaterialList(ctx context.Context, query string, sortBy string, order string, skip int, limit int) ([]materials.Material, error) {
+func (repo Repository) GetMaterialList(ctx context.Context, query string, sortBy base.SortBy, order base.Order, skip int, limit int) ([]materials.Material, error) {
 	db := utils.GetDbFromCtx(ctx, repo.db)
 	var categories []materials.Material
-	result := db.Table("materials").Where("deleted_at", nil)
-
-	if sortBy != "" && order != "" {
-		result = result.Order(fmt.Sprintf("%s %s", sortBy, order))
-	}
+	result := db.Table("materials").Where("deleted_at", nil).Order(fmt.Sprintf("%s %s", base_mysql.ToSortByColumn(sortBy), base_mysql.ToOrderColumn(order)))
 
 	if query != "" {
 		result = result.Where("name LIKE ?", "%"+query+"%")
