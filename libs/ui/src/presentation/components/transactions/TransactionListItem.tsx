@@ -10,6 +10,7 @@ import {
 import { ListItem } from '../base';
 import dayjs from 'dayjs';
 import { XStackProps } from 'tamagui';
+import { Platform } from 'react-native';
 
 export type TransactionListItemProps = {
   name: string;
@@ -51,7 +52,7 @@ export const TransactionListItem = ({
           title: 'Print',
           icon: Printer,
           onPress: onPrintMenuPress,
-          isShown: paidAt !== undefined,
+          isShown: Platform.OS === 'web',
         },
         {
           title: 'Edit',
