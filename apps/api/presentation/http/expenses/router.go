@@ -1,9 +1,9 @@
 package expenses_http
 
 import (
-	budgets_postgresql "apps/api/data/postgresql/budgets"
-	expenses_postgresql "apps/api/data/postgresql/expenses"
-	wallets_postgresql "apps/api/data/postgresql/wallets"
+	budgets_mysql "apps/api/data/mysql/budgets"
+	expenses_mysql "apps/api/data/mysql/expenses"
+	wallets_mysql "apps/api/data/mysql/wallets"
 	"apps/api/domain/expenses"
 	"net/http"
 
@@ -12,9 +12,9 @@ import (
 )
 
 func AddRouters(router *mux.Router, db *gorm.DB) {
-	repository := expenses_postgresql.NewRepository(db)
-	budgetRepository := budgets_postgresql.NewRepository(db)
-	walletRepository := wallets_postgresql.NewRepository(db)
+	repository := expenses_mysql.NewRepository(db)
+	budgetRepository := budgets_mysql.NewRepository(db)
+	walletRepository := wallets_mysql.NewRepository(db)
 
 	usecase := expenses.NewUsecase(repository, budgetRepository, walletRepository)
 	handler := NewHandler(usecase)

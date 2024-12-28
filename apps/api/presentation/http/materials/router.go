@@ -1,7 +1,7 @@
 package materials_http
 
 import (
-	materials_postgresql "apps/api/data/postgresql/materials"
+	materials_mysql "apps/api/data/mysql/materials"
 	"apps/api/domain/materials"
 	"net/http"
 
@@ -10,7 +10,7 @@ import (
 )
 
 func AddRouters(router *mux.Router, db *gorm.DB) {
-	repository := materials_postgresql.NewRepository(db)
+	repository := materials_mysql.NewRepository(db)
 	usecase := materials.NewUsecase(repository)
 	handler := NewHandler(usecase)
 

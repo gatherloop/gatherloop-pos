@@ -1,7 +1,7 @@
-package wallets_postgresql
+package wallets_mysql
 
 import (
-	base_postgresql "apps/api/data/postgresql/base"
+	base_mysql "apps/api/data/mysql/base"
 	"apps/api/domain/base"
 	"apps/api/domain/wallets"
 	"apps/api/utils"
@@ -61,7 +61,7 @@ func (repo Repository) GetWalletTransferList(ctx context.Context, walletId int64
 	db := utils.GetDbFromCtx(ctx, repo.db)
 	var walletTransfers []wallets.WalletTransfer
 
-	result := db.Table("wallet_transfers").Preload("FromWallet").Preload("ToWallet").Where("deleted_at is NULL AND from_wallet_id = ?", walletId).Order(fmt.Sprintf("%s %s", base_postgresql.ToSortByColumn(sortBy), base_postgresql.ToOrderColumn(order)))
+	result := db.Table("wallet_transfers").Preload("FromWallet").Preload("ToWallet").Where("deleted_at is NULL AND from_wallet_id = ?", walletId).Order(fmt.Sprintf("%s %s", base_mysql.ToSortByColumn(sortBy), base_mysql.ToOrderColumn(order)))
 
 	if skip > 0 {
 		result = result.Offset(skip)

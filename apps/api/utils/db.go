@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"gorm.io/driver/postgres"
+	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
@@ -17,7 +17,7 @@ type ConnectDBParams struct {
 }
 
 func ConnectDB(params ConnectDBParams) (*gorm.DB, error) {
-	return gorm.Open(postgres.Open(fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=Asia/Shanghai", params.DbHost, params.DbUsername, params.DbPassword, params.DbName, params.DbPort)))
+	return gorm.Open(mysql.Open(fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", params.DbUsername, params.DbPassword, params.DbHost, params.DbPort, params.DbName)))
 }
 
 func GetDbFromCtx(ctx context.Context, db *gorm.DB) *gorm.DB {

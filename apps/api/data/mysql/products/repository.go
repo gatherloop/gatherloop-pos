@@ -1,7 +1,7 @@
-package products_postgresql
+package products_mysql
 
 import (
-	base_postgresql "apps/api/data/postgresql/base"
+	base_mysql "apps/api/data/mysql/base"
 	"apps/api/domain/base"
 	"apps/api/domain/products"
 	"apps/api/utils"
@@ -28,7 +28,7 @@ func (repo Repository) GetProductList(ctx context.Context, query string, sortBy 
 	db := utils.GetDbFromCtx(ctx, repo.db)
 
 	var products []products.Product
-	result := db.Table("products").Preload("Category").Preload("Materials").Preload("Materials.Material").Where("deleted_at", nil).Order(fmt.Sprintf("%s %s", base_postgresql.ToSortByColumn(sortBy), base_postgresql.ToOrderColumn(order)))
+	result := db.Table("products").Preload("Category").Preload("Materials").Preload("Materials.Material").Where("deleted_at", nil).Order(fmt.Sprintf("%s %s", base_mysql.ToSortByColumn(sortBy), base_mysql.ToOrderColumn(order)))
 
 	if query != "" {
 		result = result.Where("name LIKE ?", "%"+query+"%")

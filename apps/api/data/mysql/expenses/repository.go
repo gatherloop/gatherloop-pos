@@ -1,7 +1,7 @@
-package expenses_postgresql
+package expenses_mysql
 
 import (
-	base_postgresql "apps/api/data/postgresql/base"
+	base_mysql "apps/api/data/mysql/base"
 	"apps/api/domain/base"
 	"apps/api/domain/expenses"
 	"apps/api/utils"
@@ -26,7 +26,7 @@ func (repo Repository) BeginTransaction(ctx context.Context, callback func(ctxWi
 
 func (repo Repository) GetExpenseList(ctx context.Context, sortBy base.SortBy, order base.Order, skip int, limit int) ([]expenses.Expense, error) {
 	var expenses []expenses.Expense
-	result := repo.db.Table("expenses").Where("deleted_at is NULL").Preload("ExpenseItems").Preload("Wallet").Preload("Budget").Order(fmt.Sprintf("%s %s", base_postgresql.ToSortByColumn(sortBy), base_postgresql.ToOrderColumn(order)))
+	result := repo.db.Table("expenses").Where("deleted_at is NULL").Preload("ExpenseItems").Preload("Wallet").Preload("Budget").Order(fmt.Sprintf("%s %s", base_mysql.ToSortByColumn(sortBy), base_mysql.ToOrderColumn(order)))
 
 	if skip > 0 {
 		result = result.Offset(skip)

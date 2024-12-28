@@ -1,4 +1,4 @@
-package budgets_postgresql
+package budgets_mysql
 
 import (
 	"apps/api/domain/budgets"
