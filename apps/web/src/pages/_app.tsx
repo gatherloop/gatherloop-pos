@@ -7,6 +7,7 @@ import Head from 'next/head';
 import React, { useMemo } from 'react';
 import { RootProvider } from '@gatherloop-pos/provider';
 import { DehydratedState, HydrationBoundary } from '@tanstack/react-query';
+import NextNProgress from 'nextjs-progressbar';
 
 export type PageProps = {
   dehydratedState: DehydratedState;
@@ -30,6 +31,7 @@ export default function App({ Component, pageProps }: AppProps<PageProps>) {
         <meta name="description" content="Your page description" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
+      <NextNProgress />
       <NextThemeProvider onChangeTheme={setTheme as any}>
         <RootProvider
           tamaguiProviderProps={{
