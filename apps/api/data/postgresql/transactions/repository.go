@@ -1,7 +1,7 @@
-package transactions_mysql
+package transactions_postgresql
 
 import (
-	base_mysql "apps/api/data/mysql/base"
+	base_postgresql "apps/api/data/postgresql/base"
 	"apps/api/domain/base"
 	"apps/api/domain/transactions"
 	"apps/api/utils"
@@ -28,7 +28,7 @@ func (repo Repository) GetTransactionList(ctx context.Context, query string, sor
 	db := utils.GetDbFromCtx(ctx, repo.db)
 
 	var transactionResults []transactions.Transaction
-	result := db.Table("transactions").Where("deleted_at is NULL").Preload("TransactionItems").Preload("Wallet").Order(fmt.Sprintf("%s %s", base_mysql.ToSortByColumn(sortBy), base_mysql.ToOrderColumn(order)))
+	result := db.Table("transactions").Where("deleted_at is NULL").Preload("TransactionItems").Preload("Wallet").Order(fmt.Sprintf("%s %s", base_postgresql.ToSortByColumn(sortBy), base_postgresql.ToOrderColumn(order)))
 
 	if query != "" {
 		result = result.Where("name LIKE ?", "%"+query+"%")
@@ -123,16 +123,25 @@ func (repo Repository) PayTransaction(ctx context.Context, walletId int64, paidA
 func (repo Repository) GetTransactionStatistics(ctx context.Context, groupBy string) ([]transactions.TransactionStatistic, error) {
 	db := utils.GetDbFromCtx(ctx, repo.db)
 
+	datePart := ""
 	dateFormat := ""
 
 	if groupBy == "" || groupBy == "date" {
-		dateFormat = "%d-%m-%Y"
+		dateFormat = "DD-MM-YYYY"
+		datePart = "day"
 	} else {
-		dateFormat = "%m-%Y"
+		dateFormat = "MM-YYYY"
+		datePart = "month"
 	}
 
 	var transactionStatistics []transactions.TransactionStatistic
-	result := db.Table("transactions").Select(fmt.Sprintf("DATE_FORMAT(created_at, '%s') as date, SUM(total) as total, SUM(total_income) as total_income", dateFormat)).Where("deleted_at is NULL").Group(fmt.Sprintf("DATE_FORMAT(created_at, '%s')", dateFormat)).Find(&transactionStatistics)
+	result := db.Table("transactions").
+		Select(fmt.Sprintf("TO_CHAR(created_at, '%s') as date, DATE_TRUNC('%s', created_at) as date_format, SUM(total) as total, SUM(total_income) as total_income", dateFormat, datePart)).
+		Where("deleted_at is NULL").
+		Group(fmt.Sprintf("DATE_TRUNC('%s', created_at)", datePart)).
+		Group(fmt.Sprintf("TO_CHAR(created_at, '%s')", dateFormat)).
+		Order("date_format ASC").
+		Find(&transactionStatistics)
 
 	return transactionStatistics, result.Error
 }

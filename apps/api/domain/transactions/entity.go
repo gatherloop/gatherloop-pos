@@ -31,7 +31,7 @@ type Transaction struct {
 
 type TransactionStatistic struct {
 	Date        string  `json:"date"`
-	Total       int32   `json:"total"`
+	Total       float32 `json:"total"`
 	TotalIncome float32 `json:"totalIncome"`
 }
 

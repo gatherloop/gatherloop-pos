@@ -1,7 +1,7 @@
 package wallets_http
 
 import (
-	wallets_mysql "apps/api/data/mysql/wallets"
+	wallets_postgresql "apps/api/data/postgresql/wallets"
 	"apps/api/domain/wallets"
 	"net/http"
 
@@ -10,7 +10,7 @@ import (
 )
 
 func AddRouters(router *mux.Router, db *gorm.DB) {
-	repository := wallets_mysql.NewRepository(db)
+	repository := wallets_postgresql.NewRepository(db)
 	usecase := wallets.NewUsecase(repository)
 	handler := NewHandler(usecase)
 

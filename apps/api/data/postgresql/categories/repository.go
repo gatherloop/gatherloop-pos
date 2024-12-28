@@ -1,4 +1,4 @@
-package categories_mysql
+package categories_postgresql
 
 import (
 	"apps/api/domain/categories"

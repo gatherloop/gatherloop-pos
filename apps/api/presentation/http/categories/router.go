@@ -1,7 +1,7 @@
 package categories_http
 
 import (
-	categories_mysql "apps/api/data/mysql/categories"
+	categories_postgresql "apps/api/data/postgresql/categories"
 	"apps/api/domain/categories"
 	"net/http"
 
@@ -10,7 +10,7 @@ import (
 )
 
 func AddRouters(router *mux.Router, db *gorm.DB) {
-	repository := categories_mysql.NewRepository(db)
+	repository := categories_postgresql.NewRepository(db)
 	usecase := categories.NewUsecase(repository)
 	handler := NewHandler(usecase)
 

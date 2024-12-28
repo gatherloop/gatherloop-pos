@@ -1,7 +1,7 @@
 package products_http
 
 import (
-	products_mysql "apps/api/data/mysql/products"
+	products_postgresql "apps/api/data/postgresql/products"
 	"apps/api/domain/products"
 	"net/http"
 
@@ -10,7 +10,7 @@ import (
 )
 
 func AddRouters(router *mux.Router, db *gorm.DB) {
-	repository := products_mysql.NewRepository(db)
+	repository := products_postgresql.NewRepository(db)
 	usecase := products.NewUsecase(repository)
 	handler := NewHandler(usecase)
 

@@ -1,7 +1,7 @@
 package budgets_http
 
 import (
-	budgets_mysql "apps/api/data/mysql/budgets"
+	budgets_postgresql "apps/api/data/postgresql/budgets"
 	"apps/api/domain/budgets"
 	"net/http"
 
@@ -10,7 +10,7 @@ import (
 )
 
 func AddRouters(router *mux.Router, db *gorm.DB) {
-	repository := budgets_mysql.NewRepository(db)
+	repository := budgets_postgresql.NewRepository(db)
 	usecase := budgets.NewUsecase(repository)
 	handler := NewHandler(usecase)
 

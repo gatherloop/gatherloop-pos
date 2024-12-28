@@ -1,10 +1,10 @@
 package transactions_http
 
 import (
-	budgets_mysql "apps/api/data/mysql/budgets"
-	products_mysql "apps/api/data/mysql/products"
-	transactions_mysql "apps/api/data/mysql/transactions"
-	wallets_mysql "apps/api/data/mysql/wallets"
+	budgets_postgresql "apps/api/data/postgresql/budgets"
+	products_postgresql "apps/api/data/postgresql/products"
+	transactions_postgresql "apps/api/data/postgresql/transactions"
+	wallets_postgresql "apps/api/data/postgresql/wallets"
 	"apps/api/domain/transactions"
 	"net/http"
 
@@ -13,10 +13,10 @@ import (
 )
 
 func AddRouters(router *mux.Router, db *gorm.DB) {
-	repository := transactions_mysql.NewRepository(db)
-	productRepository := products_mysql.NewRepository(db)
-	walletRepository := wallets_mysql.NewRepository(db)
-	budgetRepository := budgets_mysql.NewRepository(db)
+	repository := transactions_postgresql.NewRepository(db)
+	productRepository := products_postgresql.NewRepository(db)
+	walletRepository := wallets_postgresql.NewRepository(db)
+	budgetRepository := budgets_postgresql.NewRepository(db)
 
 	usecase := transactions.NewUsecase(repository, productRepository, walletRepository, budgetRepository)
 	handler := NewHandler(usecase)

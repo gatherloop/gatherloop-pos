@@ -1,4 +1,4 @@
-package base_mysql
+package base_postgresql
 
 import "apps/api/domain/base"
 

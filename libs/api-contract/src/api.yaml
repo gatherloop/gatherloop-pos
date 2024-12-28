@@ -1482,7 +1482,7 @@ components:
         date:
           type: string
         total:
-          type: integer
+          type: number
         totalIncome:
           type: number
     Expense:
