@@ -5,7 +5,7 @@ import dayjs from 'dayjs';
 export type TransactionPrintProps = {
   name: string;
   createdAt: string;
-  paidAt: string;
+  paidAt?: string;
   total: number;
   transactionItems: Transaction['transactionItems'];
 };
@@ -31,9 +31,11 @@ export const TransactionPrint = ({
         Waktu Transaksi : {dayjs(createdAt).format('DD/MM/YYYY HH:mm')}
       </Paragraph>
 
-      <Paragraph>
-        Waktu Pembayaran : {dayjs(paidAt).format('DD/MM/YYYY HH:mm')}
-      </Paragraph>
+      {paidAt && (
+        <Paragraph>
+          Waktu Pembayaran : {dayjs(paidAt).format('DD/MM/YYYY HH:mm')}
+        </Paragraph>
+      )}
 
       <YStack borderWidth="$0.5" borderStyle="dashed" />
 

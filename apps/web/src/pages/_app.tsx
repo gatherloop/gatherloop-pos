@@ -31,7 +31,7 @@ export default function App({ Component, pageProps }: AppProps<PageProps>) {
         <meta name="description" content="Your page description" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <NextNProgress />
+      <NextNProgress options={{ showSpinner: false }} />
       <NextThemeProvider onChangeTheme={setTheme as any}>
         <RootProvider
           tamaguiProviderProps={{
