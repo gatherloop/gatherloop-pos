@@ -112,6 +112,7 @@ export class OpenAPITransactionRepository implements TransactionRepository {
       transactionItems: formValues.transactionItems.map((item) => ({
         amount: item.amount,
         productId: item.product.id,
+        discountAmount: item.discountAmount,
       })),
     }).then();
   };
@@ -125,6 +126,7 @@ export class OpenAPITransactionRepository implements TransactionRepository {
       transactionItems: formValues.transactionItems.map((item) => ({
         amount: item.amount,
         productId: item.product.id,
+        discountAmount: item.discountAmount,
       })),
     }).then();
   };
@@ -209,6 +211,7 @@ const transformers = {
       amount: item.amount,
       id: item.id,
       price: item.price,
+      discountAmount: item.discountAmount,
       subtotal: item.subtotal,
       product: {
         category: {
@@ -231,6 +234,7 @@ const transformers = {
             createdAt: productMaterial.material.createdAt,
           },
         })),
+        description: item.product.description,
       },
     })),
     paidAt: transaction.paidAt,

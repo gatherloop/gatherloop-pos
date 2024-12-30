@@ -79,33 +79,42 @@ export const TransactionDetail = ({
       </XStack>
       <H4>Transaction Items</H4>
       <YStack gap="$3">
-        {transactionItems.map(({ price, product, amount }) => (
-          <YStack key={product.id} gap="$3">
-            <ProductListItem
-              categoryName={product.category.name}
-              name={product.name}
-              price={price}
-              flex={1}
-            />
+        {transactionItems.map(
+          ({ price, product, amount, subtotal, discountAmount }) => (
+            <YStack key={product.id} gap="$3">
+              <ProductListItem
+                categoryName={product.category.name}
+                name={product.name}
+                price={price}
+                flex={1}
+              />
 
-            <XStack gap="$5" justifyContent="flex-end">
-              <YStack>
-                <Paragraph textAlign="right">Price</Paragraph>
-                <H4 textAlign="right">Rp. {price.toLocaleString('id')}</H4>
-              </YStack>
-              <YStack>
-                <Paragraph textAlign="right">Amount</Paragraph>
-                <H4 textAlign="right">{amount}</H4>
-              </YStack>
-              <YStack>
-                <Paragraph textAlign="right">Subtotal</Paragraph>
-                <H4 textAlign="right">
-                  Rp. {(amount * price).toLocaleString('id')}
-                </H4>
-              </YStack>
-            </XStack>
-          </YStack>
-        ))}
+              <XStack gap="$5" justifyContent="flex-end">
+                <YStack>
+                  <Paragraph textAlign="right">Price</Paragraph>
+                  <H4 textAlign="right">Rp. {price.toLocaleString('id')}</H4>
+                </YStack>
+                <YStack>
+                  <Paragraph textAlign="right">Amount</Paragraph>
+                  <H4 textAlign="right">{amount}</H4>
+                </YStack>
+                {discountAmount > 0 && (
+                  <YStack>
+                    <Paragraph textAlign="right">Discount Amount</Paragraph>
+                    <H4 textAlign="right">
+                      Rp. {discountAmount.toLocaleString('id')}
+                    </H4>
+                  </YStack>
+                )}
+
+                <YStack>
+                  <Paragraph textAlign="right">Subtotal</Paragraph>
+                  <H4 textAlign="right">Rp. {subtotal.toLocaleString('id')}</H4>
+                </YStack>
+              </XStack>
+            </YStack>
+          )
+        )}
       </YStack>
       <YStack alignItems="flex-end">
         <Paragraph>Total</Paragraph>

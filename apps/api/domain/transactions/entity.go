@@ -7,13 +7,14 @@ import (
 )
 
 type TransactionItem struct {
-	Id            int64            `json:"id"`
-	TransactionId int64            `json:"transactionId"`
-	ProductId     int64            `json:"productId"`
-	Product       products.Product `json:"product"`
-	Amount        float32          `json:"amount"`
-	Price         float32          `json:"price"`
-	Subtotal      float32          `json:"subtotal"`
+	Id             int64            `json:"id"`
+	TransactionId  int64            `json:"transactionId"`
+	ProductId      int64            `json:"productId"`
+	Product        products.Product `json:"product"`
+	Amount         float32          `json:"amount"`
+	Price          float32          `json:"price"`
+	DiscountAmount float32          `json:"discountAmount"`
+	Subtotal       float32          `json:"subtotal"`
 }
 
 type Transaction struct {
@@ -41,8 +42,9 @@ type TransactionRequest struct {
 }
 
 type TransactionItemRequest struct {
-	ProductId int64   `json:"productId"`
-	Amount    float32 `json:"amount"`
+	ProductId      int64   `json:"productId"`
+	Amount         float32 `json:"amount"`
+	DiscountAmount float32 `json:"discountAmount"`
 }
 
 type TransactionPayRequest struct {

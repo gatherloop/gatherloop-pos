@@ -8,6 +8,7 @@ export type InputNumberProps = {
   min?: number;
   max?: number;
   fractionDigit?: number;
+  step?: number;
 } & InputProps;
 
 export const InputNumber = ({
@@ -15,6 +16,7 @@ export const InputNumber = ({
   min,
   max,
   fractionDigit = 0,
+  step = 1,
   ...inputProps
 }: InputNumberProps) => {
   const fieldContext = useFieldContext();
@@ -30,7 +32,7 @@ export const InputNumber = ({
             size="$2"
             onPress={() => {
               if (typeof min === 'undefined' || field.value > min) {
-                const newValue = field.value - 1;
+                const newValue = field.value - step;
                 field.onChange(newValue);
               }
             }}
@@ -61,7 +63,7 @@ export const InputNumber = ({
             size="$2"
             onPress={() => {
               if (typeof max === 'undefined' || field.value < max) {
-                const newValue = field.value + 1;
+                const newValue = field.value + step;
                 field.onChange(newValue);
               }
             }}

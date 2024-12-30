@@ -48,13 +48,14 @@ func ToApiTransaction(transaction transactions.Transaction) apiContract.Transact
 	apiTransactionItems := []apiContract.TransactionItem{}
 	for _, item := range transaction.TransactionItems {
 		apiTransactionItems = append(apiTransactionItems, apiContract.TransactionItem{
-			Id:            item.Id,
-			TransactionId: item.TransactionId,
-			ProductId:     item.ProductId,
-			Product:       products_http.ToApiProduct(item.Product),
-			Amount:        item.Amount,
-			Price:         item.Price,
-			Subtotal:      item.Subtotal,
+			Id:             item.Id,
+			TransactionId:  item.TransactionId,
+			ProductId:      item.ProductId,
+			Product:        products_http.ToApiProduct(item.Product),
+			Amount:         item.Amount,
+			Price:          item.Price,
+			DiscountAmount: item.DiscountAmount,
+			Subtotal:       item.Subtotal,
 		})
 	}
 
@@ -76,8 +77,9 @@ func ToTransactionRequest(transactionRequest apiContract.TransactionRequest) tra
 	transactionItemRequests := []transactions.TransactionItemRequest{}
 	for _, item := range transactionRequest.TransactionItems {
 		transactionItemRequests = append(transactionItemRequests, transactions.TransactionItemRequest{
-			ProductId: item.ProductId,
-			Amount:    item.Amount,
+			ProductId:      item.ProductId,
+			Amount:         item.Amount,
+			DiscountAmount: item.DiscountAmount,
 		})
 	}
 

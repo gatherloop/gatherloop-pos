@@ -75,21 +75,57 @@ export const TransactionUpdate = ({
                           <XStack
                             key={product.id}
                             gap="$5"
-                            $sm={{ flexDirection: 'column' }}
+                            $lg={{ flexDirection: 'column' }}
                           >
-                            <ProductListItem
-                              flex={1}
-                              name={product.name}
-                              price={product.price}
-                              categoryName={product.category.name}
-                            />
-                            <YStack
-                              gap="$3"
-                              $sm={{
-                                flexDirection: 'row-reverse',
-                                justifyContent: 'flex-start',
-                              }}
+                            <XStack gap="$3" flex={1} alignItems="center">
+                              <Button
+                                icon={Trash}
+                                size="$3"
+                                onPress={() => remove(index)}
+                                theme="red"
+                                color="$red8"
+                                circular
+                              />
+                              <ProductListItem
+                                flex={1}
+                                name={product.name}
+                                price={product.price}
+                                categoryName={product.category.name}
+                              />
+                            </XStack>
+
+                            <XStack
+                              gap="$5"
+                              justifyContent="flex-end"
+                              alignItems="flex-end"
                             >
+                              <YStack gap="$3">
+                                <Paragraph textAlign="left">Price</Paragraph>
+                                <H4 textTransform="none" textAlign="left">
+                                  Rp. {product.price.toLocaleString('id')}
+                                </H4>
+                              </YStack>
+                              <YStack gap="$3">
+                                <Paragraph textAlign="center">Amount</Paragraph>
+                                <InputNumber
+                                  name={`transactionItems.${index}.amount`}
+                                  min={1}
+                                  maxWidth={50}
+                                />
+                              </YStack>
+
+                              <YStack gap="$3">
+                                <Paragraph textAlign="center">
+                                  Discount Amount
+                                </Paragraph>
+                                <InputNumber
+                                  name={`transactionItems.${index}.discountAmount`}
+                                  min={0}
+                                  maxWidth={150}
+                                  step={500}
+                                />
+                              </YStack>
+
                               <YStack>
                                 <Paragraph textAlign="right">
                                   Subtotal
@@ -98,32 +134,18 @@ export const TransactionUpdate = ({
                                   control={form.control}
                                   name={[`transactionItems.${index}`]}
                                 >
-                                  {([{ product, amount }]) => (
+                                  {([{ product, amount, discountAmount }]) => (
                                     <H4 textTransform="none" textAlign="right">
                                       Rp.{' '}
-                                      {(product.price * amount).toLocaleString(
-                                        'id'
-                                      )}
+                                      {(
+                                        product.price * amount -
+                                        discountAmount
+                                      ).toLocaleString('id')}
                                     </H4>
                                   )}
                                 </FieldWatch>
                               </YStack>
-                              <XStack gap="$3" alignItems="center">
-                                <Button
-                                  icon={Trash}
-                                  size="$2"
-                                  onPress={() => remove(index)}
-                                  theme="red"
-                                  color="$red8"
-                                  circular
-                                />
-                                <InputNumber
-                                  name={`transactionItems.${index}.amount`}
-                                  min={1}
-                                  maxWidth={50}
-                                />
-                              </XStack>
-                            </YStack>
+                            </XStack>
                           </XStack>
                         );
                       })}
@@ -148,7 +170,10 @@ export const TransactionUpdate = ({
                     Rp.{' '}
                     {transactionItems
                       .reduce(
-                        (prev, curr) => prev + curr.amount * curr.product.price,
+                        (prev, curr) =>
+                          prev +
+                          (curr.amount * curr.product.price -
+                            curr.discountAmount),
                         0
                       )
                       .toLocaleString('id')}

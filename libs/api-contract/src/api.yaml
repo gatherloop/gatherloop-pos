@@ -1442,6 +1442,7 @@ components:
         - product
         - amount
         - price
+        - discountAmount
         - subtotal
       properties:
         id:
@@ -1459,6 +1460,8 @@ components:
           type: number
         price:
           type: number
+        discountAmount:
+          type: number
         subtotal:
           type: number
     TransactionItemRequest:
@@ -1466,11 +1469,14 @@ components:
       required:
         - productId
         - amount
+        - discountAmount
       properties:
         productId:
           type: integer
           format: int64
         amount:
+          type: number
+        discountAmount:
           type: number
     TransactionPayRequest:
       type: object

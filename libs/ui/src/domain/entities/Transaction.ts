@@ -6,6 +6,7 @@ type TransactionItem = {
   product: Product;
   amount: number;
   price: number;
+  discountAmount: number;
   subtotal: number;
 };
 
@@ -23,6 +24,7 @@ export type Transaction = {
 type TransactionItemForm = {
   product: Product;
   amount: number;
+  discountAmount: number;
 };
 
 export type TransactionForm = {

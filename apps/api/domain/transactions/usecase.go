@@ -65,15 +65,16 @@ func (usecase Usecase) CreateTransaction(ctx context.Context, transactionRequest
 				return err
 			}
 
-			subTotal := product.Price * item.Amount
+			subTotal := (product.Price * item.Amount) - item.DiscountAmount
 			transaction.Total += subTotal
 
 			transactionItem := TransactionItem{
-				TransactionId: transaction.Id,
-				ProductId:     item.ProductId,
-				Amount:        item.Amount,
-				Subtotal:      subTotal,
-				Price:         product.Price,
+				TransactionId:  transaction.Id,
+				ProductId:      item.ProductId,
+				Amount:         item.Amount,
+				DiscountAmount: item.DiscountAmount,
+				Subtotal:       subTotal,
+				Price:          product.Price,
 			}
 
 			transactionItems = append(transactionItems, transactionItem)
@@ -116,15 +117,16 @@ func (usecase Usecase) UpdateTransactionById(ctx context.Context, transactionReq
 				return err
 			}
 
-			subTotal := product.Price * item.Amount
+			subTotal := (product.Price * item.Amount) - item.DiscountAmount
 			transaction.Total += subTotal
 
 			transactionItem := TransactionItem{
-				TransactionId: id,
-				ProductId:     item.ProductId,
-				Amount:        item.Amount,
-				Subtotal:      subTotal,
-				Price:         product.Price,
+				TransactionId:  id,
+				ProductId:      item.ProductId,
+				Amount:         item.Amount,
+				DiscountAmount: item.DiscountAmount,
+				Subtotal:       subTotal,
+				Price:          product.Price,
 			}
 
 			transactionItems = append(transactionItems, transactionItem)

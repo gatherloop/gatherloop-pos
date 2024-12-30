@@ -139,6 +139,7 @@ export class TransactionUpdateUsecase extends Usecase<
                   amount: item.amount,
                   productId: item.product.id,
                   product: item.product,
+                  discountAmount: item.discountAmount,
                 })),
               },
             })

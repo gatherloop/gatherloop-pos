@@ -33,7 +33,14 @@ export const useTransactionUpdateController = (
       z.object({
         name: z.string().min(1),
         transactionItems: z
-          .array(z.lazy(() => z.object({ amount: z.number().min(1) })))
+          .array(
+            z.lazy(() =>
+              z.object({
+                amount: z.number().min(1),
+                discountAmount: z.number(),
+              })
+            )
+          )
           .min(1),
       }),
       {},
@@ -60,7 +67,7 @@ export const useTransactionUpdateController = (
         amount: fields[itemIndex].amount + 1,
       });
     } else {
-      append({ amount: 1, product: newProduct });
+      append({ amount: 1, product: newProduct, discountAmount: 0 });
     }
 
     setIsProductSheetOpen(false);
