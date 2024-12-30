@@ -31,8 +31,9 @@ export const useProductCreateController = (usecase: ProductCreateUsecase) => {
     resolver: zodResolver(
       z.object({
         categoryId: z.number(),
-        name: z.string(),
-        price: z.number(),
+        name: z.string().min(1),
+        description: z.string(),
+        price: z.number().min(1),
         materials: z.array(
           z.lazy(() => z.object({ materialId: z.number(), amount: z.number() }))
         ),

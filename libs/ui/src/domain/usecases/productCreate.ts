@@ -52,6 +52,7 @@ export class ProductCreateUsecase extends Usecase<
       materials: [],
       name: '',
       price: 0,
+      description: '',
     };
     return categories.length > 0
       ? {

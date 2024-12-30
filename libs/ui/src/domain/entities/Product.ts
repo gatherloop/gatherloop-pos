@@ -5,6 +5,7 @@ export type Product = {
   id: number;
   name: string;
   price: number;
+  description?: string;
   materials: {
     materialId: number;
     amount: number;
@@ -17,6 +18,7 @@ export type Product = {
 export type ProductForm = {
   name: string;
   price: number;
+  description?: string;
   materials: {
     materialId: number;
     amount: number;

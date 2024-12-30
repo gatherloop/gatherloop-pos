@@ -1268,6 +1268,8 @@ components:
           type: string
         price:
           type: number
+        description:
+          type: string
         category:
           $ref: '#/components/schemas/Category'
         materials:
@@ -1295,6 +1297,8 @@ components:
           type: string
         price:
           type: number
+        description:
+          type: string
         materials:
           type: array
           items:

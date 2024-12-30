@@ -26,8 +26,9 @@ export const useProductUpdateController = (usecase: ProductUpdateUsecase) => {
     resolver: zodResolver(
       z.object({
         categoryId: z.number(),
-        name: z.string(),
-        price: z.number(),
+        name: z.string().min(1),
+        price: z.number().min(1),
+        description: z.string(),
         materials: z.array(
           z.lazy(() => z.object({ materialId: z.number(), amount: z.number() }))
         ),

@@ -34,9 +34,10 @@ func (usecase Usecase) GetProductById(ctx context.Context, id int64) (Product, e
 func (usecase Usecase) CreateProduct(ctx context.Context, productRequest ProductRequest) error {
 	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) error {
 		product := Product{
-			Name:       productRequest.Name,
-			CategoryId: productRequest.CategoryId,
-			Price:      productRequest.Price,
+			Name:        productRequest.Name,
+			CategoryId:  productRequest.CategoryId,
+			Price:       productRequest.Price,
+			Description: productRequest.Description,
 		}
 
 		if err := usecase.repository.CreateProduct(ctxWithTx, &product); err != nil {
@@ -56,9 +57,10 @@ func (usecase Usecase) CreateProduct(ctx context.Context, productRequest Product
 func (usecase Usecase) UpdateProductById(ctx context.Context, productRequest ProductRequest, id int64) error {
 	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) error {
 		product := Product{
-			Name:       productRequest.Name,
-			CategoryId: productRequest.CategoryId,
-			Price:      productRequest.Price,
+			Name:        productRequest.Name,
+			CategoryId:  productRequest.CategoryId,
+			Price:       productRequest.Price,
+			Description: productRequest.Description,
 		}
 
 		if err := usecase.repository.UpdateProductById(ctxWithTx, &product, id); err != nil {

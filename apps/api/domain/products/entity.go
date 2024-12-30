@@ -17,14 +17,15 @@ type ProductMaterial struct {
 }
 
 type Product struct {
-	Id         int64               `json:"id"`
-	CategoryId int64               `json:"categoryId"`
-	Name       string              `json:"name"`
-	Price      float32             `json:"price"`
-	Category   categories.Category `json:"category"`
-	Materials  []ProductMaterial   `json:"materials"`
-	DeletedAt  *time.Time          `json:"deletedAt,omitempty"`
-	CreatedAt  time.Time           `json:"createdAt"`
+	Id          int64               `json:"id"`
+	CategoryId  int64               `json:"categoryId"`
+	Name        string              `json:"name"`
+	Price       float32             `json:"price"`
+	Description *string             `json:"description"`
+	Category    categories.Category `json:"category"`
+	Materials   []ProductMaterial   `json:"materials"`
+	DeletedAt   *time.Time          `json:"deletedAt,omitempty"`
+	CreatedAt   time.Time           `json:"createdAt"`
 }
 
 type ProductMaterialRequest struct {
@@ -33,8 +34,9 @@ type ProductMaterialRequest struct {
 }
 
 type ProductRequest struct {
-	CategoryId int64                    `json:"categoryId"`
-	Name       string                   `json:"name"`
-	Price      float32                  `json:"price"`
-	Materials  []ProductMaterialRequest `json:"materials"`
+	CategoryId  int64                    `json:"categoryId"`
+	Name        string                   `json:"name"`
+	Price       float32                  `json:"price"`
+	Description *string                  `json:"description"`
+	Materials   []ProductMaterialRequest `json:"materials"`
 }

@@ -71,6 +71,7 @@ export class OpenAPIProductRepository implements ProductRepository {
         amount,
         materialId: materialId,
       })),
+      description: formValues.description,
     }).then();
   };
 
@@ -86,6 +87,7 @@ export class OpenAPIProductRepository implements ProductRepository {
         amount,
         materialId: materialId,
       })),
+      description: formValues.description,
     }).then();
   };
 
@@ -179,5 +181,6 @@ export const transformers = {
         amount,
       })
     ),
+    description: product.description,
   }),
 };

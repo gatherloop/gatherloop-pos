@@ -56,14 +56,15 @@ func ToApiProduct(product products.Product) apiContract.Product {
 	}
 
 	return apiContract.Product{
-		Id:         product.Id,
-		Name:       product.Name,
-		Price:      product.Price,
-		CategoryId: product.CategoryId,
-		Category:   apiContract.Category(product.Category),
-		Materials:  apiMaterials,
-		DeletedAt:  product.DeletedAt,
-		CreatedAt:  product.CreatedAt,
+		Id:          product.Id,
+		Name:        product.Name,
+		Price:       product.Price,
+		CategoryId:  product.CategoryId,
+		Category:    apiContract.Category(product.Category),
+		Materials:   apiMaterials,
+		DeletedAt:   product.DeletedAt,
+		CreatedAt:   product.CreatedAt,
+		Description: product.Description,
 	}
 }
 
@@ -77,9 +78,10 @@ func ToProductRequest(productRequest apiContract.ProductRequest) products.Produc
 	}
 
 	return products.ProductRequest{
-		Name:       productRequest.Name,
-		Price:      productRequest.Price,
-		CategoryId: productRequest.CategoryId,
-		Materials:  productMaterials,
+		Name:        productRequest.Name,
+		Price:       productRequest.Price,
+		CategoryId:  productRequest.CategoryId,
+		Materials:   productMaterials,
+		Description: productRequest.Description,
 	}
 }
