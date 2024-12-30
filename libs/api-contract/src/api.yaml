@@ -1142,6 +1142,8 @@ components:
           format: int64
         name:
           type: string
+        description:
+          type: string
         price:
           type: number
         unit:
@@ -1160,6 +1162,8 @@ components:
         - unit
       properties:
         name:
+          type: string
+        description:
           type: string
         price:
           type: number

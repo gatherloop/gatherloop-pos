@@ -48,6 +48,7 @@ export class MaterialUpdateUsecase extends Usecase<
       name: material?.name ?? '',
       price: material?.price ?? 0,
       unit: material?.unit ?? '',
+      description: material?.description ?? '',
     };
     return {
       type: material !== null ? 'loaded' : 'idle',

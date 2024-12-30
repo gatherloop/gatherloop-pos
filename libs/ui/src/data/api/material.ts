@@ -136,5 +136,6 @@ const transformers = {
     name: material.name,
     price: material.price,
     unit: material.unit,
+    description: material.description,
   }),
 };

@@ -44,7 +44,15 @@ func ToApiProductMaterial(productMaterial products.ProductMaterial) apiContract.
 		Amount:     productMaterial.Amount,
 		DeletedAt:  productMaterial.DeletedAt,
 		CreatedAt:  productMaterial.CreatedAt,
-		Material:   apiContract.Material(productMaterial.Material),
+		Material: apiContract.Material{
+			Id:          productMaterial.Material.Id,
+			Name:        productMaterial.Material.Name,
+			Description: productMaterial.Material.Description,
+			Price:       productMaterial.Material.Price,
+			Unit:        productMaterial.Material.Unit,
+			CreatedAt:   productMaterial.CreatedAt,
+			DeletedAt:   productMaterial.DeletedAt,
+		},
 	}
 }
 

@@ -8,6 +8,7 @@ import {
   ErrorView,
   FieldWatch,
   MarkdownEditor,
+  Tabs,
 } from '../base';
 import {
   Button,
@@ -17,9 +18,6 @@ import {
   H4,
   Paragraph,
   ScrollView,
-  Separator,
-  SizableText,
-  Tabs,
   XStack,
   YStack,
 } from 'tamagui';
@@ -134,111 +132,79 @@ export const ProductUpdate = ({
         </XStack>
 
         <Tabs
-          defaultValue="materials"
-          orientation="horizontal"
-          flexDirection="column"
-          borderRadius="$4"
-          borderWidth="$0.25"
-          overflow="hidden"
-          borderColor="$borderColor"
-        >
-          <Tabs.List padded gap="$3">
-            <Tabs.Tab value="materials" radiused>
-              <SizableText fontFamily="$body">Materials</SizableText>
-            </Tabs.Tab>
-            <Tabs.Tab value="description" radiused>
-              <SizableText fontFamily="$body">Description</SizableText>
-            </Tabs.Tab>
-          </Tabs.List>
-          <Separator />
-          <Tabs.Content
-            backgroundColor="$background"
-            key="materials"
-            padding="$2"
-            flex={1}
-            borderColor="$background"
-            borderRadius="$2"
-            borderTopLeftRadius={0}
-            borderTopRightRadius={0}
-            borderWidth="$2"
-            value="materials"
-          >
-            <YStack gap="$3">
-              <XStack justifyContent="space-between">
-                <H3>Materials</H3>
-                <Button
-                  icon={Plus}
-                  variant="outlined"
-                  circular
-                  size="$3"
-                  onPress={() => onMaterialSheetOpenChange(true)}
-                />
-              </XStack>
-              {form.getValues('materials').map(({ material }, index) => (
-                <XStack
-                  gap="$3"
-                  key={material.id}
-                  $sm={{ flexDirection: 'column' }}
-                >
-                  <MaterialListItem
-                    name={material.name}
-                    price={material.price}
-                    unit={material.unit}
-                    flex={1}
-                  />
-                  <YStack alignItems="flex-end" gap="$3">
-                    <YStack>
-                      <Paragraph>Subtotal</Paragraph>
-                      <FieldWatch
-                        control={form.control}
-                        name={[`materials.${index}.amount`]}
-                      >
-                        {([amount]) => (
-                          <H4>
-                            Rp. {(material.price * amount).toLocaleString('id')}
-                          </H4>
-                        )}
-                      </FieldWatch>
-                    </YStack>
+          tabs={[
+            {
+              value: 'materials',
+              label: 'Materials',
+              content: (
+                <YStack gap="$3">
+                  <XStack justifyContent="space-between">
+                    <H3>Materials</H3>
+                    <Button
+                      icon={Plus}
+                      variant="outlined"
+                      circular
+                      size="$3"
+                      onPress={() => onMaterialSheetOpenChange(true)}
+                    />
+                  </XStack>
+                  {form.getValues('materials').map(({ material }, index) => (
+                    <XStack
+                      gap="$3"
+                      key={material.id}
+                      $sm={{ flexDirection: 'column' }}
+                    >
+                      <MaterialListItem
+                        name={material.name}
+                        price={material.price}
+                        unit={material.unit}
+                        flex={1}
+                      />
+                      <YStack alignItems="flex-end" gap="$3">
+                        <YStack>
+                          <Paragraph>Subtotal</Paragraph>
+                          <FieldWatch
+                            control={form.control}
+                            name={[`materials.${index}.amount`]}
+                          >
+                            {([amount]) => (
+                              <H4>
+                                Rp.{' '}
+                                {(material.price * amount).toLocaleString('id')}
+                              </H4>
+                            )}
+                          </FieldWatch>
+                        </YStack>
 
-                    <XStack alignItems="center" gap="$3">
-                      <Button
-                        icon={Trash}
-                        circular
-                        size="$2"
-                        theme="red"
-                        color="$red8"
-                        onPress={() => onRemoveMaterial(material)}
-                      />
-                      <InputNumber
-                        name={`materials.${index}.amount`}
-                        maxWidth={100}
-                        fractionDigit={2}
-                      />
+                        <XStack alignItems="center" gap="$3">
+                          <Button
+                            icon={Trash}
+                            circular
+                            size="$2"
+                            theme="red"
+                            color="$red8"
+                            onPress={() => onRemoveMaterial(material)}
+                          />
+                          <InputNumber
+                            name={`materials.${index}.amount`}
+                            maxWidth={100}
+                            fractionDigit={2}
+                          />
+                        </XStack>
+                      </YStack>
                     </XStack>
-                  </YStack>
-                </XStack>
-              ))}
-            </YStack>
-          </Tabs.Content>
-          <Tabs.Content
-            backgroundColor="$background"
-            key="description"
-            padding="$2"
-            flex={1}
-            borderColor="$background"
-            borderRadius="$2"
-            borderTopLeftRadius={0}
-            borderTopRightRadius={0}
-            borderWidth="$2"
-            value="description"
-          >
-            <MarkdownEditor
-              name="description"
-              defaultMode={form.getValues('description') ? 'preview' : 'edit'}
-            />
-          </Tabs.Content>
-        </Tabs>
+                  ))}
+                </YStack>
+              ),
+            },
+            {
+              value: 'description',
+              label: 'Description',
+              content: <MarkdownEditor name="description" defaultMode="edit" />,
+            },
+          ]}
+          defaultValue="materials"
+        />
 
         <Button
           disabled={isSubmitDisabled}

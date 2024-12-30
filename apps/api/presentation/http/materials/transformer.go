@@ -25,19 +25,21 @@ func GetMaterialRequest(r *http.Request) (apiContract.MaterialRequest, error) {
 
 func ToApiMaterial(material materials.Material) apiContract.Material {
 	return apiContract.Material{
-		Id:        material.Id,
-		Name:      material.Name,
-		Price:     material.Price,
-		Unit:      material.Unit,
-		DeletedAt: material.DeletedAt,
-		CreatedAt: material.CreatedAt,
+		Id:          material.Id,
+		Name:        material.Name,
+		Price:       material.Price,
+		Unit:        material.Unit,
+		DeletedAt:   material.DeletedAt,
+		CreatedAt:   material.CreatedAt,
+		Description: material.Description,
 	}
 }
 
 func ToMaterialRequest(materialRequest apiContract.MaterialRequest) materials.MaterialRequest {
 	return materials.MaterialRequest{
-		Name:  materialRequest.Name,
-		Price: materialRequest.Price,
-		Unit:  materialRequest.Unit,
+		Name:        materialRequest.Name,
+		Price:       materialRequest.Price,
+		Unit:        materialRequest.Unit,
+		Description: materialRequest.Description,
 	}
 }

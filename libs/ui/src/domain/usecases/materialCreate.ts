@@ -38,6 +38,7 @@ export class MaterialCreateUsecase extends Usecase<
       name: '',
       price: 0,
       unit: '',
+      description: '',
     };
     return {
       type: 'loaded',

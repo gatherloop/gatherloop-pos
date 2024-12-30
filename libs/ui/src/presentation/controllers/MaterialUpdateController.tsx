@@ -22,6 +22,7 @@ export const useMaterialUpdateController = (usecase: MaterialUpdateUsecase) => {
         name: z.string().min(1),
         price: z.number().min(1),
         unit: z.string().min(1),
+        description: z.string(),
       })
     ),
   });

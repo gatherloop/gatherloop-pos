@@ -1,4 +1,4 @@
-import { Field, InputText, InputNumber } from '../base';
+import { Field, InputText, InputNumber, MarkdownEditor } from '../base';
 import { MaterialForm } from '../../../domain';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
 import { Button, Form } from 'tamagui';
@@ -25,6 +25,11 @@ export const MaterialUpdate = ({
         </Field>
         <Field name="unit" label="Unit">
           <InputText />
+        </Field>
+        <Field name="description" label="Description">
+          <MarkdownEditor
+            defaultMode={form.getValues('description') ? 'preview' : 'edit'}
+          />
         </Field>
         <Button
           disabled={isSubmitDisabled}
