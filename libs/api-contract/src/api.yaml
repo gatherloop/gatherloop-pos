@@ -9,6 +9,36 @@ servers:
   - url: http://petstore.swagger.io/v1
 security: []
 paths:
+  /authentications/login:
+    post:
+      summary: Login to system
+      operationId: authenticationLogin
+      tags:
+        - authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthenticationsLoginRequest'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: string
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /categories:
     get:
       summary: List all categories
@@ -1104,6 +1134,16 @@ paths:
                 $ref: '#/components/schemas/Error'
 components:
   schemas:
+    AuthenticationsLoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+        password:
+          type: string
     Category:
       type: object
       required:
