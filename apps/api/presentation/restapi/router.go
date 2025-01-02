@@ -10,6 +10,7 @@ import (
 	"apps/api/domain/product"
 	"apps/api/domain/transaction"
 	"apps/api/domain/wallet"
+	"apps/api/utils"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -78,7 +79,7 @@ func AddRouters(router *mux.Router, db *gorm.DB) {
 	router.HandleFunc("/expenses/{expenseId}", expenseHandler.DeleteExpenseById).Methods(http.MethodDelete)
 	router.HandleFunc("/expenses", expenseHandler.CreateExpense).Methods(http.MethodPost, http.MethodOptions)
 
-	router.HandleFunc("/categories", categoryHandler.GetCategoryList).Methods(http.MethodGet)
+	router.HandleFunc("/categories", utils.CheckAuth(categoryHandler.GetCategoryList)).Methods(http.MethodGet)
 	router.HandleFunc("/categories/{categoryId}", categoryHandler.GetCategoryById).Methods(http.MethodGet)
 	router.HandleFunc("/categories/{categoryId}", categoryHandler.DeleteCategoryById).Methods(http.MethodDelete)
 	router.HandleFunc("/categories/{categoryId}", categoryHandler.UpdateCategoryById).Methods(http.MethodPut, http.MethodOptions)
