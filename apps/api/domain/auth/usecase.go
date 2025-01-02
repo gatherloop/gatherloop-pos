@@ -1,4 +1,4 @@
-package authentications
+package auth
 
 import (
 	"context"
@@ -17,18 +17,12 @@ func NewUsecase(repository Repository) Usecase {
 }
 
 func (usecase Usecase) Login(ctx context.Context, loginRequest LoginRequest) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(loginRequest.Password), 14)
-	if err != nil {
-		return "", err
-	}
-
-	hash := string(bytes)
 	user, err := usecase.repository.GetUserByUsername(ctx, loginRequest.Username)
 	if err != nil {
 		return "", err
 	}
 
-	if user.Password != hash {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(loginRequest.Password)); err != nil {
 		return "", errors.New("wrong credential")
 	}
 

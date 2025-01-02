@@ -9,18 +9,18 @@ servers:
   - url: http://petstore.swagger.io/v1
 security: []
 paths:
-  /authentications/login:
+  /auth/login:
     post:
       summary: Login to system
-      operationId: authenticationLogin
+      operationId: authLogin
       tags:
-        - authentication
+        - auth
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AuthenticationsLoginRequest'
+              $ref: '#/components/schemas/AuthLoginRequest'
       responses:
         '200':
           description: success response
@@ -1134,7 +1134,7 @@ paths:
                 $ref: '#/components/schemas/Error'
 components:
   schemas:
-    AuthenticationsLoginRequest:
+    AuthLoginRequest:
       type: object
       required:
         - username

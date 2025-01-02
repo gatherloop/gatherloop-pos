@@ -1,6 +1,7 @@
 package restapi
 
 import (
+	"apps/api/domain/auth"
 	"apps/api/domain/base"
 	"apps/api/domain/budget"
 	"apps/api/domain/category"
@@ -465,5 +466,18 @@ func ToWalletTransferRequest(walletTransferRequest apiContract.WalletTransferReq
 	return wallet.WalletTransferRequest{
 		Amount:     walletTransferRequest.Amount,
 		ToWalletId: walletTransferRequest.ToWalletId,
+	}
+}
+
+func GetLoginRequest(r *http.Request) (apiContract.AuthLoginRequest, error) {
+	var loginRequest apiContract.AuthLoginRequest
+	err := json.NewDecoder(r.Body).Decode(&loginRequest)
+	return loginRequest, err
+}
+
+func ToLoginRequest(loginRequest apiContract.AuthLoginRequest) auth.LoginRequest {
+	return auth.LoginRequest{
+		Username: loginRequest.Username,
+		Password: loginRequest.Password,
 	}
 }
