@@ -16,6 +16,7 @@ export const Sheet = ({ isOpen, onOpenChange, children }: SheetProps) => {
       zIndex={100_000}
       animation="medium"
       position={0}
+      unmountChildrenWhenHidden
     >
       <TamaguiSheet.Overlay
         animation="lazy"
