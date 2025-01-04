@@ -3,7 +3,7 @@ import {
   categoryFindById,
   categoryFindByIdQueryKey,
 } from '../../../api-contract/src';
-import { OpenAPICategoryRepository } from '../data';
+import { ApiCategoryRepository } from '../data';
 import { CategoryUpdateUsecase } from '../domain';
 import { CategoryUpdateScreen as CategoryUpdateScreenView } from '../presentation';
 import {
@@ -39,7 +39,7 @@ export function CategoryUpdateScreen({
     parse: (value) => parseInt(Array.isArray(value) ? value[0] : value ?? ''),
   });
   const client = useQueryClient();
-  const repository = new OpenAPICategoryRepository(client);
+  const repository = new ApiCategoryRepository(client);
   repository.categoryByIdServerParams = categoryIdParam;
   const usecase = new CategoryUpdateUsecase(repository);
   return <CategoryUpdateScreenView categoryUpdateUsecase={usecase} />;

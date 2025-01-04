@@ -6,9 +6,9 @@ import {
   materialListQueryKey,
 } from '../../../api-contract/src';
 import {
-  OpenAPICategoryRepository,
-  OpenAPIMaterialRepository,
-  OpenAPIProductRepository,
+  ApiCategoryRepository,
+  ApiMaterialRepository,
+  ApiProductRepository,
 } from '../data';
 import { MaterialListUsecase, ProductCreateUsecase } from '../domain';
 import { ProductCreateScreen as ProductCreateScreenView } from '../presentation';
@@ -50,14 +50,14 @@ export async function getProductCreateScreenDehydratedState(): Promise<Dehydrate
 
 export function ProductCreateScreen() {
   const client = useQueryClient();
-  const productRepository = new OpenAPIProductRepository(client);
-  const categoryRepository = new OpenAPICategoryRepository(client);
+  const productRepository = new ApiProductRepository(client);
+  const categoryRepository = new ApiCategoryRepository(client);
   const productCreateUsecase = new ProductCreateUsecase(
     productRepository,
     categoryRepository
   );
 
-  const materialRepository = new OpenAPIMaterialRepository(client);
+  const materialRepository = new ApiMaterialRepository(client);
   const materialListUsecase = new MaterialListUsecase(materialRepository);
 
   return (

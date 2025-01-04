@@ -20,7 +20,7 @@ import {
   ProductRepository,
 } from '../../domain';
 
-export class OpenAPIProductRepository implements ProductRepository {
+export class ApiProductRepository implements ProductRepository {
   client: QueryClient;
 
   productListServerParams: ProductListParams = {

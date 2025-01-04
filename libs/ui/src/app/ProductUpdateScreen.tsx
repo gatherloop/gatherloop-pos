@@ -9,9 +9,9 @@ import {
   productFindByIdQueryKey,
 } from '../../../api-contract/src';
 import {
-  OpenAPICategoryRepository,
-  OpenAPIMaterialRepository,
-  OpenAPIProductRepository,
+  ApiCategoryRepository,
+  ApiMaterialRepository,
+  ApiProductRepository,
 } from '../data';
 import { MaterialListUsecase, ProductUpdateUsecase } from '../domain';
 import { ProductUpdateScreen as ProductUpdateScreenView } from '../presentation';
@@ -71,15 +71,15 @@ export function ProductUpdateScreen({ productId }: ProductUpdateScreenProps) {
   });
 
   const client = useQueryClient();
-  const productRepository = new OpenAPIProductRepository(client);
+  const productRepository = new ApiProductRepository(client);
   productRepository.productByIdServerParams = productIdParam;
-  const categoryRepository = new OpenAPICategoryRepository(client);
+  const categoryRepository = new ApiCategoryRepository(client);
   const productUpdateUsecase = new ProductUpdateUsecase(
     productRepository,
     categoryRepository
   );
 
-  const materialRepository = new OpenAPIMaterialRepository(client);
+  const materialRepository = new ApiMaterialRepository(client);
   const materialListUsecase = new MaterialListUsecase(materialRepository);
 
   return (

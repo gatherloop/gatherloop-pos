@@ -5,7 +5,7 @@ import {
   walletTransferList,
   walletTransferListQueryKey,
 } from '../../../api-contract/src';
-import { OpenAPIWalletRepository } from '../data';
+import { ApiWalletRepository } from '../data';
 import { WalletDetailUsecase, WalletTransferListUsecase } from '../domain';
 import { WalletTransferListScreen as WalletTransferListScreenView } from '../presentation';
 import { dehydrate, QueryClient, useQueryClient } from '@tanstack/react-query';
@@ -43,7 +43,7 @@ export function WalletTransferListScreen({
   walletId,
 }: WalletTransferListScreenProps) {
   const client = useQueryClient();
-  const repository = new OpenAPIWalletRepository(client);
+  const repository = new ApiWalletRepository(client);
   repository.walletByIdServerParams = walletId;
   const walletTransferListUsecase = new WalletTransferListUsecase(repository);
   const walletDetailUsecase = new WalletDetailUsecase(repository);

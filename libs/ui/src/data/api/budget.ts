@@ -8,7 +8,7 @@ import {
 } from '../../../../api-contract/src';
 import { Budget, BudgetRepository } from '../../domain';
 
-export class OpenAPIBudgetRepository implements BudgetRepository {
+export class ApiBudgetRepository implements BudgetRepository {
   client: QueryClient;
 
   constructor(client: QueryClient) {

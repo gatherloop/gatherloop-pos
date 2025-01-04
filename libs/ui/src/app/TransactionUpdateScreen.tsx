@@ -6,10 +6,7 @@ import {
   transactionFindById,
   transactionFindByIdQueryKey,
 } from '../../../api-contract/src';
-import {
-  OpenAPIProductRepository,
-  OpenAPITransactionRepository,
-} from '../data';
+import { ApiProductRepository, ApiTransactionRepository } from '../data';
 import { ProductListUsecase, TransactionUpdateUsecase } from '../domain';
 import { TransactionUpdateScreen as TransactionUpdateScreenView } from '../presentation';
 import {
@@ -63,13 +60,13 @@ export function TransactionUpdateScreen({
     parse: (value) => parseInt(Array.isArray(value) ? value[0] : value ?? ''),
   });
   const client = useQueryClient();
-  const transactionRepository = new OpenAPITransactionRepository(client);
+  const transactionRepository = new ApiTransactionRepository(client);
   transactionRepository.transactionByIdServerParams = transactionIdParam;
   const transactionUpdateUsecase = new TransactionUpdateUsecase(
     transactionRepository
   );
 
-  const productRepository = new OpenAPIProductRepository(client);
+  const productRepository = new ApiProductRepository(client);
   const productListUsecase = new ProductListUsecase(productRepository);
   return (
     <TransactionUpdateScreenView

@@ -18,7 +18,7 @@ import {
 } from '../../../../api-contract/src';
 import { Wallet, WalletRepository, WalletTransfer } from '../../domain';
 
-export class OpenAPIWalletRepository implements WalletRepository {
+export class ApiWalletRepository implements WalletRepository {
   client: QueryClient;
 
   walletByIdServerParams: number | null = null;

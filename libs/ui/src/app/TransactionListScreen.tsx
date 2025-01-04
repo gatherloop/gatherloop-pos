@@ -3,7 +3,7 @@ import {
   transactionList,
   transactionListQueryKey,
 } from '../../../api-contract/src';
-import { OpenAPITransactionRepository, OpenAPIWalletRepository } from '../data';
+import { ApiTransactionRepository, ApiWalletRepository } from '../data';
 import {
   TransactionListUsecase,
   TransactionDeleteUsecase,
@@ -37,8 +37,8 @@ export async function getTransactionListScreenDehydratedState() {
 
 export function TransactionListScreen() {
   const client = useQueryClient();
-  const transactionRepository = new OpenAPITransactionRepository(client);
-  const walletRepository = new OpenAPIWalletRepository(client);
+  const transactionRepository = new ApiTransactionRepository(client);
+  const walletRepository = new ApiWalletRepository(client);
   const transactionListUsecase = new TransactionListUsecase(
     transactionRepository
   );

@@ -1,6 +1,6 @@
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { productList, productListQueryKey } from '../../../api-contract/src';
-import { OpenAPIProductRepository } from '../data';
+import { ApiProductRepository } from '../data';
 import { ProductListUsecase, ProductDeleteUsecase } from '../domain';
 import { ProductListScreen as ProductListScreenView } from '../presentation';
 import { dehydrate, QueryClient, useQueryClient } from '@tanstack/react-query';
@@ -30,7 +30,7 @@ export async function getProductListScreenDehydratedState() {
 
 export function ProductListScreen() {
   const client = useQueryClient();
-  const repository = new OpenAPIProductRepository(client);
+  const repository = new ApiProductRepository(client);
   const productListUsecase = new ProductListUsecase(repository);
   const productDeleteUsecase = new ProductDeleteUsecase(repository);
   return (

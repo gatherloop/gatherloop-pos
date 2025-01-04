@@ -9,9 +9,9 @@ import {
   walletListQueryKey,
 } from '../../../api-contract/src';
 import {
-  OpenAPIBudgetRepository,
-  OpenAPIExpenseRepository,
-  OpenAPIWalletRepository,
+  ApiBudgetRepository,
+  ApiExpenseRepository,
+  ApiWalletRepository,
 } from '../data';
 import { ExpenseUpdateUsecase } from '../domain';
 import { ExpenseUpdateScreen as ExpenseUpdateScreenView } from '../presentation';
@@ -56,10 +56,10 @@ export function ExpenseUpdateScreen({ expenseId }: ExpenseUpdateScreenProps) {
     parse: (value) => parseInt(Array.isArray(value) ? value[0] : value ?? ''),
   });
   const client = useQueryClient();
-  const expenseRepository = new OpenAPIExpenseRepository(client);
+  const expenseRepository = new ApiExpenseRepository(client);
   expenseRepository.expenseByIdServerParams = expenseIdParam;
-  const budgetRepository = new OpenAPIBudgetRepository(client);
-  const walletRepository = new OpenAPIWalletRepository(client);
+  const budgetRepository = new ApiBudgetRepository(client);
+  const walletRepository = new ApiWalletRepository(client);
   const usecase = new ExpenseUpdateUsecase(
     expenseRepository,
     budgetRepository,

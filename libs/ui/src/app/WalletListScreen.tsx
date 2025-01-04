@@ -1,6 +1,6 @@
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { walletList, walletListQueryKey } from '../../../api-contract/src';
-import { OpenAPIWalletRepository } from '../data';
+import { ApiWalletRepository } from '../data';
 import { WalletListUsecase } from '../domain';
 import { WalletListScreen as WalletListScreenView } from '../presentation';
 import { dehydrate, QueryClient, useQueryClient } from '@tanstack/react-query';
@@ -17,7 +17,7 @@ export async function getWalletListScreenDehydratedState() {
 
 export function WalletListScreen() {
   const client = useQueryClient();
-  const repository = new OpenAPIWalletRepository(client);
+  const repository = new ApiWalletRepository(client);
   const walletListUsecase = new WalletListUsecase(repository);
   return <WalletListScreenView walletListUsecase={walletListUsecase} />;
 }

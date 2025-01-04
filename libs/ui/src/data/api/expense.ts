@@ -14,7 +14,7 @@ import {
 } from '../../../../api-contract/src';
 import { Expense, ExpenseRepository } from '../../domain';
 
-export class OpenAPIExpenseRepository implements ExpenseRepository {
+export class ApiExpenseRepository implements ExpenseRepository {
   client: QueryClient;
 
   expenseByIdServerParams: number | null = null;
