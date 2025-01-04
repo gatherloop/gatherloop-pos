@@ -4,7 +4,7 @@ import {
   materialFindById,
   materialFindByIdQueryKey,
 } from '../../../api-contract/src';
-import { OpenAPIMaterialRepository } from '../data';
+import { ApiMaterialRepository } from '../data';
 import { MaterialUpdateUsecase } from '../domain';
 import { MaterialUpdateScreen as MaterialUpdateScreenView } from '../presentation';
 import {
@@ -39,7 +39,7 @@ export function MaterialUpdateScreen({
     parse: (value) => parseInt(Array.isArray(value) ? value[0] : value ?? ''),
   });
   const client = useQueryClient();
-  const repository = new OpenAPIMaterialRepository(client);
+  const repository = new ApiMaterialRepository(client);
   repository.materialByIdServerParams = materialIdParam;
   const usecase = new MaterialUpdateUsecase(repository);
   return <MaterialUpdateScreenView materialUpdateUsecase={usecase} />;

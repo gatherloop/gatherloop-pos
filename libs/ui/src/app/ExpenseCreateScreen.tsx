@@ -6,9 +6,9 @@ import {
   walletListQueryKey,
 } from '../../../api-contract/src';
 import {
-  OpenAPIBudgetRepository,
-  OpenAPIExpenseRepository,
-  OpenAPIWalletRepository,
+  ApiBudgetRepository,
+  ApiExpenseRepository,
+  ApiWalletRepository,
 } from '../data';
 import { ExpenseCreateUsecase } from '../domain';
 import { ExpenseCreateScreen as ExpenseCreateScreenView } from '../presentation';
@@ -37,9 +37,9 @@ export async function getExpenseCreateScreenDehydratedState(): Promise<Dehydrate
 
 export function ExpenseCreateScreen() {
   const client = useQueryClient();
-  const expenseRepository = new OpenAPIExpenseRepository(client);
-  const budgetRepository = new OpenAPIBudgetRepository(client);
-  const walletRepository = new OpenAPIWalletRepository(client);
+  const expenseRepository = new ApiExpenseRepository(client);
+  const budgetRepository = new ApiBudgetRepository(client);
+  const walletRepository = new ApiWalletRepository(client);
   const usecase = new ExpenseCreateUsecase(
     expenseRepository,
     budgetRepository,

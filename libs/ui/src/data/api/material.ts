@@ -14,7 +14,7 @@ import {
 } from '../../../../api-contract/src';
 import { Material, MaterialListParams, MaterialRepository } from '../../domain';
 
-export class OpenAPIMaterialRepository implements MaterialRepository {
+export class ApiMaterialRepository implements MaterialRepository {
   client: QueryClient;
 
   materialListServerParams: MaterialListParams = {

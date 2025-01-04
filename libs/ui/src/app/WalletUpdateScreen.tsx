@@ -4,7 +4,7 @@ import {
   walletFindById,
   walletFindByIdQueryKey,
 } from '../../../api-contract/src';
-import { OpenAPIWalletRepository } from '../data';
+import { ApiWalletRepository } from '../data';
 import { WalletUpdateUsecase } from '../domain';
 import { WalletUpdateScreen as WalletUpdateScreenView } from '../presentation';
 import {
@@ -37,7 +37,7 @@ export function WalletUpdateScreen({ walletId }: WalletUpdateScreenProps) {
     parse: (value) => parseInt(Array.isArray(value) ? value[0] : value ?? ''),
   });
   const client = useQueryClient();
-  const repository = new OpenAPIWalletRepository(client);
+  const repository = new ApiWalletRepository(client);
   repository.walletByIdServerParams = walletIdParam;
   const usecase = new WalletUpdateUsecase(repository);
   return <WalletUpdateScreenView walletUpdateUsecase={usecase} />;

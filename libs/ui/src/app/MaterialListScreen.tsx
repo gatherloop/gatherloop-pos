@@ -1,6 +1,6 @@
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { materialList, materialListQueryKey } from '../../../api-contract/src';
-import { OpenAPIMaterialRepository } from '../data';
+import { ApiMaterialRepository } from '../data';
 import { MaterialListUsecase, MaterialDeleteUsecase } from '../domain';
 import { MaterialListScreen as MaterialListScreenView } from '../presentation';
 import { dehydrate, QueryClient, useQueryClient } from '@tanstack/react-query';
@@ -30,7 +30,7 @@ export async function getMaterialListScreenDehydratedState() {
 
 export function MaterialListScreen() {
   const client = useQueryClient();
-  const repository = new OpenAPIMaterialRepository(client);
+  const repository = new ApiMaterialRepository(client);
   const materialListUsecase = new MaterialListUsecase(repository);
   const materialDeleteUsecase = new MaterialDeleteUsecase(repository);
   return (

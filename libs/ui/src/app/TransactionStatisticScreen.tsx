@@ -3,7 +3,7 @@ import {
   transactionStatistics,
   transactionStatisticsQueryKey,
 } from '../../../api-contract/src';
-import { OpenAPITransactionRepository } from '../data';
+import { ApiTransactionRepository } from '../data';
 import { TransactionStatisticListUsecase } from '../domain';
 import { TransactionStatisticScreen as TransactionStatisticScreenView } from '../presentation';
 import {
@@ -24,7 +24,7 @@ export async function getTransactionStatisticScreenDehydratedState(): Promise<De
 
 export function TransactionStatisticScreen() {
   const client = useQueryClient();
-  const repository = new OpenAPITransactionRepository(client);
+  const repository = new ApiTransactionRepository(client);
   const usecase = new TransactionStatisticListUsecase(repository);
   return (
     <TransactionStatisticScreenView transactionStatisticListUsecase={usecase} />

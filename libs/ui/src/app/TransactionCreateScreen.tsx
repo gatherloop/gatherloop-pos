@@ -1,9 +1,6 @@
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { productList, productListQueryKey } from '../../../api-contract/src';
-import {
-  OpenAPIProductRepository,
-  OpenAPITransactionRepository,
-} from '../data';
+import { ApiProductRepository, ApiTransactionRepository } from '../data';
 import { ProductListUsecase, TransactionCreateUsecase } from '../domain';
 import { TransactionCreateScreen as TransactionCreateScreenView } from '../presentation';
 import {
@@ -37,11 +34,11 @@ export async function getTransactionCreateScreenDehydratedState(): Promise<Dehyd
 
 export function TransactionCreateScreen() {
   const client = useQueryClient();
-  const transactionRepository = new OpenAPITransactionRepository(client);
+  const transactionRepository = new ApiTransactionRepository(client);
   const transactionCreateUsecase = new TransactionCreateUsecase(
     transactionRepository
   );
-  const productRepository = new OpenAPIProductRepository(client);
+  const productRepository = new ApiProductRepository(client);
   const productListUsecase = new ProductListUsecase(productRepository);
   return (
     <TransactionCreateScreenView

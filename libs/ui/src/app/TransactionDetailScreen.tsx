@@ -3,7 +3,7 @@ import {
   transactionFindById,
   transactionFindByIdQueryKey,
 } from '../../../api-contract/src';
-import { OpenAPITransactionRepository } from '../data';
+import { ApiTransactionRepository } from '../data';
 import { TransactionDetailUsecase } from '../domain';
 import { TransactionDetailScreen as TransactionDetailScreenView } from '../presentation';
 import {
@@ -32,7 +32,7 @@ export function TransactionDetailScreen({
   transactionId,
 }: TransactionDetailScreenProps) {
   const client = useQueryClient();
-  const repository = new OpenAPITransactionRepository(client);
+  const repository = new ApiTransactionRepository(client);
   repository.transactionByIdServerParams = transactionId;
   const usecase = new TransactionDetailUsecase(repository);
   return <TransactionDetailScreenView transactionDetailUsecase={usecase} />;

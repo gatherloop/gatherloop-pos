@@ -14,7 +14,7 @@ import {
 } from '../../../../api-contract/src';
 import { Category, CategoryRepository } from '../../domain';
 
-export class OpenAPICategoryRepository implements CategoryRepository {
+export class ApiCategoryRepository implements CategoryRepository {
   client: QueryClient;
 
   categoryByIdServerParams: number | null = null;

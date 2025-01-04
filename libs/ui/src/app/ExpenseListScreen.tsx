@@ -1,6 +1,6 @@
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { expenseList, expenseListQueryKey } from '../../../api-contract/src';
-import { OpenAPIExpenseRepository } from '../data';
+import { ApiExpenseRepository } from '../data';
 import { ExpenseListUsecase, ExpenseDeleteUsecase } from '../domain';
 import { ExpenseListScreen as ExpenseListScreenView } from '../presentation';
 import { dehydrate, QueryClient, useQueryClient } from '@tanstack/react-query';
@@ -23,7 +23,7 @@ export async function getExpenseListScreenDehydratedState() {
 
 export function ExpenseListScreen() {
   const client = useQueryClient();
-  const repository = new OpenAPIExpenseRepository(client);
+  const repository = new ApiExpenseRepository(client);
   const expenseListUsecase = new ExpenseListUsecase(repository);
   const expenseDeleteUsecase = new ExpenseDeleteUsecase(repository);
   return (

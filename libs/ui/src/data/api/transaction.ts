@@ -25,7 +25,7 @@ import {
   TransactionStatistic,
 } from '../../domain';
 
-export class OpenAPITransactionRepository implements TransactionRepository {
+export class ApiTransactionRepository implements TransactionRepository {
   client: QueryClient;
 
   transactionListServerParams: TransactionListParams = {
