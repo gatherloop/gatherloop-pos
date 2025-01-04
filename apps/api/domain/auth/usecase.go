@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"apps/api/utils"
 	"context"
 	"errors"
 
@@ -27,10 +28,13 @@ func (usecase Usecase) Login(ctx context.Context, loginRequest LoginRequest) (st
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"id":       user.Id,
 		"username": user.Username,
 	})
 
-	tokenString, err := token.SignedString([]byte("my_secret_key"))
+	println(utils.GetEnv().JwtSecret)
+
+	tokenString, err := token.SignedString([]byte(utils.GetEnv().JwtSecret))
 	if err != nil {
 		return "", err
 	}
