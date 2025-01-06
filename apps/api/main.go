@@ -31,5 +31,10 @@ func main() {
 	router := mux.NewRouter().StrictSlash(true)
 	router.Use(utils.EnableCORS)
 	restapi.AddRouters(router, db)
+
+	router.HandleFunc("/health-check", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("health check success"))
+	})
+
 	http.ListenAndServe(fmt.Sprintf(":%s", env.Port), router)
 }
