@@ -13,7 +13,12 @@ export const Textarea = ({ name, ...inputProps }: TextareaProps) => {
     <Controller
       name={fieldName}
       render={({ field }) => (
-        <TextArea {...inputProps} {...field} onChangeText={field.onChange} />
+        <TextArea
+          id={field.name}
+          {...inputProps}
+          {...field}
+          onChangeText={field.onChange}
+        />
       )}
     />
   );

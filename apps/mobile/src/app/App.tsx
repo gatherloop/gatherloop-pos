@@ -23,12 +23,14 @@ import {
   ExpenseUpdateScreen,
   TransactionStatisticScreen,
   TransactionPrintScreen,
+  AuthLoginScreen,
 } from '@gatherloop-pos/ui';
 import { RootProvider } from '@gatherloop-pos/provider';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 const Stack = createNativeStackNavigator<{
+  authLogin: undefined;
   dashboard: undefined;
   categoryList: undefined;
   categoryCreate: undefined;
@@ -65,6 +67,7 @@ export const App = () => {
         config: {
           initialRouteName: 'dashboard',
           screens: {
+            authLogin: 'auth/login',
             dashboard: '',
             categoryList: 'categories',
             categoryCreate: 'categories/create',
@@ -148,6 +151,11 @@ export const App = () => {
           initialRouteName="dashboard"
           screenOptions={{ header: () => null }}
         >
+          <Stack.Screen
+            name="authLogin"
+            component={AuthLoginScreen}
+            options={{ title: 'Login' }}
+          />
           <Stack.Screen
             name="dashboard"
             component={TransactionStatisticScreen}

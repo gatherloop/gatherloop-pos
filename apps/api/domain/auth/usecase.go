@@ -32,8 +32,6 @@ func (usecase Usecase) Login(ctx context.Context, loginRequest LoginRequest) (st
 		"username": user.Username,
 	})
 
-	println(utils.GetEnv().JwtSecret)
-
 	tokenString, err := token.SignedString([]byte(utils.GetEnv().JwtSecret))
 	if err != nil {
 		return "", err

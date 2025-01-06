@@ -9,11 +9,17 @@ export type InputTextProps = {
 export const InputText = ({ name, ...inputProps }: InputTextProps) => {
   const fieldContext = useFieldContext();
   const fieldName = fieldContext.name ?? name ?? '';
+
   return (
     <Controller
       name={fieldName}
       render={({ field }) => (
-        <Input {...inputProps} {...field} onChangeText={field.onChange} />
+        <Input
+          id={field.name}
+          {...inputProps}
+          {...field}
+          onChangeText={field.onChange}
+        />
       )}
     />
   );

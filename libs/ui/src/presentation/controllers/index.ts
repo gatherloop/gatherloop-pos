@@ -1,3 +1,4 @@
+export * from './AuthLoginController';
 export * from './BudgetListController';
 export * from './ProductDeleteController';
 export * from './ProductListController';
