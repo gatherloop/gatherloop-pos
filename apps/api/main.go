@@ -78,5 +78,9 @@ func main() {
 	routers.NewTransactionRouter(transactionHandler).AddRouter(router)
 	routers.NewWalletRouter(walletHandler).AddRouter(router)
 
+	router.HandleFunc("/health-check", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("health check success"))
+	})
+
 	http.ListenAndServe(fmt.Sprintf(":%s", env.Port), router)
 }
