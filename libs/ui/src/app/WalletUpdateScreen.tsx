@@ -13,14 +13,19 @@ import {
   QueryClient,
   useQueryClient,
 } from '@tanstack/react-query';
+import { GetServerSidePropsContext } from 'next';
 
 export async function getWalletUpdateScreenDehydratedState(
+  ctx: GetServerSidePropsContext,
   walletId: number
 ): Promise<DehydratedState> {
   const queryClient = new QueryClient();
   await queryClient.prefetchQuery({
     queryKey: walletFindByIdQueryKey(walletId),
-    queryFn: () => walletFindById(walletId),
+    queryFn: () =>
+      walletFindById(walletId, {
+        headers: { Cookie: ctx.req.headers.cookie },
+      }),
   });
   return dehydrate(queryClient);
 }

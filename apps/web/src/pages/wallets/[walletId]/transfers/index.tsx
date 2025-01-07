@@ -12,6 +12,7 @@ export const getServerSideProps: GetServerSideProps<
 > = async (ctx) => {
   const walletId = parseInt(ctx.params?.walletId ?? '');
   const dehydratedState = await getWalletTransferListScreenDehydratedState(
+    ctx,
     walletId
   );
   return { props: { dehydratedState, walletId } };

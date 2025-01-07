@@ -6,9 +6,9 @@ import { GetServerSideProps } from 'next';
 import { PageProps } from '../_app';
 
 export const getServerSideProps: GetServerSideProps<PageProps> = async (
-  _ctx
+  ctx
 ) => {
-  const dehydratedState = await getWalletListScreenDehydratedState();
+  const dehydratedState = await getWalletListScreenDehydratedState(ctx);
   return { props: { dehydratedState } };
 };
 

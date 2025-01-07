@@ -1,11 +1,14 @@
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { materialList, materialListQueryKey } from '../../../api-contract/src';
+import { GetServerSidePropsContext } from 'next';
 import { ApiMaterialRepository } from '../data';
 import { MaterialListUsecase, MaterialDeleteUsecase } from '../domain';
 import { MaterialListScreen as MaterialListScreenView } from '../presentation';
 import { dehydrate, QueryClient, useQueryClient } from '@tanstack/react-query';
 
-export async function getMaterialListScreenDehydratedState() {
+export async function getMaterialListScreenDehydratedState(
+  ctx: GetServerSidePropsContext
+) {
   const client = new QueryClient();
   await client.prefetchQuery({
     queryKey: materialListQueryKey({
@@ -15,14 +18,17 @@ export async function getMaterialListScreenDehydratedState() {
       skip: 0,
       sortBy: 'created_at',
     }),
-    queryFn: (ctx) =>
-      materialList({
-        limit: ctx.queryKey[1].limit,
-        order: ctx.queryKey[1].order,
-        query: ctx.queryKey[1].query,
-        skip: ctx.queryKey[1].skip,
-        sortBy: ctx.queryKey[1].sortBy,
-      }),
+    queryFn: (queryCtx) =>
+      materialList(
+        {
+          limit: queryCtx.queryKey[1].limit,
+          order: queryCtx.queryKey[1].order,
+          query: queryCtx.queryKey[1].query,
+          skip: queryCtx.queryKey[1].skip,
+          sortBy: queryCtx.queryKey[1].sortBy,
+        },
+        { headers: { Cookie: ctx.req.headers.cookie } }
+      ),
   });
 
   return dehydrate(client);

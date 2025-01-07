@@ -5,8 +5,12 @@ import {
 import { GetServerSideProps } from 'next';
 import { PageProps } from '../../_app';
 
-export const getServerSideProps: GetServerSideProps<PageProps> = async () => {
-  const dehydratedState = await getWalletTransferCreateScreenDehydratedState();
+export const getServerSideProps: GetServerSideProps<PageProps> = async (
+  ctx
+) => {
+  const dehydratedState = await getWalletTransferCreateScreenDehydratedState(
+    ctx
+  );
   return { props: { dehydratedState } };
 };
 

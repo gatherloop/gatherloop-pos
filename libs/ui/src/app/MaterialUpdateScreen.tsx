@@ -13,14 +13,19 @@ import {
   QueryClient,
   useQueryClient,
 } from '@tanstack/react-query';
+import { GetServerSidePropsContext } from 'next';
 
 export async function getMaterialUpdateScreenDehydratedState(
+  ctx: GetServerSidePropsContext,
   materialId: number
 ): Promise<DehydratedState> {
   const queryClient = new QueryClient();
   await queryClient.prefetchQuery({
     queryKey: materialFindByIdQueryKey(materialId),
-    queryFn: () => materialFindById(materialId),
+    queryFn: () =>
+      materialFindById(materialId, {
+        headers: { Cookie: ctx.req.headers.cookie },
+      }),
   });
   return dehydrate(queryClient);
 }

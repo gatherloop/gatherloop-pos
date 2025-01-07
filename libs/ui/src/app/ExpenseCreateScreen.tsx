@@ -5,6 +5,7 @@ import {
   walletList,
   walletListQueryKey,
 } from '../../../api-contract/src';
+import { GetServerSidePropsContext } from 'next';
 import {
   ApiBudgetRepository,
   ApiExpenseRepository,
@@ -19,16 +20,20 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 
-export async function getExpenseCreateScreenDehydratedState(): Promise<DehydratedState> {
+export async function getExpenseCreateScreenDehydratedState(
+  ctx: GetServerSidePropsContext
+): Promise<DehydratedState> {
   const queryClient = new QueryClient();
   await Promise.all([
     queryClient.prefetchQuery({
       queryKey: walletListQueryKey(),
-      queryFn: () => walletList(),
+      queryFn: () =>
+        walletList({ headers: { Cookie: ctx.req.headers.cookie } }),
     }),
     queryClient.prefetchQuery({
       queryKey: budgetListQueryKey(),
-      queryFn: () => budgetList(),
+      queryFn: () =>
+        budgetList({ headers: { Cookie: ctx.req.headers.cookie } }),
     }),
   ]);
 

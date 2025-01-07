@@ -5,6 +5,7 @@ import {
   materialList,
   materialListQueryKey,
 } from '../../../api-contract/src';
+import { GetServerSidePropsContext } from 'next';
 import {
   ApiCategoryRepository,
   ApiMaterialRepository,
@@ -19,12 +20,17 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 
-export async function getProductCreateScreenDehydratedState(): Promise<DehydratedState> {
+export async function getProductCreateScreenDehydratedState(
+  ctx: GetServerSidePropsContext
+): Promise<DehydratedState> {
   const queryClient = new QueryClient();
   await Promise.all([
     queryClient.prefetchQuery({
       queryKey: categoryListQueryKey(),
-      queryFn: () => categoryList(),
+      queryFn: () =>
+        categoryList({
+          headers: { Cookie: ctx.req.headers.cookie },
+        }),
     }),
     queryClient.prefetchQuery({
       queryKey: materialListQueryKey({
@@ -35,13 +41,18 @@ export async function getProductCreateScreenDehydratedState(): Promise<Dehydrate
         query: '',
       }),
       queryFn: () =>
-        materialList({
-          limit: 8,
-          skip: 0,
-          order: 'desc',
-          sortBy: 'created_at',
-          query: '',
-        }),
+        materialList(
+          {
+            limit: 8,
+            skip: 0,
+            order: 'desc',
+            sortBy: 'created_at',
+            query: '',
+          },
+          {
+            headers: { Cookie: ctx.req.headers.cookie },
+          }
+        ),
     }),
   ]);
 

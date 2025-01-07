@@ -12,6 +12,7 @@ export const getServerSideProps: GetServerSideProps<
 > = async (ctx) => {
   const categoryId = parseInt(ctx.params?.categoryId ?? '');
   const dehydratedState = await getCategoryUpdateScreenDehydratedState(
+    ctx,
     categoryId
   );
   return { props: { dehydratedState, categoryId } };

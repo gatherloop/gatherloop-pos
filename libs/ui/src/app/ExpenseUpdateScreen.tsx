@@ -21,23 +21,30 @@ import {
   QueryClient,
   useQueryClient,
 } from '@tanstack/react-query';
+import { GetServerSidePropsContext } from 'next';
 
 export async function getExpenseUpdateScreenDehydratedState(
+  ctx: GetServerSidePropsContext,
   expenseId: number
 ): Promise<DehydratedState> {
   const queryClient = new QueryClient();
   await Promise.all([
     queryClient.prefetchQuery({
       queryKey: expenseFindByIdQueryKey(expenseId),
-      queryFn: () => expenseFindById(expenseId),
+      queryFn: () =>
+        expenseFindById(expenseId, {
+          headers: { Cookie: ctx.req.headers.cookie },
+        }),
     }),
     queryClient.prefetchQuery({
       queryKey: walletListQueryKey(),
-      queryFn: () => walletList(),
+      queryFn: () =>
+        walletList({ headers: { Cookie: ctx.req.headers.cookie } }),
     }),
     queryClient.prefetchQuery({
       queryKey: budgetListQueryKey(),
-      queryFn: () => budgetList(),
+      queryFn: () =>
+        budgetList({ headers: { Cookie: ctx.req.headers.cookie } }),
     }),
   ]);
 

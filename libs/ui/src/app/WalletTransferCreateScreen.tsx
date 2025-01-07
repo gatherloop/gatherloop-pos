@@ -1,16 +1,22 @@
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { walletList, walletListQueryKey } from '../../../api-contract/src';
+import { GetServerSidePropsContext } from 'next';
 import { ApiWalletRepository } from '../data';
 import { WalletTransferCreateUsecase } from '../domain';
 import { WalletTransferCreateScreen as WalletTransferCreateScreenView } from '../presentation';
 import { dehydrate, QueryClient, useQueryClient } from '@tanstack/react-query';
 
-export async function getWalletTransferCreateScreenDehydratedState() {
+export async function getWalletTransferCreateScreenDehydratedState(
+  ctx: GetServerSidePropsContext
+) {
   const client = new QueryClient();
   await Promise.all([
     client.prefetchQuery({
       queryKey: walletListQueryKey(),
-      queryFn: () => walletList(),
+      queryFn: () =>
+        walletList({
+          headers: { Cookie: ctx.req.headers.cookie },
+        }),
     }),
   ]);
 

@@ -3,6 +3,7 @@ import {
   categoryFindById,
   categoryFindByIdQueryKey,
 } from '../../../api-contract/src';
+import { GetServerSidePropsContext } from 'next';
 import { ApiCategoryRepository } from '../data';
 import { CategoryUpdateUsecase } from '../domain';
 import { CategoryUpdateScreen as CategoryUpdateScreenView } from '../presentation';
@@ -15,12 +16,16 @@ import {
 import { createParam } from 'solito';
 
 export async function getCategoryUpdateScreenDehydratedState(
+  ctx: GetServerSidePropsContext,
   categoryId: number
 ): Promise<DehydratedState> {
   const queryClient = new QueryClient();
   await queryClient.prefetchQuery({
     queryKey: categoryFindByIdQueryKey(categoryId),
-    queryFn: () => categoryFindById(categoryId),
+    queryFn: () =>
+      categoryFindById(categoryId, {
+        headers: { Cookie: ctx.req.headers.cookie },
+      }),
   });
   return dehydrate(queryClient);
 }

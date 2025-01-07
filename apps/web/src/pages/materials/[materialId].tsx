@@ -12,6 +12,7 @@ export const getServerSideProps: GetServerSideProps<
 > = async (ctx) => {
   const materialId = parseInt(ctx.params?.materialId ?? '');
   const dehydratedState = await getMaterialUpdateScreenDehydratedState(
+    ctx,
     materialId
   );
   return { props: { dehydratedState, materialId } };
