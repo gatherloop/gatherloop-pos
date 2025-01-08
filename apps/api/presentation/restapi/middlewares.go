@@ -3,6 +3,7 @@ package restapi
 import (
 	"apps/api/utils"
 	"fmt"
+	apiContract "libs/api-contract"
 	"net/http"
 	"strings"
 
@@ -51,7 +52,7 @@ func CheckAuth(next http.HandlerFunc) http.HandlerFunc {
 		})
 
 		if err != nil {
-			w.Write([]byte("authentication error"))
+			WriteError(w, apiContract.Error{Code: apiContract.UNAUTHORIZED, Message: "Credential Error"})
 			return
 		}
 
