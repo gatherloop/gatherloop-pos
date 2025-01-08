@@ -1,6 +1,6 @@
 # Gatherloop POS (Pint Of Sale)
 
-## 1. Overview
+## 1. Overviews
 
 This project is a custom-built Point of Sale (POS) system designed specifically for use in my coffee shop, with support for both web and mobile platforms. The system provides essential features such as:
 
