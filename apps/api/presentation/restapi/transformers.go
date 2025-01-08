@@ -60,8 +60,8 @@ func ToErrorCode(errorType base.ErrorType) apiContract.ErrorCode {
 }
 
 func GetDomain(r *http.Request) string {
-	origin := r.Header.Get("Origin")
-	domain := strings.TrimPrefix(origin, "https://")
+	host := r.Host
+	domain := strings.TrimPrefix(host, "https://")
 	domain = strings.TrimPrefix(domain, "http://")
 	domain = strings.Split(domain, ":")[0]
 	return domain
