@@ -11,8 +11,6 @@ import (
 	"apps/api/domain/transaction"
 	"apps/api/domain/wallet"
 	"apps/api/presentation/restapi"
-	"apps/api/presentation/restapi/handlers"
-	"apps/api/presentation/restapi/routers"
 	"apps/api/utils"
 	"fmt"
 	"net/http"
@@ -28,7 +26,7 @@ func main() {
 
 	env := utils.GetEnv()
 
-	db, err := utils.ConnectDB(utils.ConnectDBParams{
+	db, err := mysql.ConnectDB(mysql.ConnectDBParams{
 		DbUsername: env.DbUsername,
 		DbPassword: env.DbPassword,
 		DbHost:     env.DbHost,
@@ -60,23 +58,23 @@ func main() {
 	budgetUsecase := budget.NewUsecase(budgetRepository)
 	authUsecase := auth.NewUsecase(authRepository)
 
-	walletHandler := handlers.NewWalletHandler(walletUsecase)
-	transactionHandler := handlers.NewTransactionHandler(transactionUsecase)
-	productHandler := handlers.NewProductHandler(productUsecase)
-	materialHandler := handlers.NewMaterialHandler(materialUsecase)
-	expenseHandler := handlers.NewExpenseHandler(expenseUsecase)
-	categoryHandler := handlers.NewCategoryHandler(categoryUsecase)
-	budgetHandler := handlers.NewBudgetHandler(budgetUsecase)
-	authHandler := handlers.NewAuthHandler(authUsecase)
+	walletHandler := restapi.NewWalletHandler(walletUsecase)
+	transactionHandler := restapi.NewTransactionHandler(transactionUsecase)
+	productHandler := restapi.NewProductHandler(productUsecase)
+	materialHandler := restapi.NewMaterialHandler(materialUsecase)
+	expenseHandler := restapi.NewExpenseHandler(expenseUsecase)
+	categoryHandler := restapi.NewCategoryHandler(categoryUsecase)
+	budgetHandler := restapi.NewBudgetHandler(budgetUsecase)
+	authHandler := restapi.NewAuthHandler(authUsecase)
 
-	routers.NewAuthRouter(authHandler).AddRouter(router)
-	routers.NewBudgetRouter(budgetHandler).AddRouter(router)
-	routers.NewCategoryRouter(categoryHandler).AddRouter(router)
-	routers.NewExpenseRouter(expenseHandler).AddRouter(router)
-	routers.NewMaterialRouter(materialHandler).AddRouter(router)
-	routers.NewProductRouter(productHandler).AddRouter(router)
-	routers.NewTransactionRouter(transactionHandler).AddRouter(router)
-	routers.NewWalletRouter(walletHandler).AddRouter(router)
+	restapi.NewAuthRouter(authHandler).AddRouter(router)
+	restapi.NewBudgetRouter(budgetHandler).AddRouter(router)
+	restapi.NewCategoryRouter(categoryHandler).AddRouter(router)
+	restapi.NewExpenseRouter(expenseHandler).AddRouter(router)
+	restapi.NewMaterialRouter(materialHandler).AddRouter(router)
+	restapi.NewProductRouter(productHandler).AddRouter(router)
+	restapi.NewTransactionRouter(transactionHandler).AddRouter(router)
+	restapi.NewWalletRouter(walletHandler).AddRouter(router)
 
 	router.HandleFunc("/health-check", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("health check success"))

@@ -6,7 +6,6 @@ import (
 	"apps/api/domain/product"
 	"apps/api/domain/wallet"
 	"context"
-	"errors"
 	"time"
 )
 
@@ -26,7 +25,7 @@ func NewUsecase(repository Repository, productRepository product.Repository, wal
 	}
 }
 
-func (usecase Usecase) GetTransactionList(ctx context.Context, query string, sortBy base.SortBy, order base.Order, skip int, limit int, paymentStatus PaymentStatus) ([]Transaction, int64, error) {
+func (usecase Usecase) GetTransactionList(ctx context.Context, query string, sortBy base.SortBy, order base.Order, skip int, limit int, paymentStatus PaymentStatus) ([]Transaction, int64, *base.Error) {
 	transactions, err := usecase.repository.GetTransactionList(ctx, query, sortBy, order, skip, limit, paymentStatus)
 	if err != nil {
 		return []Transaction{}, 0, err
@@ -40,12 +39,12 @@ func (usecase Usecase) GetTransactionList(ctx context.Context, query string, sor
 	return transactions, total, nil
 }
 
-func (usecase Usecase) GetTransactionById(ctx context.Context, id int64) (Transaction, error) {
+func (usecase Usecase) GetTransactionById(ctx context.Context, id int64) (Transaction, *base.Error) {
 	return usecase.repository.GetTransactionById(ctx, id)
 }
 
-func (usecase Usecase) CreateTransaction(ctx context.Context, transactionRequest TransactionRequest) error {
-	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) error {
+func (usecase Usecase) CreateTransaction(ctx context.Context, transactionRequest TransactionRequest) *base.Error {
+	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *base.Error {
 		transaction := Transaction{
 			CreatedAt: time.Now(),
 			Name:      transactionRequest.Name,
@@ -89,15 +88,15 @@ func (usecase Usecase) CreateTransaction(ctx context.Context, transactionRequest
 
 }
 
-func (usecase Usecase) UpdateTransactionById(ctx context.Context, transactionRequest TransactionRequest, id int64) error {
-	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) error {
+func (usecase Usecase) UpdateTransactionById(ctx context.Context, transactionRequest TransactionRequest, id int64) *base.Error {
+	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *base.Error {
 		existingTransaction, err := usecase.repository.GetTransactionById(ctxWithTx, id)
 		if err != nil {
 			return err
 		}
 
 		if existingTransaction.PaidAt != nil {
-			return errors.New("cannot update paid transaction")
+			return &base.Error{Type: base.BadRequest, Message: "cannot update paid transaction"}
 		}
 
 		transaction := Transaction{
@@ -140,30 +139,30 @@ func (usecase Usecase) UpdateTransactionById(ctx context.Context, transactionReq
 	})
 }
 
-func (usecase Usecase) DeleteTransactionById(ctx context.Context, id int64) error {
-	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) error {
+func (usecase Usecase) DeleteTransactionById(ctx context.Context, id int64) *base.Error {
+	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *base.Error {
 		transaction, err := usecase.repository.GetTransactionById(ctxWithTx, id)
 		if err != nil {
 			return err
 		}
 
 		if transaction.PaidAt != nil {
-			return errors.New("transaction already paid")
+			return &base.Error{Type: base.BadRequest, Message: "transaction already paid"}
 		}
 
 		return usecase.repository.DeleteTranscationById(ctxWithTx, id)
 	})
 }
 
-func (usecase Usecase) PayTransaction(ctx context.Context, transactionPayRequest TransactionPayRequest, id int64) error {
-	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) error {
+func (usecase Usecase) PayTransaction(ctx context.Context, transactionPayRequest TransactionPayRequest, id int64) *base.Error {
+	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *base.Error {
 		transaction, err := usecase.repository.GetTransactionById(ctxWithTx, id)
 		if err != nil {
 			return err
 		}
 
 		if transaction.PaidAt != nil {
-			return errors.New("transaction already paid")
+			return &base.Error{Type: base.BadRequest, Message: "transaction already paid"}
 		}
 
 		paymentWallet, err := usecase.walletRepository.GetWalletById(ctxWithTx, transactionPayRequest.WalletId)
@@ -220,6 +219,6 @@ func (usecase Usecase) PayTransaction(ctx context.Context, transactionPayRequest
 	})
 }
 
-func (usecase Usecase) GetTransactionStatistics(ctx context.Context, groupBy string) ([]TransactionStatistic, error) {
+func (usecase Usecase) GetTransactionStatistics(ctx context.Context, groupBy string) ([]TransactionStatistic, *base.Error) {
 	return usecase.repository.GetTransactionStatistics(ctx, groupBy)
 }

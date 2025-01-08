@@ -1,9 +1,7 @@
-package handlers
+package restapi
 
 import (
 	"apps/api/domain/auth"
-	"apps/api/presentation/restapi"
-	"encoding/json"
 	apiContract "libs/api-contract"
 	"net/http"
 )
@@ -19,15 +17,15 @@ func NewAuthHandler(usecase auth.Usecase) AuthHandler {
 func (handler AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	loginRequest, err := restapi.GetLoginRequest(r)
+	loginRequest, err := GetLoginRequest(r)
 	if err != nil {
-		restapi.WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
-	token, err := handler.usecase.Login(ctx, restapi.ToLoginRequest(loginRequest))
-	if err != nil {
-		restapi.WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
+	token, usecaseErr := handler.usecase.Login(ctx, ToLoginRequest(loginRequest))
+	if usecaseErr != nil {
+		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
@@ -39,5 +37,5 @@ func (handler AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 	http.SetCookie(w, &cookie)
 
-	json.NewEncoder(w).Encode(apiContract.AuthLogin200Response{Data: token})
+	WriteResponse(w, apiContract.AuthLogin200Response{Data: token})
 }

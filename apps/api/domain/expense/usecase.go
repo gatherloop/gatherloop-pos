@@ -5,7 +5,6 @@ import (
 	"apps/api/domain/budget"
 	"apps/api/domain/wallet"
 	"context"
-	"errors"
 	"time"
 )
 
@@ -23,16 +22,16 @@ func NewUsecase(repository Repository, budgetRepository budget.Repository, walle
 	}
 }
 
-func (usecase Usecase) GetExpenseList(ctx context.Context, sortBy base.SortBy, order base.Order, skip int, limit int) ([]Expense, error) {
+func (usecase Usecase) GetExpenseList(ctx context.Context, sortBy base.SortBy, order base.Order, skip int, limit int) ([]Expense, *base.Error) {
 	return usecase.repository.GetExpenseList(ctx, sortBy, order, skip, limit)
 }
 
-func (usecase Usecase) GetExpenseById(ctx context.Context, id int64) (Expense, error) {
+func (usecase Usecase) GetExpenseById(ctx context.Context, id int64) (Expense, *base.Error) {
 	return usecase.repository.GetExpenseById(ctx, id)
 }
 
-func (usecase Usecase) CreateExpense(ctx context.Context, expenseRequest ExpenseRequest) error {
-	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) error {
+func (usecase Usecase) CreateExpense(ctx context.Context, expenseRequest ExpenseRequest) *base.Error {
+	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *base.Error {
 		expense := Expense{
 			CreatedAt: time.Now(),
 			Total:     0,
@@ -73,20 +72,20 @@ func (usecase Usecase) CreateExpense(ctx context.Context, expenseRequest Expense
 		}
 
 		if expenseBudget.Balance < expense.Total {
-			return errors.New("budget's balance insufficient")
+			return &base.Error{Type: base.BadRequest, Message: "budget's balance insufficient"}
 		}
 
 		if err := usecase.budgetRepository.UpdateBudgetById(ctxWithTx, budget.BudgetRequest{Balance: expenseBudget.Balance - expense.Total}, expense.BudgetId); err != nil {
 			return err
 		}
 
-		expenseWallet, err := usecase.walletRepository.GetWalletById(ctxWithTx, expense.WalletId)
-		if err != nil {
+		expenseWallet, walletErr := usecase.walletRepository.GetWalletById(ctxWithTx, expense.WalletId)
+		if walletErr != nil {
 			return err
 		}
 
 		if expenseWallet.Balance < expense.Total {
-			return errors.New("wallet's balance insufficient")
+			return &base.Error{Type: base.BadRequest, Message: "wallet's balance insufficient"}
 		}
 
 		if err := usecase.walletRepository.UpdateWalletById(ctxWithTx, wallet.WalletRequest{Balance: expenseWallet.Balance - expense.Total}, expense.WalletId); err != nil {
@@ -97,8 +96,8 @@ func (usecase Usecase) CreateExpense(ctx context.Context, expenseRequest Expense
 	})
 }
 
-func (usecase Usecase) UpdateExpenseById(ctx context.Context, expenseRequest ExpenseRequest, id int64) error {
-	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) error {
+func (usecase Usecase) UpdateExpenseById(ctx context.Context, expenseRequest ExpenseRequest, id int64) *base.Error {
+	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *base.Error {
 		existingExpense, err := usecase.repository.GetExpenseById(ctxWithTx, id)
 		if err != nil {
 			return err
@@ -161,7 +160,7 @@ func (usecase Usecase) UpdateExpenseById(ctx context.Context, expenseRequest Exp
 		}
 
 		if expenseBudget.Balance < expense.Total {
-			return errors.New("budget's balance insufficient")
+			return &base.Error{Type: base.BadRequest, Message: "budget's balance insufficient"}
 		}
 
 		if err := usecase.budgetRepository.UpdateBudgetById(ctxWithTx, budget.BudgetRequest{Balance: expenseBudget.Balance - expense.Total}, expense.BudgetId); err != nil {
@@ -174,7 +173,7 @@ func (usecase Usecase) UpdateExpenseById(ctx context.Context, expenseRequest Exp
 		}
 
 		if expenseWallet.Balance < expense.Total {
-			return errors.New("wallet's balance insufficient")
+			return &base.Error{Type: base.BadRequest, Message: "wallet's balance insufficient"}
 		}
 
 		if err := usecase.walletRepository.UpdateWalletById(ctxWithTx, wallet.WalletRequest{Balance: expenseWallet.Balance - expense.Total}, expense.WalletId); err != nil {
@@ -185,8 +184,8 @@ func (usecase Usecase) UpdateExpenseById(ctx context.Context, expenseRequest Exp
 	})
 }
 
-func (usecase Usecase) DeleteExpenseById(ctx context.Context, id int64) error {
-	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) error {
+func (usecase Usecase) DeleteExpenseById(ctx context.Context, id int64) *base.Error {
+	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *base.Error {
 		existingExpense, err := usecase.repository.GetExpenseById(ctxWithTx, id)
 		if err != nil {
 			return err

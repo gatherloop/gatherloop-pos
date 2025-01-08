@@ -1,17 +1,16 @@
-package routers
+package restapi
 
 import (
-	"apps/api/presentation/restapi/handlers"
 	"net/http"
 
 	"github.com/gorilla/mux"
 )
 
 type AuthRouter struct {
-	handler handlers.AuthHandler
+	handler AuthHandler
 }
 
-func NewAuthRouter(handler handlers.AuthHandler) AuthRouter {
+func NewAuthRouter(handler AuthHandler) AuthRouter {
 	return AuthRouter{handler: handler}
 }
 
