@@ -9,11 +9,12 @@ import {
   walletListQueryKey,
 } from '../../../api-contract/src';
 import {
+  ApiAuthRepository,
   ApiBudgetRepository,
   ApiExpenseRepository,
   ApiWalletRepository,
 } from '../data';
-import { ExpenseUpdateUsecase } from '../domain';
+import { AuthLogoutUsecase, ExpenseUpdateUsecase } from '../domain';
 import { ExpenseUpdateScreen as ExpenseUpdateScreenView } from '../presentation';
 import {
   dehydrate,
@@ -21,23 +22,30 @@ import {
   QueryClient,
   useQueryClient,
 } from '@tanstack/react-query';
+import { GetServerSidePropsContext } from 'next';
 
 export async function getExpenseUpdateScreenDehydratedState(
+  ctx: GetServerSidePropsContext,
   expenseId: number
 ): Promise<DehydratedState> {
   const queryClient = new QueryClient();
   await Promise.all([
     queryClient.prefetchQuery({
       queryKey: expenseFindByIdQueryKey(expenseId),
-      queryFn: () => expenseFindById(expenseId),
+      queryFn: () =>
+        expenseFindById(expenseId, {
+          headers: { Cookie: ctx.req.headers.cookie },
+        }),
     }),
     queryClient.prefetchQuery({
       queryKey: walletListQueryKey(),
-      queryFn: () => walletList(),
+      queryFn: () =>
+        walletList({ headers: { Cookie: ctx.req.headers.cookie } }),
     }),
     queryClient.prefetchQuery({
       queryKey: budgetListQueryKey(),
-      queryFn: () => budgetList(),
+      queryFn: () =>
+        budgetList({ headers: { Cookie: ctx.req.headers.cookie } }),
     }),
   ]);
 
@@ -60,10 +68,19 @@ export function ExpenseUpdateScreen({ expenseId }: ExpenseUpdateScreenProps) {
   expenseRepository.expenseByIdServerParams = expenseIdParam;
   const budgetRepository = new ApiBudgetRepository(client);
   const walletRepository = new ApiWalletRepository(client);
-  const usecase = new ExpenseUpdateUsecase(
+  const expenseUpdateUsecase = new ExpenseUpdateUsecase(
     expenseRepository,
     budgetRepository,
     walletRepository
   );
-  return <ExpenseUpdateScreenView expenseUpdateUsecase={usecase} />;
+
+  const authRepository = new ApiAuthRepository();
+  const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
+
+  return (
+    <ExpenseUpdateScreenView
+      expenseUpdateUsecase={expenseUpdateUsecase}
+      authLogoutUsecase={authLogoutUsecase}
+    />
+  );
 }

@@ -2,7 +2,6 @@ package restapi
 
 import (
 	"apps/api/domain/budget"
-	"encoding/json"
 	apiContract "libs/api-contract"
 	"net/http"
 )
@@ -20,7 +19,7 @@ func (handler BudgetHandler) GetBudgetList(w http.ResponseWriter, r *http.Reques
 
 	budgets, err := handler.usecase.GetBudgetList(ctx)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
 		return
 	}
 
@@ -30,7 +29,7 @@ func (handler BudgetHandler) GetBudgetList(w http.ResponseWriter, r *http.Reques
 		apiBudgets = append(apiBudgets, ToApiBudget(budget))
 	}
 
-	json.NewEncoder(w).Encode(apiContract.BudgetList200Response{Data: apiBudgets})
+	WriteResponse(w, apiContract.BudgetList200Response{Data: apiBudgets})
 }
 
 func (handler BudgetHandler) GetBudgetById(w http.ResponseWriter, r *http.Request) {
@@ -39,19 +38,19 @@ func (handler BudgetHandler) GetBudgetById(w http.ResponseWriter, r *http.Reques
 	id, err := GetBudgetId(r)
 
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
-	budget, err := handler.usecase.GetBudgetById(ctx, id)
-	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
+	budget, usecaseErr := handler.usecase.GetBudgetById(ctx, id)
+	if usecaseErr != nil {
+		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
 	apiBudget := ToApiBudget(budget)
 
-	json.NewEncoder(w).Encode(apiContract.BudgetFindById200Response{Data: apiBudget})
+	WriteResponse(w, apiContract.BudgetFindById200Response{Data: apiBudget})
 }
 
 func (handler BudgetHandler) CreateBudget(w http.ResponseWriter, r *http.Request) {
@@ -59,16 +58,16 @@ func (handler BudgetHandler) CreateBudget(w http.ResponseWriter, r *http.Request
 
 	budgetRequest, err := GetBudgetRequest(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
 	if err := handler.usecase.CreateBudget(ctx, ToBudgetRequest(budgetRequest)); err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
 		return
 	}
 
-	json.NewEncoder(w).Encode(apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.SuccessResponse{Success: true})
 }
 
 func (handler BudgetHandler) UpdateBudgetById(w http.ResponseWriter, r *http.Request) {
@@ -76,22 +75,22 @@ func (handler BudgetHandler) UpdateBudgetById(w http.ResponseWriter, r *http.Req
 
 	id, err := GetBudgetId(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
 	budgetRequest, err := GetBudgetRequest(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
 	if err := handler.usecase.UpdateBudgetById(ctx, ToBudgetRequest(budgetRequest), id); err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
 		return
 	}
 
-	json.NewEncoder(w).Encode(apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.SuccessResponse{Success: true})
 }
 
 func (handler BudgetHandler) DeleteBudgetById(w http.ResponseWriter, r *http.Request) {
@@ -99,14 +98,14 @@ func (handler BudgetHandler) DeleteBudgetById(w http.ResponseWriter, r *http.Req
 
 	id, err := GetBudgetId(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
 	if err := handler.usecase.DeleteBudgetById(ctx, id); err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
 		return
 	}
 
-	json.NewEncoder(w).Encode(apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.SuccessResponse{Success: true})
 }

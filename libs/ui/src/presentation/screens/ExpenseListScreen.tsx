@@ -3,10 +3,12 @@ import { ExpenseList, ExpenseDeleteAlert, Layout } from '../components';
 import { Link } from 'solito/link';
 import { Plus } from '@tamagui/lucide-icons';
 import {
+  useAuthLogoutController,
   useExpenseDeleteController,
   useExpenseListController,
 } from '../controllers';
 import {
+  AuthLogoutUsecase,
   Expense,
   ExpenseDeleteUsecase,
   ExpenseListUsecase,
@@ -17,10 +19,13 @@ import { useEffect } from 'react';
 export type ExpenseListScreenProps = {
   expenseListUsecase: ExpenseListUsecase;
   expenseDeleteUsecase: ExpenseDeleteUsecase;
+  authLogoutUsecase: AuthLogoutUsecase;
 };
 
 export const ExpenseListScreen = (props: ExpenseListScreenProps) => {
   const router = useRouter();
+
+  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
 
   const expenseListController = useExpenseListController(
     props.expenseListUsecase
@@ -52,6 +57,7 @@ export const ExpenseListScreen = (props: ExpenseListScreenProps) => {
 
   return (
     <Layout
+      {...authLogoutController}
       title="Expenses"
       rightActionItem={
         <Link href="/expenses/create">

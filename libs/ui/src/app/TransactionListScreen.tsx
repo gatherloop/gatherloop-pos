@@ -3,16 +3,24 @@ import {
   transactionList,
   transactionListQueryKey,
 } from '../../../api-contract/src';
-import { ApiTransactionRepository, ApiWalletRepository } from '../data';
+import { GetServerSidePropsContext } from 'next';
+import {
+  ApiAuthRepository,
+  ApiTransactionRepository,
+  ApiWalletRepository,
+} from '../data';
 import {
   TransactionListUsecase,
   TransactionDeleteUsecase,
   TransactionPayUsecase,
+  AuthLogoutUsecase,
 } from '../domain';
 import { TransactionListScreen as TransactionListScreenView } from '../presentation';
 import { dehydrate, QueryClient, useQueryClient } from '@tanstack/react-query';
 
-export async function getTransactionListScreenDehydratedState() {
+export async function getTransactionListScreenDehydratedState(
+  ctx: GetServerSidePropsContext
+) {
   const client = new QueryClient();
   await client.prefetchQuery({
     queryKey: transactionListQueryKey({
@@ -22,14 +30,19 @@ export async function getTransactionListScreenDehydratedState() {
       skip: 0,
       sortBy: 'created_at',
     }),
-    queryFn: (ctx) =>
-      transactionList({
-        limit: ctx.queryKey[1].limit,
-        order: ctx.queryKey[1].order,
-        query: ctx.queryKey[1].query,
-        skip: ctx.queryKey[1].skip,
-        sortBy: ctx.queryKey[1].sortBy,
-      }),
+    queryFn: (queryCtx) =>
+      transactionList(
+        {
+          limit: queryCtx.queryKey[1].limit,
+          order: queryCtx.queryKey[1].order,
+          query: queryCtx.queryKey[1].query,
+          skip: queryCtx.queryKey[1].skip,
+          sortBy: queryCtx.queryKey[1].sortBy,
+        },
+        {
+          headers: { Cookie: ctx.req.headers.cookie },
+        }
+      ),
   });
 
   return dehydrate(client);
@@ -49,11 +62,16 @@ export function TransactionListScreen() {
     transactionRepository,
     walletRepository
   );
+
+  const authRepository = new ApiAuthRepository();
+  const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
+
   return (
     <TransactionListScreenView
       transactionDeleteUsecase={transactionDeleteUsecase}
       transactionListUsecase={transactionListUsecase}
       transactionPayUsecase={transactionPayUsecase}
+      authLogoutUsecase={authLogoutUsecase}
     />
   );
 }

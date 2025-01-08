@@ -1,17 +1,22 @@
 import { Layout } from '../components/base';
 import { BudgetList } from '../components';
-import { useBudgetListController } from '../controllers';
-import { BudgetListUsecase } from '../../domain';
+import {
+  useAuthLogoutController,
+  useBudgetListController,
+} from '../controllers';
+import { AuthLogoutUsecase, BudgetListUsecase } from '../../domain';
 
 export type BudgetListScreenProps = {
   budgetListUsecase: BudgetListUsecase;
+  authLogoutUsecase: AuthLogoutUsecase;
 };
 
 export const BudgetListScreen = (props: BudgetListScreenProps) => {
-  const controller = useBudgetListController(props.budgetListUsecase);
+  const budgetListController = useBudgetListController(props.budgetListUsecase);
+  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
   return (
-    <Layout title="Budgets">
-      <BudgetList {...controller} />
+    <Layout title="Budgets" {...authLogoutController}>
+      <BudgetList {...budgetListController} />
     </Layout>
   );
 };

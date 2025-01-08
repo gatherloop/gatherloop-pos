@@ -8,6 +8,7 @@ export type LayoutProps = {
   title: string;
   showBackButton?: boolean;
   rightActionItem?: ReactNode;
+  onLogoutPress: () => void;
 };
 
 export const Layout = ({
@@ -15,11 +16,12 @@ export const Layout = ({
   title,
   showBackButton,
   rightActionItem,
+  onLogoutPress,
 }: LayoutProps) => {
   return (
     <PortalProvider shouldAddRootHost>
       <XStack flex={1}>
-        <Sidebar />
+        <Sidebar onLogoutPress={onLogoutPress} />
         <YStack flex={1}>
           <Navbar
             title={title}

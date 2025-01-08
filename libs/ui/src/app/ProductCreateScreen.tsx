@@ -5,12 +5,18 @@ import {
   materialList,
   materialListQueryKey,
 } from '../../../api-contract/src';
+import { GetServerSidePropsContext } from 'next';
 import {
+  ApiAuthRepository,
   ApiCategoryRepository,
   ApiMaterialRepository,
   ApiProductRepository,
 } from '../data';
-import { MaterialListUsecase, ProductCreateUsecase } from '../domain';
+import {
+  AuthLogoutUsecase,
+  MaterialListUsecase,
+  ProductCreateUsecase,
+} from '../domain';
 import { ProductCreateScreen as ProductCreateScreenView } from '../presentation';
 import {
   dehydrate,
@@ -19,12 +25,17 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 
-export async function getProductCreateScreenDehydratedState(): Promise<DehydratedState> {
+export async function getProductCreateScreenDehydratedState(
+  ctx: GetServerSidePropsContext
+): Promise<DehydratedState> {
   const queryClient = new QueryClient();
   await Promise.all([
     queryClient.prefetchQuery({
       queryKey: categoryListQueryKey(),
-      queryFn: () => categoryList(),
+      queryFn: () =>
+        categoryList({
+          headers: { Cookie: ctx.req.headers.cookie },
+        }),
     }),
     queryClient.prefetchQuery({
       queryKey: materialListQueryKey({
@@ -35,13 +46,18 @@ export async function getProductCreateScreenDehydratedState(): Promise<Dehydrate
         query: '',
       }),
       queryFn: () =>
-        materialList({
-          limit: 8,
-          skip: 0,
-          order: 'desc',
-          sortBy: 'created_at',
-          query: '',
-        }),
+        materialList(
+          {
+            limit: 8,
+            skip: 0,
+            order: 'desc',
+            sortBy: 'created_at',
+            query: '',
+          },
+          {
+            headers: { Cookie: ctx.req.headers.cookie },
+          }
+        ),
     }),
   ]);
 
@@ -60,10 +76,14 @@ export function ProductCreateScreen() {
   const materialRepository = new ApiMaterialRepository(client);
   const materialListUsecase = new MaterialListUsecase(materialRepository);
 
+  const authRepository = new ApiAuthRepository();
+  const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
+
   return (
     <ProductCreateScreenView
       materialListUsecase={materialListUsecase}
       productCreateUsecase={productCreateUsecase}
+      authLogoutUsecase={authLogoutUsecase}
     />
   );
 }

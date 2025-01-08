@@ -29,7 +29,7 @@ export const MarkdownEditor = (props: MarkdownEditorProps) => {
       />
       <Separator />
       {isEdit ? (
-        <Textarea name={props.name} />
+        <Textarea name={props.name} id={props.name} />
       ) : (
         <FieldWatch control={form.control} name={['description']}>
           {([description]) => <Markdown content={description} />}

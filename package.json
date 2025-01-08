@@ -13,6 +13,7 @@
     "@kubb/swagger-tanstack-query": "^2.19.6",
     "@kubb/swagger-ts": "^2.19.6",
     "@kubb/swagger-zod": "^2.21.2",
+    "@react-native-async-storage/async-storage": "^2.1.0",
     "@react-navigation/native": "^6.1.17",
     "@react-navigation/native-stack": "^6.10.0",
     "@tamagui/animations-moti": "^1.111.10",

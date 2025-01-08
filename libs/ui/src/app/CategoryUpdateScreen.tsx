@@ -3,8 +3,9 @@ import {
   categoryFindById,
   categoryFindByIdQueryKey,
 } from '../../../api-contract/src';
-import { ApiCategoryRepository } from '../data';
-import { CategoryUpdateUsecase } from '../domain';
+import { GetServerSidePropsContext } from 'next';
+import { ApiAuthRepository, ApiCategoryRepository } from '../data';
+import { AuthLogoutUsecase, CategoryUpdateUsecase } from '../domain';
 import { CategoryUpdateScreen as CategoryUpdateScreenView } from '../presentation';
 import {
   dehydrate,
@@ -15,12 +16,16 @@ import {
 import { createParam } from 'solito';
 
 export async function getCategoryUpdateScreenDehydratedState(
+  ctx: GetServerSidePropsContext,
   categoryId: number
 ): Promise<DehydratedState> {
   const queryClient = new QueryClient();
   await queryClient.prefetchQuery({
     queryKey: categoryFindByIdQueryKey(categoryId),
-    queryFn: () => categoryFindById(categoryId),
+    queryFn: () =>
+      categoryFindById(categoryId, {
+        headers: { Cookie: ctx.req.headers.cookie },
+      }),
   });
   return dehydrate(queryClient);
 }
@@ -39,8 +44,17 @@ export function CategoryUpdateScreen({
     parse: (value) => parseInt(Array.isArray(value) ? value[0] : value ?? ''),
   });
   const client = useQueryClient();
-  const repository = new ApiCategoryRepository(client);
-  repository.categoryByIdServerParams = categoryIdParam;
-  const usecase = new CategoryUpdateUsecase(repository);
-  return <CategoryUpdateScreenView categoryUpdateUsecase={usecase} />;
+  const categoryRepository = new ApiCategoryRepository(client);
+  categoryRepository.categoryByIdServerParams = categoryIdParam;
+  const categoryUpdateUsecase = new CategoryUpdateUsecase(categoryRepository);
+
+  const authRepository = new ApiAuthRepository();
+  const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
+
+  return (
+    <CategoryUpdateScreenView
+      categoryUpdateUsecase={categoryUpdateUsecase}
+      authLogoutUsecase={authLogoutUsecase}
+    />
+  );
 }

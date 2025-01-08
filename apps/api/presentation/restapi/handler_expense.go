@@ -2,7 +2,6 @@ package restapi
 
 import (
 	"apps/api/domain/expense"
-	"encoding/json"
 	apiContract "libs/api-contract"
 	"net/http"
 )
@@ -23,19 +22,19 @@ func (handler ExpenseHandler) GetExpenseList(w http.ResponseWriter, r *http.Requ
 
 	skip, err := GetSkip(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
 	limit, err := GetLimit(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
-	expenses, err := handler.usecase.GetExpenseList(ctx, sortBy, order, skip, limit)
-	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
+	expenses, usecaseErr := handler.usecase.GetExpenseList(ctx, sortBy, order, skip, limit)
+	if usecaseErr != nil {
+		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
@@ -44,7 +43,7 @@ func (handler ExpenseHandler) GetExpenseList(w http.ResponseWriter, r *http.Requ
 		apiExpenses = append(apiExpenses, ToApiExpense(expense))
 	}
 
-	json.NewEncoder(w).Encode(apiContract.ExpenseList200Response{Data: apiExpenses})
+	WriteResponse(w, apiContract.ExpenseList200Response{Data: apiExpenses})
 }
 
 func (handler ExpenseHandler) GetExpenseById(w http.ResponseWriter, r *http.Request) {
@@ -52,17 +51,17 @@ func (handler ExpenseHandler) GetExpenseById(w http.ResponseWriter, r *http.Requ
 
 	id, err := GetExpenseId(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
-	expense, err := handler.usecase.GetExpenseById(ctx, id)
-	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
+	expense, usecaseErr := handler.usecase.GetExpenseById(ctx, id)
+	if usecaseErr != nil {
+		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
-	json.NewEncoder(w).Encode(apiContract.ExpenseFindById200Response{Data: ToApiExpense(expense)})
+	WriteResponse(w, apiContract.ExpenseFindById200Response{Data: ToApiExpense(expense)})
 }
 
 func (handler ExpenseHandler) CreateExpense(w http.ResponseWriter, r *http.Request) {
@@ -70,16 +69,16 @@ func (handler ExpenseHandler) CreateExpense(w http.ResponseWriter, r *http.Reque
 
 	expenseRequest, err := GetExpenseRequest(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
 	if err := handler.usecase.CreateExpense(ctx, ToExpenseRequest(expenseRequest)); err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
 		return
 	}
 
-	json.NewEncoder(w).Encode(apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.SuccessResponse{Success: true})
 }
 
 func (handler ExpenseHandler) UpdateExpenseById(w http.ResponseWriter, r *http.Request) {
@@ -87,22 +86,22 @@ func (handler ExpenseHandler) UpdateExpenseById(w http.ResponseWriter, r *http.R
 
 	id, err := GetExpenseId(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
 	expenseRequest, err := GetExpenseRequest(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
 	if err := handler.usecase.UpdateExpenseById(ctx, ToExpenseRequest(expenseRequest), id); err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
 		return
 	}
 
-	json.NewEncoder(w).Encode(apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.SuccessResponse{Success: true})
 }
 
 func (handler ExpenseHandler) DeleteExpenseById(w http.ResponseWriter, r *http.Request) {
@@ -110,14 +109,14 @@ func (handler ExpenseHandler) DeleteExpenseById(w http.ResponseWriter, r *http.R
 
 	id, err := GetExpenseId(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
 	if err := handler.usecase.DeleteExpenseById(ctx, id); err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
 		return
 	}
 
-	json.NewEncoder(w).Encode(apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.SuccessResponse{Success: true})
 }

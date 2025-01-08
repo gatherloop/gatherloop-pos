@@ -1,15 +1,20 @@
 import { ScrollView } from 'tamagui';
 import { ExpenseCreate, Layout } from '../components';
-import { useExpenseCreateController } from '../controllers';
+import {
+  useAuthLogoutController,
+  useExpenseCreateController,
+} from '../controllers';
 import { useEffect } from 'react';
 import { useRouter } from 'solito/router';
-import { ExpenseCreateUsecase } from '../../domain';
+import { AuthLogoutUsecase, ExpenseCreateUsecase } from '../../domain';
 
 export type ExpenseCreateScreenProps = {
   expenseCreateUsecase: ExpenseCreateUsecase;
+  authLogoutUsecase: AuthLogoutUsecase;
 };
 
 export const ExpenseCreateScreen = (props: ExpenseCreateScreenProps) => {
+  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
   const router = useRouter();
   const expenseCreateController = useExpenseCreateController(
     props.expenseCreateUsecase
@@ -21,7 +26,7 @@ export const ExpenseCreateScreen = (props: ExpenseCreateScreenProps) => {
   }, [expenseCreateController.state.type, router]);
 
   return (
-    <Layout title="Create Expense" showBackButton>
+    <Layout {...authLogoutController} title="Create Expense" showBackButton>
       <ScrollView>
         <ExpenseCreate {...expenseCreateController} />
       </ScrollView>

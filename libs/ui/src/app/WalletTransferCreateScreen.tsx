@@ -1,16 +1,22 @@
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { walletList, walletListQueryKey } from '../../../api-contract/src';
-import { ApiWalletRepository } from '../data';
-import { WalletTransferCreateUsecase } from '../domain';
+import { GetServerSidePropsContext } from 'next';
+import { ApiAuthRepository, ApiWalletRepository } from '../data';
+import { AuthLogoutUsecase, WalletTransferCreateUsecase } from '../domain';
 import { WalletTransferCreateScreen as WalletTransferCreateScreenView } from '../presentation';
 import { dehydrate, QueryClient, useQueryClient } from '@tanstack/react-query';
 
-export async function getWalletTransferCreateScreenDehydratedState() {
+export async function getWalletTransferCreateScreenDehydratedState(
+  ctx: GetServerSidePropsContext
+) {
   const client = new QueryClient();
   await Promise.all([
     client.prefetchQuery({
       queryKey: walletListQueryKey(),
-      queryFn: () => walletList(),
+      queryFn: () =>
+        walletList({
+          headers: { Cookie: ctx.req.headers.cookie },
+        }),
     }),
   ]);
 
@@ -25,13 +31,20 @@ export function WalletTransferCreateScreen({
   walletId,
 }: WalletTransferCreateScreenProps) {
   const client = useQueryClient();
-  const repository = new ApiWalletRepository(client);
-  repository.walletByIdServerParams = walletId;
-  const usecase = new WalletTransferCreateUsecase(repository);
+  const walletRepository = new ApiWalletRepository(client);
+  walletRepository.walletByIdServerParams = walletId;
+  const walletTransferCreateUsecase = new WalletTransferCreateUsecase(
+    walletRepository
+  );
+
+  const authRepository = new ApiAuthRepository();
+  const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
+
   return (
     <WalletTransferCreateScreenView
       walletId={walletId}
-      walletTransferCreateUsecase={usecase}
+      walletTransferCreateUsecase={walletTransferCreateUsecase}
+      authLogoutUsecase={authLogoutUsecase}
     />
   );
 }

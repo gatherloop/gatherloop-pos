@@ -1,3 +1,4 @@
+export * from './auth';
 export * from './product';
 export * from './material';
 export * from './category';

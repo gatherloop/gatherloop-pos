@@ -2,7 +2,6 @@ package restapi
 
 import (
 	"apps/api/domain/category"
-	"encoding/json"
 	apiContract "libs/api-contract"
 	"net/http"
 )
@@ -20,7 +19,7 @@ func (handler CategoryHandler) GetCategoryList(w http.ResponseWriter, r *http.Re
 
 	categories, err := handler.usecase.GetCategoryList(ctx)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
 		return
 	}
 
@@ -29,7 +28,7 @@ func (handler CategoryHandler) GetCategoryList(w http.ResponseWriter, r *http.Re
 		apiCategories = append(apiCategories, ToApiCategory(category))
 	}
 
-	json.NewEncoder(w).Encode(apiContract.CategoryList200Response{Data: apiCategories})
+	WriteResponse(w, apiContract.CategoryList200Response{Data: apiCategories})
 }
 
 func (handler CategoryHandler) GetCategoryById(w http.ResponseWriter, r *http.Request) {
@@ -37,17 +36,17 @@ func (handler CategoryHandler) GetCategoryById(w http.ResponseWriter, r *http.Re
 
 	id, err := GetCategoryId(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
-	category, err := handler.usecase.GetCategoryById(ctx, id)
-	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
+	category, baseError := handler.usecase.GetCategoryById(ctx, id)
+	if baseError != nil {
+		WriteError(w, apiContract.Error{Code: ToErrorCode(baseError.Type), Message: baseError.Message})
 		return
 	}
 
-	json.NewEncoder(w).Encode(apiContract.CategoryFindById200Response{Data: ToApiCategory(category)})
+	WriteResponse(w, apiContract.CategoryFindById200Response{Data: ToApiCategory(category)})
 }
 
 func (handler CategoryHandler) CreateCategory(w http.ResponseWriter, r *http.Request) {
@@ -55,16 +54,16 @@ func (handler CategoryHandler) CreateCategory(w http.ResponseWriter, r *http.Req
 
 	categoryRequest, err := GetCategoryRequest(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
 	if err := handler.usecase.CreateCategory(ctx, ToCategoryRequest(categoryRequest)); err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
 		return
 	}
 
-	json.NewEncoder(w).Encode(apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.SuccessResponse{Success: true})
 }
 
 func (handler CategoryHandler) UpdateCategoryById(w http.ResponseWriter, r *http.Request) {
@@ -72,22 +71,22 @@ func (handler CategoryHandler) UpdateCategoryById(w http.ResponseWriter, r *http
 
 	id, err := GetCategoryId(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
 	categoryRequest, err := GetCategoryRequest(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
 	if err := handler.usecase.UpdateCategoryById(ctx, ToCategoryRequest(categoryRequest), id); err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
 		return
 	}
 
-	json.NewEncoder(w).Encode(apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.SuccessResponse{Success: true})
 }
 
 func (handler CategoryHandler) DeleteCategoryById(w http.ResponseWriter, r *http.Request) {
@@ -95,14 +94,14 @@ func (handler CategoryHandler) DeleteCategoryById(w http.ResponseWriter, r *http
 
 	id, err := GetCategoryId(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
 	if err := handler.usecase.DeleteCategoryById(ctx, id); err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
 		return
 	}
 
-	json.NewEncoder(w).Encode(apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.SuccessResponse{Success: true})
 }

@@ -8,6 +8,7 @@ import {
   FileBox,
   Fullscreen,
   LayoutDashboard,
+  LogOut,
   Tag,
   Wallet,
 } from '@tamagui/lucide-icons';
@@ -28,7 +29,11 @@ const items: { title: string; icon: NamedExoticComponent; path: string }[] = [
   { title: 'Budgets', icon: Calculator, path: '/budgets' },
 ];
 
-export const Sidebar = () => {
+export type SidebarProps = {
+  onLogoutPress: () => void;
+};
+
+export const Sidebar = (props: SidebarProps) => {
   const { isShown, onToggleButtonPress } = useSidebarState();
   const onToggleFullScreenButtonPress = () => {
     if (!document.fullscreenElement) {
@@ -45,7 +50,6 @@ export const Sidebar = () => {
         elevation="$1"
         backgroundColor="$gray3"
         borderRadius="$0"
-        // animation="fast"
         marginLeft={isShown ? 0 : -240}
       >
         <YStack flex={1} justifyContent="space-between">
@@ -78,6 +82,12 @@ export const Sidebar = () => {
                 </Button>
               </YStack>
             )}
+          </YStack>
+
+          <YStack padding="$5">
+            <Button onPress={props.onLogoutPress} icon={LogOut}>
+              Logout
+            </Button>
           </YStack>
         </YStack>
       </YGroup>

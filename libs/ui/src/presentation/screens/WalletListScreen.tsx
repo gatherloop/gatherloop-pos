@@ -2,15 +2,21 @@ import { Button } from 'tamagui';
 import { Link } from 'solito/link';
 import { Plus } from '@tamagui/lucide-icons';
 import { WalletList, Layout } from '../components';
-import { Wallet, WalletListUsecase } from '../../domain';
+import { AuthLogoutUsecase, Wallet, WalletListUsecase } from '../../domain';
 import { useRouter } from 'solito/router';
-import { useWalletListController } from '../controllers';
+import {
+  useAuthLogoutController,
+  useWalletListController,
+} from '../controllers';
 
 export type WalletListScreenProps = {
   walletListUsecase: WalletListUsecase;
+  authLogoutUsecase: AuthLogoutUsecase;
 };
 
 export const WalletListScreen = (props: WalletListScreenProps) => {
+  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
+
   const controller = useWalletListController(props.walletListUsecase);
 
   const router = useRouter();
@@ -29,6 +35,7 @@ export const WalletListScreen = (props: WalletListScreenProps) => {
 
   return (
     <Layout
+      {...authLogoutController}
       title="Wallets"
       rightActionItem={
         <Link href="/wallets/create">

@@ -9,11 +9,16 @@ import {
   productFindByIdQueryKey,
 } from '../../../api-contract/src';
 import {
+  ApiAuthRepository,
   ApiCategoryRepository,
   ApiMaterialRepository,
   ApiProductRepository,
 } from '../data';
-import { MaterialListUsecase, ProductUpdateUsecase } from '../domain';
+import {
+  AuthLogoutUsecase,
+  MaterialListUsecase,
+  ProductUpdateUsecase,
+} from '../domain';
 import { ProductUpdateScreen as ProductUpdateScreenView } from '../presentation';
 
 import {
@@ -22,19 +27,27 @@ import {
   QueryClient,
   useQueryClient,
 } from '@tanstack/react-query';
+import { GetServerSidePropsContext } from 'next';
 
 export async function getProductUpdateScreenDehydratedState(
+  ctx: GetServerSidePropsContext,
   productId: number
 ): Promise<DehydratedState> {
   const queryClient = new QueryClient();
   await Promise.all([
     queryClient.prefetchQuery({
       queryKey: productFindByIdQueryKey(productId),
-      queryFn: () => productFindById(productId),
+      queryFn: () =>
+        productFindById(productId, {
+          headers: { Cookie: ctx.req.headers.cookie },
+        }),
     }),
     queryClient.prefetchQuery({
       queryKey: categoryListQueryKey(),
-      queryFn: () => categoryList(),
+      queryFn: () =>
+        categoryList({
+          headers: { Cookie: ctx.req.headers.cookie },
+        }),
     }),
     queryClient.prefetchQuery({
       queryKey: materialListQueryKey({
@@ -45,13 +58,18 @@ export async function getProductUpdateScreenDehydratedState(
         query: '',
       }),
       queryFn: () =>
-        materialList({
-          limit: 8,
-          skip: 0,
-          order: 'desc',
-          sortBy: 'created_at',
-          query: '',
-        }),
+        materialList(
+          {
+            limit: 8,
+            skip: 0,
+            order: 'desc',
+            sortBy: 'created_at',
+            query: '',
+          },
+          {
+            headers: { Cookie: ctx.req.headers.cookie },
+          }
+        ),
     }),
   ]);
 
@@ -82,10 +100,14 @@ export function ProductUpdateScreen({ productId }: ProductUpdateScreenProps) {
   const materialRepository = new ApiMaterialRepository(client);
   const materialListUsecase = new MaterialListUsecase(materialRepository);
 
+  const authRepository = new ApiAuthRepository();
+  const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
+
   return (
     <ProductUpdateScreenView
       materialListUsecase={materialListUsecase}
       productUpdateUsecase={productUpdateUsecase}
+      authLogoutUsecase={authLogoutUsecase}
     />
   );
 }

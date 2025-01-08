@@ -1,6 +1,7 @@
 package restapi
 
 import (
+	"apps/api/domain/auth"
 	"apps/api/domain/base"
 	"apps/api/domain/budget"
 	"apps/api/domain/category"
@@ -18,20 +19,43 @@ import (
 )
 
 func WriteError(w http.ResponseWriter, err apiContract.Error) {
-	var httpStatus int
-	switch err.Code {
-	case apiContract.SERVER_ERROR:
-		httpStatus = http.StatusInternalServerError
-	case apiContract.DATA_NOT_FOUND:
-		httpStatus = http.StatusBadRequest
-	case apiContract.VALIDATION_ERROR:
-		httpStatus = http.StatusBadRequest
-	default:
-		httpStatus = http.StatusInternalServerError
-	}
-
-	w.WriteHeader(httpStatus)
+	w.WriteHeader(ToHttpStatus(err))
 	json.NewEncoder(w).Encode(err)
+}
+
+func WriteResponse(w http.ResponseWriter, response any) {
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
+
+func ToHttpStatus(err apiContract.Error) int {
+	switch err.Code {
+	case apiContract.BAD_REQUEST:
+		return http.StatusBadRequest
+	case apiContract.NOT_FOUND:
+		return http.StatusNotFound
+	case apiContract.UNAUTHORIZED:
+		return http.StatusUnauthorized
+	case apiContract.INTERNAL_SERVER_ERROR:
+		return http.StatusInternalServerError
+	default:
+		return http.StatusInternalServerError
+	}
+}
+
+func ToErrorCode(errorType base.ErrorType) apiContract.ErrorCode {
+	switch errorType {
+	case base.BadRequest:
+		return apiContract.BAD_REQUEST
+	case base.NotFound:
+		return apiContract.NOT_FOUND
+	case base.Unauthorized:
+		return apiContract.UNAUTHORIZED
+	case base.InternalServerError:
+		return apiContract.INTERNAL_SERVER_ERROR
+	default:
+		return apiContract.INTERNAL_SERVER_ERROR
+	}
 }
 
 func GetSortBy(r *http.Request) base.SortBy {
@@ -465,5 +489,18 @@ func ToWalletTransferRequest(walletTransferRequest apiContract.WalletTransferReq
 	return wallet.WalletTransferRequest{
 		Amount:     walletTransferRequest.Amount,
 		ToWalletId: walletTransferRequest.ToWalletId,
+	}
+}
+
+func GetLoginRequest(r *http.Request) (apiContract.AuthLoginRequest, error) {
+	var loginRequest apiContract.AuthLoginRequest
+	err := json.NewDecoder(r.Body).Decode(&loginRequest)
+	return loginRequest, err
+}
+
+func ToLoginRequest(loginRequest apiContract.AuthLoginRequest) auth.LoginRequest {
+	return auth.LoginRequest{
+		Username: loginRequest.Username,
+		Password: loginRequest.Password,
 	}
 }

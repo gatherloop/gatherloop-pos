@@ -9,6 +9,55 @@ servers:
   - url: http://petstore.swagger.io/v1
 security: []
 paths:
+  /auth/login:
+    post:
+      summary: Login to system
+      operationId: authLogin
+      tags:
+        - auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthLoginRequest'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: string
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/logout:
+    get:
+      summary: Logout to system
+      operationId: authLogout
+      tags:
+        - auth
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /categories:
     get:
       summary: List all categories
@@ -1104,6 +1153,16 @@ paths:
                 $ref: '#/components/schemas/Error'
 components:
   schemas:
+    AuthLoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+        password:
+          type: string
     Category:
       type: object
       required:
@@ -1609,9 +1668,10 @@ components:
     ErrorCode:
       type: string
       enum:
-        - server_error
-        - validation_error
-        - data_not_found
+        - internal_server_error
+        - bad_request
+        - not_found
+        - unauthorized
     SuccessResponse:
       type: object
       required:

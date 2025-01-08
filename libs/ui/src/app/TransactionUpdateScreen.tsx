@@ -6,8 +6,16 @@ import {
   transactionFindById,
   transactionFindByIdQueryKey,
 } from '../../../api-contract/src';
-import { ApiProductRepository, ApiTransactionRepository } from '../data';
-import { ProductListUsecase, TransactionUpdateUsecase } from '../domain';
+import {
+  ApiAuthRepository,
+  ApiProductRepository,
+  ApiTransactionRepository,
+} from '../data';
+import {
+  AuthLogoutUsecase,
+  ProductListUsecase,
+  TransactionUpdateUsecase,
+} from '../domain';
 import { TransactionUpdateScreen as TransactionUpdateScreenView } from '../presentation';
 import {
   dehydrate,
@@ -15,15 +23,20 @@ import {
   QueryClient,
   useQueryClient,
 } from '@tanstack/react-query';
+import { GetServerSidePropsContext } from 'next';
 
 export async function getTransactionUpdateScreenDehydratedState(
+  ctx: GetServerSidePropsContext,
   transactionId: number
 ): Promise<DehydratedState> {
   const queryClient = new QueryClient();
   await Promise.all([
     queryClient.prefetchQuery({
       queryKey: transactionFindByIdQueryKey(transactionId),
-      queryFn: () => transactionFindById(transactionId),
+      queryFn: () =>
+        transactionFindById(transactionId, {
+          headers: { Cookie: ctx.req.headers.cookie },
+        }),
     }),
     queryClient.prefetchQuery({
       queryKey: productListQueryKey({
@@ -33,14 +46,19 @@ export async function getTransactionUpdateScreenDehydratedState(
         skip: 0,
         sortBy: 'created_at',
       }),
-      queryFn: (ctx) =>
-        productList({
-          limit: ctx.queryKey[1].limit,
-          order: ctx.queryKey[1].order,
-          query: ctx.queryKey[1].query,
-          skip: ctx.queryKey[1].skip,
-          sortBy: ctx.queryKey[1].sortBy,
-        }),
+      queryFn: (queryCtx) =>
+        productList(
+          {
+            limit: queryCtx.queryKey[1].limit,
+            order: queryCtx.queryKey[1].order,
+            query: queryCtx.queryKey[1].query,
+            skip: queryCtx.queryKey[1].skip,
+            sortBy: queryCtx.queryKey[1].sortBy,
+          },
+          {
+            headers: { Cookie: ctx.req.headers.cookie },
+          }
+        ),
     }),
   ]);
   return dehydrate(queryClient);
@@ -68,10 +86,15 @@ export function TransactionUpdateScreen({
 
   const productRepository = new ApiProductRepository(client);
   const productListUsecase = new ProductListUsecase(productRepository);
+
+  const authRepository = new ApiAuthRepository();
+  const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
+
   return (
     <TransactionUpdateScreenView
       productListUsecase={productListUsecase}
       transactionUpdateUsecase={transactionUpdateUsecase}
+      authLogoutUsecase={authLogoutUsecase}
     />
   );
 }

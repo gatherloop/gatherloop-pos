@@ -2,7 +2,6 @@ package restapi
 
 import (
 	"apps/api/domain/product"
-	"encoding/json"
 	apiContract "libs/api-contract"
 	"net/http"
 )
@@ -24,19 +23,19 @@ func (handler ProductHandler) GetProductList(w http.ResponseWriter, r *http.Requ
 
 	skip, err := GetSkip(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
 	limit, err := GetLimit(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
-	products, total, err := handler.usecase.GetProductList(ctx, query, sortBy, order, skip, limit)
-	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
+	products, total, usecaseErr := handler.usecase.GetProductList(ctx, query, sortBy, order, skip, limit)
+	if usecaseErr != nil {
+		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
@@ -45,7 +44,7 @@ func (handler ProductHandler) GetProductList(w http.ResponseWriter, r *http.Requ
 		apiProducts = append(apiProducts, ToApiProduct(product))
 	}
 
-	json.NewEncoder(w).Encode(apiContract.ProductList200Response{Data: apiProducts, Meta: apiContract.MetaPage{Total: total}})
+	WriteResponse(w, apiContract.ProductList200Response{Data: apiProducts, Meta: apiContract.MetaPage{Total: total}})
 }
 
 func (handler ProductHandler) GetProductById(w http.ResponseWriter, r *http.Request) {
@@ -53,17 +52,17 @@ func (handler ProductHandler) GetProductById(w http.ResponseWriter, r *http.Requ
 
 	id, err := GetProductId(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
-	product, err := handler.usecase.GetProductById(ctx, id)
-	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
+	product, usecaseErr := handler.usecase.GetProductById(ctx, id)
+	if usecaseErr != nil {
+		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
-	json.NewEncoder(w).Encode(apiContract.ProductFindById200Response{Data: ToApiProduct(product)})
+	WriteResponse(w, apiContract.ProductFindById200Response{Data: ToApiProduct(product)})
 }
 
 func (handler ProductHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
@@ -71,16 +70,16 @@ func (handler ProductHandler) CreateProduct(w http.ResponseWriter, r *http.Reque
 
 	productRequest, err := GetProductRequest(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
 	if err := handler.usecase.CreateProduct(ctx, ToProductRequest(productRequest)); err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
 		return
 	}
 
-	json.NewEncoder(w).Encode(apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.SuccessResponse{Success: true})
 }
 
 func (handler ProductHandler) UpdateProductById(w http.ResponseWriter, r *http.Request) {
@@ -88,22 +87,22 @@ func (handler ProductHandler) UpdateProductById(w http.ResponseWriter, r *http.R
 
 	id, err := GetProductId(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
 	productRequest, err := GetProductRequest(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.VALIDATION_ERROR, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
 	if err := handler.usecase.UpdateProductById(ctx, ToProductRequest(productRequest), id); err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
 		return
 	}
 
-	json.NewEncoder(w).Encode(apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.SuccessResponse{Success: true})
 }
 
 func (handler ProductHandler) DeleteProductById(w http.ResponseWriter, r *http.Request) {
@@ -111,14 +110,14 @@ func (handler ProductHandler) DeleteProductById(w http.ResponseWriter, r *http.R
 
 	id, err := GetProductId(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.SERVER_ERROR, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
 	if err := handler.usecase.DeleteProductById(ctx, id); err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.DATA_NOT_FOUND, Message: err.Error()})
+		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
 		return
 	}
 
-	json.NewEncoder(w).Encode(apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.SuccessResponse{Success: true})
 }

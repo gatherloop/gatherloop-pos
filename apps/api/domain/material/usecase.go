@@ -13,7 +13,7 @@ func NewUsecase(repository Repository) Usecase {
 	return Usecase{repository: repository}
 }
 
-func (usecase Usecase) GetMaterialList(ctx context.Context, query string, sortBy base.SortBy, order base.Order, skip int, limit int) ([]Material, int64, error) {
+func (usecase Usecase) GetMaterialList(ctx context.Context, query string, sortBy base.SortBy, order base.Order, skip int, limit int) ([]Material, int64, *base.Error) {
 	materials, err := usecase.repository.GetMaterialList(ctx, query, sortBy, order, skip, limit)
 	if err != nil {
 		return []Material{}, 0, err
@@ -27,18 +27,18 @@ func (usecase Usecase) GetMaterialList(ctx context.Context, query string, sortBy
 	return materials, total, nil
 }
 
-func (usecase Usecase) GetMaterialById(ctx context.Context, id int64) (Material, error) {
+func (usecase Usecase) GetMaterialById(ctx context.Context, id int64) (Material, *base.Error) {
 	return usecase.repository.GetMaterialById(ctx, id)
 }
 
-func (usecase Usecase) CreateMaterial(ctx context.Context, materialRequest MaterialRequest) error {
+func (usecase Usecase) CreateMaterial(ctx context.Context, materialRequest MaterialRequest) *base.Error {
 	return usecase.repository.CreateMaterial(ctx, materialRequest)
 }
 
-func (usecase Usecase) UpdateMaterialById(ctx context.Context, materialRequest MaterialRequest, id int64) error {
+func (usecase Usecase) UpdateMaterialById(ctx context.Context, materialRequest MaterialRequest, id int64) *base.Error {
 	return usecase.repository.UpdateMaterialById(ctx, materialRequest, id)
 }
 
-func (usecase Usecase) DeleteMaterialById(ctx context.Context, id int64) error {
+func (usecase Usecase) DeleteMaterialById(ctx context.Context, id int64) *base.Error {
 	return usecase.repository.DeleteMaterialById(ctx, id)
 }

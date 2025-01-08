@@ -2,14 +2,19 @@ import { ScrollView } from 'tamagui';
 import { Layout, CategoryUpdate } from '../components';
 import { useRouter } from 'solito/router';
 import { useEffect } from 'react';
-import { useCategoryUpdateController } from '../controllers';
-import { CategoryUpdateUsecase } from '../../domain';
+import {
+  useAuthLogoutController,
+  useCategoryUpdateController,
+} from '../controllers';
+import { AuthLogoutUsecase, CategoryUpdateUsecase } from '../../domain';
 
 export type CategoryUpdateScreenProps = {
   categoryUpdateUsecase: CategoryUpdateUsecase;
+  authLogoutUsecase: AuthLogoutUsecase;
 };
 
 export const CategoryUpdateScreen = (props: CategoryUpdateScreenProps) => {
+  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
   const controller = useCategoryUpdateController(props.categoryUpdateUsecase);
   const router = useRouter();
 
@@ -18,7 +23,7 @@ export const CategoryUpdateScreen = (props: CategoryUpdateScreenProps) => {
   }, [controller.state.type, router]);
 
   return (
-    <Layout title="Update Category" showBackButton>
+    <Layout {...authLogoutController} title="Update Category" showBackButton>
       <ScrollView>
         <CategoryUpdate {...controller} />
       </ScrollView>

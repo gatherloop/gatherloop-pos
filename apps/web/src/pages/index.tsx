@@ -6,10 +6,16 @@ import { GetServerSideProps } from 'next';
 import { PageProps } from './_app';
 
 export const getServerSideProps: GetServerSideProps<PageProps> = async (
-  _ctx
+  ctx
 ) => {
-  const dehydratedState = await getTransactionStatisticScreenDehydratedState();
-  return { props: { dehydratedState } };
+  const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
+  const dehydratedState = await getTransactionStatisticScreenDehydratedState(
+    ctx
+  );
+  return {
+    props: { dehydratedState },
+    redirect: isLoggedIn ? undefined : { destination: '/auth/login' },
+  };
 };
 
 export default TransactionStatisticScreen;

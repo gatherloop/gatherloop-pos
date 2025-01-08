@@ -8,6 +8,7 @@ import {
 import { Link } from 'solito/link';
 import { Plus } from '@tamagui/lucide-icons';
 import {
+  useAuthLogoutController,
   useTransactionDeleteController,
   useTransactionListController,
   useTransactionPayController,
@@ -15,6 +16,7 @@ import {
 import { useEffect } from 'react';
 import { useRouter } from 'solito/router';
 import {
+  AuthLogoutUsecase,
   Transaction,
   TransactionDeleteUsecase,
   TransactionListUsecase,
@@ -25,9 +27,11 @@ export type TransactionListScreenProps = {
   transactionListUsecase: TransactionListUsecase;
   transactionDeleteUsecase: TransactionDeleteUsecase;
   transactionPayUsecase: TransactionPayUsecase;
+  authLogoutUsecase: AuthLogoutUsecase;
 };
 
 export const TransactionListScreen = (props: TransactionListScreenProps) => {
+  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
   const transactionListController = useTransactionListController(
     props.transactionListUsecase
   );
@@ -78,6 +82,7 @@ export const TransactionListScreen = (props: TransactionListScreenProps) => {
 
   return (
     <Layout
+      {...authLogoutController}
       title="Transactions"
       rightActionItem={
         <Link href="/transactions/create">

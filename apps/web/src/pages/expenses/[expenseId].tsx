@@ -10,11 +10,16 @@ export const getServerSideProps: GetServerSideProps<
   PageProps & ExpenseUpdateScreenProps,
   { expenseId: string }
 > = async (ctx) => {
+  const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
   const expenseId = parseInt(ctx.params?.expenseId ?? '');
   const dehydratedState = await getExpenseUpdateScreenDehydratedState(
+    ctx,
     expenseId
   );
-  return { props: { dehydratedState, expenseId } };
+  return {
+    props: { dehydratedState, expenseId },
+    redirect: isLoggedIn ? undefined : { destination: '/auth/login' },
+  };
 };
 
 export default ExpenseUpdateScreen;

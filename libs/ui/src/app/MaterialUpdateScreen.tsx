@@ -4,8 +4,8 @@ import {
   materialFindById,
   materialFindByIdQueryKey,
 } from '../../../api-contract/src';
-import { ApiMaterialRepository } from '../data';
-import { MaterialUpdateUsecase } from '../domain';
+import { ApiAuthRepository, ApiMaterialRepository } from '../data';
+import { AuthLogoutUsecase, MaterialUpdateUsecase } from '../domain';
 import { MaterialUpdateScreen as MaterialUpdateScreenView } from '../presentation';
 import {
   dehydrate,
@@ -13,14 +13,19 @@ import {
   QueryClient,
   useQueryClient,
 } from '@tanstack/react-query';
+import { GetServerSidePropsContext } from 'next';
 
 export async function getMaterialUpdateScreenDehydratedState(
+  ctx: GetServerSidePropsContext,
   materialId: number
 ): Promise<DehydratedState> {
   const queryClient = new QueryClient();
   await queryClient.prefetchQuery({
     queryKey: materialFindByIdQueryKey(materialId),
-    queryFn: () => materialFindById(materialId),
+    queryFn: () =>
+      materialFindById(materialId, {
+        headers: { Cookie: ctx.req.headers.cookie },
+      }),
   });
   return dehydrate(queryClient);
 }
@@ -39,8 +44,17 @@ export function MaterialUpdateScreen({
     parse: (value) => parseInt(Array.isArray(value) ? value[0] : value ?? ''),
   });
   const client = useQueryClient();
-  const repository = new ApiMaterialRepository(client);
-  repository.materialByIdServerParams = materialIdParam;
-  const usecase = new MaterialUpdateUsecase(repository);
-  return <MaterialUpdateScreenView materialUpdateUsecase={usecase} />;
+  const materialRepository = new ApiMaterialRepository(client);
+  materialRepository.materialByIdServerParams = materialIdParam;
+  const materialUpdateUsecase = new MaterialUpdateUsecase(materialRepository);
+
+  const authRepository = new ApiAuthRepository();
+  const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
+
+  return (
+    <MaterialUpdateScreenView
+      materialUpdateUsecase={materialUpdateUsecase}
+      authLogoutUsecase={authLogoutUsecase}
+    />
+  );
 }

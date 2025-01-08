@@ -17,6 +17,7 @@ type Env struct {
 	DbHost     string
 	DbPort     string
 	Port       string
+	JwtSecret  string
 }
 
 func GetEnv() Env {
@@ -27,5 +28,6 @@ func GetEnv() Env {
 		DbHost:     os.Getenv("DB_HOST"),
 		DbPort:     os.Getenv("DB_PORT"),
 		Port:       os.Getenv("PORT"),
+		JwtSecret:  os.Getenv("JWT_SECRET"),
 	}
 }

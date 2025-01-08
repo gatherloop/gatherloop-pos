@@ -13,7 +13,7 @@ func NewUsecase(repository Repository) Usecase {
 	return Usecase{repository: repository}
 }
 
-func (usecase Usecase) GetProductList(ctx context.Context, query string, sortBy base.SortBy, order base.Order, skip int, limit int) ([]Product, int64, error) {
+func (usecase Usecase) GetProductList(ctx context.Context, query string, sortBy base.SortBy, order base.Order, skip int, limit int) ([]Product, int64, *base.Error) {
 	products, err := usecase.repository.GetProductList(ctx, query, sortBy, order, skip, limit)
 	if err != nil {
 		return []Product{}, 0, err
@@ -27,12 +27,12 @@ func (usecase Usecase) GetProductList(ctx context.Context, query string, sortBy 
 	return products, total, nil
 }
 
-func (usecase Usecase) GetProductById(ctx context.Context, id int64) (Product, error) {
+func (usecase Usecase) GetProductById(ctx context.Context, id int64) (Product, *base.Error) {
 	return usecase.repository.GetProductById(ctx, id)
 }
 
-func (usecase Usecase) CreateProduct(ctx context.Context, productRequest ProductRequest) error {
-	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) error {
+func (usecase Usecase) CreateProduct(ctx context.Context, productRequest ProductRequest) *base.Error {
+	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *base.Error {
 		product := Product{
 			Name:        productRequest.Name,
 			CategoryId:  productRequest.CategoryId,
@@ -54,8 +54,8 @@ func (usecase Usecase) CreateProduct(ctx context.Context, productRequest Product
 	})
 }
 
-func (usecase Usecase) UpdateProductById(ctx context.Context, productRequest ProductRequest, id int64) error {
-	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) error {
+func (usecase Usecase) UpdateProductById(ctx context.Context, productRequest ProductRequest, id int64) *base.Error {
+	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *base.Error {
 		product := Product{
 			Name:        productRequest.Name,
 			CategoryId:  productRequest.CategoryId,
@@ -81,6 +81,6 @@ func (usecase Usecase) UpdateProductById(ctx context.Context, productRequest Pro
 	})
 }
 
-func (usecase Usecase) DeleteProductById(ctx context.Context, id int64) error {
+func (usecase Usecase) DeleteProductById(ctx context.Context, id int64) *base.Error {
 	return usecase.repository.DeleteProductById(ctx, id)
 }

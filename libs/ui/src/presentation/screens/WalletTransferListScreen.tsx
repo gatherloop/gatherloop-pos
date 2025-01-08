@@ -3,29 +3,38 @@ import { WalletListItem, WalletTransferList, Layout } from '../components';
 import { Link } from 'solito/link';
 import { Plus } from '@tamagui/lucide-icons';
 import {
+  useAuthLogoutController,
   useWalletDetailController,
   useWalletTransferListController,
 } from '../controllers';
-import { WalletDetailUsecase, WalletTransferListUsecase } from '../../domain';
+import {
+  AuthLogoutUsecase,
+  WalletDetailUsecase,
+  WalletTransferListUsecase,
+} from '../../domain';
 
 export type WalletTransferListScreenProps = {
   walletId: number;
   walletTransferListUsecase: WalletTransferListUsecase;
   walletDetailUsecase: WalletDetailUsecase;
+  authLogoutUsecase: AuthLogoutUsecase;
 };
 
 export const WalletTransferListScreen = ({
   walletId,
   walletTransferListUsecase,
   walletDetailUsecase,
+  authLogoutUsecase,
 }: WalletTransferListScreenProps) => {
+  const authLogoutController = useAuthLogoutController(authLogoutUsecase);
+
   const walletTransferListController = useWalletTransferListController(
     walletTransferListUsecase
   );
   const walletDetailController = useWalletDetailController(walletDetailUsecase);
 
   return (
-    <Layout title="Wallet Transfer" showBackButton>
+    <Layout {...authLogoutController} title="Wallet Transfer" showBackButton>
       <YStack gap="$4" flex={1}>
         <WalletListItem {...walletDetailController} />
         <YStack flex={1} gap="$3">
