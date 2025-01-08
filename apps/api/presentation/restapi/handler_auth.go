@@ -48,6 +48,7 @@ func (handler AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
 	}
 	http.SetCookie(w, &cookieWeb)
 
@@ -75,6 +76,7 @@ func (handler AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 		Secure:   true,
 		Expires:  time.Unix(0, 0),
+		SameSite: http.SameSiteLaxMode,
 	}
 	http.SetCookie(w, &cookieWeb)
 
