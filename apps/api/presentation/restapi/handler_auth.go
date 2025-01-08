@@ -35,6 +35,7 @@ func (handler AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		Value:    "Bearer " + token,
 		Path:     "/",
 		HttpOnly: true,
+		Secure:   true,
 	}
 	http.SetCookie(w, &cookie)
 
@@ -47,6 +48,7 @@ func (handler AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
+		Secure:   true,
 		Expires:  time.Unix(0, 0),
 	}
 	http.SetCookie(w, &cookie)
