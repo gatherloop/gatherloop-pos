@@ -30,7 +30,7 @@ func (handler AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cookie := http.Cookie{
+	cookieApi := http.Cookie{
 		Domain:   GetDomain(r),
 		Name:     "Authorization",
 		Value:    "Bearer " + token,
@@ -39,13 +39,24 @@ func (handler AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		Secure:   true,
 		SameSite: http.SameSiteNoneMode,
 	}
-	http.SetCookie(w, &cookie)
+	http.SetCookie(w, &cookieApi)
+
+	cookieWeb := http.Cookie{
+		Domain:   GetOriginDomain(r),
+		Name:     "Authorization",
+		Value:    "Bearer " + token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteNoneMode,
+	}
+	http.SetCookie(w, &cookieWeb)
 
 	WriteResponse(w, apiContract.AuthLogin200Response{Data: token})
 }
 
 func (handler AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
-	cookie := http.Cookie{
+	cookieApi := http.Cookie{
 		Domain:   GetDomain(r),
 		Name:     "Authorization",
 		Value:    "",
@@ -55,6 +66,19 @@ func (handler AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		Expires:  time.Unix(0, 0),
 		SameSite: http.SameSiteNoneMode,
 	}
-	http.SetCookie(w, &cookie)
+	http.SetCookie(w, &cookieApi)
+
+	cookieWeb := http.Cookie{
+		Domain:   GetDomain(r),
+		Name:     "Authorization",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true,
+		Expires:  time.Unix(0, 0),
+		SameSite: http.SameSiteNoneMode,
+	}
+	http.SetCookie(w, &cookieWeb)
+
 	WriteResponse(w, apiContract.SuccessResponse{Success: true})
 }
