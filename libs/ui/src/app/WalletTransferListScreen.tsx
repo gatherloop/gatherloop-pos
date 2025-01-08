@@ -6,8 +6,12 @@ import {
   walletTransferListQueryKey,
 } from '../../../api-contract/src';
 import { GetServerSidePropsContext } from 'next';
-import { ApiWalletRepository } from '../data';
-import { WalletDetailUsecase, WalletTransferListUsecase } from '../domain';
+import { ApiAuthRepository, ApiWalletRepository } from '../data';
+import {
+  AuthLogoutUsecase,
+  WalletDetailUsecase,
+  WalletTransferListUsecase,
+} from '../domain';
 import { WalletTransferListScreen as WalletTransferListScreenView } from '../presentation';
 import { dehydrate, QueryClient, useQueryClient } from '@tanstack/react-query';
 
@@ -54,15 +58,22 @@ export function WalletTransferListScreen({
   walletId,
 }: WalletTransferListScreenProps) {
   const client = useQueryClient();
-  const repository = new ApiWalletRepository(client);
-  repository.walletByIdServerParams = walletId;
-  const walletTransferListUsecase = new WalletTransferListUsecase(repository);
-  const walletDetailUsecase = new WalletDetailUsecase(repository);
+  const walletRepository = new ApiWalletRepository(client);
+  walletRepository.walletByIdServerParams = walletId;
+  const walletTransferListUsecase = new WalletTransferListUsecase(
+    walletRepository
+  );
+  const walletDetailUsecase = new WalletDetailUsecase(walletRepository);
+
+  const authRepository = new ApiAuthRepository();
+  const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
+
   return (
     <WalletTransferListScreenView
       walletId={walletId}
       walletDetailUsecase={walletDetailUsecase}
       walletTransferListUsecase={walletTransferListUsecase}
+      authLogoutUsecase={authLogoutUsecase}
     />
   );
 }

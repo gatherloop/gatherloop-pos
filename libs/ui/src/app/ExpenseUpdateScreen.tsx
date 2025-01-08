@@ -9,11 +9,12 @@ import {
   walletListQueryKey,
 } from '../../../api-contract/src';
 import {
+  ApiAuthRepository,
   ApiBudgetRepository,
   ApiExpenseRepository,
   ApiWalletRepository,
 } from '../data';
-import { ExpenseUpdateUsecase } from '../domain';
+import { AuthLogoutUsecase, ExpenseUpdateUsecase } from '../domain';
 import { ExpenseUpdateScreen as ExpenseUpdateScreenView } from '../presentation';
 import {
   dehydrate,
@@ -67,10 +68,19 @@ export function ExpenseUpdateScreen({ expenseId }: ExpenseUpdateScreenProps) {
   expenseRepository.expenseByIdServerParams = expenseIdParam;
   const budgetRepository = new ApiBudgetRepository(client);
   const walletRepository = new ApiWalletRepository(client);
-  const usecase = new ExpenseUpdateUsecase(
+  const expenseUpdateUsecase = new ExpenseUpdateUsecase(
     expenseRepository,
     budgetRepository,
     walletRepository
   );
-  return <ExpenseUpdateScreenView expenseUpdateUsecase={usecase} />;
+
+  const authRepository = new ApiAuthRepository();
+  const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
+
+  return (
+    <ExpenseUpdateScreenView
+      expenseUpdateUsecase={expenseUpdateUsecase}
+      authLogoutUsecase={authLogoutUsecase}
+    />
+  );
 }

@@ -7,11 +7,12 @@ import {
 } from '../../../api-contract/src';
 import { GetServerSidePropsContext } from 'next';
 import {
+  ApiAuthRepository,
   ApiBudgetRepository,
   ApiExpenseRepository,
   ApiWalletRepository,
 } from '../data';
-import { ExpenseCreateUsecase } from '../domain';
+import { AuthLogoutUsecase, ExpenseCreateUsecase } from '../domain';
 import { ExpenseCreateScreen as ExpenseCreateScreenView } from '../presentation';
 import {
   dehydrate,
@@ -45,10 +46,19 @@ export function ExpenseCreateScreen() {
   const expenseRepository = new ApiExpenseRepository(client);
   const budgetRepository = new ApiBudgetRepository(client);
   const walletRepository = new ApiWalletRepository(client);
-  const usecase = new ExpenseCreateUsecase(
+  const expenseUsecase = new ExpenseCreateUsecase(
     expenseRepository,
     budgetRepository,
     walletRepository
   );
-  return <ExpenseCreateScreenView expenseCreateUsecase={usecase} />;
+
+  const authRepository = new ApiAuthRepository();
+  const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
+
+  return (
+    <ExpenseCreateScreenView
+      expenseCreateUsecase={expenseUsecase}
+      authLogoutUsecase={authLogoutUsecase}
+    />
+  );
 }

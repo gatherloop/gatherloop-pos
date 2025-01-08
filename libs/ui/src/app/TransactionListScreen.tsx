@@ -4,11 +4,16 @@ import {
   transactionListQueryKey,
 } from '../../../api-contract/src';
 import { GetServerSidePropsContext } from 'next';
-import { ApiTransactionRepository, ApiWalletRepository } from '../data';
+import {
+  ApiAuthRepository,
+  ApiTransactionRepository,
+  ApiWalletRepository,
+} from '../data';
 import {
   TransactionListUsecase,
   TransactionDeleteUsecase,
   TransactionPayUsecase,
+  AuthLogoutUsecase,
 } from '../domain';
 import { TransactionListScreen as TransactionListScreenView } from '../presentation';
 import { dehydrate, QueryClient, useQueryClient } from '@tanstack/react-query';
@@ -57,11 +62,16 @@ export function TransactionListScreen() {
     transactionRepository,
     walletRepository
   );
+
+  const authRepository = new ApiAuthRepository();
+  const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
+
   return (
     <TransactionListScreenView
       transactionDeleteUsecase={transactionDeleteUsecase}
       transactionListUsecase={transactionListUsecase}
       transactionPayUsecase={transactionPayUsecase}
+      authLogoutUsecase={authLogoutUsecase}
     />
   );
 }

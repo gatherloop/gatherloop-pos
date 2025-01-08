@@ -4,6 +4,7 @@ import (
 	"apps/api/domain/auth"
 	apiContract "libs/api-contract"
 	"net/http"
+	"time"
 )
 
 type AuthHandler struct {
@@ -38,4 +39,16 @@ func (handler AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &cookie)
 
 	WriteResponse(w, apiContract.AuthLogin200Response{Data: token})
+}
+
+func (handler AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	cookie := http.Cookie{
+		Name:     "Authorization",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		Expires:  time.Unix(0, 0),
+	}
+	http.SetCookie(w, &cookie)
+	WriteResponse(w, apiContract.SuccessResponse{Success: true})
 }

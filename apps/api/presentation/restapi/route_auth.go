@@ -16,4 +16,5 @@ func NewAuthRouter(handler AuthHandler) AuthRouter {
 
 func (authRouter AuthRouter) AddRouter(router *mux.Router) {
 	router.HandleFunc("/auth/login", authRouter.handler.Login).Methods(http.MethodPost, http.MethodOptions)
+	router.HandleFunc("/auth/logout", authRouter.handler.Logout).Methods(http.MethodGet)
 }

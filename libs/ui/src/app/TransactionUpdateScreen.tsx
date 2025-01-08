@@ -6,8 +6,16 @@ import {
   transactionFindById,
   transactionFindByIdQueryKey,
 } from '../../../api-contract/src';
-import { ApiProductRepository, ApiTransactionRepository } from '../data';
-import { ProductListUsecase, TransactionUpdateUsecase } from '../domain';
+import {
+  ApiAuthRepository,
+  ApiProductRepository,
+  ApiTransactionRepository,
+} from '../data';
+import {
+  AuthLogoutUsecase,
+  ProductListUsecase,
+  TransactionUpdateUsecase,
+} from '../domain';
 import { TransactionUpdateScreen as TransactionUpdateScreenView } from '../presentation';
 import {
   dehydrate,
@@ -78,10 +86,15 @@ export function TransactionUpdateScreen({
 
   const productRepository = new ApiProductRepository(client);
   const productListUsecase = new ProductListUsecase(productRepository);
+
+  const authRepository = new ApiAuthRepository();
+  const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
+
   return (
     <TransactionUpdateScreenView
       productListUsecase={productListUsecase}
       transactionUpdateUsecase={transactionUpdateUsecase}
+      authLogoutUsecase={authLogoutUsecase}
     />
   );
 }

@@ -1,8 +1,12 @@
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { materialList, materialListQueryKey } from '../../../api-contract/src';
 import { GetServerSidePropsContext } from 'next';
-import { ApiMaterialRepository } from '../data';
-import { MaterialListUsecase, MaterialDeleteUsecase } from '../domain';
+import { ApiAuthRepository, ApiMaterialRepository } from '../data';
+import {
+  MaterialListUsecase,
+  MaterialDeleteUsecase,
+  AuthLogoutUsecase,
+} from '../domain';
 import { MaterialListScreen as MaterialListScreenView } from '../presentation';
 import { dehydrate, QueryClient, useQueryClient } from '@tanstack/react-query';
 
@@ -36,13 +40,18 @@ export async function getMaterialListScreenDehydratedState(
 
 export function MaterialListScreen() {
   const client = useQueryClient();
-  const repository = new ApiMaterialRepository(client);
-  const materialListUsecase = new MaterialListUsecase(repository);
-  const materialDeleteUsecase = new MaterialDeleteUsecase(repository);
+  const materialRepository = new ApiMaterialRepository(client);
+  const materialListUsecase = new MaterialListUsecase(materialRepository);
+  const materialDeleteUsecase = new MaterialDeleteUsecase(materialRepository);
+
+  const authRepository = new ApiAuthRepository();
+  const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
+
   return (
     <MaterialListScreenView
       materialDeleteUsecase={materialDeleteUsecase}
       materialListUsecase={materialListUsecase}
+      authLogoutUsecase={authLogoutUsecase}
     />
   );
 }

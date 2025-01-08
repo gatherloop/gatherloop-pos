@@ -3,11 +3,13 @@ import { Link } from 'solito/link';
 import { Plus } from '@tamagui/lucide-icons';
 import { CategoryDeleteAlert, CategoryList, Layout } from '../components';
 import {
+  AuthLogoutUsecase,
   Category,
   CategoryDeleteUsecase,
   CategoryListUsecase,
 } from '../../domain';
 import {
+  useAuthLogoutController,
   useCategoryDeleteController,
   useCategoryListController,
 } from '../controllers';
@@ -17,9 +19,12 @@ import { useRouter } from 'solito/router';
 export type CategoryListScreenProps = {
   categoryListUsecase: CategoryListUsecase;
   categoryDeleteUsecase: CategoryDeleteUsecase;
+  authLogoutUsecase: AuthLogoutUsecase;
 };
 
 export const CategoryListScreen = (props: CategoryListScreenProps) => {
+  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
+
   const categoryListController = useCategoryListController(
     props.categoryListUsecase
   );
@@ -51,6 +56,7 @@ export const CategoryListScreen = (props: CategoryListScreenProps) => {
 
   return (
     <Layout
+      {...authLogoutController}
       title="Categories"
       rightActionItem={
         <Link href="/categories/create">

@@ -1,20 +1,29 @@
 import { H4 } from 'tamagui';
 import { TransactionStatistic, Layout } from '../components';
-import { useTransactionStatisticListController } from '../controllers';
-import { TransactionStatisticListUsecase } from '../../domain';
+import {
+  useAuthLogoutController,
+  useTransactionStatisticListController,
+} from '../controllers';
+import {
+  AuthLogoutUsecase,
+  TransactionStatisticListUsecase,
+} from '../../domain';
 
 export type TransactionStatisticScreenProps = {
   transactionStatisticListUsecase: TransactionStatisticListUsecase;
+  authLogoutUsecase: AuthLogoutUsecase;
 };
 
 export const TransactionStatisticScreen = (
   props: TransactionStatisticScreenProps
 ) => {
+  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
+
   const controller = useTransactionStatisticListController(
     props.transactionStatisticListUsecase
   );
   return (
-    <Layout title="Dashboard">
+    <Layout {...authLogoutController} title="Dashboard">
       <H4>Transaction Statistic</H4>
       <TransactionStatistic {...controller} />
     </Layout>

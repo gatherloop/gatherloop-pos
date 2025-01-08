@@ -4,8 +4,8 @@ import {
   transactionStatisticsQueryKey,
 } from '../../../api-contract/src';
 import { GetServerSidePropsContext } from 'next';
-import { ApiTransactionRepository } from '../data';
-import { TransactionStatisticListUsecase } from '../domain';
+import { ApiAuthRepository, ApiTransactionRepository } from '../data';
+import { AuthLogoutUsecase, TransactionStatisticListUsecase } from '../domain';
 import { TransactionStatisticScreen as TransactionStatisticScreenView } from '../presentation';
 import {
   dehydrate,
@@ -33,9 +33,18 @@ export async function getTransactionStatisticScreenDehydratedState(
 
 export function TransactionStatisticScreen() {
   const client = useQueryClient();
-  const repository = new ApiTransactionRepository(client);
-  const usecase = new TransactionStatisticListUsecase(repository);
+  const transactionRepository = new ApiTransactionRepository(client);
+  const transactionStatisticListusecase = new TransactionStatisticListUsecase(
+    transactionRepository
+  );
+
+  const authRepository = new ApiAuthRepository();
+  const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
+
   return (
-    <TransactionStatisticScreenView transactionStatisticListUsecase={usecase} />
+    <TransactionStatisticScreenView
+      transactionStatisticListUsecase={transactionStatisticListusecase}
+      authLogoutUsecase={authLogoutUsecase}
+    />
   );
 }

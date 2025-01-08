@@ -1,21 +1,29 @@
 import { ScrollView } from 'tamagui';
 import { TransactionCreate, Layout, ProductList } from '../components';
 import {
+  useAuthLogoutController,
   useProductListController,
   useTransactionCreateController,
 } from '../controllers';
 import { useEffect } from 'react';
 import { useRouter } from 'solito/router';
-import { ProductListUsecase, TransactionCreateUsecase } from '../../domain';
+import {
+  AuthLogoutUsecase,
+  ProductListUsecase,
+  TransactionCreateUsecase,
+} from '../../domain';
 
 export type TransactionCreateScreenProps = {
   transactionCreateUsecase: TransactionCreateUsecase;
   productListUsecase: ProductListUsecase;
+  authLogoutUsecase: AuthLogoutUsecase;
 };
 
 export const TransactionCreateScreen = (
   props: TransactionCreateScreenProps
 ) => {
+  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
+
   const transactionCreateController = useTransactionCreateController(
     props.transactionCreateUsecase
   );
@@ -30,7 +38,7 @@ export const TransactionCreateScreen = (
   }, [transactionCreateController.state.type, router]);
 
   return (
-    <Layout title="Create Transaction" showBackButton>
+    <Layout {...authLogoutController} title="Create Transaction" showBackButton>
       <ScrollView>
         <TransactionCreate
           {...transactionCreateController}

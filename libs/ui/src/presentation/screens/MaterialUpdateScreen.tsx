@@ -2,14 +2,20 @@ import { ScrollView } from 'tamagui';
 import { MaterialUpdate, Layout } from '../components';
 import { useRouter } from 'solito/router';
 import { useEffect } from 'react';
-import { useMaterialUpdateController } from '../controllers';
-import { MaterialUpdateUsecase } from '../../domain';
+import {
+  useAuthLogoutController,
+  useMaterialUpdateController,
+} from '../controllers';
+import { AuthLogoutUsecase, MaterialUpdateUsecase } from '../../domain';
 
 export type MaterialUpdateScreenProps = {
   materialUpdateUsecase: MaterialUpdateUsecase;
+  authLogoutUsecase: AuthLogoutUsecase;
 };
 
 export const MaterialUpdateScreen = (props: MaterialUpdateScreenProps) => {
+  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
+
   const controller = useMaterialUpdateController(props.materialUpdateUsecase);
   const router = useRouter();
 
@@ -18,7 +24,7 @@ export const MaterialUpdateScreen = (props: MaterialUpdateScreenProps) => {
   }, [controller.state.type, router]);
 
   return (
-    <Layout title="Update Material" showBackButton>
+    <Layout {...authLogoutController} title="Update Material" showBackButton>
       <ScrollView>
         <MaterialUpdate {...controller} />
       </ScrollView>

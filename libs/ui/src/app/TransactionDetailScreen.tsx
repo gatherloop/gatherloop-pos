@@ -4,8 +4,8 @@ import {
   transactionFindByIdQueryKey,
 } from '../../../api-contract/src';
 import { GetServerSidePropsContext } from 'next';
-import { ApiTransactionRepository } from '../data';
-import { TransactionDetailUsecase } from '../domain';
+import { ApiAuthRepository, ApiTransactionRepository } from '../data';
+import { AuthLogoutUsecase, TransactionDetailUsecase } from '../domain';
 import { TransactionDetailScreen as TransactionDetailScreenView } from '../presentation';
 import {
   dehydrate,
@@ -37,8 +37,19 @@ export function TransactionDetailScreen({
   transactionId,
 }: TransactionDetailScreenProps) {
   const client = useQueryClient();
-  const repository = new ApiTransactionRepository(client);
-  repository.transactionByIdServerParams = transactionId;
-  const usecase = new TransactionDetailUsecase(repository);
-  return <TransactionDetailScreenView transactionDetailUsecase={usecase} />;
+  const transactionRepository = new ApiTransactionRepository(client);
+  transactionRepository.transactionByIdServerParams = transactionId;
+  const transactionDetailUsecase = new TransactionDetailUsecase(
+    transactionRepository
+  );
+
+  const authRepository = new ApiAuthRepository();
+  const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
+
+  return (
+    <TransactionDetailScreenView
+      transactionDetailUsecase={transactionDetailUsecase}
+      authLogoutUsecase={authLogoutUsecase}
+    />
+  );
 }

@@ -3,17 +3,25 @@ import { ProductCreate, Layout, MaterialList } from '../components';
 import { useRouter } from 'solito/router';
 import { useEffect } from 'react';
 import {
+  useAuthLogoutController,
   useMaterialListController,
   useProductCreateController,
 } from '../controllers';
-import { MaterialListUsecase, ProductCreateUsecase } from '../../domain';
+import {
+  AuthLogoutUsecase,
+  MaterialListUsecase,
+  ProductCreateUsecase,
+} from '../../domain';
 
 export type ProductCreateScreenProps = {
   productCreateUsecase: ProductCreateUsecase;
   materialListUsecase: MaterialListUsecase;
+  authLogoutUsecase: AuthLogoutUsecase;
 };
 
 export const ProductCreateScreen = (props: ProductCreateScreenProps) => {
+  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
+
   const productCreateController = useProductCreateController(
     props.productCreateUsecase
   );
@@ -29,7 +37,7 @@ export const ProductCreateScreen = (props: ProductCreateScreenProps) => {
   }, [productCreateController.state.type, router]);
 
   return (
-    <Layout title="Create Product" showBackButton>
+    <Layout {...authLogoutController} title="Create Product" showBackButton>
       <ScrollView>
         <ProductCreate
           {...productCreateController}

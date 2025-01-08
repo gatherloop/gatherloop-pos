@@ -1,19 +1,26 @@
 import { ScrollView } from 'tamagui';
 import { WalletTransferCreate, Layout } from '../components';
-import { useWalletTransferCreateController } from '../controllers';
+import {
+  useAuthLogoutController,
+  useWalletTransferCreateController,
+} from '../controllers';
 import { useEffect } from 'react';
 import { useRouter } from 'solito/router';
-import { WalletTransferCreateUsecase } from '../../domain';
+import { AuthLogoutUsecase, WalletTransferCreateUsecase } from '../../domain';
 
 export type WalletTransferCreateScreenProps = {
   walletId: number;
   walletTransferCreateUsecase: WalletTransferCreateUsecase;
+  authLogoutUsecase: AuthLogoutUsecase;
 };
 
 export const WalletTransferCreateScreen = ({
   walletId,
   walletTransferCreateUsecase,
+  authLogoutUsecase,
 }: WalletTransferCreateScreenProps) => {
+  const authLogoutController = useAuthLogoutController(authLogoutUsecase);
+
   const controller = useWalletTransferCreateController(
     walletTransferCreateUsecase
   );
@@ -25,7 +32,7 @@ export const WalletTransferCreateScreen = ({
   }, [router, controller.state.type, walletId]);
 
   return (
-    <Layout title="Create Transfer" showBackButton>
+    <Layout {...authLogoutController} title="Create Transfer" showBackButton>
       <ScrollView>
         <WalletTransferCreate {...controller} />
       </ScrollView>

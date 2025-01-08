@@ -4,8 +4,8 @@ import {
   walletFindById,
   walletFindByIdQueryKey,
 } from '../../../api-contract/src';
-import { ApiWalletRepository } from '../data';
-import { WalletUpdateUsecase } from '../domain';
+import { ApiAuthRepository, ApiWalletRepository } from '../data';
+import { AuthLogoutUsecase, WalletUpdateUsecase } from '../domain';
 import { WalletUpdateScreen as WalletUpdateScreenView } from '../presentation';
 import {
   dehydrate,
@@ -42,8 +42,17 @@ export function WalletUpdateScreen({ walletId }: WalletUpdateScreenProps) {
     parse: (value) => parseInt(Array.isArray(value) ? value[0] : value ?? ''),
   });
   const client = useQueryClient();
-  const repository = new ApiWalletRepository(client);
-  repository.walletByIdServerParams = walletIdParam;
-  const usecase = new WalletUpdateUsecase(repository);
-  return <WalletUpdateScreenView walletUpdateUsecase={usecase} />;
+  const walletRepository = new ApiWalletRepository(client);
+  walletRepository.walletByIdServerParams = walletIdParam;
+  const walletUpdateUsecase = new WalletUpdateUsecase(walletRepository);
+
+  const authRepository = new ApiAuthRepository();
+  const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
+
+  return (
+    <WalletUpdateScreenView
+      walletUpdateUsecase={walletUpdateUsecase}
+      authLogoutUsecase={authLogoutUsecase}
+    />
+  );
 }

@@ -3,11 +3,13 @@ import { Link } from 'solito/link';
 import { Plus } from '@tamagui/lucide-icons';
 import { MaterialDeleteAlert, MaterialList, Layout } from '../components';
 import {
+  AuthLogoutUsecase,
   Material,
   MaterialDeleteUsecase,
   MaterialListUsecase,
 } from '../../domain';
 import {
+  useAuthLogoutController,
   useMaterialDeleteController,
   useMaterialListController,
 } from '../controllers';
@@ -17,9 +19,11 @@ import { useRouter } from 'solito/router';
 export type MaterialListScreenProps = {
   materialListUsecase: MaterialListUsecase;
   materialDeleteUsecase: MaterialDeleteUsecase;
+  authLogoutUsecase: AuthLogoutUsecase;
 };
 
 export const MaterialListScreen = (props: MaterialListScreenProps) => {
+  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
   const materialListController = useMaterialListController(
     props.materialListUsecase
   );
@@ -51,6 +55,7 @@ export const MaterialListScreen = (props: MaterialListScreenProps) => {
 
   return (
     <Layout
+      {...authLogoutController}
       title="Materials"
       rightActionItem={
         <Link href="/materials/create">

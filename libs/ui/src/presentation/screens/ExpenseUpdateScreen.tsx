@@ -1,16 +1,21 @@
 import { ScrollView } from 'tamagui';
 import { ExpenseUpdate, Layout } from '../components';
-import { useExpenseUpdateController } from '../controllers';
+import {
+  useAuthLogoutController,
+  useExpenseUpdateController,
+} from '../controllers';
 import { useEffect } from 'react';
 import { useRouter } from 'solito/router';
-import { ExpenseUpdateUsecase } from '../../domain';
+import { AuthLogoutUsecase, ExpenseUpdateUsecase } from '../../domain';
 
 export type ExpenseUpdateScreenProps = {
   expenseUpdateUsecase: ExpenseUpdateUsecase;
+  authLogoutUsecase: AuthLogoutUsecase;
 };
 
 export const ExpenseUpdateScreen = (props: ExpenseUpdateScreenProps) => {
   const router = useRouter();
+  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
   const expenseCreateController = useExpenseUpdateController(
     props.expenseUpdateUsecase
   );
@@ -21,7 +26,7 @@ export const ExpenseUpdateScreen = (props: ExpenseUpdateScreenProps) => {
   }, [expenseCreateController.state.type, router]);
 
   return (
-    <Layout title="Update Expense" showBackButton>
+    <Layout {...authLogoutController} title="Update Expense" showBackButton>
       <ScrollView>
         <ExpenseUpdate {...expenseCreateController} />
       </ScrollView>

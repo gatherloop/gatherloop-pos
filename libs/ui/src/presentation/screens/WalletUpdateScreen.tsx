@@ -2,14 +2,20 @@ import { ScrollView } from 'tamagui';
 import { WalletUpdate, Layout } from '../components';
 import { useRouter } from 'solito/router';
 import { useEffect } from 'react';
-import { useWalletUpdateController } from '../controllers';
-import { WalletUpdateUsecase } from '../../domain';
+import {
+  useAuthLogoutController,
+  useWalletUpdateController,
+} from '../controllers';
+import { AuthLogoutUsecase, WalletUpdateUsecase } from '../../domain';
 
 export type WalletUpdateScreenProps = {
   walletUpdateUsecase: WalletUpdateUsecase;
+  authLogoutUsecase: AuthLogoutUsecase;
 };
 
 export const WalletUpdateScreen = (props: WalletUpdateScreenProps) => {
+  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
+
   const controller = useWalletUpdateController(props.walletUpdateUsecase);
   const router = useRouter();
 
@@ -18,7 +24,7 @@ export const WalletUpdateScreen = (props: WalletUpdateScreenProps) => {
   }, [controller.state.type, router]);
 
   return (
-    <Layout title="Update Wallet" showBackButton>
+    <Layout {...authLogoutController} title="Update Wallet" showBackButton>
       <ScrollView>
         <WalletUpdate {...controller} />
       </ScrollView>

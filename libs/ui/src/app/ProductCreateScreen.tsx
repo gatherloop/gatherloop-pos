@@ -7,11 +7,16 @@ import {
 } from '../../../api-contract/src';
 import { GetServerSidePropsContext } from 'next';
 import {
+  ApiAuthRepository,
   ApiCategoryRepository,
   ApiMaterialRepository,
   ApiProductRepository,
 } from '../data';
-import { MaterialListUsecase, ProductCreateUsecase } from '../domain';
+import {
+  AuthLogoutUsecase,
+  MaterialListUsecase,
+  ProductCreateUsecase,
+} from '../domain';
 import { ProductCreateScreen as ProductCreateScreenView } from '../presentation';
 import {
   dehydrate,
@@ -71,10 +76,14 @@ export function ProductCreateScreen() {
   const materialRepository = new ApiMaterialRepository(client);
   const materialListUsecase = new MaterialListUsecase(materialRepository);
 
+  const authRepository = new ApiAuthRepository();
+  const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
+
   return (
     <ProductCreateScreenView
       materialListUsecase={materialListUsecase}
       productCreateUsecase={productCreateUsecase}
+      authLogoutUsecase={authLogoutUsecase}
     />
   );
 }

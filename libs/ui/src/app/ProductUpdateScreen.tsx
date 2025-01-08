@@ -9,11 +9,16 @@ import {
   productFindByIdQueryKey,
 } from '../../../api-contract/src';
 import {
+  ApiAuthRepository,
   ApiCategoryRepository,
   ApiMaterialRepository,
   ApiProductRepository,
 } from '../data';
-import { MaterialListUsecase, ProductUpdateUsecase } from '../domain';
+import {
+  AuthLogoutUsecase,
+  MaterialListUsecase,
+  ProductUpdateUsecase,
+} from '../domain';
 import { ProductUpdateScreen as ProductUpdateScreenView } from '../presentation';
 
 import {
@@ -95,10 +100,14 @@ export function ProductUpdateScreen({ productId }: ProductUpdateScreenProps) {
   const materialRepository = new ApiMaterialRepository(client);
   const materialListUsecase = new MaterialListUsecase(materialRepository);
 
+  const authRepository = new ApiAuthRepository();
+  const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
+
   return (
     <ProductUpdateScreenView
       materialListUsecase={materialListUsecase}
       productUpdateUsecase={productUpdateUsecase}
+      authLogoutUsecase={authLogoutUsecase}
     />
   );
 }

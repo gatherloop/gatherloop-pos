@@ -4,8 +4,8 @@ import {
   categoryFindByIdQueryKey,
 } from '../../../api-contract/src';
 import { GetServerSidePropsContext } from 'next';
-import { ApiCategoryRepository } from '../data';
-import { CategoryUpdateUsecase } from '../domain';
+import { ApiAuthRepository, ApiCategoryRepository } from '../data';
+import { AuthLogoutUsecase, CategoryUpdateUsecase } from '../domain';
 import { CategoryUpdateScreen as CategoryUpdateScreenView } from '../presentation';
 import {
   dehydrate,
@@ -44,8 +44,17 @@ export function CategoryUpdateScreen({
     parse: (value) => parseInt(Array.isArray(value) ? value[0] : value ?? ''),
   });
   const client = useQueryClient();
-  const repository = new ApiCategoryRepository(client);
-  repository.categoryByIdServerParams = categoryIdParam;
-  const usecase = new CategoryUpdateUsecase(repository);
-  return <CategoryUpdateScreenView categoryUpdateUsecase={usecase} />;
+  const categoryRepository = new ApiCategoryRepository(client);
+  categoryRepository.categoryByIdServerParams = categoryIdParam;
+  const categoryUpdateUsecase = new CategoryUpdateUsecase(categoryRepository);
+
+  const authRepository = new ApiAuthRepository();
+  const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
+
+  return (
+    <CategoryUpdateScreenView
+      categoryUpdateUsecase={categoryUpdateUsecase}
+      authLogoutUsecase={authLogoutUsecase}
+    />
+  );
 }

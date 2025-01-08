@@ -3,11 +3,13 @@ import { Link } from 'solito/link';
 import { Plus } from '@tamagui/lucide-icons';
 import { ProductDeleteAlert, ProductList, Layout } from '../components';
 import {
+  AuthLogoutUsecase,
   Product,
   ProductDeleteUsecase,
   ProductListUsecase,
 } from '../../domain';
 import {
+  useAuthLogoutController,
   useProductDeleteController,
   useProductListController,
 } from '../controllers';
@@ -17,9 +19,11 @@ import { useRouter } from 'solito/router';
 export type ProductListScreenProps = {
   productListUsecase: ProductListUsecase;
   productDeleteUsecase: ProductDeleteUsecase;
+  authLogoutUsecase: AuthLogoutUsecase;
 };
 
 export const ProductListScreen = (props: ProductListScreenProps) => {
+  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
   const productListController = useProductListController(
     props.productListUsecase
   );
@@ -51,6 +55,7 @@ export const ProductListScreen = (props: ProductListScreenProps) => {
 
   return (
     <Layout
+      {...authLogoutController}
       title="Products"
       rightActionItem={
         <Link href="/products/create">
