@@ -14,6 +14,7 @@ import (
 	apiContract "libs/api-contract"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
 )
@@ -56,6 +57,14 @@ func ToErrorCode(errorType base.ErrorType) apiContract.ErrorCode {
 	default:
 		return apiContract.INTERNAL_SERVER_ERROR
 	}
+}
+
+func GetDomain(r *http.Request) string {
+	origin := r.Header.Get("Origin")
+	domain := strings.TrimPrefix(origin, "https://")
+	domain = strings.TrimPrefix(domain, "http://")
+	domain = strings.Split(domain, ":")[0]
+	return domain
 }
 
 func GetSortBy(r *http.Request) base.SortBy {

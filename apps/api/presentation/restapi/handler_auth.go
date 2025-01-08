@@ -31,6 +31,7 @@ func (handler AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cookie := http.Cookie{
+		Domain:   GetDomain(r),
 		Name:     "Authorization",
 		Value:    "Bearer " + token,
 		Path:     "/",
@@ -44,6 +45,7 @@ func (handler AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 func (handler AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	cookie := http.Cookie{
+		Domain:   GetDomain(r),
 		Name:     "Authorization",
 		Value:    "",
 		Path:     "/",
