@@ -20,11 +20,7 @@ func (repo Repository) BeginTransaction(ctx context.Context, callback func(ctxWi
 	repo.db.Transaction(func(tx *gorm.DB) error {
 		ctxWithTx := context.WithValue(ctx, "tx", tx)
 		baseError = callback(ctxWithTx)
-
-		if baseError != nil {
-			return errors.New(baseError.Message)
-		}
-		return nil
+		return errors.New(baseError.Message)
 	})
 
 	return baseError
