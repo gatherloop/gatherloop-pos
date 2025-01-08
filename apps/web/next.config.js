@@ -13,6 +13,14 @@ const nextConfig = {
     // See: https://github.com/gregberge/svgr
     svgr: false,
   },
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: process.env.NEXT_PUBLIC_API_BASE_URL + '/:path*',
+      },
+    ];
+  },
 };
 
 const tamaguiPlugin = withTamagui({

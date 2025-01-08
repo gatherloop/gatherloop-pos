@@ -30,27 +30,15 @@ func (handler AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cookieApi := http.Cookie{
-		Domain:   GetDomain(r),
-		Name:     "Authorization",
-		Value:    "Bearer " + token,
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteNoneMode,
-	}
-	http.SetCookie(w, &cookieApi)
-
-	cookieWeb := http.Cookie{
+	cookie := http.Cookie{
 		Domain:   GetOriginDomain(r),
 		Name:     "Authorization",
 		Value:    "Bearer " + token,
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
 	}
-	http.SetCookie(w, &cookieWeb)
+	http.SetCookie(w, &cookie)
 
 	WriteResponse(w, apiContract.AuthLogin200Response{Data: token})
 }
