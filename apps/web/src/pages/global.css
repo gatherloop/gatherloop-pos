@@ -4,3 +4,7 @@ body {
   height: 100dvh;
   font-family: 'Inter';
 }
+
+#__next {
+  min-height: 100dvh;
+}
