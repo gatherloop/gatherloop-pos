@@ -44,19 +44,7 @@ func (handler AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (handler AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
-	cookieApi := http.Cookie{
-		Domain:   GetDomain(r),
-		Name:     "Authorization",
-		Value:    "",
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   true,
-		Expires:  time.Unix(0, 0),
-		SameSite: http.SameSiteNoneMode,
-	}
-	http.SetCookie(w, &cookieApi)
-
-	cookieWeb := http.Cookie{
+	cookie := http.Cookie{
 		Domain:   GetOriginDomain(r),
 		Name:     "Authorization",
 		Value:    "",
@@ -64,9 +52,8 @@ func (handler AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 		Secure:   true,
 		Expires:  time.Unix(0, 0),
-		SameSite: http.SameSiteLaxMode,
 	}
-	http.SetCookie(w, &cookieWeb)
+	http.SetCookie(w, &cookie)
 
 	WriteResponse(w, apiContract.SuccessResponse{Success: true})
 }
