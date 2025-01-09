@@ -5,7 +5,7 @@ import {
 } from '../../../api-contract/src';
 import { GetServerSidePropsContext } from 'next';
 import { ApiTransactionRepository } from '../data';
-import { TransactionPrintUsecase } from '../domain';
+import { TransactionDetailUsecase } from '../domain';
 import { TransactionPrintScreen as TransactionPrintScreenView } from '../presentation';
 import {
   dehydrate,
@@ -39,6 +39,6 @@ export function TransactionPrintScreen({
   const client = useQueryClient();
   const repository = new ApiTransactionRepository(client);
   repository.transactionByIdServerParams = transactionId;
-  const usecase = new TransactionPrintUsecase(repository);
-  return <TransactionPrintScreenView transactionPrintUsecase={usecase} />;
+  const usecase = new TransactionDetailUsecase(repository);
+  return <TransactionPrintScreenView transactionDetailUsecase={usecase} />;
 }

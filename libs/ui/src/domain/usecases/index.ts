@@ -29,6 +29,5 @@ export * from './transactionUpdate';
 export * from './transactionCreate';
 export * from './transactionPay';
 export * from './transactionDetail';
-export * from './transactionPrint';
 export * from './transactionStatisticList';
 export * from './IUsecase';

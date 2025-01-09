@@ -1,25 +1,35 @@
 import { YStack } from 'tamagui';
-import { TransactionPrintUsecase } from '../../domain';
+import { TransactionDetailUsecase } from '../../domain';
 import {
   TransactionPrintCustomer,
   TransactionPrintEmployee,
 } from '../components';
-import { useTransactionPrintController } from '../controllers';
+import { useTransactionDetailController } from '../controllers';
+import { useEffect } from 'react';
+import { useRouter } from 'solito/router';
 
 export type TransactionPrintScreenProps = {
-  transactionPrintUsecase: TransactionPrintUsecase;
+  transactionDetailUsecase: TransactionDetailUsecase;
 };
 
 export const TransactionPrintScreen = (props: TransactionPrintScreenProps) => {
-  const controller = useTransactionPrintController(
-    props.transactionPrintUsecase
+  const controller = useTransactionDetailController(
+    props.transactionDetailUsecase
   );
+  const router = useRouter();
+  useEffect(() => {
+    if (controller.state.type === 'loaded') {
+      window.print();
+      router.back();
+    }
+  }, [controller.state, router]);
+
   return (
     <YStack>
       <TransactionPrintCustomer {...controller} />
-      <YStack borderWidth="$0.5" borderStyle="dashed" marginVertical="$3" />
+      <YStack borderWidth="$0.5" borderStyle="dashed" marginVertical="$5" />
       <TransactionPrintEmployee {...controller} />
-      <YStack borderWidth="$0.5" borderStyle="dashed" marginVertical="$3" />
+      <YStack borderWidth="$0.5" borderStyle="dashed" marginVertical="$5" />
     </YStack>
   );
 };

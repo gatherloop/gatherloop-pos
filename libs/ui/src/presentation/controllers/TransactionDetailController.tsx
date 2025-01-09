@@ -4,8 +4,11 @@ import { useController } from './controller';
 export const useTransactionDetailController = (
   usecase: TransactionDetailUsecase
 ) => {
-  const { state } = useController(usecase);
+  const { state, dispatch } = useController(usecase);
   return {
+    state,
+    dispatch,
+    id: state.transaction?.id ?? -1,
     createdAt: state.transaction?.createdAt ?? '',
     name: state.transaction?.name ?? '',
     total: state.transaction?.total ?? 0,
