@@ -19,8 +19,12 @@ export const TransactionPrintScreen = (props: TransactionPrintScreenProps) => {
   const router = useRouter();
   useEffect(() => {
     if (controller.state.type === 'loaded') {
+      const handleFocus = () => {
+        window.removeEventListener('focus', handleFocus);
+        router.back();
+      };
+      window.addEventListener('focus', handleFocus);
       window.print();
-      router.back();
     }
   }, [controller.state, router]);
 
