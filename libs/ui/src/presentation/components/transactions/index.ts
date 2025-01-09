@@ -4,6 +4,7 @@ export * from './TransactionDetail';
 export * from './TransactionList';
 export * from './TransactionListItem';
 export * from './TransactionPaymentAlert';
-export * from './TransactionPrint';
+export * from './TransactionPrintEmployee';
+export * from './TransactionPrintCustomer';
 export * from './TransactionStatistic';
 export * from './TransactionUpdate';

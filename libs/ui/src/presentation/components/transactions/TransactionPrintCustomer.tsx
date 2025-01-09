@@ -2,7 +2,7 @@ import { H5, Paragraph, Theme, XStack, YStack } from 'tamagui';
 import { Transaction } from '../../../domain';
 import dayjs from 'dayjs';
 
-export type TransactionPrintProps = {
+export type TransactionPrintCustomerProps = {
   name: string;
   createdAt: string;
   paidAt?: string;
@@ -10,17 +10,16 @@ export type TransactionPrintProps = {
   transactionItems: Transaction['transactionItems'];
 };
 
-export const TransactionPrint = ({
+export const TransactionPrintCustomer = ({
   name,
   paidAt,
   createdAt,
   total,
   transactionItems,
-}: TransactionPrintProps) => {
+}: TransactionPrintCustomerProps) => {
   return (
     <Theme name="light">
       <YStack gap="$2">
-        <YStack borderWidth="$0.5" borderStyle="dashed" />
         <H5 textAlign="center" fontWeight="$16">
           Gatherloop Cafe & Community
         </H5>
@@ -100,8 +99,6 @@ export const TransactionPrint = ({
           Jangan lupa follow instagram kami untuk <b>melihat event terbaru</b>{' '}
           di @gatherloop
         </Paragraph>
-
-        <YStack borderWidth="$0.5" borderStyle="dashed" />
       </YStack>
     </Theme>
   );

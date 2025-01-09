@@ -1,5 +1,9 @@
+import { YStack } from 'tamagui';
 import { TransactionPrintUsecase } from '../../domain';
-import { TransactionPrint } from '../components';
+import {
+  TransactionPrintCustomer,
+  TransactionPrintEmployee,
+} from '../components';
 import { useTransactionPrintController } from '../controllers';
 
 export type TransactionPrintScreenProps = {
@@ -10,5 +14,11 @@ export const TransactionPrintScreen = (props: TransactionPrintScreenProps) => {
   const controller = useTransactionPrintController(
     props.transactionPrintUsecase
   );
-  return <TransactionPrint {...controller} />;
+  return (
+    <YStack gap="$2">
+      <TransactionPrintCustomer {...controller} />
+      <YStack borderWidth="$0.5" borderStyle="dashed" />
+      <TransactionPrintEmployee {...controller} />
+    </YStack>
+  );
 };

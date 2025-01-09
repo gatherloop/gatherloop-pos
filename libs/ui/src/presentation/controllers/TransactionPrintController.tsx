@@ -6,6 +6,7 @@ export const useTransactionPrintController = (
 ) => {
   const { state } = useController(usecase);
   return {
+    id: state.transaction?.id ?? -1,
     name: state.transaction?.name ?? '',
     createdAt: state.transaction?.createdAt ?? '',
     paidAt: state.transaction?.paidAt ?? '',
