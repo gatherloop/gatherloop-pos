@@ -1,10 +1,14 @@
+html {
+  min-height: 100%;
+}
+
 body {
   overflow: hidden;
   position: fixed;
-  height: 100svh;
+  height: 100%;
   font-family: 'Inter';
 }
 
 #__next {
-  min-height: 100svh;
+  min-height: 100%;
 }
