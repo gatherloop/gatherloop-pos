@@ -19,23 +19,28 @@ export const TransactionPrintCustomer = ({
 }: TransactionPrintCustomerProps) => {
   return (
     <Theme name="light">
-      <YStack gap="$2">
-        <H5 textAlign="center" fontWeight="$16">
+      <YStack>
+        <H5 textAlign="center" fontWeight="$16" fontSize="$1" lineHeight="$1">
           Gatherloop Cafe & Community
         </H5>
-        <Paragraph textAlign="center">
-          New Kraksaan Land, Blok G16, Karang Asem, Kebonagung, Kec. Kraksaan
-        </Paragraph>
 
         <YStack borderWidth="$0.5" borderStyle="dashed" />
 
-        <Paragraph fontWeight="$16">Waktu Transaksi</Paragraph>
-        <Paragraph>{dayjs(createdAt).format('DD/MM/YYYY HH:mm')}</Paragraph>
+        <Paragraph fontWeight="$16" fontSize="$3">
+          Waktu Transaksi
+        </Paragraph>
+        <Paragraph fontSize="$3">
+          {dayjs(createdAt).format('DD/MM/YYYY HH:mm')}
+        </Paragraph>
 
         {paidAt && (
           <>
-            <Paragraph fontWeight="$16">Waktu Pembayaran</Paragraph>
-            <Paragraph>{dayjs(paidAt).format('DD/MM/YYYY HH:mm')}</Paragraph>
+            <Paragraph fontWeight="$16" fontSize="$3">
+              Waktu Pembayaran
+            </Paragraph>
+            <Paragraph fontSize="$3">
+              {dayjs(paidAt).format('DD/MM/YYYY HH:mm')}
+            </Paragraph>
           </>
         )}
 
@@ -45,13 +50,15 @@ export const TransactionPrintCustomer = ({
           {transactionItems.map(
             ({ id, price, product, amount, subtotal, discountAmount }) => (
               <YStack key={id}>
-                <Paragraph fontWeight="$10">{product.name}</Paragraph>
+                <Paragraph fontWeight="$10" fontSize="$3">
+                  {product.name}
+                </Paragraph>
                 <XStack gap="$2" justifyContent="space-between">
-                  <Paragraph size="$3">
+                  <Paragraph fontSize="$3">
                     {`${amount} x ${price.toLocaleString('id')}`}
                   </Paragraph>
                   <Paragraph
-                    size="$3"
+                    fontSize="$3"
                     fontWeight={discountAmount > 0 ? '$5' : '$16'}
                   >
                     Rp. {(price * amount).toLocaleString('id')}
@@ -61,15 +68,15 @@ export const TransactionPrintCustomer = ({
                 {discountAmount > 0 && (
                   <>
                     <XStack gap="$2" justifyContent="space-between">
-                      <Paragraph size="$3">Diskon</Paragraph>
-                      <Paragraph size="$3">
+                      <Paragraph fontSize="$3">Diskon</Paragraph>
+                      <Paragraph fontSize="$3">
                         - Rp. {discountAmount.toLocaleString('id')}
                       </Paragraph>
                     </XStack>
 
                     <XStack gap="$2" justifyContent="space-between">
-                      <Paragraph size="$3"></Paragraph>
-                      <Paragraph size="$3" fontWeight="$16">
+                      <Paragraph fontSize="$3"></Paragraph>
+                      <Paragraph fontSize="$3" fontWeight="$16">
                         Rp. {subtotal.toLocaleString('id')}
                       </Paragraph>
                     </XStack>
@@ -83,21 +90,24 @@ export const TransactionPrintCustomer = ({
 
         <XStack justifyContent="space-between">
           <Paragraph>Total</Paragraph>
-          <Paragraph fontWeight="$16">
+          <Paragraph fontWeight="$16" fontSize="$3">
             Rp. {total.toLocaleString('id')}
           </Paragraph>
         </XStack>
 
-        <Paragraph textAlign="center">Wifi : Gatherloop</Paragraph>
-        <Paragraph textAlign="center">Password : kumpuldulu</Paragraph>
+        <Paragraph textAlign="center" fontSize="$3">
+          Wifi : Gatherloop
+        </Paragraph>
+        <Paragraph textAlign="center" fontSize="$3">
+          Password : kumpuldulu
+        </Paragraph>
 
-        <Paragraph textAlign="center" marginBottom="$2">
+        <Paragraph textAlign="center" marginBottom="$2" fontSize="$3">
           Terimakasih Kak {name}
         </Paragraph>
 
-        <Paragraph textAlign="center">
-          Jangan lupa follow instagram kami untuk <b>melihat event terbaru</b>{' '}
-          di @gatherloop
+        <Paragraph textAlign="center" fontSize="$3">
+          Lihat event terbaru di instagram <b>@gatherloop</b>
         </Paragraph>
       </YStack>
     </Theme>

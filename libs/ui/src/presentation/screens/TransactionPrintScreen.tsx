@@ -15,9 +15,9 @@ export const TransactionPrintScreen = (props: TransactionPrintScreenProps) => {
     props.transactionPrintUsecase
   );
   return (
-    <YStack gap="$2">
+    <YStack>
       <TransactionPrintCustomer {...controller} />
-      <YStack borderWidth="$0.5" borderStyle="dashed" />
+      <YStack borderWidth="$0.5" borderStyle="dashed" marginBottom="$8" />
       <TransactionPrintEmployee {...controller} />
     </YStack>
   );

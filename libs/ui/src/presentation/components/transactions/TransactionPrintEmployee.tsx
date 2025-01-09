@@ -18,15 +18,15 @@ export const TransactionPrintEmployee = ({
   return (
     <Theme name="light">
       <YStack>
-        <Paragraph>ID Transaksi : {id}</Paragraph>
-        <Paragraph>Nama : {name}</Paragraph>
-        <Paragraph fontWeight="$16">Waktu Transaksi</Paragraph>
+        <Paragraph fontSize="$3">ID Transaksi : {id}</Paragraph>
+        <Paragraph fontSize="$3">Nama : {name}</Paragraph>
+        <Paragraph fontSize="$3">Waktu Transaksi</Paragraph>
         <Paragraph>{dayjs(createdAt).format('DD/MM/YYYY HH:mm')}</Paragraph>
 
-        <YStack borderWidth="$0.5" borderStyle="dashed" />
+        <YStack borderWidth="$0.5" borderStyle="dashed" marginVertical="$3" />
 
         {transactionItems.map(({ id, product, amount }) => (
-          <Paragraph key={id}>
+          <Paragraph key={id} fontSize="$3">
             {product.name} x {amount}
           </Paragraph>
         ))}
