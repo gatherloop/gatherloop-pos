@@ -17,7 +17,12 @@ export const TransactionPrintScreen = (props: TransactionPrintScreenProps) => {
   return (
     <YStack>
       <TransactionPrintCustomer {...controller} />
-      <YStack borderWidth="$0.5" borderStyle="dashed" marginBottom="$8" />
+      <YStack
+        borderWidth="$0.5"
+        borderStyle="dashed"
+        marginTop="$2"
+        marginBottom="$10"
+      />
       <TransactionPrintEmployee {...controller} />
     </YStack>
   );
