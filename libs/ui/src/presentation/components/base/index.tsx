@@ -1,4 +1,5 @@
 export * from './Navbar';
+export * from './Focusable';
 export * from './Sidebar';
 export * from './ListItem';
 export * from './LoadingView';

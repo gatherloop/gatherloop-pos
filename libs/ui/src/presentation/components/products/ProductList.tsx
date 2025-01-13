@@ -1,6 +1,12 @@
 import { Input, YStack } from 'tamagui';
 import { ProductListItem } from './ProductListItem';
-import { EmptyView, ErrorView, LoadingView, Pagination } from '../base';
+import {
+  EmptyView,
+  ErrorView,
+  Focusable,
+  LoadingView,
+  Pagination,
+} from '../base';
 import { FlatList } from 'react-native';
 import { match } from 'ts-pattern';
 import { Product } from '../../../domain';
@@ -64,22 +70,24 @@ export const ProductList = ({
             nestedScrollEnabled
             data={items}
             renderItem={({ item }) => (
-              <ProductListItem
-                categoryName={item.category.name}
-                name={item.name}
-                price={item.price}
-                onDeleteMenuPress={
-                  onDeleteMenuPress
-                    ? () => onDeleteMenuPress(item)
-                    : onDeleteMenuPress
-                }
-                onEditMenuPress={
-                  onEditMenuPress
-                    ? () => onEditMenuPress(item)
-                    : onEditMenuPress
-                }
-                onPress={() => onItemPress(item)}
-              />
+              <Focusable onEnterPress={() => onItemPress(item)}>
+                <ProductListItem
+                  categoryName={item.category.name}
+                  name={item.name}
+                  price={item.price}
+                  onDeleteMenuPress={
+                    onDeleteMenuPress
+                      ? () => onDeleteMenuPress(item)
+                      : onDeleteMenuPress
+                  }
+                  onEditMenuPress={
+                    onEditMenuPress
+                      ? () => onEditMenuPress(item)
+                      : onEditMenuPress
+                  }
+                  onPress={() => onItemPress(item)}
+                />
+              </Focusable>
             )}
             ItemSeparatorComponent={() => <YStack height="$1" />}
           />

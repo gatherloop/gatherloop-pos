@@ -13,6 +13,7 @@ import { ProductListItem } from '../products';
 import { TransactionForm } from '../../../domain';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
 import { ReactNode } from 'react';
+import { useKeyboardShortcut } from '../../../utils';
 
 export type TransactionFormViewProps = {
   form: UseFormReturn<TransactionForm>;
@@ -31,6 +32,9 @@ export const TransactionFormView = ({
   isSubmitDisabled,
   ProductList,
 }: TransactionFormViewProps) => {
+  useKeyboardShortcut({
+    ctrl: { ' ': () => onProductSheetOpenChange(true) },
+  });
   return (
     <YStack>
       <FormProvider {...form}>
