@@ -75,12 +75,14 @@ func (handler TransactionHandler) CreateTransaction(w http.ResponseWriter, r *ht
 		return
 	}
 
-	if err := handler.usecase.CreateTransaction(ctx, ToTransactionRequest(transactionRequest)); err != nil {
-		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
+	id, usecaseErr := handler.usecase.CreateTransaction(ctx, ToTransactionRequest(transactionRequest))
+
+	if usecaseErr != nil {
+		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
-	WriteResponse(w, apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.TransactionCreate200Response{Success: true, Data: apiContract.TransactionCreate200ResponseData{Id: id}})
 }
 
 func (handler TransactionHandler) UpdateTransactionById(w http.ResponseWriter, r *http.Request) {

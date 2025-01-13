@@ -35,7 +35,9 @@ export interface TransactionRepository {
 
   deleteTransactionById: (transactionId: number) => Promise<void>;
 
-  createTransaction: (formValues: TransactionForm) => Promise<void>;
+  createTransaction: (
+    formValues: TransactionForm
+  ) => Promise<{ transactionId: number }>;
 
   updateTransaction: (
     formValues: TransactionForm,

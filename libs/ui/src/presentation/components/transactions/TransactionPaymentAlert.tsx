@@ -61,7 +61,7 @@ export const TransactionPaymentAlert = ({
 
               <XStack gap="$3" justifyContent="flex-end">
                 <AlertDialog.Cancel asChild>
-                  <Button disabled={isButtonDisabled}>No</Button>
+                  <Button disabled={isButtonDisabled}>Cancel</Button>
                 </AlertDialog.Cancel>
                 <Button
                   disabled={isButtonDisabled}

@@ -14,7 +14,7 @@ import { TransactionForm } from '../../../domain';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
 import { ReactNode } from 'react';
 
-export type TransactionUpdateProps = {
+export type TransactionFormViewProps = {
   form: UseFormReturn<TransactionForm>;
   onSubmit: (form: TransactionForm) => void;
   isProductSheetOpen: boolean;
@@ -23,14 +23,14 @@ export type TransactionUpdateProps = {
   ProductList: ReactNode;
 };
 
-export const TransactionUpdate = ({
+export const TransactionFormView = ({
   form,
   onSubmit,
   isProductSheetOpen,
   onProductSheetOpenChange,
   isSubmitDisabled,
   ProductList,
-}: TransactionUpdateProps) => {
+}: TransactionFormViewProps) => {
   return (
     <YStack>
       <FormProvider {...form}>
@@ -154,33 +154,34 @@ export const TransactionUpdate = ({
               )}
             </FieldArray>
           </YStack>
-          <XStack justifyContent="space-between">
+          <YStack alignItems="flex-end">
+            <H5 textTransform="none">Total</H5>
+            <FieldWatch control={form.control} name={['transactionItems']}>
+              {([transactionItems]) => (
+                <H3>
+                  Rp.{' '}
+                  {transactionItems
+                    .reduce(
+                      (prev, curr) =>
+                        prev +
+                        (curr.amount * curr.product.price -
+                          curr.discountAmount),
+                      0
+                    )
+                    .toLocaleString('id')}
+                </H3>
+              )}
+            </FieldWatch>
+          </YStack>
+          <XStack justifyContent="flex-end" gap="$3">
             <Button
               disabled={isSubmitDisabled}
               onPress={form.handleSubmit(onSubmit)}
+              size="$5"
               theme="blue"
             >
               Submit
             </Button>
-            <YStack alignItems="flex-end">
-              <H5 textTransform="none">Total</H5>
-              <FieldWatch control={form.control} name={['transactionItems']}>
-                {([transactionItems]) => (
-                  <H3>
-                    Rp.{' '}
-                    {transactionItems
-                      .reduce(
-                        (prev, curr) =>
-                          prev +
-                          (curr.amount * curr.product.price -
-                            curr.discountAmount),
-                        0
-                      )
-                      .toLocaleString('id')}
-                  </H3>
-                )}
-              </FieldWatch>
-            </YStack>
           </XStack>
         </Form>
       </FormProvider>

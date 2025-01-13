@@ -6,6 +6,7 @@ import { Usecase } from './IUsecase';
 type Context = {
   errorMessage: string | null;
   values: TransactionForm;
+  transactionId: number | null;
 };
 
 export type TransactionCreateState = (
@@ -18,7 +19,7 @@ export type TransactionCreateState = (
 
 export type TransactionCreateAction =
   | { type: 'SUBMIT'; values: TransactionForm }
-  | { type: 'SUBMIT_SUCCESS' }
+  | { type: 'SUBMIT_SUCCESS'; transactionId: number }
   | { type: 'SUBMIT_ERROR'; errorMessage: string }
   | { type: 'SUBMIT_CANCEL' };
 
@@ -37,6 +38,7 @@ export class TransactionCreateUsecase extends Usecase<
     return {
       type: 'loaded',
       errorMessage: null,
+      transactionId: null,
       values: {
         name: '',
         transactionItems: [],
@@ -60,9 +62,10 @@ export class TransactionCreateUsecase extends Usecase<
       )
       .with(
         [{ type: 'submitting' }, { type: 'SUBMIT_SUCCESS' }],
-        ([state]) => ({
+        ([state, action]) => ({
           ...state,
           type: 'submitSuccess',
+          transactionId: action.transactionId,
         })
       )
       .with(
@@ -91,7 +94,9 @@ export class TransactionCreateUsecase extends Usecase<
       .with({ type: 'submitting' }, ({ values }) => {
         this.repository
           .createTransaction(values)
-          .then(() => dispatch({ type: 'SUBMIT_SUCCESS' }))
+          .then(({ transactionId }) =>
+            dispatch({ type: 'SUBMIT_SUCCESS', transactionId })
+          )
           .catch(() =>
             dispatch({ type: 'SUBMIT_ERROR', errorMessage: 'Submit failed' })
           );

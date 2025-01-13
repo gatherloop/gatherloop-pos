@@ -114,7 +114,7 @@ export class ApiTransactionRepository implements TransactionRepository {
         productId: item.product.id,
         discountAmount: item.discountAmount,
       })),
-    }).then();
+    }).then(({ data }) => ({ transactionId: data.id }));
   };
 
   updateTransaction: TransactionRepository['updateTransaction'] = (

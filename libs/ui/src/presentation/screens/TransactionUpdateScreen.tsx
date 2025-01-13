@@ -1,5 +1,5 @@
 import { ScrollView } from 'tamagui';
-import { TransactionUpdate, Layout, ProductList } from '../components';
+import { TransactionFormView, Layout, ProductList } from '../components';
 import {
   useAuthLogoutController,
   useProductListController,
@@ -27,9 +27,11 @@ export const TransactionUpdateScreen = (
   const transactionUpdateController = useTransactionUpdateController(
     props.transactionUpdateUsecase
   );
+
   const productListController = useProductListController(
     props.productListUsecase
   );
+
   const router = useRouter();
 
   useEffect(() => {
@@ -40,7 +42,7 @@ export const TransactionUpdateScreen = (
   return (
     <Layout {...authLogoutController} title="Update Transaction" showBackButton>
       <ScrollView>
-        <TransactionUpdate
+        <TransactionFormView
           {...transactionUpdateController}
           ProductList={
             <ProductList
