@@ -15,6 +15,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'solito/router';
 import {
   AuthLogoutUsecase,
+  Product,
   ProductListUsecase,
   TransactionCreateUsecase,
   TransactionPayUsecase,
@@ -73,6 +74,11 @@ export const TransactionCreateScreen = (
     router.push('/transactions');
   };
 
+  const onProductItemPress = (product: Product) => {
+    transactionCreateController.onAddItem(product);
+    productListController.onSearchValueChange('');
+  };
+
   return (
     <Layout {...authLogoutController} title="Create Transaction" showBackButton>
       <ScrollView>
@@ -81,7 +87,7 @@ export const TransactionCreateScreen = (
           ProductList={
             <ProductList
               {...productListController}
-              onItemPress={transactionCreateController.onAddItem}
+              onItemPress={onProductItemPress}
               isSearchAutoFocus
             />
           }
