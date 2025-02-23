@@ -104,7 +104,7 @@ export const TransactionPrintCustomer = ({
         </Text>
 
         <Text textAlign="center" fontSize="$1">
-          Wifi : Gatherloop | Password : kumpuldulu
+          Wifi : Gatherloop | Password : kumpulbareng
         </Text>
       </YStack>
     </Theme>
