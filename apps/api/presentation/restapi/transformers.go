@@ -345,6 +345,7 @@ func ToProductRequest(productRequest apiContract.ProductRequest) product.Product
 	productMaterials := []product.ProductMaterialRequest{}
 	for _, productMaterial := range productRequest.Materials {
 		productMaterials = append(productMaterials, product.ProductMaterialRequest{
+			Id:         productMaterial.Id,
 			MaterialId: productMaterial.MaterialId,
 			Amount:     productMaterial.Amount,
 		})

@@ -29,6 +29,7 @@ type Product struct {
 }
 
 type ProductMaterialRequest struct {
+	Id         *int64  `json:"id"`
 	MaterialId int64   `json:"materialId"`
 	Amount     float32 `json:"amount"`
 }

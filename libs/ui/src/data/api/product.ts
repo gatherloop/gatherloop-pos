@@ -67,7 +67,8 @@ export class ApiProductRepository implements ProductRepository {
       name: formValues.name,
       categoryId: formValues.categoryId,
       price: formValues.price,
-      materials: formValues.materials.map(({ materialId, amount }) => ({
+      materials: formValues.materials.map(({ materialId, amount, id }) => ({
+        id,
         amount,
         materialId: materialId,
       })),
@@ -83,7 +84,8 @@ export class ApiProductRepository implements ProductRepository {
       name: formValues.name,
       categoryId: formValues.categoryId,
       price: formValues.price,
-      materials: formValues.materials.map(({ materialId, amount }) => ({
+      materials: formValues.materials.map(({ materialId, amount, id }) => ({
+        id,
         amount,
         materialId: materialId,
       })),
@@ -169,7 +171,8 @@ export const transformers = {
     price: product.price,
     category: transformers.category(product.category),
     materials: product.materials.map<Product['materials'][number]>(
-      ({ amount, material }) => ({
+      ({ amount, material, id }) => ({
+        id,
         materialId: material.id,
         material: {
           id: material.id,

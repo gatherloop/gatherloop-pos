@@ -32,7 +32,9 @@ export const useProductUpdateController = (usecase: ProductUpdateUsecase) => {
         materials: z.array(
           z.lazy(() => z.object({ materialId: z.number(), amount: z.number() }))
         ),
-      })
+      }),
+      {},
+      { raw: true }
     ),
   });
 

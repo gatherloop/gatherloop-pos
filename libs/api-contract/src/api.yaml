@@ -1415,6 +1415,9 @@ components:
         - materialId
         - amount
       properties:
+        id:
+          type: integer
+          format: int64
         materialId:
           type: integer
           format: int64

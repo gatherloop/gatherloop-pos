@@ -44,18 +44,67 @@ func (usecase Usecase) CreateProduct(ctx context.Context, productRequest Product
 			return err
 		}
 
+		var productMaterials []ProductMaterial
 		for _, productMaterialRequest := range productRequest.Materials {
-			if err := usecase.repository.CreateProductMaterial(ctxWithTx, productMaterialRequest, product.Id); err != nil {
-				return err
+
+			productMaterial := ProductMaterial{
+				ProductId:  product.Id,
+				MaterialId: productMaterialRequest.MaterialId,
+				Amount:     productMaterialRequest.Amount,
 			}
+
+			productMaterials = append(productMaterials, productMaterial)
 		}
 
+		if err := usecase.repository.CreateProductMaterials(ctxWithTx, productMaterials); err != nil {
+			return err
+		}
 		return nil
 	})
 }
 
 func (usecase Usecase) UpdateProductById(ctx context.Context, productRequest ProductRequest, id int64) *base.Error {
 	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *base.Error {
+		existingProduct, err := usecase.repository.GetProductById(ctxWithTx, id)
+		if err != nil {
+			return err
+		}
+
+		var productMaterials []ProductMaterial
+		for _, productMaterialRequest := range productRequest.Materials {
+			var productMaterialId int64
+			if productMaterialRequest.Id != nil {
+				productMaterialId = *productMaterialRequest.Id
+			}
+			productMaterial := ProductMaterial{
+				Id:         productMaterialId,
+				ProductId:  id,
+				MaterialId: productMaterialRequest.MaterialId,
+				Amount:     productMaterialRequest.Amount,
+			}
+
+			productMaterials = append(productMaterials, productMaterial)
+		}
+
+		if err := usecase.repository.CreateProductMaterials(ctxWithTx, productMaterials); err != nil {
+			return err
+		}
+
+		newIds := make(map[int64]bool)
+		for _, productRequestMaterial := range productRequest.Materials {
+			if productRequestMaterial.Id != nil {
+				newIds[*productRequestMaterial.Id] = true
+			}
+		}
+
+		for _, existingProductMaterial := range existingProduct.Materials {
+			if !newIds[existingProductMaterial.Id] {
+				if err := usecase.repository.DeleteProductMaterialById(ctxWithTx, existingProductMaterial.Id); err != nil {
+					return err
+				}
+			}
+		}
+
 		product := Product{
 			Name:        productRequest.Name,
 			CategoryId:  productRequest.CategoryId,
@@ -63,21 +112,7 @@ func (usecase Usecase) UpdateProductById(ctx context.Context, productRequest Pro
 			Description: productRequest.Description,
 		}
 
-		if err := usecase.repository.UpdateProductById(ctxWithTx, &product, id); err != nil {
-			return err
-		}
-
-		if err := usecase.repository.DeleteProductMaterials(ctxWithTx, id); err != nil {
-			return err
-		}
-
-		for _, productMaterialRequest := range productRequest.Materials {
-			if err := usecase.repository.CreateProductMaterial(ctxWithTx, productMaterialRequest, id); err != nil {
-				return err
-			}
-		}
-
-		return nil
+		return usecase.repository.UpdateProductById(ctxWithTx, &product, id)
 	})
 }
 

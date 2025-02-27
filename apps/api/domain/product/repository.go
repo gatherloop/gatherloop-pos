@@ -13,6 +13,6 @@ type Repository interface {
 	CreateProduct(ctx context.Context, product *Product) *base.Error
 	UpdateProductById(ctx context.Context, product *Product, id int64) *base.Error
 	DeleteProductById(ctx context.Context, id int64) *base.Error
-	CreateProductMaterial(ctx context.Context, productMaterialRequest ProductMaterialRequest, productId int64) *base.Error
-	DeleteProductMaterials(ctx context.Context, productId int64) *base.Error
+	CreateProductMaterials(ctx context.Context, productMaterial []ProductMaterial) *base.Error
+	DeleteProductMaterialById(ctx context.Context, id int64) *base.Error
 }

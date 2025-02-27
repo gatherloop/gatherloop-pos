@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 func NewProductRepository(db *gorm.DB) product.Repository {
@@ -77,19 +78,14 @@ func (repo Repository) DeleteProductById(ctx context.Context, id int64) *base.Er
 	return ToError(result.Error)
 }
 
-func (repo Repository) CreateProductMaterial(ctx context.Context, productMaterialRequest product.ProductMaterialRequest, productId int64) *base.Error {
+func (repo Repository) CreateProductMaterials(ctx context.Context, productMaterials []product.ProductMaterial) *base.Error {
 	db := GetDbFromCtx(ctx, repo.db)
-	productMaterial := product.ProductMaterial{
-		ProductId:  productId,
-		MaterialId: productMaterialRequest.MaterialId,
-		Amount:     productMaterialRequest.Amount,
-	}
-	result := db.Table("product_materials").Create(&productMaterial)
+	result := db.Clauses(clause.OnConflict{UpdateAll: true}).Table("product_materials").Create(&productMaterials)
 	return ToError(result.Error)
 }
 
-func (repo Repository) DeleteProductMaterials(ctx context.Context, productId int64) *base.Error {
+func (repo Repository) DeleteProductMaterialById(ctx context.Context, id int64) *base.Error {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Table("product_materials").Where("product_id = ?", productId).Delete(product.ProductMaterial{})
+	result := db.Table("product_materials").Where("id = ?", id).Delete(product.ProductMaterial{})
 	return ToError(result.Error)
 }
