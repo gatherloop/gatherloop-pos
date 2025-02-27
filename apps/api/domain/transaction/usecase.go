@@ -105,10 +105,6 @@ func (usecase Usecase) UpdateTransactionById(ctx context.Context, transactionReq
 			Total: 0,
 		}
 
-		if err := usecase.repository.DeleteTransactionItems(ctxWithTx, id); err != nil {
-			return err
-		}
-
 		var transactionItems []TransactionItem
 
 		for _, item := range transactionRequest.TransactionItems {
@@ -120,7 +116,14 @@ func (usecase Usecase) UpdateTransactionById(ctx context.Context, transactionReq
 			subTotal := (product.Price * item.Amount) - item.DiscountAmount
 			transaction.Total += subTotal
 
+			var transactionItemId int64
+
+			if item.Id != nil {
+				transactionItemId = *item.Id
+			}
+
 			transactionItem := TransactionItem{
+				Id:             transactionItemId,
 				TransactionId:  id,
 				ProductId:      item.ProductId,
 				Amount:         item.Amount,
@@ -134,6 +137,21 @@ func (usecase Usecase) UpdateTransactionById(ctx context.Context, transactionReq
 
 		if err := usecase.repository.CreateTransactionItems(ctxWithTx, transactionItems); err != nil {
 			return err
+		}
+
+		newIds := make(map[int64]bool)
+		for _, item := range transactionRequest.TransactionItems {
+			if item.Id != nil {
+				newIds[*item.Id] = true
+			}
+		}
+
+		for _, item := range existingTransaction.TransactionItems {
+			if !newIds[item.Id] {
+				if err := usecase.repository.DeleteTransactionItemById(ctxWithTx, item.Id); err != nil {
+					return err
+				}
+			}
 		}
 
 		return usecase.repository.UpdateTransactionById(ctxWithTx, &transaction, id)

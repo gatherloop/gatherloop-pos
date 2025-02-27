@@ -18,8 +18,6 @@ import {
   H4,
   Paragraph,
   ScrollView,
-  Separator,
-  SizableText,
   XStack,
   YStack,
 } from 'tamagui';

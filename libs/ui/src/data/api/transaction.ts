@@ -124,6 +124,7 @@ export class ApiTransactionRepository implements TransactionRepository {
     return transactionUpdateById(transactionId, {
       name: formValues.name,
       transactionItems: formValues.transactionItems.map((item) => ({
+        id: item.id,
         amount: item.amount,
         productId: item.product.id,
         discountAmount: item.discountAmount,

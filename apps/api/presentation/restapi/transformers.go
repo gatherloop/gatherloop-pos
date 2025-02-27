@@ -425,6 +425,7 @@ func ToTransactionRequest(transactionRequest apiContract.TransactionRequest) tra
 	transactionItemRequests := []transaction.TransactionItemRequest{}
 	for _, item := range transactionRequest.TransactionItems {
 		transactionItemRequests = append(transactionItemRequests, transaction.TransactionItemRequest{
+			Id:             item.Id,
 			ProductId:      item.ProductId,
 			Amount:         item.Amount,
 			DiscountAmount: item.DiscountAmount,

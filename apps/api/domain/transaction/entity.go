@@ -42,6 +42,7 @@ type TransactionRequest struct {
 }
 
 type TransactionItemRequest struct {
+	Id             *int64  `json:"id"`
 	ProductId      int64   `json:"productId"`
 	Amount         float32 `json:"amount"`
 	DiscountAmount float32 `json:"discountAmount"`

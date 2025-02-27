@@ -22,6 +22,7 @@ export type Transaction = {
 };
 
 type TransactionItemForm = {
+  id?: number;
   product: Product;
   amount: number;
   discountAmount: number;

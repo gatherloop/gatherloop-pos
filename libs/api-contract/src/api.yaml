@@ -1544,6 +1544,9 @@ components:
         - amount
         - discountAmount
       properties:
+        id:
+          type: integer
+          format: int64
         productId:
           type: integer
           format: int64

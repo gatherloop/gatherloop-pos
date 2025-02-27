@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 func NewTransactionRepository(db *gorm.DB) transaction.Repository {
@@ -92,15 +93,15 @@ func (repo Repository) DeleteTranscationById(ctx context.Context, id int64) *bas
 	return ToError(result.Error)
 }
 
-func (repo Repository) DeleteTransactionItems(ctx context.Context, transactionId int64) *base.Error {
+func (repo Repository) DeleteTransactionItemById(ctx context.Context, transactionItemId int64) *base.Error {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Table("transaction_items").Where("transaction_id = ?", transactionId).Delete(transaction.TransactionItem{})
+	result := db.Table("transaction_items").Where("id = ?", transactionItemId).Delete(transaction.TransactionItem{})
 	return ToError(result.Error)
 }
 
 func (repo Repository) CreateTransactionItems(ctx context.Context, transactionItems []transaction.TransactionItem) *base.Error {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Table("transaction_items").Create(transactionItems)
+	result := db.Clauses(clause.OnConflict{UpdateAll: true}).Table("transaction_items").Create(transactionItems)
 	return ToError(result.Error)
 }
 
