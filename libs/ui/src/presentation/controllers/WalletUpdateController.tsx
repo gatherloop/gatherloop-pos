@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { match, P } from 'ts-pattern';
-import { WalletUpdateProps } from '../components';
+import { WalletFormViewProps } from '../components';
 
 export const useWalletUpdateController = (usecase: WalletUpdateUsecase) => {
   const { state, dispatch } = useController(usecase);
@@ -33,10 +33,8 @@ export const useWalletUpdateController = (usecase: WalletUpdateUsecase) => {
   const isSubmitDisabled =
     state.type === 'submitting' || state.type === 'submitSuccess';
 
-  const onRetryButtonPress = () => dispatch({ type: 'FETCH' });
-
   const variant = match(state)
-    .returnType<WalletUpdateProps['variant']>()
+    .returnType<WalletFormViewProps['variant']>()
     .with({ type: P.union('idle', 'loading') }, () => ({
       type: 'loading',
     }))
@@ -48,7 +46,10 @@ export const useWalletUpdateController = (usecase: WalletUpdateUsecase) => {
         type: 'loaded',
       })
     )
-    .with({ type: 'error' }, () => ({ type: 'error' }))
+    .with({ type: 'error' }, () => ({
+      type: 'error',
+      onRetryButtonPress: () => dispatch({ type: 'FETCH' }),
+    }))
     .exhaustive();
 
   return {
@@ -57,7 +58,6 @@ export const useWalletUpdateController = (usecase: WalletUpdateUsecase) => {
     form,
     onSubmit,
     isSubmitDisabled,
-    onRetryButtonPress,
     variant,
   };
 };

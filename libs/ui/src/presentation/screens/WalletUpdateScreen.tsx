@@ -1,5 +1,5 @@
 import { ScrollView } from 'tamagui';
-import { WalletUpdate, Layout } from '../components';
+import { WalletFormView, Layout } from '../components';
 import { useRouter } from 'solito/router';
 import { useEffect } from 'react';
 import {
@@ -26,7 +26,7 @@ export const WalletUpdateScreen = (props: WalletUpdateScreenProps) => {
   return (
     <Layout {...authLogoutController} title="Update Wallet" showBackButton>
       <ScrollView>
-        <WalletUpdate {...controller} />
+        <WalletFormView {...controller} />
       </ScrollView>
     </Layout>
   );

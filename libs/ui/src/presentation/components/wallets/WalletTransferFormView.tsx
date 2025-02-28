@@ -3,19 +3,19 @@ import { WalletTransferForm } from '../../../domain';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
 import { Button, Form } from 'tamagui';
 
-export type WalletTransferCreateProps = {
+export type WalletTransferFormViewProps = {
   form: UseFormReturn<WalletTransferForm>;
   onSubmit: (values: WalletTransferForm) => void;
   walletSelectOptions: { label: string; value: number }[];
   isSubmitDisabled: boolean;
 };
 
-export const WalletTransferCreate = ({
+export const WalletTransferFormView = ({
   form,
   onSubmit,
   walletSelectOptions,
   isSubmitDisabled,
-}: WalletTransferCreateProps) => {
+}: WalletTransferFormViewProps) => {
   return (
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">

@@ -1,5 +1,5 @@
 import { ScrollView } from 'tamagui';
-import { MaterialCreate, Layout } from '../components';
+import { MaterialFormView, Layout } from '../components';
 import { useRouter } from 'solito/router';
 import { useEffect } from 'react';
 import {
@@ -15,17 +15,20 @@ export type MaterialCreateScreenProps = {
 
 export const MaterialCreateScreen = (props: MaterialCreateScreenProps) => {
   const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
-  const controller = useMaterialCreateController(props.materialCreateUsecase);
+  const materialCreateController = useMaterialCreateController(
+    props.materialCreateUsecase
+  );
   const router = useRouter();
 
   useEffect(() => {
-    if (controller.state.type === 'submitSuccess') router.push('/materials');
-  }, [controller.state.type, router]);
+    if (materialCreateController.state.type === 'submitSuccess')
+      router.push('/materials');
+  }, [materialCreateController.state.type, router]);
 
   return (
     <Layout {...authLogoutController} title="Create Material" showBackButton>
       <ScrollView>
-        <MaterialCreate {...controller} />
+        <MaterialFormView {...materialCreateController} />
       </ScrollView>
     </Layout>
   );

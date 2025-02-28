@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { match, P } from 'ts-pattern';
-import { CategoryUpdateProps } from '../components';
+import { CategoryFormViewProps } from '../components';
 
 export const useCategoryUpdateController = (usecase: CategoryUpdateUsecase) => {
   const { state, dispatch } = useController(usecase);
@@ -30,10 +30,8 @@ export const useCategoryUpdateController = (usecase: CategoryUpdateUsecase) => {
   const isSubmitDisabled =
     state.type === 'submitting' || state.type === 'submitSuccess';
 
-  const onRetryButtonPress = () => dispatch({ type: 'FETCH' });
-
   const variant = match(state)
-    .returnType<CategoryUpdateProps['variant']>()
+    .returnType<CategoryFormViewProps['variant']>()
     .with({ type: P.union('idle', 'loading') }, () => ({
       type: 'loading',
     }))
@@ -45,7 +43,10 @@ export const useCategoryUpdateController = (usecase: CategoryUpdateUsecase) => {
         type: 'loaded',
       })
     )
-    .with({ type: 'error' }, () => ({ type: 'error' }))
+    .with({ type: 'error' }, () => ({
+      type: 'error',
+      onRetryButtonPress: () => dispatch({ type: 'FETCH' }),
+    }))
     .exhaustive();
 
   return {
@@ -54,7 +55,6 @@ export const useCategoryUpdateController = (usecase: CategoryUpdateUsecase) => {
     form,
     onSubmit,
     isSubmitDisabled,
-    onRetryButtonPress,
     variant,
   };
 };

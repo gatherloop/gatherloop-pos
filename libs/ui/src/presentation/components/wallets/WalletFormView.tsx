@@ -1,20 +1,25 @@
-import { Field, InputText, InputNumber } from '../base';
+import { Field, InputText, InputNumber, LoadingView, ErrorView } from '../base';
 import { WalletForm } from '../../../domain';
 import { Button, Form } from 'tamagui';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
 
-export type WalletCreateProps = {
+export type WalletFormViewProps = {
+  variant:
+    | { type: 'loaded' }
+    | { type: 'loading' }
+    | { type: 'error'; onRetryButtonPress: () => void };
   form: UseFormReturn<WalletForm>;
   onSubmit: (values: WalletForm) => void;
   isSubmitDisabled: boolean;
 };
 
-export const WalletCreate = ({
+export const WalletFormView = ({
+  variant,
   form,
   onSubmit,
   isSubmitDisabled,
-}: WalletCreateProps) => {
-  return (
+}: WalletFormViewProps) => {
+  return variant.type === 'loaded' ? (
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
         <Field name="name" label="Name">
@@ -35,5 +40,13 @@ export const WalletCreate = ({
         </Button>
       </Form>
     </FormProvider>
-  );
+  ) : variant.type === 'loading' ? (
+    <LoadingView title="Fetching Wallet..." />
+  ) : variant.type === 'error' ? (
+    <ErrorView
+      title="Failed to Fetch Wallet"
+      subtitle="Please click the retry button to refetch data"
+      onRetryButtonPress={variant.onRetryButtonPress}
+    />
+  ) : null;
 };

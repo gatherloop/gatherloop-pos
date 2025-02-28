@@ -1,5 +1,5 @@
 import { ScrollView } from 'tamagui';
-import { Layout, CategoryCreate } from '../components';
+import { Layout, CategoryFormView } from '../components';
 import { useRouter } from 'solito/router';
 import { useEffect } from 'react';
 import {
@@ -29,7 +29,10 @@ export const CategoryCreateScreen = (props: CategoryCreateScreenProps) => {
   return (
     <Layout title="Create Category" showBackButton {...authLogoutController}>
       <ScrollView>
-        <CategoryCreate {...categoryCreateController} />
+        <CategoryFormView
+          {...categoryCreateController}
+          variant={{ type: 'loaded' }}
+        />
       </ScrollView>
     </Layout>
   );

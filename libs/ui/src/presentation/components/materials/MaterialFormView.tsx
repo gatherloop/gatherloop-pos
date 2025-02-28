@@ -3,17 +3,17 @@ import { MaterialForm } from '../../../domain';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
 import { Button, Form } from 'tamagui';
 
-export type MaterialUpdateProps = {
+export type MaterialFormViewProps = {
   form: UseFormReturn<MaterialForm>;
   onSubmit: (values: MaterialForm) => void;
   isSubmitDisabled: boolean;
 };
 
-export const MaterialUpdate = ({
+export const MaterialFormView = ({
   form,
   onSubmit,
   isSubmitDisabled,
-}: MaterialUpdateProps) => {
+}: MaterialFormViewProps) => {
   return (
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">

@@ -1,5 +1,5 @@
 import { ScrollView } from 'tamagui';
-import { WalletTransferCreate, Layout } from '../components';
+import { WalletTransferFormView, Layout } from '../components';
 import {
   useAuthLogoutController,
   useWalletTransferCreateController,
@@ -34,7 +34,7 @@ export const WalletTransferCreateScreen = ({
   return (
     <Layout {...authLogoutController} title="Create Transfer" showBackButton>
       <ScrollView>
-        <WalletTransferCreate {...controller} />
+        <WalletTransferFormView {...controller} />
       </ScrollView>
     </Layout>
   );

@@ -1,5 +1,5 @@
 import { ScrollView } from 'tamagui';
-import { Layout, CategoryUpdate } from '../components';
+import { Layout, CategoryFormView } from '../components';
 import { useRouter } from 'solito/router';
 import { useEffect } from 'react';
 import {
@@ -25,7 +25,7 @@ export const CategoryUpdateScreen = (props: CategoryUpdateScreenProps) => {
   return (
     <Layout {...authLogoutController} title="Update Category" showBackButton>
       <ScrollView>
-        <CategoryUpdate {...controller} />
+        <CategoryFormView {...controller} />
       </ScrollView>
     </Layout>
   );
