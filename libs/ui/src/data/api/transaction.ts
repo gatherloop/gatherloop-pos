@@ -225,6 +225,7 @@ const transformers = {
         name: item.product.name,
         price: item.product.price,
         materials: (item.product.materials ?? []).map((productMaterial) => ({
+          id: productMaterial.id,
           materialId: productMaterial.materialId,
           amount: productMaterial.amount,
           material: {
