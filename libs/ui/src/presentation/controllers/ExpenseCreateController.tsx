@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { match, P } from 'ts-pattern';
-import { ExpenseCreateProps } from '../components';
+import { ExpenseFormViewProps } from '../components';
 
 export const useExpenseCreateController = (usecase: ExpenseCreateUsecase) => {
   const { state, dispatch } = useController(usecase);
@@ -58,7 +58,7 @@ export const useExpenseCreateController = (usecase: ExpenseCreateUsecase) => {
   }));
 
   const variant = match(state)
-    .returnType<ExpenseCreateProps['variant']>()
+    .returnType<ExpenseFormViewProps['variant']>()
     .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))
     .with(
       { type: P.union('loaded', 'submitting', 'submitSuccess', 'submitError') },
