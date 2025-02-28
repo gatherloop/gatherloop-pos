@@ -1,5 +1,5 @@
 import { ScrollView } from 'tamagui';
-import { ExpenseCreate, Layout } from '../components';
+import { ExpenseFormView, Layout } from '../components';
 import {
   useAuthLogoutController,
   useExpenseCreateController,
@@ -28,7 +28,7 @@ export const ExpenseCreateScreen = (props: ExpenseCreateScreenProps) => {
   return (
     <Layout {...authLogoutController} title="Create Expense" showBackButton>
       <ScrollView>
-        <ExpenseCreate {...expenseCreateController} />
+        <ExpenseFormView {...expenseCreateController} />
       </ScrollView>
     </Layout>
   );

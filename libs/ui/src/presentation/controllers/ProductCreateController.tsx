@@ -2,7 +2,7 @@ import { ReactNode, useEffect, useState } from 'react';
 import { Material, ProductCreateUsecase, ProductForm } from '../../domain';
 import { useController } from './controller';
 import { useToastController } from '@tamagui/toast';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { UseFieldArrayReturn, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { match, P } from 'ts-pattern';
@@ -45,35 +45,40 @@ export const useProductCreateController = (usecase: ProductCreateUsecase) => {
     dispatch({ type: 'SUBMIT', values });
   };
 
-  const { fields, append, update, remove } = useFieldArray({
-    control: form.control,
-    name: 'materials',
-  });
-
-  const onAddMaterial = (newMaterial: Material) => {
-    const itemIndex = fields.findIndex(
+  const onAddMaterial = (
+    newMaterial: Material,
+    fieldArray: UseFieldArrayReturn<ProductForm, 'materials', 'key'>
+  ) => {
+    const itemIndex = fieldArray.fields.findIndex(
       ({ material }) => material.id === newMaterial.id
     );
     const isItemExist = itemIndex !== -1;
 
     if (isItemExist) {
-      update(itemIndex, {
-        ...fields[itemIndex],
-        amount: fields[itemIndex].amount + 1,
+      fieldArray.update(itemIndex, {
+        ...form.getValues('materials')[itemIndex],
+        amount: form.getValues('materials')[itemIndex].amount + 1,
       });
     } else {
-      append({ materialId: newMaterial.id, amount: 1, material: newMaterial });
+      fieldArray.append({
+        materialId: newMaterial.id,
+        amount: 1,
+        material: newMaterial,
+      });
     }
 
     setIsMaterialSheetOpen(false);
   };
 
-  const onRemoveMaterial = (newMaterial: Material) => {
-    const itemIndex = fields.findIndex(
+  const onRemoveMaterial = (
+    newMaterial: Material,
+    fieldArray: UseFieldArrayReturn<ProductForm, 'materials', 'key'>
+  ) => {
+    const itemIndex = fieldArray.fields.findIndex(
       ({ material }) => material.id === newMaterial.id
     );
     const isItemExist = itemIndex !== -1;
-    if (isItemExist) remove(itemIndex);
+    if (isItemExist) fieldArray.remove(itemIndex);
   };
 
   const isSubmitDisabled =

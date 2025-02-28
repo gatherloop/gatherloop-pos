@@ -1,5 +1,5 @@
 import { ScrollView } from 'tamagui';
-import { ProductCreate, Layout, MaterialList } from '../components';
+import { ProductFormView, Layout, MaterialList } from '../components';
 import { useRouter } from 'solito/router';
 import { useEffect } from 'react';
 import {
@@ -39,15 +39,17 @@ export const ProductCreateScreen = (props: ProductCreateScreenProps) => {
   return (
     <Layout {...authLogoutController} title="Create Product" showBackButton>
       <ScrollView>
-        <ProductCreate
+        <ProductFormView
           {...productCreateController}
-          MaterialList={
+          MaterialList={(fieldArray) => (
             <MaterialList
               {...materialListController}
-              onItemPress={productCreateController.onAddMaterial}
+              onItemPress={(material) =>
+                productCreateController.onAddMaterial(material, fieldArray)
+              }
               isSearchAutoFocus
             />
-          }
+          )}
         />
       </ScrollView>
     </Layout>

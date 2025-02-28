@@ -1,5 +1,5 @@
 import { ScrollView } from 'tamagui';
-import { ProductUpdate, Layout, MaterialList } from '../components';
+import { ProductFormView, Layout, MaterialList } from '../components';
 import { useRouter } from 'solito/router';
 import { useEffect } from 'react';
 import {
@@ -39,15 +39,17 @@ export const ProductUpdateScreen = (props: ProductUpdateScreenProps) => {
   return (
     <Layout {...authLogoutController} title="Update Product" showBackButton>
       <ScrollView>
-        <ProductUpdate
+        <ProductFormView
           {...productUpdateController}
-          MaterialList={
+          MaterialList={(fieldArray) => (
             <MaterialList
               {...materialListController}
-              onItemPress={productUpdateController.onAddMaterial}
+              onItemPress={(material) =>
+                productUpdateController.onAddMaterial(material, fieldArray)
+              }
               isSearchAutoFocus
             />
-          }
+          )}
         />
       </ScrollView>
     </Layout>

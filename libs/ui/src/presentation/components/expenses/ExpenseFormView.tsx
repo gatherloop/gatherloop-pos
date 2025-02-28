@@ -13,7 +13,7 @@ import { Plus, Trash } from '@tamagui/lucide-icons';
 import { ExpenseForm } from '../../../domain';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
 
-export type ExpenseUpdateProps = {
+export type ExpenseFormViewProps = {
   variant: { type: 'loading' } | { type: 'loaded' } | { type: 'error' };
   form: UseFormReturn<ExpenseForm>;
   onSubmit: (values: ExpenseForm) => void;
@@ -23,7 +23,7 @@ export type ExpenseUpdateProps = {
   onRetryButtonPress: () => void;
 };
 
-export const ExpenseUpdate = ({
+export const ExpenseFormView = ({
   variant,
   form,
   onSubmit,
@@ -31,7 +31,7 @@ export const ExpenseUpdate = ({
   walletSelectOptions,
   isSubmitDisabled,
   onRetryButtonPress,
-}: ExpenseUpdateProps) => {
+}: ExpenseFormViewProps) => {
   return variant.type === 'loaded' ? (
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
@@ -45,7 +45,7 @@ export const ExpenseUpdate = ({
             </Field>
           </XStack>
 
-          <FieldArray control={form.control} name="expenseItems">
+          <FieldArray control={form.control} name="expenseItems" keyName="key">
             {({ append, fields, remove }) => (
               <>
                 <XStack justifyContent="space-between">

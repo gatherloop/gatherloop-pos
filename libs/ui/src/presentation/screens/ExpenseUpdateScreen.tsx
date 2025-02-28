@@ -1,5 +1,5 @@
 import { ScrollView } from 'tamagui';
-import { ExpenseUpdate, Layout } from '../components';
+import { ExpenseFormView, Layout } from '../components';
 import {
   useAuthLogoutController,
   useExpenseUpdateController,
@@ -28,7 +28,7 @@ export const ExpenseUpdateScreen = (props: ExpenseUpdateScreenProps) => {
   return (
     <Layout {...authLogoutController} title="Update Expense" showBackButton>
       <ScrollView>
-        <ExpenseUpdate {...expenseCreateController} />
+        <ExpenseFormView {...expenseCreateController} />
       </ScrollView>
     </Layout>
   );

@@ -11,8 +11,10 @@ import {
   AuthLogoutUsecase,
   Product,
   ProductListUsecase,
+  TransactionForm,
   TransactionUpdateUsecase,
 } from '../../domain';
+import { UseFieldArrayReturn } from 'react-hook-form';
 
 export type TransactionUpdateScreenProps = {
   transactionUpdateUsecase: TransactionUpdateUsecase;
@@ -40,8 +42,11 @@ export const TransactionUpdateScreen = (
       router.push('/transactions');
   }, [transactionUpdateController.state.type, router]);
 
-  const onProductItemPress = (product: Product) => {
-    transactionUpdateController.onAddItem(product);
+  const onProductItemPress = (
+    product: Product,
+    fieldArray: UseFieldArrayReturn<TransactionForm, 'transactionItems', 'key'>
+  ) => {
+    transactionUpdateController.onAddItem(product, fieldArray);
     productListController.onSearchValueChange('');
   };
 
@@ -50,13 +55,13 @@ export const TransactionUpdateScreen = (
       <ScrollView>
         <TransactionFormView
           {...transactionUpdateController}
-          ProductList={
+          ProductList={(fieldArray) => (
             <ProductList
               {...productListController}
-              onItemPress={onProductItemPress}
+              onItemPress={(product) => onProductItemPress(product, fieldArray)}
               isSearchAutoFocus
             />
-          }
+          )}
         />
       </ScrollView>
     </Layout>

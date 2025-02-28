@@ -18,8 +18,10 @@ import {
   Product,
   ProductListUsecase,
   TransactionCreateUsecase,
+  TransactionForm,
   TransactionPayUsecase,
 } from '../../domain';
+import { UseFieldArrayReturn } from 'react-hook-form';
 
 export type TransactionCreateScreenProps = {
   transactionCreateUsecase: TransactionCreateUsecase;
@@ -74,8 +76,11 @@ export const TransactionCreateScreen = (
     router.push('/transactions');
   };
 
-  const onProductItemPress = (product: Product) => {
-    transactionCreateController.onAddItem(product);
+  const onProductItemPress = (
+    product: Product,
+    fieldArray: UseFieldArrayReturn<TransactionForm, 'transactionItems', 'key'>
+  ) => {
+    transactionCreateController.onAddItem(product, fieldArray);
     productListController.onSearchValueChange('');
   };
 
@@ -84,13 +89,13 @@ export const TransactionCreateScreen = (
       <ScrollView>
         <TransactionFormView
           {...transactionCreateController}
-          ProductList={
+          ProductList={(fieldArray) => (
             <ProductList
               {...productListController}
-              onItemPress={onProductItemPress}
+              onItemPress={(product) => onProductItemPress(product, fieldArray)}
               isSearchAutoFocus
             />
-          }
+          )}
         />
       </ScrollView>
       <TransactionPaymentAlert

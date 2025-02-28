@@ -11,7 +11,11 @@ import { H4 } from 'tamagui';
 import { Plus, Trash } from '@tamagui/lucide-icons';
 import { ProductListItem } from '../products';
 import { TransactionForm } from '../../../domain';
-import { FormProvider, UseFormReturn } from 'react-hook-form';
+import {
+  FormProvider,
+  UseFieldArrayReturn,
+  UseFormReturn,
+} from 'react-hook-form';
 import { ReactNode } from 'react';
 import { useKeyboardShortcut } from '../../../utils';
 
@@ -21,7 +25,9 @@ export type TransactionFormViewProps = {
   isProductSheetOpen: boolean;
   onProductSheetOpenChange: (isOpen: boolean) => void;
   isSubmitDisabled: boolean;
-  ProductList: ReactNode;
+  ProductList: (
+    fieldArray: UseFieldArrayReturn<TransactionForm, 'transactionItems', 'key'>
+  ) => ReactNode;
 };
 
 export const TransactionFormView = ({
@@ -43,8 +49,12 @@ export const TransactionFormView = ({
             <InputText />
           </Field>
           <YStack>
-            <FieldArray control={form.control} name="transactionItems">
-              {({ remove }) => (
+            <FieldArray
+              control={form.control}
+              name="transactionItems"
+              keyName="key"
+            >
+              {(fieldArray) => (
                 <YStack gap="$3">
                   <Sheet
                     isOpen={isProductSheetOpen}
@@ -57,7 +67,7 @@ export const TransactionFormView = ({
                           Product will automatically added to transaction
                         </Paragraph>
                       </YStack>
-                      {ProductList}
+                      {ProductList(fieldArray)}
                     </YStack>
                   </Sheet>
 
@@ -72,87 +82,83 @@ export const TransactionFormView = ({
                     />
                   </XStack>
                   <YStack gap="$3">
-                    {form
-                      .getValues('transactionItems')
-                      .map(({ product }, index) => {
-                        return (
-                          <XStack
-                            key={product.id}
-                            gap="$5"
-                            $lg={{ flexDirection: 'column' }}
-                          >
-                            <XStack gap="$3" flex={1} alignItems="center">
-                              <Button
-                                icon={Trash}
-                                size="$3"
-                                onPress={() => remove(index)}
-                                theme="red"
-                                color="$red8"
-                                circular
-                              />
-                              <ProductListItem
-                                flex={1}
-                                name={product.name}
-                                price={product.price}
-                                categoryName={product.category.name}
-                              />
-                            </XStack>
-
-                            <XStack
-                              gap="$5"
-                              justifyContent="flex-end"
-                              alignItems="flex-end"
-                            >
-                              <YStack gap="$3">
-                                <Paragraph textAlign="left">Price</Paragraph>
-                                <H4 textTransform="none" textAlign="left">
-                                  Rp. {product.price.toLocaleString('id')}
-                                </H4>
-                              </YStack>
-                              <YStack gap="$3">
-                                <Paragraph textAlign="center">Amount</Paragraph>
-                                <InputNumber
-                                  name={`transactionItems.${index}.amount`}
-                                  min={1}
-                                  maxWidth={50}
-                                />
-                              </YStack>
-
-                              <YStack gap="$3">
-                                <Paragraph textAlign="center">
-                                  Discount Amount
-                                </Paragraph>
-                                <InputNumber
-                                  name={`transactionItems.${index}.discountAmount`}
-                                  min={0}
-                                  maxWidth={150}
-                                  step={500}
-                                />
-                              </YStack>
-
-                              <YStack>
-                                <Paragraph textAlign="right">
-                                  Subtotal
-                                </Paragraph>
-                                <FieldWatch
-                                  control={form.control}
-                                  name={[`transactionItems.${index}`]}
-                                >
-                                  {([{ product, amount, discountAmount }]) => (
-                                    <H4 textTransform="none" textAlign="right">
-                                      Rp.{' '}
-                                      {(
-                                        product.price * amount -
-                                        discountAmount
-                                      ).toLocaleString('id')}
-                                    </H4>
-                                  )}
-                                </FieldWatch>
-                              </YStack>
-                            </XStack>
+                    {fieldArray.fields.map(({ product, key }, index) => {
+                      return (
+                        <XStack
+                          key={key}
+                          gap="$5"
+                          $lg={{ flexDirection: 'column' }}
+                        >
+                          <XStack gap="$3" flex={1} alignItems="center">
+                            <Button
+                              icon={Trash}
+                              size="$3"
+                              onPress={() => fieldArray.remove(index)}
+                              theme="red"
+                              color="$red8"
+                              circular
+                            />
+                            <ProductListItem
+                              flex={1}
+                              name={product.name}
+                              price={product.price}
+                              categoryName={product.category.name}
+                            />
                           </XStack>
-                        );
-                      })}
+
+                          <XStack
+                            gap="$5"
+                            justifyContent="flex-end"
+                            alignItems="flex-end"
+                          >
+                            <YStack gap="$3">
+                              <Paragraph textAlign="left">Price</Paragraph>
+                              <H4 textTransform="none" textAlign="left">
+                                Rp. {product.price.toLocaleString('id')}
+                              </H4>
+                            </YStack>
+                            <YStack gap="$3">
+                              <Paragraph textAlign="center">Amount</Paragraph>
+                              <InputNumber
+                                name={`transactionItems.${index}.amount`}
+                                min={1}
+                                maxWidth={50}
+                              />
+                            </YStack>
+
+                            <YStack gap="$3">
+                              <Paragraph textAlign="center">
+                                Discount Amount
+                              </Paragraph>
+                              <InputNumber
+                                name={`transactionItems.${index}.discountAmount`}
+                                min={0}
+                                maxWidth={150}
+                                step={500}
+                              />
+                            </YStack>
+
+                            <YStack>
+                              <Paragraph textAlign="right">Subtotal</Paragraph>
+                              <FieldWatch
+                                control={form.control}
+                                name={[`transactionItems.${index}`]}
+                              >
+                                {([{ product, amount, discountAmount }]) => (
+                                  <H4 textTransform="none" textAlign="right">
+                                    Rp.{' '}
+                                    {(
+                                      product.price * amount -
+                                      discountAmount
+                                    ).toLocaleString('id')}
+                                  </H4>
+                                )}
+                              </FieldWatch>
+                            </YStack>
+                          </XStack>
+                        </XStack>
+                      );
+                    })}
                   </YStack>
                 </YStack>
               )}

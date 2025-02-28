@@ -1,4 +1,17 @@
 import {
+  Field,
+  InputText,
+  InputNumber,
+  Select,
+  Sheet,
+  LoadingView,
+  ErrorView,
+  FieldWatch,
+  MarkdownEditor,
+  Tabs,
+  FieldArray,
+} from '../base';
+import {
   Button,
   Card,
   Form,
@@ -9,41 +22,47 @@ import {
   XStack,
   YStack,
 } from 'tamagui';
-import { Material, ProductForm } from '../../../domain';
-import { FormProvider, UseFormReturn } from 'react-hook-form';
-import {
-  Field,
-  FieldWatch,
-  InputNumber,
-  InputText,
-  Select,
-  Sheet,
-} from '../base';
-import { MaterialList, MaterialListItem } from '../materials';
 import { Plus, Trash } from '@tamagui/lucide-icons';
+import { MaterialListItem } from '../materials';
+import { Material, ProductForm } from '../../../domain';
+import {
+  FormProvider,
+  UseFieldArrayReturn,
+  UseFormReturn,
+} from 'react-hook-form';
+import { ReactNode } from 'react';
 
-export type ProductFormProps = {
+export type ProductFormViewProps = {
+  variant: { type: 'loaded' } | { type: 'loading' } | { type: 'error' };
+  onRetryButtonPress: () => void;
   form: UseFormReturn<ProductForm>;
   onSubmit: (values: ProductForm) => void;
   categorySelectOptions: { label: string; value: number }[];
   isMaterialSheetOpen: boolean;
   onMaterialSheetOpenChange: (open: boolean) => void;
-  onAddMaterial: (material: Material) => void;
-  onRemoveMaterial: (material: Material) => void;
+  onRemoveMaterial: (
+    material: Material,
+    fieldArray: UseFieldArrayReturn<ProductForm, 'materials', 'key'>
+  ) => void;
   isSubmitDisabled: boolean;
+  MaterialList: (
+    fieldArray: UseFieldArrayReturn<ProductForm, 'materials', 'key'>
+  ) => ReactNode;
 };
 
 export const ProductFormView = ({
+  variant,
+  onRetryButtonPress,
   categorySelectOptions,
-  form,
   isMaterialSheetOpen,
   isSubmitDisabled,
-  onAddMaterial,
   onMaterialSheetOpenChange,
+  form,
   onRemoveMaterial,
   onSubmit,
-}: ProductFormProps) => {
-  return (
+  MaterialList,
+}: ProductFormViewProps) => {
+  return variant.type === 'loaded' ? (
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
         <Card>
@@ -61,23 +80,6 @@ export const ProductFormView = ({
             </XStack>
           </Card.Header>
         </Card>
-
-        <Sheet
-          isOpen={isMaterialSheetOpen}
-          onOpenChange={onMaterialSheetOpenChange}
-        >
-          <YStack gap="$3" flex={1} padding="$5">
-            <YStack>
-              <H4 textAlign="center">Choose Materials</H4>
-              <Paragraph textAlign="center">
-                Material will automatically added to product
-              </Paragraph>
-            </YStack>
-            <ScrollView flex={1}>
-              <MaterialList onItemPress={onAddMaterial} isSearchAutoFocus />
-            </ScrollView>
-          </YStack>
-        </Sheet>
 
         <XStack gap="$3">
           <Card>
@@ -124,72 +126,127 @@ export const ProductFormView = ({
           </Card>
         </XStack>
 
-        <XStack justifyContent="space-between">
-          <H3>Materials</H3>
-          <Button
-            icon={Plus}
-            variant="outlined"
-            circular
-            size="$3"
-            onPress={() => onMaterialSheetOpenChange(true)}
-          />
-        </XStack>
-
-        <YStack gap="$3">
-          {form.getValues('materials').map(({ material }, index) => (
-            <XStack
-              gap="$3"
-              key={material.id}
-              $sm={{ flexDirection: 'column' }}
-            >
-              <MaterialListItem
-                name={material.name}
-                price={material.price}
-                unit={material.unit}
-                flex={1}
-              />
-              <YStack alignItems="flex-end" gap="$3">
-                <YStack>
-                  <Paragraph>Subtotal</Paragraph>
-                  <FieldWatch
+        <Tabs
+          tabs={[
+            {
+              value: 'materials',
+              label: 'Materials',
+              content: (
+                <YStack gap="$3">
+                  <XStack justifyContent="space-between">
+                    <H3>Materials</H3>
+                    <Button
+                      icon={Plus}
+                      variant="outlined"
+                      circular
+                      size="$3"
+                      onPress={() => onMaterialSheetOpenChange(true)}
+                    />
+                  </XStack>
+                  <FieldArray
                     control={form.control}
-                    name={[`materials.${index}.amount`]}
+                    name="materials"
+                    keyName="key"
                   >
-                    {([amount]) => (
-                      <H4>
-                        Rp. {(material.price * amount).toLocaleString('id')}
-                      </H4>
-                    )}
-                  </FieldWatch>
-                </YStack>
+                    {(fieldArray) => (
+                      <>
+                        <Sheet
+                          isOpen={isMaterialSheetOpen}
+                          onOpenChange={onMaterialSheetOpenChange}
+                        >
+                          <YStack gap="$3" flex={1} padding="$5">
+                            <YStack>
+                              <H4 textAlign="center">Choose Materials</H4>
+                              <Paragraph textAlign="center">
+                                Material will automatically added to product
+                              </Paragraph>
+                            </YStack>
+                            <ScrollView flex={1}>
+                              {MaterialList(fieldArray)}
+                            </ScrollView>
+                          </YStack>
+                        </Sheet>
+                        {fieldArray.fields.map(({ material, key }, index) => (
+                          <XStack
+                            gap="$3"
+                            key={key}
+                            $sm={{ flexDirection: 'column' }}
+                          >
+                            <MaterialListItem
+                              name={material.name}
+                              price={material.price}
+                              unit={material.unit}
+                              flex={1}
+                            />
+                            <YStack alignItems="flex-end" gap="$3">
+                              <YStack>
+                                <Paragraph>Subtotal</Paragraph>
+                                <FieldWatch
+                                  control={form.control}
+                                  name={[`materials.${index}.amount`]}
+                                >
+                                  {([amount]) => (
+                                    <H4>
+                                      Rp.{' '}
+                                      {(material.price * amount).toLocaleString(
+                                        'id'
+                                      )}
+                                    </H4>
+                                  )}
+                                </FieldWatch>
+                              </YStack>
 
-                <XStack alignItems="center" gap="$3">
-                  <Button
-                    icon={Trash}
-                    circular
-                    size="$2"
-                    theme="red"
-                    color="$red8"
-                    onPress={() => onRemoveMaterial(material)}
-                  />
-                  <InputNumber
-                    name={`materials.${index}.amount`}
-                    maxWidth={100}
-                    fractionDigit={2}
-                  />
-                </XStack>
-              </YStack>
-            </XStack>
-          ))}
-          <Button
-            disabled={isSubmitDisabled}
-            onPress={form.handleSubmit(onSubmit)}
-            theme="blue"
-          >
-            Submit
-          </Button>
-        </YStack>
+                              <XStack alignItems="center" gap="$3">
+                                <Button
+                                  icon={Trash}
+                                  circular
+                                  size="$2"
+                                  theme="red"
+                                  color="$red8"
+                                  onPress={() =>
+                                    onRemoveMaterial(material, fieldArray)
+                                  }
+                                />
+                                <InputNumber
+                                  name={`materials.${index}.amount`}
+                                  maxWidth={100}
+                                  fractionDigit={2}
+                                />
+                              </XStack>
+                            </YStack>
+                          </XStack>
+                        ))}
+                      </>
+                    )}
+                  </FieldArray>
+                </YStack>
+              ),
+            },
+            {
+              value: 'description',
+              label: 'Description',
+              content: <MarkdownEditor name="description" defaultMode="edit" />,
+            },
+          ]}
+          defaultValue="materials"
+        />
+
+        <Button
+          disabled={isSubmitDisabled}
+          onPress={form.handleSubmit(onSubmit)}
+          theme="blue"
+        >
+          Submit
+        </Button>
       </Form>
     </FormProvider>
-  );
+  ) : variant.type === 'loading' ? (
+    <LoadingView title="Fetching Product..." />
+  ) : variant.type === 'error' ? (
+    <ErrorView
+      title="Failed to Fetch Product"
+      subtitle="Please click the retry button to refetch data"
+      onRetryButtonPress={onRetryButtonPress}
+    />
+  ) : null;
 };

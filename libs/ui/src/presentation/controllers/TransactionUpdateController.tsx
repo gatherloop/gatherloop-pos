@@ -6,7 +6,7 @@ import {
 } from '../../domain';
 import { useController } from './controller';
 import { useToastController } from '@tamagui/toast';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { UseFieldArrayReturn, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
@@ -51,23 +51,21 @@ export const useTransactionUpdateController = (
   const onSubmit = (values: TransactionForm) =>
     dispatch({ type: 'SUBMIT', values });
 
-  const { append, update, fields } = useFieldArray({
-    control: form.control,
-    name: 'transactionItems',
-  });
-
-  const onAddItem = (newProduct: Product) => {
-    const itemIndex = fields.findIndex(
+  const onAddItem = (
+    newProduct: Product,
+    fieldArray: UseFieldArrayReturn<TransactionForm, 'transactionItems', 'key'>
+  ) => {
+    const itemIndex = fieldArray.fields.findIndex(
       ({ product }) => newProduct.id === product.id
     );
     const isItemExist = itemIndex !== -1;
     if (isItemExist) {
-      update(itemIndex, {
-        ...fields[itemIndex],
-        amount: fields[itemIndex].amount + 1,
+      fieldArray.update(itemIndex, {
+        ...form.getValues('transactionItems')[itemIndex],
+        amount: form.getValues('transactionItems')[itemIndex].amount + 1,
       });
     } else {
-      append({ amount: 1, product: newProduct, discountAmount: 0 });
+      fieldArray.append({ amount: 1, product: newProduct, discountAmount: 0 });
     }
 
     setIsProductSheetOpen(false);
