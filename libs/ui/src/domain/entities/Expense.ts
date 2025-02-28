@@ -2,6 +2,7 @@ import { Budget } from './Budget';
 import { Wallet } from './Wallet';
 
 export type ExpenseItem = {
+  id: number;
   name: string;
   unit: string;
   price: number;
@@ -18,6 +19,7 @@ export type Expense = {
 };
 
 export type ExpenseItemForm = {
+  id?: number;
   name: string;
   unit: string;
   price: number;

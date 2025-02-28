@@ -29,6 +29,7 @@ type Expense struct {
 }
 
 type ExpenseItemRequest struct {
+	Id     *int64  `json:"id"`
 	Name   string  `json:"name"`
 	Unit   string  `json:"unit"`
 	Price  float32 `json:"price"`

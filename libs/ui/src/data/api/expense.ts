@@ -94,6 +94,7 @@ const transformers = {
       percentage: expense.budget.percentage,
     },
     expenseItems: expense.expenseItems.map((item) => ({
+      id: item.id,
       amount: item.amount,
       name: item.name,
       price: item.price,

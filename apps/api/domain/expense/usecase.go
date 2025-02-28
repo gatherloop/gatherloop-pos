@@ -128,17 +128,19 @@ func (usecase Usecase) UpdateExpenseById(ctx context.Context, expenseRequest Exp
 			BudgetId:  expenseRequest.BudgetId,
 		}
 
-		if err := usecase.repository.DeleteExpenseItems(ctxWithTx, id); err != nil {
-			return err
-		}
-
 		var expenseItems []ExpenseItem
 
 		for _, item := range expenseRequest.ExpenseItems {
 			subTotal := item.Price * item.Amount
 			expense.Total += subTotal
 
+			var expenseItemId int64
+			if item.Id != nil {
+				expenseItemId = *item.Id
+			}
+
 			expenseItem := ExpenseItem{
+				Id:        expenseItemId,
 				Name:      item.Name,
 				Unit:      item.Unit,
 				Price:     item.Price,
@@ -152,6 +154,21 @@ func (usecase Usecase) UpdateExpenseById(ctx context.Context, expenseRequest Exp
 
 		if err := usecase.repository.CreateExpenseItems(ctxWithTx, expenseItems); err != nil {
 			return err
+		}
+
+		newIds := make(map[int64]bool)
+		for _, expenseRequestItem := range expenseRequest.ExpenseItems {
+			if expenseRequestItem.Id != nil {
+				newIds[*expenseRequestItem.Id] = true
+			}
+		}
+
+		for _, existingExpenseItem := range existingExpense.ExpenseItems {
+			if !newIds[existingExpenseItem.Id] {
+				if err := usecase.repository.DeleteExpenseItemById(ctxWithTx, existingExpenseItem.Id); err != nil {
+					return err
+				}
+			}
 		}
 
 		expenseBudget, err = usecase.budgetRepository.GetBudgetById(ctxWithTx, expense.BudgetId)

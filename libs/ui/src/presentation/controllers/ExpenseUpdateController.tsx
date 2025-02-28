@@ -35,7 +35,9 @@ export const useExpenseUpdateController = (usecase: ExpenseUpdateUsecase) => {
             )
           )
           .min(1),
-      })
+      }),
+      {},
+      { raw: true }
     ),
   });
 

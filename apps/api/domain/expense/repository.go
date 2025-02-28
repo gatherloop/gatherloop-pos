@@ -12,6 +12,6 @@ type Repository interface {
 	CreateExpense(ctx context.Context, expense *Expense) *base.Error
 	UpdateExpenseById(ctx context.Context, expense *Expense, id int64) *base.Error
 	DeleteExpenseById(ctx context.Context, id int64) *base.Error
-	DeleteExpenseItems(ctx context.Context, expenseId int64) *base.Error
 	CreateExpenseItems(ctx context.Context, expenseItems []ExpenseItem) *base.Error
+	DeleteExpenseItemById(ctx context.Context, id int64) *base.Error
 }

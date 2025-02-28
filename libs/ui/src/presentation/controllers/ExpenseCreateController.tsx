@@ -35,7 +35,9 @@ export const useExpenseCreateController = (usecase: ExpenseCreateUsecase) => {
             )
           )
           .min(1),
-      })
+      }),
+      {},
+      { raw: true }
     ),
   });
 

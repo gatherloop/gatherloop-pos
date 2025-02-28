@@ -227,6 +227,7 @@ func ToExpenseRequest(expenseRequest apiContract.ExpenseRequest) expense.Expense
 	expenseItemRequests := []expense.ExpenseItemRequest{}
 	for _, expenseItem := range expenseRequest.ExpenseItems {
 		expenseItemRequests = append(expenseItemRequests, expense.ExpenseItemRequest{
+			Id:     expenseItem.Id,
 			Name:   expenseItem.Name,
 			Unit:   expenseItem.Unit,
 			Price:  expenseItem.Price,
