@@ -323,11 +323,24 @@ func ToApiProductMaterial(productMaterial product.ProductMaterial) apiContract.P
 }
 
 func ToApiProductVariant(productVariant product.ProductVariant) apiContract.ProductVariant {
+
 	apiProductVariantOptions := []apiContract.ProductVariantOption{}
 	for _, productVariantOption := range productVariant.Options {
+
+		materials := []apiContract.ProductVariantOptionMaterial{}
+		for _, material := range productVariantOption.Materials {
+			materials = append(materials, apiContract.ProductVariantOptionMaterial{
+				Id:         material.Id,
+				MaterialId: material.MaterialId,
+				Material:   ToApiMaterial(material.Material),
+				Amount:     material.Amount,
+			})
+		}
+
 		apiProductVariantOptions = append(apiProductVariantOptions, apiContract.ProductVariantOption{
-			Id:   productVariantOption.Id,
-			Name: productVariantOption.Name,
+			Id:        productVariantOption.Id,
+			Name:      productVariantOption.Name,
+			Materials: materials,
 		})
 	}
 
