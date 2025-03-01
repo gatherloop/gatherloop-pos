@@ -96,8 +96,20 @@ func (repo Repository) CreateProductVariants(ctx context.Context, productVariant
 	return ToError(result.Error)
 }
 
+func (repo Repository) DeleteProductVariantById(ctx context.Context, id int64) *base.Error {
+	db := GetDbFromCtx(ctx, repo.db)
+	result := db.Table("product_variants").Where("id = ?", id).Delete(product.ProductVariant{})
+	return ToError(result.Error)
+}
+
 func (repo Repository) CreateProductVariantOptions(ctx context.Context, productVariantOptions []product.ProductVariantOption) *base.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	result := db.Clauses(clause.OnConflict{UpdateAll: true}).Table("product_variant_options").Create(&productVariantOptions)
+	return ToError(result.Error)
+}
+
+func (repo Repository) DeleteProductVariantOptionById(ctx context.Context, id int64) *base.Error {
+	db := GetDbFromCtx(ctx, repo.db)
+	result := db.Table("product_variant_options").Where("id = ?", id).Delete(product.ProductVariantOption{})
 	return ToError(result.Error)
 }

@@ -16,5 +16,7 @@ type Repository interface {
 	CreateProductMaterials(ctx context.Context, productMaterials []ProductMaterial) *base.Error
 	DeleteProductMaterialById(ctx context.Context, id int64) *base.Error
 	CreateProductVariants(ctx context.Context, productVariants []ProductVariant) *base.Error
+	DeleteProductVariantById(ctx context.Context, id int64) *base.Error
 	CreateProductVariantOptions(ctx context.Context, productVariantOptions []ProductVariantOption) *base.Error
+	DeleteProductVariantOptionById(ctx context.Context, id int64) *base.Error
 }

@@ -128,6 +128,73 @@ func (usecase Usecase) UpdateProductById(ctx context.Context, productRequest Pro
 			}
 		}
 
+		var productVariants []ProductVariant
+		for _, productVariantRequest := range productRequest.Variants {
+			var productVariantId int64
+			if productVariantRequest.Id != nil {
+				productVariantId = *productVariantRequest.Id
+			}
+			productVariants = append(productVariants, ProductVariant{
+				Id:        productVariantId,
+				ProductId: id,
+				Name:      productVariantRequest.Name,
+			})
+		}
+		if err := usecase.repository.CreateProductVariants(ctxWithTx, productVariants); err != nil {
+			return err
+		}
+
+		newProductVariantIds := make(map[int64]bool)
+		for _, productRequestVariant := range productRequest.Variants {
+			if productRequestVariant.Id != nil {
+				newProductVariantIds[*productRequestVariant.Id] = true
+			}
+		}
+		for _, existingProductVariant := range existingProduct.Variants {
+			if !newProductVariantIds[existingProductVariant.Id] {
+				if err := usecase.repository.DeleteProductVariantById(ctxWithTx, existingProductVariant.Id); err != nil {
+					return err
+				}
+			}
+		}
+
+		var productVariantOptions []ProductVariantOption
+		for index, productVariant := range productVariants {
+			for _, productVariantOption := range productRequest.Variants[index].Options {
+				var productVariantOptionId int64
+				if productVariantOption.Id != nil {
+					productVariantOptionId = *productVariantOption.Id
+				}
+
+				productVariantOptions = append(productVariantOptions, ProductVariantOption{
+					Id:               productVariantOptionId,
+					ProductVariantId: productVariant.Id,
+					Name:             productVariantOption.Name,
+				})
+			}
+		}
+		if err := usecase.repository.CreateProductVariantOptions(ctxWithTx, productVariantOptions); err != nil {
+			return err
+		}
+
+		newProductVariantOptionIds := make(map[int64]bool)
+		for _, productRequestVariant := range productRequest.Variants {
+			for _, productVariantOption := range productRequestVariant.Options {
+				if productVariantOption.Id != nil {
+					newProductVariantOptionIds[*productVariantOption.Id] = true
+				}
+			}
+		}
+		for _, existingProductVariant := range existingProduct.Variants {
+			for _, existingProductVariantOption := range existingProductVariant.Options {
+				if !newProductVariantOptionIds[existingProductVariantOption.Id] {
+					if err := usecase.repository.DeleteProductVariantOptionById(ctxWithTx, existingProductVariantOption.Id); err != nil {
+						return err
+					}
+				}
+			}
+		}
+
 		product := Product{
 			Name:        productRequest.Name,
 			CategoryId:  productRequest.CategoryId,
