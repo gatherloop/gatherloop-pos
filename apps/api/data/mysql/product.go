@@ -55,7 +55,7 @@ func (repo Repository) GetProductListTotal(ctx context.Context, query string) (i
 func (repo Repository) GetProductById(ctx context.Context, id int64) (product.Product, *base.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	var product product.Product
-	result := db.Table("products").Preload("Category").Preload("Materials").Preload("Materials.Material").Preload("Variants").Where("id = ?", id).First(&product)
+	result := db.Table("products").Preload("Category").Preload("Materials").Preload("Materials.Material").Preload("Variants").Preload("Variants.Options").Where("id = ?", id).First(&product)
 	return product, ToError(result.Error)
 }
 
