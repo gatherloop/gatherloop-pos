@@ -36,7 +36,6 @@ func (usecase Usecase) CreateProduct(ctx context.Context, productRequest Product
 		product := Product{
 			Name:        productRequest.Name,
 			CategoryId:  productRequest.CategoryId,
-			Price:       productRequest.Price,
 			Description: productRequest.Description,
 		}
 
@@ -108,7 +107,6 @@ func (usecase Usecase) UpdateProductById(ctx context.Context, productRequest Pro
 		product := Product{
 			Name:        productRequest.Name,
 			CategoryId:  productRequest.CategoryId,
-			Price:       productRequest.Price,
 			Description: productRequest.Description,
 		}
 
