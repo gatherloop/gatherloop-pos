@@ -54,10 +54,34 @@ func (usecase Usecase) CreateProduct(ctx context.Context, productRequest Product
 
 			productMaterials = append(productMaterials, productMaterial)
 		}
-
 		if err := usecase.repository.CreateProductMaterials(ctxWithTx, productMaterials); err != nil {
 			return err
 		}
+
+		var productVariants []ProductVariant
+		for _, productVariantRequest := range productRequest.Variants {
+			productVariants = append(productVariants, ProductVariant{
+				ProductId: product.Id,
+				Name:      productVariantRequest.Name,
+			})
+		}
+		if err := usecase.repository.CreateProductVariants(ctxWithTx, productVariants); err != nil {
+			return err
+		}
+
+		var productVariantOptions []ProductVariantOption
+		for index, productVariant := range productVariants {
+			for _, productVariantOption := range productRequest.Variants[index].Options {
+				productVariantOptions = append(productVariantOptions, ProductVariantOption{
+					ProductVariantId: productVariant.Id,
+					Name:             productVariantOption.Name,
+				})
+			}
+		}
+		if err := usecase.repository.CreateProductVariantOptions(ctxWithTx, productVariantOptions); err != nil {
+			return err
+		}
+
 		return nil
 	})
 }

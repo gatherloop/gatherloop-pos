@@ -365,12 +365,30 @@ func ToApiProduct(product product.Product) apiContract.Product {
 }
 
 func ToProductRequest(productRequest apiContract.ProductRequest) product.ProductRequest {
-	productMaterials := []product.ProductMaterialRequest{}
-	for _, productMaterial := range productRequest.Materials {
-		productMaterials = append(productMaterials, product.ProductMaterialRequest{
-			Id:         productMaterial.Id,
-			MaterialId: productMaterial.MaterialId,
-			Amount:     productMaterial.Amount,
+	productMaterialRequests := []product.ProductMaterialRequest{}
+	for _, productMaterialRequest := range productRequest.Materials {
+		productMaterialRequests = append(productMaterialRequests, product.ProductMaterialRequest{
+			Id:         productMaterialRequest.Id,
+			MaterialId: productMaterialRequest.MaterialId,
+			Amount:     productMaterialRequest.Amount,
+		})
+	}
+
+	productVariantRequests := []product.ProductVariantRequest{}
+	for _, productVariantRequest := range productRequest.Variants {
+
+		productVariantOptionRequests := []product.ProductVariantOptionRequest{}
+		for _, productVariantOptionRequest := range productVariantRequest.Options {
+			productVariantOptionRequests = append(productVariantOptionRequests, product.ProductVariantOptionRequest{
+				Id:   productVariantOptionRequest.Id,
+				Name: productVariantOptionRequest.Name,
+			})
+		}
+
+		productVariantRequests = append(productVariantRequests, product.ProductVariantRequest{
+			Id:      productVariantRequest.Id,
+			Name:    productVariantRequest.Name,
+			Options: productVariantOptionRequests,
 		})
 	}
 
@@ -378,8 +396,9 @@ func ToProductRequest(productRequest apiContract.ProductRequest) product.Product
 		Name:        productRequest.Name,
 		Price:       productRequest.Price,
 		CategoryId:  productRequest.CategoryId,
-		Materials:   productMaterials,
+		Materials:   productMaterialRequests,
 		Description: productRequest.Description,
+		Variants:    productVariantRequests,
 	}
 }
 

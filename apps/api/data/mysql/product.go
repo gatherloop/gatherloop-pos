@@ -89,3 +89,15 @@ func (repo Repository) DeleteProductMaterialById(ctx context.Context, id int64) 
 	result := db.Table("product_materials").Where("id = ?", id).Delete(product.ProductMaterial{})
 	return ToError(result.Error)
 }
+
+func (repo Repository) CreateProductVariants(ctx context.Context, productVariants []product.ProductVariant) *base.Error {
+	db := GetDbFromCtx(ctx, repo.db)
+	result := db.Clauses(clause.OnConflict{UpdateAll: true}).Table("product_variants").Create(&productVariants)
+	return ToError(result.Error)
+}
+
+func (repo Repository) CreateProductVariantOptions(ctx context.Context, productVariantOptions []product.ProductVariantOption) *base.Error {
+	db := GetDbFromCtx(ctx, repo.db)
+	result := db.Clauses(clause.OnConflict{UpdateAll: true}).Table("product_variant_options").Create(&productVariantOptions)
+	return ToError(result.Error)
+}

@@ -25,6 +25,7 @@ type ProductRequest struct {
 	Price       float32                  `json:"price"`
 	Description *string                  `json:"description"`
 	Materials   []ProductMaterialRequest `json:"materials"`
+	Variants    []ProductVariantRequest  `json:"variants"`
 }
 
 type ProductMaterial struct {
@@ -51,9 +52,9 @@ type ProductVariant struct {
 }
 
 type ProductVariantRequest struct {
-	Id      *int64                 `json:"id"`
-	Name    string                 `json:"name"`
-	Options []ProductVariantOption `json:"options"`
+	Id      *int64                        `json:"id"`
+	Name    string                        `json:"name"`
+	Options []ProductVariantOptionRequest `json:"options"`
 }
 
 type ProductVariantOption struct {
