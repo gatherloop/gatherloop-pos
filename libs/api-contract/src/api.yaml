@@ -1469,17 +1469,12 @@ components:
       required:
         - id
         - name
-        - materials
       properties:
         id:
           type: integer
           format: int64
         name:
           type: string
-        materials:
-          type: array
-          items:
-            $ref: '#/components/schemas/ProductVariantOptionMaterial'
     ProductVariantOptionRequest:
       type: object
       required:
@@ -1490,24 +1485,6 @@ components:
           format: int64
         name:
           type: string
-    ProductVariantOptionMaterial:
-      type: object
-      required:
-        - id
-        - materialId
-        - material
-        - amount
-      properties:
-        id:
-          type: integer
-          format: int64
-        materialId:
-          type: integer
-          format: int64
-        material:
-          $ref: '#/components/schemas/Material'
-        amount:
-          type: number
     Budget:
       type: object
       required:

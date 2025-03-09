@@ -58,21 +58,12 @@ type ProductVariantRequest struct {
 }
 
 type ProductVariantOption struct {
-	Id               int64                          `json:"id"`
-	Name             string                         `json:"name"`
-	ProductVariantId int64                          `json:"productVariantId"`
-	Materials        []ProductVariantOptionMaterial `json:"materials"`
+	Id               int64  `json:"id"`
+	Name             string `json:"name"`
+	ProductVariantId int64  `json:"productVariantId"`
 }
 
 type ProductVariantOptionRequest struct {
 	Id   *int64 `json:"id"`
 	Name string `json:"name"`
-}
-
-type ProductVariantOptionMaterial struct {
-	Id                     int64             `json:"id"`
-	MaterialId             int64             `json:"materialId"`
-	Material               material.Material `json:"material"`
-	ProductVariantOptionId int64             `json:"productVariantOptionId"`
-	Amount                 float32           `json:"amount"`
 }

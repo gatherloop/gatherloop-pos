@@ -19,7 +19,7 @@ func (repo Repository) GetProductList(ctx context.Context, query string, sortBy 
 	db := GetDbFromCtx(ctx, repo.db)
 
 	var products []product.Product
-	result := db.Table("products").Preload("Category").Preload("Materials").Preload("Materials.Material").Preload("Variants").Preload("Variants.Options").Preload("Variants.Options.Materials").Preload("Variants.Options.Materials.Material").Where("deleted_at", nil).Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
+	result := db.Table("products").Preload("Category").Preload("Materials").Preload("Materials.Material").Preload("Variants").Preload("Variants.Options").Where("deleted_at", nil).Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
 
 	if query != "" {
 		result = result.Where("name LIKE ?", "%"+query+"%")
@@ -55,7 +55,7 @@ func (repo Repository) GetProductListTotal(ctx context.Context, query string) (i
 func (repo Repository) GetProductById(ctx context.Context, id int64) (product.Product, *base.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	var product product.Product
-	result := db.Table("products").Preload("Category").Preload("Materials").Preload("Materials.Material").Preload("Variants").Preload("Variants.Options").Preload("Variants.Options.Materials").Preload("Variants.Options.Materials.Material").Where("id = ?", id).First(&product)
+	result := db.Table("products").Preload("Category").Preload("Materials").Preload("Materials.Material").Preload("Variants").Preload("Variants.Options").Where("id = ?", id).First(&product)
 	return product, ToError(result.Error)
 }
 
