@@ -78,9 +78,9 @@ func (repo Repository) DeleteProductById(ctx context.Context, id int64) *base.Er
 	return ToError(result.Error)
 }
 
-func (repo Repository) CreateProductMaterials(ctx context.Context, productMaterials []product.ProductMaterial) *base.Error {
+func (repo Repository) CreateProductMaterial(ctx context.Context, productMaterial *product.ProductMaterial) *base.Error {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Clauses(clause.OnConflict{UpdateAll: true}).Table("product_materials").Create(&productMaterials)
+	result := db.Clauses(clause.OnConflict{UpdateAll: true}).Table("product_materials").Create(productMaterial)
 	return ToError(result.Error)
 }
 
@@ -90,9 +90,9 @@ func (repo Repository) DeleteProductMaterialById(ctx context.Context, id int64) 
 	return ToError(result.Error)
 }
 
-func (repo Repository) CreateProductVariants(ctx context.Context, productVariants []product.ProductVariant) *base.Error {
+func (repo Repository) CreateProductVariant(ctx context.Context, productVariant *product.ProductVariant) *base.Error {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Clauses(clause.OnConflict{UpdateAll: true}).Table("product_variants").Create(&productVariants)
+	result := db.Clauses(clause.OnConflict{UpdateAll: true}).Table("product_variants").Create(productVariant)
 	return ToError(result.Error)
 }
 
@@ -102,9 +102,9 @@ func (repo Repository) DeleteProductVariantById(ctx context.Context, id int64) *
 	return ToError(result.Error)
 }
 
-func (repo Repository) CreateProductVariantOptions(ctx context.Context, productVariantOptions []product.ProductVariantOption) *base.Error {
+func (repo Repository) CreateProductVariantOption(ctx context.Context, productVariantOption *product.ProductVariantOption) *base.Error {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Clauses(clause.OnConflict{UpdateAll: true}).Table("product_variant_options").Create(&productVariantOptions)
+	result := db.Clauses(clause.OnConflict{UpdateAll: true}).Table("product_variant_options").Create(productVariantOption)
 	return ToError(result.Error)
 }
 
@@ -112,4 +112,11 @@ func (repo Repository) DeleteProductVariantOptionById(ctx context.Context, id in
 	db := GetDbFromCtx(ctx, repo.db)
 	result := db.Table("product_variant_options").Where("id = ?", id).Delete(product.ProductVariantOption{})
 	return ToError(result.Error)
+}
+
+func (repo Repository) GetProductVariantOptionListByProductId(ctx context.Context, productId int64) ([]product.ProductVariantOption, *base.Error) {
+	db := GetDbFromCtx(ctx, repo.db)
+	var productOptions []product.ProductVariantOption
+	result := db.Table("product_variant_options").Joins("ProductVariant").Where("product_id = ?", productId).Find(&productOptions)
+	return productOptions, ToError(result.Error)
 }

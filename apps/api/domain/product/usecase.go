@@ -31,174 +31,118 @@ func (usecase Usecase) GetProductById(ctx context.Context, id int64) (Product, *
 	return usecase.repository.GetProductById(ctx, id)
 }
 
-func (usecase Usecase) CreateProduct(ctx context.Context, productRequest ProductRequest) *base.Error {
+func (usecase Usecase) CreateProduct(ctx context.Context, product Product) *base.Error {
 	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *base.Error {
-		product := Product{
-			Name:        productRequest.Name,
-			CategoryId:  productRequest.CategoryId,
-			Description: productRequest.Description,
-		}
-
 		if err := usecase.repository.CreateProduct(ctxWithTx, &product); err != nil {
 			return err
 		}
 
-		var productMaterials []ProductMaterial
-		for _, productMaterialRequest := range productRequest.Materials {
+		for i := 1; i < len(product.Materials); i++ {
+			product.Materials[i].ProductId = product.Id
 
-			productMaterial := ProductMaterial{
-				ProductId:  product.Id,
-				MaterialId: productMaterialRequest.MaterialId,
-				Amount:     productMaterialRequest.Amount,
-			}
-
-			productMaterials = append(productMaterials, productMaterial)
-		}
-		if err := usecase.repository.CreateProductMaterials(ctxWithTx, productMaterials); err != nil {
-			return err
-		}
-
-		var productVariants []ProductVariant
-		for _, productVariantRequest := range productRequest.Variants {
-			productVariants = append(productVariants, ProductVariant{
-				ProductId: product.Id,
-				Name:      productVariantRequest.Name,
-			})
-		}
-		if err := usecase.repository.CreateProductVariants(ctxWithTx, productVariants); err != nil {
-			return err
-		}
-
-		var productVariantOptions []ProductVariantOption
-		for index, productVariant := range productVariants {
-			for _, productVariantOption := range productRequest.Variants[index].Options {
-				productVariantOptions = append(productVariantOptions, ProductVariantOption{
-					ProductVariantId: productVariant.Id,
-					Name:             productVariantOption.Name,
-				})
+			if err := usecase.repository.CreateProductMaterial(ctxWithTx, &product.Materials[i]); err != nil {
+				return err
 			}
 		}
-		if err := usecase.repository.CreateProductVariantOptions(ctxWithTx, productVariantOptions); err != nil {
-			return err
+
+		for i := 1; i < len(product.Variants); i++ {
+			productVariant := product.Variants[i]
+			productVariant.ProductId = product.Id
+
+			if err := usecase.repository.CreateProductVariant(ctxWithTx, &productVariant); err != nil {
+				return err
+			}
+
+			for j := 1; j < len(productVariant.Options); j++ {
+				productVariantOption := productVariant.Options[j]
+				productVariantOption.ProductVariantId = productVariant.Id
+
+				if err := usecase.repository.CreateProductVariantOption(ctxWithTx, &productVariantOption); err != nil {
+					return err
+				}
+			}
 		}
 
 		return nil
 	})
 }
 
-func (usecase Usecase) UpdateProductById(ctx context.Context, productRequest ProductRequest, id int64) *base.Error {
+func (usecase Usecase) UpdateProductById(ctx context.Context, product Product, id int64) *base.Error {
 	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *base.Error {
 		existingProduct, err := usecase.repository.GetProductById(ctxWithTx, id)
 		if err != nil {
 			return err
 		}
 
-		var productMaterials []ProductMaterial
-		for _, productMaterialRequest := range productRequest.Materials {
-			var productMaterialId int64
-			if productMaterialRequest.Id != nil {
-				productMaterialId = *productMaterialRequest.Id
-			}
-			productMaterial := ProductMaterial{
-				Id:         productMaterialId,
-				ProductId:  id,
-				MaterialId: productMaterialRequest.MaterialId,
-				Amount:     productMaterialRequest.Amount,
-			}
-
-			productMaterials = append(productMaterials, productMaterial)
-		}
-
-		if err := usecase.repository.CreateProductMaterials(ctxWithTx, productMaterials); err != nil {
+		existingProductVariantOptions, err := usecase.repository.GetProductVariantOptionListByProductId(ctxWithTx, id)
+		if err != nil {
 			return err
 		}
 
-		newIds := make(map[int64]bool)
-		for _, productRequestMaterial := range productRequest.Materials {
-			if productRequestMaterial.Id != nil {
-				newIds[*productRequestMaterial.Id] = true
+		for i := 1; i < len(product.Materials); i++ {
+			product.Materials[i].ProductId = product.Id
+			if err := usecase.repository.CreateProductMaterial(ctxWithTx, &product.Materials[i]); err != nil {
+				return err
 			}
 		}
 
 		for _, existingProductMaterial := range existingProduct.Materials {
-			if !newIds[existingProductMaterial.Id] {
+			found := false
+
+			for _, productMaterial := range product.Materials {
+				found = productMaterial.Id == existingProductMaterial.Id
+			}
+
+			if !found {
 				if err := usecase.repository.DeleteProductMaterialById(ctxWithTx, existingProductMaterial.Id); err != nil {
 					return err
 				}
 			}
 		}
 
-		var productVariants []ProductVariant
-		for _, productVariantRequest := range productRequest.Variants {
-			var productVariantId int64
-			if productVariantRequest.Id != nil {
-				productVariantId = *productVariantRequest.Id
+		for i := 1; i < len(product.Variants); i++ {
+			productVariant := product.Variants[i]
+			productVariant.ProductId = product.Id
+
+			if err := usecase.repository.CreateProductVariant(ctxWithTx, &productVariant); err != nil {
+				return err
 			}
-			productVariants = append(productVariants, ProductVariant{
-				Id:        productVariantId,
-				ProductId: id,
-				Name:      productVariantRequest.Name,
-			})
-		}
-		if err := usecase.repository.CreateProductVariants(ctxWithTx, productVariants); err != nil {
-			return err
+
+			for j := 1; j < len(productVariant.Options); j++ {
+				productVariantOption := productVariant.Options[j]
+				productVariantOption.ProductVariantId = productVariant.Id
+
+				if err := usecase.repository.CreateProductVariantOption(ctxWithTx, &productVariantOption); err != nil {
+					return err
+				}
+			}
 		}
 
-		newProductVariantIds := make(map[int64]bool)
-		for _, productRequestVariant := range productRequest.Variants {
-			if productRequestVariant.Id != nil {
-				newProductVariantIds[*productRequestVariant.Id] = true
-			}
-		}
 		for _, existingProductVariant := range existingProduct.Variants {
-			if !newProductVariantIds[existingProductVariant.Id] {
+			found := false
+			for _, productVariant := range product.Variants {
+				found = productVariant.Id == existingProductVariant.Id
+			}
+
+			if !found {
 				if err := usecase.repository.DeleteProductVariantById(ctxWithTx, existingProductVariant.Id); err != nil {
 					return err
 				}
 			}
 		}
 
-		var productVariantOptions []ProductVariantOption
-		for index, productVariant := range productVariants {
-			for _, productVariantOption := range productRequest.Variants[index].Options {
-				var productVariantOptionId int64
-				if productVariantOption.Id != nil {
-					productVariantOptionId = *productVariantOption.Id
-				}
-
-				productVariantOptions = append(productVariantOptions, ProductVariantOption{
-					Id:               productVariantOptionId,
-					ProductVariantId: productVariant.Id,
-					Name:             productVariantOption.Name,
-				})
-			}
-		}
-		if err := usecase.repository.CreateProductVariantOptions(ctxWithTx, productVariantOptions); err != nil {
-			return err
-		}
-
-		newProductVariantOptionIds := make(map[int64]bool)
-		for _, productRequestVariant := range productRequest.Variants {
-			for _, productVariantOption := range productRequestVariant.Options {
-				if productVariantOption.Id != nil {
-					newProductVariantOptionIds[*productVariantOption.Id] = true
+		for _, existingProductVariantOption := range existingProductVariantOptions {
+			found := false
+			for _, productVariant := range product.Variants {
+				for _, productVariantOption := range productVariant.Options {
+					found = productVariantOption.Id == existingProductVariantOption.Id
 				}
 			}
-		}
-		for _, existingProductVariant := range existingProduct.Variants {
-			for _, existingProductVariantOption := range existingProductVariant.Options {
-				if !newProductVariantOptionIds[existingProductVariantOption.Id] {
-					if err := usecase.repository.DeleteProductVariantOptionById(ctxWithTx, existingProductVariantOption.Id); err != nil {
-						return err
-					}
+			if !found {
+				if err := usecase.repository.DeleteProductVariantOptionById(ctxWithTx, existingProductVariantOption.Id); err != nil {
+					return err
 				}
 			}
-		}
-
-		product := Product{
-			Name:        productRequest.Name,
-			CategoryId:  productRequest.CategoryId,
-			Description: productRequest.Description,
 		}
 
 		return usecase.repository.UpdateProductById(ctxWithTx, &product, id)

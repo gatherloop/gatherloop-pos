@@ -364,41 +364,56 @@ func ToApiProduct(product product.Product) apiContract.Product {
 	}
 }
 
-func ToProductRequest(productRequest apiContract.ProductRequest) product.ProductRequest {
-	productMaterialRequests := []product.ProductMaterialRequest{}
-	for _, productMaterialRequest := range productRequest.Materials {
-		productMaterialRequests = append(productMaterialRequests, product.ProductMaterialRequest{
-			Id:         productMaterialRequest.Id,
-			MaterialId: productMaterialRequest.MaterialId,
-			Amount:     productMaterialRequest.Amount,
+func ToProductRequest(productRequest apiContract.ProductRequest) product.Product {
+	productMaterials := []product.ProductMaterial{}
+	for _, productMaterial := range productRequest.Materials {
+		var id int64
+		if productMaterial.Id != nil {
+			id = *productMaterial.Id
+		}
+
+		productMaterials = append(productMaterials, product.ProductMaterial{
+			Id:         id,
+			MaterialId: productMaterial.MaterialId,
+			Amount:     productMaterial.Amount,
 		})
 	}
 
-	productVariantRequests := []product.ProductVariantRequest{}
-	for _, productVariantRequest := range productRequest.Variants {
+	productVariants := []product.ProductVariant{}
+	for _, productVariant := range productRequest.Variants {
+		var productVariantId int64
+		if productVariant.Id != nil {
+			productVariantId = *productVariant.Id
+		}
 
-		productVariantOptionRequests := []product.ProductVariantOptionRequest{}
-		for _, productVariantOptionRequest := range productVariantRequest.Options {
-			productVariantOptionRequests = append(productVariantOptionRequests, product.ProductVariantOptionRequest{
-				Id:   productVariantOptionRequest.Id,
-				Name: productVariantOptionRequest.Name,
+		productVariantOptions := []product.ProductVariantOption{}
+		for _, productVariantOption := range productVariant.Options {
+			var id int64
+			if productVariantOption.Id != nil {
+				id = *productVariantOption.Id
+			}
+
+			productVariantOptions = append(productVariantOptions, product.ProductVariantOption{
+				Id:               id,
+				Name:             productVariantOption.Name,
+				ProductVariantId: productVariantId,
 			})
 		}
 
-		productVariantRequests = append(productVariantRequests, product.ProductVariantRequest{
-			Id:      productVariantRequest.Id,
-			Name:    productVariantRequest.Name,
-			Options: productVariantOptionRequests,
+		productVariants = append(productVariants, product.ProductVariant{
+			Id:      productVariantId,
+			Name:    productVariant.Name,
+			Options: productVariantOptions,
 		})
 	}
 
-	return product.ProductRequest{
+	return product.Product{
 		Name:        productRequest.Name,
 		Price:       productRequest.Price,
 		CategoryId:  productRequest.CategoryId,
-		Materials:   productMaterialRequests,
+		Materials:   productMaterials,
 		Description: productRequest.Description,
-		Variants:    productVariantRequests,
+		Variants:    productVariants,
 	}
 }
 

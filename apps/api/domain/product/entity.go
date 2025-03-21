@@ -19,15 +19,6 @@ type Product struct {
 	CreatedAt   time.Time         `json:"createdAt"`
 }
 
-type ProductRequest struct {
-	CategoryId  int64                    `json:"categoryId"`
-	Name        string                   `json:"name"`
-	Price       float32                  `json:"price"`
-	Description *string                  `json:"description"`
-	Materials   []ProductMaterialRequest `json:"materials"`
-	Variants    []ProductVariantRequest  `json:"variants"`
-}
-
 type ProductMaterial struct {
 	Id         int64             `json:"id"`
 	ProductId  int64             `json:"productId"`
@@ -38,12 +29,6 @@ type ProductMaterial struct {
 	CreatedAt  time.Time         `json:"createdAt"`
 }
 
-type ProductMaterialRequest struct {
-	Id         *int64  `json:"id"`
-	MaterialId int64   `json:"materialId"`
-	Amount     float32 `json:"amount"`
-}
-
 type ProductVariant struct {
 	Id        int64                  `json:"id"`
 	Name      string                 `json:"name"`
@@ -51,19 +36,8 @@ type ProductVariant struct {
 	ProductId int64                  `json:"productId"`
 }
 
-type ProductVariantRequest struct {
-	Id      *int64                        `json:"id"`
-	Name    string                        `json:"name"`
-	Options []ProductVariantOptionRequest `json:"options"`
-}
-
 type ProductVariantOption struct {
 	Id               int64  `json:"id"`
 	Name             string `json:"name"`
 	ProductVariantId int64  `json:"productVariantId"`
-}
-
-type ProductVariantOptionRequest struct {
-	Id   *int64 `json:"id"`
-	Name string `json:"name"`
 }
