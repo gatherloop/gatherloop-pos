@@ -22,6 +22,7 @@ import {
   TransactionListUsecase,
   TransactionPayUsecase,
 } from '../../domain';
+import { print } from '../../utils';
 
 export type TransactionListScreenProps = {
   transactionListUsecase: TransactionListUsecase;
@@ -77,7 +78,19 @@ export const TransactionListScreen = (props: TransactionListScreenProps) => {
   };
 
   const onPrintMenuPress = (transaction: Transaction) => {
-    router.push(`/transactions/${transaction.id}/print`);
+    print({
+      createdAt: new Date().toISOString(),
+      paidAt: new Date().toISOString(),
+      name: transaction.name,
+      items: transaction.transactionItems.map(
+        ({ product, amount, discountAmount }) => ({
+          name: product.name,
+          price: product.price,
+          amount,
+          discountAmount,
+        })
+      ),
+    });
   };
 
   return (

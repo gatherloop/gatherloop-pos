@@ -15,7 +15,6 @@ export * from './ProductUpdateScreen';
 export * from './TransactionCreateScreen';
 export * from './TransactionDetailScreen';
 export * from './TransactionListScreen';
-export * from './TransactionPrintScreen';
 export * from './TransactionStatisticScreen';
 export * from './TransactionUpdateScreen';
 export * from './WalletCreateScreen';

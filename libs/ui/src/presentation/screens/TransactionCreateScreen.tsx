@@ -22,6 +22,7 @@ import {
   TransactionPayUsecase,
 } from '../../domain';
 import { UseFieldArrayReturn } from 'react-hook-form';
+import { print } from '../../utils';
 
 export type TransactionCreateScreenProps = {
   transactionCreateUsecase: TransactionCreateUsecase;
@@ -64,11 +65,24 @@ export const TransactionCreateScreen = (
 
   useEffect(() => {
     if (transactionPayController.state.type === 'payingSuccess') {
-      window.location.href = `/transactions/${transactionCreateController.state.transactionId}/print`;
+      print({
+        createdAt: new Date().toISOString(),
+        paidAt: new Date().toISOString(),
+        name: transactionCreateController.form.getValues('name'),
+        items: transactionCreateController.form
+          .getValues('transactionItems')
+          .map(({ product, amount, discountAmount }) => ({
+            name: product.name,
+            price: product.price,
+            amount,
+            discountAmount,
+          })),
+      });
+      router.push('/transactions');
     }
   }, [
     router,
-    transactionCreateController.state.transactionId,
+    transactionCreateController.form,
     transactionPayController.state.type,
   ]);
 

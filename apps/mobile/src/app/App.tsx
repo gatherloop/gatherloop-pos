@@ -22,7 +22,6 @@ import {
   ExpenseCreateScreen,
   ExpenseUpdateScreen,
   TransactionStatisticScreen,
-  TransactionPrintScreen,
   AuthLoginScreen,
 } from '@gatherloop-pos/ui';
 import { RootProvider } from '@gatherloop-pos/provider';
@@ -209,10 +208,6 @@ export const App = () => {
           <Stack.Screen
             name="transactionDetail"
             component={TransactionDetailScreen}
-          />
-          <Stack.Screen
-            name="transactionPrint"
-            component={TransactionPrintScreen}
           />
           <Stack.Screen name="expenseList" component={ExpenseListScreen} />
           <Stack.Screen name="expenseCreate" component={ExpenseCreateScreen} />
