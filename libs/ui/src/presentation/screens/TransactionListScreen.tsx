@@ -79,8 +79,8 @@ export const TransactionListScreen = (props: TransactionListScreenProps) => {
 
   const onPrintMenuPress = (transaction: Transaction) => {
     print({
-      createdAt: new Date().toISOString(),
-      paidAt: new Date().toISOString(),
+      createdAt: transaction.createdAt,
+      paidAt: transaction.paidAt,
       name: transaction.name,
       items: transaction.transactionItems.map(
         ({ product, amount, discountAmount }) => ({

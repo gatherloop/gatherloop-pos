@@ -1,6 +1,6 @@
 export type TransactionPrintPayload = {
   createdAt: string;
-  paidAt: string;
+  paidAt?: string;
   name: string;
   items: {
     name: string;
