@@ -19,7 +19,7 @@ func (repo Repository) GetTransactionList(ctx context.Context, query string, sor
 	db := GetDbFromCtx(ctx, repo.db)
 
 	var transactionResults []transaction.Transaction
-	result := db.Table("transactions").Where("deleted_at is NULL").Preload("TransactionItems").Preload("Wallet").Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
+	result := db.Table("transactions").Where("deleted_at is NULL").Preload("TransactionItems").Preload("TransactionItems.Product").Preload("Wallet").Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
 
 	if query != "" {
 		result = result.Where("name LIKE ?", "%"+query+"%")
