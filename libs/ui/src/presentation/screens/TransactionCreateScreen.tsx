@@ -22,7 +22,8 @@ import {
   TransactionPayUsecase,
 } from '../../domain';
 import { UseFieldArrayReturn } from 'react-hook-form';
-import { print } from '../../utils';
+import { usePrinter } from '../../utils';
+import dayjs from 'dayjs';
 
 export type TransactionCreateScreenProps = {
   transactionCreateUsecase: TransactionCreateUsecase;
@@ -49,6 +50,7 @@ export const TransactionCreateScreen = (
   );
 
   const router = useRouter();
+  const { print } = usePrinter();
 
   useEffect(() => {
     if (transactionCreateController.state.type === 'submitSuccess') {
@@ -66,8 +68,8 @@ export const TransactionCreateScreen = (
   useEffect(() => {
     if (transactionPayController.state.type === 'payingSuccess') {
       print({
-        createdAt: new Date().toISOString(),
-        paidAt: new Date().toISOString(),
+        createdAt: dayjs(new Date().toISOString()).format('DD/MM/YYYY HH:mm'),
+        paidAt: dayjs(new Date().toISOString()).format('DD/MM/YYYY HH:mm'),
         name: transactionCreateController.form.getValues('name'),
         items: transactionCreateController.form
           .getValues('transactionItems')
@@ -81,6 +83,7 @@ export const TransactionCreateScreen = (
       router.push('/transactions');
     }
   }, [
+    print,
     router,
     transactionCreateController.form,
     transactionPayController.state.type,

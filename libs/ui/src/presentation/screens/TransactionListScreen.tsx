@@ -22,7 +22,8 @@ import {
   TransactionListUsecase,
   TransactionPayUsecase,
 } from '../../domain';
-import { print } from '../../utils';
+import { usePrinter } from '../../utils';
+import dayjs from 'dayjs';
 
 export type TransactionListScreenProps = {
   transactionListUsecase: TransactionListUsecase;
@@ -42,7 +43,9 @@ export const TransactionListScreen = (props: TransactionListScreenProps) => {
   const transactionPayController = useTransactionPayController(
     props.transactionPayUsecase
   );
+
   const router = useRouter();
+  const { print } = usePrinter();
 
   useEffect(() => {
     if (transactionDeleteController.state.type === 'deletingSuccess') {
@@ -79,8 +82,10 @@ export const TransactionListScreen = (props: TransactionListScreenProps) => {
 
   const onPrintMenuPress = (transaction: Transaction) => {
     print({
-      createdAt: transaction.createdAt,
-      paidAt: transaction.paidAt,
+      createdAt: dayjs(transaction.createdAt).format('DD/MM/YYYY HH:mm'),
+      paidAt: transaction.paidAt
+        ? dayjs(transaction.paidAt).format('DD/MM/YYYY HH:mm')
+        : undefined,
       name: transaction.name,
       items: transaction.transactionItems.map(
         ({ product, amount, discountAmount }) => ({
