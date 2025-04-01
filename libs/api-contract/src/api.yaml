@@ -1165,6 +1165,145 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /calculations:
+    get:
+      summary: List all calculations
+      operationId: calculationList
+      tags:
+        - calculation
+      parameters:
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/Order'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Skip'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Calculation'
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Create calculation
+      operationId: calculationCreate
+      tags:
+        - calculation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CalculationRequest'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '403':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /calculations/{calculationId}:
+    get:
+      summary: Get calculation by id
+      operationId: calculationFindById
+      tags:
+        - calculation
+      parameters:
+        - $ref: '#/components/parameters/CalculationId'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Calculation'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Update calculation by id
+      operationId: calculationUpdateById
+      tags:
+        - calculation
+      parameters:
+        - $ref: '#/components/parameters/CalculationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CalculationRequest'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Delete calculation by id
+      operationId: calculationDeleteById
+      tags:
+        - calculation
+      parameters:
+        - $ref: '#/components/parameters/CalculationId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 components:
   schemas:
     AuthLoginRequest:
@@ -1678,6 +1817,92 @@ components:
           type: number
         amount:
           type: number
+    Calculation:
+      type: object
+      required:
+        - id
+        - createdAt
+        - updatedAt
+        - walletId
+        - wallet
+        - totalWallet
+        - totalCalculation
+        - calculationItems
+      properties:
+        id:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        deletedAt:
+          type: string
+          format: date-time
+        walletId:
+          type: integer
+          format: int64
+        wallet:
+          $ref: '#/components/schemas/Wallet'
+        totalWallet:
+          type: number
+        totalCalculation:
+          type: number
+        calculationItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/CalculationItem'
+    CalculationItem:
+      type: object
+      required:
+        - id
+        - calculationId
+        - price
+        - amount
+        - subtotal
+      properties:
+        id:
+          type: integer
+          format: int64
+        calculationId:
+          type: integer
+          format: int64
+        price:
+          type: number
+        amount:
+          type: integer
+          format: int64
+        subtotal:
+          type: number
+    CalculationRequest:
+      type: object
+      required:
+        - walletId
+        - calculationItems
+      properties:
+        walletId:
+          type: integer
+          format: int64
+        calculationItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/CalculationItemRequest'
+    CalculationItemRequest:
+      type: object
+      required:
+        - price
+        - amount
+      properties:
+        id:
+          type: integer
+          format: int64
+        price:
+          type: number
+        amount:
+          type: integer
+          format: int64
     Error:
       type: object
       required:
@@ -1749,6 +1974,12 @@ components:
       required: true
     ExpenseId:
       name: expenseId
+      in: path
+      schema:
+        type: integer
+      required: true
+    CalculationId:
+      name: calculationId
       in: path
       schema:
         type: integer

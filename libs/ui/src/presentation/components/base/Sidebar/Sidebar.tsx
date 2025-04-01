@@ -9,6 +9,7 @@ import {
   Fullscreen,
   LayoutDashboard,
   LogOut,
+  PiggyBank,
   Tag,
   Wallet,
 } from '@tamagui/lucide-icons';
@@ -26,7 +27,8 @@ const items: { title: string; icon: NamedExoticComponent; path: string }[] = [
   { title: 'Transactions', icon: CircleDollarSign, path: '/transactions' },
   { title: 'Expenses', icon: CreditCard, path: '/expenses' },
   { title: 'Wallets', icon: Wallet, path: '/wallets' },
-  { title: 'Budgets', icon: Calculator, path: '/budgets' },
+  { title: 'Calculations', icon: Calculator, path: '/calculations' },
+  { title: 'Budgets', icon: PiggyBank, path: '/budgets' },
 ];
 
 export type SidebarProps = {

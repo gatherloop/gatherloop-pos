@@ -23,6 +23,9 @@ import {
   ExpenseUpdateScreen,
   TransactionStatisticScreen,
   AuthLoginScreen,
+  CalculationListScreen,
+  CalculationCreateScreen,
+  CalculationUpdateScreen,
 } from '@gatherloop-pos/ui';
 import { RootProvider } from '@gatherloop-pos/provider';
 import { NavigationContainer } from '@react-navigation/native';
@@ -56,6 +59,9 @@ const Stack = createNativeStackNavigator<{
   expenseList: undefined;
   expenseCreate: undefined;
   expenseUpdate: { expenseId: number };
+  calculationList: undefined;
+  calculationCreate: undefined;
+  calculationUpdate: { expenseId: number };
 }>();
 
 export const App = () => {
@@ -141,6 +147,14 @@ export const App = () => {
                 expenseId: (expenseId) => parseInt(expenseId),
               },
             },
+            calculationList: 'calculations',
+            calculationCreate: 'calculations/create',
+            calculationUpdate: {
+              path: 'calculations/:calculationId',
+              parse: {
+                calculationId: (calculationId) => parseInt(calculationId),
+              },
+            },
           },
         },
       }}
@@ -212,6 +226,18 @@ export const App = () => {
           <Stack.Screen name="expenseList" component={ExpenseListScreen} />
           <Stack.Screen name="expenseCreate" component={ExpenseCreateScreen} />
           <Stack.Screen name="expenseUpdate" component={ExpenseUpdateScreen} />
+          <Stack.Screen
+            name="calculationList"
+            component={CalculationListScreen}
+          />
+          <Stack.Screen
+            name="calculationCreate"
+            component={CalculationCreateScreen}
+          />
+          <Stack.Screen
+            name="calculationUpdate"
+            component={CalculationUpdateScreen}
+          />
         </Stack.Navigator>
       </RootProvider>
     </NavigationContainer>

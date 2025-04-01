@@ -4,6 +4,7 @@ import (
 	"apps/api/data/mysql"
 	"apps/api/domain/auth"
 	"apps/api/domain/budget"
+	"apps/api/domain/calculation"
 	"apps/api/domain/category"
 	"apps/api/domain/expense"
 	"apps/api/domain/material"
@@ -48,6 +49,7 @@ func main() {
 	expenseRepository := mysql.NewExpenseRepository(db)
 	categoryRepository := mysql.NewCategoryRepository(db)
 	authRepository := mysql.NewAuthRepository(db)
+	calculationRepository := mysql.NewCalculationRepository(db)
 
 	walletUsecase := wallet.NewUsecase(walletRepository)
 	transactionUsecase := transaction.NewUsecase(transactionRepository, productRepository, walletRepository, budgetRepository)
@@ -57,6 +59,7 @@ func main() {
 	categoryUsecase := category.NewUsecase(categoryRepository)
 	budgetUsecase := budget.NewUsecase(budgetRepository)
 	authUsecase := auth.NewUsecase(authRepository)
+	calculationUsecase := calculation.NewUsecase(calculationRepository, walletRepository)
 
 	walletHandler := restapi.NewWalletHandler(walletUsecase)
 	transactionHandler := restapi.NewTransactionHandler(transactionUsecase)
@@ -66,6 +69,7 @@ func main() {
 	categoryHandler := restapi.NewCategoryHandler(categoryUsecase)
 	budgetHandler := restapi.NewBudgetHandler(budgetUsecase)
 	authHandler := restapi.NewAuthHandler(authUsecase)
+	calculationHandler := restapi.NewCalculationHandler(calculationUsecase)
 
 	restapi.NewAuthRouter(authHandler).AddRouter(router)
 	restapi.NewBudgetRouter(budgetHandler).AddRouter(router)
@@ -75,6 +79,7 @@ func main() {
 	restapi.NewProductRouter(productHandler).AddRouter(router)
 	restapi.NewTransactionRouter(transactionHandler).AddRouter(router)
 	restapi.NewWalletRouter(walletHandler).AddRouter(router)
+	restapi.NewCalculationRouter(calculationHandler).AddRouter(router)
 
 	router.HandleFunc("/health-check", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("health check success"))
