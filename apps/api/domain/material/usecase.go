@@ -32,11 +32,11 @@ func (usecase Usecase) GetMaterialById(ctx context.Context, id int64) (Material,
 }
 
 func (usecase Usecase) CreateMaterial(ctx context.Context, material Material) *base.Error {
-	return usecase.repository.CreateMaterial(ctx, material)
+	return usecase.repository.CreateMaterial(ctx, &material)
 }
 
 func (usecase Usecase) UpdateMaterialById(ctx context.Context, material Material, id int64) *base.Error {
-	return usecase.repository.UpdateMaterialById(ctx, material, id)
+	return usecase.repository.UpdateMaterialById(ctx, &material, id)
 }
 
 func (usecase Usecase) DeleteMaterialById(ctx context.Context, id int64) *base.Error {

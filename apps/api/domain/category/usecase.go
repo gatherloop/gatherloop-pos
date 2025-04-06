@@ -22,11 +22,11 @@ func (usecase Usecase) GetCategoryById(ctx context.Context, id int64) (Category,
 }
 
 func (usecase Usecase) CreateCategory(ctx context.Context, category Category) *base.Error {
-	return usecase.repository.CreateCategory(ctx, category)
+	return usecase.repository.CreateCategory(ctx, &category)
 }
 
 func (usecase Usecase) UpdateCategoryById(ctx context.Context, category Category, id int64) *base.Error {
-	return usecase.repository.UpdateCategoryById(ctx, category, id)
+	return usecase.repository.UpdateCategoryById(ctx, &category, id)
 }
 
 func (usecase Usecase) DeleteCategoryById(ctx context.Context, id int64) *base.Error {
