@@ -3,14 +3,14 @@ package auth
 import "time"
 
 type User struct {
-	Id        int64      `json:"id"`
-	Username  string     `json:"username"`
-	Password  string     `json:"password"`
-	CreatedAt time.Time  `json:"createdAt"`
-	DeletedAt *time.Time `json:"deletedAt,omitempty"`
+	Id        int64
+	Username  string
+	Password  string
+	CreatedAt time.Time
+	DeletedAt *time.Time
 }
 
 type LoginRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Username string
+	Password string
 }

@@ -7,49 +7,49 @@ import (
 )
 
 type TransactionItem struct {
-	Id             int64           `json:"id"`
-	TransactionId  int64           `json:"transactionId"`
-	ProductId      int64           `json:"productId"`
-	Product        product.Product `json:"product"`
-	Amount         float32         `json:"amount"`
-	Price          float32         `json:"price"`
-	DiscountAmount float32         `json:"discountAmount"`
-	Subtotal       float32         `json:"subtotal"`
+	Id             int64
+	TransactionId  int64
+	ProductId      int64
+	Product        product.Product
+	Amount         float32
+	Price          float32
+	DiscountAmount float32
+	Subtotal       float32
 }
 
 type Transaction struct {
-	Id               int64             `json:"id"`
-	CreatedAt        time.Time         `json:"createdAt"`
-	Name             string            `json:"name"`
-	WalletId         *int64            `json:"walletId,omitempty"`
-	Wallet           *wallet.Wallet    `json:"wallet,omitempty"`
-	Total            float32           `json:"total"`
-	TotalIncome      float32           `json:"totalIncome"`
-	TransactionItems []TransactionItem `json:"transactionItems"`
-	PaidAt           *time.Time        `json:"paidAt,omitempty"`
-	DeletedAt        *time.Time        `json:"deletedAt,omitempty"`
+	Id               int64
+	CreatedAt        time.Time
+	Name             string
+	WalletId         *int64
+	Wallet           *wallet.Wallet
+	Total            float32
+	TotalIncome      float32
+	TransactionItems []TransactionItem
+	PaidAt           *time.Time
+	DeletedAt        *time.Time
 }
 
 type TransactionStatistic struct {
-	Date        string  `json:"date"`
-	Total       int32   `json:"total"`
-	TotalIncome float32 `json:"totalIncome"`
+	Date        string
+	Total       int32
+	TotalIncome float32
 }
 
 type TransactionRequest struct {
-	Name             string                   `json:"name"`
-	TransactionItems []TransactionItemRequest `json:"transactionItems"`
+	Name             string
+	TransactionItems []TransactionItemRequest
 }
 
 type TransactionItemRequest struct {
-	Id             *int64  `json:"id"`
-	ProductId      int64   `json:"productId"`
-	Amount         float32 `json:"amount"`
-	DiscountAmount float32 `json:"discountAmount"`
+	Id             *int64
+	ProductId      int64
+	Amount         float32
+	DiscountAmount float32
 }
 
 type TransactionPayRequest struct {
-	WalletId int64 `json:"walletId"`
+	WalletId int64
 }
 
 type PaymentStatus int

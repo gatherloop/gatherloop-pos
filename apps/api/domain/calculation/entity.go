@@ -6,21 +6,21 @@ import (
 )
 
 type Calculation struct {
-	Id               int64             `json:"id"`
-	CreatedAt        time.Time         `json:"createdAt"`
-	UpdatedAt        time.Time         `json:"updatedAt"`
-	DeletedAt        *time.Time        `json:"deletedAt"`
-	WalletId         int64             `json:"walletId"`
-	Wallet           wallet.Wallet     `json:"wallet"`
-	TotalWallet      float32           `json:"totalWallet"`
-	TotalCalculation float32           `json:"totalCalculation"`
-	CalculationItems []CalculationItem `json:"calculationItems"`
+	Id               int64
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	DeletedAt        *time.Time
+	WalletId         int64
+	Wallet           wallet.Wallet
+	TotalWallet      float32
+	TotalCalculation float32
+	CalculationItems []CalculationItem
 }
 
 type CalculationItem struct {
-	Id            int64   `json:"id"`
-	CalculationId int64   `json:"calculationId"`
-	Price         float32 `json:"price"`
-	Amount        int64   `json:"amount"`
-	Subtotal      float32 `json:"subtotal"`
+	Id            int64
+	CalculationId int64
+	Price         float32
+	Amount        int64
+	Subtotal      float32
 }

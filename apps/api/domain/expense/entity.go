@@ -7,37 +7,37 @@ import (
 )
 
 type ExpenseItem struct {
-	Id        int64   `json:"id"`
-	Name      string  `json:"name"`
-	Unit      string  `json:"unit"`
-	Price     float32 `json:"price"`
-	Amount    float32 `json:"amount"`
-	Subtotal  float32 `json:"subtotal"`
-	ExpenseId int64   `json:"expenseId"`
+	Id        int64
+	Name      string
+	Unit      string
+	Price     float32
+	Amount    float32
+	Subtotal  float32
+	ExpenseId int64
 }
 
 type Expense struct {
-	Id           int64         `json:"id"`
-	CreatedAt    time.Time     `json:"createdAt"`
-	DeletedAt    *time.Time    `json:"deletedAt,omitempty"`
-	WalletId     int64         `json:"walletId"`
-	Wallet       wallet.Wallet `json:"wallet"`
-	BudgetId     int64         `json:"budgetId"`
-	Budget       budget.Budget `json:"budget"`
-	Total        float32       `json:"total"`
-	ExpenseItems []ExpenseItem `json:"expenseItems"`
+	Id           int64
+	CreatedAt    time.Time
+	DeletedAt    *time.Time
+	WalletId     int64
+	Wallet       wallet.Wallet
+	BudgetId     int64
+	Budget       budget.Budget
+	Total        float32
+	ExpenseItems []ExpenseItem
 }
 
 type ExpenseItemRequest struct {
-	Id     *int64  `json:"id"`
-	Name   string  `json:"name"`
-	Unit   string  `json:"unit"`
-	Price  float32 `json:"price"`
-	Amount float32 `json:"amount"`
+	Id     *int64
+	Name   string
+	Unit   string
+	Price  float32
+	Amount float32
 }
 
 type ExpenseRequest struct {
-	WalletId     int64                `json:"walletId"`
-	BudgetId     int64                `json:"budgetId"`
-	ExpenseItems []ExpenseItemRequest `json:"expenseItems"`
+	WalletId     int64
+	BudgetId     int64
+	ExpenseItems []ExpenseItemRequest
 }

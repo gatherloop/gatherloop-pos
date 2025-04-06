@@ -7,37 +7,37 @@ import (
 )
 
 type ProductMaterial struct {
-	Id         int64             `json:"id"`
-	ProductId  int64             `json:"productId"`
-	MaterialId int64             `json:"materialId"`
-	Material   material.Material `json:"material"`
-	Amount     float32           `json:"amount"`
-	DeletedAt  *time.Time        `json:"deletedAt,omitempty"`
-	CreatedAt  time.Time         `json:"createdAt"`
+	Id         int64
+	ProductId  int64
+	MaterialId int64
+	Material   material.Material
+	Amount     float32
+	DeletedAt  *time.Time
+	CreatedAt  time.Time
 }
 
 type Product struct {
-	Id          int64             `json:"id"`
-	CategoryId  int64             `json:"categoryId"`
-	Name        string            `json:"name"`
-	Price       float32           `json:"price"`
-	Description *string           `json:"description"`
-	Category    category.Category `json:"category"`
-	Materials   []ProductMaterial `json:"materials"`
-	DeletedAt   *time.Time        `json:"deletedAt,omitempty"`
-	CreatedAt   time.Time         `json:"createdAt"`
+	Id          int64
+	CategoryId  int64
+	Name        string
+	Price       float32
+	Description *string
+	Category    category.Category
+	Materials   []ProductMaterial
+	DeletedAt   *time.Time
+	CreatedAt   time.Time
 }
 
 type ProductMaterialRequest struct {
-	Id         *int64  `json:"id"`
-	MaterialId int64   `json:"materialId"`
-	Amount     float32 `json:"amount"`
+	Id         *int64
+	MaterialId int64
+	Amount     float32
 }
 
 type ProductRequest struct {
-	CategoryId  int64                    `json:"categoryId"`
-	Name        string                   `json:"name"`
-	Price       float32                  `json:"price"`
-	Description *string                  `json:"description"`
-	Materials   []ProductMaterialRequest `json:"materials"`
+	CategoryId  int64
+	Name        string
+	Price       float32
+	Description *string
+	Materials   []ProductMaterialRequest
 }

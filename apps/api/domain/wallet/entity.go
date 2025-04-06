@@ -3,32 +3,32 @@ package wallet
 import "time"
 
 type WalletRequest struct {
-	Name                  string  `json:"name"`
-	Balance               float32 `json:"balance"`
-	PaymentCostPercentage float32 `json:"paymentCostPercentage"`
+	Name                  string
+	Balance               float32
+	PaymentCostPercentage float32
 }
 
 type Wallet struct {
-	Id                    int64      `json:"id"`
-	Name                  string     `json:"name"`
-	Balance               float32    `json:"balance"`
-	PaymentCostPercentage float32    `json:"paymentCostPercentage"`
-	DeletedAt             *time.Time `json:"deletedAt,omitempty"`
-	CreatedAt             time.Time  `json:"createdAt"`
+	Id                    int64
+	Name                  string
+	Balance               float32
+	PaymentCostPercentage float32
+	DeletedAt             *time.Time
+	CreatedAt             time.Time
 }
 
 type WalletTransfer struct {
-	Id           int64      `json:"id"`
-	CreatedAt    time.Time  `json:"createdAt"`
-	Amount       float32    `json:"amount"`
-	FromWalletId int64      `json:"fromWalletId"`
-	FromWallet   Wallet     `json:"fromWallet"`
-	ToWalletId   int64      `json:"toWalletId"`
-	ToWallet     Wallet     `json:"toWallet"`
-	DeletedAt    *time.Time `json:"deletedAt,omitempty"`
+	Id           int64
+	CreatedAt    time.Time
+	Amount       float32
+	FromWalletId int64
+	FromWallet   Wallet
+	ToWalletId   int64
+	ToWallet     Wallet
+	DeletedAt    *time.Time
 }
 
 type WalletTransferRequest struct {
-	Amount     float32 `json:"amount"`
-	ToWalletId int64   `json:"toWalletId"`
+	Amount     float32
+	ToWalletId int64
 }

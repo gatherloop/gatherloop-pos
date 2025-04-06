@@ -3,12 +3,12 @@ package category
 import "time"
 
 type Category struct {
-	Id        int64      `json:"id"`
-	Name      string     `json:"name"`
-	CreatedAt time.Time  `json:"createdAt"`
-	DeletedAt *time.Time `json:"deletedAt,omitempty"`
+	Id        int64
+	Name      string
+	CreatedAt time.Time
+	DeletedAt *time.Time
 }
 
 type CategoryRequest struct {
-	Name string `json:"name"`
+	Name string
 }
