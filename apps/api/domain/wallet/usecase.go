@@ -39,6 +39,8 @@ func (usecase Usecase) GetWalletTransferList(ctx context.Context, walletId int64
 
 func (usecase Usecase) CreateWalletTransfer(ctx context.Context, walletTransfer WalletTransfer, fromWalletId int64) *base.Error {
 	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *base.Error {
+		walletTransfer.FromWalletId = fromWalletId
+
 		fromWallet, err := usecase.repository.GetWalletById(ctxWithTx, fromWalletId)
 		if err != nil {
 			return err
