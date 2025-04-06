@@ -343,17 +343,21 @@ func ToApiProduct(product product.Product) apiContract.Product {
 	}
 }
 
-func ToProductRequest(productRequest apiContract.ProductRequest) product.ProductRequest {
-	productMaterials := []product.ProductMaterialRequest{}
+func ToProduct(productRequest apiContract.ProductRequest) product.Product {
+	productMaterials := []product.ProductMaterial{}
 	for _, productMaterial := range productRequest.Materials {
-		productMaterials = append(productMaterials, product.ProductMaterialRequest{
-			Id:         productMaterial.Id,
+		var id int64
+		if productMaterial.Id != nil {
+			id = *productMaterial.Id
+		}
+		productMaterials = append(productMaterials, product.ProductMaterial{
+			Id:         id,
 			MaterialId: productMaterial.MaterialId,
 			Amount:     productMaterial.Amount,
 		})
 	}
 
-	return product.ProductRequest{
+	return product.Product{
 		Name:        productRequest.Name,
 		Price:       productRequest.Price,
 		CategoryId:  productRequest.CategoryId,

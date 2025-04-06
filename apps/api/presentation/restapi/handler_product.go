@@ -74,7 +74,7 @@ func (handler ProductHandler) CreateProduct(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if err := handler.usecase.CreateProduct(ctx, ToProductRequest(productRequest)); err != nil {
+	if err := handler.usecase.CreateProduct(ctx, ToProduct(productRequest)); err != nil {
 		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
 		return
 	}
@@ -97,7 +97,7 @@ func (handler ProductHandler) UpdateProductById(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	if err := handler.usecase.UpdateProductById(ctx, ToProductRequest(productRequest), id); err != nil {
+	if err := handler.usecase.UpdateProductById(ctx, ToProduct(productRequest), id); err != nil {
 		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
 		return
 	}

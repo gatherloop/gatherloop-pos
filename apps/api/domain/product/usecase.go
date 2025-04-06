@@ -31,21 +31,14 @@ func (usecase Usecase) GetProductById(ctx context.Context, id int64) (Product, *
 	return usecase.repository.GetProductById(ctx, id)
 }
 
-func (usecase Usecase) CreateProduct(ctx context.Context, productRequest ProductRequest) *base.Error {
+func (usecase Usecase) CreateProduct(ctx context.Context, product Product) *base.Error {
 	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *base.Error {
-		product := Product{
-			Name:        productRequest.Name,
-			CategoryId:  productRequest.CategoryId,
-			Price:       productRequest.Price,
-			Description: productRequest.Description,
-		}
-
 		if err := usecase.repository.CreateProduct(ctxWithTx, &product); err != nil {
 			return err
 		}
 
 		var productMaterials []ProductMaterial
-		for _, productMaterialRequest := range productRequest.Materials {
+		for _, productMaterialRequest := range product.Materials {
 
 			productMaterial := ProductMaterial{
 				ProductId:  product.Id,
@@ -56,14 +49,11 @@ func (usecase Usecase) CreateProduct(ctx context.Context, productRequest Product
 			productMaterials = append(productMaterials, productMaterial)
 		}
 
-		if err := usecase.repository.CreateProductMaterials(ctxWithTx, productMaterials); err != nil {
-			return err
-		}
-		return nil
+		return usecase.repository.CreateProductMaterials(ctxWithTx, productMaterials)
 	})
 }
 
-func (usecase Usecase) UpdateProductById(ctx context.Context, productRequest ProductRequest, id int64) *base.Error {
+func (usecase Usecase) UpdateProductById(ctx context.Context, product Product, id int64) *base.Error {
 	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *base.Error {
 		existingProduct, err := usecase.repository.GetProductById(ctxWithTx, id)
 		if err != nil {
@@ -71,16 +61,12 @@ func (usecase Usecase) UpdateProductById(ctx context.Context, productRequest Pro
 		}
 
 		var productMaterials []ProductMaterial
-		for _, productMaterialRequest := range productRequest.Materials {
-			var productMaterialId int64
-			if productMaterialRequest.Id != nil {
-				productMaterialId = *productMaterialRequest.Id
-			}
+		for _, productMaterial := range product.Materials {
 			productMaterial := ProductMaterial{
-				Id:         productMaterialId,
+				Id:         productMaterial.Id,
 				ProductId:  id,
-				MaterialId: productMaterialRequest.MaterialId,
-				Amount:     productMaterialRequest.Amount,
+				MaterialId: productMaterial.MaterialId,
+				Amount:     productMaterial.Amount,
 			}
 
 			productMaterials = append(productMaterials, productMaterial)
@@ -91,10 +77,8 @@ func (usecase Usecase) UpdateProductById(ctx context.Context, productRequest Pro
 		}
 
 		newIds := make(map[int64]bool)
-		for _, productRequestMaterial := range productRequest.Materials {
-			if productRequestMaterial.Id != nil {
-				newIds[*productRequestMaterial.Id] = true
-			}
+		for _, productRequestMaterial := range productMaterials {
+			newIds[productRequestMaterial.Id] = true
 		}
 
 		for _, existingProductMaterial := range existingProduct.Materials {
@@ -106,10 +90,10 @@ func (usecase Usecase) UpdateProductById(ctx context.Context, productRequest Pro
 		}
 
 		product := Product{
-			Name:        productRequest.Name,
-			CategoryId:  productRequest.CategoryId,
-			Price:       productRequest.Price,
-			Description: productRequest.Description,
+			Name:        product.Name,
+			CategoryId:  product.CategoryId,
+			Price:       product.Price,
+			Description: product.Description,
 		}
 
 		return usecase.repository.UpdateProductById(ctxWithTx, &product, id)
