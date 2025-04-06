@@ -11,10 +11,3 @@ type Material struct {
 	DeletedAt   *time.Time
 	CreatedAt   time.Time
 }
-
-type MaterialRequest struct {
-	Name        string
-	Price       float32
-	Unit        string
-	Description *string
-}

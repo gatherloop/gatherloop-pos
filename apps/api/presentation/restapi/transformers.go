@@ -268,8 +268,8 @@ func ToApiMaterial(material material.Material) apiContract.Material {
 	}
 }
 
-func ToMaterialRequest(materialRequest apiContract.MaterialRequest) material.MaterialRequest {
-	return material.MaterialRequest{
+func ToMaterial(materialRequest apiContract.MaterialRequest) material.Material {
+	return material.Material{
 		Name:        materialRequest.Name,
 		Price:       materialRequest.Price,
 		Unit:        materialRequest.Unit,

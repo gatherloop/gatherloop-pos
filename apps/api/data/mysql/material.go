@@ -57,13 +57,13 @@ func (repo Repository) GetMaterialById(ctx context.Context, id int64) (material.
 	return material, ToError(result.Error)
 }
 
-func (repo Repository) CreateMaterial(ctx context.Context, materialRequest material.MaterialRequest) *base.Error {
+func (repo Repository) CreateMaterial(ctx context.Context, materialRequest material.Material) *base.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	result := db.Table("materials").Create(materialRequest)
 	return ToError(result.Error)
 }
 
-func (repo Repository) UpdateMaterialById(ctx context.Context, materialRequest material.MaterialRequest, id int64) *base.Error {
+func (repo Repository) UpdateMaterialById(ctx context.Context, materialRequest material.Material, id int64) *base.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	result := db.Table("materials").Where("id = ?", id).Updates(materialRequest)
 	return ToError(result.Error)
