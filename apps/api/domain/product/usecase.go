@@ -32,25 +32,7 @@ func (usecase Usecase) GetProductById(ctx context.Context, id int64) (Product, *
 }
 
 func (usecase Usecase) CreateProduct(ctx context.Context, product Product) *base.Error {
-	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *base.Error {
-		if err := usecase.repository.CreateProduct(ctxWithTx, &product); err != nil {
-			return err
-		}
-
-		var productMaterials []ProductMaterial
-		for _, productMaterialRequest := range product.Materials {
-
-			productMaterial := ProductMaterial{
-				ProductId:  product.Id,
-				MaterialId: productMaterialRequest.MaterialId,
-				Amount:     productMaterialRequest.Amount,
-			}
-
-			productMaterials = append(productMaterials, productMaterial)
-		}
-
-		return usecase.repository.CreateProductMaterials(ctxWithTx, productMaterials)
-	})
+	return usecase.repository.CreateProduct(ctx, &product)
 }
 
 func (usecase Usecase) UpdateProductById(ctx context.Context, product Product, id int64) *base.Error {
