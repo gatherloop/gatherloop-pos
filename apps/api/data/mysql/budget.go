@@ -27,13 +27,13 @@ func (repo Repository) GetBudgetById(ctx context.Context, id int64) (budget.Budg
 	return budget, ToError(result.Error)
 }
 
-func (repo Repository) CreateBudget(ctx context.Context, budgetRequest budget.BudgetRequest) *base.Error {
+func (repo Repository) CreateBudget(ctx context.Context, budgetRequest budget.Budget) *base.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	result := db.Table("budgets").Create(budgetRequest)
 	return ToError(result.Error)
 }
 
-func (repo Repository) UpdateBudgetById(ctx context.Context, budgetRequest budget.BudgetRequest, id int64) *base.Error {
+func (repo Repository) UpdateBudgetById(ctx context.Context, budgetRequest budget.Budget, id int64) *base.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	result := db.Table("budgets").Where("id = ?", id).Updates(budgetRequest)
 	return ToError(result.Error)

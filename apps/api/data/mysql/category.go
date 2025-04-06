@@ -27,13 +27,13 @@ func (repo Repository) GetCategoryById(ctx context.Context, id int64) (category.
 	return category, ToError(result.Error)
 }
 
-func (repo Repository) CreateCategory(ctx context.Context, categoryRequest category.CategoryRequest) *base.Error {
+func (repo Repository) CreateCategory(ctx context.Context, categoryRequest category.Category) *base.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	result := db.Table("categories").Create(categoryRequest)
 	return ToError(result.Error)
 }
 
-func (repo Repository) UpdateCategoryById(ctx context.Context, categoryRequest category.CategoryRequest, id int64) *base.Error {
+func (repo Repository) UpdateCategoryById(ctx context.Context, categoryRequest category.Category, id int64) *base.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	result := db.Table("categories").Where("id = ?", id).Updates(categoryRequest)
 	return ToError(result.Error)

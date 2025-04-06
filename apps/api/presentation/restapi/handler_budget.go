@@ -62,7 +62,7 @@ func (handler BudgetHandler) CreateBudget(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if err := handler.usecase.CreateBudget(ctx, ToBudgetRequest(budgetRequest)); err != nil {
+	if err := handler.usecase.CreateBudget(ctx, ToBudget(budgetRequest)); err != nil {
 		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
 		return
 	}
@@ -85,7 +85,7 @@ func (handler BudgetHandler) UpdateBudgetById(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	if err := handler.usecase.UpdateBudgetById(ctx, ToBudgetRequest(budgetRequest), id); err != nil {
+	if err := handler.usecase.UpdateBudgetById(ctx, ToBudget(budgetRequest), id); err != nil {
 		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
 		return
 	}

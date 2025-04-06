@@ -8,7 +8,3 @@ type Category struct {
 	CreatedAt time.Time
 	DeletedAt *time.Time
 }
-
-type CategoryRequest struct {
-	Name string
-}

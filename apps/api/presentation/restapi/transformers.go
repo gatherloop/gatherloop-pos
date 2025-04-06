@@ -148,8 +148,8 @@ func ToApiBudget(budget budget.Budget) apiContract.Budget {
 	}
 }
 
-func ToBudgetRequest(budgetRequest apiContract.BudgetRequest) budget.BudgetRequest {
-	return budget.BudgetRequest{
+func ToBudget(budgetRequest apiContract.BudgetRequest) budget.Budget {
+	return budget.Budget{
 		Name:       budgetRequest.Name,
 		Percentage: budgetRequest.Percentage,
 		Balance:    budgetRequest.Balance,
@@ -178,8 +178,8 @@ func ToApiCategory(category category.Category) apiContract.Category {
 	}
 }
 
-func ToCategoryRequest(categoryRequest apiContract.CategoryRequest) category.CategoryRequest {
-	return category.CategoryRequest{
+func ToCategory(categoryRequest apiContract.CategoryRequest) category.Category {
+	return category.Category{
 		Name: categoryRequest.Name,
 	}
 }
