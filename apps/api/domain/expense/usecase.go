@@ -75,7 +75,7 @@ func (usecase Usecase) CreateExpense(ctx context.Context, expenseRequest Expense
 			return &base.Error{Type: base.BadRequest, Message: "budget's balance insufficient"}
 		}
 
-		if err := usecase.budgetRepository.UpdateBudgetById(ctxWithTx, budget.Budget{Balance: expenseBudget.Balance - expense.Total}, expense.BudgetId); err != nil {
+		if err := usecase.budgetRepository.UpdateBudgetById(ctxWithTx, &budget.Budget{Balance: expenseBudget.Balance - expense.Total}, expense.BudgetId); err != nil {
 			return err
 		}
 
@@ -108,7 +108,7 @@ func (usecase Usecase) UpdateExpenseById(ctx context.Context, expense Expense, i
 			return err
 		}
 
-		if err := usecase.budgetRepository.UpdateBudgetById(ctxWithTx, budget.Budget{Balance: expenseBudget.Balance + existingExpense.Total}, existingExpense.BudgetId); err != nil {
+		if err := usecase.budgetRepository.UpdateBudgetById(ctxWithTx, &budget.Budget{Balance: expenseBudget.Balance + existingExpense.Total}, existingExpense.BudgetId); err != nil {
 			return err
 		}
 
@@ -171,7 +171,7 @@ func (usecase Usecase) UpdateExpenseById(ctx context.Context, expense Expense, i
 			return &base.Error{Type: base.BadRequest, Message: "budget's balance insufficient"}
 		}
 
-		if err := usecase.budgetRepository.UpdateBudgetById(ctxWithTx, budget.Budget{Balance: expenseBudget.Balance - expense.Total}, expense.BudgetId); err != nil {
+		if err := usecase.budgetRepository.UpdateBudgetById(ctxWithTx, &budget.Budget{Balance: expenseBudget.Balance - expense.Total}, expense.BudgetId); err != nil {
 			return err
 		}
 
@@ -204,7 +204,7 @@ func (usecase Usecase) DeleteExpenseById(ctx context.Context, id int64) *base.Er
 			return err
 		}
 
-		if err := usecase.budgetRepository.UpdateBudgetById(ctxWithTx, budget.Budget{Balance: expenseBudget.Balance + existingExpense.Total}, existingExpense.BudgetId); err != nil {
+		if err := usecase.budgetRepository.UpdateBudgetById(ctxWithTx, &budget.Budget{Balance: expenseBudget.Balance + existingExpense.Total}, existingExpense.BudgetId); err != nil {
 			return err
 		}
 

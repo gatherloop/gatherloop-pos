@@ -222,7 +222,7 @@ func (usecase Usecase) PayTransaction(ctx context.Context, walletId int64, id in
 				newBalance = budgetItem.Balance + addition
 			}
 
-			if err := usecase.budgetRepository.UpdateBudgetById(ctxWithTx, budget.Budget{Balance: newBalance}, budgetItem.Id); err != nil {
+			if err := usecase.budgetRepository.UpdateBudgetById(ctxWithTx, &budget.Budget{Balance: newBalance}, budgetItem.Id); err != nil {
 				return err
 			}
 		}
