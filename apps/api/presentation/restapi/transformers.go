@@ -432,26 +432,24 @@ func ToApiTransaction(transaction transaction.Transaction) apiContract.Transacti
 	}
 }
 
-func ToTransactionRequest(transactionRequest apiContract.TransactionRequest) transaction.TransactionRequest {
-	transactionItemRequests := []transaction.TransactionItemRequest{}
+func ToTransaction(transactionRequest apiContract.TransactionRequest) transaction.Transaction {
+	transactionItems := []transaction.TransactionItem{}
 	for _, item := range transactionRequest.TransactionItems {
-		transactionItemRequests = append(transactionItemRequests, transaction.TransactionItemRequest{
-			Id:             item.Id,
+		var id int64
+		if item.Id != nil {
+			id = *item.Id
+		}
+		transactionItems = append(transactionItems, transaction.TransactionItem{
+			Id:             id,
 			ProductId:      item.ProductId,
 			Amount:         item.Amount,
 			DiscountAmount: item.DiscountAmount,
 		})
 	}
 
-	return transaction.TransactionRequest{
+	return transaction.Transaction{
 		Name:             transactionRequest.Name,
-		TransactionItems: transactionItemRequests,
-	}
-}
-
-func ToTransactionPayRequest(transactionPayRequest apiContract.TransactionPayRequest) transaction.TransactionPayRequest {
-	return transaction.TransactionPayRequest{
-		WalletId: transactionPayRequest.WalletId,
+		TransactionItems: transactionItems,
 	}
 }
 

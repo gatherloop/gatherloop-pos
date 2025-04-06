@@ -43,7 +43,7 @@ func (usecase Usecase) GetTransactionById(ctx context.Context, id int64) (Transa
 	return usecase.repository.GetTransactionById(ctx, id)
 }
 
-func (usecase Usecase) CreateTransaction(ctx context.Context, transactionRequest TransactionRequest) (int64, *base.Error) {
+func (usecase Usecase) CreateTransaction(ctx context.Context, transactionRequest Transaction) (int64, *base.Error) {
 	transaction := Transaction{
 		CreatedAt: time.Now(),
 		Name:      transactionRequest.Name,
@@ -89,7 +89,7 @@ func (usecase Usecase) CreateTransaction(ctx context.Context, transactionRequest
 	return transaction.Id, err
 }
 
-func (usecase Usecase) UpdateTransactionById(ctx context.Context, transactionRequest TransactionRequest, id int64) *base.Error {
+func (usecase Usecase) UpdateTransactionById(ctx context.Context, transactionRequest Transaction, id int64) *base.Error {
 	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *base.Error {
 		existingTransaction, err := usecase.repository.GetTransactionById(ctxWithTx, id)
 		if err != nil {
@@ -116,14 +116,8 @@ func (usecase Usecase) UpdateTransactionById(ctx context.Context, transactionReq
 			subTotal := (product.Price * item.Amount) - item.DiscountAmount
 			transaction.Total += subTotal
 
-			var transactionItemId int64
-
-			if item.Id != nil {
-				transactionItemId = *item.Id
-			}
-
 			transactionItem := TransactionItem{
-				Id:             transactionItemId,
+				Id:             item.Id,
 				TransactionId:  id,
 				ProductId:      item.ProductId,
 				Amount:         item.Amount,
@@ -140,10 +134,8 @@ func (usecase Usecase) UpdateTransactionById(ctx context.Context, transactionReq
 		}
 
 		newIds := make(map[int64]bool)
-		for _, item := range transactionRequest.TransactionItems {
-			if item.Id != nil {
-				newIds[*item.Id] = true
-			}
+		for _, item := range transactionItems {
+			newIds[item.Id] = true
 		}
 
 		for _, item := range existingTransaction.TransactionItems {
@@ -173,7 +165,7 @@ func (usecase Usecase) DeleteTransactionById(ctx context.Context, id int64) *bas
 	})
 }
 
-func (usecase Usecase) PayTransaction(ctx context.Context, transactionPayRequest TransactionPayRequest, id int64) *base.Error {
+func (usecase Usecase) PayTransaction(ctx context.Context, walletId int64, id int64) *base.Error {
 	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *base.Error {
 		transaction, err := usecase.repository.GetTransactionById(ctxWithTx, id)
 		if err != nil {
@@ -184,7 +176,7 @@ func (usecase Usecase) PayTransaction(ctx context.Context, transactionPayRequest
 			return &base.Error{Type: base.BadRequest, Message: "transaction already paid"}
 		}
 
-		paymentWallet, err := usecase.walletRepository.GetWalletById(ctxWithTx, transactionPayRequest.WalletId)
+		paymentWallet, err := usecase.walletRepository.GetWalletById(ctxWithTx, walletId)
 		if err != nil {
 			return err
 		}
@@ -192,7 +184,7 @@ func (usecase Usecase) PayTransaction(ctx context.Context, transactionPayRequest
 		paymentCost := transaction.Total * paymentWallet.PaymentCostPercentage / 100
 		newBalance := paymentWallet.Balance + transaction.Total - paymentCost
 
-		if err := usecase.walletRepository.UpdateWalletById(ctxWithTx, wallet.Wallet{Balance: newBalance}, transactionPayRequest.WalletId); err != nil {
+		if err := usecase.walletRepository.UpdateWalletById(ctxWithTx, wallet.Wallet{Balance: newBalance}, walletId); err != nil {
 			return err
 		}
 
@@ -234,7 +226,7 @@ func (usecase Usecase) PayTransaction(ctx context.Context, transactionPayRequest
 				return err
 			}
 		}
-		return usecase.repository.PayTransaction(ctxWithTx, transactionPayRequest.WalletId, time.Now(), id)
+		return usecase.repository.PayTransaction(ctxWithTx, walletId, time.Now(), id)
 	})
 }
 

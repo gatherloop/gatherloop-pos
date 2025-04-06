@@ -75,7 +75,7 @@ func (handler TransactionHandler) CreateTransaction(w http.ResponseWriter, r *ht
 		return
 	}
 
-	id, usecaseErr := handler.usecase.CreateTransaction(ctx, ToTransactionRequest(transactionRequest))
+	id, usecaseErr := handler.usecase.CreateTransaction(ctx, ToTransaction(transactionRequest))
 
 	if usecaseErr != nil {
 		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
@@ -100,7 +100,7 @@ func (handler TransactionHandler) UpdateTransactionById(w http.ResponseWriter, r
 		return
 	}
 
-	if err := handler.usecase.UpdateTransactionById(ctx, ToTransactionRequest(transactionRequest), id); err != nil {
+	if err := handler.usecase.UpdateTransactionById(ctx, ToTransaction(transactionRequest), id); err != nil {
 		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
 		return
 	}
@@ -140,7 +140,7 @@ func (handler TransactionHandler) PayTransaction(w http.ResponseWriter, r *http.
 		return
 	}
 
-	if err := handler.usecase.PayTransaction(ctx, ToTransactionPayRequest(transactionPayRequest), id); err != nil {
+	if err := handler.usecase.PayTransaction(ctx, transactionPayRequest.WalletId, id); err != nil {
 		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
 		return
 	}
