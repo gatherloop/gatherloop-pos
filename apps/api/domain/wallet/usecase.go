@@ -21,12 +21,12 @@ func (usecase Usecase) GetWalletById(ctx context.Context, id int64) (Wallet, *ba
 	return usecase.repository.GetWalletById(ctx, id)
 }
 
-func (usecase Usecase) CreateWallet(ctx context.Context, walletRequest WalletRequest) *base.Error {
-	return usecase.repository.CreateWallet(ctx, walletRequest)
+func (usecase Usecase) CreateWallet(ctx context.Context, wallet Wallet) *base.Error {
+	return usecase.repository.CreateWallet(ctx, wallet)
 }
 
-func (usecase Usecase) UpdateWalletById(ctx context.Context, walletRequest WalletRequest, id int64) *base.Error {
-	return usecase.repository.UpdateWalletById(ctx, walletRequest, id)
+func (usecase Usecase) UpdateWalletById(ctx context.Context, wallet Wallet, id int64) *base.Error {
+	return usecase.repository.UpdateWalletById(ctx, wallet, id)
 }
 
 func (usecase Usecase) DeleteWalletById(ctx context.Context, id int64) *base.Error {
@@ -37,30 +37,30 @@ func (usecase Usecase) GetWalletTransferList(ctx context.Context, walletId int64
 	return usecase.repository.GetWalletTransferList(ctx, walletId, sortBy, order, skip, limit)
 }
 
-func (usecase Usecase) CreateWalletTransfer(ctx context.Context, walletTransferRequest WalletTransferRequest, fromWalletId int64) *base.Error {
+func (usecase Usecase) CreateWalletTransfer(ctx context.Context, walletTransfer WalletTransfer, fromWalletId int64) *base.Error {
 	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *base.Error {
 		fromWallet, err := usecase.repository.GetWalletById(ctxWithTx, fromWalletId)
 		if err != nil {
 			return err
 		}
 
-		if walletTransferRequest.Amount > fromWallet.Balance {
+		if walletTransfer.Amount > fromWallet.Balance {
 			return &base.Error{Type: base.BadRequest, Message: "insufficient balance"}
 		}
 
-		if err := usecase.repository.UpdateWalletById(ctxWithTx, WalletRequest{Balance: fromWallet.Balance - walletTransferRequest.Amount}, fromWalletId); err != nil {
+		if err := usecase.repository.UpdateWalletById(ctxWithTx, Wallet{Balance: fromWallet.Balance - walletTransfer.Amount}, fromWalletId); err != nil {
 			return err
 		}
 
-		toWallet, err := usecase.repository.GetWalletById(ctxWithTx, walletTransferRequest.ToWalletId)
+		toWallet, err := usecase.repository.GetWalletById(ctxWithTx, walletTransfer.ToWalletId)
 		if err != nil {
 			return err
 		}
 
-		if err := usecase.repository.UpdateWalletById(ctxWithTx, WalletRequest{Balance: toWallet.Balance + walletTransferRequest.Amount}, walletTransferRequest.ToWalletId); err != nil {
+		if err := usecase.repository.UpdateWalletById(ctxWithTx, Wallet{Balance: toWallet.Balance + walletTransfer.Amount}, walletTransfer.ToWalletId); err != nil {
 			return err
 		}
 
-		return usecase.repository.CreateWalletTransfer(ctxWithTx, walletTransferRequest, fromWalletId)
+		return usecase.repository.CreateWalletTransfer(ctxWithTx, walletTransfer, fromWalletId)
 	})
 }

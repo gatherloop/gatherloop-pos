@@ -192,7 +192,7 @@ func (usecase Usecase) PayTransaction(ctx context.Context, transactionPayRequest
 		paymentCost := transaction.Total * paymentWallet.PaymentCostPercentage / 100
 		newBalance := paymentWallet.Balance + transaction.Total - paymentCost
 
-		if err := usecase.walletRepository.UpdateWalletById(ctxWithTx, wallet.WalletRequest{Balance: newBalance}, transactionPayRequest.WalletId); err != nil {
+		if err := usecase.walletRepository.UpdateWalletById(ctxWithTx, wallet.Wallet{Balance: newBalance}, transactionPayRequest.WalletId); err != nil {
 			return err
 		}
 

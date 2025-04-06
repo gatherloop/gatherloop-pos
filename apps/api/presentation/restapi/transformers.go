@@ -485,8 +485,8 @@ func ToApiWallet(wallet wallet.Wallet) apiContract.Wallet {
 	}
 }
 
-func ToWalletRequest(walletRequest apiContract.WalletRequest) wallet.WalletRequest {
-	return wallet.WalletRequest{
+func ToWalletRequest(walletRequest apiContract.WalletRequest) wallet.Wallet {
+	return wallet.Wallet{
 		Name:                  walletRequest.Name,
 		Balance:               walletRequest.Balance,
 		PaymentCostPercentage: walletRequest.PaymentCostPercentage,
@@ -506,8 +506,8 @@ func ToApiWalletTransfer(walletTransfer wallet.WalletTransfer) apiContract.Walle
 	}
 }
 
-func ToWalletTransferRequest(walletTransferRequest apiContract.WalletTransferRequest) wallet.WalletTransferRequest {
-	return wallet.WalletTransferRequest{
+func ToWalletTransferRequest(walletTransferRequest apiContract.WalletTransferRequest) wallet.WalletTransfer {
+	return wallet.WalletTransfer{
 		Amount:     walletTransferRequest.Amount,
 		ToWalletId: walletTransferRequest.ToWalletId,
 	}

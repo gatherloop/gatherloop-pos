@@ -2,12 +2,6 @@ package wallet
 
 import "time"
 
-type WalletRequest struct {
-	Name                  string
-	Balance               float32
-	PaymentCostPercentage float32
-}
-
 type Wallet struct {
 	Id                    int64
 	Name                  string
@@ -26,9 +20,4 @@ type WalletTransfer struct {
 	ToWalletId   int64
 	ToWallet     Wallet
 	DeletedAt    *time.Time
-}
-
-type WalletTransferRequest struct {
-	Amount     float32
-	ToWalletId int64
 }

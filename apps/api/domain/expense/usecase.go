@@ -88,7 +88,7 @@ func (usecase Usecase) CreateExpense(ctx context.Context, expenseRequest Expense
 			return &base.Error{Type: base.BadRequest, Message: "wallet's balance insufficient"}
 		}
 
-		if err := usecase.walletRepository.UpdateWalletById(ctxWithTx, wallet.WalletRequest{Balance: expenseWallet.Balance - expense.Total}, expense.WalletId); err != nil {
+		if err := usecase.walletRepository.UpdateWalletById(ctxWithTx, wallet.Wallet{Balance: expenseWallet.Balance - expense.Total}, expense.WalletId); err != nil {
 			return err
 		}
 
@@ -117,7 +117,7 @@ func (usecase Usecase) UpdateExpenseById(ctx context.Context, expenseRequest Exp
 			return err
 		}
 
-		if err := usecase.walletRepository.UpdateWalletById(ctxWithTx, wallet.WalletRequest{Balance: expenseWallet.Balance + existingExpense.Total}, existingExpense.WalletId); err != nil {
+		if err := usecase.walletRepository.UpdateWalletById(ctxWithTx, wallet.Wallet{Balance: expenseWallet.Balance + existingExpense.Total}, existingExpense.WalletId); err != nil {
 			return err
 		}
 
@@ -193,7 +193,7 @@ func (usecase Usecase) UpdateExpenseById(ctx context.Context, expenseRequest Exp
 			return &base.Error{Type: base.BadRequest, Message: "wallet's balance insufficient"}
 		}
 
-		if err := usecase.walletRepository.UpdateWalletById(ctxWithTx, wallet.WalletRequest{Balance: expenseWallet.Balance - expense.Total}, expense.WalletId); err != nil {
+		if err := usecase.walletRepository.UpdateWalletById(ctxWithTx, wallet.Wallet{Balance: expenseWallet.Balance - expense.Total}, expense.WalletId); err != nil {
 			return err
 		}
 
@@ -222,7 +222,7 @@ func (usecase Usecase) DeleteExpenseById(ctx context.Context, id int64) *base.Er
 			return err
 		}
 
-		if err := usecase.walletRepository.UpdateWalletById(ctxWithTx, wallet.WalletRequest{Balance: expenseWallet.Balance + existingExpense.Total}, existingExpense.WalletId); err != nil {
+		if err := usecase.walletRepository.UpdateWalletById(ctxWithTx, wallet.Wallet{Balance: expenseWallet.Balance + existingExpense.Total}, existingExpense.WalletId); err != nil {
 			return err
 		}
 

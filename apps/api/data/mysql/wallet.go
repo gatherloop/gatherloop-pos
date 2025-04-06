@@ -28,13 +28,13 @@ func (repo Repository) GetWalletById(ctx context.Context, id int64) (wallet.Wall
 	return wallet, ToError(result.Error)
 }
 
-func (repo Repository) CreateWallet(ctx context.Context, walletRequest wallet.WalletRequest) *base.Error {
+func (repo Repository) CreateWallet(ctx context.Context, walletRequest wallet.Wallet) *base.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	result := db.Table("wallets").Create(walletRequest)
 	return ToError(result.Error)
 }
 
-func (repo Repository) UpdateWalletById(ctx context.Context, walletRequest wallet.WalletRequest, id int64) *base.Error {
+func (repo Repository) UpdateWalletById(ctx context.Context, walletRequest wallet.Wallet, id int64) *base.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	result := db.Table("wallets").Where("id = ?", id).Updates(walletRequest)
 	return ToError(result.Error)
@@ -66,7 +66,7 @@ func (repo Repository) GetWalletTransferList(ctx context.Context, walletId int64
 	return walletTransfers, ToError(result.Error)
 }
 
-func (repo Repository) CreateWalletTransfer(ctx context.Context, walletTransferRequest wallet.WalletTransferRequest, fromWalletId int64) *base.Error {
+func (repo Repository) CreateWalletTransfer(ctx context.Context, walletTransferRequest wallet.WalletTransfer, fromWalletId int64) *base.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	walletTransfer := wallet.WalletTransfer{
 		CreatedAt:    time.Now(),
