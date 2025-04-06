@@ -27,17 +27,3 @@ type Expense struct {
 	Total        float32
 	ExpenseItems []ExpenseItem
 }
-
-type ExpenseItemRequest struct {
-	Id     *int64
-	Name   string
-	Unit   string
-	Price  float32
-	Amount float32
-}
-
-type ExpenseRequest struct {
-	WalletId     int64
-	BudgetId     int64
-	ExpenseItems []ExpenseItemRequest
-}

@@ -73,7 +73,7 @@ func (handler ExpenseHandler) CreateExpense(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if err := handler.usecase.CreateExpense(ctx, ToExpenseRequest(expenseRequest)); err != nil {
+	if err := handler.usecase.CreateExpense(ctx, ToExpense(expenseRequest)); err != nil {
 		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
 		return
 	}
@@ -96,7 +96,7 @@ func (handler ExpenseHandler) UpdateExpenseById(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	if err := handler.usecase.UpdateExpenseById(ctx, ToExpenseRequest(expenseRequest), id); err != nil {
+	if err := handler.usecase.UpdateExpenseById(ctx, ToExpense(expenseRequest), id); err != nil {
 		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
 		return
 	}

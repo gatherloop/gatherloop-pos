@@ -30,7 +30,7 @@ func (usecase Usecase) GetExpenseById(ctx context.Context, id int64) (Expense, *
 	return usecase.repository.GetExpenseById(ctx, id)
 }
 
-func (usecase Usecase) CreateExpense(ctx context.Context, expenseRequest ExpenseRequest) *base.Error {
+func (usecase Usecase) CreateExpense(ctx context.Context, expenseRequest Expense) *base.Error {
 	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *base.Error {
 		expense := Expense{
 			CreatedAt: time.Now(),
@@ -96,7 +96,7 @@ func (usecase Usecase) CreateExpense(ctx context.Context, expenseRequest Expense
 	})
 }
 
-func (usecase Usecase) UpdateExpenseById(ctx context.Context, expenseRequest ExpenseRequest, id int64) *base.Error {
+func (usecase Usecase) UpdateExpenseById(ctx context.Context, expense Expense, id int64) *base.Error {
 	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *base.Error {
 		existingExpense, err := usecase.repository.GetExpenseById(ctxWithTx, id)
 		if err != nil {
@@ -122,25 +122,18 @@ func (usecase Usecase) UpdateExpenseById(ctx context.Context, expenseRequest Exp
 		}
 
 		expense := Expense{
-			CreatedAt: time.Now(),
-			Total:     0,
-			WalletId:  expenseRequest.WalletId,
-			BudgetId:  expenseRequest.BudgetId,
+			Total:    0,
+			WalletId: expense.WalletId,
+			BudgetId: expense.BudgetId,
 		}
 
 		var expenseItems []ExpenseItem
 
-		for _, item := range expenseRequest.ExpenseItems {
+		for _, item := range expense.ExpenseItems {
 			subTotal := item.Price * item.Amount
 			expense.Total += subTotal
-
-			var expenseItemId int64
-			if item.Id != nil {
-				expenseItemId = *item.Id
-			}
-
 			expenseItem := ExpenseItem{
-				Id:        expenseItemId,
+				Id:        item.Id,
 				Name:      item.Name,
 				Unit:      item.Unit,
 				Price:     item.Price,
@@ -157,10 +150,8 @@ func (usecase Usecase) UpdateExpenseById(ctx context.Context, expenseRequest Exp
 		}
 
 		newIds := make(map[int64]bool)
-		for _, expenseRequestItem := range expenseRequest.ExpenseItems {
-			if expenseRequestItem.Id != nil {
-				newIds[*expenseRequestItem.Id] = true
-			}
+		for _, expenseRequestItem := range expenseItems {
+			newIds[expenseRequestItem.Id] = true
 		}
 
 		for _, existingExpenseItem := range existingExpense.ExpenseItems {

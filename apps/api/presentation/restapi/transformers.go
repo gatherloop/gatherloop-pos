@@ -224,11 +224,15 @@ func ToApiExpense(expense expense.Expense) apiContract.Expense {
 	}
 }
 
-func ToExpenseRequest(expenseRequest apiContract.ExpenseRequest) expense.ExpenseRequest {
-	expenseItemRequests := []expense.ExpenseItemRequest{}
+func ToExpense(expenseRequest apiContract.ExpenseRequest) expense.Expense {
+	expenseItems := []expense.ExpenseItem{}
 	for _, expenseItem := range expenseRequest.ExpenseItems {
-		expenseItemRequests = append(expenseItemRequests, expense.ExpenseItemRequest{
-			Id:     expenseItem.Id,
+		var id int64
+		if expenseItem.Id != nil {
+			id = *expenseItem.Id
+		}
+		expenseItems = append(expenseItems, expense.ExpenseItem{
+			Id:     id,
 			Name:   expenseItem.Name,
 			Unit:   expenseItem.Unit,
 			Price:  expenseItem.Price,
@@ -236,10 +240,10 @@ func ToExpenseRequest(expenseRequest apiContract.ExpenseRequest) expense.Expense
 		})
 	}
 
-	return expense.ExpenseRequest{
+	return expense.Expense{
 		WalletId:     expenseRequest.WalletId,
 		BudgetId:     expenseRequest.BudgetId,
-		ExpenseItems: expenseItemRequests,
+		ExpenseItems: expenseItems,
 	}
 }
 
