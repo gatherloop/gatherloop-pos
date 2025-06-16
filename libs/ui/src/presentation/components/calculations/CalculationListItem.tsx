@@ -2,6 +2,7 @@ import { Calendar, Clock, Pencil, Trash } from '@tamagui/lucide-icons';
 import { ListItem } from '../base';
 import dayjs from 'dayjs';
 import { XStackProps } from 'tamagui';
+import { getCalculationStatus } from './utils';
 
 export type CalculationListItemProps = {
   walletName: string;
@@ -21,11 +22,10 @@ export const CalculationListItem = ({
   onDeleteMenuPress,
   ...xStackProps
 }: CalculationListItemProps) => {
-  const status = totalCalculation === totalWallet ? 'Balanced' : 'Unbalanced';
   return (
     <ListItem
       title={walletName}
-      subtitle={status}
+      subtitle={getCalculationStatus({ totalCalculation, totalWallet })}
       menus={[
         {
           title: 'Edit',

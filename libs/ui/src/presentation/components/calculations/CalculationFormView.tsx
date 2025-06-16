@@ -10,6 +10,7 @@ import {
 import { Button, Card, Form, H4, Paragraph, XStack, YStack } from 'tamagui';
 import { CalculationForm } from '../../../domain';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
+import { getCalculationStatus } from './utils';
 
 export type CalculationFormViewProps = {
   variant: { type: 'loading' } | { type: 'loaded' } | { type: 'error' };
@@ -36,13 +37,32 @@ export const CalculationFormView = ({
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
         <YStack gap="$3">
-          <XStack>
+          <XStack flexWrap="wrap" gap="$3">
             <Field name="walletId" label="Wallet Name" flex={1}>
               <Select
                 items={walletSelectOptions}
                 disabled={isWalletSelectDisabled}
               />
             </Field>
+            <YStack justifyContent="flex-end" flex={1}>
+              <Paragraph textAlign="right">Status</Paragraph>
+              <FieldWatch
+                control={form.control}
+                name={[`totalWallet`, `calculationItems`]}
+              >
+                {([totalWallet, calculationItems]) => (
+                  <H4 textAlign="right">
+                    {getCalculationStatus({
+                      totalCalculation: calculationItems.reduce(
+                        (prev, curr) => prev + curr.amount * curr.price,
+                        0
+                      ),
+                      totalWallet,
+                    })}
+                  </H4>
+                )}
+              </FieldWatch>
+            </YStack>
             <YStack justifyContent="flex-end" flex={1}>
               <Paragraph textAlign="right">Total Wallet</Paragraph>
               <FieldWatch
