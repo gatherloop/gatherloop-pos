@@ -74,7 +74,7 @@ func (handler MaterialHandler) CreateMaterial(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	if err := handler.usecase.CreateMaterial(ctx, ToMaterialRequest(materialRequest)); err != nil {
+	if err := handler.usecase.CreateMaterial(ctx, ToMaterial(materialRequest)); err != nil {
 		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
 		return
 	}
@@ -97,7 +97,7 @@ func (handler MaterialHandler) UpdateMaterialById(w http.ResponseWriter, r *http
 		return
 	}
 
-	if err := handler.usecase.UpdateMaterialById(ctx, ToMaterialRequest(materialRequest), id); err != nil {
+	if err := handler.usecase.UpdateMaterialById(ctx, ToMaterial(materialRequest), id); err != nil {
 		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
 		return
 	}

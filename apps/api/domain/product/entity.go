@@ -27,17 +27,3 @@ type Product struct {
 	DeletedAt   *time.Time
 	CreatedAt   time.Time
 }
-
-type ProductMaterialRequest struct {
-	Id         *int64
-	MaterialId int64
-	Amount     float32
-}
-
-type ProductRequest struct {
-	CategoryId  int64
-	Name        string
-	Price       float32
-	Description *string
-	Materials   []ProductMaterialRequest
-}

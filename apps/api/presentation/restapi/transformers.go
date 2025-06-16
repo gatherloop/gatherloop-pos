@@ -148,8 +148,8 @@ func ToApiBudget(budget budget.Budget) apiContract.Budget {
 	}
 }
 
-func ToBudgetRequest(budgetRequest apiContract.BudgetRequest) budget.BudgetRequest {
-	return budget.BudgetRequest{
+func ToBudget(budgetRequest apiContract.BudgetRequest) budget.Budget {
+	return budget.Budget{
 		Name:       budgetRequest.Name,
 		Percentage: budgetRequest.Percentage,
 		Balance:    budgetRequest.Balance,
@@ -178,8 +178,8 @@ func ToApiCategory(category category.Category) apiContract.Category {
 	}
 }
 
-func ToCategoryRequest(categoryRequest apiContract.CategoryRequest) category.CategoryRequest {
-	return category.CategoryRequest{
+func ToCategory(categoryRequest apiContract.CategoryRequest) category.Category {
+	return category.Category{
 		Name: categoryRequest.Name,
 	}
 }
@@ -224,22 +224,31 @@ func ToApiExpense(expense expense.Expense) apiContract.Expense {
 	}
 }
 
-func ToExpenseRequest(expenseRequest apiContract.ExpenseRequest) expense.ExpenseRequest {
-	expenseItemRequests := []expense.ExpenseItemRequest{}
+func ToExpense(expenseRequest apiContract.ExpenseRequest) expense.Expense {
+	var total float32
+	expenseItems := []expense.ExpenseItem{}
 	for _, expenseItem := range expenseRequest.ExpenseItems {
-		expenseItemRequests = append(expenseItemRequests, expense.ExpenseItemRequest{
-			Id:     expenseItem.Id,
-			Name:   expenseItem.Name,
-			Unit:   expenseItem.Unit,
-			Price:  expenseItem.Price,
-			Amount: expenseItem.Amount,
+		var id int64
+		if expenseItem.Id != nil {
+			id = *expenseItem.Id
+		}
+		subtotal := expenseItem.Price * expenseItem.Amount
+		total += subtotal
+		expenseItems = append(expenseItems, expense.ExpenseItem{
+			Id:       id,
+			Name:     expenseItem.Name,
+			Unit:     expenseItem.Unit,
+			Price:    expenseItem.Price,
+			Amount:   expenseItem.Amount,
+			Subtotal: subtotal,
 		})
 	}
 
-	return expense.ExpenseRequest{
+	return expense.Expense{
 		WalletId:     expenseRequest.WalletId,
 		BudgetId:     expenseRequest.BudgetId,
-		ExpenseItems: expenseItemRequests,
+		ExpenseItems: expenseItems,
+		Total:        total,
 	}
 }
 
@@ -268,8 +277,8 @@ func ToApiMaterial(material material.Material) apiContract.Material {
 	}
 }
 
-func ToMaterialRequest(materialRequest apiContract.MaterialRequest) material.MaterialRequest {
-	return material.MaterialRequest{
+func ToMaterial(materialRequest apiContract.MaterialRequest) material.Material {
+	return material.Material{
 		Name:        materialRequest.Name,
 		Price:       materialRequest.Price,
 		Unit:        materialRequest.Unit,
@@ -343,17 +352,21 @@ func ToApiProduct(product product.Product) apiContract.Product {
 	}
 }
 
-func ToProductRequest(productRequest apiContract.ProductRequest) product.ProductRequest {
-	productMaterials := []product.ProductMaterialRequest{}
+func ToProduct(productRequest apiContract.ProductRequest) product.Product {
+	productMaterials := []product.ProductMaterial{}
 	for _, productMaterial := range productRequest.Materials {
-		productMaterials = append(productMaterials, product.ProductMaterialRequest{
-			Id:         productMaterial.Id,
+		var id int64
+		if productMaterial.Id != nil {
+			id = *productMaterial.Id
+		}
+		productMaterials = append(productMaterials, product.ProductMaterial{
+			Id:         id,
 			MaterialId: productMaterial.MaterialId,
 			Amount:     productMaterial.Amount,
 		})
 	}
 
-	return product.ProductRequest{
+	return product.Product{
 		Name:        productRequest.Name,
 		Price:       productRequest.Price,
 		CategoryId:  productRequest.CategoryId,
@@ -424,26 +437,24 @@ func ToApiTransaction(transaction transaction.Transaction) apiContract.Transacti
 	}
 }
 
-func ToTransactionRequest(transactionRequest apiContract.TransactionRequest) transaction.TransactionRequest {
-	transactionItemRequests := []transaction.TransactionItemRequest{}
+func ToTransaction(transactionRequest apiContract.TransactionRequest) transaction.Transaction {
+	transactionItems := []transaction.TransactionItem{}
 	for _, item := range transactionRequest.TransactionItems {
-		transactionItemRequests = append(transactionItemRequests, transaction.TransactionItemRequest{
-			Id:             item.Id,
+		var id int64
+		if item.Id != nil {
+			id = *item.Id
+		}
+		transactionItems = append(transactionItems, transaction.TransactionItem{
+			Id:             id,
 			ProductId:      item.ProductId,
 			Amount:         item.Amount,
 			DiscountAmount: item.DiscountAmount,
 		})
 	}
 
-	return transaction.TransactionRequest{
+	return transaction.Transaction{
 		Name:             transactionRequest.Name,
-		TransactionItems: transactionItemRequests,
-	}
-}
-
-func ToTransactionPayRequest(transactionPayRequest apiContract.TransactionPayRequest) transaction.TransactionPayRequest {
-	return transaction.TransactionPayRequest{
-		WalletId: transactionPayRequest.WalletId,
+		TransactionItems: transactionItems,
 	}
 }
 
@@ -485,8 +496,8 @@ func ToApiWallet(wallet wallet.Wallet) apiContract.Wallet {
 	}
 }
 
-func ToWalletRequest(walletRequest apiContract.WalletRequest) wallet.WalletRequest {
-	return wallet.WalletRequest{
+func ToWalletRequest(walletRequest apiContract.WalletRequest) wallet.Wallet {
+	return wallet.Wallet{
 		Name:                  walletRequest.Name,
 		Balance:               walletRequest.Balance,
 		PaymentCostPercentage: walletRequest.PaymentCostPercentage,
@@ -506,8 +517,8 @@ func ToApiWalletTransfer(walletTransfer wallet.WalletTransfer) apiContract.Walle
 	}
 }
 
-func ToWalletTransferRequest(walletTransferRequest apiContract.WalletTransferRequest) wallet.WalletTransferRequest {
-	return wallet.WalletTransferRequest{
+func ToWalletTransferRequest(walletTransferRequest apiContract.WalletTransferRequest) wallet.WalletTransfer {
+	return wallet.WalletTransfer{
 		Amount:     walletTransferRequest.Amount,
 		ToWalletId: walletTransferRequest.ToWalletId,
 	}

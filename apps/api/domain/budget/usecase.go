@@ -21,12 +21,12 @@ func (usecase Usecase) GetBudgetById(ctx context.Context, id int64) (Budget, *ba
 	return usecase.repository.GetBudgetById(ctx, id)
 }
 
-func (usecase Usecase) CreateBudget(ctx context.Context, budgetRequest BudgetRequest) *base.Error {
-	return usecase.repository.CreateBudget(ctx, budgetRequest)
+func (usecase Usecase) CreateBudget(ctx context.Context, budget Budget) *base.Error {
+	return usecase.repository.CreateBudget(ctx, &budget)
 }
 
-func (usecase Usecase) UpdateBudgetById(ctx context.Context, budgetRequest BudgetRequest, id int64) *base.Error {
-	return usecase.repository.UpdateBudgetById(ctx, budgetRequest, id)
+func (usecase Usecase) UpdateBudgetById(ctx context.Context, budget Budget, id int64) *base.Error {
+	return usecase.repository.UpdateBudgetById(ctx, &budget, id)
 }
 
 func (usecase Usecase) DeleteBudgetById(ctx context.Context, id int64) *base.Error {

@@ -58,7 +58,7 @@ func (handler CategoryHandler) CreateCategory(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	if err := handler.usecase.CreateCategory(ctx, ToCategoryRequest(categoryRequest)); err != nil {
+	if err := handler.usecase.CreateCategory(ctx, ToCategory(categoryRequest)); err != nil {
 		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
 		return
 	}
@@ -81,7 +81,7 @@ func (handler CategoryHandler) UpdateCategoryById(w http.ResponseWriter, r *http
 		return
 	}
 
-	if err := handler.usecase.UpdateCategoryById(ctx, ToCategoryRequest(categoryRequest), id); err != nil {
+	if err := handler.usecase.UpdateCategoryById(ctx, ToCategory(categoryRequest), id); err != nil {
 		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
 		return
 	}

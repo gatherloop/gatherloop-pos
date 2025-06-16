@@ -47,20 +47,18 @@ func (repo Repository) CreateExpense(ctx context.Context, expense *expense.Expen
 
 func (repo Repository) UpdateExpenseById(ctx context.Context, expense *expense.Expense, id int64) *base.Error {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Table("expenses").Where("id = ?", id).Updates(expense)
+	if result := db.Table("expenses").Where("id = ?", id).Updates(expense); result.Error != nil {
+		return ToError(result.Error)
+	}
+
+	result := db.Clauses(clause.OnConflict{UpdateAll: true}).Table("expense_items").Create(expense.ExpenseItems)
 	return ToError(result.Error)
 }
 
 func (repo Repository) DeleteExpenseById(ctx context.Context, id int64) *base.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	currentTime := time.Now()
-	result := db.Table("expenses").Where("id = ?", id).Update("deleted_at", currentTime)
-	return ToError(result.Error)
-}
-
-func (repo Repository) CreateExpenseItems(ctx context.Context, expenseItems []expense.ExpenseItem) *base.Error {
-	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Clauses(clause.OnConflict{UpdateAll: true}).Table("expense_items").Create(expenseItems)
+	result := db.Clauses(clause.OnConflict{UpdateAll: true}).Table("expenses").Where("id = ?", id).Update("deleted_at", currentTime)
 	return ToError(result.Error)
 }
 

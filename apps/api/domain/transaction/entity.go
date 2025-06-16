@@ -36,22 +36,6 @@ type TransactionStatistic struct {
 	TotalIncome float32
 }
 
-type TransactionRequest struct {
-	Name             string
-	TransactionItems []TransactionItemRequest
-}
-
-type TransactionItemRequest struct {
-	Id             *int64
-	ProductId      int64
-	Amount         float32
-	DiscountAmount float32
-}
-
-type TransactionPayRequest struct {
-	WalletId int64
-}
-
 type PaymentStatus int
 
 const (

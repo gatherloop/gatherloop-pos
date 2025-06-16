@@ -10,9 +10,3 @@ type Budget struct {
 	DeletedAt  *time.Time
 	CreatedAt  time.Time
 }
-
-type BudgetRequest struct {
-	Name       string
-	Percentage float32
-	Balance    float32
-}

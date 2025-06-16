@@ -10,7 +10,7 @@ type Repository interface {
 	GetMaterialList(ctx context.Context, query string, sortBy base.SortBy, order base.Order, skip int, limit int) ([]Material, *base.Error)
 	GetMaterialListTotal(ctx context.Context, query string) (int64, *base.Error)
 	GetMaterialById(ctx context.Context, id int64) (Material, *base.Error)
-	CreateMaterial(ctx context.Context, materialRequest MaterialRequest) *base.Error
-	UpdateMaterialById(ctx context.Context, materialRequest MaterialRequest, id int64) *base.Error
+	CreateMaterial(ctx context.Context, material *Material) *base.Error
+	UpdateMaterialById(ctx context.Context, material *Material, id int64) *base.Error
 	DeleteMaterialById(ctx context.Context, id int64) *base.Error
 }
