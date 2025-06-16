@@ -225,18 +225,22 @@ func ToApiExpense(expense expense.Expense) apiContract.Expense {
 }
 
 func ToExpense(expenseRequest apiContract.ExpenseRequest) expense.Expense {
+	var total float32
 	expenseItems := []expense.ExpenseItem{}
 	for _, expenseItem := range expenseRequest.ExpenseItems {
 		var id int64
 		if expenseItem.Id != nil {
 			id = *expenseItem.Id
 		}
+		subtotal := expenseItem.Price * expenseItem.Amount
+		total += subtotal
 		expenseItems = append(expenseItems, expense.ExpenseItem{
-			Id:     id,
-			Name:   expenseItem.Name,
-			Unit:   expenseItem.Unit,
-			Price:  expenseItem.Price,
-			Amount: expenseItem.Amount,
+			Id:       id,
+			Name:     expenseItem.Name,
+			Unit:     expenseItem.Unit,
+			Price:    expenseItem.Price,
+			Amount:   expenseItem.Amount,
+			Subtotal: subtotal,
 		})
 	}
 
@@ -244,6 +248,7 @@ func ToExpense(expenseRequest apiContract.ExpenseRequest) expense.Expense {
 		WalletId:     expenseRequest.WalletId,
 		BudgetId:     expenseRequest.BudgetId,
 		ExpenseItems: expenseItems,
+		Total:        total,
 	}
 }
 
