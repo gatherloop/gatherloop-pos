@@ -1,22 +1,24 @@
 import { Material, MaterialForm } from '../entities';
 
-export type MaterialListParams = {
-  page: number;
-  itemPerPage: number;
-  query: string;
-  sortBy: 'created_at';
-  orderBy: 'asc' | 'desc';
-};
-
 export interface MaterialRepository {
-  getMaterialList: (params: MaterialListParams) => {
+  getMaterialList: (params: {
+    page: number;
+    itemPerPage: number;
+    query: string;
+    sortBy: 'created_at';
+    orderBy: 'asc' | 'desc';
+  }) => {
     materials: Material[];
     totalItem: number;
   };
 
-  fetchMaterialList: (
-    params: MaterialListParams
-  ) => Promise<{ materials: Material[]; totalItem: number }>;
+  fetchMaterialList: (params: {
+    page: number;
+    itemPerPage: number;
+    query: string;
+    sortBy: 'created_at';
+    orderBy: 'asc' | 'desc';
+  }) => Promise<{ materials: Material[]; totalItem: number }>;
 
   fetchMaterialById: (materialId: number) => Promise<Material>;
 

@@ -13,7 +13,6 @@ import {
 } from '../../../../api-contract/src';
 import { Material, MaterialRepository } from '../../domain';
 import { RequestConfig } from '@kubb/swagger-client/client';
-import { MaterialListParams } from '../../domain/repositories';
 
 export class ApiMaterialRepository implements MaterialRepository {
   client: QueryClient;
@@ -79,7 +78,19 @@ export class ApiMaterialRepository implements MaterialRepository {
   };
 
   fetchMaterialList = (
-    { itemPerPage, orderBy, page, query, sortBy }: MaterialListParams,
+    {
+      itemPerPage,
+      orderBy,
+      page,
+      query,
+      sortBy,
+    }: {
+      page: number;
+      itemPerPage: number;
+      query: string;
+      sortBy: 'created_at';
+      orderBy: 'asc' | 'desc';
+    },
     options?: Partial<RequestConfig>
   ) => {
     const params = {

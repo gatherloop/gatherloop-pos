@@ -1,17 +1,6 @@
 import { CategoryRepository } from '../../domain';
 
 export class MockCategoryRepository implements CategoryRepository {
-  getCategoryById: CategoryRepository['getCategoryById'] = (_categoryId) => {
-    return {
-      id: 1,
-      createdAt: new Date().toString(),
-      name: 'Mock Category',
-    };
-  };
-
-  getCategoryByIdServerParams: CategoryRepository['getCategoryByIdServerParams'] =
-    () => null;
-
   fetchCategoryById: CategoryRepository['fetchCategoryById'] = (
     _categoryId
   ) => {
@@ -37,10 +26,6 @@ export class MockCategoryRepository implements CategoryRepository {
     _categoryId
   ) => {
     return Promise.resolve();
-  };
-
-  getCategoryList: CategoryRepository['getCategoryList'] = () => {
-    return [];
   };
 
   fetchCategoryList: CategoryRepository['fetchCategoryList'] = () => {

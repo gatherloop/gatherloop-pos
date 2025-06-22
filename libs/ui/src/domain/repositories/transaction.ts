@@ -5,22 +5,27 @@ import {
   TransactionStatistic,
 } from '../entities';
 
-export type TransactionListParams = {
-  page: number;
-  itemPerPage: number;
-  query: string;
-  sortBy: 'created_at';
-  orderBy: 'asc' | 'desc';
-  paymentStatus: PaymentStatus;
-};
-
 export interface TransactionRepository {
-  getTransactionList: (params: TransactionListParams) => {
+  getTransactionList: (params: {
+    page: number;
+    itemPerPage: number;
+    query: string;
+    sortBy: 'created_at';
+    orderBy: 'asc' | 'desc';
+    paymentStatus: PaymentStatus;
+  }) => {
     transactions: Transaction[];
     totalItem: number;
   };
 
-  fetchTransactionList: (params: TransactionListParams) => Promise<{
+  fetchTransactionList: (params: {
+    page: number;
+    itemPerPage: number;
+    query: string;
+    sortBy: 'created_at';
+    orderBy: 'asc' | 'desc';
+    paymentStatus: PaymentStatus;
+  }) => Promise<{
     transactions: Transaction[];
     totalItem: number;
   }>;

@@ -13,7 +13,7 @@ export const useTransactionDetailController = (
     name: state.transaction?.name ?? '',
     total: state.transaction?.total ?? 0,
     transactionItems: state.transaction?.transactionItems ?? [],
-    paidAt: state.transaction?.paidAt,
+    paidAt: state.transaction?.paidAt ?? undefined,
     walletName: state.transaction?.wallet?.name,
   };
 };

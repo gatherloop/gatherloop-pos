@@ -1,22 +1,24 @@
 import { Product, ProductForm } from '../entities';
 
-export type ProductListParams = {
-  page: number;
-  itemPerPage: number;
-  query: string;
-  sortBy: 'created_at';
-  orderBy: 'asc' | 'desc';
-};
-
 export interface ProductRepository {
-  getProductList: (params: ProductListParams) => {
+  getProductList: (params: {
+    page: number;
+    itemPerPage: number;
+    query: string;
+    sortBy: 'created_at';
+    orderBy: 'asc' | 'desc';
+  }) => {
     products: Product[];
     totalItem: number;
   };
 
-  fetchProductList: (
-    params: ProductListParams
-  ) => Promise<{ products: Product[]; totalItem: number }>;
+  fetchProductList: (params: {
+    page: number;
+    itemPerPage: number;
+    query: string;
+    sortBy: 'created_at';
+    orderBy: 'asc' | 'desc';
+  }) => Promise<{ products: Product[]; totalItem: number }>;
 
   fetchProductById: (productId: number) => Promise<Product>;
 
