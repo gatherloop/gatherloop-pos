@@ -1,83 +1,47 @@
-// eslint-disable-next-line @nx/enforce-module-boundaries
-import {
-  categoryList,
-  categoryListQueryKey,
-  materialList,
-  materialListQueryKey,
-} from '../../../api-contract/src';
-import { GetServerSidePropsContext } from 'next';
 import {
   ApiAuthRepository,
   ApiCategoryRepository,
   ApiMaterialRepository,
   ApiProductRepository,
+  UrlMaterialListQueryRepository,
 } from '../data';
 import {
   AuthLogoutUsecase,
+  MaterialListParams,
   MaterialListUsecase,
+  ProductCreateParams,
   ProductCreateUsecase,
 } from '../domain';
 import { ProductCreateScreen as ProductCreateScreenView } from '../presentation';
-import {
-  dehydrate,
-  DehydratedState,
-  QueryClient,
-  useQueryClient,
-} from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
 
-export async function getProductCreateScreenDehydratedState(
-  ctx: GetServerSidePropsContext
-): Promise<DehydratedState> {
-  const queryClient = new QueryClient();
-  await Promise.all([
-    queryClient.prefetchQuery({
-      queryKey: categoryListQueryKey(),
-      queryFn: () =>
-        categoryList({
-          headers: { Cookie: ctx.req.headers.cookie },
-        }),
-    }),
-    queryClient.prefetchQuery({
-      queryKey: materialListQueryKey({
-        limit: 8,
-        skip: 0,
-        order: 'desc',
-        sortBy: 'created_at',
-        query: '',
-      }),
-      queryFn: () =>
-        materialList(
-          {
-            limit: 8,
-            skip: 0,
-            order: 'desc',
-            sortBy: 'created_at',
-            query: '',
-          },
-          {
-            headers: { Cookie: ctx.req.headers.cookie },
-          }
-        ),
-    }),
-  ]);
+export type ProductCreateScreenProps = {
+  productCreateParams: ProductCreateParams;
+  materialListParam: MaterialListParams;
+};
 
-  return dehydrate(queryClient);
-}
-
-export function ProductCreateScreen() {
-  const client = useQueryClient();
+export function ProductCreateScreen({
+  productCreateParams,
+  materialListParam,
+}: ProductCreateScreenProps) {
+  const client = new QueryClient();
   const productRepository = new ApiProductRepository(client);
   const categoryRepository = new ApiCategoryRepository(client);
+  const materialRepository = new ApiMaterialRepository(client);
+  const materialListQueryRepository = new UrlMaterialListQueryRepository();
+  const authRepository = new ApiAuthRepository();
+
+  const materialListUsecase = new MaterialListUsecase(
+    materialRepository,
+    materialListQueryRepository,
+    materialListParam
+  );
+  const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
   const productCreateUsecase = new ProductCreateUsecase(
     productRepository,
-    categoryRepository
+    categoryRepository,
+    productCreateParams
   );
-
-  const materialRepository = new ApiMaterialRepository(client);
-  const materialListUsecase = new MaterialListUsecase(materialRepository);
-
-  const authRepository = new ApiAuthRepository();
-  const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
 
   return (
     <ProductCreateScreenView

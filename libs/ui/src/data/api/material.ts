@@ -4,7 +4,6 @@ import {
   materialCreate,
   materialDeleteById,
   materialFindById,
-  MaterialFindById200,
   materialFindByIdQueryKey,
   materialList,
   MaterialList200,
@@ -12,48 +11,25 @@ import {
   materialUpdateById,
   Material as ApiMaterial,
 } from '../../../../api-contract/src';
-import { Material, MaterialListParams, MaterialRepository } from '../../domain';
+import { Material, MaterialRepository } from '../../domain';
+import { RequestConfig } from '@kubb/swagger-client/client';
+import { MaterialListParams } from '../../domain/repositories';
 
 export class ApiMaterialRepository implements MaterialRepository {
   client: QueryClient;
-
-  materialListServerParams: MaterialListParams = {
-    page: 1,
-    itemPerPage: 8,
-    orderBy: 'desc',
-    query: '',
-    sortBy: 'created_at',
-  };
-
-  materialByIdServerParams: number | null = null;
 
   constructor(client: QueryClient) {
     this.client = client;
   }
 
-  getMaterialById: MaterialRepository['getMaterialById'] = (materialId) => {
-    const res = this.client.getQueryState<MaterialFindById200>(
-      materialFindByIdQueryKey(materialId)
-    )?.data;
-
-    this.client.removeQueries({
-      queryKey: materialFindByIdQueryKey(materialId),
-    });
-
-    return res ? transformers.material(res.data) : null;
-  };
-
-  getMaterialListServerParams: MaterialRepository['getMaterialListServerParams'] =
-    () => this.materialListServerParams;
-
-  getMaterialByIdServerParams: MaterialRepository['getMaterialByIdServerParams'] =
-    () => this.materialByIdServerParams;
-
-  fetchMaterialById: MaterialRepository['fetchMaterialById'] = (materialId) => {
+  fetchMaterialById = (
+    materialId: number,
+    options?: Partial<RequestConfig>
+  ) => {
     return this.client
       .fetchQuery({
         queryKey: materialFindByIdQueryKey(materialId),
-        queryFn: () => materialFindById(materialId),
+        queryFn: () => materialFindById(materialId, options),
       })
       .then(({ data }) => transformers.material(data));
   };
@@ -102,13 +78,10 @@ export class ApiMaterialRepository implements MaterialRepository {
     };
   };
 
-  fetchMaterialList: MaterialRepository['fetchMaterialList'] = ({
-    itemPerPage,
-    orderBy,
-    page,
-    query,
-    sortBy,
-  }) => {
+  fetchMaterialList = (
+    { itemPerPage, orderBy, page, query, sortBy }: MaterialListParams,
+    options?: Partial<RequestConfig>
+  ) => {
     const params = {
       query,
       skip: (page - 1) * itemPerPage,
@@ -120,7 +93,7 @@ export class ApiMaterialRepository implements MaterialRepository {
     return this.client
       .fetchQuery({
         queryKey: materialListQueryKey(params),
-        queryFn: () => materialList(params),
+        queryFn: () => materialList(params, options),
       })
       .then((data) => ({
         materials: data.data.map(transformers.material),
@@ -136,6 +109,6 @@ const transformers = {
     name: material.name,
     price: material.price,
     unit: material.unit,
-    description: material.description,
+    description: material.description ?? '',
   }),
 };

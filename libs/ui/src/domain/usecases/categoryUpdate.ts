@@ -1,5 +1,5 @@
 import { match } from 'ts-pattern';
-import { CategoryForm } from '../entities';
+import { Category, CategoryForm } from '../entities';
 import { CategoryRepository } from '../repositories';
 import { Usecase } from './IUsecase';
 
@@ -28,27 +28,31 @@ export type CategoryUpdateAction =
   | { type: 'SUBMIT_ERROR'; errorMessage: string }
   | { type: 'SUBMIT_CANCEL' };
 
+export type CategoryUpdateParams = {
+  categoryId: number;
+  category: Category | null;
+};
+
 export class CategoryUpdateUsecase extends Usecase<
   CategoryUpdateState,
-  CategoryUpdateAction
+  CategoryUpdateAction,
+  CategoryUpdateParams
 > {
+  params: CategoryUpdateParams;
   repository: CategoryRepository;
 
-  constructor(repository: CategoryRepository) {
+  constructor(repository: CategoryRepository, params: CategoryUpdateParams) {
     super();
     this.repository = repository;
+    this.params = params;
   }
 
   getInitialState(): CategoryUpdateState {
-    const categoryId = this.repository.getCategoryByIdServerParams();
-    const category = categoryId
-      ? this.repository.getCategoryById(categoryId)
-      : null;
     return {
-      type: category !== null ? 'loaded' : 'idle',
+      type: this.params.category !== null ? 'loaded' : 'idle',
       errorMessage: null,
       values: {
-        name: category?.name ?? '',
+        name: this.params.category?.name ?? '',
       },
     };
   }
@@ -125,9 +129,8 @@ export class CategoryUpdateUsecase extends Usecase<
         dispatch({ type: 'FETCH' });
       })
       .with({ type: 'loading' }, () => {
-        const categoryId = this.repository.getCategoryByIdServerParams() ?? NaN;
         this.repository
-          .fetchCategoryById(categoryId)
+          .fetchCategoryById(this.params.categoryId)
           .then((category) =>
             dispatch({
               type: 'FETCH_SUCCESS',
@@ -144,9 +147,8 @@ export class CategoryUpdateUsecase extends Usecase<
           );
       })
       .with({ type: 'submitting' }, ({ values }) => {
-        const categoryId = this.repository.getCategoryByIdServerParams() ?? NaN;
         this.repository
-          .updateCategory(values, categoryId)
+          .updateCategory(values, this.params.categoryId)
           .then(() => dispatch({ type: 'SUBMIT_SUCCESS' }))
           .catch(() =>
             dispatch({ type: 'SUBMIT_ERROR', errorMessage: 'Submit failed' })

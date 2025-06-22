@@ -1,13 +1,10 @@
 import { MaterialCreateScreen } from '@gatherloop-pos/ui';
 import { GetServerSideProps } from 'next';
-import { PageProps } from '../_app';
 
-export const getServerSideProps: GetServerSideProps<PageProps> = async (
-  ctx
-) => {
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
   return {
-    props: { dehydratedState: { mutations: [], queries: [] } },
+    props: {},
     redirect: isLoggedIn ? undefined : { destination: '/auth/login' },
   };
 };

@@ -48,16 +48,16 @@ export const CalculationFormView = ({
               <Paragraph textAlign="right">Status</Paragraph>
               <FieldWatch
                 control={form.control}
-                name={[`totalWallet`, `calculationItems`]}
+                name={[`totalWallet`, `walletId`, `calculationItems`]}
               >
-                {([totalWallet, calculationItems]) => (
+                {([totalWallet, walletId, calculationItems]) => (
                   <H4 textAlign="right">
                     {getCalculationStatus({
                       totalCalculation: calculationItems.reduce(
                         (prev, curr) => prev + curr.amount * curr.price,
                         0
                       ),
-                      totalWallet,
+                      totalWallet: getTotalWallet(totalWallet, walletId),
                     })}
                   </H4>
                 )}

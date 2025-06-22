@@ -1,45 +1,32 @@
-// eslint-disable-next-line @nx/enforce-module-boundaries
-import {
-  transactionStatistics,
-  transactionStatisticsQueryKey,
-} from '../../../api-contract/src';
-import { GetServerSidePropsContext } from 'next';
 import { ApiAuthRepository, ApiTransactionRepository } from '../data';
-import { AuthLogoutUsecase, TransactionStatisticListUsecase } from '../domain';
-import { TransactionStatisticScreen as TransactionStatisticScreenView } from '../presentation';
 import {
-  dehydrate,
-  DehydratedState,
-  QueryClient,
-  useQueryClient,
-} from '@tanstack/react-query';
+  AuthLogoutUsecase,
+  TransactionStatisticListParams,
+  TransactionStatisticListUsecase,
+} from '../domain';
+import { TransactionStatisticScreen as TransactionStatisticScreenView } from '../presentation';
+import { QueryClient } from '@tanstack/react-query';
+import { UrlTransactionStatisticListQueryRepository } from '../data/url/transactionStatisticListQuery';
 
-export async function getTransactionStatisticScreenDehydratedState(
-  ctx: GetServerSidePropsContext
-): Promise<DehydratedState> {
-  const queryClient = new QueryClient();
-  await queryClient.prefetchQuery({
-    queryKey: transactionStatisticsQueryKey({ groupBy: 'date' }),
-    queryFn: () =>
-      transactionStatistics(
-        { groupBy: 'date' },
-        {
-          headers: { Cookie: ctx.req.headers.cookie },
-        }
-      ),
-  });
-  return dehydrate(queryClient);
-}
+export type TransactionStatisticScreenProps = {
+  transactionStatisticListParams: TransactionStatisticListParams;
+};
 
-export function TransactionStatisticScreen() {
-  const client = useQueryClient();
+export function TransactionStatisticScreen({
+  transactionStatisticListParams,
+}: TransactionStatisticScreenProps) {
+  const client = new QueryClient();
   const transactionRepository = new ApiTransactionRepository(client);
-  const transactionStatisticListusecase = new TransactionStatisticListUsecase(
-    transactionRepository
-  );
-
+  const transactionStatisticListQueryRepository =
+    new UrlTransactionStatisticListQueryRepository();
   const authRepository = new ApiAuthRepository();
+
   const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
+  const transactionStatisticListusecase = new TransactionStatisticListUsecase(
+    transactionRepository,
+    transactionStatisticListQueryRepository,
+    transactionStatisticListParams
+  );
 
   return (
     <TransactionStatisticScreenView

@@ -1,70 +1,50 @@
-// eslint-disable-next-line @nx/enforce-module-boundaries
-import {
-  transactionList,
-  transactionListQueryKey,
-} from '../../../api-contract/src';
-import { GetServerSidePropsContext } from 'next';
 import {
   ApiAuthRepository,
   ApiTransactionRepository,
   ApiWalletRepository,
+  UrlTransactionListQueryRepository,
 } from '../data';
 import {
   TransactionListUsecase,
   TransactionDeleteUsecase,
   TransactionPayUsecase,
   AuthLogoutUsecase,
+  TransactionListParams,
+  TransactionPayParams,
 } from '../domain';
 import { TransactionListScreen as TransactionListScreenView } from '../presentation';
-import { dehydrate, QueryClient, useQueryClient } from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
 
-export async function getTransactionListScreenDehydratedState(
-  ctx: GetServerSidePropsContext
-) {
+export type TransactionListScreenProps = {
+  transactionListParams: TransactionListParams;
+  transactionPayParams: TransactionPayParams;
+};
+
+export function TransactionListScreen({
+  transactionListParams,
+  transactionPayParams,
+}: TransactionListScreenProps) {
   const client = new QueryClient();
-  await client.prefetchQuery({
-    queryKey: transactionListQueryKey({
-      limit: 8,
-      order: 'desc',
-      query: '',
-      skip: 0,
-      sortBy: 'created_at',
-    }),
-    queryFn: (queryCtx) =>
-      transactionList(
-        {
-          limit: queryCtx.queryKey[1].limit,
-          order: queryCtx.queryKey[1].order,
-          query: queryCtx.queryKey[1].query,
-          skip: queryCtx.queryKey[1].skip,
-          sortBy: queryCtx.queryKey[1].sortBy,
-        },
-        {
-          headers: { Cookie: ctx.req.headers.cookie },
-        }
-      ),
-  });
-
-  return dehydrate(client);
-}
-
-export function TransactionListScreen() {
-  const client = useQueryClient();
   const transactionRepository = new ApiTransactionRepository(client);
+  const transactionListQueryRepository =
+    new UrlTransactionListQueryRepository();
   const walletRepository = new ApiWalletRepository(client);
+  const authRepository = new ApiAuthRepository();
+
+  const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
   const transactionListUsecase = new TransactionListUsecase(
-    transactionRepository
+    transactionRepository,
+    transactionListQueryRepository,
+    transactionListParams
   );
   const transactionDeleteUsecase = new TransactionDeleteUsecase(
     transactionRepository
   );
   const transactionPayUsecase = new TransactionPayUsecase(
     transactionRepository,
-    walletRepository
+    walletRepository,
+    transactionPayParams
   );
-
-  const authRepository = new ApiAuthRepository();
-  const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
 
   return (
     <TransactionListScreenView

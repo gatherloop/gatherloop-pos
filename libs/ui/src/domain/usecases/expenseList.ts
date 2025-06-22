@@ -24,24 +24,29 @@ export type ExpenseListAction =
   | { type: 'REVALIDATE'; expenses: Expense[] }
   | { type: 'REVALIDATE_FINISH'; expenses: Expense[] };
 
+export type ExpenseListParams = {
+  expenses: Expense[];
+};
+
 export class ExpenseListUsecase extends Usecase<
   ExpenseListState,
-  ExpenseListAction
+  ExpenseListAction,
+  ExpenseListParams
 > {
+  params: ExpenseListParams;
   repository: ExpenseRepository;
 
-  constructor(repository: ExpenseRepository) {
+  constructor(repository: ExpenseRepository, params: ExpenseListParams) {
     super();
     this.repository = repository;
+    this.params = params;
   }
 
   getInitialState() {
-    const expenses = this.repository.getExpenseList();
-
     const state: ExpenseListState = {
-      type: expenses.length >= 1 ? 'loaded' : 'idle',
+      type: this.params.expenses.length >= 1 ? 'loaded' : 'idle',
       errorMessage: null,
-      expenses,
+      expenses: this.params.expenses,
     };
 
     return state;

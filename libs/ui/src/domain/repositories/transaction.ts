@@ -15,16 +15,10 @@ export type TransactionListParams = {
 };
 
 export interface TransactionRepository {
-  getTransactionListServerParams: () => TransactionListParams;
-
-  getTransactionByIdServerParams: () => number | null;
-
   getTransactionList: (params: TransactionListParams) => {
     transactions: Transaction[];
     totalItem: number;
   };
-
-  getTransactionById: (transactionId: number) => Transaction | null;
 
   fetchTransactionList: (params: TransactionListParams) => Promise<{
     transactions: Transaction[];

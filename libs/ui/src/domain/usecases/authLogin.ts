@@ -23,6 +23,7 @@ export type AuthLoginAction =
   | { type: 'SUBMIT_CANCEL' };
 
 export class AuthLoginUsecase extends Usecase<AuthLoginState, AuthLoginAction> {
+  params: undefined;
   repository: AuthRepository;
 
   constructor(repository: AuthRepository) {

@@ -26,6 +26,7 @@ export class CategoryCreateUsecase extends Usecase<
   CategoryCreateState,
   CategoryCreateAction
 > {
+  params: undefined;
   repository: CategoryRepository;
 
   constructor(repository: CategoryRepository) {

@@ -1,16 +1,20 @@
 import { match, P } from 'ts-pattern';
 import { Product } from '../entities';
-import { ProductRepository } from '../repositories';
+import { ProductRepository, ProductListQueryRepository } from '../repositories';
 import { createDebounce } from '../../utils';
 import { Usecase } from './IUsecase';
+
+type SortBy = 'created_at';
+
+type OrderBy = 'asc' | 'desc';
 
 type Context = {
   products: Product[];
   page: number;
   query: string;
   errorMessage: string | null;
-  sortBy: 'created_at';
-  orderBy: 'asc' | 'desc';
+  sortBy: SortBy;
+  orderBy: OrderBy;
   itemPerPage: number;
   totalItem: number;
   fetchDebounceDelay: number;
@@ -39,38 +43,63 @@ export type ProductListAction =
   | { type: 'REVALIDATE'; products: Product[]; totalItem: number }
   | { type: 'REVALIDATE_FINISH'; products: Product[]; totalItem: number };
 
+export type ProductListParams = {
+  products: Product[];
+  totalItem: number;
+  page?: number;
+  query?: string;
+  sortBy?: SortBy;
+  orderBy?: OrderBy;
+  itemPerPage?: number;
+};
+
 const changeParamsDebounce = createDebounce();
 
 export class ProductListUsecase extends Usecase<
   ProductListState,
-  ProductListAction
+  ProductListAction,
+  ProductListParams
 > {
-  repository: ProductRepository;
+  productRepository: ProductRepository;
+  productListQueryRepository: ProductListQueryRepository;
 
-  constructor(repository: ProductRepository) {
+  params: ProductListParams;
+
+  constructor(
+    productRepository: ProductRepository,
+    productListQueryRepository: ProductListQueryRepository,
+    params: ProductListParams
+  ) {
     super();
-    this.repository = repository;
+    this.productRepository = productRepository;
+    this.productListQueryRepository = productListQueryRepository;
+    this.params = params;
   }
 
-  getInitialState() {
-    const initialParams = this.repository.getProductListServerParams();
-    const { products, totalItem } =
-      this.repository.getProductList(initialParams);
+  getInitialState(): ProductListState {
+    const page = this.params.page ?? this.productListQueryRepository.getPage();
+    const itemPerPage =
+      this.params.itemPerPage ??
+      this.productListQueryRepository.getItemPerPage();
+    const query =
+      this.params.query ?? this.productListQueryRepository.getSearchQuery();
+    const sortBy =
+      this.params.sortBy ?? this.productListQueryRepository.getSortBy();
+    const orderBy =
+      this.params.orderBy ?? this.productListQueryRepository.getOrderBy();
 
-    const state: ProductListState = {
-      type: products.length >= 1 ? 'loaded' : 'idle',
-      totalItem,
-      page: initialParams.page,
-      query: initialParams.query,
+    return {
+      type: this.params.products.length >= 1 ? 'loaded' : 'idle',
+      products: this.params.products,
+      totalItem: this.params.totalItem,
+      page,
+      query,
       errorMessage: null,
-      sortBy: initialParams.sortBy,
-      orderBy: initialParams.orderBy,
-      itemPerPage: initialParams.itemPerPage,
+      sortBy,
+      orderBy,
+      itemPerPage,
       fetchDebounceDelay: 0,
-      products,
     };
-
-    return state;
   }
 
   getNextState(state: ProductListState, action: ProductListAction) {
@@ -154,7 +183,7 @@ export class ProductListUsecase extends Usecase<
       .with(
         { type: 'loading' },
         ({ page, itemPerPage, orderBy, query, sortBy }) =>
-          this.repository
+          this.productRepository
             .fetchProductList({ page, itemPerPage, orderBy, query, sortBy })
             .then(({ products, totalItem }) =>
               dispatch({ type: 'FETCH_SUCCESS', products, totalItem })
@@ -169,14 +198,21 @@ export class ProductListUsecase extends Usecase<
       .with(
         { type: 'changingParams' },
         ({ page, itemPerPage, orderBy, query, sortBy, fetchDebounceDelay }) => {
+          this.productListQueryRepository.setPage(page);
+          this.productListQueryRepository.setItemPerPage(itemPerPage);
+          this.productListQueryRepository.setOrderBy(orderBy);
+          this.productListQueryRepository.setSearchQuery(query);
+          this.productListQueryRepository.setSortBy(sortBy);
+
           changeParamsDebounce(() => {
-            const { products, totalItem } = this.repository.getProductList({
-              page,
-              itemPerPage,
-              orderBy,
-              query,
-              sortBy,
-            });
+            const { products, totalItem } =
+              this.productRepository.getProductList({
+                page,
+                itemPerPage,
+                orderBy,
+                query,
+                sortBy,
+              });
 
             if (products.length > 0) {
               dispatch({ type: 'REVALIDATE', products, totalItem });
@@ -197,7 +233,7 @@ export class ProductListUsecase extends Usecase<
           products,
           totalItem,
         }) => {
-          this.repository
+          this.productRepository
             .fetchProductList({
               page,
               itemPerPage,

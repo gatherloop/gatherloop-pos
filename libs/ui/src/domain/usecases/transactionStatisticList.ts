@@ -1,6 +1,9 @@
 import { match } from 'ts-pattern';
 import { TransactionStatistic } from '../entities';
-import { TransactionRepository } from '../repositories';
+import {
+  TransactionRepository,
+  TransactionStatisticListQueryRepository,
+} from '../repositories';
 import { Usecase } from './IUsecase';
 
 type Context = {
@@ -23,26 +26,38 @@ export type TransactionStatisticListAction =
   | { type: 'FETCH_ERROR'; errorMessage: string }
   | { type: 'SET_GROUP_BY'; groupBy: 'date' | 'month' };
 
+export type TransactionStatisticListParams = {
+  transactionStatistics: TransactionStatistic[];
+  groupBy?: 'date' | 'month';
+};
+
 export class TransactionStatisticListUsecase extends Usecase<
   TransactionStatisticListState,
-  TransactionStatisticListAction
+  TransactionStatisticListAction,
+  TransactionStatisticListParams
 > {
-  repository: TransactionRepository;
+  params: TransactionStatisticListParams;
+  transactionRepository: TransactionRepository;
+  transactionStatisticListQueryRepository: TransactionStatisticListQueryRepository;
 
-  constructor(repository: TransactionRepository) {
+  constructor(
+    transactionRepository: TransactionRepository,
+    transactionStatisticListQueryRepository: TransactionStatisticListQueryRepository,
+    params: TransactionStatisticListParams
+  ) {
     super();
-    this.repository = repository;
+    this.transactionRepository = transactionRepository;
+    this.transactionStatisticListQueryRepository =
+      transactionStatisticListQueryRepository;
+    this.params = params;
   }
 
   getInitialState(): TransactionStatisticListState {
-    const groupBy = 'date';
-    const transactionStatistics =
-      this.repository.getTransactionStatisticList(groupBy);
     return {
-      type: transactionStatistics.length > 0 ? 'loaded' : 'idle',
+      type: this.params.transactionStatistics.length > 0 ? 'loaded' : 'idle',
       errorMessage: null,
-      transactionStatistics,
-      groupBy,
+      transactionStatistics: this.params.transactionStatistics,
+      groupBy: this.params.groupBy ?? 'date',
     };
   }
 
@@ -96,7 +111,8 @@ export class TransactionStatisticListUsecase extends Usecase<
         dispatch({ type: 'FETCH' });
       })
       .with({ type: 'loading' }, ({ groupBy }) => {
-        this.repository
+        this.transactionStatisticListQueryRepository.setGroupBy(groupBy);
+        this.transactionRepository
           .fetchTransactionStatisticList(groupBy)
           .then((transactionStatistics) =>
             dispatch({

@@ -1,53 +1,58 @@
-// eslint-disable-next-line @nx/enforce-module-boundaries
-import { productList, productListQueryKey } from '../../../api-contract/src';
-import { GetServerSidePropsContext } from 'next';
 import { ApiAuthRepository, ApiProductRepository } from '../data';
 import {
   ProductListUsecase,
   ProductDeleteUsecase,
   AuthLogoutUsecase,
+  ProductListParams,
 } from '../domain';
 import { ProductListScreen as ProductListScreenView } from '../presentation';
-import { dehydrate, QueryClient, useQueryClient } from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
+import { UrlProductListQueryRepository } from '../data/url/productListQuery';
 
-export async function getProductListScreenDehydratedState(
-  ctx: GetServerSidePropsContext
-) {
+export type ProductListScreenProps = {
+  productListParams: ProductListParams;
+};
+
+export function ProductListScreen({
+  productListParams,
+}: ProductListScreenProps) {
   const client = new QueryClient();
-  await client.prefetchQuery({
-    queryKey: productListQueryKey({
-      limit: 8,
-      order: 'desc',
-      query: '',
-      skip: 0,
-      sortBy: 'created_at',
-    }),
-    queryFn: (queryCtx) =>
-      productList(
-        {
-          limit: queryCtx.queryKey[1].limit,
-          order: queryCtx.queryKey[1].order,
-          query: queryCtx.queryKey[1].query,
-          skip: queryCtx.queryKey[1].skip,
-          sortBy: queryCtx.queryKey[1].sortBy,
-        },
-        {
-          headers: { Cookie: ctx.req.headers.cookie },
-        }
-      ),
-  });
+  const productRepository = new ApiProductRepository(client);
+  const productListQueryRepository = new UrlProductListQueryRepository();
+  const authRepository = new ApiAuthRepository();
 
-  return dehydrate(client);
+  const productDeleteUsecase = new ProductDeleteUsecase(productRepository);
+  const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
+  const productListUsecase = new ProductListUsecase(
+    productRepository,
+    productListQueryRepository,
+    productListParams
+  );
+
+  return (
+    <ProductListScreenView
+      productListUsecase={productListUsecase}
+      productDeleteUsecase={productDeleteUsecase}
+      authLogoutUsecase={authLogoutUsecase}
+    />
+  );
 }
 
-export function ProductListScreen() {
-  const client = useQueryClient();
-  const productRepository = new ApiProductRepository(client);
-  const productListUsecase = new ProductListUsecase(productRepository);
-  const productDeleteUsecase = new ProductDeleteUsecase(productRepository);
+export function ProductListScreenMock({
+  productListParams,
+}: ProductListScreenProps) {
+  const client = new QueryClient();
+  const productRepository = new MockProductRepository(client);
+  const productListQueryRepository = new UrlProductListQueryRepository();
+  const authRepository = new MockAuthRepository();
 
-  const authRepository = new ApiAuthRepository();
+  const productDeleteUsecase = new ProductDeleteUsecase(productRepository);
   const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
+  const productListUsecase = new ProductListUsecase(
+    productRepository,
+    productListQueryRepository,
+    productListParams
+  );
 
   return (
     <ProductListScreenView

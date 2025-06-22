@@ -1,18 +1,32 @@
 import {
+  ApiWalletRepository,
   CalculationCreateScreen,
-  getCalculationCreateScreenDehydratedState,
+  CalculationCreateScreenProps,
 } from '@gatherloop-pos/ui';
 import { GetServerSideProps } from 'next';
-import { PageProps } from '../_app';
+import { QueryClient } from '@tanstack/react-query';
 
-export const getServerSideProps: GetServerSideProps<PageProps> = async (
-  ctx
-) => {
+export const getServerSideProps: GetServerSideProps<
+  CalculationCreateScreenProps
+> = async (ctx) => {
   const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
-  const dehydratedState = await getCalculationCreateScreenDehydratedState(ctx);
+  if (!isLoggedIn) {
+    return {
+      redirect: {
+        destination: '/auth/login',
+        permanent: false,
+      },
+    };
+  }
+
+  const client = new QueryClient();
+  const walletRepository = new ApiWalletRepository(client);
+  const wallets = await walletRepository.fetchWalletList({
+    headers: { Cookie: ctx.req.headers.cookie },
+  });
+
   return {
-    props: { dehydratedState },
-    redirect: isLoggedIn ? undefined : { destination: '/auth/login' },
+    props: { calculationCreateParams: { wallets } },
   };
 };
 

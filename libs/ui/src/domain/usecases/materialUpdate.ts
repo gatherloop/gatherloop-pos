@@ -1,5 +1,5 @@
 import { match } from 'ts-pattern';
-import { MaterialForm } from '../entities';
+import { Material, MaterialForm } from '../entities';
 import { MaterialRepository } from '../repositories';
 import { Usecase } from './IUsecase';
 
@@ -28,30 +28,35 @@ export type MaterialUpdateAction =
   | { type: 'SUBMIT_ERROR'; errorMessage: string }
   | { type: 'SUBMIT_CANCEL' };
 
+export type MaterialUpdateParams = {
+  materialId: number;
+  material: Material | null;
+};
+
 export class MaterialUpdateUsecase extends Usecase<
   MaterialUpdateState,
-  MaterialUpdateAction
+  MaterialUpdateAction,
+  MaterialUpdateParams
 > {
+  params: MaterialUpdateParams;
   repository: MaterialRepository;
 
-  constructor(repository: MaterialRepository) {
+  constructor(repository: MaterialRepository, params: MaterialUpdateParams) {
     super();
     this.repository = repository;
+    this.params = params;
   }
 
   getInitialState(): MaterialUpdateState {
-    const materialId = this.repository.getMaterialByIdServerParams();
-    const material = materialId
-      ? this.repository.getMaterialById(materialId)
-      : null;
     const values: MaterialForm = {
-      name: material?.name ?? '',
-      price: material?.price ?? 0,
-      unit: material?.unit ?? '',
-      description: material?.description ?? '',
+      name: this.params.material?.name ?? '',
+      price: this.params.material?.price ?? 0,
+      unit: this.params.material?.unit ?? '',
+      description: this.params.material?.description ?? '',
     };
+
     return {
-      type: material !== null ? 'loaded' : 'idle',
+      type: this.params.material !== null ? 'loaded' : 'idle',
       errorMessage: null,
       values,
     };
@@ -129,7 +134,7 @@ export class MaterialUpdateUsecase extends Usecase<
         dispatch({ type: 'FETCH' });
       })
       .with({ type: 'loading' }, () => {
-        const materialId = this.repository.getMaterialByIdServerParams() ?? NaN;
+        const materialId = this.params.materialId;
         this.repository
           .fetchMaterialById(materialId)
           .then((material) =>
@@ -150,7 +155,7 @@ export class MaterialUpdateUsecase extends Usecase<
           );
       })
       .with({ type: 'submitting' }, ({ values }) => {
-        const materialId = this.repository.getMaterialByIdServerParams() ?? NaN;
+        const materialId = this.params.materialId;
         this.repository
           .updateMaterial(values, materialId)
           .then(() => dispatch({ type: 'SUBMIT_SUCCESS' }))

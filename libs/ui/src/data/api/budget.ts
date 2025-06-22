@@ -2,11 +2,11 @@ import { QueryClient } from '@tanstack/react-query';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import {
   budgetList,
-  BudgetList200,
   budgetListQueryKey,
   Budget as ApiBudget,
 } from '../../../../api-contract/src';
 import { Budget, BudgetRepository } from '../../domain';
+import { RequestConfig } from '@kubb/swagger-client/client';
 
 export class ApiBudgetRepository implements BudgetRepository {
   client: QueryClient;
@@ -15,21 +15,11 @@ export class ApiBudgetRepository implements BudgetRepository {
     this.client = client;
   }
 
-  getBudgetList: BudgetRepository['getBudgetList'] = () => {
-    const res = this.client.getQueryState<BudgetList200>(
-      budgetListQueryKey()
-    )?.data;
-
-    this.client.removeQueries({ queryKey: budgetListQueryKey() });
-
-    return res?.data.map(transformers.budget) ?? [];
-  };
-
-  fetchBudgetList: BudgetRepository['fetchBudgetList'] = () => {
+  fetchBudgetList = (options?: Partial<RequestConfig>): Promise<Budget[]> => {
     return this.client
       .fetchQuery({
         queryKey: budgetListQueryKey(),
-        queryFn: () => budgetList(),
+        queryFn: () => budgetList(options),
       })
       .then((data) => data.data.map(transformers.budget));
   };

@@ -1,6 +1,9 @@
 import { match, P } from 'ts-pattern';
 import { Material } from '../entities';
-import { MaterialRepository } from '../repositories';
+import {
+  MaterialRepository,
+  MaterialListQueryRepository,
+} from '../repositories';
 import { createDebounce } from '../../utils';
 import { Usecase } from './IUsecase';
 
@@ -41,33 +44,53 @@ export type MaterialListAction =
 
 const changeParamsDebounce = createDebounce();
 
+export type MaterialListParams = {
+  materials: Material[];
+  totalItem: number;
+  page?: number;
+  query?: string;
+  sortBy?: 'created_at';
+  orderBy?: 'asc' | 'desc';
+  itemPerPage?: number;
+};
+
 export class MaterialListUsecase extends Usecase<
   MaterialListState,
-  MaterialListAction
+  MaterialListAction,
+  MaterialListParams
 > {
-  repository: MaterialRepository;
+  params: MaterialListParams;
+  materialRepository: MaterialRepository;
+  materialListQueryRepository: MaterialListQueryRepository;
 
-  constructor(repository: MaterialRepository) {
+  constructor(
+    materialRepository: MaterialRepository,
+    materialListQueryRepository: MaterialListQueryRepository,
+    params: MaterialListParams
+  ) {
     super();
-    this.repository = repository;
+    this.materialRepository = materialRepository;
+    this.materialListQueryRepository = materialListQueryRepository;
+    this.params = params;
   }
 
   getInitialState() {
-    const initialParams = this.repository.getMaterialListServerParams();
-    const { materials, totalItem } =
-      this.repository.getMaterialList(initialParams);
-
     const state: MaterialListState = {
-      type: materials.length >= 1 ? 'loaded' : 'idle',
-      totalItem,
-      page: initialParams.page,
-      query: initialParams.query,
+      type: this.params.materials.length >= 1 ? 'loaded' : 'idle',
+      totalItem: this.params.totalItem,
+      page: this.params.page || this.materialListQueryRepository.getPage(),
+      query:
+        this.params.query || this.materialListQueryRepository.getSearchQuery(),
       errorMessage: null,
-      sortBy: initialParams.sortBy,
-      orderBy: initialParams.orderBy,
-      itemPerPage: initialParams.itemPerPage,
+      sortBy:
+        this.params.sortBy || this.materialListQueryRepository.getSortBy(),
+      orderBy:
+        this.params.orderBy || this.materialListQueryRepository.getOrderBy(),
+      itemPerPage:
+        this.params.itemPerPage ||
+        this.materialListQueryRepository.getItemPerPage(),
       fetchDebounceDelay: 0,
-      materials,
+      materials: this.params.materials,
     };
 
     return state;
@@ -154,7 +177,7 @@ export class MaterialListUsecase extends Usecase<
       .with(
         { type: 'loading' },
         ({ page, itemPerPage, orderBy, query, sortBy }) =>
-          this.repository
+          this.materialRepository
             .fetchMaterialList({ page, itemPerPage, orderBy, query, sortBy })
             .then(({ materials, totalItem }) =>
               dispatch({ type: 'FETCH_SUCCESS', materials, totalItem })
@@ -169,14 +192,21 @@ export class MaterialListUsecase extends Usecase<
       .with(
         { type: 'changingParams' },
         ({ page, itemPerPage, orderBy, query, sortBy, fetchDebounceDelay }) => {
+          this.materialListQueryRepository.setPage(page);
+          this.materialListQueryRepository.setItemPerPage(itemPerPage);
+          this.materialListQueryRepository.setOrderBy(orderBy);
+          this.materialListQueryRepository.setSearchQuery(query);
+          this.materialListQueryRepository.setSortBy(sortBy);
+
           changeParamsDebounce(() => {
-            const { materials, totalItem } = this.repository.getMaterialList({
-              page,
-              itemPerPage,
-              orderBy,
-              query,
-              sortBy,
-            });
+            const { materials, totalItem } =
+              this.materialRepository.getMaterialList({
+                page,
+                itemPerPage,
+                orderBy,
+                query,
+                sortBy,
+              });
 
             if (materials.length > 0) {
               dispatch({ type: 'REVALIDATE', materials, totalItem });
@@ -197,7 +227,7 @@ export class MaterialListUsecase extends Usecase<
           materials,
           totalItem,
         }) => {
-          this.repository
+          this.materialRepository
             .fetchMaterialList({
               page,
               itemPerPage,

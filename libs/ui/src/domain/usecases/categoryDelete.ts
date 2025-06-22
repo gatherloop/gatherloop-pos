@@ -27,6 +27,7 @@ export class CategoryDeleteUsecase extends Usecase<
   CategoryDeleteState,
   CategoryDeleteAction
 > {
+  params: undefined;
   repository: CategoryRepository;
 
   constructor(repository: CategoryRepository) {

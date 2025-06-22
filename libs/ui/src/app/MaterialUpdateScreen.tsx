@@ -1,55 +1,28 @@
-import { createParam } from 'solito';
-// eslint-disable-next-line @nx/enforce-module-boundaries
-import {
-  materialFindById,
-  materialFindByIdQueryKey,
-} from '../../../api-contract/src';
 import { ApiAuthRepository, ApiMaterialRepository } from '../data';
-import { AuthLogoutUsecase, MaterialUpdateUsecase } from '../domain';
-import { MaterialUpdateScreen as MaterialUpdateScreenView } from '../presentation';
 import {
-  dehydrate,
-  DehydratedState,
-  QueryClient,
-  useQueryClient,
-} from '@tanstack/react-query';
-import { GetServerSidePropsContext } from 'next';
-
-export async function getMaterialUpdateScreenDehydratedState(
-  ctx: GetServerSidePropsContext,
-  materialId: number
-): Promise<DehydratedState> {
-  const queryClient = new QueryClient();
-  await queryClient.prefetchQuery({
-    queryKey: materialFindByIdQueryKey(materialId),
-    queryFn: () =>
-      materialFindById(materialId, {
-        headers: { Cookie: ctx.req.headers.cookie },
-      }),
-  });
-  return dehydrate(queryClient);
-}
+  AuthLogoutUsecase,
+  MaterialUpdateParams,
+  MaterialUpdateUsecase,
+} from '../domain';
+import { MaterialUpdateScreen as MaterialUpdateScreenView } from '../presentation';
+import { QueryClient } from '@tanstack/react-query';
 
 export type MaterialUpdateScreenProps = {
-  materialId: number;
+  materialUpdateParams: MaterialUpdateParams;
 };
 
-const { useParam } = createParam<MaterialUpdateScreenProps>();
-
 export function MaterialUpdateScreen({
-  materialId,
+  materialUpdateParams,
 }: MaterialUpdateScreenProps) {
-  const [materialIdParam] = useParam('materialId', {
-    initial: materialId ?? NaN,
-    parse: (value) => parseInt(Array.isArray(value) ? value[0] : value ?? ''),
-  });
-  const client = useQueryClient();
-  const materialRepository = new ApiMaterialRepository(client);
-  materialRepository.materialByIdServerParams = materialIdParam;
-  const materialUpdateUsecase = new MaterialUpdateUsecase(materialRepository);
-
+  const client = new QueryClient();
   const authRepository = new ApiAuthRepository();
+  const materialRepository = new ApiMaterialRepository(client);
+
   const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
+  const materialUpdateUsecase = new MaterialUpdateUsecase(
+    materialRepository,
+    materialUpdateParams
+  );
 
   return (
     <MaterialUpdateScreenView

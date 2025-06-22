@@ -1,5 +1,5 @@
 import { match } from 'ts-pattern';
-import { TransactionForm } from '../entities';
+import { Transaction, TransactionForm } from '../entities';
 import { TransactionRepository } from '../repositories';
 import { Usecase } from './IUsecase';
 
@@ -28,28 +28,35 @@ export type TransactionUpdateAction =
   | { type: 'SUBMIT_ERROR'; errorMessage: string }
   | { type: 'SUBMIT_CANCEL' };
 
+export type TransactionUpdateParams = {
+  transactionId: number;
+  transaction: Transaction | null;
+};
+
 export class TransactionUpdateUsecase extends Usecase<
   TransactionUpdateState,
-  TransactionUpdateAction
+  TransactionUpdateAction,
+  TransactionUpdateParams
 > {
+  params: TransactionUpdateParams;
   repository: TransactionRepository;
 
-  constructor(repository: TransactionRepository) {
+  constructor(
+    repository: TransactionRepository,
+    params: TransactionUpdateParams
+  ) {
     super();
     this.repository = repository;
+    this.params = params;
   }
 
   getInitialState(): TransactionUpdateState {
-    const transactionId = this.repository.getTransactionByIdServerParams();
-    const transaction = transactionId
-      ? this.repository.getTransactionById(transactionId)
-      : null;
     return {
-      type: transaction !== null ? 'loaded' : 'idle',
+      type: this.params.transaction !== null ? 'loaded' : 'idle',
       errorMessage: null,
       values: {
-        name: transaction?.name ?? '',
-        transactionItems: transaction?.transactionItems ?? [],
+        name: this.params.transaction?.name ?? '',
+        transactionItems: this.params.transaction?.transactionItems ?? [],
       },
     };
   }
@@ -126,10 +133,8 @@ export class TransactionUpdateUsecase extends Usecase<
         dispatch({ type: 'FETCH' });
       })
       .with({ type: 'loading' }, () => {
-        const transactionId =
-          this.repository.getTransactionByIdServerParams() ?? NaN;
         this.repository
-          .fetchTransactionById(transactionId)
+          .fetchTransactionById(this.params.transactionId)
           .then((transaction) =>
             dispatch({
               type: 'FETCH_SUCCESS',
@@ -152,10 +157,8 @@ export class TransactionUpdateUsecase extends Usecase<
           );
       })
       .with({ type: 'submitting' }, ({ values }) => {
-        const transactionId =
-          this.repository.getTransactionByIdServerParams() ?? NaN;
         this.repository
-          .updateTransaction(values, transactionId)
+          .updateTransaction(values, this.params.transactionId)
           .then(() => dispatch({ type: 'SUBMIT_SUCCESS' }))
           .catch(() =>
             dispatch({ type: 'SUBMIT_ERROR', errorMessage: 'Submit failed' })

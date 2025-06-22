@@ -17,8 +17,8 @@ export type Transaction = {
   total: number;
   totalIncome: number;
   transactionItems: TransactionItem[];
-  wallet?: Wallet;
-  paidAt?: string;
+  wallet: Wallet | null;
+  paidAt: string | null;
 };
 
 type TransactionItemForm = {

@@ -27,6 +27,7 @@ export class ProductDeleteUsecase extends Usecase<
   ProductDeleteState,
   ProductDeleteAction
 > {
+  params: undefined;
   repository: ProductRepository;
 
   constructor(repository: ProductRepository) {

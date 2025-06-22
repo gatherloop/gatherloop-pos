@@ -1,50 +1,31 @@
-// eslint-disable-next-line @nx/enforce-module-boundaries
-import {
-  calculationList,
-  calculationListQueryKey,
-} from '../../../api-contract/src';
-import { GetServerSidePropsContext } from 'next';
 import { ApiAuthRepository, ApiCalculationRepository } from '../data';
 import {
   CalculationListUsecase,
   CalculationDeleteUsecase,
   AuthLogoutUsecase,
+  CalculationListParams,
 } from '../domain';
 import { CalculationListScreen as CalculationListScreenView } from '../presentation';
-import { dehydrate, QueryClient, useQueryClient } from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
 
-export async function getCalculationListScreenDehydratedState(
-  ctx: GetServerSidePropsContext
-) {
+export type CalculationListScreenProps = {
+  calculationListParams: CalculationListParams;
+};
+
+export function CalculationListScreen({
+  calculationListParams,
+}: CalculationListScreenProps) {
   const client = new QueryClient();
-  await client.prefetchQuery({
-    queryKey: calculationListQueryKey({
-      sortBy: 'created_at',
-      order: 'desc',
-    }),
-    queryFn: () =>
-      calculationList(
-        {
-          sortBy: 'created_at',
-          order: 'desc',
-        },
-        { headers: { Cookie: ctx.req.headers.cookie } }
-      ),
-  });
-  return dehydrate(client);
-}
-
-export function CalculationListScreen() {
-  const client = useQueryClient();
   const calculationRepository = new ApiCalculationRepository(client);
-  const calculationListUsecase = new CalculationListUsecase(
-    calculationRepository
-  );
+  const authRepository = new ApiAuthRepository();
+
   const calculationDeleteUsecase = new CalculationDeleteUsecase(
     calculationRepository
   );
-
-  const authRepository = new ApiAuthRepository();
+  const calculationListUsecase = new CalculationListUsecase(
+    calculationRepository,
+    calculationListParams
+  );
   const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
 
   return (

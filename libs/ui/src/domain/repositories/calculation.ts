@@ -1,12 +1,6 @@
 import { Calculation, CalculationForm } from '../entities';
 
 export interface CalculationRepository {
-  getCalculationByIdServerParams: () => number | null;
-
-  getCalculationList: () => Calculation[];
-
-  getCalculationById: (calculationId: number) => Calculation | null;
-
   fetchCalculationList: () => Promise<Calculation[]>;
 
   fetchCalculationById: (calculationId: number) => Promise<Calculation>;

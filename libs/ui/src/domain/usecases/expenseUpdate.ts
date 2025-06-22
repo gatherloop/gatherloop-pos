@@ -1,5 +1,5 @@
 import { match } from 'ts-pattern';
-import { Budget, ExpenseForm, Wallet } from '../entities';
+import { Budget, Expense, ExpenseForm, Wallet } from '../entities';
 import {
   BudgetRepository,
   ExpenseRepository,
@@ -39,10 +39,19 @@ export type ExpenseUpdateAction =
   | { type: 'SUBMIT_ERROR'; errorMessage: string }
   | { type: 'SUBMIT_CANCEL' };
 
+export type ExpenseUpdateParams = {
+  expenseId: number;
+  expense: Expense | null;
+  budgets: Budget[];
+  wallets: Wallet[];
+};
+
 export class ExpenseUpdateUsecase extends Usecase<
   ExpenseUpdateState,
-  ExpenseUpdateAction
+  ExpenseUpdateAction,
+  ExpenseUpdateParams
 > {
+  params: ExpenseUpdateParams;
   budgetRepository: BudgetRepository;
   walletRepository: WalletRepository;
   expenseRepository: ExpenseRepository;
@@ -50,33 +59,30 @@ export class ExpenseUpdateUsecase extends Usecase<
   constructor(
     expenseRepository: ExpenseRepository,
     budgetRepository: BudgetRepository,
-    walletRepository: WalletRepository
+    walletRepository: WalletRepository,
+    params: ExpenseUpdateParams
   ) {
     super();
     this.expenseRepository = expenseRepository;
     this.budgetRepository = budgetRepository;
     this.walletRepository = walletRepository;
+    this.params = params;
   }
 
   getInitialState(): ExpenseUpdateState {
-    const expenseId = this.expenseRepository.getExpenseByIdServerParams();
-    const expense = expenseId
-      ? this.expenseRepository.getExpenseById(expenseId)
-      : null;
-
-    const budgets = this.budgetRepository.getBudgetList();
-    const wallets = this.walletRepository.getWalletList();
     const isLoaded =
-      expense !== null && budgets.length > 0 && wallets.length > 0;
+      this.params.expense !== null &&
+      this.params.budgets.length > 0 &&
+      this.params.wallets.length > 0;
     return {
       type: isLoaded ? 'loaded' : 'idle',
       errorMessage: null,
-      budgets,
-      wallets,
+      budgets: this.params.budgets,
+      wallets: this.params.wallets,
       values: {
-        budgetId: expense?.budget.id ?? NaN,
-        walletId: expense?.wallet.id ?? NaN,
-        expenseItems: expense?.expenseItems ?? [],
+        budgetId: this.params.expense?.budget.id ?? NaN,
+        walletId: this.params.expense?.wallet.id ?? NaN,
+        expenseItems: this.params.expense?.expenseItems ?? [],
       },
     };
   }
@@ -155,9 +161,7 @@ export class ExpenseUpdateUsecase extends Usecase<
         dispatch({ type: 'FETCH' });
       })
       .with({ type: 'loading' }, () => {
-        const expenseId =
-          this.expenseRepository.getExpenseByIdServerParams() ?? NaN;
-
+        const expenseId = this.params.expenseId;
         Promise.all([
           this.expenseRepository.fetchExpenseById(expenseId),
           this.budgetRepository.fetchBudgetList(),
@@ -183,8 +187,7 @@ export class ExpenseUpdateUsecase extends Usecase<
           );
       })
       .with({ type: 'submitting' }, ({ values }) => {
-        const expenseId =
-          this.expenseRepository.getExpenseByIdServerParams() ?? NaN;
+        const expenseId = this.params.expenseId;
         this.expenseRepository
           .updateExpense(values, expenseId)
           .then(() => dispatch({ type: 'SUBMIT_SUCCESS' }))

@@ -1,24 +1,41 @@
 import {
+  ApiCalculationRepository,
+  ApiWalletRepository,
   CalculationUpdateScreen,
   CalculationUpdateScreenProps,
-  getCalculationUpdateScreenDehydratedState,
 } from '@gatherloop-pos/ui';
+import { QueryClient } from '@tanstack/react-query';
 import { GetServerSideProps } from 'next';
-import { PageProps } from '../_app';
 
 export const getServerSideProps: GetServerSideProps<
-  PageProps & CalculationUpdateScreenProps,
+  CalculationUpdateScreenProps,
   { calculationId: string }
 > = async (ctx) => {
   const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
+  if (!isLoggedIn) {
+    return {
+      redirect: {
+        destination: '/auth/login',
+        permanent: false,
+      },
+    };
+  }
+
   const calculationId = parseInt(ctx.params?.calculationId ?? '');
-  const dehydratedState = await getCalculationUpdateScreenDehydratedState(
-    ctx,
-    calculationId
+  const client = new QueryClient();
+  const calculationRepository = new ApiCalculationRepository(client);
+  const walletRepository = new ApiWalletRepository(client);
+
+  const wallets = await walletRepository.fetchWalletList({
+    headers: { Cookie: ctx.req.headers.cookie },
+  });
+  const calculation = await calculationRepository.fetchCalculationById(
+    calculationId,
+    { headers: { Cookie: ctx.req.headers.cookie } }
   );
+
   return {
-    props: { dehydratedState, calculationId },
-    redirect: isLoggedIn ? undefined : { destination: '/auth/login' },
+    props: { calculationListParams: { calculation, calculationId, wallets } },
   };
 };
 

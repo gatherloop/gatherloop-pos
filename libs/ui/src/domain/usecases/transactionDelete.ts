@@ -27,6 +27,7 @@ export class TransactionDeleteUsecase extends Usecase<
   TransactionDeleteState,
   TransactionDeleteAction
 > {
+  params: undefined;
   repository: TransactionRepository;
 
   constructor(repository: TransactionRepository) {

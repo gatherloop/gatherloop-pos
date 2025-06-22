@@ -23,24 +23,29 @@ export type WalletListAction =
   | { type: 'FETCH_ERROR'; message: string }
   | { type: 'REVALIDATE_FINISH'; wallets: Wallet[] };
 
+export type WalletListParams = {
+  wallets: Wallet[];
+};
+
 export class WalletListUsecase extends Usecase<
   WalletListState,
-  WalletListAction
+  WalletListAction,
+  WalletListParams
 > {
   repository: WalletRepository;
+  params: WalletListParams;
 
-  constructor(repository: WalletRepository) {
+  constructor(repository: WalletRepository, params: WalletListParams) {
     super();
     this.repository = repository;
+    this.params = params;
   }
 
   getInitialState() {
-    const wallets = this.repository.getWalletList();
-
     const state: WalletListState = {
-      type: wallets.length >= 1 ? 'loaded' : 'idle',
+      type: this.params.wallets.length >= 1 ? 'loaded' : 'idle',
       errorMessage: null,
-      wallets,
+      wallets: this.params.wallets,
     };
 
     return state;

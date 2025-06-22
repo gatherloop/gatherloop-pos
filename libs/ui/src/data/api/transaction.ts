@@ -4,7 +4,6 @@ import {
   transactionCreate,
   transactionDeleteById,
   transactionFindById,
-  TransactionFindById200,
   transactionFindByIdQueryKey,
   transactionList,
   TransactionList200,
@@ -20,31 +19,17 @@ import {
 } from '../../../../api-contract/src';
 import {
   Transaction,
-  TransactionListParams,
   TransactionRepository,
   TransactionStatistic,
 } from '../../domain';
+import { RequestConfig } from '@kubb/swagger-client/client';
 
 export class ApiTransactionRepository implements TransactionRepository {
   client: QueryClient;
 
-  transactionListServerParams: TransactionListParams = {
-    page: 1,
-    itemPerPage: 8,
-    orderBy: 'desc',
-    query: '',
-    sortBy: 'created_at',
-    paymentStatus: 'all',
-  };
-
-  transactionByIdServerParams: number | null = null;
-
   constructor(client: QueryClient) {
     this.client = client;
   }
-
-  getTransactionListServerParams: TransactionRepository['getTransactionListServerParams'] =
-    () => this.transactionListServerParams;
 
   getTransactionStatisticList: TransactionRepository['getTransactionStatisticList'] =
     (groupBy: 'date' | 'month') => {
@@ -59,15 +44,17 @@ export class ApiTransactionRepository implements TransactionRepository {
       return res?.data.map(transformers.transactionStatistic) ?? [];
     };
 
-  fetchTransactionStatisticList: TransactionRepository['fetchTransactionStatisticList'] =
-    (groupBy: 'date' | 'month') => {
-      return this.client
-        .fetchQuery({
-          queryKey: transactionStatisticsQueryKey({ groupBy }),
-          queryFn: () => transactionStatistics({ groupBy }),
-        })
-        .then((data) => data.data.map(transformers.transactionStatistic));
-    };
+  fetchTransactionStatisticList = (
+    groupBy: 'date' | 'month',
+    options?: Partial<RequestConfig>
+  ) => {
+    return this.client
+      .fetchQuery({
+        queryKey: transactionStatisticsQueryKey({ groupBy }),
+        queryFn: () => transactionStatistics({ groupBy }, options),
+      })
+      .then((data) => data.data.map(transformers.transactionStatistic));
+  };
 
   payTransaction: TransactionRepository['payTransaction'] = (
     transactionId,
@@ -76,30 +63,14 @@ export class ApiTransactionRepository implements TransactionRepository {
     return transactionPayById(transactionId, { walletId }).then();
   };
 
-  getTransactionById: TransactionRepository['getTransactionById'] = (
-    transactionId
-  ) => {
-    const res = this.client.getQueryState<TransactionFindById200>(
-      transactionFindByIdQueryKey(transactionId)
-    )?.data;
-
-    this.client.removeQueries({
-      queryKey: transactionFindByIdQueryKey(transactionId),
-    });
-
-    return res ? transformers.transaction(res.data) : null;
-  };
-
-  getTransactionByIdServerParams: TransactionRepository['getTransactionByIdServerParams'] =
-    () => this.transactionByIdServerParams;
-
-  fetchTransactionById: TransactionRepository['fetchTransactionById'] = (
-    transactionId
+  fetchTransactionById = (
+    transactionId: number,
+    options?: Partial<RequestConfig>
   ) => {
     return this.client
       .fetchQuery({
         queryKey: transactionFindByIdQueryKey(transactionId),
-        queryFn: () => transactionFindById(transactionId),
+        queryFn: () => transactionFindById(transactionId, options),
       })
       .then(({ data }) => transformers.transaction(data));
   };
@@ -164,14 +135,24 @@ export class ApiTransactionRepository implements TransactionRepository {
     };
   };
 
-  fetchTransactionList: TransactionRepository['fetchTransactionList'] = ({
-    itemPerPage,
-    orderBy,
-    page,
-    query,
-    sortBy,
-    paymentStatus,
-  }) => {
+  fetchTransactionList = (
+    {
+      itemPerPage,
+      orderBy,
+      page,
+      query,
+      sortBy,
+      paymentStatus,
+    }: {
+      itemPerPage: number;
+      orderBy: 'asc' | 'desc';
+      page: number;
+      query: string;
+      sortBy: 'created_at';
+      paymentStatus: 'all' | 'paid' | 'unpaid';
+    },
+    options?: Partial<RequestConfig>
+  ) => {
     const params: TransactionListQueryParams = {
       query,
       skip: (page - 1) * itemPerPage,
@@ -183,7 +164,7 @@ export class ApiTransactionRepository implements TransactionRepository {
     return this.client
       .fetchQuery({
         queryKey: transactionListQueryKey(params),
-        queryFn: () => transactionList(params),
+        queryFn: () => transactionList(params, options),
       })
       .then((data) => {
         return {
@@ -236,10 +217,10 @@ const transformers = {
             createdAt: productMaterial.material.createdAt,
           },
         })),
-        description: item.product.description,
+        description: item.product.description ?? '',
       },
     })),
-    paidAt: transaction.paidAt,
+    paidAt: transaction.paidAt ?? null,
     wallet: transaction.wallet
       ? {
           balance: transaction.wallet.balance,
@@ -248,6 +229,6 @@ const transformers = {
           name: transaction.wallet.name,
           paymentCostPercentage: transaction.wallet.paymentCostPercentage,
         }
-      : undefined,
+      : null,
   }),
 };

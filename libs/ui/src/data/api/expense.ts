@@ -4,43 +4,27 @@ import {
   expenseCreate,
   expenseDeleteById,
   expenseFindById,
-  ExpenseFindById200,
   expenseFindByIdQueryKey,
   expenseList,
-  ExpenseList200,
   expenseListQueryKey,
   expenseUpdateById,
   Expense as ApiExpense,
 } from '../../../../api-contract/src';
 import { Expense, ExpenseRepository } from '../../domain';
+import { RequestConfig } from '@kubb/swagger-client/client';
 
 export class ApiExpenseRepository implements ExpenseRepository {
   client: QueryClient;
-
-  expenseByIdServerParams: number | null = null;
 
   constructor(client: QueryClient) {
     this.client = client;
   }
 
-  getExpenseById: ExpenseRepository['getExpenseById'] = (expenseId) => {
-    const res = this.client.getQueryState<ExpenseFindById200>(
-      expenseFindByIdQueryKey(expenseId)
-    )?.data;
-
-    this.client.removeQueries({ queryKey: expenseFindByIdQueryKey(expenseId) });
-
-    return res ? transformers.expense(res.data) : null;
-  };
-
-  getExpenseByIdServerParams: ExpenseRepository['getExpenseByIdServerParams'] =
-    () => this.expenseByIdServerParams;
-
-  fetchExpenseById: ExpenseRepository['fetchExpenseById'] = (expenseId) => {
+  fetchExpenseById = (expenseId: number, options?: Partial<RequestConfig>) => {
     return this.client
       .fetchQuery({
         queryKey: expenseFindByIdQueryKey(expenseId),
-        queryFn: () => expenseFindById(expenseId),
+        queryFn: () => expenseFindById(expenseId, options),
       })
       .then(({ data }) => transformers.expense(data));
   };
@@ -60,23 +44,12 @@ export class ApiExpenseRepository implements ExpenseRepository {
     return expenseDeleteById(expenseId).then();
   };
 
-  getExpenseList: ExpenseRepository['getExpenseList'] = () => {
-    const res = this.client.getQueryState<ExpenseList200>(
-      expenseListQueryKey({ sortBy: 'created_at', order: 'desc' })
-    )?.data;
-
-    this.client.removeQueries({
-      queryKey: expenseListQueryKey({ sortBy: 'created_at', order: 'desc' }),
-    });
-
-    return res?.data.map(transformers.expense) ?? [];
-  };
-
-  fetchExpenseList: ExpenseRepository['fetchExpenseList'] = () => {
+  fetchExpenseList = (options?: Partial<RequestConfig>) => {
     return this.client
       .fetchQuery({
         queryKey: expenseListQueryKey({ sortBy: 'created_at', order: 'desc' }),
-        queryFn: () => expenseList({ sortBy: 'created_at', order: 'desc' }),
+        queryFn: () =>
+          expenseList({ sortBy: 'created_at', order: 'desc' }, options),
       })
       .then((data) => data.data.map(transformers.expense));
   };

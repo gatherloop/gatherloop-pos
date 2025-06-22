@@ -21,26 +21,33 @@ export type TransactionDetailAction =
   | { type: 'FETCH_SUCCESS'; transaction: Transaction }
   | { type: 'FETCH_ERROR'; errorMessage: string };
 
+export type TransactionDetailParams = {
+  transactionId: number;
+  transaction: Transaction | null;
+};
+
 export class TransactionDetailUsecase extends Usecase<
   TransactionDetailState,
-  TransactionDetailAction
+  TransactionDetailAction,
+  TransactionDetailParams
 > {
+  params: TransactionDetailParams;
   repository: TransactionRepository;
 
-  constructor(repository: TransactionRepository) {
+  constructor(
+    repository: TransactionRepository,
+    params: TransactionDetailParams
+  ) {
     super();
     this.repository = repository;
+    this.params = params;
   }
 
   getInitialState(): TransactionDetailState {
-    const transactionId = this.repository.getTransactionByIdServerParams();
-    const transaction = transactionId
-      ? this.repository.getTransactionById(transactionId)
-      : null;
     return {
-      type: transaction !== null ? 'loaded' : 'idle',
+      type: this.params.transaction !== null ? 'loaded' : 'idle',
       errorMessage: null,
-      transaction,
+      transaction: this.params.transaction,
     };
   }
 
@@ -86,10 +93,8 @@ export class TransactionDetailUsecase extends Usecase<
         dispatch({ type: 'FETCH' });
       })
       .with({ type: 'loading' }, () => {
-        const transactionId =
-          this.repository.getTransactionByIdServerParams() ?? NaN;
         this.repository
-          .fetchTransactionById(transactionId)
+          .fetchTransactionById(this.params.transactionId)
           .then((transaction) =>
             dispatch({
               type: 'FETCH_SUCCESS',

@@ -1,18 +1,32 @@
 import {
+  ApiWalletRepository,
   WalletListScreen,
-  getWalletListScreenDehydratedState,
+  WalletListScreenProps,
 } from '@gatherloop-pos/ui';
+import { QueryClient } from '@tanstack/react-query';
 import { GetServerSideProps } from 'next';
-import { PageProps } from '../_app';
 
-export const getServerSideProps: GetServerSideProps<PageProps> = async (
-  ctx
-) => {
+export const getServerSideProps: GetServerSideProps<
+  WalletListScreenProps
+> = async (ctx) => {
   const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
-  const dehydratedState = await getWalletListScreenDehydratedState(ctx);
+  if (!isLoggedIn) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      },
+    };
+  }
+
+  const client = new QueryClient();
+  const walletRepository = new ApiWalletRepository(client);
+  const wallets = await walletRepository.fetchWalletList({
+    headers: { Cookie: ctx.req.headers.cookie },
+  });
+
   return {
-    props: { dehydratedState },
-    redirect: isLoggedIn ? undefined : { destination: '/auth/login' },
+    props: { walletListParams: { wallets } },
   };
 };
 

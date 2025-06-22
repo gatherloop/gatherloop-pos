@@ -29,9 +29,12 @@ import {
 } from '@gatherloop-pos/ui';
 import { RootProvider } from '@gatherloop-pos/provider';
 import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import {
+  createNativeStackNavigator,
+  NativeStackScreenProps,
+} from '@react-navigation/native-stack';
 
-const Stack = createNativeStackNavigator<{
+export type RootStackParamList = {
   authLogin: undefined;
   dashboard: undefined;
   categoryList: undefined;
@@ -61,8 +64,10 @@ const Stack = createNativeStackNavigator<{
   expenseUpdate: { expenseId: number };
   calculationList: undefined;
   calculationCreate: undefined;
-  calculationUpdate: { expenseId: number };
-}>();
+  calculationUpdate: { calculationId: number };
+};
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export const App = () => {
   return (
@@ -174,69 +179,337 @@ export const App = () => {
             component={TransactionStatisticScreen}
             options={{ title: 'Dashboard' }}
           />
-          <Stack.Screen name="categoryList" component={CategoryListScreen} />
+          <Stack.Screen
+            name="categoryList"
+            component={(
+              _props: NativeStackScreenProps<RootStackParamList, 'categoryList'>
+            ) => <CategoryListScreen categoryListParams={{ categories: [] }} />}
+          />
           <Stack.Screen
             name="categoryCreate"
             component={CategoryCreateScreen}
           />
           <Stack.Screen
             name="categoryUpdate"
-            component={CategoryUpdateScreen}
+            component={(
+              props: NativeStackScreenProps<
+                RootStackParamList,
+                'categoryUpdate'
+              >
+            ) => (
+              <CategoryUpdateScreen
+                categoryUpdateParams={{
+                  category: null,
+                  categoryId: props.route.params?.categoryId,
+                }}
+              />
+            )}
           />
-          <Stack.Screen name="materialList" component={MaterialListScreen} />
+          <Stack.Screen
+            name="materialList"
+            component={(
+              props: NativeStackScreenProps<RootStackParamList, 'materialList'>
+            ) => (
+              <MaterialListScreen
+                materialListParams={{
+                  materials: [],
+                  totalItem: 0,
+                }}
+              />
+            )}
+          />
           <Stack.Screen
             name="materialCreate"
             component={MaterialCreateScreen}
           />
           <Stack.Screen
             name="materialUpdate"
-            component={MaterialUpdateScreen}
+            component={(
+              props: NativeStackScreenProps<
+                RootStackParamList,
+                'materialUpdate'
+              >
+            ) => (
+              <MaterialUpdateScreen
+                materialUpdateParams={{
+                  material: null,
+                  materialId: props.route.params?.materialId,
+                }}
+              />
+            )}
           />
-          <Stack.Screen name="walletList" component={WalletListScreen} />
+          <Stack.Screen
+            name="walletList"
+            component={(
+              _props: NativeStackScreenProps<RootStackParamList, 'walletList'>
+            ) => (
+              <WalletListScreen
+                walletListParams={{
+                  wallets: [],
+                }}
+              />
+            )}
+          />
           <Stack.Screen name="walletCreate" component={WalletCreateScreen} />
-          <Stack.Screen name="walletUpdate" component={WalletUpdateScreen} />
+          <Stack.Screen
+            name="walletUpdate"
+            component={(
+              props: NativeStackScreenProps<RootStackParamList, 'walletUpdate'>
+            ) => (
+              <WalletUpdateScreen
+                walletUpdateParams={{
+                  wallet: null,
+                  walletId: props.route.params?.walletId,
+                }}
+              />
+            )}
+          />
           <Stack.Screen
             name="walletTransferList"
-            component={WalletTransferListScreen}
+            component={(
+              props: NativeStackScreenProps<
+                RootStackParamList,
+                'walletTransferList'
+              >
+            ) => (
+              <WalletTransferListScreen
+                walletDetailParams={{
+                  wallet: null,
+                  walletId: props.route.params.walletId,
+                }}
+                walletTransferListParams={{
+                  walletId: props.route.params.walletId,
+                  walletTransfers: [],
+                }}
+              />
+            )}
           />
           <Stack.Screen
             name="walletTransferCreate"
-            component={WalletTransferCreateScreen}
+            component={(
+              props: NativeStackScreenProps<
+                RootStackParamList,
+                'walletTransferCreate'
+              >
+            ) => (
+              <WalletTransferCreateScreen
+                walletTransferCreateParams={{
+                  fromWalletId: props.route.params.walletId,
+                  wallets: [],
+                }}
+              />
+            )}
           />
-          <Stack.Screen name="productList" component={ProductListScreen} />
-          <Stack.Screen name="productCreate" component={ProductCreateScreen} />
-          <Stack.Screen name="productUpdate" component={ProductUpdateScreen} />
-          <Stack.Screen name="budgetList" component={BudgetListScreen} />
+          <Stack.Screen
+            name="productList"
+            component={(
+              _props: NativeStackScreenProps<RootStackParamList, 'productList'>
+            ) => (
+              <ProductListScreen
+                productListParams={{
+                  products: [],
+                  totalItem: 0,
+                }}
+              />
+            )}
+          />
+          <Stack.Screen
+            name="productCreate"
+            component={(
+              _props: NativeStackScreenProps<
+                RootStackParamList,
+                'productCreate'
+              >
+            ) => (
+              <ProductCreateScreen
+                productCreateParams={{ categories: [] }}
+                materialListParam={{
+                  materials: [],
+                  totalItem: 0,
+                }}
+              />
+            )}
+          />
+          <Stack.Screen
+            name="productUpdate"
+            component={(
+              props: NativeStackScreenProps<RootStackParamList, 'productUpdate'>
+            ) => (
+              <ProductUpdateScreen
+                productUpdateParams={{
+                  categories: [],
+                  product: null,
+                  productId: props.route.params.productId,
+                }}
+                materialListParams={{
+                  materials: [],
+                  totalItem: 0,
+                }}
+              />
+            )}
+          />
+          <Stack.Screen
+            name="budgetList"
+            component={(
+              _props: NativeStackScreenProps<RootStackParamList, 'budgetList'>
+            ) => <BudgetListScreen budgetListParams={{ budgets: [] }} />}
+          />
           <Stack.Screen
             name="transactionList"
-            component={TransactionListScreen}
+            component={(
+              _props: NativeStackScreenProps<
+                RootStackParamList,
+                'transactionList'
+              >
+            ) => (
+              <TransactionListScreen
+                transactionListParams={{ transactions: [], totalItem: 0 }}
+                transactionPayParams={{ wallets: [] }}
+              />
+            )}
           />
           <Stack.Screen
             name="transactionCreate"
-            component={TransactionCreateScreen}
+            component={(
+              _props: NativeStackScreenProps<
+                RootStackParamList,
+                'transactionCreate'
+              >
+            ) => (
+              <TransactionCreateScreen
+                productListParams={{
+                  products: [],
+                  totalItem: 0,
+                }}
+                transactionPayParams={{
+                  wallets: [],
+                }}
+              />
+            )}
           />
           <Stack.Screen
             name="transactionUpdate"
-            component={TransactionUpdateScreen}
+            component={(
+              props: NativeStackScreenProps<
+                RootStackParamList,
+                'transactionUpdate'
+              >
+            ) => (
+              <TransactionUpdateScreen
+                productListParams={{
+                  products: [],
+                  totalItem: 0,
+                }}
+                transactionUpdateParams={{
+                  transaction: null,
+                  transactionId: props.route.params.transactionId,
+                }}
+              />
+            )}
           />
           <Stack.Screen
             name="transactionDetail"
-            component={TransactionDetailScreen}
+            component={(
+              props: NativeStackScreenProps<
+                RootStackParamList,
+                'transactionDetail'
+              >
+            ) => (
+              <TransactionDetailScreen
+                transactionDetailParams={{
+                  transaction: null,
+                  transactionId: props.route.params.transactionId,
+                }}
+              />
+            )}
           />
-          <Stack.Screen name="expenseList" component={ExpenseListScreen} />
-          <Stack.Screen name="expenseCreate" component={ExpenseCreateScreen} />
-          <Stack.Screen name="expenseUpdate" component={ExpenseUpdateScreen} />
+          <Stack.Screen
+            name="expenseList"
+            component={(
+              _props: NativeStackScreenProps<RootStackParamList, 'expenseList'>
+            ) => (
+              <ExpenseListScreen
+                expenseListParams={{
+                  expenses: [],
+                }}
+              />
+            )}
+          />
+          <Stack.Screen
+            name="expenseCreate"
+            component={(
+              _props: NativeStackScreenProps<
+                RootStackParamList,
+                'expenseCreate'
+              >
+            ) => (
+              <ExpenseCreateScreen
+                expenseCreateParams={{
+                  budgets: [],
+                  wallets: [],
+                }}
+              />
+            )}
+          />
+          <Stack.Screen
+            name="expenseUpdate"
+            component={(
+              props: NativeStackScreenProps<RootStackParamList, 'expenseUpdate'>
+            ) => (
+              <ExpenseUpdateScreen
+                expenseUpdateParams={{
+                  budgets: [],
+                  expense: null,
+                  expenseId: props.route.params.expenseId,
+                  wallets: [],
+                }}
+              />
+            )}
+          />
           <Stack.Screen
             name="calculationList"
-            component={CalculationListScreen}
+            component={(
+              _props: NativeStackScreenProps<
+                RootStackParamList,
+                'calculationList'
+              >
+            ) => (
+              <CalculationListScreen
+                calculationListParams={{
+                  calculations: [],
+                }}
+              />
+            )}
           />
           <Stack.Screen
             name="calculationCreate"
-            component={CalculationCreateScreen}
+            component={(
+              _props: NativeStackScreenProps<
+                RootStackParamList,
+                'calculationCreate'
+              >
+            ) => (
+              <CalculationCreateScreen
+                calculationCreateParams={{ wallets: [] }}
+              />
+            )}
           />
           <Stack.Screen
             name="calculationUpdate"
-            component={CalculationUpdateScreen}
+            component={(
+              props: NativeStackScreenProps<
+                RootStackParamList,
+                'calculationUpdate'
+              >
+            ) => (
+              <CalculationUpdateScreen
+                calculationListParams={{
+                  calculation: null,
+                  calculationId: props.route.params.calculationId,
+                  wallets: [],
+                }}
+              />
+            )}
           />
         </Stack.Navigator>
       </RootProvider>

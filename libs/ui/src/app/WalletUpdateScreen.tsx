@@ -1,53 +1,29 @@
-import { createParam } from 'solito';
 // eslint-disable-next-line @nx/enforce-module-boundaries
-import {
-  walletFindById,
-  walletFindByIdQueryKey,
-} from '../../../api-contract/src';
 import { ApiAuthRepository, ApiWalletRepository } from '../data';
-import { AuthLogoutUsecase, WalletUpdateUsecase } from '../domain';
-import { WalletUpdateScreen as WalletUpdateScreenView } from '../presentation';
 import {
-  dehydrate,
-  DehydratedState,
-  QueryClient,
-  useQueryClient,
-} from '@tanstack/react-query';
-import { GetServerSidePropsContext } from 'next';
-
-export async function getWalletUpdateScreenDehydratedState(
-  ctx: GetServerSidePropsContext,
-  walletId: number
-): Promise<DehydratedState> {
-  const queryClient = new QueryClient();
-  await queryClient.prefetchQuery({
-    queryKey: walletFindByIdQueryKey(walletId),
-    queryFn: () =>
-      walletFindById(walletId, {
-        headers: { Cookie: ctx.req.headers.cookie },
-      }),
-  });
-  return dehydrate(queryClient);
-}
+  AuthLogoutUsecase,
+  WalletUpdateParams,
+  WalletUpdateUsecase,
+} from '../domain';
+import { WalletUpdateScreen as WalletUpdateScreenView } from '../presentation';
+import { QueryClient } from '@tanstack/react-query';
 
 export type WalletUpdateScreenProps = {
-  walletId: number;
+  walletUpdateParams: WalletUpdateParams;
 };
 
-const { useParam } = createParam<WalletUpdateScreenProps>();
-
-export function WalletUpdateScreen({ walletId }: WalletUpdateScreenProps) {
-  const [walletIdParam] = useParam('walletId', {
-    initial: walletId ?? NaN,
-    parse: (value) => parseInt(Array.isArray(value) ? value[0] : value ?? ''),
-  });
-  const client = useQueryClient();
-  const walletRepository = new ApiWalletRepository(client);
-  walletRepository.walletByIdServerParams = walletIdParam;
-  const walletUpdateUsecase = new WalletUpdateUsecase(walletRepository);
-
+export function WalletUpdateScreen({
+  walletUpdateParams,
+}: WalletUpdateScreenProps) {
+  const client = new QueryClient();
   const authRepository = new ApiAuthRepository();
+  const walletRepository = new ApiWalletRepository(client);
+
   const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
+  const walletUpdateUsecase = new WalletUpdateUsecase(
+    walletRepository,
+    walletUpdateParams
+  );
 
   return (
     <WalletUpdateScreenView

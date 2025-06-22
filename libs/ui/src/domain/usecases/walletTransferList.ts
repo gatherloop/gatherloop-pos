@@ -23,25 +23,30 @@ export type WalletTransferListAction =
   | { type: 'FETCH_ERROR'; message: string }
   | { type: 'REVALIDATE_FINISH'; walletTransfers: WalletTransfer[] };
 
+export type WalletTransferListParams = {
+  walletId: number;
+  walletTransfers: WalletTransfer[];
+};
+
 export class WalletTransferListUsecase extends Usecase<
   WalletTransferListState,
-  WalletTransferListAction
+  WalletTransferListAction,
+  WalletTransferListParams
 > {
+  params: WalletTransferListParams;
   repository: WalletRepository;
 
-  constructor(repository: WalletRepository) {
+  constructor(repository: WalletRepository, params: WalletTransferListParams) {
     super();
     this.repository = repository;
+    this.params = params;
   }
 
   getInitialState() {
-    const walletId = this.repository.getWalletByIdServerParams() ?? NaN;
-    const walletTransfers = this.repository.getWalletTransferList(walletId);
-
     const state: WalletTransferListState = {
-      type: walletTransfers.length >= 1 ? 'loaded' : 'idle',
+      type: this.params.walletTransfers.length >= 1 ? 'loaded' : 'idle',
       errorMessage: null,
-      walletTransfers,
+      walletTransfers: this.params.walletTransfers,
     };
 
     return state;
@@ -96,9 +101,7 @@ export class WalletTransferListUsecase extends Usecase<
       .with({ type: 'idle' }, () => dispatch({ type: 'FETCH' }))
       .with({ type: 'loading' }, () =>
         this.repository
-          .fetchWalletTransferList(
-            this.repository.getWalletByIdServerParams() ?? NaN
-          )
+          .fetchWalletTransferList(this.params.walletId)
           .then((walletTransfers) =>
             dispatch({ type: 'FETCH_SUCCESS', walletTransfers })
           )
@@ -111,9 +114,7 @@ export class WalletTransferListUsecase extends Usecase<
       )
       .with({ type: 'revalidating' }, ({ walletTransfers }) => {
         this.repository
-          .fetchWalletTransferList(
-            this.repository.getWalletByIdServerParams() ?? NaN
-          )
+          .fetchWalletTransferList(this.params.walletId)
           .then((walletTransfers) =>
             dispatch({ type: 'REVALIDATE_FINISH', walletTransfers })
           )

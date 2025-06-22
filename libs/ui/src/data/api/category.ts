@@ -4,45 +4,30 @@ import {
   categoryCreate,
   categoryDeleteById,
   categoryFindById,
-  CategoryFindById200,
   categoryFindByIdQueryKey,
   categoryList,
-  CategoryList200,
   categoryListQueryKey,
   categoryUpdateById,
   Category as ApiCategory,
 } from '../../../../api-contract/src';
 import { Category, CategoryRepository } from '../../domain';
+import { RequestConfig } from '@kubb/swagger-client/client';
 
 export class ApiCategoryRepository implements CategoryRepository {
   client: QueryClient;
-
-  categoryByIdServerParams: number | null = null;
 
   constructor(client: QueryClient) {
     this.client = client;
   }
 
-  getCategoryById: CategoryRepository['getCategoryById'] = (categoryId) => {
-    const res = this.client.getQueryState<CategoryFindById200>(
-      categoryFindByIdQueryKey(categoryId)
-    )?.data;
-
-    this.client.removeQueries({
-      queryKey: categoryFindByIdQueryKey(categoryId),
-    });
-
-    return res ? transformers.category(res.data) : null;
-  };
-
-  getCategoryByIdServerParams: CategoryRepository['getCategoryByIdServerParams'] =
-    () => this.categoryByIdServerParams;
-
-  fetchCategoryById: CategoryRepository['fetchCategoryById'] = (categoryId) => {
+  fetchCategoryById = (
+    categoryId: number,
+    options?: Partial<RequestConfig>
+  ) => {
     return this.client
       .fetchQuery({
         queryKey: categoryFindByIdQueryKey(categoryId),
-        queryFn: () => categoryFindById(categoryId),
+        queryFn: () => categoryFindById(categoryId, options),
       })
       .then(({ data }) => transformers.category(data));
   };
@@ -64,21 +49,13 @@ export class ApiCategoryRepository implements CategoryRepository {
     return categoryDeleteById(categoryId).then();
   };
 
-  getCategoryList: CategoryRepository['getCategoryList'] = () => {
-    const res = this.client.getQueryState<CategoryList200>(
-      categoryListQueryKey()
-    )?.data;
-
-    this.client.removeQueries({ queryKey: categoryListQueryKey() });
-
-    return res?.data.map(transformers.category) ?? [];
-  };
-
-  fetchCategoryList: CategoryRepository['fetchCategoryList'] = () => {
+  fetchCategoryList = (
+    options?: Partial<RequestConfig>
+  ): Promise<Category[]> => {
     return this.client
       .fetchQuery({
         queryKey: categoryListQueryKey(),
-        queryFn: () => categoryList(),
+        queryFn: () => categoryList(options),
       })
       .then((data) => data.data.map(transformers.category));
   };

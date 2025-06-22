@@ -27,6 +27,7 @@ export class CalculationDeleteUsecase extends Usecase<
   CalculationDeleteState,
   CalculationDeleteAction
 > {
+  params: undefined;
   repository: CalculationRepository;
 
   constructor(repository: CalculationRepository) {

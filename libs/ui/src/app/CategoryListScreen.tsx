@@ -1,35 +1,30 @@
-import { GetServerSidePropsContext } from 'next';
-// eslint-disable-next-line @nx/enforce-module-boundaries
-import { categoryList, categoryListQueryKey } from '../../../api-contract/src';
 import { ApiAuthRepository, ApiCategoryRepository } from '../data';
 import {
   CategoryListUsecase,
   CategoryDeleteUsecase,
   AuthLogoutUsecase,
+  CategoryListParams,
 } from '../domain';
 import { CategoryListScreen as CategoryListScreenView } from '../presentation';
-import { dehydrate, QueryClient, useQueryClient } from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
 
-export async function getCategoryListScreenDehydratedState(
-  ctx: GetServerSidePropsContext
-) {
+export type CategoryListScreenProps = {
+  categoryListParams: CategoryListParams;
+};
+
+export function CategoryListScreen({
+  categoryListParams,
+}: CategoryListScreenProps) {
   const client = new QueryClient();
-  await client.prefetchQuery({
-    queryKey: categoryListQueryKey(),
-    queryFn: () =>
-      categoryList({ headers: { Cookie: ctx.req.headers.cookie } }),
-  });
-  return dehydrate(client);
-}
-
-export function CategoryListScreen() {
-  const client = useQueryClient();
   const categoryRepository = new ApiCategoryRepository(client);
-  const categoryListUsecase = new CategoryListUsecase(categoryRepository);
-  const categoryDeleteUsecase = new CategoryDeleteUsecase(categoryRepository);
-
   const authRepository = new ApiAuthRepository();
+
   const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
+  const categoryDeleteUsecase = new CategoryDeleteUsecase(categoryRepository);
+  const categoryListUsecase = new CategoryListUsecase(
+    categoryRepository,
+    categoryListParams
+  );
 
   return (
     <CategoryListScreenView

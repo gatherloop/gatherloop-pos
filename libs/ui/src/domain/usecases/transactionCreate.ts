@@ -27,6 +27,7 @@ export class TransactionCreateUsecase extends Usecase<
   TransactionCreateState,
   TransactionCreateAction
 > {
+  params: undefined;
   repository: TransactionRepository;
 
   constructor(repository: TransactionRepository) {

@@ -27,6 +27,7 @@ export class MaterialDeleteUsecase extends Usecase<
   MaterialDeleteState,
   MaterialDeleteAction
 > {
+  params: undefined;
   repository: MaterialRepository;
 
   constructor(repository: MaterialRepository) {

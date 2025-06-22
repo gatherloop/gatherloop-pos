@@ -34,10 +34,17 @@ export type ExpenseCreateAction =
   | { type: 'SUBMIT_ERROR'; errorMessage: string }
   | { type: 'SUBMIT_CANCEL' };
 
+export type ExpenseCreateParams = {
+  budgets: Budget[];
+  wallets: Wallet[];
+};
+
 export class ExpenseCreateUsecase extends Usecase<
   ExpenseCreateState,
-  ExpenseCreateAction
+  ExpenseCreateAction,
+  ExpenseCreateParams
 > {
+  params: ExpenseCreateParams;
   expenseRepository: ExpenseRepository;
   budgetRepository: BudgetRepository;
   walletRepository: WalletRepository;
@@ -45,23 +52,24 @@ export class ExpenseCreateUsecase extends Usecase<
   constructor(
     expenseRepository: ExpenseRepository,
     budgetRepository: BudgetRepository,
-    walletRepository: WalletRepository
+    walletRepository: WalletRepository,
+    params: ExpenseCreateParams
   ) {
     super();
     this.expenseRepository = expenseRepository;
     this.budgetRepository = budgetRepository;
     this.walletRepository = walletRepository;
+    this.params = params;
   }
 
   getInitialState(): ExpenseCreateState {
-    const budgets = this.budgetRepository.getBudgetList();
-    const wallets = this.walletRepository.getWalletList();
-    const isLoaded = budgets.length > 0 && wallets.length > 0;
+    const isLoaded =
+      this.params.budgets.length > 0 && this.params.wallets.length > 0;
     return {
       type: isLoaded ? 'loaded' : 'idle',
       errorMessage: null,
-      budgets,
-      wallets,
+      budgets: this.params.budgets,
+      wallets: this.params.wallets,
       values: {
         budgetId: NaN,
         walletId: NaN,

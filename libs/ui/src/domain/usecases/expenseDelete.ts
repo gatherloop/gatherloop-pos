@@ -27,6 +27,7 @@ export class ExpenseDeleteUsecase extends Usecase<
   ExpenseDeleteState,
   ExpenseDeleteAction
 > {
+  params: undefined;
   repository: ExpenseRepository;
 
   constructor(repository: ExpenseRepository) {

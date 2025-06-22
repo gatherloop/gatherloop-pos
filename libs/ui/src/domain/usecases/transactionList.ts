@@ -1,6 +1,9 @@
 import { match, P } from 'ts-pattern';
 import { PaymentStatus, Transaction } from '../entities';
-import { TransactionRepository } from '../repositories';
+import {
+  TransactionRepository,
+  TransactionListQueryRepository,
+} from '../repositories';
 import { createDebounce } from '../../utils';
 import { Usecase } from './IUsecase';
 
@@ -45,36 +48,60 @@ export type TransactionListAction =
       totalItem: number;
     };
 
+export type TransactionListParams = {
+  page?: number;
+  query?: string;
+  paymentStatus?: PaymentStatus;
+  sortBy?: 'created_at';
+  orderBy?: 'asc' | 'desc';
+  itemPerPage?: number;
+  transactions: Transaction[];
+  totalItem: number;
+};
+
 const changeParamsDebounce = createDebounce();
 
 export class TransactionListUsecase extends Usecase<
   TransactionListState,
-  TransactionListAction
+  TransactionListAction,
+  TransactionListParams
 > {
-  repository: TransactionRepository;
+  params: TransactionListParams;
+  transactionRepository: TransactionRepository;
+  transactionListQueryRepository: TransactionListQueryRepository;
 
-  constructor(repository: TransactionRepository) {
+  constructor(
+    transactionRepository: TransactionRepository,
+    transactionListQueryRepository: TransactionListQueryRepository,
+    params: TransactionListParams
+  ) {
     super();
-    this.repository = repository;
+    this.transactionRepository = transactionRepository;
+    this.transactionListQueryRepository = transactionListQueryRepository;
+    this.params = params;
   }
 
   getInitialState() {
-    const initialParams = this.repository.getTransactionListServerParams();
-    const { transactions, totalItem } =
-      this.repository.getTransactionList(initialParams);
-
     const state: TransactionListState = {
-      type: transactions.length > 0 ? 'loaded' : 'idle',
-      totalItem,
-      page: initialParams.page,
-      query: initialParams.query,
-      paymentStatus: 'all',
+      type: this.params.transactions.length > 0 ? 'loaded' : 'idle',
+      totalItem: this.params.totalItem,
+      page: this.params.page ?? this.transactionListQueryRepository.getPage(),
+      query:
+        this.params.query ??
+        this.transactionListQueryRepository.getSearchQuery(),
+      paymentStatus:
+        this.params.paymentStatus ??
+        this.transactionListQueryRepository.getPaymentStatus(),
       errorMessage: null,
-      sortBy: initialParams.sortBy,
-      orderBy: initialParams.orderBy,
-      itemPerPage: initialParams.itemPerPage,
+      sortBy:
+        this.params.sortBy ?? this.transactionListQueryRepository.getSortBy(),
+      orderBy:
+        this.params.orderBy ?? this.transactionListQueryRepository.getOrderBy(),
+      itemPerPage:
+        this.params.itemPerPage ??
+        this.transactionListQueryRepository.getItemPerPage(),
       fetchDebounceDelay: 0,
-      transactions,
+      transactions: this.params.transactions,
     };
 
     return state;
@@ -161,7 +188,7 @@ export class TransactionListUsecase extends Usecase<
       .with(
         { type: 'loading' },
         ({ page, itemPerPage, orderBy, query, sortBy, paymentStatus }) => {
-          this.repository
+          this.transactionRepository
             .fetchTransactionList({
               page,
               itemPerPage,
@@ -192,9 +219,16 @@ export class TransactionListUsecase extends Usecase<
           fetchDebounceDelay,
           paymentStatus,
         }) => {
+          this.transactionListQueryRepository.setPage(page);
+          this.transactionListQueryRepository.setSearchQuery(query);
+          this.transactionListQueryRepository.setOrderBy(orderBy);
+          this.transactionListQueryRepository.setSortBy(sortBy);
+          this.transactionListQueryRepository.setItemPerPage(itemPerPage);
+          this.transactionListQueryRepository.setPaymentStatus(paymentStatus);
+
           changeParamsDebounce(() => {
             const { transactions, totalItem } =
-              this.repository.getTransactionList({
+              this.transactionRepository.getTransactionList({
                 page,
                 itemPerPage,
                 orderBy,
@@ -223,7 +257,7 @@ export class TransactionListUsecase extends Usecase<
           transactions,
           totalItem,
         }) => {
-          this.repository
+          this.transactionRepository
             .fetchTransactionList({
               page,
               itemPerPage,

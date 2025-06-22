@@ -1,5 +1,5 @@
 import { match } from 'ts-pattern';
-import { WalletForm } from '../entities';
+import { Wallet, WalletForm } from '../entities';
 import { WalletRepository } from '../repositories';
 import { Usecase } from './IUsecase';
 
@@ -28,27 +28,33 @@ export type WalletUpdateAction =
   | { type: 'SUBMIT_ERROR'; errorMessage: string }
   | { type: 'SUBMIT_CANCEL' };
 
+export type WalletUpdateParams = {
+  walletId: number;
+  wallet: Wallet | null;
+};
+
 export class WalletUpdateUsecase extends Usecase<
   WalletUpdateState,
-  WalletUpdateAction
+  WalletUpdateAction,
+  WalletUpdateParams
 > {
+  params: WalletUpdateParams;
   repository: WalletRepository;
 
-  constructor(repository: WalletRepository) {
+  constructor(repository: WalletRepository, params: WalletUpdateParams) {
     super();
     this.repository = repository;
+    this.params = params;
   }
 
   getInitialState(): WalletUpdateState {
-    const walletId = this.repository.getWalletByIdServerParams();
-    const wallet = walletId ? this.repository.getWalletById(walletId) : null;
     return {
-      type: wallet !== null ? 'loaded' : 'idle',
+      type: this.params.wallet !== null ? 'loaded' : 'idle',
       errorMessage: null,
       values: {
-        name: wallet?.name ?? '',
-        balance: wallet?.balance ?? 0,
-        paymentCostPercentage: wallet?.paymentCostPercentage ?? 0,
+        name: this.params.wallet?.name ?? '',
+        balance: this.params.wallet?.balance ?? 0,
+        paymentCostPercentage: this.params.wallet?.paymentCostPercentage ?? 0,
       },
     };
   }
@@ -125,9 +131,8 @@ export class WalletUpdateUsecase extends Usecase<
         dispatch({ type: 'FETCH' });
       })
       .with({ type: 'loading' }, () => {
-        const walletId = this.repository.getWalletByIdServerParams() ?? NaN;
         this.repository
-          .fetchWalletById(walletId)
+          .fetchWalletById(this.params.walletId)
           .then((wallet) =>
             dispatch({
               type: 'FETCH_SUCCESS',
@@ -146,9 +151,8 @@ export class WalletUpdateUsecase extends Usecase<
           );
       })
       .with({ type: 'submitting' }, ({ values }) => {
-        const walletId = this.repository.getWalletByIdServerParams() ?? NaN;
         this.repository
-          .updateWallet(values, walletId)
+          .updateWallet(values, this.params.walletId)
           .then(() => dispatch({ type: 'SUBMIT_SUCCESS' }))
           .catch(() =>
             dispatch({ type: 'SUBMIT_ERROR', errorMessage: 'Submit failed' })

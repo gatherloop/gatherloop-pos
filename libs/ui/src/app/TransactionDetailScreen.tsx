@@ -1,50 +1,28 @@
-// eslint-disable-next-line @nx/enforce-module-boundaries
-import {
-  transactionFindById,
-  transactionFindByIdQueryKey,
-} from '../../../api-contract/src';
-import { GetServerSidePropsContext } from 'next';
 import { ApiAuthRepository, ApiTransactionRepository } from '../data';
-import { AuthLogoutUsecase, TransactionDetailUsecase } from '../domain';
-import { TransactionDetailScreen as TransactionDetailScreenView } from '../presentation';
 import {
-  dehydrate,
-  DehydratedState,
-  QueryClient,
-  useQueryClient,
-} from '@tanstack/react-query';
-
-export async function getTransactionDetailScreenDehydratedState(
-  ctx: GetServerSidePropsContext,
-  transactionId: number
-): Promise<DehydratedState> {
-  const queryClient = new QueryClient();
-  await queryClient.prefetchQuery({
-    queryKey: transactionFindByIdQueryKey(transactionId),
-    queryFn: () =>
-      transactionFindById(transactionId, {
-        headers: { Cookie: ctx.req.headers.cookie },
-      }),
-  });
-  return dehydrate(queryClient);
-}
+  AuthLogoutUsecase,
+  TransactionDetailParams,
+  TransactionDetailUsecase,
+} from '../domain';
+import { TransactionDetailScreen as TransactionDetailScreenView } from '../presentation';
+import { QueryClient } from '@tanstack/react-query';
 
 export type TransactionDetailScreenProps = {
-  transactionId: number;
+  transactionDetailParams: TransactionDetailParams;
 };
 
 export function TransactionDetailScreen({
-  transactionId,
+  transactionDetailParams,
 }: TransactionDetailScreenProps) {
-  const client = useQueryClient();
+  const client = new QueryClient();
   const transactionRepository = new ApiTransactionRepository(client);
-  transactionRepository.transactionByIdServerParams = transactionId;
-  const transactionDetailUsecase = new TransactionDetailUsecase(
-    transactionRepository
-  );
-
   const authRepository = new ApiAuthRepository();
+
   const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
+  const transactionDetailUsecase = new TransactionDetailUsecase(
+    transactionRepository,
+    transactionDetailParams
+  );
 
   return (
     <TransactionDetailScreenView

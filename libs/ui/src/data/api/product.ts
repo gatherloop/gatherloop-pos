@@ -4,7 +4,6 @@ import {
   productCreate,
   productDeleteById,
   productFindById,
-  ProductFindById200,
   productFindByIdQueryKey,
   productList,
   ProductList200,
@@ -13,51 +12,24 @@ import {
   Product as ApiProduct,
   Category as ApiCategory,
 } from '../../../../api-contract/src';
-import {
-  Category,
-  Product,
-  ProductListParams,
-  ProductRepository,
-} from '../../domain';
+import { Category, Product, ProductRepository } from '../../domain';
+import { RequestConfig } from '@kubb/swagger-client/client';
 
 export class ApiProductRepository implements ProductRepository {
   client: QueryClient;
-
-  productListServerParams: ProductListParams = {
-    page: 1,
-    itemPerPage: 8,
-    orderBy: 'desc',
-    query: '',
-    sortBy: 'created_at',
-  };
-
-  productByIdServerParams: number | null = null;
 
   constructor(client: QueryClient) {
     this.client = client;
   }
 
-  getProductById: ProductRepository['getProductById'] = (productId) => {
-    const res = this.client.getQueryState<ProductFindById200>(
-      productFindByIdQueryKey(productId)
-    )?.data;
-
-    this.client.removeQueries({ queryKey: productFindByIdQueryKey(productId) });
-
-    return res ? transformers.product(res.data) : null;
-  };
-
-  getProductListServerParams: ProductRepository['getProductListServerParams'] =
-    () => this.productListServerParams;
-
-  getProductByIdServerParams: ProductRepository['getProductByIdServerParams'] =
-    () => this.productByIdServerParams;
-
-  fetchProductById: ProductRepository['fetchProductById'] = (productId) => {
+  fetchProductById = (
+    productId: number,
+    options?: Partial<RequestConfig>
+  ): Promise<Product> => {
     return this.client
       .fetchQuery({
         queryKey: productFindByIdQueryKey(productId),
-        queryFn: () => productFindById(productId),
+        queryFn: () => productFindById(productId, options),
       })
       .then(({ data }) => transformers.product(data));
   };
@@ -131,25 +103,28 @@ export class ApiProductRepository implements ProductRepository {
     };
   };
 
-  fetchProductList: ProductRepository['fetchProductList'] = ({
-    itemPerPage,
-    orderBy,
-    page,
-    query,
-    sortBy,
-  }) => {
-    const params = {
-      query,
-      skip: (page - 1) * itemPerPage,
-      limit: itemPerPage,
-      order: orderBy,
-      sortBy,
+  fetchProductList = (
+    params: {
+      query: string;
+      page: number;
+      itemPerPage: number;
+      orderBy: 'asc' | 'desc';
+      sortBy: 'created_at';
+    },
+    options?: Partial<RequestConfig>
+  ) => {
+    const queryParams = {
+      query: params.query,
+      skip: (params.page - 1) * params.itemPerPage,
+      limit: params.itemPerPage,
+      order: params.orderBy,
+      sortBy: params.sortBy,
     };
 
     return this.client
       .fetchQuery({
-        queryKey: productListQueryKey(params),
-        queryFn: () => productList(params),
+        queryKey: productListQueryKey(queryParams),
+        queryFn: () => productList(queryParams, options),
       })
       .then((data) => ({
         products: data.data.map(transformers.product),
@@ -184,6 +159,6 @@ export const transformers = {
         amount,
       })
     ),
-    description: product.description,
+    description: product.description ?? '',
   }),
 };

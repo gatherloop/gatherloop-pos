@@ -26,6 +26,7 @@ export class WalletCreateUsecase extends Usecase<
   WalletCreateState,
   WalletCreateAction
 > {
+  params: undefined;
   repository: WalletRepository;
 
   constructor(repository: WalletRepository) {

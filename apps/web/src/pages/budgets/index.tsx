@@ -1,19 +1,28 @@
 import {
+  ApiBudgetRepository,
   BudgetListScreen,
-  getBudgetListScreenDehydratedState,
+  BudgetListScreenProps,
 } from '@gatherloop-pos/ui';
+import { QueryClient } from '@tanstack/react-query';
 import { GetServerSideProps } from 'next';
-import { PageProps } from '../_app';
 
-export const getServerSideProps: GetServerSideProps<PageProps> = async (
-  ctx
-) => {
+export const getServerSideProps: GetServerSideProps<
+  BudgetListScreenProps
+> = async (ctx) => {
   const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
-  const dehydratedState = await getBudgetListScreenDehydratedState(ctx);
-  return {
-    props: { dehydratedState },
-    redirect: isLoggedIn ? undefined : { destination: '/auth/login' },
-  };
+  if (!isLoggedIn) {
+    return {
+      redirect: { destination: '/auth/login', permanent: false },
+    };
+  }
+
+  const client = new QueryClient();
+  const budgetRepository = new ApiBudgetRepository(client);
+  const budgets = await budgetRepository.fetchBudgetList({
+    headers: { Cookie: ctx.req.headers.cookie },
+  });
+
+  return { props: { budgetListParams: { budgets } } };
 };
 
 export default BudgetListScreen;

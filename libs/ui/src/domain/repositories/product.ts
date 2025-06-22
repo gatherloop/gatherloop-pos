@@ -9,16 +9,10 @@ export type ProductListParams = {
 };
 
 export interface ProductRepository {
-  getProductListServerParams: () => ProductListParams;
-
-  getProductByIdServerParams: () => number | null;
-
   getProductList: (params: ProductListParams) => {
     products: Product[];
     totalItem: number;
   };
-
-  getProductById: (productId: number) => Product | null;
 
   fetchProductList: (
     params: ProductListParams

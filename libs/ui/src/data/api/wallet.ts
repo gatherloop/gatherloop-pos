@@ -3,52 +3,29 @@ import { QueryClient } from '@tanstack/react-query';
 import {
   walletCreate,
   walletFindById,
-  WalletFindById200,
   walletFindByIdQueryKey,
   walletList,
-  WalletList200,
   walletListQueryKey,
   walletUpdateById,
   Wallet as ApiWallet,
   WalletTransfer as ApiWalletTransfer,
-  WalletTransferList200,
   walletTransferListQueryKey,
   walletTransferList,
   walletTransferCreate,
 } from '../../../../api-contract/src';
 import { Wallet, WalletRepository, WalletTransfer } from '../../domain';
+import { RequestConfig } from '@kubb/swagger-client/client';
 
 export class ApiWalletRepository implements WalletRepository {
   client: QueryClient;
-
-  walletByIdServerParams: number | null = null;
 
   constructor(client: QueryClient) {
     this.client = client;
   }
 
-  getWalletTransferList: WalletRepository['getWalletTransferList'] = (
-    walletId
-  ) => {
-    const res = this.client.getQueryState<WalletTransferList200>(
-      walletTransferListQueryKey(walletId, {
-        sortBy: 'created_at',
-        order: 'desc',
-      })
-    )?.data;
-
-    this.client.removeQueries({
-      queryKey: walletTransferListQueryKey(walletId, {
-        sortBy: 'created_at',
-        order: 'desc',
-      }),
-    });
-
-    return res?.data.map(transformers.walletTransfer) ?? [];
-  };
-
-  fetchWalletTransferList: WalletRepository['fetchWalletTransferList'] = (
-    walletId
+  fetchWalletTransferList = (
+    walletId: number,
+    options?: Partial<RequestConfig>
   ) => {
     return this.client
       .fetchQuery({
@@ -57,10 +34,14 @@ export class ApiWalletRepository implements WalletRepository {
           order: 'desc',
         }),
         queryFn: () =>
-          walletTransferList(walletId, {
-            sortBy: 'created_at',
-            order: 'desc',
-          }),
+          walletTransferList(
+            walletId,
+            {
+              sortBy: 'created_at',
+              order: 'desc',
+            },
+            options
+          ),
       })
       .then((data) => data.data.map(transformers.walletTransfer));
   };
@@ -74,24 +55,11 @@ export class ApiWalletRepository implements WalletRepository {
     }).then();
   };
 
-  getWalletById: WalletRepository['getWalletById'] = (walletId) => {
-    const res = this.client.getQueryState<WalletFindById200>(
-      walletFindByIdQueryKey(walletId)
-    )?.data;
-
-    this.client.removeQueries({ queryKey: walletFindByIdQueryKey(walletId) });
-
-    return res ? transformers.wallet(res.data) : null;
-  };
-
-  getWalletByIdServerParams: WalletRepository['getWalletByIdServerParams'] =
-    () => this.walletByIdServerParams;
-
-  fetchWalletById: WalletRepository['fetchWalletById'] = (walletId) => {
+  fetchWalletById = (walletId: number, options?: Partial<RequestConfig>) => {
     return this.client
       .fetchQuery({
         queryKey: walletFindByIdQueryKey(walletId),
-        queryFn: () => walletFindById(walletId),
+        queryFn: () => walletFindById(walletId, options),
       })
       .then(({ data }) => transformers.wallet(data));
   };
@@ -104,21 +72,11 @@ export class ApiWalletRepository implements WalletRepository {
     return walletUpdateById(walletId, formValues).then();
   };
 
-  getWalletList: WalletRepository['getWalletList'] = () => {
-    const res = this.client.getQueryState<WalletList200>(
-      walletListQueryKey()
-    )?.data;
-
-    this.client.removeQueries({ queryKey: walletListQueryKey() });
-
-    return res?.data.map(transformers.wallet) ?? [];
-  };
-
-  fetchWalletList: WalletRepository['fetchWalletList'] = () => {
+  fetchWalletList = (options?: Partial<RequestConfig>) => {
     return this.client
       .fetchQuery({
         queryKey: walletListQueryKey(),
-        queryFn: () => walletList(),
+        queryFn: () => walletList(options),
       })
       .then((data) => data.data.map(transformers.wallet));
   };

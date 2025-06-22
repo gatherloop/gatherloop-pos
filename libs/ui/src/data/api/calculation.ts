@@ -4,49 +4,30 @@ import {
   calculationCreate,
   calculationDeleteById,
   calculationFindById,
-  CalculationFindById200,
   calculationFindByIdQueryKey,
   calculationList,
-  CalculationList200,
   calculationListQueryKey,
   calculationUpdateById,
   Calculation as ApiCalculation,
 } from '../../../../api-contract/src';
 import { Calculation, CalculationRepository } from '../../domain';
+import { RequestConfig } from '@kubb/swagger-client/client';
 
 export class ApiCalculationRepository implements CalculationRepository {
   client: QueryClient;
-
-  calculationByIdServerParams: number | null = null;
 
   constructor(client: QueryClient) {
     this.client = client;
   }
 
-  getCalculationById: CalculationRepository['getCalculationById'] = (
-    calculationId
-  ) => {
-    const res = this.client.getQueryState<CalculationFindById200>(
-      calculationFindByIdQueryKey(calculationId)
-    )?.data;
-
-    this.client.removeQueries({
-      queryKey: calculationFindByIdQueryKey(calculationId),
-    });
-
-    return res ? transformers.calculation(res.data) : null;
-  };
-
-  getCalculationByIdServerParams: CalculationRepository['getCalculationByIdServerParams'] =
-    () => this.calculationByIdServerParams;
-
-  fetchCalculationById: CalculationRepository['fetchCalculationById'] = (
-    calculationId
+  fetchCalculationById = (
+    calculationId: number,
+    options?: Partial<RequestConfig>
   ) => {
     return this.client
       .fetchQuery({
         queryKey: calculationFindByIdQueryKey(calculationId),
-        queryFn: () => calculationFindById(calculationId),
+        queryFn: () => calculationFindById(calculationId, options),
       })
       .then(({ data }) => transformers.calculation(data));
   };
@@ -76,29 +57,15 @@ export class ApiCalculationRepository implements CalculationRepository {
     return calculationDeleteById(calculationId).then();
   };
 
-  getCalculationList: CalculationRepository['getCalculationList'] = () => {
-    const res = this.client.getQueryState<CalculationList200>(
-      calculationListQueryKey({ sortBy: 'created_at', order: 'desc' })
-    )?.data;
-
-    this.client.removeQueries({
-      queryKey: calculationListQueryKey({
-        sortBy: 'created_at',
-        order: 'desc',
-      }),
-    });
-
-    return res?.data.map(transformers.calculation) ?? [];
-  };
-
-  fetchCalculationList: CalculationRepository['fetchCalculationList'] = () => {
+  fetchCalculationList = (options?: Partial<RequestConfig>) => {
     return this.client
       .fetchQuery({
         queryKey: calculationListQueryKey({
           sortBy: 'created_at',
           order: 'desc',
         }),
-        queryFn: () => calculationList({ sortBy: 'created_at', order: 'desc' }),
+        queryFn: () =>
+          calculationList({ sortBy: 'created_at', order: 'desc' }, options),
       })
       .then((data) => data.data.map(transformers.calculation));
   };

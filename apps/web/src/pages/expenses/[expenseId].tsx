@@ -1,24 +1,42 @@
 import {
+  ApiBudgetRepository,
+  ApiExpenseRepository,
+  ApiWalletRepository,
   ExpenseUpdateScreen,
   ExpenseUpdateScreenProps,
-  getExpenseUpdateScreenDehydratedState,
 } from '@gatherloop-pos/ui';
+import { QueryClient } from '@tanstack/react-query';
 import { GetServerSideProps } from 'next';
-import { PageProps } from '../_app';
 
 export const getServerSideProps: GetServerSideProps<
-  PageProps & ExpenseUpdateScreenProps,
+  ExpenseUpdateScreenProps,
   { expenseId: string }
 > = async (ctx) => {
   const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
+  if (!isLoggedIn) {
+    return {
+      redirect: { destination: '/auth/login', permanent: false },
+    };
+  }
+
   const expenseId = parseInt(ctx.params?.expenseId ?? '');
-  const dehydratedState = await getExpenseUpdateScreenDehydratedState(
-    ctx,
-    expenseId
-  );
+  const client = new QueryClient();
+  const expenseRepository = new ApiExpenseRepository(client);
+  const budgetRepository = new ApiBudgetRepository(client);
+  const walletRepository = new ApiWalletRepository(client);
+
+  const expense = await expenseRepository.fetchExpenseById(expenseId, {
+    headers: { Cookie: ctx.req.headers.cookie },
+  });
+  const budgets = await budgetRepository.fetchBudgetList({
+    headers: { Cookie: ctx.req.headers.cookie },
+  });
+  const wallets = await walletRepository.fetchWalletList({
+    headers: { Cookie: ctx.req.headers.cookie },
+  });
+
   return {
-    props: { dehydratedState, expenseId },
-    redirect: isLoggedIn ? undefined : { destination: '/auth/login' },
+    props: { expenseUpdateParams: { expense, budgets, expenseId, wallets } },
   };
 };
 

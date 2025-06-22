@@ -6,11 +6,10 @@ import { useQueryClient } from '@tanstack/react-query';
 export function MaterialCreateScreen() {
   const client = useQueryClient();
   const materialRepository = new ApiMaterialRepository(client);
-  const materialUsecase = new MaterialCreateUsecase(materialRepository);
-
   const authRepository = new ApiAuthRepository();
-  const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
 
+  const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
+  const materialUsecase = new MaterialCreateUsecase(materialRepository);
   return (
     <MaterialCreateScreenView
       materialCreateUsecase={materialUsecase}

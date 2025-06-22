@@ -26,6 +26,7 @@ export class MaterialCreateUsecase extends Usecase<
   MaterialCreateState,
   MaterialCreateAction
 > {
+  params: undefined;
   repository: MaterialRepository;
 
   constructor(repository: MaterialRepository) {

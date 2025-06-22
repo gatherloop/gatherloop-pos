@@ -1,5 +1,5 @@
 import { match } from 'ts-pattern';
-import { Category, ProductForm } from '../entities';
+import { Category, Product, ProductForm } from '../entities';
 import { CategoryRepository, ProductRepository } from '../repositories';
 import { Usecase } from './IUsecase';
 
@@ -29,41 +29,47 @@ export type ProductUpdateAction =
   | { type: 'SUBMIT_ERROR'; errorMessage: string }
   | { type: 'SUBMIT_CANCEL' };
 
+export type ProductUpdateParams = {
+  productId: number;
+  product: Product | null;
+  categories: Category[];
+};
+
 export class ProductUpdateUsecase extends Usecase<
   ProductUpdateState,
-  ProductUpdateAction
+  ProductUpdateAction,
+  ProductUpdateParams
 > {
   productRepository: ProductRepository;
   categoryRepository: CategoryRepository;
+  params: ProductUpdateParams;
 
   constructor(
     productRepository: ProductRepository,
-    categoryRepository: CategoryRepository
+    categoryRepository: CategoryRepository,
+    params: ProductUpdateParams
   ) {
     super();
     this.productRepository = productRepository;
     this.categoryRepository = categoryRepository;
+    this.params = params;
   }
 
   getInitialState(): ProductUpdateState {
-    const productId = this.productRepository.getProductByIdServerParams();
-    const product = productId
-      ? this.productRepository.getProductById(productId)
-      : null;
-    const categories = this.categoryRepository.getCategoryList();
-    const values: ProductForm = {
-      categoryId: product?.category.id ?? NaN,
-      materials: product?.materials ?? [],
-      name: product?.name ?? '',
-      price: product?.price ?? 0,
-      description: product?.description ?? '',
-    };
-
     return {
-      type: product !== null && categories.length > 0 ? 'loaded' : 'idle',
-      categories,
+      categories: this.params.categories,
       errorMessage: null,
-      values,
+      type:
+        this.params.product !== null && this.params.categories.length > 0
+          ? 'loaded'
+          : 'idle',
+      values: {
+        categoryId: this.params.product?.category.id ?? NaN,
+        materials: this.params.product?.materials ?? [],
+        name: this.params.product?.name ?? '',
+        price: this.params.product?.price ?? 0,
+        description: this.params.product?.description ?? '',
+      },
     };
   }
 
@@ -140,11 +146,9 @@ export class ProductUpdateUsecase extends Usecase<
         dispatch({ type: 'FETCH' });
       })
       .with({ type: 'loading' }, () => {
-        const productId =
-          this.productRepository.getProductByIdServerParams() ?? NaN;
         Promise.all([
           this.categoryRepository.fetchCategoryList(),
-          this.productRepository.fetchProductById(productId),
+          this.productRepository.fetchProductById(this.params.productId),
         ])
           .then(([categories, product]) =>
             dispatch({
@@ -166,10 +170,8 @@ export class ProductUpdateUsecase extends Usecase<
           );
       })
       .with({ type: 'submitting' }, ({ values }) => {
-        const productId =
-          this.productRepository.getProductByIdServerParams() ?? NaN;
         this.productRepository
-          .updateProduct(values, productId)
+          .updateProduct(values, this.params.productId)
           .then(() => dispatch({ type: 'SUBMIT_SUCCESS' }))
           .catch(() =>
             dispatch({ type: 'SUBMIT_ERROR', errorMessage: 'Submit failed' })

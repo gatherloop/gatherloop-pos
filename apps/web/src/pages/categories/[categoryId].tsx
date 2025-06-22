@@ -1,24 +1,34 @@
 import {
+  ApiCategoryRepository,
   CategoryUpdateScreen,
   CategoryUpdateScreenProps,
-  getCategoryUpdateScreenDehydratedState,
 } from '@gatherloop-pos/ui';
 import { GetServerSideProps } from 'next';
-import { PageProps } from '../_app';
+import { QueryClient } from '@tanstack/react-query';
 
 export const getServerSideProps: GetServerSideProps<
-  PageProps & CategoryUpdateScreenProps,
+  CategoryUpdateScreenProps,
   { categoryId: string }
 > = async (ctx) => {
   const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
+  if (!isLoggedIn) {
+    return {
+      redirect: {
+        destination: '/auth/login',
+        permanent: false,
+      },
+    };
+  }
+
+  const client = new QueryClient();
+  const categoryRepository = new ApiCategoryRepository(client);
   const categoryId = parseInt(ctx.params?.categoryId ?? '');
-  const dehydratedState = await getCategoryUpdateScreenDehydratedState(
-    ctx,
-    categoryId
-  );
+  const category = await categoryRepository.fetchCategoryById(categoryId, {
+    headers: { Cookie: ctx.req.headers.cookie },
+  });
+
   return {
-    props: { dehydratedState, categoryId },
-    redirect: isLoggedIn ? undefined : { destination: '/auth/login' },
+    props: { categoryUpdateParams: { category, categoryId } },
   };
 };
 

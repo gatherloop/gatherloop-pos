@@ -23,24 +23,29 @@ export type BudgetListAction =
   | { type: 'FETCH_ERROR'; message: string }
   | { type: 'REVALIDATE_FINISH'; budgets: Budget[] };
 
+export type BudgetListParams = {
+  budgets: Budget[];
+};
+
 export class BudgetListUsecase extends Usecase<
   BudgetListState,
-  BudgetListAction
+  BudgetListAction,
+  BudgetListParams
 > {
+  params: BudgetListParams;
   repository: BudgetRepository;
 
-  constructor(repository: BudgetRepository) {
+  constructor(repository: BudgetRepository, params: BudgetListParams) {
     super();
     this.repository = repository;
+    this.params = params;
   }
 
   getInitialState() {
-    const budgets = this.repository.getBudgetList();
-
     const state: BudgetListState = {
-      type: budgets.length >= 1 ? 'loaded' : 'idle',
+      type: this.params.budgets.length >= 1 ? 'loaded' : 'idle',
       errorMessage: null,
-      budgets,
+      budgets: this.params.budgets,
     };
 
     return state;

@@ -21,24 +21,30 @@ export type WalletDetailAction =
   | { type: 'FETCH_SUCCESS'; wallet: Wallet }
   | { type: 'FETCH_ERROR'; errorMessage: string };
 
+export type WalletDetailParams = {
+  walletId: number;
+  wallet: Wallet | null;
+};
+
 export class WalletDetailUsecase extends Usecase<
   WalletDetailState,
-  WalletDetailAction
+  WalletDetailAction,
+  WalletDetailParams
 > {
+  params: WalletDetailParams;
   repository: WalletRepository;
 
-  constructor(repository: WalletRepository) {
+  constructor(repository: WalletRepository, params: WalletDetailParams) {
     super();
     this.repository = repository;
+    this.params = params;
   }
 
   getInitialState(): WalletDetailState {
-    const walletId = this.repository.getWalletByIdServerParams();
-    const wallet = walletId ? this.repository.getWalletById(walletId) : null;
     return {
-      type: wallet !== null ? 'loaded' : 'idle',
+      type: this.params.wallet !== null ? 'loaded' : 'idle',
       errorMessage: null,
-      wallet,
+      wallet: this.params.wallet,
     };
   }
 
@@ -84,9 +90,8 @@ export class WalletDetailUsecase extends Usecase<
         dispatch({ type: 'FETCH' });
       })
       .with({ type: 'loading' }, () => {
-        const walletId = this.repository.getWalletByIdServerParams() ?? NaN;
         this.repository
-          .fetchWalletById(walletId)
+          .fetchWalletById(this.params.walletId)
           .then((wallet) =>
             dispatch({
               type: 'FETCH_SUCCESS',

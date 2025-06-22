@@ -24,24 +24,32 @@ export type CalculationListAction =
   | { type: 'REVALIDATE'; calculations: Calculation[] }
   | { type: 'REVALIDATE_FINISH'; calculations: Calculation[] };
 
+export type CalculationListParams = {
+  calculations: Calculation[];
+};
+
 export class CalculationListUsecase extends Usecase<
   CalculationListState,
-  CalculationListAction
+  CalculationListAction,
+  CalculationListParams
 > {
   repository: CalculationRepository;
+  params: CalculationListParams;
 
-  constructor(repository: CalculationRepository) {
+  constructor(
+    repository: CalculationRepository,
+    params: CalculationListParams
+  ) {
     super();
     this.repository = repository;
+    this.params = params;
   }
 
   getInitialState() {
-    const calculations = this.repository.getCalculationList();
-
     const state: CalculationListState = {
-      type: calculations.length >= 1 ? 'loaded' : 'idle',
+      type: this.params.calculations.length >= 1 ? 'loaded' : 'idle',
       errorMessage: null,
-      calculations,
+      calculations: this.params.calculations,
     };
 
     return state;

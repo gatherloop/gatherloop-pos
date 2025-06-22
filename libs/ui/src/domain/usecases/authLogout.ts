@@ -16,6 +16,7 @@ export class AuthLogoutUsecase extends Usecase<
   AuthLogoutState,
   AuthLogoutAction
 > {
+  params: undefined;
   repository: AuthRepository;
 
   constructor(repository: AuthRepository) {

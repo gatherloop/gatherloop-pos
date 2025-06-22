@@ -6,18 +6,13 @@ import { AppProps } from 'next/app';
 import Head from 'next/head';
 import React, { useMemo } from 'react';
 import { RootProvider } from '@gatherloop-pos/provider';
-import { DehydratedState, HydrationBoundary } from '@tanstack/react-query';
 import NextNProgress from 'nextjs-progressbar';
-
-export type PageProps = {
-  dehydratedState: DehydratedState;
-};
 
 if (process.env.NODE_ENV === 'production') {
   require('../../public/tamagui.css');
 }
 
-export default function App({ Component, pageProps }: AppProps<PageProps>) {
+export default function App({ Component, pageProps }: AppProps) {
   const [theme, setTheme] = useRootTheme();
 
   const contents = useMemo(() => {
@@ -40,9 +35,7 @@ export default function App({ Component, pageProps }: AppProps<PageProps>) {
             defaultTheme: theme,
           }}
         >
-          <HydrationBoundary state={pageProps.dehydratedState}>
-            {contents}
-          </HydrationBoundary>
+          {contents}
         </RootProvider>
       </NextThemeProvider>
     </>

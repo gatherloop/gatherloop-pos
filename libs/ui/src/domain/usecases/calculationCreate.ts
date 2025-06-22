@@ -29,29 +29,36 @@ export type CalculationCreateAction =
   | { type: 'SUBMIT_ERROR'; errorMessage: string }
   | { type: 'SUBMIT_CANCEL' };
 
+export type CalculationCreateParams = {
+  wallets: Wallet[];
+};
+
 export class CalculationCreateUsecase extends Usecase<
   CalculationCreateState,
-  CalculationCreateAction
+  CalculationCreateAction,
+  CalculationCreateParams
 > {
+  params: CalculationCreateParams;
   calculationRepository: CalculationRepository;
   walletRepository: WalletRepository;
 
   constructor(
     calculationRepository: CalculationRepository,
-    walletRepository: WalletRepository
+    walletRepository: WalletRepository,
+    params: CalculationCreateParams
   ) {
     super();
     this.calculationRepository = calculationRepository;
     this.walletRepository = walletRepository;
+    this.params = params;
   }
 
   getInitialState(): CalculationCreateState {
-    const wallets = this.walletRepository.getWalletList();
-    const isLoaded = wallets.length > 0;
+    const isLoaded = this.params.wallets.length > 0;
     return {
       type: isLoaded ? 'loaded' : 'idle',
       errorMessage: null,
-      wallets,
+      wallets: this.params.wallets,
       values: {
         walletId: NaN,
         totalWallet: NaN,

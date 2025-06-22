@@ -29,24 +29,31 @@ export type ProductCreateAction =
   | { type: 'SUBMIT_ERROR'; errorMessage: string }
   | { type: 'SUBMIT_CANCEL' };
 
+export type ProductCreateParams = {
+  categories: Category[];
+};
+
 export class ProductCreateUsecase extends Usecase<
   ProductCreateState,
-  ProductCreateAction
+  ProductCreateAction,
+  ProductCreateParams
 > {
+  params: ProductCreateParams;
   productRepository: ProductRepository;
   categoryRepository: CategoryRepository;
 
   constructor(
     productRepository: ProductRepository,
-    categoryRepository: CategoryRepository
+    categoryRepository: CategoryRepository,
+    params: ProductCreateParams
   ) {
     super();
     this.productRepository = productRepository;
     this.categoryRepository = categoryRepository;
+    this.params = params;
   }
 
   getInitialState(): ProductCreateState {
-    const categories = this.categoryRepository.getCategoryList();
     const values: ProductForm = {
       categoryId: NaN,
       materials: [],
@@ -54,16 +61,16 @@ export class ProductCreateUsecase extends Usecase<
       price: 0,
       description: '',
     };
-    return categories.length > 0
+    return this.params.categories.length > 0
       ? {
           type: 'loaded',
-          categories,
+          categories: this.params.categories,
           errorMessage: null,
           values,
         }
       : {
           type: 'idle',
-          categories,
+          categories: [],
           errorMessage: null,
           values,
         };

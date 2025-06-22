@@ -1,5 +1,5 @@
 import { match } from 'ts-pattern';
-import { CalculationForm, Wallet } from '../entities';
+import { Calculation, CalculationForm, Wallet } from '../entities';
 import { CalculationRepository, WalletRepository } from '../repositories';
 import { Usecase } from './IUsecase';
 
@@ -33,41 +33,43 @@ export type CalculationUpdateAction =
   | { type: 'SUBMIT_ERROR'; errorMessage: string }
   | { type: 'SUBMIT_CANCEL' };
 
+export type CalculationUpdateParams = {
+  calculationId: number;
+  calculation: Calculation | null;
+  wallets: Wallet[];
+};
+
 export class CalculationUpdateUsecase extends Usecase<
   CalculationUpdateState,
-  CalculationUpdateAction
+  CalculationUpdateAction,
+  CalculationUpdateParams
 > {
+  params: CalculationUpdateParams;
   walletRepository: WalletRepository;
   calculationRepository: CalculationRepository;
 
   constructor(
     calculationRepository: CalculationRepository,
-    walletRepository: WalletRepository
+    walletRepository: WalletRepository,
+    params: CalculationUpdateParams
   ) {
     super();
     this.calculationRepository = calculationRepository;
     this.walletRepository = walletRepository;
+    this.params = params;
   }
 
   getInitialState(): CalculationUpdateState {
-    const calculationId =
-      this.calculationRepository.getCalculationByIdServerParams();
-    const calculation = calculationId
-      ? this.calculationRepository.getCalculationById(calculationId)
-      : null;
-
-    const wallets = this.walletRepository.getWalletList();
-    const isLoaded = calculation !== null && wallets.length > 0;
     return {
-      type: isLoaded ? 'loaded' : 'idle',
+      type: this.params.calculation !== null ? 'loaded' : 'idle',
       errorMessage: null,
-      wallets,
+      wallets: this.params.wallets,
       values: {
-        walletId: calculation?.wallet.id ?? NaN,
-        totalWallet: calculation?.totalWallet ?? 0,
-        calculationItems: calculation?.calculationItems ?? [],
+        walletId: this.params.calculation?.wallet.id ?? NaN,
+        totalWallet: this.params.calculation?.totalWallet ?? 0,
+        calculationItems: this.params.calculation?.calculationItems ?? [],
       },
-    };
+    } as CalculationUpdateState;
   }
 
   getNextState(
@@ -143,9 +145,7 @@ export class CalculationUpdateUsecase extends Usecase<
         dispatch({ type: 'FETCH' });
       })
       .with({ type: 'loading' }, () => {
-        const calculationId =
-          this.calculationRepository.getCalculationByIdServerParams() ?? NaN;
-
+        const calculationId = this.params.calculationId;
         Promise.all([
           this.calculationRepository.fetchCalculationById(calculationId),
           this.walletRepository.fetchWalletList(),
@@ -169,8 +169,7 @@ export class CalculationUpdateUsecase extends Usecase<
           );
       })
       .with({ type: 'submitting' }, ({ values }) => {
-        const calculationId =
-          this.calculationRepository.getCalculationByIdServerParams() ?? NaN;
+        const calculationId = this.params.calculationId;
         this.calculationRepository
           .updateCalculation(values, calculationId)
           .then(() => dispatch({ type: 'SUBMIT_SUCCESS' }))

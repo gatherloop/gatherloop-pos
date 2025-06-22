@@ -29,29 +29,38 @@ export type WalletTransferCreateAction =
   | { type: 'SUBMIT_ERROR'; errorMessage: string }
   | { type: 'SUBMIT_CANCEL' };
 
+export type WalletTransferCreateParams = {
+  fromWalletId: number;
+  wallets: Wallet[];
+};
+
 export class WalletTransferCreateUsecase extends Usecase<
   WalletTransferCreateState,
-  WalletTransferCreateAction
+  WalletTransferCreateAction,
+  WalletTransferCreateParams
 > {
   repository: WalletRepository;
+  params: WalletTransferCreateParams;
 
-  constructor(repository: WalletRepository) {
+  constructor(
+    repository: WalletRepository,
+    params: WalletTransferCreateParams
+  ) {
     super();
     this.repository = repository;
+    this.params = params;
   }
 
   getInitialState(): WalletTransferCreateState {
-    const wallets = this.repository.getWalletList();
-    const fromWalletId = this.repository.getWalletByIdServerParams();
     return {
-      type: wallets.length > 0 ? 'loaded' : 'idle',
+      type: this.params.wallets.length > 0 ? 'loaded' : 'idle',
       errorMessage: null,
       values: {
         amount: 0,
-        fromWalletId: fromWalletId ?? NaN,
+        fromWalletId: this.params.fromWalletId,
         toWalletId: NaN,
       },
-      wallets,
+      wallets: this.params.wallets,
     };
   }
   getNextState(

@@ -27,29 +27,36 @@ export type TransactionPayAction =
   | { type: 'PAY_ERROR' }
   | { type: 'PAY_CANCEL' };
 
+export type TransactionPayParams = {
+  wallets: Wallet[];
+};
+
 export class TransactionPayUsecase extends Usecase<
   TransactionPayState,
-  TransactionPayAction
+  TransactionPayAction,
+  TransactionPayParams
 > {
   transactionRepository: TransactionRepository;
   walletRepository: WalletRepository;
+  params: TransactionPayParams;
 
   constructor(
     transactionRepository: TransactionRepository,
-    walletRepository: WalletRepository
+    walletRepository: WalletRepository,
+    params: TransactionPayParams
   ) {
     super();
     this.transactionRepository = transactionRepository;
     this.walletRepository = walletRepository;
+    this.params = params;
   }
 
   getInitialState(): TransactionPayState {
-    const wallets = this.walletRepository.getWalletList();
     return {
       type: 'hidden',
       transactionId: null,
       walletId: null,
-      wallets,
+      wallets: this.params.wallets,
     };
   }
 

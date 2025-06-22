@@ -1,18 +1,60 @@
 import {
+  ApiMaterialRepository,
+  getUrlFromCtx,
   MaterialListScreen,
-  getMaterialListScreenDehydratedState,
+  MaterialListScreenProps,
+  UrlMaterialListQueryRepository,
 } from '@gatherloop-pos/ui';
+import { QueryClient } from '@tanstack/react-query';
 import { GetServerSideProps } from 'next';
-import { PageProps } from '../_app';
 
-export const getServerSideProps: GetServerSideProps<PageProps> = async (
-  ctx
-) => {
+export const getServerSideProps: GetServerSideProps<
+  MaterialListScreenProps
+> = async (ctx) => {
   const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
-  const dehydratedState = await getMaterialListScreenDehydratedState(ctx);
+  if (!isLoggedIn) {
+    return {
+      redirect: {
+        destination: '/auth/login',
+        permanent: false,
+      },
+    };
+  }
+
+  const url = getUrlFromCtx(ctx);
+  const client = new QueryClient();
+  const materialRepository = new ApiMaterialRepository(client);
+  const materialListQueryRepository = new UrlMaterialListQueryRepository();
+  const page = materialListQueryRepository.getPage(url);
+  const itemPerPage = materialListQueryRepository.getItemPerPage(url);
+  const sortBy = materialListQueryRepository.getSortBy(url);
+  const orderBy = materialListQueryRepository.getOrderBy(url);
+  const query = materialListQueryRepository.getSearchQuery(url);
+  const { materials, totalItem } = await materialRepository.fetchMaterialList(
+    {
+      page,
+      itemPerPage,
+      orderBy,
+      query,
+      sortBy,
+    },
+    {
+      headers: { Cookie: ctx.req.headers.cookie },
+    }
+  );
+
   return {
-    props: { dehydratedState },
-    redirect: isLoggedIn ? undefined : { destination: '/auth/login' },
+    props: {
+      materialListParams: {
+        materials,
+        totalItem,
+        itemPerPage,
+        orderBy,
+        page,
+        query,
+        sortBy,
+      },
+    },
   };
 };
 

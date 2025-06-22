@@ -24,26 +24,30 @@ export type CategoryListAction =
   | { type: 'REVALIDATE'; categories: Category[] }
   | { type: 'REVALIDATE_FINISH'; categories: Category[] };
 
+export type CategoryListParams = {
+  categories: Category[];
+};
+
 export class CategoryListUsecase extends Usecase<
   CategoryListState,
-  CategoryListAction
+  CategoryListAction,
+  CategoryListParams
 > {
+  params: CategoryListParams;
   repository: CategoryRepository;
 
-  constructor(repository: CategoryRepository) {
+  constructor(repository: CategoryRepository, params: CategoryListParams) {
     super();
     this.repository = repository;
+    this.params = params;
   }
 
   getInitialState() {
-    const categories = this.repository.getCategoryList();
-
     const state: CategoryListState = {
-      type: categories.length >= 1 ? 'loaded' : 'idle',
+      type: this.params.categories.length >= 1 ? 'loaded' : 'idle',
       errorMessage: null,
-      categories,
+      categories: this.params.categories,
     };
-
     return state;
   }
 

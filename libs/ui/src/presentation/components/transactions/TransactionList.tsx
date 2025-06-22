@@ -86,7 +86,7 @@ export const TransactionList = ({
                   createdAt={item.createdAt}
                   name={item.name}
                   total={item.total}
-                  paidAt={item.paidAt}
+                  paidAt={item.paidAt ?? undefined}
                   walletName={item.wallet?.name}
                   onEditMenuPress={() => onEditMenuPress(item)}
                   onDeleteMenuPress={() => onDeleteMenuPress(item)}

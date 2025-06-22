@@ -9,16 +9,10 @@ export type MaterialListParams = {
 };
 
 export interface MaterialRepository {
-  getMaterialListServerParams: () => MaterialListParams;
-
-  getMaterialByIdServerParams: () => number | null;
-
   getMaterialList: (params: MaterialListParams) => {
     materials: Material[];
     totalItem: number;
   };
-
-  getMaterialById: (materialId: number) => Material | null;
 
   fetchMaterialList: (
     params: MaterialListParams
