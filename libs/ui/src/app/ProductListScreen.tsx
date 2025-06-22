@@ -37,28 +37,3 @@ export function ProductListScreen({
     />
   );
 }
-
-export function ProductListScreenMock({
-  productListParams,
-}: ProductListScreenProps) {
-  const client = new QueryClient();
-  const productRepository = new MockProductRepository(client);
-  const productListQueryRepository = new UrlProductListQueryRepository();
-  const authRepository = new MockAuthRepository();
-
-  const productDeleteUsecase = new ProductDeleteUsecase(productRepository);
-  const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
-  const productListUsecase = new ProductListUsecase(
-    productRepository,
-    productListQueryRepository,
-    productListParams
-  );
-
-  return (
-    <ProductListScreenView
-      productListUsecase={productListUsecase}
-      productDeleteUsecase={productDeleteUsecase}
-      authLogoutUsecase={authLogoutUsecase}
-    />
-  );
-}
