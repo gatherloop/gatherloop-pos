@@ -47,11 +47,12 @@ func (repo Repository) CreateExpense(ctx context.Context, expense *expense.Expen
 
 func (repo Repository) UpdateExpenseById(ctx context.Context, expense *expense.Expense, id int64) *base.Error {
 	db := GetDbFromCtx(ctx, repo.db)
-	if result := db.Table("expenses").Where("id = ?", id).Updates(expense); result.Error != nil {
+
+	if result := db.Clauses(clause.OnConflict{UpdateAll: true}).Table("expense_items").Create(expense.ExpenseItems); result != nil {
 		return ToError(result.Error)
 	}
 
-	result := db.Clauses(clause.OnConflict{UpdateAll: true}).Table("expense_items").Create(expense.ExpenseItems)
+	result := db.Table("expenses").Where("id = ?", id).Updates(expense)
 	return ToError(result.Error)
 }
 
