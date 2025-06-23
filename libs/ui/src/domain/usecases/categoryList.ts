@@ -56,7 +56,7 @@ export class CategoryListUsecase extends Usecase<
       .returnType<CategoryListState>()
       .with(
         [{ type: P.union('idle', 'error') }, { type: 'FETCH' }],
-        ([state]) => ({ ...state, type: 'loading' })
+        ([state]) => ({ ...state, type: 'loading', errorMessage: null })
       )
       .with(
         [{ type: 'loading' }, { type: 'FETCH_SUCCESS' }],
@@ -64,6 +64,7 @@ export class CategoryListUsecase extends Usecase<
           ...state,
           type: 'loaded',
           categories,
+          errorMessage: null,
         })
       )
       .with(
@@ -71,19 +72,21 @@ export class CategoryListUsecase extends Usecase<
         ([state, { message }]) => ({
           ...state,
           type: 'error',
-          message,
+          errorMessage: message,
         })
       )
       .with([{ type: 'loaded' }, { type: 'FETCH' }], ([state]) => ({
         ...state,
         type: 'revalidating',
+        errorMessage: null,
       }))
       .with(
         [{ type: 'revalidating' }, { type: 'REVALIDATE_FINISH' }],
-        ([state, { type: _type, ...params }]) => ({
+        ([state, { categories }]) => ({
           ...state,
-          ...params,
           type: 'loaded',
+          categories,
+          errorMessage: null,
         })
       )
       .otherwise(() => state);
@@ -115,7 +118,7 @@ export class CategoryListUsecase extends Usecase<
           .catch(() => dispatch({ type: 'REVALIDATE_FINISH', categories }));
       })
       .otherwise(() => {
-        // TODO: IMPLEMENT SOMETHING
+        // No action needed for other states
       });
   }
 }
