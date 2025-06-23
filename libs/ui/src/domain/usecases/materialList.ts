@@ -4,7 +4,7 @@ import {
   MaterialRepository,
   MaterialListQueryRepository,
 } from '../repositories';
-import { createDebounce } from '../../utils';
+import { createDebounce } from '../../utils/debounce';
 import { Usecase } from './IUsecase';
 
 type Context = {
@@ -117,7 +117,7 @@ export class MaterialListUsecase extends Usecase<
         ([state, { message }]) => ({
           ...state,
           type: 'error',
-          message,
+          errorMessage: message,
         })
       )
       .with([{ type: 'loaded' }, { type: 'FETCH' }], ([state]) => ({
