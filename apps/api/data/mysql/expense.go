@@ -48,7 +48,7 @@ func (repo Repository) CreateExpense(ctx context.Context, expense *expense.Expen
 func (repo Repository) UpdateExpenseById(ctx context.Context, expense *expense.Expense, id int64) *base.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 
-	if result := db.Clauses(clause.OnConflict{UpdateAll: true}).Table("expense_items").Create(expense.ExpenseItems); result != nil {
+	if result := db.Clauses(clause.OnConflict{UpdateAll: true}).Table("expense_items").Create(expense.ExpenseItems); result.Error != nil {
 		return ToError(result.Error)
 	}
 
