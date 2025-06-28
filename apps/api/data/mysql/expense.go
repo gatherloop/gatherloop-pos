@@ -52,7 +52,7 @@ func (repo Repository) UpdateExpenseById(ctx context.Context, expense *expense.E
 		return ToError(result.Error)
 	}
 
-	result := db.Table("expenses").Where("id = ?", id).Save(expense)
+	result := db.Table("expenses").Where("id = ?", id).Updates(expense)
 	return ToError(result.Error)
 }
 

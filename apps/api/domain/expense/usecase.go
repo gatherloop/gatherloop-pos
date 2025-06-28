@@ -117,6 +117,7 @@ func (usecase Usecase) UpdateExpenseById(ctx context.Context, expense Expense, i
 			expense.ExpenseItems[i].ExpenseId = id
 		}
 
+		expense.Id = id
 		if err := usecase.repository.UpdateExpenseById(ctxWithTx, &expense, id); err != nil {
 			return err
 		}
