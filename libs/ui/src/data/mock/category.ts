@@ -2,10 +2,11 @@ import { Category, CategoryForm } from '../../domain/entities/Category';
 import { CategoryRepository } from '../../domain/repositories/category';
 
 export class MockCategoryRepository implements CategoryRepository {
-  private categories: Category[] = [
+  categories: Category[] = [
     { id: 1, name: 'Mock Category 1', createdAt: '2024-03-20T00:00:00.000Z' },
     { id: 2, name: 'Mock Category 2', createdAt: '2024-03-21T00:00:00.000Z' },
   ];
+
   private nextId = 3;
   private shouldFail = false;
 
@@ -47,7 +48,10 @@ export class MockCategoryRepository implements CategoryRepository {
     });
   }
 
-  async updateCategory(formValues: CategoryForm, categoryId: number): Promise<void> {
+  async updateCategory(
+    formValues: CategoryForm,
+    categoryId: number
+  ): Promise<void> {
     if (this.shouldFail) {
       throw new Error('Failed to update category');
     }
@@ -67,4 +71,4 @@ export class MockCategoryRepository implements CategoryRepository {
     this.nextId = 3;
     this.shouldFail = false;
   }
-} 
+}
