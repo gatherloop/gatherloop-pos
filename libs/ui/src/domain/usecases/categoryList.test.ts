@@ -8,110 +8,116 @@ import { MockCategoryRepository } from '../../data/mock';
 import { UsecaseTester } from '../../utils/usecase';
 
 describe('CategoryListUsecase', () => {
-  it('should follow the success flow', async () => {
+  describe('success flow', () => {
     const repository = new MockCategoryRepository();
-
     const usecase = new CategoryListUsecase(repository, { categories: [] });
-
-    const categoryList = new UsecaseTester<
+    let categoryList: UsecaseTester<
       CategoryListUsecase,
       CategoryListState,
       CategoryListAction,
       CategoryListParams
-    >(usecase);
+    >;
 
-    expect(categoryList.state).toEqual({
-      type: 'loading',
-      categories: [],
-      errorMessage: null,
+    it('initialize with loading state', () => {
+      categoryList = new UsecaseTester<
+        CategoryListUsecase,
+        CategoryListState,
+        CategoryListAction,
+        CategoryListParams
+      >(usecase);
+
+      expect(categoryList.state).toEqual({
+        type: 'loading',
+        categories: [],
+        errorMessage: null,
+      });
     });
 
-    await Promise.resolve();
-
-    expect(categoryList.state).toEqual({
-      type: 'loaded',
-      categories: repository.categories,
-      errorMessage: null,
+    it('transition to loaded state after success fetch', async () => {
+      await Promise.resolve();
+      expect(categoryList.state).toEqual({
+        type: 'loaded',
+        categories: repository.categories,
+        errorMessage: null,
+      });
     });
 
-    categoryList.dispatch({ type: 'FETCH' });
-
-    expect(categoryList.state).toEqual({
-      type: 'revalidating',
-      categories: repository.categories,
-      errorMessage: null,
+    it('transition to revalidating state when FETCH action is dispatched', () => {
+      categoryList.dispatch({ type: 'FETCH' });
+      expect(categoryList.state).toEqual({
+        type: 'revalidating',
+        categories: repository.categories,
+        errorMessage: null,
+      });
     });
 
-    await Promise.resolve();
-
-    expect(categoryList.state).toEqual({
-      type: 'loaded',
-      categories: repository.categories,
-      errorMessage: null,
+    it('transition to loaded state after success fetch', async () => {
+      await Promise.resolve();
+      expect(categoryList.state).toEqual({
+        type: 'loaded',
+        categories: repository.categories,
+        errorMessage: null,
+      });
     });
   });
 
-  it('should follow the failed flow', async () => {
+  describe('failed flow', () => {
     const repository = new MockCategoryRepository();
     repository.setShouldFail(true);
     const usecase = new CategoryListUsecase(repository, { categories: [] });
-    const categoryList = new UsecaseTester<
+    let categoryList: UsecaseTester<
       CategoryListUsecase,
       CategoryListState,
       CategoryListAction,
       CategoryListParams
-    >(usecase);
+    >;
 
-    expect(categoryList.state).toEqual({
-      type: 'loading',
-      categories: [],
-      errorMessage: null,
+    it('initialize with loading state', () => {
+      categoryList = new UsecaseTester<
+        CategoryListUsecase,
+        CategoryListState,
+        CategoryListAction,
+        CategoryListParams
+      >(usecase);
+
+      expect(categoryList.state).toEqual({
+        type: 'loading',
+        categories: [],
+        errorMessage: null,
+      });
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 0));
-
-    expect(categoryList.state).toEqual({
-      type: 'error',
-      categories: [],
-      errorMessage: 'Failed to fetch categories',
+    it('transition to error state after failed fetch', async () => {
+      await Promise.resolve();
+      expect(categoryList.state).toEqual({
+        type: 'error',
+        categories: [],
+        errorMessage: 'Failed to fetch categories',
+      });
     });
 
-    repository.setShouldFail(false);
-
-    categoryList.dispatch({ type: 'FETCH' });
-
-    expect(categoryList.state).toEqual({
-      type: 'loading',
-      categories: [],
-      errorMessage: null,
+    it('transition to loading state after FETCH action is dispatched', () => {
+      categoryList.dispatch({ type: 'FETCH' });
+      expect(categoryList.state).toEqual({
+        type: 'loading',
+        categories: [],
+        errorMessage: null,
+      });
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 0));
-
-    expect(categoryList.state).toEqual({
-      type: 'loaded',
-      categories: repository.categories,
-      errorMessage: null,
-    });
-
-    repository.setShouldFail(true);
-    categoryList.dispatch({ type: 'FETCH' });
-
-    expect(categoryList.state).toEqual({
-      type: 'revalidating',
-      categories: repository.categories,
-      errorMessage: null,
-    });
-
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(categoryList.state).toEqual({
-      type: 'loaded',
-      categories: repository.categories,
-      errorMessage: null,
+    it('transition to loaded state after success fetch', async () => {
+      repository.setShouldFail(false);
+      categoryList.dispatch({ type: 'FETCH' });
+      await Promise.resolve();
+      expect(categoryList.state).toEqual({
+        type: 'loaded',
+        categories: repository.categories,
+        errorMessage: null,
+      });
     });
   });
 
-  it('should show loaded state when data initial data is given', async () => {
+  it('show loaded state when initial data is given', async () => {
     const repository = new MockCategoryRepository();
 
     const categories = [
