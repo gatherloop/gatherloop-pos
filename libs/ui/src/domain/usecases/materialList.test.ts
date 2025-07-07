@@ -19,87 +19,195 @@ describe('MaterialListUsecase', () => {
     materialListQueryRepository = new MockMaterialListQueryRepository();
   });
 
-  it('should follow the success flow', async () => {
+  describe('success flow', () => {
+    const repository = new MockMaterialRepository();
+    const materialListQueryRepository = new MockMaterialListQueryRepository();
     const usecase = new MaterialListUsecase(
-      materialRepository,
+      repository,
       materialListQueryRepository,
       { materials: [], totalItem: 0 }
     );
-    const materialList = new UsecaseTester<
+
+    let materialList: UsecaseTester<
       MaterialListUsecase,
       MaterialListState,
       MaterialListAction,
       MaterialListParams
-    >(usecase);
+    >;
 
-    expect(materialList.state).toEqual({
-      type: 'loading',
-      materials: [],
-      totalItem: 0,
-      page: materialListQueryRepository.getPage(),
-      query: materialListQueryRepository.getSearchQuery(),
-      errorMessage: null,
-      sortBy: materialListQueryRepository.getSortBy(),
-      orderBy: materialListQueryRepository.getOrderBy(),
-      itemPerPage: materialListQueryRepository.getItemPerPage(),
-      fetchDebounceDelay: 0,
+    it('initialize with loading state', () => {
+      materialList = new UsecaseTester<
+        MaterialListUsecase,
+        MaterialListState,
+        MaterialListAction,
+        MaterialListParams
+      >(usecase);
+
+      expect(materialList.state).toEqual({
+        type: 'loading',
+        materials: [],
+        totalItem: 0,
+        page: materialListQueryRepository.getPage(),
+        query: materialListQueryRepository.getSearchQuery(),
+        errorMessage: null,
+        sortBy: materialListQueryRepository.getSortBy(),
+        orderBy: materialListQueryRepository.getOrderBy(),
+        itemPerPage: materialListQueryRepository.getItemPerPage(),
+        fetchDebounceDelay: 0,
+      });
     });
 
-    await Promise.resolve();
+    it('transition to loaded state after success fetch', async () => {
+      await Promise.resolve();
+      expect(materialList.state).toEqual({
+        type: 'loaded',
+        materials: repository.materials,
+        totalItem: repository.materials.length,
+        page: materialListQueryRepository.getPage(),
+        query: materialListQueryRepository.getSearchQuery(),
+        errorMessage: null,
+        sortBy: materialListQueryRepository.getSortBy(),
+        orderBy: materialListQueryRepository.getOrderBy(),
+        itemPerPage: materialListQueryRepository.getItemPerPage(),
+        fetchDebounceDelay: 0,
+      });
+    });
 
-    expect(materialList.state.type).toBe('loaded');
-    expect(materialList.state.materials).toEqual(materialRepository.materials);
-    expect(materialList.state.totalItem).toBe(
-      materialRepository.materials.length
-    );
+    it('transition to revalidating state when FETCH action is dispatched', () => {
+      materialList.dispatch({ type: 'FETCH' });
+      expect(materialList.state).toEqual({
+        type: 'revalidating',
+        materials: repository.materials,
+        totalItem: repository.materials.length,
+        page: materialListQueryRepository.getPage(),
+        query: materialListQueryRepository.getSearchQuery(),
+        errorMessage: null,
+        sortBy: materialListQueryRepository.getSortBy(),
+        orderBy: materialListQueryRepository.getOrderBy(),
+        itemPerPage: materialListQueryRepository.getItemPerPage(),
+        fetchDebounceDelay: 0,
+      });
+    });
 
-    materialList.dispatch({ type: 'FETCH' });
-    expect(materialList.state.type).toBe('revalidating');
-    await Promise.resolve();
-    expect(materialList.state.type).toBe('loaded');
-    expect(materialList.state.materials).toEqual(materialRepository.materials);
-    expect(materialList.state.totalItem).toBe(
-      materialRepository.materials.length
-    );
+    it('transition to loaded state after success fetch', async () => {
+      await Promise.resolve();
+      expect(materialList.state).toEqual({
+        type: 'loaded',
+        materials: repository.materials,
+        totalItem: repository.materials.length,
+        page: materialListQueryRepository.getPage(),
+        query: materialListQueryRepository.getSearchQuery(),
+        errorMessage: null,
+        sortBy: materialListQueryRepository.getSortBy(),
+        orderBy: materialListQueryRepository.getOrderBy(),
+        itemPerPage: materialListQueryRepository.getItemPerPage(),
+        fetchDebounceDelay: 0,
+      });
+    });
+
+    it('transition to changingParams state after CHANGE_PARAMS action is dispatched', () => {
+      materialList.dispatch({ type: 'CHANGE_PARAMS', page: 2 });
+      expect(materialList.state).toEqual({
+        type: 'changingParams',
+        materials: repository.materials,
+        totalItem: repository.materials.length,
+        page: 2,
+        query: materialListQueryRepository.getSearchQuery(),
+        errorMessage: null,
+        sortBy: materialListQueryRepository.getSortBy(),
+        orderBy: materialListQueryRepository.getOrderBy(),
+        itemPerPage: materialListQueryRepository.getItemPerPage(),
+        fetchDebounceDelay: 0,
+      });
+    });
   });
 
-  it('should follow the failed flow', async () => {
+  describe('error flow', () => {
+    const materialRepository = new MockMaterialRepository();
+    materialRepository.shouldFail = true;
+    const materialListQueryRepository = new MockMaterialListQueryRepository();
     const usecase = new MaterialListUsecase(
       materialRepository,
       materialListQueryRepository,
       { materials: [], totalItem: 0 }
     );
-    materialRepository.shouldFail = true;
-    const materialList = new UsecaseTester<
+    let materialList: UsecaseTester<
       MaterialListUsecase,
       MaterialListState,
       MaterialListAction,
       MaterialListParams
-    >(usecase);
+    >;
 
-    expect(materialList.state.type).toBe('loading');
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(materialList.state.type).toBe('error');
+    it('initialize with loading state', () => {
+      materialList = new UsecaseTester<
+        MaterialListUsecase,
+        MaterialListState,
+        MaterialListAction,
+        MaterialListParams
+      >(usecase);
 
-    materialRepository.shouldFail = false;
-    materialList.dispatch({ type: 'FETCH' });
-    expect(materialList.state.type).toBe('loading');
-    await Promise.resolve();
-    expect(materialList.state.type).toBe('loaded');
-    expect(materialList.state.materials).toEqual(materialRepository.materials);
-    expect(materialList.state.totalItem).toBe(
-      materialRepository.materials.length
-    );
+      expect(materialList.state).toEqual({
+        type: 'loading',
+        materials: [],
+        totalItem: 0,
+        page: materialListQueryRepository.getPage(),
+        query: materialListQueryRepository.getSearchQuery(),
+        errorMessage: null,
+        sortBy: materialListQueryRepository.getSortBy(),
+        orderBy: materialListQueryRepository.getOrderBy(),
+        itemPerPage: materialListQueryRepository.getItemPerPage(),
+        fetchDebounceDelay: 0,
+      });
+    });
 
-    materialRepository.shouldFail = true;
-    materialList.dispatch({ type: 'FETCH' });
-    expect(materialList.state.type).toBe('revalidating');
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(materialList.state.type).toBe('loaded');
-    expect(materialList.state.materials).toEqual(materialRepository.materials);
-    expect(materialList.state.totalItem).toBe(
-      materialRepository.materials.length
-    );
+    it('transition to error state after failed fetch', async () => {
+      await Promise.resolve();
+      expect(materialList.state).toEqual({
+        type: 'error',
+        materials: [],
+        totalItem: 0,
+        page: materialListQueryRepository.getPage(),
+        query: materialListQueryRepository.getSearchQuery(),
+        errorMessage: 'Failed to fetch materials',
+        sortBy: materialListQueryRepository.getSortBy(),
+        orderBy: materialListQueryRepository.getOrderBy(),
+        itemPerPage: materialListQueryRepository.getItemPerPage(),
+        fetchDebounceDelay: 0,
+      });
+    });
+
+    it('transition to loading state when FETCH action is dispatched', () => {
+      materialRepository.shouldFail = false;
+      materialList.dispatch({ type: 'FETCH' });
+      expect(materialList.state).toEqual({
+        type: 'loading',
+        materials: [],
+        totalItem: 0,
+        page: materialListQueryRepository.getPage(),
+        query: materialListQueryRepository.getSearchQuery(),
+        errorMessage: null,
+        sortBy: materialListQueryRepository.getSortBy(),
+        orderBy: materialListQueryRepository.getOrderBy(),
+        itemPerPage: materialListQueryRepository.getItemPerPage(),
+        fetchDebounceDelay: 0,
+      });
+    });
+
+    it('transition to loaded state after successful fetch', async () => {
+      await Promise.resolve();
+      expect(materialList.state).toEqual({
+        type: 'loaded',
+        materials: materialRepository.materials,
+        totalItem: materialRepository.materials.length,
+        page: materialListQueryRepository.getPage(),
+        query: materialListQueryRepository.getSearchQuery(),
+        errorMessage: null,
+        sortBy: materialListQueryRepository.getSortBy(),
+        orderBy: materialListQueryRepository.getOrderBy(),
+        itemPerPage: materialListQueryRepository.getItemPerPage(),
+        fetchDebounceDelay: 0,
+      });
+    });
   });
 
   it('should show loaded state when initial data is given', async () => {

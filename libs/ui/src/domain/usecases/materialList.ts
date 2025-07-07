@@ -101,13 +101,14 @@ export class MaterialListUsecase extends Usecase<
       .returnType<MaterialListState>()
       .with(
         [{ type: P.union('idle', 'error') }, { type: 'FETCH' }],
-        ([state]) => ({ ...state, type: 'loading' })
+        ([state]) => ({ ...state, type: 'loading', errorMessage: null })
       )
       .with(
         [{ type: 'loading' }, { type: 'FETCH_SUCCESS' }],
         ([state, { materials, totalItem }]) => ({
           ...state,
           type: 'loaded',
+          errorMessage: null,
           materials,
           totalItem,
         })

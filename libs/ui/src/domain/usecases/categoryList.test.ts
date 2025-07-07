@@ -97,6 +97,7 @@ describe('CategoryListUsecase', () => {
     });
 
     it('transition to loading state after FETCH action is dispatched', () => {
+      repository.setShouldFail(false);
       categoryList.dispatch({ type: 'FETCH' });
       expect(categoryList.state).toEqual({
         type: 'loading',
@@ -106,8 +107,6 @@ describe('CategoryListUsecase', () => {
     });
 
     it('transition to loaded state after success fetch', async () => {
-      repository.setShouldFail(false);
-      categoryList.dispatch({ type: 'FETCH' });
       await Promise.resolve();
       expect(categoryList.state).toEqual({
         type: 'loaded',
