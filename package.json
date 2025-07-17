@@ -4,7 +4,8 @@
   "license": "MIT",
   "scripts": {
     "prepare": "husky",
-    "test": "nx run ui:test"
+    "test": "nx run ui:test",
+    "lint": "nx run-many --target=lint --all"
   },
   "private": true,
   "dependencies": {
