@@ -28,6 +28,7 @@ export type ProductListProps = {
     | { type: 'error' }
     | { type: 'empty' }
     | { type: 'loaded'; items: Product[] };
+  numColumns?: number;
 };
 
 export const ProductList = ({
@@ -43,6 +44,7 @@ export const ProductList = ({
   currentPage,
   itemPerPage,
   variant,
+  numColumns = 1,
 }: ProductListProps) => {
   return (
     <YStack gap="$3" flex={1}>
@@ -69,10 +71,17 @@ export const ProductList = ({
           <FlatList
             nestedScrollEnabled
             data={items}
+            numColumns={numColumns}
+            contentContainerStyle={{ gap: 16 }}
+            columnWrapperStyle={numColumns > 1 ? { gap: 16 } : undefined}
             renderItem={({ item }) => (
-              <Focusable onEnterPress={() => onItemPress(item)}>
+              <Focusable
+                onEnterPress={() => onItemPress(item)}
+                style={{ flex: 1 }}
+              >
                 <ProductListItem
                   categoryName={item.category.name}
+                  style={{ flex: 1 }}
                   name={item.name}
                   price={item.price}
                   onDeleteMenuPress={
@@ -89,7 +98,9 @@ export const ProductList = ({
                 />
               </Focusable>
             )}
-            ItemSeparatorComponent={() => <YStack height="$1" />}
+            ItemSeparatorComponent={() => (
+              <YStack height="$1" style={{ flex: 1 }} />
+            )}
           />
         ))
         .with({ type: 'error' }, () => (

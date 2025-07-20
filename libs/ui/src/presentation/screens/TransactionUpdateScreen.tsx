@@ -60,6 +60,7 @@ export const TransactionUpdateScreen = (
               {...productListController}
               onItemPress={(product) => onProductItemPress(product, fieldArray)}
               isSearchAutoFocus
+              numColumns={2}
             />
           )}
         />

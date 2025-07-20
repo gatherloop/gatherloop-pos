@@ -111,6 +111,7 @@ export const TransactionCreateScreen = (
               {...productListController}
               onItemPress={(product) => onProductItemPress(product, fieldArray)}
               isSearchAutoFocus
+              numColumns={2}
             />
           )}
         />

@@ -22,7 +22,6 @@ export const ProductListItem = ({
     <ListItem
       title={name}
       subtitle={`Rp. ${price.toLocaleString('id')}`}
-      thumbnailSrc="https://placehold.jp/120x120.png"
       menus={[
         {
           title: 'Edit',

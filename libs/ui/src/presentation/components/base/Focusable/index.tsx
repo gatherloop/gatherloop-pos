@@ -10,7 +10,7 @@ export const Focusable = (props: FocusableProps) => {
   };
 
   return (
-    <div tabIndex={0} onKeyDown={onKeyDown}>
+    <div tabIndex={0} onKeyDown={onKeyDown} style={{ flex: 1 }}>
       {props.children}
     </div>
   );
