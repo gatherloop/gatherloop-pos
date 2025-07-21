@@ -89,6 +89,7 @@ const transformers = {
     name: wallet.name,
     balance: wallet.balance,
     paymentCostPercentage: wallet.paymentCostPercentage,
+    isCashless: wallet.isCashless,
   }),
   walletTransfer: (walletTransfer: ApiWalletTransfer): WalletTransfer => ({
     id: walletTransfer.id,
@@ -100,6 +101,7 @@ const transformers = {
       id: walletTransfer.fromWallet.id,
       name: walletTransfer.fromWallet.name,
       paymentCostPercentage: walletTransfer.fromWallet.paymentCostPercentage,
+      isCashless: walletTransfer.fromWallet.isCashless,
     },
     toWallet: {
       balance: walletTransfer.toWallet.balance,
@@ -107,6 +109,7 @@ const transformers = {
       id: walletTransfer.toWallet.id,
       name: walletTransfer.toWallet.name,
       paymentCostPercentage: walletTransfer.toWallet.paymentCostPercentage,
+      isCashless: walletTransfer.toWallet.isCashless,
     },
   }),
 };

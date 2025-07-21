@@ -1,4 +1,11 @@
-import { Field, InputText, InputNumber, LoadingView, ErrorView } from '../base';
+import {
+  Field,
+  InputText,
+  InputNumber,
+  LoadingView,
+  ErrorView,
+  Switch,
+} from '../base';
 import { WalletForm } from '../../../domain';
 import { Button, Form } from 'tamagui';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
@@ -30,6 +37,9 @@ export const WalletFormView = ({
         </Field>
         <Field name="paymentCostPercentage" label="Payment Cost Percentage">
           <InputNumber fractionDigit={2} />
+        </Field>
+        <Field name="isCashless" label="Cashless">
+          <Switch />
         </Field>
         <Button
           disabled={isSubmitDisabled}

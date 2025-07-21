@@ -491,6 +491,7 @@ func ToApiWallet(wallet wallet.Wallet) apiContract.Wallet {
 		Name:                  wallet.Name,
 		Balance:               wallet.Balance,
 		PaymentCostPercentage: wallet.PaymentCostPercentage,
+		IsCashless:            wallet.IsCashless,
 		DeletedAt:             wallet.DeletedAt,
 		CreatedAt:             wallet.CreatedAt,
 	}
@@ -501,6 +502,7 @@ func ToWalletRequest(walletRequest apiContract.WalletRequest) wallet.Wallet {
 		Name:                  walletRequest.Name,
 		Balance:               walletRequest.Balance,
 		PaymentCostPercentage: walletRequest.PaymentCostPercentage,
+		IsCashless:            walletRequest.IsCashless,
 	}
 }
 
