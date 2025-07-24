@@ -5,7 +5,9 @@ import { Wallet } from '../entities';
 
 type Context = {
   transactionId: number | null;
+  transactionTotal: number;
   walletId: number | null;
+  paidAmount: number;
   wallets: Wallet[];
 };
 
@@ -20,9 +22,13 @@ export type TransactionPayState = (
 
 export type TransactionPayAction =
   | { type: 'SET_WALLETS'; wallets: Wallet[] }
-  | { type: 'SHOW_CONFIRMATION'; transactionId: number }
+  | {
+      type: 'SHOW_CONFIRMATION';
+      transactionId: number;
+      transactionTotal: number;
+    }
   | { type: 'HIDE_CONFIRMATION' }
-  | { type: 'PAY'; walletId: number }
+  | { type: 'PAY'; walletId: number; paidAmount: number }
   | { type: 'PAY_SUCCESS' }
   | { type: 'PAY_ERROR' }
   | { type: 'PAY_CANCEL' };
@@ -55,8 +61,10 @@ export class TransactionPayUsecase extends Usecase<
     return {
       type: 'hidden',
       transactionId: null,
+      transactionTotal: 0,
       walletId: null,
       wallets: this.params.wallets,
+      paidAmount: 0,
     };
   }
 
@@ -68,18 +76,22 @@ export class TransactionPayUsecase extends Usecase<
       .returnType<TransactionPayState>()
       .with(
         [{ type: 'hidden' }, { type: 'SHOW_CONFIRMATION' }],
-        ([state, { transactionId }]) => ({
+        ([state, { transactionId, transactionTotal }]) => ({
           ...state,
           type: 'shown',
           transactionId,
+          transactionTotal,
           walletId: null,
+          paidAmount: 0,
         })
       )
       .with([{ type: 'shown' }, { type: 'HIDE_CONFIRMATION' }], ([state]) => ({
         ...state,
         type: 'hidden',
         transactionId: null,
+        transactionTotal: 0,
         walletId: null,
+        paidAmount: 0,
       }))
       .with(
         [{ type: 'shown' }, { type: 'SET_WALLETS' }],
@@ -89,11 +101,15 @@ export class TransactionPayUsecase extends Usecase<
           wallets,
         })
       )
-      .with([{ type: 'shown' }, { type: 'PAY' }], ([state, { walletId }]) => ({
-        ...state,
-        type: 'paying',
-        walletId,
-      }))
+      .with(
+        [{ type: 'shown' }, { type: 'PAY' }],
+        ([state, { walletId, paidAmount }]) => ({
+          ...state,
+          type: 'paying',
+          walletId,
+          paidAmount,
+        })
+      )
       .with([{ type: 'paying' }, { type: 'PAY_ERROR' }], ([state]) => ({
         ...state,
         type: 'payingError',
@@ -111,8 +127,10 @@ export class TransactionPayUsecase extends Usecase<
         ([state]) => ({
           ...state,
           type: 'hidden',
-          TransactionId: null,
+          transactionId: null,
+          transactionTotal: 0,
           walletId: null,
+          paidAmount: 0,
         })
       )
       .otherwise(() => state);
@@ -130,10 +148,10 @@ export class TransactionPayUsecase extends Usecase<
             .then((wallets) => dispatch({ type: 'SET_WALLETS', wallets }));
         }
       })
-      .with({ type: 'paying' }, ({ transactionId, walletId }) => {
+      .with({ type: 'paying' }, ({ transactionId, walletId, paidAmount }) => {
         if (walletId && transactionId) {
           this.transactionRepository
-            .payTransaction(transactionId, walletId)
+            .payTransaction(transactionId, walletId, paidAmount)
             .then(() => dispatch({ type: 'PAY_SUCCESS' }))
             .catch(() => dispatch({ type: 'PAY_ERROR' }));
         }

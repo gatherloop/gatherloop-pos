@@ -165,7 +165,7 @@ func (usecase Usecase) DeleteTransactionById(ctx context.Context, id int64) *bas
 	})
 }
 
-func (usecase Usecase) PayTransaction(ctx context.Context, walletId int64, id int64) *base.Error {
+func (usecase Usecase) PayTransaction(ctx context.Context, walletId int64, paidAmount float32, id int64) *base.Error {
 	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *base.Error {
 		transaction, err := usecase.repository.GetTransactionById(ctxWithTx, id)
 		if err != nil {
@@ -184,7 +184,13 @@ func (usecase Usecase) PayTransaction(ctx context.Context, walletId int64, id in
 		paymentCost := transaction.Total * paymentWallet.PaymentCostPercentage / 100
 		newBalance := paymentWallet.Balance + transaction.Total - paymentCost
 
-		if err := usecase.walletRepository.UpdateWalletById(ctxWithTx, &wallet.Wallet{Balance: newBalance}, walletId); err != nil {
+		if err := usecase.walletRepository.UpdateWalletById(ctxWithTx, &wallet.Wallet{
+			Name:                  paymentWallet.Name,
+			PaymentCostPercentage: paymentWallet.PaymentCostPercentage,
+			Balance:               newBalance,
+			IsCashless:            paymentWallet.IsCashless,
+		},
+			walletId); err != nil {
 			return err
 		}
 
@@ -226,7 +232,7 @@ func (usecase Usecase) PayTransaction(ctx context.Context, walletId int64, id in
 				return err
 			}
 		}
-		return usecase.repository.PayTransaction(ctxWithTx, walletId, time.Now(), id)
+		return usecase.repository.PayTransaction(ctxWithTx, walletId, time.Now(), paidAmount, id)
 	})
 }
 

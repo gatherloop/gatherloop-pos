@@ -26,6 +26,7 @@ type Transaction struct {
 	Total            float32
 	TotalIncome      float32
 	TransactionItems []TransactionItem
+	PaidAmount       float32
 	PaidAt           *time.Time
 	DeletedAt        *time.Time
 }

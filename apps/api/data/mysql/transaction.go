@@ -105,9 +105,9 @@ func (repo Repository) CreateTransactionItems(ctx context.Context, transactionIt
 	return ToError(result.Error)
 }
 
-func (repo Repository) PayTransaction(ctx context.Context, walletId int64, paidAt time.Time, id int64) *base.Error {
+func (repo Repository) PayTransaction(ctx context.Context, walletId int64, paidAt time.Time, paidAmount float32, id int64) *base.Error {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Table("transactions").Where("id = ?", id).Updates(transaction.Transaction{WalletId: &walletId, PaidAt: &paidAt})
+	result := db.Table("transactions").Where("id = ?", id).Updates(transaction.Transaction{WalletId: &walletId, PaidAt: &paidAt, PaidAmount: paidAmount})
 	return ToError(result.Error)
 }
 

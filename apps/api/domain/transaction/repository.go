@@ -16,6 +16,6 @@ type Repository interface {
 	DeleteTranscationById(ctx context.Context, id int64) *base.Error
 	DeleteTransactionItemById(ctx context.Context, id int64) *base.Error
 	CreateTransactionItems(ctx context.Context, transactionItems []TransactionItem) *base.Error
-	PayTransaction(ctx context.Context, walletId int64, paidAt time.Time, id int64) *base.Error
+	PayTransaction(ctx context.Context, walletId int64, paidAt time.Time, paidAmount float32, id int64) *base.Error
 	GetTransactionStatistics(ctx context.Context, groupBy string) ([]TransactionStatistic, *base.Error)
 }

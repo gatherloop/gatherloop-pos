@@ -140,7 +140,7 @@ func (handler TransactionHandler) PayTransaction(w http.ResponseWriter, r *http.
 		return
 	}
 
-	if err := handler.usecase.PayTransaction(ctx, transactionPayRequest.WalletId, id); err != nil {
+	if err := handler.usecase.PayTransaction(ctx, transactionPayRequest.WalletId, transactionPayRequest.PaidAmount, id); err != nil {
 		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
 		return
 	}

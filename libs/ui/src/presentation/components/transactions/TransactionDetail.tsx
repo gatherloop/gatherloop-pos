@@ -11,6 +11,7 @@ export type TransactionDetailProps = {
   paidAt?: string;
   walletName?: string;
   total: number;
+  paidAmount: number;
   transactionItems: Transaction['transactionItems'];
 };
 
@@ -21,10 +22,11 @@ export const TransactionDetail = ({
   walletName,
   total,
   transactionItems,
+  paidAmount,
 }: TransactionDetailProps) => {
   return (
     <YStack gap="$3">
-      <XStack gap="$3" $md={{ flexDirection: 'column' }}>
+      <XStack gap="$3" flexWrap="wrap" $md={{ flexDirection: 'column' }}>
         <Card flex={1}>
           <Card.Header>
             <XStack gap="$3" alignItems="center">
@@ -59,6 +61,34 @@ export const TransactionDetail = ({
                 <Paragraph>Paid At</Paragraph>
                 <H5 textTransform="none">
                   {dayjs(paidAt).format('DD/MM/YYYY HH:mm')}
+                </H5>
+              </YStack>
+            </XStack>
+          </Card.Header>
+        </Card>
+
+        <Card flex={1}>
+          <Card.Header>
+            <XStack gap="$3" alignItems="center">
+              <CreditCard size="$3" />
+              <YStack>
+                <Paragraph>Paid Amount</Paragraph>
+                <H5 textTransform="none">
+                  Rp. {paidAmount.toLocaleString('id')}
+                </H5>
+              </YStack>
+            </XStack>
+          </Card.Header>
+        </Card>
+
+        <Card flex={1}>
+          <Card.Header>
+            <XStack gap="$3" alignItems="center">
+              <CreditCard size="$3" />
+              <YStack>
+                <Paragraph>Change</Paragraph>
+                <H5 textTransform="none">
+                  Rp. {(paidAmount - total).toLocaleString('id')}
                 </H5>
               </YStack>
             </XStack>

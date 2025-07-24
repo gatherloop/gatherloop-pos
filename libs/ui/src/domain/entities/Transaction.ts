@@ -19,6 +19,7 @@ export type Transaction = {
   transactionItems: TransactionItem[];
   wallet: Wallet | null;
   paidAt: string | null;
+  paidAmount: number;
 };
 
 type TransactionItemForm = {

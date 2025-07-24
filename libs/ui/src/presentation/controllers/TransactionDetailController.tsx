@@ -15,5 +15,6 @@ export const useTransactionDetailController = (
     transactionItems: state.transaction?.transactionItems ?? [],
     paidAt: state.transaction?.paidAt ?? undefined,
     walletName: state.transaction?.wallet?.name,
+    paidAmount: state.transaction?.paidAmount ?? 0,
   };
 };

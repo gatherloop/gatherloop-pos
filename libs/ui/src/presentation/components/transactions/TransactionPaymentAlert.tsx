@@ -1,13 +1,15 @@
-import { AlertDialog, Button, XStack, YStack } from 'tamagui';
-import { Field, Select } from '../base';
+import { AlertDialog, Button, H4, Label, XStack, YStack } from 'tamagui';
+import { Field, FieldWatch, InputNumber, Select } from '../base';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
+import { Wallet } from '../../../domain';
 
 export type TransactionPaymentAlertProps = {
   isOpen: boolean;
   onCancel: () => void;
-  form: UseFormReturn<{ walletId: number }>;
-  onSubmit: (walletId: { walletId: number }) => void;
-  walletSelectOptions: { label: string; value: number }[];
+  form: UseFormReturn<{ wallet: Wallet; paidAmount: number }>;
+  onSubmit: (values: { wallet: Wallet; paidAmount: number }) => void;
+  walletSelectOptions: { label: string; value: Wallet }[];
+  transactionTotal: number;
   isButtonDisabled: boolean;
 };
 
@@ -18,6 +20,7 @@ export const TransactionPaymentAlert = ({
   onCancel,
   walletSelectOptions,
   isButtonDisabled,
+  transactionTotal,
 }: TransactionPaymentAlertProps) => {
   return (
     <AlertDialog open={isOpen} onOpenChange={onCancel} modal>
@@ -55,9 +58,36 @@ export const TransactionPaymentAlert = ({
                 Please fill the wallet name and click the yes button
               </AlertDialog.Description>
 
-              <Field name="walletId" label="Wallet Name">
+              <Field name="wallet" label="Wallet Name">
                 <Select items={walletSelectOptions} />
               </Field>
+
+              <YStack gap="$3">
+                <Label>Total Amount</Label>
+                <H4>Rp. {transactionTotal.toLocaleString('id')}</H4>
+              </YStack>
+
+              <FieldWatch
+                control={form.control}
+                name={['wallet.isCashless', 'paidAmount']}
+              >
+                {([isCashless, paidAmount]) =>
+                  isCashless ? null : (
+                    <>
+                      <Field name="paidAmount" label="Paid Amount">
+                        <InputNumber step={500} />
+                      </Field>
+                      <YStack gap="$3">
+                        <Label>Change</Label>
+                        <H4>
+                          Rp.{' '}
+                          {(paidAmount - transactionTotal).toLocaleString('id')}
+                        </H4>
+                      </YStack>
+                    </>
+                  )
+                }
+              </FieldWatch>
 
               <XStack gap="$3" justifyContent="flex-end">
                 <AlertDialog.Cancel asChild>

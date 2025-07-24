@@ -433,6 +433,7 @@ func ToApiTransaction(transaction transaction.Transaction) apiContract.Transacti
 		Total:            transaction.Total,
 		TotalIncome:      transaction.TotalIncome,
 		PaidAt:           transaction.PaidAt,
+		PaidAmount:       transaction.PaidAmount,
 		TransactionItems: apiTransactionItems,
 	}
 }

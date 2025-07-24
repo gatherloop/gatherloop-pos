@@ -1613,6 +1613,7 @@ components:
         - name
         - total
         - totalIncome
+        - paidAmount
         - transactionItems
       properties:
         id:
@@ -1631,6 +1632,8 @@ components:
         total:
           type: number
         totalIncome:
+          type: number
+        paidAmount:
           type: number
         transactionItems:
           type: array
@@ -1706,10 +1709,13 @@ components:
       type: object
       required:
         - walletId
+        - paidAmount
       properties:
         walletId:
           type: integer
           format: int64
+        paidAmount:
+          type: number
     TransactionStatistic:
       type: object
       required:

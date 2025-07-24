@@ -58,9 +58,10 @@ export class ApiTransactionRepository implements TransactionRepository {
 
   payTransaction: TransactionRepository['payTransaction'] = (
     transactionId,
-    walletId
+    walletId,
+    paidAmount
   ) => {
-    return transactionPayById(transactionId, { walletId }).then();
+    return transactionPayById(transactionId, { walletId, paidAmount }).then();
   };
 
   fetchTransactionById = (
@@ -228,7 +229,9 @@ const transformers = {
           id: transaction.wallet.id,
           name: transaction.wallet.name,
           paymentCostPercentage: transaction.wallet.paymentCostPercentage,
+          isCashless: transaction.wallet.isCashless,
         }
       : null,
+    paidAmount: transaction.paidAmount,
   }),
 };

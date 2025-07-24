@@ -54,14 +54,23 @@ export const TransactionCreateScreen = (
 
   useEffect(() => {
     if (transactionCreateController.state.type === 'submitSuccess') {
+      const transactionTotal =
+        transactionCreateController.state.values.transactionItems.reduce(
+          (prev, curr) =>
+            prev + (curr.product.price * curr.amount - curr.discountAmount),
+          0
+        );
+
       transactionPayController.dispatch({
         type: 'SHOW_CONFIRMATION',
         transactionId: transactionCreateController.state.transactionId ?? -1,
+        transactionTotal,
       });
     }
   }, [
     transactionCreateController.state.transactionId,
     transactionCreateController.state.type,
+    transactionCreateController.state.values.transactionItems,
     transactionPayController,
   ]);
 

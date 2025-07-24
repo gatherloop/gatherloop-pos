@@ -34,9 +34,14 @@ func (repo Repository) CreateWallet(ctx context.Context, wallet *wallet.Wallet) 
 	return ToError(result.Error)
 }
 
-func (repo Repository) UpdateWalletById(ctx context.Context, wallet *wallet.Wallet, id int64) *base.Error {
+func (repo Repository) UpdateWalletById(ctx context.Context, payload *wallet.Wallet, id int64) *base.Error {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Table("wallets").Where("id = ?", id).Updates(wallet)
+	result := db.Table("wallets").Where("id = ?", id).Updates(map[string]any{
+		"name":                    payload.Name,
+		"balance":                 payload.Balance,
+		"is_cashless":             payload.IsCashless,
+		"payment_cost_percentage": payload.PaymentCostPercentage,
+	})
 	return ToError(result.Error)
 }
 

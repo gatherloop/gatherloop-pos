@@ -77,6 +77,7 @@ export const TransactionListScreen = (props: TransactionListScreenProps) => {
     transactionPayController.dispatch({
       type: 'SHOW_CONFIRMATION',
       transactionId: transaction.id,
+      transactionTotal: transaction.total,
     });
   };
 

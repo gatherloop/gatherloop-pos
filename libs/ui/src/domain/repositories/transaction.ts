@@ -43,7 +43,11 @@ export interface TransactionRepository {
     transactionId: number
   ) => Promise<void>;
 
-  payTransaction: (transactionId: number, walletId: number) => Promise<void>;
+  payTransaction: (
+    transactionId: number,
+    walletId: number,
+    paidAmount: number
+  ) => Promise<void>;
 
   getTransactionStatisticList: (
     groupBy: 'date' | 'month'

@@ -50,7 +50,12 @@ func (usecase Usecase) CreateWalletTransfer(ctx context.Context, walletTransfer 
 			return &base.Error{Type: base.BadRequest, Message: "insufficient balance"}
 		}
 
-		if err := usecase.repository.UpdateWalletById(ctxWithTx, &Wallet{Balance: fromWallet.Balance - walletTransfer.Amount}, fromWalletId); err != nil {
+		if err := usecase.repository.UpdateWalletById(ctxWithTx, &Wallet{
+			Name:                  fromWallet.Name,
+			PaymentCostPercentage: fromWallet.PaymentCostPercentage,
+			IsCashless:            fromWallet.IsCashless,
+			Balance:               fromWallet.Balance - walletTransfer.Amount,
+		}, fromWalletId); err != nil {
 			return err
 		}
 
@@ -59,7 +64,12 @@ func (usecase Usecase) CreateWalletTransfer(ctx context.Context, walletTransfer 
 			return err
 		}
 
-		if err := usecase.repository.UpdateWalletById(ctxWithTx, &Wallet{Balance: toWallet.Balance + walletTransfer.Amount}, walletTransfer.ToWalletId); err != nil {
+		if err := usecase.repository.UpdateWalletById(ctxWithTx, &Wallet{
+			Name:                  toWallet.Name,
+			PaymentCostPercentage: toWallet.PaymentCostPercentage,
+			IsCashless:            toWallet.IsCashless,
+			Balance:               toWallet.Balance + walletTransfer.Amount,
+		}, walletTransfer.ToWalletId); err != nil {
 			return err
 		}
 

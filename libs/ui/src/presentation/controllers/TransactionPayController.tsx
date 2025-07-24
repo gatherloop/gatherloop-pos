@@ -2,9 +2,10 @@ import { useToastController } from '@tamagui/toast';
 import { TransactionPayUsecase } from '../../domain';
 import { useController } from './controller';
 import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { Wallet } from '@gatherloop-pos/api-contract';
 
 export const useTransactionPayController = (usecase: TransactionPayUsecase) => {
   const { state, dispatch } = useController(usecase);
@@ -18,13 +19,37 @@ export const useTransactionPayController = (usecase: TransactionPayUsecase) => {
     }
   }, [state.type, toast]);
 
-  const form = useForm<{ walletId: number }>({
-    defaultValues: { walletId: NaN },
-    resolver: zodResolver(z.object({ walletId: z.number().min(1) })),
+  const form = useForm<{ wallet: Wallet; paidAmount: number }>({
+    defaultValues: { paidAmount: 0 },
+    resolver: zodResolver(
+      z.object({
+        wallet: z.object({ id: z.number() }),
+        paidAmount: z.number().min(state.transactionTotal),
+      })
+    ),
   });
 
-  const onSubmit = (values: { walletId: number }) =>
-    dispatch({ type: 'PAY', walletId: values.walletId });
+  const isCashless = useWatch({
+    control: form.control,
+    name: 'wallet.isCashless',
+  });
+  const paidAmount = useWatch({
+    control: form.control,
+    name: 'paidAmount',
+  });
+
+  useEffect(() => {
+    if (isCashless && paidAmount !== state.transactionTotal) {
+      form.setValue('paidAmount', state.transactionTotal);
+    }
+  }, [form, isCashless, paidAmount, state.transactionTotal]);
+
+  const onSubmit = (values: { wallet: Wallet; paidAmount: number }) =>
+    dispatch({
+      type: 'PAY',
+      walletId: values.wallet.id,
+      paidAmount: values.paidAmount,
+    });
 
   const isButtonDisabled =
     state.type === 'paying' ||
@@ -41,7 +66,7 @@ export const useTransactionPayController = (usecase: TransactionPayUsecase) => {
 
   const walletSelectOptions = state.wallets.map((wallet) => ({
     label: wallet.name,
-    value: wallet.id,
+    value: wallet,
   }));
 
   return {
@@ -53,5 +78,6 @@ export const useTransactionPayController = (usecase: TransactionPayUsecase) => {
     isOpen,
     onCancel,
     walletSelectOptions,
+    transactionTotal: state.transactionTotal,
   };
 };
