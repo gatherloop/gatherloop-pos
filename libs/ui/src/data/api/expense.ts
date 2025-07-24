@@ -80,6 +80,7 @@ const transformers = {
       id: expense.wallet.id,
       name: expense.wallet.name,
       paymentCostPercentage: expense.wallet.paymentCostPercentage,
+      isCashless: expense.wallet.isCashless,
     },
   }),
 };

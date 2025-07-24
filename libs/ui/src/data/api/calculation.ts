@@ -89,6 +89,7 @@ const transformers = {
       id: calculation.wallet.id,
       name: calculation.wallet.name,
       paymentCostPercentage: calculation.wallet.paymentCostPercentage,
+      isCashless: calculation.wallet.isCashless,
     },
   }),
 };
