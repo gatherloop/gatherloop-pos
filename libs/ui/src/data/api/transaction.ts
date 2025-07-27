@@ -197,11 +197,6 @@ const transformers = {
       discountAmount: item.discountAmount,
       subtotal: item.subtotal,
       variant: {
-        category: {
-          id: item.variant.category.id,
-          createdAt: item.variant.category.createdAt,
-          name: item.variant.category.name,
-        },
         createdAt: item.variant.createdAt,
         id: item.variant.id,
         name: item.variant.name,
@@ -219,6 +214,13 @@ const transformers = {
           },
         })),
         description: item.variant.description ?? '',
+        product: {
+          category: item.variant.product.category,
+          createdAt: item.variant.product.createdAt,
+          id: item.variant.product.id,
+          name: item.variant.product.name,
+          description: item.variant.product.description,
+        },
       },
     })),
     paidAt: transaction.paidAt ?? null,

@@ -102,7 +102,7 @@ export const TransactionFormView = ({
                               flex={1}
                               name={variant.name}
                               price={variant.price}
-                              categoryName={variant.category.name}
+                              productName={variant.product.name}
                             />
                           </XStack>
 
