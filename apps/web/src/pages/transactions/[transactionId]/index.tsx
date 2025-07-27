@@ -1,10 +1,10 @@
 import {
-  ApiProductRepository,
+  ApiVariantRepository,
   ApiTransactionRepository,
   getUrlFromCtx,
   TransactionUpdateScreen,
   TransactionUpdateScreenProps,
-  UrlProductListQueryRepository,
+  UrlVariantListQueryRepository,
 } from '@gatherloop-pos/ui';
 import { QueryClient } from '@tanstack/react-query';
 import { GetServerSideProps } from 'next';
@@ -22,8 +22,8 @@ export const getServerSideProps: GetServerSideProps<
 
   const client = new QueryClient();
   const transactionRepository = new ApiTransactionRepository(client);
-  const productRepository = new ApiProductRepository(client);
-  const productListQueryRepository = new UrlProductListQueryRepository();
+  const variantRepository = new ApiVariantRepository(client);
+  const variantListQueryRepository = new UrlVariantListQueryRepository();
 
   const transactionId = parseInt(ctx.params?.transactionId ?? '');
   const transaction = await transactionRepository.fetchTransactionById(
@@ -32,13 +32,13 @@ export const getServerSideProps: GetServerSideProps<
   );
 
   const url = getUrlFromCtx(ctx);
-  const page = productListQueryRepository.getPage(url);
-  const itemPerPage = productListQueryRepository.getItemPerPage(url);
-  const query = productListQueryRepository.getSearchQuery(url);
-  const orderBy = productListQueryRepository.getOrderBy(url);
-  const sortBy = productListQueryRepository.getSortBy(url);
+  const page = variantListQueryRepository.getPage(url);
+  const itemPerPage = variantListQueryRepository.getItemPerPage(url);
+  const query = variantListQueryRepository.getSearchQuery(url);
+  const orderBy = variantListQueryRepository.getOrderBy(url);
+  const sortBy = variantListQueryRepository.getSortBy(url);
 
-  const { products, totalItem } = await productRepository.fetchProductList(
+  const { variants, totalItem } = await variantRepository.fetchVariantList(
     { page, itemPerPage, orderBy, query, sortBy },
     { headers: { Cookie: ctx.req.headers.cookie } }
   );
@@ -46,8 +46,8 @@ export const getServerSideProps: GetServerSideProps<
   return {
     props: {
       transactionUpdateParams: { transaction, transactionId },
-      productListParams: {
-        products,
+      variantListParams: {
+        variants,
         totalItem,
         itemPerPage,
         orderBy,

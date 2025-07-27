@@ -142,8 +142,8 @@ export class TransactionUpdateUsecase extends Usecase<
                 name: transaction.name,
                 transactionItems: transaction.transactionItems.map((item) => ({
                   amount: item.amount,
-                  productId: item.product.id,
-                  product: item.product,
+                  variantId: item.variant.id,
+                  variant: item.variant,
                   discountAmount: item.discountAmount,
                 })),
               },

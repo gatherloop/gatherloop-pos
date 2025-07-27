@@ -1,16 +1,16 @@
 import { ScrollView } from 'tamagui';
-import { TransactionFormView, Layout, ProductList } from '../components';
+import { TransactionFormView, Layout, VariantList } from '../components';
 import {
   useAuthLogoutController,
-  useProductListController,
+  useVariantListController,
   useTransactionUpdateController,
 } from '../controllers';
 import { useEffect } from 'react';
 import { useRouter } from 'solito/router';
 import {
   AuthLogoutUsecase,
-  Product,
-  ProductListUsecase,
+  Variant,
+  VariantListUsecase,
   TransactionForm,
   TransactionUpdateUsecase,
 } from '../../domain';
@@ -18,7 +18,7 @@ import { UseFieldArrayReturn } from 'react-hook-form';
 
 export type TransactionUpdateScreenProps = {
   transactionUpdateUsecase: TransactionUpdateUsecase;
-  productListUsecase: ProductListUsecase;
+  variantListUsecase: VariantListUsecase;
   authLogoutUsecase: AuthLogoutUsecase;
 };
 
@@ -31,8 +31,8 @@ export const TransactionUpdateScreen = (
     props.transactionUpdateUsecase
   );
 
-  const productListController = useProductListController(
-    props.productListUsecase
+  const variantListController = useVariantListController(
+    props.variantListUsecase
   );
 
   const router = useRouter();
@@ -42,12 +42,12 @@ export const TransactionUpdateScreen = (
       router.push('/transactions');
   }, [transactionUpdateController.state.type, router]);
 
-  const onProductItemPress = (
-    product: Product,
+  const onVariantItemPress = (
+    variant: Variant,
     fieldArray: UseFieldArrayReturn<TransactionForm, 'transactionItems', 'key'>
   ) => {
-    transactionUpdateController.onAddItem(product, fieldArray);
-    productListController.onSearchValueChange('');
+    transactionUpdateController.onAddItem(variant, fieldArray);
+    variantListController.onSearchValueChange('');
   };
 
   return (
@@ -55,10 +55,10 @@ export const TransactionUpdateScreen = (
       <ScrollView>
         <TransactionFormView
           {...transactionUpdateController}
-          ProductList={(fieldArray) => (
-            <ProductList
-              {...productListController}
-              onItemPress={(product) => onProductItemPress(product, fieldArray)}
+          VariantList={(fieldArray) => (
+            <VariantList
+              {...variantListController}
+              onItemPress={(variant) => onVariantItemPress(variant, fieldArray)}
               isSearchAutoFocus
               numColumns={2}
             />

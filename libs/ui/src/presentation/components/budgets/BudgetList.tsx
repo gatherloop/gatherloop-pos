@@ -26,7 +26,7 @@ export const BudgetList = ({
         .with({ type: 'empty' }, () => (
           <EmptyView
             title="Oops, Budget is Empty"
-            subtitle="Please create a new product"
+            subtitle="Please create a new budget"
           />
         ))
         .with({ type: 'loaded' }, ({ items }) => (

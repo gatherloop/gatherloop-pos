@@ -1,6 +1,6 @@
 import { Card, H3, H4, Paragraph, XStack, YStack } from 'tamagui';
 import dayjs from 'dayjs';
-import { ProductListItem } from '../products';
+import { VariantListItem } from '../variants';
 import { Calendar, CreditCard, User, Wallet } from '@tamagui/lucide-icons';
 import { H5 } from 'tamagui';
 import { Transaction } from '../../../domain';
@@ -110,11 +110,11 @@ export const TransactionDetail = ({
       <H4>Transaction Items</H4>
       <YStack gap="$3">
         {transactionItems.map(
-          ({ price, product, amount, subtotal, discountAmount }) => (
-            <YStack key={product.id} gap="$3">
-              <ProductListItem
-                categoryName={product.category.name}
-                name={product.name}
+          ({ price, variant, amount, subtotal, discountAmount }) => (
+            <YStack key={variant.id} gap="$3">
+              <VariantListItem
+                categoryName={variant.category.name}
+                name={variant.name}
                 price={price}
                 flex={1}
               />

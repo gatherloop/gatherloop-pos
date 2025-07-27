@@ -3,7 +3,7 @@ package transaction
 import (
 	"apps/api/domain/base"
 	"apps/api/domain/budget"
-	"apps/api/domain/product"
+	"apps/api/domain/variant"
 	"apps/api/domain/wallet"
 	"context"
 	"time"
@@ -11,15 +11,15 @@ import (
 
 type Usecase struct {
 	repository        Repository
-	productRepository product.Repository
+	variantRepository variant.Repository
 	walletRepository  wallet.Repository
 	budgetRepository  budget.Repository
 }
 
-func NewUsecase(repository Repository, productRepository product.Repository, walletRepository wallet.Repository, budgetRepository budget.Repository) Usecase {
+func NewUsecase(repository Repository, variantRepository variant.Repository, walletRepository wallet.Repository, budgetRepository budget.Repository) Usecase {
 	return Usecase{
 		repository:        repository,
-		productRepository: productRepository,
+		variantRepository: variantRepository,
 		walletRepository:  walletRepository,
 		budgetRepository:  budgetRepository,
 	}
@@ -59,21 +59,21 @@ func (usecase Usecase) CreateTransaction(ctx context.Context, transactionRequest
 		var transactionItems []TransactionItem
 
 		for _, item := range transactionRequest.TransactionItems {
-			product, err := usecase.productRepository.GetProductById(ctxWithTx, item.ProductId)
+			variant, err := usecase.variantRepository.GetVariantById(ctxWithTx, item.VariantId)
 			if err != nil {
 				return err
 			}
 
-			subTotal := (product.Price * item.Amount) - item.DiscountAmount
+			subTotal := (variant.Price * item.Amount) - item.DiscountAmount
 			transaction.Total += subTotal
 
 			transactionItem := TransactionItem{
 				TransactionId:  transaction.Id,
-				ProductId:      item.ProductId,
+				VariantId:      item.VariantId,
 				Amount:         item.Amount,
 				DiscountAmount: item.DiscountAmount,
 				Subtotal:       subTotal,
-				Price:          product.Price,
+				Price:          variant.Price,
 			}
 
 			transactionItems = append(transactionItems, transactionItem)
@@ -108,22 +108,22 @@ func (usecase Usecase) UpdateTransactionById(ctx context.Context, transactionReq
 		var transactionItems []TransactionItem
 
 		for _, item := range transactionRequest.TransactionItems {
-			product, err := usecase.productRepository.GetProductById(ctxWithTx, item.ProductId)
+			variant, err := usecase.variantRepository.GetVariantById(ctxWithTx, item.VariantId)
 			if err != nil {
 				return err
 			}
 
-			subTotal := (product.Price * item.Amount) - item.DiscountAmount
+			subTotal := (variant.Price * item.Amount) - item.DiscountAmount
 			transaction.Total += subTotal
 
 			transactionItem := TransactionItem{
 				Id:             item.Id,
 				TransactionId:  id,
-				ProductId:      item.ProductId,
+				VariantId:      item.VariantId,
 				Amount:         item.Amount,
 				DiscountAmount: item.DiscountAmount,
 				Subtotal:       subTotal,
-				Price:          product.Price,
+				Price:          variant.Price,
 			}
 
 			transactionItems = append(transactionItems, transactionItem)
@@ -194,15 +194,15 @@ func (usecase Usecase) PayTransaction(ctx context.Context, walletId int64, paidA
 			return err
 		}
 
-		productMaterials := []product.ProductMaterial{}
+		variantMaterials := []variant.VariantMaterial{}
 
 		for _, item := range transaction.TransactionItems {
-			productMaterials = append(productMaterials, item.Product.Materials...)
+			variantMaterials = append(variantMaterials, item.Variant.Materials...)
 		}
 
 		var foodCost float32
-		for _, productMaterial := range productMaterials {
-			foodCost += productMaterial.Amount * productMaterial.Material.Price
+		for _, variantMaterial := range variantMaterials {
+			foodCost += variantMaterial.Amount * variantMaterial.Material.Price
 		}
 
 		totalIncome := transaction.Total - paymentCost - foodCost

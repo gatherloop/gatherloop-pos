@@ -8,7 +8,7 @@ import (
 	"apps/api/domain/category"
 	"apps/api/domain/expense"
 	"apps/api/domain/material"
-	"apps/api/domain/product"
+	"apps/api/domain/variant"
 	"apps/api/domain/transaction"
 	"apps/api/domain/wallet"
 	"apps/api/presentation/restapi"
@@ -42,7 +42,7 @@ func main() {
 	router.Use(restapi.EnableCORS)
 
 	walletRepository := mysql.NewWalletRepository(db)
-	productRepository := mysql.NewProductRepository(db)
+	variantRepository := mysql.NewVariantRepository(db)
 	budgetRepository := mysql.NewBudgetRepository(db)
 	transactionRepository := mysql.NewTransactionRepository(db)
 	materialRepository := mysql.NewMaterialRepository(db)
@@ -52,8 +52,8 @@ func main() {
 	calculationRepository := mysql.NewCalculationRepository(db)
 
 	walletUsecase := wallet.NewUsecase(walletRepository)
-	transactionUsecase := transaction.NewUsecase(transactionRepository, productRepository, walletRepository, budgetRepository)
-	productUsecase := product.NewUsecase(productRepository)
+	transactionUsecase := transaction.NewUsecase(transactionRepository, variantRepository, walletRepository, budgetRepository)
+	variantUsecase := variant.NewUsecase(variantRepository)
 	materialUsecase := material.NewUsecase(materialRepository)
 	expenseUsecase := expense.NewUsecase(expenseRepository, budgetRepository, walletRepository)
 	categoryUsecase := category.NewUsecase(categoryRepository)
@@ -63,7 +63,7 @@ func main() {
 
 	walletHandler := restapi.NewWalletHandler(walletUsecase)
 	transactionHandler := restapi.NewTransactionHandler(transactionUsecase)
-	productHandler := restapi.NewProductHandler(productUsecase)
+	variantHandler := restapi.NewVariantHandler(variantUsecase)
 	materialHandler := restapi.NewMaterialHandler(materialUsecase)
 	expenseHandler := restapi.NewExpenseHandler(expenseUsecase)
 	categoryHandler := restapi.NewCategoryHandler(categoryUsecase)
@@ -76,7 +76,7 @@ func main() {
 	restapi.NewCategoryRouter(categoryHandler).AddRouter(router)
 	restapi.NewExpenseRouter(expenseHandler).AddRouter(router)
 	restapi.NewMaterialRouter(materialHandler).AddRouter(router)
-	restapi.NewProductRouter(productHandler).AddRouter(router)
+	restapi.NewVariantRouter(variantHandler).AddRouter(router)
 	restapi.NewTransactionRouter(transactionHandler).AddRouter(router)
 	restapi.NewWalletRouter(walletHandler).AddRouter(router)
 	restapi.NewCalculationRouter(calculationHandler).AddRouter(router)

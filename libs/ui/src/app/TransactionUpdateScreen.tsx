@@ -1,13 +1,13 @@
 import {
   ApiAuthRepository,
-  ApiProductRepository,
+  ApiVariantRepository,
   ApiTransactionRepository,
-  UrlProductListQueryRepository,
+  UrlVariantListQueryRepository,
 } from '../data';
 import {
   AuthLogoutUsecase,
-  ProductListParams,
-  ProductListUsecase,
+  VariantListParams,
+  VariantListUsecase,
   TransactionUpdateParams,
   TransactionUpdateUsecase,
 } from '../domain';
@@ -16,17 +16,17 @@ import { QueryClient } from '@tanstack/react-query';
 
 export type TransactionUpdateScreenProps = {
   transactionUpdateParams: TransactionUpdateParams;
-  productListParams: ProductListParams;
+  variantListParams: VariantListParams;
 };
 
 export function TransactionUpdateScreen({
   transactionUpdateParams,
-  productListParams,
+  variantListParams,
 }: TransactionUpdateScreenProps) {
   const client = new QueryClient();
   const transactionRepository = new ApiTransactionRepository(client);
-  const productRepository = new ApiProductRepository(client);
-  const productListQueryRepository = new UrlProductListQueryRepository();
+  const variantRepository = new ApiVariantRepository(client);
+  const variantListQueryRepository = new UrlVariantListQueryRepository();
   const authRepository = new ApiAuthRepository();
 
   const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
@@ -34,15 +34,15 @@ export function TransactionUpdateScreen({
     transactionRepository,
     transactionUpdateParams
   );
-  const productListUsecase = new ProductListUsecase(
-    productRepository,
-    productListQueryRepository,
-    productListParams
+  const variantListUsecase = new VariantListUsecase(
+    variantRepository,
+    variantListQueryRepository,
+    variantListParams
   );
 
   return (
     <TransactionUpdateScreenView
-      productListUsecase={productListUsecase}
+      variantListUsecase={variantListUsecase}
       transactionUpdateUsecase={transactionUpdateUsecase}
       authLogoutUsecase={authLogoutUsecase}
     />

@@ -1,6 +1,6 @@
 export * from './auth';
 export * from './material';
-export * from './product';
+export * from './variant';
 export * from './category';
 export * from './calculation';
 export * from './budget';

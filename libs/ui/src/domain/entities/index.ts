@@ -2,7 +2,7 @@ export * from './Auth';
 export * from './Category';
 export * from './Calculation';
 export * from './Material';
-export * from './Product';
+export * from './Variant';
 export * from './Budget';
 export * from './Wallet';
 export * from './WalletTransfer';

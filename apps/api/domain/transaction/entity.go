@@ -1,7 +1,7 @@
 package transaction
 
 import (
-	"apps/api/domain/product"
+	"apps/api/domain/variant"
 	"apps/api/domain/wallet"
 	"time"
 )
@@ -9,8 +9,8 @@ import (
 type TransactionItem struct {
 	Id             int64
 	TransactionId  int64
-	ProductId      int64
-	Product        product.Product
+	VariantId      int64
+	Variant        variant.Variant
 	Amount         float32
 	Price          float32
 	DiscountAmount float32

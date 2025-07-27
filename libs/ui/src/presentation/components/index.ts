@@ -5,6 +5,6 @@ export * from './categories';
 export * from './calculations';
 export * from './expenses';
 export * from './materials';
-export * from './products';
+export * from './variants';
 export * from './transactions';
 export * from './wallets';

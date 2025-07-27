@@ -2,12 +2,12 @@ import { ScrollView } from 'tamagui';
 import {
   TransactionFormView,
   Layout,
-  ProductList,
+  VariantList,
   TransactionPaymentAlert,
 } from '../components';
 import {
   useAuthLogoutController,
-  useProductListController,
+  useVariantListController,
   useTransactionCreateController,
   useTransactionPayController,
 } from '../controllers';
@@ -15,8 +15,8 @@ import { useEffect } from 'react';
 import { useRouter } from 'solito/router';
 import {
   AuthLogoutUsecase,
-  Product,
-  ProductListUsecase,
+  Variant,
+  VariantListUsecase,
   TransactionCreateUsecase,
   TransactionForm,
   TransactionPayUsecase,
@@ -27,7 +27,7 @@ import dayjs from 'dayjs';
 
 export type TransactionCreateScreenProps = {
   transactionCreateUsecase: TransactionCreateUsecase;
-  productListUsecase: ProductListUsecase;
+  variantListUsecase: VariantListUsecase;
   transactionPayUsecase: TransactionPayUsecase;
   authLogoutUsecase: AuthLogoutUsecase;
 };
@@ -41,8 +41,8 @@ export const TransactionCreateScreen = (
     props.transactionCreateUsecase
   );
 
-  const productListController = useProductListController(
-    props.productListUsecase
+  const variantListController = useVariantListController(
+    props.variantListUsecase
   );
 
   const transactionPayController = useTransactionPayController(
@@ -57,7 +57,7 @@ export const TransactionCreateScreen = (
       const transactionTotal =
         transactionCreateController.state.values.transactionItems.reduce(
           (prev, curr) =>
-            prev + (curr.product.price * curr.amount - curr.discountAmount),
+            prev + (curr.variant.price * curr.amount - curr.discountAmount),
           0
         );
 
@@ -82,9 +82,9 @@ export const TransactionCreateScreen = (
         name: transactionCreateController.form.getValues('name'),
         items: transactionCreateController.form
           .getValues('transactionItems')
-          .map(({ product, amount, discountAmount }) => ({
-            name: product.name,
-            price: product.price,
+          .map(({ variant, amount, discountAmount }) => ({
+            name: variant.name,
+            price: variant.price,
             amount,
             discountAmount,
           })),
@@ -102,12 +102,12 @@ export const TransactionCreateScreen = (
     router.push('/transactions');
   };
 
-  const onProductItemPress = (
-    product: Product,
+  const onVariantItemPress = (
+    variant: Variant,
     fieldArray: UseFieldArrayReturn<TransactionForm, 'transactionItems', 'key'>
   ) => {
-    transactionCreateController.onAddItem(product, fieldArray);
-    productListController.onSearchValueChange('');
+    transactionCreateController.onAddItem(variant, fieldArray);
+    variantListController.onSearchValueChange('');
   };
 
   return (
@@ -115,10 +115,10 @@ export const TransactionCreateScreen = (
       <ScrollView>
         <TransactionFormView
           {...transactionCreateController}
-          ProductList={(fieldArray) => (
-            <ProductList
-              {...productListController}
-              onItemPress={(product) => onProductItemPress(product, fieldArray)}
+          VariantList={(fieldArray) => (
+            <VariantList
+              {...variantListController}
+              onItemPress={(variant) => onVariantItemPress(variant, fieldArray)}
               isSearchAutoFocus
               numColumns={2}
             />

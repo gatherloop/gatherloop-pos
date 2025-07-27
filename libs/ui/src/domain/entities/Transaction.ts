@@ -1,9 +1,9 @@
-import { Product } from './Product';
+import { Variant } from './Variant';
 import { Wallet } from './Wallet';
 
 type TransactionItem = {
   id: number;
-  product: Product;
+  variant: Variant;
   amount: number;
   price: number;
   discountAmount: number;
@@ -24,7 +24,7 @@ export type Transaction = {
 
 type TransactionItemForm = {
   id?: number;
-  product: Product;
+  variant: Variant;
   amount: number;
   discountAmount: number;
 };

@@ -33,7 +33,7 @@ export const WalletList = ({
         .with({ type: 'empty' }, () => (
           <EmptyView
             title="Oops, Wallet is Empty"
-            subtitle="Please create a new product"
+            subtitle="Please create a new wallet"
           />
         ))
         .with({ type: 'loaded' }, ({ items }) => (

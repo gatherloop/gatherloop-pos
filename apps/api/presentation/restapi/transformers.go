@@ -8,7 +8,7 @@ import (
 	"apps/api/domain/category"
 	"apps/api/domain/expense"
 	"apps/api/domain/material"
-	"apps/api/domain/product"
+	"apps/api/domain/variant"
 	"apps/api/domain/transaction"
 	"apps/api/domain/wallet"
 	"encoding/json"
@@ -286,92 +286,92 @@ func ToMaterial(materialRequest apiContract.MaterialRequest) material.Material {
 	}
 }
 
-func GetProductId(r *http.Request) (int64, error) {
+func GetVariantId(r *http.Request) (int64, error) {
 	vars := mux.Vars(r)
-	idParam := vars["productId"]
+	idParam := vars["variantId"]
 	id, err := strconv.ParseInt(idParam, 10, 32)
 	return id, err
 }
 
-func GetProductRequest(r *http.Request) (apiContract.ProductRequest, error) {
-	var productRequest apiContract.ProductRequest
-	err := json.NewDecoder(r.Body).Decode(&productRequest)
-	return productRequest, err
+func GetVariantRequest(r *http.Request) (apiContract.VariantRequest, error) {
+	var variantRequest apiContract.VariantRequest
+	err := json.NewDecoder(r.Body).Decode(&variantRequest)
+	return variantRequest, err
 }
 
-func GetProductMaterialId(r *http.Request) (int64, error) {
+func GetVariantMaterialId(r *http.Request) (int64, error) {
 	vars := mux.Vars(r)
-	idParam := vars["productMaterialId"]
+	idParam := vars["variantMaterialId"]
 	id, err := strconv.ParseInt(idParam, 10, 32)
 	return id, err
 }
 
-func GetProductMaterialRequest(r *http.Request) (apiContract.ProductMaterialRequest, error) {
-	var productMaterialRequest apiContract.ProductMaterialRequest
-	err := json.NewDecoder(r.Body).Decode(&productMaterialRequest)
-	return productMaterialRequest, err
+func GetVariantMaterialRequest(r *http.Request) (apiContract.VariantMaterialRequest, error) {
+	var variantMaterialRequest apiContract.VariantMaterialRequest
+	err := json.NewDecoder(r.Body).Decode(&variantMaterialRequest)
+	return variantMaterialRequest, err
 }
 
-func ToApiProductMaterial(productMaterial product.ProductMaterial) apiContract.ProductMaterial {
-	return apiContract.ProductMaterial{
-		Id:         productMaterial.Id,
-		ProductId:  productMaterial.ProductId,
-		MaterialId: productMaterial.MaterialId,
-		Amount:     productMaterial.Amount,
-		DeletedAt:  productMaterial.DeletedAt,
-		CreatedAt:  productMaterial.CreatedAt,
+func ToApiVariantMaterial(variantMaterial variant.VariantMaterial) apiContract.VariantMaterial {
+	return apiContract.VariantMaterial{
+		Id:         variantMaterial.Id,
+		VariantId:  variantMaterial.VariantId,
+		MaterialId: variantMaterial.MaterialId,
+		Amount:     variantMaterial.Amount,
+		DeletedAt:  variantMaterial.DeletedAt,
+		CreatedAt:  variantMaterial.CreatedAt,
 		Material: apiContract.Material{
-			Id:          productMaterial.Material.Id,
-			Name:        productMaterial.Material.Name,
-			Description: productMaterial.Material.Description,
-			Price:       productMaterial.Material.Price,
-			Unit:        productMaterial.Material.Unit,
-			CreatedAt:   productMaterial.CreatedAt,
-			DeletedAt:   productMaterial.DeletedAt,
+			Id:          variantMaterial.Material.Id,
+			Name:        variantMaterial.Material.Name,
+			Description: variantMaterial.Material.Description,
+			Price:       variantMaterial.Material.Price,
+			Unit:        variantMaterial.Material.Unit,
+			CreatedAt:   variantMaterial.CreatedAt,
+			DeletedAt:   variantMaterial.DeletedAt,
 		},
 	}
 }
 
-func ToApiProduct(product product.Product) apiContract.Product {
-	apiMaterials := []apiContract.ProductMaterial{}
+func ToApiVariant(variant variant.Variant) apiContract.Variant {
+	apiMaterials := []apiContract.VariantMaterial{}
 
-	for _, productMaterial := range product.Materials {
-		apiMaterials = append(apiMaterials, ToApiProductMaterial(productMaterial))
+	for _, variantMaterial := range variant.Materials {
+		apiMaterials = append(apiMaterials, ToApiVariantMaterial(variantMaterial))
 	}
 
-	return apiContract.Product{
-		Id:          product.Id,
-		Name:        product.Name,
-		Price:       product.Price,
-		CategoryId:  product.CategoryId,
-		Category:    apiContract.Category(product.Category),
+	return apiContract.Variant{
+		Id:          variant.Id,
+		Name:        variant.Name,
+		Price:       variant.Price,
+		CategoryId:  variant.CategoryId,
+		Category:    apiContract.Category(variant.Category),
 		Materials:   apiMaterials,
-		DeletedAt:   product.DeletedAt,
-		CreatedAt:   product.CreatedAt,
-		Description: product.Description,
+		DeletedAt:   variant.DeletedAt,
+		CreatedAt:   variant.CreatedAt,
+		Description: variant.Description,
 	}
 }
 
-func ToProduct(productRequest apiContract.ProductRequest) product.Product {
-	productMaterials := []product.ProductMaterial{}
-	for _, productMaterial := range productRequest.Materials {
+func ToVariant(variantRequest apiContract.VariantRequest) variant.Variant {
+	variantMaterials := []variant.VariantMaterial{}
+	for _, variantMaterial := range variantRequest.Materials {
 		var id int64
-		if productMaterial.Id != nil {
-			id = *productMaterial.Id
+		if variantMaterial.Id != nil {
+			id = *variantMaterial.Id
 		}
-		productMaterials = append(productMaterials, product.ProductMaterial{
+		variantMaterials = append(variantMaterials, variant.VariantMaterial{
 			Id:         id,
-			MaterialId: productMaterial.MaterialId,
-			Amount:     productMaterial.Amount,
+			MaterialId: variantMaterial.MaterialId,
+			Amount:     variantMaterial.Amount,
 		})
 	}
 
-	return product.Product{
-		Name:        productRequest.Name,
-		Price:       productRequest.Price,
-		CategoryId:  productRequest.CategoryId,
-		Materials:   productMaterials,
-		Description: productRequest.Description,
+	return variant.Variant{
+		Name:        variantRequest.Name,
+		Price:       variantRequest.Price,
+		CategoryId:  variantRequest.CategoryId,
+		Materials:   variantMaterials,
+		Description: variantRequest.Description,
 	}
 }
 
@@ -414,8 +414,8 @@ func ToApiTransaction(transaction transaction.Transaction) apiContract.Transacti
 		apiTransactionItems = append(apiTransactionItems, apiContract.TransactionItem{
 			Id:             item.Id,
 			TransactionId:  item.TransactionId,
-			ProductId:      item.ProductId,
-			Product:        ToApiProduct(item.Product),
+			VariantId:      item.VariantId,
+			Variant:        ToApiVariant(item.Variant),
 			Amount:         item.Amount,
 			Price:          item.Price,
 			DiscountAmount: item.DiscountAmount,
@@ -447,7 +447,7 @@ func ToTransaction(transactionRequest apiContract.TransactionRequest) transactio
 		}
 		transactionItems = append(transactionItems, transaction.TransactionItem{
 			Id:             id,
-			ProductId:      item.ProductId,
+			VariantId:      item.VariantId,
 			Amount:         item.Amount,
 			DiscountAmount: item.DiscountAmount,
 		})

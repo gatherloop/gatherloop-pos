@@ -1,10 +1,10 @@
 import {
-  ApiProductRepository,
+  ApiVariantRepository,
   ApiWalletRepository,
   getUrlFromCtx,
   TransactionCreateScreen,
   TransactionCreateScreenProps,
-  UrlProductListQueryRepository,
+  UrlVariantListQueryRepository,
 } from '@gatherloop-pos/ui';
 import { GetServerSideProps } from 'next';
 import { QueryClient } from '@tanstack/react-query';
@@ -23,18 +23,18 @@ export const getServerSideProps: GetServerSideProps<
   }
 
   const client = new QueryClient();
-  const productRepository = new ApiProductRepository(client);
-  const productListQueryRepository = new UrlProductListQueryRepository();
+  const variantRepository = new ApiVariantRepository(client);
+  const variantListQueryRepository = new UrlVariantListQueryRepository();
   const walletRepository = new ApiWalletRepository(client);
 
   const url = getUrlFromCtx(ctx);
-  const page = productListQueryRepository.getPage(url);
-  const itemPerPage = productListQueryRepository.getItemPerPage(url);
-  const query = productListQueryRepository.getSearchQuery(url);
-  const orderBy = productListQueryRepository.getOrderBy(url);
-  const sortBy = productListQueryRepository.getSortBy(url);
+  const page = variantListQueryRepository.getPage(url);
+  const itemPerPage = variantListQueryRepository.getItemPerPage(url);
+  const query = variantListQueryRepository.getSearchQuery(url);
+  const orderBy = variantListQueryRepository.getOrderBy(url);
+  const sortBy = variantListQueryRepository.getSortBy(url);
 
-  const { products, totalItem } = await productRepository.fetchProductList(
+  const { variants, totalItem } = await variantRepository.fetchVariantList(
     { page, itemPerPage, orderBy, query, sortBy },
     { headers: { Cookie: ctx.req.headers.cookie } }
   );
@@ -45,8 +45,8 @@ export const getServerSideProps: GetServerSideProps<
 
   return {
     props: {
-      productListParams: {
-        products,
+      variantListParams: {
+        variants,
         totalItem,
         itemPerPage,
         orderBy,

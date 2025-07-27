@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
-  Product,
+  Variant,
   TransactionCreateUsecase,
   TransactionForm,
 } from '../../domain';
@@ -15,9 +15,9 @@ export const useTransactionCreateController = (
 ) => {
   const { state, dispatch } = useController(usecase);
 
-  const [isProductSheetOpen, setIsProductSheetOpen] = useState<boolean>(false);
+  const [isVariantSheetOpen, setIsVariantSheetOpen] = useState<boolean>(false);
 
-  const onProductSheetOpenChange = setIsProductSheetOpen;
+  const onVariantSheetOpenChange = setIsVariantSheetOpen;
 
   const toast = useToastController();
   useEffect(() => {
@@ -52,11 +52,11 @@ export const useTransactionCreateController = (
     dispatch({ type: 'SUBMIT', values });
 
   const onAddItem = (
-    newProduct: Product,
+    newVariant: Variant,
     fieldArray: UseFieldArrayReturn<TransactionForm, 'transactionItems', 'key'>
   ) => {
     const itemIndex = fieldArray.fields.findIndex(
-      ({ product }) => newProduct.id === product.id
+      ({ variant }) => newVariant.id === variant.id
     );
     const isItemExist = itemIndex !== -1;
     if (isItemExist) {
@@ -65,17 +65,17 @@ export const useTransactionCreateController = (
         amount: form.getValues('transactionItems')[itemIndex].amount + 1,
       });
     } else {
-      fieldArray.append({ amount: 1, product: newProduct, discountAmount: 0 });
+      fieldArray.append({ amount: 1, variant: newVariant, discountAmount: 0 });
     }
 
-    setIsProductSheetOpen(false);
+    setIsVariantSheetOpen(false);
   };
 
   const isSubmitDisabled = state.type === 'submitting';
 
   return {
-    isProductSheetOpen,
-    onProductSheetOpenChange,
+    isVariantSheetOpen,
+    onVariantSheetOpenChange,
     state,
     dispatch,
     form,

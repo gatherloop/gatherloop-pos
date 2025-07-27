@@ -83,7 +83,7 @@ export class ApiTransactionRepository implements TransactionRepository {
       name: formValues.name,
       transactionItems: formValues.transactionItems.map((item) => ({
         amount: item.amount,
-        productId: item.product.id,
+        variantId: item.variant.id,
         discountAmount: item.discountAmount,
       })),
     }).then(({ data }) => ({ transactionId: data.id }));
@@ -98,7 +98,7 @@ export class ApiTransactionRepository implements TransactionRepository {
       transactionItems: formValues.transactionItems.map((item) => ({
         id: item.id,
         amount: item.amount,
-        productId: item.product.id,
+        variantId: item.variant.id,
         discountAmount: item.discountAmount,
       })),
     }).then();
@@ -196,29 +196,29 @@ const transformers = {
       price: item.price,
       discountAmount: item.discountAmount,
       subtotal: item.subtotal,
-      product: {
+      variant: {
         category: {
-          id: item.product.category.id,
-          createdAt: item.product.category.createdAt,
-          name: item.product.category.name,
+          id: item.variant.category.id,
+          createdAt: item.variant.category.createdAt,
+          name: item.variant.category.name,
         },
-        createdAt: item.product.createdAt,
-        id: item.product.id,
-        name: item.product.name,
-        price: item.product.price,
-        materials: (item.product.materials ?? []).map((productMaterial) => ({
-          id: productMaterial.id,
-          materialId: productMaterial.materialId,
-          amount: productMaterial.amount,
+        createdAt: item.variant.createdAt,
+        id: item.variant.id,
+        name: item.variant.name,
+        price: item.variant.price,
+        materials: (item.variant.materials ?? []).map((variantMaterial) => ({
+          id: variantMaterial.id,
+          materialId: variantMaterial.materialId,
+          amount: variantMaterial.amount,
           material: {
-            id: productMaterial.material.id,
-            name: productMaterial.material.name,
-            price: productMaterial.material.price,
-            unit: productMaterial.material.unit,
-            createdAt: productMaterial.material.createdAt,
+            id: variantMaterial.material.id,
+            name: variantMaterial.material.name,
+            price: variantMaterial.material.price,
+            unit: variantMaterial.material.unit,
+            createdAt: variantMaterial.material.createdAt,
           },
         })),
-        description: item.product.description ?? '',
+        description: item.variant.description ?? '',
       },
     })),
     paidAt: transaction.paidAt ?? null,

@@ -48,10 +48,10 @@ export const TransactionPrintCustomer = ({
 
         <YStack>
           {transactionItems.map(
-            ({ id, price, product, amount, subtotal, discountAmount }) => (
+            ({ id, price, variant, amount, subtotal, discountAmount }) => (
               <YStack key={id}>
                 <Text fontWeight="$10" fontSize="$1">
-                  {product.name}
+                  {variant.name}
                 </Text>
                 <XStack gap="$2" justifyContent="space-between">
                   <Text fontSize="$1">

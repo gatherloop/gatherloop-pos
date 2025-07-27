@@ -19,7 +19,7 @@ func (repo Repository) GetTransactionList(ctx context.Context, query string, sor
 	db := GetDbFromCtx(ctx, repo.db)
 
 	var transactionResults []transaction.Transaction
-	result := db.Table("transactions").Where("deleted_at is NULL").Preload("TransactionItems").Preload("TransactionItems.Product").Preload("Wallet").Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
+	result := db.Table("transactions").Where("deleted_at is NULL").Preload("TransactionItems").Preload("TransactionItems.Variant").Preload("Wallet").Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
 
 	if query != "" {
 		result = result.Where("name LIKE ?", "%"+query+"%")
@@ -70,7 +70,7 @@ func (repo Repository) GetTransactionById(ctx context.Context, id int64) (transa
 	db := GetDbFromCtx(ctx, repo.db)
 
 	var transaction transaction.Transaction
-	result := db.Table("transactions").Where("id = ?", id).Preload("TransactionItems").Preload("Wallet").Preload("TransactionItems.Product").Preload("TransactionItems.Product.Materials").Preload("TransactionItems.Product.Materials.Material").Preload("TransactionItems.Product.Category").First(&transaction)
+	result := db.Table("transactions").Where("id = ?", id).Preload("TransactionItems").Preload("Wallet").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.Materials").Preload("TransactionItems.Variant.Materials.Material").Preload("TransactionItems.Variant.Category").First(&transaction)
 	return transaction, ToError(result.Error)
 }
 

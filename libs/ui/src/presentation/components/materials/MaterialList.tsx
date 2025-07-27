@@ -56,7 +56,7 @@ export const MaterialList = ({
         .with({ type: 'empty' }, () => (
           <EmptyView
             title="Oops, Material is Empty"
-            subtitle="Please create a new product"
+            subtitle="Please create a new material"
           />
         ))
         .with({ type: 'loaded' }, ({ items }) => (

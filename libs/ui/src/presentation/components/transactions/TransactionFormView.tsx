@@ -9,7 +9,7 @@ import {
 import { Button, Form, H3, H5, Paragraph, XStack, YStack } from 'tamagui';
 import { H4 } from 'tamagui';
 import { Plus, Trash } from '@tamagui/lucide-icons';
-import { ProductListItem } from '../products';
+import { VariantListItem } from '../variants';
 import { TransactionForm } from '../../../domain';
 import {
   FormProvider,
@@ -22,10 +22,10 @@ import { useKeyboardShortcut } from '../../../utils';
 export type TransactionFormViewProps = {
   form: UseFormReturn<TransactionForm>;
   onSubmit: (form: TransactionForm) => void;
-  isProductSheetOpen: boolean;
-  onProductSheetOpenChange: (isOpen: boolean) => void;
+  isVariantSheetOpen: boolean;
+  onVariantSheetOpenChange: (isOpen: boolean) => void;
   isSubmitDisabled: boolean;
-  ProductList: (
+  VariantList: (
     fieldArray: UseFieldArrayReturn<TransactionForm, 'transactionItems', 'key'>
   ) => ReactNode;
 };
@@ -33,13 +33,13 @@ export type TransactionFormViewProps = {
 export const TransactionFormView = ({
   form,
   onSubmit,
-  isProductSheetOpen,
-  onProductSheetOpenChange,
+  isVariantSheetOpen,
+  onVariantSheetOpenChange,
   isSubmitDisabled,
-  ProductList,
+  VariantList,
 }: TransactionFormViewProps) => {
   useKeyboardShortcut({
-    ctrl: { ' ': () => onProductSheetOpenChange(true) },
+    ctrl: { ' ': () => onVariantSheetOpenChange(true) },
   });
   return (
     <YStack>
@@ -57,17 +57,17 @@ export const TransactionFormView = ({
               {(fieldArray) => (
                 <YStack gap="$3">
                   <Sheet
-                    isOpen={isProductSheetOpen}
-                    onOpenChange={onProductSheetOpenChange}
+                    isOpen={isVariantSheetOpen}
+                    onOpenChange={onVariantSheetOpenChange}
                   >
                     <YStack gap="$3" flex={1} padding="$5">
                       <YStack>
-                        <H4 textAlign="center">Choose Products</H4>
+                        <H4 textAlign="center">Choose Variants</H4>
                         <Paragraph textAlign="center">
-                          Product will automatically added to transaction
+                          Variant will automatically added to transaction
                         </Paragraph>
                       </YStack>
-                      {ProductList(fieldArray)}
+                      {VariantList(fieldArray)}
                     </YStack>
                   </Sheet>
 
@@ -77,12 +77,12 @@ export const TransactionFormView = ({
                       size="$3"
                       icon={Plus}
                       variant="outlined"
-                      onPress={() => onProductSheetOpenChange(true)}
+                      onPress={() => onVariantSheetOpenChange(true)}
                       circular
                     />
                   </XStack>
                   <YStack gap="$3">
-                    {fieldArray.fields.map(({ product, key }, index) => {
+                    {fieldArray.fields.map(({ variant, key }, index) => {
                       return (
                         <XStack
                           key={key}
@@ -98,11 +98,11 @@ export const TransactionFormView = ({
                               color="$red8"
                               circular
                             />
-                            <ProductListItem
+                            <VariantListItem
                               flex={1}
-                              name={product.name}
-                              price={product.price}
-                              categoryName={product.category.name}
+                              name={variant.name}
+                              price={variant.price}
+                              categoryName={variant.category.name}
                             />
                           </XStack>
 
@@ -114,7 +114,7 @@ export const TransactionFormView = ({
                             <YStack gap="$3">
                               <Paragraph textAlign="left">Price</Paragraph>
                               <H4 textTransform="none" textAlign="left">
-                                Rp. {product.price.toLocaleString('id')}
+                                Rp. {variant.price.toLocaleString('id')}
                               </H4>
                             </YStack>
                             <YStack gap="$3">
@@ -144,11 +144,11 @@ export const TransactionFormView = ({
                                 control={form.control}
                                 name={[`transactionItems.${index}`]}
                               >
-                                {([{ product, amount, discountAmount }]) => (
+                                {([{ variant, amount, discountAmount }]) => (
                                   <H4 textTransform="none" textAlign="right">
                                     Rp.{' '}
                                     {(
-                                      product.price * amount -
+                                      variant.price * amount -
                                       discountAmount
                                     ).toLocaleString('id')}
                                   </H4>
@@ -174,7 +174,7 @@ export const TransactionFormView = ({
                     .reduce(
                       (prev, curr) =>
                         prev +
-                        (curr.amount * curr.product.price -
+                        (curr.amount * curr.variant.price -
                           curr.discountAmount),
                       0
                     )

@@ -33,7 +33,7 @@ export const CategoryList = ({
         .with({ type: 'empty' }, () => (
           <EmptyView
             title="Oops, Category is Empty"
-            subtitle="Please create a new product"
+            subtitle="Please create a new category"
           />
         ))
         .with({ type: 'loaded' }, ({ categories }) => (

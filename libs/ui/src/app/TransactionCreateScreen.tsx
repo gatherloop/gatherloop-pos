@@ -1,14 +1,14 @@
 import {
   ApiAuthRepository,
-  ApiProductRepository,
+  ApiVariantRepository,
   ApiTransactionRepository,
   ApiWalletRepository,
-  UrlProductListQueryRepository,
+  UrlVariantListQueryRepository,
 } from '../data';
 import {
   AuthLogoutUsecase,
-  ProductListParams,
-  ProductListUsecase,
+  VariantListParams,
+  VariantListUsecase,
   TransactionCreateUsecase,
   TransactionPayParams,
   TransactionPayUsecase,
@@ -17,19 +17,19 @@ import { TransactionCreateScreen as TransactionCreateScreenView } from '../prese
 import { QueryClient } from '@tanstack/react-query';
 
 export type TransactionCreateScreenProps = {
-  productListParams: ProductListParams;
+  variantListParams: VariantListParams;
   transactionPayParams: TransactionPayParams;
 };
 
 export function TransactionCreateScreen({
-  productListParams,
+  variantListParams,
   transactionPayParams,
 }: TransactionCreateScreenProps) {
   const client = new QueryClient();
   const walletRepository = new ApiWalletRepository(client);
   const transactionRepository = new ApiTransactionRepository(client);
-  const productRepository = new ApiProductRepository(client);
-  const productListQueryRepository = new UrlProductListQueryRepository();
+  const variantRepository = new ApiVariantRepository(client);
+  const variantListQueryRepository = new UrlVariantListQueryRepository();
   const authRepository = new ApiAuthRepository();
 
   const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
@@ -41,15 +41,15 @@ export function TransactionCreateScreen({
     walletRepository,
     transactionPayParams
   );
-  const productListUsecase = new ProductListUsecase(
-    productRepository,
-    productListQueryRepository,
-    productListParams
+  const variantListUsecase = new VariantListUsecase(
+    variantRepository,
+    variantListQueryRepository,
+    variantListParams
   );
 
   return (
     <TransactionCreateScreenView
-      productListUsecase={productListUsecase}
+      variantListUsecase={variantListUsecase}
       transactionCreateUsecase={transactionCreateUsecase}
       transactionPayUsecase={transactionPayUsecase}
       authLogoutUsecase={authLogoutUsecase}

@@ -89,9 +89,9 @@ export const TransactionListScreen = (props: TransactionListScreenProps) => {
         : undefined,
       name: transaction.name,
       items: transaction.transactionItems.map(
-        ({ product, amount, discountAmount }) => ({
-          name: product.name,
-          price: product.price,
+        ({ variant, amount, discountAmount }) => ({
+          name: variant.name,
+          price: variant.price,
           amount,
           discountAmount,
         })

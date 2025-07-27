@@ -8,9 +8,9 @@ import {
   WalletListScreen,
   WalletCreateScreen,
   WalletUpdateScreen,
-  ProductListScreen,
-  ProductCreateScreen,
-  ProductUpdateScreen,
+  VariantListScreen,
+  VariantCreateScreen,
+  VariantUpdateScreen,
   BudgetListScreen,
   WalletTransferListScreen,
   WalletTransferCreateScreen,
@@ -48,9 +48,9 @@ export type RootStackParamList = {
   walletUpdate: { walletId: number };
   walletTransferList: { walletId: number };
   walletTransferCreate: { walletId: number };
-  productList: undefined;
-  productCreate: undefined;
-  productUpdate: { productId: number };
+  variantList: undefined;
+  variantCreate: undefined;
+  variantUpdate: { variantId: number };
   budgetList: undefined;
   budgetCreate: undefined;
   budgetUpdate: { budgetId: number };
@@ -115,12 +115,12 @@ export const App = () => {
                 walletId: (walletId) => parseInt(walletId),
               },
             },
-            productList: 'products',
-            productCreate: 'products/create',
-            productUpdate: {
-              path: 'products/:productId',
+            variantList: 'variants',
+            variantCreate: 'variants/create',
+            variantUpdate: {
+              path: 'variants/:variantId',
               parse: {
-                productId: (productId) => parseInt(productId),
+                variantId: (variantId) => parseInt(variantId),
               },
             },
             budgetList: 'budgets',
@@ -301,28 +301,28 @@ export const App = () => {
             )}
           />
           <Stack.Screen
-            name="productList"
+            name="variantList"
             component={(
-              _props: NativeStackScreenProps<RootStackParamList, 'productList'>
+              _props: NativeStackScreenProps<RootStackParamList, 'variantList'>
             ) => (
-              <ProductListScreen
-                productListParams={{
-                  products: [],
+              <VariantListScreen
+                variantListParams={{
+                  variants: [],
                   totalItem: 0,
                 }}
               />
             )}
           />
           <Stack.Screen
-            name="productCreate"
+            name="variantCreate"
             component={(
               _props: NativeStackScreenProps<
                 RootStackParamList,
-                'productCreate'
+                'variantCreate'
               >
             ) => (
-              <ProductCreateScreen
-                productCreateParams={{ categories: [] }}
+              <VariantCreateScreen
+                variantCreateParams={{ categories: [] }}
                 materialListParam={{
                   materials: [],
                   totalItem: 0,
@@ -331,15 +331,15 @@ export const App = () => {
             )}
           />
           <Stack.Screen
-            name="productUpdate"
+            name="variantUpdate"
             component={(
-              props: NativeStackScreenProps<RootStackParamList, 'productUpdate'>
+              props: NativeStackScreenProps<RootStackParamList, 'variantUpdate'>
             ) => (
-              <ProductUpdateScreen
-                productUpdateParams={{
+              <VariantUpdateScreen
+                variantUpdateParams={{
                   categories: [],
-                  product: null,
-                  productId: props.route.params.productId,
+                  variant: null,
+                  variantId: props.route.params.variantId,
                 }}
                 materialListParams={{
                   materials: [],
@@ -377,8 +377,8 @@ export const App = () => {
               >
             ) => (
               <TransactionCreateScreen
-                productListParams={{
-                  products: [],
+                variantListParams={{
+                  variants: [],
                   totalItem: 0,
                 }}
                 transactionPayParams={{
@@ -396,8 +396,8 @@ export const App = () => {
               >
             ) => (
               <TransactionUpdateScreen
-                productListParams={{
-                  products: [],
+                variantListParams={{
+                  variants: [],
                   totalItem: 0,
                 }}
                 transactionUpdateParams={{
