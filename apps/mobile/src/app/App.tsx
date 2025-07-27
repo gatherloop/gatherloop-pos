@@ -8,6 +8,9 @@ import {
   WalletListScreen,
   WalletCreateScreen,
   WalletUpdateScreen,
+  ProductListScreen,
+  ProductCreateScreen,
+  ProductUpdateScreen,
   VariantListScreen,
   VariantCreateScreen,
   VariantUpdateScreen,
@@ -48,6 +51,9 @@ export type RootStackParamList = {
   walletUpdate: { walletId: number };
   walletTransferList: { walletId: number };
   walletTransferCreate: { walletId: number };
+  productList: undefined;
+  productCreate: undefined;
+  productUpdate: { productId: number };
   variantList: undefined;
   variantCreate: undefined;
   variantUpdate: { variantId: number };
@@ -296,6 +302,44 @@ export const App = () => {
                 walletTransferCreateParams={{
                   fromWalletId: props.route.params.walletId,
                   wallets: [],
+                }}
+              />
+            )}
+          />
+          <Stack.Screen
+            name="productList"
+            component={(
+              _props: NativeStackScreenProps<RootStackParamList, 'productList'>
+            ) => (
+              <ProductListScreen
+                productListParams={{
+                  products: [],
+                  totalItem: 0,
+                }}
+              />
+            )}
+          />
+          <Stack.Screen
+            name="productCreate"
+            component={(
+              _props: NativeStackScreenProps<
+                RootStackParamList,
+                'productCreate'
+              >
+            ) => (
+              <ProductCreateScreen productCreateParams={{ categories: [] }} />
+            )}
+          />
+          <Stack.Screen
+            name="productUpdate"
+            component={(
+              props: NativeStackScreenProps<RootStackParamList, 'productUpdate'>
+            ) => (
+              <ProductUpdateScreen
+                productUpdateParams={{
+                  categories: [],
+                  product: null,
+                  productId: props.route.params.productId,
                 }}
               />
             )}

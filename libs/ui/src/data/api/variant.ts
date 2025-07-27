@@ -12,7 +12,7 @@ import {
   Variant as ApiVariant,
   Category as ApiCategory,
 } from '../../../../api-contract/src';
-import { Category, Variant, VariantRepository, VariantForm } from '../../domain';
+import { Category, Variant, VariantRepository } from '../../domain';
 import { RequestConfig } from '@kubb/swagger-client/client';
 
 export class ApiVariantRepository implements VariantRepository {
@@ -132,8 +132,7 @@ export class ApiVariantRepository implements VariantRepository {
       }));
   };
 }
-
-export const transformers = {
+const transformers = {
   category: (category: ApiCategory): Category => ({
     id: category.id,
     name: category.name,

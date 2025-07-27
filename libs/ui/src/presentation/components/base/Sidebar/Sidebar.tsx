@@ -22,6 +22,7 @@ import { Link } from 'solito/link';
 const items: { title: string; icon: NamedExoticComponent; path: string }[] = [
   { title: 'Dashboard', icon: LayoutDashboard, path: '/' },
   { title: 'Categories', icon: Tag, path: '/categories' },
+  { title: 'Products', icon: FileBox, path: '/products' },
   { title: 'Variants', icon: FileBox, path: '/variants' },
   { title: 'Materials', icon: Box, path: '/materials' },
   { title: 'Transactions', icon: CircleDollarSign, path: '/transactions' },

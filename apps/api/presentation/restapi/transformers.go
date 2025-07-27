@@ -8,8 +8,9 @@ import (
 	"apps/api/domain/category"
 	"apps/api/domain/expense"
 	"apps/api/domain/material"
-	"apps/api/domain/variant"
+	"apps/api/domain/product"
 	"apps/api/domain/transaction"
+	"apps/api/domain/variant"
 	"apps/api/domain/wallet"
 	"encoding/json"
 	apiContract "libs/api-contract"
@@ -283,6 +284,39 @@ func ToMaterial(materialRequest apiContract.MaterialRequest) material.Material {
 		Price:       materialRequest.Price,
 		Unit:        materialRequest.Unit,
 		Description: materialRequest.Description,
+	}
+}
+
+func GetProductId(r *http.Request) (int64, error) {
+	vars := mux.Vars(r)
+	idParam := vars["productId"]
+	id, err := strconv.ParseInt(idParam, 10, 32)
+	return id, err
+}
+
+func GetProductRequest(r *http.Request) (apiContract.ProductRequest, error) {
+	var productRequest apiContract.ProductRequest
+	err := json.NewDecoder(r.Body).Decode(&productRequest)
+	return productRequest, err
+}
+
+func ToApiProduct(product product.Product) apiContract.Product {
+	return apiContract.Product{
+		Id:          product.Id,
+		Name:        product.Name,
+		CategoryId:  product.CategoryId,
+		Category:    apiContract.Category(product.Category),
+		DeletedAt:   product.DeletedAt,
+		CreatedAt:   product.CreatedAt,
+		Description: product.Description,
+	}
+}
+
+func ToProduct(productRequest apiContract.ProductRequest) product.Product {
+	return product.Product{
+		Name:        productRequest.Name,
+		CategoryId:  productRequest.CategoryId,
+		Description: productRequest.Description,
 	}
 }
 
