@@ -1,11 +1,11 @@
 import { match } from 'ts-pattern';
-import { Category, Variant, VariantForm } from '../entities';
-import { CategoryRepository, VariantRepository } from '../repositories';
+import { Product, Variant, VariantForm } from '../entities';
+import { ProductRepository, VariantRepository } from '../repositories';
 import { Usecase } from './IUsecase';
 
 type Context = {
   errorMessage: string | null;
-  categories: Category[];
+  products: Product[];
   values: VariantForm;
 };
 
@@ -22,7 +22,7 @@ export type VariantUpdateState = (
 
 export type VariantUpdateAction =
   | { type: 'FETCH' }
-  | { type: 'FETCH_SUCCESS'; categories: Category[]; values: VariantForm }
+  | { type: 'FETCH_SUCCESS'; products: Product[]; values: VariantForm }
   | { type: 'FETCH_ERROR'; errorMessage: string }
   | { type: 'SUBMIT'; values: VariantForm }
   | { type: 'SUBMIT_SUCCESS' }
@@ -32,7 +32,7 @@ export type VariantUpdateAction =
 export type VariantUpdateParams = {
   variantId: number;
   variant: Variant | null;
-  categories: Category[];
+  products: Product[];
 };
 
 export class VariantUpdateUsecase extends Usecase<
@@ -41,30 +41,30 @@ export class VariantUpdateUsecase extends Usecase<
   VariantUpdateParams
 > {
   variantRepository: VariantRepository;
-  categoryRepository: CategoryRepository;
+  productRepository: ProductRepository;
   params: VariantUpdateParams;
 
   constructor(
     variantRepository: VariantRepository,
-    categoryRepository: CategoryRepository,
+    productRepository: ProductRepository,
     params: VariantUpdateParams
   ) {
     super();
     this.variantRepository = variantRepository;
-    this.categoryRepository = categoryRepository;
+    this.productRepository = productRepository;
     this.params = params;
   }
 
   getInitialState(): VariantUpdateState {
     return {
-      categories: this.params.categories,
+      products: this.params.products,
       errorMessage: null,
       type:
-        this.params.variant !== null && this.params.categories.length > 0
+        this.params.variant !== null && this.params.products.length > 0
           ? 'loaded'
           : 'idle',
       values: {
-        categoryId: this.params.variant?.category.id ?? NaN,
+        productId: this.params.variant?.product.id ?? NaN,
         materials: this.params.variant?.materials ?? [],
         name: this.params.variant?.name ?? '',
         price: this.params.variant?.price ?? 0,
@@ -97,10 +97,10 @@ export class VariantUpdateUsecase extends Usecase<
       }))
       .with(
         [{ type: 'loading' }, { type: 'FETCH_SUCCESS' }],
-        ([state, { categories, values }]) => ({
+        ([state, { products, values }]) => ({
           ...state,
           type: 'loaded',
-          categories,
+          products,
           values,
         })
       )
@@ -147,18 +147,24 @@ export class VariantUpdateUsecase extends Usecase<
       })
       .with({ type: 'loading' }, () => {
         Promise.all([
-          this.categoryRepository.fetchCategoryList(),
+          this.productRepository.fetchProductList({
+            itemPerPage: 1000,
+            orderBy: 'asc',
+            page: 1,
+            query: '',
+            sortBy: 'created_at',
+          }),
           this.variantRepository.fetchVariantById(this.params.variantId),
         ])
-          .then(([categories, variant]) =>
+          .then(([{ products }, variant]) =>
             dispatch({
               type: 'FETCH_SUCCESS',
-              categories,
+              products,
               values: {
                 name: variant.name,
                 price: variant.price,
                 materials: variant.materials,
-                categoryId: variant.category.id,
+                productId: variant.product.id,
               },
             })
           )

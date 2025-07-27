@@ -25,7 +25,7 @@ export const useVariantUpdateController = (usecase: VariantUpdateUsecase) => {
     defaultValues: state.values,
     resolver: zodResolver(
       z.object({
-        categoryId: z.number(),
+        productId: z.number(),
         name: z.string().min(1),
         price: z.number().min(1),
         description: z.string(),
@@ -99,9 +99,9 @@ export const useVariantUpdateController = (usecase: VariantUpdateUsecase) => {
     .with({ type: 'error' }, () => ({ type: 'error' }))
     .exhaustive();
 
-  const categorySelectOptions = state.categories.map((category) => ({
-    label: category.name,
-    value: category.id,
+  const productSelectOptions = state.products.map((product) => ({
+    label: product.name,
+    value: product.id,
   }));
 
   return {
@@ -116,6 +116,6 @@ export const useVariantUpdateController = (usecase: VariantUpdateUsecase) => {
     isSubmitDisabled,
     onRetryButtonPress,
     variant,
-    categorySelectOptions,
+    productSelectOptions,
   };
 };

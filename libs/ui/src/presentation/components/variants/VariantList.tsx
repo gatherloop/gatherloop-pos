@@ -24,10 +24,10 @@ export type VariantListProps = {
   totalItem: number;
   itemPerPage: number;
   variant:
-  | { type: 'loading' }
-  | { type: 'error' }
-  | { type: 'empty' }
-  | { type: 'loaded'; items: Variant[] };
+    | { type: 'loading' }
+    | { type: 'error' }
+    | { type: 'empty' }
+    | { type: 'loaded'; items: Variant[] };
   numColumns?: number;
 };
 
@@ -80,7 +80,7 @@ export const VariantList = ({
                 style={{ flex: 1 }}
               >
                 <VariantListItem
-                  categoryName={item.category.name}
+                  productName={item.product.name}
                   style={{ flex: 1 }}
                   name={item.name}
                   price={item.price}

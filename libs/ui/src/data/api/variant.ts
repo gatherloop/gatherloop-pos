@@ -37,7 +37,7 @@ export class ApiVariantRepository implements VariantRepository {
   createVariant: VariantRepository['createVariant'] = (formValues) => {
     return variantCreate({
       name: formValues.name,
-      categoryId: formValues.categoryId,
+      productId: formValues.productId,
       price: formValues.price,
       materials: formValues.materials.map(({ materialId, amount, id }) => ({
         id,
@@ -54,7 +54,7 @@ export class ApiVariantRepository implements VariantRepository {
   ) => {
     return variantUpdateById(variantId, {
       name: formValues.name,
-      categoryId: formValues.categoryId,
+      productId: formValues.productId,
       price: formValues.price,
       materials: formValues.materials.map(({ materialId, amount, id }) => ({
         id,
@@ -143,7 +143,6 @@ const transformers = {
     createdAt: variant.createdAt,
     name: variant.name,
     price: variant.price,
-    category: transformers.category(variant.category),
     materials: variant.materials.map<Variant['materials'][number]>(
       ({ amount, material, id }) => ({
         id,
@@ -159,5 +158,16 @@ const transformers = {
       })
     ),
     description: variant.description ?? '',
+    product: {
+      category: {
+        createdAt: variant.product.category.createdAt,
+        id: variant.product.category.id,
+        name: variant.product.category.name,
+      },
+      createdAt: variant.product.createdAt,
+      id: variant.product.id,
+      name: variant.product.name,
+      description: variant.product.description ?? '',
+    },
   }),
 };

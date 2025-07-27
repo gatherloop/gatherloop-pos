@@ -377,8 +377,8 @@ func ToApiVariant(variant variant.Variant) apiContract.Variant {
 		Id:          variant.Id,
 		Name:        variant.Name,
 		Price:       variant.Price,
-		CategoryId:  variant.CategoryId,
-		Category:    apiContract.Category(variant.Category),
+		ProductId:   variant.ProductId,
+		Product:     ToApiProduct(variant.Product),
 		Materials:   apiMaterials,
 		DeletedAt:   variant.DeletedAt,
 		CreatedAt:   variant.CreatedAt,
@@ -403,7 +403,7 @@ func ToVariant(variantRequest apiContract.VariantRequest) variant.Variant {
 	return variant.Variant{
 		Name:        variantRequest.Name,
 		Price:       variantRequest.Price,
-		CategoryId:  variantRequest.CategoryId,
+		ProductId:   variantRequest.ProductId,
 		Materials:   variantMaterials,
 		Description: variantRequest.Description,
 	}

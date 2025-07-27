@@ -1656,8 +1656,8 @@ components:
       type: object
       required:
         - id
-        - categoryId
-        - category
+        - productId
+        - product
         - name
         - price
         - materials
@@ -1666,17 +1666,17 @@ components:
         id:
           type: integer
           format: int64
-        categoryId:
+        productId:
           type: integer
           format: int64
+        product:
+          $ref: '#/components/schemas/Product'
         name:
           type: string
         price:
           type: number
         description:
           type: string
-        category:
-          $ref: '#/components/schemas/Category'
         materials:
           type: array
           items:
@@ -1690,12 +1690,12 @@ components:
     VariantRequest:
       type: object
       required:
-        - categoryId
+        - productId
         - name
         - price
         - materials
       properties:
-        categoryId:
+        productId:
           type: integer
           format: int64
         name:

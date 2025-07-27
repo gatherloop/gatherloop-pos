@@ -31,7 +31,7 @@ export type VariantCreateProps = {
   onRetryButtonPress: () => void;
   form: UseFormReturn<VariantForm>;
   onSubmit: (values: VariantForm) => void;
-  categorySelectOptions: { label: string; value: number }[];
+  productSelectOptions: { label: string; value: number }[];
   isMaterialSheetOpen: boolean;
   onMaterialSheetOpenChange: (open: boolean) => void;
   onRemoveMaterial: (material: Material) => void;
@@ -44,7 +44,7 @@ export const VariantCreate = ({
   onRetryButtonPress,
   form,
   onSubmit,
-  categorySelectOptions,
+  productSelectOptions,
   isMaterialSheetOpen,
   isSubmitDisabled,
   onMaterialSheetOpenChange,
@@ -60,8 +60,8 @@ export const VariantCreate = ({
               <Field name="name" label="Name" flex={1}>
                 <InputText />
               </Field>
-              <Field name="categoryId" label="Category" flex={1}>
-                <Select items={categorySelectOptions} />
+              <Field name="productId" label="Product" flex={1}>
+                <Select items={productSelectOptions} />
               </Field>
               <Field name="price" label="Price" flex={1}>
                 <InputNumber min={0} />
@@ -114,12 +114,12 @@ export const VariantCreate = ({
                   <H4>
                     {(price > 0
                       ? (materials.reduce(
-                        (prev, curr) =>
-                          prev + curr.material.price * curr.amount,
-                        0
-                      ) /
-                        price) *
-                      100
+                          (prev, curr) =>
+                            prev + curr.material.price * curr.amount,
+                          0
+                        ) /
+                          price) *
+                        100
                       : 0
                     ).toFixed(1)}
                     %

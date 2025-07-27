@@ -1,5 +1,5 @@
-import { Category } from './Category';
 import { Material } from './Material';
+import { Product } from './Product';
 
 export type Variant = {
   id: number;
@@ -12,7 +12,7 @@ export type Variant = {
     amount: number;
     material: Material;
   }[];
-  category: Category;
+  product: Product;
   createdAt: string;
 };
 
@@ -26,5 +26,5 @@ export type VariantForm = {
     amount: number;
     material: Material;
   }[];
-  categoryId: number;
+  productId: number;
 };

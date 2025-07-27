@@ -1,5 +1,5 @@
 import {
-  ApiCategoryRepository,
+  ApiProductRepository,
   ApiMaterialRepository,
   getUrlFromCtx,
   VariantCreateScreen,
@@ -19,10 +19,19 @@ export const getServerSideProps: GetServerSideProps<
 
   const url = getUrlFromCtx(ctx);
   const client = new QueryClient();
-  const categoryRepository = new ApiCategoryRepository(client);
-  const categories = await categoryRepository.fetchCategoryList({
-    headers: { Cookie: ctx.req.headers.cookie },
-  });
+  const productRepository = new ApiProductRepository(client);
+  const { products } = await productRepository.fetchProductList(
+    {
+      itemPerPage: 1000,
+      orderBy: 'desc',
+      page: 1,
+      query: '',
+      sortBy: 'created_at',
+    },
+    {
+      headers: { Cookie: ctx.req.headers.cookie },
+    }
+  );
 
   const materialRepository = new ApiMaterialRepository(client);
   const materialListQueryRepository = new UrlMaterialListQueryRepository();
@@ -46,7 +55,7 @@ export const getServerSideProps: GetServerSideProps<
 
   return {
     props: {
-      variantCreateParams: { categories },
+      variantCreateParams: { products },
       materialListParam: {
         materials,
         totalItem,

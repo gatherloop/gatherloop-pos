@@ -1,7 +1,7 @@
 import {
   ApiAuthRepository,
-  ApiCategoryRepository,
   ApiMaterialRepository,
+  ApiProductRepository,
   ApiVariantRepository,
   UrlMaterialListQueryRepository,
 } from '../data';
@@ -26,7 +26,7 @@ export function VariantCreateScreen({
 }: VariantCreateScreenProps) {
   const client = new QueryClient();
   const variantRepository = new ApiVariantRepository(client);
-  const categoryRepository = new ApiCategoryRepository(client);
+  const productRepository = new ApiProductRepository(client);
   const materialRepository = new ApiMaterialRepository(client);
   const materialListQueryRepository = new UrlMaterialListQueryRepository();
   const authRepository = new ApiAuthRepository();
@@ -39,7 +39,7 @@ export function VariantCreateScreen({
   const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
   const variantCreateUsecase = new VariantCreateUsecase(
     variantRepository,
-    categoryRepository,
+    productRepository,
     variantCreateParams
   );
 

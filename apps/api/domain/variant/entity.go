@@ -1,8 +1,8 @@
 package variant
 
 import (
-	"apps/api/domain/category"
 	"apps/api/domain/material"
+	"apps/api/domain/product"
 	"time"
 )
 
@@ -18,11 +18,11 @@ type VariantMaterial struct {
 
 type Variant struct {
 	Id          int64
-	CategoryId  int64
+	ProductId   int64
+	Product     product.Product
 	Name        string
 	Price       float32
 	Description *string
-	Category    category.Category
 	Materials   []VariantMaterial
 	DeletedAt   *time.Time
 	CreatedAt   time.Time

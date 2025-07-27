@@ -73,7 +73,7 @@ func (usecase Usecase) UpdateVariantById(ctx context.Context, variant Variant, i
 
 		variant := Variant{
 			Name:        variant.Name,
-			CategoryId:  variant.CategoryId,
+			ProductId:   variant.ProductId,
 			Price:       variant.Price,
 			Description: variant.Description,
 		}

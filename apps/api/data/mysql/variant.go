@@ -19,7 +19,7 @@ func (repo Repository) GetVariantList(ctx context.Context, query string, sortBy 
 	db := GetDbFromCtx(ctx, repo.db)
 
 	var variants []variant.Variant
-	result := db.Table("variants").Preload("Category").Preload("Materials").Preload("Materials.Material").Where("deleted_at", nil).Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
+	result := db.Table("variants").Preload("Product").Preload("Product.Category").Preload("Materials").Preload("Materials.Material").Where("deleted_at", nil).Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
 
 	if query != "" {
 		result = result.Where("name LIKE ?", "%"+query+"%")
@@ -55,7 +55,7 @@ func (repo Repository) GetVariantListTotal(ctx context.Context, query string) (i
 func (repo Repository) GetVariantById(ctx context.Context, id int64) (variant.Variant, *base.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	var variant variant.Variant
-	result := db.Table("variants").Preload("Category").Preload("Materials").Preload("Materials.Material").Where("id = ?", id).First(&variant)
+	result := db.Table("variants").Preload("Product").Preload("Product.Category").Preload("Materials").Preload("Materials.Material").Where("id = ?", id).First(&variant)
 	return variant, ToError(result.Error)
 }
 

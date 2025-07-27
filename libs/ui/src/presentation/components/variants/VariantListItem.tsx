@@ -5,7 +5,7 @@ import { XStackProps } from 'tamagui';
 export type VariantListItemProps = {
   name: string;
   price: number;
-  categoryName: string;
+  productName: string;
   onEditMenuPress?: () => void;
   onDeleteMenuPress?: () => void;
 } & XStackProps;
@@ -13,7 +13,7 @@ export type VariantListItemProps = {
 export const VariantListItem = ({
   name,
   price,
-  categoryName,
+  productName,
   onEditMenuPress,
   onDeleteMenuPress,
   ...xStackProps
@@ -36,7 +36,7 @@ export const VariantListItem = ({
           isShown: typeof onDeleteMenuPress === 'function',
         },
       ]}
-      footerItems={[{ value: categoryName, icon: Tag }]}
+      footerItems={[{ value: productName, icon: Tag }]}
       {...xStackProps}
     />
   );
