@@ -70,7 +70,7 @@ func (repo Repository) GetTransactionById(ctx context.Context, id int64) (transa
 	db := GetDbFromCtx(ctx, repo.db)
 
 	var transaction transaction.Transaction
-	result := db.Table("transactions").Where("id = ?", id).Preload("TransactionItems").Preload("Wallet").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.Materials").Preload("TransactionItems.Variant.Materials.Material").Preload("TransactionItems.Variant.Category").First(&transaction)
+	result := db.Table("transactions").Where("id = ?", id).Preload("TransactionItems").Preload("Wallet").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.Materials").Preload("TransactionItems.Variant.Materials.Material").Preload("TransactionItems.Variant.Product").First(&transaction)
 	return transaction, ToError(result.Error)
 }
 

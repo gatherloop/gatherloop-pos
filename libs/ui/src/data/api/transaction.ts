@@ -219,7 +219,7 @@ const transformers = {
           createdAt: item.variant.product.createdAt,
           id: item.variant.product.id,
           name: item.variant.product.name,
-          description: item.variant.product.description,
+          description: item.variant.product.description ?? '',
         },
       },
     })),
