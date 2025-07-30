@@ -168,6 +168,7 @@ const transformers = {
       id: variant.product.id,
       name: variant.product.name,
       description: variant.product.description ?? '',
+      options: variant.product.options,
     },
   }),
 };

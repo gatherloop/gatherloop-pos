@@ -18,7 +18,7 @@ func (repo Repository) GetProductList(ctx context.Context, query string, sortBy 
 	db := GetDbFromCtx(ctx, repo.db)
 
 	var products []product.Product
-	result := db.Table("products").Preload("Category").Where("deleted_at", nil).Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
+	result := db.Table("products").Preload("Category").Preload("Options").Preload("Options.Values").Where("deleted_at", nil).Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
 
 	if query != "" {
 		result = result.Where("name LIKE ?", "%"+query+"%")
@@ -54,7 +54,7 @@ func (repo Repository) GetProductListTotal(ctx context.Context, query string) (i
 func (repo Repository) GetProductById(ctx context.Context, id int64) (product.Product, *base.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	var product product.Product
-	result := db.Table("products").Preload("Category").Where("id = ?", id).First(&product)
+	result := db.Table("products").Preload("Category").Preload("Options").Preload("Options.Values").Where("id = ?", id).First(&product)
 	return product, ToError(result.Error)
 }
 
@@ -66,7 +66,7 @@ func (repo Repository) CreateProduct(ctx context.Context, product *product.Produ
 
 func (repo Repository) UpdateProductById(ctx context.Context, product *product.Product, id int64) *base.Error {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Table("products").Where("id = ?", id).Updates(product)
+	result := db.Session(&gorm.Session{FullSaveAssociations: true}).Table("products").Where("id = ?", id).Updates(product)
 	return ToError(result.Error)
 }
 
@@ -75,4 +75,22 @@ func (repo Repository) DeleteProductById(ctx context.Context, id int64) *base.Er
 	currentTime := time.Now()
 	result := db.Table("products").Where("id = ?", id).Update("deleted_at", currentTime)
 	return ToError(result.Error)
+}
+
+func (repo Repository) DeleteUnusedOptions(ctx context.Context, idsToKeep []int64) *base.Error {
+	if len(idsToKeep) > 0 {
+		db := GetDbFromCtx(ctx, repo.db)
+		return ToError(db.Where("id NOT IN ?", idsToKeep).Delete(&product.Option{}).Error)
+	} else {
+		return nil
+	}
+}
+
+func (repo Repository) DeleteUnusedOptionValues(ctx context.Context, idsToKeep []int64) *base.Error {
+	if len(idsToKeep) > 0 {
+		db := GetDbFromCtx(ctx, repo.db)
+		return ToError(db.Where("id NOT IN ?", idsToKeep).Delete(&product.OptionValue{}).Error)
+	} else {
+		return nil
+	}
 }

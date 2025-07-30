@@ -37,13 +37,54 @@ func (usecase Usecase) CreateProduct(ctx context.Context, product Product) *base
 
 func (usecase Usecase) UpdateProductById(ctx context.Context, product Product, id int64) *base.Error {
 	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *base.Error {
-		product := Product{
-			Name:        product.Name,
-			CategoryId:  product.CategoryId,
-			Description: product.Description,
+		options := []Option{}
+		for _, option := range product.Options {
+			values := []OptionValue{}
+
+			for _, value := range option.Values {
+				values = append(values, OptionValue{
+					Id:       value.Id,
+					Name:     value.Name,
+					OptionId: option.Id,
+				})
+			}
+
+			options = append(options, Option{
+				Id:        option.Id,
+				ProductId: id,
+				Name:      option.Name,
+				Values:    values,
+			})
 		}
 
-		return usecase.repository.UpdateProductById(ctxWithTx, &product, id)
+		payload := Product{
+			Id:          id,
+			CategoryId:  product.CategoryId,
+			Name:        product.Name,
+			Description: product.Description,
+			DeletedAt:   product.DeletedAt,
+			CreatedAt:   product.CreatedAt,
+			Options:     options,
+		}
+
+		if err := usecase.repository.UpdateProductById(ctxWithTx, &payload, id); err != nil {
+			return err
+		}
+
+		newOptionIds := []int64{}
+		newOptionValueIds := []int64{}
+		for _, option := range payload.Options {
+			newOptionIds = append(newOptionIds, option.Id)
+			for _, value := range option.Values {
+				newOptionValueIds = append(newOptionValueIds, value.Id)
+			}
+		}
+
+		if err := usecase.repository.DeleteUnusedOptions(ctxWithTx, newOptionIds); err != nil {
+			return err
+		}
+
+		return usecase.repository.DeleteUnusedOptionValues(ctxWithTx, newOptionValueIds)
 	})
 }
 

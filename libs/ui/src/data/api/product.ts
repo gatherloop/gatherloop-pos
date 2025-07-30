@@ -39,6 +39,7 @@ export class ApiProductRepository implements ProductRepository {
       name: formValues.name,
       categoryId: formValues.categoryId,
       description: formValues.description,
+      options: formValues.options,
     }).then();
   };
 
@@ -50,6 +51,7 @@ export class ApiProductRepository implements ProductRepository {
       name: formValues.name,
       categoryId: formValues.categoryId,
       description: formValues.description,
+      options: formValues.options,
     }).then();
   };
 
@@ -133,5 +135,6 @@ const transformers = {
     name: product.name,
     category: transformers.category(product.category),
     description: product.description ?? '',
+    options: product.options,
   }),
 };

@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { match, P } from 'ts-pattern';
-import { ProductCreateProps } from '../components';
+import { ProductFormViewProps } from '../components';
 
 export type ProductCreateProviderProps = {
   children: ReactNode;
@@ -29,7 +29,10 @@ export const useProductCreateController = (usecase: ProductCreateUsecase) => {
         categoryId: z.number(),
         name: z.string().min(1),
         description: z.string(),
-      })
+        options: z.array(z.object({})).min(1),
+      }),
+      {},
+      { raw: true }
     ),
   });
 
@@ -43,7 +46,7 @@ export const useProductCreateController = (usecase: ProductCreateUsecase) => {
   const onRetryButtonPress = () => dispatch({ type: 'FETCH' });
 
   const variant = match(state)
-    .returnType<ProductCreateProps['variant']>()
+    .returnType<ProductFormViewProps['variant']>()
     .with({ type: P.union('idle', 'loading') }, () => ({
       type: 'loading',
     }))

@@ -58,6 +58,7 @@ export class ProductCreateUsecase extends Usecase<
       categoryId: NaN,
       name: '',
       description: '',
+      options: [],
     };
     return this.params.categories.length > 0
       ? {

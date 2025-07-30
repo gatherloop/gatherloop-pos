@@ -67,6 +67,7 @@ export class ProductUpdateUsecase extends Usecase<
         categoryId: this.params.product?.category.id ?? NaN,
         name: this.params.product?.name ?? '',
         description: this.params.product?.description ?? '',
+        options: this.params.product?.options ?? [],
       },
     };
   }
@@ -155,6 +156,8 @@ export class ProductUpdateUsecase extends Usecase<
               values: {
                 name: product.name,
                 categoryId: product.category.id,
+                description: product.description,
+                options: product.options,
               },
             })
           )

@@ -1,4 +1,3 @@
-export * from './ProductCreate';
 export * from './ProductFormView';
 export * from './ProductDeleteAlert';
 export * from './ProductList';

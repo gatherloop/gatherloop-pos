@@ -13,4 +13,18 @@ type Product struct {
 	Category    category.Category
 	DeletedAt   *time.Time
 	CreatedAt   time.Time
+	Options     []Option
+}
+
+type Option struct {
+	Id        int64
+	ProductId int64
+	Name      string
+	Values    []OptionValue
+}
+
+type OptionValue struct {
+	Id       int64
+	OptionId int64
+	Name     string
 }

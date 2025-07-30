@@ -301,6 +301,24 @@ func GetProductRequest(r *http.Request) (apiContract.ProductRequest, error) {
 }
 
 func ToApiProduct(product product.Product) apiContract.Product {
+	apiOptions := []apiContract.Option{}
+	for _, option := range product.Options {
+		apiValues := []apiContract.OptionValue{}
+
+		for _, value := range option.Values {
+			apiValues = append(apiValues, apiContract.OptionValue{
+				Id:   value.Id,
+				Name: value.Name,
+			})
+		}
+
+		apiOptions = append(apiOptions, apiContract.Option{
+			Id:     option.Id,
+			Name:   option.Name,
+			Values: apiValues,
+		})
+	}
+
 	return apiContract.Product{
 		Id:          product.Id,
 		Name:        product.Name,
@@ -309,14 +327,45 @@ func ToApiProduct(product product.Product) apiContract.Product {
 		DeletedAt:   product.DeletedAt,
 		CreatedAt:   product.CreatedAt,
 		Description: product.Description,
+		Options:     apiOptions,
 	}
 }
 
 func ToProduct(productRequest apiContract.ProductRequest) product.Product {
+	options := []product.Option{}
+
+	for _, apiOption := range productRequest.Options {
+		var id int64
+		if apiOption.Id != nil {
+			id = *apiOption.Id
+		}
+
+		values := []product.OptionValue{}
+
+		for _, apiOptionValue := range apiOption.Values {
+			var id int64
+			if apiOptionValue.Id != nil {
+				id = *apiOptionValue.Id
+			}
+
+			values = append(values, product.OptionValue{
+				Id:   id,
+				Name: apiOptionValue.Name,
+			})
+		}
+
+		options = append(options, product.Option{
+			Id:     id,
+			Name:   apiOption.Name,
+			Values: values,
+		})
+	}
+
 	return product.Product{
 		Name:        productRequest.Name,
 		CategoryId:  productRequest.CategoryId,
 		Description: productRequest.Description,
+		Options:     options,
 	}
 }
 

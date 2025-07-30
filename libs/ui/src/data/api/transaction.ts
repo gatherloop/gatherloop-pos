@@ -220,6 +220,7 @@ const transformers = {
           id: item.variant.product.id,
           name: item.variant.product.name,
           description: item.variant.product.description ?? '',
+          options: item.variant.product.options,
         },
       },
     })),
