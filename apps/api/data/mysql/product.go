@@ -77,19 +77,19 @@ func (repo Repository) DeleteProductById(ctx context.Context, id int64) *base.Er
 	return ToError(result.Error)
 }
 
-func (repo Repository) DeleteUnusedOptions(ctx context.Context, idsToKeep []int64) *base.Error {
+func (repo Repository) DeleteUnusedOptions(ctx context.Context, productId int64, idsToKeep []int64) *base.Error {
 	if len(idsToKeep) > 0 {
 		db := GetDbFromCtx(ctx, repo.db)
-		return ToError(db.Where("id NOT IN ?", idsToKeep).Delete(&product.Option{}).Error)
+		return ToError(db.Where("product_id = ? AND id NOT IN ?", productId, idsToKeep).Delete(&product.Option{}).Error)
 	} else {
 		return nil
 	}
 }
 
-func (repo Repository) DeleteUnusedOptionValues(ctx context.Context, idsToKeep []int64) *base.Error {
+func (repo Repository) DeleteUnusedOptionValues(ctx context.Context, optionId int64, idsToKeep []int64) *base.Error {
 	if len(idsToKeep) > 0 {
 		db := GetDbFromCtx(ctx, repo.db)
-		return ToError(db.Where("id NOT IN ?", idsToKeep).Delete(&product.OptionValue{}).Error)
+		return ToError(db.Where("option_id = ? AND id NOT IN ?", optionId, idsToKeep).Delete(&product.OptionValue{}).Error)
 	} else {
 		return nil
 	}

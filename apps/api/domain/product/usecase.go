@@ -72,19 +72,18 @@ func (usecase Usecase) UpdateProductById(ctx context.Context, product Product, i
 		}
 
 		newOptionIds := []int64{}
-		newOptionValueIds := []int64{}
 		for _, option := range payload.Options {
 			newOptionIds = append(newOptionIds, option.Id)
+
+			newOptionValueIds := []int64{}
 			for _, value := range option.Values {
 				newOptionValueIds = append(newOptionValueIds, value.Id)
 			}
+
+			usecase.repository.DeleteUnusedOptionValues(ctxWithTx, option.Id, newOptionValueIds)
 		}
 
-		if err := usecase.repository.DeleteUnusedOptions(ctxWithTx, newOptionIds); err != nil {
-			return err
-		}
-
-		return usecase.repository.DeleteUnusedOptionValues(ctxWithTx, newOptionValueIds)
+		return usecase.repository.DeleteUnusedOptions(ctxWithTx, id, newOptionIds)
 	})
 }
 

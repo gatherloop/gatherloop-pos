@@ -13,6 +13,6 @@ type Repository interface {
 	CreateProduct(ctx context.Context, variant *Product) *base.Error
 	UpdateProductById(ctx context.Context, variant *Product, id int64) *base.Error
 	DeleteProductById(ctx context.Context, id int64) *base.Error
-	DeleteUnusedOptions(ctx context.Context, idsToKeep []int64) *base.Error
-	DeleteUnusedOptionValues(ctx context.Context, idsToKeep []int64) *base.Error
+	DeleteUnusedOptions(ctx context.Context, productId int64, idsToKeep []int64) *base.Error
+	DeleteUnusedOptionValues(ctx context.Context, optionId int64, idsToKeep []int64) *base.Error
 }
