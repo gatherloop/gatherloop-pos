@@ -26,19 +26,22 @@ export const InputNumber = ({
       name={fieldName}
       render={({ field }) => (
         <XStack gap="$2" alignItems="center">
-          <Button
-            icon={Minus}
-            variant="outlined"
-            size="$2"
-            onPress={() => {
-              if (typeof min === 'undefined' || field.value > min) {
-                const newValue = field.value - step;
-                field.onChange(newValue);
-              }
-            }}
-            circular
-            disabled={inputProps.disabled}
-          />
+          {step > 0 && (
+            <Button
+              icon={Minus}
+              variant="outlined"
+              size="$2"
+              onPress={() => {
+                if (typeof min === 'undefined' || field.value > min) {
+                  const newValue = field.value - step;
+                  field.onChange(newValue);
+                }
+              }}
+              circular
+              disabled={inputProps.disabled}
+            />
+          )}
+
           <Input
             {...inputProps}
             id={fieldName}
@@ -57,19 +60,22 @@ export const InputNumber = ({
             onBlur={field.onBlur}
             flex={1}
           />
-          <Button
-            icon={Plus}
-            variant="outlined"
-            size="$2"
-            onPress={() => {
-              if (typeof max === 'undefined' || field.value < max) {
-                const newValue = field.value + step;
-                field.onChange(newValue);
-              }
-            }}
-            circular
-            disabled={inputProps.disabled}
-          />
+
+          {step > 0 && (
+            <Button
+              icon={Plus}
+              variant="outlined"
+              size="$2"
+              onPress={() => {
+                if (typeof max === 'undefined' || field.value < max) {
+                  const newValue = field.value + step;
+                  field.onChange(newValue);
+                }
+              }}
+              circular
+              disabled={inputProps.disabled}
+            />
+          )}
         </XStack>
       )}
     />

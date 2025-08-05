@@ -52,51 +52,54 @@ export const TransactionPaymentAlert = ({
           y={0}
         >
           <FormProvider {...form}>
-            <YStack gap="$3">
+            <YStack gap="$5">
               <AlertDialog.Title>Pay Transaction</AlertDialog.Title>
               <AlertDialog.Description>
                 Please fill the wallet name and click the yes button
               </AlertDialog.Description>
 
-              <Field name="wallet" label="Wallet Name">
-                <Select items={walletSelectOptions} />
-              </Field>
+              <XStack gap="$5" alignItems="center">
+                <Field name="wallet" label="Wallet Name" flex={1}>
+                  <Select items={walletSelectOptions} />
+                </Field>
 
-              <YStack gap="$3">
-                <Label>Total Amount</Label>
-                <H4>Rp. {transactionTotal.toLocaleString('id')}</H4>
-              </YStack>
+                <YStack gap="$3" flex={1}>
+                  <Label>Total Amount</Label>
+                  <H4>Rp. {transactionTotal.toLocaleString('id')}</H4>
+                </YStack>
+              </XStack>
 
               <FieldWatch
                 control={form.control}
                 name={['wallet.isCashless', 'paidAmount']}
               >
                 {([isCashless, paidAmount]) =>
-                  isCashless ? null : (
-                    <>
+                  isCashless === true || isCashless === undefined ? null : (
+                    <XStack gap="$5" alignItems="center">
                       <Field name="paidAmount" label="Paid Amount">
-                        <InputNumber step={500} />
+                        <InputNumber step={0} maxWidth={150} />
                       </Field>
-                      <YStack gap="$3">
+                      <YStack gap="$3" flex={1}>
                         <Label>Change</Label>
                         <H4>
                           Rp.{' '}
                           {(paidAmount - transactionTotal).toLocaleString('id')}
                         </H4>
                       </YStack>
-                    </>
+                    </XStack>
                   )
                 }
               </FieldWatch>
 
-              <XStack gap="$3" justifyContent="flex-end">
-                <AlertDialog.Cancel asChild>
+              <XStack gap="$5" backgroundColor="$backgroundFocus">
+                <AlertDialog.Cancel asChild flex={1}>
                   <Button disabled={isButtonDisabled}>Cancel</Button>
                 </AlertDialog.Cancel>
                 <Button
                   disabled={isButtonDisabled}
                   onPress={form.handleSubmit(onSubmit)}
                   theme="active"
+                  flex={1}
                 >
                   Submit
                 </Button>
