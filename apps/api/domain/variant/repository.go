@@ -15,4 +15,5 @@ type Repository interface {
 	DeleteVariantById(ctx context.Context, id int64) *base.Error
 	CreateVariantMaterials(ctx context.Context, variantMaterial []VariantMaterial) *base.Error
 	DeleteVariantMaterialById(ctx context.Context, id int64) *base.Error
+	DeleteUnusedValues(ctx context.Context, variantId int64, idsToKeep []int64) *base.Error
 }

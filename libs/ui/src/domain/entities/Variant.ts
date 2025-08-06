@@ -14,6 +14,17 @@ export type Variant = {
   }[];
   product: Product;
   createdAt: string;
+  values: VariantValue[];
+};
+
+export type VariantValue = {
+  id: number;
+  variantId: number;
+  optionValueId: number;
+  optionValue: {
+    id: number;
+    name: string;
+  };
 };
 
 export type VariantForm = {
@@ -27,4 +38,8 @@ export type VariantForm = {
     material: Material;
   }[];
   productId: number;
+  values: {
+    id?: number;
+    optionValueId: number;
+  }[];
 };

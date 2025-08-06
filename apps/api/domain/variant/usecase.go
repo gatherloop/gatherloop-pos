@@ -71,14 +71,34 @@ func (usecase Usecase) UpdateVariantById(ctx context.Context, variant Variant, i
 			}
 		}
 
-		variant := Variant{
-			Name:        variant.Name,
-			ProductId:   variant.ProductId,
-			Price:       variant.Price,
-			Description: variant.Description,
+		variantValues := []VariantValue{}
+		for _, variantValue := range variant.VariantValues {
+			variantValues = append(variantValues, VariantValue{
+				Id:            variantValue.Id,
+				VariantId:     id,
+				OptionValueId: variantValue.OptionValueId,
+			})
 		}
 
-		return usecase.repository.UpdateVariantById(ctxWithTx, &variant, id)
+		variantPayload := Variant{
+			Id:            id,
+			Name:          variant.Name,
+			ProductId:     variant.ProductId,
+			Price:         variant.Price,
+			Description:   variant.Description,
+			VariantValues: variantValues,
+		}
+
+		if err := usecase.repository.UpdateVariantById(ctxWithTx, &variantPayload, id); err != nil {
+			return err
+		}
+
+		newVariantValueIds := []int64{}
+		for _, variantValue := range variantPayload.VariantValues {
+			newVariantValueIds = append(newVariantValueIds, variantValue.Id)
+		}
+
+		return usecase.repository.DeleteUnusedValues(ctxWithTx, id, newVariantValueIds)
 	})
 }
 

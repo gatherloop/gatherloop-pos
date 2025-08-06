@@ -1,6 +1,6 @@
 import { ReactNode, createContext, useContext } from 'react';
-import { useFormContext } from 'react-hook-form';
-import { Label, Paragraph, YStack, YStackProps } from 'tamagui';
+import { Label, YStack, YStackProps } from 'tamagui';
+import { ErrorMessage } from './ErrorMessage';
 
 type FieldContextValue = { name?: string };
 
@@ -20,17 +20,12 @@ export const Field = ({
   children,
   ...yStackProps
 }: FieldProps) => {
-  const { formState } = useFormContext();
   return (
     <Context.Provider value={{ name }}>
       <YStack gap="$3" {...yStackProps}>
         <Label htmlFor={name}>{label}</Label>
         {children}
-        {formState.errors[name] && (
-          <Paragraph color="$red10">
-            {formState.errors[name]?.message}
-          </Paragraph>
-        )}
+        <ErrorMessage name={name} />
       </YStack>
     </Context.Provider>
   );

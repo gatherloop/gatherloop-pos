@@ -417,9 +417,21 @@ func ToApiVariantMaterial(variantMaterial variant.VariantMaterial) apiContract.V
 
 func ToApiVariant(variant variant.Variant) apiContract.Variant {
 	apiMaterials := []apiContract.VariantMaterial{}
-
 	for _, variantMaterial := range variant.Materials {
 		apiMaterials = append(apiMaterials, ToApiVariantMaterial(variantMaterial))
+	}
+
+	apiVariantValues := []apiContract.VariantValue{}
+	for _, variantValue := range variant.VariantValues {
+		apiVariantValues = append(apiVariantValues, apiContract.VariantValue{
+			Id:            variantValue.Id,
+			VariantId:     variantValue.VariantId,
+			OptionValueId: variantValue.OptionValueId,
+			OptionValue: apiContract.OptionValue{
+				Id:   variantValue.OptionValue.Id,
+				Name: variantValue.OptionValue.Name,
+			},
+		})
 	}
 
 	return apiContract.Variant{
@@ -432,6 +444,7 @@ func ToApiVariant(variant variant.Variant) apiContract.Variant {
 		DeletedAt:   variant.DeletedAt,
 		CreatedAt:   variant.CreatedAt,
 		Description: variant.Description,
+		Values:      apiVariantValues,
 	}
 }
 
@@ -449,12 +462,25 @@ func ToVariant(variantRequest apiContract.VariantRequest) variant.Variant {
 		})
 	}
 
+	variantValues := []variant.VariantValue{}
+	for _, variantValue := range variantRequest.Values {
+		var id int64
+		if variantValue.Id != nil {
+			id = *variantValue.Id
+		}
+		variantValues = append(variantValues, variant.VariantValue{
+			Id:            id,
+			OptionValueId: variantValue.OptionValueId,
+		})
+	}
+
 	return variant.Variant{
-		Name:        variantRequest.Name,
-		Price:       variantRequest.Price,
-		ProductId:   variantRequest.ProductId,
-		Materials:   variantMaterials,
-		Description: variantRequest.Description,
+		Name:          variantRequest.Name,
+		Price:         variantRequest.Price,
+		ProductId:     variantRequest.ProductId,
+		Materials:     variantMaterials,
+		Description:   variantRequest.Description,
+		VariantValues: variantValues,
 	}
 }
 

@@ -1723,6 +1723,7 @@ components:
         - name
         - price
         - materials
+        - values
         - createdAt
       properties:
         id:
@@ -1746,6 +1747,10 @@ components:
         deletedAt:
           type: string
           format: date-time
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/VariantValue'
         createdAt:
           type: string
           format: date-time
@@ -1756,6 +1761,7 @@ components:
         - name
         - price
         - materials
+        - values
       properties:
         productId:
           type: integer
@@ -1770,6 +1776,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/VariantMaterialRequest'
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/VariantValueRequest'
     VariantMaterial:
       type: object
       required:
@@ -1813,6 +1823,36 @@ components:
           format: int64
         amount:
           type: number
+    VariantValue:
+      type: object
+      required:
+        - id
+        - variantId
+        - optionValueId
+        - optionValue
+      properties:
+        id:
+          type: integer
+          format: int64
+        variantId:
+          type: integer
+          format: int64
+        optionValueId:
+          type: integer
+          format: int64
+        optionValue:
+          $ref: '#/components/schemas/OptionValue'
+    VariantValueRequest:
+      type: object
+      required:
+        - optionValueId
+      properties:
+        id:
+          type: integer
+          format: int64
+        optionValueId:
+          type: integer
+          format: int64
     Budget:
       type: object
       required:

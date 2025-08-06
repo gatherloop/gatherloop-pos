@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Material, VariantForm, VariantUpdateUsecase } from '../../domain';
 import { useController } from './controller';
 import { useToastController } from '@tamagui/toast';
-import { UseFieldArrayReturn, useForm } from 'react-hook-form';
+import { UseFieldArrayReturn, useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { VariantFormViewProps } from '../components';
@@ -29,9 +29,16 @@ export const useVariantUpdateController = (usecase: VariantUpdateUsecase) => {
         name: z.string().min(1),
         price: z.number().min(1),
         description: z.string(),
-        materials: z.array(
-          z.lazy(() => z.object({ materialId: z.number(), amount: z.number() }))
-        ),
+        materials: z
+          .array(
+            z.lazy(() =>
+              z.object({ materialId: z.number(), amount: z.number() })
+            )
+          )
+          .min(1),
+        values: z
+          .array(z.lazy(() => z.object({ optionValueId: z.number() })))
+          .min(1),
       }),
       {},
       { raw: true }
@@ -104,6 +111,11 @@ export const useVariantUpdateController = (usecase: VariantUpdateUsecase) => {
     value: product.id,
   }));
 
+  const productId = useWatch({ control: form.control, name: 'productId' });
+  const selectedProduct = state.products.find(
+    (product) => product.id === productId
+  );
+
   return {
     state,
     dispatch,
@@ -117,5 +129,6 @@ export const useVariantUpdateController = (usecase: VariantUpdateUsecase) => {
     onRetryButtonPress,
     variant,
     productSelectOptions,
+    selectedProduct,
   };
 };

@@ -60,6 +60,7 @@ export class VariantCreateUsecase extends Usecase<
       name: '',
       price: 0,
       description: '',
+      values: [],
     };
     return this.params.products.length > 0
       ? {

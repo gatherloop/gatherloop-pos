@@ -55,7 +55,7 @@ func (repo Repository) GetVariantListTotal(ctx context.Context, query string) (i
 func (repo Repository) GetVariantById(ctx context.Context, id int64) (variant.Variant, *base.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	var variant variant.Variant
-	result := db.Table("variants").Preload("Product").Preload("Product.Category").Preload("Materials").Preload("Materials.Material").Where("id = ?", id).First(&variant)
+	result := db.Table("variants").Preload("Product").Preload("Product.Category").Preload("Materials").Preload("Materials.Material").Preload("VariantValues").Preload("VariantValues.OptionValue").Where("id = ?", id).First(&variant)
 	return variant, ToError(result.Error)
 }
 
@@ -67,7 +67,7 @@ func (repo Repository) CreateVariant(ctx context.Context, variant *variant.Varia
 
 func (repo Repository) UpdateVariantById(ctx context.Context, variant *variant.Variant, id int64) *base.Error {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Table("variants").Where("id = ?", id).Updates(variant)
+	result := db.Session(&gorm.Session{FullSaveAssociations: true}).Table("variants").Where("id = ?", id).Updates(variant)
 	return ToError(result.Error)
 }
 
@@ -88,4 +88,13 @@ func (repo Repository) DeleteVariantMaterialById(ctx context.Context, id int64) 
 	db := GetDbFromCtx(ctx, repo.db)
 	result := db.Table("variant_materials").Where("id = ?", id).Delete(variant.VariantMaterial{})
 	return ToError(result.Error)
+}
+
+func (repo Repository) DeleteUnusedValues(ctx context.Context, variantId int64, idsToKeep []int64) *base.Error {
+	if len(idsToKeep) > 0 {
+		db := GetDbFromCtx(ctx, repo.db)
+		return ToError(db.Where("variant_id = ? AND id NOT IN ?", variantId, idsToKeep).Delete(&variant.VariantValue{}).Error)
+	} else {
+		return nil
+	}
 }

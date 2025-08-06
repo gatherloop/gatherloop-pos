@@ -16,14 +16,22 @@ type VariantMaterial struct {
 	CreatedAt  time.Time
 }
 
+type VariantValue struct {
+	Id            int64
+	VariantId     int64
+	OptionValueId int64
+	OptionValue   product.OptionValue
+}
+
 type Variant struct {
-	Id          int64
-	ProductId   int64
-	Product     product.Product
-	Name        string
-	Price       float32
-	Description *string
-	Materials   []VariantMaterial
-	DeletedAt   *time.Time
-	CreatedAt   time.Time
+	Id            int64
+	ProductId     int64
+	Product       product.Product
+	Name          string
+	Price         float32
+	Description   *string
+	Materials     []VariantMaterial
+	DeletedAt     *time.Time
+	CreatedAt     time.Time
+	VariantValues []VariantValue
 }

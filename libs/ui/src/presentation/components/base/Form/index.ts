@@ -1,3 +1,4 @@
+export * from './ErrorMessage';
 export * from './Field';
 export * from './FieldWatch';
 export * from './FieldArray';

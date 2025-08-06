@@ -45,6 +45,10 @@ export class ApiVariantRepository implements VariantRepository {
         materialId: materialId,
       })),
       description: formValues.description,
+      values: formValues.values.map(({ id, optionValueId }) => ({
+        id,
+        optionValueId,
+      })),
     }).then();
   };
 
@@ -62,6 +66,10 @@ export class ApiVariantRepository implements VariantRepository {
         materialId: materialId,
       })),
       description: formValues.description,
+      values: formValues.values.map(({ id, optionValueId }) => ({
+        id,
+        optionValueId,
+      })),
     }).then();
   };
 
@@ -170,5 +178,14 @@ const transformers = {
       description: variant.product.description ?? '',
       options: variant.product.options,
     },
+    values: variant.values.map((value) => ({
+      id: value.id,
+      variantId: value.variantId,
+      optionValueId: value.optionValue.id,
+      optionValue: {
+        id: value.optionValue.id,
+        name: value.optionValue.name,
+      },
+    })),
   }),
 };

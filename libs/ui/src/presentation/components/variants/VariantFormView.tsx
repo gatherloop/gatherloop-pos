@@ -10,6 +10,7 @@ import {
   MarkdownEditor,
   Tabs,
   FieldArray,
+  ErrorMessage,
 } from '../base';
 import {
   Button,
@@ -24,7 +25,7 @@ import {
 } from 'tamagui';
 import { Plus, Trash } from '@tamagui/lucide-icons';
 import { MaterialListItem } from '../materials';
-import { Material, VariantForm } from '../../../domain';
+import { Material, Product, VariantForm } from '../../../domain';
 import {
   FormProvider,
   UseFieldArrayReturn,
@@ -38,6 +39,7 @@ export type VariantFormViewProps = {
   form: UseFormReturn<VariantForm>;
   onSubmit: (values: VariantForm) => void;
   productSelectOptions: { label: string; value: number }[];
+  selectedProduct?: Product;
   isMaterialSheetOpen: boolean;
   onMaterialSheetOpenChange: (open: boolean) => void;
   onRemoveMaterial: (
@@ -54,6 +56,7 @@ export const VariantFormView = ({
   variant,
   onRetryButtonPress,
   productSelectOptions,
+  selectedProduct,
   isMaterialSheetOpen,
   isSubmitDisabled,
   onMaterialSheetOpenChange,
@@ -72,7 +75,10 @@ export const VariantFormView = ({
                 <InputText />
               </Field>
               <Field name="productId" label="Product" flex={1}>
-                <Select items={productSelectOptions} />
+                <Select
+                  items={productSelectOptions}
+                  onValueChange={() => form.setValue('values', [])}
+                />
               </Field>
               <Field name="price" label="Price" flex={1}>
                 <InputNumber min={0} />
@@ -129,6 +135,33 @@ export const VariantFormView = ({
         <Tabs
           tabs={[
             {
+              value: 'values',
+              label: 'Values',
+              content: (
+                <YStack gap="$3">
+                  <H4>Variant Values</H4>
+                  <ErrorMessage name="values" />
+                  <XStack gap="$3" $sm={{ flexDirection: 'column' }}>
+                    {selectedProduct?.options.map((option, index) => (
+                      <Field
+                        key={option.id}
+                        name={`values.${index}.optionValueId`}
+                        label={option.name}
+                        flex={1}
+                      >
+                        <Select
+                          items={option.values.map((value) => ({
+                            label: value.name,
+                            value: value.id,
+                          }))}
+                        />
+                      </Field>
+                    ))}
+                  </XStack>
+                </YStack>
+              ),
+            },
+            {
               value: 'materials',
               label: 'Materials',
               content: (
@@ -143,6 +176,7 @@ export const VariantFormView = ({
                       onPress={() => onMaterialSheetOpenChange(true)}
                     />
                   </XStack>
+                  <ErrorMessage name="materials" />
                   <FieldArray
                     control={form.control}
                     name="materials"
