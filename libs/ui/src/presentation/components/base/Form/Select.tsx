@@ -2,7 +2,7 @@ import { Check, ChevronDown, ChevronUp } from '@tamagui/lucide-icons';
 import {
   Adapt,
   Select as TamaguiSelect,
-  SelectProps as TamaguiSelectProps,
+  SelectTriggerProps as TamaguiSelectTriggerProps,
   YStack,
 } from 'tamagui';
 import { LinearGradient } from 'tamagui/linear-gradient';
@@ -13,7 +13,8 @@ import { Controller } from 'react-hook-form';
 export type SelectProps<FieldValue> = {
   name?: string;
   items: { label: string; value: FieldValue }[];
-} & TamaguiSelectProps;
+  onValueChange?: (value: FieldValue) => void;
+} & TamaguiSelectTriggerProps;
 
 export const Select = <FieldValue,>({
   name,
@@ -27,7 +28,6 @@ export const Select = <FieldValue,>({
       name={fieldName}
       render={({ field }) => (
         <TamaguiSelect
-          {...selectProps}
           id={fieldName}
           name={fieldName}
           value={JSON.stringify(field.value)}
@@ -37,7 +37,7 @@ export const Select = <FieldValue,>({
           }}
           disablePreventBodyScroll
         >
-          <TamaguiSelect.Trigger iconAfter={ChevronDown}>
+          <TamaguiSelect.Trigger iconAfter={ChevronDown} {...selectProps}>
             <TamaguiSelect.Value />
           </TamaguiSelect.Trigger>
 

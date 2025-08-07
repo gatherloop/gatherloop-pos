@@ -222,6 +222,15 @@ const transformers = {
           description: item.variant.product.description ?? '',
           options: item.variant.product.options,
         },
+        values: item.variant.values.map((value) => ({
+          id: value.id,
+          variantId: value.variantId,
+          optionValueId: value.optionValueId,
+          optionValue: {
+            id: value.optionValue.id,
+            name: value.optionValue.name,
+          },
+        })),
       },
     })),
     paidAt: transaction.paidAt ?? null,
