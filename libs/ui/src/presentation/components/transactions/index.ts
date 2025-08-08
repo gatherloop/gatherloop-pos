@@ -1,6 +1,7 @@
 export * from './TransactionDeleteAlert';
 export * from './TransactionDetail';
 export * from './TransactionFormView';
+export * from './TransactionItemSelect';
 export * from './TransactionList';
 export * from './TransactionListItem';
 export * from './TransactionPaymentAlert';

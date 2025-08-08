@@ -83,6 +83,8 @@ export class ApiVariantRepository implements VariantRepository {
     page,
     query,
     sortBy,
+    optionValueIds,
+    productId,
   }) => {
     const params = {
       query,
@@ -90,6 +92,8 @@ export class ApiVariantRepository implements VariantRepository {
       limit: itemPerPage,
       order: orderBy,
       sortBy,
+      optionValueIds,
+      productId,
     };
 
     const res = this.client.getQueryState<VariantList200>(
@@ -99,13 +103,6 @@ export class ApiVariantRepository implements VariantRepository {
     this.client.removeQueries({ queryKey: variantListQueryKey(params) });
 
     return {
-      type: res?.data ? 'loaded' : 'idle',
-      page: 1,
-      itemPerPage: 8,
-      query: '',
-      sortBy: 'created_at',
-      orderBy: 'desc',
-      errorMessage: null,
       variants: res?.data.map(transformers.variant) ?? [],
       totalItem: res?.meta.total ?? 0,
     };
@@ -118,6 +115,8 @@ export class ApiVariantRepository implements VariantRepository {
       itemPerPage: number;
       orderBy: 'asc' | 'desc';
       sortBy: 'created_at';
+      productId?: number;
+      optionValueIds: number[];
     },
     options?: Partial<RequestConfig>
   ) => {
@@ -127,6 +126,8 @@ export class ApiVariantRepository implements VariantRepository {
       limit: params.itemPerPage,
       order: params.orderBy,
       sortBy: params.sortBy,
+      productId: params.productId,
+      optionValueIds: params.optionValueIds,
     };
 
     return this.client

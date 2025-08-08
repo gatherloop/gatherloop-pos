@@ -1,11 +1,4 @@
-import {
-  Field,
-  FieldArray,
-  FieldWatch,
-  InputNumber,
-  InputText,
-  Sheet,
-} from '../base';
+import { Field, FieldWatch, InputNumber, InputText, Sheet } from '../base';
 import { Button, Form, H3, H5, Paragraph, XStack, YStack } from 'tamagui';
 import { H4 } from 'tamagui';
 import { Plus, Trash } from '@tamagui/lucide-icons';
@@ -25,9 +18,8 @@ export type TransactionFormViewProps = {
   isVariantSheetOpen: boolean;
   onVariantSheetOpenChange: (isOpen: boolean) => void;
   isSubmitDisabled: boolean;
-  VariantList: (
-    fieldArray: UseFieldArrayReturn<TransactionForm, 'transactionItems', 'key'>
-  ) => ReactNode;
+  TransactionItemSelect: () => ReactNode;
+  fieldArray: UseFieldArrayReturn<TransactionForm, 'transactionItems', 'key'>;
 };
 
 export const TransactionFormView = ({
@@ -36,7 +28,8 @@ export const TransactionFormView = ({
   isVariantSheetOpen,
   onVariantSheetOpenChange,
   isSubmitDisabled,
-  VariantList,
+  TransactionItemSelect,
+  fieldArray,
 }: TransactionFormViewProps) => {
   useKeyboardShortcut({
     ctrl: { ' ': () => onVariantSheetOpenChange(true) },
@@ -49,120 +42,106 @@ export const TransactionFormView = ({
             <InputText />
           </Field>
           <YStack>
-            <FieldArray
-              control={form.control}
-              name="transactionItems"
-              keyName="key"
-            >
-              {(fieldArray) => (
-                <YStack gap="$3">
-                  <Sheet
-                    isOpen={isVariantSheetOpen}
-                    onOpenChange={onVariantSheetOpenChange}
-                  >
-                    <YStack gap="$3" flex={1} padding="$5">
-                      <YStack>
-                        <H4 textAlign="center">Choose Variants</H4>
-                        <Paragraph textAlign="center">
-                          Variant will automatically added to transaction
-                        </Paragraph>
-                      </YStack>
-                      {VariantList(fieldArray)}
-                    </YStack>
-                  </Sheet>
-
-                  <XStack justifyContent="space-between" alignItems="center">
-                    <H4>Transaction Items</H4>
-                    <Button
-                      size="$3"
-                      icon={Plus}
-                      variant="outlined"
-                      onPress={() => onVariantSheetOpenChange(true)}
-                      circular
-                    />
-                  </XStack>
-                  <YStack gap="$3">
-                    {fieldArray.fields.map(({ variant, key }, index) => {
-                      return (
-                        <XStack
-                          key={key}
-                          gap="$5"
-                          $lg={{ flexDirection: 'column' }}
-                        >
-                          <XStack gap="$3" flex={1} alignItems="center">
-                            <Button
-                              icon={Trash}
-                              size="$3"
-                              onPress={() => fieldArray.remove(index)}
-                              theme="red"
-                              color="$red8"
-                              circular
-                            />
-                            <VariantListItem
-                              flex={1}
-                              name={variant.name}
-                              price={variant.price}
-                              productName={variant.product.name}
-                            />
-                          </XStack>
-
-                          <XStack
-                            gap="$5"
-                            justifyContent="flex-end"
-                            alignItems="flex-end"
-                          >
-                            <YStack gap="$3">
-                              <Paragraph textAlign="left">Price</Paragraph>
-                              <H4 textTransform="none" textAlign="left">
-                                Rp. {variant.price.toLocaleString('id')}
-                              </H4>
-                            </YStack>
-                            <YStack gap="$3">
-                              <Paragraph textAlign="center">Amount</Paragraph>
-                              <InputNumber
-                                name={`transactionItems.${index}.amount`}
-                                min={1}
-                                maxWidth={50}
-                              />
-                            </YStack>
-
-                            <YStack gap="$3">
-                              <Paragraph textAlign="center">
-                                Discount Amount
-                              </Paragraph>
-                              <InputNumber
-                                name={`transactionItems.${index}.discountAmount`}
-                                min={0}
-                                maxWidth={150}
-                                step={500}
-                              />
-                            </YStack>
-
-                            <YStack>
-                              <Paragraph textAlign="right">Subtotal</Paragraph>
-                              <FieldWatch
-                                control={form.control}
-                                name={[`transactionItems.${index}`]}
-                              >
-                                {([{ variant, amount, discountAmount }]) => (
-                                  <H4 textTransform="none" textAlign="right">
-                                    Rp.{' '}
-                                    {(
-                                      variant.price * amount -
-                                      discountAmount
-                                    ).toLocaleString('id')}
-                                  </H4>
-                                )}
-                              </FieldWatch>
-                            </YStack>
-                          </XStack>
-                        </XStack>
-                      );
-                    })}
-                  </YStack>
+            <YStack gap="$3">
+              <Sheet
+                isOpen={isVariantSheetOpen}
+                onOpenChange={onVariantSheetOpenChange}
+              >
+                <YStack gap="$3" flex={1} padding="$5">
+                  {TransactionItemSelect()}
                 </YStack>
-              )}
-            </FieldArray>
+              </Sheet>
+
+              <XStack justifyContent="space-between" alignItems="center">
+                <H4>Transaction Items</H4>
+                <Button
+                  size="$3"
+                  icon={Plus}
+                  variant="outlined"
+                  onPress={() => onVariantSheetOpenChange(true)}
+                  circular
+                />
+              </XStack>
+              <YStack gap="$3">
+                {fieldArray.fields.map(({ variant, key }, index) => {
+                  return (
+                    <XStack
+                      key={key}
+                      gap="$5"
+                      $lg={{ flexDirection: 'column' }}
+                    >
+                      <XStack gap="$3" flex={1} alignItems="center">
+                        <Button
+                          icon={Trash}
+                          size="$3"
+                          onPress={() => fieldArray.remove(index)}
+                          theme="red"
+                          color="$red8"
+                          circular
+                        />
+                        <VariantListItem
+                          flex={1}
+                          name={variant.name}
+                          price={variant.price}
+                          productName={variant.product.name}
+                        />
+                      </XStack>
+
+                      <XStack
+                        gap="$5"
+                        justifyContent="flex-end"
+                        alignItems="flex-end"
+                      >
+                        <YStack gap="$3">
+                          <Paragraph textAlign="left">Price</Paragraph>
+                          <H4 textTransform="none" textAlign="left">
+                            Rp. {variant.price.toLocaleString('id')}
+                          </H4>
+                        </YStack>
+                        <YStack gap="$3">
+                          <Paragraph textAlign="center">Amount</Paragraph>
+                          <InputNumber
+                            name={`transactionItems.${index}.amount`}
+                            min={1}
+                            maxWidth={50}
+                          />
+                        </YStack>
+
+                        <YStack gap="$3">
+                          <Paragraph textAlign="center">
+                            Discount Amount
+                          </Paragraph>
+                          <InputNumber
+                            name={`transactionItems.${index}.discountAmount`}
+                            min={0}
+                            maxWidth={150}
+                            step={500}
+                          />
+                        </YStack>
+
+                        <YStack>
+                          <Paragraph textAlign="right">Subtotal</Paragraph>
+                          <FieldWatch
+                            control={form.control}
+                            name={[`transactionItems.${index}`]}
+                          >
+                            {([{ variant, amount, discountAmount }]) => (
+                              <H4 textTransform="none" textAlign="right">
+                                Rp.{' '}
+                                {(
+                                  variant.price * amount -
+                                  discountAmount
+                                ).toLocaleString('id')}
+                              </H4>
+                            )}
+                          </FieldWatch>
+                        </YStack>
+                      </XStack>
+                    </XStack>
+                  );
+                })}
+              </YStack>
+            </YStack>
           </YStack>
           <YStack alignItems="flex-end">
             <H5 textTransform="none">Total</H5>

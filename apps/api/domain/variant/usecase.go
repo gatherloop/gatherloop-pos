@@ -13,8 +13,8 @@ func NewUsecase(repository Repository) Usecase {
 	return Usecase{repository: repository}
 }
 
-func (usecase Usecase) GetVariantList(ctx context.Context, query string, sortBy base.SortBy, order base.Order, skip int, limit int) ([]Variant, int64, *base.Error) {
-	variants, err := usecase.repository.GetVariantList(ctx, query, sortBy, order, skip, limit)
+func (usecase Usecase) GetVariantList(ctx context.Context, query string, sortBy base.SortBy, order base.Order, skip int, limit int, productId *int, optionValueIds []int) ([]Variant, int64, *base.Error) {
+	variants, err := usecase.repository.GetVariantList(ctx, query, sortBy, order, skip, limit, productId, optionValueIds)
 	if err != nil {
 		return []Variant{}, 0, err
 	}

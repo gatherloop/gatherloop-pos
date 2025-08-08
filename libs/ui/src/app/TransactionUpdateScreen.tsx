@@ -1,48 +1,48 @@
 import {
   ApiAuthRepository,
-  ApiVariantRepository,
+  ApiProductRepository,
   ApiTransactionRepository,
-  UrlVariantListQueryRepository,
+  ApiVariantRepository,
 } from '../data';
 import {
   AuthLogoutUsecase,
-  VariantListParams,
-  VariantListUsecase,
   TransactionUpdateParams,
   TransactionUpdateUsecase,
+  TransactionItemSelectUsecase,
+  TransactionItemSelectParams,
 } from '../domain';
 import { TransactionUpdateScreen as TransactionUpdateScreenView } from '../presentation';
 import { QueryClient } from '@tanstack/react-query';
 
 export type TransactionUpdateScreenProps = {
   transactionUpdateParams: TransactionUpdateParams;
-  variantListParams: VariantListParams;
+  transactionItemSelectParams: TransactionItemSelectParams;
 };
 
 export function TransactionUpdateScreen({
   transactionUpdateParams,
-  variantListParams,
+  transactionItemSelectParams,
 }: TransactionUpdateScreenProps) {
   const client = new QueryClient();
   const transactionRepository = new ApiTransactionRepository(client);
-  const variantRepository = new ApiVariantRepository(client);
-  const variantListQueryRepository = new UrlVariantListQueryRepository();
   const authRepository = new ApiAuthRepository();
+  const variantRepository = new ApiVariantRepository(client);
+  const productRepository = new ApiProductRepository(client);
 
   const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
   const transactionUpdateUsecase = new TransactionUpdateUsecase(
     transactionRepository,
     transactionUpdateParams
   );
-  const variantListUsecase = new VariantListUsecase(
+  const transactionItemSelectUsecase = new TransactionItemSelectUsecase(
+    productRepository,
     variantRepository,
-    variantListQueryRepository,
-    variantListParams
+    transactionItemSelectParams
   );
 
   return (
     <TransactionUpdateScreenView
-      variantListUsecase={variantListUsecase}
+      transactionItemSelectUsecase={transactionItemSelectUsecase}
       transactionUpdateUsecase={transactionUpdateUsecase}
       authLogoutUsecase={authLogoutUsecase}
     />

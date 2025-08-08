@@ -6,14 +6,18 @@ export type Product = {
   description?: string;
   category: Category;
   createdAt: string;
-  options: {
-    id: number;
-    name: string;
-    values: {
-      id: number;
-      name: string;
-    }[];
-  }[];
+  options: Option[];
+};
+
+export type Option = {
+  id: number;
+  name: string;
+  values: OptionValue[];
+};
+
+export type OptionValue = {
+  id: number;
+  name: string;
 };
 
 export type ProductForm = {

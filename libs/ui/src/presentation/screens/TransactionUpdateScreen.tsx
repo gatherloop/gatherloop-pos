@@ -1,24 +1,25 @@
 import { ScrollView } from 'tamagui';
-import { TransactionFormView, Layout, VariantList } from '../components';
+import {
+  TransactionFormView,
+  Layout,
+  TransactionItemSelect,
+} from '../components';
 import {
   useAuthLogoutController,
-  useVariantListController,
   useTransactionUpdateController,
 } from '../controllers';
 import { useEffect } from 'react';
 import { useRouter } from 'solito/router';
 import {
   AuthLogoutUsecase,
-  Variant,
-  VariantListUsecase,
-  TransactionForm,
   TransactionUpdateUsecase,
+  TransactionItemSelectUsecase,
 } from '../../domain';
-import { UseFieldArrayReturn } from 'react-hook-form';
+import { useTransactionItemSelectController } from '../controllers/TransactionItemSelectController';
 
 export type TransactionUpdateScreenProps = {
   transactionUpdateUsecase: TransactionUpdateUsecase;
-  variantListUsecase: VariantListUsecase;
+  transactionItemSelectUsecase: TransactionItemSelectUsecase;
   authLogoutUsecase: AuthLogoutUsecase;
 };
 
@@ -31,8 +32,8 @@ export const TransactionUpdateScreen = (
     props.transactionUpdateUsecase
   );
 
-  const variantListController = useVariantListController(
-    props.variantListUsecase
+  const transactionItemSelectController = useTransactionItemSelectController(
+    props.transactionItemSelectUsecase
   );
 
   const router = useRouter();
@@ -42,26 +43,28 @@ export const TransactionUpdateScreen = (
       router.push('/transactions');
   }, [transactionUpdateController.state.type, router]);
 
-  const onVariantItemPress = (
-    variant: Variant,
-    fieldArray: UseFieldArrayReturn<TransactionForm, 'transactionItems', 'key'>
-  ) => {
-    transactionUpdateController.onAddItem(variant, fieldArray);
-    variantListController.onSearchValueChange('');
-  };
+  useEffect(() => {
+    if (
+      transactionItemSelectController.state.type === 'loadingVariantSuccess' &&
+      transactionItemSelectController.state.selectedVariant
+    ) {
+      transactionUpdateController.onAddItem(
+        transactionItemSelectController.state.selectedVariant
+      );
+    }
+  }, [
+    transactionUpdateController,
+    transactionItemSelectController.state.selectedVariant,
+    transactionItemSelectController.state.type,
+  ]);
 
   return (
     <Layout {...authLogoutController} title="Update Transaction" showBackButton>
       <ScrollView>
         <TransactionFormView
           {...transactionUpdateController}
-          VariantList={(fieldArray) => (
-            <VariantList
-              {...variantListController}
-              onItemPress={(variant) => onVariantItemPress(variant, fieldArray)}
-              isSearchAutoFocus
-              numColumns={2}
-            />
+          TransactionItemSelect={() => (
+            <TransactionItemSelect {...transactionItemSelectController} />
           )}
         />
       </ScrollView>

@@ -184,7 +184,14 @@ export class VariantListUsecase extends Usecase<
         { type: 'loading' },
         ({ page, itemPerPage, orderBy, query, sortBy }) =>
           this.variantRepository
-            .fetchVariantList({ page, itemPerPage, orderBy, query, sortBy })
+            .fetchVariantList({
+              page,
+              itemPerPage,
+              orderBy,
+              query,
+              sortBy,
+              optionValueIds: [],
+            })
             .then(({ variants, totalItem }) =>
               dispatch({ type: 'FETCH_SUCCESS', variants, totalItem })
             )
@@ -212,6 +219,7 @@ export class VariantListUsecase extends Usecase<
                 orderBy,
                 query,
                 sortBy,
+                optionValueIds: [],
               });
 
             if (variants.length > 0) {
@@ -240,6 +248,7 @@ export class VariantListUsecase extends Usecase<
               orderBy,
               query,
               sortBy,
+              optionValueIds: [],
             })
             .then(({ variants, totalItem }) =>
               dispatch({ type: 'REVALIDATE_FINISH', variants, totalItem })

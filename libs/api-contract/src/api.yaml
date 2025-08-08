@@ -682,6 +682,8 @@ paths:
         - $ref: '#/components/parameters/Order'
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Skip'
+        - $ref: '#/components/parameters/ProductIdQuery'
+        - $ref: '#/components/parameters/OptionValueIds'
       responses:
         '200':
           description: success response
@@ -2257,6 +2259,12 @@ components:
       schema:
         type: integer
       required: true
+    ProductIdQuery:
+      name: productId
+      in: query
+      schema:
+        type: integer
+      required: false
     VariantId:
       name: variantId
       in: path
@@ -2287,6 +2295,14 @@ components:
       schema:
         type: integer
       required: true
+    OptionValueIds:
+      name: optionValueIds
+      in: query
+      schema:
+        type: array
+        items:
+          type: integer
+      required: false
     Query:
       name: query
       in: query

@@ -6,7 +6,7 @@ import {
 } from '../../domain';
 import { useController } from './controller';
 import { useToastController } from '@tamagui/toast';
-import { UseFieldArrayReturn, useForm } from 'react-hook-form';
+import { useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
@@ -51,10 +51,13 @@ export const useTransactionUpdateController = (
   const onSubmit = (values: TransactionForm) =>
     dispatch({ type: 'SUBMIT', values });
 
-  const onAddItem = (
-    newVariant: Variant,
-    fieldArray: UseFieldArrayReturn<TransactionForm, 'transactionItems', 'key'>
-  ) => {
+  const fieldArray = useFieldArray<TransactionForm, 'transactionItems', 'key'>({
+    name: 'transactionItems',
+    control: form.control,
+    keyName: 'key',
+  });
+
+  const onAddItem = (newVariant: Variant) => {
     const itemIndex = fieldArray.fields.findIndex(
       ({ variant }) => newVariant.id === variant.id
     );
@@ -82,5 +85,6 @@ export const useTransactionUpdateController = (
     onSubmit,
     onAddItem,
     isSubmitDisabled,
+    fieldArray,
   };
 };

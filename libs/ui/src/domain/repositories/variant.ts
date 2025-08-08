@@ -7,6 +7,8 @@ export interface VariantRepository {
     query: string;
     sortBy: 'created_at';
     orderBy: 'asc' | 'desc';
+    productId?: number;
+    optionValueIds: number[];
   }) => {
     variants: Variant[];
     totalItem: number;
@@ -18,6 +20,8 @@ export interface VariantRepository {
     query: string;
     sortBy: 'created_at';
     orderBy: 'asc' | 'desc';
+    productId?: number;
+    optionValueIds: number[];
   }) => Promise<{ variants: Variant[]; totalItem: number }>;
 
   fetchVariantById: (variantId: number) => Promise<Variant>;

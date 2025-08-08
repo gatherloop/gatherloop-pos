@@ -1,13 +1,12 @@
 import { ScrollView } from 'tamagui';
 import {
   TransactionFormView,
+  TransactionItemSelect,
   Layout,
-  VariantList,
   TransactionPaymentAlert,
 } from '../components';
 import {
   useAuthLogoutController,
-  useVariantListController,
   useTransactionCreateController,
   useTransactionPayController,
 } from '../controllers';
@@ -15,19 +14,17 @@ import { useEffect } from 'react';
 import { useRouter } from 'solito/router';
 import {
   AuthLogoutUsecase,
-  Variant,
-  VariantListUsecase,
   TransactionCreateUsecase,
-  TransactionForm,
   TransactionPayUsecase,
+  TransactionItemSelectUsecase,
 } from '../../domain';
-import { UseFieldArrayReturn } from 'react-hook-form';
 import { usePrinter } from '../../utils';
 import dayjs from 'dayjs';
+import { useTransactionItemSelectController } from '../controllers/TransactionItemSelectController';
 
 export type TransactionCreateScreenProps = {
   transactionCreateUsecase: TransactionCreateUsecase;
-  variantListUsecase: VariantListUsecase;
+  transactionItemSelectUsecase: TransactionItemSelectUsecase;
   transactionPayUsecase: TransactionPayUsecase;
   authLogoutUsecase: AuthLogoutUsecase;
 };
@@ -41,8 +38,8 @@ export const TransactionCreateScreen = (
     props.transactionCreateUsecase
   );
 
-  const variantListController = useVariantListController(
-    props.variantListUsecase
+  const transactionItemSelectController = useTransactionItemSelectController(
+    props.transactionItemSelectUsecase
   );
 
   const transactionPayController = useTransactionPayController(
@@ -98,16 +95,23 @@ export const TransactionCreateScreen = (
     transactionPayController.state.type,
   ]);
 
+  useEffect(() => {
+    if (
+      transactionItemSelectController.state.type === 'loadingVariantSuccess' &&
+      transactionItemSelectController.state.selectedVariant
+    ) {
+      transactionCreateController.onAddItem(
+        transactionItemSelectController.state.selectedVariant
+      );
+    }
+  }, [
+    transactionCreateController,
+    transactionItemSelectController.state.selectedVariant,
+    transactionItemSelectController.state.type,
+  ]);
+
   const onCancelPayment = () => {
     router.push('/transactions');
-  };
-
-  const onVariantItemPress = (
-    variant: Variant,
-    fieldArray: UseFieldArrayReturn<TransactionForm, 'transactionItems', 'key'>
-  ) => {
-    transactionCreateController.onAddItem(variant, fieldArray);
-    variantListController.onSearchValueChange('');
   };
 
   return (
@@ -115,13 +119,8 @@ export const TransactionCreateScreen = (
       <ScrollView>
         <TransactionFormView
           {...transactionCreateController}
-          VariantList={(fieldArray) => (
-            <VariantList
-              {...variantListController}
-              onItemPress={(variant) => onVariantItemPress(variant, fieldArray)}
-              isSearchAutoFocus
-              numColumns={2}
-            />
+          TransactionItemSelect={() => (
+            <TransactionItemSelect {...transactionItemSelectController} />
           )}
         />
       </ScrollView>

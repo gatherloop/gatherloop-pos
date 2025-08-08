@@ -33,7 +33,19 @@ func (handler VariantHandler) GetVariantList(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	variants, total, usecaseErr := handler.usecase.GetVariantList(ctx, query, sortBy, order, skip, limit)
+	productId, err := GetProductIdQuery(r)
+	if err != nil {
+		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
+		return
+	}
+
+	optionValueIds, err := GetOptionValueIds(r)
+	if err != nil {
+		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
+		return
+	}
+
+	variants, total, usecaseErr := handler.usecase.GetVariantList(ctx, query, sortBy, order, skip, limit, productId, optionValueIds)
 	if usecaseErr != nil {
 		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return

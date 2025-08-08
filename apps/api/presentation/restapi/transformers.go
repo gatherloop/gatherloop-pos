@@ -294,6 +294,32 @@ func GetProductId(r *http.Request) (int64, error) {
 	return id, err
 }
 
+func GetProductIdQuery(r *http.Request) (*int, error) {
+	productIdQuery := r.URL.Query().Get("productId")
+	if productIdQuery == "" {
+		return nil, nil
+	} else {
+		id, err := strconv.Atoi(productIdQuery)
+		return &id, err
+	}
+}
+
+func GetOptionValueIds(r *http.Request) ([]int, error) {
+	query := r.URL.Query()
+	values := query["optionValueIds[]"]
+
+	ids := []int{}
+	for _, v := range values {
+		if id, err := strconv.Atoi(v); err == nil {
+			ids = append(ids, id)
+		} else {
+			return []int{}, err
+		}
+	}
+
+	return ids, nil
+}
+
 func GetProductRequest(r *http.Request) (apiContract.ProductRequest, error) {
 	var productRequest apiContract.ProductRequest
 	err := json.NewDecoder(r.Body).Decode(&productRequest)

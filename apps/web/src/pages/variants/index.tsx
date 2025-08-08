@@ -30,7 +30,7 @@ export const getServerSideProps: GetServerSideProps<
   const sortBy = variantListQueryRepository.getSortBy(url);
 
   const { variants, totalItem } = await variantRepository.fetchVariantList(
-    { page, itemPerPage, orderBy, query, sortBy },
+    { page, itemPerPage, orderBy, query, sortBy, optionValueIds: [] },
     { headers: { Cookie: ctx.req.headers.cookie } }
   );
 

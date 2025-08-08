@@ -15,14 +15,18 @@ func NewVariantRepository(db *gorm.DB) variant.Repository {
 	return Repository{db: db}
 }
 
-func (repo Repository) GetVariantList(ctx context.Context, query string, sortBy base.SortBy, order base.Order, skip int, limit int) ([]variant.Variant, *base.Error) {
+func (repo Repository) GetVariantList(ctx context.Context, query string, sortBy base.SortBy, order base.Order, skip int, limit int, productId *int, optionValueIds []int) ([]variant.Variant, *base.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 
 	var variants []variant.Variant
-	result := db.Table("variants").Preload("Product").Preload("Product.Category").Preload("Materials").Preload("Materials.Material").Where("deleted_at", nil).Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
+	result := db.Table("variants").Preload("Product").Preload("Product.Category").Preload("Materials").Preload("Materials.Material").Where("variants.deleted_at", nil).Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
+
+	if len(optionValueIds) > 0 {
+		result = result.Joins("JOIN variant_values ON variant_values.variant_id = variants.id").Where("variant_values.option_value_id IN ?", optionValueIds).Group("variants.id").Having("COUNT(*) = ?", len(optionValueIds))
+	}
 
 	if query != "" {
-		result = result.Where("name LIKE ?", "%"+query+"%")
+		result = result.Where("variants.name LIKE ?", "%"+query+"%")
 	}
 
 	if skip > 0 {
@@ -31,6 +35,10 @@ func (repo Repository) GetVariantList(ctx context.Context, query string, sortBy 
 
 	if limit > 0 {
 		result = result.Limit(limit)
+	}
+
+	if productId != nil {
+		result = result.Where("variants.product_id = ?", productId)
 	}
 
 	result = result.Find(&variants)
