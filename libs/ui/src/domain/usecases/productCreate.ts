@@ -57,6 +57,7 @@ export class ProductCreateUsecase extends Usecase<
     const values: ProductForm = {
       categoryId: NaN,
       name: '',
+      imageUrl: '',
       description: '',
       options: [],
     };

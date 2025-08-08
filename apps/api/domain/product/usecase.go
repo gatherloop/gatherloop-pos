@@ -61,6 +61,7 @@ func (usecase Usecase) UpdateProductById(ctx context.Context, product Product, i
 			Id:          id,
 			CategoryId:  product.CategoryId,
 			Name:        product.Name,
+			ImageUrl:    product.ImageUrl,
 			Description: product.Description,
 			DeletedAt:   product.DeletedAt,
 			CreatedAt:   product.CreatedAt,

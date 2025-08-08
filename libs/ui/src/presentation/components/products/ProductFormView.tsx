@@ -41,6 +41,9 @@ export const ProductFormView = ({
               <Field name="categoryId" label="Category" flex={1}>
                 <Select items={categorySelectOptions} />
               </Field>
+              <Field name="imageUrl" label="Image URL" flex={1}>
+                <InputText />
+              </Field>
             </XStack>
           </Card.Header>
         </Card>

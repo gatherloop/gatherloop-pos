@@ -5,6 +5,7 @@ import { XStackProps } from 'tamagui';
 export type ProductListItemProps = {
   name: string;
   categoryName: string;
+  imageUrl?: string;
   onEditMenuPress?: () => void;
   onDeleteMenuPress?: () => void;
 } & XStackProps;
@@ -12,6 +13,7 @@ export type ProductListItemProps = {
 export const ProductListItem = ({
   name,
   categoryName,
+  imageUrl,
   onEditMenuPress,
   onDeleteMenuPress,
   ...xStackProps
@@ -20,6 +22,7 @@ export const ProductListItem = ({
     <ListItem
       title={name}
       subtitle={categoryName}
+      thumbnailSrc={imageUrl}
       menus={[
         {
           title: 'Edit',

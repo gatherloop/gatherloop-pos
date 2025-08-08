@@ -38,6 +38,7 @@ export class ApiProductRepository implements ProductRepository {
     return productCreate({
       name: formValues.name,
       categoryId: formValues.categoryId,
+      imageUrl: formValues.imageUrl,
       description: formValues.description,
       options: formValues.options,
     }).then();
@@ -50,6 +51,7 @@ export class ApiProductRepository implements ProductRepository {
     return productUpdateById(productId, {
       name: formValues.name,
       categoryId: formValues.categoryId,
+      imageUrl: formValues.imageUrl,
       description: formValues.description,
       options: formValues.options,
     }).then();
@@ -133,6 +135,7 @@ const transformers = {
     id: product.id,
     createdAt: product.createdAt,
     name: product.name,
+    imageUrl: product.imageUrl,
     category: transformers.category(product.category),
     description: product.description ?? '',
     options: product.options,

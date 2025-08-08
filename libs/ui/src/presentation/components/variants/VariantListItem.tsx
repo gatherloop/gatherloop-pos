@@ -6,6 +6,7 @@ export type VariantListItemProps = {
   name: string;
   price: number;
   productName: string;
+  productImageUrl: string;
   onEditMenuPress?: () => void;
   onDeleteMenuPress?: () => void;
 } & XStackProps;
@@ -14,6 +15,7 @@ export const VariantListItem = ({
   name,
   price,
   productName,
+  productImageUrl,
   onEditMenuPress,
   onDeleteMenuPress,
   ...xStackProps
@@ -22,6 +24,7 @@ export const VariantListItem = ({
     <ListItem
       title={name}
       subtitle={`Rp. ${price.toLocaleString('id')}`}
+      thumbnailSrc={productImageUrl}
       menus={[
         {
           title: 'Edit',

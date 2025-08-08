@@ -353,6 +353,7 @@ func ToApiProduct(product product.Product) apiContract.Product {
 		DeletedAt:   product.DeletedAt,
 		CreatedAt:   product.CreatedAt,
 		Description: product.Description,
+		ImageUrl:    product.ImageUrl,
 		Options:     apiOptions,
 	}
 }
@@ -390,6 +391,7 @@ func ToProduct(productRequest apiContract.ProductRequest) product.Product {
 	return product.Product{
 		Name:        productRequest.Name,
 		CategoryId:  productRequest.CategoryId,
+		ImageUrl:    productRequest.ImageUrl,
 		Description: productRequest.Description,
 		Options:     options,
 	}

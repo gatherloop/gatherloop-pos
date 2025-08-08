@@ -81,6 +81,7 @@ export const VariantList = ({
               >
                 <VariantListItem
                   productName={item.product.name}
+                  productImageUrl={item.product.imageUrl}
                   style={{ flex: 1 }}
                   name={item.name}
                   price={item.price}

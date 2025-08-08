@@ -1621,6 +1621,7 @@ components:
         - categoryId
         - category
         - name
+        - imageUrl
         - createdAt
         - options
       properties:
@@ -1633,6 +1634,8 @@ components:
         name:
           type: string
         description:
+          type: string
+        imageUrl:
           type: string
         category:
           $ref: '#/components/schemas/Category'
@@ -1651,12 +1654,15 @@ components:
       required:
         - categoryId
         - name
+        - imageUrl
         - options
       properties:
         categoryId:
           type: integer
           format: int64
         name:
+          type: string
+        imageUrl:
           type: string
         description:
           type: string

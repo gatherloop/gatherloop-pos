@@ -11,6 +11,7 @@ type Product struct {
 	Name        string
 	Description *string
 	Category    category.Category
+	ImageUrl    string
 	DeletedAt   *time.Time
 	CreatedAt   time.Time
 	Options     []Option

@@ -83,6 +83,7 @@ export const ProductList = ({
                   categoryName={item.category.name}
                   style={{ flex: 1 }}
                   name={item.name}
+                  imageUrl={item.imageUrl}
                   onDeleteMenuPress={
                     onDeleteMenuPress
                       ? () => onDeleteMenuPress(item)

@@ -221,6 +221,7 @@ const transformers = {
           name: item.variant.product.name,
           description: item.variant.product.description ?? '',
           options: item.variant.product.options,
+          imageUrl: item.variant.product.imageUrl,
         },
         values: item.variant.values.map((value) => ({
           id: value.id,

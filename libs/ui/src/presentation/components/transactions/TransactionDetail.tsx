@@ -114,6 +114,7 @@ export const TransactionDetail = ({
             <YStack key={variant.id} gap="$3">
               <VariantListItem
                 productName={variant.product.name}
+                productImageUrl={variant.product.imageUrl}
                 name={variant.name}
                 price={price}
                 flex={1}

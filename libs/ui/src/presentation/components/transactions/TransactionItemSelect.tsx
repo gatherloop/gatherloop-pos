@@ -187,6 +187,7 @@ export const TransactionItemSelect = ({
                                 categoryName={item.category.name}
                                 style={{ flex: 1 }}
                                 name={item.name}
+                                imageUrl={item.imageUrl}
                                 onPress={() => onSelectProduct(item)}
                               />
                             </Focusable>

@@ -5,6 +5,7 @@ export type Product = {
   name: string;
   description?: string;
   category: Category;
+  imageUrl: string;
   createdAt: string;
   options: Option[];
 };
@@ -24,6 +25,7 @@ export type ProductForm = {
   name: string;
   description?: string;
   categoryId: number;
+  imageUrl: string;
   options: {
     id?: number;
     name: string;
