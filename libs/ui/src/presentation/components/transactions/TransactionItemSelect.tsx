@@ -151,7 +151,7 @@ export const TransactionItemSelect = ({
                   nestedScrollEnabled
                   scrollEnabled
                   data={products}
-                  numColumns={4}
+                  numColumns={5}
                   contentContainerStyle={{ gap: 16 }}
                   columnWrapperStyle={{ gap: 16 }}
                   renderItem={({ item }) => (

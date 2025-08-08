@@ -17,6 +17,8 @@ export const Sheet = ({ isOpen, onOpenChange, children }: SheetProps) => {
       animation="medium"
       position={0}
       unmountChildrenWhenHidden
+      disableDrag
+      snapPoints={[100, 0]}
     >
       <TamaguiSheet.Overlay
         animation="lazy"
@@ -24,7 +26,7 @@ export const Sheet = ({ isOpen, onOpenChange, children }: SheetProps) => {
         exitStyle={{ opacity: 0 }}
       />
       <TamaguiSheet.Handle />
-      <TamaguiSheet.Frame>{children}</TamaguiSheet.Frame>
+      <TamaguiSheet.Frame height="100vh">{children}</TamaguiSheet.Frame>
     </TamaguiSheet>
   );
 };
