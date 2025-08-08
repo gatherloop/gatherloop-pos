@@ -18,6 +18,7 @@ import {
   Focusable,
   LoadingView,
   Pagination,
+  Tabs,
 } from '../base';
 import { FlatList } from 'react-native';
 import { ProductListItem } from '../products';
@@ -65,6 +66,14 @@ export const TransactionItemSelect = ({
   selectedOptionValues,
   selectedProduct,
 }: TransactionItemSelectProps) => {
+  const productByCategories = products.reduce<Record<string, Product[]>>(
+    (prev, curr) => ({
+      ...prev,
+      [curr.category.name]: [...(prev[curr.category.name] ?? []), curr],
+    }),
+    {}
+  );
+
   return (
     <YStack flex={1}>
       {variant.type === 'selectingOptions' || variant.type === 'submitting' ? (
@@ -140,6 +149,7 @@ export const TransactionItemSelect = ({
               autoFocus
             />
           </YStack>
+
           <ScrollView flex={1}>
             {match(variant)
               .with({ type: 'loading' }, () => (
@@ -152,28 +162,41 @@ export const TransactionItemSelect = ({
                 />
               ))
               .with({ type: 'loaded' }, () => (
-                <FlatList
-                  nestedScrollEnabled
-                  scrollEnabled
-                  data={products}
-                  numColumns={5}
-                  contentContainerStyle={{ gap: 16 }}
-                  columnWrapperStyle={{ gap: 16 }}
-                  renderItem={({ item }) => (
-                    <Focusable
-                      onEnterPress={() => onSelectProduct(item)}
-                      style={{ flex: 1 }}
-                    >
-                      <ProductListItem
-                        categoryName={item.category.name}
-                        style={{ flex: 1 }}
-                        name={item.name}
-                        onPress={() => onSelectProduct(item)}
-                      />
-                    </Focusable>
-                  )}
-                  ItemSeparatorComponent={() => (
-                    <YStack height="$1" style={{ flex: 1 }} />
+                <Tabs
+                  defaultValue={Object.keys(productByCategories)[0] ?? ''}
+                  tabs={Object.entries(productByCategories).map(
+                    ([categoryName, products]) => ({
+                      label: categoryName,
+                      value: categoryName,
+                      content: (
+                        <FlatList
+                          nestedScrollEnabled
+                          scrollEnabled
+                          data={products.sort((a, b) =>
+                            a.name.localeCompare(b.name)
+                          )}
+                          numColumns={5}
+                          contentContainerStyle={{ gap: 16 }}
+                          columnWrapperStyle={{ gap: 16 }}
+                          renderItem={({ item }) => (
+                            <Focusable
+                              onEnterPress={() => onSelectProduct(item)}
+                              style={{ flex: 1 }}
+                            >
+                              <ProductListItem
+                                categoryName={item.category.name}
+                                style={{ flex: 1 }}
+                                name={item.name}
+                                onPress={() => onSelectProduct(item)}
+                              />
+                            </Focusable>
+                          )}
+                          ItemSeparatorComponent={() => (
+                            <YStack height="$1" style={{ flex: 1 }} />
+                          )}
+                        />
+                      ),
+                    })
                   )}
                 />
               ))
