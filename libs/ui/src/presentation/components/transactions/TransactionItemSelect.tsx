@@ -46,7 +46,6 @@ export type TransactionItemSelectProps = {
   totalItem: number;
   itemPerPage: number;
   onPageChange: (page: number) => void;
-  onClose: () => void;
 };
 
 export const TransactionItemSelect = ({
