@@ -18,7 +18,7 @@ export const Sheet = ({ isOpen, onOpenChange, children }: SheetProps) => {
       position={0}
       unmountChildrenWhenHidden
       disableDrag
-      snapPoints={[100, 0]}
+      snapPoints={[90, 0]}
     >
       <TamaguiSheet.Overlay
         animation="lazy"

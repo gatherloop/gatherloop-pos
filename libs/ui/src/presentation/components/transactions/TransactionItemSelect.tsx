@@ -46,6 +46,7 @@ export type TransactionItemSelectProps = {
   totalItem: number;
   itemPerPage: number;
   onPageChange: (page: number) => void;
+  onClose: () => void;
 };
 
 export const TransactionItemSelect = ({
@@ -76,7 +77,7 @@ export const TransactionItemSelect = ({
 
           <H5>Choose Options</H5>
           {selectedProduct?.options.map((option, index) => (
-            <YStack>
+            <YStack key={option.id}>
               <H5>{option.name}</H5>
               <RadioGroup
                 value={
@@ -90,9 +91,14 @@ export const TransactionItemSelect = ({
                   onOptionValuesChange(newOptionsValues);
                 }}
               >
-                <XStack>
+                <XStack flexWrap="wrap">
                   {option.values.map((value) => (
-                    <XStack width={300} alignItems="center" space="$4">
+                    <XStack
+                      width={300}
+                      alignItems="center"
+                      gap="$2"
+                      key={value.id}
+                    >
                       <RadioGroup.Item
                         value={JSON.stringify(value)}
                         id={value.id.toString()}
