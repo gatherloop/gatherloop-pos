@@ -6,6 +6,7 @@ import {
   Label,
   Paragraph,
   RadioGroup,
+  ScrollView,
   XStack,
   YStack,
 } from 'tamagui';
@@ -65,7 +66,7 @@ export const TransactionItemSelect = ({
   selectedProduct,
 }: TransactionItemSelectProps) => {
   return (
-    <YStack>
+    <YStack flex={1}>
       {variant.type === 'selectingOptions' || variant.type === 'submitting' ? (
         <YStack gap="$3">
           <XStack alignItems="center" gap="$3">
@@ -121,7 +122,7 @@ export const TransactionItemSelect = ({
           </XStack>
         </YStack>
       ) : (
-        <YStack gap="$3">
+        <YStack gap="$3" flex={1}>
           <H4>Select Product</H4>
           <Paragraph>
             You can select product and its options to the transaction
@@ -134,50 +135,52 @@ export const TransactionItemSelect = ({
               autoFocus
             />
           </YStack>
-
-          {match(variant)
-            .with({ type: 'loading' }, () => (
-              <LoadingView title="Fetching Products..." />
-            ))
-            .with({ type: 'empty' }, () => (
-              <EmptyView
-                title="Oops, Product is Empty"
-                subtitle="Please create a new product"
-              />
-            ))
-            .with({ type: 'loaded' }, () => (
-              <FlatList
-                nestedScrollEnabled
-                data={products}
-                numColumns={2}
-                contentContainerStyle={{ gap: 16 }}
-                columnWrapperStyle={{ gap: 16 }}
-                renderItem={({ item }) => (
-                  <Focusable
-                    onEnterPress={() => onSelectProduct(item)}
-                    style={{ flex: 1 }}
-                  >
-                    <ProductListItem
-                      categoryName={item.category.name}
+          <ScrollView flex={1}>
+            {match(variant)
+              .with({ type: 'loading' }, () => (
+                <LoadingView title="Fetching Products..." />
+              ))
+              .with({ type: 'empty' }, () => (
+                <EmptyView
+                  title="Oops, Product is Empty"
+                  subtitle="Please create a new product"
+                />
+              ))
+              .with({ type: 'loaded' }, () => (
+                <FlatList
+                  nestedScrollEnabled
+                  scrollEnabled
+                  data={products}
+                  numColumns={4}
+                  contentContainerStyle={{ gap: 16 }}
+                  columnWrapperStyle={{ gap: 16 }}
+                  renderItem={({ item }) => (
+                    <Focusable
+                      onEnterPress={() => onSelectProduct(item)}
                       style={{ flex: 1 }}
-                      name={item.name}
-                      onPress={() => onSelectProduct(item)}
-                    />
-                  </Focusable>
-                )}
-                ItemSeparatorComponent={() => (
-                  <YStack height="$1" style={{ flex: 1 }} />
-                )}
-              />
-            ))
-            .with({ type: 'error' }, () => (
-              <ErrorView
-                title="Failed to Fetch Products"
-                subtitle="Please click the retry button to refetch data"
-                onRetryButtonPress={onRetryButtonPress}
-              />
-            ))
-            .otherwise(() => null)}
+                    >
+                      <ProductListItem
+                        categoryName={item.category.name}
+                        style={{ flex: 1 }}
+                        name={item.name}
+                        onPress={() => onSelectProduct(item)}
+                      />
+                    </Focusable>
+                  )}
+                  ItemSeparatorComponent={() => (
+                    <YStack height="$1" style={{ flex: 1 }} />
+                  )}
+                />
+              ))
+              .with({ type: 'error' }, () => (
+                <ErrorView
+                  title="Failed to Fetch Products"
+                  subtitle="Please click the retry button to refetch data"
+                  onRetryButtonPress={onRetryButtonPress}
+                />
+              ))
+              .otherwise(() => null)}
+          </ScrollView>
 
           <Pagination
             currentPage={currentPage}

@@ -315,7 +315,7 @@ export class TransactionItemSelectUsecase extends Usecase<
       .with(
         { type: 'loadingVariant' },
         ({ selectedProduct, selectedOptionValues }) => {
-          if (selectedProduct && selectedOptionValues.length > 1)
+          if (selectedProduct && selectedOptionValues.length > 0)
             this.variantRepository
               .fetchVariantList({
                 page: 1,
