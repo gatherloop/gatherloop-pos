@@ -16,6 +16,7 @@ export const Tabs = ({ tabs, defaultValue }: TabsProps) => {
       borderWidth="$0.25"
       overflow="hidden"
       borderColor="$borderColor"
+      flex={1}
     >
       <TamaguiTabs.List padded gap="$3">
         {tabs.map(({ value, label }) => (

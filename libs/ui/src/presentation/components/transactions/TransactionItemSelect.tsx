@@ -150,32 +150,32 @@ export const TransactionItemSelect = ({
             />
           </YStack>
 
-          <ScrollView flex={1}>
-            {match(variant)
-              .with({ type: 'loading' }, () => (
-                <LoadingView title="Fetching Products..." />
-              ))
-              .with({ type: 'empty' }, () => (
-                <EmptyView
-                  title="Oops, Product is Empty"
-                  subtitle="Please create a new product"
-                />
-              ))
-              .with({ type: 'loaded' }, () => (
-                <Tabs
-                  defaultValue={Object.keys(productByCategories)[0] ?? ''}
-                  tabs={Object.entries(productByCategories).map(
-                    ([categoryName, products]) => ({
-                      label: categoryName,
-                      value: categoryName,
-                      content: (
+          {match(variant)
+            .with({ type: 'loading' }, () => (
+              <LoadingView title="Fetching Products..." />
+            ))
+            .with({ type: 'empty' }, () => (
+              <EmptyView
+                title="Oops, Product is Empty"
+                subtitle="Please create a new product"
+              />
+            ))
+            .with({ type: 'loaded' }, () => (
+              <Tabs
+                defaultValue={Object.keys(productByCategories)[0] ?? ''}
+                tabs={Object.entries(productByCategories).map(
+                  ([categoryName, products]) => ({
+                    label: categoryName,
+                    value: categoryName,
+                    content: (
+                      <ScrollView flex={1}>
                         <FlatList
                           nestedScrollEnabled
                           scrollEnabled
                           data={products.sort((a, b) =>
                             a.name.localeCompare(b.name)
                           )}
-                          numColumns={5}
+                          numColumns={3}
                           contentContainerStyle={{ gap: 16 }}
                           columnWrapperStyle={{ gap: 16 }}
                           renderItem={({ item }) => (
@@ -196,20 +196,20 @@ export const TransactionItemSelect = ({
                             <YStack height="$1" style={{ flex: 1 }} />
                           )}
                         />
-                      ),
-                    })
-                  )}
-                />
-              ))
-              .with({ type: 'error' }, () => (
-                <ErrorView
-                  title="Failed to Fetch Products"
-                  subtitle="Please click the retry button to refetch data"
-                  onRetryButtonPress={onRetryButtonPress}
-                />
-              ))
-              .otherwise(() => null)}
-          </ScrollView>
+                      </ScrollView>
+                    ),
+                  })
+                )}
+              />
+            ))
+            .with({ type: 'error' }, () => (
+              <ErrorView
+                title="Failed to Fetch Products"
+                subtitle="Please click the retry button to refetch data"
+                onRetryButtonPress={onRetryButtonPress}
+              />
+            ))
+            .otherwise(() => null)}
 
           <Pagination
             currentPage={currentPage}
