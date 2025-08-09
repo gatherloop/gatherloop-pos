@@ -115,8 +115,10 @@ export const TransactionDetail = ({
               <VariantListItem
                 productName={variant.product.name}
                 productImageUrl={variant.product.imageUrl}
-                name={variant.name}
                 price={price}
+                optionValues={variant.values.map(
+                  (variantValue) => variantValue.optionValue
+                )}
                 flex={1}
               />
 

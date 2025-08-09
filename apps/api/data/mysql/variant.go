@@ -19,7 +19,7 @@ func (repo Repository) GetVariantList(ctx context.Context, query string, sortBy 
 	db := GetDbFromCtx(ctx, repo.db)
 
 	var variants []variant.Variant
-	result := db.Table("variants").Preload("Product").Preload("Product.Category").Preload("Materials").Preload("Materials.Material").Where("variants.deleted_at", nil).Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
+	result := db.Table("variants").Preload("Product").Preload("Product.Category").Preload("Materials").Preload("Materials.Material").Preload("VariantValues").Preload("VariantValues.OptionValue").Where("variants.deleted_at", nil).Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
 
 	if len(optionValueIds) > 0 {
 		result = result.Joins("JOIN variant_values ON variant_values.variant_id = variants.id").Where("variant_values.option_value_id IN ?", optionValueIds).Group("variants.id").Having("COUNT(*) = ?", len(optionValueIds))

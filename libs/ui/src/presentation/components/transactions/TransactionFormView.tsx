@@ -81,10 +81,12 @@ export const TransactionFormView = ({
                         />
                         <VariantListItem
                           flex={1}
-                          name={variant.name}
                           price={variant.price}
                           productImageUrl={variant.product.imageUrl}
                           productName={variant.product.name}
+                          optionValues={variant.values.map(
+                            (variantValue) => variantValue.optionValue
+                          )}
                         />
                       </XStack>
 

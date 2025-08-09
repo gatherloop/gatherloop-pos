@@ -1,29 +1,30 @@
-import { Pencil, Tag, Trash } from '@tamagui/lucide-icons';
+import { Pencil, Trash } from '@tamagui/lucide-icons';
 import { ListItem } from '../base';
 import { XStackProps } from 'tamagui';
+import { OptionValue } from '../../../domain';
 
 export type VariantListItemProps = {
-  name: string;
   price: number;
   productName: string;
   productImageUrl: string;
+  optionValues: OptionValue[];
   onEditMenuPress?: () => void;
   onDeleteMenuPress?: () => void;
 } & XStackProps;
 
 export const VariantListItem = ({
-  name,
   price,
   productName,
   productImageUrl,
+  optionValues,
   onEditMenuPress,
   onDeleteMenuPress,
   ...xStackProps
 }: VariantListItemProps) => {
   return (
     <ListItem
-      title={name}
-      subtitle={`Rp. ${price.toLocaleString('id')}`}
+      title={productName}
+      subtitle={optionValues.map((value) => value.name).join(' - ')}
       thumbnailSrc={productImageUrl}
       menus={[
         {
@@ -39,7 +40,7 @@ export const VariantListItem = ({
           isShown: typeof onDeleteMenuPress === 'function',
         },
       ]}
-      footerItems={[{ value: productName, icon: Tag }]}
+      footerItems={[{ value: `Rp. ${price.toLocaleString('id')}` }]}
       {...xStackProps}
     />
   );

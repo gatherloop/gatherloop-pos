@@ -11,7 +11,6 @@ import {
   Button,
   Paragraph,
   H4,
-  H5,
   usePopoverContext,
 } from 'tamagui';
 
@@ -101,9 +100,9 @@ export const ListItem = ({
           <YStack flex={1} justifyContent="center">
             <H4 ellipse>{title}</H4>
             {subtitle && (
-              <H5 textTransform="none" ellipse>
+              <Paragraph textTransform="none" ellipse size="$6">
                 {subtitle}
-              </H5>
+              </Paragraph>
             )}
           </YStack>
 

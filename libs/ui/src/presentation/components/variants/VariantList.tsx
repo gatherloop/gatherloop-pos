@@ -83,7 +83,9 @@ export const VariantList = ({
                   productName={item.product.name}
                   productImageUrl={item.product.imageUrl}
                   style={{ flex: 1 }}
-                  name={item.name}
+                  optionValues={item.values.map(
+                    (variantValue) => variantValue.optionValue
+                  )}
                   price={item.price}
                   onDeleteMenuPress={
                     onDeleteMenuPress
