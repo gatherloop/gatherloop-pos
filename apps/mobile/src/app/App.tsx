@@ -29,6 +29,9 @@ import {
   CalculationListScreen,
   CalculationCreateScreen,
   CalculationUpdateScreen,
+  CouponListScreen,
+  CouponCreateScreen,
+  CouponUpdateScreen,
 } from '@gatherloop-pos/ui';
 import { RootProvider } from '@gatherloop-pos/provider';
 import { NavigationContainer } from '@react-navigation/native';
@@ -43,6 +46,9 @@ export type RootStackParamList = {
   categoryList: undefined;
   categoryCreate: undefined;
   categoryUpdate: { categoryId: number };
+  couponList: undefined;
+  couponCreate: undefined;
+  couponUpdate: { couponId: number };
   materialList: undefined;
   materialCreate: undefined;
   materialUpdate: { materialId: number };
@@ -91,6 +97,14 @@ export const App = () => {
               path: 'categories/:categoryId',
               parse: {
                 categoryId: (categoryId) => parseInt(categoryId),
+              },
+            },
+            couponList: 'coupons',
+            couponCreate: 'coupons/create',
+            couponUpdate: {
+              path: 'coupons/:couponId',
+              parse: {
+                couponId: (couponId) => parseInt(couponId),
               },
             },
             materialList: 'materials',
@@ -207,6 +221,26 @@ export const App = () => {
                 categoryUpdateParams={{
                   category: null,
                   categoryId: props.route.params?.categoryId,
+                }}
+              />
+            )}
+          />
+          <Stack.Screen
+            name="couponList"
+            component={(
+              _props: NativeStackScreenProps<RootStackParamList, 'couponList'>
+            ) => <CouponListScreen couponListParams={{ coupons: [] }} />}
+          />
+          <Stack.Screen name="couponCreate" component={CouponCreateScreen} />
+          <Stack.Screen
+            name="couponUpdate"
+            component={(
+              props: NativeStackScreenProps<RootStackParamList, 'couponUpdate'>
+            ) => (
+              <CouponUpdateScreen
+                couponUpdateParams={{
+                  coupon: null,
+                  couponId: props.route.params?.couponId,
                 }}
               />
             )}
@@ -366,7 +400,7 @@ export const App = () => {
               >
             ) => (
               <VariantCreateScreen
-                variantCreateParams={{ categories: [] }}
+                variantCreateParams={{ products: [] }}
                 materialListParam={{
                   materials: [],
                   totalItem: 0,
@@ -381,7 +415,7 @@ export const App = () => {
             ) => (
               <VariantUpdateScreen
                 variantUpdateParams={{
-                  categories: [],
+                  products: [],
                   variant: null,
                   variantId: props.route.params.variantId,
                 }}
@@ -421,8 +455,8 @@ export const App = () => {
               >
             ) => (
               <TransactionCreateScreen
-                variantListParams={{
-                  variants: [],
+                transactionItemSelectParams={{
+                  products: [],
                   totalItem: 0,
                 }}
                 transactionPayParams={{
@@ -440,8 +474,8 @@ export const App = () => {
               >
             ) => (
               <TransactionUpdateScreen
-                variantListParams={{
-                  variants: [],
+                transactionItemSelectParams={{
+                  products: [],
                   totalItem: 0,
                 }}
                 transactionUpdateParams={{

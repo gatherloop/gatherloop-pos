@@ -6,6 +6,7 @@ import (
 	"apps/api/domain/budget"
 	"apps/api/domain/calculation"
 	"apps/api/domain/category"
+	"apps/api/domain/coupon"
 	"apps/api/domain/expense"
 	"apps/api/domain/material"
 	"apps/api/domain/product"
@@ -182,6 +183,38 @@ func ToApiCategory(category category.Category) apiContract.Category {
 func ToCategory(categoryRequest apiContract.CategoryRequest) category.Category {
 	return category.Category{
 		Name: categoryRequest.Name,
+	}
+}
+
+func GetCouponId(r *http.Request) (int64, error) {
+	vars := mux.Vars(r)
+	idParam := vars["couponId"]
+	id, err := strconv.ParseInt(idParam, 10, 32)
+	return id, err
+}
+
+func GetCouponRequest(r *http.Request) (apiContract.CouponRequest, error) {
+	var couponRequest apiContract.CouponRequest
+	err := json.NewDecoder(r.Body).Decode(&couponRequest)
+	return couponRequest, err
+}
+
+func ToApiCoupon(coupon coupon.Coupon) apiContract.Coupon {
+	return apiContract.Coupon{
+		Id:        coupon.Id,
+		Code:      coupon.Code,
+		Type:      string(coupon.Type),
+		Amount:    coupon.Amount,
+		CreatedAt: coupon.CreatedAt,
+		DeletedAt: coupon.DeletedAt,
+	}
+}
+
+func ToCoupon(couponRequest apiContract.CouponRequest) coupon.Coupon {
+	return coupon.Coupon{
+		Code:   couponRequest.Code,
+		Type:   coupon.CouponType(couponRequest.Type),
+		Amount: couponRequest.Amount,
 	}
 }
 

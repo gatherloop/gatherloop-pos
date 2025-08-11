@@ -3,6 +3,7 @@ export * from './material';
 export * from './product';
 export * from './variant';
 export * from './category';
+export * from './coupon';
 export * from './calculation';
 export * from './budget';
 export * from './wallet';

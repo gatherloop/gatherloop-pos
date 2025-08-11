@@ -11,6 +11,7 @@ import {
   LogOut,
   PiggyBank,
   Tag,
+  Ticket,
   Wallet,
 } from '@tamagui/lucide-icons';
 import { Button, H3, ListItem, YGroup, YStack } from 'tamagui';
@@ -26,6 +27,7 @@ const items: { title: string; icon: NamedExoticComponent; path: string }[] = [
   { title: 'Variants', icon: FileBox, path: '/variants' },
   { title: 'Materials', icon: Box, path: '/materials' },
   { title: 'Transactions', icon: CircleDollarSign, path: '/transactions' },
+  { title: 'Coupons', icon: Ticket, path: '/coupons' },
   { title: 'Expenses', icon: CreditCard, path: '/expenses' },
   { title: 'Wallets', icon: Wallet, path: '/wallets' },
   { title: 'Calculations', icon: Calculator, path: '/calculations' },
@@ -67,6 +69,8 @@ export const Sidebar = (props: SidebarProps) => {
                     backgroundColor="$colorTransparent"
                     hoverTheme
                     icon={item.icon}
+                    size="$5"
+                    cursor="pointer"
                   >
                     {item.title}
                   </ListItem>

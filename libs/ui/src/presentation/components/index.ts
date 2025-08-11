@@ -2,6 +2,7 @@ export * from './auth';
 export * from './base';
 export * from './budgets';
 export * from './categories';
+export * from './coupons';
 export * from './calculations';
 export * from './expenses';
 export * from './materials';

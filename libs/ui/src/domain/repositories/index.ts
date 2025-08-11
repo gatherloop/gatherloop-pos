@@ -6,6 +6,7 @@ export * from './productListQuery';
 export * from './material';
 export * from './materialListQuery';
 export * from './category';
+export * from './coupon';
 export * from './calculation';
 export * from './budget';
 export * from './wallet';

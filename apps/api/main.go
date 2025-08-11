@@ -6,6 +6,7 @@ import (
 	"apps/api/domain/budget"
 	"apps/api/domain/calculation"
 	"apps/api/domain/category"
+	"apps/api/domain/coupon"
 	"apps/api/domain/expense"
 	"apps/api/domain/material"
 	"apps/api/domain/product"
@@ -50,6 +51,7 @@ func main() {
 	materialRepository := mysql.NewMaterialRepository(db)
 	expenseRepository := mysql.NewExpenseRepository(db)
 	categoryRepository := mysql.NewCategoryRepository(db)
+	couponRepository := mysql.NewCouponRepository(db)
 	authRepository := mysql.NewAuthRepository(db)
 	calculationRepository := mysql.NewCalculationRepository(db)
 
@@ -60,6 +62,7 @@ func main() {
 	materialUsecase := material.NewUsecase(materialRepository)
 	expenseUsecase := expense.NewUsecase(expenseRepository, budgetRepository, walletRepository)
 	categoryUsecase := category.NewUsecase(categoryRepository)
+	couponUsecase := coupon.NewUsecase(couponRepository)
 	budgetUsecase := budget.NewUsecase(budgetRepository)
 	authUsecase := auth.NewUsecase(authRepository)
 	calculationUsecase := calculation.NewUsecase(calculationRepository, walletRepository)
@@ -71,6 +74,7 @@ func main() {
 	materialHandler := restapi.NewMaterialHandler(materialUsecase)
 	expenseHandler := restapi.NewExpenseHandler(expenseUsecase)
 	categoryHandler := restapi.NewCategoryHandler(categoryUsecase)
+	couponHandler := restapi.NewCouponHandler(couponUsecase)
 	budgetHandler := restapi.NewBudgetHandler(budgetUsecase)
 	authHandler := restapi.NewAuthHandler(authUsecase)
 	calculationHandler := restapi.NewCalculationHandler(calculationUsecase)
@@ -78,6 +82,7 @@ func main() {
 	restapi.NewAuthRouter(authHandler).AddRouter(router)
 	restapi.NewBudgetRouter(budgetHandler).AddRouter(router)
 	restapi.NewCategoryRouter(categoryHandler).AddRouter(router)
+	restapi.NewCouponRouter(couponHandler).AddRouter(router)
 	restapi.NewExpenseRouter(expenseHandler).AddRouter(router)
 	restapi.NewMaterialRouter(materialHandler).AddRouter(router)
 	restapi.NewVariantRouter(variantHandler).AddRouter(router)
