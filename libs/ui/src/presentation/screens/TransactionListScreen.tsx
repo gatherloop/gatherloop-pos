@@ -81,21 +81,45 @@ export const TransactionListScreen = (props: TransactionListScreenProps) => {
     });
   };
 
-  const onPrintMenuPress = (transaction: Transaction) => {
+  const onPrintInvoiceMenuPress = (transaction: Transaction) => {
     print({
-      createdAt: dayjs(transaction.createdAt).format('DD/MM/YYYY HH:mm'),
-      paidAt: transaction.paidAt
-        ? dayjs(transaction.paidAt).format('DD/MM/YYYY HH:mm')
-        : undefined,
-      name: transaction.name,
-      items: transaction.transactionItems.map(
-        ({ variant, amount, discountAmount }) => ({
-          name: variant.name,
-          price: variant.price,
-          amount,
-          discountAmount,
-        })
-      ),
+      type: 'INVOICE',
+      transaction: {
+        createdAt: dayjs(transaction.createdAt).format('DD/MM/YYYY HH:mm'),
+        paidAt: transaction.paidAt
+          ? dayjs(transaction.paidAt).format('DD/MM/YYYY HH:mm')
+          : undefined,
+        name: transaction.name,
+        items: transaction.transactionItems.map(
+          ({ variant, amount, discountAmount }) => ({
+            name: variant.name,
+            price: variant.price,
+            amount,
+            discountAmount,
+          })
+        ),
+      },
+    });
+  };
+
+  const onPrintOrderSlipMenuPress = (transaction: Transaction) => {
+    print({
+      type: 'ORDER_SLIP',
+      transaction: {
+        createdAt: dayjs(transaction.createdAt).format('DD/MM/YYYY HH:mm'),
+        paidAt: transaction.paidAt
+          ? dayjs(transaction.paidAt).format('DD/MM/YYYY HH:mm')
+          : undefined,
+        name: transaction.name,
+        items: transaction.transactionItems.map(
+          ({ variant, amount, discountAmount }) => ({
+            name: variant.name,
+            price: variant.price,
+            amount,
+            discountAmount,
+          })
+        ),
+      },
     });
   };
 
@@ -115,7 +139,8 @@ export const TransactionListScreen = (props: TransactionListScreenProps) => {
         onEditMenuPress={onEditMenuPress}
         onPayMenuPress={onPayMenuPress}
         onItemPress={onEditMenuPress}
-        onPrintMenuPress={onPrintMenuPress}
+        onPrintInvoiceMenuPress={onPrintInvoiceMenuPress}
+        onPrintOrderSlipMenuPress={onPrintOrderSlipMenuPress}
       />
       <TransactionDeleteAlert {...transactionDeleteController} />
       <TransactionPaymentAlert {...transactionPayController} />

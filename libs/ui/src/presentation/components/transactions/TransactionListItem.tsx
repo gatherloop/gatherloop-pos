@@ -21,7 +21,8 @@ export type TransactionListItemProps = {
   onPayMenuPress: () => void;
   onEditMenuPress: () => void;
   onDeleteMenuPress: () => void;
-  onPrintMenuPress: () => void;
+  onPrintInvoiceMenuPress: () => void;
+  onPrintOrderSlipMenuPress: () => void;
 } & XStackProps;
 
 export const TransactionListItem = ({
@@ -33,7 +34,8 @@ export const TransactionListItem = ({
   onPayMenuPress,
   onEditMenuPress,
   onDeleteMenuPress,
-  onPrintMenuPress,
+  onPrintInvoiceMenuPress,
+  onPrintOrderSlipMenuPress,
   ...xStackProps
 }: TransactionListItemProps) => {
   return (
@@ -49,9 +51,15 @@ export const TransactionListItem = ({
           isShown: paidAt === undefined,
         },
         {
-          title: 'Print',
+          title: 'Print Invoice',
           icon: Printer,
-          onPress: onPrintMenuPress,
+          onPress: onPrintInvoiceMenuPress,
+          isShown: Platform.OS === 'web',
+        },
+        {
+          title: 'Print Order Slip',
+          icon: Printer,
+          onPress: onPrintOrderSlipMenuPress,
           isShown: Platform.OS === 'web',
         },
         {
