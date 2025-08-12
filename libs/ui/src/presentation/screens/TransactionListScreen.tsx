@@ -92,7 +92,9 @@ export const TransactionListScreen = (props: TransactionListScreenProps) => {
         name: transaction.name,
         items: transaction.transactionItems.map(
           ({ variant, amount, discountAmount }) => ({
-            name: variant.name,
+            name: `${variant.product.name} - ${variant.values
+              .map(({ optionValue: { name } }) => name)
+              .join(' - ')}`,
             price: variant.price,
             amount,
             discountAmount,
@@ -113,7 +115,9 @@ export const TransactionListScreen = (props: TransactionListScreenProps) => {
         name: transaction.name,
         items: transaction.transactionItems.map(
           ({ variant, amount, discountAmount }) => ({
-            name: variant.name,
+            name: `${variant.product.name} - ${variant.values
+              .map(({ optionValue: { name } }) => name)
+              .join(' - ')}`,
             price: variant.price,
             amount,
             discountAmount,
