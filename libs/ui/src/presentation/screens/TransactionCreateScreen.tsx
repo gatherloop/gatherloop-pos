@@ -4,6 +4,7 @@ import {
   TransactionItemSelect,
   Layout,
   TransactionPaymentAlert,
+  useConfirmationAlert,
 } from '../components';
 import {
   useAuthLogoutController,
@@ -48,6 +49,7 @@ export const TransactionCreateScreen = (
 
   const router = useRouter();
   const { print } = usePrinter();
+  const { show } = useConfirmationAlert();
 
   useEffect(() => {
     if (transactionCreateController.state.type === 'submitSuccess') {
@@ -73,7 +75,7 @@ export const TransactionCreateScreen = (
 
   useEffect(() => {
     if (transactionPayController.state.type === 'payingSuccess') {
-      print({
+      const transaction = {
         createdAt: dayjs(new Date().toISOString()).format('DD/MM/YYYY HH:mm'),
         paidAt: dayjs(new Date().toISOString()).format('DD/MM/YYYY HH:mm'),
         name: transactionCreateController.form.getValues('name'),
@@ -85,12 +87,36 @@ export const TransactionCreateScreen = (
             amount,
             discountAmount,
           })),
+      };
+
+      show({
+        title: 'Print Invoice',
+        description: 'Do you want to print invoice ?',
+        onConfirm: () => {
+          print({ type: 'INVOICE', transaction })
+            .then(() => {
+              show({
+                title: 'Print Order Slip',
+                description: 'Do you want to print order slip ?',
+                onConfirm: () => {
+                  print({ type: 'ORDER_SLIP', transaction }).then(() => {
+                    router.push('/transactions');
+                  });
+                },
+                onCancel: () => router.push('/transactions'),
+              });
+            })
+            .catch(() => {
+              router.push('/transactions');
+            });
+        },
+        onCancel: () => router.push('/transactions'),
       });
-      router.push('/transactions');
     }
   }, [
     print,
     router,
+    show,
     transactionCreateController.form,
     transactionPayController.state.type,
   ]);

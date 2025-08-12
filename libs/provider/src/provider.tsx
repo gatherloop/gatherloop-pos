@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React, { ReactNode } from 'react';
-import { TamaguiProvider, TamaguiProviderProps, PortalProvider } from 'tamagui';
-import { tamaguiConfig } from '@gatherloop-pos/ui';
+import { TamaguiProvider, TamaguiProviderProps } from 'tamagui';
+import { tamaguiConfig, ConfirmationAlertProvider } from '@gatherloop-pos/ui';
 import { ToastProvider, ToastViewport } from '@tamagui/toast';
 import { CurrentToast } from './currentToast';
 
@@ -17,7 +17,9 @@ export const RootProvider = (props: RootProviderProps) => {
     <QueryClientProvider client={queryClient}>
       <TamaguiProvider config={tamaguiConfig} {...props.tamaguiProviderProps}>
         <ToastProvider>
-          {props.children}
+          <ConfirmationAlertProvider>
+            {props.children}
+          </ConfirmationAlertProvider>
           <CurrentToast />
           <ToastViewport
             flexDirection="column"
