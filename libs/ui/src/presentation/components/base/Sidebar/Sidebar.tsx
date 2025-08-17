@@ -69,7 +69,7 @@ export const Sidebar = (props: SidebarProps) => {
                     backgroundColor="$colorTransparent"
                     hoverTheme
                     icon={item.icon}
-                    size="$5"
+                    size="$4"
                     cursor="pointer"
                   >
                     {item.title}

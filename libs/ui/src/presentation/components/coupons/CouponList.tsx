@@ -7,8 +7,8 @@ import { Coupon } from '../../../domain';
 
 export type CouponListProps = {
   onRetryButtonPress: () => void;
-  onDeleteMenuPress: (coupon: Coupon) => void;
-  onEditMenuPress: (coupon: Coupon) => void;
+  onDeleteMenuPress?: (coupon: Coupon) => void;
+  onEditMenuPress?: (coupon: Coupon) => void;
   onItemPress: (coupon: Coupon) => void;
   variant:
     | { type: 'loading' }
@@ -45,8 +45,12 @@ export const CouponList = ({
                 code={item.code}
                 amount={item.amount}
                 type={item.type}
-                onDeleteMenuPress={() => onDeleteMenuPress(item)}
-                onEditMenuPress={() => onEditMenuPress(item)}
+                onDeleteMenuPress={
+                  onDeleteMenuPress ? () => onDeleteMenuPress(item) : undefined
+                }
+                onEditMenuPress={
+                  onEditMenuPress ? () => onEditMenuPress(item) : undefined
+                }
                 onPress={() => onItemPress(item)}
               />
             )}

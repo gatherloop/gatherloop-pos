@@ -462,6 +462,9 @@ export const App = () => {
                 transactionPayParams={{
                   wallets: [],
                 }}
+                couponListParams={{
+                  coupons: [],
+                }}
               />
             )}
           />
@@ -481,6 +484,9 @@ export const App = () => {
                 transactionUpdateParams={{
                   transaction: null,
                   transactionId: props.route.params.transactionId,
+                }}
+                couponListParams={{
+                  coupons: [],
                 }}
               />
             )}

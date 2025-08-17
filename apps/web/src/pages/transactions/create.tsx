@@ -1,4 +1,5 @@
 import {
+  ApiCouponRepository,
   ApiProductRepository,
   ApiWalletRepository,
   TransactionCreateScreen,
@@ -23,6 +24,7 @@ export const getServerSideProps: GetServerSideProps<
   const client = new QueryClient();
   const productRepository = new ApiProductRepository(client);
   const walletRepository = new ApiWalletRepository(client);
+  const couponRepository = new ApiCouponRepository(client);
 
   const page = 1;
   const itemPerPage = 100;
@@ -39,6 +41,10 @@ export const getServerSideProps: GetServerSideProps<
     headers: { Cookie: ctx.req.headers.cookie },
   });
 
+  const coupons = await couponRepository.fetchCouponList({
+    headers: { Cookie: ctx.req.headers.cookie },
+  });
+
   return {
     props: {
       transactionItemSelectParams: {
@@ -52,6 +58,9 @@ export const getServerSideProps: GetServerSideProps<
       },
       transactionPayParams: {
         wallets,
+      },
+      couponListParams: {
+        coupons,
       },
     },
   };

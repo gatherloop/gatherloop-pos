@@ -593,18 +593,31 @@ func ToApiTransaction(transaction transaction.Transaction) apiContract.Transacti
 		})
 	}
 
+	apiTransactionCoupons := []apiContract.TransactionCoupon{}
+	for _, transactionCoupon := range transaction.TransactionCoupons {
+		apiTransactionCoupons = append(apiTransactionCoupons, apiContract.TransactionCoupon{
+			Id:            transactionCoupon.Id,
+			CouponId:      transactionCoupon.CouponId,
+			Coupon:        ToApiCoupon(transactionCoupon.Coupon),
+			Type:          string(transactionCoupon.Type),
+			Amount:        transactionCoupon.Amount,
+			TransactionId: transactionCoupon.TransactionId,
+		})
+	}
+
 	return apiContract.Transaction{
-		Id:               transaction.Id,
-		Name:             transaction.Name,
-		DeletedAt:        transaction.DeletedAt,
-		CreatedAt:        transaction.CreatedAt,
-		WalletId:         transaction.WalletId,
-		Wallet:           (*apiContract.Wallet)(transaction.Wallet),
-		Total:            transaction.Total,
-		TotalIncome:      transaction.TotalIncome,
-		PaidAt:           transaction.PaidAt,
-		PaidAmount:       transaction.PaidAmount,
-		TransactionItems: apiTransactionItems,
+		Id:                 transaction.Id,
+		Name:               transaction.Name,
+		DeletedAt:          transaction.DeletedAt,
+		CreatedAt:          transaction.CreatedAt,
+		WalletId:           transaction.WalletId,
+		Wallet:             (*apiContract.Wallet)(transaction.Wallet),
+		Total:              transaction.Total,
+		TotalIncome:        transaction.TotalIncome,
+		PaidAt:             transaction.PaidAt,
+		PaidAmount:         transaction.PaidAmount,
+		TransactionItems:   apiTransactionItems,
+		TransactionCoupons: apiTransactionCoupons,
 	}
 }
 
@@ -623,9 +636,22 @@ func ToTransaction(transactionRequest apiContract.TransactionRequest) transactio
 		})
 	}
 
+	transactionCoupons := []transaction.TransactionCoupon{}
+	for _, transactionCoupon := range transactionRequest.TransactionCoupons {
+		var id int64
+		if transactionCoupon.Id != nil {
+			id = *transactionCoupon.Id
+		}
+		transactionCoupons = append(transactionCoupons, transaction.TransactionCoupon{
+			Id:       id,
+			CouponId: transactionCoupon.CouponId,
+		})
+	}
+
 	return transaction.Transaction{
-		Name:             transactionRequest.Name,
-		TransactionItems: transactionItems,
+		Name:               transactionRequest.Name,
+		TransactionItems:   transactionItems,
+		TransactionCoupons: transactionCoupons,
 	}
 }
 

@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"apps/api/domain/coupon"
 	"apps/api/domain/variant"
 	"apps/api/domain/wallet"
 	"time"
@@ -17,18 +18,28 @@ type TransactionItem struct {
 	Subtotal       float32
 }
 
+type TransactionCoupon struct {
+	Id            int64
+	TransactionId int64
+	CouponId      int64
+	Coupon        coupon.Coupon
+	Type          coupon.CouponType
+	Amount        int64
+}
+
 type Transaction struct {
-	Id               int64
-	CreatedAt        time.Time
-	Name             string
-	WalletId         *int64
-	Wallet           *wallet.Wallet
-	Total            float32
-	TotalIncome      float32
-	TransactionItems []TransactionItem
-	PaidAmount       float32
-	PaidAt           *time.Time
-	DeletedAt        *time.Time
+	Id                 int64
+	CreatedAt          time.Time
+	Name               string
+	WalletId           *int64
+	Wallet             *wallet.Wallet
+	Total              float32
+	TotalIncome        float32
+	TransactionItems   []TransactionItem
+	TransactionCoupons []TransactionCoupon
+	PaidAmount         float32
+	PaidAt             *time.Time
+	DeletedAt          *time.Time
 }
 
 type TransactionStatistic struct {

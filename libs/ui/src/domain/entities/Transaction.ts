@@ -1,3 +1,4 @@
+import { Coupon, CouponType } from './Coupon';
 import { Variant } from './Variant';
 import { Wallet } from './Wallet';
 
@@ -10,6 +11,13 @@ type TransactionItem = {
   subtotal: number;
 };
 
+type TransactionCoupon = {
+  id: number;
+  coupon: Coupon;
+  type: CouponType;
+  amount: number;
+};
+
 export type Transaction = {
   id: number;
   createdAt: string;
@@ -17,6 +25,7 @@ export type Transaction = {
   total: number;
   totalIncome: number;
   transactionItems: TransactionItem[];
+  transactionCoupons: TransactionCoupon[];
   wallet: Wallet | null;
   paidAt: string | null;
   paidAmount: number;
@@ -29,9 +38,15 @@ type TransactionItemForm = {
   discountAmount: number;
 };
 
+type TransactionCouponForm = {
+  id?: number;
+  coupon: Coupon;
+};
+
 export type TransactionForm = {
   name: string;
   transactionItems: TransactionItemForm[];
+  transactionCoupons: TransactionCouponForm[];
 };
 
 export type PaymentStatus = 'paid' | 'unpaid' | 'all';

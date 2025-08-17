@@ -3,6 +3,7 @@ package transaction
 import (
 	"apps/api/domain/base"
 	"apps/api/domain/budget"
+	"apps/api/domain/coupon"
 	"apps/api/domain/variant"
 	"apps/api/domain/wallet"
 	"context"
@@ -12,14 +13,16 @@ import (
 type Usecase struct {
 	repository        Repository
 	variantRepository variant.Repository
+	couponRepository  coupon.Repository
 	walletRepository  wallet.Repository
 	budgetRepository  budget.Repository
 }
 
-func NewUsecase(repository Repository, variantRepository variant.Repository, walletRepository wallet.Repository, budgetRepository budget.Repository) Usecase {
+func NewUsecase(repository Repository, variantRepository variant.Repository, couponRepository coupon.Repository, walletRepository wallet.Repository, budgetRepository budget.Repository) Usecase {
 	return Usecase{
 		repository:        repository,
 		variantRepository: variantRepository,
+		couponRepository:  couponRepository,
 		walletRepository:  walletRepository,
 		budgetRepository:  budgetRepository,
 	}
@@ -83,6 +86,38 @@ func (usecase Usecase) CreateTransaction(ctx context.Context, transactionRequest
 			return err
 		}
 
+		var transactionCoupons []TransactionCoupon
+
+		for _, transactionCoupon := range transactionRequest.TransactionCoupons {
+			couponItem, err := usecase.couponRepository.GetCouponById(ctxWithTx, transactionCoupon.CouponId)
+			if err != nil {
+				return err
+			}
+
+			couponDiscountAmount := 0
+			switch couponItem.Type {
+			case coupon.Fixed:
+				couponDiscountAmount = int(couponItem.Amount)
+			case coupon.Percentage:
+				couponDiscountAmount = int(transaction.Total) * int(couponItem.Amount) / 100
+			}
+
+			transaction.Total -= float32(couponDiscountAmount)
+
+			transactionCoupons = append(transactionCoupons, TransactionCoupon{
+				CouponId:      transactionCoupon.CouponId,
+				Type:          couponItem.Type,
+				Amount:        couponItem.Amount,
+				TransactionId: transaction.Id,
+			})
+		}
+
+		if len(transactionCoupons) > 0 {
+			if err := usecase.repository.CreateTransactionCoupons(ctxWithTx, transactionCoupons); err != nil {
+				return err
+			}
+		}
+
 		return usecase.repository.UpdateTransactionById(ctxWithTx, &Transaction{Total: transaction.Total}, transaction.Id)
 	})
 
@@ -141,6 +176,52 @@ func (usecase Usecase) UpdateTransactionById(ctx context.Context, transactionReq
 		for _, item := range existingTransaction.TransactionItems {
 			if !newIds[item.Id] {
 				if err := usecase.repository.DeleteTransactionItemById(ctxWithTx, item.Id); err != nil {
+					return err
+				}
+			}
+		}
+
+		var transactionCoupons []TransactionCoupon
+
+		for _, transactionCoupon := range transactionRequest.TransactionCoupons {
+			couponItem, err := usecase.couponRepository.GetCouponById(ctxWithTx, transactionCoupon.CouponId)
+			if err != nil {
+				return err
+			}
+
+			couponDiscountAmount := 0
+			switch couponItem.Type {
+			case coupon.Fixed:
+				couponDiscountAmount = int(couponItem.Amount)
+			case coupon.Percentage:
+				couponDiscountAmount = int(transaction.Total) * int(couponItem.Amount) / 100
+			}
+
+			transaction.Total -= float32(couponDiscountAmount)
+
+			transactionCoupons = append(transactionCoupons, TransactionCoupon{
+				CouponId:      transactionCoupon.CouponId,
+				Type:          couponItem.Type,
+				Amount:        couponItem.Amount,
+				TransactionId: id,
+				Id:            transactionCoupon.Id,
+			})
+		}
+
+		if len(transactionCoupons) > 0 {
+			if err := usecase.repository.CreateTransactionCoupons(ctxWithTx, transactionCoupons); err != nil {
+				return err
+			}
+		}
+
+		newTransactionCouponIds := make(map[int64]bool)
+		for _, couponitem := range transactionCoupons {
+			newTransactionCouponIds[couponitem.Id] = true
+		}
+
+		for _, couponItem := range existingTransaction.TransactionCoupons {
+			if !newTransactionCouponIds[couponItem.Id] {
+				if err := usecase.repository.DeleteTransactionCouponById(ctxWithTx, couponItem.Id); err != nil {
 					return err
 				}
 			}

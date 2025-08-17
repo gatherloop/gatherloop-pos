@@ -3,9 +3,11 @@ import {
   TransactionFormView,
   Layout,
   TransactionItemSelect,
+  CouponList,
 } from '../components';
 import {
   useAuthLogoutController,
+  useCouponListController,
   useTransactionUpdateController,
 } from '../controllers';
 import { useEffect } from 'react';
@@ -14,12 +16,14 @@ import {
   AuthLogoutUsecase,
   TransactionUpdateUsecase,
   TransactionItemSelectUsecase,
+  CouponListUsecase,
 } from '../../domain';
 import { useTransactionItemSelectController } from '../controllers/TransactionItemSelectController';
 
 export type TransactionUpdateScreenProps = {
   transactionUpdateUsecase: TransactionUpdateUsecase;
   transactionItemSelectUsecase: TransactionItemSelectUsecase;
+  couponListUsecase: CouponListUsecase;
   authLogoutUsecase: AuthLogoutUsecase;
 };
 
@@ -35,6 +39,8 @@ export const TransactionUpdateScreen = (
   const transactionItemSelectController = useTransactionItemSelectController(
     props.transactionItemSelectUsecase
   );
+
+  const couponListController = useCouponListController(props.couponListUsecase);
 
   const router = useRouter();
 
@@ -65,6 +71,12 @@ export const TransactionUpdateScreen = (
           {...transactionUpdateController}
           TransactionItemSelect={() => (
             <TransactionItemSelect {...transactionItemSelectController} />
+          )}
+          TransactionCouponList={() => (
+            <CouponList
+              {...couponListController}
+              onItemPress={transactionUpdateController.onAddCoupon}
+            />
           )}
         />
       </ScrollView>

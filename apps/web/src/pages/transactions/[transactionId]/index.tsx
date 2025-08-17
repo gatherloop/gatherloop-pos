@@ -3,6 +3,7 @@ import {
   TransactionUpdateScreen,
   TransactionUpdateScreenProps,
   ApiProductRepository,
+  ApiCouponRepository,
 } from '@gatherloop-pos/ui';
 import { QueryClient } from '@tanstack/react-query';
 import { GetServerSideProps } from 'next';
@@ -21,6 +22,7 @@ export const getServerSideProps: GetServerSideProps<
   const client = new QueryClient();
   const transactionRepository = new ApiTransactionRepository(client);
   const productRepository = new ApiProductRepository(client);
+  const couponRepository = new ApiCouponRepository(client);
 
   const transactionId = parseInt(ctx.params?.transactionId ?? '');
   const transaction = await transactionRepository.fetchTransactionById(
@@ -39,6 +41,10 @@ export const getServerSideProps: GetServerSideProps<
     { headers: { Cookie: ctx.req.headers.cookie } }
   );
 
+  const coupons = await couponRepository.fetchCouponList({
+    headers: { Cookie: ctx.req.headers.cookie },
+  });
+
   return {
     props: {
       transactionUpdateParams: { transaction, transactionId },
@@ -50,6 +56,9 @@ export const getServerSideProps: GetServerSideProps<
         page,
         query,
         sortBy,
+      },
+      couponListParams: {
+        coupons,
       },
     },
   };

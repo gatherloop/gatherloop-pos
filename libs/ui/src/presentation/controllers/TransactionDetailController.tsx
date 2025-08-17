@@ -13,6 +13,7 @@ export const useTransactionDetailController = (
     name: state.transaction?.name ?? '',
     total: state.transaction?.total ?? 0,
     transactionItems: state.transaction?.transactionItems ?? [],
+    transactionCoupons: state.transaction?.transactionCoupons ?? [],
     paidAt: state.transaction?.paidAt ?? undefined,
     walletName: state.transaction?.wallet?.name,
     paidAmount: state.transaction?.paidAmount ?? 0,

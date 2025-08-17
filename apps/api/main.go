@@ -56,7 +56,7 @@ func main() {
 	calculationRepository := mysql.NewCalculationRepository(db)
 
 	walletUsecase := wallet.NewUsecase(walletRepository)
-	transactionUsecase := transaction.NewUsecase(transactionRepository, variantRepository, walletRepository, budgetRepository)
+	transactionUsecase := transaction.NewUsecase(transactionRepository, variantRepository, couponRepository, walletRepository, budgetRepository)
 	variantUsecase := variant.NewUsecase(variantRepository)
 	productUsecase := product.NewUsecase(productRepository)
 	materialUsecase := material.NewUsecase(materialRepository)

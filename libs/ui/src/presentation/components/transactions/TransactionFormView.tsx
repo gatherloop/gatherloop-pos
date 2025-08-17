@@ -11,15 +11,28 @@ import {
 } from 'react-hook-form';
 import { ReactNode } from 'react';
 import { useKeyboardShortcut } from '../../../utils';
+import { CouponListItem } from '../coupons';
 
 export type TransactionFormViewProps = {
   form: UseFormReturn<TransactionForm>;
   onSubmit: (form: TransactionForm) => void;
   isVariantSheetOpen: boolean;
   onVariantSheetOpenChange: (isOpen: boolean) => void;
+  isCouponSheetOpen: boolean;
+  onCouponSheetOpenChange: (isOpen: boolean) => void;
   isSubmitDisabled: boolean;
   TransactionItemSelect: () => ReactNode;
-  fieldArray: UseFieldArrayReturn<TransactionForm, 'transactionItems', 'key'>;
+  TransactionCouponList: () => ReactNode;
+  itemsFieldArray: UseFieldArrayReturn<
+    TransactionForm,
+    'transactionItems',
+    'key'
+  >;
+  couponsFieldArray: UseFieldArrayReturn<
+    TransactionForm,
+    'transactionCoupons',
+    'key'
+  >;
 };
 
 export const TransactionFormView = ({
@@ -27,9 +40,13 @@ export const TransactionFormView = ({
   onSubmit,
   isVariantSheetOpen,
   onVariantSheetOpenChange,
+  isCouponSheetOpen,
+  onCouponSheetOpenChange,
   isSubmitDisabled,
   TransactionItemSelect,
-  fieldArray,
+  TransactionCouponList,
+  itemsFieldArray,
+  couponsFieldArray,
 }: TransactionFormViewProps) => {
   useKeyboardShortcut({
     ctrl: { ' ': () => onVariantSheetOpenChange(true) },
@@ -52,6 +69,15 @@ export const TransactionFormView = ({
                 </YStack>
               </Sheet>
 
+              <Sheet
+                isOpen={isCouponSheetOpen}
+                onOpenChange={onCouponSheetOpenChange}
+              >
+                <YStack gap="$3" flex={1} padding="$5">
+                  {TransactionCouponList()}
+                </YStack>
+              </Sheet>
+
               <XStack justifyContent="space-between" alignItems="center">
                 <H4>Transaction Items</H4>
                 <Button
@@ -63,7 +89,7 @@ export const TransactionFormView = ({
                 />
               </XStack>
               <YStack gap="$3">
-                {fieldArray.fields.map(({ variant, key }, index) => {
+                {itemsFieldArray.fields.map(({ variant, key }, index) => {
                   return (
                     <XStack
                       key={key}
@@ -74,7 +100,7 @@ export const TransactionFormView = ({
                         <Button
                           icon={Trash}
                           size="$3"
-                          onPress={() => fieldArray.remove(index)}
+                          onPress={() => itemsFieldArray.remove(index)}
                           theme="red"
                           color="$red8"
                           circular
@@ -144,25 +170,124 @@ export const TransactionFormView = ({
                   );
                 })}
               </YStack>
+
+              <XStack justifyContent="space-between" alignItems="center">
+                <H4>Transaction Coupons</H4>
+                <Button
+                  size="$3"
+                  icon={Plus}
+                  variant="outlined"
+                  onPress={() => onCouponSheetOpenChange(true)}
+                  circular
+                />
+              </XStack>
+              <YStack gap="$3">
+                {couponsFieldArray.fields.map(({ coupon, key }, index) => {
+                  return (
+                    <XStack
+                      key={key}
+                      gap="$5"
+                      $lg={{ flexDirection: 'column' }}
+                    >
+                      <XStack gap="$3" flex={1} alignItems="center">
+                        <Button
+                          icon={Trash}
+                          size="$3"
+                          onPress={() => couponsFieldArray.remove(index)}
+                          theme="red"
+                          color="$red8"
+                          circular
+                        />
+                        <CouponListItem
+                          flex={1}
+                          amount={coupon.amount}
+                          code={coupon.code}
+                          type={coupon.type}
+                        />
+                      </XStack>
+
+                      <XStack
+                        gap="$5"
+                        justifyContent="flex-end"
+                        alignItems="flex-end"
+                      >
+                        <YStack>
+                          <Paragraph textAlign="right">Subtotal</Paragraph>
+                          <FieldWatch
+                            control={form.control}
+                            name={['transactionItems', `transactionCoupons`]}
+                          >
+                            {([transactionItems, transactionCoupons]) => {
+                              let calculatedTotal = transactionItems.reduce(
+                                (prev, curr) =>
+                                  prev +
+                                  (curr.amount * curr.variant.price -
+                                    curr.discountAmount),
+                                0
+                              );
+
+                              for (let i = 0; i < index; i++) {
+                                const prevCoupon = transactionCoupons[i];
+                                const prevDiscountAmount =
+                                  prevCoupon.coupon.type === 'fixed'
+                                    ? prevCoupon.coupon.amount
+                                    : prevCoupon.coupon.type === 'percentage'
+                                    ? (calculatedTotal *
+                                        prevCoupon.coupon.amount) /
+                                      100
+                                    : 0;
+                                calculatedTotal -= prevDiscountAmount;
+                              }
+
+                              const discountAmount =
+                                coupon.type === 'fixed'
+                                  ? coupon.amount
+                                  : coupon.type === 'percentage'
+                                  ? (calculatedTotal * coupon.amount) / 100
+                                  : 0;
+
+                              return (
+                                <H4 textTransform="none" textAlign="right">
+                                  - Rp. {discountAmount.toLocaleString('id')}
+                                </H4>
+                              );
+                            }}
+                          </FieldWatch>
+                        </YStack>
+                      </XStack>
+                    </XStack>
+                  );
+                })}
+              </YStack>
             </YStack>
           </YStack>
           <YStack alignItems="flex-end">
             <H5 textTransform="none">Total</H5>
-            <FieldWatch control={form.control} name={['transactionItems']}>
-              {([transactionItems]) => (
-                <H3>
-                  Rp.{' '}
-                  {transactionItems
-                    .reduce(
-                      (prev, curr) =>
-                        prev +
-                        (curr.amount * curr.variant.price -
-                          curr.discountAmount),
-                      0
-                    )
-                    .toLocaleString('id')}
-                </H3>
-              )}
+            <FieldWatch
+              control={form.control}
+              name={['transactionItems', 'transactionCoupons']}
+            >
+              {([transactionItems, transactionCoupons]) => {
+                let total = transactionItems.reduce(
+                  (prev, curr) =>
+                    prev +
+                    (curr.amount * curr.variant.price - curr.discountAmount),
+                  0
+                );
+
+                for (let i = 0; i < transactionCoupons.length; i++) {
+                  const couponItem = transactionCoupons[i];
+                  const discountAmount =
+                    couponItem.coupon.type === 'fixed'
+                      ? couponItem.coupon.amount
+                      : couponItem.coupon.type === 'percentage'
+                      ? (total * couponItem.coupon.amount) / 100
+                      : 0;
+                  total -= discountAmount;
+                }
+
+                return <H3>Rp. {total.toLocaleString('id')}</H3>;
+              }}
             </FieldWatch>
           </YStack>
           <XStack justifyContent="flex-end" gap="$3">

@@ -5,9 +5,11 @@ import {
   Layout,
   TransactionPaymentAlert,
   useConfirmationAlert,
+  CouponList,
 } from '../components';
 import {
   useAuthLogoutController,
+  useCouponListController,
   useTransactionCreateController,
   useTransactionPayController,
 } from '../controllers';
@@ -18,6 +20,7 @@ import {
   TransactionCreateUsecase,
   TransactionPayUsecase,
   TransactionItemSelectUsecase,
+  CouponListUsecase,
 } from '../../domain';
 import { usePrinter } from '../../utils';
 import dayjs from 'dayjs';
@@ -27,6 +30,7 @@ export type TransactionCreateScreenProps = {
   transactionCreateUsecase: TransactionCreateUsecase;
   transactionItemSelectUsecase: TransactionItemSelectUsecase;
   transactionPayUsecase: TransactionPayUsecase;
+  couponListUsecase: CouponListUsecase;
   authLogoutUsecase: AuthLogoutUsecase;
 };
 
@@ -47,18 +51,35 @@ export const TransactionCreateScreen = (
     props.transactionPayUsecase
   );
 
+  const couponListController = useCouponListController(props.couponListUsecase);
+
   const router = useRouter();
   const { print } = usePrinter();
   const { show } = useConfirmationAlert();
 
   useEffect(() => {
-    if (transactionCreateController.state.type === 'submitSuccess') {
-      const transactionTotal =
+    if (
+      transactionCreateController.state.type === 'submitSuccess' &&
+      transactionPayController.state.type === 'hidden'
+    ) {
+      let transactionTotal =
         transactionCreateController.state.values.transactionItems.reduce(
           (prev, curr) =>
             prev + (curr.variant.price * curr.amount - curr.discountAmount),
           0
         );
+
+      transactionCreateController.state.values.transactionCoupons.forEach(
+        (couponItem) => {
+          const discountAmount =
+            couponItem.coupon.type === 'fixed'
+              ? couponItem.coupon.amount
+              : couponItem.coupon.type === 'percentage'
+              ? (transactionTotal * couponItem.coupon.amount) / 100
+              : 0;
+          transactionTotal -= discountAmount;
+        }
+      );
 
       transactionPayController.dispatch({
         type: 'SHOW_CONFIRMATION',
@@ -69,6 +90,7 @@ export const TransactionCreateScreen = (
   }, [
     transactionCreateController.state.transactionId,
     transactionCreateController.state.type,
+    transactionCreateController.state.values.transactionCoupons,
     transactionCreateController.state.values.transactionItems,
     transactionPayController,
   ]);
@@ -149,6 +171,12 @@ export const TransactionCreateScreen = (
           {...transactionCreateController}
           TransactionItemSelect={() => (
             <TransactionItemSelect {...transactionItemSelectController} />
+          )}
+          TransactionCouponList={() => (
+            <CouponList
+              {...couponListController}
+              onItemPress={transactionCreateController.onAddCoupon}
+            />
           )}
         />
       </ScrollView>

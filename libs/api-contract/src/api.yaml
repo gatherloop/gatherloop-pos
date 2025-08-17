@@ -2042,6 +2042,7 @@ components:
         - totalIncome
         - paidAmount
         - transactionItems
+        - transactionCoupons
       properties:
         id:
           type: integer
@@ -2066,6 +2067,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TransactionItem'
+        transactionCoupons:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransactionCoupon'
         paidAt:
           type: string
           format: date-time
@@ -2077,6 +2082,7 @@ components:
       required:
         - name
         - transactionItems
+        - transactionCoupons
       properties:
         name:
           type: string
@@ -2084,6 +2090,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TransactionItemRequest'
+        transactionCoupons:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransactionCouponRequest'
     TransactionItem:
       type: object
       required:
@@ -2132,6 +2142,46 @@ components:
           type: number
         discountAmount:
           type: number
+    TransactionCoupon:
+      type: object
+      required:
+        - id
+        - transactionId
+        - couponId
+        - coupon
+        - type
+        - amount
+      properties:
+        id:
+          type: integer
+          format: int64
+        transactionId:
+          type: integer
+          format: int64
+        couponId:
+          type: integer
+          format: int64
+        coupon:
+          $ref: '#/components/schemas/Coupon'
+        type:
+          type: string
+          enum:
+            - percentage
+            - fixed
+        amount:
+          type: integer
+          format: int64
+    TransactionCouponRequest:
+      type: object
+      required:
+        - couponId
+      properties:
+        id:
+          type: integer
+          format: int64
+        couponId:
+          type: integer
+          format: int64
     TransactionPayRequest:
       type: object
       required:

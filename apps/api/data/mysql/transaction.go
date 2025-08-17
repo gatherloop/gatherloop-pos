@@ -19,7 +19,7 @@ func (repo Repository) GetTransactionList(ctx context.Context, query string, sor
 	db := GetDbFromCtx(ctx, repo.db)
 
 	var transactionResults []transaction.Transaction
-	result := db.Table("transactions").Where("deleted_at is NULL").Preload("TransactionItems").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").Preload("Wallet").Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
+	result := db.Table("transactions").Where("deleted_at is NULL").Preload("TransactionItems").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").Preload("TransactionCoupons").Preload("TransactionCoupons.Coupon").Preload("Wallet").Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
 
 	if query != "" {
 		result = result.Where("name LIKE ?", "%"+query+"%")
@@ -70,7 +70,7 @@ func (repo Repository) GetTransactionById(ctx context.Context, id int64) (transa
 	db := GetDbFromCtx(ctx, repo.db)
 
 	var transaction transaction.Transaction
-	result := db.Table("transactions").Where("id = ?", id).Preload("TransactionItems").Preload("Wallet").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.Materials").Preload("TransactionItems.Variant.Materials.Material").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").First(&transaction)
+	result := db.Table("transactions").Where("id = ?", id).Preload("TransactionItems").Preload("Wallet").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.Materials").Preload("TransactionItems.Variant.Materials.Material").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").Preload("TransactionCoupons").Preload("TransactionCoupons.Coupon").First(&transaction)
 	return transaction, ToError(result.Error)
 }
 
@@ -99,9 +99,21 @@ func (repo Repository) DeleteTransactionItemById(ctx context.Context, transactio
 	return ToError(result.Error)
 }
 
+func (repo Repository) DeleteTransactionCouponById(ctx context.Context, transactionCouponId int64) *base.Error {
+	db := GetDbFromCtx(ctx, repo.db)
+	result := db.Table("transaction_coupons").Where("id = ?", transactionCouponId).Delete(transaction.TransactionCoupon{})
+	return ToError(result.Error)
+}
+
 func (repo Repository) CreateTransactionItems(ctx context.Context, transactionItems []transaction.TransactionItem) *base.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	result := db.Clauses(clause.OnConflict{UpdateAll: true}).Table("transaction_items").Create(transactionItems)
+	return ToError(result.Error)
+}
+
+func (repo Repository) CreateTransactionCoupons(ctx context.Context, transactionCoupons []transaction.TransactionCoupon) *base.Error {
+	db := GetDbFromCtx(ctx, repo.db)
+	result := db.Clauses(clause.OnConflict{UpdateAll: true}).Table("transaction_coupons").Create(transactionCoupons)
 	return ToError(result.Error)
 }
 

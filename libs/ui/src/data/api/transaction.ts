@@ -86,6 +86,10 @@ export class ApiTransactionRepository implements TransactionRepository {
         variantId: item.variant.id,
         discountAmount: item.discountAmount,
       })),
+      transactionCoupons: formValues.transactionCoupons.map((item) => ({
+        id: item.id,
+        couponId: item.coupon.id,
+      })),
     }).then(({ data }) => ({ transactionId: data.id }));
   };
 
@@ -100,6 +104,10 @@ export class ApiTransactionRepository implements TransactionRepository {
         amount: item.amount,
         variantId: item.variant.id,
         discountAmount: item.discountAmount,
+      })),
+      transactionCoupons: formValues.transactionCoupons.map((item) => ({
+        id: item.id,
+        couponId: item.coupon.id,
       })),
     }).then();
   };
@@ -232,6 +240,18 @@ const transformers = {
             name: value.optionValue.name,
           },
         })),
+      },
+    })),
+    transactionCoupons: transaction.transactionCoupons.map((item) => ({
+      id: item.id,
+      type: item.type,
+      amount: item.amount,
+      coupon: {
+        id: item.coupon.id,
+        amount: item.coupon.amount,
+        code: item.coupon.code,
+        type: item.coupon.type,
+        createdAt: item.coupon.createdAt,
       },
     })),
     paidAt: transaction.paidAt ?? null,

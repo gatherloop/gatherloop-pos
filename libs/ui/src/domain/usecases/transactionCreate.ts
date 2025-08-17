@@ -43,6 +43,7 @@ export class TransactionCreateUsecase extends Usecase<
       values: {
         name: '',
         transactionItems: [],
+        transactionCoupons: [],
       },
     };
   }

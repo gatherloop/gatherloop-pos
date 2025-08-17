@@ -4,6 +4,7 @@ import { VariantListItem } from '../variants';
 import { Calendar, CreditCard, User, Wallet } from '@tamagui/lucide-icons';
 import { H5 } from 'tamagui';
 import { Transaction } from '../../../domain';
+import { CouponListItem } from '../coupons';
 
 export type TransactionDetailProps = {
   name: string;
@@ -13,6 +14,7 @@ export type TransactionDetailProps = {
   total: number;
   paidAmount: number;
   transactionItems: Transaction['transactionItems'];
+  transactionCoupons: Transaction['transactionCoupons'];
 };
 
 export const TransactionDetail = ({
@@ -22,8 +24,39 @@ export const TransactionDetail = ({
   walletName,
   total,
   transactionItems,
+  transactionCoupons,
   paidAmount,
 }: TransactionDetailProps) => {
+  function getDiscountAmount(index: number) {
+    let calculatedTotal = transactionItems.reduce(
+      (prev, curr) =>
+        prev + (curr.amount * curr.variant.price - curr.discountAmount),
+      0
+    );
+
+    for (let i = 0; i < index; i++) {
+      const prevCoupon = transactionCoupons[i];
+      const prevDiscountAmount =
+        prevCoupon.coupon.type === 'fixed'
+          ? prevCoupon.coupon.amount
+          : prevCoupon.coupon.type === 'percentage'
+          ? (calculatedTotal * prevCoupon.coupon.amount) / 100
+          : 0;
+      calculatedTotal -= prevDiscountAmount;
+    }
+
+    const currentCoupon = transactionCoupons[index];
+
+    const discountAmount =
+      currentCoupon.type === 'fixed'
+        ? currentCoupon.amount
+        : currentCoupon.type === 'percentage'
+        ? (calculatedTotal * currentCoupon.amount) / 100
+        : 0;
+
+    return discountAmount;
+  }
+
   return (
     <YStack gap="$3">
       <XStack gap="$3" flexWrap="wrap" $md={{ flexDirection: 'column' }}>
@@ -149,6 +182,30 @@ export const TransactionDetail = ({
           )
         )}
       </YStack>
+
+      <H4>Transaction Coupons</H4>
+      <YStack gap="$3">
+        {transactionCoupons.map(({ amount, type, coupon }, index) => (
+          <YStack key={coupon.id} gap="$3">
+            <CouponListItem
+              amount={amount}
+              code={coupon.code}
+              type={type}
+              flex={1}
+            />
+
+            <XStack gap="$5" justifyContent="flex-end">
+              <YStack>
+                <Paragraph textAlign="right">Subtotal</Paragraph>
+                <H4 textAlign="right">
+                  - Rp. {getDiscountAmount(index).toLocaleString('id')}
+                </H4>
+              </YStack>
+            </XStack>
+          </YStack>
+        ))}
+      </YStack>
+
       <YStack alignItems="flex-end">
         <Paragraph>Total</Paragraph>
         <H3>Rp. {total.toLocaleString('id')}</H3>

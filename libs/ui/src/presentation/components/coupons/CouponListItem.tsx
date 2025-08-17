@@ -6,8 +6,8 @@ export type CouponListItemProps = {
   code: string;
   amount: number;
   type: 'fixed' | 'percentage';
-  onEditMenuPress: () => void;
-  onDeleteMenuPress: () => void;
+  onEditMenuPress?: () => void;
+  onDeleteMenuPress?: () => void;
 } & XStackProps;
 
 export const CouponListItem = ({

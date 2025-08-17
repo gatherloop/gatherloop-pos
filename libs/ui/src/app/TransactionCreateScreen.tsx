@@ -4,6 +4,7 @@ import {
   ApiTransactionRepository,
   ApiWalletRepository,
   ApiProductRepository,
+  ApiCouponRepository,
 } from '../data';
 import {
   AuthLogoutUsecase,
@@ -12,6 +13,8 @@ import {
   TransactionPayUsecase,
   TransactionItemSelectUsecase,
   TransactionItemSelectParams,
+  CouponListUsecase,
+  CouponListParams,
 } from '../domain';
 import { TransactionCreateScreen as TransactionCreateScreenView } from '../presentation';
 import { QueryClient } from '@tanstack/react-query';
@@ -19,17 +22,20 @@ import { QueryClient } from '@tanstack/react-query';
 export type TransactionCreateScreenProps = {
   transactionItemSelectParams: TransactionItemSelectParams;
   transactionPayParams: TransactionPayParams;
+  couponListParams: CouponListParams;
 };
 
 export function TransactionCreateScreen({
   transactionItemSelectParams,
   transactionPayParams,
+  couponListParams,
 }: TransactionCreateScreenProps) {
   const client = new QueryClient();
   const walletRepository = new ApiWalletRepository(client);
   const transactionRepository = new ApiTransactionRepository(client);
   const variantRepository = new ApiVariantRepository(client);
   const productRepository = new ApiProductRepository(client);
+  const couponRepository = new ApiCouponRepository(client);
   const authRepository = new ApiAuthRepository();
 
   const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
@@ -48,11 +54,17 @@ export function TransactionCreateScreen({
     transactionItemSelectParams
   );
 
+  const couponListUsecase = new CouponListUsecase(
+    couponRepository,
+    couponListParams
+  );
+
   return (
     <TransactionCreateScreenView
       transactionItemSelectUsecase={transactionItemSelectUsecase}
       transactionCreateUsecase={transactionCreateUsecase}
       transactionPayUsecase={transactionPayUsecase}
+      couponListUsecase={couponListUsecase}
       authLogoutUsecase={authLogoutUsecase}
     />
   );
