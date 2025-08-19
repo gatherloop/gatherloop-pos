@@ -268,12 +268,14 @@ export const TransactionFormView = ({
               name={['transactionItems', 'transactionCoupons']}
             >
               {([transactionItems, transactionCoupons]) => {
-                let total = transactionItems.reduce(
+                const total = transactionItems.reduce(
                   (prev, curr) =>
                     prev +
                     (curr.amount * curr.variant.price - curr.discountAmount),
                   0
                 );
+
+                let finalTotal = total;
 
                 for (let i = 0; i < transactionCoupons.length; i++) {
                   const couponItem = transactionCoupons[i];
@@ -281,12 +283,21 @@ export const TransactionFormView = ({
                     couponItem.coupon.type === 'fixed'
                       ? couponItem.coupon.amount
                       : couponItem.coupon.type === 'percentage'
-                      ? (total * couponItem.coupon.amount) / 100
+                      ? (finalTotal * couponItem.coupon.amount) / 100
                       : 0;
-                  total -= discountAmount;
+                  finalTotal -= discountAmount;
                 }
 
-                return <H3>Rp. {total.toLocaleString('id')}</H3>;
+                return (
+                  <YStack>
+                    {finalTotal < total ? (
+                      <H4 textDecorationLine="line-through">
+                        Rp. {total.toLocaleString('id')}
+                      </H4>
+                    ) : null}
+                    <H3>Rp. {finalTotal.toLocaleString('id')}</H3>
+                  </YStack>
+                );
               }}
             </FieldWatch>
           </YStack>

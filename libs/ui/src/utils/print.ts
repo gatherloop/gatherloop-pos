@@ -12,6 +12,13 @@ export type TransactionPrintPayload = {
       amount: number;
       discountAmount: number;
     }[];
+    coupons: {
+      code: string;
+      type: 'FIXED' | 'PERCENTAGE';
+      amount: number;
+    }[];
+    isCashless: boolean;
+    paidAmount: number;
   };
 };
 

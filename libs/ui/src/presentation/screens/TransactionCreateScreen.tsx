@@ -22,7 +22,7 @@ import {
   TransactionItemSelectUsecase,
   CouponListUsecase,
 } from '../../domain';
-import { usePrinter } from '../../utils';
+import { TransactionPrintPayload, usePrinter } from '../../utils';
 import dayjs from 'dayjs';
 import { useTransactionItemSelectController } from '../controllers/TransactionItemSelectController';
 
@@ -96,8 +96,15 @@ export const TransactionCreateScreen = (
   ]);
 
   useEffect(() => {
-    if (transactionPayController.state.type === 'payingSuccess') {
-      const transaction = {
+    const selectedWallet = transactionPayController.state.wallets.find(
+      ({ id }) => id === transactionPayController.state.walletId
+    );
+
+    if (
+      transactionPayController.state.type === 'payingSuccess' &&
+      selectedWallet
+    ) {
+      const transaction: TransactionPrintPayload['transaction'] = {
         createdAt: dayjs(new Date().toISOString()).format('DD/MM/YYYY HH:mm'),
         paidAt: dayjs(new Date().toISOString()).format('DD/MM/YYYY HH:mm'),
         name: transactionCreateController.form.getValues('name'),
@@ -111,6 +118,15 @@ export const TransactionCreateScreen = (
             amount,
             discountAmount,
           })),
+        coupons: transactionCreateController.form
+          .getValues('transactionCoupons')
+          .map(({ coupon }) => ({
+            amount: coupon.amount,
+            type: coupon.type === 'fixed' ? 'FIXED' : 'PERCENTAGE',
+            code: coupon.code,
+          })),
+        isCashless: selectedWallet.isCashless,
+        paidAmount: transactionPayController.state.paidAmount,
       };
 
       show({
@@ -142,7 +158,10 @@ export const TransactionCreateScreen = (
     router,
     show,
     transactionCreateController.form,
+    transactionPayController.state.paidAmount,
     transactionPayController.state.type,
+    transactionPayController.state.walletId,
+    transactionPayController.state.wallets,
   ]);
 
   useEffect(() => {

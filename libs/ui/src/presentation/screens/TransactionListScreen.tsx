@@ -100,6 +100,15 @@ export const TransactionListScreen = (props: TransactionListScreenProps) => {
             discountAmount,
           })
         ),
+        coupons: transaction.transactionCoupons.map(
+          ({ amount, type, coupon }) => ({
+            amount,
+            type: type === 'fixed' ? 'FIXED' : 'PERCENTAGE',
+            code: coupon.code,
+          })
+        ),
+        isCashless: transaction.wallet?.isCashless ?? false,
+        paidAmount: transaction.paidAmount,
       },
     });
   };
@@ -123,6 +132,15 @@ export const TransactionListScreen = (props: TransactionListScreenProps) => {
             discountAmount,
           })
         ),
+        coupons: transaction.transactionCoupons.map(
+          ({ amount, type, coupon }) => ({
+            amount,
+            type: type === 'fixed' ? 'FIXED' : 'PERCENTAGE',
+            code: coupon.code,
+          })
+        ),
+        isCashless: transaction.wallet?.isCashless ?? false,
+        paidAmount: transaction.paidAmount,
       },
     });
   };
