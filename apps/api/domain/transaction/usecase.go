@@ -6,6 +6,7 @@ import (
 	"apps/api/domain/coupon"
 	"apps/api/domain/variant"
 	"apps/api/domain/wallet"
+	"apps/api/utils"
 	"context"
 	"time"
 )
@@ -99,7 +100,7 @@ func (usecase Usecase) CreateTransaction(ctx context.Context, transactionRequest
 			case coupon.Fixed:
 				couponDiscountAmount = int(couponItem.Amount)
 			case coupon.Percentage:
-				couponDiscountAmount = int(transaction.Total) * int(couponItem.Amount) / 100
+				couponDiscountAmount = utils.RoundToNearest500(int(transaction.Total) * int(couponItem.Amount) / 100)
 			}
 
 			transaction.Total -= float32(couponDiscountAmount)
@@ -194,7 +195,7 @@ func (usecase Usecase) UpdateTransactionById(ctx context.Context, transactionReq
 			case coupon.Fixed:
 				couponDiscountAmount = int(couponItem.Amount)
 			case coupon.Percentage:
-				couponDiscountAmount = int(transaction.Total) * int(couponItem.Amount) / 100
+				couponDiscountAmount = utils.RoundToNearest500(int(transaction.Total) * int(couponItem.Amount) / 100)
 			}
 
 			transaction.Total -= float32(couponDiscountAmount)

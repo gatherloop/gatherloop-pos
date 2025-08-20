@@ -6,3 +6,4 @@ export * from './queryParam';
 export * from './stringUnionParser';
 export * from './url';
 export * from './usecase';
+export * from './math';

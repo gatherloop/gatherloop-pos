@@ -5,6 +5,7 @@ import { Calendar, CreditCard, User, Wallet } from '@tamagui/lucide-icons';
 import { H5 } from 'tamagui';
 import { Transaction } from '../../../domain';
 import { CouponListItem } from '../coupons';
+import { roundToNearest500 } from '../../../utils';
 
 export type TransactionDetailProps = {
   name: string;
@@ -40,7 +41,9 @@ export const TransactionDetail = ({
         prevCoupon.coupon.type === 'fixed'
           ? prevCoupon.coupon.amount
           : prevCoupon.coupon.type === 'percentage'
-          ? (calculatedTotal * prevCoupon.coupon.amount) / 100
+          ? roundToNearest500(
+              (calculatedTotal * prevCoupon.coupon.amount) / 100
+            )
           : 0;
       calculatedTotal -= prevDiscountAmount;
     }
@@ -51,7 +54,7 @@ export const TransactionDetail = ({
       currentCoupon.type === 'fixed'
         ? currentCoupon.amount
         : currentCoupon.type === 'percentage'
-        ? (calculatedTotal * currentCoupon.amount) / 100
+        ? roundToNearest500((calculatedTotal * currentCoupon.amount) / 100)
         : 0;
 
     return discountAmount;

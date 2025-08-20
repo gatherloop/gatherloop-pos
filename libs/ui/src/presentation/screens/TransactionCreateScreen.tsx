@@ -22,7 +22,11 @@ import {
   TransactionItemSelectUsecase,
   CouponListUsecase,
 } from '../../domain';
-import { TransactionPrintPayload, usePrinter } from '../../utils';
+import {
+  roundToNearest500,
+  TransactionPrintPayload,
+  usePrinter,
+} from '../../utils';
 import dayjs from 'dayjs';
 import { useTransactionItemSelectController } from '../controllers/TransactionItemSelectController';
 
@@ -75,7 +79,9 @@ export const TransactionCreateScreen = (
             couponItem.coupon.type === 'fixed'
               ? couponItem.coupon.amount
               : couponItem.coupon.type === 'percentage'
-              ? (transactionTotal * couponItem.coupon.amount) / 100
+              ? roundToNearest500(
+                  (transactionTotal * couponItem.coupon.amount) / 100
+                )
               : 0;
           transactionTotal -= discountAmount;
         }

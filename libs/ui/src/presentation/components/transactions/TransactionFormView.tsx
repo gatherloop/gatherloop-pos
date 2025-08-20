@@ -10,7 +10,7 @@ import {
   UseFormReturn,
 } from 'react-hook-form';
 import { ReactNode } from 'react';
-import { useKeyboardShortcut } from '../../../utils';
+import { roundToNearest500, useKeyboardShortcut } from '../../../utils';
 import { CouponListItem } from '../coupons';
 
 export type TransactionFormViewProps = {
@@ -232,9 +232,11 @@ export const TransactionFormView = ({
                                   prevCoupon.coupon.type === 'fixed'
                                     ? prevCoupon.coupon.amount
                                     : prevCoupon.coupon.type === 'percentage'
-                                    ? (calculatedTotal *
-                                        prevCoupon.coupon.amount) /
-                                      100
+                                    ? roundToNearest500(
+                                        (calculatedTotal *
+                                          prevCoupon.coupon.amount) /
+                                          100
+                                      )
                                     : 0;
                                 calculatedTotal -= prevDiscountAmount;
                               }
@@ -243,7 +245,9 @@ export const TransactionFormView = ({
                                 coupon.type === 'fixed'
                                   ? coupon.amount
                                   : coupon.type === 'percentage'
-                                  ? (calculatedTotal * coupon.amount) / 100
+                                  ? roundToNearest500(
+                                      (calculatedTotal * coupon.amount) / 100
+                                    )
                                   : 0;
 
                               return (
@@ -283,7 +287,9 @@ export const TransactionFormView = ({
                     couponItem.coupon.type === 'fixed'
                       ? couponItem.coupon.amount
                       : couponItem.coupon.type === 'percentage'
-                      ? (finalTotal * couponItem.coupon.amount) / 100
+                      ? roundToNearest500(
+                          (finalTotal * couponItem.coupon.amount) / 100
+                        )
                       : 0;
                   finalTotal -= discountAmount;
                 }
