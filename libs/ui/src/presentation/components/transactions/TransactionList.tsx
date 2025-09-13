@@ -115,6 +115,7 @@ export const TransactionList = ({
                 <TransactionListItem
                   createdAt={item.createdAt}
                   name={item.name}
+                  orderNumber={item.orderNumber}
                   total={item.total}
                   paidAt={item.paidAt ?? undefined}
                   walletName={item.wallet?.name}

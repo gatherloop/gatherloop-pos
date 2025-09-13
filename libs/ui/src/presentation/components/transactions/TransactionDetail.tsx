@@ -1,7 +1,13 @@
 import { Card, H3, H4, Paragraph, XStack, YStack } from 'tamagui';
 import dayjs from 'dayjs';
 import { VariantListItem } from '../variants';
-import { Calendar, CreditCard, User, Wallet } from '@tamagui/lucide-icons';
+import {
+  Calendar,
+  ConciergeBell,
+  CreditCard,
+  User,
+  Wallet,
+} from '@tamagui/lucide-icons';
 import { H5 } from 'tamagui';
 import { Transaction } from '../../../domain';
 import { CouponListItem } from '../coupons';
@@ -9,6 +15,7 @@ import { roundToNearest500 } from '../../../utils';
 
 export type TransactionDetailProps = {
   name: string;
+  orderNumber: number;
   createdAt: string;
   paidAt?: string;
   walletName?: string;
@@ -20,6 +27,7 @@ export type TransactionDetailProps = {
 
 export const TransactionDetail = ({
   name,
+  orderNumber,
   createdAt,
   paidAt,
   walletName,
@@ -74,6 +82,20 @@ export const TransactionDetail = ({
             </XStack>
           </Card.Header>
         </Card>
+
+        {orderNumber > 0 && (
+          <Card flex={1}>
+            <Card.Header>
+              <XStack gap="$3" alignItems="center">
+                <ConciergeBell size="$3" />
+                <YStack>
+                  <Paragraph>Order Number</Paragraph>
+                  <H5 textTransform="none">{orderNumber}</H5>
+                </YStack>
+              </XStack>
+            </Card.Header>
+          </Card>
+        )}
 
         <Card flex={1}>
           <Card.Header>

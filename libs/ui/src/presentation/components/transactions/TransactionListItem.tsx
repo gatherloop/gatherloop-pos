@@ -1,6 +1,7 @@
 import {
   Calendar,
   Clock,
+  ConciergeBell,
   DollarSign,
   Pencil,
   Printer,
@@ -14,6 +15,7 @@ import { Platform } from 'react-native';
 
 export type TransactionListItemProps = {
   name: string;
+  orderNumber: number;
   total: number;
   createdAt: string;
   paidAt?: string;
@@ -27,6 +29,7 @@ export type TransactionListItemProps = {
 
 export const TransactionListItem = ({
   name,
+  orderNumber,
   total,
   createdAt,
   paidAt,
@@ -76,6 +79,11 @@ export const TransactionListItem = ({
         },
       ]}
       footerItems={[
+        {
+          icon: ConciergeBell,
+          value: orderNumber.toString(),
+          isShown: orderNumber > 0,
+        },
         {
           icon: Calendar,
           value: dayjs(createdAt).format('DD/MM/YYYY'),

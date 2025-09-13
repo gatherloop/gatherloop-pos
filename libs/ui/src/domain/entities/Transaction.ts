@@ -22,6 +22,7 @@ export type Transaction = {
   id: number;
   createdAt: string;
   name: string;
+  orderNumber: number;
   total: number;
   totalIncome: number;
   transactionItems: TransactionItem[];
@@ -45,6 +46,7 @@ type TransactionCouponForm = {
 
 export type TransactionForm = {
   name: string;
+  orderNumber: number;
   transactionItems: TransactionItemForm[];
   transactionCoupons: TransactionCouponForm[];
 };

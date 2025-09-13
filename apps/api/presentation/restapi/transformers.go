@@ -619,6 +619,7 @@ func ToApiTransaction(transaction transaction.Transaction) apiContract.Transacti
 	return apiContract.Transaction{
 		Id:                 transaction.Id,
 		Name:               transaction.Name,
+		OrderNumber:        transaction.OrderNumber,
 		DeletedAt:          transaction.DeletedAt,
 		CreatedAt:          transaction.CreatedAt,
 		WalletId:           transaction.WalletId,
@@ -661,6 +662,7 @@ func ToTransaction(transactionRequest apiContract.TransactionRequest) transactio
 
 	return transaction.Transaction{
 		Name:               transactionRequest.Name,
+		OrderNumber:        transactionRequest.OrderNumber,
 		TransactionItems:   transactionItems,
 		TransactionCoupons: transactionCoupons,
 	}

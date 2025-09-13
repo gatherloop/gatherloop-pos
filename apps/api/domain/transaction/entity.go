@@ -31,6 +31,7 @@ type Transaction struct {
 	Id                 int64
 	CreatedAt          time.Time
 	Name               string
+	OrderNumber        int64
 	WalletId           *int64
 	Wallet             *wallet.Wallet
 	Total              float32

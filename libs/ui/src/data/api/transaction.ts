@@ -81,6 +81,7 @@ export class ApiTransactionRepository implements TransactionRepository {
   ) => {
     return transactionCreate({
       name: formValues.name,
+      orderNumber: formValues.orderNumber,
       transactionItems: formValues.transactionItems.map((item) => ({
         amount: item.amount,
         variantId: item.variant.id,
@@ -99,6 +100,7 @@ export class ApiTransactionRepository implements TransactionRepository {
   ) => {
     return transactionUpdateById(transactionId, {
       name: formValues.name,
+      orderNumber: formValues.orderNumber,
       transactionItems: formValues.transactionItems.map((item) => ({
         id: item.id,
         amount: item.amount,
@@ -203,6 +205,7 @@ const transformers = {
     id: transaction.id,
     createdAt: transaction.createdAt,
     name: transaction.name,
+    orderNumber: transaction.orderNumber,
     total: transaction.total,
     totalIncome: transaction.totalIncome,
     transactionItems: transaction.transactionItems.map((item) => ({

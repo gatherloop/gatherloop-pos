@@ -11,6 +11,7 @@ export const useTransactionDetailController = (
     id: state.transaction?.id ?? -1,
     createdAt: state.transaction?.createdAt ?? '',
     name: state.transaction?.name ?? '',
+    orderNumber: state.transaction?.orderNumber ?? 0,
     total: state.transaction?.total ?? 0,
     transactionItems: state.transaction?.transactionItems ?? [],
     transactionCoupons: state.transaction?.transactionCoupons ?? [],

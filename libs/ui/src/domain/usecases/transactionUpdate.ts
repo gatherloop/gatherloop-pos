@@ -56,6 +56,7 @@ export class TransactionUpdateUsecase extends Usecase<
       errorMessage: null,
       values: {
         name: this.params.transaction?.name ?? '',
+        orderNumber: this.params.transaction?.orderNumber ?? 0,
         transactionItems: this.params.transaction?.transactionItems ?? [],
         transactionCoupons: this.params.transaction?.transactionCoupons ?? [],
       },
@@ -141,6 +142,7 @@ export class TransactionUpdateUsecase extends Usecase<
               type: 'FETCH_SUCCESS',
               values: {
                 name: transaction.name,
+                orderNumber: transaction.orderNumber,
                 transactionItems: transaction.transactionItems.map((item) => ({
                   id: item.id,
                   amount: item.amount,

@@ -35,6 +35,7 @@ export const useTransactionCreateController = (
     resolver: zodResolver(
       z.object({
         name: z.string().min(1),
+        orderNumber: z.number(),
         transactionItems: z
           .array(
             z.lazy(() =>

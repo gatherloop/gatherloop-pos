@@ -55,9 +55,20 @@ export const TransactionFormView = ({
     <YStack>
       <FormProvider {...form}>
         <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
-          <Field name="name" label="Customer Name">
-            <InputText />
-          </Field>
+          <XStack gap="$3">
+            <Field name="name" label="Customer Name" maxWidth={300} flex={1}>
+              <InputText />
+            </Field>
+            <Field
+              name="orderNumber"
+              label="Order Number"
+              maxWidth={300}
+              flex={1}
+            >
+              <InputNumber />
+            </Field>
+          </XStack>
+
           <YStack>
             <YStack gap="$3">
               <Sheet

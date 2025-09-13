@@ -49,9 +49,10 @@ func (usecase Usecase) GetTransactionById(ctx context.Context, id int64) (Transa
 
 func (usecase Usecase) CreateTransaction(ctx context.Context, transactionRequest Transaction) (int64, *base.Error) {
 	transaction := Transaction{
-		CreatedAt: time.Now(),
-		Name:      transactionRequest.Name,
-		Total:     0,
+		CreatedAt:   time.Now(),
+		Name:        transactionRequest.Name,
+		OrderNumber: transactionRequest.OrderNumber,
+		Total:       0,
 	}
 
 	err := usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *base.Error {
@@ -137,8 +138,9 @@ func (usecase Usecase) UpdateTransactionById(ctx context.Context, transactionReq
 		}
 
 		transaction := Transaction{
-			Name:  transactionRequest.Name,
-			Total: 0,
+			Name:        transactionRequest.Name,
+			OrderNumber: transactionRequest.OrderNumber,
+			Total:       0,
 		}
 
 		var transactionItems []TransactionItem

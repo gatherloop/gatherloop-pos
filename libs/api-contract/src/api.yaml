@@ -2039,6 +2039,7 @@ components:
         - id
         - createdAt
         - name
+        - orderNumber
         - total
         - totalIncome
         - paidAmount
@@ -2051,6 +2052,9 @@ components:
         createdAt:
           type: string
           format: date-time
+        orderNumber:
+          type: integer
+          format: int64
         name:
           type: string
         walletId:
@@ -2082,11 +2086,15 @@ components:
       type: object
       required:
         - name
+        - orderNumber
         - transactionItems
         - transactionCoupons
       properties:
         name:
           type: string
+        orderNumber:
+          type: integer
+          format: int64
         transactionItems:
           type: array
           items:
