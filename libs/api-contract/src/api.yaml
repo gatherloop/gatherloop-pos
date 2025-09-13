@@ -962,6 +962,7 @@ paths:
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Skip'
         - $ref: '#/components/parameters/PaymentStatus'
+        - $ref: '#/components/parameters/WalletIdQuery'
       responses:
         '200':
           description: success response
@@ -2582,3 +2583,8 @@ components:
       schema:
         type: string
         enum: [paid, unpaid, all]
+    WalletIdQuery:
+      name: walletId
+      in: query
+      schema:
+        type: integer

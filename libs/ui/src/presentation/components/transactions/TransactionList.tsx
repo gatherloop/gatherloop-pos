@@ -2,7 +2,7 @@ import { EmptyView, ErrorView, LoadingView, Pagination } from '../base';
 import { Input, Paragraph, ToggleGroup, XStack, YStack } from 'tamagui';
 import { FlatList } from 'react-native';
 import { TransactionListItem } from './TransactionListItem';
-import { PaymentStatus, Transaction } from '../../../domain';
+import { PaymentStatus, Transaction, Wallet } from '../../../domain';
 import { Label } from 'tamagui';
 
 export type TransactionListProps = {
@@ -23,6 +23,9 @@ export type TransactionListProps = {
   onPrintInvoiceMenuPress: (transaction: Transaction) => void;
   onPrintOrderSlipMenuPress: (transaction: Transaction) => void;
   onItemPress: (transaction: Transaction) => void;
+  wallets: Wallet[];
+  walletId: number | null;
+  onWalletIdChange: (walletId: number | null) => void;
 };
 
 export const TransactionList = ({
@@ -43,6 +46,9 @@ export const TransactionList = ({
   onPayMenuPress,
   onPrintInvoiceMenuPress,
   onPrintOrderSlipMenuPress,
+  wallets,
+  walletId,
+  onWalletIdChange,
 }: TransactionListProps) => {
   return (
     <YStack gap="$3" flex={1}>
@@ -54,9 +60,31 @@ export const TransactionList = ({
           flex={1}
         />
         <XStack gap="$3" $xs={{ flexDirection: 'column' }}>
+          <Label paddingRight="$0">Wallet</Label>
+          <ToggleGroup
+            orientation="horizontal"
+            disableDeactivation
+            type="single"
+            value={walletId === null ? 'all' : walletId.toString()}
+            onValueChange={(value) =>
+              onWalletIdChange(value === 'all' ? null : parseInt(value))
+            }
+          >
+            <ToggleGroup.Item value="all" aria-label="all">
+              <Paragraph>All</Paragraph>
+            </ToggleGroup.Item>
+            {wallets.map((wallet) => (
+              <ToggleGroup.Item
+                value={wallet.id.toString()}
+                aria-label={wallet.name}
+              >
+                <Paragraph>{wallet.name}</Paragraph>
+              </ToggleGroup.Item>
+            ))}
+          </ToggleGroup>
+        </XStack>
+        <XStack gap="$3" $xs={{ flexDirection: 'column' }}>
           <Label paddingRight="$0">Payment Status</Label>
-          {/* eslint-disable-next-line @typescript-eslint/ban-ts-comment */}
-          {/* @ts-expect-error */}
           <ToggleGroup
             orientation="horizontal"
             disableDeactivation

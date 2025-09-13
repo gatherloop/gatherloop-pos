@@ -578,6 +578,17 @@ func GetPaymentStatus(r *http.Request) transaction.PaymentStatus {
 	}
 }
 
+func GetWalletIdQuery(r *http.Request) *int {
+	walletId := r.URL.Query().Get("walletId")
+
+	id, err := strconv.Atoi(walletId)
+	if err != nil {
+		return nil
+	}
+
+	return &id
+}
+
 func ToApiTransaction(transaction transaction.Transaction) apiContract.Transaction {
 	apiTransactionItems := []apiContract.TransactionItem{}
 	for _, item := range transaction.TransactionItems {

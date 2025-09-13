@@ -35,6 +35,7 @@ export function TransactionListScreen({
   const transactionListUsecase = new TransactionListUsecase(
     transactionRepository,
     transactionListQueryRepository,
+    walletRepository,
     transactionListParams
   );
   const transactionDeleteUsecase = new TransactionDeleteUsecase(

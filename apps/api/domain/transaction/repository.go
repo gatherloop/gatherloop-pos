@@ -8,8 +8,8 @@ import (
 
 type Repository interface {
 	BeginTransaction(ctx context.Context, callback func(ctxWithTx context.Context) *base.Error) *base.Error
-	GetTransactionList(ctx context.Context, query string, sortBy base.SortBy, order base.Order, skip int, limit int, paymentStatus PaymentStatus) ([]Transaction, *base.Error)
-	GetTransactionListTotal(ctx context.Context, query string, paymentStatus PaymentStatus) (int64, *base.Error)
+	GetTransactionList(ctx context.Context, query string, sortBy base.SortBy, order base.Order, skip int, limit int, paymentStatus PaymentStatus, walletId *int) ([]Transaction, *base.Error)
+	GetTransactionListTotal(ctx context.Context, query string, paymentStatus PaymentStatus, walletId *int) (int64, *base.Error)
 	GetTransactionById(ctx context.Context, id int64) (Transaction, *base.Error)
 	CreateTransaction(ctx context.Context, transaction *Transaction) *base.Error
 	UpdateTransactionById(ctx context.Context, transaction *Transaction, id int64) *base.Error

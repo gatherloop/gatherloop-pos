@@ -32,6 +32,7 @@ export const getServerSideProps: GetServerSideProps<
   const orderBy = transactionListQueryRepository.getOrderBy(url);
   const sortBy = transactionListQueryRepository.getSortBy(url);
   const paymentStatus = transactionListQueryRepository.getPaymentStatus(url);
+  const walletId = transactionListQueryRepository.getWalletId(url);
 
   const { totalItem, transactions } =
     await transactionRepository.fetchTransactionList(
@@ -42,6 +43,7 @@ export const getServerSideProps: GetServerSideProps<
         query,
         sortBy,
         paymentStatus,
+        walletId,
       },
       {
         headers: { Cookie: ctx.req.headers.cookie },
@@ -63,6 +65,8 @@ export const getServerSideProps: GetServerSideProps<
         paymentStatus,
         query,
         sortBy,
+        walletId,
+        wallets,
       },
       transactionPayParams: {
         wallets,

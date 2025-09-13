@@ -65,6 +65,17 @@ export class UrlTransactionListQueryRepository
   setPaymentStatus = (paymentStatus: PaymentStatus) => {
     setQueryParam('paymentStatus', paymentStatus);
   };
+
+  getWalletId = (url?: string): number | null => {
+    const walletId = getQueryParam('walletId', url);
+    return walletId === 'all' || walletId === undefined
+      ? null
+      : parseInt(walletId);
+  };
+
+  setWalletId = (walletId: number | null) => {
+    setQueryParam('walletId', walletId === null ? 'all' : walletId.toString());
+  };
 }
 
 const toSortBy = createStringUnionParser<'created_at'[]>(['created_at']);

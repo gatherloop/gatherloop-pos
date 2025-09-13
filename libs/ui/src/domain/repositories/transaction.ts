@@ -13,6 +13,7 @@ export interface TransactionRepository {
     sortBy: 'created_at';
     orderBy: 'asc' | 'desc';
     paymentStatus: PaymentStatus;
+    walletId: number | null;
   }) => {
     transactions: Transaction[];
     totalItem: number;
@@ -25,6 +26,7 @@ export interface TransactionRepository {
     sortBy: 'created_at';
     orderBy: 'asc' | 'desc';
     paymentStatus: PaymentStatus;
+    walletId: number | null;
   }) => Promise<{
     transactions: Transaction[];
     totalItem: number;

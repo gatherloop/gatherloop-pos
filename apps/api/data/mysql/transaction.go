@@ -15,7 +15,7 @@ func NewTransactionRepository(db *gorm.DB) transaction.Repository {
 	return Repository{db: db}
 }
 
-func (repo Repository) GetTransactionList(ctx context.Context, query string, sortBy base.SortBy, order base.Order, skip int, limit int, paymentStatus transaction.PaymentStatus) ([]transaction.Transaction, *base.Error) {
+func (repo Repository) GetTransactionList(ctx context.Context, query string, sortBy base.SortBy, order base.Order, skip int, limit int, paymentStatus transaction.PaymentStatus, walletId *int) ([]transaction.Transaction, *base.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 
 	var transactionResults []transaction.Transaction
@@ -40,12 +40,16 @@ func (repo Repository) GetTransactionList(ctx context.Context, query string, sor
 		result = result.Where("paid_at IS NULL")
 	}
 
+	if walletId != nil {
+		result = result.Where("wallet_id = ?", walletId)
+	}
+
 	result = result.Find(&transactionResults)
 
 	return transactionResults, ToError(result.Error)
 }
 
-func (repo Repository) GetTransactionListTotal(ctx context.Context, query string, paymentStatus transaction.PaymentStatus) (int64, *base.Error) {
+func (repo Repository) GetTransactionListTotal(ctx context.Context, query string, paymentStatus transaction.PaymentStatus, walletId *int) (int64, *base.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	var count int64
 	result := db.Table("transactions").Where("deleted_at", nil)
@@ -59,6 +63,10 @@ func (repo Repository) GetTransactionListTotal(ctx context.Context, query string
 		result = result.Where("paid_at IS NOT NULL")
 	case transaction.Unpaid:
 		result = result.Where("paid_at IS NULL")
+	}
+
+	if walletId != nil {
+		result = result.Where("wallet_id = ?", walletId)
 	}
 
 	result = result.Count(&count)

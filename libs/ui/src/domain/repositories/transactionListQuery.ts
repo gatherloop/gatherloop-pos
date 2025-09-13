@@ -18,4 +18,7 @@ export interface TransactionListQueryRepository {
 
   getPaymentStatus: () => PaymentStatus;
   setPaymentStatus: (paymentStatus: PaymentStatus) => void;
+
+  getWalletId: () => number | null;
+  setWalletId: (walletId: number | null) => void;
 }

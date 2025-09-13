@@ -17,6 +17,15 @@ export const useTransactionListController = (
     });
   };
 
+  const onWalletIdChange = (walletId: number | null) => {
+    dispatch({
+      type: 'CHANGE_PARAMS',
+      walletId,
+      page: 1,
+      fetchDebounceDelay: 600,
+    });
+  };
+
   const onSearchValueChange = (query: string) => {
     dispatch({
       type: 'CHANGE_PARAMS',
@@ -50,6 +59,7 @@ export const useTransactionListController = (
     onSearchValueChange,
     paymentStatus: state.paymentStatus,
     onPaymentStatusChange,
+    onWalletIdChange,
     onPageChange,
     onRetryButtonPress,
     variant,
@@ -58,5 +68,7 @@ export const useTransactionListController = (
     currentPage: state.page,
     totalItem: state.totalItem,
     itemPerPage: state.itemPerPage,
+    wallets: state.wallets,
+    walletId: state.walletId,
   };
 };
