@@ -62,7 +62,6 @@ export const TransactionList = ({
         <XStack gap="$3" $xs={{ flexDirection: 'column' }}>
           <Label paddingRight="$0">Wallet</Label>
           {/* eslint-disable-next-line @typescript-eslint/ban-ts-comment */}
-          {/* @ts-expect-error */}
           <ToggleGroup
             orientation="horizontal"
             disableDeactivation
@@ -88,7 +87,6 @@ export const TransactionList = ({
         <XStack gap="$3" $xs={{ flexDirection: 'column' }}>
           <Label paddingRight="$0">Payment Status</Label>
           {/* eslint-disable-next-line @typescript-eslint/ban-ts-comment */}
-          {/* @ts-expect-error */}
           <ToggleGroup
             orientation="horizontal"
             disableDeactivation
