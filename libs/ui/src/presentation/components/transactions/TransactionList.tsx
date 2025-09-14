@@ -1,5 +1,5 @@
 import { EmptyView, ErrorView, LoadingView, Pagination } from '../base';
-import { Input, Paragraph, ToggleGroup, XStack, YStack } from 'tamagui';
+import { Input, RadioGroup, XStack, YStack } from 'tamagui';
 import { FlatList } from 'react-native';
 import { TransactionListItem } from './TransactionListItem';
 import { PaymentStatus, Transaction, Wallet } from '../../../domain';
@@ -59,51 +59,71 @@ export const TransactionList = ({
           onChangeText={onSearchValueChange}
           flex={1}
         />
-        <XStack gap="$3" $xs={{ flexDirection: 'column' }}>
+        <XStack gap="$3" alignItems="center" $xs={{ flexDirection: 'column' }}>
           <Label paddingRight="$0">Wallet</Label>
-          {/* eslint-disable-next-line @typescript-eslint/ban-ts-comment */}
-          <ToggleGroup
-            orientation="horizontal"
-            disableDeactivation
-            type="single"
+
+          <RadioGroup
             value={walletId === null ? 'all' : walletId.toString()}
             onValueChange={(value) =>
               onWalletIdChange(value === 'all' ? null : parseInt(value))
             }
           >
-            <ToggleGroup.Item value="all" aria-label="all">
-              <Paragraph>All</Paragraph>
-            </ToggleGroup.Item>
-            {wallets.map((wallet) => (
-              <ToggleGroup.Item
-                value={wallet.id.toString()}
-                aria-label={wallet.name}
-              >
-                <Paragraph>{wallet.name}</Paragraph>
-              </ToggleGroup.Item>
-            ))}
-          </ToggleGroup>
+            <XStack gap="$3">
+              <XStack gap="$2" alignItems="center">
+                <RadioGroup.Item value="all" id="all-wallet">
+                  <RadioGroup.Indicator />
+                </RadioGroup.Item>
+
+                <Label htmlFor="all-wallet">All</Label>
+              </XStack>
+
+              {wallets.map((wallet) => (
+                <XStack gap="$2" alignItems="center">
+                  <RadioGroup.Item
+                    value={wallet.id.toString()}
+                    id={wallet.id.toString()}
+                  >
+                    <RadioGroup.Indicator />
+                  </RadioGroup.Item>
+
+                  <Label htmlFor={wallet.id.toString()}>{wallet.name}</Label>
+                </XStack>
+              ))}
+            </XStack>
+          </RadioGroup>
         </XStack>
-        <XStack gap="$3" $xs={{ flexDirection: 'column' }}>
+        <XStack gap="$3" alignItems="center" $xs={{ flexDirection: 'column' }}>
           <Label paddingRight="$0">Payment Status</Label>
-          {/* eslint-disable-next-line @typescript-eslint/ban-ts-comment */}
-          <ToggleGroup
-            orientation="horizontal"
-            disableDeactivation
-            type="single"
+          <RadioGroup
             value={paymentStatus}
-            onValueChange={onPaymentStatusChange}
+            onValueChange={(value) =>
+              onPaymentStatusChange(value as PaymentStatus)
+            }
+            gap="$2"
           >
-            <ToggleGroup.Item value="all" aria-label="all">
-              <Paragraph>All</Paragraph>
-            </ToggleGroup.Item>
-            <ToggleGroup.Item value="paid" aria-label="paid">
-              <Paragraph>Paid</Paragraph>
-            </ToggleGroup.Item>
-            <ToggleGroup.Item value="unpaid" aria-label="unpaid">
-              <Paragraph>Unpaid</Paragraph>
-            </ToggleGroup.Item>
-          </ToggleGroup>
+            <XStack gap="$3">
+              <XStack gap="$2" alignItems="center">
+                <RadioGroup.Item value="all" id="all-payment-status">
+                  <RadioGroup.Indicator />
+                </RadioGroup.Item>
+                <Label htmlFor="all-payment-status">All</Label>
+              </XStack>
+
+              <XStack gap="$2" alignItems="center">
+                <RadioGroup.Item value="paid" id="paid">
+                  <RadioGroup.Indicator />
+                </RadioGroup.Item>
+                <Label htmlFor="paid">Paid</Label>
+              </XStack>
+
+              <XStack gap="$2" alignItems="center">
+                <RadioGroup.Item value="unpaid" id="unpaid">
+                  <RadioGroup.Indicator />
+                </RadioGroup.Item>
+                <Label htmlFor="unpaid">Unpaid</Label>
+              </XStack>
+            </XStack>
+          </RadioGroup>
         </XStack>
       </XStack>
       {variant.type === 'loading' ? (
