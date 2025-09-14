@@ -90,6 +90,7 @@ export const TransactionListScreen = (props: TransactionListScreenProps) => {
           ? dayjs(transaction.paidAt).format('DD/MM/YYYY HH:mm')
           : undefined,
         name: transaction.name,
+        orderNumber: transaction.orderNumber,
         items: transaction.transactionItems.map(
           ({ variant, amount, discountAmount }) => ({
             name: `${variant.product.name} - ${variant.values
@@ -122,6 +123,7 @@ export const TransactionListScreen = (props: TransactionListScreenProps) => {
           ? dayjs(transaction.paidAt).format('DD/MM/YYYY HH:mm')
           : undefined,
         name: transaction.name,
+        orderNumber: transaction.orderNumber,
         items: transaction.transactionItems.map(
           ({ variant, amount, discountAmount }) => ({
             name: `${variant.product.name} - ${variant.values

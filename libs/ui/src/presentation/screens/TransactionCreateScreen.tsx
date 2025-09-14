@@ -114,6 +114,7 @@ export const TransactionCreateScreen = (
         createdAt: dayjs(new Date().toISOString()).format('DD/MM/YYYY HH:mm'),
         paidAt: dayjs(new Date().toISOString()).format('DD/MM/YYYY HH:mm'),
         name: transactionCreateController.form.getValues('name'),
+        orderNumber: transactionCreateController.form.getValues('orderNumber'),
         items: transactionCreateController.form
           .getValues('transactionItems')
           .map(({ variant, amount, discountAmount }) => ({

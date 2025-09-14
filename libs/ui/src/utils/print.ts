@@ -6,6 +6,7 @@ export type TransactionPrintPayload = {
     createdAt: string;
     paidAt?: string;
     name: string;
+    orderNumber: number;
     items: {
       name: string;
       price: number;
