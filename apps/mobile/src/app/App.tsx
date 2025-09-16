@@ -32,6 +32,9 @@ import {
   CouponListScreen,
   CouponCreateScreen,
   CouponUpdateScreen,
+  TransactionCategoryListScreen,
+  TransactionCategoryCreateScreen,
+  TransactionCategoryUpdateScreen,
 } from '@gatherloop-pos/ui';
 import { RootProvider } from '@gatherloop-pos/provider';
 import { NavigationContainer } from '@react-navigation/native';
@@ -77,6 +80,9 @@ export type RootStackParamList = {
   calculationList: undefined;
   calculationCreate: undefined;
   calculationUpdate: { calculationId: number };
+  transactionCategoryList: undefined;
+  transactionCategoryCreate: undefined;
+  transactionCategoryUpdate: { transactionCategoryId: number };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -178,6 +184,15 @@ export const App = () => {
               path: 'calculations/:calculationId',
               parse: {
                 calculationId: (calculationId) => parseInt(calculationId),
+              },
+            },
+            transactionCategoryList: 'transactionCategories',
+            transactionCategoryCreate: 'transactionCategories/create',
+            transactionCategoryUpdate: {
+              path: 'transactionCategories/:transactionCategoryId',
+              parse: {
+                transactionCategoryId: (transactionCategoryId) =>
+                  parseInt(transactionCategoryId),
               },
             },
           },
@@ -441,7 +456,11 @@ export const App = () => {
               >
             ) => (
               <TransactionListScreen
-                transactionListParams={{ transactions: [], totalItem: 0 }}
+                transactionListParams={{
+                  transactions: [],
+                  totalItem: 0,
+                  wallets: [],
+                }}
                 transactionPayParams={{ wallets: [] }}
               />
             )}
@@ -591,6 +610,50 @@ export const App = () => {
                   calculation: null,
                   calculationId: props.route.params.calculationId,
                   wallets: [],
+                }}
+              />
+            )}
+          />
+          <Stack.Screen
+            name="transactionCategoryList"
+            component={(
+              _props: NativeStackScreenProps<
+                RootStackParamList,
+                'transactionCategoryList'
+              >
+            ) => (
+              <TransactionCategoryListScreen
+                transactionCategoryListParams={{ transactionCategories: [] }}
+              />
+            )}
+          />
+          <Stack.Screen
+            name="transactionCategoryCreate"
+            component={(
+              _props: NativeStackScreenProps<
+                RootStackParamList,
+                'transactionCategoryCreate'
+              >
+            ) => (
+              <TransactionCategoryCreateScreen
+                transactionCategoryCreateParams={{ products: [] }}
+              />
+            )}
+          />
+          <Stack.Screen
+            name="transactionCategoryUpdate"
+            component={(
+              props: NativeStackScreenProps<
+                RootStackParamList,
+                'transactionCategoryUpdate'
+              >
+            ) => (
+              <TransactionCategoryUpdateScreen
+                transactionCategoryUpdateParams={{
+                  products: [],
+                  transactionCategory: null,
+                  transactionCategoryId:
+                    props.route.params.transactionCategoryId,
                 }}
               />
             )}

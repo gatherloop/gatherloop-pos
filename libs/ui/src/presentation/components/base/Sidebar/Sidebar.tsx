@@ -27,6 +27,11 @@ const items: { title: string; icon: NamedExoticComponent; path: string }[] = [
   { title: 'Variants', icon: FileBox, path: '/variants' },
   { title: 'Materials', icon: Box, path: '/materials' },
   { title: 'Transactions', icon: CircleDollarSign, path: '/transactions' },
+  {
+    title: 'Transaction Categories',
+    icon: Tag,
+    path: '/transaction-categories',
+  },
   { title: 'Coupons', icon: Ticket, path: '/coupons' },
   { title: 'Expenses', icon: CreditCard, path: '/expenses' },
   { title: 'Wallets', icon: Wallet, path: '/wallets' },

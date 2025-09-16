@@ -31,7 +31,7 @@ export class ApiProductRepository implements ProductRepository {
         queryKey: productFindByIdQueryKey(productId),
         queryFn: () => productFindById(productId, options),
       })
-      .then(({ data }) => transformers.product(data));
+      .then(({ data }) => productTransformers.product(data));
   };
 
   createProduct: ProductRepository['createProduct'] = (formValues) => {
@@ -90,7 +90,7 @@ export class ApiProductRepository implements ProductRepository {
       sortBy: 'created_at',
       orderBy: 'desc',
       errorMessage: null,
-      products: res?.data.map(transformers.product) ?? [],
+      products: res?.data.map(productTransformers.product) ?? [],
       totalItem: res?.meta.total ?? 0,
     };
   };
@@ -119,13 +119,13 @@ export class ApiProductRepository implements ProductRepository {
         queryFn: () => productList(queryParams, options),
       })
       .then((data) => ({
-        products: data.data.map(transformers.product),
+        products: data.data.map(productTransformers.product),
         totalItem: data.meta.total,
       }));
   };
 }
 
-const transformers = {
+export const productTransformers = {
   category: (category: ApiCategory): Category => ({
     id: category.id,
     name: category.name,
@@ -136,7 +136,7 @@ const transformers = {
     createdAt: product.createdAt,
     name: product.name,
     imageUrl: product.imageUrl,
-    category: transformers.category(product.category),
+    category: productTransformers.category(product.category),
     description: product.description ?? '',
     options: product.options,
   }),

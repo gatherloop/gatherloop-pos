@@ -14,3 +14,4 @@ export * from './expense';
 export * from './transaction';
 export * from './transactionListQuery';
 export * from './transactionStatisticListQuery';
+export * from './transactionCategory';

@@ -11,6 +11,7 @@ import (
 	"apps/api/domain/material"
 	"apps/api/domain/product"
 	"apps/api/domain/transaction"
+	"apps/api/domain/transactionCategory"
 	"apps/api/domain/variant"
 	"apps/api/domain/wallet"
 	"encoding/json"
@@ -215,6 +216,43 @@ func ToCoupon(couponRequest apiContract.CouponRequest) coupon.Coupon {
 		Code:   couponRequest.Code,
 		Type:   coupon.CouponType(couponRequest.Type),
 		Amount: couponRequest.Amount,
+	}
+}
+
+func GetTransactionCategoryId(r *http.Request) (int64, error) {
+	vars := mux.Vars(r)
+	idParam := vars["transactionCategoryId"]
+	id, err := strconv.ParseInt(idParam, 10, 32)
+	return id, err
+}
+
+func GetTransactionCategoryRequest(r *http.Request) (apiContract.TransactionCategoryRequest, error) {
+	var transactionCategoryRequest apiContract.TransactionCategoryRequest
+	err := json.NewDecoder(r.Body).Decode(&transactionCategoryRequest)
+	return transactionCategoryRequest, err
+}
+
+func ToApiTransactionCategory(transactionCategory transactionCategory.TransactionCategory) apiContract.TransactionCategory {
+	var checkoutProduct *apiContract.Product = nil
+	if transactionCategory.CheckoutProduct != nil {
+		product := ToApiProduct(*transactionCategory.CheckoutProduct)
+		checkoutProduct = &product
+	}
+
+	return apiContract.TransactionCategory{
+		Id:                transactionCategory.Id,
+		Name:              transactionCategory.Name,
+		DeletedAt:         transactionCategory.DeletedAt,
+		CreatedAt:         transactionCategory.CreatedAt,
+		CheckoutProductId: transactionCategory.CheckoutProductId,
+		CheckoutProduct:   checkoutProduct,
+	}
+}
+
+func ToTransactionCategory(transactionCategoryRequest apiContract.TransactionCategoryRequest) transactionCategory.TransactionCategory {
+	return transactionCategory.TransactionCategory{
+		Name:              transactionCategoryRequest.Name,
+		CheckoutProductId: transactionCategoryRequest.CheckoutProductId,
 	}
 }
 
