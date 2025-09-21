@@ -31,7 +31,7 @@ export class ApiVariantRepository implements VariantRepository {
         queryKey: variantFindByIdQueryKey(variantId),
         queryFn: () => variantFindById(variantId, options),
       })
-      .then(({ data }) => transformers.variant(data));
+      .then(({ data }) => variantTransformers.variant(data));
   };
 
   createVariant: VariantRepository['createVariant'] = (formValues) => {
@@ -103,7 +103,7 @@ export class ApiVariantRepository implements VariantRepository {
     this.client.removeQueries({ queryKey: variantListQueryKey(params) });
 
     return {
-      variants: res?.data.map(transformers.variant) ?? [],
+      variants: res?.data.map(variantTransformers.variant) ?? [],
       totalItem: res?.meta.total ?? 0,
     };
   };
@@ -136,12 +136,12 @@ export class ApiVariantRepository implements VariantRepository {
         queryFn: () => variantList(queryParams, options),
       })
       .then((data) => ({
-        variants: data.data.map(transformers.variant),
+        variants: data.data.map(variantTransformers.variant),
         totalItem: data.meta.total,
       }));
   };
 }
-const transformers = {
+export const variantTransformers = {
   category: (category: ApiCategory): Category => ({
     id: category.id,
     name: category.name,

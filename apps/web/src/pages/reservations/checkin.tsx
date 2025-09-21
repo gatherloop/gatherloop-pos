@@ -1,15 +1,13 @@
 import {
-  ApiCouponRepository,
   ApiProductRepository,
-  ApiWalletRepository,
-  TransactionCreateScreen,
-  TransactionCreateScreenProps,
+  ReservationCheckinScreen,
+  ReservationCheckinScreenProps,
 } from '@gatherloop-pos/ui';
 import { GetServerSideProps } from 'next';
 import { QueryClient } from '@tanstack/react-query';
 
 export const getServerSideProps: GetServerSideProps<
-  TransactionCreateScreenProps
+  ReservationCheckinScreenProps
 > = async (ctx) => {
   const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
   if (!isLoggedIn) {
@@ -23,8 +21,6 @@ export const getServerSideProps: GetServerSideProps<
 
   const client = new QueryClient();
   const productRepository = new ApiProductRepository(client);
-  const walletRepository = new ApiWalletRepository(client);
-  const couponRepository = new ApiCouponRepository(client);
 
   const page = 1;
   const itemPerPage = 100;
@@ -37,14 +33,6 @@ export const getServerSideProps: GetServerSideProps<
     { headers: { Cookie: ctx.req.headers.cookie } }
   );
 
-  const wallets = await walletRepository.fetchWalletList({
-    headers: { Cookie: ctx.req.headers.cookie },
-  });
-
-  const coupons = await couponRepository.fetchCouponList({
-    headers: { Cookie: ctx.req.headers.cookie },
-  });
-
   return {
     props: {
       transactionItemSelectParams: {
@@ -56,14 +44,8 @@ export const getServerSideProps: GetServerSideProps<
         query,
         sortBy,
       },
-      transactionPayParams: {
-        wallets,
-      },
-      couponListParams: {
-        coupons,
-      },
     },
   };
 };
 
-export default TransactionCreateScreen;
+export default ReservationCheckinScreen;

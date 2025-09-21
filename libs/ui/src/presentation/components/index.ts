@@ -9,4 +9,5 @@ export * from './materials';
 export * from './products';
 export * from './variants';
 export * from './transactions';
+export * from './reservations';
 export * from './wallets';

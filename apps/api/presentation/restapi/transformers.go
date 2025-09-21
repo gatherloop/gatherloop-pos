@@ -10,6 +10,7 @@ import (
 	"apps/api/domain/expense"
 	"apps/api/domain/material"
 	"apps/api/domain/product"
+	"apps/api/domain/reservation"
 	"apps/api/domain/transaction"
 	"apps/api/domain/variant"
 	"apps/api/domain/wallet"
@@ -216,13 +217,6 @@ func ToCoupon(couponRequest apiContract.CouponRequest) coupon.Coupon {
 		Type:   coupon.CouponType(couponRequest.Type),
 		Amount: couponRequest.Amount,
 	}
-}
-
-func GetTransactionCategoryId(r *http.Request) (int64, error) {
-	vars := mux.Vars(r)
-	idParam := vars["transactionCategoryId"]
-	id, err := strconv.ParseInt(idParam, 10, 32)
-	return id, err
 }
 
 func GetExpenseId(r *http.Request) (int64, error) {
@@ -680,6 +674,58 @@ func ToApiTransactionStatistic(transactionStatistic transaction.TransactionStati
 		Date:        transactionStatistic.Date,
 		Total:       transactionStatistic.Total,
 		TotalIncome: transactionStatistic.TotalIncome,
+	}
+}
+
+func GetReservationId(r *http.Request) (int64, error) {
+	vars := mux.Vars(r)
+	idParam := vars["reservationId"]
+	id, err := strconv.ParseInt(idParam, 10, 32)
+	return id, err
+}
+
+func GetCheckoutStatus(r *http.Request) reservation.CheckoutStatus {
+	checkoutStatusQuery := r.URL.Query().Get("checkoutStatus")
+	switch checkoutStatusQuery {
+	case "completed":
+		return reservation.Completed
+	case "ongoing":
+		return reservation.Ongoing
+	case "all":
+		return reservation.All
+	default:
+		return reservation.All
+	}
+}
+
+func GetReservationRequests(r *http.Request) ([]apiContract.ReservationRequest, error) {
+	var reservationRequests []apiContract.ReservationRequest
+	err := json.NewDecoder(r.Body).Decode(&reservationRequests)
+	return reservationRequests, err
+}
+
+func GetReservationIds(r *http.Request) ([]int64, error) {
+	var reservationRequests []int64
+	err := json.NewDecoder(r.Body).Decode(&reservationRequests)
+	return reservationRequests, err
+}
+
+func ToApiReservation(reservation reservation.Reservation) apiContract.Reservation {
+	return apiContract.Reservation{
+		Id:         reservation.Id,
+		Code:       reservation.Code,
+		VariantId:  reservation.VariantId,
+		Variant:    ToApiVariant(reservation.Variant),
+		CheckinAt:  reservation.CheckinAt,
+		CheckoutAt: reservation.CheckoutAt,
+		CreatedAt:  reservation.CreatedAt,
+	}
+}
+
+func ToReservation(reservationRequest apiContract.ReservationRequest) reservation.Reservation {
+	return reservation.Reservation{
+		Code:      reservationRequest.Code,
+		VariantId: reservationRequest.VariantId,
 	}
 }
 

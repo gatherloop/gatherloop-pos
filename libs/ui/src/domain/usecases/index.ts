@@ -43,4 +43,8 @@ export * from './calculationList';
 export * from './calculationDelete';
 export * from './calculationUpdate';
 export * from './calculationCreate';
+export * from './reservationList';
+export * from './reservationDelete';
+export * from './reservationCheckin';
+export * from './reservationCheckout';
 export * from './IUsecase';
