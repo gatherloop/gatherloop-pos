@@ -42,7 +42,3 @@ export * from './CalculationDeleteController';
 export * from './CalculationListController';
 export * from './CalculationCreateController';
 export * from './CalculationUpdateController';
-export * from './TransactionCategoryListController';
-export * from './TransactionCategoryCreateController';
-export * from './TransactionCategoryUpdateController';
-export * from './TransactionCategoryDeleteController';

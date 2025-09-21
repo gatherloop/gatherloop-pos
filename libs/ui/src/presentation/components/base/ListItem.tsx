@@ -12,6 +12,7 @@ import {
   Paragraph,
   H4,
   usePopoverContext,
+  Separator,
 } from 'tamagui';
 
 export type PopoverMenuProps = {
@@ -106,14 +107,37 @@ export const ListItem = ({
             )}
           </YStack>
 
+          <Separator />
+
           <XStack gap="$3" flexWrap="wrap">
             {shownFooterItems.map((footerItem, index) => (
-              <XStack gap="$2" alignItems="center" key={index}>
-                {footerItem.icon && (
-                  <footerItem.icon size="$1" color="$gray12" />
-                )}
-                <Paragraph color="$gray12">{footerItem.value}</Paragraph>
-              </XStack>
+              <>
+                <XStack
+                  gap="$2"
+                  alignItems={footerItem.label ? 'flex-start' : 'center'}
+                  key={index}
+                >
+                  {footerItem.icon && (
+                    <YStack
+                      theme="active"
+                      backgroundColor="$background"
+                      padding="$2"
+                      justifyContent="center"
+                      alignItems="center"
+                      borderRadius="$12"
+                    >
+                      <footerItem.icon size="$1" color="$gray12" />
+                    </YStack>
+                  )}
+                  <YStack>
+                    <Paragraph fontWeight="bold" color="$gray12">
+                      {footerItem.label}
+                    </Paragraph>
+                    <Paragraph color="$gray12">{footerItem.value}</Paragraph>
+                  </YStack>
+                </XStack>
+                <Separator vertical />
+              </>
             ))}
           </XStack>
         </YStack>

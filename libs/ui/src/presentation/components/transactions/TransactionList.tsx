@@ -1,5 +1,5 @@
 import { EmptyView, ErrorView, LoadingView, Pagination } from '../base';
-import { Input, RadioGroup, XStack, YStack } from 'tamagui';
+import { Card, Input, Paragraph, RadioGroup, XStack, YStack } from 'tamagui';
 import { FlatList } from 'react-native';
 import { TransactionListItem } from './TransactionListItem';
 import { PaymentStatus, Transaction, Wallet } from '../../../domain';
@@ -53,78 +53,90 @@ export const TransactionList = ({
   return (
     <YStack gap="$3" flex={1}>
       <XStack gap="$3" $xs={{ flexDirection: 'column' }}>
-        <Input
-          placeholder="Search Transaction by Customer Name"
-          value={searchValue}
-          onChangeText={onSearchValueChange}
-          flex={1}
-        />
-        <XStack gap="$3" alignItems="center" $xs={{ flexDirection: 'column' }}>
-          <Label paddingRight="$0">Wallet</Label>
+        <Card flex={1} justifyContent="center" padded>
+          <YStack justifyContent="center">
+            <Label htmlFor="search">Customer Name</Label>
+            <Input
+              id="search"
+              placeholder="Search Transaction by Customer Name"
+              value={searchValue}
+              onChangeText={onSearchValueChange}
+              flex={1}
+            />
+          </YStack>
+        </Card>
 
-          <RadioGroup
-            value={walletId === null ? 'all' : walletId.toString()}
-            onValueChange={(value) =>
-              onWalletIdChange(value === 'all' ? null : parseInt(value))
-            }
-          >
-            <XStack gap="$3">
-              <XStack gap="$2" alignItems="center">
-                <RadioGroup.Item value="all" id="all-wallet">
-                  <RadioGroup.Indicator />
-                </RadioGroup.Item>
+        <Card justifyContent="center" padded>
+          <YStack>
+            <Paragraph>Wallet</Paragraph>
 
-                <Label htmlFor="all-wallet">All</Label>
-              </XStack>
-
-              {wallets.map((wallet) => (
+            <RadioGroup
+              value={walletId === null ? 'all' : walletId.toString()}
+              onValueChange={(value) =>
+                onWalletIdChange(value === 'all' ? null : parseInt(value))
+              }
+            >
+              <XStack gap="$3">
                 <XStack gap="$2" alignItems="center">
-                  <RadioGroup.Item
-                    value={wallet.id.toString()}
-                    id={wallet.id.toString()}
-                  >
+                  <RadioGroup.Item value="all" id="all-wallet">
                     <RadioGroup.Indicator />
                   </RadioGroup.Item>
 
-                  <Label htmlFor={wallet.id.toString()}>{wallet.name}</Label>
+                  <Label htmlFor="all-wallet">All</Label>
                 </XStack>
-              ))}
-            </XStack>
-          </RadioGroup>
-        </XStack>
-        <XStack gap="$3" alignItems="center" $xs={{ flexDirection: 'column' }}>
-          <Label paddingRight="$0">Payment Status</Label>
-          <RadioGroup
-            value={paymentStatus}
-            onValueChange={(value) =>
-              onPaymentStatusChange(value as PaymentStatus)
-            }
-            gap="$2"
-          >
-            <XStack gap="$3">
-              <XStack gap="$2" alignItems="center">
-                <RadioGroup.Item value="all" id="all-payment-status">
-                  <RadioGroup.Indicator />
-                </RadioGroup.Item>
-                <Label htmlFor="all-payment-status">All</Label>
-              </XStack>
 
-              <XStack gap="$2" alignItems="center">
-                <RadioGroup.Item value="paid" id="paid">
-                  <RadioGroup.Indicator />
-                </RadioGroup.Item>
-                <Label htmlFor="paid">Paid</Label>
-              </XStack>
+                {wallets.map((wallet) => (
+                  <XStack gap="$2" alignItems="center">
+                    <RadioGroup.Item
+                      value={wallet.id.toString()}
+                      id={wallet.id.toString()}
+                    >
+                      <RadioGroup.Indicator />
+                    </RadioGroup.Item>
 
-              <XStack gap="$2" alignItems="center">
-                <RadioGroup.Item value="unpaid" id="unpaid">
-                  <RadioGroup.Indicator />
-                </RadioGroup.Item>
-                <Label htmlFor="unpaid">Unpaid</Label>
+                    <Label htmlFor={wallet.id.toString()}>{wallet.name}</Label>
+                  </XStack>
+                ))}
               </XStack>
-            </XStack>
-          </RadioGroup>
-        </XStack>
+            </RadioGroup>
+          </YStack>
+        </Card>
+
+        <Card justifyContent="center" padded>
+          <YStack>
+            <Paragraph>Payment Status</Paragraph>
+            <RadioGroup
+              value={paymentStatus}
+              onValueChange={(value) =>
+                onPaymentStatusChange(value as PaymentStatus)
+              }
+              gap="$2"
+            >
+              <XStack gap="$3">
+                <XStack gap="$2" alignItems="center">
+                  <RadioGroup.Item value="all" id="all-payment-status">
+                    <RadioGroup.Indicator />
+                  </RadioGroup.Item>
+                  <Label htmlFor="all-payment-status">All</Label>
+                </XStack>
+
+                <XStack gap="$2" alignItems="center">
+                  <RadioGroup.Item value="paid" id="paid">
+                    <RadioGroup.Indicator />
+                  </RadioGroup.Item>
+                  <Label htmlFor="paid">Paid</Label>
+                </XStack>
+
+                <XStack gap="$2" alignItems="center">
+                  <RadioGroup.Item value="unpaid" id="unpaid">
+                    <RadioGroup.Indicator />
+                  </RadioGroup.Item>
+                  <Label htmlFor="unpaid">Unpaid</Label>
+                </XStack>
+              </XStack>
+            </RadioGroup>
+          </YStack>
+        </Card>
       </XStack>
       {variant.type === 'loading' ? (
         <LoadingView title="Fetching Transactions..." />

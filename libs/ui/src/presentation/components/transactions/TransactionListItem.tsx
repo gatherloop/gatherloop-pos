@@ -1,6 +1,5 @@
 import {
   Calendar,
-  Clock,
   ConciergeBell,
   DollarSign,
   Pencil,
@@ -45,7 +44,8 @@ export const TransactionListItem = ({
     <ListItem
       title={name}
       subtitle={`Rp. ${total.toLocaleString('id')}`}
-      backgroundColor={paidAt ? '$gray1' : '$red3'}
+      backgroundColor="$background"
+      theme={paidAt ? 'gray' : 'red'}
       menus={[
         {
           title: 'Pay',
@@ -81,24 +81,24 @@ export const TransactionListItem = ({
       footerItems={[
         {
           icon: ConciergeBell,
+          label: 'ORDER NUMBER',
           value: orderNumber.toString(),
           isShown: orderNumber > 0,
         },
         {
           icon: Calendar,
-          value: dayjs(createdAt).format('DD/MM/YYYY'),
-        },
-        {
-          icon: Clock,
-          value: dayjs(createdAt).format('HH:mm'),
+          label: 'TRANSACTION DATE',
+          value: dayjs(createdAt).format('DD/MM/YYYY - HH:mm'),
         },
         {
           icon: DollarSign,
-          value: paidAt ? 'Paid' : 'Unpaid',
+          label: 'PAYMENT DATE',
+          value: dayjs(paidAt).format('DD/MM/YYYY - HH:mm'),
           isShown: typeof paidAt === 'string',
         },
         {
           icon: Wallet,
+          label: 'WALLET',
           value: walletName ?? '',
           isShown: typeof walletName === 'string',
         },

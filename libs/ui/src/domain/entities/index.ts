@@ -11,4 +11,3 @@ export * from './WalletTransfer';
 export * from './Expense';
 export * from './Transaction';
 export * from './TransactionStatistic';
-export * from './TransactionCategory';
