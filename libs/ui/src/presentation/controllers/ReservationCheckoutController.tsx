@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import {
   Reservation,
   ReservationCheckoutUsecase,
@@ -14,10 +14,6 @@ export const useReservationCheckoutController = (
   usecase: ReservationCheckoutUsecase
 ) => {
   const { state, dispatch } = useController(usecase);
-
-  const [isReservationSheetOpen, setIsReservationSheetOpen] =
-    useState<boolean>(false);
-  const onReservationSheetOpenChange = setIsReservationSheetOpen;
 
   const toast = useToastController();
   useEffect(() => {
@@ -61,14 +57,11 @@ export const useReservationCheckoutController = (
     }
 
     reservationsFieldArray.append(newReservation);
-    setIsReservationSheetOpen(false);
   };
 
   const isSubmitDisabled = state.type === 'submitting';
 
   return {
-    isReservationSheetOpen,
-    onReservationSheetOpenChange,
     state,
     dispatch,
     form,

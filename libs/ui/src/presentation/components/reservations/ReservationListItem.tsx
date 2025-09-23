@@ -1,10 +1,11 @@
-import { Calendar, Trash } from '@tamagui/lucide-icons';
+import { Calendar, QrCode, Trash } from '@tamagui/lucide-icons';
 import { ListItem } from '../base';
 import dayjs from 'dayjs';
 import { XStackProps } from 'tamagui';
 
 export type ReservationListItemProps = {
   code: string;
+  name: string;
   variantName: string;
   checkinAt: string;
   checkoutAt?: string;
@@ -14,6 +15,7 @@ export type ReservationListItemProps = {
 
 export const ReservationListItem = ({
   code,
+  name,
   variantName,
   checkinAt,
   checkoutAt,
@@ -25,8 +27,8 @@ export const ReservationListItem = ({
   const canDelete = dayjs().isBefore(target);
   return (
     <ListItem
-      title={variantName}
-      subtitle={code}
+      title={name}
+      subtitle={variantName}
       backgroundColor="$background"
       theme={checkoutAt ? 'gray' : 'red'}
       onPress={onItemPress}
@@ -42,6 +44,11 @@ export const ReservationListItem = ({
           : undefined
       }
       footerItems={[
+        {
+          icon: QrCode,
+          label: 'CODE',
+          value: code,
+        },
         {
           icon: Calendar,
           label: 'CHECKIN DATE',

@@ -1,7 +1,14 @@
-import { Sheet } from '../base';
-import { Button, Form, XStack, YStack } from 'tamagui';
+import {
+  Button,
+  Card,
+  Form,
+  Paragraph,
+  Separator,
+  XStack,
+  YStack,
+} from 'tamagui';
 import { H4 } from 'tamagui';
-import { Plus, Trash } from '@tamagui/lucide-icons';
+import { Calendar, QrCode, Trash } from '@tamagui/lucide-icons';
 import { ReservationCheckoutForm } from '../../../domain';
 import {
   FormProvider,
@@ -9,14 +16,11 @@ import {
   UseFormReturn,
 } from 'react-hook-form';
 import { ReactNode } from 'react';
-import { useKeyboardShortcut } from '../../../utils';
-import { ReservationListItem } from './ReservationListItem';
+import dayjs from 'dayjs';
 
 export type ReservationCheckoutFormViewProps = {
   form: UseFormReturn<ReservationCheckoutForm>;
   onSubmit: (form: ReservationCheckoutForm) => void;
-  isReservationSheetOpen: boolean;
-  onReservationSheetOpenChange: (isOpen: boolean) => void;
   isSubmitDisabled: boolean;
   ReservationItemSelect: () => ReactNode;
   reservationsFieldArray: UseFieldArrayReturn<
@@ -29,81 +33,96 @@ export type ReservationCheckoutFormViewProps = {
 export const ReservationCheckoutFormView = ({
   form,
   onSubmit,
-  isReservationSheetOpen,
-  onReservationSheetOpenChange,
   isSubmitDisabled,
   ReservationItemSelect,
   reservationsFieldArray,
 }: ReservationCheckoutFormViewProps) => {
-  useKeyboardShortcut({
-    ctrl: { ' ': () => onReservationSheetOpenChange(true) },
-  });
   return (
     <YStack>
       <FormProvider {...form}>
         <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
-          <YStack>
-            <YStack gap="$3">
-              <Sheet
-                isOpen={isReservationSheetOpen}
-                onOpenChange={onReservationSheetOpenChange}
-              >
-                <YStack gap="$3" flex={1} padding="$5">
-                  {ReservationItemSelect()}
+          <XStack gap="$5">
+            <YStack flex={1}>{ReservationItemSelect()}</YStack>
+            <YStack gap="$3" maxWidth={350} flex={1}>
+              <Card padded>
+                <YStack gap="$3">
+                  <H4>Items</H4>
+                  <YStack gap="$3">
+                    {reservationsFieldArray.fields.map(
+                      ({ variant, checkinAt, code, name, key }, index) => {
+                        return (
+                          <YStack
+                            key={key}
+                            gap="$3"
+                            justifyContent="space-between"
+                          >
+                            <XStack gap="$3" flex={1} alignItems="center">
+                              <Button
+                                icon={Trash}
+                                size="$3"
+                                onPress={() =>
+                                  reservationsFieldArray.remove(index)
+                                }
+                                theme="red"
+                                color="$red8"
+                                circular
+                              />
+                              <YStack>
+                                <Paragraph>{name}</Paragraph>
+                                <Paragraph>
+                                  {`${variant.product.name} - ${variant.values
+                                    .map(({ optionValue }) => optionValue.name)
+                                    .join(' - ')}`}
+                                </Paragraph>
+                                <XStack gap="$3">
+                                  <XStack gap="$3" alignItems="center">
+                                    <YStack
+                                      backgroundColor="$background"
+                                      theme="active"
+                                      padding="$2"
+                                      borderRadius="$12"
+                                    >
+                                      <QrCode size="$1" />
+                                    </YStack>
+                                    <Paragraph>{code}</Paragraph>
+                                  </XStack>
+                                  <XStack gap="$3" alignItems="center">
+                                    <YStack
+                                      backgroundColor="$background"
+                                      theme="active"
+                                      padding="$2"
+                                      borderRadius="$12"
+                                    >
+                                      <Calendar size="$1" />
+                                    </YStack>
+                                    <Paragraph>
+                                      {dayjs(checkinAt).format(
+                                        'DD/MM/YYYY - HH:mm'
+                                      )}
+                                    </Paragraph>
+                                  </XStack>
+                                </XStack>
+                              </YStack>
+                            </XStack>
+                            <Separator />
+                          </YStack>
+                        );
+                      }
+                    )}
+                  </YStack>
                 </YStack>
-              </Sheet>
-
-              <XStack justifyContent="space-between" alignItems="center">
-                <H4>Reservation Items</H4>
+              </Card>
+              <XStack justifyContent="flex-end" gap="$3">
                 <Button
-                  size="$3"
-                  icon={Plus}
-                  variant="outlined"
-                  onPress={() => onReservationSheetOpenChange(true)}
-                  circular
-                />
+                  disabled={isSubmitDisabled}
+                  onPress={form.handleSubmit(onSubmit)}
+                  size="$5"
+                  theme="blue"
+                >
+                  Submit
+                </Button>
               </XStack>
-              <YStack gap="$3">
-                {reservationsFieldArray.fields.map(
-                  ({ variant, checkinAt, code, key }, index) => {
-                    return (
-                      <XStack
-                        key={key}
-                        gap="$5"
-                        $lg={{ flexDirection: 'column' }}
-                      >
-                        <XStack gap="$3" flex={1} alignItems="center">
-                          <Button
-                            icon={Trash}
-                            size="$3"
-                            onPress={() => reservationsFieldArray.remove(index)}
-                            theme="red"
-                            color="$red8"
-                            circular
-                          />
-                          <ReservationListItem
-                            flex={1}
-                            checkinAt={checkinAt}
-                            code={code}
-                            variantName={variant.name}
-                          />
-                        </XStack>
-                      </XStack>
-                    );
-                  }
-                )}
-              </YStack>
             </YStack>
-          </YStack>
-          <XStack justifyContent="flex-end" gap="$3">
-            <Button
-              disabled={isSubmitDisabled}
-              onPress={form.handleSubmit(onSubmit)}
-              size="$5"
-              theme="blue"
-            >
-              Submit
-            </Button>
           </XStack>
         </Form>
       </FormProvider>

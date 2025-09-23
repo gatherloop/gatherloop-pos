@@ -8,6 +8,7 @@ import (
 type Reservation struct {
 	Id         int64
 	Code       string
+	Name       string
 	VariantId  int64
 	Variant    variant.Variant
 	CheckinAt  time.Time

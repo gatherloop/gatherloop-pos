@@ -186,15 +186,19 @@ export class TransactionItemSelectUsecase extends Usecase<
       )
       .with(
         [{ type: 'loaded' }, { type: 'SELECT_PRODUCT' }],
-        ([state, { product }]) =>
-          ({
+        ([state, { product }]) => {
+          const hasOneOptions =
+            product.options.length === 1 &&
+            product.options[0].values.length === 1;
+          return {
             ...state,
-            type: 'selectingOptions',
+            type: hasOneOptions ? 'loadingVariant' : 'selectingOptions',
             selectedProduct: product,
             selectedOptionValues: product.options
               .filter((option) => option.values.length > 0)
               .map((option) => option.values[0]),
-          } as const)
+          } as TransactionItemSelectState;
+        }
       )
       .with(
         [{ type: 'selectingOptions' }, { type: 'UNSELECT_PRODUCT' }],

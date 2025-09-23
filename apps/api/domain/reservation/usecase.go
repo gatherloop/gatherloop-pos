@@ -119,7 +119,10 @@ func (usecase Usecase) CheckoutReservations(ctx context.Context, reservationIds 
 				Price:          variant.Price,
 				DiscountAmount: 0,
 				Subtotal:       variant.Price * float32(resolvedHours),
+				ReservationId:  &existingReservation.Id,
 			})
+
+			transactionData.Name = existingReservation.Name
 		}
 
 		transactionData.Total = float32(total)

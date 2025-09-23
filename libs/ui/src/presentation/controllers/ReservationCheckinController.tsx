@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import {
   Variant,
   ReservationCheckinUsecase,
@@ -15,9 +15,6 @@ export const useReservationCheckinController = (
 ) => {
   const { state, dispatch } = useController(usecase);
 
-  const [isVariantSheetOpen, setIsVariantSheetOpen] = useState<boolean>(false);
-  const onVariantSheetOpenChange = setIsVariantSheetOpen;
-
   const toast = useToastController();
   useEffect(() => {
     if (state.type === 'submitSuccess')
@@ -30,6 +27,7 @@ export const useReservationCheckinController = (
     defaultValues: state.values,
     resolver: zodResolver(
       z.object({
+        name: z.string().min(1),
         reservations: z
           .array(
             z.lazy(() =>
@@ -64,15 +62,11 @@ export const useReservationCheckinController = (
       code: '',
       variant: newVariant,
     });
-
-    setIsVariantSheetOpen(false);
   };
 
   const isSubmitDisabled = state.type === 'submitting';
 
   return {
-    isVariantSheetOpen,
-    onVariantSheetOpenChange,
     state,
     dispatch,
     form,

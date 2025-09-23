@@ -3,6 +3,7 @@ import { Variant } from './Variant';
 export type Reservation = {
   id: number;
   code: string;
+  name: string;
   variant: Variant;
   createdAt: string;
   checkinAt: string;
@@ -10,6 +11,7 @@ export type Reservation = {
 };
 
 export type ReservationCheckinForm = {
+  name: string;
   reservations: {
     code: string;
     variant: Variant;

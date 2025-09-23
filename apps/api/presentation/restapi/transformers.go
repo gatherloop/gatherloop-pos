@@ -714,6 +714,7 @@ func ToApiReservation(reservation reservation.Reservation) apiContract.Reservati
 	return apiContract.Reservation{
 		Id:         reservation.Id,
 		Code:       reservation.Code,
+		Name:       reservation.Name,
 		VariantId:  reservation.VariantId,
 		Variant:    ToApiVariant(reservation.Variant),
 		CheckinAt:  reservation.CheckinAt,
@@ -725,6 +726,7 @@ func ToApiReservation(reservation reservation.Reservation) apiContract.Reservati
 func ToReservation(reservationRequest apiContract.ReservationRequest) reservation.Reservation {
 	return reservation.Reservation{
 		Code:      reservationRequest.Code,
+		Name:      reservationRequest.Name,
 		VariantId: reservationRequest.VariantId,
 	}
 }

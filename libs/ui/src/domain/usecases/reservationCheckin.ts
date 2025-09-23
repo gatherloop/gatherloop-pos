@@ -38,7 +38,7 @@ export class ReservationCheckinUsecase extends Usecase<
     return {
       type: 'loaded',
       errorMessage: null,
-      values: { reservations: [] },
+      values: { name: '', reservations: [] },
     };
   }
 

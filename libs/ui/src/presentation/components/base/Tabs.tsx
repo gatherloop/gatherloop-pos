@@ -13,12 +13,11 @@ export const Tabs = ({ tabs, defaultValue }: TabsProps) => {
       orientation="horizontal"
       flexDirection="column"
       borderRadius="$4"
-      borderWidth="$0.25"
       overflow="hidden"
       borderColor="$borderColor"
       flex={1}
     >
-      <TamaguiTabs.List padded gap="$3">
+      <TamaguiTabs.List padded gap="$3" flexWrap="wrap">
         {tabs.map(({ value, label }) => (
           <TamaguiTabs.Tab key={value} value={value} radiused>
             <SizableText fontFamily="$body">{label}</SizableText>

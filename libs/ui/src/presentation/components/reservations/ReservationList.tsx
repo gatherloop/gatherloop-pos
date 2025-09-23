@@ -1,9 +1,18 @@
 import { EmptyView, ErrorView, LoadingView, Pagination } from '../base';
-import { Card, Input, Paragraph, RadioGroup, XStack, YStack } from 'tamagui';
+import {
+  Button,
+  Input,
+  Paragraph,
+  RadioGroup,
+  Separator,
+  XStack,
+  YStack,
+} from 'tamagui';
 import { FlatList } from 'react-native';
 import { ReservationListItem } from './ReservationListItem';
 import { CheckoutStatus, Reservation } from '../../../domain';
 import { Label } from 'tamagui';
+import { X } from '@tamagui/lucide-icons';
 
 export type ReservationListProps = {
   searchValue: string;
@@ -19,6 +28,7 @@ export type ReservationListProps = {
   onRetryButtonPress: () => void;
   onDeleteMenuPress?: (reservation: Reservation) => void;
   onItemPress?: (reservation: Reservation) => void;
+  isSearchAutoFocus?: boolean;
 };
 
 export const ReservationList = ({
@@ -35,58 +45,58 @@ export const ReservationList = ({
   onRetryButtonPress,
   onDeleteMenuPress,
   onItemPress,
+  isSearchAutoFocus,
 }: ReservationListProps) => {
   return (
     <YStack gap="$3" flex={1}>
-      <XStack gap="$3" $xs={{ flexDirection: 'column' }}>
-        <Card flex={1} justifyContent="center" padded>
-          <YStack justifyContent="center">
-            <Label htmlFor="search">Code</Label>
-            <Input
-              id="search"
-              placeholder="Search Reservation by Code"
-              value={searchValue}
-              onChangeText={onSearchValueChange}
-              flex={1}
-            />
-          </YStack>
-        </Card>
+      <XStack gap="$3" alignItems="center" $xs={{ flexDirection: 'column' }}>
+        <XStack gap="$3" flex={1}>
+          <Input
+            id="search"
+            placeholder="Search Reservation by Code"
+            value={searchValue}
+            onChangeText={onSearchValueChange}
+            autoFocus={isSearchAutoFocus}
+            flex={1}
+          />
+          <Button icon={X} onPress={() => onSearchValueChange('')} circular />
+        </XStack>
 
-        <Card justifyContent="center" padded>
-          <YStack>
-            <Paragraph>Checkout Status</Paragraph>
-            <RadioGroup
-              value={checkoutStatus}
-              onValueChange={(value) =>
-                onCheckoutStatusChange(value as CheckoutStatus)
-              }
-              gap="$2"
-            >
-              <XStack gap="$3">
-                <XStack gap="$2" alignItems="center">
-                  <RadioGroup.Item value="all" id="all-checkout-status">
-                    <RadioGroup.Indicator />
-                  </RadioGroup.Item>
-                  <Label htmlFor="all-checkout-status">All</Label>
-                </XStack>
+        <Separator vertical />
 
-                <XStack gap="$2" alignItems="center">
-                  <RadioGroup.Item value="ongoing" id="ongoing">
-                    <RadioGroup.Indicator />
-                  </RadioGroup.Item>
-                  <Label htmlFor="ongoing">Ongoing</Label>
-                </XStack>
-
-                <XStack gap="$2" alignItems="center">
-                  <RadioGroup.Item value="completed" id="completed">
-                    <RadioGroup.Indicator />
-                  </RadioGroup.Item>
-                  <Label htmlFor="completed">Completed</Label>
-                </XStack>
+        <YStack>
+          <Paragraph>Checkout Status</Paragraph>
+          <RadioGroup
+            value={checkoutStatus}
+            onValueChange={(value) =>
+              onCheckoutStatusChange(value as CheckoutStatus)
+            }
+            gap="$2"
+          >
+            <XStack gap="$3">
+              <XStack gap="$2" alignItems="center">
+                <RadioGroup.Item value="all" id="all-checkout-status">
+                  <RadioGroup.Indicator />
+                </RadioGroup.Item>
+                <Label htmlFor="all-checkout-status">All</Label>
               </XStack>
-            </RadioGroup>
-          </YStack>
-        </Card>
+
+              <XStack gap="$2" alignItems="center">
+                <RadioGroup.Item value="ongoing" id="ongoing">
+                  <RadioGroup.Indicator />
+                </RadioGroup.Item>
+                <Label htmlFor="ongoing">Ongoing</Label>
+              </XStack>
+
+              <XStack gap="$2" alignItems="center">
+                <RadioGroup.Item value="completed" id="completed">
+                  <RadioGroup.Indicator />
+                </RadioGroup.Item>
+                <Label htmlFor="completed">Completed</Label>
+              </XStack>
+            </XStack>
+          </RadioGroup>
+        </YStack>
       </XStack>
       {variant.type === 'loading' ? (
         <LoadingView title="Fetching Reservations..." />
@@ -101,6 +111,7 @@ export const ReservationList = ({
                   checkoutAt={item.checkoutAt ?? undefined}
                   variantName={item.variant.name}
                   code={item.code}
+                  name={item.name}
                   onDeleteMenuPress={
                     onDeleteMenuPress
                       ? () => onDeleteMenuPress(item)

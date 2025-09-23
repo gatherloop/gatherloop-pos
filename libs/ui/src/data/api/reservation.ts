@@ -27,6 +27,7 @@ export class ApiReservationRepository implements ReservationRepository {
     return reservationCheckin(
       formValues.reservations.map((reservation) => ({
         code: reservation.code,
+        name: formValues.name,
         variantId: reservation.variant.id,
       }))
     ).then();
@@ -118,6 +119,7 @@ const transformers = {
   reservation: (reservation: ApiReservation): Reservation => ({
     id: reservation.id,
     code: reservation.code,
+    name: reservation.name,
     checkinAt: reservation.checkinAt,
     checkoutAt: reservation.checkoutAt ?? null,
     createdAt: reservation.createdAt,

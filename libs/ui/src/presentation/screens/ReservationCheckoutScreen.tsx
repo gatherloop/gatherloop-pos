@@ -13,6 +13,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'solito/router';
 import {
   AuthLogoutUsecase,
+  Reservation,
   ReservationCheckoutUsecase,
   ReservationListUsecase,
 } from '../../domain';
@@ -56,6 +57,11 @@ export const ReservationCheckoutScreen = (
     router,
   ]);
 
+  const onItemPress = (reservation: Reservation) => {
+    reservationCheckoutController.onAddItem(reservation);
+    reservationListController.onSearchValueChange('');
+  };
+
   return (
     <Layout
       {...authLogoutController}
@@ -67,7 +73,8 @@ export const ReservationCheckoutScreen = (
           {...reservationCheckoutController}
           ReservationItemSelect={() => (
             <ReservationList
-              onItemPress={reservationCheckoutController.onAddItem}
+              onItemPress={onItemPress}
+              isSearchAutoFocus
               {...reservationListController}
             />
           )}

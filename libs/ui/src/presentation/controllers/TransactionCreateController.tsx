@@ -16,9 +16,6 @@ export const useTransactionCreateController = (
 ) => {
   const { state, dispatch } = useController(usecase);
 
-  const [isVariantSheetOpen, setIsVariantSheetOpen] = useState<boolean>(false);
-  const onVariantSheetOpenChange = setIsVariantSheetOpen;
-
   const [isCouponSheetOpen, setIsCouponSheetOpen] = useState<boolean>(false);
   const onCouponSheetOpenChange = setIsCouponSheetOpen;
 
@@ -82,8 +79,6 @@ export const useTransactionCreateController = (
         discountAmount: 0,
       });
     }
-
-    setIsVariantSheetOpen(false);
   };
 
   const couponsFieldArray = useFieldArray<
@@ -117,8 +112,6 @@ export const useTransactionCreateController = (
   const isSubmitDisabled = state.type === 'submitting';
 
   return {
-    isVariantSheetOpen,
-    onVariantSheetOpenChange,
     isCouponSheetOpen,
     onCouponSheetOpenChange,
     state,
