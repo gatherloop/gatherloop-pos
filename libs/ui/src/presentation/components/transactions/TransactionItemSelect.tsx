@@ -223,9 +223,7 @@ export const TransactionItemSelect = ({
                           data={products.sort((a, b) =>
                             a.name.localeCompare(b.name)
                           )}
-                          numColumns={2}
                           contentContainerStyle={{ gap: 16 }}
-                          columnWrapperStyle={{ gap: 16 }}
                           renderItem={({ item }) => (
                             <Focusable
                               onEnterPress={() => onSelectProduct(item)}

@@ -59,7 +59,7 @@ export const TransactionFormView = ({
           <XStack gap="$3">
             <YStack flex={1}>{TransactionItemSelect()}</YStack>
             <YStack gap="$3">
-              <Card flex={1} maxWidth={350} padded alignSelf="flex-start">
+              <Card flex={1} maxWidth={400} padded alignSelf="flex-start">
                 <YStack gap="$3">
                   <Field name="name" label="Customer Name" flex={1}>
                     <InputText />

@@ -41,8 +41,9 @@ export const ReservationCheckinFormView = ({
               </Field>
 
               <XStack gap="$3">
-                {ReservationItemSelect()}
-                <Card padded maxWidth={350} flex={1}>
+                <YStack flex={1}>{ReservationItemSelect()}</YStack>
+
+                <Card padded width={350} flex={1}>
                   <YStack gap="$3">
                     <H4>Items</H4>
                     {reservationsFieldArray.fields.map(

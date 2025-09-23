@@ -3,6 +3,7 @@ import {
   Button,
   Input,
   Paragraph,
+  Popover,
   RadioGroup,
   Separator,
   XStack,
@@ -12,7 +13,7 @@ import { FlatList } from 'react-native';
 import { ReservationListItem } from './ReservationListItem';
 import { CheckoutStatus, Reservation } from '../../../domain';
 import { Label } from 'tamagui';
-import { X } from '@tamagui/lucide-icons';
+import { Filter, X } from '@tamagui/lucide-icons';
 
 export type ReservationListProps = {
   searchValue: string;
@@ -62,41 +63,65 @@ export const ReservationList = ({
           <Button icon={X} onPress={() => onSearchValueChange('')} circular />
         </XStack>
 
-        <Separator vertical />
+        <Popover size="$5" allowFlip stayInFrame offset={15}>
+          <Popover.Trigger asChild>
+            <Button icon={Filter}>Filter</Button>
+          </Popover.Trigger>
 
-        <YStack>
-          <Paragraph>Checkout Status</Paragraph>
-          <RadioGroup
-            value={checkoutStatus}
-            onValueChange={(value) =>
-              onCheckoutStatusChange(value as CheckoutStatus)
-            }
-            gap="$2"
+          <Popover.Content
+            borderWidth={1}
+            borderColor="$borderColor"
+            width={300}
+            height={200}
+            enterStyle={{ y: -10, opacity: 0 }}
+            exitStyle={{ y: -10, opacity: 0 }}
+            elevate
+            animation={[
+              'quick',
+              {
+                opacity: {
+                  overshootClamping: true,
+                },
+              },
+            ]}
           >
-            <XStack gap="$3">
-              <XStack gap="$2" alignItems="center">
-                <RadioGroup.Item value="all" id="all-checkout-status">
-                  <RadioGroup.Indicator />
-                </RadioGroup.Item>
-                <Label htmlFor="all-checkout-status">All</Label>
-              </XStack>
+            <Popover.Arrow borderWidth={1} borderColor="$borderColor" />
 
-              <XStack gap="$2" alignItems="center">
-                <RadioGroup.Item value="ongoing" id="ongoing">
-                  <RadioGroup.Indicator />
-                </RadioGroup.Item>
-                <Label htmlFor="ongoing">Ongoing</Label>
-              </XStack>
+            <YStack>
+              <Paragraph>Checkout Status</Paragraph>
+              <RadioGroup
+                value={checkoutStatus}
+                onValueChange={(value) =>
+                  onCheckoutStatusChange(value as CheckoutStatus)
+                }
+                gap="$2"
+              >
+                <XStack gap="$3">
+                  <XStack gap="$2" alignItems="center">
+                    <RadioGroup.Item value="all" id="all-checkout-status">
+                      <RadioGroup.Indicator />
+                    </RadioGroup.Item>
+                    <Label htmlFor="all-checkout-status">All</Label>
+                  </XStack>
 
-              <XStack gap="$2" alignItems="center">
-                <RadioGroup.Item value="completed" id="completed">
-                  <RadioGroup.Indicator />
-                </RadioGroup.Item>
-                <Label htmlFor="completed">Completed</Label>
-              </XStack>
-            </XStack>
-          </RadioGroup>
-        </YStack>
+                  <XStack gap="$2" alignItems="center">
+                    <RadioGroup.Item value="ongoing" id="ongoing">
+                      <RadioGroup.Indicator />
+                    </RadioGroup.Item>
+                    <Label htmlFor="ongoing">Ongoing</Label>
+                  </XStack>
+
+                  <XStack gap="$2" alignItems="center">
+                    <RadioGroup.Item value="completed" id="completed">
+                      <RadioGroup.Indicator />
+                    </RadioGroup.Item>
+                    <Label htmlFor="completed">Completed</Label>
+                  </XStack>
+                </XStack>
+              </RadioGroup>
+            </YStack>
+          </Popover.Content>
+        </Popover>
       </XStack>
       {variant.type === 'loading' ? (
         <LoadingView title="Fetching Reservations..." />

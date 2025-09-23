@@ -43,7 +43,7 @@ export const ReservationCheckoutFormView = ({
         <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
           <XStack gap="$5">
             <YStack flex={1}>{ReservationItemSelect()}</YStack>
-            <YStack gap="$3" maxWidth={350} flex={1}>
+            <YStack gap="$3" width={400} flex={1}>
               <Card padded>
                 <YStack gap="$3">
                   <H4>Items</H4>
