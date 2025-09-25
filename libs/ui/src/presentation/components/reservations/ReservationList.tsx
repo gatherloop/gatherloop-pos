@@ -5,15 +5,15 @@ import {
   Paragraph,
   Popover,
   RadioGroup,
-  Separator,
   XStack,
   YStack,
 } from 'tamagui';
-import { FlatList } from 'react-native';
+import { FlatList, TextInput } from 'react-native';
 import { ReservationListItem } from './ReservationListItem';
 import { CheckoutStatus, Reservation } from '../../../domain';
 import { Label } from 'tamagui';
 import { Filter, X } from '@tamagui/lucide-icons';
+import { useRef } from 'react';
 
 export type ReservationListProps = {
   searchValue: string;
@@ -48,6 +48,7 @@ export const ReservationList = ({
   onItemPress,
   isSearchAutoFocus,
 }: ReservationListProps) => {
+  const textInputRef = useRef<TextInput>(null);
   return (
     <YStack gap="$3" flex={1}>
       <XStack gap="$3" alignItems="center" $xs={{ flexDirection: 'column' }}>
@@ -55,12 +56,27 @@ export const ReservationList = ({
           <Input
             id="search"
             placeholder="Search Reservation by Code"
-            value={searchValue}
+            ref={textInputRef}
+            // value={searchValue}
             onChangeText={onSearchValueChange}
+            onSubmitEditing={(event) => {
+              event.preventDefault();
+              textInputRef.current?.clear();
+              setTimeout(() => {
+                textInputRef.current?.focus();
+              }, 100);
+            }}
             autoFocus={isSearchAutoFocus}
             flex={1}
           />
-          <Button icon={X} onPress={() => onSearchValueChange('')} circular />
+          <Button
+            icon={X}
+            onPress={() => {
+              textInputRef.current?.clear();
+              onSearchValueChange('');
+            }}
+            circular
+          />
         </XStack>
 
         <Popover size="$5" allowFlip stayInFrame offset={15}>

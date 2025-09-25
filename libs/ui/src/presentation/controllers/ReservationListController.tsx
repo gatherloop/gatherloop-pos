@@ -2,10 +2,22 @@ import { match, P } from 'ts-pattern';
 import { CheckoutStatus, ReservationListUsecase } from '../../domain';
 import { useController } from './controller';
 import { ReservationListProps } from '../components';
+import { useDebounce } from 'tamagui';
 
 export const useReservationListController = (
   usecase: ReservationListUsecase
 ) => {
+  const debounceUpdateQuery = useDebounce(
+    (query: string) =>
+      dispatch({
+        type: 'CHANGE_PARAMS',
+        query,
+        page: 1,
+        fetchDebounceDelay: 0,
+      }),
+    300
+  );
+
   const { state, dispatch } = useController(usecase);
 
   const onCheckoutStatusChange = (checkoutStatus: CheckoutStatus) => {
@@ -18,12 +30,7 @@ export const useReservationListController = (
   };
 
   const onSearchValueChange = (query: string) => {
-    dispatch({
-      type: 'CHANGE_PARAMS',
-      query,
-      page: 1,
-      fetchDebounceDelay: 600,
-    });
+    debounceUpdateQuery(query);
   };
 
   const onPageChange = (page: number) => {

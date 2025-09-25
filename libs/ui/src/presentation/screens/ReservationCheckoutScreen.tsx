@@ -57,6 +57,26 @@ export const ReservationCheckoutScreen = (
     router,
   ]);
 
+  useEffect(() => {
+    if (reservationListController.state.type !== 'loaded') return;
+    const searchCode = reservationListController.state.query;
+    if (
+      reservationCheckoutController.state.values.reservations.some(
+        ({ code }) => code === searchCode
+      )
+    )
+      return;
+
+    const reservation = reservationListController.state.reservations.find(
+      ({ code }) => code === searchCode
+    );
+
+    if (reservation) {
+      reservationCheckoutController.onAddItem(reservation);
+      reservationListController.onSearchValueChange('');
+    }
+  }, [reservationCheckoutController, reservationListController]);
+
   const onItemPress = (reservation: Reservation) => {
     reservationCheckoutController.onAddItem(reservation);
     reservationListController.onSearchValueChange('');
