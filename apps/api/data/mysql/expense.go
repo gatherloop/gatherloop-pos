@@ -15,7 +15,7 @@ func NewExpenseRepository(db *gorm.DB) expense.Repository {
 	return Repository{db: db}
 }
 
-func (repo Repository) GetExpenseList(ctx context.Context, sortBy base.SortBy, order base.Order, skip int, limit int) ([]expense.Expense, *base.Error) {
+func (repo Repository) GetExpenseList(ctx context.Context, query string, sortBy base.SortBy, order base.Order, skip int, limit int, walletId *int, budgetId *int) ([]expense.Expense, *base.Error) {
 	var expenses []expense.Expense
 	result := repo.db.Table("expenses").Where("deleted_at is NULL").Preload("ExpenseItems").Preload("Wallet").Preload("Budget").Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
 
@@ -27,9 +27,42 @@ func (repo Repository) GetExpenseList(ctx context.Context, sortBy base.SortBy, o
 		result = result.Limit(limit)
 	}
 
+	if query != "" {
+		result = result.Joins("JOIN expense_items items ON items.expense_id = expenses.id").Where("items.name LIKE ?", "%"+query+"%")
+	}
+
+	if walletId != nil {
+		result = result.Where("wallet_id = ?", walletId)
+	}
+
+	if budgetId != nil {
+		result = result.Where("budget_id = ?", budgetId)
+	}
+
 	result = result.Find(&expenses)
 
 	return expenses, ToError(result.Error)
+}
+
+func (repo Repository) GetExpenseListTotal(ctx context.Context, query string, walletId *int, budgetId *int) (int64, *base.Error) {
+	var count int64
+	result := repo.db.Table("expenses").Where("deleted_at is NULL")
+
+	if query != "" {
+		result = result.Joins("JOIN expense_items items ON items.expense_id = expenses.id").Where("items.name LIKE ?", "%"+query+"%")
+	}
+
+	if walletId != nil {
+		result = result.Where("wallet_id = ?", walletId)
+	}
+
+	if budgetId != nil {
+		result = result.Where("budget_id = ?", budgetId)
+	}
+
+	result = result.Count(&count)
+
+	return count, ToError(result.Error)
 }
 
 func (repo Repository) GetExpenseById(ctx context.Context, id int64) (expense.Expense, *base.Error) {

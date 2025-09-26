@@ -1,7 +1,25 @@
 import { Expense, ExpenseForm } from '../entities';
 
 export interface ExpenseRepository {
-  fetchExpenseList: () => Promise<Expense[]>;
+  getExpenseList: (params: {
+    page: number;
+    itemPerPage: number;
+    query: string;
+    sortBy: 'created_at';
+    orderBy: 'asc' | 'desc';
+    walletId: number | null;
+    budgetId: number | null;
+  }) => { expenses: Expense[]; totalItem: number };
+
+  fetchExpenseList: (params: {
+    page: number;
+    itemPerPage: number;
+    query: string;
+    sortBy: 'created_at';
+    orderBy: 'asc' | 'desc';
+    walletId: number | null;
+    budgetId: number | null;
+  }) => Promise<{ expenses: Expense[]; totalItem: number }>;
 
   fetchExpenseById: (expenseId: number) => Promise<Expense>;
 

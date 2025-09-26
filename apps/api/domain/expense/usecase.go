@@ -21,8 +21,18 @@ func NewUsecase(repository Repository, budgetRepository budget.Repository, walle
 	}
 }
 
-func (usecase Usecase) GetExpenseList(ctx context.Context, sortBy base.SortBy, order base.Order, skip int, limit int) ([]Expense, *base.Error) {
-	return usecase.repository.GetExpenseList(ctx, sortBy, order, skip, limit)
+func (usecase Usecase) GetExpenseList(ctx context.Context, query string, sortBy base.SortBy, order base.Order, skip int, limit int, walletId *int, budgetId *int) ([]Expense, int64, *base.Error) {
+	expenses, err := usecase.repository.GetExpenseList(ctx, query, sortBy, order, skip, limit, walletId, budgetId)
+	if err != nil {
+		return []Expense{}, 0, err
+	}
+
+	total, err := usecase.repository.GetExpenseListTotal(ctx, query, walletId, budgetId)
+	if err != nil {
+		return []Expense{}, 0, err
+	}
+
+	return expenses, total, nil
 }
 
 func (usecase Usecase) GetExpenseById(ctx context.Context, id int64) (Expense, *base.Error) {

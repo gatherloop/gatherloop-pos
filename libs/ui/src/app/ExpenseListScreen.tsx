@@ -1,4 +1,10 @@
-import { ApiAuthRepository, ApiExpenseRepository } from '../data';
+import {
+  ApiAuthRepository,
+  ApiBudgetRepository,
+  ApiExpenseRepository,
+  ApiWalletRepository,
+  UrlExpenseListQueryRepository,
+} from '../data';
 import {
   ExpenseListUsecase,
   ExpenseDeleteUsecase,
@@ -17,12 +23,18 @@ export function ExpenseListScreen({
 }: ExpenseListScreenProps) {
   const client = new QueryClient();
   const expenseRepository = new ApiExpenseRepository(client);
+  const expenseListQueryRepository = new UrlExpenseListQueryRepository();
+  const walletRepository = new ApiWalletRepository(client);
+  const budgetRepository = new ApiBudgetRepository(client);
   const authRepository = new ApiAuthRepository();
 
   const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
   const expenseDeleteUsecase = new ExpenseDeleteUsecase(expenseRepository);
   const expenseListUsecase = new ExpenseListUsecase(
     expenseRepository,
+    expenseListQueryRepository,
+    walletRepository,
+    budgetRepository,
     expenseListParams
   );
 

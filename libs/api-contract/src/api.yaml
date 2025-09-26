@@ -1340,6 +1340,9 @@ paths:
         - $ref: '#/components/parameters/Order'
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Skip'
+        - $ref: '#/components/parameters/BudgetIdQuery'
+        - $ref: '#/components/parameters/WalletIdQuery'
+        - $ref: '#/components/parameters/Query'
       responses:
         '200':
           description: success response
@@ -1349,11 +1352,14 @@ paths:
                 type: object
                 required:
                   - data
+                  - meta
                 properties:
                   data:
                     type: array
                     items:
                       $ref: '#/components/schemas/Expense'
+                  meta:
+                    $ref: '#/components/schemas/MetaPage'
         '500':
           description: server error
           content:
@@ -2724,6 +2730,11 @@ components:
       schema:
         type: integer
       required: true
+    BudgetIdQuery:
+      name: budgetId
+      in: query
+      schema:
+        type: integer
     TransactionId:
       name: transactionId
       in: path

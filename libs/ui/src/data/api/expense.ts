@@ -9,6 +9,8 @@ import {
   expenseListQueryKey,
   expenseUpdateById,
   Expense as ApiExpense,
+  ExpenseListQueryParams,
+  ExpenseList200,
 } from '../../../../api-contract/src';
 import { Expense, ExpenseRepository } from '../../domain';
 import { RequestConfig } from '@kubb/swagger-client/client';
@@ -44,14 +46,72 @@ export class ApiExpenseRepository implements ExpenseRepository {
     return expenseDeleteById(expenseId).then();
   };
 
-  fetchExpenseList = (options?: Partial<RequestConfig>) => {
+  fetchExpenseList = (
+    {
+      page,
+      itemPerPage,
+      query,
+      sortBy,
+      orderBy,
+      walletId,
+      budgetId,
+    }: {
+      page: number;
+      itemPerPage: number;
+      query: string;
+      sortBy: 'created_at';
+      orderBy: 'asc' | 'desc';
+      walletId: number | null;
+      budgetId: number | null;
+    },
+    options?: Partial<RequestConfig>
+  ) => {
+    const params: ExpenseListQueryParams = {
+      query: query,
+      skip: (page - 1) * itemPerPage,
+      limit: itemPerPage,
+      order: orderBy,
+      sortBy: sortBy,
+      walletId: walletId ?? undefined,
+      budgetId: budgetId ?? undefined,
+    };
     return this.client
       .fetchQuery({
-        queryKey: expenseListQueryKey({ sortBy: 'created_at', order: 'desc' }),
-        queryFn: () =>
-          expenseList({ sortBy: 'created_at', order: 'desc' }, options),
+        queryKey: expenseListQueryKey(params),
+        queryFn: () => expenseList(params, options),
       })
-      .then((data) => data.data.map(transformers.expense));
+      .then((data) => ({
+        expenses: data.data.map(transformers.expense),
+        totalItem: data.meta.total,
+      }));
+  };
+
+  getExpenseList: ExpenseRepository['getExpenseList'] = ({
+    query,
+    page,
+    itemPerPage,
+    orderBy,
+    sortBy,
+    walletId,
+    budgetId,
+  }) => {
+    const params: ExpenseListQueryParams = {
+      query,
+      skip: (page - 1) * itemPerPage,
+      limit: itemPerPage,
+      order: orderBy,
+      sortBy,
+      walletId: walletId ?? undefined,
+      budgetId: budgetId ?? undefined,
+    };
+    const res = this.client.getQueryState<ExpenseList200>(
+      expenseListQueryKey(params)
+    )?.data;
+    this.client.removeQueries({ queryKey: expenseListQueryKey(params) });
+    return {
+      expenses: res?.data.map(transformers.expense) ?? [],
+      totalItem: res?.meta.total ?? 0,
+    };
   };
 }
 

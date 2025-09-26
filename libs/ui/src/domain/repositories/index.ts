@@ -11,6 +11,7 @@ export * from './calculation';
 export * from './budget';
 export * from './wallet';
 export * from './expense';
+export * from './expenseListQuery';
 export * from './transaction';
 export * from './transactionListQuery';
 export * from './transactionStatisticListQuery';

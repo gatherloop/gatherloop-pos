@@ -17,8 +17,12 @@ func NewExpenseHandler(usecase expense.Usecase) ExpenseHandler {
 func (handler ExpenseHandler) GetExpenseList(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
+	query := GetQuery(r)
 	sortBy := GetSortBy(r)
 	order := GetOrder(r)
+
+	walletId := GetWalletIdQuery(r)
+	budgetId := GetBudgetIdQuery(r)
 
 	skip, err := GetSkip(r)
 	if err != nil {
@@ -32,7 +36,7 @@ func (handler ExpenseHandler) GetExpenseList(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	expenses, usecaseErr := handler.usecase.GetExpenseList(ctx, sortBy, order, skip, limit)
+	expenses, total, usecaseErr := handler.usecase.GetExpenseList(ctx, query, sortBy, order, skip, limit, walletId, budgetId)
 	if usecaseErr != nil {
 		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
@@ -43,7 +47,7 @@ func (handler ExpenseHandler) GetExpenseList(w http.ResponseWriter, r *http.Requ
 		apiExpenses = append(apiExpenses, ToApiExpense(expense))
 	}
 
-	WriteResponse(w, apiContract.ExpenseList200Response{Data: apiExpenses})
+	WriteResponse(w, apiContract.ExpenseList200Response{Data: apiExpenses, Meta: apiContract.MetaPage{Total: total}})
 }
 
 func (handler ExpenseHandler) GetExpenseById(w http.ResponseWriter, r *http.Request) {

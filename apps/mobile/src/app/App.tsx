@@ -528,6 +528,9 @@ export const App = () => {
               <ExpenseListScreen
                 expenseListParams={{
                   expenses: [],
+                  budgets: [],
+                  totalItem: 0,
+                  wallets: [],
                 }}
               />
             )}

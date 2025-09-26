@@ -590,6 +590,17 @@ func GetWalletIdQuery(r *http.Request) *int {
 	return &id
 }
 
+func GetBudgetIdQuery(r *http.Request) *int {
+	budgetId := r.URL.Query().Get("budgetId")
+
+	id, err := strconv.Atoi(budgetId)
+	if err != nil {
+		return nil
+	}
+
+	return &id
+}
+
 func ToApiTransaction(transaction transaction.Transaction) apiContract.Transaction {
 	apiTransactionItems := []apiContract.TransactionItem{}
 	for _, item := range transaction.TransactionItems {
