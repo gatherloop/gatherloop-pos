@@ -1,5 +1,5 @@
 import { Field, InputText } from '../base';
-import { Button, Card, Form, Paragraph, XStack, YStack } from 'tamagui';
+import { Button, Card, Form, Input, Paragraph, XStack, YStack } from 'tamagui';
 import { H4 } from 'tamagui';
 import { Trash } from '@tamagui/lucide-icons';
 import { ReservationCheckinForm } from '../../../domain';
@@ -8,7 +8,7 @@ import {
   UseFieldArrayReturn,
   UseFormReturn,
 } from 'react-hook-form';
-import { ReactNode } from 'react';
+import { ReactNode, useRef } from 'react';
 import { Separator } from 'tamagui';
 
 export type ReservationCheckinFormViewProps = {
@@ -30,6 +30,7 @@ export const ReservationCheckinFormView = ({
   ReservationItemSelect,
   reservationsFieldArray,
 }: ReservationCheckinFormViewProps) => {
+  const inputCodeRefs = useRef<(Input | null)[]>([]);
   return (
     <YStack>
       <FormProvider {...form}>
@@ -89,6 +90,17 @@ export const ReservationCheckinFormView = ({
                               name={`reservations.${index}.code`}
                               placeholder="Code"
                               flex={1}
+                              ref={(element) => {
+                                inputCodeRefs.current[index] = element;
+                              }}
+                              onSubmitEditing={() => {
+                                if (
+                                  index <
+                                  reservationsFieldArray.fields.length - 1
+                                ) {
+                                  inputCodeRefs.current[index + 1]?.focus();
+                                }
+                              }}
                             />
                             <Separator />
                           </YStack>
