@@ -9,6 +9,7 @@ import {
   calculationListQueryKey,
   calculationUpdateById,
   Calculation as ApiCalculation,
+  calculationCompleteById,
 } from '../../../../api-contract/src';
 import { Calculation, CalculationRepository } from '../../domain';
 import { RequestConfig } from '@kubb/swagger-client/client';
@@ -57,6 +58,12 @@ export class ApiCalculationRepository implements CalculationRepository {
     return calculationDeleteById(calculationId).then();
   };
 
+  completeCalculationById: CalculationRepository['completeCalculationById'] = (
+    calculationId
+  ) => {
+    return calculationCompleteById(calculationId).then();
+  };
+
   fetchCalculationList = (options?: Partial<RequestConfig>) => {
     return this.client
       .fetchQuery({
@@ -76,6 +83,7 @@ const transformers = {
     id: calculation.id,
     createdAt: calculation.createdAt,
     updatedAt: calculation.updatedAt,
+    completedAt: calculation.completedAt ?? null,
     calculationItems: calculation.calculationItems.map((item) => ({
       id: item.id,
       amount: item.amount,

@@ -18,22 +18,19 @@ export const CalculationUpdateScreen = (
 ) => {
   const router = useRouter();
   const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
-  const calculationCreateController = useCalculationUpdateController(
+  const calculationUpdateController = useCalculationUpdateController(
     props.calculationUpdateUsecase
   );
 
   useEffect(() => {
-    if (calculationCreateController.state.type === 'submitSuccess')
+    if (calculationUpdateController.state.type === 'submitSuccess')
       router.push('/calculations');
-  }, [calculationCreateController.state.type, router]);
+  }, [calculationUpdateController.state.type, router]);
 
   return (
     <Layout {...authLogoutController} title="Update Calculation" showBackButton>
       <ScrollView>
-        <CalculationFormView
-          {...calculationCreateController}
-          isWalletSelectDisabled
-        />
+        <CalculationFormView {...calculationUpdateController} />
       </ScrollView>
     </Layout>
   );

@@ -10,6 +10,7 @@ type Calculation struct {
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
 	DeletedAt        *time.Time
+	CompletedAt      *time.Time
 	WalletId         int64
 	Wallet           wallet.Wallet
 	TotalWallet      float32

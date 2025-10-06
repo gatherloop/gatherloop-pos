@@ -13,4 +13,6 @@ export interface CalculationRepository {
     formValues: CalculationForm,
     calculationId: number
   ) => Promise<void>;
+
+  completeCalculationById: (calculationId: number) => Promise<void>;
 }

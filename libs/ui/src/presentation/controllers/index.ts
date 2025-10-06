@@ -43,6 +43,7 @@ export * from './CalculationDeleteController';
 export * from './CalculationListController';
 export * from './CalculationCreateController';
 export * from './CalculationUpdateController';
+export * from './CalculationCompleteController';
 export * from './ReservationCheckinController';
 export * from './ReservationCheckoutController';
 export * from './ReservationDeleteController';

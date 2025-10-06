@@ -8,6 +8,7 @@ export type CalculationListProps = {
   onRetryButtonPress: () => void;
   onEditMenuPress: (calculation: Calculation) => void;
   onDeleteMenuPress: (calculation: Calculation) => void;
+  onCompleteMenuPress: (calculation: Calculation) => void;
   onItemPress: (calculation: Calculation) => void;
   variant:
     | { type: 'loading' }
@@ -19,6 +20,7 @@ export const CalculationList = ({
   onRetryButtonPress,
   onDeleteMenuPress,
   onEditMenuPress,
+  onCompleteMenuPress,
   onItemPress,
   variant,
 }: CalculationListProps) => {
@@ -34,11 +36,13 @@ export const CalculationList = ({
             renderItem={({ item }) => (
               <CalculationListItem
                 createdAt={item.createdAt}
+                completedAt={item.completedAt}
                 totalCalculation={item.totalCalculation}
                 totalWallet={item.totalWallet}
                 walletName={item.wallet.name}
                 onEditMenuPress={() => onEditMenuPress(item)}
                 onDeleteMenuPress={() => onDeleteMenuPress(item)}
+                onCompleteMenuPress={() => onCompleteMenuPress(item)}
                 onPress={() => onItemPress(item)}
               />
             )}

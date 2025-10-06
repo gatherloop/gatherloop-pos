@@ -18,8 +18,8 @@ export type CalculationFormViewProps = {
   onSubmit: (values: CalculationForm) => void;
   walletSelectOptions: { label: string; value: number }[];
   getTotalWallet: (totalWallet: number, walletId: number) => number;
-  isWalletSelectDisabled?: boolean;
   isSubmitDisabled: boolean;
+  isFormDisabled?: boolean;
   onRetryButtonPress: () => void;
 };
 
@@ -29,7 +29,7 @@ export const CalculationFormView = ({
   onSubmit,
   walletSelectOptions,
   getTotalWallet,
-  isWalletSelectDisabled,
+  isFormDisabled,
   isSubmitDisabled,
   onRetryButtonPress,
 }: CalculationFormViewProps) => {
@@ -39,10 +39,7 @@ export const CalculationFormView = ({
         <YStack gap="$3">
           <XStack flexWrap="wrap" gap="$3">
             <Field name="walletId" label="Wallet Name" flex={1}>
-              <Select
-                items={walletSelectOptions}
-                disabled={isWalletSelectDisabled}
-              />
+              <Select items={walletSelectOptions} disabled={isFormDisabled} />
             </Field>
             <YStack justifyContent="flex-end" flex={1}>
               <Paragraph textAlign="right">Status</Paragraph>
@@ -118,6 +115,7 @@ export const CalculationFormView = ({
                           <InputNumber
                             name={`calculationItems.${index}.amount`}
                             min={0}
+                            disabled={isFormDisabled}
                           />
                           <YStack justifyContent="flex-end" flex={1}>
                             <Paragraph textAlign="right">Subtotal</Paragraph>
@@ -146,7 +144,7 @@ export const CalculationFormView = ({
         </YStack>
 
         <Button
-          disabled={isSubmitDisabled}
+          disabled={isSubmitDisabled || isFormDisabled}
           onPress={form.handleSubmit(onSubmit)}
           theme="blue"
         >

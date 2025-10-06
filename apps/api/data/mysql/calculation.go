@@ -70,3 +70,10 @@ func (repo Repository) DeleteCalculationItemById(ctx context.Context, id int64) 
 	result := db.Table("calculation_items").Where("id = ?", id).Delete(&calculation.Calculation{})
 	return ToError(result.Error)
 }
+
+func (repo Repository) CompleteCalculationById(ctx context.Context, id int64) *base.Error {
+	db := GetDbFromCtx(ctx, repo.db)
+	currentTime := time.Now()
+	result := db.Table("calculations").Where("id = ?", id).Update("completed_at", currentTime)
+	return ToError(result.Error)
+}

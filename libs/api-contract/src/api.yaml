@@ -1613,6 +1613,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /calculations/{calculationId}/complete:
+    put:
+      summary: Complete calculation by id
+      operationId: calculationCompleteById
+      tags:
+        - calculation
+      parameters:
+        - $ref: '#/components/parameters/CalculationId'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /coupons:
     get:
       summary: List all coupons
@@ -2546,6 +2567,9 @@ components:
           type: string
           format: date-time
         deletedAt:
+          type: string
+          format: date-time
+        completedAt:
           type: string
           format: date-time
         walletId:

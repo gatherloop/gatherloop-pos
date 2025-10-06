@@ -4,6 +4,7 @@ export type Calculation = {
   id: number;
   createdAt: string;
   updatedAt: string;
+  completedAt: string | null;
   wallet: Wallet;
   totalWallet: number;
   totalCalculation: number;

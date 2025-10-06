@@ -73,6 +73,8 @@ export const useCalculationUpdateController = (
       : totalWallet;
   };
 
+  const isFormDisabled = state.isComplete;
+
   return {
     state,
     dispatch,
@@ -83,5 +85,6 @@ export const useCalculationUpdateController = (
     walletSelectOptions,
     variant,
     getTotalWallet,
+    isFormDisabled,
   };
 };

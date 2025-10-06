@@ -14,4 +14,5 @@ type Repository interface {
 	DeleteCalculationById(ctx context.Context, id int64) *base.Error
 	CreateCalculationItems(ctx context.Context, calculationItems []CalculationItem) *base.Error
 	DeleteCalculationItemById(ctx context.Context, id int64) *base.Error
+	CompleteCalculationById(ctx context.Context, id int64) *base.Error
 }

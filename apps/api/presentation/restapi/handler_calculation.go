@@ -119,3 +119,20 @@ func (handler CalculationHandler) DeleteCalculationById(w http.ResponseWriter, r
 
 	WriteResponse(w, apiContract.SuccessResponse{Success: true})
 }
+
+func (handler CalculationHandler) CompleteCalculationById(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	id, err := GetCalculationId(r)
+	if err != nil {
+		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
+		return
+	}
+
+	if err := handler.usecase.CompleteCalculationById(ctx, id); err != nil {
+		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
+		return
+	}
+
+	WriteResponse(w, apiContract.SuccessResponse{Success: true})
+}

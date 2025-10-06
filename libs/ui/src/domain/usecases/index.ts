@@ -43,6 +43,7 @@ export * from './calculationList';
 export * from './calculationDelete';
 export * from './calculationUpdate';
 export * from './calculationCreate';
+export * from './calculationComplete';
 export * from './reservationList';
 export * from './reservationDelete';
 export * from './reservationCheckin';

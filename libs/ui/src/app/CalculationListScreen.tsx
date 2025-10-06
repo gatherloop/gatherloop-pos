@@ -4,6 +4,7 @@ import {
   CalculationDeleteUsecase,
   AuthLogoutUsecase,
   CalculationListParams,
+  CalculationCompleteUsecase,
 } from '../domain';
 import { CalculationListScreen as CalculationListScreenView } from '../presentation';
 import { QueryClient } from '@tanstack/react-query';
@@ -22,6 +23,9 @@ export function CalculationListScreen({
   const calculationDeleteUsecase = new CalculationDeleteUsecase(
     calculationRepository
   );
+  const calculationCompleteUsecase = new CalculationCompleteUsecase(
+    calculationRepository
+  );
   const calculationListUsecase = new CalculationListUsecase(
     calculationRepository,
     calculationListParams
@@ -31,6 +35,7 @@ export function CalculationListScreen({
   return (
     <CalculationListScreenView
       calculationDeleteUsecase={calculationDeleteUsecase}
+      calculationCompleteUsecase={calculationCompleteUsecase}
       calculationListUsecase={calculationListUsecase}
       authLogoutUsecase={authLogoutUsecase}
     />

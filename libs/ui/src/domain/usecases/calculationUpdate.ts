@@ -6,6 +6,7 @@ import { Usecase } from './IUsecase';
 type Context = {
   errorMessage: string | null;
   values: CalculationForm;
+  isComplete: boolean;
   wallets: Wallet[];
 };
 
@@ -26,6 +27,7 @@ export type CalculationUpdateAction =
       type: 'FETCH_SUCCESS';
       values: CalculationForm;
       wallets: Wallet[];
+      isComplete: boolean;
     }
   | { type: 'FETCH_ERROR'; errorMessage: string }
   | { type: 'SUBMIT'; values: CalculationForm }
@@ -60,15 +62,21 @@ export class CalculationUpdateUsecase extends Usecase<
   }
 
   getInitialState(): CalculationUpdateState {
+    const selectedWallet = this.params.wallets.find(
+      (wallet) => wallet.id === this.params.calculation?.wallet.id
+    );
+
     return {
       type: this.params.calculation !== null ? 'loaded' : 'idle',
       errorMessage: null,
       wallets: this.params.wallets,
       values: {
         walletId: this.params.calculation?.wallet.id ?? NaN,
-        totalWallet: this.params.calculation?.totalWallet ?? 0,
+        totalWallet:
+          selectedWallet?.balance ?? this.params.calculation?.totalWallet ?? 0,
         calculationItems: this.params.calculation?.calculationItems ?? [],
       },
+      isComplete: this.params.calculation?.completedAt !== null,
     } as CalculationUpdateState;
   }
 
@@ -159,6 +167,7 @@ export class CalculationUpdateUsecase extends Usecase<
                 calculationItems: calculation.calculationItems,
               },
               wallets,
+              isComplete: calculation.completedAt !== null,
             })
           )
           .catch(() =>

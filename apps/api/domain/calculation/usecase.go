@@ -73,14 +73,24 @@ func (usecase Usecase) UpdateCalculationById(ctx context.Context, calculationReq
 			return err
 		}
 
+		if existingCalculation.CompletedAt != nil {
+			return &base.Error{Type: base.BadRequest, Message: "cannot update completed calculation"}
+		}
+
 		var totalCalculation float32
 		for _, item := range calculationRequest.CalculationItems {
 			totalCalculation += item.Price * float32(item.Amount)
 		}
 
+		wallet, err := usecase.walletRepository.GetWalletById(ctxWithTx, calculationRequest.WalletId)
+		if err != nil {
+			return err
+		}
+
 		calculation := Calculation{
 			UpdatedAt:        time.Now(),
 			TotalCalculation: totalCalculation,
+			TotalWallet:      wallet.Balance,
 		}
 
 		if err := usecase.calculationRepository.UpdateCalculationById(ctxWithTx, &calculation, id); err != nil {
@@ -122,5 +132,18 @@ func (usecase Usecase) UpdateCalculationById(ctx context.Context, calculationReq
 }
 
 func (usecase Usecase) DeleteCalculationById(ctx context.Context, id int64) *base.Error {
+	existingCalculation, err := usecase.calculationRepository.GetCalculationById(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	if existingCalculation.CompletedAt != nil {
+		return &base.Error{Type: base.BadRequest, Message: "cannot delete completed calculation"}
+	}
+
 	return usecase.calculationRepository.DeleteCalculationById(ctx, id)
+}
+
+func (usecase Usecase) CompleteCalculationById(ctx context.Context, id int64) *base.Error {
+	return usecase.calculationRepository.CompleteCalculationById(ctx, id)
 }

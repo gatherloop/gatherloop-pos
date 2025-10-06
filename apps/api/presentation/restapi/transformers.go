@@ -866,6 +866,7 @@ func ToApiCalculation(calculation calculation.Calculation) apiContract.Calculati
 		CreatedAt:        calculation.CreatedAt,
 		UpdatedAt:        calculation.UpdatedAt,
 		DeletedAt:        calculation.DeletedAt,
+		CompletedAt:      calculation.CompletedAt,
 		WalletId:         calculation.WalletId,
 		Wallet:           ToApiWallet(calculation.Wallet),
 		TotalWallet:      calculation.TotalWallet,
