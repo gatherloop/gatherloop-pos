@@ -91,16 +91,18 @@ export const TransactionListScreen = (props: TransactionListScreenProps) => {
           : undefined,
         name: transaction.name,
         orderNumber: transaction.orderNumber,
-        items: transaction.transactionItems.map(
-          ({ variant, amount, discountAmount }) => ({
+        items: transaction.transactionItems
+          .sort((a, b) =>
+            a.variant.product.name.localeCompare(b.variant.product.name)
+          )
+          .map(({ variant, amount, discountAmount }) => ({
             name: `${variant.product.name} - ${variant.values
               .map(({ optionValue: { name } }) => name)
               .join(' - ')}`,
             price: variant.price,
             amount,
             discountAmount,
-          })
-        ),
+          })),
         coupons: transaction.transactionCoupons.map(
           ({ amount, type, coupon }) => ({
             amount,
@@ -124,16 +126,18 @@ export const TransactionListScreen = (props: TransactionListScreenProps) => {
           : undefined,
         name: transaction.name,
         orderNumber: transaction.orderNumber,
-        items: transaction.transactionItems.map(
-          ({ variant, amount, discountAmount }) => ({
+        items: transaction.transactionItems
+          .sort((a, b) =>
+            a.variant.product.name.localeCompare(b.variant.product.name)
+          )
+          .map(({ variant, amount, discountAmount }) => ({
             name: `${variant.product.name} - ${variant.values
               .map(({ optionValue: { name } }) => name)
               .join(' - ')}`,
             price: variant.price,
             amount,
             discountAmount,
-          })
-        ),
+          })),
         coupons: transaction.transactionCoupons.map(
           ({ amount, type, coupon }) => ({
             amount,

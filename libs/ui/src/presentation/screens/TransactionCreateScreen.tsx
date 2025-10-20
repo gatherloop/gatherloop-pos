@@ -117,6 +117,9 @@ export const TransactionCreateScreen = (
         orderNumber: transactionCreateController.form.getValues('orderNumber'),
         items: transactionCreateController.form
           .getValues('transactionItems')
+          .sort((a, b) =>
+            a.variant.product.name.localeCompare(b.variant.product.name)
+          )
           .map(({ variant, amount, discountAmount }) => ({
             name: `${variant.product.name} - ${variant.values
               .map(({ optionValue: { name } }) => name)
@@ -157,7 +160,20 @@ export const TransactionCreateScreen = (
               router.push('/transactions');
             });
         },
-        onCancel: () => router.push('/transactions'),
+        onCancel: () => {
+          setTimeout(() => {
+            show({
+              title: 'Print Order Slip',
+              description: 'Do you want to print order slip ?',
+              onConfirm: () => {
+                print({ type: 'ORDER_SLIP', transaction }).then(() => {
+                  router.push('/transactions');
+                });
+              },
+              onCancel: () => router.push('/transactions'),
+            });
+          }, 200);
+        },
       });
     }
   }, [
@@ -187,7 +203,45 @@ export const TransactionCreateScreen = (
   ]);
 
   const onCancelPayment = () => {
-    router.push('/transactions');
+    const transaction: TransactionPrintPayload['transaction'] = {
+      createdAt: dayjs(new Date().toISOString()).format('DD/MM/YYYY HH:mm'),
+      paidAt: dayjs(new Date().toISOString()).format('DD/MM/YYYY HH:mm'),
+      name: transactionCreateController.form.getValues('name'),
+      orderNumber: transactionCreateController.form.getValues('orderNumber'),
+      items: transactionCreateController.form
+        .getValues('transactionItems')
+        .sort((a, b) =>
+          a.variant.product.name.localeCompare(b.variant.product.name)
+        )
+        .map(({ variant, amount, discountAmount }) => ({
+          name: `${variant.product.name} - ${variant.values
+            .map(({ optionValue: { name } }) => name)
+            .join(' - ')}`,
+          price: variant.price,
+          amount,
+          discountAmount,
+        })),
+      coupons: transactionCreateController.form
+        .getValues('transactionCoupons')
+        .map(({ coupon }) => ({
+          amount: coupon.amount,
+          type: coupon.type === 'fixed' ? 'FIXED' : 'PERCENTAGE',
+          code: coupon.code,
+        })),
+      isCashless: false,
+      paidAmount: 0,
+    };
+
+    show({
+      title: 'Print Order Slip',
+      description: 'Do you want to print order slip ?',
+      onConfirm: () => {
+        print({ type: 'ORDER_SLIP', transaction }).then(() => {
+          router.push('/transactions');
+        });
+      },
+      onCancel: () => router.push('/transactions'),
+    });
   };
 
   return (
