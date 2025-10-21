@@ -1,45 +1,37 @@
 import {
-  Box,
-  Calculator,
+  ChevronDown,
   ChevronsLeft,
   ChevronsRight,
-  CircleDollarSign,
-  Clock,
-  CreditCard,
-  FileBox,
-  LayoutDashboard,
   LogOut,
-  PiggyBank,
-  Tag,
-  Ticket,
-  Wallet,
 } from '@tamagui/lucide-icons';
-import { Button, H5, ListItem, XStack, YGroup, YStack } from 'tamagui';
+import {
+  Accordion,
+  Button,
+  H5,
+  ListItem,
+  Paragraph,
+  Square,
+  XStack,
+  YGroup,
+  YStack,
+} from 'tamagui';
 import { useSidebarState } from './Sidebar.state';
-import { NamedExoticComponent } from 'react';
 import { Link } from 'solito/link';
-
-const items: { title: string; icon: NamedExoticComponent; path: string }[] = [
-  { title: 'Dashboard', icon: LayoutDashboard, path: '/' },
-  { title: 'Categories', icon: Tag, path: '/categories' },
-  { title: 'Products', icon: FileBox, path: '/products' },
-  { title: 'Variants', icon: FileBox, path: '/variants' },
-  { title: 'Materials', icon: Box, path: '/materials' },
-  { title: 'Transactions', icon: CircleDollarSign, path: '/transactions' },
-  { title: 'Reservations', icon: Clock, path: '/reservations' },
-  { title: 'Coupons', icon: Ticket, path: '/coupons' },
-  { title: 'Expenses', icon: CreditCard, path: '/expenses' },
-  { title: 'Wallets', icon: Wallet, path: '/wallets' },
-  { title: 'Calculations', icon: Calculator, path: '/calculations' },
-  { title: 'Budgets', icon: PiggyBank, path: '/budgets' },
-];
 
 export type SidebarProps = {
   onLogoutPress: () => void;
 };
 
 export const Sidebar = (props: SidebarProps) => {
-  const { isShown, onToggleButtonPress } = useSidebarState();
+  const {
+    isShown,
+    onToggleButtonPress,
+    router,
+    items,
+    accordionValue,
+    setAccordionValue,
+    currentPath,
+  } = useSidebarState();
 
   return (
     <>
@@ -52,25 +44,79 @@ export const Sidebar = (props: SidebarProps) => {
         marginLeft={isShown ? 0 : -200}
       >
         <YStack flex={1} justifyContent="space-between">
-          <YStack>
+          <YStack gap="$3">
             <XStack padding="$3" paddingBottom="$0">
               <H5>Gatherloop POS</H5>
             </XStack>
-            {items.map((item, index) => (
-              <YGroup.Item key={index}>
-                <Link href={item.path}>
-                  <ListItem
-                    backgroundColor="$colorTransparent"
-                    hoverTheme
-                    icon={item.icon}
-                    size="$4"
-                    cursor="pointer"
+
+            <Accordion
+              overflow="hidden"
+              type="single"
+              value={accordionValue}
+              onValueChange={setAccordionValue}
+            >
+              {items.map((item) => (
+                <Accordion.Item value={item.title} key={item.title}>
+                  <Accordion.Trigger
+                    flexDirection="row"
+                    justifyContent="space-between"
+                    backgroundColor="$gray3"
+                    onPress={(event) => {
+                      if (item.path) {
+                        event.preventDefault();
+                        router.push(item.path);
+                      }
+                    }}
                   >
-                    {item.title}
-                  </ListItem>
-                </Link>
-              </YGroup.Item>
-            ))}
+                    {({ open }: { open: boolean }) => (
+                      <>
+                        <XStack gap="$3">
+                          <item.icon size="$1" />
+                          <Paragraph>{item.title}</Paragraph>
+                        </XStack>
+                        {item.subItems && (
+                          <Square
+                            animation="quick"
+                            rotate={open ? '180deg' : '0deg'}
+                          >
+                            <ChevronDown size="$1" />
+                          </Square>
+                        )}
+                      </>
+                    )}
+                  </Accordion.Trigger>
+
+                  {item.subItems && (
+                    <Accordion.HeightAnimator animation="medium">
+                      <Accordion.Content
+                        animation="medium"
+                        exitStyle={{ opacity: 0 }}
+                        backgroundColor="$gray3"
+                      >
+                        {item.subItems.map((subItem, index) => (
+                          <YGroup.Item key={index}>
+                            <Link href={subItem.path}>
+                              <ListItem
+                                backgroundColor={
+                                  subItem.path === currentPath
+                                    ? undefined
+                                    : '$colorTransparent'
+                                }
+                                hoverTheme
+                                size="$4"
+                                cursor="pointer"
+                              >
+                                {subItem.title}
+                              </ListItem>
+                            </Link>
+                          </YGroup.Item>
+                        ))}
+                      </Accordion.Content>
+                    </Accordion.HeightAnimator>
+                  )}
+                </Accordion.Item>
+              ))}
+            </Accordion>
           </YStack>
 
           <YStack padding="$3" paddingTop="$0">
