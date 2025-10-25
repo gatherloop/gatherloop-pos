@@ -229,6 +229,7 @@ const transformers = {
             price: variantMaterial.material.price,
             unit: variantMaterial.material.unit,
             createdAt: variantMaterial.material.createdAt,
+            weeklyUsage: variantMaterial.material.weeklyUsage,
           },
         })),
         description: item.variant.description ?? '',
