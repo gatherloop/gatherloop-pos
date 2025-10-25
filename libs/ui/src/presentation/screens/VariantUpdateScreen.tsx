@@ -36,6 +36,11 @@ export const VariantUpdateScreen = (props: VariantUpdateScreenProps) => {
       router.push('/variants');
   }, [variantUpdateController.state.type, router]);
 
+  console.log(
+    'variantUpdateController',
+    variantUpdateController.state.values.materials
+  );
+
   return (
     <Layout {...authLogoutController} title="Update Variant" showBackButton>
       <ScrollView>

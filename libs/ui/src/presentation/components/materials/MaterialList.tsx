@@ -68,6 +68,7 @@ export const MaterialList = ({
                 name={item.name}
                 price={item.price}
                 unit={item.unit}
+                weeklyUsage={item.weeklyUsage}
                 onEditMenuPress={
                   onEditMenuPress ? () => onEditMenuPress(item) : undefined
                 }

@@ -24,11 +24,35 @@ func (usecase Usecase) GetMaterialList(ctx context.Context, query string, sortBy
 		return []Material{}, 0, err
 	}
 
+	materialIds := []int64{}
+	for _, material := range materials {
+		materialIds = append(materialIds, material.Id)
+	}
+	materialWeeklyUsage, err := usecase.repository.GetMaterialsWeeklyUsage(ctx, materialIds)
+	if err != nil {
+		return []Material{}, 0, err
+	}
+	for index, material := range materials {
+		material.WeeklyUsage = materialWeeklyUsage[material.Id]
+		materials[index] = material
+	}
+
 	return materials, total, nil
 }
 
 func (usecase Usecase) GetMaterialById(ctx context.Context, id int64) (Material, *base.Error) {
-	return usecase.repository.GetMaterialById(ctx, id)
+	materialsUsage, err := usecase.repository.GetMaterialsWeeklyUsage(ctx, []int64{id})
+	if err != nil {
+		return Material{}, err
+	}
+
+	material, err := usecase.repository.GetMaterialById(ctx, id)
+	if err != nil {
+		return Material{}, err
+	}
+
+	material.WeeklyUsage = materialsUsage[id]
+	return material, nil
 }
 
 func (usecase Usecase) CreateMaterial(ctx context.Context, material Material) *base.Error {

@@ -60,7 +60,7 @@ export const Sidebar = (props: SidebarProps) => {
                   <Accordion.Trigger
                     flexDirection="row"
                     justifyContent="space-between"
-                    backgroundColor="$gray3"
+                    backgroundColor={'$gray3'}
                     onPress={(event) => {
                       if (item.path) {
                         event.preventDefault();
@@ -105,6 +105,7 @@ export const Sidebar = (props: SidebarProps) => {
                                 hoverTheme
                                 size="$4"
                                 cursor="pointer"
+                                borderRadius="$3"
                               >
                                 {subItem.title}
                               </ListItem>

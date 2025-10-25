@@ -121,5 +121,6 @@ const transformers = {
     price: material.price,
     unit: material.unit,
     description: material.description ?? '',
+    weeklyUsage: material.weeklyUsage,
   }),
 };

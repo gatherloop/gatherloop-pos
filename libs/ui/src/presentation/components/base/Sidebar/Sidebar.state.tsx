@@ -66,6 +66,8 @@ export const useSidebarState = () => {
   }, []);
 
   useEffect(() => {
+    if (currentPath === undefined) return;
+
     const defaultItem = items.find(
       (item) =>
         item.path === currentPath ||

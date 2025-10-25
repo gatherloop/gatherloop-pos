@@ -14,6 +14,7 @@ export class MockMaterialRepository implements MaterialRepository {
         price: 100,
         unit: 'kg',
         createdAt: '2024-03-20T00:00:00.000Z',
+        weeklyUsage: 0,
       },
       {
         id: 2,
@@ -21,6 +22,7 @@ export class MockMaterialRepository implements MaterialRepository {
         price: 200,
         unit: 'kg',
         createdAt: '2024-03-21T00:00:00.000Z',
+        weeklyUsage: 0,
       },
       {
         id: 3,
@@ -28,6 +30,7 @@ export class MockMaterialRepository implements MaterialRepository {
         price: 300,
         unit: 'kg',
         createdAt: '2024-03-22T00:00:00.000Z',
+        weeklyUsage: 0,
       },
       {
         id: 4,
@@ -35,6 +38,7 @@ export class MockMaterialRepository implements MaterialRepository {
         price: 400,
         unit: 'kg',
         createdAt: '2024-03-23T00:00:00.000Z',
+        weeklyUsage: 0,
       },
     ];
   }
@@ -52,9 +56,13 @@ export class MockMaterialRepository implements MaterialRepository {
     // Sort by createdAt
     const sortedMaterials = [...this.materials].sort((a, b) => {
       if (orderBy === 'asc') {
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        return (
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
       } else {
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        return (
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
       }
     });
     const start = (page - 1) * itemPerPage;
@@ -76,9 +84,13 @@ export class MockMaterialRepository implements MaterialRepository {
     // Sort by createdAt
     const sortedMaterials = [...this.materials].sort((a, b) => {
       if (orderBy === 'asc') {
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        return (
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
       } else {
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        return (
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
       }
     });
     const start = (page - 1) * itemPerPage;
@@ -97,6 +109,7 @@ export class MockMaterialRepository implements MaterialRepository {
       price: 100,
       unit: 'kg',
       createdAt: '2024-03-20T00:00:00.000Z',
+      weeklyUsage: 0,
     });
   }
 
@@ -104,7 +117,9 @@ export class MockMaterialRepository implements MaterialRepository {
     if (this.shouldFail) {
       return Promise.reject(new Error('Failed to delete material'));
     }
-    this.materials = this.materials.filter((material) => material.id !== materialId);
+    this.materials = this.materials.filter(
+      (material) => material.id !== materialId
+    );
     return Promise.resolve();
   }
 
@@ -112,13 +127,17 @@ export class MockMaterialRepository implements MaterialRepository {
     if (this.shouldFail) {
       return Promise.reject(new Error('Failed to create material'));
     }
-    const newId = this.materials.length > 0 ? Math.max(...this.materials.map(m => m.id)) + 1 : 1;
+    const newId =
+      this.materials.length > 0
+        ? Math.max(...this.materials.map((m) => m.id)) + 1
+        : 1;
     const newMaterial: Material = {
       id: newId,
       name: formValues.name,
       price: formValues.price,
       unit: formValues.unit,
       createdAt: new Date().toISOString(),
+      weeklyUsage: 0,
     };
     this.materials.push(newMaterial);
     return Promise.resolve();
@@ -128,7 +147,9 @@ export class MockMaterialRepository implements MaterialRepository {
     if (this.shouldFail) {
       return Promise.reject(new Error('Failed to update material'));
     }
-    const index = this.materials.findIndex((material) => material.id === materialId);
+    const index = this.materials.findIndex(
+      (material) => material.id === materialId
+    );
     if (index !== -1) {
       this.materials[index] = {
         ...this.materials[index],

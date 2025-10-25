@@ -4,6 +4,7 @@ export type Material = {
   price: number;
   unit: string;
   description?: string;
+  weeklyUsage: number;
   createdAt: string;
 };
 

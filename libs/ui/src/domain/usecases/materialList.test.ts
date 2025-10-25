@@ -218,6 +218,7 @@ describe('MaterialListUsecase', () => {
         price: 100,
         unit: 'kg',
         createdAt: new Date().toISOString(),
+        weeklyUsage: 0,
       },
     ];
     const usecase = new MaterialListUsecase(

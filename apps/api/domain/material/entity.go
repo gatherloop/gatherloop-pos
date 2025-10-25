@@ -7,6 +7,7 @@ type Material struct {
 	Name        string
 	Price       float32
 	Unit        string
+	WeeklyUsage float32
 	Description *string
 	DeletedAt   *time.Time
 	CreatedAt   time.Time
