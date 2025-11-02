@@ -10,18 +10,13 @@ import (
 	"gorm.io/gorm"
 )
 
-type MaterialUsage struct {
-	ID     int64   `gorm:"column:id"`
-	Amount float32 `gorm:"column:amount"`
-}
-
 func NewMaterialRepository(db *gorm.DB) material.Repository {
 	return Repository{db: db}
 }
 
 func (repo Repository) GetMaterialList(ctx context.Context, query string, sortBy base.SortBy, order base.Order, skip int, limit int) ([]material.Material, *base.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
-	var categories []material.Material
+	var materials []Material
 	result := db.Table("materials").Where("deleted_at", nil).Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
 
 	if query != "" {
@@ -36,9 +31,9 @@ func (repo Repository) GetMaterialList(ctx context.Context, query string, sortBy
 		result = result.Limit(limit)
 	}
 
-	result = result.Find(&categories)
+	result = result.Find(&materials)
 
-	return categories, ToError(result.Error)
+	return ToMaterialListDomain(materials), ToError(result.Error)
 }
 
 func (repo Repository) GetMaterialListTotal(ctx context.Context, query string) (int64, *base.Error) {
@@ -91,20 +86,25 @@ func (repo Repository) GetMaterialsWeeklyUsage(ctx context.Context, ids []int64)
 
 func (repo Repository) GetMaterialById(ctx context.Context, id int64) (material.Material, *base.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
-	var material material.Material
-	result := db.Table("materials").Where("id = ?", id).First(&material)
-	return material, ToError(result.Error)
+	var material Material
+	result := db.Table("materials").Where("id = ?", id).Where("deleted_at", nil).First(&material)
+	return ToMaterialDomain(material), ToError(result.Error)
 }
 
 func (repo Repository) CreateMaterial(ctx context.Context, material *material.Material) *base.Error {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Table("materials").Create(material)
+	materialPayload := ToMaterialDB(*material)
+	result := db.Table("materials").Create(&materialPayload)
+
+	material.Id = materialPayload.Id
+
 	return ToError(result.Error)
 }
 
 func (repo Repository) UpdateMaterialById(ctx context.Context, material *material.Material, id int64) *base.Error {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Table("materials").Where("id = ?", id).Updates(material)
+	materialPayload := ToMaterialDB(*material)
+	result := db.Table("materials").Where("id = ?", id).Updates(materialPayload)
 	return ToError(result.Error)
 }
 
