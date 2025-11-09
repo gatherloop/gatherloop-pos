@@ -66,17 +66,22 @@ export class CalculationUpdateUsecase extends Usecase<
       (wallet) => wallet.id === this.params.calculation?.wallet.id
     );
 
+    const isComplete = this.params.calculation?.completedAt !== null;
+
+    const totalWallet = isComplete
+      ? this.params.calculation?.totalWallet ?? 0
+      : selectedWallet?.balance ?? 0;
+
     return {
       type: this.params.calculation !== null ? 'loaded' : 'idle',
       errorMessage: null,
       wallets: this.params.wallets,
       values: {
         walletId: this.params.calculation?.wallet.id ?? NaN,
-        totalWallet:
-          selectedWallet?.balance ?? this.params.calculation?.totalWallet ?? 0,
+        totalWallet,
         calculationItems: this.params.calculation?.calculationItems ?? [],
       },
-      isComplete: this.params.calculation?.completedAt !== null,
+      isComplete,
     } as CalculationUpdateState;
   }
 
