@@ -3,6 +3,7 @@ import {
   NavigationContainerRef,
   ParamListBase,
 } from '@react-navigation/native';
+import Router from 'next/router';
 
 export let navigationRef: NavigationContainerRef<ParamListBase> | null = null;
 
@@ -15,6 +16,7 @@ export function setQueryParam(key: string, value: string) {
     const url = new URL(window.location.href);
     url.searchParams.set(key, value);
     window.history.replaceState({}, '', url.toString());
+    Router.replace(url.toString(), undefined, { shallow: true });
   } else {
     if (!navigationRef) {
       console.warn('navigationRef not set');
