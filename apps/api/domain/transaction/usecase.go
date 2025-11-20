@@ -320,6 +320,78 @@ func (usecase Usecase) PayTransaction(ctx context.Context, walletId int64, paidA
 	})
 }
 
+func (usecase Usecase) UnpayTransaction(ctx context.Context, id int64) *base.Error {
+	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *base.Error {
+		transaction, err := usecase.repository.GetTransactionById(ctxWithTx, id)
+		if err != nil {
+			return err
+		}
+
+		if transaction.PaidAt == nil {
+			return &base.Error{Type: base.BadRequest, Message: "transaction already unpaid"}
+		}
+
+		now := time.Now()
+		if now.Sub(transaction.CreatedAt) > 24*time.Hour {
+			return &base.Error{Type: base.BadRequest, Message: "cannot unpay if more than 24 hours"}
+		}
+
+		paymentWallet, err := usecase.walletRepository.GetWalletById(ctxWithTx, *transaction.WalletId)
+		if err != nil {
+			return err
+		}
+
+		paymentCost := transaction.Total * paymentWallet.PaymentCostPercentage / 100
+		newBalance := paymentWallet.Balance - (transaction.Total - paymentCost)
+
+		if err := usecase.walletRepository.UpdateWalletById(ctxWithTx, &wallet.Wallet{
+			Name:                  paymentWallet.Name,
+			PaymentCostPercentage: paymentWallet.PaymentCostPercentage,
+			Balance:               newBalance,
+			IsCashless:            paymentWallet.IsCashless,
+		},
+			*transaction.WalletId); err != nil {
+			return err
+		}
+
+		variantMaterials := []variant.VariantMaterial{}
+
+		for _, item := range transaction.TransactionItems {
+			variantMaterials = append(variantMaterials, item.Variant.Materials...)
+		}
+
+		var foodCost float32
+		for _, variantMaterial := range variantMaterials {
+			foodCost += variantMaterial.Amount * variantMaterial.Material.Price
+		}
+
+		totalIncome := transaction.Total - paymentCost - foodCost
+
+		budgetList, err := usecase.budgetRepository.GetBudgetList(ctxWithTx)
+		if err != nil {
+			return err
+		}
+
+		for _, budgetItem := range budgetList {
+			var restockBudgetId int64 = 4
+
+			var newBalance float32
+
+			if budgetItem.Id == restockBudgetId {
+				newBalance = budgetItem.Balance - foodCost
+			} else {
+				addition := totalIncome * budgetItem.Percentage / 100
+				newBalance = budgetItem.Balance - addition
+			}
+
+			if err := usecase.budgetRepository.UpdateBudgetById(ctxWithTx, &budget.Budget{Balance: newBalance}, budgetItem.Id); err != nil {
+				return err
+			}
+		}
+		return usecase.repository.UnpayTransaction(ctxWithTx, id)
+	})
+}
+
 func (usecase Usecase) GetTransactionStatistics(ctx context.Context, groupBy string) ([]TransactionStatistic, *base.Error) {
 	return usecase.repository.GetTransactionStatistics(ctx, groupBy)
 }

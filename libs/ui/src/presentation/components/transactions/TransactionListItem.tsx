@@ -6,6 +6,7 @@ import {
   Printer,
   Trash,
   Wallet,
+  XCircle,
 } from '@tamagui/lucide-icons';
 import { ListItem } from '../base';
 import dayjs from 'dayjs';
@@ -20,6 +21,7 @@ export type TransactionListItemProps = {
   paidAt?: string;
   walletName?: string;
   onPayMenuPress: () => void;
+  onUnpayMenuPress: () => void;
   onEditMenuPress: () => void;
   onDeleteMenuPress: () => void;
   onPrintInvoiceMenuPress: () => void;
@@ -34,6 +36,7 @@ export const TransactionListItem = ({
   paidAt,
   walletName,
   onPayMenuPress,
+  onUnpayMenuPress,
   onEditMenuPress,
   onDeleteMenuPress,
   onPrintInvoiceMenuPress,
@@ -52,6 +55,13 @@ export const TransactionListItem = ({
           icon: DollarSign,
           onPress: onPayMenuPress,
           isShown: paidAt === undefined,
+        },
+        {
+          title: 'Unpay',
+          icon: XCircle,
+          onPress: onUnpayMenuPress,
+          isShown:
+            paidAt !== undefined && dayjs().diff(createdAt, 'hour') <= 24,
         },
         {
           title: 'Print Invoice',

@@ -36,6 +36,7 @@ export * from './TransactionListController';
 export * from './TransactionCreateController';
 export * from './TransactionUpdateController';
 export * from './TransactionPayController';
+export * from './TransactionUnpayController';
 export * from './TransactionDetailController';
 export * from './TransactionItemSelectController';
 export * from './TransactionStatisticListController';

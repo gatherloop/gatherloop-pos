@@ -16,6 +16,7 @@ import {
   TransactionStatistic as ApiTransactionStatistic,
   TransactionStatistics200,
   TransactionListQueryParams,
+  transactionUnpayById,
 } from '../../../../api-contract/src';
 import {
   Transaction,
@@ -62,6 +63,12 @@ export class ApiTransactionRepository implements TransactionRepository {
     paidAmount
   ) => {
     return transactionPayById(transactionId, { walletId, paidAmount }).then();
+  };
+
+  unpayTransaction: TransactionRepository['unpayTransaction'] = (
+    transactionId
+  ) => {
+    return transactionUnpayById(transactionId).then();
   };
 
   fetchTransactionById = (

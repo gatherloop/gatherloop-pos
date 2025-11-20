@@ -1141,6 +1141,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /transactions/{transactionId}/unpay:
+    put:
+      summary: unpay transaction by id
+      operationId: transactionUnpayById
+      tags:
+        - transaction
+      parameters:
+        - $ref: '#/components/parameters/TransactionId'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /transactions/statistics:
     get:
       summary: Get transactions statistics

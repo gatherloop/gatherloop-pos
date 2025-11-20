@@ -11,6 +11,7 @@ import {
   AuthLogoutUsecase,
   TransactionListParams,
   TransactionPayParams,
+  TransactionUnpayUsecase,
 } from '../domain';
 import { TransactionListScreen as TransactionListScreenView } from '../presentation';
 import { QueryClient } from '@tanstack/react-query';
@@ -46,12 +47,16 @@ export function TransactionListScreen({
     walletRepository,
     transactionPayParams
   );
+  const transactionUnpayUsecase = new TransactionUnpayUsecase(
+    transactionRepository
+  );
 
   return (
     <TransactionListScreenView
       transactionDeleteUsecase={transactionDeleteUsecase}
       transactionListUsecase={transactionListUsecase}
       transactionPayUsecase={transactionPayUsecase}
+      transactionUnpayUsecase={transactionUnpayUsecase}
       authLogoutUsecase={authLogoutUsecase}
     />
   );

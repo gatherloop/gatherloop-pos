@@ -149,6 +149,23 @@ func (handler TransactionHandler) PayTransaction(w http.ResponseWriter, r *http.
 	WriteResponse(w, apiContract.SuccessResponse{Success: true})
 }
 
+func (handler TransactionHandler) UnpayTransaction(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	id, err := GetTransactionId(r)
+	if err != nil {
+		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
+		return
+	}
+
+	if err := handler.usecase.UnpayTransaction(ctx, id); err != nil {
+		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
+		return
+	}
+
+	WriteResponse(w, apiContract.SuccessResponse{Success: true})
+}
+
 func (handler TransactionHandler) GetTransactionStatistics(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

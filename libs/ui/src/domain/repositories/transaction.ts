@@ -51,6 +51,8 @@ export interface TransactionRepository {
     paidAmount: number
   ) => Promise<void>;
 
+  unpayTransaction: (transactionId: number) => Promise<void>;
+
   getTransactionStatisticList: (
     groupBy: 'date' | 'month'
   ) => TransactionStatistic[];

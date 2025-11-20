@@ -4,6 +4,7 @@ import {
   TransactionList,
   TransactionDeleteAlert,
   TransactionPaymentAlert,
+  TransactionUnpayAlert,
 } from '../components';
 import { Link } from 'solito/link';
 import { Plus } from '@tamagui/lucide-icons';
@@ -12,6 +13,7 @@ import {
   useTransactionDeleteController,
   useTransactionListController,
   useTransactionPayController,
+  useTransactionUnpayController,
 } from '../controllers';
 import { useEffect } from 'react';
 import { useRouter } from 'solito/router';
@@ -21,6 +23,7 @@ import {
   TransactionDeleteUsecase,
   TransactionListUsecase,
   TransactionPayUsecase,
+  TransactionUnpayUsecase,
 } from '../../domain';
 import { usePrinter } from '../../utils';
 import dayjs from 'dayjs';
@@ -29,6 +32,7 @@ export type TransactionListScreenProps = {
   transactionListUsecase: TransactionListUsecase;
   transactionDeleteUsecase: TransactionDeleteUsecase;
   transactionPayUsecase: TransactionPayUsecase;
+  transactionUnpayUsecase: TransactionUnpayUsecase;
   authLogoutUsecase: AuthLogoutUsecase;
 };
 
@@ -42,6 +46,9 @@ export const TransactionListScreen = (props: TransactionListScreenProps) => {
   );
   const transactionPayController = useTransactionPayController(
     props.transactionPayUsecase
+  );
+  const transactionUnpayController = useTransactionUnpayController(
+    props.transactionUnpayUsecase
   );
 
   const router = useRouter();
@@ -58,6 +65,12 @@ export const TransactionListScreen = (props: TransactionListScreenProps) => {
       transactionListController.dispatch({ type: 'FETCH' });
     }
   }, [transactionListController, transactionPayController.state.type]);
+
+  useEffect(() => {
+    if (transactionUnpayController.state.type === 'unpayingSuccess') {
+      transactionListController.dispatch({ type: 'FETCH' });
+    }
+  }, [transactionListController, transactionUnpayController.state.type]);
 
   const onDeleteMenuPress = (transaction: Transaction) => {
     transactionDeleteController.dispatch({
@@ -78,6 +91,13 @@ export const TransactionListScreen = (props: TransactionListScreenProps) => {
       type: 'SHOW_CONFIRMATION',
       transactionId: transaction.id,
       transactionTotal: transaction.total,
+    });
+  };
+
+  const onUnpayMenuPress = (transaction: Transaction) => {
+    transactionUnpayController.dispatch({
+      type: 'SHOW_CONFIRMATION',
+      transactionId: transaction.id,
     });
   };
 
@@ -166,12 +186,14 @@ export const TransactionListScreen = (props: TransactionListScreenProps) => {
         onDeleteMenuPress={onDeleteMenuPress}
         onEditMenuPress={onEditMenuPress}
         onPayMenuPress={onPayMenuPress}
+        onUnpayMenuPress={onUnpayMenuPress}
         onItemPress={onEditMenuPress}
         onPrintInvoiceMenuPress={onPrintInvoiceMenuPress}
         onPrintOrderSlipMenuPress={onPrintOrderSlipMenuPress}
       />
       <TransactionDeleteAlert {...transactionDeleteController} />
       <TransactionPaymentAlert {...transactionPayController} />
+      <TransactionUnpayAlert {...transactionUnpayController} />
     </Layout>
   );
 };

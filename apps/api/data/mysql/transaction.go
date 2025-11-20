@@ -131,6 +131,17 @@ func (repo Repository) PayTransaction(ctx context.Context, walletId int64, paidA
 	return ToError(result.Error)
 }
 
+func (repo Repository) UnpayTransaction(ctx context.Context, id int64) *base.Error {
+	db := GetDbFromCtx(ctx, repo.db)
+	result := db.Table("transactions").Where("id = ?", id).Updates(map[string]interface{}{
+		"wallet_id":    nil,
+		"total_income": 0,
+		"paid_at":      nil,
+		"paid_amount":  0,
+	})
+	return ToError(result.Error)
+}
+
 func (repo Repository) GetTransactionStatistics(ctx context.Context, groupBy string) ([]transaction.TransactionStatistic, *base.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 
