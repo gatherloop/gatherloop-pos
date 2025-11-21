@@ -181,6 +181,7 @@ export const variantTransformers = {
       description: variant.product.description ?? '',
       options: variant.product.options,
       imageUrl: variant.product.imageUrl,
+      saleType: variant.product.saleType,
     },
     values: variant.values.map((value) => ({
       id: value.id,

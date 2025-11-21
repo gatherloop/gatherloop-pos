@@ -158,6 +158,7 @@ export class VariantUpdateUsecase extends Usecase<
             page: 1,
             query: '',
             sortBy: 'created_at',
+            saleType: 'all',
           }),
           this.variantRepository.fetchVariantById(this.params.variantId),
         ])

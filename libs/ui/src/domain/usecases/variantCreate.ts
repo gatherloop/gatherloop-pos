@@ -156,6 +156,7 @@ export class VariantCreateUsecase extends Usecase<
             page: 1,
             query: '',
             sortBy: 'created_at',
+            saleType: 'all',
           })
           .then(({ products }) => dispatch({ type: 'FETCH_SUCCESS', products }))
           .catch(() =>

@@ -27,6 +27,7 @@ export const getServerSideProps: GetServerSideProps<
       page: 1,
       query: '',
       sortBy: 'created_at',
+      saleType: 'all',
     },
     {
       headers: { Cookie: ctx.req.headers.cookie },
