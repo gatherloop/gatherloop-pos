@@ -13,13 +13,13 @@ func NewUsecase(repository Repository) Usecase {
 	return Usecase{repository: repository}
 }
 
-func (usecase Usecase) GetProductList(ctx context.Context, query string, sortBy base.SortBy, order base.Order, skip int, limit int) ([]Product, int64, *base.Error) {
-	products, err := usecase.repository.GetProductList(ctx, query, sortBy, order, skip, limit)
+func (usecase Usecase) GetProductList(ctx context.Context, query string, sortBy base.SortBy, order base.Order, skip int, limit int, saleTypeQuery SaleTypeQuery) ([]Product, int64, *base.Error) {
+	products, err := usecase.repository.GetProductList(ctx, query, sortBy, order, skip, limit, saleTypeQuery)
 	if err != nil {
 		return []Product{}, 0, err
 	}
 
-	total, err := usecase.repository.GetProductListTotal(ctx, query)
+	total, err := usecase.repository.GetProductListTotal(ctx, query, saleTypeQuery)
 	if err != nil {
 		return []Product{}, 0, err
 	}
@@ -66,6 +66,7 @@ func (usecase Usecase) UpdateProductById(ctx context.Context, product Product, i
 			DeletedAt:   product.DeletedAt,
 			CreatedAt:   product.CreatedAt,
 			Options:     options,
+			SaleType:    product.SaleType,
 		}
 
 		if err := usecase.repository.UpdateProductById(ctxWithTx, &payload, id); err != nil {

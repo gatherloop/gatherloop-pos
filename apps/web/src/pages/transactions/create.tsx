@@ -33,7 +33,7 @@ export const getServerSideProps: GetServerSideProps<
   const sortBy = 'created_at';
 
   const { products, totalItem } = await productRepository.fetchProductList(
-    { page, itemPerPage, orderBy, query, sortBy },
+    { page, itemPerPage, orderBy, query, sortBy, saleType: 'purchase' },
     { headers: { Cookie: ctx.req.headers.cookie } }
   );
 

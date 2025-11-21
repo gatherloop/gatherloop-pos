@@ -28,9 +28,10 @@ export const getServerSideProps: GetServerSideProps<
   const query = productListQueryRepository.getSearchQuery(url);
   const orderBy = productListQueryRepository.getOrderBy(url);
   const sortBy = productListQueryRepository.getSortBy(url);
+  const saleType = productListQueryRepository.getSaleType(url);
 
   const { products, totalItem } = await productRepository.fetchProductList(
-    { page, itemPerPage, orderBy, query, sortBy },
+    { page, itemPerPage, orderBy, query, sortBy, saleType },
     { headers: { Cookie: ctx.req.headers.cookie } }
   );
 
@@ -44,6 +45,7 @@ export const getServerSideProps: GetServerSideProps<
         products,
         query,
         sortBy,
+        saleType,
       },
     },
   };

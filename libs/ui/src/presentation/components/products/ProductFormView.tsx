@@ -41,6 +41,14 @@ export const ProductFormView = ({
               <Field name="categoryId" label="Category" flex={1}>
                 <Select items={categorySelectOptions} />
               </Field>
+              <Field name="saleType" label="Sale Type" flex={1}>
+                <Select
+                  items={[
+                    { label: 'Purchase', value: 'purchase' },
+                    { label: 'Rental', value: 'rental' },
+                  ]}
+                />
+              </Field>
               <Field name="imageUrl" label="Image URL" flex={1}>
                 <InputText />
               </Field>

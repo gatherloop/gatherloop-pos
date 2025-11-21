@@ -13,4 +13,7 @@ export interface ProductListQueryRepository {
 
   getOrderBy: () => 'asc' | 'desc';
   setOrderBy: (orderBy: 'asc' | 'desc') => void;
+
+  getSaleType: () => 'purchase' | 'rental' | 'all';
+  setSaleType: (saleType: 'purchase' | 'rental' | 'all') => void;
 }

@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { ProductListUsecase } from '../../domain';
+import { ProductListUsecase, SaleType } from '../../domain';
 import { useFocusEffect } from '../../utils';
 import { useController } from './controller';
 import { match, P } from 'ts-pattern';
@@ -27,6 +27,10 @@ export const useProductListController = (usecase: ProductListUsecase) => {
     dispatch({ type: 'CHANGE_PARAMS', page });
   };
 
+  const onSaleTypeChange = (saleType: SaleType) => {
+    dispatch({ type: 'CHANGE_PARAMS', saleType });
+  };
+
   const onRetryButtonPress = () => {
     dispatch({ type: 'FETCH' });
   };
@@ -48,10 +52,12 @@ export const useProductListController = (usecase: ProductListUsecase) => {
     state,
     dispatch,
     searchValue: state.query,
+    saleType: state.saleType,
     currentPage: state.page,
     totalItem: state.totalItem,
     itemPerPage: state.itemPerPage,
     onSearchValueChange,
+    onSaleTypeChange,
     onPageChange,
     onRetryButtonPress,
     variant,

@@ -539,6 +539,7 @@ paths:
         - $ref: '#/components/parameters/Order'
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Skip'
+        - $ref: '#/components/parameters/SaleType'
       responses:
         '200':
           description: success response
@@ -1199,12 +1200,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  /reservations:
+  /rentals:
     get:
-      summary: List all reservations
-      operationId: ReservationList
+      summary: List all rentals
+      operationId: RentalList
       tags:
-        - reservation
+        - rental
       parameters:
         - $ref: '#/components/parameters/Query'
         - $ref: '#/components/parameters/SortBy'
@@ -1226,7 +1227,7 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Reservation'
+                      $ref: '#/components/schemas/Rental'
                   meta:
                     $ref: '#/components/schemas/MetaPage'
         '500':
@@ -1235,14 +1236,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  /reservations/{reservationId}:
+  /rentals/{rentalId}:
     get:
-      summary: Get reservation by id
-      operationId: reservationFindById
+      summary: Get rental by id
+      operationId: rentalFindById
       tags:
-        - reservation
+        - rental
       parameters:
-        - $ref: '#/components/parameters/ReservationId'
+        - $ref: '#/components/parameters/RentalId'
       responses:
         '200':
           description: success response
@@ -1254,7 +1255,7 @@ paths:
                   - data
                 properties:
                   data:
-                    $ref: '#/components/schemas/Reservation'
+                    $ref: '#/components/schemas/Rental'
         '404':
           description: not found error
           content:
@@ -1262,12 +1263,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
     delete:
-      summary: Delete reservation by id
-      operationId: reservationDeleteById
+      summary: Delete rental by id
+      operationId: rentalDeleteById
       tags:
-        - reservation
+        - rental
       parameters:
-        - $ref: '#/components/parameters/ReservationId'
+        - $ref: '#/components/parameters/RentalId'
       requestBody:
         required: false
         content:
@@ -1287,12 +1288,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  /reservations/checkin:
+  /rentals/checkin:
     post:
-      summary: Checkin reservations
-      operationId: reservationCheckin
+      summary: Checkin rentals
+      operationId: rentalCheckin
       tags:
-        - reservation
+        - rental
       requestBody:
         required: true
         content:
@@ -1300,7 +1301,7 @@ paths:
             schema:
               type: array
               items:
-                $ref: '#/components/schemas/ReservationRequest'
+                $ref: '#/components/schemas/RentalRequest'
       responses:
         '200':
           description: success response
@@ -1314,12 +1315,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  /reservations/checkout:
+  /rentals/checkout:
     post:
-      summary: Checkout reservation
-      operationId: reservationCheckout
+      summary: Checkout rental
+      operationId: rentalCheckout
       tags:
-        - reservation
+        - rental
       requestBody:
         required: true
         content:
@@ -1973,6 +1974,7 @@ components:
         - imageUrl
         - createdAt
         - options
+        - saleType
       properties:
         id:
           type: integer
@@ -1992,6 +1994,9 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Option'
+        saleType:
+          type: string
+          enum: [purchase, rental]
         deletedAt:
           type: string
           format: date-time
@@ -2005,6 +2010,7 @@ components:
         - name
         - imageUrl
         - options
+        - saleType
       properties:
         categoryId:
           type: integer
@@ -2019,6 +2025,9 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/OptionRequest'
+        saleType:
+          type: string
+          enum: [purchase, rental]
     Option:
       type: object
       required:
@@ -2429,7 +2438,7 @@ components:
           type: integer
         totalIncome:
           type: number
-    Reservation:
+    Rental:
       type: object
       required:
         - id
@@ -2461,7 +2470,7 @@ components:
         createdAt:
           type: string
           format: date-time
-    ReservationRequest:
+    RentalRequest:
       type: object
       required:
         - code
@@ -2795,8 +2804,8 @@ components:
       schema:
         type: integer
       required: true
-    ReservationId:
-      name: reservationId
+    RentalId:
+      name: rentalId
       in: path
       schema:
         type: integer
@@ -2876,3 +2885,9 @@ components:
       in: query
       schema:
         type: integer
+    SaleType:
+      name: saleType
+      in: query
+      schema:
+        type: string
+        enum: [purchase, rental, all]

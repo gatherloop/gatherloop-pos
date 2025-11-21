@@ -5,6 +5,13 @@ import (
 	"time"
 )
 
+type SaleType string
+
+const (
+	SaleTypePurchase SaleType = "purchase"
+	SaleTypeRental   SaleType = "rental"
+)
+
 type Product struct {
 	Id          int64
 	CategoryId  int64
@@ -15,6 +22,7 @@ type Product struct {
 	DeletedAt   *time.Time
 	CreatedAt   time.Time
 	Options     []Option
+	SaleType    SaleType
 }
 
 type Option struct {
@@ -29,3 +37,11 @@ type OptionValue struct {
 	OptionId int64
 	Name     string
 }
+
+type SaleTypeQuery int
+
+const (
+	Purchase SaleTypeQuery = iota
+	Rental
+	All
+)

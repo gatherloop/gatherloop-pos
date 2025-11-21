@@ -69,6 +69,7 @@ export class ProductUpdateUsecase extends Usecase<
         imageUrl: this.params.product?.imageUrl ?? '',
         description: this.params.product?.description ?? '',
         options: this.params.product?.options ?? [],
+        saleType: this.params.product?.saleType ?? 'purchase',
       },
     };
   }
@@ -160,6 +161,7 @@ export class ProductUpdateUsecase extends Usecase<
                 imageUrl: product.imageUrl,
                 description: product.description,
                 options: product.options,
+                saleType: product.saleType,
               },
             })
           )

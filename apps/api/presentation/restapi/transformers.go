@@ -10,7 +10,7 @@ import (
 	"apps/api/domain/expense"
 	"apps/api/domain/material"
 	"apps/api/domain/product"
-	"apps/api/domain/reservation"
+	"apps/api/domain/rental"
 	"apps/api/domain/transaction"
 	"apps/api/domain/variant"
 	"apps/api/domain/wallet"
@@ -390,6 +390,7 @@ func ToApiProduct(product product.Product) apiContract.Product {
 		Description: product.Description,
 		ImageUrl:    product.ImageUrl,
 		Options:     apiOptions,
+		SaleType:    string(product.SaleType),
 	}
 }
 
@@ -429,6 +430,7 @@ func ToProduct(productRequest apiContract.ProductRequest) product.Product {
 		ImageUrl:    productRequest.ImageUrl,
 		Description: productRequest.Description,
 		Options:     options,
+		SaleType:    product.SaleType(productRequest.SaleType),
 	}
 }
 
@@ -581,6 +583,20 @@ func GetPaymentStatus(r *http.Request) transaction.PaymentStatus {
 	}
 }
 
+func GetSaleType(r *http.Request) product.SaleTypeQuery {
+	saleTypeQuery := r.URL.Query().Get("saleType")
+	switch saleTypeQuery {
+	case "rental":
+		return product.Rental
+	case "purchase":
+		return product.Purchase
+	case "all":
+		return product.All
+	default:
+		return product.All
+	}
+}
+
 func GetWalletIdQuery(r *http.Request) *int {
 	walletId := r.URL.Query().Get("walletId")
 
@@ -690,57 +706,57 @@ func ToApiTransactionStatistic(transactionStatistic transaction.TransactionStati
 	}
 }
 
-func GetReservationId(r *http.Request) (int64, error) {
+func GetRentalId(r *http.Request) (int64, error) {
 	vars := mux.Vars(r)
-	idParam := vars["reservationId"]
+	idParam := vars["rentalId"]
 	id, err := strconv.ParseInt(idParam, 10, 32)
 	return id, err
 }
 
-func GetCheckoutStatus(r *http.Request) reservation.CheckoutStatus {
+func GetCheckoutStatus(r *http.Request) rental.CheckoutStatus {
 	checkoutStatusQuery := r.URL.Query().Get("checkoutStatus")
 	switch checkoutStatusQuery {
 	case "completed":
-		return reservation.Completed
+		return rental.Completed
 	case "ongoing":
-		return reservation.Ongoing
+		return rental.Ongoing
 	case "all":
-		return reservation.All
+		return rental.All
 	default:
-		return reservation.All
+		return rental.All
 	}
 }
 
-func GetReservationRequests(r *http.Request) ([]apiContract.ReservationRequest, error) {
-	var reservationRequests []apiContract.ReservationRequest
-	err := json.NewDecoder(r.Body).Decode(&reservationRequests)
-	return reservationRequests, err
+func GetRentalRequests(r *http.Request) ([]apiContract.RentalRequest, error) {
+	var rentalRequests []apiContract.RentalRequest
+	err := json.NewDecoder(r.Body).Decode(&rentalRequests)
+	return rentalRequests, err
 }
 
-func GetReservationIds(r *http.Request) ([]int64, error) {
-	var reservationRequests []int64
-	err := json.NewDecoder(r.Body).Decode(&reservationRequests)
-	return reservationRequests, err
+func GetRentalIds(r *http.Request) ([]int64, error) {
+	var rentalRequests []int64
+	err := json.NewDecoder(r.Body).Decode(&rentalRequests)
+	return rentalRequests, err
 }
 
-func ToApiReservation(reservation reservation.Reservation) apiContract.Reservation {
-	return apiContract.Reservation{
-		Id:         reservation.Id,
-		Code:       reservation.Code,
-		Name:       reservation.Name,
-		VariantId:  reservation.VariantId,
-		Variant:    ToApiVariant(reservation.Variant),
-		CheckinAt:  reservation.CheckinAt,
-		CheckoutAt: reservation.CheckoutAt,
-		CreatedAt:  reservation.CreatedAt,
+func ToApiRental(rental rental.Rental) apiContract.Rental {
+	return apiContract.Rental{
+		Id:         rental.Id,
+		Code:       rental.Code,
+		Name:       rental.Name,
+		VariantId:  rental.VariantId,
+		Variant:    ToApiVariant(rental.Variant),
+		CheckinAt:  rental.CheckinAt,
+		CheckoutAt: rental.CheckoutAt,
+		CreatedAt:  rental.CreatedAt,
 	}
 }
 
-func ToReservation(reservationRequest apiContract.ReservationRequest) reservation.Reservation {
-	return reservation.Reservation{
-		Code:      reservationRequest.Code,
-		Name:      reservationRequest.Name,
-		VariantId: reservationRequest.VariantId,
+func ToRental(rentalRequest apiContract.RentalRequest) rental.Rental {
+	return rental.Rental{
+		Code:      rentalRequest.Code,
+		Name:      rentalRequest.Name,
+		VariantId: rentalRequest.VariantId,
 	}
 }
 

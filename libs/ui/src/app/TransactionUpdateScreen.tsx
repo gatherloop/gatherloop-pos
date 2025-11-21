@@ -43,7 +43,7 @@ export function TransactionUpdateScreen({
   const transactionItemSelectUsecase = new TransactionItemSelectUsecase(
     productRepository,
     variantRepository,
-    transactionItemSelectParams
+    { ...transactionItemSelectParams, saleType: 'purchase' }
   );
   const couponListUsecase = new CouponListUsecase(
     couponRepository,

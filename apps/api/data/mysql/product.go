@@ -14,7 +14,7 @@ func NewProductRepository(db *gorm.DB) product.Repository {
 	return Repository{db: db}
 }
 
-func (repo Repository) GetProductList(ctx context.Context, query string, sortBy base.SortBy, order base.Order, skip int, limit int) ([]product.Product, *base.Error) {
+func (repo Repository) GetProductList(ctx context.Context, query string, sortBy base.SortBy, order base.Order, skip int, limit int, saleTypeQuery product.SaleTypeQuery) ([]product.Product, *base.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 
 	var products []product.Product
@@ -22,6 +22,13 @@ func (repo Repository) GetProductList(ctx context.Context, query string, sortBy 
 
 	if query != "" {
 		result = result.Where("name LIKE ?", "%"+query+"%")
+	}
+
+	switch saleTypeQuery {
+	case product.Purchase:
+		result = result.Where("sale_type = 'purchase'")
+	case product.Rental:
+		result = result.Where("sale_type = 'rental'")
 	}
 
 	if skip > 0 {
@@ -37,13 +44,20 @@ func (repo Repository) GetProductList(ctx context.Context, query string, sortBy 
 	return products, ToError(result.Error)
 }
 
-func (repo Repository) GetProductListTotal(ctx context.Context, query string) (int64, *base.Error) {
+func (repo Repository) GetProductListTotal(ctx context.Context, query string, saleTypeQuery product.SaleTypeQuery) (int64, *base.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	var count int64
 	result := db.Table("products").Where("deleted_at", nil)
 
 	if query != "" {
 		result = result.Where("name LIKE ?", "%"+query+"%")
+	}
+
+	switch saleTypeQuery {
+	case product.Purchase:
+		result = result.Where("sale_type = 'purchase'")
+	case product.Rental:
+		result = result.Where("sale_type = 'rental'")
 	}
 
 	result = result.Count(&count)
@@ -66,6 +80,7 @@ func (repo Repository) CreateProduct(ctx context.Context, product *product.Produ
 
 func (repo Repository) UpdateProductById(ctx context.Context, product *product.Product, id int64) *base.Error {
 	db := GetDbFromCtx(ctx, repo.db)
+	fmt.Println(product)
 	result := db.Session(&gorm.Session{FullSaveAssociations: true}).Table("products").Where("id = ?", id).Updates(product)
 	return ToError(result.Error)
 }

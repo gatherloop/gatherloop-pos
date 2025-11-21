@@ -32,9 +32,9 @@ import {
   CouponListScreen,
   CouponCreateScreen,
   CouponUpdateScreen,
-  ReservationListScreen,
-  ReservationCheckinScreen,
-  ReservationCheckoutScreen,
+  RentalListScreen,
+  RentalCheckinScreen,
+  RentalCheckoutScreen,
 } from '@gatherloop-pos/ui';
 import { RootProvider } from '@gatherloop-pos/provider';
 import { NavigationContainer } from '@react-navigation/native';
@@ -80,9 +80,9 @@ export type RootStackParamList = {
   calculationList: undefined;
   calculationCreate: undefined;
   calculationUpdate: { calculationId: number };
-  reservationList: undefined;
-  reservationCheckin: undefined;
-  reservationCheckout: undefined;
+  rentalList: undefined;
+  rentalCheckin: undefined;
+  rentalCheckout: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -186,9 +186,9 @@ export const App = () => {
                 calculationId: (calculationId) => parseInt(calculationId),
               },
             },
-            reservationList: 'reservations',
-            reservationCheckin: 'reservations/checkin',
-            reservationCheckout: 'reservations/checkout',
+            rentalList: 'rentals',
+            rentalCheckin: 'rentals/checkin',
+            rentalCheckout: 'rentals/checkout',
           },
         },
       }}
@@ -612,41 +612,38 @@ export const App = () => {
             )}
           />
           <Stack.Screen
-            name="reservationList"
+            name="rentalList"
             component={(
-              _props: NativeStackScreenProps<
-                RootStackParamList,
-                'reservationList'
-              >
+              _props: NativeStackScreenProps<RootStackParamList, 'rentalList'>
             ) => (
-              <ReservationListScreen
-                reservationListParams={{ reservations: [], totalItem: 0 }}
+              <RentalListScreen
+                rentalListParams={{ rentals: [], totalItem: 0 }}
               />
             )}
           />
           <Stack.Screen
-            name="reservationCheckin"
+            name="rentalCheckin"
             component={(
               _props: NativeStackScreenProps<
                 RootStackParamList,
-                'reservationCheckin'
+                'rentalCheckin'
               >
             ) => (
-              <ReservationCheckinScreen
+              <RentalCheckinScreen
                 transactionItemSelectParams={{ products: [], totalItem: 0 }}
               />
             )}
           />
           <Stack.Screen
-            name="reservationCheckout"
+            name="rentalCheckout"
             component={(
               _props: NativeStackScreenProps<
                 RootStackParamList,
-                'reservationCheckout'
+                'rentalCheckout'
               >
             ) => (
-              <ReservationCheckoutScreen
-                reservationListParams={{ reservations: [], totalItem: 0 }}
+              <RentalCheckoutScreen
+                rentalListParams={{ rentals: [], totalItem: 0 }}
               />
             )}
           />

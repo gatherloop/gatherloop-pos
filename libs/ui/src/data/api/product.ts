@@ -41,6 +41,7 @@ export class ApiProductRepository implements ProductRepository {
       imageUrl: formValues.imageUrl,
       description: formValues.description,
       options: formValues.options,
+      saleType: formValues.saleType,
     }).then();
   };
 
@@ -54,6 +55,7 @@ export class ApiProductRepository implements ProductRepository {
       imageUrl: formValues.imageUrl,
       description: formValues.description,
       options: formValues.options,
+      saleType: formValues.saleType,
     }).then();
   };
 
@@ -67,6 +69,7 @@ export class ApiProductRepository implements ProductRepository {
     page,
     query,
     sortBy,
+    saleType,
   }) => {
     const params = {
       query,
@@ -74,6 +77,7 @@ export class ApiProductRepository implements ProductRepository {
       limit: itemPerPage,
       order: orderBy,
       sortBy,
+      saleType,
     };
 
     const res = this.client.getQueryState<ProductList200>(
@@ -102,6 +106,7 @@ export class ApiProductRepository implements ProductRepository {
       itemPerPage: number;
       orderBy: 'asc' | 'desc';
       sortBy: 'created_at';
+      saleType: 'purchase' | 'rental' | 'all';
     },
     options?: Partial<RequestConfig>
   ) => {
@@ -111,6 +116,7 @@ export class ApiProductRepository implements ProductRepository {
       limit: params.itemPerPage,
       order: params.orderBy,
       sortBy: params.sortBy,
+      saleType: params.saleType,
     };
 
     return this.client
@@ -139,5 +145,6 @@ export const productTransformers = {
     category: productTransformers.category(product.category),
     description: product.description ?? '',
     options: product.options,
+    saleType: product.saleType,
   }),
 };

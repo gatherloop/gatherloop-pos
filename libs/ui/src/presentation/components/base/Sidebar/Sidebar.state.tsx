@@ -25,7 +25,7 @@ const items: MenuItem[] = [
     icon: ShoppingCart,
     subItems: [
       { title: 'Transactions', path: '/transactions' },
-      { title: 'Reservations', path: '/reservations' },
+      { title: 'Rentals', path: '/rentals' },
       { title: 'Coupons', path: '/coupons' },
     ],
   },

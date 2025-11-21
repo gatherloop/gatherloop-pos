@@ -4,4 +4,4 @@ export * from './materialListQuery';
 export * from './transactionListQuery';
 export * from './expenseListQuery';
 export * from './transactionStatisticListQuery';
-export * from './reservationListQuery';
+export * from './rentalListQuery';

@@ -60,6 +60,7 @@ export class ProductCreateUsecase extends Usecase<
       imageUrl: '',
       description: '',
       options: [],
+      saleType: 'purchase',
     };
     return this.params.categories.length > 0
       ? {

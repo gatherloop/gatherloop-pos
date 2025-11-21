@@ -28,6 +28,7 @@ export const useProductCreateController = (usecase: ProductCreateUsecase) => {
       z.object({
         categoryId: z.number(),
         name: z.string().min(1),
+        saleType: z.string().min(1),
         description: z.string(),
         imageUrl: z.string().min(1).url(),
         options: z.array(z.object({})).min(1),

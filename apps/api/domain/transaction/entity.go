@@ -16,7 +16,7 @@ type TransactionItem struct {
 	Price          float32
 	DiscountAmount float32
 	Subtotal       float32
-	ReservationId  *int64
+	RentalId       *int64
 }
 
 type TransactionCoupon struct {

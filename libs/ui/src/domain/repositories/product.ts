@@ -7,6 +7,7 @@ export interface ProductRepository {
     query: string;
     sortBy: 'created_at';
     orderBy: 'asc' | 'desc';
+    saleType: 'purchase' | 'rental' | 'all';
   }) => {
     products: Product[];
     totalItem: number;
@@ -18,6 +19,7 @@ export interface ProductRepository {
     query: string;
     sortBy: 'created_at';
     orderBy: 'asc' | 'desc';
+    saleType: 'purchase' | 'rental' | 'all';
   }) => Promise<{ products: Product[]; totalItem: number }>;
 
   fetchProductById: (productId: number) => Promise<Product>;

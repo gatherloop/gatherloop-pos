@@ -8,6 +8,7 @@ export type Product = {
   imageUrl: string;
   createdAt: string;
   options: Option[];
+  saleType: 'purchase' | 'rental';
 };
 
 export type Option = {
@@ -34,4 +35,5 @@ export type ProductForm = {
       name: string;
     }[];
   }[];
+  saleType: 'purchase' | 'rental';
 };
