@@ -71,5 +71,6 @@ export const useProductUpdateController = (usecase: ProductUpdateUsecase) => {
     onRetryButtonPress,
     variant,
     categorySelectOptions,
+    variants: state.variants,
   };
 };

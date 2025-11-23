@@ -33,13 +33,14 @@ export const VariantUpdateScreen = (props: VariantUpdateScreenProps) => {
 
   useEffect(() => {
     if (variantUpdateController.state.type === 'submitSuccess')
-      router.push('/variants');
-  }, [variantUpdateController.state.type, router]);
-
-  console.log(
-    'variantUpdateController',
-    variantUpdateController.state.values.materials
-  );
+      router.push(
+        `/products/${variantUpdateController.state.values.productId}`
+      );
+  }, [
+    router,
+    variantUpdateController.state.type,
+    variantUpdateController.state.values.productId,
+  ]);
 
   return (
     <Layout {...authLogoutController} title="Update Variant" showBackButton>

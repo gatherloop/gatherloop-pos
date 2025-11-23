@@ -2,11 +2,19 @@ import { ReactNode } from 'react';
 import { Separator, SizableText, Tabs as TamaguiTabs } from 'tamagui';
 
 export type TabsProps = {
-  tabs: { value: string; label: string; content: ReactNode }[];
+  tabs: {
+    value: string;
+    label: string;
+    content: ReactNode;
+    isShown?: boolean;
+  }[];
   defaultValue: string;
 };
 
 export const Tabs = ({ tabs, defaultValue }: TabsProps) => {
+  const shownTabs = tabs.filter(
+    ({ isShown }) => typeof isShown === 'undefined' || isShown
+  );
   return (
     <TamaguiTabs
       defaultValue={defaultValue}
@@ -18,14 +26,14 @@ export const Tabs = ({ tabs, defaultValue }: TabsProps) => {
       flex={1}
     >
       <TamaguiTabs.List padded gap="$3" flexWrap="wrap">
-        {tabs.map(({ value, label }) => (
+        {shownTabs.map(({ value, label }) => (
           <TamaguiTabs.Tab key={value} value={value} radiused>
             <SizableText fontFamily="$body">{label}</SizableText>
           </TamaguiTabs.Tab>
         ))}
       </TamaguiTabs.List>
       <Separator />
-      {tabs.map(({ value, content }) => (
+      {shownTabs.map(({ value, content }) => (
         <TamaguiTabs.Content
           backgroundColor="$background"
           key={value}

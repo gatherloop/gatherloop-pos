@@ -12,7 +12,7 @@ import { QueryClient } from '@tanstack/react-query';
 
 export const getServerSideProps: GetServerSideProps<
   VariantUpdateScreenProps,
-  { variantId: string }
+  { productId: string; variantId: string }
 > = async (ctx) => {
   const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
   if (!isLoggedIn) {
@@ -24,19 +24,10 @@ export const getServerSideProps: GetServerSideProps<
   const variantRepository = new ApiVariantRepository(client);
   const productRepository = new ApiProductRepository(client);
   const variantId = parseInt(ctx.params?.variantId ?? '');
-  const { products } = await productRepository.fetchProductList(
-    {
-      itemPerPage: 1000,
-      orderBy: 'desc',
-      page: 1,
-      query: '',
-      sortBy: 'created_at',
-      saleType: 'all',
-    },
-    {
-      headers: { Cookie: ctx.req.headers.cookie },
-    }
-  );
+  const productId = parseInt(ctx.params?.productId ?? '');
+  const product = await productRepository.fetchProductById(productId, {
+    headers: { Cookie: ctx.req.headers.cookie },
+  });
   const variant = await variantRepository.fetchVariantById(variantId, {
     headers: { Cookie: ctx.req.headers.cookie },
   });
@@ -63,7 +54,7 @@ export const getServerSideProps: GetServerSideProps<
 
   return {
     props: {
-      variantUpdateParams: { variant, products, variantId },
+      variantUpdateParams: { variant, product, variantId, productId },
       materialListParams: {
         materials,
         totalItem,

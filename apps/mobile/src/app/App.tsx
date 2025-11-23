@@ -64,8 +64,8 @@ export type RootStackParamList = {
   productCreate: undefined;
   productUpdate: { productId: number };
   variantList: undefined;
-  variantCreate: undefined;
-  variantUpdate: { variantId: number };
+  variantCreate: { productId: number };
+  variantUpdate: { productId: number; variantId: number };
   budgetList: undefined;
   budgetCreate: undefined;
   budgetUpdate: { budgetId: number };
@@ -383,6 +383,7 @@ export const App = () => {
                   categories: [],
                   product: null,
                   productId: props.route.params.productId,
+                  variants: [],
                 }}
               />
             )}
@@ -403,13 +404,13 @@ export const App = () => {
           <Stack.Screen
             name="variantCreate"
             component={(
-              _props: NativeStackScreenProps<
-                RootStackParamList,
-                'variantCreate'
-              >
+              props: NativeStackScreenProps<RootStackParamList, 'variantCreate'>
             ) => (
               <VariantCreateScreen
-                variantCreateParams={{ products: [] }}
+                variantCreateParams={{
+                  product: null,
+                  productId: props.route.params.productId,
+                }}
                 materialListParam={{
                   materials: [],
                   totalItem: 0,
@@ -424,9 +425,10 @@ export const App = () => {
             ) => (
               <VariantUpdateScreen
                 variantUpdateParams={{
-                  products: [],
+                  product: null,
                   variant: null,
-                  variantId: props.route.params.variantId,
+                  variantId: props.route.params?.variantId,
+                  productId: props.route.params?.productId,
                 }}
                 materialListParams={{
                   materials: [],

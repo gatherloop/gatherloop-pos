@@ -33,11 +33,21 @@ export const VariantCreateScreen = (props: VariantCreateScreenProps) => {
 
   useEffect(() => {
     if (variantCreateController.state.type === 'submitSuccess')
-      router.push('/variants');
-  }, [variantCreateController.state.type, router]);
+      router.push(
+        `/products/${variantCreateController.state.values.productId}`
+      );
+  }, [
+    variantCreateController.state.type,
+    router,
+    variantCreateController.state.values.productId,
+  ]);
 
   return (
-    <Layout {...authLogoutController} title="Create Variant" showBackButton>
+    <Layout
+      {...authLogoutController}
+      title={`Create ${variantCreateController.product?.name} Variant`}
+      showBackButton
+    >
       <ScrollView>
         <VariantFormView
           {...variantCreateController}

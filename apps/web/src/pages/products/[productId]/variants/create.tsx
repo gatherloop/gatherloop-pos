@@ -10,29 +10,22 @@ import { GetServerSideProps } from 'next';
 import { QueryClient } from '@tanstack/react-query';
 
 export const getServerSideProps: GetServerSideProps<
-  VariantCreateScreenProps
+  VariantCreateScreenProps,
+  { productId: string }
 > = async (ctx) => {
   const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
   if (!isLoggedIn) {
     return { redirect: { destination: '/auth/login', permanent: false } };
   }
 
+  const productId = parseInt(ctx.params?.productId ?? '');
+
   const url = getUrlFromCtx(ctx);
   const client = new QueryClient();
   const productRepository = new ApiProductRepository(client);
-  const { products } = await productRepository.fetchProductList(
-    {
-      itemPerPage: 1000,
-      orderBy: 'desc',
-      page: 1,
-      query: '',
-      sortBy: 'created_at',
-      saleType: 'all',
-    },
-    {
-      headers: { Cookie: ctx.req.headers.cookie },
-    }
-  );
+  const product = await productRepository.fetchProductById(productId, {
+    headers: { Cookie: ctx.req.headers.cookie },
+  });
 
   const materialRepository = new ApiMaterialRepository(client);
   const materialListQueryRepository = new UrlMaterialListQueryRepository();
@@ -56,7 +49,7 @@ export const getServerSideProps: GetServerSideProps<
 
   return {
     props: {
-      variantCreateParams: { products },
+      variantCreateParams: { product, productId },
       materialListParam: {
         materials,
         totalItem,

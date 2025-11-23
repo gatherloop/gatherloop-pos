@@ -30,7 +30,7 @@ export const ProductCreateScreen = (props: ProductCreateScreenProps) => {
   return (
     <Layout {...authLogoutController} title="Create Product" showBackButton>
       <ScrollView>
-        <ProductFormView {...productCreateController} />
+        <ProductFormView {...productCreateController} variants={[]} />
       </ScrollView>
     </Layout>
   );

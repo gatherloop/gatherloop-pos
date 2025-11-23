@@ -5,7 +5,7 @@ import { Usecase } from './IUsecase';
 
 type Context = {
   errorMessage: string | null;
-  products: Product[];
+  product: Product | null;
   values: VariantForm;
 };
 
@@ -22,7 +22,7 @@ export type VariantUpdateState = (
 
 export type VariantUpdateAction =
   | { type: 'FETCH' }
-  | { type: 'FETCH_SUCCESS'; products: Product[]; values: VariantForm }
+  | { type: 'FETCH_SUCCESS'; product: Product; values: VariantForm }
   | { type: 'FETCH_ERROR'; errorMessage: string }
   | { type: 'SUBMIT'; values: VariantForm }
   | { type: 'SUBMIT_SUCCESS' }
@@ -32,7 +32,8 @@ export type VariantUpdateAction =
 export type VariantUpdateParams = {
   variantId: number;
   variant: Variant | null;
-  products: Product[];
+  productId: number;
+  product: Product | null;
 };
 
 export class VariantUpdateUsecase extends Usecase<
@@ -57,10 +58,10 @@ export class VariantUpdateUsecase extends Usecase<
 
   getInitialState(): VariantUpdateState {
     return {
-      products: this.params.products,
+      product: this.params.product,
       errorMessage: null,
       type:
-        this.params.variant !== null && this.params.products.length > 0
+        this.params.variant !== null && this.params.product !== null
           ? 'loaded'
           : 'idle',
       values: {
@@ -102,10 +103,10 @@ export class VariantUpdateUsecase extends Usecase<
       }))
       .with(
         [{ type: 'loading' }, { type: 'FETCH_SUCCESS' }],
-        ([state, { products, values }]) => ({
+        ([state, { product, values }]) => ({
           ...state,
           type: 'loaded',
-          products,
+          product,
           values,
         })
       )
@@ -152,20 +153,13 @@ export class VariantUpdateUsecase extends Usecase<
       })
       .with({ type: 'loading' }, () => {
         Promise.all([
-          this.productRepository.fetchProductList({
-            itemPerPage: 1000,
-            orderBy: 'asc',
-            page: 1,
-            query: '',
-            sortBy: 'created_at',
-            saleType: 'all',
-          }),
+          this.productRepository.fetchProductById(this.params.productId),
           this.variantRepository.fetchVariantById(this.params.variantId),
         ])
-          .then(([{ products }, variant]) =>
+          .then(([product, variant]) =>
             dispatch({
               type: 'FETCH_SUCCESS',
-              products,
+              product,
               values: {
                 name: variant.name,
                 price: variant.price,

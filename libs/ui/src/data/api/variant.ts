@@ -159,7 +159,7 @@ export const variantTransformers = {
         material: {
           id: material.id,
           name: material.name,
-          description: material.description,
+          description: material.description ?? '',
           price: material.price,
           unit: material.unit,
           createdAt: material.createdAt,

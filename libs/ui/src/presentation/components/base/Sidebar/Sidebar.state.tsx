@@ -35,7 +35,6 @@ const items: MenuItem[] = [
     subItems: [
       { title: 'Categories', path: '/categories' },
       { title: 'Products', path: '/products' },
-      { title: 'Variants', path: '/variants' },
       { title: 'Materials', path: '/materials' },
     ],
   },

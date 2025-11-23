@@ -38,8 +38,7 @@ export type VariantFormViewProps = {
   onRetryButtonPress: () => void;
   form: UseFormReturn<VariantForm>;
   onSubmit: (values: VariantForm) => void;
-  productSelectOptions: { label: string; value: number }[];
-  selectedProduct?: Product;
+  product: Product | null;
   isMaterialSheetOpen: boolean;
   onMaterialSheetOpenChange: (open: boolean) => void;
   onRemoveMaterial: (
@@ -55,8 +54,7 @@ export type VariantFormViewProps = {
 export const VariantFormView = ({
   variant,
   onRetryButtonPress,
-  productSelectOptions,
-  selectedProduct,
+  product,
   isMaterialSheetOpen,
   isSubmitDisabled,
   onMaterialSheetOpenChange,
@@ -73,12 +71,6 @@ export const VariantFormView = ({
             <XStack gap="$3" $sm={{ flexDirection: 'column' }}>
               <Field name="name" label="Name" flex={1}>
                 <InputText />
-              </Field>
-              <Field name="productId" label="Product" flex={1}>
-                <Select
-                  items={productSelectOptions}
-                  onValueChange={() => form.setValue('values', [])}
-                />
               </Field>
               <Field name="price" label="Price" flex={1}>
                 <InputNumber min={0} />
@@ -142,7 +134,7 @@ export const VariantFormView = ({
                   <H4>Variant Values</H4>
                   <ErrorMessage name="values" />
                   <XStack gap="$3" $sm={{ flexDirection: 'column' }}>
-                    {selectedProduct?.options.map((option, index) => (
+                    {product?.options.map((option, index) => (
                       <Field
                         key={option.id}
                         name={`values.${index}.optionValueId`}

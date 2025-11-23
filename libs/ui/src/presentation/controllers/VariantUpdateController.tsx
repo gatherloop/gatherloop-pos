@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Material, VariantForm, VariantUpdateUsecase } from '../../domain';
 import { useController } from './controller';
 import { useToastController } from '@tamagui/toast';
-import { UseFieldArrayReturn, useForm, useWatch } from 'react-hook-form';
+import { UseFieldArrayReturn, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { VariantFormViewProps } from '../components';
@@ -106,16 +106,6 @@ export const useVariantUpdateController = (usecase: VariantUpdateUsecase) => {
     .with({ type: 'error' }, () => ({ type: 'error' }))
     .exhaustive();
 
-  const productSelectOptions = state.products.map((product) => ({
-    label: product.name,
-    value: product.id,
-  }));
-
-  const productId = useWatch({ control: form.control, name: 'productId' });
-  const selectedProduct = state.products.find(
-    (product) => product.id === productId
-  );
-
   return {
     state,
     dispatch,
@@ -128,7 +118,6 @@ export const useVariantUpdateController = (usecase: VariantUpdateUsecase) => {
     isSubmitDisabled,
     onRetryButtonPress,
     variant,
-    productSelectOptions,
-    selectedProduct,
+    product: state.product,
   };
 };

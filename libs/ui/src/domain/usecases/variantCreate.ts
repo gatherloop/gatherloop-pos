@@ -5,7 +5,7 @@ import { Usecase } from './IUsecase';
 
 type Context = {
   errorMessage: string | null;
-  products: Product[];
+  product: Product | null;
   values: VariantForm;
 };
 
@@ -22,7 +22,7 @@ export type VariantCreateState = (
 
 export type VariantCreateAction =
   | { type: 'FETCH' }
-  | { type: 'FETCH_SUCCESS'; products: Product[] }
+  | { type: 'FETCH_SUCCESS'; product: Product }
   | { type: 'FETCH_ERROR'; errorMessage: string }
   | { type: 'SUBMIT'; values: VariantForm }
   | { type: 'SUBMIT_SUCCESS' }
@@ -30,7 +30,8 @@ export type VariantCreateAction =
   | { type: 'SUBMIT_CANCEL' };
 
 export type VariantCreateParams = {
-  products: Product[];
+  productId: number;
+  product: Product | null;
 };
 
 export class VariantCreateUsecase extends Usecase<
@@ -55,23 +56,23 @@ export class VariantCreateUsecase extends Usecase<
 
   getInitialState(): VariantCreateState {
     const values: VariantForm = {
-      productId: NaN,
+      productId: this.params.productId,
       materials: [],
       name: '',
       price: 0,
       description: '',
       values: [],
     };
-    return this.params.products.length > 0
+    return this.params.product !== null
       ? {
           type: 'loaded',
-          products: this.params.products,
+          product: this.params.product,
           errorMessage: null,
           values,
         }
       : {
           type: 'idle',
-          products: [],
+          product: null,
           errorMessage: null,
           values,
         };
@@ -101,10 +102,10 @@ export class VariantCreateUsecase extends Usecase<
       }))
       .with(
         [{ type: 'loading' }, { type: 'FETCH_SUCCESS' }],
-        ([state, { products }]) => ({
+        ([state, { product }]) => ({
           ...state,
           type: 'loaded',
-          products,
+          product,
         })
       )
       .with(
@@ -150,15 +151,8 @@ export class VariantCreateUsecase extends Usecase<
       })
       .with({ type: 'loading' }, () => {
         this.productRepository
-          .fetchProductList({
-            itemPerPage: 1000,
-            orderBy: 'desc',
-            page: 1,
-            query: '',
-            sortBy: 'created_at',
-            saleType: 'all',
-          })
-          .then(({ products }) => dispatch({ type: 'FETCH_SUCCESS', products }))
+          .fetchProductById(this.params.productId)
+          .then((product) => dispatch({ type: 'FETCH_SUCCESS', product }))
           .catch(() =>
             dispatch({
               type: 'FETCH_ERROR',

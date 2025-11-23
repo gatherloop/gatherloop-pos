@@ -6,28 +6,41 @@ import {
   ErrorView,
   MarkdownEditor,
   FieldArray,
+  Tabs,
 } from '../base';
-import { Button, Card, Form, XStack, Paragraph, YStack, H4 } from 'tamagui';
-import { ProductForm } from '../../../domain';
+import { Button, Card, Form, XStack, Paragraph, YStack } from 'tamagui';
+import { ProductForm, Variant } from '../../../domain';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
 import { Plus, X } from '@tamagui/lucide-icons';
+import { FlatList } from 'react-native';
+import { VariantListItem } from '../variants';
 
 export type ProductFormViewProps = {
   variant: { type: 'loaded' } | { type: 'loading' } | { type: 'error' };
   onRetryButtonPress: () => void;
   form: UseFormReturn<ProductForm>;
+  variants: Variant[];
   onSubmit: (values: ProductForm) => void;
   categorySelectOptions: { label: string; value: number }[];
   isSubmitDisabled: boolean;
+  onVariantDeleteMenuPress?: (variant: Variant) => void;
+  onVariantEditMenuPress?: (variant: Variant) => void;
+  onVariantPress?: (variant: Variant) => void;
+  onVariantCreatePress?: () => void;
 };
 
 export const ProductFormView = ({
   variant,
+  variants,
   onRetryButtonPress,
   categorySelectOptions,
   isSubmitDisabled,
   form,
   onSubmit,
+  onVariantDeleteMenuPress,
+  onVariantEditMenuPress,
+  onVariantPress,
+  onVariantCreatePress,
 }: ProductFormViewProps) => {
   return variant.type === 'loaded' ? (
     <FormProvider {...form}>
@@ -55,100 +68,172 @@ export const ProductFormView = ({
             </XStack>
           </Card.Header>
         </Card>
-        <Card>
-          <Card.Header>
-            <FieldArray control={form.control} name="options" keyName="key">
-              {(fieldArray) => (
-                <YStack gap="$3">
-                  <XStack justifyContent="space-between" alignItems="center">
-                    <H4>Options</H4>
-                    <Button
-                      icon={Plus}
-                      onPress={() => {
-                        fieldArray.append({ name: 'New Option', values: [] });
-                      }}
-                    />
-                  </XStack>
 
-                  <XStack gap="$3" flexWrap="wrap">
-                    {fieldArray.fields.map((field, index) => (
-                      <Card key={field.key} backgroundColor="$background025">
-                        <Card.Header>
-                          <YStack gap="$3">
-                            <XStack gap="$3" alignItems="center">
-                              <InputText name={`options.${index}.name`} />
-                              <Button
-                                icon={X}
-                                theme="red"
-                                size="$2"
-                                circular
-                                onPress={() => fieldArray.remove(index)}
-                              />
-                            </XStack>
+        <Tabs
+          defaultValue="options"
+          tabs={[
+            {
+              label: 'Options',
+              value: 'options',
+              content: (
+                <FieldArray control={form.control} name="options" keyName="key">
+                  {(fieldArray) => (
+                    <YStack gap="$3">
+                      <XStack
+                        justifyContent="space-between"
+                        alignItems="center"
+                      >
+                        <Button
+                          icon={Plus}
+                          onPress={() => {
+                            fieldArray.append({
+                              name: 'New Option',
+                              values: [],
+                            });
+                          }}
+                        >
+                          Create Option
+                        </Button>
+                      </XStack>
 
-                            <FieldArray
-                              control={form.control}
-                              name={`options.${index}.values`}
-                              keyName="key"
-                            >
-                              {(optionValueFieldArray) => (
-                                <YStack gap="$3">
-                                  <XStack
-                                    gap="$3"
-                                    justifyContent="space-between"
-                                    alignItems="center"
-                                  >
-                                    <Paragraph>Values</Paragraph>
+                      <XStack gap="$3" flexWrap="wrap">
+                        {fieldArray.fields.map((field, index) => (
+                          <Card
+                            key={field.key}
+                            backgroundColor="$background025"
+                          >
+                            <Card.Header>
+                              <YStack gap="$3">
+                                <XStack gap="$3" alignItems="center">
+                                  <InputText name={`options.${index}.name`} />
+                                  <Button
+                                    icon={X}
+                                    theme="red"
+                                    size="$2"
+                                    circular
+                                    onPress={() => fieldArray.remove(index)}
+                                  />
+                                </XStack>
 
-                                    <Button
-                                      size="$2"
-                                      icon={Plus}
-                                      onPress={() => {
-                                        optionValueFieldArray.append({
-                                          name: 'New Value',
-                                        });
-                                      }}
-                                    />
-                                  </XStack>
-
-                                  {optionValueFieldArray.fields.map(
-                                    (field, indexValue) => (
+                                <FieldArray
+                                  control={form.control}
+                                  name={`options.${index}.values`}
+                                  keyName="key"
+                                >
+                                  {(optionValueFieldArray) => (
+                                    <YStack gap="$3">
                                       <XStack
                                         gap="$3"
+                                        justifyContent="space-between"
                                         alignItems="center"
-                                        key={field.key}
                                       >
-                                        <InputText
-                                          name={`options.${index}.values.${indexValue}.name`}
-                                        />
+                                        <Paragraph>Values</Paragraph>
+
                                         <Button
                                           size="$2"
-                                          icon={X}
-                                          circular
-                                          theme="red"
-                                          onPress={() =>
-                                            optionValueFieldArray.remove(
-                                              indexValue
-                                            )
-                                          }
+                                          icon={Plus}
+                                          onPress={() => {
+                                            optionValueFieldArray.append({
+                                              name: 'New Value',
+                                            });
+                                          }}
                                         />
                                       </XStack>
-                                    )
+
+                                      {optionValueFieldArray.fields.map(
+                                        (field, indexValue) => (
+                                          <XStack
+                                            gap="$3"
+                                            alignItems="center"
+                                            key={field.key}
+                                          >
+                                            <InputText
+                                              name={`options.${index}.values.${indexValue}.name`}
+                                            />
+                                            <Button
+                                              size="$2"
+                                              icon={X}
+                                              circular
+                                              theme="red"
+                                              onPress={() =>
+                                                optionValueFieldArray.remove(
+                                                  indexValue
+                                                )
+                                              }
+                                            />
+                                          </XStack>
+                                        )
+                                      )}
+                                    </YStack>
                                   )}
-                                </YStack>
-                              )}
-                            </FieldArray>
-                          </YStack>
-                        </Card.Header>
-                      </Card>
-                    ))}
+                                </FieldArray>
+                              </YStack>
+                            </Card.Header>
+                          </Card>
+                        ))}
+                      </XStack>
+                    </YStack>
+                  )}
+                </FieldArray>
+              ),
+            },
+            {
+              label: 'Variants',
+              value: 'variants',
+              isShown:
+                variants.length > 0 || onVariantCreatePress !== undefined,
+              content: (
+                <YStack gap="$3">
+                  <XStack>
+                    <Button icon={Plus} onPress={onVariantCreatePress}>
+                      Create Variant
+                    </Button>
                   </XStack>
+
+                  <FlatList
+                    nestedScrollEnabled
+                    data={variants}
+                    contentContainerStyle={{ gap: 16 }}
+                    renderItem={({ item }) => (
+                      <VariantListItem
+                        productName={item.product.name}
+                        productImageUrl={item.product.imageUrl}
+                        optionValues={item.values.map(
+                          (variantValue) => variantValue.optionValue
+                        )}
+                        price={item.price}
+                        onDeleteMenuPress={
+                          onVariantDeleteMenuPress
+                            ? () => onVariantDeleteMenuPress(item)
+                            : undefined
+                        }
+                        onEditMenuPress={
+                          onVariantEditMenuPress
+                            ? () => onVariantEditMenuPress(item)
+                            : undefined
+                        }
+                        onPress={
+                          onVariantPress
+                            ? () => onVariantPress(item)
+                            : undefined
+                        }
+                      />
+                    )}
+                    ItemSeparatorComponent={() => (
+                      <YStack height="$1" style={{ flex: 1 }} />
+                    )}
+                  />
                 </YStack>
-              )}
-            </FieldArray>
-          </Card.Header>
-        </Card>
-        <MarkdownEditor name="description" defaultMode="edit" />
+              ),
+            },
+            {
+              label: 'Description',
+              value: 'description',
+              content: <MarkdownEditor name="description" defaultMode="edit" />,
+            },
+          ]}
+        />
+
         <Button
           disabled={isSubmitDisabled}
           onPress={form.handleSubmit(onSubmit)}
