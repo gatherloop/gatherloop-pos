@@ -36,6 +36,7 @@ const items: MenuItem[] = [
       { title: 'Categories', path: '/categories' },
       { title: 'Products', path: '/products' },
       { title: 'Materials', path: '/materials' },
+      { title: 'Suppliers', path: '/suppliers' },
     ],
   },
   {

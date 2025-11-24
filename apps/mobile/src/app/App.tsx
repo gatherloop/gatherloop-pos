@@ -35,6 +35,9 @@ import {
   RentalListScreen,
   RentalCheckinScreen,
   RentalCheckoutScreen,
+  SupplierListScreen,
+  SupplierCreateScreen,
+  SupplierUpdateScreen,
 } from '@gatherloop-pos/ui';
 import { RootProvider } from '@gatherloop-pos/provider';
 import { NavigationContainer } from '@react-navigation/native';
@@ -55,6 +58,9 @@ export type RootStackParamList = {
   materialList: undefined;
   materialCreate: undefined;
   materialUpdate: { materialId: number };
+  supplierList: undefined;
+  supplierCreate: undefined;
+  supplierUpdate: { supplierId: number };
   walletList: undefined;
   walletCreate: undefined;
   walletUpdate: { walletId: number };
@@ -119,6 +125,14 @@ export const App = () => {
               path: 'materials/:materialId',
               parse: {
                 materialId: (materialId) => parseInt(materialId),
+              },
+            },
+            supplierList: 'suppliers',
+            supplierCreate: 'suppliers/create',
+            supplierUpdate: {
+              path: 'suppliers/:supplierId',
+              parse: {
+                supplierId: (supplierId) => parseInt(supplierId),
               },
             },
             walletList: 'wallets',
@@ -283,6 +297,39 @@ export const App = () => {
                 materialUpdateParams={{
                   material: null,
                   materialId: props.route.params?.materialId,
+                }}
+              />
+            )}
+          />
+          <Stack.Screen
+            name="supplierList"
+            component={(
+              _props: NativeStackScreenProps<RootStackParamList, 'supplierList'>
+            ) => (
+              <SupplierListScreen
+                supplierListParams={{
+                  suppliers: [],
+                  totalItem: 0,
+                }}
+              />
+            )}
+          />
+          <Stack.Screen
+            name="supplierCreate"
+            component={SupplierCreateScreen}
+          />
+          <Stack.Screen
+            name="supplierUpdate"
+            component={(
+              props: NativeStackScreenProps<
+                RootStackParamList,
+                'supplierUpdate'
+              >
+            ) => (
+              <SupplierUpdateScreen
+                supplierUpdateParams={{
+                  supplier: null,
+                  supplierId: props.route.params?.supplierId,
                 }}
               />
             )}

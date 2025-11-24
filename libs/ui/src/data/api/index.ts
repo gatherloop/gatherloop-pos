@@ -10,3 +10,4 @@ export * from './wallet';
 export * from './expense';
 export * from './transaction';
 export * from './rental';
+export * from './supplier';

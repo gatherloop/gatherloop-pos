@@ -12,3 +12,4 @@ export * from './Expense';
 export * from './Transaction';
 export * from './TransactionStatistic';
 export * from './Rental';
+export * from './Supplier';

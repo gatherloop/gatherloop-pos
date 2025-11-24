@@ -49,4 +49,8 @@ export * from './rentalList';
 export * from './rentalDelete';
 export * from './rentalCheckin';
 export * from './rentalCheckout';
+export * from './supplierList';
+export * from './supplierDelete';
+export * from './supplierUpdate';
+export * from './supplierCreate';
 export * from './IUsecase';

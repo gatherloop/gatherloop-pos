@@ -11,6 +11,7 @@ import (
 	"apps/api/domain/material"
 	"apps/api/domain/product"
 	"apps/api/domain/rental"
+	"apps/api/domain/supplier"
 	"apps/api/domain/transaction"
 	"apps/api/domain/variant"
 	"apps/api/domain/wallet"
@@ -50,6 +51,7 @@ func main() {
 	budgetRepository := mysql.NewBudgetRepository(db)
 	transactionRepository := mysql.NewTransactionRepository(db)
 	materialRepository := mysql.NewMaterialRepository(db)
+	supplierRepository := mysql.NewSupplierRepository(db)
 	expenseRepository := mysql.NewExpenseRepository(db)
 	categoryRepository := mysql.NewCategoryRepository(db)
 	couponRepository := mysql.NewCouponRepository(db)
@@ -62,6 +64,7 @@ func main() {
 	variantUsecase := variant.NewUsecase(variantRepository)
 	productUsecase := product.NewUsecase(productRepository)
 	materialUsecase := material.NewUsecase(materialRepository)
+	supplierUsecase := supplier.NewUsecase(supplierRepository)
 	expenseUsecase := expense.NewUsecase(expenseRepository, budgetRepository, walletRepository)
 	categoryUsecase := category.NewUsecase(categoryRepository)
 	couponUsecase := coupon.NewUsecase(couponRepository)
@@ -75,6 +78,7 @@ func main() {
 	variantHandler := restapi.NewVariantHandler(variantUsecase)
 	productHandler := restapi.NewProductHandler(productUsecase)
 	materialHandler := restapi.NewMaterialHandler(materialUsecase)
+	supplierHandler := restapi.NewSupplierHandler(supplierUsecase)
 	expenseHandler := restapi.NewExpenseHandler(expenseUsecase)
 	categoryHandler := restapi.NewCategoryHandler(categoryUsecase)
 	couponHandler := restapi.NewCouponHandler(couponUsecase)
@@ -89,6 +93,7 @@ func main() {
 	restapi.NewCouponRouter(couponHandler).AddRouter(router)
 	restapi.NewExpenseRouter(expenseHandler).AddRouter(router)
 	restapi.NewMaterialRouter(materialHandler).AddRouter(router)
+	restapi.NewSupplierRouter(supplierHandler).AddRouter(router)
 	restapi.NewVariantRouter(variantHandler).AddRouter(router)
 	restapi.NewProductRouter(productHandler).AddRouter(router)
 	restapi.NewTransactionRouter(transactionHandler).AddRouter(router)

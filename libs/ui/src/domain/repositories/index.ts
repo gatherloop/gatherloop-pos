@@ -17,3 +17,5 @@ export * from './transactionListQuery';
 export * from './transactionStatisticListQuery';
 export * from './rental';
 export * from './rentalListQuery';
+export * from './supplier';
+export * from './supplierListQuery';

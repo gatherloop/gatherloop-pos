@@ -49,3 +49,7 @@ export * from './RentalCheckinController';
 export * from './RentalCheckoutController';
 export * from './RentalDeleteController';
 export * from './RentalListController';
+export * from './SupplierDeleteController';
+export * from './SupplierListController';
+export * from './SupplierCreateController';
+export * from './SupplierUpdateController';
