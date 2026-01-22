@@ -159,6 +159,12 @@ export const TransactionFormView = ({
                                   </FieldWatch>
                                 </XStack>
 
+                                <InputText
+                                  name={`transactionItems.${index}.note`}
+                                  placeholder="Add Notes"
+                                  flex={1}
+                                />
+
                                 <Separator />
                               </YStack>
                             );

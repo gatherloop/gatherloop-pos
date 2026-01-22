@@ -666,6 +666,7 @@ func ToApiTransaction(transaction transaction.Transaction) apiContract.Transacti
 			Price:          item.Price,
 			DiscountAmount: item.DiscountAmount,
 			Subtotal:       item.Subtotal,
+			Note:           item.Note,
 		})
 	}
 
@@ -710,6 +711,7 @@ func ToTransaction(transactionRequest apiContract.TransactionRequest) transactio
 			VariantId:      item.VariantId,
 			Amount:         item.Amount,
 			DiscountAmount: item.DiscountAmount,
+			Note:           item.Note,
 		})
 	}
 

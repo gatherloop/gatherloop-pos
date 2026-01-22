@@ -39,6 +39,7 @@ export const useTransactionCreateController = (
               z.object({
                 amount: z.number().min(1),
                 discountAmount: z.number(),
+                note: z.string(),
               })
             )
           )
@@ -77,6 +78,7 @@ export const useTransactionCreateController = (
         amount: 1,
         variant: newVariant,
         discountAmount: 0,
+        note: '',
       });
     }
   };

@@ -9,6 +9,7 @@ type TransactionItem = {
   price: number;
   discountAmount: number;
   subtotal: number;
+  note: string;
 };
 
 type TransactionCoupon = {
@@ -37,6 +38,7 @@ type TransactionItemForm = {
   variant: Variant;
   amount: number;
   discountAmount: number;
+  note: string;
 };
 
 type TransactionCouponForm = {

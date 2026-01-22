@@ -93,6 +93,7 @@ export class ApiTransactionRepository implements TransactionRepository {
         amount: item.amount,
         variantId: item.variant.id,
         discountAmount: item.discountAmount,
+        note: item.note,
       })),
       transactionCoupons: formValues.transactionCoupons.map((item) => ({
         id: item.id,
@@ -113,6 +114,7 @@ export class ApiTransactionRepository implements TransactionRepository {
         amount: item.amount,
         variantId: item.variant.id,
         discountAmount: item.discountAmount,
+        note: item.note,
       })),
       transactionCoupons: formValues.transactionCoupons.map((item) => ({
         id: item.id,
@@ -221,6 +223,7 @@ const transformers = {
       price: item.price,
       discountAmount: item.discountAmount,
       subtotal: item.subtotal,
+      note: item.note,
       variant: {
         createdAt: item.variant.createdAt,
         id: item.variant.id,

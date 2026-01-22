@@ -168,7 +168,7 @@ export const TransactionDetail = ({
       <H4>Transaction Items</H4>
       <YStack gap="$3">
         {transactionItems.map(
-          ({ price, variant, amount, subtotal, discountAmount }) => (
+          ({ price, variant, amount, subtotal, discountAmount, note }) => (
             <YStack key={variant.id} gap="$3">
               <VariantListItem
                 productName={variant.product.name}
@@ -181,6 +181,10 @@ export const TransactionDetail = ({
               />
 
               <XStack gap="$5" justifyContent="flex-end">
+                <YStack>
+                  <Paragraph textAlign="right">Note</Paragraph>
+                  <H4 textAlign="right">{note}</H4>
+                </YStack>
                 <YStack>
                   <Paragraph textAlign="right">Price</Paragraph>
                   <H4 textAlign="right">Rp. {price.toLocaleString('id')}</H4>

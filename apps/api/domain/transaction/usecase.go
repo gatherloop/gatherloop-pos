@@ -79,6 +79,7 @@ func (usecase Usecase) CreateTransaction(ctx context.Context, transactionRequest
 				DiscountAmount: item.DiscountAmount,
 				Subtotal:       subTotal,
 				Price:          variant.Price,
+				Note:           item.Note,
 			}
 
 			transactionItems = append(transactionItems, transactionItem)
@@ -162,6 +163,7 @@ func (usecase Usecase) UpdateTransactionById(ctx context.Context, transactionReq
 				DiscountAmount: item.DiscountAmount,
 				Subtotal:       subTotal,
 				Price:          variant.Price,
+				Note:           item.Note,
 			}
 
 			transactionItems = append(transactionItems, transactionItem)

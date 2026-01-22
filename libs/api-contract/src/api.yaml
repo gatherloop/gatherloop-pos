@@ -2521,6 +2521,7 @@ components:
         - price
         - discountAmount
         - subtotal
+        - note
       properties:
         id:
           type: integer
@@ -2541,11 +2542,14 @@ components:
           type: number
         subtotal:
           type: number
+        note:
+          type: string
     TransactionItemRequest:
       type: object
       required:
         - variantId
         - amount
+        - note
         - discountAmount
       properties:
         id:
@@ -2556,6 +2560,8 @@ components:
           format: int64
         amount:
           type: number
+        note:
+          type: string
         discountAmount:
           type: number
     TransactionCoupon:
