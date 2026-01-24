@@ -193,11 +193,13 @@ export const TransactionCreateScreen = (
       transactionItemSelectController.state.selectedVariant
     ) {
       transactionCreateController.onAddItem(
-        transactionItemSelectController.state.selectedVariant
+        transactionItemSelectController.state.selectedVariant,
+        transactionItemSelectController.state.amount
       );
     }
   }, [
     transactionCreateController,
+    transactionItemSelectController.state.amount,
     transactionItemSelectController.state.selectedVariant,
     transactionItemSelectController.state.type,
   ]);

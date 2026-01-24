@@ -14,6 +14,7 @@ type Context = {
   selectedProduct?: Product;
   selectedOptionValues: OptionValue[];
   selectedVariant?: Variant;
+  amount: number;
   page: number;
   query: string;
   saleType: SaleType;
@@ -56,6 +57,7 @@ export type TransactionItemSelectAction =
   | { type: 'FETCH_VARIANT' }
   | { type: 'FETCH_VARIANT_ERROR' }
   | { type: 'FETCH_VARIANT_SUCCESS'; variant: Variant }
+  | { type: 'CHANGE_AMOUNT'; amount: number }
   | { type: 'RESET' };
 
 export type TransactionItemSelectParams = {
@@ -105,6 +107,7 @@ export class TransactionItemSelectUsecase extends Usecase<
       selectedProduct: undefined,
       selectedOptionValues: [],
       selectedVariant: undefined,
+      amount: 1,
       totalItem: this.params.totalItem,
       page,
       query,
@@ -199,6 +202,7 @@ export class TransactionItemSelectUsecase extends Usecase<
             ...state,
             type: hasOneOptions ? 'loadingVariant' : 'selectingOptions',
             selectedProduct: product,
+            amount: 1,
             selectedOptionValues: product.options
               .filter((option) => option.values.length > 0)
               .map((option) => option.values[0]),
@@ -226,6 +230,14 @@ export class TransactionItemSelectUsecase extends Usecase<
         ([state]) => ({
           ...state,
           type: 'loadingVariant',
+        })
+      )
+      .with(
+        [{ type: 'selectingOptions' }, { type: 'CHANGE_AMOUNT' }],
+        ([state, { amount }]) => ({
+          ...state,
+          amount,
+          type: 'selectingOptions',
         })
       )
       .with(

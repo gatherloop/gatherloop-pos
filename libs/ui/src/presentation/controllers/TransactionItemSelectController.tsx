@@ -66,6 +66,10 @@ export const useTransactionItemSelectController = (
     .with({ type: 'loadingVariantSuccess' }, () => ({ type: 'submited' }))
     .exhaustive();
 
+  const onAmountChange = (amount: number) => {
+    dispatch({ type: 'CHANGE_AMOUNT', amount });
+  };
+
   return {
     state,
     dispatch,
@@ -84,5 +88,7 @@ export const useTransactionItemSelectController = (
     products: state.products,
     selectedOptionValues: state.selectedOptionValues,
     selectedProduct: state.selectedProduct,
+    amount: state.amount,
+    onAmountChange,
   };
 };

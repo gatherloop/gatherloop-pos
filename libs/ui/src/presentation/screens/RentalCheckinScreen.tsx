@@ -42,11 +42,13 @@ export const RentalCheckinScreen = (props: RentalCheckinScreenProps) => {
       transactionItemSelectController.state.selectedVariant
     ) {
       rentalCheckinController.onAddItem(
-        transactionItemSelectController.state.selectedVariant
+        transactionItemSelectController.state.selectedVariant,
+        transactionItemSelectController.state.amount
       );
     }
   }, [
     rentalCheckinController,
+    transactionItemSelectController.state.amount,
     transactionItemSelectController.state.selectedVariant,
     transactionItemSelectController.state.type,
   ]);

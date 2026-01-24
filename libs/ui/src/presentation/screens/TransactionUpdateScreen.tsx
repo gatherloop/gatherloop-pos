@@ -55,13 +55,15 @@ export const TransactionUpdateScreen = (
       transactionItemSelectController.state.selectedVariant
     ) {
       transactionUpdateController.onAddItem(
-        transactionItemSelectController.state.selectedVariant
+        transactionItemSelectController.state.selectedVariant,
+        transactionItemSelectController.state.amount
       );
     }
   }, [
     transactionUpdateController,
     transactionItemSelectController.state.selectedVariant,
     transactionItemSelectController.state.type,
+    transactionItemSelectController.state.amount,
   ]);
 
   return (

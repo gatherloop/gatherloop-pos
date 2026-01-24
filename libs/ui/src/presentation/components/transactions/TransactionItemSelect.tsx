@@ -23,7 +23,7 @@ import {
 } from '../base';
 import { FlatList } from 'react-native';
 import { ProductListItem } from '../products';
-import { X } from '@tamagui/lucide-icons';
+import { Minus, Plus, X } from '@tamagui/lucide-icons';
 
 export type TransactionItemSelectProps = {
   variant:
@@ -48,6 +48,8 @@ export type TransactionItemSelectProps = {
   totalItem: number;
   itemPerPage: number;
   onPageChange: (page: number) => void;
+  amount: number;
+  onAmountChange: (amount: number) => void;
 };
 
 export const TransactionItemSelect = ({
@@ -66,6 +68,8 @@ export const TransactionItemSelect = ({
   products,
   selectedOptionValues,
   selectedProduct,
+  amount,
+  onAmountChange,
 }: TransactionItemSelectProps) => {
   const productByCategories = products.reduce<Record<string, Product[]>>(
     (prev, curr) => ({
@@ -158,6 +162,35 @@ export const TransactionItemSelect = ({
                   </RadioGroup>
                 </YStack>
               ))}
+              <XStack gap="$2" alignItems="center">
+                <Button
+                  icon={Minus}
+                  variant="outlined"
+                  size="$2"
+                  onPress={() => onAmountChange(amount - 1)}
+                  circular
+                  disabled={amount === 1}
+                />
+
+                <Input
+                  onChangeText={(text: string) => {
+                    const numberValue =
+                      text.trim() === '' ? 1 : parseFloat(text);
+                    if (!isNaN(numberValue)) {
+                      onAmountChange(numberValue);
+                    }
+                  }}
+                  value={amount.toString()}
+                  flex={1}
+                />
+                <Button
+                  icon={Plus}
+                  variant="outlined"
+                  size="$2"
+                  onPress={() => onAmountChange(amount + 1)}
+                  circular
+                />
+              </XStack>
               <XStack gap="$3">
                 <Button onPress={onUnselectProduct}>Cancel</Button>
                 <Button

@@ -63,7 +63,7 @@ export const useTransactionUpdateController = (
     keyName: 'key',
   });
 
-  const onAddItem = (newVariant: Variant) => {
+  const onAddItem = (newVariant: Variant, amount: number) => {
     const itemIndex = itemsFieldArray.fields.findIndex(
       ({ variant }) => newVariant.id === variant.id
     );
@@ -71,11 +71,11 @@ export const useTransactionUpdateController = (
     if (isItemExist) {
       itemsFieldArray.update(itemIndex, {
         ...form.getValues('transactionItems')[itemIndex],
-        amount: form.getValues('transactionItems')[itemIndex].amount + 1,
+        amount: form.getValues('transactionItems')[itemIndex].amount + amount,
       });
     } else {
       itemsFieldArray.append({
-        amount: 1,
+        amount,
         variant: newVariant,
         discountAmount: 0,
         note: '',

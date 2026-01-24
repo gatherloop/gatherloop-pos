@@ -45,11 +45,13 @@ export const useRentalCheckinController = (usecase: RentalCheckinUsecase) => {
     keyName: 'key',
   });
 
-  const onAddItem = (newVariant: Variant) => {
-    rentalsFieldArray.append({
-      code: '',
-      variant: newVariant,
-    });
+  const onAddItem = (newVariant: Variant, amount: number) => {
+    for (let i = 1; i <= amount; i++) {
+      rentalsFieldArray.append({
+        code: '',
+        variant: newVariant,
+      });
+    }
   };
 
   const isSubmitDisabled = state.type === 'submitting';
