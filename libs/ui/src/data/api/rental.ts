@@ -21,12 +21,27 @@ export class ApiRentalRepository implements RentalRepository {
     this.client = client;
   }
 
-  checkinRentals: RentalRepository['checkinRentals'] = (formValues) => {
+  checkinRentals: RentalRepository['checkinRentals'] = ({
+    name,
+    checkinAt,
+    rentals,
+  }) => {
     return rentalCheckin(
-      formValues.rentals.map((rental) => ({
+      rentals.map((rental) => ({
         code: rental.code,
-        name: formValues.name,
+        name,
         variantId: rental.variant.id,
+        checkinAt: checkinAt
+          ? new Date(
+              checkinAt.year,
+              checkinAt.month,
+              checkinAt.date,
+              checkinAt.hour,
+              checkinAt.minute,
+              0,
+              0
+            ).toISOString()
+          : new Date().toISOString(),
       }))
     ).then();
   };

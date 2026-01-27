@@ -56,6 +56,21 @@ export const useRentalCheckinController = (usecase: RentalCheckinUsecase) => {
 
   const isSubmitDisabled = state.type === 'submitting';
 
+  const onToggleCustomizeCheckinDateTime = (checked: boolean) => {
+    if (checked) {
+      const date = new Date();
+      form.setValue('checkinAt', {
+        date: date.getDate(),
+        month: date.getMonth(),
+        year: date.getFullYear(),
+        hour: date.getHours(),
+        minute: date.getMinutes(),
+      });
+    } else {
+      form.setValue('checkinAt', null);
+    }
+  };
+
   return {
     state,
     dispatch,
@@ -64,5 +79,6 @@ export const useRentalCheckinController = (usecase: RentalCheckinUsecase) => {
     onAddItem,
     isSubmitDisabled,
     rentalsFieldArray,
+    onToggleCustomizeCheckinDateTime,
   };
 };

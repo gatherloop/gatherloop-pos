@@ -16,6 +16,13 @@ export type RentalCheckinForm = {
     code: string;
     variant: Variant;
   }[];
+  checkinAt: {
+    date: number;
+    month: number;
+    year: number;
+    hour: number;
+    minute: number;
+  } | null;
 };
 
 export type RentalCheckoutForm = {

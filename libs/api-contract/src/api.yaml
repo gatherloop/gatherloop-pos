@@ -2666,6 +2666,7 @@ components:
         - code
         - name
         - variantId
+        - checkinAt
       properties:
         code:
           type: string
@@ -2674,6 +2675,9 @@ components:
         variantId:
           type: integer
           format: int64
+        checkinAt:
+          type: string
+          format: date-time
     Expense:
       type: object
       required:

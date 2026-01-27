@@ -794,6 +794,7 @@ func ToRental(rentalRequest apiContract.RentalRequest) rental.Rental {
 		Code:      rentalRequest.Code,
 		Name:      rentalRequest.Name,
 		VariantId: rentalRequest.VariantId,
+		CheckinAt: rentalRequest.CheckinAt,
 	}
 }
 

@@ -1,7 +1,17 @@
-import { Field, InputText } from '../base';
-import { Button, Card, Form, Input, Paragraph, XStack, YStack } from 'tamagui';
+import { Field, FieldWatch, InputText, Select } from '../base';
+import {
+  Button,
+  Card,
+  Checkbox,
+  Form,
+  Input,
+  Label,
+  Paragraph,
+  XStack,
+  YStack,
+} from 'tamagui';
 import { H4 } from 'tamagui';
-import { Trash } from '@tamagui/lucide-icons';
+import { Check, Trash } from '@tamagui/lucide-icons';
 import { RentalCheckinForm } from '../../../domain';
 import {
   FormProvider,
@@ -13,6 +23,7 @@ import { Separator } from 'tamagui';
 
 export type RentalCheckinFormViewProps = {
   form: UseFormReturn<RentalCheckinForm>;
+  onToggleCustomizeCheckinDateTime: (checked: boolean) => void;
   onSubmit: (form: RentalCheckinForm) => void;
   isSubmitDisabled: boolean;
   RentalItemSelect: () => ReactNode;
@@ -21,6 +32,7 @@ export type RentalCheckinFormViewProps = {
 
 export const RentalCheckinFormView = ({
   form,
+  onToggleCustomizeCheckinDateTime,
   onSubmit,
   isSubmitDisabled,
   RentalItemSelect,
@@ -46,6 +58,128 @@ export const RentalCheckinFormView = ({
                     >
                       <InputText />
                     </Field>
+                    <FieldWatch control={form.control} name={['checkinAt']}>
+                      {([checkinAt]) => (
+                        <YStack>
+                          <XStack>
+                            <XStack width={300} alignItems="center" gap="$4">
+                              <Checkbox
+                                id="customizeCheckinAt"
+                                checked={checkinAt !== null}
+                                onCheckedChange={
+                                  onToggleCustomizeCheckinDateTime
+                                }
+                              >
+                                <Checkbox.Indicator>
+                                  <Check />
+                                </Checkbox.Indicator>
+                              </Checkbox>
+
+                              <Label htmlFor="customizeCheckinAt">
+                                Customize Checkin Date Time
+                              </Label>
+                            </XStack>
+                          </XStack>
+                          {checkinAt !== null && (
+                            <YStack>
+                              <XStack gap="$3">
+                                <Field
+                                  name="checkinAt.date"
+                                  label="Date"
+                                  flex={1}
+                                >
+                                  <Select
+                                    items={Array.from(
+                                      { length: 31 },
+                                      (_, i) => ({
+                                        label: (i + 1)
+                                          .toString()
+                                          .padStart(2, '0'),
+                                        value: i + 1,
+                                      })
+                                    )}
+                                  />
+                                </Field>
+                                <Field
+                                  name="checkinAt.month"
+                                  label="Month"
+                                  minWidth={150}
+                                  flex={1}
+                                >
+                                  <Select
+                                    items={[
+                                      { label: 'Januari', value: 0 },
+                                      { label: 'Februari', value: 1 },
+                                      { label: 'Maret', value: 2 },
+                                      { label: 'April', value: 3 },
+                                      { label: 'Mei', value: 4 },
+                                      { label: 'Juni', value: 5 },
+                                      { label: 'July', value: 6 },
+                                      { label: 'Agustus', value: 7 },
+                                      { label: 'September', value: 8 },
+                                      { label: 'Oktober', value: 9 },
+                                      { label: 'November', value: 10 },
+                                      { label: 'Desember', value: 11 },
+                                    ]}
+                                  />
+                                </Field>
+                                <Field
+                                  name="checkinAt.year"
+                                  label="Year"
+                                  flex={1}
+                                >
+                                  <Select
+                                    items={Array.from(
+                                      {
+                                        length:
+                                          new Date().getFullYear() + 1 - 2000,
+                                      },
+                                      (_, i) => ({
+                                        label: (i + 2000).toString(),
+                                        value: i + 2000,
+                                      })
+                                    )}
+                                  />
+                                </Field>
+                              </XStack>
+                              <XStack gap="$3">
+                                <Field
+                                  name="checkinAt.hour"
+                                  label="Hour"
+                                  flex={1}
+                                >
+                                  <Select
+                                    items={Array.from(
+                                      { length: 24 },
+                                      (_, i) => ({
+                                        label: i.toString().padStart(2, '0'),
+                                        value: i,
+                                      })
+                                    )}
+                                  />
+                                </Field>
+                                <Field
+                                  name="checkinAt.minute"
+                                  label="Minute"
+                                  flex={1}
+                                >
+                                  <Select
+                                    items={Array.from(
+                                      { length: 60 },
+                                      (_, i) => ({
+                                        label: i.toString().padStart(2, '0'),
+                                        value: i,
+                                      })
+                                    )}
+                                  />
+                                </Field>
+                              </XStack>
+                            </YStack>
+                          )}
+                        </YStack>
+                      )}
+                    </FieldWatch>
+
                     <H4>Items</H4>
                     {rentalsFieldArray.fields.map(({ variant, key }, index) => {
                       return (

@@ -59,7 +59,6 @@ func (usecase Usecase) DeleteRentalById(ctx context.Context, id int64) *base.Err
 func (usecase Usecase) CheckinRentals(ctx context.Context, rentalRequests []Rental) *base.Error {
 	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *base.Error {
 		for index := range rentalRequests {
-			rentalRequests[index].CheckinAt = time.Now()
 			rentalRequests[index].CreatedAt = time.Now()
 		}
 		return usecase.repository.CheckinRentals(ctxWithTx, rentalRequests)

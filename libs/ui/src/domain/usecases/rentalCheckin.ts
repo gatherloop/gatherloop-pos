@@ -38,7 +38,11 @@ export class RentalCheckinUsecase extends Usecase<
     return {
       type: 'loaded',
       errorMessage: null,
-      values: { name: '', rentals: [] },
+      values: {
+        name: '',
+        rentals: [],
+        checkinAt: null,
+      },
     };
   }
 
