@@ -223,7 +223,7 @@ export const TransactionCreateScreen = (
           price: variant.price,
           amount,
           discountAmount,
-          note
+          note,
         })),
       coupons: transactionCreateController.form
         .getValues('transactionCoupons')
