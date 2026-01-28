@@ -12,6 +12,7 @@ export type TransactionPrintPayload = {
       price: number;
       amount: number;
       discountAmount: number;
+      note: string;
     }[];
     coupons: {
       code: string;

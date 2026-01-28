@@ -120,13 +120,14 @@ export const TransactionCreateScreen = (
           .sort((a, b) =>
             a.variant.product.name.localeCompare(b.variant.product.name)
           )
-          .map(({ variant, amount, discountAmount }) => ({
+          .map(({ variant, amount, discountAmount, note }) => ({
             name: `${variant.product.name} - ${variant.values
               .map(({ optionValue: { name } }) => name)
               .join(' - ')}`,
             price: variant.price,
             amount,
             discountAmount,
+            note,
           })),
         coupons: transactionCreateController.form
           .getValues('transactionCoupons')
@@ -215,13 +216,14 @@ export const TransactionCreateScreen = (
         .sort((a, b) =>
           a.variant.product.name.localeCompare(b.variant.product.name)
         )
-        .map(({ variant, amount, discountAmount }) => ({
+        .map(({ variant, amount, discountAmount, note }) => ({
           name: `${variant.product.name} - ${variant.values
             .map(({ optionValue: { name } }) => name)
             .join(' - ')}`,
           price: variant.price,
           amount,
           discountAmount,
+          note
         })),
       coupons: transactionCreateController.form
         .getValues('transactionCoupons')
