@@ -70,8 +70,20 @@ export const ProductFormView = ({
         </Card>
 
         <Tabs
-          defaultValue="options"
+          defaultValue="description"
           tabs={[
+            {
+              label: 'Description',
+              value: 'description',
+              content: (
+                <MarkdownEditor
+                  name="description"
+                  defaultMode={
+                    form.getValues('description') === '' ? 'edit' : 'preview'
+                  }
+                />
+              ),
+            },
             {
               label: 'Options',
               value: 'options',
@@ -225,11 +237,6 @@ export const ProductFormView = ({
                   />
                 </YStack>
               ),
-            },
-            {
-              label: 'Description',
-              value: 'description',
-              content: <MarkdownEditor name="description" defaultMode="edit" />,
             },
           ]}
         />
