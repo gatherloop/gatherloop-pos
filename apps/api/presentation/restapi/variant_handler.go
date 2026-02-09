@@ -1,16 +1,16 @@
 package restapi
 
 import (
-	"apps/api/domain/variant"
+	"apps/api/domain"
 	apiContract "libs/api-contract"
 	"net/http"
 )
 
 type VariantHandler struct {
-	usecase variant.Usecase
+	usecase domain.VariantUsecase
 }
 
-func NewVariantHandler(usecase variant.Usecase) VariantHandler {
+func NewVariantHandler(usecase domain.VariantUsecase) VariantHandler {
 	return VariantHandler{usecase: usecase}
 }
 

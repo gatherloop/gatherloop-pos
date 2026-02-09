@@ -1,17 +1,17 @@
 package restapi
 
 import (
-	"apps/api/domain/auth"
+	"apps/api/domain"
 	apiContract "libs/api-contract"
 	"net/http"
 	"time"
 )
 
 type AuthHandler struct {
-	usecase auth.Usecase
+	usecase domain.AuthUsecase
 }
 
-func NewAuthHandler(usecase auth.Usecase) AuthHandler {
+func NewAuthHandler(usecase domain.AuthUsecase) AuthHandler {
 	return AuthHandler{usecase: usecase}
 }
 

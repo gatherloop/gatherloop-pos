@@ -1,8 +1,7 @@
 package mysql
 
 import (
-	"apps/api/domain/base"
-	"apps/api/domain/supplier"
+	"apps/api/domain"
 	"context"
 	"fmt"
 	"time"
@@ -10,11 +9,11 @@ import (
 	"gorm.io/gorm"
 )
 
-func NewSupplierRepository(db *gorm.DB) supplier.Repository {
+func NewSupplierRepository(db *gorm.DB) domain.SupplierRepository {
 	return Repository{db: db}
 }
 
-func (repo Repository) GetSupplierList(ctx context.Context, query string, sortBy base.SortBy, order base.Order, skip int, limit int) ([]supplier.Supplier, *base.Error) {
+func (repo Repository) GetSupplierList(ctx context.Context, query string, sortBy domain.SortBy, order domain.Order, skip int, limit int) ([]domain.Supplier, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	var suppliers []Supplier
 	result := db.Table("suppliers").Where("deleted_at", nil).Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
@@ -36,7 +35,7 @@ func (repo Repository) GetSupplierList(ctx context.Context, query string, sortBy
 	return ToSupplierListDomain(suppliers), ToError(result.Error)
 }
 
-func (repo Repository) GetSupplierListTotal(ctx context.Context, query string) (int64, *base.Error) {
+func (repo Repository) GetSupplierListTotal(ctx context.Context, query string) (int64, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	var count int64
 	result := db.Table("suppliers").Where("deleted_at", nil)
@@ -50,14 +49,14 @@ func (repo Repository) GetSupplierListTotal(ctx context.Context, query string) (
 	return count, ToError(result.Error)
 }
 
-func (repo Repository) GetSupplierById(ctx context.Context, id int64) (supplier.Supplier, *base.Error) {
+func (repo Repository) GetSupplierById(ctx context.Context, id int64) (domain.Supplier, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	var supplier Supplier
 	result := db.Table("suppliers").Where("id = ?", id).Where("deleted_at", nil).First(&supplier)
 	return ToSupplierDomain(supplier), ToError(result.Error)
 }
 
-func (repo Repository) CreateSupplier(ctx context.Context, supplier *supplier.Supplier) *base.Error {
+func (repo Repository) CreateSupplier(ctx context.Context, supplier *domain.Supplier) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	supplierPayload := ToSupplierDB(*supplier)
 	result := db.Table("suppliers").Create(&supplierPayload)
@@ -67,14 +66,14 @@ func (repo Repository) CreateSupplier(ctx context.Context, supplier *supplier.Su
 	return ToError(result.Error)
 }
 
-func (repo Repository) UpdateSupplierById(ctx context.Context, supplier *supplier.Supplier, id int64) *base.Error {
+func (repo Repository) UpdateSupplierById(ctx context.Context, supplier *domain.Supplier, id int64) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	supplierPayload := ToSupplierDB(*supplier)
 	result := db.Table("suppliers").Where("id = ?", id).Updates(supplierPayload)
 	return ToError(result.Error)
 }
 
-func (repo Repository) DeleteSupplierById(ctx context.Context, id int64) *base.Error {
+func (repo Repository) DeleteSupplierById(ctx context.Context, id int64) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	currentTime := time.Now()
 	result := db.Table("suppliers").Where("id = ?", id).Update("deleted_at", currentTime)

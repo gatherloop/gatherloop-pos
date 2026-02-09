@@ -1,7 +1,7 @@
 package restapi
 
 import (
-	"apps/api/domain/variant"
+	"apps/api/domain"
 	"encoding/json"
 	apiContract "libs/api-contract"
 	"net/http"
@@ -36,7 +36,7 @@ func GetVariantMaterialRequest(r *http.Request) (apiContract.VariantMaterialRequ
 	return variantMaterialRequest, err
 }
 
-func ToApiVariantMaterial(variantMaterial variant.VariantMaterial) apiContract.VariantMaterial {
+func ToApiVariantMaterial(variantMaterial domain.VariantMaterial) apiContract.VariantMaterial {
 	return apiContract.VariantMaterial{
 		Id:         variantMaterial.Id,
 		VariantId:  variantMaterial.VariantId,
@@ -57,7 +57,7 @@ func ToApiVariantMaterial(variantMaterial variant.VariantMaterial) apiContract.V
 	}
 }
 
-func ToApiVariant(variant variant.Variant) apiContract.Variant {
+func ToApiVariant(variant domain.Variant) apiContract.Variant {
 	apiMaterials := []apiContract.VariantMaterial{}
 	for _, variantMaterial := range variant.Materials {
 		apiMaterials = append(apiMaterials, ToApiVariantMaterial(variantMaterial))
@@ -90,33 +90,33 @@ func ToApiVariant(variant variant.Variant) apiContract.Variant {
 	}
 }
 
-func ToVariant(variantRequest apiContract.VariantRequest) variant.Variant {
-	variantMaterials := []variant.VariantMaterial{}
+func ToVariant(variantRequest apiContract.VariantRequest) domain.Variant {
+	variantMaterials := []domain.VariantMaterial{}
 	for _, variantMaterial := range variantRequest.Materials {
 		var id int64
 		if variantMaterial.Id != nil {
 			id = *variantMaterial.Id
 		}
-		variantMaterials = append(variantMaterials, variant.VariantMaterial{
+		variantMaterials = append(variantMaterials, domain.VariantMaterial{
 			Id:         id,
 			MaterialId: variantMaterial.MaterialId,
 			Amount:     variantMaterial.Amount,
 		})
 	}
 
-	variantValues := []variant.VariantValue{}
+	variantValues := []domain.VariantValue{}
 	for _, variantValue := range variantRequest.Values {
 		var id int64
 		if variantValue.Id != nil {
 			id = *variantValue.Id
 		}
-		variantValues = append(variantValues, variant.VariantValue{
+		variantValues = append(variantValues, domain.VariantValue{
 			Id:            id,
 			OptionValueId: variantValue.OptionValueId,
 		})
 	}
 
-	return variant.Variant{
+	return domain.Variant{
 		Name:          variantRequest.Name,
 		Price:         variantRequest.Price,
 		ProductId:     variantRequest.ProductId,

@@ -1,7 +1,7 @@
 package restapi
 
 import (
-	"apps/api/domain/wallet"
+	"apps/api/domain"
 	"encoding/json"
 	apiContract "libs/api-contract"
 	"net/http"
@@ -40,7 +40,7 @@ func GetWalletTransferRequest(r *http.Request) (apiContract.WalletTransferReques
 	return walletTransferRequest, err
 }
 
-func ToApiWallet(wallet wallet.Wallet) apiContract.Wallet {
+func ToApiWallet(wallet domain.Wallet) apiContract.Wallet {
 	return apiContract.Wallet{
 		Id:                    wallet.Id,
 		Name:                  wallet.Name,
@@ -52,8 +52,8 @@ func ToApiWallet(wallet wallet.Wallet) apiContract.Wallet {
 	}
 }
 
-func ToWalletRequest(walletRequest apiContract.WalletRequest) wallet.Wallet {
-	return wallet.Wallet{
+func ToWalletRequest(walletRequest apiContract.WalletRequest) domain.Wallet {
+	return domain.Wallet{
 		Name:                  walletRequest.Name,
 		Balance:               walletRequest.Balance,
 		PaymentCostPercentage: walletRequest.PaymentCostPercentage,
@@ -61,7 +61,7 @@ func ToWalletRequest(walletRequest apiContract.WalletRequest) wallet.Wallet {
 	}
 }
 
-func ToApiWalletTransfer(walletTransfer wallet.WalletTransfer) apiContract.WalletTransfer {
+func ToApiWalletTransfer(walletTransfer domain.WalletTransfer) apiContract.WalletTransfer {
 	return apiContract.WalletTransfer{
 		Id:           walletTransfer.Id,
 		CreatedAt:    walletTransfer.CreatedAt,
@@ -74,8 +74,8 @@ func ToApiWalletTransfer(walletTransfer wallet.WalletTransfer) apiContract.Walle
 	}
 }
 
-func ToWalletTransferRequest(walletTransferRequest apiContract.WalletTransferRequest) wallet.WalletTransfer {
-	return wallet.WalletTransfer{
+func ToWalletTransferRequest(walletTransferRequest apiContract.WalletTransferRequest) domain.WalletTransfer {
+	return domain.WalletTransfer{
 		Amount:     walletTransferRequest.Amount,
 		ToWalletId: walletTransferRequest.ToWalletId,
 	}

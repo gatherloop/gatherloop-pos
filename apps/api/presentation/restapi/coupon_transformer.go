@@ -1,7 +1,7 @@
 package restapi
 
 import (
-	"apps/api/domain/coupon"
+	"apps/api/domain"
 	"encoding/json"
 	apiContract "libs/api-contract"
 	"net/http"
@@ -23,7 +23,7 @@ func GetCouponRequest(r *http.Request) (apiContract.CouponRequest, error) {
 	return couponRequest, err
 }
 
-func ToApiCoupon(coupon coupon.Coupon) apiContract.Coupon {
+func ToApiCoupon(coupon domain.Coupon) apiContract.Coupon {
 	return apiContract.Coupon{
 		Id:        coupon.Id,
 		Code:      coupon.Code,
@@ -34,10 +34,10 @@ func ToApiCoupon(coupon coupon.Coupon) apiContract.Coupon {
 	}
 }
 
-func ToCoupon(couponRequest apiContract.CouponRequest) coupon.Coupon {
-	return coupon.Coupon{
+func ToCoupon(couponRequest apiContract.CouponRequest) domain.Coupon {
+	return domain.Coupon{
 		Code:   couponRequest.Code,
-		Type:   coupon.CouponType(couponRequest.Type),
+		Type:   domain.CouponType(couponRequest.Type),
 		Amount: couponRequest.Amount,
 	}
 }

@@ -1,8 +1,7 @@
 package mysql
 
 import (
-	"apps/api/domain/base"
-	"apps/api/domain/wallet"
+	"apps/api/domain"
 	"context"
 	"fmt"
 	"time"
@@ -10,31 +9,31 @@ import (
 	"gorm.io/gorm"
 )
 
-func NewWalletRepository(db *gorm.DB) wallet.Repository {
+func NewWalletRepository(db *gorm.DB) domain.WalletRepository {
 	return Repository{db: db}
 }
 
-func (repo Repository) GetWalletList(ctx context.Context) ([]wallet.Wallet, *base.Error) {
+func (repo Repository) GetWalletList(ctx context.Context) ([]domain.Wallet, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
-	var wallets []wallet.Wallet
+	var wallets []domain.Wallet
 	result := db.Table("wallets").Where("deleted_at", nil).Find(&wallets)
 	return wallets, ToError(result.Error)
 }
 
-func (repo Repository) GetWalletById(ctx context.Context, id int64) (wallet.Wallet, *base.Error) {
+func (repo Repository) GetWalletById(ctx context.Context, id int64) (domain.Wallet, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
-	var wallet wallet.Wallet
+	var wallet domain.Wallet
 	result := db.Table("wallets").Where("id = ?", id).First(&wallet)
 	return wallet, ToError(result.Error)
 }
 
-func (repo Repository) CreateWallet(ctx context.Context, wallet *wallet.Wallet) *base.Error {
+func (repo Repository) CreateWallet(ctx context.Context, wallet *domain.Wallet) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	result := db.Table("wallets").Create(wallet)
 	return ToError(result.Error)
 }
 
-func (repo Repository) UpdateWalletById(ctx context.Context, payload *wallet.Wallet, id int64) *base.Error {
+func (repo Repository) UpdateWalletById(ctx context.Context, payload *domain.Wallet, id int64) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	result := db.Table("wallets").Where("id = ?", id).Updates(map[string]any{
 		"name":                    payload.Name,
@@ -45,16 +44,16 @@ func (repo Repository) UpdateWalletById(ctx context.Context, payload *wallet.Wal
 	return ToError(result.Error)
 }
 
-func (repo Repository) DeleteWalletById(ctx context.Context, id int64) *base.Error {
+func (repo Repository) DeleteWalletById(ctx context.Context, id int64) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	currentTime := time.Now()
 	result := db.Table("wallets").Where("id = ?", id).Update("deleted_at", currentTime)
 	return ToError(result.Error)
 }
 
-func (repo Repository) GetWalletTransferList(ctx context.Context, walletId int64, sortBy base.SortBy, order base.Order, skip int, limit int) ([]wallet.WalletTransfer, *base.Error) {
+func (repo Repository) GetWalletTransferList(ctx context.Context, walletId int64, sortBy domain.SortBy, order domain.Order, skip int, limit int) ([]domain.WalletTransfer, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
-	var walletTransfers []wallet.WalletTransfer
+	var walletTransfers []domain.WalletTransfer
 
 	result := db.Table("wallet_transfers").Preload("FromWallet").Preload("ToWallet").Where("deleted_at is NULL AND from_wallet_id = ?", walletId).Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
 
@@ -71,7 +70,7 @@ func (repo Repository) GetWalletTransferList(ctx context.Context, walletId int64
 	return walletTransfers, ToError(result.Error)
 }
 
-func (repo Repository) CreateWalletTransfer(ctx context.Context, walletTransfer *wallet.WalletTransfer, fromWalletId int64) *base.Error {
+func (repo Repository) CreateWalletTransfer(ctx context.Context, walletTransfer *domain.WalletTransfer, fromWalletId int64) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	result := db.Table("wallet_transfers").Create(walletTransfer)
 	return ToError(result.Error)

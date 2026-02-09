@@ -1,16 +1,16 @@
 package restapi
 
 import (
-	"apps/api/domain/category"
+	"apps/api/domain"
 	apiContract "libs/api-contract"
 	"net/http"
 )
 
 type CategoryHandler struct {
-	usecase category.Usecase
+	usecase domain.CategoryUsecase
 }
 
-func NewCategoryHandler(usecase category.Usecase) CategoryHandler {
+func NewCategoryHandler(usecase domain.CategoryUsecase) CategoryHandler {
 	return CategoryHandler{usecase: usecase}
 }
 

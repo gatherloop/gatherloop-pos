@@ -1,16 +1,16 @@
 package restapi
 
 import (
-	"apps/api/domain/wallet"
+	"apps/api/domain"
 	apiContract "libs/api-contract"
 	"net/http"
 )
 
 type WalletHandler struct {
-	usecase wallet.Usecase
+	usecase domain.WalletUsecase
 }
 
-func NewWalletHandler(usecase wallet.Usecase) WalletHandler {
+func NewWalletHandler(usecase domain.WalletUsecase) WalletHandler {
 	return WalletHandler{usecase: usecase}
 }
 

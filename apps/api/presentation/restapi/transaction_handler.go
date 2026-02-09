@@ -1,16 +1,16 @@
 package restapi
 
 import (
-	"apps/api/domain/transaction"
+	"apps/api/domain"
 	apiContract "libs/api-contract"
 	"net/http"
 )
 
 type TransactionHandler struct {
-	usecase transaction.Usecase
+	usecase domain.TransactionUsecase
 }
 
-func NewTransactionHandler(usecase transaction.Usecase) TransactionHandler {
+func NewTransactionHandler(usecase domain.TransactionUsecase) TransactionHandler {
 	return TransactionHandler{usecase: usecase}
 }
 

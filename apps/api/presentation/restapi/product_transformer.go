@@ -1,7 +1,7 @@
 package restapi
 
 import (
-	"apps/api/domain/product"
+	"apps/api/domain"
 	"encoding/json"
 	apiContract "libs/api-contract"
 	"net/http"
@@ -49,7 +49,7 @@ func GetProductRequest(r *http.Request) (apiContract.ProductRequest, error) {
 	return productRequest, err
 }
 
-func ToApiProduct(product product.Product) apiContract.Product {
+func ToApiProduct(product domain.Product) apiContract.Product {
 	apiOptions := []apiContract.Option{}
 	for _, option := range product.Options {
 		apiValues := []apiContract.OptionValue{}
@@ -82,8 +82,8 @@ func ToApiProduct(product product.Product) apiContract.Product {
 	}
 }
 
-func ToProduct(productRequest apiContract.ProductRequest) product.Product {
-	options := []product.Option{}
+func ToProduct(productRequest apiContract.ProductRequest) domain.Product {
+	options := []domain.Option{}
 
 	for _, apiOption := range productRequest.Options {
 		var id int64
@@ -91,7 +91,7 @@ func ToProduct(productRequest apiContract.ProductRequest) product.Product {
 			id = *apiOption.Id
 		}
 
-		values := []product.OptionValue{}
+		values := []domain.OptionValue{}
 
 		for _, apiOptionValue := range apiOption.Values {
 			var id int64
@@ -99,39 +99,39 @@ func ToProduct(productRequest apiContract.ProductRequest) product.Product {
 				id = *apiOptionValue.Id
 			}
 
-			values = append(values, product.OptionValue{
+			values = append(values, domain.OptionValue{
 				Id:   id,
 				Name: apiOptionValue.Name,
 			})
 		}
 
-		options = append(options, product.Option{
+		options = append(options, domain.Option{
 			Id:     id,
 			Name:   apiOption.Name,
 			Values: values,
 		})
 	}
 
-	return product.Product{
+	return domain.Product{
 		Name:        productRequest.Name,
 		CategoryId:  productRequest.CategoryId,
 		ImageUrl:    productRequest.ImageUrl,
 		Description: productRequest.Description,
 		Options:     options,
-		SaleType:    product.SaleType(productRequest.SaleType),
+		SaleType:    domain.SaleType(productRequest.SaleType),
 	}
 }
 
-func GetSaleType(r *http.Request) product.SaleTypeQuery {
+func GetSaleType(r *http.Request) *domain.SaleType {
 	saleTypeQuery := r.URL.Query().Get("saleType")
 	switch saleTypeQuery {
 	case "rental":
-		return product.Rental
+		saleTypeValue := domain.SaleTypeRental
+		return &saleTypeValue
 	case "purchase":
-		return product.Purchase
-	case "all":
-		return product.All
+		saleTypeValue := domain.SaleTypePurchase
+		return &saleTypeValue
 	default:
-		return product.All
+		return nil
 	}
 }

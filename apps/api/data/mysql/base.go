@@ -1,7 +1,7 @@
 package mysql
 
 import (
-	"apps/api/domain/base"
+	"apps/api/domain"
 	"context"
 	"errors"
 	"fmt"
@@ -14,8 +14,8 @@ type Repository struct {
 	db *gorm.DB
 }
 
-func (repo Repository) BeginTransaction(ctx context.Context, callback func(ctxWithTx context.Context) *base.Error) *base.Error {
-	var baseError *base.Error = nil
+func (repo Repository) BeginTransaction(ctx context.Context, callback func(ctxWithTx context.Context) *domain.Error) *domain.Error {
+	var baseError *domain.Error = nil
 
 	repo.db.Transaction(func(tx *gorm.DB) error {
 		ctxWithTx := context.WithValue(ctx, "tx", tx)
@@ -30,35 +30,35 @@ func (repo Repository) BeginTransaction(ctx context.Context, callback func(ctxWi
 	return baseError
 }
 
-func ToSortByColumn(sortBy base.SortBy) string {
+func ToSortByColumn(sortBy domain.SortBy) string {
 	switch sortBy {
-	case base.CreatedAt:
+	case domain.CreatedAt:
 		return "created_at"
 	default:
 		return "created_at"
 	}
 }
 
-func ToOrderColumn(order base.Order) string {
+func ToOrderColumn(order domain.Order) string {
 	switch order {
-	case base.Ascending:
+	case domain.Ascending:
 		return "asc"
-	case base.Descending:
+	case domain.Descending:
 		return "desc"
 	default:
 		return "asc"
 	}
 }
 
-func ToError(err error) *base.Error {
+func ToError(err error) *domain.Error {
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return &base.Error{
-				Type:    base.NotFound,
+			return &domain.Error{
+				Type:    domain.NotFound,
 				Message: err.Error(),
 			}
 		} else {
-			return &base.Error{Type: base.InternalServerError, Message: err.Error()}
+			return &domain.Error{Type: domain.InternalServerError, Message: err.Error()}
 		}
 	}
 

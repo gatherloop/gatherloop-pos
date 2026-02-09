@@ -1,7 +1,7 @@
 package restapi
 
 import (
-	"apps/api/domain/material"
+	"apps/api/domain"
 	"encoding/json"
 	apiContract "libs/api-contract"
 	"net/http"
@@ -23,7 +23,7 @@ func GetMaterialRequest(r *http.Request) (apiContract.MaterialRequest, error) {
 	return materialRequest, err
 }
 
-func ToApiMaterial(material material.Material) apiContract.Material {
+func ToApiMaterial(material domain.Material) apiContract.Material {
 	return apiContract.Material{
 		Id:          material.Id,
 		Name:        material.Name,
@@ -36,8 +36,8 @@ func ToApiMaterial(material material.Material) apiContract.Material {
 	}
 }
 
-func ToMaterial(materialRequest apiContract.MaterialRequest) material.Material {
-	return material.Material{
+func ToMaterial(materialRequest apiContract.MaterialRequest) domain.Material {
+	return domain.Material{
 		Name:        materialRequest.Name,
 		Price:       materialRequest.Price,
 		Unit:        materialRequest.Unit,

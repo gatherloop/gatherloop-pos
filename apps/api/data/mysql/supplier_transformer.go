@@ -1,8 +1,8 @@
 package mysql
 
-import "apps/api/domain/supplier"
+import "apps/api/domain"
 
-func ToSupplierDB(domainSupplier supplier.Supplier) Supplier {
+func ToSupplierDB(domainSupplier domain.Supplier) Supplier {
 	return Supplier{
 		Id:        domainSupplier.Id,
 		Name:      domainSupplier.Name,
@@ -14,8 +14,8 @@ func ToSupplierDB(domainSupplier supplier.Supplier) Supplier {
 	}
 }
 
-func ToSupplierDomain(dbSupplier Supplier) supplier.Supplier {
-	return supplier.Supplier{
+func ToSupplierDomain(dbSupplier Supplier) domain.Supplier {
+	return domain.Supplier{
 		Id:        dbSupplier.Id,
 		Name:      dbSupplier.Name,
 		Phone:     dbSupplier.Phone,
@@ -26,8 +26,8 @@ func ToSupplierDomain(dbSupplier Supplier) supplier.Supplier {
 	}
 }
 
-func ToSupplierListDomain(dbSuppliers []Supplier) []supplier.Supplier {
-	var domainSuppliers []supplier.Supplier
+func ToSupplierListDomain(dbSuppliers []Supplier) []domain.Supplier {
+	var domainSuppliers []domain.Supplier
 	for _, dbSupplier := range dbSuppliers {
 		domainSuppliers = append(domainSuppliers, ToSupplierDomain(dbSupplier))
 	}

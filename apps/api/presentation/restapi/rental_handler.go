@@ -1,16 +1,16 @@
 package restapi
 
 import (
-	"apps/api/domain/rental"
+	"apps/api/domain"
 	apiContract "libs/api-contract"
 	"net/http"
 )
 
 type RentalHandler struct {
-	usecase rental.Usecase
+	usecase domain.RentalUsecase
 }
 
-func NewRentalHandler(usecase rental.Usecase) RentalHandler {
+func NewRentalHandler(usecase domain.RentalUsecase) RentalHandler {
 	return RentalHandler{usecase: usecase}
 }
 
@@ -76,7 +76,7 @@ func (handler RentalHandler) CheckinRentals(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	rentalRequests := []rental.Rental{}
+	rentalRequests := []domain.Rental{}
 	for _, apiRental := range apiRentalRequests {
 		rentalRequests = append(rentalRequests, ToRental(apiRental))
 	}

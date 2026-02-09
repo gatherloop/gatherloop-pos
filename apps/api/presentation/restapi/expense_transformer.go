@@ -1,7 +1,7 @@
 package restapi
 
 import (
-	"apps/api/domain/expense"
+	"apps/api/domain"
 	"encoding/json"
 	apiContract "libs/api-contract"
 	"net/http"
@@ -23,7 +23,7 @@ func GetExpenseRequest(r *http.Request) (apiContract.ExpenseRequest, error) {
 	return expenseRequest, err
 }
 
-func ToApiExpense(expense expense.Expense) apiContract.Expense {
+func ToApiExpense(expense domain.Expense) apiContract.Expense {
 	apiExpenseItems := []apiContract.ExpenseItem{}
 	for _, expenseItem := range expense.ExpenseItems {
 		apiExpenseItems = append(apiExpenseItems, apiContract.ExpenseItem{
@@ -50,9 +50,9 @@ func ToApiExpense(expense expense.Expense) apiContract.Expense {
 	}
 }
 
-func ToExpense(expenseRequest apiContract.ExpenseRequest) expense.Expense {
+func ToExpense(expenseRequest apiContract.ExpenseRequest) domain.Expense {
 	var total float32
-	expenseItems := []expense.ExpenseItem{}
+	expenseItems := []domain.ExpenseItem{}
 	for _, expenseItem := range expenseRequest.ExpenseItems {
 		var id int64
 		if expenseItem.Id != nil {
@@ -60,7 +60,7 @@ func ToExpense(expenseRequest apiContract.ExpenseRequest) expense.Expense {
 		}
 		subtotal := expenseItem.Price * expenseItem.Amount
 		total += subtotal
-		expenseItems = append(expenseItems, expense.ExpenseItem{
+		expenseItems = append(expenseItems, domain.ExpenseItem{
 			Id:       id,
 			Name:     expenseItem.Name,
 			Unit:     expenseItem.Unit,
@@ -70,7 +70,7 @@ func ToExpense(expenseRequest apiContract.ExpenseRequest) expense.Expense {
 		})
 	}
 
-	return expense.Expense{
+	return domain.Expense{
 		WalletId:     expenseRequest.WalletId,
 		BudgetId:     expenseRequest.BudgetId,
 		ExpenseItems: expenseItems,

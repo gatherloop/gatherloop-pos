@@ -1,7 +1,7 @@
 package restapi
 
 import (
-	"apps/api/domain/category"
+	"apps/api/domain"
 	"encoding/json"
 	apiContract "libs/api-contract"
 	"net/http"
@@ -23,7 +23,7 @@ func GetCategoryRequest(r *http.Request) (apiContract.CategoryRequest, error) {
 	return categoryRequest, err
 }
 
-func ToApiCategory(category category.Category) apiContract.Category {
+func ToApiCategory(category domain.Category) apiContract.Category {
 	return apiContract.Category{
 		Id:        category.Id,
 		Name:      category.Name,
@@ -32,8 +32,8 @@ func ToApiCategory(category category.Category) apiContract.Category {
 	}
 }
 
-func ToCategory(categoryRequest apiContract.CategoryRequest) category.Category {
-	return category.Category{
+func ToCategory(categoryRequest apiContract.CategoryRequest) domain.Category {
+	return domain.Category{
 		Name: categoryRequest.Name,
 	}
 }

@@ -1,16 +1,16 @@
 package restapi
 
 import (
-	"apps/api/domain/expense"
+	"apps/api/domain"
 	apiContract "libs/api-contract"
 	"net/http"
 )
 
 type ExpenseHandler struct {
-	usecase expense.Usecase
+	usecase domain.ExpenseUsecase
 }
 
-func NewExpenseHandler(usecase expense.Usecase) ExpenseHandler {
+func NewExpenseHandler(usecase domain.ExpenseUsecase) ExpenseHandler {
 	return ExpenseHandler{usecase: usecase}
 }
 

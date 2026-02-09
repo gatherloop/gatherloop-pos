@@ -1,45 +1,44 @@
 package mysql
 
 import (
-	"apps/api/domain/base"
-	"apps/api/domain/category"
+	"apps/api/domain"
 	"context"
 	"time"
 
 	"gorm.io/gorm"
 )
 
-func NewCategoryRepository(db *gorm.DB) category.Repository {
+func NewCategoryRepository(db *gorm.DB) domain.CategoryRepository {
 	return Repository{db: db}
 }
 
-func (repo Repository) GetCategoryList(ctx context.Context) ([]category.Category, *base.Error) {
+func (repo Repository) GetCategoryList(ctx context.Context) ([]domain.Category, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
-	var categories []category.Category
+	var categories []domain.Category
 	result := db.Table("categories").Where("deleted_at", nil).Find(&categories)
 	return categories, ToError(result.Error)
 }
 
-func (repo Repository) GetCategoryById(ctx context.Context, id int64) (category.Category, *base.Error) {
+func (repo Repository) GetCategoryById(ctx context.Context, id int64) (domain.Category, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
-	var category category.Category
+	var category domain.Category
 	result := db.Table("categories").Where("id = ?", id).First(&category)
 	return category, ToError(result.Error)
 }
 
-func (repo Repository) CreateCategory(ctx context.Context, category *category.Category) *base.Error {
+func (repo Repository) CreateCategory(ctx context.Context, category *domain.Category) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	result := db.Table("categories").Create(category)
 	return ToError(result.Error)
 }
 
-func (repo Repository) UpdateCategoryById(ctx context.Context, category *category.Category, id int64) *base.Error {
+func (repo Repository) UpdateCategoryById(ctx context.Context, category *domain.Category, id int64) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	result := db.Table("categories").Where("id = ?", id).Updates(category)
 	return ToError(result.Error)
 }
 
-func (repo Repository) DeleteCategoryById(ctx context.Context, id int64) *base.Error {
+func (repo Repository) DeleteCategoryById(ctx context.Context, id int64) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	currentTime := time.Now()
 	result := db.Table("categories").Where("id = ?", id).Update("deleted_at", currentTime)

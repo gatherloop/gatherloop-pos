@@ -1,7 +1,7 @@
 package restapi
 
 import (
-	"apps/api/domain/rental"
+	"apps/api/domain"
 	"encoding/json"
 	apiContract "libs/api-contract"
 	"net/http"
@@ -17,17 +17,17 @@ func GetRentalId(r *http.Request) (int64, error) {
 	return id, err
 }
 
-func GetCheckoutStatus(r *http.Request) rental.CheckoutStatus {
+func GetCheckoutStatus(r *http.Request) domain.CheckoutStatus {
 	checkoutStatusQuery := r.URL.Query().Get("checkoutStatus")
 	switch checkoutStatusQuery {
 	case "completed":
-		return rental.Completed
+		return domain.CheckoutStatusCompleted
 	case "ongoing":
-		return rental.Ongoing
+		return domain.CheckoutStatusOngoing
 	case "all":
-		return rental.All
+		return domain.CheckoutStatusAll
 	default:
-		return rental.All
+		return domain.CheckoutStatusAll
 	}
 }
 
@@ -43,7 +43,7 @@ func GetRentalIds(r *http.Request) ([]int64, error) {
 	return rentalRequests, err
 }
 
-func ToApiRental(rental rental.Rental) apiContract.Rental {
+func ToApiRental(rental domain.Rental) apiContract.Rental {
 	return apiContract.Rental{
 		Id:         rental.Id,
 		Code:       rental.Code,
@@ -56,8 +56,8 @@ func ToApiRental(rental rental.Rental) apiContract.Rental {
 	}
 }
 
-func ToRental(rentalRequest apiContract.RentalRequest) rental.Rental {
-	return rental.Rental{
+func ToRental(rentalRequest apiContract.RentalRequest) domain.Rental {
+	return domain.Rental{
 		Code:      rentalRequest.Code,
 		Name:      rentalRequest.Name,
 		VariantId: rentalRequest.VariantId,

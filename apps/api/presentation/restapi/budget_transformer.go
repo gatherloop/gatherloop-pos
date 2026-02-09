@@ -1,7 +1,7 @@
 package restapi
 
 import (
-	"apps/api/domain/budget"
+	"apps/api/domain"
 	"encoding/json"
 	apiContract "libs/api-contract"
 	"net/http"
@@ -34,7 +34,7 @@ func GetBudgetRequest(r *http.Request) (apiContract.BudgetRequest, error) {
 	return budgetRequest, err
 }
 
-func ToApiBudget(budget budget.Budget) apiContract.Budget {
+func ToApiBudget(budget domain.Budget) apiContract.Budget {
 	return apiContract.Budget{
 		Id:         budget.Id,
 		Name:       budget.Name,
@@ -45,8 +45,8 @@ func ToApiBudget(budget budget.Budget) apiContract.Budget {
 	}
 }
 
-func ToBudget(budgetRequest apiContract.BudgetRequest) budget.Budget {
-	return budget.Budget{
+func ToBudget(budgetRequest apiContract.BudgetRequest) domain.Budget {
+	return domain.Budget{
 		Name:       budgetRequest.Name,
 		Percentage: budgetRequest.Percentage,
 		Balance:    budgetRequest.Balance,

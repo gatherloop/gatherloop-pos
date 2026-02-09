@@ -1,7 +1,7 @@
 package restapi
 
 import (
-	"apps/api/domain/calculation"
+	"apps/api/domain"
 	"encoding/json"
 	apiContract "libs/api-contract"
 	"net/http"
@@ -23,28 +23,28 @@ func GetCalculationRequest(r *http.Request) (apiContract.CalculationRequest, err
 	return calculationRequest, err
 }
 
-func ToCalculation(calculationRequest apiContract.CalculationRequest) calculation.Calculation {
-	calculationItems := []calculation.CalculationItem{}
+func ToCalculation(calculationRequest apiContract.CalculationRequest) domain.Calculation {
+	calculationItems := []domain.CalculationItem{}
 	for _, item := range calculationRequest.CalculationItems {
 		var id int64
 		if item.Id != nil {
 			id = *item.Id
 		}
 
-		calculationItems = append(calculationItems, calculation.CalculationItem{
+		calculationItems = append(calculationItems, domain.CalculationItem{
 			Id:     id,
 			Price:  item.Price,
 			Amount: item.Amount,
 		})
 	}
 
-	return calculation.Calculation{
+	return domain.Calculation{
 		WalletId:         calculationRequest.WalletId,
 		CalculationItems: calculationItems,
 	}
 }
 
-func ToApiCalculation(calculation calculation.Calculation) apiContract.Calculation {
+func ToApiCalculation(calculation domain.Calculation) apiContract.Calculation {
 	calculationItems := []apiContract.CalculationItem{}
 	for _, item := range calculation.CalculationItems {
 		calculationItems = append(calculationItems, apiContract.CalculationItem{

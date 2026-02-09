@@ -1,8 +1,7 @@
 package mysql
 
 import (
-	"apps/api/domain/base"
-	"apps/api/domain/material"
+	"apps/api/domain"
 	"context"
 	"fmt"
 	"time"
@@ -10,11 +9,11 @@ import (
 	"gorm.io/gorm"
 )
 
-func NewMaterialRepository(db *gorm.DB) material.Repository {
+func NewMaterialRepository(db *gorm.DB) domain.MaterialRepository {
 	return Repository{db: db}
 }
 
-func (repo Repository) GetMaterialList(ctx context.Context, query string, sortBy base.SortBy, order base.Order, skip int, limit int) ([]material.Material, *base.Error) {
+func (repo Repository) GetMaterialList(ctx context.Context, query string, sortBy domain.SortBy, order domain.Order, skip int, limit int) ([]domain.Material, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	var materials []Material
 	result := db.Table("materials").Where("deleted_at", nil).Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
@@ -36,7 +35,7 @@ func (repo Repository) GetMaterialList(ctx context.Context, query string, sortBy
 	return ToMaterialListDomain(materials), ToError(result.Error)
 }
 
-func (repo Repository) GetMaterialListTotal(ctx context.Context, query string) (int64, *base.Error) {
+func (repo Repository) GetMaterialListTotal(ctx context.Context, query string) (int64, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	var count int64
 	result := db.Table("materials").Where("deleted_at", nil)
@@ -50,7 +49,7 @@ func (repo Repository) GetMaterialListTotal(ctx context.Context, query string) (
 	return count, ToError(result.Error)
 }
 
-func (repo Repository) GetMaterialsWeeklyUsage(ctx context.Context, ids []int64) (map[int64]float32, *base.Error) {
+func (repo Repository) GetMaterialsWeeklyUsage(ctx context.Context, ids []int64) (map[int64]float32, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 
 	endDate := time.Now()
@@ -84,14 +83,14 @@ func (repo Repository) GetMaterialsWeeklyUsage(ctx context.Context, ids []int64)
 	return usageMap, nil
 }
 
-func (repo Repository) GetMaterialById(ctx context.Context, id int64) (material.Material, *base.Error) {
+func (repo Repository) GetMaterialById(ctx context.Context, id int64) (domain.Material, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	var material Material
 	result := db.Table("materials").Where("id = ?", id).Where("deleted_at", nil).First(&material)
 	return ToMaterialDomain(material), ToError(result.Error)
 }
 
-func (repo Repository) CreateMaterial(ctx context.Context, material *material.Material) *base.Error {
+func (repo Repository) CreateMaterial(ctx context.Context, material *domain.Material) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	materialPayload := ToMaterialDB(*material)
 	result := db.Table("materials").Create(&materialPayload)
@@ -101,14 +100,14 @@ func (repo Repository) CreateMaterial(ctx context.Context, material *material.Ma
 	return ToError(result.Error)
 }
 
-func (repo Repository) UpdateMaterialById(ctx context.Context, material *material.Material, id int64) *base.Error {
+func (repo Repository) UpdateMaterialById(ctx context.Context, material *domain.Material, id int64) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	materialPayload := ToMaterialDB(*material)
 	result := db.Table("materials").Where("id = ?", id).Updates(materialPayload)
 	return ToError(result.Error)
 }
 
-func (repo Repository) DeleteMaterialById(ctx context.Context, id int64) *base.Error {
+func (repo Repository) DeleteMaterialById(ctx context.Context, id int64) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	currentTime := time.Now()
 	result := db.Table("materials").Where("id = ?", id).Update("deleted_at", currentTime)

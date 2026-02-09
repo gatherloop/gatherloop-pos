@@ -1,7 +1,7 @@
 package restapi
 
 import (
-	"apps/api/domain/transaction"
+	"apps/api/domain"
 	"encoding/json"
 	apiContract "libs/api-contract"
 	"net/http"
@@ -29,21 +29,21 @@ func GetTransactionPayRequest(r *http.Request) (apiContract.TransactionPayReques
 	return transactionPayRequest, err
 }
 
-func GetPaymentStatus(r *http.Request) transaction.PaymentStatus {
+func GetPaymentStatus(r *http.Request) domain.PaymentStatus {
 	paymentStatusQuery := r.URL.Query().Get("paymentStatus")
 	switch paymentStatusQuery {
 	case "paid":
-		return transaction.Paid
+		return domain.Paid
 	case "unpaid":
-		return transaction.Unpaid
+		return domain.Unpaid
 	case "all":
-		return transaction.All
+		return domain.All
 	default:
-		return transaction.All
+		return domain.All
 	}
 }
 
-func ToApiTransaction(transaction transaction.Transaction) apiContract.Transaction {
+func ToApiTransaction(transaction domain.Transaction) apiContract.Transaction {
 	apiTransactionItems := []apiContract.TransactionItem{}
 	for _, item := range transaction.TransactionItems {
 		apiTransactionItems = append(apiTransactionItems, apiContract.TransactionItem{
@@ -88,14 +88,14 @@ func ToApiTransaction(transaction transaction.Transaction) apiContract.Transacti
 	}
 }
 
-func ToTransaction(transactionRequest apiContract.TransactionRequest) transaction.Transaction {
-	transactionItems := []transaction.TransactionItem{}
+func ToTransaction(transactionRequest apiContract.TransactionRequest) domain.Transaction {
+	transactionItems := []domain.TransactionItem{}
 	for _, item := range transactionRequest.TransactionItems {
 		var id int64
 		if item.Id != nil {
 			id = *item.Id
 		}
-		transactionItems = append(transactionItems, transaction.TransactionItem{
+		transactionItems = append(transactionItems, domain.TransactionItem{
 			Id:             id,
 			VariantId:      item.VariantId,
 			Amount:         item.Amount,
@@ -104,19 +104,19 @@ func ToTransaction(transactionRequest apiContract.TransactionRequest) transactio
 		})
 	}
 
-	transactionCoupons := []transaction.TransactionCoupon{}
+	transactionCoupons := []domain.TransactionCoupon{}
 	for _, transactionCoupon := range transactionRequest.TransactionCoupons {
 		var id int64
 		if transactionCoupon.Id != nil {
 			id = *transactionCoupon.Id
 		}
-		transactionCoupons = append(transactionCoupons, transaction.TransactionCoupon{
+		transactionCoupons = append(transactionCoupons, domain.TransactionCoupon{
 			Id:       id,
 			CouponId: transactionCoupon.CouponId,
 		})
 	}
 
-	return transaction.Transaction{
+	return domain.Transaction{
 		Name:               transactionRequest.Name,
 		OrderNumber:        transactionRequest.OrderNumber,
 		TransactionItems:   transactionItems,
@@ -124,7 +124,7 @@ func ToTransaction(transactionRequest apiContract.TransactionRequest) transactio
 	}
 }
 
-func ToApiTransactionStatistic(transactionStatistic transaction.TransactionStatistic) apiContract.TransactionStatistic {
+func ToApiTransactionStatistic(transactionStatistic domain.TransactionStatistic) apiContract.TransactionStatistic {
 	return apiContract.TransactionStatistic{
 		Date:        transactionStatistic.Date,
 		Total:       transactionStatistic.Total,

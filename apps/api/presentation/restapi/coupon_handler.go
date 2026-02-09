@@ -1,16 +1,16 @@
 package restapi
 
 import (
-	"apps/api/domain/coupon"
+	"apps/api/domain"
 	apiContract "libs/api-contract"
 	"net/http"
 )
 
 type CouponHandler struct {
-	usecase coupon.Usecase
+	usecase domain.CouponUsecase
 }
 
-func NewCouponHandler(usecase coupon.Usecase) CouponHandler {
+func NewCouponHandler(usecase domain.CouponUsecase) CouponHandler {
 	return CouponHandler{usecase: usecase}
 }
 

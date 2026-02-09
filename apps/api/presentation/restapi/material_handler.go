@@ -1,16 +1,16 @@
 package restapi
 
 import (
-	"apps/api/domain/material"
+	"apps/api/domain"
 	apiContract "libs/api-contract"
 	"net/http"
 )
 
 type MaterialHandler struct {
-	usecase material.Usecase
+	usecase domain.MaterialUsecase
 }
 
-func NewMaterialHandler(usecase material.Usecase) MaterialHandler {
+func NewMaterialHandler(usecase domain.MaterialUsecase) MaterialHandler {
 	return MaterialHandler{usecase: usecase}
 }
 

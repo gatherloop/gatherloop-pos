@@ -1,7 +1,7 @@
 package restapi
 
 import (
-	"apps/api/domain/auth"
+	"apps/api/domain"
 	"encoding/json"
 	apiContract "libs/api-contract"
 	"net/http"
@@ -13,8 +13,8 @@ func GetLoginRequest(r *http.Request) (apiContract.AuthLoginRequest, error) {
 	return loginRequest, err
 }
 
-func ToLoginRequest(loginRequest apiContract.AuthLoginRequest) auth.LoginRequest {
-	return auth.LoginRequest{
+func ToLoginRequest(loginRequest apiContract.AuthLoginRequest) domain.LoginRequest {
+	return domain.LoginRequest{
 		Username: loginRequest.Username,
 		Password: loginRequest.Password,
 	}

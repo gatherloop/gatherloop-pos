@@ -1,8 +1,7 @@
 package mysql
 
 import (
-	"apps/api/domain/base"
-	"apps/api/domain/rental"
+	"apps/api/domain"
 	"context"
 	"fmt"
 	"time"
@@ -10,14 +9,14 @@ import (
 	"gorm.io/gorm"
 )
 
-func NewRentalRepository(db *gorm.DB) rental.Repository {
+func NewRentalRepository(db *gorm.DB) domain.RentalRepository {
 	return Repository{db: db}
 }
 
-func (repo Repository) GetRentalList(ctx context.Context, query string, sortBy base.SortBy, order base.Order, skip int, limit int, checkoutStatus rental.CheckoutStatus) ([]rental.Rental, *base.Error) {
+func (repo Repository) GetRentalList(ctx context.Context, query string, sortBy domain.SortBy, order domain.Order, skip int, limit int, checkoutStatus domain.CheckoutStatus) ([]domain.Rental, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 
-	var transactionResults []rental.Rental
+	var transactionResults []domain.Rental
 	result := db.Table("rentals").Where("deleted_at is NULL").Preload("Variant").Preload("Variant.VariantValues").Preload("Variant.VariantValues.OptionValue").Preload("Variant.Product").Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
 
 	if query != "" {
@@ -33,9 +32,9 @@ func (repo Repository) GetRentalList(ctx context.Context, query string, sortBy b
 	}
 
 	switch checkoutStatus {
-	case rental.Completed:
+	case domain.CheckoutStatusCompleted:
 		result = result.Where("checkout_at IS NOT NULL")
-	case rental.Ongoing:
+	case domain.CheckoutStatusOngoing:
 		result = result.Where("checkout_at IS NULL")
 	}
 
@@ -44,7 +43,7 @@ func (repo Repository) GetRentalList(ctx context.Context, query string, sortBy b
 	return transactionResults, ToError(result.Error)
 }
 
-func (repo Repository) GetRentalListTotal(ctx context.Context, query string, checkoutStatus rental.CheckoutStatus) (int64, *base.Error) {
+func (repo Repository) GetRentalListTotal(ctx context.Context, query string, checkoutStatus domain.CheckoutStatus) (int64, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	var count int64
 	result := db.Table("rentals").Where("deleted_at", nil)
@@ -54,9 +53,9 @@ func (repo Repository) GetRentalListTotal(ctx context.Context, query string, che
 	}
 
 	switch checkoutStatus {
-	case rental.Completed:
+	case domain.CheckoutStatusCompleted:
 		result = result.Where("checkout_at IS NOT NULL")
-	case rental.Ongoing:
+	case domain.CheckoutStatusOngoing:
 		result = result.Where("checkout_at IS NULL")
 	}
 
@@ -65,27 +64,27 @@ func (repo Repository) GetRentalListTotal(ctx context.Context, query string, che
 	return count, ToError(result.Error)
 }
 
-func (repo Repository) GetRentalById(ctx context.Context, id int64) (rental.Rental, *base.Error) {
+func (repo Repository) GetRentalById(ctx context.Context, id int64) (domain.Rental, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 
-	var rental rental.Rental
+	var rental domain.Rental
 	result := db.Table("rentals").Where("id = ?", id).Preload("Variant").Preload("Variant.Materials").Preload("Variant.Materials.Material").Preload("Variant.VariantValues").Preload("Variant.VariantValues.OptionValue").Preload("Variant.Product").First(&rental)
 	return rental, ToError(result.Error)
 }
 
-func (repo Repository) CheckinRentals(ctx context.Context, rentals []rental.Rental) *base.Error {
+func (repo Repository) CheckinRentals(ctx context.Context, rentals []domain.Rental) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	result := db.Table("rentals").Create(rentals)
 	return ToError(result.Error)
 }
 
-func (repo Repository) CheckoutRental(ctx context.Context, rentalId int64) *base.Error {
+func (repo Repository) CheckoutRental(ctx context.Context, rentalId int64) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	result := db.Table("rentals").Where("id = ?", rentalId).Update("checkout_at", time.Now())
 	return ToError(result.Error)
 }
 
-func (repo Repository) DeleteRentalById(ctx context.Context, id int64) *base.Error {
+func (repo Repository) DeleteRentalById(ctx context.Context, id int64) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	currentTime := time.Now()
 	result := db.Table("rentals").Where("id = ?", id).Update("deleted_at", currentTime)

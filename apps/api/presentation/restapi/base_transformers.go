@@ -1,7 +1,7 @@
 package restapi
 
 import (
-	"apps/api/domain/base"
+	"apps/api/domain"
 	"encoding/json"
 	apiContract "libs/api-contract"
 	"net/http"
@@ -34,15 +34,15 @@ func ToHttpStatus(err apiContract.Error) int {
 	}
 }
 
-func ToErrorCode(errorType base.ErrorType) apiContract.ErrorCode {
+func ToErrorCode(errorType domain.ErrorType) apiContract.ErrorCode {
 	switch errorType {
-	case base.BadRequest:
+	case domain.BadRequest:
 		return apiContract.BAD_REQUEST
-	case base.NotFound:
+	case domain.NotFound:
 		return apiContract.NOT_FOUND
-	case base.Unauthorized:
+	case domain.Unauthorized:
 		return apiContract.UNAUTHORIZED
-	case base.InternalServerError:
+	case domain.InternalServerError:
 		return apiContract.INTERNAL_SERVER_ERROR
 	default:
 		return apiContract.INTERNAL_SERVER_ERROR
@@ -65,25 +65,25 @@ func GetOriginDomain(r *http.Request) string {
 	return domain
 }
 
-func GetSortBy(r *http.Request) base.SortBy {
+func GetSortBy(r *http.Request) domain.SortBy {
 	sortByQuery := r.URL.Query().Get("sortBy")
 	switch sortByQuery {
 	case "created_at":
-		return base.CreatedAt
+		return domain.CreatedAt
 	default:
-		return base.CreatedAt
+		return domain.CreatedAt
 	}
 }
 
-func GetOrder(r *http.Request) base.Order {
+func GetOrder(r *http.Request) domain.Order {
 	orderQuery := r.URL.Query().Get("order")
 	switch orderQuery {
 	case "asc":
-		return base.Ascending
+		return domain.Ascending
 	case "desc":
-		return base.Descending
+		return domain.Descending
 	default:
-		return base.Ascending
+		return domain.Ascending
 	}
 }
 

@@ -1,7 +1,7 @@
 package restapi
 
 import (
-	"apps/api/domain/supplier"
+	"apps/api/domain"
 	"encoding/json"
 	apiContract "libs/api-contract"
 	"net/http"
@@ -23,7 +23,7 @@ func GetSupplierRequest(r *http.Request) (apiContract.SupplierRequest, error) {
 	return supplierRequest, err
 }
 
-func ToApiSupplier(supplier supplier.Supplier) apiContract.Supplier {
+func ToApiSupplier(supplier domain.Supplier) apiContract.Supplier {
 	return apiContract.Supplier{
 		Id:        supplier.Id,
 		Name:      supplier.Name,
@@ -35,8 +35,8 @@ func ToApiSupplier(supplier supplier.Supplier) apiContract.Supplier {
 	}
 }
 
-func ToSupplier(supplierRequest apiContract.SupplierRequest) supplier.Supplier {
-	return supplier.Supplier{
+func ToSupplier(supplierRequest apiContract.SupplierRequest) domain.Supplier {
+	return domain.Supplier{
 		Name:     supplierRequest.Name,
 		Phone:    supplierRequest.Phone,
 		Address:  supplierRequest.Address,

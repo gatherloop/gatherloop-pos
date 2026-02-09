@@ -1,16 +1,16 @@
 package restapi
 
 import (
-	"apps/api/domain/product"
+	"apps/api/domain"
 	apiContract "libs/api-contract"
 	"net/http"
 )
 
 type ProductHandler struct {
-	usecase product.Usecase
+	usecase domain.ProductUsecase
 }
 
-func NewProductHandler(usecase product.Usecase) ProductHandler {
+func NewProductHandler(usecase domain.ProductUsecase) ProductHandler {
 	return ProductHandler{usecase: usecase}
 }
 

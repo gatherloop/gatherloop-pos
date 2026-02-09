@@ -1,8 +1,8 @@
 package mysql
 
-import "apps/api/domain/material"
+import "apps/api/domain"
 
-func ToMaterialDB(domainMaterial material.Material) Material {
+func ToMaterialDB(domainMaterial domain.Material) Material {
 	return Material{
 		Id:          domainMaterial.Id,
 		Name:        domainMaterial.Name,
@@ -14,8 +14,8 @@ func ToMaterialDB(domainMaterial material.Material) Material {
 	}
 }
 
-func ToMaterialDomain(dbMaterial Material) material.Material {
-	return material.Material{
+func ToMaterialDomain(dbMaterial Material) domain.Material {
+	return domain.Material{
 		Id:          dbMaterial.Id,
 		Name:        dbMaterial.Name,
 		Price:       dbMaterial.Price,
@@ -26,8 +26,8 @@ func ToMaterialDomain(dbMaterial Material) material.Material {
 	}
 }
 
-func ToMaterialListDomain(dbMaterials []Material) []material.Material {
-	var domainMaterials []material.Material
+func ToMaterialListDomain(dbMaterials []Material) []domain.Material {
+	var domainMaterials []domain.Material
 	for _, dbMaterial := range dbMaterials {
 		domainMaterials = append(domainMaterials, ToMaterialDomain(dbMaterial))
 	}

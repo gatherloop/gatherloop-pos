@@ -1,16 +1,16 @@
 package restapi
 
 import (
-	"apps/api/domain/calculation"
+	"apps/api/domain"
 	apiContract "libs/api-contract"
 	"net/http"
 )
 
 type CalculationHandler struct {
-	usecase calculation.Usecase
+	usecase domain.CalculationUsecase
 }
 
-func NewCalculationHandler(usecase calculation.Usecase) CalculationHandler {
+func NewCalculationHandler(usecase domain.CalculationUsecase) CalculationHandler {
 	return CalculationHandler{usecase: usecase}
 }
 

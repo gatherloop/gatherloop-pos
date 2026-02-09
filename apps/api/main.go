@@ -2,19 +2,7 @@ package main
 
 import (
 	"apps/api/data/mysql"
-	"apps/api/domain/auth"
-	"apps/api/domain/budget"
-	"apps/api/domain/calculation"
-	"apps/api/domain/category"
-	"apps/api/domain/coupon"
-	"apps/api/domain/expense"
-	"apps/api/domain/material"
-	"apps/api/domain/product"
-	"apps/api/domain/rental"
-	"apps/api/domain/supplier"
-	"apps/api/domain/transaction"
-	"apps/api/domain/variant"
-	"apps/api/domain/wallet"
+	"apps/api/domain"
 	"apps/api/presentation/restapi"
 	"apps/api/utils"
 	"fmt"
@@ -59,19 +47,19 @@ func main() {
 	calculationRepository := mysql.NewCalculationRepository(db)
 	rentalRepository := mysql.NewRentalRepository(db)
 
-	walletUsecase := wallet.NewUsecase(walletRepository)
-	transactionUsecase := transaction.NewUsecase(transactionRepository, variantRepository, couponRepository, walletRepository, budgetRepository)
-	variantUsecase := variant.NewUsecase(variantRepository)
-	productUsecase := product.NewUsecase(productRepository)
-	materialUsecase := material.NewUsecase(materialRepository)
-	supplierUsecase := supplier.NewUsecase(supplierRepository)
-	expenseUsecase := expense.NewUsecase(expenseRepository, budgetRepository, walletRepository)
-	categoryUsecase := category.NewUsecase(categoryRepository)
-	couponUsecase := coupon.NewUsecase(couponRepository)
-	budgetUsecase := budget.NewUsecase(budgetRepository)
-	authUsecase := auth.NewUsecase(authRepository)
-	calculationUsecase := calculation.NewUsecase(calculationRepository, walletRepository)
-	rentalUsecase := rental.NewUsecase(rentalRepository, variantRepository, transactionRepository)
+	walletUsecase := domain.NewWalletUsecase(walletRepository)
+	transactionUsecase := domain.NewTransactionUsecase(transactionRepository, variantRepository, couponRepository, walletRepository, budgetRepository)
+	variantUsecase := domain.NewVariantUsecase(variantRepository)
+	productUsecase := domain.NewProductUsecase(productRepository)
+	materialUsecase := domain.NewMaterialUsecase(materialRepository)
+	supplierUsecase := domain.NewSupplierUsecase(supplierRepository)
+	expenseUsecase := domain.NewExpenseUsecase(expenseRepository, budgetRepository, walletRepository)
+	categoryUsecase := domain.NewCategoryUsecase(categoryRepository)
+	couponUsecase := domain.NewCouponUsecase(couponRepository)
+	budgetUsecase := domain.NewBudgetUsecase(budgetRepository)
+	authUsecase := domain.NewAuthUsecase(authRepository)
+	calculationUsecase := domain.NewCalculationUsecase(calculationRepository, walletRepository)
+	rentalUsecase := domain.NewRentalUsecase(rentalRepository, variantRepository, transactionRepository)
 
 	walletHandler := restapi.NewWalletHandler(walletUsecase)
 	transactionHandler := restapi.NewTransactionHandler(transactionUsecase)
