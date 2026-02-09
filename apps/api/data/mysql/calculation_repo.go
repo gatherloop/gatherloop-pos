@@ -16,7 +16,7 @@ func NewCalculationRepository(db *gorm.DB) domain.CalculationRepository {
 
 func (repo Repository) GetCalculationList(ctx context.Context, sortBy domain.SortBy, order domain.Order, skip int, limit int) ([]domain.Calculation, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
-	var calculations []domain.Calculation
+	var calculations []Calculation
 	result := db.Table("calculations").Where("deleted_at is NULL").Preload("CalculationItems").Preload("Wallet").Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
 
 	if skip > 0 {
@@ -29,25 +29,25 @@ func (repo Repository) GetCalculationList(ctx context.Context, sortBy domain.Sor
 
 	result = result.Find(&calculations)
 
-	return calculations, ToError(result.Error)
+	return ToCalculationsListDomain(calculations), ToError(result.Error)
 }
 
 func (repo Repository) GetCalculationById(ctx context.Context, id int64) (domain.Calculation, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
-	var calculation domain.Calculation
+	var calculation Calculation
 	result := db.Table("calculations").Where("id = ?", id).Preload("CalculationItems").Preload("Wallet").First(&calculation)
-	return calculation, ToError(result.Error)
+	return ToCalculationDomain(calculation), ToError(result.Error)
 }
 
 func (repo Repository) CreateCalculation(ctx context.Context, calculation *domain.Calculation) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Table("calculations").Create(calculation)
+	result := db.Table("calculations").Create(ToCalculationDB(*calculation))
 	return ToError(result.Error)
 }
 
 func (repo Repository) UpdateCalculationById(ctx context.Context, calculation *domain.Calculation, id int64) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Table("calculations").Where("id = ?", id).Updates(calculation)
+	result := db.Table("calculations").Where("id = ?", id).Updates(ToCalculationDB(*calculation))
 	return ToError(result.Error)
 }
 
@@ -60,13 +60,13 @@ func (repo Repository) DeleteCalculationById(ctx context.Context, id int64) *dom
 
 func (repo Repository) CreateCalculationItems(ctx context.Context, calculationItems []domain.CalculationItem) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Clauses(clause.OnConflict{UpdateAll: true}).Table("calculation_items").Create(calculationItems)
+	result := db.Clauses(clause.OnConflict{UpdateAll: true}).Table("calculation_items").Create(ToCalculationItemListDB(calculationItems))
 	return ToError(result.Error)
 }
 
 func (repo Repository) DeleteCalculationItemById(ctx context.Context, id int64) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Table("calculation_items").Where("id = ?", id).Delete(&domain.Calculation{})
+	result := db.Table("calculation_items").Where("id = ?", id).Delete(&CalculationItem{})
 	return ToError(result.Error)
 }
 

@@ -14,27 +14,27 @@ func NewBudgetRepository(db *gorm.DB) domain.BudgetRepository {
 
 func (repo Repository) GetBudgetList(ctx context.Context) ([]domain.Budget, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
-	var budgets []domain.Budget
-	result := db.Table("budgets").Where("deleted_at", nil).Find(&budgets)
-	return budgets, ToError(result.Error)
+	var budgets []Budget
+	result := db.Table("budgets").Where("deleted_at is NULL").Find(&budgets)
+	return ToBudgetsListDomain(budgets), ToError(result.Error)
 }
 
 func (repo Repository) GetBudgetById(ctx context.Context, id int64) (domain.Budget, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
-	var budget domain.Budget
+	var budget Budget
 	result := db.Table("budgets").Where("id = ?", id).First(&budget)
-	return budget, ToError(result.Error)
+	return ToBudgetDomain(budget), ToError(result.Error)
 }
 
 func (repo Repository) CreateBudget(ctx context.Context, budget *domain.Budget) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Table("budgets").Create(budget)
+	result := db.Table("budgets").Create(ToBudgetDB(*budget))
 	return ToError(result.Error)
 }
 
 func (repo Repository) UpdateBudgetById(ctx context.Context, budget *domain.Budget, id int64) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Table("budgets").Where("id = ?", id).Updates(budget)
+	result := db.Table("budgets").Where("id = ?", id).Updates(ToBudgetDB(*budget))
 	return ToError(result.Error)
 }
 

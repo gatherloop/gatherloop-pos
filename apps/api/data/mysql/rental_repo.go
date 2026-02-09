@@ -16,7 +16,7 @@ func NewRentalRepository(db *gorm.DB) domain.RentalRepository {
 func (repo Repository) GetRentalList(ctx context.Context, query string, sortBy domain.SortBy, order domain.Order, skip int, limit int, checkoutStatus domain.CheckoutStatus) ([]domain.Rental, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 
-	var transactionResults []domain.Rental
+	var transactionResults []Rental
 	result := db.Table("rentals").Where("deleted_at is NULL").Preload("Variant").Preload("Variant.VariantValues").Preload("Variant.VariantValues.OptionValue").Preload("Variant.Product").Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
 
 	if query != "" {
@@ -40,7 +40,7 @@ func (repo Repository) GetRentalList(ctx context.Context, query string, sortBy d
 
 	result = result.Find(&transactionResults)
 
-	return transactionResults, ToError(result.Error)
+	return ToRentalListDomain(transactionResults), ToError(result.Error)
 }
 
 func (repo Repository) GetRentalListTotal(ctx context.Context, query string, checkoutStatus domain.CheckoutStatus) (int64, *domain.Error) {
@@ -67,14 +67,14 @@ func (repo Repository) GetRentalListTotal(ctx context.Context, query string, che
 func (repo Repository) GetRentalById(ctx context.Context, id int64) (domain.Rental, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 
-	var rental domain.Rental
+	var rental Rental
 	result := db.Table("rentals").Where("id = ?", id).Preload("Variant").Preload("Variant.Materials").Preload("Variant.Materials.Material").Preload("Variant.VariantValues").Preload("Variant.VariantValues.OptionValue").Preload("Variant.Product").First(&rental)
-	return rental, ToError(result.Error)
+	return ToRentalDomain(rental), ToError(result.Error)
 }
 
 func (repo Repository) CheckinRentals(ctx context.Context, rentals []domain.Rental) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Table("rentals").Create(rentals)
+	result := db.Table("rentals").Create(ToRentalListDB(rentals))
 	return ToError(result.Error)
 }
 

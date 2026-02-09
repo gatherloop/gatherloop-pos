@@ -15,21 +15,21 @@ func NewWalletRepository(db *gorm.DB) domain.WalletRepository {
 
 func (repo Repository) GetWalletList(ctx context.Context) ([]domain.Wallet, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
-	var wallets []domain.Wallet
+	var wallets []Wallet
 	result := db.Table("wallets").Where("deleted_at", nil).Find(&wallets)
-	return wallets, ToError(result.Error)
+	return ToWalletListDomain(wallets), ToError(result.Error)
 }
 
 func (repo Repository) GetWalletById(ctx context.Context, id int64) (domain.Wallet, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
-	var wallet domain.Wallet
+	var wallet Wallet
 	result := db.Table("wallets").Where("id = ?", id).First(&wallet)
-	return wallet, ToError(result.Error)
+	return ToWalletDomain(wallet), ToError(result.Error)
 }
 
 func (repo Repository) CreateWallet(ctx context.Context, wallet *domain.Wallet) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Table("wallets").Create(wallet)
+	result := db.Table("wallets").Create(ToWalletDB(*wallet))
 	return ToError(result.Error)
 }
 
@@ -53,7 +53,7 @@ func (repo Repository) DeleteWalletById(ctx context.Context, id int64) *domain.E
 
 func (repo Repository) GetWalletTransferList(ctx context.Context, walletId int64, sortBy domain.SortBy, order domain.Order, skip int, limit int) ([]domain.WalletTransfer, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
-	var walletTransfers []domain.WalletTransfer
+	var walletTransfers []WalletTransfer
 
 	result := db.Table("wallet_transfers").Preload("FromWallet").Preload("ToWallet").Where("deleted_at is NULL AND from_wallet_id = ?", walletId).Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
 
@@ -67,11 +67,11 @@ func (repo Repository) GetWalletTransferList(ctx context.Context, walletId int64
 
 	result = result.Find(&walletTransfers)
 
-	return walletTransfers, ToError(result.Error)
+	return ToWalletTransferListDomain(walletTransfers), ToError(result.Error)
 }
 
 func (repo Repository) CreateWalletTransfer(ctx context.Context, walletTransfer *domain.WalletTransfer, fromWalletId int64) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Table("wallet_transfers").Create(walletTransfer)
+	result := db.Table("wallet_transfers").Create(ToWalletTransferDB(*walletTransfer))
 	return ToError(result.Error)
 }

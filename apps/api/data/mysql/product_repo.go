@@ -16,7 +16,7 @@ func NewProductRepository(db *gorm.DB) domain.ProductRepository {
 func (repo Repository) GetProductList(ctx context.Context, query string, sortBy domain.SortBy, order domain.Order, skip int, limit int, saleType *domain.SaleType) ([]domain.Product, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 
-	var products []domain.Product
+	var products []Product
 	result := db.Table("products").Preload("Category").Preload("Options").Preload("Options.Values").Where("deleted_at", nil).Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
 
 	if query != "" {
@@ -40,7 +40,7 @@ func (repo Repository) GetProductList(ctx context.Context, query string, sortBy 
 
 	result = result.Find(&products)
 
-	return products, ToError(result.Error)
+	return ToProductListDomain(products), ToError(result.Error)
 }
 
 func (repo Repository) GetProductListTotal(ctx context.Context, query string, saleType *domain.SaleType) (int64, *domain.Error) {
@@ -66,21 +66,21 @@ func (repo Repository) GetProductListTotal(ctx context.Context, query string, sa
 
 func (repo Repository) GetProductById(ctx context.Context, id int64) (domain.Product, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
-	var product domain.Product
+	var product Product
 	result := db.Table("products").Preload("Category").Preload("Options").Preload("Options.Values").Where("id = ?", id).First(&product)
-	return product, ToError(result.Error)
+	return ToProductDomain(product), ToError(result.Error)
 }
 
 func (repo Repository) CreateProduct(ctx context.Context, product *domain.Product) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Table("products").Create(product)
+	result := db.Table("products").Create(ToProductDB(*product))
 	return ToError(result.Error)
 }
 
 func (repo Repository) UpdateProductById(ctx context.Context, product *domain.Product, id int64) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	fmt.Println(product)
-	result := db.Session(&gorm.Session{FullSaveAssociations: true}).Table("products").Where("id = ?", id).Updates(product)
+	result := db.Session(&gorm.Session{FullSaveAssociations: true}).Table("products").Where("id = ?", id).Updates(ToProductDB(*product))
 	return ToError(result.Error)
 }
 

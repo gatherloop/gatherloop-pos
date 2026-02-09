@@ -13,7 +13,7 @@ func NewAuthRepository(db *gorm.DB) domain.AuthRepository {
 
 func (repo Repository) GetUserByUsername(ctx context.Context, username string) (domain.User, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
-	var user domain.User
+	var user User
 	result := db.Table("users").Where("username = ?", username).First(&user)
-	return user, ToError(result.Error)
+	return ToUserDomain(user), ToError(result.Error)
 }

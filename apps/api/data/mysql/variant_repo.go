@@ -17,7 +17,7 @@ func NewVariantRepository(db *gorm.DB) domain.VariantRepository {
 func (repo Repository) GetVariantList(ctx context.Context, query string, sortBy domain.SortBy, order domain.Order, skip int, limit int, productId *int, optionValueIds []int) ([]domain.Variant, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 
-	var variants []domain.Variant
+	var variants []Variant
 	result := db.Table("variants").Preload("Product").Preload("Product.Category").Preload("Materials").Preload("Materials.Material").Preload("VariantValues").Preload("VariantValues.OptionValue").Where("variants.deleted_at", nil).Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
 
 	if len(optionValueIds) > 0 {
@@ -42,7 +42,7 @@ func (repo Repository) GetVariantList(ctx context.Context, query string, sortBy 
 
 	result = result.Find(&variants)
 
-	return variants, ToError(result.Error)
+	return ToVariantsListDomain(variants), ToError(result.Error)
 }
 
 func (repo Repository) GetVariantListTotal(ctx context.Context, query string) (int64, *domain.Error) {
@@ -61,20 +61,20 @@ func (repo Repository) GetVariantListTotal(ctx context.Context, query string) (i
 
 func (repo Repository) GetVariantById(ctx context.Context, id int64) (domain.Variant, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
-	var variant domain.Variant
+	var variant Variant
 	result := db.Table("variants").Preload("Product").Preload("Product.Category").Preload("Materials").Preload("Materials.Material").Preload("VariantValues").Preload("VariantValues.OptionValue").Where("id = ?", id).First(&variant)
-	return variant, ToError(result.Error)
+	return ToVariantDomain(variant), ToError(result.Error)
 }
 
 func (repo Repository) CreateVariant(ctx context.Context, variant *domain.Variant) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Table("variants").Create(variant)
+	result := db.Table("variants").Create(ToVariantDB(*variant))
 	return ToError(result.Error)
 }
 
 func (repo Repository) UpdateVariantById(ctx context.Context, variant *domain.Variant, id int64) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Session(&gorm.Session{FullSaveAssociations: true}).Table("variants").Where("id = ?", id).Updates(variant)
+	result := db.Session(&gorm.Session{FullSaveAssociations: true}).Table("variants").Where("id = ?", id).Updates(ToVariantDB(*variant))
 	return ToError(result.Error)
 }
 
@@ -87,7 +87,7 @@ func (repo Repository) DeleteVariantById(ctx context.Context, id int64) *domain.
 
 func (repo Repository) CreateVariantMaterials(ctx context.Context, variantMaterials []domain.VariantMaterial) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Clauses(clause.OnConflict{UpdateAll: true}).Table("variant_materials").Create(&variantMaterials)
+	result := db.Clauses(clause.OnConflict{UpdateAll: true}).Table("variant_materials").Create(ToVariantMaterialListDB(variantMaterials))
 	return ToError(result.Error)
 }
 

@@ -15,7 +15,7 @@ func NewExpenseRepository(db *gorm.DB) domain.ExpenseRepository {
 }
 
 func (repo Repository) GetExpenseList(ctx context.Context, query string, sortBy domain.SortBy, order domain.Order, skip int, limit int, walletId *int, budgetId *int) ([]domain.Expense, *domain.Error) {
-	var expenses []domain.Expense
+	var expenses []Expense
 	result := repo.db.Table("expenses").Where("deleted_at is NULL").Preload("ExpenseItems").Preload("Wallet").Preload("Budget").Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
 
 	if skip > 0 {
@@ -40,7 +40,7 @@ func (repo Repository) GetExpenseList(ctx context.Context, query string, sortBy 
 
 	result = result.Find(&expenses)
 
-	return expenses, ToError(result.Error)
+	return ToExpensesListDomain(expenses), ToError(result.Error)
 }
 
 func (repo Repository) GetExpenseListTotal(ctx context.Context, query string, walletId *int, budgetId *int) (int64, *domain.Error) {
@@ -66,25 +66,25 @@ func (repo Repository) GetExpenseListTotal(ctx context.Context, query string, wa
 
 func (repo Repository) GetExpenseById(ctx context.Context, id int64) (domain.Expense, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
-	var expense domain.Expense
+	var expense Expense
 	result := db.Table("expenses").Where("id = ?", id).Preload("ExpenseItems").Preload("Wallet").Preload("Budget").First(&expense)
-	return expense, ToError(result.Error)
+	return ToExpenseDomain(expense), ToError(result.Error)
 }
 
 func (repo Repository) CreateExpense(ctx context.Context, expense *domain.Expense) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Table("expenses").Create(expense)
+	result := db.Table("expenses").Create(ToExpenseDB(*expense))
 	return ToError(result.Error)
 }
 
 func (repo Repository) UpdateExpenseById(ctx context.Context, expense *domain.Expense, id int64) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 
-	if result := db.Clauses(clause.OnConflict{UpdateAll: true}).Table("expense_items").Create(expense.ExpenseItems); result.Error != nil {
+	if result := db.Clauses(clause.OnConflict{UpdateAll: true}).Table("expense_items").Create(ToExpenseItemsListDB(expense.ExpenseItems)); result.Error != nil {
 		return ToError(result.Error)
 	}
 
-	result := db.Table("expenses").Where("id = ?", id).Updates(expense)
+	result := db.Table("expenses").Where("id = ?", id).Updates(ToExpenseDB(*expense))
 	return ToError(result.Error)
 }
 
@@ -97,6 +97,6 @@ func (repo Repository) DeleteExpenseById(ctx context.Context, id int64) *domain.
 
 func (repo Repository) DeleteExpenseItemById(ctx context.Context, id int64) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Table("expense_items").Where("id = ?", id).Delete(&domain.ExpenseItem{})
+	result := db.Table("expense_items").Where("id = ?", id).Delete(&ExpenseItem{})
 	return ToError(result.Error)
 }
