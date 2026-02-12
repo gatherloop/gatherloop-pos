@@ -23,11 +23,13 @@ func (repo Repository) GetProductList(ctx context.Context, query string, sortBy 
 		result = result.Where("name LIKE ?", "%"+query+"%")
 	}
 
-	switch *saleType {
-	case domain.SaleTypePurchase:
-		result = result.Where("sale_type = 'purchase'")
-	case domain.SaleTypeRental:
-		result = result.Where("sale_type = 'rental'")
+	if saleType != nil {
+		switch *saleType {
+		case domain.SaleTypePurchase:
+			result = result.Where("sale_type = 'purchase'")
+		case domain.SaleTypeRental:
+			result = result.Where("sale_type = 'rental'")
+		}
 	}
 
 	if skip > 0 {
@@ -52,11 +54,13 @@ func (repo Repository) GetProductListTotal(ctx context.Context, query string, sa
 		result = result.Where("name LIKE ?", "%"+query+"%")
 	}
 
-	switch *saleType {
-	case domain.SaleTypePurchase:
-		result = result.Where("sale_type = 'purchase'")
-	case domain.SaleTypeRental:
-		result = result.Where("sale_type = 'rental'")
+	if saleType != nil {
+		switch *saleType {
+		case domain.SaleTypePurchase:
+			result = result.Where("sale_type = 'purchase'")
+		case domain.SaleTypeRental:
+			result = result.Where("sale_type = 'rental'")
+		}
 	}
 
 	result = result.Count(&count)
