@@ -10,7 +10,7 @@ type MaterialRepository interface {
 	GetMaterialListTotal(ctx context.Context, query string) (int64, *Error)
 	GetMaterialsWeeklyUsage(ctx context.Context, ids []int64) (map[int64]float32, *Error)
 	GetMaterialById(ctx context.Context, id int64) (Material, *Error)
-	CreateMaterial(ctx context.Context, material *Material) *Error
-	UpdateMaterialById(ctx context.Context, material *Material, id int64) *Error
+	CreateMaterial(ctx context.Context, material Material) (Material, *Error)
+	UpdateMaterialById(ctx context.Context, material Material, id int64) (Material, *Error)
 	DeleteMaterialById(ctx context.Context, id int64) *Error
 }

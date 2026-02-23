@@ -35,12 +35,12 @@ func (usecase SupplierUsecase) GetSupplierById(ctx context.Context, id int64) (S
 	return supplier, nil
 }
 
-func (usecase SupplierUsecase) CreateSupplier(ctx context.Context, supplier Supplier) *Error {
-	return usecase.repository.CreateSupplier(ctx, &supplier)
+func (usecase SupplierUsecase) CreateSupplier(ctx context.Context, supplier Supplier) (Supplier, *Error) {
+	return usecase.repository.CreateSupplier(ctx, supplier)
 }
 
-func (usecase SupplierUsecase) UpdateSupplierById(ctx context.Context, supplier Supplier, id int64) *Error {
-	return usecase.repository.UpdateSupplierById(ctx, &supplier, id)
+func (usecase SupplierUsecase) UpdateSupplierById(ctx context.Context, supplier Supplier, id int64) (Supplier, *Error) {
+	return usecase.repository.UpdateSupplierById(ctx, supplier, id)
 }
 
 func (usecase SupplierUsecase) DeleteSupplierById(ctx context.Context, id int64) *Error {

@@ -53,16 +53,25 @@ func (usecase RentalUsecase) DeleteRentalById(ctx context.Context, id int64) *Er
 	})
 }
 
-func (usecase RentalUsecase) CheckinRentals(ctx context.Context, rentalRequests []Rental) *Error {
-	return usecase.rentalRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+func (usecase RentalUsecase) CheckinRentals(ctx context.Context, rentalRequests []Rental) ([]Rental, *Error) {
+	var createdRentals []Rental
+
+	err := usecase.rentalRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 		for index := range rentalRequests {
 			rentalRequests[index].CreatedAt = time.Now()
 		}
-		return usecase.rentalRepository.CheckinRentals(ctxWithTx, rentalRequests)
+		cr, err := usecase.rentalRepository.CheckinRentals(ctxWithTx, rentalRequests)
+		if err != nil {
+			return err
+		}
+		createdRentals = cr
+		return nil
 	})
+
+	return createdRentals, err
 }
 
-func (usecase RentalUsecase) CheckoutRentals(ctx context.Context, rentalIds []int64) (int64, *Error) {
+func (usecase RentalUsecase) CheckoutRentals(ctx context.Context, rentalIds []int64) (Transaction, *Error) {
 	checkoutAt := time.Now()
 
 	transactionData := Transaction{
@@ -124,8 +133,13 @@ func (usecase RentalUsecase) CheckoutRentals(ctx context.Context, rentalIds []in
 		transactionData.Total = float32(total)
 		transactionData.TransactionItems = transactionItems
 
-		return usecase.transactionRepository.CreateTransaction(ctxWithTx, &transactionData)
+		ct, err := usecase.transactionRepository.CreateTransaction(ctxWithTx, transactionData)
+		if err != nil {
+			return err
+		}
+		transactionData = ct
+		return nil
 	})
 
-	return transactionData.Id, err
+	return transactionData, err
 }

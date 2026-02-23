@@ -27,21 +27,25 @@ func (repo Repository) GetWalletById(ctx context.Context, id int64) (domain.Wall
 	return ToWalletDomain(wallet), ToError(result.Error)
 }
 
-func (repo Repository) CreateWallet(ctx context.Context, wallet *domain.Wallet) *domain.Error {
+func (repo Repository) CreateWallet(ctx context.Context, wallet domain.Wallet) (domain.Wallet, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Table("wallets").Create(ToWalletDB(*wallet))
-	return ToError(result.Error)
+	walletPayload := ToWalletDB(wallet)
+	result := db.Table("wallets").Create(&walletPayload)
+	return ToWalletDomain(walletPayload), ToError(result.Error)
 }
 
-func (repo Repository) UpdateWalletById(ctx context.Context, payload *domain.Wallet, id int64) *domain.Error {
+func (repo Repository) UpdateWalletById(ctx context.Context, wallet domain.Wallet, id int64) (domain.Wallet, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	result := db.Table("wallets").Where("id = ?", id).Updates(map[string]any{
-		"name":                    payload.Name,
-		"balance":                 payload.Balance,
-		"is_cashless":             payload.IsCashless,
-		"payment_cost_percentage": payload.PaymentCostPercentage,
+		"name":                    wallet.Name,
+		"balance":                 wallet.Balance,
+		"is_cashless":             wallet.IsCashless,
+		"payment_cost_percentage": wallet.PaymentCostPercentage,
 	})
-	return ToError(result.Error)
+
+	var updatedWallet Wallet
+	result = db.Table("wallets").Where("id = ?", id).First(&updatedWallet)
+	return ToWalletDomain(updatedWallet), ToError(result.Error)
 }
 
 func (repo Repository) DeleteWalletById(ctx context.Context, id int64) *domain.Error {
@@ -70,8 +74,15 @@ func (repo Repository) GetWalletTransferList(ctx context.Context, walletId int64
 	return ToWalletTransferListDomain(walletTransfers), ToError(result.Error)
 }
 
-func (repo Repository) CreateWalletTransfer(ctx context.Context, walletTransfer *domain.WalletTransfer, fromWalletId int64) *domain.Error {
+func (repo Repository) CreateWalletTransfer(ctx context.Context, walletTransfer domain.WalletTransfer, fromWalletId int64) (domain.WalletTransfer, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Table("wallet_transfers").Create(ToWalletTransferDB(*walletTransfer))
-	return ToError(result.Error)
+	walletTransferPayload := ToWalletTransferDB(walletTransfer)
+
+	if result := db.Table("wallet_transfers").Create(&walletTransferPayload); result.Error != nil {
+		return domain.WalletTransfer{}, ToError(result.Error)
+	}
+
+	var createdWalletTransfer WalletTransfer
+	result := db.Table("wallet_transfers").Preload("FromWallet").Preload("ToWallet").Where("id = ?", walletTransferPayload.Id).First(&createdWalletTransfer)
+	return ToWalletTransferDomain(createdWalletTransfer), ToError(result.Error)
 }

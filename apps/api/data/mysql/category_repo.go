@@ -26,16 +26,23 @@ func (repo Repository) GetCategoryById(ctx context.Context, id int64) (domain.Ca
 	return ToCategoryDomain(category), ToError(result.Error)
 }
 
-func (repo Repository) CreateCategory(ctx context.Context, category *domain.Category) *domain.Error {
+func (repo Repository) CreateCategory(ctx context.Context, category domain.Category) (domain.Category, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Table("categories").Create(ToCategoryDB(*category))
-	return ToError(result.Error)
+	categoryPayload := ToCategoryDB(category)
+	result := db.Table("categories").Create(&categoryPayload)
+	return ToCategoryDomain(categoryPayload), ToError(result.Error)
 }
 
-func (repo Repository) UpdateCategoryById(ctx context.Context, category *domain.Category, id int64) *domain.Error {
+func (repo Repository) UpdateCategoryById(ctx context.Context, category domain.Category, id int64) (domain.Category, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Table("categories").Where("id = ?", id).Updates(ToCategoryDB(*category))
-	return ToError(result.Error)
+	categoryPayload := ToCategoryDB(category)
+	if result := db.Table("categories").Where("id = ?", id).Updates(&categoryPayload); result.Error != nil {
+		return domain.Category{}, ToError(result.Error)
+	}
+
+	var updatedCategory Category
+	fetchResult := db.Table("categories").Where("id = ?", id).First(&updatedCategory)
+	return ToCategoryDomain(updatedCategory), ToError(fetchResult.Error)
 }
 
 func (repo Repository) DeleteCategoryById(ctx context.Context, id int64) *domain.Error {

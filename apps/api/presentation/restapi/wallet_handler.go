@@ -28,7 +28,7 @@ func (handler WalletHandler) GetWalletList(w http.ResponseWriter, r *http.Reques
 		apiWallets = append(apiWallets, ToApiWallet(wallet))
 	}
 
-	WriteResponse(w, apiContract.WalletList200Response{Data: apiWallets})
+	WriteResponse(w, apiContract.WalletListResponse{Data: apiWallets})
 }
 
 func (handler WalletHandler) GetWalletById(w http.ResponseWriter, r *http.Request) {
@@ -46,7 +46,7 @@ func (handler WalletHandler) GetWalletById(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	WriteResponse(w, apiContract.WalletFindById200Response{Data: ToApiWallet(wallet)})
+	WriteResponse(w, apiContract.WalletFindByIdResponse{Data: ToApiWallet(wallet)})
 }
 
 func (handler WalletHandler) CreateWallet(w http.ResponseWriter, r *http.Request) {
@@ -58,12 +58,14 @@ func (handler WalletHandler) CreateWallet(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if err := handler.usecase.CreateWallet(ctx, ToWalletRequest(walletRequest)); err != nil {
-		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
+	wallet, usecaseErr := handler.usecase.CreateWallet(ctx, ToWalletRequest(walletRequest))
+
+	if usecaseErr != nil {
+		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
-	WriteResponse(w, apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.WalletCreateResponse{Data: ToApiWallet(wallet)})
 }
 
 func (handler WalletHandler) UpdateWalletById(w http.ResponseWriter, r *http.Request) {
@@ -81,12 +83,14 @@ func (handler WalletHandler) UpdateWalletById(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	if err := handler.usecase.UpdateWalletById(ctx, ToWalletRequest(walletRequest), id); err != nil {
-		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
+	wallet, usecaseErr := handler.usecase.UpdateWalletById(ctx, ToWalletRequest(walletRequest), id)
+
+	if usecaseErr != nil {
+		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
-	WriteResponse(w, apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.WalletUpdateByIdResponse{Data: ToApiWallet(wallet)})
 }
 
 func (handler WalletHandler) DeleteWalletById(w http.ResponseWriter, r *http.Request) {
@@ -141,7 +145,7 @@ func (handler WalletHandler) GetWalletTransferList(w http.ResponseWriter, r *htt
 		apiWalletTransfers = append(apiWalletTransfers, ToApiWalletTransfer(walletTransfer))
 	}
 
-	WriteResponse(w, apiContract.WalletTransferList200Response{Data: apiWalletTransfers})
+	WriteResponse(w, apiContract.WalletTransferListResponse{Data: apiWalletTransfers})
 }
 
 func (handler WalletHandler) CreateWalletTransfer(w http.ResponseWriter, r *http.Request) {
@@ -159,10 +163,11 @@ func (handler WalletHandler) CreateWalletTransfer(w http.ResponseWriter, r *http
 		return
 	}
 
-	if err := handler.usecase.CreateWalletTransfer(ctx, ToWalletTransferRequest(walletTransferRequest), walletId); err != nil {
-		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
+	walletTransfer, usecaseErr := handler.usecase.CreateWalletTransfer(ctx, ToWalletTransferRequest(walletTransferRequest), walletId)
+	if usecaseErr != nil {
+		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
-	WriteResponse(w, apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.WalletTransferCreateResponse{Data: ToApiWalletTransfer(walletTransfer)})
 }

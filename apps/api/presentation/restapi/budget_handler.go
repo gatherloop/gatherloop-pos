@@ -29,7 +29,7 @@ func (handler BudgetHandler) GetBudgetList(w http.ResponseWriter, r *http.Reques
 		apiBudgets = append(apiBudgets, ToApiBudget(budget))
 	}
 
-	WriteResponse(w, apiContract.BudgetList200Response{Data: apiBudgets})
+	WriteResponse(w, apiContract.BudgetListResponse{Data: apiBudgets})
 }
 
 func (handler BudgetHandler) GetBudgetById(w http.ResponseWriter, r *http.Request) {
@@ -50,7 +50,7 @@ func (handler BudgetHandler) GetBudgetById(w http.ResponseWriter, r *http.Reques
 
 	apiBudget := ToApiBudget(budget)
 
-	WriteResponse(w, apiContract.BudgetFindById200Response{Data: apiBudget})
+	WriteResponse(w, apiContract.BudgetFindByIdResponse{Data: apiBudget})
 }
 
 func (handler BudgetHandler) CreateBudget(w http.ResponseWriter, r *http.Request) {
@@ -62,12 +62,14 @@ func (handler BudgetHandler) CreateBudget(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if err := handler.usecase.CreateBudget(ctx, ToBudget(budgetRequest)); err != nil {
-		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
+	budget, usecaseErr := handler.usecase.CreateBudget(ctx, ToBudget(budgetRequest))
+
+	if usecaseErr != nil {
+		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
-	WriteResponse(w, apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.BudgetCreateResponse{Data: ToApiBudget(budget)})
 }
 
 func (handler BudgetHandler) UpdateBudgetById(w http.ResponseWriter, r *http.Request) {
@@ -85,12 +87,13 @@ func (handler BudgetHandler) UpdateBudgetById(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	if err := handler.usecase.UpdateBudgetById(ctx, ToBudget(budgetRequest), id); err != nil {
-		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
+	budget, usecaseErr := handler.usecase.UpdateBudgetById(ctx, ToBudget(budgetRequest), id)
+	if usecaseErr != nil {
+		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
-	WriteResponse(w, apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.BudgetUpdateByIdResponse{Data: ToApiBudget(budget)})
 }
 
 func (handler BudgetHandler) DeleteBudgetById(w http.ResponseWriter, r *http.Request) {

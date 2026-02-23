@@ -75,17 +75,71 @@ func (repo Repository) GetProductById(ctx context.Context, id int64) (domain.Pro
 	return ToProductDomain(product), ToError(result.Error)
 }
 
-func (repo Repository) CreateProduct(ctx context.Context, product *domain.Product) *domain.Error {
+func (repo Repository) CreateProduct(ctx context.Context, product domain.Product) (domain.Product, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Table("products").Create(ToProductDB(*product))
-	return ToError(result.Error)
+	payload := ToProductDB(product)
+	if result := db.Table("products").Create(&payload); result.Error != nil {
+		return domain.Product{}, ToError(result.Error)
+	}
+
+	// Fetch the created product with all relations
+	var createdProduct Product
+	fetchResult := db.Table("products").Preload("Category").Preload("Options").Preload("Options.Values").Where("id = ?", payload.Id).First(&createdProduct)
+	return ToProductDomain(createdProduct), ToError(fetchResult.Error)
 }
 
-func (repo Repository) UpdateProductById(ctx context.Context, product *domain.Product, id int64) *domain.Error {
+func (repo Repository) UpdateProductById(ctx context.Context, product domain.Product, id int64) (domain.Product, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
-	fmt.Println(product)
-	result := db.Session(&gorm.Session{FullSaveAssociations: true}).Table("products").Where("id = ?", id).Updates(ToProductDB(*product))
-	return ToError(result.Error)
+	product.Id = id
+
+	// update product
+	productPayload := ToProductDB(product)
+	if result := db.Session(&gorm.Session{FullSaveAssociations: true}).Table("products").Where("id = ?", id).Updates(&productPayload); result.Error != nil {
+		return domain.Product{}, ToError(result.Error)
+	}
+
+	// Collect IDs of options and option values that should be kept (those that are present in the incoming payload)
+	optionIdsToKeep := []int64{}
+	optionValueIdsToKeep := []int64{}
+	for _, opt := range productPayload.Options {
+		if opt.Id > 0 {
+			optionIdsToKeep = append(optionIdsToKeep, opt.Id)
+		}
+		for _, val := range opt.Values {
+			if val.Id > 0 {
+				optionValueIdsToKeep = append(optionValueIdsToKeep, val.Id)
+			}
+		}
+	}
+
+	if len(optionIdsToKeep) > 0 {
+		// delete items that were present before but are not in the incoming idsToKeep
+		if err := db.Table("options").Where("product_id = ? AND id NOT IN ?", id, optionIdsToKeep).Delete(&Option{}).Error; err != nil {
+			return domain.Product{}, ToError(err)
+		}
+	} else {
+		// If incoming payload has no existing IDs, remove all previously existing items
+		if err := db.Table("options").Where("product_id = ?", id).Delete(&Option{}).Error; err != nil {
+			return domain.Product{}, ToError(err)
+		}
+	}
+
+	if len(optionValueIdsToKeep) > 0 {
+		// delete items that were present before but are not in the incoming idsToKeep
+		if err := db.Table("option_values").Where("option_id IN (SELECT id FROM options WHERE product_id = ?) AND id NOT IN ?", id, optionValueIdsToKeep).Delete(&OptionValue{}).Error; err != nil {
+			return domain.Product{}, ToError(err)
+		}
+	} else {
+		// If incoming payload has no existing IDs, remove all previously existing items
+		if err := db.Table("option_values").Where("option_id IN (SELECT id FROM options WHERE product_id = ?)", id).Delete(&OptionValue{}).Error; err != nil {
+			return domain.Product{}, ToError(err)
+		}
+	}
+
+	// Fetch the updated product with all relations
+	var updatedProduct Product
+	fetchResult := db.Table("products").Preload("Category").Preload("Options").Preload("Options.Values").Where("id = ?", id).First(&updatedProduct)
+	return ToProductDomain(updatedProduct), ToError(fetchResult.Error)
 }
 
 func (repo Repository) DeleteProductById(ctx context.Context, id int64) *domain.Error {

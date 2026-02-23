@@ -54,12 +54,34 @@ func (usecase MaterialUsecase) GetMaterialById(ctx context.Context, id int64) (M
 	return material, nil
 }
 
-func (usecase MaterialUsecase) CreateMaterial(ctx context.Context, material Material) *Error {
-	return usecase.repository.CreateMaterial(ctx, &material)
+func (usecase MaterialUsecase) CreateMaterial(ctx context.Context, material Material) (Material, *Error) {
+	createdMaterial, err := usecase.repository.CreateMaterial(ctx, material)
+	if err != nil {
+		return Material{}, err
+	}
+
+	materialsUsage, err := usecase.repository.GetMaterialsWeeklyUsage(ctx, []int64{createdMaterial.Id})
+	if err != nil {
+		return Material{}, err
+	}
+
+	createdMaterial.WeeklyUsage = materialsUsage[createdMaterial.Id]
+	return createdMaterial, nil
 }
 
-func (usecase MaterialUsecase) UpdateMaterialById(ctx context.Context, material Material, id int64) *Error {
-	return usecase.repository.UpdateMaterialById(ctx, &material, id)
+func (usecase MaterialUsecase) UpdateMaterialById(ctx context.Context, material Material, id int64) (Material, *Error) {
+	updatedMaterial, err := usecase.repository.UpdateMaterialById(ctx, material, id)
+	if err != nil {
+		return Material{}, err
+	}
+
+	materialsUsage, err := usecase.repository.GetMaterialsWeeklyUsage(ctx, []int64{id})
+	if err != nil {
+		return Material{}, err
+	}
+
+	updatedMaterial.WeeklyUsage = materialsUsage[id]
+	return updatedMaterial, nil
 }
 
 func (usecase MaterialUsecase) DeleteMaterialById(ctx context.Context, id int64) *Error {

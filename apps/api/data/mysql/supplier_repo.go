@@ -56,21 +56,23 @@ func (repo Repository) GetSupplierById(ctx context.Context, id int64) (domain.Su
 	return ToSupplierDomain(supplier), ToError(result.Error)
 }
 
-func (repo Repository) CreateSupplier(ctx context.Context, supplier *domain.Supplier) *domain.Error {
+func (repo Repository) CreateSupplier(ctx context.Context, supplier domain.Supplier) (domain.Supplier, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
-	supplierPayload := ToSupplierDB(*supplier)
+	supplierPayload := ToSupplierDB(supplier)
 	result := db.Table("suppliers").Create(&supplierPayload)
-
-	supplier.Id = supplierPayload.Id
-
-	return ToError(result.Error)
+	return ToSupplierDomain(supplierPayload), ToError(result.Error)
 }
 
-func (repo Repository) UpdateSupplierById(ctx context.Context, supplier *domain.Supplier, id int64) *domain.Error {
+func (repo Repository) UpdateSupplierById(ctx context.Context, supplier domain.Supplier, id int64) (domain.Supplier, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
-	supplierPayload := ToSupplierDB(*supplier)
-	result := db.Table("suppliers").Where("id = ?", id).Updates(supplierPayload)
-	return ToError(result.Error)
+	supplierPayload := ToSupplierDB(supplier)
+	if result := db.Table("suppliers").Where("id = ?", id).Updates(&supplierPayload); result.Error != nil {
+		return domain.Supplier{}, ToError(result.Error)
+	}
+
+	var updatedSupplier Supplier
+	result := db.Table("suppliers").Where("id = ?", id).First(&updatedSupplier)
+	return ToSupplierDomain(updatedSupplier), ToError(result.Error)
 }
 
 func (repo Repository) DeleteSupplierById(ctx context.Context, id int64) *domain.Error {

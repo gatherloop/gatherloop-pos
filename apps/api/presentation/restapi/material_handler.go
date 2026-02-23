@@ -44,7 +44,7 @@ func (handler MaterialHandler) GetMaterialList(w http.ResponseWriter, r *http.Re
 		apiMaterials = append(apiMaterials, ToApiMaterial(material))
 	}
 
-	WriteResponse(w, apiContract.MaterialList200Response{Data: apiMaterials, Meta: apiContract.MetaPage{Total: total}})
+	WriteResponse(w, apiContract.MaterialListResponse{Data: apiMaterials, Meta: apiContract.MetaPage{Total: total}})
 }
 
 func (handler MaterialHandler) GetMaterialById(w http.ResponseWriter, r *http.Request) {
@@ -62,7 +62,7 @@ func (handler MaterialHandler) GetMaterialById(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	WriteResponse(w, apiContract.MaterialFindById200Response{Data: ToApiMaterial(Material)})
+	WriteResponse(w, apiContract.MaterialFindByIdResponse{Data: ToApiMaterial(Material)})
 }
 
 func (handler MaterialHandler) CreateMaterial(w http.ResponseWriter, r *http.Request) {
@@ -74,12 +74,13 @@ func (handler MaterialHandler) CreateMaterial(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	if err := handler.usecase.CreateMaterial(ctx, ToMaterial(materialRequest)); err != nil {
-		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
+	material, usecaseErr := handler.usecase.CreateMaterial(ctx, ToMaterial(materialRequest))
+	if usecaseErr != nil {
+		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
-	WriteResponse(w, apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.MaterialCreateResponse{Data: ToApiMaterial(material)})
 }
 
 func (handler MaterialHandler) UpdateMaterialById(w http.ResponseWriter, r *http.Request) {
@@ -97,12 +98,13 @@ func (handler MaterialHandler) UpdateMaterialById(w http.ResponseWriter, r *http
 		return
 	}
 
-	if err := handler.usecase.UpdateMaterialById(ctx, ToMaterial(materialRequest), id); err != nil {
-		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
+	material, usecaseErr := handler.usecase.UpdateMaterialById(ctx, ToMaterial(materialRequest), id)
+	if usecaseErr != nil {
+		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
-	WriteResponse(w, apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.MaterialUpdateByIdResponse{Data: ToApiMaterial(material)})
 }
 
 func (handler MaterialHandler) DeleteMaterialById(w http.ResponseWriter, r *http.Request) {

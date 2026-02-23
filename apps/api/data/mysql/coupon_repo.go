@@ -26,16 +26,23 @@ func (repo Repository) GetCouponById(ctx context.Context, id int64) (domain.Coup
 	return ToCouponDomain(coupon), ToError(result.Error)
 }
 
-func (repo Repository) CreateCoupon(ctx context.Context, coupon *domain.Coupon) *domain.Error {
+func (repo Repository) CreateCoupon(ctx context.Context, coupon domain.Coupon) (domain.Coupon, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Table("coupons").Create(ToCouponDB(*coupon))
-	return ToError(result.Error)
+	couponPayload := ToCouponDB(coupon)
+	result := db.Table("coupons").Create(&couponPayload)
+	return ToCouponDomain(couponPayload), ToError(result.Error)
 }
 
-func (repo Repository) UpdateCouponById(ctx context.Context, coupon *domain.Coupon, id int64) *domain.Error {
+func (repo Repository) UpdateCouponById(ctx context.Context, coupon domain.Coupon, id int64) (domain.Coupon, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Table("coupons").Where("id = ?", id).Updates(ToCouponDB(*coupon))
-	return ToError(result.Error)
+	couponPayload := ToCouponDB(coupon)
+	if result := db.Table("coupons").Where("id = ?", id).Updates(&couponPayload); result.Error != nil {
+		return domain.Coupon{}, ToError(result.Error)
+	}
+
+	var updatedCoupon Coupon
+	fetchResult := db.Table("coupons").Where("id = ?", id).First(&updatedCoupon)
+	return ToCouponDomain(updatedCoupon), ToError(fetchResult.Error)
 }
 
 func (repo Repository) DeleteCouponById(ctx context.Context, id int64) *domain.Error {

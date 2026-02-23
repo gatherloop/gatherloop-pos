@@ -56,7 +56,7 @@ func (handler VariantHandler) GetVariantList(w http.ResponseWriter, r *http.Requ
 		apiVariants = append(apiVariants, ToApiVariant(variant))
 	}
 
-	WriteResponse(w, apiContract.VariantList200Response{Data: apiVariants, Meta: apiContract.MetaPage{Total: total}})
+	WriteResponse(w, apiContract.VariantListResponse{Data: apiVariants, Meta: apiContract.MetaPage{Total: total}})
 }
 
 func (handler VariantHandler) GetVariantById(w http.ResponseWriter, r *http.Request) {
@@ -74,7 +74,7 @@ func (handler VariantHandler) GetVariantById(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	WriteResponse(w, apiContract.VariantFindById200Response{Data: ToApiVariant(variant)})
+	WriteResponse(w, apiContract.VariantFindByIdResponse{Data: ToApiVariant(variant)})
 }
 
 func (handler VariantHandler) CreateVariant(w http.ResponseWriter, r *http.Request) {
@@ -87,13 +87,13 @@ func (handler VariantHandler) CreateVariant(w http.ResponseWriter, r *http.Reque
 	}
 
 	variant := ToVariant(variantRequest)
-	usecaseErr := handler.usecase.CreateVariant(ctx, variant)
+	createdVariant, usecaseErr := handler.usecase.CreateVariant(ctx, variant)
 	if usecaseErr != nil {
 		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
-	WriteResponse(w, apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.VariantCreateResponse{Data: ToApiVariant(createdVariant)})
 }
 
 func (handler VariantHandler) UpdateVariantById(w http.ResponseWriter, r *http.Request) {
@@ -112,13 +112,13 @@ func (handler VariantHandler) UpdateVariantById(w http.ResponseWriter, r *http.R
 	}
 
 	variant := ToVariant(variantRequest)
-	usecaseErr := handler.usecase.UpdateVariantById(ctx, variant, id)
+	updatedVariant, usecaseErr := handler.usecase.UpdateVariantById(ctx, variant, id)
 	if usecaseErr != nil {
 		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
-	WriteResponse(w, apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.VariantUpdateByIdResponse{Data: ToApiVariant(updatedVariant)})
 }
 
 func (handler VariantHandler) DeleteVariantById(w http.ResponseWriter, r *http.Request) {

@@ -4,19 +4,29 @@ import "apps/api/domain"
 
 func ToRentalDB(domainRental domain.Rental) Rental {
 	return Rental{
-		Id:        domainRental.Id,
-		Name:      domainRental.Name,
-		CreatedAt: domainRental.CreatedAt,
-		DeletedAt: domainRental.DeletedAt,
+		Id:         domainRental.Id,
+		Code:       domainRental.Code,
+		Name:       domainRental.Name,
+		CheckinAt:  domainRental.CheckinAt,
+		CheckoutAt: domainRental.CheckoutAt,
+		VariantId:  domainRental.VariantId,
+		Variant:    ToVariantDB(domainRental.Variant),
+		CreatedAt:  domainRental.CreatedAt,
+		DeletedAt:  domainRental.DeletedAt,
 	}
 }
 
 func ToRentalDomain(dbRental Rental) domain.Rental {
 	return domain.Rental{
-		Id:        dbRental.Id,
-		Name:      dbRental.Name,
-		CreatedAt: dbRental.CreatedAt,
-		DeletedAt: dbRental.DeletedAt,
+		Id:         dbRental.Id,
+		Code:       dbRental.Code,
+		Name:       dbRental.Name,
+		VariantId:  dbRental.VariantId,
+		Variant:    ToVariantDomain(dbRental.Variant),
+		CheckinAt:  dbRental.CheckinAt,
+		CheckoutAt: dbRental.CheckoutAt,
+		CreatedAt:  dbRental.CreatedAt,
+		DeletedAt:  dbRental.DeletedAt,
 	}
 }
 

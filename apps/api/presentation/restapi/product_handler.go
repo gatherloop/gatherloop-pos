@@ -46,7 +46,7 @@ func (handler ProductHandler) GetProductList(w http.ResponseWriter, r *http.Requ
 		apiProducts = append(apiProducts, ToApiProduct(product))
 	}
 
-	WriteResponse(w, apiContract.ProductList200Response{Data: apiProducts, Meta: apiContract.MetaPage{Total: total}})
+	WriteResponse(w, apiContract.ProductListResponse{Data: apiProducts, Meta: apiContract.MetaPage{Total: total}})
 }
 
 func (handler ProductHandler) GetProductById(w http.ResponseWriter, r *http.Request) {
@@ -64,7 +64,7 @@ func (handler ProductHandler) GetProductById(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	WriteResponse(w, apiContract.ProductFindById200Response{Data: ToApiProduct(product)})
+	WriteResponse(w, apiContract.ProductFindByIdResponse{Data: ToApiProduct(product)})
 }
 
 func (handler ProductHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
@@ -77,13 +77,13 @@ func (handler ProductHandler) CreateProduct(w http.ResponseWriter, r *http.Reque
 	}
 
 	product := ToProduct(productRequest)
-	usecaseErr := handler.usecase.CreateProduct(ctx, product)
+	createdProduct, usecaseErr := handler.usecase.CreateProduct(ctx, product)
 	if usecaseErr != nil {
 		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
-	WriteResponse(w, apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.ProductCreateResponse{Data: ToApiProduct(createdProduct)})
 }
 
 func (handler ProductHandler) UpdateProductById(w http.ResponseWriter, r *http.Request) {
@@ -102,13 +102,13 @@ func (handler ProductHandler) UpdateProductById(w http.ResponseWriter, r *http.R
 	}
 
 	product := ToProduct(productRequest)
-	usecaseErr := handler.usecase.UpdateProductById(ctx, product, id)
+	updatedProduct, usecaseErr := handler.usecase.UpdateProductById(ctx, product, id)
 	if usecaseErr != nil {
 		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
-	WriteResponse(w, apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.ProductUpdateByIdResponse{Data: ToApiProduct(updatedProduct)})
 }
 
 func (handler ProductHandler) DeleteProductById(w http.ResponseWriter, r *http.Request) {

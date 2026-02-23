@@ -26,16 +26,28 @@ func (repo Repository) GetBudgetById(ctx context.Context, id int64) (domain.Budg
 	return ToBudgetDomain(budget), ToError(result.Error)
 }
 
-func (repo Repository) CreateBudget(ctx context.Context, budget *domain.Budget) *domain.Error {
+func (repo Repository) CreateBudget(ctx context.Context, budget domain.Budget) (domain.Budget, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Table("budgets").Create(ToBudgetDB(*budget))
-	return ToError(result.Error)
+	budgetPayload := ToBudgetDB(budget)
+	if result := db.Table("budgets").Create(&budgetPayload); result.Error != nil {
+		return domain.Budget{}, ToError(result.Error)
+	}
+
+	var createdBudget Budget
+	fetchResult := db.Table("budgets").Where("id = ?", budgetPayload.Id).First(&createdBudget)
+	return ToBudgetDomain(createdBudget), ToError(fetchResult.Error)
 }
 
-func (repo Repository) UpdateBudgetById(ctx context.Context, budget *domain.Budget, id int64) *domain.Error {
+func (repo Repository) UpdateBudgetById(ctx context.Context, budget domain.Budget, id int64) (domain.Budget, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Table("budgets").Where("id = ?", id).Updates(ToBudgetDB(*budget))
-	return ToError(result.Error)
+	budgetPayload := ToBudgetDB(budget)
+	if result := db.Table("budgets").Where("id = ?", id).Updates(&budgetPayload); result.Error != nil {
+		return domain.Budget{}, ToError(result.Error)
+	}
+
+	var updatedBudget Budget
+	fetchResult := db.Table("budgets").Where("id = ?", id).First(&updatedBudget)
+	return ToBudgetDomain(updatedBudget), ToError(fetchResult.Error)
 }
 
 func (repo Repository) DeleteBudgetById(ctx context.Context, id int64) *domain.Error {

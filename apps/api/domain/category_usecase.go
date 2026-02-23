@@ -20,12 +20,12 @@ func (usecase CategoryUsecase) GetCategoryById(ctx context.Context, id int64) (C
 	return usecase.repository.GetCategoryById(ctx, id)
 }
 
-func (usecase CategoryUsecase) CreateCategory(ctx context.Context, category Category) *Error {
-	return usecase.repository.CreateCategory(ctx, &category)
+func (usecase CategoryUsecase) CreateCategory(ctx context.Context, category Category) (Category, *Error) {
+	return usecase.repository.CreateCategory(ctx, category)
 }
 
-func (usecase CategoryUsecase) UpdateCategoryById(ctx context.Context, category Category, id int64) *Error {
-	return usecase.repository.UpdateCategoryById(ctx, &category, id)
+func (usecase CategoryUsecase) UpdateCategoryById(ctx context.Context, category Category, id int64) (Category, *Error) {
+	return usecase.repository.UpdateCategoryById(ctx, category, id)
 }
 
 func (usecase CategoryUsecase) DeleteCategoryById(ctx context.Context, id int64) *Error {

@@ -40,7 +40,7 @@ func (handler AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 	http.SetCookie(w, &cookie)
 
-	WriteResponse(w, apiContract.AuthLogin200Response{Data: token})
+	WriteResponse(w, apiContract.AuthLoginResponse{Data: token})
 }
 
 func (handler AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {

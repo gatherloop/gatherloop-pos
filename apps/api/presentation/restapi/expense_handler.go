@@ -47,7 +47,7 @@ func (handler ExpenseHandler) GetExpenseList(w http.ResponseWriter, r *http.Requ
 		apiExpenses = append(apiExpenses, ToApiExpense(expense))
 	}
 
-	WriteResponse(w, apiContract.ExpenseList200Response{Data: apiExpenses, Meta: apiContract.MetaPage{Total: total}})
+	WriteResponse(w, apiContract.ExpenseListResponse{Data: apiExpenses, Meta: apiContract.MetaPage{Total: total}})
 }
 
 func (handler ExpenseHandler) GetExpenseById(w http.ResponseWriter, r *http.Request) {
@@ -65,7 +65,7 @@ func (handler ExpenseHandler) GetExpenseById(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	WriteResponse(w, apiContract.ExpenseFindById200Response{Data: ToApiExpense(expense)})
+	WriteResponse(w, apiContract.ExpenseFindByIdResponse{Data: ToApiExpense(expense)})
 }
 
 func (handler ExpenseHandler) CreateExpense(w http.ResponseWriter, r *http.Request) {
@@ -77,12 +77,13 @@ func (handler ExpenseHandler) CreateExpense(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if err := handler.usecase.CreateExpense(ctx, ToExpense(expenseRequest)); err != nil {
-		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
+	createdExpense, usecaseErr := handler.usecase.CreateExpense(ctx, ToExpense(expenseRequest))
+	if usecaseErr != nil {
+		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
-	WriteResponse(w, apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.ExpenseCreateResponse{Data: ToApiExpense(createdExpense)})
 }
 
 func (handler ExpenseHandler) UpdateExpenseById(w http.ResponseWriter, r *http.Request) {
@@ -100,12 +101,13 @@ func (handler ExpenseHandler) UpdateExpenseById(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	if err := handler.usecase.UpdateExpenseById(ctx, ToExpense(expenseRequest), id); err != nil {
-		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
+	updatedExpense, usecaseErr := handler.usecase.UpdateExpenseById(ctx, ToExpense(expenseRequest), id)
+	if usecaseErr != nil {
+		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
-	WriteResponse(w, apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.ExpenseUpdateByIdResponse{Data: ToApiExpense(updatedExpense)})
 }
 
 func (handler ExpenseHandler) DeleteExpenseById(w http.ResponseWriter, r *http.Request) {

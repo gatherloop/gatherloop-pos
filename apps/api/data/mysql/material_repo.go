@@ -90,21 +90,29 @@ func (repo Repository) GetMaterialById(ctx context.Context, id int64) (domain.Ma
 	return ToMaterialDomain(material), ToError(result.Error)
 }
 
-func (repo Repository) CreateMaterial(ctx context.Context, material *domain.Material) *domain.Error {
+func (repo Repository) CreateMaterial(ctx context.Context, material domain.Material) (domain.Material, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
-	materialPayload := ToMaterialDB(*material)
+	materialPayload := ToMaterialDB(material)
 	result := db.Table("materials").Create(&materialPayload)
 
-	material.Id = materialPayload.Id
+	if result.Error != nil {
+		return domain.Material{}, ToError(result.Error)
+	}
 
-	return ToError(result.Error)
+	return ToMaterialDomain(materialPayload), nil
 }
 
-func (repo Repository) UpdateMaterialById(ctx context.Context, material *domain.Material, id int64) *domain.Error {
+func (repo Repository) UpdateMaterialById(ctx context.Context, material domain.Material, id int64) (domain.Material, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
-	materialPayload := ToMaterialDB(*material)
-	result := db.Table("materials").Where("id = ?", id).Updates(materialPayload)
-	return ToError(result.Error)
+	materialPayload := ToMaterialDB(material)
+	if result := db.Table("materials").Where("id = ?", id).Updates(&materialPayload); result.Error != nil {
+		return domain.Material{}, ToError(result.Error)
+	}
+
+	// Fetch the updated material to get all fields including timestamps
+	var updatedMaterial Material
+	fetchResult := db.Table("materials").Where("id = ?", id).First(&updatedMaterial)
+	return ToMaterialDomain(updatedMaterial), ToError(fetchResult.Error)
 }
 
 func (repo Repository) DeleteMaterialById(ctx context.Context, id int64) *domain.Error {

@@ -10,6 +10,6 @@ type RentalRepository interface {
 	GetRentalListTotal(ctx context.Context, query string, checkoutStatus CheckoutStatus) (int64, *Error)
 	GetRentalById(ctx context.Context, id int64) (Rental, *Error)
 	DeleteRentalById(ctx context.Context, id int64) *Error
-	CheckinRentals(ctx context.Context, rentals []Rental) *Error
+	CheckinRentals(ctx context.Context, rentals []Rental) ([]Rental, *Error)
 	CheckoutRental(ctx context.Context, rentalId int64) *Error
 }

@@ -46,7 +46,7 @@ func (handler TransactionHandler) GetTransactionList(w http.ResponseWriter, r *h
 		apiTransactions = append(apiTransactions, ToApiTransaction(transaction))
 	}
 
-	WriteResponse(w, apiContract.TransactionList200Response{Data: apiTransactions, Meta: apiContract.MetaPage{Total: total}})
+	WriteResponse(w, apiContract.TransactionListResponse{Data: apiTransactions, Meta: apiContract.MetaPage{Total: total}})
 }
 
 func (handler TransactionHandler) GetTransactionById(w http.ResponseWriter, r *http.Request) {
@@ -64,7 +64,7 @@ func (handler TransactionHandler) GetTransactionById(w http.ResponseWriter, r *h
 		return
 	}
 
-	WriteResponse(w, apiContract.TransactionFindById200Response{Data: ToApiTransaction(transaction)})
+	WriteResponse(w, apiContract.TransactionFindByIdResponse{Data: ToApiTransaction(transaction)})
 }
 
 func (handler TransactionHandler) CreateTransaction(w http.ResponseWriter, r *http.Request) {
@@ -76,14 +76,14 @@ func (handler TransactionHandler) CreateTransaction(w http.ResponseWriter, r *ht
 		return
 	}
 
-	id, usecaseErr := handler.usecase.CreateTransaction(ctx, ToTransaction(transactionRequest))
+	createdTransaction, usecaseErr := handler.usecase.CreateTransaction(ctx, ToTransaction(transactionRequest))
 
 	if usecaseErr != nil {
 		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
-	WriteResponse(w, apiContract.TransactionCreate200Response{Success: true, Data: apiContract.TransactionCreate200ResponseData{Id: id}})
+	WriteResponse(w, apiContract.TransactionCreateResponse{Data: ToApiTransaction(createdTransaction)})
 }
 
 func (handler TransactionHandler) UpdateTransactionById(w http.ResponseWriter, r *http.Request) {
@@ -101,12 +101,13 @@ func (handler TransactionHandler) UpdateTransactionById(w http.ResponseWriter, r
 		return
 	}
 
-	if err := handler.usecase.UpdateTransactionById(ctx, ToTransaction(transactionRequest), id); err != nil {
-		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
+	updatedTransaction, usecaseErr := handler.usecase.UpdateTransactionById(ctx, ToTransaction(transactionRequest), id)
+	if usecaseErr != nil {
+		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
-	WriteResponse(w, apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.TransactionUpdateByIdResponse{Data: ToApiTransaction(updatedTransaction)})
 }
 
 func (handler TransactionHandler) DeleteTransactionById(w http.ResponseWriter, r *http.Request) {
@@ -182,5 +183,5 @@ func (handler TransactionHandler) GetTransactionStatistics(w http.ResponseWriter
 		apiTransactionStatistics = append(apiTransactionStatistics, ToApiTransactionStatistic(transactionStatistic))
 	}
 
-	WriteResponse(w, apiContract.TransactionStatistics200Response{Data: apiTransactionStatistics})
+	WriteResponse(w, apiContract.TransactionStatisticResponse{Data: apiTransactionStatistics})
 }

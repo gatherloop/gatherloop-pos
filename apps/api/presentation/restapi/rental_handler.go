@@ -46,7 +46,7 @@ func (handler RentalHandler) GetRentalList(w http.ResponseWriter, r *http.Reques
 		apiRentals = append(apiRentals, ToApiRental(rental))
 	}
 
-	WriteResponse(w, apiContract.RentalList200Response{Data: apiRentals, Meta: apiContract.MetaPage{Total: total}})
+	WriteResponse(w, apiContract.RentalListResponse{Data: apiRentals, Meta: apiContract.MetaPage{Total: total}})
 }
 
 func (handler RentalHandler) GetRentalById(w http.ResponseWriter, r *http.Request) {
@@ -64,7 +64,7 @@ func (handler RentalHandler) GetRentalById(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	WriteResponse(w, apiContract.RentalFindById200Response{Data: ToApiRental(rental)})
+	WriteResponse(w, apiContract.RentalFindByIdResponse{Data: ToApiRental(rental)})
 }
 
 func (handler RentalHandler) CheckinRentals(w http.ResponseWriter, r *http.Request) {
@@ -81,12 +81,18 @@ func (handler RentalHandler) CheckinRentals(w http.ResponseWriter, r *http.Reque
 		rentalRequests = append(rentalRequests, ToRental(apiRental))
 	}
 
-	if err := handler.usecase.CheckinRentals(ctx, rentalRequests); err != nil {
-		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
+	createdRentals, usecaseErr := handler.usecase.CheckinRentals(ctx, rentalRequests)
+	if usecaseErr != nil {
+		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
-	WriteResponse(w, apiContract.SuccessResponse{Success: true})
+	apiRentals := []apiContract.Rental{}
+	for _, rental := range createdRentals {
+		apiRentals = append(apiRentals, ToApiRental(rental))
+	}
+
+	WriteResponse(w, apiContract.RentalCheckinResponse{Data: apiRentals})
 }
 
 func (handler RentalHandler) CheckoutRentals(w http.ResponseWriter, r *http.Request) {
@@ -98,14 +104,13 @@ func (handler RentalHandler) CheckoutRentals(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	transactionId, usecaseErr := handler.usecase.CheckoutRentals(ctx, rentalIds)
-
+	transaction, usecaseErr := handler.usecase.CheckoutRentals(ctx, rentalIds)
 	if usecaseErr != nil {
 		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
-	WriteResponse(w, apiContract.RentalCheckout200Response{Success: true, Data: apiContract.RentalCheckout200ResponseData{TransactionId: transactionId}})
+	WriteResponse(w, apiContract.RentalCheckoutResponse{Data: ToApiTransaction(transaction)})
 }
 
 func (handler RentalHandler) DeleteRentalById(w http.ResponseWriter, r *http.Request) {

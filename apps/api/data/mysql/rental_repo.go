@@ -72,10 +72,22 @@ func (repo Repository) GetRentalById(ctx context.Context, id int64) (domain.Rent
 	return ToRentalDomain(rental), ToError(result.Error)
 }
 
-func (repo Repository) CheckinRentals(ctx context.Context, rentals []domain.Rental) *domain.Error {
+func (repo Repository) CheckinRentals(ctx context.Context, rentals []domain.Rental) ([]domain.Rental, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
-	result := db.Table("rentals").Create(ToRentalListDB(rentals))
-	return ToError(result.Error)
+
+	dbRentals := ToRentalListDB(rentals)
+	if result := db.Table("rentals").Create(&dbRentals); result.Error != nil {
+		return []domain.Rental{}, ToError(result.Error)
+	}
+
+	var ids []int64
+	for _, rental := range dbRentals {
+		ids = append(ids, rental.Id)
+	}
+
+	var created []Rental
+	fetch := db.Table("rentals").Where("id IN ?", ids).Preload("Variant").Preload("Variant.Materials").Preload("Variant.Materials.Material").Preload("Variant.VariantValues").Preload("Variant.VariantValues.OptionValue").Preload("Variant.Product").Find(&created)
+	return ToRentalListDomain(created), ToError(fetch.Error)
 }
 
 func (repo Repository) CheckoutRental(ctx context.Context, rentalId int64) *domain.Error {

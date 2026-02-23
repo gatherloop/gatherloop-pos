@@ -28,7 +28,7 @@ func (handler CategoryHandler) GetCategoryList(w http.ResponseWriter, r *http.Re
 		apiCategories = append(apiCategories, ToApiCategory(category))
 	}
 
-	WriteResponse(w, apiContract.CategoryList200Response{Data: apiCategories})
+	WriteResponse(w, apiContract.CategoryListResponse{Data: apiCategories})
 }
 
 func (handler CategoryHandler) GetCategoryById(w http.ResponseWriter, r *http.Request) {
@@ -40,13 +40,13 @@ func (handler CategoryHandler) GetCategoryById(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	category, baseError := handler.usecase.GetCategoryById(ctx, id)
-	if baseError != nil {
-		WriteError(w, apiContract.Error{Code: ToErrorCode(baseError.Type), Message: baseError.Message})
+	category, usecaseErr := handler.usecase.GetCategoryById(ctx, id)
+	if usecaseErr != nil {
+		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
-	WriteResponse(w, apiContract.CategoryFindById200Response{Data: ToApiCategory(category)})
+	WriteResponse(w, apiContract.CategoryFindByIdResponse{Data: ToApiCategory(category)})
 }
 
 func (handler CategoryHandler) CreateCategory(w http.ResponseWriter, r *http.Request) {
@@ -58,12 +58,13 @@ func (handler CategoryHandler) CreateCategory(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	if err := handler.usecase.CreateCategory(ctx, ToCategory(categoryRequest)); err != nil {
-		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
+	category, usecaseErr := handler.usecase.CreateCategory(ctx, ToCategory(categoryRequest))
+	if usecaseErr != nil {
+		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
-	WriteResponse(w, apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.CategoryCreateResponse{Data: ToApiCategory(category)})
 }
 
 func (handler CategoryHandler) UpdateCategoryById(w http.ResponseWriter, r *http.Request) {
@@ -81,12 +82,14 @@ func (handler CategoryHandler) UpdateCategoryById(w http.ResponseWriter, r *http
 		return
 	}
 
-	if err := handler.usecase.UpdateCategoryById(ctx, ToCategory(categoryRequest), id); err != nil {
-		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
+	category, usecaseErr := handler.usecase.UpdateCategoryById(ctx, ToCategory(categoryRequest), id)
+
+	if usecaseErr != nil {
+		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
-	WriteResponse(w, apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.CategoryUpdateByIdResponse{Data: ToApiCategory(category)})
 }
 
 func (handler CategoryHandler) DeleteCategoryById(w http.ResponseWriter, r *http.Request) {

@@ -44,7 +44,7 @@ func (handler SupplierHandler) GetSupplierList(w http.ResponseWriter, r *http.Re
 		apiSuppliers = append(apiSuppliers, ToApiSupplier(supplier))
 	}
 
-	WriteResponse(w, apiContract.SupplierList200Response{Data: apiSuppliers, Meta: apiContract.MetaPage{Total: total}})
+	WriteResponse(w, apiContract.SupplierListResponse{Data: apiSuppliers, Meta: apiContract.MetaPage{Total: total}})
 }
 
 func (handler SupplierHandler) GetSupplierById(w http.ResponseWriter, r *http.Request) {
@@ -62,7 +62,7 @@ func (handler SupplierHandler) GetSupplierById(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	WriteResponse(w, apiContract.SupplierFindById200Response{Data: ToApiSupplier(Supplier)})
+	WriteResponse(w, apiContract.SupplierFindByIdResponse{Data: ToApiSupplier(Supplier)})
 }
 
 func (handler SupplierHandler) CreateSupplier(w http.ResponseWriter, r *http.Request) {
@@ -74,12 +74,13 @@ func (handler SupplierHandler) CreateSupplier(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	if err := handler.usecase.CreateSupplier(ctx, ToSupplier(supplierRequest)); err != nil {
-		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
+	supplier, usecaseErr := handler.usecase.CreateSupplier(ctx, ToSupplier(supplierRequest))
+	if usecaseErr != nil {
+		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
-	WriteResponse(w, apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.SupplierCreateResponse{Data: ToApiSupplier(supplier)})
 }
 
 func (handler SupplierHandler) UpdateSupplierById(w http.ResponseWriter, r *http.Request) {
@@ -97,12 +98,13 @@ func (handler SupplierHandler) UpdateSupplierById(w http.ResponseWriter, r *http
 		return
 	}
 
-	if err := handler.usecase.UpdateSupplierById(ctx, ToSupplier(supplierRequest), id); err != nil {
-		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
+	supplier, usecaseErr := handler.usecase.UpdateSupplierById(ctx, ToSupplier(supplierRequest), id)
+	if usecaseErr != nil {
+		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
-	WriteResponse(w, apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.SupplierUpdateByIdResponse{Data: ToApiSupplier(supplier)})
 }
 
 func (handler SupplierHandler) DeleteSupplierById(w http.ResponseWriter, r *http.Request) {

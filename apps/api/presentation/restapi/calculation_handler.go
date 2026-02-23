@@ -43,7 +43,7 @@ func (handler CalculationHandler) GetCalculationList(w http.ResponseWriter, r *h
 		apiCalculations = append(apiCalculations, ToApiCalculation(calculation))
 	}
 
-	WriteResponse(w, apiContract.CalculationList200Response{Data: apiCalculations})
+	WriteResponse(w, apiContract.CalculationListResponse{Data: apiCalculations})
 }
 
 func (handler CalculationHandler) GetCalculationById(w http.ResponseWriter, r *http.Request) {
@@ -61,7 +61,7 @@ func (handler CalculationHandler) GetCalculationById(w http.ResponseWriter, r *h
 		return
 	}
 
-	WriteResponse(w, apiContract.CalculationFindById200Response{Data: ToApiCalculation(calculation)})
+	WriteResponse(w, apiContract.CalculationFindByIdResponse{Data: ToApiCalculation(calculation)})
 }
 
 func (handler CalculationHandler) CreateCalculation(w http.ResponseWriter, r *http.Request) {
@@ -72,12 +72,13 @@ func (handler CalculationHandler) CreateCalculation(w http.ResponseWriter, r *ht
 		return
 	}
 
-	if err := handler.usecase.CreateCalculation(ctx, ToCalculation(calculationRequest)); err != nil {
-		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
+	createdCalculation, usecaseErr := handler.usecase.CreateCalculation(ctx, ToCalculation(calculationRequest))
+	if usecaseErr != nil {
+		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
-	WriteResponse(w, apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.CalculationCreateResponse{Data: ToApiCalculation(createdCalculation)})
 }
 
 func (handler CalculationHandler) UpdateCalculationById(w http.ResponseWriter, r *http.Request) {
@@ -95,12 +96,13 @@ func (handler CalculationHandler) UpdateCalculationById(w http.ResponseWriter, r
 		return
 	}
 
-	if err := handler.usecase.UpdateCalculationById(ctx, ToCalculation(calculationRequest), id); err != nil {
-		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
+	updatedCalculation, usecaseErr := handler.usecase.UpdateCalculationById(ctx, ToCalculation(calculationRequest), id)
+	if usecaseErr != nil {
+		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
-	WriteResponse(w, apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.CalculationUpdateByIdResponse{Data: ToApiCalculation(updatedCalculation)})
 }
 
 func (handler CalculationHandler) DeleteCalculationById(w http.ResponseWriter, r *http.Request) {

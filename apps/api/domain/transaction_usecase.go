@@ -42,23 +42,13 @@ func (usecase TransactionUsecase) GetTransactionById(ctx context.Context, id int
 	return usecase.transactionRepository.GetTransactionById(ctx, id)
 }
 
-func (usecase TransactionUsecase) CreateTransaction(ctx context.Context, transactionRequest Transaction) (int64, *Error) {
-	transaction := Transaction{
-		CreatedAt:   time.Now(),
-		Name:        transactionRequest.Name,
-		OrderNumber: transactionRequest.OrderNumber,
-		Total:       0,
-	}
+func (usecase TransactionUsecase) CreateTransaction(ctx context.Context, transaction Transaction) (Transaction, *Error) {
+	var createdTransaction Transaction
 
 	err := usecase.transactionRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		err := usecase.transactionRepository.CreateTransaction(ctxWithTx, &transaction)
-		if err != nil {
-			return err
-		}
 
-		var transactionItems []TransactionItem
-
-		for _, item := range transactionRequest.TransactionItems {
+		// Calculate total
+		for index, item := range transaction.TransactionItems {
 			variant, err := usecase.variantRepository.GetVariantById(ctxWithTx, item.VariantId)
 			if err != nil {
 				return err
@@ -68,7 +58,7 @@ func (usecase TransactionUsecase) CreateTransaction(ctx context.Context, transac
 			transaction.Total += subTotal
 
 			transactionItem := TransactionItem{
-				TransactionId:  transaction.Id,
+				TransactionId:  createdTransaction.Id,
 				VariantId:      item.VariantId,
 				Amount:         item.Amount,
 				DiscountAmount: item.DiscountAmount,
@@ -77,16 +67,11 @@ func (usecase TransactionUsecase) CreateTransaction(ctx context.Context, transac
 				Note:           item.Note,
 			}
 
-			transactionItems = append(transactionItems, transactionItem)
+			transaction.TransactionItems[index] = transactionItem
 		}
 
-		if err := usecase.transactionRepository.CreateTransactionItems(ctxWithTx, transactionItems); err != nil {
-			return err
-		}
-
-		var transactionCoupons []TransactionCoupon
-
-		for _, transactionCoupon := range transactionRequest.TransactionCoupons {
+		// Calculate total with coupon
+		for index, transactionCoupon := range transaction.TransactionCoupons {
 			couponItem, err := usecase.couponRepository.GetCouponById(ctxWithTx, transactionCoupon.CouponId)
 			if err != nil {
 				return err
@@ -102,28 +87,31 @@ func (usecase TransactionUsecase) CreateTransaction(ctx context.Context, transac
 
 			transaction.Total -= float32(couponDiscountAmount)
 
-			transactionCoupons = append(transactionCoupons, TransactionCoupon{
+			transaction.TransactionCoupons[index] = TransactionCoupon{
 				CouponId:      transactionCoupon.CouponId,
 				Type:          couponItem.Type,
 				Amount:        couponItem.Amount,
-				TransactionId: transaction.Id,
-			})
-		}
-
-		if len(transactionCoupons) > 0 {
-			if err := usecase.transactionRepository.CreateTransactionCoupons(ctxWithTx, transactionCoupons); err != nil {
-				return err
+				TransactionId: createdTransaction.Id,
 			}
 		}
 
-		return usecase.transactionRepository.UpdateTransactionById(ctxWithTx, &Transaction{Total: transaction.Total}, transaction.Id)
+		// Create transaction
+		ct, err := usecase.transactionRepository.CreateTransaction(ctxWithTx, transaction)
+		if err != nil {
+			return err
+		}
+
+		createdTransaction = ct
+		return nil
 	})
 
-	return transaction.Id, err
+	return createdTransaction, err
 }
 
-func (usecase TransactionUsecase) UpdateTransactionById(ctx context.Context, transactionRequest Transaction, id int64) *Error {
-	return usecase.transactionRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+func (usecase TransactionUsecase) UpdateTransactionById(ctx context.Context, transaction Transaction, id int64) (Transaction, *Error) {
+	var updatedTransaction Transaction
+
+	err := usecase.transactionRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 		existingTransaction, err := usecase.transactionRepository.GetTransactionById(ctxWithTx, id)
 		if err != nil {
 			return err
@@ -133,15 +121,7 @@ func (usecase TransactionUsecase) UpdateTransactionById(ctx context.Context, tra
 			return &Error{Type: BadRequest, Message: "cannot update paid transaction"}
 		}
 
-		transaction := Transaction{
-			Name:        transactionRequest.Name,
-			OrderNumber: transactionRequest.OrderNumber,
-			Total:       0,
-		}
-
-		var transactionItems []TransactionItem
-
-		for _, item := range transactionRequest.TransactionItems {
+		for index, item := range transaction.TransactionItems {
 			variant, err := usecase.variantRepository.GetVariantById(ctxWithTx, item.VariantId)
 			if err != nil {
 				return err
@@ -161,29 +141,10 @@ func (usecase TransactionUsecase) UpdateTransactionById(ctx context.Context, tra
 				Note:           item.Note,
 			}
 
-			transactionItems = append(transactionItems, transactionItem)
+			transaction.TransactionItems[index] = transactionItem
 		}
 
-		if err := usecase.transactionRepository.CreateTransactionItems(ctxWithTx, transactionItems); err != nil {
-			return err
-		}
-
-		newIds := make(map[int64]bool)
-		for _, item := range transactionItems {
-			newIds[item.Id] = true
-		}
-
-		for _, item := range existingTransaction.TransactionItems {
-			if !newIds[item.Id] {
-				if err := usecase.transactionRepository.DeleteTransactionItemById(ctxWithTx, item.Id); err != nil {
-					return err
-				}
-			}
-		}
-
-		var transactionCoupons []TransactionCoupon
-
-		for _, transactionCoupon := range transactionRequest.TransactionCoupons {
+		for index, transactionCoupon := range transaction.TransactionCoupons {
 			couponItem, err := usecase.couponRepository.GetCouponById(ctxWithTx, transactionCoupon.CouponId)
 			if err != nil {
 				return err
@@ -199,36 +160,25 @@ func (usecase TransactionUsecase) UpdateTransactionById(ctx context.Context, tra
 
 			transaction.Total -= float32(couponDiscountAmount)
 
-			transactionCoupons = append(transactionCoupons, TransactionCoupon{
+			transaction.TransactionCoupons[index] = TransactionCoupon{
 				CouponId:      transactionCoupon.CouponId,
 				Type:          couponItem.Type,
 				Amount:        couponItem.Amount,
 				TransactionId: id,
 				Id:            transactionCoupon.Id,
-			})
-		}
-
-		if len(transactionCoupons) > 0 {
-			if err := usecase.transactionRepository.CreateTransactionCoupons(ctxWithTx, transactionCoupons); err != nil {
-				return err
 			}
 		}
 
-		newTransactionCouponIds := make(map[int64]bool)
-		for _, couponitem := range transactionCoupons {
-			newTransactionCouponIds[couponitem.Id] = true
+		ut, err := usecase.transactionRepository.UpdateTransactionById(ctxWithTx, transaction, id)
+		if err != nil {
+			return err
 		}
 
-		for _, couponItem := range existingTransaction.TransactionCoupons {
-			if !newTransactionCouponIds[couponItem.Id] {
-				if err := usecase.transactionRepository.DeleteTransactionCouponById(ctxWithTx, couponItem.Id); err != nil {
-					return err
-				}
-			}
-		}
-
-		return usecase.transactionRepository.UpdateTransactionById(ctxWithTx, &transaction, id)
+		updatedTransaction = ut
+		return nil
 	})
+
+	return updatedTransaction, err
 }
 
 func (usecase TransactionUsecase) DeleteTransactionById(ctx context.Context, id int64) *Error {
@@ -265,7 +215,7 @@ func (usecase TransactionUsecase) PayTransaction(ctx context.Context, walletId i
 		paymentCost := transaction.Total * paymentWallet.PaymentCostPercentage / 100
 		newBalance := paymentWallet.Balance + transaction.Total - paymentCost
 
-		if err := usecase.walletRepository.UpdateWalletById(ctxWithTx, &Wallet{
+		if _, err := usecase.walletRepository.UpdateWalletById(ctxWithTx, Wallet{
 			Name:                  paymentWallet.Name,
 			PaymentCostPercentage: paymentWallet.PaymentCostPercentage,
 			Balance:               newBalance,
@@ -288,7 +238,7 @@ func (usecase TransactionUsecase) PayTransaction(ctx context.Context, walletId i
 
 		totalIncome := transaction.Total - paymentCost - foodCost
 
-		if err := usecase.transactionRepository.UpdateTransactionById(ctxWithTx, &Transaction{TotalIncome: totalIncome}, id); err != nil {
+		if _, err := usecase.transactionRepository.UpdateTransactionById(ctxWithTx, Transaction{TotalIncome: totalIncome}, id); err != nil {
 			return err
 		}
 
@@ -309,7 +259,7 @@ func (usecase TransactionUsecase) PayTransaction(ctx context.Context, walletId i
 				newBalance = budgetItem.Balance + addition
 			}
 
-			if err := usecase.budgetRepository.UpdateBudgetById(ctxWithTx, &Budget{Balance: newBalance}, budgetItem.Id); err != nil {
+			if _, err := usecase.budgetRepository.UpdateBudgetById(ctxWithTx, Budget{Balance: newBalance}, budgetItem.Id); err != nil {
 				return err
 			}
 		}
@@ -341,7 +291,7 @@ func (usecase TransactionUsecase) UnpayTransaction(ctx context.Context, id int64
 		paymentCost := transaction.Total * paymentWallet.PaymentCostPercentage / 100
 		newBalance := paymentWallet.Balance - (transaction.Total - paymentCost)
 
-		if err := usecase.walletRepository.UpdateWalletById(ctxWithTx, &Wallet{
+		if _, err := usecase.walletRepository.UpdateWalletById(ctxWithTx, Wallet{
 			Name:                  paymentWallet.Name,
 			PaymentCostPercentage: paymentWallet.PaymentCostPercentage,
 			Balance:               newBalance,
@@ -381,7 +331,7 @@ func (usecase TransactionUsecase) UnpayTransaction(ctx context.Context, id int64
 				newBalance = budgetItem.Balance - addition
 			}
 
-			if err := usecase.budgetRepository.UpdateBudgetById(ctxWithTx, &Budget{Balance: newBalance}, budgetItem.Id); err != nil {
+			if _, err := usecase.budgetRepository.UpdateBudgetById(ctxWithTx, Budget{Balance: newBalance}, budgetItem.Id); err != nil {
 				return err
 			}
 		}

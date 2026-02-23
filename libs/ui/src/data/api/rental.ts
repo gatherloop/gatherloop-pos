@@ -48,7 +48,7 @@ export class ApiRentalRepository implements RentalRepository {
 
   checkoutRentals: RentalRepository['checkoutRentals'] = (formValues) => {
     return rentalCheckout(formValues.rentals.map((rental) => rental.id)).then(
-      ({ data: { transactionId } }) => ({ transactionId })
+      ({ data: { id } }) => ({ transactionId: id })
     );
   };
 
