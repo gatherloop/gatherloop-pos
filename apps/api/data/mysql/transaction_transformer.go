@@ -44,7 +44,11 @@ func ToTransactionDomain(dbTransaction Transaction) domain.Transaction {
 }
 
 func ToTransactionsListDomain(dbTransactions []Transaction) []domain.Transaction {
-	var domainTransactions []domain.Transaction
+	if dbTransactions == nil {
+		return nil
+	}
+
+	domainTransactions := []domain.Transaction{}
 	for _, dbTran := range dbTransactions {
 		domainTransactions = append(domainTransactions, ToTransactionDomain(dbTran))
 	}
@@ -74,7 +78,11 @@ func ToTransactionCouponDB(domainTransactionCoupon domain.TransactionCoupon) Tra
 }
 
 func ToTransactionCouponsListDomain(dbTransactionCoupons []TransactionCoupon) []domain.TransactionCoupon {
-	var domainTransactionCoupons []domain.TransactionCoupon
+	if dbTransactionCoupons == nil {
+		return nil
+	}
+
+	domainTransactionCoupons := []domain.TransactionCoupon{}
 	for _, dbTranCoupon := range dbTransactionCoupons {
 		domainTransactionCoupons = append(domainTransactionCoupons, ToTransactionCouponDomain(dbTranCoupon))
 	}
@@ -82,7 +90,11 @@ func ToTransactionCouponsListDomain(dbTransactionCoupons []TransactionCoupon) []
 }
 
 func ToTransactionCouponsListDB(domainTransactionCoupons []domain.TransactionCoupon) []TransactionCoupon {
-	var dbTransactionCoupons []TransactionCoupon
+	if domainTransactionCoupons == nil {
+		return nil
+	}
+
+	dbTransactionCoupons := []TransactionCoupon{}
 	for _, domainTranCoupon := range domainTransactionCoupons {
 		dbTransactionCoupons = append(dbTransactionCoupons, ToTransactionCouponDB(domainTranCoupon))
 	}
@@ -120,7 +132,11 @@ func ToTransactionItemDB(domainTransactionItem domain.TransactionItem) Transacti
 }
 
 func ToTransactionItemsListDomain(dbTransactionItems []TransactionItem) []domain.TransactionItem {
-	var domainTransactionItems []domain.TransactionItem
+	if dbTransactionItems == nil {
+		return nil
+	}
+
+	domainTransactionItems := []domain.TransactionItem{}
 	for _, dbTranItem := range dbTransactionItems {
 		domainTransactionItems = append(domainTransactionItems, ToTransactionItemDomain(dbTranItem))
 	}
@@ -128,7 +144,11 @@ func ToTransactionItemsListDomain(dbTransactionItems []TransactionItem) []domain
 }
 
 func ToTransactionItemsListDB(domainTransactionItems []domain.TransactionItem) []TransactionItem {
-	var dbTransactionItems []TransactionItem
+	if domainTransactionItems == nil {
+		return nil
+	}
+
+	dbTransactionItems := []TransactionItem{}
 	for _, domainTranItem := range domainTransactionItems {
 		dbTransactionItems = append(dbTransactionItems, ToTransactionItemDB(domainTranItem))
 	}
@@ -144,7 +164,11 @@ func ToTransactionStatisticDomain(dbTransactionStatistic TransactionStatistic) d
 }
 
 func ToTransactionStatisticsListDomain(dbTransactionStatistics []TransactionStatistic) []domain.TransactionStatistic {
-	var domainTransactionStatistics []domain.TransactionStatistic
+	if dbTransactionStatistics == nil {
+		return nil
+	}
+
+	domainTransactionStatistics := []domain.TransactionStatistic{}
 	for _, dbTranStat := range dbTransactionStatistics {
 		domainTransactionStatistics = append(domainTransactionStatistics, ToTransactionStatisticDomain(dbTranStat))
 	}

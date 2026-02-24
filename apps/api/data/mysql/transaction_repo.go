@@ -98,47 +98,51 @@ func (repo Repository) UpdateTransactionById(ctx context.Context, transaction do
 	transaction.Id = id
 
 	dbTransaction := ToTransactionDB(transaction)
-	if result := db.Table("transactions").Where("id = ?", id).Updates(&dbTransaction); result.Error != nil {
+	if result := db.Session(&gorm.Session{FullSaveAssociations: true}).Table("transactions").Where("id = ?", id).Updates(&dbTransaction); result.Error != nil {
 		return domain.Transaction{}, ToError(result.Error)
 	}
 
-	// Determine which existing item IDs to keep (those that are present in the incoming payload)
-	transactionItemIdsToKeep := []int64{}
-	for _, it := range dbTransaction.TransactionItems {
-		if it.Id > 0 {
-			transactionItemIdsToKeep = append(transactionItemIdsToKeep, it.Id)
+	if dbTransaction.TransactionItems != nil {
+		// Determine which existing item IDs to keep (those that are present in the incoming payload)
+		transactionItemIdsToKeep := []int64{}
+		for _, it := range dbTransaction.TransactionItems {
+			if it.Id > 0 {
+				transactionItemIdsToKeep = append(transactionItemIdsToKeep, it.Id)
+			}
+		}
+
+		if len(transactionItemIdsToKeep) > 0 {
+			// delete items that were present before but are not in the incoming idsToKeep
+			if result := db.Table("transaction_items").Where("transaction_id = ? AND id NOT IN ?", id, transactionItemIdsToKeep).Delete(&TransactionItem{}); result.Error != nil {
+				return domain.Transaction{}, ToError(result.Error)
+			}
+		} else {
+			// If incoming payload has no existing IDs, remove all previously existing items
+			if result := db.Table("transaction_items").Where("transaction_id = ?", id).Delete(&TransactionItem{}); result.Error != nil {
+				return domain.Transaction{}, ToError(result.Error)
+			}
 		}
 	}
 
-	if len(transactionItemIdsToKeep) > 0 {
-		// delete items that were present before but are not in the incoming idsToKeep
-		if result := db.Table("transaction_items").Where("transaction_id = ? AND id NOT IN ?", id, transactionItemIdsToKeep).Delete(&TransactionItem{}); result.Error != nil {
-			return domain.Transaction{}, ToError(result.Error)
+	if dbTransaction.TransactionCoupons != nil {
+		// Determine which existing coupon IDs to keep (those that are present in the incoming payload)
+		transactionCouponIdsToKeep := []int64{}
+		for _, it := range dbTransaction.TransactionCoupons {
+			if it.Id > 0 {
+				transactionCouponIdsToKeep = append(transactionCouponIdsToKeep, it.Id)
+			}
 		}
-	} else {
-		// If incoming payload has no existing IDs, remove all previously existing items
-		if result := db.Table("transaction_items").Where("transaction_id = ?", id).Delete(&TransactionItem{}); result.Error != nil {
-			return domain.Transaction{}, ToError(result.Error)
-		}
-	}
 
-	// Determine which existing coupon IDs to keep (those that are present in the incoming payload)
-	transactionCouponIdsToKeep := []int64{}
-	for _, it := range dbTransaction.TransactionCoupons {
-		if it.Id > 0 {
-			transactionCouponIdsToKeep = append(transactionCouponIdsToKeep, it.Id)
-		}
-	}
-
-	if len(transactionCouponIdsToKeep) > 0 {
-		// delete coupons that were present before but are not in the incoming idsToKeep
-		if result := db.Table("transaction_coupons").Where("transaction_id = ? AND id NOT IN ?", id, transactionCouponIdsToKeep).Delete(&TransactionCoupon{}); result.Error != nil {
-			return domain.Transaction{}, ToError(result.Error)
-		}
-	} else {
-		// If incoming payload has no existing IDs, remove all previously existing items
-		if result := db.Table("transaction_coupons").Where("transaction_id = ?", id).Delete(&TransactionCoupon{}); result.Error != nil {
-			return domain.Transaction{}, ToError(result.Error)
+		if len(transactionCouponIdsToKeep) > 0 {
+			// delete coupons that were present before but are not in the incoming idsToKeep
+			if result := db.Table("transaction_coupons").Where("transaction_id = ? AND id NOT IN ?", id, transactionCouponIdsToKeep).Delete(&TransactionCoupon{}); result.Error != nil {
+				return domain.Transaction{}, ToError(result.Error)
+			}
+		} else {
+			// If incoming payload has no existing IDs, remove all previously existing items
+			if result := db.Table("transaction_coupons").Where("transaction_id = ?", id).Delete(&TransactionCoupon{}); result.Error != nil {
+				return domain.Transaction{}, ToError(result.Error)
+			}
 		}
 	}
 
