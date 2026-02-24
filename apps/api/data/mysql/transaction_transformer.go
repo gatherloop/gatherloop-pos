@@ -27,11 +27,18 @@ func ToTransactionDB(domainTransaction domain.Transaction) Transaction {
 }
 
 func ToTransactionDomain(dbTransaction Transaction) domain.Transaction {
+	var wallet *domain.Wallet
+	if dbTransaction.Wallet != nil {
+		w := ToWalletDomain(*dbTransaction.Wallet)
+		wallet = &w
+	}
+
 	return domain.Transaction{
 		Id:                 dbTransaction.Id,
 		Name:               dbTransaction.Name,
 		OrderNumber:        dbTransaction.OrderNumber,
 		WalletId:           dbTransaction.WalletId,
+		Wallet:             wallet,
 		Total:              dbTransaction.Total,
 		TotalIncome:        dbTransaction.TotalIncome,
 		PaidAmount:         dbTransaction.PaidAmount,
