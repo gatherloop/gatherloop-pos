@@ -5,7 +5,7 @@ import { useToastController } from '@tamagui/toast';
 import { useRouter } from 'solito/router';
 
 export const useAuthLogoutController = (usecase: AuthLogoutUsecase) => {
-  const { state, dispatch } = useController(usecase, undefined);
+  const { state, dispatch } = useController(usecase);
   const router = useRouter();
   const toast = useToastController();
 
