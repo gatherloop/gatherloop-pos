@@ -1,14 +1,14 @@
 import {
   ApiWalletRepository,
-  CalculationCreateScreen,
-  CalculationCreateScreenProps,
+  CalculationCreate,
+  CalculationCreateProps,
 } from '@gatherloop-pos/ui';
 import { GetServerSideProps } from 'next';
 import { QueryClient } from '@tanstack/react-query';
 
-export const getServerSideProps: GetServerSideProps<
-  CalculationCreateScreenProps
-> = async (ctx) => {
+export const getServerSideProps: GetServerSideProps<CalculationCreateProps> = async (
+  ctx
+) => {
   const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
   if (!isLoggedIn) {
     return {
@@ -30,4 +30,4 @@ export const getServerSideProps: GetServerSideProps<
   };
 };
 
-export default CalculationCreateScreen;
+export default CalculationCreate;

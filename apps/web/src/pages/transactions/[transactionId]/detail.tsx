@@ -1,13 +1,13 @@
 import {
   ApiTransactionRepository,
-  TransactionDetailScreen,
-  TransactionDetailScreenProps,
+  TransactionDetail,
+  TransactionDetailProps,
 } from '@gatherloop-pos/ui';
 import { GetServerSideProps } from 'next';
 import { QueryClient } from '@tanstack/react-query';
 
 export const getServerSideProps: GetServerSideProps<
-  TransactionDetailScreenProps,
+  TransactionDetailProps,
   { transactionId: string }
 > = async (ctx) => {
   const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
@@ -31,4 +31,4 @@ export const getServerSideProps: GetServerSideProps<
   };
 };
 
-export default TransactionDetailScreen;
+export default TransactionDetail;

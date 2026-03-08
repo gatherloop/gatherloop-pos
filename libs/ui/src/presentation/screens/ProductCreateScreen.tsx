@@ -1,36 +1,32 @@
 import { ScrollView } from 'tamagui';
 import { ProductFormView, Layout } from '../components';
-import { useRouter } from 'solito/router';
-import { useEffect } from 'react';
-import {
-  useAuthLogoutController,
-  useProductCreateController,
-} from '../controllers';
-import { AuthLogoutUsecase, ProductCreateUsecase } from '../../domain';
+import { ProductForm, Variant } from '../../domain';
+import { UseFormReturn } from 'react-hook-form';
 
 export type ProductCreateScreenProps = {
-  productCreateUsecase: ProductCreateUsecase;
-  authLogoutUsecase: AuthLogoutUsecase;
+  form: UseFormReturn<ProductForm>;
+  onSubmit: (values: ProductForm) => void;
+  isSubmitDisabled: boolean;
+  onRetryButtonPress: () => void;
+  variant: { type: 'loaded' } | { type: 'loading' } | { type: 'error' };
+  categorySelectOptions: { label: string; value: number }[];
+  variants: Variant[];
+  onLogoutPress: () => void;
 };
 
 export const ProductCreateScreen = (props: ProductCreateScreenProps) => {
-  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
-
-  const productCreateController = useProductCreateController(
-    props.productCreateUsecase
-  );
-
-  const router = useRouter();
-
-  useEffect(() => {
-    if (productCreateController.state.type === 'submitSuccess')
-      router.push('/products');
-  }, [productCreateController.state.type, router]);
-
   return (
-    <Layout {...authLogoutController} title="Create Product" showBackButton>
+    <Layout title="Create Product" showBackButton onLogoutPress={props.onLogoutPress}>
       <ScrollView>
-        <ProductFormView {...productCreateController} variants={[]} />
+        <ProductFormView
+          form={props.form}
+          onSubmit={props.onSubmit}
+          isSubmitDisabled={props.isSubmitDisabled}
+          onRetryButtonPress={props.onRetryButtonPress}
+          variant={props.variant}
+          categorySelectOptions={props.categorySelectOptions}
+          variants={props.variants}
+        />
       </ScrollView>
     </Layout>
   );

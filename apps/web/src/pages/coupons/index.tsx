@@ -1,14 +1,14 @@
 import {
   ApiCouponRepository,
-  CouponListScreen,
-  CouponListScreenProps,
+  CouponList,
+  CouponListProps,
 } from '@gatherloop-pos/ui';
 import { GetServerSideProps } from 'next';
 import { QueryClient } from '@tanstack/react-query';
 
-export const getServerSideProps: GetServerSideProps<
-  CouponListScreenProps
-> = async (ctx) => {
+export const getServerSideProps: GetServerSideProps<CouponListProps> = async (
+  ctx
+) => {
   const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
   if (!isLoggedIn) {
     return {
@@ -30,4 +30,4 @@ export const getServerSideProps: GetServerSideProps<
   };
 };
 
-export default CouponListScreen;
+export default CouponList;

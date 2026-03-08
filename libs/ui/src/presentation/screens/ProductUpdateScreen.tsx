@@ -1,80 +1,47 @@
 import { ScrollView } from 'tamagui';
 import { ProductFormView, Layout, VariantDeleteAlert } from '../components';
-import { useRouter } from 'solito/router';
-import { useEffect } from 'react';
-import {
-  useAuthLogoutController,
-  useProductUpdateController,
-  useVariantDeleteController,
-} from '../controllers';
-import {
-  AuthLogoutUsecase,
-  ProductUpdateUsecase,
-  Variant,
-  VariantDeleteUsecase,
-} from '../../domain';
+import { ProductForm, Variant } from '../../domain';
+import { UseFormReturn } from 'react-hook-form';
 
 export type ProductUpdateScreenProps = {
-  productUpdateUsecase: ProductUpdateUsecase;
-  variantDeleteUsecase: VariantDeleteUsecase;
-  authLogoutUsecase: AuthLogoutUsecase;
+  form: UseFormReturn<ProductForm>;
+  onSubmit: (values: ProductForm) => void;
+  isSubmitDisabled: boolean;
+  onRetryButtonPress: () => void;
+  variant: { type: 'loaded' } | { type: 'loading' } | { type: 'error' };
+  categorySelectOptions: { label: string; value: number }[];
+  variants: Variant[];
+  onVariantDeleteMenuPress: (variant: Variant) => void;
+  onVariantEditMenuPress: (variant: Variant) => void;
+  onVariantPress: (variant: Variant) => void;
+  onVariantCreatePress: () => void;
+  variantDeleteAlert: {
+    isOpen: boolean;
+    onCancel: () => void;
+    onConfirm: () => void;
+    isButtonDisabled: boolean;
+  };
+  onLogoutPress: () => void;
 };
 
 export const ProductUpdateScreen = (props: ProductUpdateScreenProps) => {
-  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
-
-  const productUpdateController = useProductUpdateController(
-    props.productUpdateUsecase
-  );
-
-  const variantDeleteController = useVariantDeleteController(
-    props.variantDeleteUsecase
-  );
-
-  const router = useRouter();
-
-  useEffect(() => {
-    if (productUpdateController.state.type === 'submitSuccess')
-      router.push('/products');
-  }, [productUpdateController.state.type, router]);
-
-  useEffect(() => {
-    if (variantDeleteController.state.type === 'deletingSuccess')
-      productUpdateController.dispatch({ type: 'FETCH' });
-  }, [productUpdateController, variantDeleteController.state.type]);
-
-  const onVariantDeleteMenuPress = (variant: Variant) => {
-    variantDeleteController.dispatch({
-      type: 'SHOW_CONFIRMATION',
-      variantId: variant.id,
-    });
-  };
-
-  const onVariantEditMenuPress = (variant: Variant) => {
-    router.push(`/products/${variant.product.id}/variants/${variant.id}`);
-  };
-
-  const onVariantPress = (variant: Variant) => {
-    router.push(`/products/${variant.product.id}/variants/${variant.id}`);
-  };
-
-  const onVariantCreatePress = () => {
-    router.push(
-      `/products/${props.productUpdateUsecase.params.productId}/variants/create`
-    );
-  };
-
   return (
-    <Layout {...authLogoutController} title="Update Product" showBackButton>
+    <Layout title="Update Product" showBackButton onLogoutPress={props.onLogoutPress}>
       <ScrollView>
         <ProductFormView
-          {...productUpdateController}
-          onVariantPress={onVariantPress}
-          onVariantDeleteMenuPress={onVariantDeleteMenuPress}
-          onVariantEditMenuPress={onVariantEditMenuPress}
-          onVariantCreatePress={onVariantCreatePress}
+          form={props.form}
+          onSubmit={props.onSubmit}
+          isSubmitDisabled={props.isSubmitDisabled}
+          onRetryButtonPress={props.onRetryButtonPress}
+          variant={props.variant}
+          categorySelectOptions={props.categorySelectOptions}
+          variants={props.variants}
+          onVariantPress={props.onVariantPress}
+          onVariantDeleteMenuPress={props.onVariantDeleteMenuPress}
+          onVariantEditMenuPress={props.onVariantEditMenuPress}
+          onVariantCreatePress={props.onVariantCreatePress}
         />
-        <VariantDeleteAlert {...variantDeleteController} />
+        <VariantDeleteAlert {...props.variantDeleteAlert} />
       </ScrollView>
     </Layout>
   );

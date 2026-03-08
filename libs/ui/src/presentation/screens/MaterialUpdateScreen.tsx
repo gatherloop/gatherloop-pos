@@ -1,35 +1,28 @@
 import { ScrollView } from 'tamagui';
 import { MaterialFormView, Layout } from '../components';
-import { useRouter } from 'solito/router';
-import { useEffect } from 'react';
-import {
-  useAuthLogoutController,
-  useMaterialUpdateController,
-} from '../controllers';
-import { AuthLogoutUsecase, MaterialUpdateUsecase } from '../../domain';
+import { MaterialForm } from '../../domain';
+import { UseFormReturn } from 'react-hook-form';
 
 export type MaterialUpdateScreenProps = {
-  materialUpdateUsecase: MaterialUpdateUsecase;
-  authLogoutUsecase: AuthLogoutUsecase;
+  form: UseFormReturn<MaterialForm>;
+  onSubmit: (values: MaterialForm) => void;
+  isSubmitDisabled: boolean;
+  onLogoutPress: () => void;
 };
 
 export const MaterialUpdateScreen = (props: MaterialUpdateScreenProps) => {
-  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
-
-  const materialUpdateController = useMaterialUpdateController(
-    props.materialUpdateUsecase
-  );
-  const router = useRouter();
-
-  useEffect(() => {
-    if (materialUpdateController.state.type === 'submitSuccess')
-      router.push('/materials');
-  }, [materialUpdateController.state.type, router]);
-
   return (
-    <Layout {...authLogoutController} title="Update Material" showBackButton>
+    <Layout
+      title="Update Material"
+      showBackButton
+      onLogoutPress={props.onLogoutPress}
+    >
       <ScrollView>
-        <MaterialFormView {...materialUpdateController} />
+        <MaterialFormView
+          form={props.form}
+          onSubmit={props.onSubmit}
+          isSubmitDisabled={props.isSubmitDisabled}
+        />
       </ScrollView>
     </Layout>
   );

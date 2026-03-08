@@ -2,8 +2,8 @@ import {
   ApiBudgetRepository,
   ApiExpenseRepository,
   ApiWalletRepository,
-  ExpenseListScreen,
-  ExpenseListScreenProps,
+  ExpenseList,
+  ExpenseListProps,
   getUrlFromCtx,
   UrlExpenseListQueryRepository,
 } from '@gatherloop-pos/ui';
@@ -11,7 +11,7 @@ import { GetServerSideProps } from 'next';
 import { QueryClient } from '@tanstack/react-query';
 
 export const getServerSideProps: GetServerSideProps<
-  ExpenseListScreenProps
+  ExpenseListProps
 > = async (ctx) => {
   const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
   if (!isLoggedIn) {
@@ -77,4 +77,4 @@ export const getServerSideProps: GetServerSideProps<
   };
 };
 
-export default ExpenseListScreen;
+export default ExpenseList;

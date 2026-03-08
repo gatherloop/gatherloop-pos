@@ -1,14 +1,14 @@
 import {
   ApiBudgetRepository,
-  BudgetListScreen,
-  BudgetListScreenProps,
+  BudgetList,
+  BudgetListProps,
 } from '@gatherloop-pos/ui';
 import { QueryClient } from '@tanstack/react-query';
 import { GetServerSideProps } from 'next';
 
-export const getServerSideProps: GetServerSideProps<
-  BudgetListScreenProps
-> = async (ctx) => {
+export const getServerSideProps: GetServerSideProps<BudgetListProps> = async (
+  ctx
+) => {
   const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
   if (!isLoggedIn) {
     return {
@@ -25,4 +25,4 @@ export const getServerSideProps: GetServerSideProps<
   return { props: { budgetListParams: { budgets } } };
 };
 
-export default BudgetListScreen;
+export default BudgetList;

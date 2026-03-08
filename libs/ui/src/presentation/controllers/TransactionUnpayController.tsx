@@ -17,24 +17,8 @@ export const useTransactionUnpayController = (
     }
   }, [state.type, toast]);
 
-  const onConfirm = () => dispatch({ type: 'UNPAY' });
-
-  const isOpen =
-    state.type === 'shown' ||
-    state.type === 'unpaying' ||
-    state.type === 'unpayingSuccess' ||
-    state.type === 'unpayingError';
-
-  const isButtonDisabled = state.type === 'unpaying';
-
-  const onCancel = () => dispatch({ type: 'HIDE_CONFIRMATION' });
-
   return {
     state,
     dispatch,
-    onConfirm,
-    isOpen,
-    onCancel,
-    isButtonDisabled,
   };
 };

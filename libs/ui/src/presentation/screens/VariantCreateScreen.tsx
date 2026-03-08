@@ -1,63 +1,76 @@
 import { ScrollView } from 'tamagui';
-import { VariantFormView, Layout, MaterialList } from '../components';
-import { useRouter } from 'solito/router';
-import { useEffect } from 'react';
 import {
-  useAuthLogoutController,
-  useMaterialListController,
-  useVariantCreateController,
-} from '../controllers';
-import {
-  AuthLogoutUsecase,
-  MaterialListUsecase,
-  VariantCreateUsecase,
-} from '../../domain';
+  VariantFormView,
+  Layout,
+  VariantFormViewProps,
+  MaterialList,
+  MaterialListProps,
+} from '../components';
+import { Product, Material, VariantForm } from '../../domain';
+import { UseFormReturn, UseFieldArrayReturn } from 'react-hook-form';
 
 export type VariantCreateScreenProps = {
-  variantCreateUsecase: VariantCreateUsecase;
-  materialListUsecase: MaterialListUsecase;
-  authLogoutUsecase: AuthLogoutUsecase;
+  form: UseFormReturn<VariantForm>;
+  onSubmit: (values: VariantForm) => void;
+  isSubmitDisabled: boolean;
+  onLogoutPress: () => void;
+  onRetryButtonPress: () => void;
+  isMaterialSheetOpen: boolean;
+  onMaterialSheetOpenChange: (open: boolean) => void;
+  onAddMaterial: (
+    newMaterial: Material,
+    fieldArray: UseFieldArrayReturn<VariantForm, 'materials', 'key'>
+  ) => void;
+  onRemoveMaterial: (
+    newMaterial: Material,
+    fieldArray: UseFieldArrayReturn<VariantForm, 'materials', 'key'>
+  ) => void;
+  variant: VariantFormViewProps['variant'];
+  product: Product | null;
+  materialList: {
+    currentPage: number;
+    itemPerPage: number;
+    onPageChange: (page: number) => void;
+    onRetryButtonPress: () => void;
+    onSearchValueChange: (value: string) => void;
+    searchValue: string;
+    totalItem: number;
+    variant: MaterialListProps['variant'];
+  };
 };
 
 export const VariantCreateScreen = (props: VariantCreateScreenProps) => {
-  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
-
-  const variantCreateController = useVariantCreateController(
-    props.variantCreateUsecase
-  );
-  const materialListController = useMaterialListController(
-    props.materialListUsecase
-  );
-
-  const router = useRouter();
-
-  useEffect(() => {
-    if (variantCreateController.state.type === 'submitSuccess')
-      router.push(
-        `/products/${variantCreateController.state.values.productId}`
-      );
-  }, [
-    variantCreateController.state.type,
-    router,
-    variantCreateController.state.values.productId,
-  ]);
-
   return (
     <Layout
-      {...authLogoutController}
-      title={`Create ${variantCreateController.product?.name} Variant`}
+      title={`Create ${props.product?.name} Variant`}
       showBackButton
+      onLogoutPress={props.onLogoutPress}
     >
       <ScrollView>
         <VariantFormView
-          {...variantCreateController}
+          form={props.form}
+          onSubmit={props.onSubmit}
+          isSubmitDisabled={props.isSubmitDisabled}
+          isMaterialSheetOpen={props.isMaterialSheetOpen}
+          onMaterialSheetOpenChange={props.onMaterialSheetOpenChange}
+          onRetryButtonPress={props.onRetryButtonPress}
+          onRemoveMaterial={props.onRemoveMaterial}
+          product={props.product}
+          variant={props.variant}
           MaterialList={(fieldArray) => (
             <MaterialList
-              {...materialListController}
-              onItemPress={(material) =>
-                variantCreateController.onAddMaterial(material, fieldArray)
-              }
               isSearchAutoFocus
+              currentPage={props.materialList.currentPage}
+              itemPerPage={props.materialList.itemPerPage}
+              onPageChange={props.materialList.onPageChange}
+              onRetryButtonPress={props.materialList.onRetryButtonPress}
+              onSearchValueChange={props.materialList.onSearchValueChange}
+              searchValue={props.materialList.searchValue}
+              totalItem={props.materialList.totalItem}
+              variant={props.materialList.variant}
+              onItemPress={(material) =>
+                props.onAddMaterial(material, fieldArray)
+              }
             />
           )}
         />

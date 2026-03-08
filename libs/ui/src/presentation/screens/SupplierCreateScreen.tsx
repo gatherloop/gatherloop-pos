@@ -1,34 +1,24 @@
 import { ScrollView } from 'tamagui';
 import { SupplierFormView, Layout } from '../components';
-import { useRouter } from 'solito/router';
-import { useEffect } from 'react';
-import {
-  useAuthLogoutController,
-  useSupplierCreateController,
-} from '../controllers';
-import { AuthLogoutUsecase, SupplierCreateUsecase } from '../../domain';
+import { SupplierForm } from '../../domain';
+import { UseFormReturn } from 'react-hook-form';
 
 export type SupplierCreateScreenProps = {
-  supplierCreateUsecase: SupplierCreateUsecase;
-  authLogoutUsecase: AuthLogoutUsecase;
+  form: UseFormReturn<SupplierForm>;
+  onSubmit: (values: SupplierForm) => void;
+  isSubmitDisabled: boolean;
+  onLogoutPress: () => void;
 };
 
 export const SupplierCreateScreen = (props: SupplierCreateScreenProps) => {
-  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
-  const supplierCreateController = useSupplierCreateController(
-    props.supplierCreateUsecase
-  );
-  const router = useRouter();
-
-  useEffect(() => {
-    if (supplierCreateController.state.type === 'submitSuccess')
-      router.push('/suppliers');
-  }, [supplierCreateController.state.type, router]);
-
   return (
-    <Layout {...authLogoutController} title="Create Supplier" showBackButton>
+    <Layout title="Create Supplier" showBackButton onLogoutPress={props.onLogoutPress}>
       <ScrollView>
-        <SupplierFormView {...supplierCreateController} />
+        <SupplierFormView
+          form={props.form}
+          onSubmit={props.onSubmit}
+          isSubmitDisabled={props.isSubmitDisabled}
+        />
       </ScrollView>
     </Layout>
   );

@@ -1,15 +1,15 @@
 import {
   ApiRentalRepository,
   getUrlFromCtx,
-  RentalListScreen,
-  RentalListScreenProps,
+  RentalList,
+  RentalListProps,
   UrlRentalListQueryRepository,
 } from '@gatherloop-pos/ui';
 import { QueryClient } from '@tanstack/react-query';
 import { GetServerSideProps } from 'next';
 
 export const getServerSideProps: GetServerSideProps<
-  RentalListScreenProps
+  RentalListProps
 > = async (ctx) => {
   const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
   if (!isLoggedIn) {
@@ -60,4 +60,4 @@ export const getServerSideProps: GetServerSideProps<
   };
 };
 
-export default RentalListScreen;
+export default RentalList;

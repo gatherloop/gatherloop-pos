@@ -1,37 +1,39 @@
 import { ScrollView } from 'tamagui';
-import { Layout, CouponFormView } from '../components';
-import { useRouter } from 'solito/router';
-import { useEffect } from 'react';
 import {
-  useAuthLogoutController,
-  useCouponCreateController,
-} from '../controllers';
-import { AuthLogoutUsecase, CouponCreateUsecase } from '../../domain';
+  CouponFormView,
+  CouponFormViewProps,
+  Layout,
+} from '../components';
+import { CouponForm } from '../../domain';
+import { UseFormReturn } from 'react-hook-form';
 
 export type CouponCreateScreenProps = {
-  couponCreateUsecase: CouponCreateUsecase;
-  authLogoutUsecase: AuthLogoutUsecase;
+  onLogoutPress: () => void;
+  form: UseFormReturn<CouponForm>;
+  isSubmitDisabled: boolean;
+  onSubmit: (values: CouponForm) => void;
+  variant: CouponFormViewProps['variant'];
 };
 
-export const CouponCreateScreen = (props: CouponCreateScreenProps) => {
-  const couponCreateController = useCouponCreateController(
-    props.couponCreateUsecase
-  );
-  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
-
-  const router = useRouter();
-
-  useEffect(() => {
-    if (couponCreateController.state.type === 'submitSuccess')
-      router.push('/coupons');
-  }, [couponCreateController.state.type, router]);
-
+export const CouponCreateScreen = ({
+  form,
+  isSubmitDisabled,
+  onLogoutPress,
+  onSubmit,
+  variant,
+}: CouponCreateScreenProps) => {
   return (
-    <Layout title="Create Coupon" showBackButton {...authLogoutController}>
+    <Layout
+      onLogoutPress={onLogoutPress}
+      title="Create Coupon"
+      showBackButton
+    >
       <ScrollView>
         <CouponFormView
-          {...couponCreateController}
-          variant={{ type: 'loaded' }}
+          form={form}
+          isSubmitDisabled={isSubmitDisabled}
+          onSubmit={onSubmit}
+          variant={variant}
         />
       </ScrollView>
     </Layout>

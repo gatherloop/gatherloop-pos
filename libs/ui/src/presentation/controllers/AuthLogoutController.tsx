@@ -5,9 +5,8 @@ import { useToastController } from '@tamagui/toast';
 import { useRouter } from 'solito/router';
 
 export const useAuthLogoutController = (usecase: AuthLogoutUsecase) => {
-  const { state, dispatch } = useController(usecase);
+  const { state, dispatch } = useController(usecase, undefined);
   const router = useRouter();
-
   const toast = useToastController();
 
   useEffect(() => {
@@ -17,16 +16,8 @@ export const useAuthLogoutController = (usecase: AuthLogoutUsecase) => {
     }
   }, [toast, state.type, router]);
 
-  const onLogoutPress = () => {
-    dispatch({ type: 'LOGOUT' });
-  };
-
-  const isLoading = state.type === 'loading';
-
   return {
     state,
     dispatch,
-    isLoading,
-    onLogoutPress,
   };
 };

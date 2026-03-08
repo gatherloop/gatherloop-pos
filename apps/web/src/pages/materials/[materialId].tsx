@@ -1,13 +1,13 @@
 import {
   ApiMaterialRepository,
-  MaterialUpdateScreen,
-  MaterialUpdateScreenProps,
+  MaterialUpdate,
+  MaterialUpdateProps,
 } from '@gatherloop-pos/ui';
 import { GetServerSideProps } from 'next';
 import { QueryClient } from '@tanstack/react-query';
 
 export const getServerSideProps: GetServerSideProps<
-  MaterialUpdateScreenProps,
+  MaterialUpdateProps,
   { materialId: string }
 > = async (ctx) => {
   const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
@@ -31,4 +31,4 @@ export const getServerSideProps: GetServerSideProps<
   return { props: { materialUpdateParams: { material, materialId } } };
 };
 
-export default MaterialUpdateScreen;
+export default MaterialUpdate;

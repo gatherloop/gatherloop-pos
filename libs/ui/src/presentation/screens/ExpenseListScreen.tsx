@@ -1,63 +1,68 @@
 import { Button } from 'tamagui';
-import { ExpenseList, ExpenseDeleteAlert, Layout } from '../components';
+import {
+  ExpenseList,
+  ExpenseDeleteAlert,
+  Layout,
+  ExpenseListProps,
+} from '../components';
 import { Link } from 'solito/link';
 import { Plus } from '@tamagui/lucide-icons';
-import {
-  useAuthLogoutController,
-  useExpenseDeleteController,
-  useExpenseListController,
-} from '../controllers';
-import {
-  AuthLogoutUsecase,
-  Expense,
-  ExpenseDeleteUsecase,
-  ExpenseListUsecase,
-} from '../../domain';
-import { useRouter } from 'solito/router';
-import { useEffect } from 'react';
+import { Expense } from '../../domain';
 
 export type ExpenseListScreenProps = {
-  expenseListUsecase: ExpenseListUsecase;
-  expenseDeleteUsecase: ExpenseDeleteUsecase;
-  authLogoutUsecase: AuthLogoutUsecase;
+  onLogoutPress: () => void;
+  onEditMenuPress: (expense: Expense) => void;
+  onDeleteMenuPress: (expense: Expense) => void;
+  onItemPress: (expense: Expense) => void;
+  onRetryButtonPress: () => void;
+  variant: ExpenseListProps['variant'];
+  expenses: Expense[];
+  searchValue: string;
+  onSearchValueChange: (value: string) => void;
+  currentPage: number;
+  onPageChange: (page: number) => void;
+  totalItem: number;
+  itemPerPage: number;
+  wallets: ExpenseListProps['wallets'];
+  walletId: number | null;
+  onWalletIdChange: (walletId: number | null) => void;
+  budgets: ExpenseListProps['budgets'];
+  budgetId: number | null;
+  onBudgetIdChange: (budgetId: number | null) => void;
+  isDeleteModalOpen: boolean;
+  isDeleteButtonDisabled: boolean;
+  onDeleteCancel: () => void;
+  onDeleteButtonConfirmPress: () => void;
 };
 
-export const ExpenseListScreen = (props: ExpenseListScreenProps) => {
-  const router = useRouter();
-
-  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
-
-  const expenseListController = useExpenseListController(
-    props.expenseListUsecase
-  );
-  const expenseDeleteController = useExpenseDeleteController(
-    props.expenseDeleteUsecase
-  );
-
-  useEffect(() => {
-    if (expenseDeleteController.state.type === 'deletingSuccess') {
-      expenseListController.dispatch({ type: 'FETCH' });
-    }
-  }, [expenseDeleteController.state.type, expenseListController]);
-
-  const onDeleteMenuPress = (expense: Expense) => {
-    expenseDeleteController.dispatch({
-      type: 'SHOW_CONFIRMATION',
-      expenseId: expense.id,
-    });
-  };
-
-  const onEditMenuPress = (expense: Expense) => {
-    router.push(`/expenses/${expense.id}`);
-  };
-
-  const onItemPress = (expense: Expense) => {
-    router.push(`/expenses/${expense.id}`);
-  };
-
+export const ExpenseListScreen = ({
+  onLogoutPress,
+  onEditMenuPress,
+  onDeleteMenuPress,
+  onItemPress,
+  onRetryButtonPress,
+  variant,
+  expenses,
+  searchValue,
+  onSearchValueChange,
+  currentPage,
+  onPageChange,
+  totalItem,
+  itemPerPage,
+  wallets,
+  walletId,
+  onWalletIdChange,
+  budgets,
+  budgetId,
+  onBudgetIdChange,
+  isDeleteModalOpen,
+  isDeleteButtonDisabled,
+  onDeleteCancel,
+  onDeleteButtonConfirmPress,
+}: ExpenseListScreenProps) => {
   return (
     <Layout
-      {...authLogoutController}
+      onLogoutPress={onLogoutPress}
       title="Expenses"
       rightActionItem={
         <Link href="/expenses/create">
@@ -66,12 +71,31 @@ export const ExpenseListScreen = (props: ExpenseListScreenProps) => {
       }
     >
       <ExpenseList
-        {...expenseListController}
+        variant={variant}
+        expenses={expenses}
+        searchValue={searchValue}
+        onSearchValueChange={onSearchValueChange}
+        currentPage={currentPage}
+        onPageChange={onPageChange}
+        totalItem={totalItem}
+        itemPerPage={itemPerPage}
+        wallets={wallets}
+        walletId={walletId}
+        onWalletIdChange={onWalletIdChange}
+        budgets={budgets}
+        budgetId={budgetId}
+        onBudgetIdChange={onBudgetIdChange}
+        onRetryButtonPress={onRetryButtonPress}
         onDeleteMenuPress={onDeleteMenuPress}
         onEditMenuPress={onEditMenuPress}
         onItemPress={onItemPress}
       />
-      <ExpenseDeleteAlert {...expenseDeleteController} />
+      <ExpenseDeleteAlert
+        isOpen={isDeleteModalOpen}
+        isButtonDisabled={isDeleteButtonDisabled}
+        onCancel={onDeleteCancel}
+        onButtonConfirmPress={onDeleteButtonConfirmPress}
+      />
     </Layout>
   );
 };

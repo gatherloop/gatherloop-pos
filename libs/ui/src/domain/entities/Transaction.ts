@@ -2,7 +2,7 @@ import { Coupon, CouponType } from './Coupon';
 import { Variant } from './Variant';
 import { Wallet } from './Wallet';
 
-type TransactionItem = {
+export type TransactionItem = {
   id: number;
   variant: Variant;
   amount: number;
@@ -12,7 +12,7 @@ type TransactionItem = {
   note: string;
 };
 
-type TransactionCoupon = {
+export type TransactionCoupon = {
   id: number;
   coupon: Coupon;
   type: CouponType;

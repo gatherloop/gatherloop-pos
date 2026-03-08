@@ -8,174 +8,94 @@ import {
 } from '../components';
 import { Link } from 'solito/link';
 import { Plus } from '@tamagui/lucide-icons';
-import {
-  useAuthLogoutController,
-  useTransactionDeleteController,
-  useTransactionListController,
-  useTransactionPayController,
-  useTransactionUnpayController,
-} from '../controllers';
-import { useEffect } from 'react';
-import { useRouter } from 'solito/router';
-import {
-  AuthLogoutUsecase,
-  Transaction,
-  TransactionDeleteUsecase,
-  TransactionListUsecase,
-  TransactionPayUsecase,
-  TransactionUnpayUsecase,
-} from '../../domain';
-import { usePrinter } from '../../utils';
-import dayjs from 'dayjs';
+import { Transaction, Wallet } from '../../domain';
+import { UseFormReturn } from 'react-hook-form';
 
 export type TransactionListScreenProps = {
-  transactionListUsecase: TransactionListUsecase;
-  transactionDeleteUsecase: TransactionDeleteUsecase;
-  transactionPayUsecase: TransactionPayUsecase;
-  transactionUnpayUsecase: TransactionUnpayUsecase;
-  authLogoutUsecase: AuthLogoutUsecase;
+  onLogoutPress: () => void;
+  onDeleteMenuPress: (transaction: Transaction) => void;
+  onEditMenuPress: (transaction: Transaction) => void;
+  onPayMenuPress: (transaction: Transaction) => void;
+  onUnpayMenuPress: (transaction: Transaction) => void;
+  onItemPress: (transaction: Transaction) => void;
+  onPrintInvoiceMenuPress: (transaction: Transaction) => void;
+  onPrintOrderSlipMenuPress: (transaction: Transaction) => void;
+  onRetryButtonPress: () => void;
+  variant: { type: 'loading' } | { type: 'loaded' } | { type: 'error' };
+  transactions: Transaction[];
+  searchValue: string;
+  onSearchValueChange: (value: string) => void;
+  paymentStatus: 'all' | 'paid' | 'unpaid';
+  onPaymentStatusChange: (paymentStatus: 'all' | 'paid' | 'unpaid') => void;
+  currentPage: number;
+  onPageChange: (page: number) => void;
+  totalItem: number;
+  itemPerPage: number;
+  wallets: Wallet[];
+  walletId: number | null;
+  onWalletIdChange: (walletId: number | null) => void;
+  // Delete alert
+  isDeleteModalOpen: boolean;
+  isDeleteButtonDisabled: boolean;
+  onDeleteCancel: () => void;
+  onDeleteConfirm: () => void;
+  // Pay alert
+  isPayModalOpen: boolean;
+  payForm: UseFormReturn<{ wallet: Wallet; paidAmount: number }>;
+  onPayCancel: () => void;
+  onPaySubmit: (values: { wallet: Wallet; paidAmount: number }) => void;
+  payWalletSelectOptions: { label: string; value: Wallet }[];
+  payTransactionTotal: number;
+  isPayButtonDisabled: boolean;
+  // Unpay alert
+  isUnpayModalOpen: boolean;
+  isUnpayButtonDisabled: boolean;
+  onUnpayCancel: () => void;
+  onUnpayConfirm: () => void;
 };
 
-export const TransactionListScreen = (props: TransactionListScreenProps) => {
-  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
-  const transactionListController = useTransactionListController(
-    props.transactionListUsecase
-  );
-  const transactionDeleteController = useTransactionDeleteController(
-    props.transactionDeleteUsecase
-  );
-  const transactionPayController = useTransactionPayController(
-    props.transactionPayUsecase
-  );
-  const transactionUnpayController = useTransactionUnpayController(
-    props.transactionUnpayUsecase
-  );
-
-  const router = useRouter();
-  const { print } = usePrinter();
-
-  useEffect(() => {
-    if (transactionDeleteController.state.type === 'deletingSuccess') {
-      transactionListController.dispatch({ type: 'FETCH' });
-    }
-  }, [transactionDeleteController.state.type, transactionListController]);
-
-  useEffect(() => {
-    if (transactionPayController.state.type === 'payingSuccess') {
-      transactionListController.dispatch({ type: 'FETCH' });
-    }
-  }, [transactionListController, transactionPayController.state.type]);
-
-  useEffect(() => {
-    if (transactionUnpayController.state.type === 'unpayingSuccess') {
-      transactionListController.dispatch({ type: 'FETCH' });
-    }
-  }, [transactionListController, transactionUnpayController.state.type]);
-
-  const onDeleteMenuPress = (transaction: Transaction) => {
-    transactionDeleteController.dispatch({
-      type: 'SHOW_CONFIRMATION',
-      transactionId: transaction.id,
-    });
-  };
-
-  const onEditMenuPress = (transaction: Transaction) => {
-    const targetPath = transaction.paidAt
-      ? `/transactions/${transaction.id}/detail`
-      : `/transactions/${transaction.id}`;
-    router.push(targetPath);
-  };
-
-  const onPayMenuPress = (transaction: Transaction) => {
-    transactionPayController.dispatch({
-      type: 'SHOW_CONFIRMATION',
-      transactionId: transaction.id,
-      transactionTotal: transaction.total,
-    });
-  };
-
-  const onUnpayMenuPress = (transaction: Transaction) => {
-    transactionUnpayController.dispatch({
-      type: 'SHOW_CONFIRMATION',
-      transactionId: transaction.id,
-    });
-  };
-
-  const onPrintInvoiceMenuPress = (transaction: Transaction) => {
-    print({
-      type: 'INVOICE',
-      transaction: {
-        createdAt: dayjs(transaction.createdAt).format('DD/MM/YYYY HH:mm'),
-        paidAt: transaction.paidAt
-          ? dayjs(transaction.paidAt).format('DD/MM/YYYY HH:mm')
-          : undefined,
-        name: transaction.name,
-        orderNumber: transaction.orderNumber,
-        items: transaction.transactionItems
-          .sort((a, b) =>
-            a.variant.product.name.localeCompare(b.variant.product.name)
-          )
-          .map(({ variant, amount, discountAmount, note }) => ({
-            name: `${variant.product.name} - ${variant.values
-              .map(({ optionValue: { name } }) => name)
-              .join(' - ')}`,
-            price: variant.price,
-            amount,
-            discountAmount,
-            note,
-          })),
-        coupons: transaction.transactionCoupons.map(
-          ({ amount, type, coupon }) => ({
-            amount,
-            type: type === 'fixed' ? 'FIXED' : 'PERCENTAGE',
-            code: coupon.code,
-          })
-        ),
-        isCashless: transaction.wallet?.isCashless ?? false,
-        paidAmount: transaction.paidAmount,
-      },
-    });
-  };
-
-  const onPrintOrderSlipMenuPress = (transaction: Transaction) => {
-    print({
-      type: 'ORDER_SLIP',
-      transaction: {
-        createdAt: dayjs(transaction.createdAt).format('DD/MM/YYYY HH:mm'),
-        paidAt: transaction.paidAt
-          ? dayjs(transaction.paidAt).format('DD/MM/YYYY HH:mm')
-          : undefined,
-        name: transaction.name,
-        orderNumber: transaction.orderNumber,
-        items: transaction.transactionItems
-          .sort((a, b) =>
-            a.variant.product.name.localeCompare(b.variant.product.name)
-          )
-          .map(({ variant, amount, discountAmount, note }) => ({
-            name: `${variant.product.name} - ${variant.values
-              .map(({ optionValue: { name } }) => name)
-              .join(' - ')}`,
-            price: variant.price,
-            amount,
-            discountAmount,
-            note,
-          })),
-        coupons: transaction.transactionCoupons.map(
-          ({ amount, type, coupon }) => ({
-            amount,
-            type: type === 'fixed' ? 'FIXED' : 'PERCENTAGE',
-            code: coupon.code,
-          })
-        ),
-        isCashless: transaction.wallet?.isCashless ?? false,
-        paidAmount: transaction.paidAmount,
-      },
-    });
-  };
-
+export const TransactionListScreen = ({
+  onLogoutPress,
+  onDeleteMenuPress,
+  onEditMenuPress,
+  onPayMenuPress,
+  onUnpayMenuPress,
+  onItemPress,
+  onPrintInvoiceMenuPress,
+  onPrintOrderSlipMenuPress,
+  onRetryButtonPress,
+  variant,
+  transactions,
+  searchValue,
+  onSearchValueChange,
+  paymentStatus,
+  onPaymentStatusChange,
+  currentPage,
+  onPageChange,
+  totalItem,
+  itemPerPage,
+  wallets,
+  walletId,
+  onWalletIdChange,
+  isDeleteModalOpen,
+  isDeleteButtonDisabled,
+  onDeleteCancel,
+  onDeleteConfirm,
+  isPayModalOpen,
+  payForm,
+  onPayCancel,
+  onPaySubmit,
+  payWalletSelectOptions,
+  payTransactionTotal,
+  isPayButtonDisabled,
+  isUnpayModalOpen,
+  isUnpayButtonDisabled,
+  onUnpayCancel,
+  onUnpayConfirm,
+}: TransactionListScreenProps) => {
   return (
     <Layout
-      {...authLogoutController}
+      onLogoutPress={onLogoutPress}
       title="Transactions"
       rightActionItem={
         <Link href="/transactions/create">
@@ -184,18 +104,49 @@ export const TransactionListScreen = (props: TransactionListScreenProps) => {
       }
     >
       <TransactionList
-        {...transactionListController}
-        onDeleteMenuPress={onDeleteMenuPress}
+        searchValue={searchValue}
+        onSearchValueChange={onSearchValueChange}
+        paymentStatus={paymentStatus}
+        onPaymentStatusChange={onPaymentStatusChange}
+        variant={variant}
+        transactions={transactions}
+        currentPage={currentPage}
+        onPageChange={onPageChange}
+        totalItem={totalItem}
+        itemPerPage={itemPerPage}
+        onRetryButtonPress={onRetryButtonPress}
         onEditMenuPress={onEditMenuPress}
+        onDeleteMenuPress={onDeleteMenuPress}
         onPayMenuPress={onPayMenuPress}
         onUnpayMenuPress={onUnpayMenuPress}
-        onItemPress={onEditMenuPress}
         onPrintInvoiceMenuPress={onPrintInvoiceMenuPress}
         onPrintOrderSlipMenuPress={onPrintOrderSlipMenuPress}
+        onItemPress={onItemPress}
+        wallets={wallets}
+        walletId={walletId}
+        onWalletIdChange={onWalletIdChange}
       />
-      <TransactionDeleteAlert {...transactionDeleteController} />
-      <TransactionPaymentAlert {...transactionPayController} />
-      <TransactionUnpayAlert {...transactionUnpayController} />
+      <TransactionDeleteAlert
+        isOpen={isDeleteModalOpen}
+        isButtonDisabled={isDeleteButtonDisabled}
+        onCancel={onDeleteCancel}
+        onButtonConfirmPress={onDeleteConfirm}
+      />
+      <TransactionPaymentAlert
+        isOpen={isPayModalOpen}
+        form={payForm}
+        onSubmit={onPaySubmit}
+        onCancel={onPayCancel}
+        walletSelectOptions={payWalletSelectOptions}
+        transactionTotal={payTransactionTotal}
+        isButtonDisabled={isPayButtonDisabled}
+      />
+      <TransactionUnpayAlert
+        isOpen={isUnpayModalOpen}
+        isButtonDisabled={isUnpayButtonDisabled}
+        onCancel={onUnpayCancel}
+        onConfirm={onUnpayConfirm}
+      />
     </Layout>
   );
 };

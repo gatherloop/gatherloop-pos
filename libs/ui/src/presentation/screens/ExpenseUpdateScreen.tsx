@@ -1,34 +1,49 @@
 import { ScrollView } from 'tamagui';
-import { ExpenseFormView, Layout } from '../components';
 import {
-  useAuthLogoutController,
-  useExpenseUpdateController,
-} from '../controllers';
-import { useEffect } from 'react';
-import { useRouter } from 'solito/router';
-import { AuthLogoutUsecase, ExpenseUpdateUsecase } from '../../domain';
+  ExpenseFormView,
+  ExpenseFormViewProps,
+  Layout,
+} from '../components';
+import { ExpenseForm } from '../../domain';
+import { UseFormReturn } from 'react-hook-form';
 
 export type ExpenseUpdateScreenProps = {
-  expenseUpdateUsecase: ExpenseUpdateUsecase;
-  authLogoutUsecase: AuthLogoutUsecase;
+  onLogoutPress: () => void;
+  form: UseFormReturn<ExpenseForm>;
+  isSubmitDisabled: boolean;
+  onSubmit: (values: ExpenseForm) => void;
+  onRetryButtonPress: () => void;
+  budgetSelectOptions: { label: string; value: number }[];
+  walletSelectOptions: { label: string; value: number }[];
+  variant: ExpenseFormViewProps['variant'];
 };
 
-export const ExpenseUpdateScreen = (props: ExpenseUpdateScreenProps) => {
-  const router = useRouter();
-  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
-  const expenseCreateController = useExpenseUpdateController(
-    props.expenseUpdateUsecase
-  );
-
-  useEffect(() => {
-    if (expenseCreateController.state.type === 'submitSuccess')
-      router.push('/expenses');
-  }, [expenseCreateController.state.type, router]);
-
+export const ExpenseUpdateScreen = ({
+  form,
+  isSubmitDisabled,
+  onLogoutPress,
+  onRetryButtonPress,
+  onSubmit,
+  budgetSelectOptions,
+  walletSelectOptions,
+  variant,
+}: ExpenseUpdateScreenProps) => {
   return (
-    <Layout {...authLogoutController} title="Update Expense" showBackButton>
+    <Layout
+      onLogoutPress={onLogoutPress}
+      title="Update Expense"
+      showBackButton
+    >
       <ScrollView>
-        <ExpenseFormView {...expenseCreateController} />
+        <ExpenseFormView
+          form={form}
+          isSubmitDisabled={isSubmitDisabled}
+          onRetryButtonPress={onRetryButtonPress}
+          onSubmit={onSubmit}
+          budgetSelectOptions={budgetSelectOptions}
+          walletSelectOptions={walletSelectOptions}
+          variant={variant}
+        />
       </ScrollView>
     </Layout>
   );

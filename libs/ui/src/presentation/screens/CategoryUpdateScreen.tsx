@@ -1,31 +1,40 @@
 import { ScrollView } from 'tamagui';
-import { Layout, CategoryFormView } from '../components';
-import { useRouter } from 'solito/router';
-import { useEffect } from 'react';
 import {
-  useAuthLogoutController,
-  useCategoryUpdateController,
-} from '../controllers';
-import { AuthLogoutUsecase, CategoryUpdateUsecase } from '../../domain';
+  CategoryFormView,
+  CategoryFormViewProps,
+  Layout,
+} from '../components';
+import { CategoryForm } from '../../domain';
+import { UseFormReturn } from 'react-hook-form';
 
 export type CategoryUpdateScreenProps = {
-  categoryUpdateUsecase: CategoryUpdateUsecase;
-  authLogoutUsecase: AuthLogoutUsecase;
+  onLogoutPress: () => void;
+  form: UseFormReturn<CategoryForm>;
+  isSubmitDisabled: boolean;
+  onSubmit: (values: CategoryForm) => void;
+  variant: CategoryFormViewProps['variant'];
 };
 
-export const CategoryUpdateScreen = (props: CategoryUpdateScreenProps) => {
-  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
-  const controller = useCategoryUpdateController(props.categoryUpdateUsecase);
-  const router = useRouter();
-
-  useEffect(() => {
-    if (controller.state.type === 'submitSuccess') router.push('/categories');
-  }, [controller.state.type, router]);
-
+export const CategoryUpdateScreen = ({
+  form,
+  isSubmitDisabled,
+  onLogoutPress,
+  onSubmit,
+  variant,
+}: CategoryUpdateScreenProps) => {
   return (
-    <Layout {...authLogoutController} title="Update Category" showBackButton>
+    <Layout
+      onLogoutPress={onLogoutPress}
+      title="Update Category"
+      showBackButton
+    >
       <ScrollView>
-        <CategoryFormView {...controller} />
+        <CategoryFormView
+          form={form}
+          isSubmitDisabled={isSubmitDisabled}
+          onSubmit={onSubmit}
+          variant={variant}
+        />
       </ScrollView>
     </Layout>
   );

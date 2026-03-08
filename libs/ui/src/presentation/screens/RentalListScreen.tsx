@@ -2,48 +2,50 @@ import { Button, XStack } from 'tamagui';
 import { Layout, RentalList, RentalDeleteAlert } from '../components';
 import { Link } from 'solito/link';
 import { Check, Plus } from '@tamagui/lucide-icons';
-import {
-  useAuthLogoutController,
-  useRentalDeleteController,
-  useRentalListController,
-} from '../controllers';
-import { useEffect } from 'react';
-import {
-  AuthLogoutUsecase,
-  Rental,
-  RentalDeleteUsecase,
-  RentalListUsecase,
-} from '../../domain';
+import { CheckoutStatus, Rental } from '../../domain';
 
 export type RentalListScreenProps = {
-  rentalListUsecase: RentalListUsecase;
-  rentalDeleteUsecase: RentalDeleteUsecase;
-  authLogoutUsecase: AuthLogoutUsecase;
+  onLogoutPress: () => void;
+  onDeleteMenuPress: (rental: Rental) => void;
+  onRetryButtonPress: () => void;
+  variant: { type: 'loading' } | { type: 'loaded' } | { type: 'error' };
+  rentals: Rental[];
+  searchValue: string;
+  onSearchValueChange: (value: string) => void;
+  checkoutStatus: CheckoutStatus;
+  onCheckoutStatusChange: (checkoutStatus: CheckoutStatus) => void;
+  currentPage: number;
+  onPageChange: (page: number) => void;
+  totalItem: number;
+  itemPerPage: number;
+  isDeleteModalOpen: boolean;
+  isDeleteButtonDisabled: boolean;
+  onDeleteCancel: () => void;
+  onDeleteConfirm: () => void;
 };
 
-export const RentalListScreen = (props: RentalListScreenProps) => {
-  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
-  const rentalListController = useRentalListController(props.rentalListUsecase);
-  const rentalDeleteController = useRentalDeleteController(
-    props.rentalDeleteUsecase
-  );
-
-  useEffect(() => {
-    if (rentalDeleteController.state.type === 'deletingSuccess') {
-      rentalListController.dispatch({ type: 'FETCH' });
-    }
-  }, [rentalDeleteController.state.type, rentalListController]);
-
-  const onDeleteMenuPress = (rental: Rental) => {
-    rentalDeleteController.dispatch({
-      type: 'SHOW_CONFIRMATION',
-      rentalId: rental.id,
-    });
-  };
-
+export const RentalListScreen = ({
+  onLogoutPress,
+  onDeleteMenuPress,
+  onRetryButtonPress,
+  variant,
+  rentals,
+  searchValue,
+  onSearchValueChange,
+  checkoutStatus,
+  onCheckoutStatusChange,
+  currentPage,
+  onPageChange,
+  totalItem,
+  itemPerPage,
+  isDeleteModalOpen,
+  isDeleteButtonDisabled,
+  onDeleteCancel,
+  onDeleteConfirm,
+}: RentalListScreenProps) => {
   return (
     <Layout
-      {...authLogoutController}
+      onLogoutPress={onLogoutPress}
       title="Rentals"
       rightActionItem={
         <XStack gap="$3">
@@ -61,10 +63,25 @@ export const RentalListScreen = (props: RentalListScreenProps) => {
       }
     >
       <RentalList
-        {...rentalListController}
+        variant={variant}
+        rentals={rentals}
+        searchValue={searchValue}
+        onSearchValueChange={onSearchValueChange}
+        checkoutStatus={checkoutStatus}
+        onCheckoutStatusChange={onCheckoutStatusChange}
+        currentPage={currentPage}
+        onPageChange={onPageChange}
+        totalItem={totalItem}
+        itemPerPage={itemPerPage}
+        onRetryButtonPress={onRetryButtonPress}
         onDeleteMenuPress={onDeleteMenuPress}
       />
-      <RentalDeleteAlert {...rentalDeleteController} />
+      <RentalDeleteAlert
+        isOpen={isDeleteModalOpen}
+        isButtonDisabled={isDeleteButtonDisabled}
+        onCancel={onDeleteCancel}
+        onButtonConfirmPress={onDeleteConfirm}
+      />
     </Layout>
   );
 };

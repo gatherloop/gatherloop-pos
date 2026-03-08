@@ -1,36 +1,52 @@
 import { ScrollView } from 'tamagui';
-import { CalculationFormView, Layout } from '../components';
 import {
-  useAuthLogoutController,
-  useCalculationCreateController,
-} from '../controllers';
-import { useEffect } from 'react';
-import { useRouter } from 'solito/router';
-import { AuthLogoutUsecase, CalculationCreateUsecase } from '../../domain';
+  CalculationFormView,
+  CalculationFormViewProps,
+  Layout,
+} from '../components';
+import { CalculationForm } from '../../domain';
+import { UseFormReturn } from 'react-hook-form';
 
 export type CalculationCreateScreenProps = {
-  calculationCreateUsecase: CalculationCreateUsecase;
-  authLogoutUsecase: AuthLogoutUsecase;
+  onLogoutPress: () => void;
+  form: UseFormReturn<CalculationForm>;
+  getTotalWallet: (totalWallet: number, walletId: number) => number;
+  isSubmitDisabled: boolean;
+  onRetryButtonPress: () => void;
+  onSubmit: (values: CalculationForm) => void;
+  variant: CalculationFormViewProps['variant'];
+  walletSelectOptions: {
+    label: string;
+    value: number;
+  }[];
 };
 
-export const CalculationCreateScreen = (
-  props: CalculationCreateScreenProps
-) => {
-  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
-  const router = useRouter();
-  const calculationCreateController = useCalculationCreateController(
-    props.calculationCreateUsecase
-  );
-
-  useEffect(() => {
-    if (calculationCreateController.state.type === 'submitSuccess')
-      router.push('/calculations');
-  }, [calculationCreateController.state.type, router]);
-
+export const CalculationCreateScreen = ({
+  form,
+  getTotalWallet,
+  isSubmitDisabled,
+  onLogoutPress,
+  onRetryButtonPress,
+  onSubmit,
+  variant,
+  walletSelectOptions,
+}: CalculationCreateScreenProps) => {
   return (
-    <Layout {...authLogoutController} title="Create Calculation" showBackButton>
+    <Layout
+      onLogoutPress={onLogoutPress}
+      title="Create Calculation"
+      showBackButton
+    >
       <ScrollView>
-        <CalculationFormView {...calculationCreateController} />
+        <CalculationFormView
+          form={form}
+          getTotalWallet={getTotalWallet}
+          isSubmitDisabled={isSubmitDisabled}
+          onRetryButtonPress={onRetryButtonPress}
+          onSubmit={onSubmit}
+          variant={variant}
+          walletSelectOptions={walletSelectOptions}
+        />
       </ScrollView>
     </Layout>
   );

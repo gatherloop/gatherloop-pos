@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { SupplierCreateUsecase, SupplierForm } from '../../domain';
+import { SupplierCreateUsecase } from '../../domain';
 import { useController } from './controller';
 import { useToastController } from '@tamagui/toast';
 import { useForm } from 'react-hook-form';
@@ -27,20 +27,9 @@ export const useSupplierCreateController = (usecase: SupplierCreateUsecase) => {
     ),
   });
 
-  const onSubmit = (values: SupplierForm) => {
-    dispatch({ type: 'SUBMIT', values });
-  };
-
-  const isSubmitDisabled =
-    state.type === 'submitting' ||
-    state.type === 'submitError' ||
-    state.type === 'submitSuccess';
-
   return {
     state,
     dispatch,
     form,
-    onSubmit,
-    isSubmitDisabled,
   };
 };

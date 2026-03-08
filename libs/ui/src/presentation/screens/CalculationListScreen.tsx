@@ -4,85 +4,52 @@ import {
   CalculationDeleteAlert,
   Layout,
   CalculationCompleteAlert,
+  CalculationListProps,
 } from '../components';
 import { Link } from 'solito/link';
 import { Plus } from '@tamagui/lucide-icons';
-import {
-  useAuthLogoutController,
-  useCalculationCompleteController,
-  useCalculationDeleteController,
-  useCalculationListController,
-} from '../controllers';
-import {
-  AuthLogoutUsecase,
-  Calculation,
-  CalculationCompleteUsecase,
-  CalculationDeleteUsecase,
-  CalculationListUsecase,
-} from '../../domain';
-import { useRouter } from 'solito/router';
-import { useEffect } from 'react';
+import { Calculation } from '../../domain';
 
 export type CalculationListScreenProps = {
-  calculationListUsecase: CalculationListUsecase;
-  calculationDeleteUsecase: CalculationDeleteUsecase;
-  calculationCompleteUsecase: CalculationCompleteUsecase;
-  authLogoutUsecase: AuthLogoutUsecase;
+  onLogoutPress: () => void;
+  onEditMenuPress: (calculation: Calculation) => void;
+  onDeleteMenuPress: (calculation: Calculation) => void;
+  onCompleteMenuPress: (calculation: Calculation) => void;
+  onItemPress: (calculation: Calculation) => void;
+  onRetryButtonPress: () => void;
+  variant: CalculationListProps['variant'];
+
+  isDeleteModalOpen: boolean;
+  isDeleteButtonDisabled: boolean;
+  onDeleteCancel: () => void;
+  onDeleteButtonConfirmPress: () => void;
+
+  isCompleteModalOpen: boolean;
+  isCompleteButtonDisabled: boolean;
+  onCompleteCancel: () => void;
+  onCompleteButtonConfirmPress: () => void;
 };
 
-export const CalculationListScreen = (props: CalculationListScreenProps) => {
-  const router = useRouter();
-
-  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
-
-  const calculationListController = useCalculationListController(
-    props.calculationListUsecase
-  );
-  const calculationDeleteController = useCalculationDeleteController(
-    props.calculationDeleteUsecase
-  );
-  const calculationCompleteController = useCalculationCompleteController(
-    props.calculationCompleteUsecase
-  );
-
-  useEffect(() => {
-    if (
-      calculationDeleteController.state.type === 'deletingSuccess' ||
-      calculationCompleteController.state.type === 'completingSuccess'
-    ) {
-      calculationListController.dispatch({ type: 'FETCH' });
-    }
-  }, [
-    calculationDeleteController.state.type,
-    calculationCompleteController.state.type,
-    calculationListController,
-  ]);
-
-  const onDeleteMenuPress = (calculation: Calculation) => {
-    calculationDeleteController.dispatch({
-      type: 'SHOW_CONFIRMATION',
-      calculationId: calculation.id,
-    });
-  };
-
-  const onEditMenuPress = (calculation: Calculation) => {
-    router.push(`/calculations/${calculation.id}`);
-  };
-
-  const onCompleteMenuPress = (calculation: Calculation) => {
-    calculationCompleteController.dispatch({
-      type: 'SHOW_CONFIRMATION',
-      calculationId: calculation.id,
-    });
-  };
-
-  const onItemPress = (calculation: Calculation) => {
-    router.push(`/calculations/${calculation.id}`);
-  };
-
+export const CalculationListScreen = ({
+  onLogoutPress,
+  onEditMenuPress,
+  onDeleteMenuPress,
+  onCompleteMenuPress,
+  onItemPress,
+  onRetryButtonPress,
+  variant,
+  isDeleteModalOpen,
+  isDeleteButtonDisabled,
+  onDeleteCancel,
+  onDeleteButtonConfirmPress,
+  isCompleteModalOpen,
+  isCompleteButtonDisabled,
+  onCompleteCancel,
+  onCompleteButtonConfirmPress,
+}: CalculationListScreenProps) => {
   return (
     <Layout
-      {...authLogoutController}
+      onLogoutPress={onLogoutPress}
       title="Calculations"
       rightActionItem={
         <Link href="/calculations/create">
@@ -91,14 +58,25 @@ export const CalculationListScreen = (props: CalculationListScreenProps) => {
       }
     >
       <CalculationList
-        {...calculationListController}
+        onRetryButtonPress={onRetryButtonPress}
+        variant={variant}
         onDeleteMenuPress={onDeleteMenuPress}
         onEditMenuPress={onEditMenuPress}
         onCompleteMenuPress={onCompleteMenuPress}
         onItemPress={onItemPress}
       />
-      <CalculationDeleteAlert {...calculationDeleteController} />
-      <CalculationCompleteAlert {...calculationCompleteController} />
+      <CalculationDeleteAlert
+        isOpen={isDeleteModalOpen}
+        isButtonDisabled={isDeleteButtonDisabled}
+        onCancel={onDeleteCancel}
+        onButtonConfirmPress={onDeleteButtonConfirmPress}
+      />
+      <CalculationCompleteAlert
+        isOpen={isCompleteModalOpen}
+        isButtonDisabled={isCompleteButtonDisabled}
+        onCancel={onCompleteCancel}
+        onButtonConfirmPress={onCompleteButtonConfirmPress}
+      />
     </Layout>
   );
 };

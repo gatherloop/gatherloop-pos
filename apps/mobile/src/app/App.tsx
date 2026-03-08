@@ -1,43 +1,43 @@
 import {
-  CategoryListScreen,
-  CategoryCreateScreen,
-  CategoryUpdateScreen,
-  MaterialListScreen,
-  MaterialCreateScreen,
-  MaterialUpdateScreen,
-  WalletListScreen,
-  WalletCreateScreen,
-  WalletUpdateScreen,
-  ProductListScreen,
-  ProductCreateScreen,
-  ProductUpdateScreen,
-  VariantListScreen,
-  VariantCreateScreen,
-  VariantUpdateScreen,
-  BudgetListScreen,
-  WalletTransferListScreen,
-  WalletTransferCreateScreen,
-  TransactionListScreen,
-  TransactionCreateScreen,
-  TransactionUpdateScreen,
-  TransactionDetailScreen,
-  ExpenseListScreen,
-  ExpenseCreateScreen,
-  ExpenseUpdateScreen,
-  TransactionStatisticScreen,
-  AuthLoginScreen,
-  CalculationListScreen,
-  CalculationCreateScreen,
-  CalculationUpdateScreen,
-  CouponListScreen,
-  CouponCreateScreen,
-  CouponUpdateScreen,
-  RentalListScreen,
-  RentalCheckinScreen,
-  RentalCheckoutScreen,
-  SupplierListScreen,
-  SupplierCreateScreen,
-  SupplierUpdateScreen,
+  CategoryList,
+  CategoryCreate,
+  CategoryUpdate,
+  MaterialList,
+  MaterialCreate,
+  MaterialUpdate,
+  WalletList,
+  WalletCreate,
+  WalletUpdate,
+  ProductList,
+  ProductCreate,
+  ProductUpdate,
+  VariantList,
+  VariantCreate,
+  VariantUpdate,
+  BudgetList,
+  WalletTransferList,
+  WalletTransferCreate,
+  TransactionList,
+  TransactionCreate,
+  TransactionUpdate,
+  TransactionDetail,
+  ExpenseList,
+  ExpenseCreate,
+  ExpenseUpdate,
+  TransactionStatisticApp,
+  AuthLogin,
+  CalculationList,
+  CalculationCreate,
+  CalculationUpdate,
+  CouponList,
+  CouponCreate,
+  CouponUpdate,
+  RentalList,
+  RentalCheckin,
+  RentalCheckout,
+  SupplierList,
+  SupplierCreate,
+  SupplierUpdate,
 } from '@gatherloop-pos/ui';
 import { RootProvider } from '@gatherloop-pos/provider';
 import { NavigationContainer } from '@react-navigation/native';
@@ -214,23 +214,29 @@ export const App = () => {
         >
           <Stack.Screen
             name="authLogin"
-            component={AuthLoginScreen}
+            component={AuthLogin}
             options={{ title: 'Login' }}
           />
           <Stack.Screen
             name="dashboard"
-            component={TransactionStatisticScreen}
+            component={() => (
+              <TransactionStatisticApp
+                transactionStatisticListParams={{
+                  transactionStatistics: [],
+                }}
+              />
+            )}
             options={{ title: 'Dashboard' }}
           />
           <Stack.Screen
             name="categoryList"
             component={(
               _props: NativeStackScreenProps<RootStackParamList, 'categoryList'>
-            ) => <CategoryListScreen categoryListParams={{ categories: [] }} />}
+            ) => <CategoryList categoryListParams={{ categories: [] }} />}
           />
           <Stack.Screen
             name="categoryCreate"
-            component={CategoryCreateScreen}
+            component={CategoryCreate}
           />
           <Stack.Screen
             name="categoryUpdate"
@@ -240,7 +246,7 @@ export const App = () => {
                 'categoryUpdate'
               >
             ) => (
-              <CategoryUpdateScreen
+              <CategoryUpdate
                 categoryUpdateParams={{
                   category: null,
                   categoryId: props.route.params?.categoryId,
@@ -252,15 +258,15 @@ export const App = () => {
             name="couponList"
             component={(
               _props: NativeStackScreenProps<RootStackParamList, 'couponList'>
-            ) => <CouponListScreen couponListParams={{ coupons: [] }} />}
+            ) => <CouponList couponListParams={{ coupons: [] }} />}
           />
-          <Stack.Screen name="couponCreate" component={CouponCreateScreen} />
+          <Stack.Screen name="couponCreate" component={CouponCreate} />
           <Stack.Screen
             name="couponUpdate"
             component={(
               props: NativeStackScreenProps<RootStackParamList, 'couponUpdate'>
             ) => (
-              <CouponUpdateScreen
+              <CouponUpdate
                 couponUpdateParams={{
                   coupon: null,
                   couponId: props.route.params?.couponId,
@@ -273,7 +279,7 @@ export const App = () => {
             component={(
               props: NativeStackScreenProps<RootStackParamList, 'materialList'>
             ) => (
-              <MaterialListScreen
+              <MaterialList
                 materialListParams={{
                   materials: [],
                   totalItem: 0,
@@ -283,7 +289,7 @@ export const App = () => {
           />
           <Stack.Screen
             name="materialCreate"
-            component={MaterialCreateScreen}
+            component={MaterialCreate}
           />
           <Stack.Screen
             name="materialUpdate"
@@ -293,7 +299,7 @@ export const App = () => {
                 'materialUpdate'
               >
             ) => (
-              <MaterialUpdateScreen
+              <MaterialUpdate
                 materialUpdateParams={{
                   material: null,
                   materialId: props.route.params?.materialId,
@@ -306,7 +312,7 @@ export const App = () => {
             component={(
               _props: NativeStackScreenProps<RootStackParamList, 'supplierList'>
             ) => (
-              <SupplierListScreen
+              <SupplierList
                 supplierListParams={{
                   suppliers: [],
                   totalItem: 0,
@@ -316,7 +322,7 @@ export const App = () => {
           />
           <Stack.Screen
             name="supplierCreate"
-            component={SupplierCreateScreen}
+            component={SupplierCreate}
           />
           <Stack.Screen
             name="supplierUpdate"
@@ -326,7 +332,7 @@ export const App = () => {
                 'supplierUpdate'
               >
             ) => (
-              <SupplierUpdateScreen
+              <SupplierUpdate
                 supplierUpdateParams={{
                   supplier: null,
                   supplierId: props.route.params?.supplierId,
@@ -339,20 +345,20 @@ export const App = () => {
             component={(
               _props: NativeStackScreenProps<RootStackParamList, 'walletList'>
             ) => (
-              <WalletListScreen
+              <WalletList
                 walletListParams={{
                   wallets: [],
                 }}
               />
             )}
           />
-          <Stack.Screen name="walletCreate" component={WalletCreateScreen} />
+          <Stack.Screen name="walletCreate" component={WalletCreate} />
           <Stack.Screen
             name="walletUpdate"
             component={(
               props: NativeStackScreenProps<RootStackParamList, 'walletUpdate'>
             ) => (
-              <WalletUpdateScreen
+              <WalletUpdate
                 walletUpdateParams={{
                   wallet: null,
                   walletId: props.route.params?.walletId,
@@ -368,7 +374,7 @@ export const App = () => {
                 'walletTransferList'
               >
             ) => (
-              <WalletTransferListScreen
+              <WalletTransferList
                 walletDetailParams={{
                   wallet: null,
                   walletId: props.route.params.walletId,
@@ -388,7 +394,7 @@ export const App = () => {
                 'walletTransferCreate'
               >
             ) => (
-              <WalletTransferCreateScreen
+              <WalletTransferCreate
                 walletTransferCreateParams={{
                   fromWalletId: props.route.params.walletId,
                   wallets: [],
@@ -401,7 +407,7 @@ export const App = () => {
             component={(
               _props: NativeStackScreenProps<RootStackParamList, 'productList'>
             ) => (
-              <ProductListScreen
+              <ProductList
                 productListParams={{
                   products: [],
                   totalItem: 0,
@@ -417,7 +423,7 @@ export const App = () => {
                 'productCreate'
               >
             ) => (
-              <ProductCreateScreen productCreateParams={{ categories: [] }} />
+              <ProductCreate productCreateParams={{ categories: [] }} />
             )}
           />
           <Stack.Screen
@@ -425,7 +431,7 @@ export const App = () => {
             component={(
               props: NativeStackScreenProps<RootStackParamList, 'productUpdate'>
             ) => (
-              <ProductUpdateScreen
+              <ProductUpdate
                 productUpdateParams={{
                   categories: [],
                   product: null,
@@ -440,7 +446,7 @@ export const App = () => {
             component={(
               _props: NativeStackScreenProps<RootStackParamList, 'variantList'>
             ) => (
-              <VariantListScreen
+              <VariantList
                 variantListParams={{
                   variants: [],
                   totalItem: 0,
@@ -453,7 +459,7 @@ export const App = () => {
             component={(
               props: NativeStackScreenProps<RootStackParamList, 'variantCreate'>
             ) => (
-              <VariantCreateScreen
+              <VariantCreate
                 variantCreateParams={{
                   product: null,
                   productId: props.route.params.productId,
@@ -470,7 +476,7 @@ export const App = () => {
             component={(
               props: NativeStackScreenProps<RootStackParamList, 'variantUpdate'>
             ) => (
-              <VariantUpdateScreen
+              <VariantUpdate
                 variantUpdateParams={{
                   product: null,
                   variant: null,
@@ -488,7 +494,7 @@ export const App = () => {
             name="budgetList"
             component={(
               _props: NativeStackScreenProps<RootStackParamList, 'budgetList'>
-            ) => <BudgetListScreen budgetListParams={{ budgets: [] }} />}
+            ) => <BudgetList budgetListParams={{ budgets: [] }} />}
           />
           <Stack.Screen
             name="transactionList"
@@ -498,7 +504,7 @@ export const App = () => {
                 'transactionList'
               >
             ) => (
-              <TransactionListScreen
+              <TransactionList
                 transactionListParams={{
                   transactions: [],
                   totalItem: 0,
@@ -516,7 +522,7 @@ export const App = () => {
                 'transactionCreate'
               >
             ) => (
-              <TransactionCreateScreen
+              <TransactionCreate
                 transactionItemSelectParams={{
                   products: [],
                   totalItem: 0,
@@ -538,7 +544,7 @@ export const App = () => {
                 'transactionUpdate'
               >
             ) => (
-              <TransactionUpdateScreen
+              <TransactionUpdate
                 transactionItemSelectParams={{
                   products: [],
                   totalItem: 0,
@@ -561,7 +567,7 @@ export const App = () => {
                 'transactionDetail'
               >
             ) => (
-              <TransactionDetailScreen
+              <TransactionDetail
                 transactionDetailParams={{
                   transaction: null,
                   transactionId: props.route.params.transactionId,
@@ -574,7 +580,7 @@ export const App = () => {
             component={(
               _props: NativeStackScreenProps<RootStackParamList, 'expenseList'>
             ) => (
-              <ExpenseListScreen
+              <ExpenseList
                 expenseListParams={{
                   expenses: [],
                   budgets: [],
@@ -592,7 +598,7 @@ export const App = () => {
                 'expenseCreate'
               >
             ) => (
-              <ExpenseCreateScreen
+              <ExpenseCreate
                 expenseCreateParams={{
                   budgets: [],
                   wallets: [],
@@ -605,7 +611,7 @@ export const App = () => {
             component={(
               props: NativeStackScreenProps<RootStackParamList, 'expenseUpdate'>
             ) => (
-              <ExpenseUpdateScreen
+              <ExpenseUpdate
                 expenseUpdateParams={{
                   budgets: [],
                   expense: null,
@@ -623,7 +629,7 @@ export const App = () => {
                 'calculationList'
               >
             ) => (
-              <CalculationListScreen
+              <CalculationList
                 calculationListParams={{
                   calculations: [],
                 }}
@@ -638,7 +644,7 @@ export const App = () => {
                 'calculationCreate'
               >
             ) => (
-              <CalculationCreateScreen
+              <CalculationCreate
                 calculationCreateParams={{ wallets: [] }}
               />
             )}
@@ -651,8 +657,8 @@ export const App = () => {
                 'calculationUpdate'
               >
             ) => (
-              <CalculationUpdateScreen
-                calculationListParams={{
+              <CalculationUpdate
+                calculationUpdateParams={{
                   calculation: null,
                   calculationId: props.route.params.calculationId,
                   wallets: [],
@@ -665,7 +671,7 @@ export const App = () => {
             component={(
               _props: NativeStackScreenProps<RootStackParamList, 'rentalList'>
             ) => (
-              <RentalListScreen
+              <RentalList
                 rentalListParams={{ rentals: [], totalItem: 0 }}
               />
             )}
@@ -678,7 +684,7 @@ export const App = () => {
                 'rentalCheckin'
               >
             ) => (
-              <RentalCheckinScreen
+              <RentalCheckin
                 transactionItemSelectParams={{ products: [], totalItem: 0 }}
               />
             )}
@@ -691,7 +697,7 @@ export const App = () => {
                 'rentalCheckout'
               >
             ) => (
-              <RentalCheckoutScreen
+              <RentalCheckout
                 rentalListParams={{ rentals: [], totalItem: 0 }}
               />
             )}

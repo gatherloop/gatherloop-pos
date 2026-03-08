@@ -2,64 +2,52 @@ import { Button } from 'tamagui';
 import { Link } from 'solito/link';
 import { Plus } from '@tamagui/lucide-icons';
 import { SupplierDeleteAlert, SupplierList, Layout } from '../components';
-import {
-  AuthLogoutUsecase,
-  Supplier,
-  SupplierDeleteUsecase,
-  SupplierListUsecase,
-} from '../../domain';
-import {
-  useAuthLogoutController,
-  useSupplierDeleteController,
-  useSupplierListController,
-} from '../controllers';
-import { useEffect } from 'react';
-import { useRouter } from 'solito/router';
+import { Supplier } from '../../domain';
 
 export type SupplierListScreenProps = {
-  supplierListUsecase: SupplierListUsecase;
-  supplierDeleteUsecase: SupplierDeleteUsecase;
-  authLogoutUsecase: AuthLogoutUsecase;
+  onLogoutPress: () => void;
+  onDeleteMenuPress: (supplier: Supplier) => void;
+  onOpenMapMenuPress: (supplier: Supplier) => void;
+  onEditMenuPress: (supplier: Supplier) => void;
+  onItemPress: (supplier: Supplier) => void;
+  onRetryButtonPress: () => void;
+  variant: { type: 'loading' } | { type: 'error' } | { type: 'empty' } | { type: 'loaded'; items: Supplier[] };
+  suppliers: Supplier[];
+  searchValue: string;
+  onSearchValueChange: (value: string) => void;
+  currentPage: number;
+  onPageChange: (page: number) => void;
+  totalItem: number;
+  itemPerPage: number;
+  isDeleteModalOpen: boolean;
+  isDeleteButtonDisabled: boolean;
+  onDeleteCancel: () => void;
+  onDeleteConfirm: () => void;
 };
 
-export const SupplierListScreen = (props: SupplierListScreenProps) => {
-  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
-  const supplierListController = useSupplierListController(
-    props.supplierListUsecase
-  );
-  const supplierDeleteController = useSupplierDeleteController(
-    props.supplierDeleteUsecase
-  );
-
-  const router = useRouter();
-
-  useEffect(() => {
-    if (supplierDeleteController.state.type === 'deletingSuccess')
-      supplierListController.dispatch({ type: 'FETCH' });
-  }, [supplierDeleteController.state.type, supplierListController]);
-
-  const onOpenMapMenuPress = (supplier: Supplier) => {
-    router.push(supplier.mapsLink);
-  };
-
-  const onEditMenuPress = (supplier: Supplier) => {
-    router.push(`/suppliers/${supplier.id}`);
-  };
-
-  const onItemPress = (supplier: Supplier) => {
-    router.push(`/suppliers/${supplier.id}`);
-  };
-
-  const onDeleteMenuPress = (supplier: Supplier) => {
-    supplierDeleteController.dispatch({
-      type: 'SHOW_CONFIRMATION',
-      supplierId: supplier.id,
-    });
-  };
-
+export const SupplierListScreen = ({
+  onLogoutPress,
+  onDeleteMenuPress,
+  onOpenMapMenuPress,
+  onEditMenuPress,
+  onItemPress,
+  onRetryButtonPress,
+  variant,
+  suppliers,
+  searchValue,
+  onSearchValueChange,
+  currentPage,
+  onPageChange,
+  totalItem,
+  itemPerPage,
+  isDeleteModalOpen,
+  isDeleteButtonDisabled,
+  onDeleteCancel,
+  onDeleteConfirm,
+}: SupplierListScreenProps) => {
   return (
     <Layout
-      {...authLogoutController}
+      onLogoutPress={onLogoutPress}
       title="Suppliers"
       rightActionItem={
         <Link href="/suppliers/create">
@@ -68,13 +56,25 @@ export const SupplierListScreen = (props: SupplierListScreenProps) => {
       }
     >
       <SupplierList
-        {...supplierListController}
+        variant={variant}
+        searchValue={searchValue}
+        onSearchValueChange={onSearchValueChange}
+        onRetryButtonPress={onRetryButtonPress}
+        onPageChange={onPageChange}
         onOpenMapMenuPress={onOpenMapMenuPress}
         onEditMenuPress={onEditMenuPress}
         onDeleteMenuPress={onDeleteMenuPress}
         onItemPress={onItemPress}
+        currentPage={currentPage}
+        totalItem={totalItem}
+        itemPerPage={itemPerPage}
       />
-      <SupplierDeleteAlert {...supplierDeleteController} />
+      <SupplierDeleteAlert
+        isOpen={isDeleteModalOpen}
+        onCancel={onDeleteCancel}
+        onConfirm={onDeleteConfirm}
+        isButtonDisabled={isDeleteButtonDisabled}
+      />
     </Layout>
   );
 };

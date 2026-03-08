@@ -1,61 +1,58 @@
 import { Button } from 'tamagui';
 import { Link } from 'solito/link';
 import { Plus } from '@tamagui/lucide-icons';
-import { ProductDeleteAlert, ProductList, Layout } from '../components';
 import {
-  AuthLogoutUsecase,
-  Product,
-  ProductDeleteUsecase,
-  ProductListUsecase,
-} from '../../domain';
-import {
-  useAuthLogoutController,
-  useProductDeleteController,
-  useProductListController,
-} from '../controllers';
-import { useEffect } from 'react';
-import { useRouter } from 'solito/router';
+  ProductDeleteAlert,
+  ProductList,
+  Layout,
+  ProductListProps,
+} from '../components';
+import { Product, SaleType } from '../../domain';
 
 export type ProductListScreenProps = {
-  productListUsecase: ProductListUsecase;
-  productDeleteUsecase: ProductDeleteUsecase;
-  authLogoutUsecase: AuthLogoutUsecase;
+  onLogoutPress: () => void;
+  onEditMenuPress: (product: Product) => void;
+  onDeleteMenuPress: (product: Product) => void;
+  onItemPress: (product: Product) => void;
+  currentPage: number;
+  itemPerPage: number;
+  totalItem: number;
+  onPageChange: (page: number) => void;
+  onRetryButtonPress: () => void;
+  onSaleTypeChange: (saleType: SaleType) => void;
+  onSearchValueChange: (value: string) => void;
+  saleType: SaleType;
+  searchValue: string;
+  variant: ProductListProps['variant'];
+  isDeleteButtonDisabled: boolean;
+  isDeleteModalOpen: boolean;
+  onDeleteCancel: () => void;
+  onDeleteConfirm: () => void;
 };
 
-export const ProductListScreen = (props: ProductListScreenProps) => {
-  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
-  const productListController = useProductListController(
-    props.productListUsecase
-  );
-  const productDeleteController = useProductDeleteController(
-    props.productDeleteUsecase
-  );
-
-  const router = useRouter();
-
-  useEffect(() => {
-    if (productDeleteController.state.type === 'deletingSuccess')
-      productListController.dispatch({ type: 'FETCH' });
-  }, [productDeleteController.state.type, productListController]);
-
-  const onEditMenuPress = (product: Product) => {
-    router.push(`/products/${product.id}`);
-  };
-
-  const onItemPress = (product: Product) => {
-    router.push(`/products/${product.id}`);
-  };
-
-  const onDeleteMenuPress = (product: Product) => {
-    productDeleteController.dispatch({
-      type: 'SHOW_CONFIRMATION',
-      productId: product.id,
-    });
-  };
-
+export const ProductListScreen = ({
+  onLogoutPress,
+  onDeleteMenuPress,
+  onEditMenuPress,
+  onItemPress,
+  currentPage,
+  isDeleteButtonDisabled,
+  isDeleteModalOpen,
+  itemPerPage,
+  onDeleteCancel,
+  onDeleteConfirm,
+  onPageChange,
+  onRetryButtonPress,
+  onSaleTypeChange,
+  onSearchValueChange,
+  saleType,
+  searchValue,
+  totalItem,
+  variant,
+}: ProductListScreenProps) => {
   return (
     <Layout
-      {...authLogoutController}
+      onLogoutPress={onLogoutPress}
       title="Products"
       rightActionItem={
         <Link href="/products/create">
@@ -64,12 +61,26 @@ export const ProductListScreen = (props: ProductListScreenProps) => {
       }
     >
       <ProductList
-        {...productListController}
+        currentPage={currentPage}
+        itemPerPage={itemPerPage}
+        onPageChange={onPageChange}
+        onRetryButtonPress={onRetryButtonPress}
+        onSaleTypeChange={onSaleTypeChange}
+        onSearchValueChange={onSearchValueChange}
+        saleType={saleType}
+        searchValue={searchValue}
+        totalItem={totalItem}
+        variant={variant}
         onEditMenuPress={onEditMenuPress}
         onDeleteMenuPress={onDeleteMenuPress}
         onItemPress={onItemPress}
       />
-      <ProductDeleteAlert {...productDeleteController} />
+      <ProductDeleteAlert
+        isButtonDisabled={isDeleteButtonDisabled}
+        isOpen={isDeleteModalOpen}
+        onCancel={onDeleteCancel}
+        onConfirm={onDeleteConfirm}
+      />
     </Layout>
   );
 };

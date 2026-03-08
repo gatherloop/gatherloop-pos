@@ -1,37 +1,39 @@
 import { ScrollView } from 'tamagui';
-import { Layout, CategoryFormView } from '../components';
-import { useRouter } from 'solito/router';
-import { useEffect } from 'react';
 import {
-  useAuthLogoutController,
-  useCategoryCreateController,
-} from '../controllers';
-import { AuthLogoutUsecase, CategoryCreateUsecase } from '../../domain';
+  CategoryFormView,
+  CategoryFormViewProps,
+  Layout,
+} from '../components';
+import { CategoryForm } from '../../domain';
+import { UseFormReturn } from 'react-hook-form';
 
 export type CategoryCreateScreenProps = {
-  categoryCreateUsecase: CategoryCreateUsecase;
-  authLogoutUsecase: AuthLogoutUsecase;
+  onLogoutPress: () => void;
+  form: UseFormReturn<CategoryForm>;
+  isSubmitDisabled: boolean;
+  onSubmit: (values: CategoryForm) => void;
+  variant: CategoryFormViewProps['variant'];
 };
 
-export const CategoryCreateScreen = (props: CategoryCreateScreenProps) => {
-  const categoryCreateController = useCategoryCreateController(
-    props.categoryCreateUsecase
-  );
-  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
-
-  const router = useRouter();
-
-  useEffect(() => {
-    if (categoryCreateController.state.type === 'submitSuccess')
-      router.push('/categories');
-  }, [categoryCreateController.state.type, router]);
-
+export const CategoryCreateScreen = ({
+  form,
+  isSubmitDisabled,
+  onLogoutPress,
+  onSubmit,
+  variant,
+}: CategoryCreateScreenProps) => {
   return (
-    <Layout title="Create Category" showBackButton {...authLogoutController}>
+    <Layout
+      onLogoutPress={onLogoutPress}
+      title="Create Category"
+      showBackButton
+    >
       <ScrollView>
         <CategoryFormView
-          {...categoryCreateController}
-          variant={{ type: 'loaded' }}
+          form={form}
+          isSubmitDisabled={isSubmitDisabled}
+          onSubmit={onSubmit}
+          variant={variant}
         />
       </ScrollView>
     </Layout>

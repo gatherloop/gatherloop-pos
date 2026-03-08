@@ -1,6 +1,6 @@
 import {
-  ProductUpdateScreen,
-  ProductUpdateScreenProps,
+  ProductUpdate,
+  ProductUpdateProps,
   ApiProductRepository,
   ApiCategoryRepository,
   ApiVariantRepository,
@@ -9,7 +9,7 @@ import { GetServerSideProps } from 'next';
 import { QueryClient } from '@tanstack/react-query';
 
 export const getServerSideProps: GetServerSideProps<
-  ProductUpdateScreenProps,
+  ProductUpdateProps,
   { productId: string }
 > = async (ctx) => {
   const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
@@ -51,4 +51,4 @@ export const getServerSideProps: GetServerSideProps<
   };
 };
 
-export default ProductUpdateScreen;
+export default ProductUpdate;

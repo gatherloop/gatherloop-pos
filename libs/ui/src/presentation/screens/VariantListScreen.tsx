@@ -2,60 +2,50 @@ import { Button } from 'tamagui';
 import { Link } from 'solito/link';
 import { Plus } from '@tamagui/lucide-icons';
 import { VariantDeleteAlert, VariantList, Layout } from '../components';
-import {
-  AuthLogoutUsecase,
-  Variant,
-  VariantDeleteUsecase,
-  VariantListUsecase,
-} from '../../domain';
-import {
-  useAuthLogoutController,
-  useVariantDeleteController,
-  useVariantListController,
-} from '../controllers';
-import { useEffect } from 'react';
-import { useRouter } from 'solito/router';
+import { Variant } from '../../domain';
 
 export type VariantListScreenProps = {
-  variantListUsecase: VariantListUsecase;
-  variantDeleteUsecase: VariantDeleteUsecase;
-  authLogoutUsecase: AuthLogoutUsecase;
+  onLogoutPress: () => void;
+  onEditMenuPress: (variant: Variant) => void;
+  onDeleteMenuPress: (variant: Variant) => void;
+  onItemPress: (variant: Variant) => void;
+  onRetryButtonPress: () => void;
+  variant: { type: 'loading' } | { type: 'error' } | { type: 'empty' } | { type: 'loaded'; items: Variant[] };
+  variants: Variant[];
+  searchValue: string;
+  onSearchValueChange: (value: string) => void;
+  currentPage: number;
+  onPageChange: (page: number) => void;
+  totalItem: number;
+  itemPerPage: number;
+  isDeleteModalOpen: boolean;
+  isDeleteButtonDisabled: boolean;
+  onDeleteCancel: () => void;
+  onDeleteConfirm: () => void;
 };
 
-export const VariantListScreen = (props: VariantListScreenProps) => {
-  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
-  const variantListController = useVariantListController(
-    props.variantListUsecase
-  );
-  const variantDeleteController = useVariantDeleteController(
-    props.variantDeleteUsecase
-  );
-
-  const router = useRouter();
-
-  useEffect(() => {
-    if (variantDeleteController.state.type === 'deletingSuccess')
-      variantListController.dispatch({ type: 'FETCH' });
-  }, [variantDeleteController.state.type, variantListController]);
-
-  const onEditMenuPress = (variant: Variant) => {
-    router.push(`/variants/${variant.id}`);
-  };
-
-  const onItemPress = (variant: Variant) => {
-    router.push(`/variants/${variant.id}`);
-  };
-
-  const onDeleteMenuPress = (variant: Variant) => {
-    variantDeleteController.dispatch({
-      type: 'SHOW_CONFIRMATION',
-      variantId: variant.id,
-    });
-  };
-
+export const VariantListScreen = ({
+  onLogoutPress,
+  onEditMenuPress,
+  onDeleteMenuPress,
+  onItemPress,
+  onRetryButtonPress,
+  variant,
+  variants,
+  searchValue,
+  onSearchValueChange,
+  currentPage,
+  onPageChange,
+  totalItem,
+  itemPerPage,
+  isDeleteModalOpen,
+  isDeleteButtonDisabled,
+  onDeleteCancel,
+  onDeleteConfirm,
+}: VariantListScreenProps) => {
   return (
     <Layout
-      {...authLogoutController}
+      onLogoutPress={onLogoutPress}
       title="Variants"
       rightActionItem={
         <Link href="/variants/create">
@@ -64,12 +54,24 @@ export const VariantListScreen = (props: VariantListScreenProps) => {
       }
     >
       <VariantList
-        {...variantListController}
+        variant={variant}
+        searchValue={searchValue}
+        onSearchValueChange={onSearchValueChange}
+        onRetryButtonPress={onRetryButtonPress}
+        onPageChange={onPageChange}
         onEditMenuPress={onEditMenuPress}
         onDeleteMenuPress={onDeleteMenuPress}
         onItemPress={onItemPress}
+        currentPage={currentPage}
+        totalItem={totalItem}
+        itemPerPage={itemPerPage}
       />
-      <VariantDeleteAlert {...variantDeleteController} />
+      <VariantDeleteAlert
+        isOpen={isDeleteModalOpen}
+        onCancel={onDeleteCancel}
+        onConfirm={onDeleteConfirm}
+        isButtonDisabled={isDeleteButtonDisabled}
+      />
     </Layout>
   );
 };

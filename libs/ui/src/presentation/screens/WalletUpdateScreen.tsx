@@ -1,32 +1,27 @@
 import { ScrollView } from 'tamagui';
 import { WalletFormView, Layout } from '../components';
-import { useRouter } from 'solito/router';
-import { useEffect } from 'react';
-import {
-  useAuthLogoutController,
-  useWalletUpdateController,
-} from '../controllers';
-import { AuthLogoutUsecase, WalletUpdateUsecase } from '../../domain';
+import { WalletForm } from '../../domain';
+import { UseFormReturn } from 'react-hook-form';
+import { WalletFormViewProps } from '../components';
 
 export type WalletUpdateScreenProps = {
-  walletUpdateUsecase: WalletUpdateUsecase;
-  authLogoutUsecase: AuthLogoutUsecase;
+  form: UseFormReturn<WalletForm>;
+  onSubmit: (values: WalletForm) => void;
+  isSubmitDisabled: boolean;
+  onLogoutPress: () => void;
+  variant: WalletFormViewProps['variant'];
 };
 
 export const WalletUpdateScreen = (props: WalletUpdateScreenProps) => {
-  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
-
-  const controller = useWalletUpdateController(props.walletUpdateUsecase);
-  const router = useRouter();
-
-  useEffect(() => {
-    if (controller.state.type === 'submitSuccess') router.push('/wallets');
-  }, [controller.state.type, router]);
-
   return (
-    <Layout {...authLogoutController} title="Update Wallet" showBackButton>
+    <Layout title="Update Wallet" showBackButton onLogoutPress={props.onLogoutPress}>
       <ScrollView>
-        <WalletFormView {...controller} />
+        <WalletFormView
+          form={props.form}
+          onSubmit={props.onSubmit}
+          isSubmitDisabled={props.isSubmitDisabled}
+          variant={props.variant}
+        />
       </ScrollView>
     </Layout>
   );

@@ -2,59 +2,37 @@ import { Button } from 'tamagui';
 import { Link } from 'solito/link';
 import { Plus } from '@tamagui/lucide-icons';
 import { CouponDeleteAlert, CouponList, Layout } from '../components';
-import {
-  AuthLogoutUsecase,
-  Coupon,
-  CouponDeleteUsecase,
-  CouponListUsecase,
-} from '../../domain';
-import {
-  useAuthLogoutController,
-  useCouponDeleteController,
-  useCouponListController,
-} from '../controllers';
-import { useEffect } from 'react';
-import { useRouter } from 'solito/router';
+import type { CouponListProps } from '../components';
+import { Coupon } from '../../domain';
 
 export type CouponListScreenProps = {
-  couponListUsecase: CouponListUsecase;
-  couponDeleteUsecase: CouponDeleteUsecase;
-  authLogoutUsecase: AuthLogoutUsecase;
+  onLogoutPress: () => void;
+  onEditMenuPress: (coupon: Coupon) => void;
+  onDeleteMenuPress: (coupon: Coupon) => void;
+  onItemPress: (coupon: Coupon) => void;
+  onRetryButtonPress: () => void;
+  variant: CouponListProps['variant'];
+  isDeleteModalOpen: boolean;
+  isDeleteButtonDisabled: boolean;
+  onDeleteCancel: () => void;
+  onDeleteConfirm: () => void;
 };
 
-export const CouponListScreen = (props: CouponListScreenProps) => {
-  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
-
-  const couponListController = useCouponListController(props.couponListUsecase);
-  const couponDeleteController = useCouponDeleteController(
-    props.couponDeleteUsecase
-  );
-
-  const router = useRouter();
-
-  useEffect(() => {
-    if (couponDeleteController.state.type === 'deletingSuccess')
-      couponListController.dispatch({ type: 'FETCH' });
-  }, [couponDeleteController.state.type, couponListController]);
-
-  const onEditMenuPress = (coupon: Coupon) => {
-    router.push(`/coupons/${coupon.id}`);
-  };
-
-  const onItemPress = (coupon: Coupon) => {
-    router.push(`/coupons/${coupon.id}`);
-  };
-
-  const onDeleteMenuPress = (coupon: Coupon) => {
-    couponDeleteController.dispatch({
-      type: 'SHOW_CONFIRMATION',
-      couponId: coupon.id,
-    });
-  };
-
+export const CouponListScreen = ({
+  onLogoutPress,
+  onEditMenuPress,
+  onDeleteMenuPress,
+  onItemPress,
+  onRetryButtonPress,
+  variant,
+  isDeleteModalOpen,
+  isDeleteButtonDisabled,
+  onDeleteCancel,
+  onDeleteConfirm,
+}: CouponListScreenProps) => {
   return (
     <Layout
-      {...authLogoutController}
+      onLogoutPress={onLogoutPress}
       title="Coupons"
       rightActionItem={
         <Link href="/coupons/create">
@@ -63,12 +41,18 @@ export const CouponListScreen = (props: CouponListScreenProps) => {
       }
     >
       <CouponList
-        {...couponListController}
-        onEditMenuPress={onEditMenuPress}
+        onRetryButtonPress={onRetryButtonPress}
         onDeleteMenuPress={onDeleteMenuPress}
+        onEditMenuPress={onEditMenuPress}
         onItemPress={onItemPress}
+        variant={variant}
       />
-      <CouponDeleteAlert {...couponDeleteController} />
+      <CouponDeleteAlert
+        isOpen={isDeleteModalOpen}
+        onCancel={onDeleteCancel}
+        onConfirm={onDeleteConfirm}
+        isButtonDisabled={isDeleteButtonDisabled}
+      />
     </Layout>
   );
 };

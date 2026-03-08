@@ -1,12 +1,10 @@
 import { useToastController } from '@tamagui/toast';
-import { ExpenseForm, ExpenseUpdateUsecase } from '../../domain';
+import { ExpenseUpdateUsecase } from '../../domain';
 import { useController } from './controller';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { match, P } from 'ts-pattern';
-import { ExpenseFormViewProps } from '../components/expenses';
 
 export const useExpenseUpdateController = (usecase: ExpenseUpdateUsecase) => {
   const { state, dispatch } = useController(usecase);
@@ -41,45 +39,9 @@ export const useExpenseUpdateController = (usecase: ExpenseUpdateUsecase) => {
     ),
   });
 
-  const onSubmit = (values: ExpenseForm) =>
-    dispatch({ type: 'SUBMIT', values });
-
-  const isSubmitDisabled =
-    state.type === 'submitting' || state.type === 'submitSuccess';
-
-  const onRetryButtonPress = () => dispatch({ type: 'FETCH' });
-
-  const budgetSelectOptions = state.budgets.map((budget) => ({
-    label: budget.name,
-    value: budget.id,
-  }));
-
-  const walletSelectOptions = state.wallets.map((wallet) => ({
-    label: wallet.name,
-    value: wallet.id,
-  }));
-
-  const variant = match(state)
-    .returnType<ExpenseFormViewProps['variant']>()
-    .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))
-    .with(
-      { type: P.union('loaded', 'submitting', 'submitSuccess', 'submitError') },
-      () => ({
-        type: 'loaded',
-      })
-    )
-    .with({ type: 'error' }, () => ({ type: 'error' }))
-    .exhaustive();
-
   return {
     state,
     dispatch,
     form,
-    onSubmit,
-    isSubmitDisabled,
-    onRetryButtonPress,
-    budgetSelectOptions,
-    walletSelectOptions,
-    variant,
   };
 };

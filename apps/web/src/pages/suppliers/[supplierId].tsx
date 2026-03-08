@@ -1,13 +1,13 @@
 import {
   ApiSupplierRepository,
-  SupplierUpdateScreen,
-  SupplierUpdateScreenProps,
+  SupplierUpdate,
+  SupplierUpdateProps,
 } from '@gatherloop-pos/ui';
 import { GetServerSideProps } from 'next';
 import { QueryClient } from '@tanstack/react-query';
 
 export const getServerSideProps: GetServerSideProps<
-  SupplierUpdateScreenProps,
+  SupplierUpdateProps,
   { supplierId: string }
 > = async (ctx) => {
   const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
@@ -31,4 +31,4 @@ export const getServerSideProps: GetServerSideProps<
   return { props: { supplierUpdateParams: { supplier, supplierId } } };
 };
 
-export default SupplierUpdateScreen;
+export default SupplierUpdate;

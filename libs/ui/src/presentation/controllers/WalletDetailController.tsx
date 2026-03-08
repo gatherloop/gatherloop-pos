@@ -6,8 +6,5 @@ export const useWalletDetailController = (usecase: WalletDetailUsecase) => {
   return {
     state,
     dispatch,
-    balance: state.wallet?.balance ?? 0,
-    name: state.wallet?.name ?? '',
-    paymentCostPercentage: state.wallet?.paymentCostPercentage ?? 0,
   };
 };

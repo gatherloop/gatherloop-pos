@@ -44,40 +44,9 @@ export const useTransactionPayController = (usecase: TransactionPayUsecase) => {
     }
   }, [form, isCashless, paidAmount, state.transactionTotal]);
 
-  const onSubmit = (values: { wallet: Wallet; paidAmount: number }) =>
-    dispatch({
-      type: 'PAY',
-      walletId: values.wallet.id,
-      paidAmount: values.paidAmount,
-    });
-
-  const isButtonDisabled =
-    state.type === 'paying' ||
-    state.type === 'payingSuccess' ||
-    state.type === 'payingError';
-
-  const isOpen =
-    state.type === 'shown' ||
-    state.type === 'paying' ||
-    state.type === 'payingSuccess' ||
-    state.type === 'payingError';
-
-  const onCancel = () => dispatch({ type: 'HIDE_CONFIRMATION' });
-
-  const walletSelectOptions = state.wallets.map((wallet) => ({
-    label: wallet.name,
-    value: wallet,
-  }));
-
   return {
     state,
     dispatch,
     form,
-    onSubmit,
-    isButtonDisabled,
-    isOpen,
-    onCancel,
-    walletSelectOptions,
-    transactionTotal: state.transactionTotal,
   };
 };

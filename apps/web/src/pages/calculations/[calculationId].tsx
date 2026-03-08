@@ -1,14 +1,14 @@
 import {
   ApiCalculationRepository,
   ApiWalletRepository,
-  CalculationUpdateScreen,
-  CalculationUpdateScreenProps,
+  CalculationUpdate,
+  CalculationUpdateProps,
 } from '@gatherloop-pos/ui';
 import { QueryClient } from '@tanstack/react-query';
 import { GetServerSideProps } from 'next';
 
 export const getServerSideProps: GetServerSideProps<
-  CalculationUpdateScreenProps,
+  CalculationUpdateProps,
   { calculationId: string }
 > = async (ctx) => {
   const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
@@ -35,8 +35,8 @@ export const getServerSideProps: GetServerSideProps<
   );
 
   return {
-    props: { calculationListParams: { calculation, calculationId, wallets } },
+    props: { calculationUpdateParams: { calculation, calculationId, wallets } },
   };
 };
 
-export default CalculationUpdateScreen;
+export default CalculationUpdate;

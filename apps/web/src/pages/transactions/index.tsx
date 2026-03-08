@@ -2,15 +2,15 @@ import {
   ApiTransactionRepository,
   ApiWalletRepository,
   getUrlFromCtx,
-  TransactionListScreen,
-  TransactionListScreenProps,
+  TransactionList,
+  TransactionListProps,
   UrlTransactionListQueryRepository,
 } from '@gatherloop-pos/ui';
 import { QueryClient } from '@tanstack/react-query';
 import { GetServerSideProps } from 'next';
 
 export const getServerSideProps: GetServerSideProps<
-  TransactionListScreenProps
+  TransactionListProps
 > = async (ctx) => {
   const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
   if (!isLoggedIn) {
@@ -75,4 +75,4 @@ export const getServerSideProps: GetServerSideProps<
   };
 };
 
-export default TransactionListScreen;
+export default TransactionList;

@@ -1,14 +1,14 @@
 import {
   ApiCalculationRepository,
-  CalculationListScreen,
-  CalculationListScreenProps,
+  CalculationList,
+  CalculationListProps,
 } from '@gatherloop-pos/ui';
 import { GetServerSideProps } from 'next';
 import { QueryClient } from '@tanstack/react-query';
 
-export const getServerSideProps: GetServerSideProps<
-  CalculationListScreenProps
-> = async (ctx) => {
+export const getServerSideProps: GetServerSideProps<CalculationListProps> = async (
+  ctx
+) => {
   const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
   if (!isLoggedIn) {
     return {
@@ -29,4 +29,4 @@ export const getServerSideProps: GetServerSideProps<
   };
 };
 
-export default CalculationListScreen;
+export default CalculationList;

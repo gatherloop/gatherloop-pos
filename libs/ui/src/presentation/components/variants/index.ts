@@ -1,4 +1,3 @@
-export * from './VariantCreate';
 export * from './VariantFormView';
 export * from './VariantDeleteAlert';
 export * from './VariantList';

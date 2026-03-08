@@ -1,13 +1,13 @@
 import {
   ApiWalletRepository,
-  WalletUpdateScreen,
-  WalletUpdateScreenProps,
+  WalletUpdate,
+  WalletUpdateProps,
 } from '@gatherloop-pos/ui';
 import { QueryClient } from '@tanstack/react-query';
 import { GetServerSideProps } from 'next';
 
 export const getServerSideProps: GetServerSideProps<
-  WalletUpdateScreenProps,
+  WalletUpdateProps,
   { walletId: string }
 > = async (ctx) => {
   const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
@@ -33,4 +33,4 @@ export const getServerSideProps: GetServerSideProps<
   };
 };
 
-export default WalletUpdateScreen;
+export default WalletUpdate;

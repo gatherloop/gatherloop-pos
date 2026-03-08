@@ -1,5 +1,5 @@
 import { useForm } from 'react-hook-form';
-import { CategoryCreateUsecase, CategoryForm } from '../../domain';
+import { CategoryCreateUsecase } from '../../domain';
 import { useController } from './controller';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -21,20 +21,9 @@ export const useCategoryCreateController = (usecase: CategoryCreateUsecase) => {
     resolver: zodResolver(z.object({ name: z.string().min(1) })),
   });
 
-  const onSubmit = (values: CategoryForm) => {
-    dispatch({ type: 'SUBMIT', values });
-  };
-
-  const isSubmitDisabled =
-    state.type === 'submitting' ||
-    state.type === 'submitError' ||
-    state.type === 'submitSuccess';
-
   return {
     state,
     dispatch,
     form,
-    onSubmit,
-    isSubmitDisabled,
   };
 };

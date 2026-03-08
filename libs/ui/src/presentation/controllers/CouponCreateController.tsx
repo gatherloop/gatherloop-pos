@@ -1,5 +1,5 @@
 import { useForm } from 'react-hook-form';
-import { CouponCreateUsecase, CouponForm } from '../../domain';
+import { CouponCreateUsecase } from '../../domain';
 import { useController } from './controller';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -27,20 +27,9 @@ export const useCouponCreateController = (usecase: CouponCreateUsecase) => {
     ),
   });
 
-  const onSubmit = (values: CouponForm) => {
-    dispatch({ type: 'SUBMIT', values });
-  };
-
-  const isSubmitDisabled =
-    state.type === 'submitting' ||
-    state.type === 'submitError' ||
-    state.type === 'submitSuccess';
-
   return {
     state,
     dispatch,
     form,
-    onSubmit,
-    isSubmitDisabled,
   };
 };

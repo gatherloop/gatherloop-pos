@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { MaterialForm, MaterialUpdateUsecase } from '../../domain';
+import { MaterialUpdateUsecase } from '../../domain';
 import { useController } from './controller';
 import { useToastController } from '@tamagui/toast';
 import { useForm } from 'react-hook-form';
@@ -27,20 +27,9 @@ export const useMaterialUpdateController = (usecase: MaterialUpdateUsecase) => {
     ),
   });
 
-  const onSubmit = (values: MaterialForm) => {
-    dispatch({ type: 'SUBMIT', values });
-  };
-
-  const isSubmitDisabled =
-    state.type === 'submitting' ||
-    state.type === 'submitError' ||
-    state.type === 'submitSuccess';
-
   return {
     state,
     dispatch,
     form,
-    onSubmit,
-    isSubmitDisabled,
   };
 };

@@ -30,9 +30,6 @@ export const useRentalCheckoutController = (usecase: RentalCheckoutUsecase) => {
     ),
   });
 
-  const onSubmit = (values: RentalCheckoutForm) =>
-    dispatch({ type: 'SUBMIT', values });
-
   const rentalsFieldArray = useFieldArray<RentalCheckoutForm, 'rentals', 'key'>(
     {
       name: 'rentals',
@@ -49,15 +46,11 @@ export const useRentalCheckoutController = (usecase: RentalCheckoutUsecase) => {
     rentalsFieldArray.append(newRental);
   };
 
-  const isSubmitDisabled = state.type === 'submitting';
-
   return {
     state,
     dispatch,
     form,
-    onSubmit,
     onAddItem,
-    isSubmitDisabled,
     rentalsFieldArray,
   };
 };

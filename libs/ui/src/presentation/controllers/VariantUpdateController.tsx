@@ -5,8 +5,6 @@ import { useToastController } from '@tamagui/toast';
 import { UseFieldArrayReturn, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { VariantFormViewProps } from '../components';
-import { match, P } from 'ts-pattern';
 
 export const useVariantUpdateController = (usecase: VariantUpdateUsecase) => {
   const { state, dispatch } = useController(usecase);
@@ -45,10 +43,6 @@ export const useVariantUpdateController = (usecase: VariantUpdateUsecase) => {
     ),
   });
 
-  const onSubmit = (values: VariantForm) => {
-    dispatch({ type: 'SUBMIT', values });
-  };
-
   const onAddMaterial = (
     newMaterial: Material,
     fieldArray: UseFieldArrayReturn<VariantForm, 'materials', 'key'>
@@ -85,39 +79,13 @@ export const useVariantUpdateController = (usecase: VariantUpdateUsecase) => {
     if (isItemExist) fieldArray.remove(itemIndex);
   };
 
-  const isSubmitDisabled =
-    state.type === 'submitting' || state.type === 'submitSuccess';
-
-  const onRetryButtonPress = () => dispatch({ type: 'FETCH' });
-
-  const variant = match(state)
-    .returnType<VariantFormViewProps['variant']>()
-    .with({ type: P.union('idle', 'loading') }, () => ({
-      type: 'loading',
-    }))
-    .with(
-      {
-        type: P.union('loaded', 'submitSuccess', 'submitError', 'submitting'),
-      },
-      () => ({
-        type: 'loaded',
-      })
-    )
-    .with({ type: 'error' }, () => ({ type: 'error' }))
-    .exhaustive();
-
   return {
     state,
     dispatch,
     isMaterialSheetOpen,
     onMaterialSheetOpenChange,
     form,
-    onSubmit,
     onAddMaterial,
     onRemoveMaterial,
-    isSubmitDisabled,
-    onRetryButtonPress,
-    variant,
-    product: state.product,
   };
 };

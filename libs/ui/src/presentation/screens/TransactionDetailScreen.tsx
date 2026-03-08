@@ -1,28 +1,41 @@
 import { ScrollView } from 'tamagui';
 import { TransactionDetail, Layout } from '../components';
-import { AuthLogoutUsecase, TransactionDetailUsecase } from '../../domain';
-import {
-  useAuthLogoutController,
-  useTransactionDetailController,
-} from '../controllers';
+import { TransactionCoupon, TransactionItem } from '../../domain';
 
 export type TransactionDetailScreenProps = {
-  transactionDetailUsecase: TransactionDetailUsecase;
-  authLogoutUsecase: AuthLogoutUsecase;
+  createdAt: string;
+  name: string;
+  orderNumber: number;
+  total: number;
+  transactionItems: TransactionItem[];
+  transactionCoupons: TransactionCoupon[];
+  paidAt?: string;
+  walletName?: string;
+  paidAmount: number;
+  onLogoutPress: () => void;
 };
 
 export const TransactionDetailScreen = (
   props: TransactionDetailScreenProps
 ) => {
-  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
-
-  const controller = useTransactionDetailController(
-    props.transactionDetailUsecase
-  );
   return (
-    <Layout {...authLogoutController} title="Detail Transaction" showBackButton>
+    <Layout
+      title="Detail Transaction"
+      showBackButton
+      onLogoutPress={props.onLogoutPress}
+    >
       <ScrollView>
-        <TransactionDetail {...controller} />
+        <TransactionDetail
+          createdAt={props.createdAt}
+          name={props.name}
+          orderNumber={props.orderNumber}
+          total={props.total}
+          transactionItems={props.transactionItems}
+          transactionCoupons={props.transactionCoupons}
+          paidAt={props.paidAt}
+          walletName={props.walletName}
+          paidAmount={props.paidAmount}
+        />
       </ScrollView>
     </Layout>
   );

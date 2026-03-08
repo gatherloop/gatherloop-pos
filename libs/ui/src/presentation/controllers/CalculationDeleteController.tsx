@@ -2,7 +2,6 @@ import { useToastController } from '@tamagui/toast';
 import { CalculationDeleteUsecase } from '../../domain';
 import { useController } from './controller';
 import { useEffect } from 'react';
-import { match, P } from 'ts-pattern';
 
 export const useCalculationDeleteController = (
   usecase: CalculationDeleteUsecase
@@ -17,28 +16,8 @@ export const useCalculationDeleteController = (
       toast.show('Delete Calculation Error');
   }, [state.type, toast]);
 
-  const onButtonConfirmPress = () => {
-    dispatch({ type: 'DELETE' });
-  };
-
-  const isOpen = match(state.type)
-    .with(
-      P.union('shown', 'deleting', 'deletingError', 'deletingSuccess'),
-      () => true
-    )
-    .otherwise(() => false);
-
-  const onCancel = () => dispatch({ type: 'HIDE_CONFIRMATION' });
-
-  const isButtonDisabled =
-    state.type === 'deleting' || state.type === 'deletingSuccess';
-
   return {
     state,
     dispatch,
-    onButtonConfirmPress,
-    isOpen,
-    onCancel,
-    isButtonDisabled,
   };
 };

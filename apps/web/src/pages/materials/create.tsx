@@ -1,4 +1,4 @@
-import { MaterialCreateScreen } from '@gatherloop-pos/ui';
+import { MaterialCreate } from '@gatherloop-pos/ui';
 import { GetServerSideProps } from 'next';
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
@@ -9,4 +9,4 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   };
 };
 
-export default MaterialCreateScreen;
+export default MaterialCreate;

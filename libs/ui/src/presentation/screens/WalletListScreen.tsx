@@ -2,40 +2,28 @@ import { Button } from 'tamagui';
 import { Link } from 'solito/link';
 import { Plus } from '@tamagui/lucide-icons';
 import { WalletList, Layout } from '../components';
-import { AuthLogoutUsecase, Wallet, WalletListUsecase } from '../../domain';
-import { useRouter } from 'solito/router';
-import {
-  useAuthLogoutController,
-  useWalletListController,
-} from '../controllers';
+import { Wallet } from '../../domain';
 
 export type WalletListScreenProps = {
-  walletListUsecase: WalletListUsecase;
-  authLogoutUsecase: AuthLogoutUsecase;
+  onLogoutPress: () => void;
+  onEditMenuPress: (wallet: Wallet) => void;
+  onItemPress: (wallet: Wallet) => void;
+  onTransferMenuPress: (wallet: Wallet) => void;
+  onRetryButtonPress: () => void;
+  variant: { type: 'loading' } | { type: 'error' } | { type: 'empty' } | { type: 'loaded'; items: Wallet[] };
 };
 
-export const WalletListScreen = (props: WalletListScreenProps) => {
-  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
-
-  const controller = useWalletListController(props.walletListUsecase);
-
-  const router = useRouter();
-
-  const onEditMenuPress = (material: Wallet) => {
-    router.push(`/wallets/${material.id}`);
-  };
-
-  const onItemPress = (material: Wallet) => {
-    router.push(`/wallets/${material.id}/transfers`);
-  };
-
-  const onTransferMenuPress = (material: Wallet) => {
-    router.push(`/wallets/${material.id}/transfers`);
-  };
-
+export const WalletListScreen = ({
+  onLogoutPress,
+  onEditMenuPress,
+  onItemPress,
+  onTransferMenuPress,
+  onRetryButtonPress,
+  variant,
+}: WalletListScreenProps) => {
   return (
     <Layout
-      {...authLogoutController}
+      onLogoutPress={onLogoutPress}
       title="Wallets"
       rightActionItem={
         <Link href="/wallets/create">
@@ -44,7 +32,8 @@ export const WalletListScreen = (props: WalletListScreenProps) => {
       }
     >
       <WalletList
-        {...controller}
+        variant={variant}
+        onRetryButtonPress={onRetryButtonPress}
         onEditMenuPress={onEditMenuPress}
         onItemPress={onItemPress}
         onTransferMenuPress={onTransferMenuPress}

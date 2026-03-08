@@ -1,31 +1,30 @@
 import { H4 } from 'tamagui';
 import { TransactionStatistic, Layout } from '../components';
-import {
-  useAuthLogoutController,
-  useTransactionStatisticListController,
-} from '../controllers';
-import {
-  AuthLogoutUsecase,
-  TransactionStatisticListUsecase,
-} from '../../domain';
 
 export type TransactionStatisticScreenProps = {
-  transactionStatisticListUsecase: TransactionStatisticListUsecase;
-  authLogoutUsecase: AuthLogoutUsecase;
+  onLogoutPress: () => void;
+  onGroupByChange: (groupBy: 'date' | 'month') => void;
+  onRetryButtonPress: () => void;
+  variant: { type: 'loading' } | { type: 'loaded' } | { type: 'error' };
+  totalStatistics: { x: string; y: number }[];
+  totalIncomeStatistics: { x: string; y: number }[];
+  groupBy: 'date' | 'month';
 };
 
 export const TransactionStatisticScreen = (
   props: TransactionStatisticScreenProps
 ) => {
-  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
-
-  const controller = useTransactionStatisticListController(
-    props.transactionStatisticListUsecase
-  );
   return (
-    <Layout {...authLogoutController} title="Dashboard">
+    <Layout onLogoutPress={props.onLogoutPress} title="Dashboard">
       <H4>Transaction Statistic</H4>
-      <TransactionStatistic {...controller} />
+      <TransactionStatistic
+        onGroupByChange={props.onGroupByChange}
+        onRetryButtonPress={props.onRetryButtonPress}
+        variant={props.variant}
+        totalStatistics={props.totalStatistics}
+        totalIncomeStatistics={props.totalIncomeStatistics}
+        groupBy={props.groupBy}
+      />
     </Layout>
   );
 };

@@ -1,0 +1,53 @@
+import {
+  ApiAuthRepository,
+  ApiMaterialRepository,
+  ApiProductRepository,
+  ApiVariantRepository,
+  UrlMaterialListQueryRepository,
+} from '../data';
+import {
+  AuthLogoutUsecase,
+  MaterialListParams,
+  MaterialListUsecase,
+  VariantCreateParams,
+  VariantCreateUsecase,
+} from '../domain';
+import { VariantCreateHandler } from '../presentation';
+import { QueryClient } from '@tanstack/react-query';
+
+export type VariantCreateProps = {
+  variantCreateParams: VariantCreateParams;
+  materialListParam: MaterialListParams;
+};
+
+export function VariantCreate({
+  variantCreateParams,
+  materialListParam,
+}: VariantCreateProps) {
+  const client = new QueryClient();
+  const variantRepository = new ApiVariantRepository(client);
+  const productRepository = new ApiProductRepository(client);
+  const materialRepository = new ApiMaterialRepository(client);
+  const materialListQueryRepository = new UrlMaterialListQueryRepository();
+  const authRepository = new ApiAuthRepository();
+
+  const materialListUsecase = new MaterialListUsecase(
+    materialRepository,
+    materialListQueryRepository,
+    materialListParam
+  );
+  const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
+  const variantCreateUsecase = new VariantCreateUsecase(
+    variantRepository,
+    productRepository,
+    variantCreateParams
+  );
+
+  return (
+    <VariantCreateHandler
+      variantCreateUsecase={variantCreateUsecase}
+      materialListUsecase={materialListUsecase}
+      authLogoutUsecase={authLogoutUsecase}
+    />
+  );
+}

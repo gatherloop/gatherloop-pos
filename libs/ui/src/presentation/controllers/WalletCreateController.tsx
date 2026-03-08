@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { WalletCreateUsecase, WalletForm } from '../../domain';
+import { WalletCreateUsecase } from '../../domain';
 import { useController } from './controller';
 import { useToastController } from '@tamagui/toast';
 import { useForm } from 'react-hook-form';
@@ -27,16 +27,9 @@ export const useWalletCreateController = (usecase: WalletCreateUsecase) => {
     ),
   });
 
-  const onSubmit = (values: WalletForm) => dispatch({ type: 'SUBMIT', values });
-
-  const isSubmitDisabled =
-    state.type === 'submitting' || state.type === 'submitSuccess';
-
   return {
     state,
     dispatch,
     form,
-    onSubmit,
-    isSubmitDisabled,
   };
 };

@@ -1,13 +1,13 @@
 import {
   ApiCategoryRepository,
-  ProductCreateScreen,
-  ProductCreateScreenProps,
+  ProductCreate,
+  ProductCreateProps,
 } from '@gatherloop-pos/ui';
 import { GetServerSideProps } from 'next';
 import { QueryClient } from '@tanstack/react-query';
 
 export const getServerSideProps: GetServerSideProps<
-  ProductCreateScreenProps
+  ProductCreateProps
 > = async (ctx) => {
   const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
   if (!isLoggedIn) {
@@ -25,4 +25,4 @@ export const getServerSideProps: GetServerSideProps<
   };
 };
 
-export default ProductCreateScreen;
+export default ProductCreate;

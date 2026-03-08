@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { WalletTransferCreateUsecase, WalletTransferForm } from '../../domain';
+import { WalletTransferCreateUsecase } from '../../domain';
 import { useController } from './controller';
 import { useToastController } from '@tamagui/toast';
 import { useForm } from 'react-hook-form';
@@ -28,24 +28,9 @@ export const useWalletTransferCreateController = (
     ),
   });
 
-  const onSubmit = (values: WalletTransferForm) =>
-    dispatch({ type: 'SUBMIT', values });
-
-  const isSubmitDisabled = state.type === 'submitting';
-
-  const walletSelectOptions = state.wallets
-    .filter((wallet) => wallet.id !== state.values.fromWalletId)
-    .map((wallet) => ({
-      label: wallet.name,
-      value: wallet.id,
-    }));
-
   return {
     state,
     dispatch,
     form,
-    onSubmit,
-    isSubmitDisabled,
-    walletSelectOptions,
   };
 };

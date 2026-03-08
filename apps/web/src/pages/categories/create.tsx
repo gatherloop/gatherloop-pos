@@ -1,4 +1,4 @@
-import { CategoryCreateScreen } from '@gatherloop-pos/ui';
+import { CategoryCreate } from '@gatherloop-pos/ui';
 import { GetServerSideProps } from 'next';
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
@@ -9,4 +9,4 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   };
 };
 
-export default CategoryCreateScreen;
+export default CategoryCreate;

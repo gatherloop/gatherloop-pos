@@ -1,272 +1,133 @@
 import { ScrollView } from 'tamagui';
 import {
   TransactionFormView,
-  TransactionItemSelect,
   Layout,
   TransactionPaymentAlert,
-  useConfirmationAlert,
+  TransactionItemSelect,
+  TransactionItemSelectProps,
   CouponList,
+  CouponListProps,
 } from '../components';
-import {
-  useAuthLogoutController,
-  useCouponListController,
-  useTransactionCreateController,
-  useTransactionPayController,
-} from '../controllers';
-import { useEffect } from 'react';
-import { useRouter } from 'solito/router';
-import {
-  AuthLogoutUsecase,
-  TransactionCreateUsecase,
-  TransactionPayUsecase,
-  TransactionItemSelectUsecase,
-  CouponListUsecase,
-} from '../../domain';
-import {
-  roundToNearest500,
-  TransactionPrintPayload,
-  usePrinter,
-} from '../../utils';
-import dayjs from 'dayjs';
-import { useTransactionItemSelectController } from '../controllers/TransactionItemSelectController';
+import { OptionValue, Product, TransactionForm, Wallet } from '../../domain';
+import { UseFormReturn, UseFieldArrayReturn } from 'react-hook-form';
+import { Coupon } from '../../domain';
 
 export type TransactionCreateScreenProps = {
-  transactionCreateUsecase: TransactionCreateUsecase;
-  transactionItemSelectUsecase: TransactionItemSelectUsecase;
-  transactionPayUsecase: TransactionPayUsecase;
-  couponListUsecase: CouponListUsecase;
-  authLogoutUsecase: AuthLogoutUsecase;
+  form: UseFormReturn<TransactionForm>;
+  onSubmit: (values: TransactionForm) => void;
+  isSubmitDisabled: boolean;
+  onLogoutPress: () => void;
+  isCouponSheetOpen: boolean;
+  onCouponSheetOpenChange: (open: boolean) => void;
+  itemsFieldArray: UseFieldArrayReturn<
+    TransactionForm,
+    'transactionItems',
+    'key'
+  >;
+  couponsFieldArray: UseFieldArrayReturn<
+    TransactionForm,
+    'transactionCoupons',
+    'key'
+  >;
+  transactionItemSelect: {
+    amount: number;
+    currentPage: number;
+    itemPerPage: number;
+    onAmountChange: (amount: number) => void;
+    onOptionValuesChange: (optionValues: OptionValue[]) => void;
+    onPageChange: (page: number) => void;
+    onRetryButtonPress: () => void;
+    onSearchValueChange: (value: string) => void;
+    onSelectProduct: (product: Product) => void;
+    onSubmit: () => void;
+    onUnselectProduct: () => void;
+    products: Product[];
+    searchValue: string;
+    selectedOptionValues: OptionValue[];
+    totalItem: number;
+    variant: TransactionItemSelectProps['variant'];
+    selectedProduct?: Product;
+  };
+  couponList: {
+    onItemPress: (coupon: Coupon) => void;
+    onRetryButtonPress: () => void;
+    variant: CouponListProps['variant'];
+  };
+  transactionPayment: {
+    form: UseFormReturn<{ wallet: Wallet; paidAmount: number }>;
+    isButtonDisabled: boolean;
+    onCancel: () => void;
+    isOpen: boolean;
+    onSubmit: (values: { wallet: Wallet; paidAmount: number }) => void;
+    transactionTotal: number;
+    walletSelectOptions: { label: string; value: Wallet }[];
+  };
 };
 
 export const TransactionCreateScreen = (
   props: TransactionCreateScreenProps
 ) => {
-  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
-
-  const transactionCreateController = useTransactionCreateController(
-    props.transactionCreateUsecase
-  );
-
-  const transactionItemSelectController = useTransactionItemSelectController(
-    props.transactionItemSelectUsecase
-  );
-
-  const transactionPayController = useTransactionPayController(
-    props.transactionPayUsecase
-  );
-
-  const couponListController = useCouponListController(props.couponListUsecase);
-
-  const router = useRouter();
-  const { print } = usePrinter();
-  const { show } = useConfirmationAlert();
-
-  useEffect(() => {
-    if (
-      transactionCreateController.state.type === 'submitSuccess' &&
-      transactionPayController.state.type === 'hidden'
-    ) {
-      let transactionTotal =
-        transactionCreateController.state.values.transactionItems.reduce(
-          (prev, curr) =>
-            prev + (curr.variant.price * curr.amount - curr.discountAmount),
-          0
-        );
-
-      transactionCreateController.state.values.transactionCoupons.forEach(
-        (couponItem) => {
-          const discountAmount =
-            couponItem.coupon.type === 'fixed'
-              ? couponItem.coupon.amount
-              : couponItem.coupon.type === 'percentage'
-              ? roundToNearest500(
-                  (transactionTotal * couponItem.coupon.amount) / 100
-                )
-              : 0;
-          transactionTotal -= discountAmount;
-        }
-      );
-
-      transactionPayController.dispatch({
-        type: 'SHOW_CONFIRMATION',
-        transactionId: transactionCreateController.state.transactionId ?? -1,
-        transactionTotal,
-      });
-    }
-  }, [
-    transactionCreateController.state.transactionId,
-    transactionCreateController.state.type,
-    transactionCreateController.state.values.transactionCoupons,
-    transactionCreateController.state.values.transactionItems,
-    transactionPayController,
-  ]);
-
-  useEffect(() => {
-    const selectedWallet = transactionPayController.state.wallets.find(
-      ({ id }) => id === transactionPayController.state.walletId
-    );
-
-    if (
-      transactionPayController.state.type === 'payingSuccess' &&
-      selectedWallet
-    ) {
-      const transaction: TransactionPrintPayload['transaction'] = {
-        createdAt: dayjs(new Date().toISOString()).format('DD/MM/YYYY HH:mm'),
-        paidAt: dayjs(new Date().toISOString()).format('DD/MM/YYYY HH:mm'),
-        name: transactionCreateController.form.getValues('name'),
-        orderNumber: transactionCreateController.form.getValues('orderNumber'),
-        items: transactionCreateController.form
-          .getValues('transactionItems')
-          .sort((a, b) =>
-            a.variant.product.name.localeCompare(b.variant.product.name)
-          )
-          .map(({ variant, amount, discountAmount, note }) => ({
-            name: `${variant.product.name} - ${variant.values
-              .map(({ optionValue: { name } }) => name)
-              .join(' - ')}`,
-            price: variant.price,
-            amount,
-            discountAmount,
-            note,
-          })),
-        coupons: transactionCreateController.form
-          .getValues('transactionCoupons')
-          .map(({ coupon }) => ({
-            amount: coupon.amount,
-            type: coupon.type === 'fixed' ? 'FIXED' : 'PERCENTAGE',
-            code: coupon.code,
-          })),
-        isCashless: selectedWallet.isCashless,
-        paidAmount: transactionPayController.state.paidAmount,
-      };
-
-      show({
-        title: 'Print Invoice',
-        description: 'Do you want to print invoice ?',
-        onConfirm: () => {
-          print({ type: 'INVOICE', transaction })
-            .then(() => {
-              show({
-                title: 'Print Order Slip',
-                description: 'Do you want to print order slip ?',
-                onConfirm: () => {
-                  print({ type: 'ORDER_SLIP', transaction }).then(() => {
-                    router.push('/transactions');
-                  });
-                },
-                onCancel: () => router.push('/transactions'),
-              });
-            })
-            .catch(() => {
-              router.push('/transactions');
-            });
-        },
-        onCancel: () => {
-          setTimeout(() => {
-            show({
-              title: 'Print Order Slip',
-              description: 'Do you want to print order slip ?',
-              onConfirm: () => {
-                print({ type: 'ORDER_SLIP', transaction }).then(() => {
-                  router.push('/transactions');
-                });
-              },
-              onCancel: () => router.push('/transactions'),
-            });
-          }, 200);
-        },
-      });
-    }
-  }, [
-    print,
-    router,
-    show,
-    transactionCreateController.form,
-    transactionPayController.state.paidAmount,
-    transactionPayController.state.type,
-    transactionPayController.state.walletId,
-    transactionPayController.state.wallets,
-  ]);
-
-  useEffect(() => {
-    if (
-      transactionItemSelectController.state.type === 'loadingVariantSuccess' &&
-      transactionItemSelectController.state.selectedVariant
-    ) {
-      transactionCreateController.onAddItem(
-        transactionItemSelectController.state.selectedVariant,
-        transactionItemSelectController.state.amount
-      );
-    }
-  }, [
-    transactionCreateController,
-    transactionItemSelectController.state.amount,
-    transactionItemSelectController.state.selectedVariant,
-    transactionItemSelectController.state.type,
-  ]);
-
-  const onCancelPayment = () => {
-    const transaction: TransactionPrintPayload['transaction'] = {
-      createdAt: dayjs(new Date().toISOString()).format('DD/MM/YYYY HH:mm'),
-      paidAt: dayjs(new Date().toISOString()).format('DD/MM/YYYY HH:mm'),
-      name: transactionCreateController.form.getValues('name'),
-      orderNumber: transactionCreateController.form.getValues('orderNumber'),
-      items: transactionCreateController.form
-        .getValues('transactionItems')
-        .sort((a, b) =>
-          a.variant.product.name.localeCompare(b.variant.product.name)
-        )
-        .map(({ variant, amount, discountAmount, note }) => ({
-          name: `${variant.product.name} - ${variant.values
-            .map(({ optionValue: { name } }) => name)
-            .join(' - ')}`,
-          price: variant.price,
-          amount,
-          discountAmount,
-          note,
-        })),
-      coupons: transactionCreateController.form
-        .getValues('transactionCoupons')
-        .map(({ coupon }) => ({
-          amount: coupon.amount,
-          type: coupon.type === 'fixed' ? 'FIXED' : 'PERCENTAGE',
-          code: coupon.code,
-        })),
-      isCashless: false,
-      paidAmount: 0,
-    };
-
-    show({
-      title: 'Print Order Slip',
-      description: 'Do you want to print order slip ?',
-      onConfirm: () => {
-        print({ type: 'ORDER_SLIP', transaction }).then(() => {
-          router.push('/transactions');
-        });
-      },
-      onCancel: () => router.push('/transactions'),
-    });
-  };
-
   return (
-    <Layout {...authLogoutController} title="Create Transaction" showBackButton>
+    <Layout
+      title="Create Transaction"
+      showBackButton
+      onLogoutPress={props.onLogoutPress}
+    >
       <ScrollView>
         <TransactionFormView
-          {...transactionCreateController}
+          form={props.form}
+          onSubmit={props.onSubmit}
+          isSubmitDisabled={props.isSubmitDisabled}
+          isCouponSheetOpen={props.isCouponSheetOpen}
+          onCouponSheetOpenChange={props.onCouponSheetOpenChange}
+          itemsFieldArray={props.itemsFieldArray}
+          couponsFieldArray={props.couponsFieldArray}
           TransactionItemSelect={() => (
-            <TransactionItemSelect {...transactionItemSelectController} />
+            <TransactionItemSelect
+              amount={props.transactionItemSelect.amount}
+              currentPage={props.transactionItemSelect.currentPage}
+              itemPerPage={props.transactionItemSelect.itemPerPage}
+              onAmountChange={props.transactionItemSelect.onAmountChange}
+              onOptionValuesChange={
+                props.transactionItemSelect.onOptionValuesChange
+              }
+              onPageChange={props.transactionItemSelect.onPageChange}
+              onRetryButtonPress={
+                props.transactionItemSelect.onRetryButtonPress
+              }
+              onSearchValueChange={
+                props.transactionItemSelect.onSearchValueChange
+              }
+              onSelectProduct={props.transactionItemSelect.onSelectProduct}
+              onSubmit={props.transactionItemSelect.onSubmit}
+              onUnselectProduct={props.transactionItemSelect.onUnselectProduct}
+              products={props.transactionItemSelect.products}
+              searchValue={props.transactionItemSelect.searchValue}
+              selectedOptionValues={
+                props.transactionItemSelect.selectedOptionValues
+              }
+              totalItem={props.transactionItemSelect.totalItem}
+              variant={props.transactionItemSelect.variant}
+              selectedProduct={props.transactionItemSelect.selectedProduct}
+            />
           )}
           TransactionCouponList={() => (
             <CouponList
-              {...couponListController}
-              onItemPress={transactionCreateController.onAddCoupon}
+              onItemPress={props.couponList.onItemPress}
+              onRetryButtonPress={props.couponList.onRetryButtonPress}
+              variant={props.couponList.variant}
             />
           )}
         />
       </ScrollView>
       <TransactionPaymentAlert
-        {...transactionPayController}
-        onCancel={onCancelPayment}
+        form={props.transactionPayment.form}
+        isButtonDisabled={props.transactionPayment.isButtonDisabled}
+        onCancel={props.transactionPayment.onCancel}
+        isOpen={props.transactionPayment.isOpen}
+        onSubmit={props.transactionPayment.onSubmit}
+        transactionTotal={props.transactionPayment.transactionTotal}
+        walletSelectOptions={props.transactionPayment.walletSelectOptions}
       />
     </Layout>
   );

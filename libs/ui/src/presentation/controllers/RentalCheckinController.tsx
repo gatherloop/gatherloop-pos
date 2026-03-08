@@ -36,9 +36,6 @@ export const useRentalCheckinController = (usecase: RentalCheckinUsecase) => {
     ),
   });
 
-  const onSubmit = (values: RentalCheckinForm) =>
-    dispatch({ type: 'SUBMIT', values });
-
   const rentalsFieldArray = useFieldArray<RentalCheckinForm, 'rentals', 'key'>({
     name: 'rentals',
     control: form.control,
@@ -53,8 +50,6 @@ export const useRentalCheckinController = (usecase: RentalCheckinUsecase) => {
       });
     }
   };
-
-  const isSubmitDisabled = state.type === 'submitting';
 
   const onToggleCustomizeCheckinDateTime = (checked: boolean) => {
     if (checked) {
@@ -75,9 +70,7 @@ export const useRentalCheckinController = (usecase: RentalCheckinUsecase) => {
     state,
     dispatch,
     form,
-    onSubmit,
     onAddItem,
-    isSubmitDisabled,
     rentalsFieldArray,
     onToggleCustomizeCheckinDateTime,
   };

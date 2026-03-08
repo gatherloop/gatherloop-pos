@@ -1,62 +1,42 @@
 import { Button } from 'tamagui';
 import { Link } from 'solito/link';
 import { Plus } from '@tamagui/lucide-icons';
-import { CategoryDeleteAlert, CategoryList, Layout } from '../components';
 import {
-  AuthLogoutUsecase,
-  Category,
-  CategoryDeleteUsecase,
-  CategoryListUsecase,
-} from '../../domain';
-import {
-  useAuthLogoutController,
-  useCategoryDeleteController,
-  useCategoryListController,
-} from '../controllers';
-import { useEffect } from 'react';
-import { useRouter } from 'solito/router';
+  CategoryDeleteAlert,
+  CategoryList,
+  Layout,
+  CategoryListProps,
+} from '../components';
+import { Category } from '../../domain';
 
 export type CategoryListScreenProps = {
-  categoryListUsecase: CategoryListUsecase;
-  categoryDeleteUsecase: CategoryDeleteUsecase;
-  authLogoutUsecase: AuthLogoutUsecase;
+  onLogoutPress: () => void;
+  onEditMenuPress: (category: Category) => void;
+  onDeleteMenuPress: (category: Category) => void;
+  onItemPress: (category: Category) => void;
+  onRetryButtonPress: () => void;
+  variant: CategoryListProps['variant'];
+  isDeleteButtonDisabled: boolean;
+  isDeleteModalOpen: boolean;
+  onDeleteCancel: () => void;
+  onDeleteConfirm: () => void;
 };
 
-export const CategoryListScreen = (props: CategoryListScreenProps) => {
-  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
-
-  const categoryListController = useCategoryListController(
-    props.categoryListUsecase
-  );
-  const categoryDeleteController = useCategoryDeleteController(
-    props.categoryDeleteUsecase
-  );
-
-  const router = useRouter();
-
-  useEffect(() => {
-    if (categoryDeleteController.state.type === 'deletingSuccess')
-      categoryListController.dispatch({ type: 'FETCH' });
-  }, [categoryDeleteController.state.type, categoryListController]);
-
-  const onEditMenuPress = (category: Category) => {
-    router.push(`/categories/${category.id}`);
-  };
-
-  const onItemPress = (category: Category) => {
-    router.push(`/categories/${category.id}`);
-  };
-
-  const onDeleteMenuPress = (category: Category) => {
-    categoryDeleteController.dispatch({
-      type: 'SHOW_CONFIRMATION',
-      categoryId: category.id,
-    });
-  };
-
+export const CategoryListScreen = ({
+  onLogoutPress,
+  onEditMenuPress,
+  onDeleteMenuPress,
+  onItemPress,
+  onRetryButtonPress,
+  variant,
+  isDeleteButtonDisabled,
+  isDeleteModalOpen,
+  onDeleteCancel,
+  onDeleteConfirm,
+}: CategoryListScreenProps) => {
   return (
     <Layout
-      {...authLogoutController}
+      onLogoutPress={onLogoutPress}
       title="Categories"
       rightActionItem={
         <Link href="/categories/create">
@@ -65,12 +45,18 @@ export const CategoryListScreen = (props: CategoryListScreenProps) => {
       }
     >
       <CategoryList
-        {...categoryListController}
+        onRetryButtonPress={onRetryButtonPress}
+        variant={variant}
         onEditMenuPress={onEditMenuPress}
         onDeleteMenuPress={onDeleteMenuPress}
         onItemPress={onItemPress}
       />
-      <CategoryDeleteAlert {...categoryDeleteController} />
+      <CategoryDeleteAlert
+        isOpen={isDeleteModalOpen}
+        isButtonDisabled={isDeleteButtonDisabled}
+        onCancel={onDeleteCancel}
+        onConfirm={onDeleteConfirm}
+      />
     </Layout>
   );
 };

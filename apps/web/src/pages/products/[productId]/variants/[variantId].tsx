@@ -1,6 +1,6 @@
 import {
-  VariantUpdateScreen,
-  VariantUpdateScreenProps,
+  VariantUpdate,
+  VariantUpdateProps,
   ApiVariantRepository,
   ApiProductRepository,
   ApiMaterialRepository,
@@ -11,7 +11,7 @@ import { GetServerSideProps } from 'next';
 import { QueryClient } from '@tanstack/react-query';
 
 export const getServerSideProps: GetServerSideProps<
-  VariantUpdateScreenProps,
+  VariantUpdateProps,
   { productId: string; variantId: string }
 > = async (ctx) => {
   const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
@@ -68,4 +68,4 @@ export const getServerSideProps: GetServerSideProps<
   };
 };
 
-export default VariantUpdateScreen;
+export default VariantUpdate;

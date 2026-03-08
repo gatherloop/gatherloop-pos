@@ -1,15 +1,15 @@
 import {
   ApiProductRepository,
   getUrlFromCtx,
-  ProductListScreen,
-  ProductListScreenProps,
+  ProductList,
+  ProductListProps,
   UrlProductListQueryRepository,
 } from '@gatherloop-pos/ui';
 import { GetServerSideProps } from 'next';
 import { QueryClient } from '@tanstack/react-query';
 
 export const getServerSideProps: GetServerSideProps<
-  ProductListScreenProps
+  ProductListProps
 > = async (ctx) => {
   const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
   if (!isLoggedIn) {
@@ -51,4 +51,4 @@ export const getServerSideProps: GetServerSideProps<
   };
 };
 
-export default ProductListScreen;
+export default ProductList;

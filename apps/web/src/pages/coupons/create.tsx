@@ -1,4 +1,4 @@
-import { CouponCreateScreen } from '@gatherloop-pos/ui';
+import { CouponCreate } from '@gatherloop-pos/ui';
 import { GetServerSideProps } from 'next';
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
@@ -9,4 +9,4 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   };
 };
 
-export default CouponCreateScreen;
+export default CouponCreate;

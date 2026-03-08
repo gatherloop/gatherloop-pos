@@ -1,61 +1,55 @@
 import { Button } from 'tamagui';
 import { Link } from 'solito/link';
 import { Plus } from '@tamagui/lucide-icons';
-import { MaterialDeleteAlert, MaterialList, Layout } from '../components';
 import {
-  AuthLogoutUsecase,
-  Material,
-  MaterialDeleteUsecase,
-  MaterialListUsecase,
-} from '../../domain';
-import {
-  useAuthLogoutController,
-  useMaterialDeleteController,
-  useMaterialListController,
-} from '../controllers';
-import { useEffect } from 'react';
-import { useRouter } from 'solito/router';
+  MaterialDeleteAlert,
+  MaterialList,
+  Layout,
+  MaterialListProps,
+} from '../components';
+import { Material } from '../../domain';
 
 export type MaterialListScreenProps = {
-  materialListUsecase: MaterialListUsecase;
-  materialDeleteUsecase: MaterialDeleteUsecase;
-  authLogoutUsecase: AuthLogoutUsecase;
+  onLogoutPress: () => void;
+  onEditMenuPress: (material: Material) => void;
+  onDeleteMenuPress: (material: Material) => void;
+  onItemPress: (material: Material) => void;
+  onRetryButtonPress: () => void;
+  variant: MaterialListProps['variant'];
+  searchValue: string;
+  onSearchValueChange: (value: string) => void;
+  currentPage: number;
+  onPageChange: (page: number) => void;
+  totalItem: number;
+  itemPerPage: number;
+
+  isDeleteModalOpen: boolean;
+  isDeleteButtonDisabled: boolean;
+  onDeleteCancel: () => void;
+  onDeleteConfirm: () => void;
 };
 
-export const MaterialListScreen = (props: MaterialListScreenProps) => {
-  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
-  const materialListController = useMaterialListController(
-    props.materialListUsecase
-  );
-  const materialDeleteController = useMaterialDeleteController(
-    props.materialDeleteUsecase
-  );
-
-  const router = useRouter();
-
-  useEffect(() => {
-    if (materialDeleteController.state.type === 'deletingSuccess')
-      materialListController.dispatch({ type: 'FETCH' });
-  }, [materialDeleteController.state.type, materialListController]);
-
-  const onEditMenuPress = (material: Material) => {
-    router.push(`/materials/${material.id}`);
-  };
-
-  const onItemPress = (material: Material) => {
-    router.push(`/materials/${material.id}`);
-  };
-
-  const onDeleteMenuPress = (material: Material) => {
-    materialDeleteController.dispatch({
-      type: 'SHOW_CONFIRMATION',
-      materialId: material.id,
-    });
-  };
-
+export const MaterialListScreen = ({
+  onLogoutPress,
+  onEditMenuPress,
+  onDeleteMenuPress,
+  onItemPress,
+  onRetryButtonPress,
+  variant,
+  searchValue,
+  onSearchValueChange,
+  currentPage,
+  onPageChange,
+  totalItem,
+  itemPerPage,
+  isDeleteModalOpen,
+  isDeleteButtonDisabled,
+  onDeleteCancel,
+  onDeleteConfirm,
+}: MaterialListScreenProps) => {
   return (
     <Layout
-      {...authLogoutController}
+      onLogoutPress={onLogoutPress}
       title="Materials"
       rightActionItem={
         <Link href="/materials/create">
@@ -64,12 +58,24 @@ export const MaterialListScreen = (props: MaterialListScreenProps) => {
       }
     >
       <MaterialList
-        {...materialListController}
+        variant={variant}
+        searchValue={searchValue}
+        onSearchValueChange={onSearchValueChange}
+        currentPage={currentPage}
+        onPageChange={onPageChange}
+        totalItem={totalItem}
+        itemPerPage={itemPerPage}
+        onRetryButtonPress={onRetryButtonPress}
         onEditMenuPress={onEditMenuPress}
         onDeleteMenuPress={onDeleteMenuPress}
         onItemPress={onItemPress}
       />
-      <MaterialDeleteAlert {...materialDeleteController} />
+      <MaterialDeleteAlert
+        isOpen={isDeleteModalOpen}
+        isButtonDisabled={isDeleteButtonDisabled}
+        onCancel={onDeleteCancel}
+        onConfirm={onDeleteConfirm}
+      />
     </Layout>
   );
 };

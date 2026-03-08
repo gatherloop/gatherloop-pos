@@ -1,22 +1,20 @@
 import { Layout } from '../components/base';
-import { BudgetList } from '../components';
-import {
-  useAuthLogoutController,
-  useBudgetListController,
-} from '../controllers';
-import { AuthLogoutUsecase, BudgetListUsecase } from '../../domain';
+import { BudgetList, BudgetListProps } from '../components';
 
 export type BudgetListScreenProps = {
-  budgetListUsecase: BudgetListUsecase;
-  authLogoutUsecase: AuthLogoutUsecase;
+  onLogoutPress: () => void;
+  onRetryButtonPress: () => void;
+  variant: BudgetListProps['variant'];
 };
 
-export const BudgetListScreen = (props: BudgetListScreenProps) => {
-  const budgetListController = useBudgetListController(props.budgetListUsecase);
-  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
+export const BudgetListScreen = ({
+  onLogoutPress,
+  onRetryButtonPress,
+  variant,
+}: BudgetListScreenProps) => {
   return (
-    <Layout title="Budgets" {...authLogoutController}>
-      <BudgetList {...budgetListController} />
+    <Layout title="Budgets" onLogoutPress={onLogoutPress}>
+      <BudgetList onRetryButtonPress={onRetryButtonPress} variant={variant} />
     </Layout>
   );
 };

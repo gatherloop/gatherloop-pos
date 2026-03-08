@@ -50,9 +50,6 @@ export const useTransactionCreateController = (
     ),
   });
 
-  const onSubmit = (values: TransactionForm) =>
-    dispatch({ type: 'SUBMIT', values });
-
   const itemsFieldArray = useFieldArray<
     TransactionForm,
     'transactionItems',
@@ -111,17 +108,13 @@ export const useTransactionCreateController = (
     setIsCouponSheetOpen(false);
   };
 
-  const isSubmitDisabled = state.type === 'submitting';
-
   return {
     isCouponSheetOpen,
     onCouponSheetOpenChange,
     state,
     dispatch,
     form,
-    onSubmit,
     onAddItem,
-    isSubmitDisabled,
     itemsFieldArray,
     couponsFieldArray,
     onAddCoupon,

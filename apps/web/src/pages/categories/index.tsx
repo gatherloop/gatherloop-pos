@@ -1,14 +1,14 @@
 import {
   ApiCategoryRepository,
-  CategoryListScreen,
-  CategoryListScreenProps,
+  CategoryList,
+  CategoryListProps,
 } from '@gatherloop-pos/ui';
 import { GetServerSideProps } from 'next';
 import { QueryClient } from '@tanstack/react-query';
 
-export const getServerSideProps: GetServerSideProps<
-  CategoryListScreenProps
-> = async (ctx) => {
+export const getServerSideProps: GetServerSideProps<CategoryListProps> = async (
+  ctx
+) => {
   const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
   if (!isLoggedIn) {
     return {
@@ -30,4 +30,4 @@ export const getServerSideProps: GetServerSideProps<
   };
 };
 
-export default CategoryListScreen;
+export default CategoryList;

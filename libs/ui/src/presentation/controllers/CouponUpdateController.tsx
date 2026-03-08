@@ -1,12 +1,10 @@
 import { useEffect } from 'react';
-import { CouponForm, CouponUpdateUsecase } from '../../domain';
+import { CouponUpdateUsecase } from '../../domain';
 import { useController } from './controller';
 import { useToastController } from '@tamagui/toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { match, P } from 'ts-pattern';
-import { CouponFormViewProps } from '../components';
 
 export const useCouponUpdateController = (usecase: CouponUpdateUsecase) => {
   const { state, dispatch } = useController(usecase);
@@ -29,38 +27,9 @@ export const useCouponUpdateController = (usecase: CouponUpdateUsecase) => {
     ),
   });
 
-  const onSubmit = (values: CouponForm) => {
-    dispatch({ type: 'SUBMIT', values });
-  };
-
-  const isSubmitDisabled =
-    state.type === 'submitting' || state.type === 'submitSuccess';
-
-  const variant = match(state)
-    .returnType<CouponFormViewProps['variant']>()
-    .with({ type: P.union('idle', 'loading') }, () => ({
-      type: 'loading',
-    }))
-    .with(
-      {
-        type: P.union('loaded', 'submitError', 'submitSuccess', 'submitting'),
-      },
-      () => ({
-        type: 'loaded',
-      })
-    )
-    .with({ type: 'error' }, () => ({
-      type: 'error',
-      onRetryButtonPress: () => dispatch({ type: 'FETCH' }),
-    }))
-    .exhaustive();
-
   return {
     state,
     dispatch,
     form,
-    onSubmit,
-    isSubmitDisabled,
-    variant,
   };
 };

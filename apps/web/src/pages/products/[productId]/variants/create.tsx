@@ -2,15 +2,15 @@ import {
   ApiProductRepository,
   ApiMaterialRepository,
   getUrlFromCtx,
-  VariantCreateScreen,
-  VariantCreateScreenProps,
+  VariantCreate,
+  VariantCreateProps,
   UrlMaterialListQueryRepository,
 } from '@gatherloop-pos/ui';
 import { GetServerSideProps } from 'next';
 import { QueryClient } from '@tanstack/react-query';
 
 export const getServerSideProps: GetServerSideProps<
-  VariantCreateScreenProps,
+  VariantCreateProps,
   { productId: string }
 > = async (ctx) => {
   const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
@@ -63,4 +63,4 @@ export const getServerSideProps: GetServerSideProps<
   };
 };
 
-export default VariantCreateScreen;
+export default VariantCreate;

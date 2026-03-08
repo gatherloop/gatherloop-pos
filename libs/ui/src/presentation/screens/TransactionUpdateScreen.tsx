@@ -3,82 +3,79 @@ import {
   TransactionFormView,
   Layout,
   TransactionItemSelect,
+  TransactionItemSelectProps,
   CouponList,
+  CouponListProps,
 } from '../components';
-import {
-  useAuthLogoutController,
-  useCouponListController,
-  useTransactionUpdateController,
-} from '../controllers';
-import { useEffect } from 'react';
-import { useRouter } from 'solito/router';
-import {
-  AuthLogoutUsecase,
-  TransactionUpdateUsecase,
-  TransactionItemSelectUsecase,
-  CouponListUsecase,
-} from '../../domain';
-import { useTransactionItemSelectController } from '../controllers/TransactionItemSelectController';
+import { OptionValue, Product, TransactionForm, Coupon } from '../../domain';
+import { UseFormReturn, UseFieldArrayReturn } from 'react-hook-form';
 
 export type TransactionUpdateScreenProps = {
-  transactionUpdateUsecase: TransactionUpdateUsecase;
-  transactionItemSelectUsecase: TransactionItemSelectUsecase;
-  couponListUsecase: CouponListUsecase;
-  authLogoutUsecase: AuthLogoutUsecase;
+  form: UseFormReturn<TransactionForm>;
+  onSubmit: (values: TransactionForm) => void;
+  isSubmitDisabled: boolean;
+  onLogoutPress: () => void;
+  isCouponSheetOpen: boolean;
+  onCouponSheetOpenChange: (open: boolean) => void;
+  itemsFieldArray: UseFieldArrayReturn<
+    TransactionForm,
+    'transactionItems',
+    'key'
+  >;
+  couponsFieldArray: UseFieldArrayReturn<
+    TransactionForm,
+    'transactionCoupons',
+    'key'
+  >;
+  transactionItemSelect: {
+    amount: number;
+    currentPage: number;
+    itemPerPage: number;
+    onAmountChange: (amount: number) => void;
+    onOptionValuesChange: (optionValues: OptionValue[]) => void;
+    onPageChange: (page: number) => void;
+    onRetryButtonPress: () => void;
+    onSearchValueChange: (value: string) => void;
+    onSelectProduct: (product: Product) => void;
+    onSubmit: () => void;
+    onUnselectProduct: () => void;
+    products: Product[];
+    searchValue: string;
+    selectedOptionValues: OptionValue[];
+    totalItem: number;
+    variant: TransactionItemSelectProps['variant'];
+    selectedProduct?: Product;
+  };
+  couponList: {
+    onItemPress: (coupon: Coupon) => void;
+    onRetryButtonPress: () => void;
+    variant: CouponListProps['variant'];
+  };
 };
 
 export const TransactionUpdateScreen = (
   props: TransactionUpdateScreenProps
 ) => {
-  const authLogoutController = useAuthLogoutController(props.authLogoutUsecase);
-
-  const transactionUpdateController = useTransactionUpdateController(
-    props.transactionUpdateUsecase
-  );
-
-  const transactionItemSelectController = useTransactionItemSelectController(
-    props.transactionItemSelectUsecase
-  );
-
-  const couponListController = useCouponListController(props.couponListUsecase);
-
-  const router = useRouter();
-
-  useEffect(() => {
-    if (transactionUpdateController.state.type === 'submitSuccess')
-      router.push('/transactions');
-  }, [transactionUpdateController.state.type, router]);
-
-  useEffect(() => {
-    if (
-      transactionItemSelectController.state.type === 'loadingVariantSuccess' &&
-      transactionItemSelectController.state.selectedVariant
-    ) {
-      transactionUpdateController.onAddItem(
-        transactionItemSelectController.state.selectedVariant,
-        transactionItemSelectController.state.amount
-      );
-    }
-  }, [
-    transactionUpdateController,
-    transactionItemSelectController.state.selectedVariant,
-    transactionItemSelectController.state.type,
-    transactionItemSelectController.state.amount,
-  ]);
-
   return (
-    <Layout {...authLogoutController} title="Update Transaction" showBackButton>
+    <Layout
+      title="Update Transaction"
+      showBackButton
+      onLogoutPress={props.onLogoutPress}
+    >
       <ScrollView>
         <TransactionFormView
-          {...transactionUpdateController}
+          form={props.form}
+          onSubmit={props.onSubmit}
+          isSubmitDisabled={props.isSubmitDisabled}
+          isCouponSheetOpen={props.isCouponSheetOpen}
+          onCouponSheetOpenChange={props.onCouponSheetOpenChange}
+          itemsFieldArray={props.itemsFieldArray}
+          couponsFieldArray={props.couponsFieldArray}
           TransactionItemSelect={() => (
-            <TransactionItemSelect {...transactionItemSelectController} />
+            <TransactionItemSelect {...props.transactionItemSelect} />
           )}
           TransactionCouponList={() => (
-            <CouponList
-              {...couponListController}
-              onItemPress={transactionUpdateController.onAddCoupon}
-            />
+            <CouponList {...props.couponList} />
           )}
         />
       </ScrollView>

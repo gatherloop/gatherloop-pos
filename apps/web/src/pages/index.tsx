@@ -1,15 +1,15 @@
 import {
   ApiTransactionRepository,
   getUrlFromCtx,
-  TransactionStatisticScreen,
-  TransactionStatisticScreenProps,
+  TransactionStatisticApp,
+  TransactionStatisticAppProps,
   UrlTransactionStatisticListQueryRepository,
 } from '@gatherloop-pos/ui';
 import { GetServerSideProps } from 'next';
 import { QueryClient } from '@tanstack/react-query';
 
 export const getServerSideProps: GetServerSideProps<
-  TransactionStatisticScreenProps
+  TransactionStatisticAppProps
 > = async (ctx) => {
   const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
   if (!isLoggedIn) {
@@ -37,4 +37,4 @@ export const getServerSideProps: GetServerSideProps<
   };
 };
 
-export default TransactionStatisticScreen;
+export default TransactionStatisticApp;
