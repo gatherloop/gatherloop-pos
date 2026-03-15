@@ -7,6 +7,9 @@ import {
 } from '../repositories';
 import { Usecase } from './IUsecase';
 import { ExpenseListQueryRepository } from '../repositories/expenseListQuery';
+import { createDebounce } from '../../utils';
+
+const changeParamsDebounce = createDebounce();
 
 type Context = {
   expenses: Expense[];
@@ -124,7 +127,7 @@ export class ExpenseListUsecase extends Usecase<
       .returnType<ExpenseListState>()
       .with(
         [{ type: P.union('idle', 'error') }, { type: 'FETCH' }],
-        ([state]) => ({ ...state, type: 'loading' })
+        ([state]) => ({ ...state, type: 'loading', errorMessage: null })
       )
       .with(
         [{ type: 'loading' }, { type: 'FETCH_SUCCESS' }],
@@ -142,7 +145,7 @@ export class ExpenseListUsecase extends Usecase<
         ([state, { message }]) => ({
           ...state,
           type: 'error',
-          message,
+          errorMessage: message,
         })
       )
       .with([{ type: 'loaded' }, { type: 'FETCH' }], ([state]) => ({
@@ -241,23 +244,24 @@ export class ExpenseListUsecase extends Usecase<
           this.expenseListQueryRepository.setWalletId(walletId);
           this.expenseListQueryRepository.setBudgetId(budgetId);
 
-          const { expenses, totalItem } = this.expenseRepository.getExpenseList(
-            {
-              page,
-              itemPerPage,
-              orderBy,
-              query,
-              sortBy,
-              walletId,
-              budgetId,
-            }
-          );
+          changeParamsDebounce(() => {
+            const { expenses, totalItem } =
+              this.expenseRepository.getExpenseList({
+                page,
+                itemPerPage,
+                orderBy,
+                query,
+                sortBy,
+                walletId,
+                budgetId,
+              });
 
-          if (expenses.length > 0) {
-            dispatch({ type: 'REVALIDATE', expenses, totalItem });
-          } else {
-            dispatch({ type: 'FETCH' });
-          }
+            if (expenses.length > 0) {
+              dispatch({ type: 'REVALIDATE', expenses, totalItem });
+            } else {
+              dispatch({ type: 'FETCH' });
+            }
+          }, 0);
         }
       )
       .with(

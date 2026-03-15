@@ -60,7 +60,7 @@ export class CalculationListUsecase extends Usecase<
       .returnType<CalculationListState>()
       .with(
         [{ type: P.union('idle', 'error') }, { type: 'FETCH' }],
-        ([state]) => ({ ...state, type: 'loading' })
+        ([state]) => ({ ...state, type: 'loading', errorMessage: null })
       )
       .with(
         [{ type: 'loading' }, { type: 'FETCH_SUCCESS' }],
@@ -75,7 +75,7 @@ export class CalculationListUsecase extends Usecase<
         ([state, { message }]) => ({
           ...state,
           type: 'error',
-          message,
+          errorMessage: message,
         })
       )
       .with([{ type: 'loaded' }, { type: 'FETCH' }], ([state]) => ({

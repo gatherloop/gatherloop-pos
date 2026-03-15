@@ -128,7 +128,7 @@ export class TransactionListUsecase extends Usecase<
       .returnType<TransactionListState>()
       .with(
         [{ type: P.union('idle', 'error') }, { type: 'FETCH' }],
-        ([state]) => ({ ...state, type: 'loading' })
+        ([state]) => ({ ...state, type: 'loading', errorMessage: null })
       )
       .with(
         [{ type: 'loading' }, { type: 'FETCH_SUCCESS' }],
@@ -145,7 +145,7 @@ export class TransactionListUsecase extends Usecase<
         ([state, { message }]) => ({
           ...state,
           type: 'error',
-          message,
+          errorMessage: message,
         })
       )
       .with([{ type: 'loaded' }, { type: 'FETCH' }], ([state]) => ({

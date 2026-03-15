@@ -82,6 +82,7 @@ export class TransactionStatisticListUsecase extends Usecase<
       .with([{ type: 'error' }, { type: 'FETCH' }], ([state]) => ({
         ...state,
         type: 'loading',
+        errorMessage: null,
       }))
       .with(
         [{ type: 'loading' }, { type: 'FETCH_SUCCESS' }],
