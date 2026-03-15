@@ -84,12 +84,12 @@ func TestMaterialUsecase_GetMaterialList(t *testing.T) {
 
 func TestMaterialUsecase_GetMaterialById(t *testing.T) {
 	tests := []struct {
-		name               string
-		id                 int64
-		setupMock          func(r *mock.MockMaterialRepository)
-		expectedName       string
+		name                string
+		id                  int64
+		setupMock           func(r *mock.MockMaterialRepository)
+		expectedName        string
 		expectedWeeklyUsage float32
-		expectedError      *domain.Error
+		expectedError       *domain.Error
 	}{
 		{
 			name: "success — enriched with weekly usage",

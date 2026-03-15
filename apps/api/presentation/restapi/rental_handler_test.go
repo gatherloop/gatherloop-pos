@@ -43,9 +43,10 @@ func TestRentalHandler_GetRentalList(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:           "invalid skip param",
-			url:            "/rentals?skip=abc",
-			setupMocks:     func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository) {},
+			name: "invalid skip param",
+			url:  "/rentals?skip=abc",
+			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository) {
+			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
@@ -94,9 +95,10 @@ func TestRentalHandler_GetRentalById(t *testing.T) {
 			expectedStatus: http.StatusNotFound,
 		},
 		{
-			name:           "invalid id",
-			rentalId:       "abc",
-			setupMocks:     func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository) {},
+			name:     "invalid id",
+			rentalId: "abc",
+			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository) {
+			},
 			expectedStatus: http.StatusBadRequest,
 		},
 	}
@@ -133,9 +135,10 @@ func TestRentalHandler_CheckinRentals(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:           "invalid JSON body",
-			body:           `{invalid`,
-			setupMocks:     func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository) {},
+			name: "invalid JSON body",
+			body: `{invalid`,
+			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository) {
+			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
@@ -184,9 +187,10 @@ func TestRentalHandler_CheckoutRentals(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:           "invalid JSON body",
-			body:           `{invalid`,
-			setupMocks:     func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository) {},
+			name: "invalid JSON body",
+			body: `{invalid`,
+			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository) {
+			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
@@ -233,9 +237,10 @@ func TestRentalHandler_DeleteRentalById(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:           "invalid id",
-			rentalId:       "abc",
-			setupMocks:     func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository) {},
+			name:     "invalid id",
+			rentalId: "abc",
+			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository) {
+			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{

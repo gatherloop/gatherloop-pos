@@ -13,12 +13,12 @@ import (
 
 func TestCalculationUsecase_CreateCalculation(t *testing.T) {
 	tests := []struct {
-		name                    string
-		input                   domain.Calculation
-		setupMock               func(calcRepo *mock.MockCalculationRepository, walletRepo *mock.MockWalletRepository)
+		name                     string
+		input                    domain.Calculation
+		setupMock                func(calcRepo *mock.MockCalculationRepository, walletRepo *mock.MockWalletRepository)
 		expectedTotalCalculation float32
-		expectedTotalWallet     float32
-		expectedError           *domain.Error
+		expectedTotalWallet      float32
+		expectedError            *domain.Error
 	}{
 		{
 			name: "success — computes totals from items and wallet balance",

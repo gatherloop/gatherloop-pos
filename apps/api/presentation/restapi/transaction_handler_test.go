@@ -97,9 +97,10 @@ func TestTransactionHandler_GetTransactionById(t *testing.T) {
 			expectedStatus: http.StatusNotFound,
 		},
 		{
-			name:           "invalid id",
-			transactionId:  "abc",
-			setupMocks:     func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository, budgetRepo *mock.MockBudgetRepository) {},
+			name:          "invalid id",
+			transactionId: "abc",
+			setupMocks: func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository, budgetRepo *mock.MockBudgetRepository) {
+			},
 			expectedStatus: http.StatusBadRequest,
 		},
 	}
@@ -136,9 +137,10 @@ func TestTransactionHandler_CreateTransaction(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:           "invalid JSON body",
-			body:           `{invalid`,
-			setupMocks:     func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository, budgetRepo *mock.MockBudgetRepository) {},
+			name: "invalid JSON body",
+			body: `{invalid`,
+			setupMocks: func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository, budgetRepo *mock.MockBudgetRepository) {
+			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
@@ -188,10 +190,11 @@ func TestTransactionHandler_UpdateTransactionById(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:           "invalid id",
-			transactionId:  "abc",
-			body:           `{}`,
-			setupMocks:     func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository, budgetRepo *mock.MockBudgetRepository) {},
+			name:          "invalid id",
+			transactionId: "abc",
+			body:          `{}`,
+			setupMocks: func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository, budgetRepo *mock.MockBudgetRepository) {
+			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
@@ -241,9 +244,10 @@ func TestTransactionHandler_DeleteTransactionById(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:           "invalid id",
-			transactionId:  "abc",
-			setupMocks:     func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository, budgetRepo *mock.MockBudgetRepository) {},
+			name:          "invalid id",
+			transactionId: "abc",
+			setupMocks: func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository, budgetRepo *mock.MockBudgetRepository) {
+			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
@@ -296,10 +300,11 @@ func TestTransactionHandler_PayTransaction(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:           "invalid id",
-			transactionId:  "abc",
-			body:           `{"walletId": 1, "paidAmount": 20000}`,
-			setupMocks:     func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository, budgetRepo *mock.MockBudgetRepository) {},
+			name:          "invalid id",
+			transactionId: "abc",
+			body:          `{"walletId": 1, "paidAmount": 20000}`,
+			setupMocks: func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository, budgetRepo *mock.MockBudgetRepository) {
+			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
@@ -348,9 +353,10 @@ func TestTransactionHandler_UnpayTransaction(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name:           "invalid id",
-			transactionId:  "abc",
-			setupMocks:     func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository, budgetRepo *mock.MockBudgetRepository) {},
+			name:          "invalid id",
+			transactionId: "abc",
+			setupMocks: func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository, budgetRepo *mock.MockBudgetRepository) {
+			},
 			expectedStatus: http.StatusBadRequest,
 		},
 	}

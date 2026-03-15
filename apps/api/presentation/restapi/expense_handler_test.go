@@ -42,9 +42,10 @@ func TestExpenseHandler_GetExpenseList(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:           "invalid skip param",
-			url:            "/expenses?skip=abc",
-			setupMocks:     func(expRepo *mock.MockExpenseRepository, budgetRepo *mock.MockBudgetRepository, walletRepo *mock.MockWalletRepository) {},
+			name: "invalid skip param",
+			url:  "/expenses?skip=abc",
+			setupMocks: func(expRepo *mock.MockExpenseRepository, budgetRepo *mock.MockBudgetRepository, walletRepo *mock.MockWalletRepository) {
+			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
@@ -93,9 +94,10 @@ func TestExpenseHandler_GetExpenseById(t *testing.T) {
 			expectedStatus: http.StatusNotFound,
 		},
 		{
-			name:           "invalid id",
-			expenseId:      "abc",
-			setupMocks:     func(expRepo *mock.MockExpenseRepository, budgetRepo *mock.MockBudgetRepository, walletRepo *mock.MockWalletRepository) {},
+			name:      "invalid id",
+			expenseId: "abc",
+			setupMocks: func(expRepo *mock.MockExpenseRepository, budgetRepo *mock.MockBudgetRepository, walletRepo *mock.MockWalletRepository) {
+			},
 			expectedStatus: http.StatusBadRequest,
 		},
 	}
@@ -135,9 +137,10 @@ func TestExpenseHandler_CreateExpense(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:           "invalid JSON body",
-			body:           `{invalid`,
-			setupMocks:     func(expRepo *mock.MockExpenseRepository, budgetRepo *mock.MockBudgetRepository, walletRepo *mock.MockWalletRepository) {},
+			name: "invalid JSON body",
+			body: `{invalid`,
+			setupMocks: func(expRepo *mock.MockExpenseRepository, budgetRepo *mock.MockBudgetRepository, walletRepo *mock.MockWalletRepository) {
+			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
@@ -188,9 +191,10 @@ func TestExpenseHandler_DeleteExpenseById(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:           "invalid id",
-			expenseId:      "abc",
-			setupMocks:     func(expRepo *mock.MockExpenseRepository, budgetRepo *mock.MockBudgetRepository, walletRepo *mock.MockWalletRepository) {},
+			name:      "invalid id",
+			expenseId: "abc",
+			setupMocks: func(expRepo *mock.MockExpenseRepository, budgetRepo *mock.MockBudgetRepository, walletRepo *mock.MockWalletRepository) {
+			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{

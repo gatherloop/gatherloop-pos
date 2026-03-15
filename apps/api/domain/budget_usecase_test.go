@@ -156,12 +156,12 @@ func TestBudgetUsecase_CreateBudget(t *testing.T) {
 
 func TestBudgetUsecase_UpdateBudgetById(t *testing.T) {
 	tests := []struct {
-		name             string
-		id               int64
-		input            domain.Budget
-		setupMock        func(r *mock.MockBudgetRepository)
-		expectedBalance  float32
-		expectedError    *domain.Error
+		name            string
+		id              int64
+		input           domain.Budget
+		setupMock       func(r *mock.MockBudgetRepository)
+		expectedBalance float32
+		expectedError   *domain.Error
 	}{
 		{
 			name:  "success",
