@@ -1,3 +1,5 @@
+//go:generate mockgen -source=wallet_repository.go -destination=../data/mock/wallet_repository.go -package=mock
+
 package domain
 
 import (

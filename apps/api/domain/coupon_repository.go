@@ -1,3 +1,5 @@
+//go:generate mockgen -source=coupon_repository.go -destination=../data/mock/coupon_repository.go -package=mock
+
 package domain
 
 import (

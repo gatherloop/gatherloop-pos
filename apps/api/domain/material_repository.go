@@ -1,3 +1,5 @@
+//go:generate mockgen -source=material_repository.go -destination=../data/mock/material_repository.go -package=mock
+
 package domain
 
 import (
