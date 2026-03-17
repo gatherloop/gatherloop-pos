@@ -28,7 +28,7 @@ export class ApiExpenseRepository implements ExpenseRepository {
         queryKey: expenseFindByIdQueryKey(expenseId),
         queryFn: () => expenseFindById(expenseId, options),
       })
-      .then(({ data }) => transformers.expense(data));
+      .then(({ data }) => expenseTransformers.expense(data));
   };
 
   createExpense: ExpenseRepository['createExpense'] = (formValues) => {
@@ -81,7 +81,7 @@ export class ApiExpenseRepository implements ExpenseRepository {
         queryFn: () => expenseList(params, options),
       })
       .then((data) => ({
-        expenses: data.data.map(transformers.expense),
+        expenses: data.data.map(expenseTransformers.expense),
         totalItem: data.meta.total,
       }));
   };
@@ -109,13 +109,13 @@ export class ApiExpenseRepository implements ExpenseRepository {
     )?.data;
     this.client.removeQueries({ queryKey: expenseListQueryKey(params) });
     return {
-      expenses: res?.data.map(transformers.expense) ?? [],
+      expenses: res?.data.map(expenseTransformers.expense) ?? [],
       totalItem: res?.meta.total ?? 0,
     };
   };
 }
 
-const transformers = {
+export const expenseTransformers = {
   expense: (expense: ApiExpense): Expense => ({
     id: expense.id,
     createdAt: expense.createdAt,

@@ -30,7 +30,7 @@ export class ApiSupplierRepository implements SupplierRepository {
         queryKey: supplierFindByIdQueryKey(supplierId),
         queryFn: () => supplierFindById(supplierId, options),
       })
-      .then(({ data }) => transformers.supplier(data));
+      .then(({ data }) => supplierTransformers.supplier(data));
   };
 
   createSupplier: SupplierRepository['createSupplier'] = (formValues) => {
@@ -72,7 +72,7 @@ export class ApiSupplierRepository implements SupplierRepository {
     this.client.removeQueries({ queryKey: supplierListQueryKey(params) });
 
     return {
-      suppliers: res?.data.map(transformers.supplier) ?? [],
+      suppliers: res?.data.map(supplierTransformers.supplier) ?? [],
       totalItem: res?.meta.total ?? 0,
     };
   };
@@ -107,13 +107,13 @@ export class ApiSupplierRepository implements SupplierRepository {
         queryFn: () => supplierList(params, options),
       })
       .then((data) => ({
-        suppliers: data.data.map(transformers.supplier),
+        suppliers: data.data.map(supplierTransformers.supplier),
         totalItem: data.meta.total,
       }));
   };
 }
 
-const transformers = {
+export const supplierTransformers = {
   supplier: (supplier: ApiSupplier): Supplier => ({
     id: supplier.id,
     createdAt: supplier.createdAt,

@@ -30,7 +30,7 @@ export class ApiCalculationRepository implements CalculationRepository {
         queryKey: calculationFindByIdQueryKey(calculationId),
         queryFn: () => calculationFindById(calculationId, options),
       })
-      .then(({ data }) => transformers.calculation(data));
+      .then(({ data }) => calculationTransformers.calculation(data));
   };
 
   createCalculation: CalculationRepository['createCalculation'] = (
@@ -74,11 +74,11 @@ export class ApiCalculationRepository implements CalculationRepository {
         queryFn: () =>
           calculationList({ sortBy: 'created_at', order: 'desc' }, options),
       })
-      .then((data) => data.data.map(transformers.calculation));
+      .then((data) => data.data.map(calculationTransformers.calculation));
   };
 }
 
-const transformers = {
+export const calculationTransformers = {
   calculation: (calculation: ApiCalculation): Calculation => ({
     id: calculation.id,
     createdAt: calculation.createdAt,

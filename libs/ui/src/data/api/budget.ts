@@ -21,11 +21,11 @@ export class ApiBudgetRepository implements BudgetRepository {
         queryKey: budgetListQueryKey(),
         queryFn: () => budgetList(options),
       })
-      .then((data) => data.data.map(transformers.budget));
+      .then((data) => data.data.map(budgetTransformers.budget));
   };
 }
 
-const transformers = {
+export const budgetTransformers = {
   budget: (budget: ApiBudget): Budget => ({
     id: budget.id,
     createdAt: budget.createdAt,

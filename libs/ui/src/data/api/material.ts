@@ -30,7 +30,7 @@ export class ApiMaterialRepository implements MaterialRepository {
         queryKey: materialFindByIdQueryKey(materialId),
         queryFn: () => materialFindById(materialId, options),
       })
-      .then(({ data }) => transformers.material(data));
+      .then(({ data }) => materialTransformers.material(data));
   };
 
   createMaterial: MaterialRepository['createMaterial'] = (formValues) => {
@@ -72,7 +72,7 @@ export class ApiMaterialRepository implements MaterialRepository {
     this.client.removeQueries({ queryKey: materialListQueryKey(params) });
 
     return {
-      materials: res?.data.map(transformers.material) ?? [],
+      materials: res?.data.map(materialTransformers.material) ?? [],
       totalItem: res?.meta.total ?? 0,
     };
   };
@@ -107,13 +107,13 @@ export class ApiMaterialRepository implements MaterialRepository {
         queryFn: () => materialList(params, options),
       })
       .then((data) => ({
-        materials: data.data.map(transformers.material),
+        materials: data.data.map(materialTransformers.material),
         totalItem: data.meta.total,
       }));
   };
 }
 
-const transformers = {
+export const materialTransformers = {
   material: (material: ApiMaterial): Material => ({
     id: material.id,
     createdAt: material.createdAt,
