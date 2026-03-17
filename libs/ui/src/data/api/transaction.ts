@@ -42,7 +42,7 @@ export class ApiTransactionRepository implements TransactionRepository {
         queryKey: transactionStatisticsQueryKey({ groupBy }),
       });
 
-      return res?.data.map(transformers.transactionStatistic) ?? [];
+      return res?.data.map(transactionTransformers.transactionStatistic) ?? [];
     };
 
   fetchTransactionStatisticList = (
@@ -54,7 +54,7 @@ export class ApiTransactionRepository implements TransactionRepository {
         queryKey: transactionStatisticsQueryKey({ groupBy }),
         queryFn: () => transactionStatistics({ groupBy }, options),
       })
-      .then((data) => data.data.map(transformers.transactionStatistic));
+      .then((data) => data.data.map(transactionTransformers.transactionStatistic));
   };
 
   payTransaction: TransactionRepository['payTransaction'] = (
@@ -80,7 +80,7 @@ export class ApiTransactionRepository implements TransactionRepository {
         queryKey: transactionFindByIdQueryKey(transactionId),
         queryFn: () => transactionFindById(transactionId, options),
       })
-      .then(({ data }) => transformers.transaction(data));
+      .then(({ data }) => transactionTransformers.transaction(data));
   };
 
   createTransaction: TransactionRepository['createTransaction'] = (
@@ -154,7 +154,7 @@ export class ApiTransactionRepository implements TransactionRepository {
     this.client.removeQueries({ queryKey: transactionListQueryKey(params) });
 
     return {
-      transactions: res?.data.map(transformers.transaction) ?? [],
+      transactions: res?.data.map(transactionTransformers.transaction) ?? [],
       totalItem: res?.meta.total ?? 0,
     };
   };
@@ -195,14 +195,14 @@ export class ApiTransactionRepository implements TransactionRepository {
       })
       .then((data) => {
         return {
-          transactions: data.data.map(transformers.transaction),
+          transactions: data.data.map(transactionTransformers.transaction),
           totalItem: data.meta.total,
         };
       });
   };
 }
 
-const transformers = {
+export const transactionTransformers = {
   transactionStatistic: (
     transactionStatistic: ApiTransactionStatistic
   ): TransactionStatistic => ({

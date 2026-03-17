@@ -79,7 +79,7 @@ export class ApiRentalRepository implements RentalRepository {
     this.client.removeQueries({ queryKey: rentalListQueryKey(params) });
 
     return {
-      rentals: res?.data.map(transformers.rental) ?? [],
+      rentals: res?.data.map(rentalTransformers.rental) ?? [],
       totalItem: res?.meta.total ?? 0,
     };
   };
@@ -117,14 +117,14 @@ export class ApiRentalRepository implements RentalRepository {
       })
       .then((data) => {
         return {
-          rentals: data.data.map(transformers.rental),
+          rentals: data.data.map(rentalTransformers.rental),
           totalItem: data.meta.total,
         };
       });
   };
 }
 
-const transformers = {
+export const rentalTransformers = {
   rental: (rental: ApiRental): Rental => ({
     id: rental.id,
     code: rental.code,

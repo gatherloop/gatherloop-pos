@@ -26,7 +26,7 @@ export class ApiCouponRepository implements CouponRepository {
         queryKey: couponFindByIdQueryKey(couponId),
         queryFn: () => couponFindById(couponId, options),
       })
-      .then(({ data }) => transformers.coupon(data));
+      .then(({ data }) => couponTransformers.coupon(data));
   };
 
   createCoupon: CouponRepository['createCoupon'] = (formValues) => {
@@ -47,11 +47,11 @@ export class ApiCouponRepository implements CouponRepository {
         queryKey: couponListQueryKey(),
         queryFn: () => couponList(options),
       })
-      .then((data) => data.data.map(transformers.coupon));
+      .then((data) => data.data.map(couponTransformers.coupon));
   };
 }
 
-const transformers = {
+export const couponTransformers = {
   coupon: (coupon: ApiCoupon): Coupon => ({
     id: coupon.id,
     amount: coupon.amount,

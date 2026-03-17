@@ -29,7 +29,7 @@ export class ApiCategoryRepository implements CategoryRepository {
         queryKey: categoryFindByIdQueryKey(categoryId),
         queryFn: () => categoryFindById(categoryId, options),
       })
-      .then(({ data }) => transformers.category(data));
+      .then(({ data }) => categoryTransformers.category(data));
   };
 
   createCategory: CategoryRepository['createCategory'] = (formValues) => {
@@ -57,11 +57,11 @@ export class ApiCategoryRepository implements CategoryRepository {
         queryKey: categoryListQueryKey(),
         queryFn: () => categoryList(options),
       })
-      .then((data) => data.data.map(transformers.category));
+      .then((data) => data.data.map(categoryTransformers.category));
   };
 }
 
-const transformers = {
+export const categoryTransformers = {
   category: (category: ApiCategory): Category => ({
     id: category.id,
     createdAt: category.createdAt,

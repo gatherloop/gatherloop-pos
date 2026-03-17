@@ -43,7 +43,7 @@ export class ApiWalletRepository implements WalletRepository {
             options
           ),
       })
-      .then((data) => data.data.map(transformers.walletTransfer));
+      .then((data) => data.data.map(walletTransformers.walletTransfer));
   };
 
   createWalletTransfer: WalletRepository['createWalletTransfer'] = (
@@ -61,7 +61,7 @@ export class ApiWalletRepository implements WalletRepository {
         queryKey: walletFindByIdQueryKey(walletId),
         queryFn: () => walletFindById(walletId, options),
       })
-      .then(({ data }) => transformers.wallet(data));
+      .then(({ data }) => walletTransformers.wallet(data));
   };
 
   createWallet: WalletRepository['createWallet'] = (formValues) => {
@@ -78,11 +78,11 @@ export class ApiWalletRepository implements WalletRepository {
         queryKey: walletListQueryKey(),
         queryFn: () => walletList(options),
       })
-      .then((data) => data.data.map(transformers.wallet));
+      .then((data) => data.data.map(walletTransformers.wallet));
   };
 }
 
-const transformers = {
+export const walletTransformers = {
   wallet: (wallet: ApiWallet): Wallet => ({
     id: wallet.id,
     createdAt: wallet.createdAt,
