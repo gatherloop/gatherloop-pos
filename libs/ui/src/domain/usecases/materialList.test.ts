@@ -8,35 +8,20 @@ import {
   MockMaterialRepository,
   MockMaterialListQueryRepository,
 } from '../../data/mock';
-import { UsecaseTester } from '../../utils/usecase';
+import { UsecaseTester, flushPromises } from '../../utils/usecase';
 
 describe('MaterialListUsecase', () => {
-  let materialRepository: MockMaterialRepository;
-  let materialListQueryRepository: MockMaterialListQueryRepository;
-
-  beforeEach(() => {
-    materialRepository = new MockMaterialRepository();
-    materialListQueryRepository = new MockMaterialListQueryRepository();
-  });
-
   describe('success flow', () => {
-    const repository = new MockMaterialRepository();
-    const materialListQueryRepository = new MockMaterialListQueryRepository();
-    const usecase = new MaterialListUsecase(
-      repository,
-      materialListQueryRepository,
-      { materials: [], totalItem: 0 }
-    );
+    it('should transition loading → loaded → revalidating → loaded → changingParams', async () => {
+      const repository = new MockMaterialRepository();
+      const materialListQueryRepository = new MockMaterialListQueryRepository();
+      const usecase = new MaterialListUsecase(
+        repository,
+        materialListQueryRepository,
+        { materials: [], totalItem: 0 }
+      );
 
-    let materialList: UsecaseTester<
-      MaterialListUsecase,
-      MaterialListState,
-      MaterialListAction,
-      MaterialListParams
-    >;
-
-    it('initialize with loading state', () => {
-      materialList = new UsecaseTester<
+      const materialList = new UsecaseTester<
         MaterialListUsecase,
         MaterialListState,
         MaterialListAction,
@@ -55,10 +40,8 @@ describe('MaterialListUsecase', () => {
         itemPerPage: materialListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
-    });
 
-    it('transition to loaded state after success fetch', async () => {
-      await Promise.resolve();
+      await flushPromises();
       expect(materialList.state).toEqual({
         type: 'loaded',
         materials: repository.materials,
@@ -71,9 +54,7 @@ describe('MaterialListUsecase', () => {
         itemPerPage: materialListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
-    });
 
-    it('transition to revalidating state when FETCH action is dispatched', () => {
       materialList.dispatch({ type: 'FETCH' });
       expect(materialList.state).toEqual({
         type: 'revalidating',
@@ -87,10 +68,8 @@ describe('MaterialListUsecase', () => {
         itemPerPage: materialListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
-    });
 
-    it('transition to loaded state after success fetch', async () => {
-      await Promise.resolve();
+      await flushPromises();
       expect(materialList.state).toEqual({
         type: 'loaded',
         materials: repository.materials,
@@ -103,9 +82,7 @@ describe('MaterialListUsecase', () => {
         itemPerPage: materialListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
-    });
 
-    it('transition to changingParams state after CHANGE_PARAMS action is dispatched', () => {
       materialList.dispatch({ type: 'CHANGE_PARAMS', page: 2 });
       expect(materialList.state).toEqual({
         type: 'changingParams',
@@ -123,23 +100,17 @@ describe('MaterialListUsecase', () => {
   });
 
   describe('error flow', () => {
-    const materialRepository = new MockMaterialRepository();
-    materialRepository.shouldFail = true;
-    const materialListQueryRepository = new MockMaterialListQueryRepository();
-    const usecase = new MaterialListUsecase(
-      materialRepository,
-      materialListQueryRepository,
-      { materials: [], totalItem: 0 }
-    );
-    let materialList: UsecaseTester<
-      MaterialListUsecase,
-      MaterialListState,
-      MaterialListAction,
-      MaterialListParams
-    >;
+    it('should transition loading → error → loading → loaded', async () => {
+      const materialRepository = new MockMaterialRepository();
+      materialRepository.shouldFail = true;
+      const materialListQueryRepository = new MockMaterialListQueryRepository();
+      const usecase = new MaterialListUsecase(
+        materialRepository,
+        materialListQueryRepository,
+        { materials: [], totalItem: 0 }
+      );
 
-    it('initialize with loading state', () => {
-      materialList = new UsecaseTester<
+      const materialList = new UsecaseTester<
         MaterialListUsecase,
         MaterialListState,
         MaterialListAction,
@@ -158,10 +129,8 @@ describe('MaterialListUsecase', () => {
         itemPerPage: materialListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
-    });
 
-    it('transition to error state after failed fetch', async () => {
-      await Promise.resolve();
+      await flushPromises();
       expect(materialList.state).toEqual({
         type: 'error',
         materials: [],
@@ -174,9 +143,7 @@ describe('MaterialListUsecase', () => {
         itemPerPage: materialListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
-    });
 
-    it('transition to loading state when FETCH action is dispatched', () => {
       materialRepository.shouldFail = false;
       materialList.dispatch({ type: 'FETCH' });
       expect(materialList.state).toEqual({
@@ -191,10 +158,8 @@ describe('MaterialListUsecase', () => {
         itemPerPage: materialListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
-    });
 
-    it('transition to loaded state after successful fetch', async () => {
-      await Promise.resolve();
+      await flushPromises();
       expect(materialList.state).toEqual({
         type: 'loaded',
         materials: materialRepository.materials,
@@ -211,6 +176,8 @@ describe('MaterialListUsecase', () => {
   });
 
   it('should show loaded state when initial data is given', async () => {
+    const materialRepository = new MockMaterialRepository();
+    const materialListQueryRepository = new MockMaterialListQueryRepository();
     const materials = [
       {
         id: 1,

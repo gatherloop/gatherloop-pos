@@ -5,24 +5,17 @@ import {
   WalletTransferListParams,
 } from './walletTransferList';
 import { MockWalletRepository } from '../../data/mock';
-import { UsecaseTester } from '../../utils/usecase';
+import { UsecaseTester, flushPromises } from '../../utils/usecase';
 
 describe('WalletTransferListUsecase', () => {
   describe('success flow', () => {
-    const repository = new MockWalletRepository();
-    const usecase = new WalletTransferListUsecase(repository, {
-      walletId: 1,
-      walletTransfers: [],
-    });
-    let walletTransferList: UsecaseTester<
-      WalletTransferListUsecase,
-      WalletTransferListState,
-      WalletTransferListAction,
-      WalletTransferListParams
-    >;
-
-    it('initialize with loading state', () => {
-      walletTransferList = new UsecaseTester<
+    it('should transition loading -> loaded -> revalidating -> loaded', async () => {
+      const repository = new MockWalletRepository();
+      const usecase = new WalletTransferListUsecase(repository, {
+        walletId: 1,
+        walletTransfers: [],
+      });
+      const walletTransferList = new UsecaseTester<
         WalletTransferListUsecase,
         WalletTransferListState,
         WalletTransferListAction,
@@ -34,28 +27,22 @@ describe('WalletTransferListUsecase', () => {
         walletTransfers: [],
         errorMessage: null,
       });
-    });
 
-    it('transition to loaded state after success fetch', async () => {
-      await Promise.resolve();
+      await flushPromises();
       expect(walletTransferList.state).toEqual({
         type: 'loaded',
         walletTransfers: repository.walletTransfers,
         errorMessage: null,
       });
-    });
 
-    it('transition to revalidating state when FETCH action is dispatched', () => {
       walletTransferList.dispatch({ type: 'FETCH' });
       expect(walletTransferList.state).toEqual({
         type: 'revalidating',
         walletTransfers: repository.walletTransfers,
         errorMessage: null,
       });
-    });
 
-    it('transition to loaded state after success fetch', async () => {
-      await Promise.resolve();
+      await flushPromises();
       expect(walletTransferList.state).toEqual({
         type: 'loaded',
         walletTransfers: repository.walletTransfers,
@@ -65,21 +52,14 @@ describe('WalletTransferListUsecase', () => {
   });
 
   describe('failed flow', () => {
-    const repository = new MockWalletRepository();
-    repository.setShouldFail(true);
-    const usecase = new WalletTransferListUsecase(repository, {
-      walletId: 1,
-      walletTransfers: [],
-    });
-    let walletTransferList: UsecaseTester<
-      WalletTransferListUsecase,
-      WalletTransferListState,
-      WalletTransferListAction,
-      WalletTransferListParams
-    >;
-
-    it('initialize with loading state', () => {
-      walletTransferList = new UsecaseTester<
+    it('should transition loading -> error -> loading -> loaded', async () => {
+      const repository = new MockWalletRepository();
+      repository.setShouldFail(true);
+      const usecase = new WalletTransferListUsecase(repository, {
+        walletId: 1,
+        walletTransfers: [],
+      });
+      const walletTransferList = new UsecaseTester<
         WalletTransferListUsecase,
         WalletTransferListState,
         WalletTransferListAction,
@@ -91,18 +71,14 @@ describe('WalletTransferListUsecase', () => {
         walletTransfers: [],
         errorMessage: null,
       });
-    });
 
-    it('transition to error state after failed fetch', async () => {
-      await Promise.resolve();
+      await flushPromises();
       expect(walletTransferList.state).toEqual({
         type: 'error',
         walletTransfers: [],
         errorMessage: 'Failed to fetch wallets',
       });
-    });
 
-    it('transition to loading state after FETCH action is dispatched', () => {
       repository.setShouldFail(false);
       walletTransferList.dispatch({ type: 'FETCH' });
       expect(walletTransferList.state).toEqual({
@@ -110,10 +86,8 @@ describe('WalletTransferListUsecase', () => {
         walletTransfers: [],
         errorMessage: null,
       });
-    });
 
-    it('transition to loaded state after success fetch', async () => {
-      await Promise.resolve();
+      await flushPromises();
       expect(walletTransferList.state).toEqual({
         type: 'loaded',
         walletTransfers: repository.walletTransfers,

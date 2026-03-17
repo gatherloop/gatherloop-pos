@@ -4,49 +4,38 @@ import {
   AuthLogoutAction,
 } from './authLogout';
 import { MockAuthRepository } from '../../data/mock';
-import { UsecaseTester } from '../../utils/usecase';
+import { UsecaseTester, flushPromises } from '../../utils/usecase';
 
 describe('AuthLogoutUsecase', () => {
   describe('success flow', () => {
-    const repository = new MockAuthRepository();
-    const usecase = new AuthLogoutUsecase(repository);
-    let tester: UsecaseTester<AuthLogoutUsecase, AuthLogoutState, AuthLogoutAction, undefined>;
+    it('should transition idle → loading → loaded', async () => {
+      const repository = new MockAuthRepository();
+      const usecase = new AuthLogoutUsecase(repository);
+      const tester = new UsecaseTester<AuthLogoutUsecase, AuthLogoutState, AuthLogoutAction, undefined>(usecase);
 
-    it('initializes in idle state', () => {
-      tester = new UsecaseTester(usecase);
       expect(tester.state.type).toBe('idle');
-    });
 
-    it('transitions to loading when LOGOUT is dispatched', () => {
       tester.dispatch({ type: 'LOGOUT' });
       expect(tester.state.type).toBe('loading');
-    });
 
-    it('transitions to loaded after successful logout', async () => {
-      await Promise.resolve();
+      await flushPromises();
       expect(tester.state.type).toBe('loaded');
     });
   });
 
   describe('error flow', () => {
-    const repository = new MockAuthRepository();
-    repository.setShouldFail(true);
-    const usecase = new AuthLogoutUsecase(repository);
-    let tester: UsecaseTester<AuthLogoutUsecase, AuthLogoutState, AuthLogoutAction, undefined>;
+    it('should transition idle → loading → idle (error auto-recovers)', async () => {
+      const repository = new MockAuthRepository();
+      repository.setShouldFail(true);
+      const usecase = new AuthLogoutUsecase(repository);
+      const tester = new UsecaseTester<AuthLogoutUsecase, AuthLogoutState, AuthLogoutAction, undefined>(usecase);
 
-    it('initializes in idle state', () => {
-      tester = new UsecaseTester(usecase);
       expect(tester.state.type).toBe('idle');
-    });
 
-    it('transitions to loading when LOGOUT is dispatched', () => {
       tester.dispatch({ type: 'LOGOUT' });
       expect(tester.state.type).toBe('loading');
-    });
 
-    it('returns to idle state after logout error', async () => {
-      await Promise.resolve();
-      // LOGOUT_ERROR transitions back to idle
+      await flushPromises();
       expect(tester.state.type).toBe('idle');
     });
   });
