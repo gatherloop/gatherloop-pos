@@ -1,5 +1,8 @@
 import { Usecase } from '../domain';
 
+export const flushPromises = () =>
+  new Promise((resolve) => setTimeout(resolve, 0));
+
 export class UsecaseTester<
   UsecaseScenario extends Usecase<State, Action, Params>,
   State,

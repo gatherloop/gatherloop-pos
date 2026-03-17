@@ -8,35 +8,20 @@ import {
   MockRentalRepository,
   MockRentalListQueryRepository,
 } from '../../data/mock';
-import { UsecaseTester } from '../../utils/usecase';
+import { UsecaseTester, flushPromises } from '../../utils/usecase';
 
 describe('RentalListUsecase', () => {
-  let rentalRepository: MockRentalRepository;
-  let rentalListQueryRepository: MockRentalListQueryRepository;
-
-  beforeEach(() => {
-    rentalRepository = new MockRentalRepository();
-    rentalListQueryRepository = new MockRentalListQueryRepository();
-  });
-
   describe('success flow', () => {
-    const repository = new MockRentalRepository();
-    const rentalListQueryRepository = new MockRentalListQueryRepository();
-    const usecase = new RentalListUsecase(
-      repository,
-      rentalListQueryRepository,
-      { rentals: [], totalItem: 0 }
-    );
+    it('should transition loading → loaded → revalidating → loaded → changingParams', async () => {
+      const repository = new MockRentalRepository();
+      const rentalListQueryRepository = new MockRentalListQueryRepository();
+      const usecase = new RentalListUsecase(
+        repository,
+        rentalListQueryRepository,
+        { rentals: [], totalItem: 0 }
+      );
 
-    let rentalList: UsecaseTester<
-      RentalListUsecase,
-      RentalListState,
-      RentalListAction,
-      RentalListParams
-    >;
-
-    it('initialize with loading state', () => {
-      rentalList = new UsecaseTester<
+      const rentalList = new UsecaseTester<
         RentalListUsecase,
         RentalListState,
         RentalListAction,
@@ -56,10 +41,8 @@ describe('RentalListUsecase', () => {
         itemPerPage: rentalListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
-    });
 
-    it('transition to loaded state after success fetch', async () => {
-      await Promise.resolve();
+      await flushPromises();
       expect(rentalList.state).toEqual({
         type: 'loaded',
         rentals: repository.rentals,
@@ -73,9 +56,7 @@ describe('RentalListUsecase', () => {
         itemPerPage: rentalListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
-    });
 
-    it('transition to revalidating state when FETCH action is dispatched', () => {
       rentalList.dispatch({ type: 'FETCH' });
       expect(rentalList.state).toEqual({
         type: 'revalidating',
@@ -90,10 +71,8 @@ describe('RentalListUsecase', () => {
         itemPerPage: rentalListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
-    });
 
-    it('transition to loaded state after success fetch', async () => {
-      await Promise.resolve();
+      await flushPromises();
       expect(rentalList.state).toEqual({
         type: 'loaded',
         rentals: repository.rentals,
@@ -107,9 +86,7 @@ describe('RentalListUsecase', () => {
         itemPerPage: rentalListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
-    });
 
-    it('transition to changingParams state after CHANGE_PARAMS action is dispatched', () => {
       rentalList.dispatch({ type: 'CHANGE_PARAMS', page: 2 });
       expect(rentalList.state).toEqual({
         type: 'changingParams',
@@ -128,23 +105,16 @@ describe('RentalListUsecase', () => {
   });
 
   describe('error flow', () => {
-    const rentalRepository = new MockRentalRepository();
-    rentalRepository.setShouldFail(true);
-    const rentalListQueryRepository = new MockRentalListQueryRepository();
-    const usecase = new RentalListUsecase(
-      rentalRepository,
-      rentalListQueryRepository,
-      { rentals: [], totalItem: 0 }
-    );
-    let rentalList: UsecaseTester<
-      RentalListUsecase,
-      RentalListState,
-      RentalListAction,
-      RentalListParams
-    >;
-
-    it('initialize with loading state', () => {
-      rentalList = new UsecaseTester<
+    it('should transition loading → error → loading → loaded', async () => {
+      const rentalRepository = new MockRentalRepository();
+      rentalRepository.setShouldFail(true);
+      const rentalListQueryRepository = new MockRentalListQueryRepository();
+      const usecase = new RentalListUsecase(
+        rentalRepository,
+        rentalListQueryRepository,
+        { rentals: [], totalItem: 0 }
+      );
+      const rentalList = new UsecaseTester<
         RentalListUsecase,
         RentalListState,
         RentalListAction,
@@ -164,10 +134,8 @@ describe('RentalListUsecase', () => {
         itemPerPage: rentalListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
-    });
 
-    it('transition to error state after failed fetch', async () => {
-      await Promise.resolve();
+      await flushPromises();
       expect(rentalList.state).toEqual({
         type: 'error',
         rentals: [],
@@ -181,9 +149,7 @@ describe('RentalListUsecase', () => {
         itemPerPage: rentalListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
-    });
 
-    it('transition to loading state when FETCH action is dispatched', () => {
       rentalRepository.setShouldFail(false);
       rentalList.dispatch({ type: 'FETCH' });
       expect(rentalList.state).toEqual({
@@ -199,10 +165,8 @@ describe('RentalListUsecase', () => {
         itemPerPage: rentalListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
-    });
 
-    it('transition to loaded state after successful fetch', async () => {
-      await Promise.resolve();
+      await flushPromises();
       expect(rentalList.state).toEqual({
         type: 'loaded',
         rentals: rentalRepository.rentals,
@@ -220,6 +184,8 @@ describe('RentalListUsecase', () => {
   });
 
   it('should show loaded state when initial data is given', async () => {
+    const rentalRepository = new MockRentalRepository();
+    const rentalListQueryRepository = new MockRentalListQueryRepository();
     const rentals = [rentalRepository.rentals[0]];
     const usecase = new RentalListUsecase(
       rentalRepository,

@@ -4,48 +4,38 @@ import {
   CategoryCreateAction,
 } from './categoryCreate';
 import { MockCategoryRepository } from '../../data/mock';
-import { UsecaseTester } from '../../utils/usecase';
+import { UsecaseTester, flushPromises } from '../../utils/usecase';
 
 describe('CategoryCreateUsecase', () => {
   describe('success flow', () => {
-    const repository = new MockCategoryRepository();
-    const usecase = new CategoryCreateUsecase(repository);
-    let tester: UsecaseTester<CategoryCreateUsecase, CategoryCreateState, CategoryCreateAction, undefined>;
+    it('should transition loaded → submitting → submitSuccess', async () => {
+      const repository = new MockCategoryRepository();
+      const usecase = new CategoryCreateUsecase(repository);
+      const tester = new UsecaseTester<CategoryCreateUsecase, CategoryCreateState, CategoryCreateAction, undefined>(usecase);
 
-    it('initializes in loaded state', () => {
-      tester = new UsecaseTester(usecase);
       expect(tester.state.type).toBe('loaded');
-    });
 
-    it('transitions to submitting when SUBMIT is dispatched', () => {
       tester.dispatch({ type: 'SUBMIT', values: { name: 'New Category' } });
       expect(tester.state.type).toBe('submitting');
-    });
 
-    it('transitions to submitSuccess after successful create', async () => {
-      await Promise.resolve();
+      await flushPromises();
       expect(tester.state.type).toBe('submitSuccess');
     });
   });
 
   describe('error flow', () => {
-    const repository = new MockCategoryRepository();
-    repository.setShouldFail(true);
-    const usecase = new CategoryCreateUsecase(repository);
-    let tester: UsecaseTester<CategoryCreateUsecase, CategoryCreateState, CategoryCreateAction, undefined>;
+    it('should transition loaded → submitting → loaded (auto-recovery)', async () => {
+      const repository = new MockCategoryRepository();
+      repository.setShouldFail(true);
+      const usecase = new CategoryCreateUsecase(repository);
+      const tester = new UsecaseTester<CategoryCreateUsecase, CategoryCreateState, CategoryCreateAction, undefined>(usecase);
 
-    it('initializes in loaded state', () => {
-      tester = new UsecaseTester(usecase);
       expect(tester.state.type).toBe('loaded');
-    });
 
-    it('transitions to submitting when SUBMIT is dispatched', () => {
       tester.dispatch({ type: 'SUBMIT', values: { name: 'New Category' } });
       expect(tester.state.type).toBe('submitting');
-    });
 
-    it('recovers to loaded state after submit error', async () => {
-      await Promise.resolve();
+      await flushPromises();
       // submitError auto-cancels to loaded via onStateChange(submitError) -> SUBMIT_CANCEL
       expect(tester.state.type).toBe('loaded');
     });

@@ -4,48 +4,38 @@ import {
   CouponCreateAction,
 } from './couponCreate';
 import { MockCouponRepository } from '../../data/mock';
-import { UsecaseTester } from '../../utils/usecase';
+import { UsecaseTester, flushPromises } from '../../utils/usecase';
 
 describe('CouponCreateUsecase', () => {
   describe('success flow', () => {
-    const repository = new MockCouponRepository();
-    const usecase = new CouponCreateUsecase(repository);
-    let tester: UsecaseTester<CouponCreateUsecase, CouponCreateState, CouponCreateAction, undefined>;
+    it('should transition loaded → submitting → submitSuccess', async () => {
+      const repository = new MockCouponRepository();
+      const usecase = new CouponCreateUsecase(repository);
+      const tester = new UsecaseTester<CouponCreateUsecase, CouponCreateState, CouponCreateAction, undefined>(usecase);
 
-    it('initializes in loaded state', () => {
-      tester = new UsecaseTester(usecase);
       expect(tester.state.type).toBe('loaded');
-    });
 
-    it('transitions to submitting when SUBMIT is dispatched', () => {
       tester.dispatch({ type: 'SUBMIT', values: { code: 'DISCOUNT10', type: 'fixed', amount: 10000 } });
       expect(tester.state.type).toBe('submitting');
-    });
 
-    it('transitions to submitSuccess after successful create', async () => {
-      await Promise.resolve();
+      await flushPromises();
       expect(tester.state.type).toBe('submitSuccess');
     });
   });
 
   describe('error flow', () => {
-    const repository = new MockCouponRepository();
-    repository.setShouldFail(true);
-    const usecase = new CouponCreateUsecase(repository);
-    let tester: UsecaseTester<CouponCreateUsecase, CouponCreateState, CouponCreateAction, undefined>;
+    it('should transition loaded → submitting → loaded (auto-recover)', async () => {
+      const repository = new MockCouponRepository();
+      repository.setShouldFail(true);
+      const usecase = new CouponCreateUsecase(repository);
+      const tester = new UsecaseTester<CouponCreateUsecase, CouponCreateState, CouponCreateAction, undefined>(usecase);
 
-    it('initializes in loaded state', () => {
-      tester = new UsecaseTester(usecase);
       expect(tester.state.type).toBe('loaded');
-    });
 
-    it('transitions to submitting when SUBMIT is dispatched', () => {
       tester.dispatch({ type: 'SUBMIT', values: { code: 'DISCOUNT10', type: 'fixed', amount: 10000 } });
       expect(tester.state.type).toBe('submitting');
-    });
 
-    it('recovers to loaded state after submit error', async () => {
-      await Promise.resolve();
+      await flushPromises();
       // submitError auto-cancels to loaded via onStateChange(submitError) -> SUBMIT_CANCEL
       expect(tester.state.type).toBe('loaded');
     });

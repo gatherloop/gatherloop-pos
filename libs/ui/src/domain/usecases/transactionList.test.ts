@@ -9,40 +9,23 @@ import {
   MockTransactionListQueryRepository,
   MockWalletRepository,
 } from '../../data/mock';
-import { UsecaseTester } from '../../utils/usecase';
+import { UsecaseTester, flushPromises } from '../../utils/usecase';
 
 describe('TransactionListUsecase', () => {
-  let transactionRepository: MockTransactionRepository;
-  let transactionListQueryRepository: MockTransactionListQueryRepository;
-  let walletRepository: MockWalletRepository;
-
-  beforeEach(() => {
-    transactionRepository = new MockTransactionRepository();
-    transactionListQueryRepository = new MockTransactionListQueryRepository();
-    walletRepository = new MockWalletRepository();
-  });
-
   describe('success flow', () => {
-    const repository = new MockTransactionRepository();
-    const transactionListQueryRepository =
-      new MockTransactionListQueryRepository();
-    const walletRepository = new MockWalletRepository();
-    const usecase = new TransactionListUsecase(
-      repository,
-      transactionListQueryRepository,
-      walletRepository,
-      { transactions: [], totalItem: 0, wallets: [] }
-    );
+    it('should transition loading → loaded → revalidating → loaded → changingParams', async () => {
+      const repository = new MockTransactionRepository();
+      const transactionListQueryRepository =
+        new MockTransactionListQueryRepository();
+      const walletRepository = new MockWalletRepository();
+      const usecase = new TransactionListUsecase(
+        repository,
+        transactionListQueryRepository,
+        walletRepository,
+        { transactions: [], totalItem: 0, wallets: [] }
+      );
 
-    let transactionList: UsecaseTester<
-      TransactionListUsecase,
-      TransactionListState,
-      TransactionListAction,
-      TransactionListParams
-    >;
-
-    it('initialize with loading state', () => {
-      transactionList = new UsecaseTester<
+      const transactionList = new UsecaseTester<
         TransactionListUsecase,
         TransactionListState,
         TransactionListAction,
@@ -64,10 +47,8 @@ describe('TransactionListUsecase', () => {
         itemPerPage: transactionListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
-    });
 
-    it('transition to loaded state after success fetch', async () => {
-      await Promise.resolve();
+      await flushPromises();
       expect(transactionList.state).toEqual({
         type: 'loaded',
         transactions: repository.transactions,
@@ -83,9 +64,7 @@ describe('TransactionListUsecase', () => {
         itemPerPage: transactionListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
-    });
 
-    it('transition to revalidating state when FETCH action is dispatched', () => {
       transactionList.dispatch({ type: 'FETCH' });
       expect(transactionList.state).toEqual({
         type: 'revalidating',
@@ -102,10 +81,8 @@ describe('TransactionListUsecase', () => {
         itemPerPage: transactionListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
-    });
 
-    it('transition to loaded state after success fetch', async () => {
-      await Promise.resolve();
+      await flushPromises();
       expect(transactionList.state).toEqual({
         type: 'loaded',
         transactions: repository.transactions,
@@ -121,9 +98,7 @@ describe('TransactionListUsecase', () => {
         itemPerPage: transactionListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
-    });
 
-    it('transition to changingParams state after CHANGE_PARAMS action is dispatched', () => {
       transactionList.dispatch({ type: 'CHANGE_PARAMS', page: 2 });
       expect(transactionList.state).toEqual({
         type: 'changingParams',
@@ -144,26 +119,19 @@ describe('TransactionListUsecase', () => {
   });
 
   describe('error flow', () => {
-    const transactionRepository = new MockTransactionRepository();
-    transactionRepository.setShouldFail(true);
-    const transactionListQueryRepository =
-      new MockTransactionListQueryRepository();
-    const walletRepository = new MockWalletRepository();
-    const usecase = new TransactionListUsecase(
-      transactionRepository,
-      transactionListQueryRepository,
-      walletRepository,
-      { transactions: [], totalItem: 0, wallets: [] }
-    );
-    let transactionList: UsecaseTester<
-      TransactionListUsecase,
-      TransactionListState,
-      TransactionListAction,
-      TransactionListParams
-    >;
-
-    it('initialize with loading state', () => {
-      transactionList = new UsecaseTester<
+    it('should transition loading → error → loading → loaded', async () => {
+      const transactionRepository = new MockTransactionRepository();
+      transactionRepository.setShouldFail(true);
+      const transactionListQueryRepository =
+        new MockTransactionListQueryRepository();
+      const walletRepository = new MockWalletRepository();
+      const usecase = new TransactionListUsecase(
+        transactionRepository,
+        transactionListQueryRepository,
+        walletRepository,
+        { transactions: [], totalItem: 0, wallets: [] }
+      );
+      const transactionList = new UsecaseTester<
         TransactionListUsecase,
         TransactionListState,
         TransactionListAction,
@@ -185,10 +153,8 @@ describe('TransactionListUsecase', () => {
         itemPerPage: transactionListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
-    });
 
-    it('transition to error state after failed fetch', async () => {
-      await Promise.resolve();
+      await flushPromises();
       expect(transactionList.state).toEqual({
         type: 'error',
         transactions: [],
@@ -204,9 +170,7 @@ describe('TransactionListUsecase', () => {
         itemPerPage: transactionListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
-    });
 
-    it('transition to loading state when FETCH action is dispatched', () => {
       transactionRepository.setShouldFail(false);
       transactionList.dispatch({ type: 'FETCH' });
       expect(transactionList.state).toEqual({
@@ -224,10 +188,8 @@ describe('TransactionListUsecase', () => {
         itemPerPage: transactionListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
-    });
 
-    it('transition to loaded state after successful fetch', async () => {
-      await Promise.resolve();
+      await flushPromises();
       expect(transactionList.state).toEqual({
         type: 'loaded',
         transactions: transactionRepository.transactions,
@@ -247,6 +209,10 @@ describe('TransactionListUsecase', () => {
   });
 
   it('should show loaded state when initial data is given', async () => {
+    const transactionRepository = new MockTransactionRepository();
+    const transactionListQueryRepository =
+      new MockTransactionListQueryRepository();
+    const walletRepository = new MockWalletRepository();
     const transactions = [transactionRepository.transactions[0]];
     const usecase = new TransactionListUsecase(
       transactionRepository,

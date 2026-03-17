@@ -8,35 +8,20 @@ import {
   MockProductRepository,
   MockProductListQueryRepository,
 } from '../../data/mock';
-import { UsecaseTester } from '../../utils/usecase';
+import { UsecaseTester, flushPromises } from '../../utils/usecase';
 
 describe('ProductListUsecase', () => {
-  let productRepository: MockProductRepository;
-  let productListQueryRepository: MockProductListQueryRepository;
-
-  beforeEach(() => {
-    productRepository = new MockProductRepository();
-    productListQueryRepository = new MockProductListQueryRepository();
-  });
-
   describe('success flow', () => {
-    const repository = new MockProductRepository();
-    const productListQueryRepository = new MockProductListQueryRepository();
-    const usecase = new ProductListUsecase(
-      repository,
-      productListQueryRepository,
-      { products: [], totalItem: 0 }
-    );
+    it('should transition loading → loaded → revalidating → loaded → changingParams', async () => {
+      const repository = new MockProductRepository();
+      const productListQueryRepository = new MockProductListQueryRepository();
+      const usecase = new ProductListUsecase(
+        repository,
+        productListQueryRepository,
+        { products: [], totalItem: 0 }
+      );
 
-    let productList: UsecaseTester<
-      ProductListUsecase,
-      ProductListState,
-      ProductListAction,
-      ProductListParams
-    >;
-
-    it('initialize with loading state', () => {
-      productList = new UsecaseTester<
+      const productList = new UsecaseTester<
         ProductListUsecase,
         ProductListState,
         ProductListAction,
@@ -56,10 +41,8 @@ describe('ProductListUsecase', () => {
         itemPerPage: productListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
-    });
 
-    it('transition to loaded state after success fetch', async () => {
-      await Promise.resolve();
+      await flushPromises();
       expect(productList.state).toEqual({
         type: 'loaded',
         products: repository.products,
@@ -73,9 +56,7 @@ describe('ProductListUsecase', () => {
         itemPerPage: productListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
-    });
 
-    it('transition to revalidating state when FETCH action is dispatched', () => {
       productList.dispatch({ type: 'FETCH' });
       expect(productList.state).toEqual({
         type: 'revalidating',
@@ -90,10 +71,8 @@ describe('ProductListUsecase', () => {
         itemPerPage: productListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
-    });
 
-    it('transition to loaded state after success fetch', async () => {
-      await Promise.resolve();
+      await flushPromises();
       expect(productList.state).toEqual({
         type: 'loaded',
         products: repository.products,
@@ -107,9 +86,7 @@ describe('ProductListUsecase', () => {
         itemPerPage: productListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
-    });
 
-    it('transition to changingParams state after CHANGE_PARAMS action is dispatched', () => {
       productList.dispatch({ type: 'CHANGE_PARAMS', page: 2 });
       expect(productList.state).toEqual({
         type: 'changingParams',
@@ -128,23 +105,17 @@ describe('ProductListUsecase', () => {
   });
 
   describe('error flow', () => {
-    const productRepository = new MockProductRepository();
-    productRepository.setShouldFail(true);
-    const productListQueryRepository = new MockProductListQueryRepository();
-    const usecase = new ProductListUsecase(
-      productRepository,
-      productListQueryRepository,
-      { products: [], totalItem: 0 }
-    );
-    let productList: UsecaseTester<
-      ProductListUsecase,
-      ProductListState,
-      ProductListAction,
-      ProductListParams
-    >;
+    it('should transition loading → error → loading → loaded', async () => {
+      const productRepository = new MockProductRepository();
+      productRepository.setShouldFail(true);
+      const productListQueryRepository = new MockProductListQueryRepository();
+      const usecase = new ProductListUsecase(
+        productRepository,
+        productListQueryRepository,
+        { products: [], totalItem: 0 }
+      );
 
-    it('initialize with loading state', () => {
-      productList = new UsecaseTester<
+      const productList = new UsecaseTester<
         ProductListUsecase,
         ProductListState,
         ProductListAction,
@@ -164,10 +135,8 @@ describe('ProductListUsecase', () => {
         itemPerPage: productListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
-    });
 
-    it('transition to error state after failed fetch', async () => {
-      await Promise.resolve();
+      await flushPromises();
       expect(productList.state).toEqual({
         type: 'error',
         products: [],
@@ -181,9 +150,7 @@ describe('ProductListUsecase', () => {
         itemPerPage: productListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
-    });
 
-    it('transition to loading state when FETCH action is dispatched', () => {
       productRepository.setShouldFail(false);
       productList.dispatch({ type: 'FETCH' });
       expect(productList.state).toEqual({
@@ -199,10 +166,8 @@ describe('ProductListUsecase', () => {
         itemPerPage: productListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
-    });
 
-    it('transition to loaded state after successful fetch', async () => {
-      await Promise.resolve();
+      await flushPromises();
       expect(productList.state).toEqual({
         type: 'loaded',
         products: productRepository.products,
@@ -220,6 +185,8 @@ describe('ProductListUsecase', () => {
   });
 
   it('should show loaded state when initial data is given', async () => {
+    const productRepository = new MockProductRepository();
+    const productListQueryRepository = new MockProductListQueryRepository();
     const products = [productRepository.products[0]];
     const usecase = new ProductListUsecase(
       productRepository,

@@ -5,21 +5,14 @@ import {
   BudgetListParams,
 } from './budgetList';
 import { MockBudgetRepository } from '../../data/mock';
-import { UsecaseTester } from '../../utils/usecase';
+import { UsecaseTester, flushPromises } from '../../utils/usecase';
 
 describe('BudgetListUsecase', () => {
   describe('success flow', () => {
-    const repository = new MockBudgetRepository();
-    const usecase = new BudgetListUsecase(repository, { budgets: [] });
-    let budgetList: UsecaseTester<
-      BudgetListUsecase,
-      BudgetListState,
-      BudgetListAction,
-      BudgetListParams
-    >;
-
-    it('initialize with loading state', () => {
-      budgetList = new UsecaseTester<
+    it('should transition loading → loaded → revalidating → loaded', async () => {
+      const repository = new MockBudgetRepository();
+      const usecase = new BudgetListUsecase(repository, { budgets: [] });
+      const budgetList = new UsecaseTester<
         BudgetListUsecase,
         BudgetListState,
         BudgetListAction,
@@ -31,28 +24,22 @@ describe('BudgetListUsecase', () => {
         budgets: [],
         errorMessage: null,
       });
-    });
 
-    it('transition to loaded state after success fetch', async () => {
-      await Promise.resolve();
+      await flushPromises();
       expect(budgetList.state).toEqual({
         type: 'loaded',
         budgets: repository.budgets,
         errorMessage: null,
       });
-    });
 
-    it('transition to revalidating state when FETCH action is dispatched', () => {
       budgetList.dispatch({ type: 'FETCH' });
       expect(budgetList.state).toEqual({
         type: 'revalidating',
         budgets: repository.budgets,
         errorMessage: null,
       });
-    });
 
-    it('transition to loaded state after success fetch', async () => {
-      await Promise.resolve();
+      await flushPromises();
       expect(budgetList.state).toEqual({
         type: 'loaded',
         budgets: repository.budgets,
@@ -62,18 +49,11 @@ describe('BudgetListUsecase', () => {
   });
 
   describe('failed flow', () => {
-    const repository = new MockBudgetRepository();
-    repository.setShouldFail(true);
-    const usecase = new BudgetListUsecase(repository, { budgets: [] });
-    let budgetList: UsecaseTester<
-      BudgetListUsecase,
-      BudgetListState,
-      BudgetListAction,
-      BudgetListParams
-    >;
-
-    it('initialize with loading state', () => {
-      budgetList = new UsecaseTester<
+    it('should transition loading → error → loading → loaded', async () => {
+      const repository = new MockBudgetRepository();
+      repository.setShouldFail(true);
+      const usecase = new BudgetListUsecase(repository, { budgets: [] });
+      const budgetList = new UsecaseTester<
         BudgetListUsecase,
         BudgetListState,
         BudgetListAction,
@@ -85,18 +65,14 @@ describe('BudgetListUsecase', () => {
         budgets: [],
         errorMessage: null,
       });
-    });
 
-    it('transition to error state after failed fetch', async () => {
-      await Promise.resolve();
+      await flushPromises();
       expect(budgetList.state).toEqual({
         type: 'error',
         budgets: [],
         errorMessage: 'Failed to fetch budgets',
       });
-    });
 
-    it('transition to loading state after FETCH action is dispatched', () => {
       repository.setShouldFail(false);
       budgetList.dispatch({ type: 'FETCH' });
       expect(budgetList.state).toEqual({
@@ -104,10 +80,8 @@ describe('BudgetListUsecase', () => {
         budgets: [],
         errorMessage: null,
       });
-    });
 
-    it('transition to loaded state after success fetch', async () => {
-      await Promise.resolve();
+      await flushPromises();
       expect(budgetList.state).toEqual({
         type: 'loaded',
         budgets: repository.budgets,

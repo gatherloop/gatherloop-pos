@@ -5,21 +5,14 @@ import {
   CategoryListParams,
 } from './categoryList';
 import { MockCategoryRepository } from '../../data/mock';
-import { UsecaseTester } from '../../utils/usecase';
+import { UsecaseTester, flushPromises } from '../../utils/usecase';
 
 describe('CategoryListUsecase', () => {
   describe('success flow', () => {
-    const repository = new MockCategoryRepository();
-    const usecase = new CategoryListUsecase(repository, { categories: [] });
-    let categoryList: UsecaseTester<
-      CategoryListUsecase,
-      CategoryListState,
-      CategoryListAction,
-      CategoryListParams
-    >;
-
-    it('initialize with loading state', () => {
-      categoryList = new UsecaseTester<
+    it('should transition loading → loaded → revalidating → loaded', async () => {
+      const repository = new MockCategoryRepository();
+      const usecase = new CategoryListUsecase(repository, { categories: [] });
+      const categoryList = new UsecaseTester<
         CategoryListUsecase,
         CategoryListState,
         CategoryListAction,
@@ -31,28 +24,22 @@ describe('CategoryListUsecase', () => {
         categories: [],
         errorMessage: null,
       });
-    });
 
-    it('transition to loaded state after success fetch', async () => {
-      await Promise.resolve();
+      await flushPromises();
       expect(categoryList.state).toEqual({
         type: 'loaded',
         categories: repository.categories,
         errorMessage: null,
       });
-    });
 
-    it('transition to revalidating state when FETCH action is dispatched', () => {
       categoryList.dispatch({ type: 'FETCH' });
       expect(categoryList.state).toEqual({
         type: 'revalidating',
         categories: repository.categories,
         errorMessage: null,
       });
-    });
 
-    it('transition to loaded state after success fetch', async () => {
-      await Promise.resolve();
+      await flushPromises();
       expect(categoryList.state).toEqual({
         type: 'loaded',
         categories: repository.categories,
@@ -62,18 +49,11 @@ describe('CategoryListUsecase', () => {
   });
 
   describe('failed flow', () => {
-    const repository = new MockCategoryRepository();
-    repository.setShouldFail(true);
-    const usecase = new CategoryListUsecase(repository, { categories: [] });
-    let categoryList: UsecaseTester<
-      CategoryListUsecase,
-      CategoryListState,
-      CategoryListAction,
-      CategoryListParams
-    >;
-
-    it('initialize with loading state', () => {
-      categoryList = new UsecaseTester<
+    it('should transition loading → error → loading → loaded', async () => {
+      const repository = new MockCategoryRepository();
+      repository.setShouldFail(true);
+      const usecase = new CategoryListUsecase(repository, { categories: [] });
+      const categoryList = new UsecaseTester<
         CategoryListUsecase,
         CategoryListState,
         CategoryListAction,
@@ -85,18 +65,14 @@ describe('CategoryListUsecase', () => {
         categories: [],
         errorMessage: null,
       });
-    });
 
-    it('transition to error state after failed fetch', async () => {
-      await Promise.resolve();
+      await flushPromises();
       expect(categoryList.state).toEqual({
         type: 'error',
         categories: [],
         errorMessage: 'Failed to fetch categories',
       });
-    });
 
-    it('transition to loading state after FETCH action is dispatched', () => {
       repository.setShouldFail(false);
       categoryList.dispatch({ type: 'FETCH' });
       expect(categoryList.state).toEqual({
@@ -104,10 +80,8 @@ describe('CategoryListUsecase', () => {
         categories: [],
         errorMessage: null,
       });
-    });
 
-    it('transition to loaded state after success fetch', async () => {
-      await Promise.resolve();
+      await flushPromises();
       expect(categoryList.state).toEqual({
         type: 'loaded',
         categories: repository.categories,

@@ -4,31 +4,24 @@ import {
   TransactionUnpayAction,
 } from './transactionUnpay';
 import { MockTransactionRepository } from '../../data/mock';
-import { UsecaseTester } from '../../utils/usecase';
+import { UsecaseTester, flushPromises } from '../../utils/usecase';
 
 describe('TransactionUnpayUsecase', () => {
   describe('success flow', () => {
-    const repository = new MockTransactionRepository();
-    const usecase = new TransactionUnpayUsecase(repository);
-    let tester: UsecaseTester<TransactionUnpayUsecase, TransactionUnpayState, TransactionUnpayAction, undefined>;
+    it('should transition hidden → shown → unpaying → hidden', async () => {
+      const repository = new MockTransactionRepository();
+      const usecase = new TransactionUnpayUsecase(repository);
+      const tester = new UsecaseTester<TransactionUnpayUsecase, TransactionUnpayState, TransactionUnpayAction, undefined>(usecase);
 
-    it('initializes in hidden state', () => {
-      tester = new UsecaseTester(usecase);
       expect(tester.state).toEqual({ type: 'hidden', transactionId: null });
-    });
 
-    it('transitions to shown when SHOW_CONFIRMATION is dispatched', () => {
       tester.dispatch({ type: 'SHOW_CONFIRMATION', transactionId: 1 });
       expect(tester.state).toEqual({ type: 'shown', transactionId: 1 });
-    });
 
-    it('transitions to unpaying when UNPAY is dispatched', () => {
       tester.dispatch({ type: 'UNPAY' });
       expect(tester.state.type).toBe('unpaying');
-    });
 
-    it('auto-transitions to hidden after successful unpay', async () => {
-      await Promise.resolve();
+      await flushPromises();
       // unpayingSuccess -> onStateChange dispatches HIDE_CONFIRMATION -> hidden
       expect(tester.state.type).toBe('hidden');
     });
@@ -44,28 +37,21 @@ describe('TransactionUnpayUsecase', () => {
   });
 
   describe('error flow', () => {
-    const repository = new MockTransactionRepository();
-    repository.setShouldFail(true);
-    const usecase = new TransactionUnpayUsecase(repository);
-    let tester: UsecaseTester<TransactionUnpayUsecase, TransactionUnpayState, TransactionUnpayAction, undefined>;
+    it('should transition hidden → shown → unpaying → shown (auto-recover from unpayingError)', async () => {
+      const repository = new MockTransactionRepository();
+      repository.setShouldFail(true);
+      const usecase = new TransactionUnpayUsecase(repository);
+      const tester = new UsecaseTester<TransactionUnpayUsecase, TransactionUnpayState, TransactionUnpayAction, undefined>(usecase);
 
-    it('initializes in hidden state', () => {
-      tester = new UsecaseTester(usecase);
       expect(tester.state.type).toBe('hidden');
-    });
 
-    it('transitions to shown when SHOW_CONFIRMATION is dispatched', () => {
       tester.dispatch({ type: 'SHOW_CONFIRMATION', transactionId: 1 });
       expect(tester.state.type).toBe('shown');
-    });
 
-    it('transitions to unpaying when UNPAY is dispatched', () => {
       tester.dispatch({ type: 'UNPAY' });
       expect(tester.state.type).toBe('unpaying');
-    });
 
-    it('auto-recovers to shown state after unpay error', async () => {
-      await Promise.resolve();
+      await flushPromises();
       // unpaying -> unpayingError -> onStateChange(unpayingError) -> UNPAY_CANCEL -> shown
       expect(tester.state.type).toBe('shown');
     });
