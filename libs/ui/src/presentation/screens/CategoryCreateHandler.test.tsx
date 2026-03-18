@@ -11,8 +11,9 @@ jest.mock('solito/router', () => ({
   useRouter: () => ({ push: mockRouterPush, replace: jest.fn(), back: jest.fn() }),
 }));
 
+const mockToastShow = jest.fn();
 jest.mock('@tamagui/toast', () => ({
-  useToastController: () => ({ show: jest.fn() }),
+  useToastController: () => ({ show: mockToastShow }),
 }));
 
 const createProps = (options: { shouldFail?: boolean } = {}) => {
@@ -91,6 +92,37 @@ describe('CategoryCreateHandler', () => {
       });
 
       expect(mockRouterPush).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('validation', () => {
+    it('should show error message when name field is empty and submit is clicked', async () => {
+      const user = userEvent.setup();
+      render(<CategoryCreateHandler {...createProps()} />);
+
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByText('String must contain at least 1 character(s)')).toBeTruthy();
+    });
+  });
+
+  describe('toast notifications', () => {
+    it('should show toast error message when creation fails', async () => {
+      const user = userEvent.setup();
+      render(<CategoryCreateHandler {...createProps({ shouldFail: true })} />);
+
+      await user.type(screen.getByRole('textbox', { name: 'Name' }), 'New Category');
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(mockToastShow).toHaveBeenCalledWith('Create Category Error');
     });
   });
 });

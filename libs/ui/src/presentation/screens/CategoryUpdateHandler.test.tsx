@@ -11,8 +11,9 @@ jest.mock('solito/router', () => ({
   useRouter: () => ({ push: mockRouterPush, replace: jest.fn(), back: jest.fn() }),
 }));
 
+const mockToastShow = jest.fn();
 jest.mock('@tamagui/toast', () => ({
-  useToastController: () => ({ show: jest.fn() }),
+  useToastController: () => ({ show: mockToastShow }),
 }));
 
 const createProps = (options: {
@@ -132,6 +133,54 @@ describe('CategoryUpdateHandler', () => {
       });
 
       expect(mockRouterPush).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('validation', () => {
+    it('should show error message when name field is empty and submit is clicked', async () => {
+      const user = userEvent.setup();
+      render(<CategoryUpdateHandler {...createProps({ preloaded: true })} />);
+
+      const nameInput = screen.getByRole('textbox', { name: 'Name' });
+      await user.clear(nameInput);
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByText('String must contain at least 1 character(s)')).toBeTruthy();
+    });
+  });
+
+  describe('toast notifications', () => {
+    it('should show toast error message when update fails', async () => {
+      const user = userEvent.setup();
+      const categoryRepo = new MockCategoryRepository();
+      const preloadedCategory = categoryRepo.categories[0];
+      const categoryUpdateUsecase = new CategoryUpdateUsecase(categoryRepo, {
+        categoryId: preloadedCategory.id,
+        category: preloadedCategory,
+      });
+      categoryRepo.setShouldFail(true);
+
+      render(
+        <CategoryUpdateHandler
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          categoryUpdateUsecase={categoryUpdateUsecase}
+        />
+      );
+
+      const nameInput = screen.getByRole('textbox', { name: 'Name' });
+      await user.clear(nameInput);
+      await user.type(nameInput, 'Updated Category');
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(mockToastShow).toHaveBeenCalledWith('Update Category Error');
     });
   });
 
