@@ -7,8 +7,12 @@ type AnyProps = {
 };
 
 const makeComponent = (name: string) => {
-  const Component = ({ children }: AnyProps) =>
-    React.createElement('div', { 'data-component': name }, children);
+  const Component = ({ children, onPress }: AnyProps) =>
+    React.createElement(
+      'div',
+      { 'data-component': name, ...(onPress ? { onClick: onPress } : {}) },
+      children
+    );
   Component.displayName = name;
   return Component;
 };
@@ -34,8 +38,9 @@ export const Text = ({ children }: AnyProps) => React.createElement('span', null
 export const Button = ({ children, onPress }: AnyProps) =>
   React.createElement('button', { onClick: onPress }, children);
 
-export const Input = ({ value, placeholder, onChangeText }: AnyProps) =>
+export const Input = ({ value, placeholder, onChangeText, id }: AnyProps) =>
   React.createElement('input', {
+    id,
     value,
     placeholder,
     onChange: (e: { target: { value: string } }) => onChangeText?.(e.target.value),
@@ -54,7 +59,8 @@ const PopoverBase = ({ children }: AnyProps) =>
   React.createElement('div', { 'data-component': 'Popover' }, children);
 const PopoverTrigger = ({ children }: AnyProps) =>
   React.createElement(React.Fragment, null, children);
-const PopoverContent = () => null;
+const PopoverContent = ({ children }: AnyProps) =>
+  React.createElement(React.Fragment, null, children);
 const PopoverArrow = () => null;
 export const Popover = Object.assign(PopoverBase, {
   Trigger: PopoverTrigger,
@@ -83,12 +89,25 @@ export const YGroup = Object.assign(YGroupBase, {
 });
 
 // Tamagui's built-in ListItem (distinct from our base/ListItem.tsx)
-export const ListItem = ({ children, title }: AnyProps) =>
-  React.createElement('div', { 'data-component': 'TamaguiListItem' }, title, children);
+export const ListItem = ({ children, title, onPress }: AnyProps) =>
+  React.createElement(
+    'div',
+    { 'data-component': 'TamaguiListItem', ...(onPress ? { onClick: onPress } : {}) },
+    title,
+    children
+  );
 
-// AlertDialog
-const AlertDialogBase = ({ open, children }: AnyProps) =>
-  open ? React.createElement('div', { 'data-component': 'AlertDialog' }, children) : null;
+// AlertDialog — supports onOpenChange context so Cancel children can close the dialog
+const AlertDialogContext = React.createContext<{ onOpenChange?: () => void }>({});
+
+const AlertDialogBase = ({ open, children, onOpenChange }: AnyProps) =>
+  open
+    ? React.createElement(
+        AlertDialogContext.Provider,
+        { value: { onOpenChange } },
+        React.createElement('div', { 'data-component': 'AlertDialog' }, children)
+      )
+    : null;
 const AlertDialogPortal = ({ children }: AnyProps) =>
   React.createElement(React.Fragment, null, children);
 const AlertDialogOverlay = () => null;
@@ -98,8 +117,11 @@ const AlertDialogTitle = ({ children }: AnyProps) =>
   React.createElement('h3', null, children);
 const AlertDialogDescription = ({ children }: AnyProps) =>
   React.createElement('p', null, children);
-const AlertDialogCancel = ({ children }: AnyProps) =>
-  React.createElement(React.Fragment, null, children);
+// Cancel: wraps children in a span that calls onOpenChange when clicked (simulates asChild close)
+const AlertDialogCancel = ({ children }: AnyProps) => {
+  const { onOpenChange } = React.useContext(AlertDialogContext);
+  return React.createElement('span', { onClick: () => onOpenChange?.() }, children);
+};
 const AlertDialogAction = ({ children }: AnyProps) =>
   React.createElement(React.Fragment, null, children);
 export const AlertDialog = Object.assign(AlertDialogBase, {

@@ -1,108 +1,96 @@
 import React from 'react';
-import { render, act } from '@testing-library/react';
+import { render, fireEvent, act } from '@testing-library/react';
 import { AuthLoginHandler } from './AuthLoginHandler';
 import { MockAuthRepository } from '../../data/mock';
 import { AuthLoginUsecase } from '../../domain';
+import { flushPromises } from '../../utils/testUtils';
 
 const mockRouterPush = jest.fn();
 jest.mock('solito/router', () => ({
   useRouter: () => ({ push: mockRouterPush, replace: jest.fn(), back: jest.fn() }),
 }));
 
-const mockToastShow = jest.fn();
 jest.mock('@tamagui/toast', () => ({
-  useToastController: () => ({ show: mockToastShow }),
+  useToastController: () => ({ show: jest.fn() }),
 }));
 
-// Mock the Screen so forms don't need to render — tests focus on orchestration
-jest.mock('./AuthLoginScreen', () => ({
-  AuthLoginScreen: () => null,
-}));
-
-// Mutable state container for the mocked controller
-const authLoginCtrl = {
-  state: {
-    type: 'loaded' as string,
-    errorMessage: null as string | null,
-    values: { username: '', password: '' },
-  },
-  dispatch: jest.fn(),
-  form: {} as never,
+const createProps = (options: { shouldFail?: boolean } = {}) => {
+  const mockAuthRepo = new MockAuthRepository();
+  if (options.shouldFail) mockAuthRepo.setShouldFail(true);
+  return {
+    authLoginUsecase: new AuthLoginUsecase(mockAuthRepo),
+  };
 };
-
-jest.mock('../controllers', () => ({
-  useAuthLoginController: () => ({
-    state: authLoginCtrl.state,
-    dispatch: authLoginCtrl.dispatch,
-    form: authLoginCtrl.form,
-  }),
-}));
-
-const createProps = () => ({
-  authLoginUsecase: new AuthLoginUsecase(new MockAuthRepository()),
-});
 
 describe('AuthLoginHandler', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    authLoginCtrl.state = {
-      type: 'loaded',
-      errorMessage: null,
-      values: { username: '', password: '' },
-    };
   });
 
-  it('should navigate to "/" when state reaches submitSuccess', async () => {
-    authLoginCtrl.state = {
-      type: 'submitSuccess',
-      errorMessage: null,
-      values: { username: 'admin', password: 'secret' },
-    };
+  it('should render login form initially', () => {
+    const { getByText } = render(<AuthLoginHandler {...createProps()} />);
+    expect(getByText('Submit')).toBeTruthy();
+  });
+
+  it('should render username and password input fields', () => {
+    const { container } = render(<AuthLoginHandler {...createProps()} />);
+    expect(container.querySelector('#username')).toBeTruthy();
+    expect(container.querySelector('#password')).toBeTruthy();
+  });
+
+  it('should navigate to "/" after successful login', async () => {
+    const { container, getByText } = render(<AuthLoginHandler {...createProps()} />);
+
+    const usernameInput = container.querySelector('#username') as HTMLInputElement;
+    const passwordInput = container.querySelector('#password') as HTMLInputElement;
+
+    fireEvent.change(usernameInput, { target: { value: 'admin' } });
+    fireEvent.change(passwordInput, { target: { value: 'secret' } });
+    fireEvent.click(getByText('Submit'));
 
     await act(async () => {
-      render(<AuthLoginHandler {...createProps()} />);
+      await flushPromises();
     });
 
     expect(mockRouterPush).toHaveBeenCalledWith('/');
   });
 
-  it('should not navigate when state is loaded', async () => {
-    authLoginCtrl.state = {
-      type: 'loaded',
-      errorMessage: null,
-      values: { username: '', password: '' },
-    };
+  it('should not navigate when login fails', async () => {
+    const { container, getByText } = render(
+      <AuthLoginHandler {...createProps({ shouldFail: true })} />
+    );
+
+    const usernameInput = container.querySelector('#username') as HTMLInputElement;
+    const passwordInput = container.querySelector('#password') as HTMLInputElement;
+
+    fireEvent.change(usernameInput, { target: { value: 'admin' } });
+    fireEvent.change(passwordInput, { target: { value: 'wrong' } });
+    fireEvent.click(getByText('Submit'));
 
     await act(async () => {
-      render(<AuthLoginHandler {...createProps()} />);
+      await flushPromises();
     });
 
     expect(mockRouterPush).not.toHaveBeenCalled();
   });
 
-  it('should not navigate when state is submitting', async () => {
-    authLoginCtrl.state = {
-      type: 'submitting',
-      errorMessage: null,
-      values: { username: 'admin', password: 'secret' },
-    };
+  it('should not navigate when fields are empty (validation fails)', async () => {
+    const { getByText } = render(<AuthLoginHandler {...createProps()} />);
+
+    fireEvent.click(getByText('Submit'));
 
     await act(async () => {
-      render(<AuthLoginHandler {...createProps()} />);
+      await flushPromises();
     });
 
     expect(mockRouterPush).not.toHaveBeenCalled();
   });
 
-  it('should not navigate when state is submitError', async () => {
-    authLoginCtrl.state = {
-      type: 'submitError',
-      errorMessage: 'Login failed',
-      values: { username: 'admin', password: 'wrong' },
-    };
+  it('should not navigate without any user interaction', async () => {
+    render(<AuthLoginHandler {...createProps()} />);
 
     await act(async () => {
-      render(<AuthLoginHandler {...createProps()} />);
+      await flushPromises();
     });
 
     expect(mockRouterPush).not.toHaveBeenCalled();
