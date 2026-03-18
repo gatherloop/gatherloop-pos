@@ -1,8 +1,10 @@
 import React from 'react';
-import { render, act } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { CategoryCreateHandler } from './CategoryCreateHandler';
 import { MockAuthRepository, MockCategoryRepository } from '../../data/mock';
 import { AuthLogoutUsecase, CategoryCreateUsecase } from '../../domain';
+import { flushPromises } from '../../utils/testUtils';
 
 const mockRouterPush = jest.fn();
 jest.mock('solito/router', () => ({
@@ -14,106 +16,113 @@ jest.mock('@tamagui/toast', () => ({
   useToastController: () => ({ show: mockToastShow }),
 }));
 
-// Mock the Screen — tests focus on handler orchestration, not form rendering
-jest.mock('./CategoryCreateScreen', () => ({
-  CategoryCreateScreen: () => null,
-}));
-
-const categoryCreateCtrl = {
-  state: {
-    type: 'loaded' as string,
-    errorMessage: null as string | null,
-    values: { name: '' },
-  },
-  dispatch: jest.fn(),
-  form: {} as never,
+const createProps = (options: { shouldFail?: boolean } = {}) => {
+  const categoryRepo = new MockCategoryRepository();
+  if (options.shouldFail) categoryRepo.setShouldFail(true);
+  return {
+    authLogoutUsecase: new AuthLogoutUsecase(new MockAuthRepository()),
+    categoryCreateUsecase: new CategoryCreateUsecase(categoryRepo),
+  };
 };
-const authLogoutCtrl = {
-  state: { type: 'idle' as string },
-  dispatch: jest.fn(),
-};
-
-jest.mock('../controllers', () => ({
-  useCategoryCreateController: () => ({
-    state: categoryCreateCtrl.state,
-    dispatch: categoryCreateCtrl.dispatch,
-    form: categoryCreateCtrl.form,
-  }),
-  useAuthLogoutController: () => ({
-    state: authLogoutCtrl.state,
-    dispatch: authLogoutCtrl.dispatch,
-  }),
-}));
-
-const createProps = () => ({
-  authLogoutUsecase: new AuthLogoutUsecase(new MockAuthRepository()),
-  categoryCreateUsecase: new CategoryCreateUsecase(new MockCategoryRepository()),
-});
 
 describe('CategoryCreateHandler', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    categoryCreateCtrl.state = {
-      type: 'loaded',
-      errorMessage: null,
-      values: { name: '' },
-    };
-    authLogoutCtrl.state = { type: 'idle' };
   });
 
-  it('should navigate to "/categories" when create succeeds', async () => {
-    categoryCreateCtrl.state = {
-      type: 'submitSuccess',
-      errorMessage: null,
-      values: { name: 'New Category' },
-    };
-
-    await act(async () => {
+  describe('form rendering', () => {
+    it('should render the create form in loaded state', () => {
       render(<CategoryCreateHandler {...createProps()} />);
+      expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
     });
 
-    expect(mockRouterPush).toHaveBeenCalledWith('/categories');
+    it('should render the name input field', () => {
+      render(<CategoryCreateHandler {...createProps()} />);
+      expect(screen.getByRole('textbox', { name: 'Name' })).toBeTruthy();
+    });
   });
 
-  it('should not navigate when state is loaded', async () => {
-    categoryCreateCtrl.state = {
-      type: 'loaded',
-      errorMessage: null,
-      values: { name: '' },
-    };
-
-    await act(async () => {
+  describe('navigation', () => {
+    it('should navigate to "/categories" after successful creation', async () => {
+      const user = userEvent.setup();
       render(<CategoryCreateHandler {...createProps()} />);
+
+      await user.type(screen.getByRole('textbox', { name: 'Name' }), 'New Category');
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(mockRouterPush).toHaveBeenCalledWith('/categories');
     });
 
-    expect(mockRouterPush).not.toHaveBeenCalled();
+    it('should not navigate when creation fails', async () => {
+      const user = userEvent.setup();
+      render(<CategoryCreateHandler {...createProps({ shouldFail: true })} />);
+
+      await user.type(screen.getByRole('textbox', { name: 'Name' }), 'New Category');
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(mockRouterPush).not.toHaveBeenCalled();
+    });
+
+    it('should not navigate when name field is empty (validation fails)', async () => {
+      const user = userEvent.setup();
+      render(<CategoryCreateHandler {...createProps()} />);
+
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(mockRouterPush).not.toHaveBeenCalled();
+    });
+
+    it('should not navigate without any user interaction', async () => {
+      render(<CategoryCreateHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(mockRouterPush).not.toHaveBeenCalled();
+    });
   });
 
-  it('should not navigate when state is submitting', async () => {
-    categoryCreateCtrl.state = {
-      type: 'submitting',
-      errorMessage: null,
-      values: { name: 'New Category' },
-    };
-
-    await act(async () => {
+  describe('validation', () => {
+    it('should show error message when name field is empty and submit is clicked', async () => {
+      const user = userEvent.setup();
       render(<CategoryCreateHandler {...createProps()} />);
-    });
 
-    expect(mockRouterPush).not.toHaveBeenCalled();
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByText('String must contain at least 1 character(s)')).toBeTruthy();
+    });
   });
 
-  it('should not navigate when state is submitError', async () => {
-    categoryCreateCtrl.state = {
-      type: 'submitError',
-      errorMessage: 'Failed to create',
-      values: { name: 'New Category' },
-    };
+  describe('toast notifications', () => {
+    it('should show toast error message when creation fails', async () => {
+      const user = userEvent.setup();
+      render(<CategoryCreateHandler {...createProps({ shouldFail: true })} />);
 
-    await act(async () => {
-      render(<CategoryCreateHandler {...createProps()} />);
+      await user.type(screen.getByRole('textbox', { name: 'Name' }), 'New Category');
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(mockToastShow).toHaveBeenCalledWith('Create Category Error');
     });
-
-    expect(mockRouterPush).not.toHaveBeenCalled();
   });
 });

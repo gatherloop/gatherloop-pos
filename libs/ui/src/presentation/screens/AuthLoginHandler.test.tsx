@@ -1,8 +1,10 @@
 import React from 'react';
-import { render, act } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { AuthLoginHandler } from './AuthLoginHandler';
 import { MockAuthRepository } from '../../data/mock';
 import { AuthLoginUsecase } from '../../domain';
+import { flushPromises } from '../../utils/testUtils';
 
 const mockRouterPush = jest.fn();
 jest.mock('solito/router', () => ({
@@ -14,97 +16,109 @@ jest.mock('@tamagui/toast', () => ({
   useToastController: () => ({ show: mockToastShow }),
 }));
 
-// Mock the Screen so forms don't need to render — tests focus on orchestration
-jest.mock('./AuthLoginScreen', () => ({
-  AuthLoginScreen: () => null,
-}));
-
-// Mutable state container for the mocked controller
-const authLoginCtrl = {
-  state: {
-    type: 'loaded' as string,
-    errorMessage: null as string | null,
-    values: { username: '', password: '' },
-  },
-  dispatch: jest.fn(),
-  form: {} as never,
+const createProps = (options: { shouldFail?: boolean } = {}) => {
+  const mockAuthRepo = new MockAuthRepository();
+  if (options.shouldFail) mockAuthRepo.setShouldFail(true);
+  return {
+    authLoginUsecase: new AuthLoginUsecase(mockAuthRepo),
+  };
 };
-
-jest.mock('../controllers', () => ({
-  useAuthLoginController: () => ({
-    state: authLoginCtrl.state,
-    dispatch: authLoginCtrl.dispatch,
-    form: authLoginCtrl.form,
-  }),
-}));
-
-const createProps = () => ({
-  authLoginUsecase: new AuthLoginUsecase(new MockAuthRepository()),
-});
 
 describe('AuthLoginHandler', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    authLoginCtrl.state = {
-      type: 'loaded',
-      errorMessage: null,
-      values: { username: '', password: '' },
-    };
   });
 
-  it('should navigate to "/" when state reaches submitSuccess', async () => {
-    authLoginCtrl.state = {
-      type: 'submitSuccess',
-      errorMessage: null,
-      values: { username: 'admin', password: 'secret' },
-    };
+  it('should render login form initially', () => {
+    render(<AuthLoginHandler {...createProps()} />);
+    expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
+  });
+
+  it('should render username and password input fields', () => {
+    render(<AuthLoginHandler {...createProps()} />);
+    expect(screen.getByRole('textbox', { name: 'Username' })).toBeTruthy();
+    expect(screen.getByRole('textbox', { name: 'Password' })).toBeTruthy();
+  });
+
+  it('should navigate to "/" after successful login', async () => {
+    const user = userEvent.setup();
+    render(<AuthLoginHandler {...createProps()} />);
+
+    await user.type(screen.getByRole('textbox', { name: 'Username' }), 'admin');
+    await user.type(screen.getByRole('textbox', { name: 'Password' }), 'secret');
+    await user.click(screen.getByRole('button', { name: 'Submit' }));
 
     await act(async () => {
-      render(<AuthLoginHandler {...createProps()} />);
+      await flushPromises();
     });
 
     expect(mockRouterPush).toHaveBeenCalledWith('/');
   });
 
-  it('should not navigate when state is loaded', async () => {
-    authLoginCtrl.state = {
-      type: 'loaded',
-      errorMessage: null,
-      values: { username: '', password: '' },
-    };
+  it('should not navigate when login fails', async () => {
+    const user = userEvent.setup();
+    render(<AuthLoginHandler {...createProps({ shouldFail: true })} />);
+
+    await user.type(screen.getByRole('textbox', { name: 'Username' }), 'admin');
+    await user.type(screen.getByRole('textbox', { name: 'Password' }), 'wrong');
+    await user.click(screen.getByRole('button', { name: 'Submit' }));
 
     await act(async () => {
-      render(<AuthLoginHandler {...createProps()} />);
+      await flushPromises();
     });
 
     expect(mockRouterPush).not.toHaveBeenCalled();
   });
 
-  it('should not navigate when state is submitting', async () => {
-    authLoginCtrl.state = {
-      type: 'submitting',
-      errorMessage: null,
-      values: { username: 'admin', password: 'secret' },
-    };
+  it('should not navigate when fields are empty (validation fails)', async () => {
+    const user = userEvent.setup();
+    render(<AuthLoginHandler {...createProps()} />);
+
+    await user.click(screen.getByRole('button', { name: 'Submit' }));
 
     await act(async () => {
-      render(<AuthLoginHandler {...createProps()} />);
+      await flushPromises();
     });
 
     expect(mockRouterPush).not.toHaveBeenCalled();
   });
 
-  it('should not navigate when state is submitError', async () => {
-    authLoginCtrl.state = {
-      type: 'submitError',
-      errorMessage: 'Login failed',
-      values: { username: 'admin', password: 'wrong' },
-    };
+  it('should not navigate without any user interaction', async () => {
+    render(<AuthLoginHandler {...createProps()} />);
 
     await act(async () => {
-      render(<AuthLoginHandler {...createProps()} />);
+      await flushPromises();
     });
 
     expect(mockRouterPush).not.toHaveBeenCalled();
+  });
+
+  it('should show error messages when fields are empty and submit is clicked', async () => {
+    const user = userEvent.setup();
+    render(<AuthLoginHandler {...createProps()} />);
+
+    await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await act(async () => {
+      await flushPromises();
+    });
+
+    const errorMessages = screen.getAllByText('String must contain at least 1 character(s)');
+    expect(errorMessages.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('should show toast error message when login fails', async () => {
+    const user = userEvent.setup();
+    render(<AuthLoginHandler {...createProps({ shouldFail: true })} />);
+
+    await user.type(screen.getByRole('textbox', { name: 'Username' }), 'admin');
+    await user.type(screen.getByRole('textbox', { name: 'Password' }), 'wrong');
+    await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await act(async () => {
+      await flushPromises();
+    });
+
+    expect(mockToastShow).toHaveBeenCalledWith('Login Error');
   });
 });
