@@ -76,225 +76,313 @@ expect(tester.state.type).toBe('loaded');
 
 ---
 
-## 3. Testing Strategy — The Plan
+## 3. Revised Testing Strategy
 
-### Testing Pyramid for This Architecture
+### 3.0 Why the Original Plan Was Over-Engineered
+
+The original plan (below in the appendix) proposed testing every layer independently: transformers, URL repos, controllers, components, handlers, and E2E. While thorough on paper, this creates a **heavy maintenance burden** with diminishing returns. Most of these layers are thin glue code — testing them in isolation doesn't catch the bugs that actually matter (integration between layers).
+
+After reviewing the architecture more carefully, the real value lies in **two testing surfaces** that together cover nearly all meaningful code paths, plus **Storybook** for visual verification.
+
+### Revised Testing Pyramid
 
 ```
-         /  E2E Tests  \          ← Critical user flows (Playwright)
-        / Integration    \        ← Handler components with mock repos
-       / Component Tests  \       ← Pure components with prop variations
-      / Controller Tests   \      ← React hooks with mock usecases
-     / Domain/Usecase Tests \     ← State machine logic (EXISTING ✅)
-    / Data Layer Tests       \    ← API transformers, URL repos
+         /   Storybook   \          ← Visual & interaction testing for components
+        / Handler Integ.   \        ← Mock repos + REAL usecases + handler + screen
+       /  Usecase Unit      \       ← State machine logic (EXISTING ✅)
 ```
 
-### 3.1 Priority 1: Fix Existing Domain Tests
+This is a **pragmatic, focused strategy** that maximizes coverage-per-test while minimizing maintenance cost.
 
-**Problem**: Test coupling via shared mutable state across `it` blocks.
+---
 
-**Fix**: Refactor each `describe` block so the `UsecaseTester` is created in a `beforeEach` or each `it` is fully self-contained. For sequential state transition tests, chain transitions within a single `it` block or use a builder pattern.
+### 3.1 Layer 1: Usecase Unit Tests (Keep & Improve)
+
+**Status**: Already strong (55 test files). These remain the foundation.
+
+**What they cover**: Core business logic — state machine transitions, side effects, error handling.
+
+**What to fix**:
+1. **Test isolation** — stop sharing mutable state across `it` blocks via closures. Each test should create its own `UsecaseTester`.
+2. **Use `expect.objectContaining()`** — avoid asserting the full state object so tests don't break when new fields are added.
+3. **Standardize on `flushPromises()`** — replace inconsistent `await Promise.resolve()` calls.
 
 **Recommended pattern:**
 
 ```typescript
 describe('ProductListUsecase', () => {
-  describe('success flow', () => {
-    it('should transition idle → loading → loaded', async () => {
-      const repository = new MockProductRepository();
-      const queryRepo = new MockProductListQueryRepository();
-      const usecase = new ProductListUsecase(repository, queryRepo, {
-        products: [],
-        totalItem: 0,
-      });
-      const tester = new UsecaseTester(usecase);
-
-      // idle triggers FETCH → loading
-      expect(tester.state.type).toBe('loading');
-
-      // loading triggers API call → loaded
-      await flushPromises();
-      expect(tester.state.type).toBe('loaded');
-      expect(tester.state.products).toEqual(repository.products);
-    });
-
-    it('should revalidate on FETCH from loaded state', async () => {
-      // Full setup in this test — no shared state
-      const repository = new MockProductRepository();
-      const queryRepo = new MockProductListQueryRepository();
-      const usecase = new ProductListUsecase(repository, queryRepo, {
-        products: [],
-        totalItem: 0,
-      });
-      const tester = new UsecaseTester(usecase);
-      await flushPromises(); // reach loaded
-
-      tester.dispatch({ type: 'FETCH' });
-      expect(tester.state.type).toBe('revalidating');
-    });
-  });
-});
-```
-
-### 3.2 Priority 2: Data Layer Tests (NEW)
-
-**What to test**: API response transformers and URL query repositories.
-
-These are pure functions / simple classes — easy to test, high value for catching API contract drift.
-
-```typescript
-// data/api/product.test.ts
-describe('productTransformers', () => {
-  it('should transform API product to domain product', () => {
-    const apiProduct = { id: 1, name: 'Test', category: {...}, ... };
-    const result = productTransformers.product(apiProduct);
-    expect(result).toEqual({
-      id: 1,
-      name: 'Test',
-      category: { id: 1, name: 'Cat1', createdAt: '...' },
-      ...
-    });
-  });
-
-  it('should default description to empty string when null', () => {
-    const apiProduct = { ...baseProduct, description: null };
-    expect(productTransformers.product(apiProduct).description).toBe('');
-  });
-});
-```
-
-**For URL query repositories**: Test that `getPage()`, `setPage()`, `getSearchQuery()` etc. correctly read/write URL parameters.
-
-### 3.3 Priority 3: Controller Hook Tests (NEW)
-
-Test that React hooks correctly bridge usecases to component state using `@testing-library/react` `renderHook`.
-
-```typescript
-// presentation/controllers/ProductListController.test.tsx
-import { renderHook, act } from '@testing-library/react';
-
-describe('useProductListController', () => {
-  it('should return state and dispatch from usecase', () => {
-    const mockRepo = new MockProductRepository();
-    const mockQueryRepo = new MockProductListQueryRepository();
-    const usecase = new ProductListUsecase(mockRepo, mockQueryRepo, {
+  const createTester = (overrides?: { shouldFail?: boolean }) => {
+    const repository = new MockProductRepository();
+    if (overrides?.shouldFail) repository.setShouldFail(true);
+    const queryRepo = new MockProductListQueryRepository();
+    const usecase = new ProductListUsecase(repository, queryRepo, {
       products: [],
       totalItem: 0,
     });
-
-    const { result } = renderHook(() => useProductListController(usecase));
-
-    expect(result.current.state).toBeDefined();
-    expect(typeof result.current.dispatch).toBe('function');
-  });
-});
-```
-
-### 3.4 Priority 4: Component Tests (NEW)
-
-Test pure UI components render correctly for each variant. These are the most straightforward to add since components accept props — no mocking needed.
-
-```typescript
-// presentation/components/products/ProductList.test.tsx
-import { render, screen } from '@testing-library/react';
-
-describe('ProductList', () => {
-  const baseProps = {
-    searchValue: '',
-    saleType: 'all' as const,
-    onSearchValueChange: jest.fn(),
-    // ... other required callbacks
+    return { tester: new UsecaseTester(usecase), repository };
   };
 
-  it('should show loading view when variant is loading', () => {
-    render(<ProductList {...baseProps} variant={{ type: 'loading' }} />);
-    expect(screen.getByText('Fetching Products...')).toBeTruthy();
+  it('should transition loading → loaded on success', async () => {
+    const { tester, repository } = createTester();
+    expect(tester.state.type).toBe('loading');
+    await flushPromises();
+    expect(tester.state).toEqual(expect.objectContaining({
+      type: 'loaded',
+      products: repository.products,
+    }));
   });
 
-  it('should show error view when variant is error', () => {
-    render(<ProductList {...baseProps} variant={{ type: 'error' }} />);
-    expect(screen.getByText('Failed to Fetch Products')).toBeTruthy();
-  });
-
-  it('should render product items when variant is loaded', () => {
-    const items = [{ id: 1, name: 'Product 1', ... }];
-    render(<ProductList {...baseProps} variant={{ type: 'loaded', items }} />);
-    expect(screen.getByText('Product 1')).toBeTruthy();
+  it('should transition loading → error on failure', async () => {
+    const { tester } = createTester({ shouldFail: true });
+    await flushPromises();
+    expect(tester.state.type).toBe('error');
   });
 });
 ```
 
-**Note**: This requires proper Tamagui/React Native test setup. A `test-setup.ts` file that configures Tamagui provider and mocks native modules will be needed.
+---
 
-### 3.5 Priority 5: Handler Integration Tests (NEW)
+### 3.2 Layer 2: Handler Integration Tests (New — Core Addition)
 
-Test the orchestration logic in Handler components (e.g., "when delete succeeds, refetch the list"):
+This is the **key change** from the original plan. Instead of testing controllers, components, and handlers each in isolation, we test the **handler with real usecases** (backed by mock repos). This exercises the full chain:
+
+```
+Mock Repository → Real Usecase → Real Controller → Handler → Screen → Components
+```
+
+#### Why This Is Better Than the Original Plan
+
+The current handler tests (e.g., `ProductListHandler.test.tsx`) **mock the controllers**:
 
 ```typescript
+// CURRENT APPROACH — mocks away the most important layer
+jest.mock('../controllers', () => ({
+  useProductListController: () => ({
+    state: productListCtrl.state,    // ← fake state, not from usecase
+    dispatch: productListCtrl.dispatch, // ← jest.fn(), not real dispatch
+  }),
+}));
+```
+
+This defeats the purpose. The handler's job is to orchestrate usecases and map their state to UI — but the test replaces the usecases with static objects. It can't catch:
+- Usecase state transitions not matching what the handler expects
+- Controller wiring issues
+- Race conditions between multiple usecases
+
+**The revised approach** removes the controller mocks entirely:
+
+```typescript
+// REVISED APPROACH — real usecases, only mock the data boundary
 describe('ProductListHandler', () => {
-  it('should refetch product list after successful delete', async () => {
-    // Render handler with mock usecases
-    // Trigger delete flow
-    // Assert productList.dispatch was called with { type: 'FETCH' }
+  const createHandler = (overrides?: { shouldFail?: boolean }) => {
+    const productRepo = new MockProductRepository();
+    if (overrides?.shouldFail) productRepo.setShouldFail(true);
+    const queryRepo = new MockProductListQueryRepository();
+    const authRepo = new MockAuthRepository();
+
+    return render(
+      <ProductListHandler
+        productListUsecase={new ProductListUsecase(productRepo, queryRepo, {
+          products: [],
+          totalItem: 0,
+        })}
+        productDeleteUsecase={new ProductDeleteUsecase(productRepo)}
+        authLogoutUsecase={new AuthLogoutUsecase(authRepo)}
+      />
+    );
+  };
+
+  it('should show loading then product list after fetch', async () => {
+    const { getByText } = createHandler();
+    expect(getByText('Fetching Products...')).toBeTruthy();
+
+    await act(async () => { await flushPromises(); });
+    expect(getByText('Product 1')).toBeTruthy(); // from MockProductRepository
+  });
+
+  it('should show error state when fetch fails', async () => {
+    const { getByText } = createHandler({ shouldFail: true });
+    await act(async () => { await flushPromises(); });
+    expect(getByText('Failed to Fetch Products')).toBeTruthy();
+  });
+
+  it('should refetch list after successful delete', async () => {
+    const { getByText, getByRole } = createHandler();
+    await act(async () => { await flushPromises(); }); // reach loaded
+
+    // Trigger delete flow through the UI
+    fireEvent.press(getByText('Delete'));
+    fireEvent.press(getByText('Confirm'));
+    await act(async () => { await flushPromises(); });
+
+    // List should have refetched (still shows products because mock doesn't actually delete)
+    expect(getByText('Product 1')).toBeTruthy();
   });
 });
 ```
 
-### 3.6 Priority 6: E2E Tests (Playwright — Expand)
+#### What This Covers
 
-Replace the placeholder tests with critical user flow tests:
+| Code Path | Covered? |
+|-----------|----------|
+| Mock repository data | Yes — it's the data source |
+| Usecase state machine | Yes — real usecase runs |
+| Controller (useReducer bridge) | Yes — real hook runs |
+| Handler orchestration logic | Yes — the component under test |
+| Screen component rendering | Yes — rendered as child |
+| Individual UI components | Yes — rendered transitively |
+| State-to-variant mapping | Yes — handler's `match()` runs with real state |
 
-1. **Authentication flow**: Login → redirect to dashboard
-2. **CRUD flows**: Create product → verify in list → edit → verify changes → delete → verify removal
-3. **Transaction flow**: Create transaction → pay → verify in list
-4. **Search & pagination**: Search products → verify results → paginate
+#### Diagnostic Power
+
+When a handler test fails, the debugging path is clear:
+
+1. **Check usecase tests first** — if they pass, the core logic is fine
+2. **If usecase tests also fail** — fix the usecase (root cause)
+3. **If usecase tests pass but handler test fails** — the bug is in one of:
+   - Handler orchestration logic (the `useEffect` wiring)
+   - State-to-props mapping (the `match()` in handler)
+   - Component rendering
+   - Mock repository data
+
+Since handler orchestration and state mapping are small, focused code, these are easy to debug manually.
+
+---
+
+### 3.3 Layer 3: Storybook for Components (New — Visual Testing)
+
+Instead of writing unit tests for every component variant, use **Storybook** to visually verify components in all their states.
+
+**Why Storybook over component unit tests:**
+- Components are **prop-driven and pure** — they don't have logic to test, they have *appearance* to verify
+- Storybook makes it trivial to see all states at a glance (loading, error, empty, loaded with many items, etc.)
+- Storybook stories double as **living documentation** for the component library
+- Visual regression testing (via Chromatic or similar) catches CSS/layout bugs that unit tests miss entirely
+- Developers can interactively test event handlers (onPress, onChange, etc.) in the Storybook UI
+
+**Example stories:**
+
+```typescript
+// presentation/components/products/ProductList.stories.tsx
+import type { Meta, StoryObj } from '@storybook/react';
+import { ProductList } from './ProductList';
+
+const meta: Meta<typeof ProductList> = {
+  component: ProductList,
+  args: {
+    searchValue: '',
+    saleType: 'all',
+    currentPage: 1,
+    totalItem: 50,
+    itemPerPage: 10,
+    onSearchValueChange: fn(),
+    onSaleTypeChange: fn(),
+    onRetryButtonPress: fn(),
+    onPageChange: fn(),
+    onItemPress: fn(),
+  },
+};
+export default meta;
+
+type Story = StoryObj<typeof ProductList>;
+
+export const Loading: Story = {
+  args: { variant: { type: 'loading' } },
+};
+
+export const Empty: Story = {
+  args: { variant: { type: 'empty' } },
+};
+
+export const Error: Story = {
+  args: { variant: { type: 'error' } },
+};
+
+export const Loaded: Story = {
+  args: {
+    variant: {
+      type: 'loaded',
+      items: [
+        { id: 1, name: 'Nasi Goreng', category: { id: 1, name: 'Food', createdAt: '' }, imageUrl: '...', options: [], saleType: 'purchase', createdAt: '' },
+        { id: 2, name: 'Es Teh', category: { id: 2, name: 'Drink', createdAt: '' }, imageUrl: '...', options: [], saleType: 'purchase', createdAt: '' },
+      ],
+    },
+  },
+};
+```
+
+**What Storybook covers:**
+- Visual correctness of every component state
+- Interactive event handler verification (click, type, etc.)
+- Cross-browser/responsive testing (if configured)
+- Design system consistency
+
+**What it doesn't cover (and doesn't need to):**
+- Business logic (covered by usecase tests)
+- Integration between components (covered by handler tests)
+
+---
+
+### 3.4 What We Intentionally Skip (and Why)
+
+| Layer | Why We Skip Dedicated Tests |
+|-------|----------------------------|
+| **Transformers (data/api)** | Already covered by existing tests. Low risk — they're pure mappers. If an API contract changes, the handler integration test will catch it because mock repos mirror the domain interface, and real API calls would fail visibly. Keep the existing transformer tests but don't prioritize expanding them. |
+| **URL query repos (data/url)** | Already covered by existing tests. Same as above — keep what exists but these are simple getters/setters. If `getPage()` breaks, the handler test will show wrong pagination behavior. |
+| **Controllers** | These are 5-line hooks that call `useReducer` + `useEffect`. Testing them in isolation provides almost zero value — the handler integration tests exercise them fully. The existing controller tests can be **deleted** once handler integration tests are in place. |
+| **Individual component unit tests** | Storybook covers visual correctness better than `expect(getByText(...))` assertions. The handler integration tests already verify components render correctly for real state transitions. |
+
+---
+
+### 3.5 Data Layer Tests: Keep What Exists
+
+The existing transformer tests (`data/api/*.test.ts`) and URL repo tests (`data/url/*.test.ts`) are already written, low-maintenance, and provide value as a fast feedback loop for pure functions. **Keep them** — but don't prioritize writing new ones for every transformer. They're a nice-to-have safety net, not a critical testing surface.
+
+---
+
+### 3.6 E2E Tests (Future — Lower Priority)
+
+With usecase tests + handler integration tests + Storybook, the remaining gap is **real API integration** and **real browser behavior**. E2E tests with Playwright should cover critical user flows when the team has bandwidth:
+
+1. Authentication flow (login → dashboard)
+2. Core CRUD flows (create → list → edit → delete)
+3. Transaction flow (create → pay → verify)
+
+These are high-effort but provide the final safety net for production.
 
 ---
 
 ## 4. Improvements to Testing Infrastructure
 
-### 4.1 Enhance `UsecaseTester`
+### 4.1 Fix `UsecaseTester` Isolation
 
-The current `UsecaseTester` is good but should support:
+Standardize on factory functions per test file to eliminate shared mutable state:
 
 ```typescript
-export class UsecaseTester<...> {
-  // Existing
-  usecase: UsecaseScenario;
-  state: State;
-  dispatch: (action: Action) => void;
-
-  // Add: state history for debugging
-  stateHistory: State[] = [];
-
-  // Add: async helper
-  async flushAsync(): Promise<void> {
-    await new Promise(resolve => setTimeout(resolve, 0));
-  }
-
-  // Add: wait for specific state
-  async waitForState(type: string, timeout = 1000): Promise<State> {
-    const start = Date.now();
-    while (this.state.type !== type) {
-      if (Date.now() - start > timeout) throw new Error(`Timed out waiting for state ${type}`);
-      await this.flushAsync();
-    }
-    return this.state;
-  }
-}
+// Each test file gets a createTester() that returns fresh instances
+const createTester = (overrides?: { shouldFail?: boolean }) => {
+  const repository = new MockProductRepository();
+  if (overrides?.shouldFail) repository.setShouldFail(true);
+  const queryRepo = new MockProductListQueryRepository();
+  const usecase = new ProductListUsecase(repository, queryRepo, {
+    products: [],
+    totalItem: 0,
+  });
+  return { tester: new UsecaseTester(usecase), repository, queryRepo };
+};
 ```
 
-### 4.2 Add `flushPromises` Utility
+### 4.2 Standardize `flushPromises`
 
-Replace `await Promise.resolve()` (which only flushes ONE microtask) with:
+Replace inconsistent `await Promise.resolve()` with the existing `flushPromises` utility:
 
 ```typescript
 export const flushPromises = () => new Promise(resolve => setTimeout(resolve, 0));
 ```
 
-### 4.3 Component Test Setup
+### 4.3 Handler Test Setup
 
-Create a shared test wrapper for component tests:
+Create a shared test helper for handler integration tests that provides the necessary providers and mocks for navigation/toast:
 
 ```typescript
 // utils/testUtils.tsx
@@ -311,51 +399,36 @@ export const renderWithProviders = (ui: React.ReactElement) =>
   render(ui, { wrapper: TestWrapper });
 ```
 
-### 4.4 Coverage Configuration
+### 4.4 Set Up Storybook
 
-Add coverage thresholds to `jest.config.ts`:
+Configure Storybook for the `libs/ui` package with Tamagui support. This is a one-time setup cost that pays for itself across all components:
 
-```typescript
-coverageThreshold: {
-  global: {
-    branches: 70,
-    functions: 80,
-    lines: 80,
-    statements: 80,
-  },
-  './src/domain/': {
-    branches: 90,
-    functions: 95,
-    lines: 95,
-    statements: 95,
-  },
-},
-```
+1. Install `@storybook/react` + `@storybook/addon-essentials`
+2. Configure Tamagui decorator for all stories
+3. Add stories alongside components: `ComponentName.stories.tsx`
+4. Optionally add Chromatic or Percy for visual regression CI
 
 ---
 
 ## 5. TDD Workflow Recommendation
 
-For TDD compatibility, the architecture already works well because:
-
-1. **Domain layer is pure logic** — write tests first for state transitions, then implement `getNextState`
-2. **Repository interfaces as contracts** — define the interface, write mock, test the usecase, then implement the API repo
-3. **Components are prop-driven** — write tests for each variant, then implement the component
-
-**Recommended TDD cycle for a new feature (e.g., "Add Coupon"):**
+The revised strategy fits TDD naturally:
 
 ```
 1. Define entity type         → domain/entities/Coupon.ts
 2. Define repository interface → domain/repositories/coupon.ts
-3. Write usecase test          → domain/usecases/couponCreate.test.ts  ← RED
-4. Implement usecase           → domain/usecases/couponCreate.ts       ← GREEN
-5. Write mock repository       → data/mock/coupon.ts
-6. Write component test        → presentation/components/CouponForm.test.tsx ← RED
-7. Implement component         → presentation/components/CouponForm.tsx      ← GREEN
-8. Write API repository        → data/api/coupon.ts
-9. Wire up in app layer        → app/CouponCreate.tsx
-10. Write E2E test             → apps/web-e2e/src/coupon.spec.ts
+3. Write mock repository       → data/mock/coupon.ts
+4. Write usecase test          → domain/usecases/couponCreate.test.ts  ← RED
+5. Implement usecase           → domain/usecases/couponCreate.ts       ← GREEN
+6. Write Storybook stories     → presentation/components/CouponForm.stories.tsx
+7. Implement component         → presentation/components/CouponForm.tsx (verify in Storybook)
+8. Write handler integ. test   → presentation/screens/CouponCreateHandler.test.tsx ← RED
+9. Implement handler           → presentation/screens/CouponCreateHandler.tsx      ← GREEN
+10. Wire up API repository     → data/api/coupon.ts
+11. Wire up in app layer       → app/CouponCreate.tsx
 ```
+
+**Key difference from original TDD cycle**: Component development is driven by Storybook (visual feedback) rather than unit tests. Handler development is driven by integration tests that exercise the full stack.
 
 ---
 
@@ -363,15 +436,37 @@ For TDD compatibility, the architecture already works well because:
 
 | # | Action | Effort | Impact | Priority |
 |---|--------|--------|--------|----------|
-| 1 | Fix test isolation in existing domain tests | Low | Medium | P0 |
-| 2 | Add `flushPromises` utility | Low | Medium | P0 |
-| 3 | Add data transformer tests | Low | High | P1 |
-| 4 | Add URL query repository tests | Low | Medium | P1 |
-| 5 | Add controller hook tests | Medium | Medium | P2 |
-| 6 | Add component render tests (per variant) | Medium | High | P2 |
-| 7 | Add handler integration tests | Medium | High | P3 |
-| 8 | Add real E2E tests for critical flows | High | Very High | P3 |
-| 9 | Set up coverage thresholds | Low | Medium | P2 |
-| 10 | Enhance `UsecaseTester` with state history & async helpers | Low | Medium | P2 |
+| 1 | Fix test isolation in existing usecase tests | Low | Medium | P0 |
+| 2 | Standardize `flushPromises` usage across all usecase tests | Low | Low | P0 |
+| 3 | Write handler integration tests (real usecases, mock repos, no controller mocks) | Medium | **Very High** | **P1** |
+| 4 | Set up Storybook for component visual testing | Medium | High | **P1** |
+| 5 | Remove controller-mocking handler tests (replaced by #3) | Low | Medium | P2 |
+| 6 | Delete standalone controller tests (redundant with #3) | Low | Low | P2 |
+| 7 | Keep existing transformer & URL repo tests (already written, low maintenance) | None | Medium | — |
+| 8 | Add real E2E tests for critical flows (Playwright) | High | High | P3 |
 
-**Bottom line**: The domain layer testing is solid in concept but has execution issues (test coupling). The biggest gap is that the presentation and data layers — where most regressions actually occur — have zero test coverage. Adding component tests (Priority 4) and data transformer tests (Priority 2) gives the most bang for the buck.
+**Bottom line**: Focus automated testing on **two surfaces** — usecase unit tests (logic) and handler integration tests (full-stack behavior with mock data). Use **Storybook** for visual/interaction verification of components. This gives maximum coverage with minimum test maintenance overhead. When something breaks, the usecase tests tell you if it's a logic bug; the handler tests tell you if it's a wiring/rendering bug; Storybook tells you if it's a visual bug.
+
+---
+
+## Appendix: Original Testing Strategy (Superseded)
+
+The original plan proposed testing every layer independently (transformers, URL repos, controllers, components, handlers, E2E). While comprehensive, it was over-engineered for this codebase's architecture. The revised strategy above achieves comparable coverage with fewer, higher-value tests. The original plan is preserved below for reference.
+
+<details>
+<summary>Click to expand original plan</summary>
+
+### Original Testing Pyramid
+
+```
+         /  E2E Tests  \          ← Critical user flows (Playwright)
+        / Integration    \        ← Handler components with mock repos
+       / Component Tests  \       ← Pure components with prop variations
+      / Controller Tests   \      ← React hooks with mock usecases
+     / Domain/Usecase Tests \     ← State machine logic (EXISTING ✅)
+    / Data Layer Tests       \    ← API transformers, URL repos
+```
+
+The original plan had 10 action items across 6 priority levels, testing each architectural layer independently. The revised strategy consolidates this into 3 testing surfaces (usecase tests, handler integration tests, Storybook) that together provide equivalent or better coverage.
+
+</details>
