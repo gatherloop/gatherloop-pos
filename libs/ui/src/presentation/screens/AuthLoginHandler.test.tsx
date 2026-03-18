@@ -11,8 +11,9 @@ jest.mock('solito/router', () => ({
   useRouter: () => ({ push: mockRouterPush, replace: jest.fn(), back: jest.fn() }),
 }));
 
+const mockToastShow = jest.fn();
 jest.mock('@tamagui/toast', () => ({
-  useToastController: () => ({ show: jest.fn() }),
+  useToastController: () => ({ show: mockToastShow }),
 }));
 
 const createProps = (options: { shouldFail?: boolean } = {}) => {
@@ -90,5 +91,34 @@ describe('AuthLoginHandler', () => {
     });
 
     expect(mockRouterPush).not.toHaveBeenCalled();
+  });
+
+  it('should show error messages when fields are empty and submit is clicked', async () => {
+    const user = userEvent.setup();
+    render(<AuthLoginHandler {...createProps()} />);
+
+    await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await act(async () => {
+      await flushPromises();
+    });
+
+    const errorMessages = screen.getAllByText('String must contain at least 1 character(s)');
+    expect(errorMessages.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('should show toast error message when login fails', async () => {
+    const user = userEvent.setup();
+    render(<AuthLoginHandler {...createProps({ shouldFail: true })} />);
+
+    await user.type(screen.getByRole('textbox', { name: 'Username' }), 'admin');
+    await user.type(screen.getByRole('textbox', { name: 'Password' }), 'wrong');
+    await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await act(async () => {
+      await flushPromises();
+    });
+
+    expect(mockToastShow).toHaveBeenCalledWith('Login Error');
   });
 });
