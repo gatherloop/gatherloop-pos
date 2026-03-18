@@ -1,5 +1,6 @@
 import React from 'react';
-import { render, fireEvent, act, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { AuthLoginHandler } from './AuthLoginHandler';
 import { MockAuthRepository } from '../../data/mock';
 import { AuthLoginUsecase } from '../../domain';
@@ -28,22 +29,23 @@ describe('AuthLoginHandler', () => {
   });
 
   it('should render login form initially', () => {
-    const { getByText } = render(<AuthLoginHandler {...createProps()} />);
-    expect(getByText('Submit')).toBeTruthy();
+    render(<AuthLoginHandler {...createProps()} />);
+    expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
   });
 
   it('should render username and password input fields', () => {
     render(<AuthLoginHandler {...createProps()} />);
-    expect(screen.getByLabelText('Username')).toBeTruthy();
-    expect(screen.getByLabelText('Password')).toBeTruthy();
+    expect(screen.getByRole('textbox', { name: 'Username' })).toBeTruthy();
+    expect(screen.getByRole('textbox', { name: 'Password' })).toBeTruthy();
   });
 
   it('should navigate to "/" after successful login', async () => {
-    const { getByText } = render(<AuthLoginHandler {...createProps()} />);
+    const user = userEvent.setup();
+    render(<AuthLoginHandler {...createProps()} />);
 
-    fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'admin' } });
-    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'secret' } });
-    fireEvent.click(getByText('Submit'));
+    await user.type(screen.getByRole('textbox', { name: 'Username' }), 'admin');
+    await user.type(screen.getByRole('textbox', { name: 'Password' }), 'secret');
+    await user.click(screen.getByRole('button', { name: 'Submit' }));
 
     await act(async () => {
       await flushPromises();
@@ -53,13 +55,12 @@ describe('AuthLoginHandler', () => {
   });
 
   it('should not navigate when login fails', async () => {
-    const { getByText } = render(
-      <AuthLoginHandler {...createProps({ shouldFail: true })} />
-    );
+    const user = userEvent.setup();
+    render(<AuthLoginHandler {...createProps({ shouldFail: true })} />);
 
-    fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'admin' } });
-    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'wrong' } });
-    fireEvent.click(getByText('Submit'));
+    await user.type(screen.getByRole('textbox', { name: 'Username' }), 'admin');
+    await user.type(screen.getByRole('textbox', { name: 'Password' }), 'wrong');
+    await user.click(screen.getByRole('button', { name: 'Submit' }));
 
     await act(async () => {
       await flushPromises();
@@ -69,9 +70,10 @@ describe('AuthLoginHandler', () => {
   });
 
   it('should not navigate when fields are empty (validation fails)', async () => {
-    const { getByText } = render(<AuthLoginHandler {...createProps()} />);
+    const user = userEvent.setup();
+    render(<AuthLoginHandler {...createProps()} />);
 
-    fireEvent.click(getByText('Submit'));
+    await user.click(screen.getByRole('button', { name: 'Submit' }));
 
     await act(async () => {
       await flushPromises();

@@ -1,5 +1,6 @@
 import React from 'react';
-import { render, fireEvent, act } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { CategoryCreateHandler } from './CategoryCreateHandler';
 import { MockAuthRepository, MockCategoryRepository } from '../../data/mock';
 import { AuthLogoutUsecase, CategoryCreateUsecase } from '../../domain';
@@ -30,23 +31,23 @@ describe('CategoryCreateHandler', () => {
 
   describe('form rendering', () => {
     it('should render the create form in loaded state', () => {
-      const { getByText } = render(<CategoryCreateHandler {...createProps()} />);
-      expect(getByText('Submit')).toBeTruthy();
+      render(<CategoryCreateHandler {...createProps()} />);
+      expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
     });
 
     it('should render the name input field', () => {
-      const { container } = render(<CategoryCreateHandler {...createProps()} />);
-      expect(container.querySelector('#name')).toBeTruthy();
+      render(<CategoryCreateHandler {...createProps()} />);
+      expect(screen.getByRole('textbox', { name: 'Name' })).toBeTruthy();
     });
   });
 
   describe('navigation', () => {
     it('should navigate to "/categories" after successful creation', async () => {
-      const { container, getByText } = render(<CategoryCreateHandler {...createProps()} />);
+      const user = userEvent.setup();
+      render(<CategoryCreateHandler {...createProps()} />);
 
-      const nameInput = container.querySelector('#name') as HTMLInputElement;
-      fireEvent.change(nameInput, { target: { value: 'New Category' } });
-      fireEvent.click(getByText('Submit'));
+      await user.type(screen.getByRole('textbox', { name: 'Name' }), 'New Category');
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
 
       await act(async () => {
         await flushPromises();
@@ -56,13 +57,11 @@ describe('CategoryCreateHandler', () => {
     });
 
     it('should not navigate when creation fails', async () => {
-      const { container, getByText } = render(
-        <CategoryCreateHandler {...createProps({ shouldFail: true })} />
-      );
+      const user = userEvent.setup();
+      render(<CategoryCreateHandler {...createProps({ shouldFail: true })} />);
 
-      const nameInput = container.querySelector('#name') as HTMLInputElement;
-      fireEvent.change(nameInput, { target: { value: 'New Category' } });
-      fireEvent.click(getByText('Submit'));
+      await user.type(screen.getByRole('textbox', { name: 'Name' }), 'New Category');
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
 
       await act(async () => {
         await flushPromises();
@@ -72,9 +71,10 @@ describe('CategoryCreateHandler', () => {
     });
 
     it('should not navigate when name field is empty (validation fails)', async () => {
-      const { getByText } = render(<CategoryCreateHandler {...createProps()} />);
+      const user = userEvent.setup();
+      render(<CategoryCreateHandler {...createProps()} />);
 
-      fireEvent.click(getByText('Submit'));
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
 
       await act(async () => {
         await flushPromises();

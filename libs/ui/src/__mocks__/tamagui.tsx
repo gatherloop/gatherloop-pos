@@ -91,7 +91,7 @@ export const YGroup = Object.assign(YGroupBase, {
 // Tamagui's built-in ListItem (distinct from our base/ListItem.tsx)
 export const ListItem = ({ children, title, onPress }: AnyProps) =>
   React.createElement(
-    'div',
+    onPress ? 'button' : 'div',
     { 'data-component': 'TamaguiListItem', ...(onPress ? { onClick: onPress } : {}) },
     title,
     children

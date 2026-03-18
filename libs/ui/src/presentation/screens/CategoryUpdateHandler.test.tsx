@@ -1,5 +1,6 @@
 import React from 'react';
-import { render, fireEvent, act } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { CategoryUpdateHandler } from './CategoryUpdateHandler';
 import { MockAuthRepository, MockCategoryRepository } from '../../data/mock';
 import { AuthLogoutUsecase, CategoryUpdateUsecase } from '../../domain';
@@ -45,50 +46,45 @@ describe('CategoryUpdateHandler', () => {
 
   describe('loading and data states', () => {
     it('should show loading state while fetching category', () => {
-      const { getByText } = render(<CategoryUpdateHandler {...createProps()} />);
-      expect(getByText('Fetching Category...')).toBeTruthy();
+      render(<CategoryUpdateHandler {...createProps()} />);
+      expect(screen.getByText('Fetching Category...')).toBeTruthy();
     });
 
     it('should show the form after category data loads', async () => {
-      const { getByText } = render(<CategoryUpdateHandler {...createProps()} />);
+      render(<CategoryUpdateHandler {...createProps()} />);
 
       await act(async () => {
         await flushPromises();
       });
 
-      expect(getByText('Submit')).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
     });
 
     it('should render pre-filled form when category is preloaded', () => {
-      const { getByDisplayValue } = render(
-        <CategoryUpdateHandler {...createProps({ preloaded: true })} />
-      );
-
-      expect(getByDisplayValue('Mock Category 1')).toBeTruthy();
+      render(<CategoryUpdateHandler {...createProps({ preloaded: true })} />);
+      expect(screen.getByDisplayValue('Mock Category 1')).toBeTruthy();
     });
 
     it('should show error state when category fetch fails', async () => {
-      const { getByText } = render(
-        <CategoryUpdateHandler {...createProps({ shouldFail: true })} />
-      );
+      render(<CategoryUpdateHandler {...createProps({ shouldFail: true })} />);
 
       await act(async () => {
         await flushPromises();
       });
 
-      expect(getByText('Failed to Fetch Category')).toBeTruthy();
+      expect(screen.getByRole('heading', { name: 'Failed to Fetch Category' })).toBeTruthy();
     });
   });
 
   describe('navigation', () => {
     it('should navigate to "/categories" after successful update', async () => {
-      const { container, getByText } = render(
-        <CategoryUpdateHandler {...createProps({ preloaded: true })} />
-      );
+      const user = userEvent.setup();
+      render(<CategoryUpdateHandler {...createProps({ preloaded: true })} />);
 
-      const nameInput = container.querySelector('#name') as HTMLInputElement;
-      fireEvent.change(nameInput, { target: { value: 'Updated Category' } });
-      fireEvent.click(getByText('Submit'));
+      const nameInput = screen.getByRole('textbox', { name: 'Name' });
+      await user.clear(nameInput);
+      await user.type(nameInput, 'Updated Category');
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
 
       await act(async () => {
         await flushPromises();
@@ -98,6 +94,7 @@ describe('CategoryUpdateHandler', () => {
     });
 
     it('should not navigate when update fails', async () => {
+      const user = userEvent.setup();
       const categoryRepo = new MockCategoryRepository();
       // Allow fetch to succeed but fail on update
       const preloadedCategory = categoryRepo.categories[0];
@@ -108,16 +105,17 @@ describe('CategoryUpdateHandler', () => {
       // Set shouldFail after usecase is created (affects updateCategory)
       categoryRepo.setShouldFail(true);
 
-      const { container, getByText } = render(
+      render(
         <CategoryUpdateHandler
           authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
           categoryUpdateUsecase={categoryUpdateUsecase}
         />
       );
 
-      const nameInput = container.querySelector('#name') as HTMLInputElement;
-      fireEvent.change(nameInput, { target: { value: 'Updated Category' } });
-      fireEvent.click(getByText('Submit'));
+      const nameInput = screen.getByRole('textbox', { name: 'Name' });
+      await user.clear(nameInput);
+      await user.type(nameInput, 'Updated Category');
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
 
       await act(async () => {
         await flushPromises();
@@ -139,10 +137,11 @@ describe('CategoryUpdateHandler', () => {
 
   describe('error recovery', () => {
     it('should refetch category when retry button is pressed after error', async () => {
+      const user = userEvent.setup();
       const categoryRepo = new MockCategoryRepository();
       categoryRepo.setShouldFail(true);
 
-      const { getByText } = render(
+      render(
         <CategoryUpdateHandler
           authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
           categoryUpdateUsecase={new CategoryUpdateUsecase(categoryRepo, {
@@ -156,18 +155,18 @@ describe('CategoryUpdateHandler', () => {
         await flushPromises();
       });
 
-      expect(getByText('Failed to Fetch Category')).toBeTruthy();
+      expect(screen.getByRole('heading', { name: 'Failed to Fetch Category' })).toBeTruthy();
 
       // Fix repo so retry succeeds
       categoryRepo.setShouldFail(false);
 
-      fireEvent.click(getByText('Retry'));
+      await user.click(screen.getByRole('button', { name: 'Retry' }));
 
       await act(async () => {
         await flushPromises();
       });
 
-      expect(getByText('Submit')).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
     });
   });
 });
