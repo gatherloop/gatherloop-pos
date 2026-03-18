@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, fireEvent, act } from '@testing-library/react';
+import { render, fireEvent, act, screen } from '@testing-library/react';
 import { AuthLoginHandler } from './AuthLoginHandler';
 import { MockAuthRepository } from '../../data/mock';
 import { AuthLoginUsecase } from '../../domain';
@@ -33,19 +33,16 @@ describe('AuthLoginHandler', () => {
   });
 
   it('should render username and password input fields', () => {
-    const { container } = render(<AuthLoginHandler {...createProps()} />);
-    expect(container.querySelector('#username')).toBeTruthy();
-    expect(container.querySelector('#password')).toBeTruthy();
+    render(<AuthLoginHandler {...createProps()} />);
+    expect(screen.getByLabelText('Username')).toBeTruthy();
+    expect(screen.getByLabelText('Password')).toBeTruthy();
   });
 
   it('should navigate to "/" after successful login', async () => {
-    const { container, getByText } = render(<AuthLoginHandler {...createProps()} />);
+    const { getByText } = render(<AuthLoginHandler {...createProps()} />);
 
-    const usernameInput = container.querySelector('#username') as HTMLInputElement;
-    const passwordInput = container.querySelector('#password') as HTMLInputElement;
-
-    fireEvent.change(usernameInput, { target: { value: 'admin' } });
-    fireEvent.change(passwordInput, { target: { value: 'secret' } });
+    fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'admin' } });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'secret' } });
     fireEvent.click(getByText('Submit'));
 
     await act(async () => {
@@ -56,15 +53,12 @@ describe('AuthLoginHandler', () => {
   });
 
   it('should not navigate when login fails', async () => {
-    const { container, getByText } = render(
+    const { getByText } = render(
       <AuthLoginHandler {...createProps({ shouldFail: true })} />
     );
 
-    const usernameInput = container.querySelector('#username') as HTMLInputElement;
-    const passwordInput = container.querySelector('#password') as HTMLInputElement;
-
-    fireEvent.change(usernameInput, { target: { value: 'admin' } });
-    fireEvent.change(passwordInput, { target: { value: 'wrong' } });
+    fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'admin' } });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'wrong' } });
     fireEvent.click(getByText('Submit'));
 
     await act(async () => {

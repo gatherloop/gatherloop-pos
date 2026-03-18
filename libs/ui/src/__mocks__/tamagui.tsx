@@ -46,8 +46,8 @@ export const Input = ({ value, placeholder, onChangeText, id }: AnyProps) =>
     onChange: (e: { target: { value: string } }) => onChangeText?.(e.target.value),
   });
 
-export const Label = ({ children }: AnyProps) =>
-  React.createElement('label', null, children);
+export const Label = ({ children, htmlFor }: AnyProps) =>
+  React.createElement('label', { htmlFor }, children);
 
 export const Separator = () => React.createElement('hr', null);
 
