@@ -166,6 +166,14 @@ export const Sheet = Object.assign(SheetBase, {
   ScrollView: SheetScrollView,
 });
 
+// Adapt
+const AdaptBase = ({ children }: AnyProps) =>
+  React.createElement(React.Fragment, null, children);
+const AdaptContents = () => null;
+export const Adapt = Object.assign(AdaptBase, {
+  Contents: AdaptContents,
+});
+
 // Select
 const SelectBase = ({ children }: AnyProps) =>
   React.createElement('div', { 'data-component': 'Select' }, children);
@@ -183,6 +191,9 @@ const SelectItemText = ({ children }: AnyProps) =>
   React.createElement('span', null, children);
 const SelectScrollUpButton = () => null;
 const SelectScrollDownButton = () => null;
+const SelectGroup = ({ children }: AnyProps) =>
+  React.createElement('div', { 'data-component': 'Select.Group' }, children);
+const SelectItemIndicator = () => null;
 export const Select = Object.assign(SelectBase, {
   Trigger: SelectTrigger,
   Value: SelectValue,
@@ -190,8 +201,10 @@ export const Select = Object.assign(SelectBase, {
   Viewport: SelectViewport,
   Item: SelectItem,
   ItemText: SelectItemText,
+  ItemIndicator: SelectItemIndicator,
   ScrollUpButton: SelectScrollUpButton,
   ScrollDownButton: SelectScrollDownButton,
+  Group: SelectGroup,
 });
 
 // Tabs
@@ -201,11 +214,14 @@ const TabsList = ({ children }: AnyProps) =>
   React.createElement('div', { 'data-component': 'Tabs.List' }, children);
 const TabsTrigger = ({ children }: AnyProps) =>
   React.createElement('button', null, children);
+const TabsTab = ({ children }: AnyProps) =>
+  React.createElement('button', null, children);
 const TabsContent = ({ children }: AnyProps) =>
   React.createElement('div', null, children);
 export const Tabs = Object.assign(TabsBase, {
   List: TabsList,
   Trigger: TabsTrigger,
+  Tab: TabsTab,
   Content: TabsContent,
 });
 

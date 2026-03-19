@@ -32,16 +32,12 @@ export const useVariantCreateController = (usecase: VariantCreateUsecase) => {
         name: z.string().min(1),
         description: z.string(),
         price: z.number().min(1),
-        materials: z
-          .array(
-            z.lazy(() =>
-              z.object({ materialId: z.number(), amount: z.number() })
-            )
+        materials: z.array(
+          z.lazy(() =>
+            z.object({ materialId: z.number(), amount: z.number() })
           )
-          .min(1),
-        values: z
-          .array(z.lazy(() => z.object({ optionValueId: z.number() })))
-          .min(1),
+        ),
+        values: z.array(z.lazy(() => z.object({ optionValueId: z.number() }))),
       })
     ),
   });

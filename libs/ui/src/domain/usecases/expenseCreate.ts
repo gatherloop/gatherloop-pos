@@ -146,6 +146,9 @@ export class ExpenseCreateUsecase extends Usecase<
     dispatch: (action: ExpenseCreateAction) => void
   ): void {
     match(state)
+      .with({ type: 'idle' }, () => {
+        dispatch({ type: 'FETCH' });
+      })
       .with({ type: 'loading' }, () => {
         Promise.all([
           this.budgetRepository.fetchBudgetList(),
@@ -170,7 +173,7 @@ export class ExpenseCreateUsecase extends Usecase<
         dispatch({ type: 'SUBMIT_CANCEL' });
       })
       .otherwise(() => {
-        // TODO: IMPLEMENT SOMETHING
+        // nothing to do
       });
   }
 }
