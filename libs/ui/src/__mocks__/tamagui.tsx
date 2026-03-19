@@ -35,8 +35,8 @@ export const H5 = ({ children }: AnyProps) => React.createElement('h5', null, ch
 export const H6 = ({ children }: AnyProps) => React.createElement('h6', null, children);
 export const Text = ({ children }: AnyProps) => React.createElement('span', null, children);
 
-export const Button = ({ children, onPress }: AnyProps) =>
-  React.createElement('button', { onClick: onPress }, children);
+export const Button = ({ children, onPress, disabled }: AnyProps) =>
+  React.createElement('button', { onClick: onPress, disabled: disabled ?? false }, children);
 
 export const Input = ({ value, placeholder, onChangeText, id }: AnyProps) =>
   React.createElement('input', {
@@ -175,8 +175,13 @@ export const Adapt = Object.assign(AdaptBase, {
 });
 
 // Select
-const SelectBase = ({ children }: AnyProps) =>
-  React.createElement('div', { 'data-component': 'Select' }, children);
+const SelectContext = React.createContext<{ onValueChange?: (value: string) => void }>({});
+const SelectBase = ({ children, onValueChange, id, name }: AnyProps) =>
+  React.createElement(
+    SelectContext.Provider,
+    { value: { onValueChange } },
+    React.createElement('div', { 'data-component': 'Select', id, name }, children)
+  );
 const SelectTrigger = ({ children }: AnyProps) =>
   React.createElement('div', { 'data-component': 'Select.Trigger' }, children);
 const SelectValue = ({ children }: AnyProps) =>
@@ -185,8 +190,14 @@ const SelectContent = ({ children }: AnyProps) =>
   React.createElement('div', { 'data-component': 'Select.Content' }, children);
 const SelectViewport = ({ children }: AnyProps) =>
   React.createElement('div', null, children);
-const SelectItem = ({ children }: AnyProps) =>
-  React.createElement('div', null, children);
+const SelectItem = ({ children, value }: AnyProps) => {
+  const ctx = React.useContext(SelectContext);
+  return React.createElement(
+    'div',
+    { 'data-component': 'Select.Item', role: 'option', onClick: () => ctx.onValueChange?.(value) },
+    children
+  );
+};
 const SelectItemText = ({ children }: AnyProps) =>
   React.createElement('span', null, children);
 const SelectScrollUpButton = () => null;
@@ -261,6 +272,22 @@ export const Accordion = Object.assign(AccordionBase, {
   Heading: AccordionHeading,
   HeightAnimator: AccordionHeightAnimator,
 });
+
+// Switch
+const SwitchBase = ({ checked, onCheckedChange, id, name, children }: AnyProps) =>
+  React.createElement(
+    'button',
+    {
+      id,
+      name,
+      role: 'switch',
+      'aria-checked': checked,
+      onClick: () => onCheckedChange?.(!checked),
+    },
+    children
+  );
+const SwitchThumb = () => null;
+export const Switch = Object.assign(SwitchBase, { Thumb: SwitchThumb });
 
 // Hooks
 export const usePopoverContext = () => ({ onOpenChange: jest.fn() });
