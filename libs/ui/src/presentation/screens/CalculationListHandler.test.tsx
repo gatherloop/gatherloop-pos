@@ -1,5 +1,6 @@
 import React from 'react';
-import { render, act } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { CalculationListHandler } from './CalculationListHandler';
 import { MockAuthRepository, MockCalculationRepository } from '../../data/mock';
 import {
@@ -8,142 +9,314 @@ import {
   CalculationDeleteUsecase,
   CalculationListUsecase,
 } from '../../domain';
+import { flushPromises } from '../../utils/testUtils';
 
 const mockRouterPush = jest.fn();
 jest.mock('solito/router', () => ({
   useRouter: () => ({ push: mockRouterPush, replace: jest.fn(), back: jest.fn() }),
 }));
 
+const mockToastShow = jest.fn();
 jest.mock('@tamagui/toast', () => ({
-  useToastController: () => ({ show: jest.fn() }),
+  useToastController: () => ({ show: mockToastShow }),
 }));
 
-const calculationListCtrl = {
-  state: {
-    type: 'loaded' as string,
-    calculations: [] as never[],
-  },
-  dispatch: jest.fn(),
+const createProps = (
+  options: {
+    calculationRepo?: MockCalculationRepository;
+  } = {}
+) => {
+  const calculationRepo = options.calculationRepo ?? new MockCalculationRepository();
+  return {
+    authLogoutUsecase: new AuthLogoutUsecase(new MockAuthRepository()),
+    calculationListUsecase: new CalculationListUsecase(calculationRepo, {
+      calculations: [],
+    }),
+    calculationDeleteUsecase: new CalculationDeleteUsecase(calculationRepo),
+    calculationCompleteUsecase: new CalculationCompleteUsecase(calculationRepo),
+  };
 };
-const calculationDeleteCtrl = {
-  state: { type: 'hidden' as string },
-  dispatch: jest.fn(),
-};
-const calculationCompleteCtrl = {
-  state: { type: 'hidden' as string },
-  dispatch: jest.fn(),
-};
-const authLogoutCtrl = {
-  state: { type: 'idle' as string },
-  dispatch: jest.fn(),
-};
-
-jest.mock('../controllers', () => ({
-  useCalculationListController: () => ({
-    state: calculationListCtrl.state,
-    dispatch: calculationListCtrl.dispatch,
-  }),
-  useCalculationDeleteController: () => ({
-    state: calculationDeleteCtrl.state,
-    dispatch: calculationDeleteCtrl.dispatch,
-  }),
-  useCalculationCompleteController: () => ({
-    state: calculationCompleteCtrl.state,
-    dispatch: calculationCompleteCtrl.dispatch,
-  }),
-  useAuthLogoutController: () => ({
-    state: authLogoutCtrl.state,
-    dispatch: authLogoutCtrl.dispatch,
-  }),
-}));
-
-const createProps = () => ({
-  authLogoutUsecase: new AuthLogoutUsecase(new MockAuthRepository()),
-  calculationListUsecase: new CalculationListUsecase(new MockCalculationRepository(), {
-    calculations: [],
-  }),
-  calculationDeleteUsecase: new CalculationDeleteUsecase(new MockCalculationRepository()),
-  calculationCompleteUsecase: new CalculationCompleteUsecase(new MockCalculationRepository()),
-});
 
 describe('CalculationListHandler', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    calculationListCtrl.state = { type: 'loaded', calculations: [] };
-    calculationDeleteCtrl.state = { type: 'hidden' };
-    calculationCompleteCtrl.state = { type: 'hidden' };
-    authLogoutCtrl.state = { type: 'idle' };
   });
 
-  describe('delete → refetch orchestration', () => {
-    it('should dispatch FETCH to calculation list when delete succeeds', async () => {
-      calculationDeleteCtrl.state = { type: 'deletingSuccess' };
-
-      await act(async () => {
-        render(<CalculationListHandler {...createProps()} />);
-      });
-
-      expect(calculationListCtrl.dispatch).toHaveBeenCalledWith({ type: 'FETCH' });
+  describe('loading and data states', () => {
+    it('should show loading state initially', () => {
+      render(<CalculationListHandler {...createProps()} />);
+      expect(screen.getByText('Fetching Calculations...')).toBeTruthy();
     });
 
-    it('should not dispatch FETCH when delete has not succeeded', async () => {
-      calculationDeleteCtrl.state = { type: 'hidden' };
+    it('should show calculation list after successful fetch', async () => {
+      render(<CalculationListHandler {...createProps()} />);
 
       await act(async () => {
-        render(<CalculationListHandler {...createProps()} />);
+        await flushPromises();
       });
 
-      expect(calculationListCtrl.dispatch).not.toHaveBeenCalledWith({ type: 'FETCH' });
-    });
-  });
-
-  describe('complete → refetch orchestration', () => {
-    it('should dispatch FETCH to calculation list when complete succeeds', async () => {
-      calculationCompleteCtrl.state = { type: 'completingSuccess' };
-
-      await act(async () => {
-        render(<CalculationListHandler {...createProps()} />);
-      });
-
-      expect(calculationListCtrl.dispatch).toHaveBeenCalledWith({ type: 'FETCH' });
+      // MockCalculationRepository has 2 calculations with wallet name 'Cash'
+      const walletHeadings = screen.getAllByRole('heading', { name: 'Cash' });
+      expect(walletHeadings.length).toBe(2);
     });
 
-    it('should not dispatch FETCH when complete has not succeeded', async () => {
-      calculationCompleteCtrl.state = { type: 'hidden' };
+    it('should show error state when fetch fails', async () => {
+      const calculationRepo = new MockCalculationRepository();
+      calculationRepo.setShouldFail(true);
+
+      render(<CalculationListHandler {...createProps({ calculationRepo })} />);
 
       await act(async () => {
-        render(<CalculationListHandler {...createProps()} />);
+        await flushPromises();
       });
 
-      expect(calculationListCtrl.dispatch).not.toHaveBeenCalledWith({ type: 'FETCH' });
+      expect(screen.getByRole('heading', { name: 'Failed to Fetch Calculations' })).toBeTruthy();
     });
 
-    it('should not dispatch FETCH when completing is in progress', async () => {
-      calculationCompleteCtrl.state = { type: 'completing' };
+    it('should show empty state when no calculations exist', async () => {
+      const calculationRepo = new MockCalculationRepository();
+      calculationRepo.calculations = [];
+
+      render(<CalculationListHandler {...createProps({ calculationRepo })} />);
 
       await act(async () => {
-        render(<CalculationListHandler {...createProps()} />);
+        await flushPromises();
       });
 
-      expect(calculationListCtrl.dispatch).not.toHaveBeenCalledWith({ type: 'FETCH' });
+      expect(screen.getByRole('heading', { name: 'Oops, Calculation is Empty' })).toBeTruthy();
     });
   });
 
-  describe('list variant rendering', () => {
-    it('should render loading state when calculation list is loading', () => {
-      calculationListCtrl.state = { type: 'loading', calculations: [] };
+  describe('delete modal', () => {
+    it('should not show delete modal initially', async () => {
+      render(<CalculationListHandler {...createProps()} />);
 
-      const { getByText } = render(<CalculationListHandler {...createProps()} />);
+      await act(async () => {
+        await flushPromises();
+      });
 
-      expect(getByText('Fetching Calculations...')).toBeTruthy();
+      expect(screen.queryByText('Delete Calculation')).toBeNull();
     });
 
-    it('should render error state when list fetch fails', () => {
-      calculationListCtrl.state = { type: 'error', calculations: [] };
+    it('should show delete modal when delete menu is pressed', async () => {
+      const user = userEvent.setup();
+      render(<CalculationListHandler {...createProps()} />);
 
-      const { getByText } = render(<CalculationListHandler {...createProps()} />);
+      await act(async () => {
+        await flushPromises();
+      });
 
-      expect(getByText('Failed to Fetch Calculations')).toBeTruthy();
+      const deleteMenuItems = screen.getAllByRole('button', { name: 'Delete' });
+      await user.click(deleteMenuItems[0]);
+
+      expect(screen.getByText('Delete Calculation')).toBeTruthy();
+    });
+
+    it('should hide delete modal when cancel is pressed', async () => {
+      const user = userEvent.setup();
+      render(<CalculationListHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      const deleteMenuItems = screen.getAllByRole('button', { name: 'Delete' });
+      await user.click(deleteMenuItems[0]);
+      expect(screen.getByText('Delete Calculation')).toBeTruthy();
+
+      await user.click(screen.getByRole('button', { name: 'No' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.queryByText('Delete Calculation')).toBeNull();
+    });
+
+    it('should refetch calculation list after successful delete', async () => {
+      const user = userEvent.setup();
+      const calculationRepo = new MockCalculationRepository();
+      render(<CalculationListHandler {...createProps({ calculationRepo })} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getAllByRole('heading', { name: 'Cash' }).length).toBe(2);
+
+      const deleteMenuItems = screen.getAllByRole('button', { name: 'Delete' });
+      await user.click(deleteMenuItems[0]);
+      expect(screen.getByText('Delete Calculation')).toBeTruthy();
+
+      await user.click(screen.getByRole('button', { name: 'Yes' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.queryByText('Delete Calculation')).toBeNull();
+      expect(screen.getAllByRole('heading', { name: 'Cash' }).length).toBe(1);
+    });
+
+    it('should show toast after successful delete', async () => {
+      const user = userEvent.setup();
+      render(<CalculationListHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      const deleteMenuItems = screen.getAllByRole('button', { name: 'Delete' });
+      await user.click(deleteMenuItems[0]);
+      await user.click(screen.getByRole('button', { name: 'Yes' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(mockToastShow).toHaveBeenCalledWith('Delete Calculation Success');
+    });
+  });
+
+  describe('complete modal', () => {
+    it('should not show complete modal initially', async () => {
+      render(<CalculationListHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.queryByText('Complete Calculation')).toBeNull();
+    });
+
+    it('should show complete modal when complete menu is pressed', async () => {
+      const user = userEvent.setup();
+      render(<CalculationListHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      const completeMenuItems = screen.getAllByRole('button', { name: 'Complete' });
+      await user.click(completeMenuItems[0]);
+
+      expect(screen.getByText('Complete Calculation')).toBeTruthy();
+    });
+
+    it('should hide complete modal when cancel is pressed', async () => {
+      const user = userEvent.setup();
+      render(<CalculationListHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      const completeMenuItems = screen.getAllByRole('button', { name: 'Complete' });
+      await user.click(completeMenuItems[0]);
+      expect(screen.getByText('Complete Calculation')).toBeTruthy();
+
+      await user.click(screen.getByRole('button', { name: 'No' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.queryByText('Complete Calculation')).toBeNull();
+    });
+
+    it('should refetch calculation list after successful complete', async () => {
+      const user = userEvent.setup();
+      const calculationRepo = new MockCalculationRepository();
+      render(<CalculationListHandler {...createProps({ calculationRepo })} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      const completeMenuItems = screen.getAllByRole('button', { name: 'Complete' });
+      await user.click(completeMenuItems[0]);
+      await user.click(screen.getByRole('button', { name: 'Yes' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.queryByText('Complete Calculation')).toBeNull();
+    });
+
+    it('should show toast after successful complete', async () => {
+      const user = userEvent.setup();
+      render(<CalculationListHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      const completeMenuItems = screen.getAllByRole('button', { name: 'Complete' });
+      await user.click(completeMenuItems[0]);
+      await user.click(screen.getByRole('button', { name: 'Yes' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(mockToastShow).toHaveBeenCalledWith('Complete Calculation Success');
+    });
+  });
+
+  describe('navigation', () => {
+    it('should navigate to calculation edit page when edit menu is pressed', async () => {
+      const user = userEvent.setup();
+      render(<CalculationListHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      const editMenuItems = screen.getAllByRole('button', { name: 'Edit' });
+      await user.click(editMenuItems[0]);
+
+      expect(mockRouterPush).toHaveBeenCalledWith('/calculations/1');
+    });
+
+    it('should navigate to calculation page when item is pressed', async () => {
+      const user = userEvent.setup();
+      render(<CalculationListHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      const walletHeadings = screen.getAllByRole('heading', { name: 'Cash' });
+      await user.click(walletHeadings[0]);
+
+      expect(mockRouterPush).toHaveBeenCalledWith('/calculations/1');
+    });
+  });
+
+  describe('error recovery', () => {
+    it('should refetch calculations when retry button is pressed', async () => {
+      const user = userEvent.setup();
+      const calculationRepo = new MockCalculationRepository();
+      calculationRepo.setShouldFail(true);
+
+      render(<CalculationListHandler {...createProps({ calculationRepo })} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByRole('heading', { name: 'Failed to Fetch Calculations' })).toBeTruthy();
+
+      calculationRepo.setShouldFail(false);
+
+      await user.click(screen.getByRole('button', { name: 'Retry' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getAllByRole('heading', { name: 'Cash' }).length).toBeGreaterThan(0);
     });
   });
 });
