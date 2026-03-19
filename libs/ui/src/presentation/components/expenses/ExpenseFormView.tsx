@@ -1,4 +1,5 @@
 import {
+  ErrorMessage,
   ErrorView,
   Field,
   FieldArray,
@@ -142,6 +143,7 @@ export const ExpenseFormView = ({
               </>
             )}
           </FieldArray>
+          <ErrorMessage name="expenseItems" />
 
           <YStack alignItems="flex-end">
             <Paragraph textAlign="right">Total</Paragraph>

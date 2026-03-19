@@ -9,7 +9,7 @@ import { UsecaseTester, flushPromises } from '../../utils/usecase';
 
 describe('ExpenseCreateUsecase', () => {
   describe('success flow - no preloaded data (fetch required)', () => {
-    it('should transition idle → loading → loaded → submitting → submitSuccess', async () => {
+    it('should transition loading → loaded → submitting → submitSuccess', async () => {
       const expenseRepository = new MockExpenseRepository();
       const budgetRepository = new MockBudgetRepository();
       const walletRepository = new MockWalletRepository();
@@ -19,9 +19,7 @@ describe('ExpenseCreateUsecase', () => {
       });
       const tester = new UsecaseTester<ExpenseCreateUsecase, ExpenseCreateState, ExpenseCreateAction, ExpenseCreateParams>(usecase);
 
-      expect(tester.state.type).toBe('idle');
-
-      tester.dispatch({ type: 'FETCH' });
+      // idle -> onStateChange(idle) dispatches FETCH -> loading
       expect(tester.state.type).toBe('loading');
 
       await flushPromises();
@@ -39,7 +37,7 @@ describe('ExpenseCreateUsecase', () => {
   });
 
   describe('error flow - fetch error', () => {
-    it('should transition idle → loading → error → loading → loaded', async () => {
+    it('should transition loading → error → loading → loaded', async () => {
       const expenseRepository = new MockExpenseRepository();
       const budgetRepository = new MockBudgetRepository();
       budgetRepository.setShouldFail(true);
@@ -50,9 +48,7 @@ describe('ExpenseCreateUsecase', () => {
       });
       const tester = new UsecaseTester<ExpenseCreateUsecase, ExpenseCreateState, ExpenseCreateAction, ExpenseCreateParams>(usecase);
 
-      expect(tester.state.type).toBe('idle');
-
-      tester.dispatch({ type: 'FETCH' });
+      // idle -> onStateChange(idle) dispatches FETCH -> loading
       expect(tester.state.type).toBe('loading');
 
       await flushPromises();

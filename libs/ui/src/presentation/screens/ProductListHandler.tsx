@@ -90,7 +90,7 @@ export const ProductListHandler = ({
           () => true
         )
         .otherwise(() => false)}
-      onDeleteCancel={() => productDelete.dispatch({ type: 'DELETE_CANCEL' })}
+      onDeleteCancel={() => productDelete.dispatch({ type: 'HIDE_CONFIRMATION' })}
       onDeleteConfirm={() => productDelete.dispatch({ type: 'DELETE' })}
     />
   );

@@ -1,5 +1,6 @@
 import React from 'react';
-import { render, act } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { ProductUpdateHandler } from './ProductUpdateHandler';
 import {
   MockAuthRepository,
@@ -7,7 +8,12 @@ import {
   MockProductRepository,
   MockVariantRepository,
 } from '../../data/mock';
-import { AuthLogoutUsecase, ProductUpdateUsecase, VariantDeleteUsecase } from '../../domain';
+import {
+  AuthLogoutUsecase,
+  ProductUpdateUsecase,
+  VariantDeleteUsecase,
+} from '../../domain';
+import { flushPromises } from '../../utils/testUtils';
 
 const mockRouterPush = jest.fn();
 jest.mock('solito/router', () => ({
@@ -19,137 +25,253 @@ jest.mock('@tamagui/toast', () => ({
   useToastController: () => ({ show: mockToastShow }),
 }));
 
-// Mock the Screen — tests focus on handler orchestration, not form rendering
-jest.mock('./ProductUpdateScreen', () => ({
-  ProductUpdateScreen: () => null,
-}));
+const createProps = (
+  options: {
+    productId?: number;
+    productShouldFail?: boolean;
+    preloaded?: boolean;
+  } = {}
+) => {
+  const productId = options.productId ?? 1;
+  const productRepo = new MockProductRepository();
+  const categoryRepo = new MockCategoryRepository();
+  const variantRepo = new MockVariantRepository();
 
-const productUpdateCtrl = {
-  state: {
-    type: 'loaded' as string,
-    errorMessage: null as string | null,
-    values: { name: '', categoryId: 1, imageUrl: '', description: '', saleType: 'purchase' },
-    categories: [] as never[],
-    variants: [] as never[],
-  },
-  dispatch: jest.fn(),
-  form: {} as never,
-};
-const variantDeleteCtrl = {
-  state: { type: 'hidden' as string },
-  dispatch: jest.fn(),
-};
-const authLogoutCtrl = {
-  state: { type: 'idle' as string },
-  dispatch: jest.fn(),
-};
+  if (options.productShouldFail) productRepo.setShouldFail(true);
 
-jest.mock('../controllers', () => ({
-  useProductUpdateController: () => ({
-    state: productUpdateCtrl.state,
-    dispatch: productUpdateCtrl.dispatch,
-    form: productUpdateCtrl.form,
-  }),
-  useVariantDeleteController: () => ({
-    state: variantDeleteCtrl.state,
-    dispatch: variantDeleteCtrl.dispatch,
-  }),
-  useAuthLogoutController: () => ({
-    state: authLogoutCtrl.state,
-    dispatch: authLogoutCtrl.dispatch,
-  }),
-}));
+  const preloadedProduct = options.preloaded
+    ? productRepo.products.find((p) => p.id === productId) ?? null
+    : null;
+  const preloadedCategories = options.preloaded ? categoryRepo.categories : [];
 
-const createProps = () => ({
-  authLogoutUsecase: new AuthLogoutUsecase(new MockAuthRepository()),
-  productUpdateUsecase: new ProductUpdateUsecase(
-    new MockProductRepository(),
-    new MockCategoryRepository(),
-    new MockVariantRepository(),
-    { productId: 1 }
-  ),
-  variantDeleteUsecase: new VariantDeleteUsecase(new MockVariantRepository()),
-});
+  return {
+    authLogoutUsecase: new AuthLogoutUsecase(new MockAuthRepository()),
+    productUpdateUsecase: new ProductUpdateUsecase(
+      productRepo,
+      categoryRepo,
+      variantRepo,
+      {
+        productId,
+        product: preloadedProduct,
+        categories: preloadedCategories,
+        variants: [],
+      }
+    ),
+    variantDeleteUsecase: new VariantDeleteUsecase(variantRepo),
+  };
+};
 
 describe('ProductUpdateHandler', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    productUpdateCtrl.state = {
-      type: 'loaded',
-      errorMessage: null,
-      values: { name: '', categoryId: 1, imageUrl: '', description: '', saleType: 'purchase' },
-      categories: [],
-      variants: [],
-    };
-    variantDeleteCtrl.state = { type: 'hidden' };
-    authLogoutCtrl.state = { type: 'idle' };
   });
 
-  describe('navigation after update success', () => {
-    it('should navigate to "/products" when update succeeds', async () => {
-      productUpdateCtrl.state = {
-        type: 'submitSuccess',
-        errorMessage: null,
-        values: { name: 'Updated Product', categoryId: 1, imageUrl: '', description: '', saleType: 'purchase' },
-        categories: [],
-        variants: [],
-      };
+  describe('loading and data states', () => {
+    it('should show loading state while fetching product', () => {
+      render(<ProductUpdateHandler {...createProps()} />);
+      expect(screen.getByText('Fetching Product...')).toBeTruthy();
+    });
+
+    it('should show the form after product data loads', async () => {
+      render(<ProductUpdateHandler {...createProps()} />);
 
       await act(async () => {
-        render(<ProductUpdateHandler {...createProps()} />);
+        await flushPromises();
+      });
+
+      expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
+    });
+
+    it('should render pre-filled form when product is preloaded', () => {
+      render(<ProductUpdateHandler {...createProps({ preloaded: true })} />);
+      expect(screen.getByDisplayValue('Product 1')).toBeTruthy();
+    });
+
+    it('should show error state when product fetch fails', async () => {
+      render(<ProductUpdateHandler {...createProps({ productShouldFail: true })} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByRole('heading', { name: 'Failed to Fetch Product' })).toBeTruthy();
+    });
+  });
+
+  describe('navigation', () => {
+    it('should navigate to "/products" after successful update', async () => {
+      const user = userEvent.setup();
+      render(<ProductUpdateHandler {...createProps({ preloaded: true })} />);
+
+      const nameInput = screen.getByRole('textbox', { name: 'Name' });
+      await user.clear(nameInput);
+      await user.type(nameInput, 'Updated Product');
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
       });
 
       expect(mockRouterPush).toHaveBeenCalledWith('/products');
     });
 
-    it('should not navigate when state is loaded', async () => {
+    it('should not navigate when update fails', async () => {
+      const user = userEvent.setup();
+      const productRepo = new MockProductRepository();
+      const categoryRepo = new MockCategoryRepository();
+      const variantRepo = new MockVariantRepository();
+      const preloadedProduct = productRepo.products[0];
+      const preloadedCategories = categoryRepo.categories;
+
+      const productUpdateUsecase = new ProductUpdateUsecase(
+        productRepo,
+        categoryRepo,
+        variantRepo,
+        {
+          productId: preloadedProduct.id,
+          product: preloadedProduct,
+          categories: preloadedCategories,
+          variants: [],
+        }
+      );
+      productRepo.setShouldFail(true);
+
+      render(
+        <ProductUpdateHandler
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          productUpdateUsecase={productUpdateUsecase}
+          variantDeleteUsecase={new VariantDeleteUsecase(variantRepo)}
+        />
+      );
+
+      const nameInput = screen.getByRole('textbox', { name: 'Name' });
+      await user.clear(nameInput);
+      await user.type(nameInput, 'Updated Product');
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
       await act(async () => {
-        render(<ProductUpdateHandler {...createProps()} />);
+        await flushPromises();
       });
 
-      expect(mockRouterPush).not.toHaveBeenCalledWith('/products');
+      expect(mockRouterPush).not.toHaveBeenCalled();
     });
 
-    it('should not navigate when state is submitting', async () => {
-      productUpdateCtrl.state = { ...productUpdateCtrl.state, type: 'submitting' };
+    it('should not navigate without user interaction', async () => {
+      render(<ProductUpdateHandler {...createProps({ preloaded: true })} />);
 
       await act(async () => {
-        render(<ProductUpdateHandler {...createProps()} />);
+        await flushPromises();
       });
 
-      expect(mockRouterPush).not.toHaveBeenCalledWith('/products');
+      expect(mockRouterPush).not.toHaveBeenCalled();
     });
   });
 
-  describe('variant delete → product refetch orchestration', () => {
-    it('should dispatch FETCH to product update when variant delete succeeds', async () => {
-      variantDeleteCtrl.state = { type: 'deletingSuccess' };
+  describe('validation', () => {
+    it('should show error message when name field is empty and submit is clicked', async () => {
+      const user = userEvent.setup();
+      render(<ProductUpdateHandler {...createProps({ preloaded: true })} />);
+
+      const nameInput = screen.getByRole('textbox', { name: 'Name' });
+      await user.clear(nameInput);
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
 
       await act(async () => {
-        render(<ProductUpdateHandler {...createProps()} />);
+        await flushPromises();
       });
 
-      expect(productUpdateCtrl.dispatch).toHaveBeenCalledWith({ type: 'FETCH' });
+      expect(screen.getByText('String must contain at least 1 character(s)')).toBeTruthy();
     });
+  });
 
-    it('should not dispatch FETCH when variant delete has not succeeded', async () => {
-      variantDeleteCtrl.state = { type: 'hidden' };
+  describe('toast notifications', () => {
+    it('should show toast error message when update fails', async () => {
+      const user = userEvent.setup();
+      const productRepo = new MockProductRepository();
+      const categoryRepo = new MockCategoryRepository();
+      const variantRepo = new MockVariantRepository();
+      const preloadedProduct = productRepo.products[0];
+
+      const productUpdateUsecase = new ProductUpdateUsecase(
+        productRepo,
+        categoryRepo,
+        variantRepo,
+        {
+          productId: preloadedProduct.id,
+          product: preloadedProduct,
+          categories: categoryRepo.categories,
+          variants: [],
+        }
+      );
+      productRepo.setShouldFail(true);
+
+      render(
+        <ProductUpdateHandler
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          productUpdateUsecase={productUpdateUsecase}
+          variantDeleteUsecase={new VariantDeleteUsecase(variantRepo)}
+        />
+      );
+
+      const nameInput = screen.getByRole('textbox', { name: 'Name' });
+      await user.clear(nameInput);
+      await user.type(nameInput, 'Updated Product');
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
 
       await act(async () => {
-        render(<ProductUpdateHandler {...createProps()} />);
+        await flushPromises();
       });
 
-      expect(productUpdateCtrl.dispatch).not.toHaveBeenCalledWith({ type: 'FETCH' });
+      expect(mockToastShow).toHaveBeenCalledWith('Update Product Error');
     });
+  });
 
-    it('should not dispatch FETCH when variant delete is still in progress', async () => {
-      variantDeleteCtrl.state = { type: 'deleting' };
+  describe('variant delete modal', () => {
+    it('should not show variant delete modal initially', async () => {
+      render(<ProductUpdateHandler {...createProps({ preloaded: true })} />);
 
       await act(async () => {
-        render(<ProductUpdateHandler {...createProps()} />);
+        await flushPromises();
       });
 
-      expect(productUpdateCtrl.dispatch).not.toHaveBeenCalledWith({ type: 'FETCH' });
+      expect(screen.queryByRole('heading', { name: 'Delete Variant ?' })).toBeNull();
+    });
+  });
+
+  describe('error recovery', () => {
+    it('should refetch product when retry button is pressed after error', async () => {
+      const user = userEvent.setup();
+      const productRepo = new MockProductRepository();
+      productRepo.setShouldFail(true);
+
+      render(
+        <ProductUpdateHandler
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          productUpdateUsecase={new ProductUpdateUsecase(
+            productRepo,
+            new MockCategoryRepository(),
+            new MockVariantRepository(),
+            { productId: 1, product: null, categories: [], variants: [] }
+          )}
+          variantDeleteUsecase={new VariantDeleteUsecase(new MockVariantRepository())}
+        />
+      );
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByRole('heading', { name: 'Failed to Fetch Product' })).toBeTruthy();
+
+      productRepo.setShouldFail(false);
+
+      await user.click(screen.getByRole('button', { name: 'Retry' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
     });
   });
 });
