@@ -134,6 +134,42 @@ export const AlertDialog = Object.assign(AlertDialogBase, {
   Action: AlertDialogAction,
 });
 
+// Dialog — used by TransactionItemSelect and similar components
+const DialogBase = ({ open, children, onOpenChange }: AnyProps) =>
+  open ? React.createElement('div', { 'data-component': 'Dialog' }, children) : null;
+const DialogPortal = ({ children }: AnyProps) =>
+  React.createElement(React.Fragment, null, children);
+const DialogOverlay = () => null;
+const DialogContent = ({ children }: AnyProps) =>
+  React.createElement('div', { 'data-component': 'Dialog.Content' }, children);
+const DialogTitle = ({ children }: AnyProps) =>
+  React.createElement('h3', null, children);
+const DialogDescription = ({ children }: AnyProps) =>
+  React.createElement('p', null, children);
+const DialogClose = ({ children }: AnyProps) =>
+  React.createElement(React.Fragment, null, children);
+export const Dialog = Object.assign(DialogBase, {
+  Portal: DialogPortal,
+  Overlay: DialogOverlay,
+  Content: DialogContent,
+  Title: DialogTitle,
+  Description: DialogDescription,
+  Close: DialogClose,
+});
+
+// Checkbox — used by RentalCheckinFormView
+const CheckboxBase = ({ children, onCheckedChange, checked }: AnyProps) =>
+  React.createElement(
+    'div',
+    { 'data-component': 'Checkbox', onClick: () => onCheckedChange?.(!checked) },
+    children
+  );
+const CheckboxIndicator = ({ children }: AnyProps) =>
+  React.createElement('div', { 'data-component': 'Checkbox.Indicator' }, children);
+export const Checkbox = Object.assign(CheckboxBase, {
+  Indicator: CheckboxIndicator,
+});
+
 // Form
 const FormBase = ({ children, onSubmit }: AnyProps) =>
   React.createElement('form', { onSubmit }, children);

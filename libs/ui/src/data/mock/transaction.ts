@@ -6,6 +6,24 @@ import {
 } from '../../domain/entities';
 import { TransactionRepository } from '../../domain/repositories/transaction';
 
+const mockVariant = {
+  id: 1,
+  name: 'Variant 1',
+  price: 50000,
+  materials: [],
+  product: {
+    id: 1,
+    name: 'Product 1',
+    category: { id: 1, name: 'Category 1', createdAt: '2024-03-20T00:00:00.000Z' },
+    imageUrl: '',
+    saleType: 'purchase' as const,
+    options: [],
+    createdAt: '2024-03-20T00:00:00.000Z',
+  },
+  createdAt: '2024-03-20T00:00:00.000Z',
+  values: [],
+};
+
 const initialTransactions: Transaction[] = [
   {
     id: 1,
@@ -14,7 +32,17 @@ const initialTransactions: Transaction[] = [
     orderNumber: 1,
     total: 100000,
     totalIncome: 90000,
-    transactionItems: [],
+    transactionItems: [
+      {
+        id: 1,
+        variant: mockVariant,
+        amount: 1,
+        price: 50000,
+        discountAmount: 0,
+        subtotal: 50000,
+        note: '',
+      },
+    ],
     transactionCoupons: [],
     wallet: null,
     paidAt: null,
