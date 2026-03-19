@@ -111,7 +111,7 @@ export const ExpenseList = ({
                     </XStack>
 
                     {wallets.map((wallet) => (
-                      <XStack gap="$2" alignItems="center">
+                      <XStack key={wallet.id} gap="$2" alignItems="center">
                         <RadioGroup.Item
                           value={wallet.id.toString()}
                           id={`wallet-${wallet.id.toString()}`}
@@ -149,7 +149,7 @@ export const ExpenseList = ({
                     </XStack>
 
                     {budgets.map((budget) => (
-                      <XStack gap="$2" alignItems="center">
+                      <XStack key={budget.id} gap="$2" alignItems="center">
                         <RadioGroup.Item
                           value={budget.id.toString()}
                           id={`budget-${budget.id.toString()}`}

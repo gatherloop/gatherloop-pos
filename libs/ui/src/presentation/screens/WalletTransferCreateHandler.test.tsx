@@ -44,16 +44,22 @@ describe('WalletTransferCreateHandler', () => {
   });
 
   describe('form rendering', () => {
-    it('should render the create transfer form immediately', () => {
+    it('should render the create transfer form immediately', async () => {
       render(<WalletTransferCreateHandler {...createProps()} />);
       // The form is always shown (no loading state in WalletTransferCreateScreen)
       expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
-    it('should show wallet options after wallets are preloaded', () => {
+    it('should show wallet options after wallets are preloaded', async () => {
       render(<WalletTransferCreateHandler {...createProps({ preloaded: true, walletId: 1 })} />);
       // fromWalletId=1 (Cash) is excluded, only Bank Transfer (id=2) should appear
       expect(screen.getByText('Bank Transfer')).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
     it('should show wallet options after auto-fetch', async () => {
@@ -146,11 +152,14 @@ describe('WalletTransferCreateHandler', () => {
   });
 
   describe('wallet filter', () => {
-    it('should exclude fromWallet from transfer target options', () => {
+    it('should exclude fromWallet from transfer target options', async () => {
       // fromWalletId=1 (Cash) should not appear as a transfer target
       render(<WalletTransferCreateHandler {...createProps({ preloaded: true, walletId: 1 })} />);
       expect(screen.queryByText('Cash')).toBeNull();
       expect(screen.getByText('Bank Transfer')).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
   });
 });

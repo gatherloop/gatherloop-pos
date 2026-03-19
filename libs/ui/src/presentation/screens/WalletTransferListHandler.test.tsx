@@ -49,9 +49,12 @@ describe('WalletTransferListHandler', () => {
   });
 
   describe('loading and data states', () => {
-    it('should show loading state initially', () => {
+    it('should show loading state initially', async () => {
       render(<WalletTransferListHandler {...createProps()} />);
       expect(screen.getByText('Fetching Transfer Histories...')).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
     it('should show wallet detail after fetch', async () => {

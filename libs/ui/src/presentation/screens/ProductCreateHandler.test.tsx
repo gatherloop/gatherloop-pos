@@ -46,9 +46,12 @@ describe('ProductCreateHandler', () => {
   });
 
   describe('loading and data states', () => {
-    it('should show loading state while fetching categories', () => {
+    it('should show loading state while fetching categories', async () => {
       render(<ProductCreateHandler {...createProps()} />);
       expect(screen.getByText('Fetching Product...')).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
     it('should show the form after categories are fetched', async () => {
@@ -71,9 +74,12 @@ describe('ProductCreateHandler', () => {
       expect(screen.getByRole('heading', { name: 'Failed to Fetch Product' })).toBeTruthy();
     });
 
-    it('should render the form immediately when categories are preloaded', () => {
+    it('should render the form immediately when categories are preloaded', async () => {
       render(<ProductCreateHandler {...createProps({ preloadCategories: true })} />);
       expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
   });
 

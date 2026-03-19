@@ -38,13 +38,15 @@ export const Text = ({ children }: AnyProps) => React.createElement('span', null
 export const Button = ({ children, onPress, disabled }: AnyProps) =>
   React.createElement('button', { onClick: onPress, disabled: disabled ?? false }, children);
 
-export const Input = ({ value, placeholder, onChangeText, id }: AnyProps) =>
+export const Input = React.forwardRef(({ value, placeholder, onChangeText, id }: AnyProps, ref) =>
   React.createElement('input', {
+    ref,
     id,
     value,
     placeholder,
     onChange: (e: { target: { value: string } }) => onChangeText?.(e.target.value),
-  });
+  })
+);
 
 export const Label = ({ children, htmlFor }: AnyProps) =>
   React.createElement('label', { htmlFor }, children);
@@ -279,12 +281,14 @@ export const PortalProvider = ({ children }: AnyProps) =>
   React.createElement(React.Fragment, null, children);
 export const SizableText = ({ children }: AnyProps) =>
   React.createElement('span', null, children);
-export const TextArea = ({ value, placeholder, onChangeText }: AnyProps) =>
+export const TextArea = React.forwardRef(({ value, placeholder, onChangeText }: AnyProps, ref) =>
   React.createElement('textarea', {
+    ref,
     value,
     placeholder,
     onChange: (e: { target: { value: string } }) => onChangeText?.(e.target.value),
-  });
+  })
+);
 export const Square = ({ children }: AnyProps) =>
   React.createElement('div', { 'data-component': 'Square' }, children);
 
@@ -294,7 +298,11 @@ const AccordionBase = ({ children }: AnyProps) =>
 const AccordionItem = ({ children }: AnyProps) =>
   React.createElement('div', { 'data-component': 'Accordion.Item' }, children);
 const AccordionTrigger = ({ children, onPress }: AnyProps) =>
-  React.createElement('button', { onClick: onPress }, children);
+  React.createElement(
+    'button',
+    { onClick: onPress },
+    typeof children === 'function' ? children({ open: false }) : children
+  );
 const AccordionContent = ({ children }: AnyProps) =>
   React.createElement('div', { 'data-component': 'Accordion.Content' }, children);
 const AccordionHeading = ({ children }: AnyProps) =>

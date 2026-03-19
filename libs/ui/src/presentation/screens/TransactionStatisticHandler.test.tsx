@@ -47,9 +47,12 @@ describe('TransactionStatisticHandler', () => {
   });
 
   describe('loading and data states', () => {
-    it('should show loading state initially', () => {
+    it('should show loading state initially', async () => {
       render(<TransactionStatisticHandler {...createProps()} />);
       expect(screen.getByText('Fetching Statistics...')).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
     it('should show statistics section after successful fetch', async () => {

@@ -43,9 +43,12 @@ describe('CalculationListHandler', () => {
   });
 
   describe('loading and data states', () => {
-    it('should show loading state initially', () => {
+    it('should show loading state initially', async () => {
       render(<CalculationListHandler {...createProps()} />);
       expect(screen.getByText('Fetching Calculations...')).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
     it('should show calculation list after successful fetch', async () => {

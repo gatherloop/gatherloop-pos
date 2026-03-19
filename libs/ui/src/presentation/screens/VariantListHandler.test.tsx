@@ -48,9 +48,12 @@ describe('VariantListHandler', () => {
   });
 
   describe('loading and data states', () => {
-    it('should show loading state initially', () => {
+    it('should show loading state initially', async () => {
       render(<VariantListHandler {...createProps()} />);
       expect(screen.getByText('Fetching Variants...')).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
     it('should show variant list after successful fetch', async () => {

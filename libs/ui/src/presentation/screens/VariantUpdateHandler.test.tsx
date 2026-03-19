@@ -73,9 +73,12 @@ describe('VariantUpdateHandler', () => {
   });
 
   describe('loading and data states', () => {
-    it('should show loading state while fetching variant', () => {
+    it('should show loading state while fetching variant', async () => {
       render(<VariantUpdateHandler {...createProps()} />);
       expect(screen.getByText('Fetching Variant...')).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
     it('should show the form after variant data loads', async () => {
@@ -88,9 +91,12 @@ describe('VariantUpdateHandler', () => {
       expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
     });
 
-    it('should render pre-filled form when variant is preloaded', () => {
+    it('should render pre-filled form when variant is preloaded', async () => {
       render(<VariantUpdateHandler {...createProps({ preloaded: true })} />);
       expect(screen.getByDisplayValue('Variant 1')).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
     it('should show error state when variant fetch fails', async () => {

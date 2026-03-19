@@ -100,12 +100,11 @@ export const CalculationFormView = ({
             {({ fields }) => (
               <>
                 {fields.map((field, index) => (
-                  <Card>
+                  <Card key={index}>
                     <Card.Header>
                       <YStack>
                         <XStack
                           gap="$5"
-                          key={index}
                           flexWrap="wrap"
                           alignItems="center"
                         >

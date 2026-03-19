@@ -47,24 +47,36 @@ describe('MaterialUpdateHandler', () => {
   });
 
   describe('form rendering', () => {
-    it('should render the update form', () => {
+    it('should render the update form', async () => {
       render(<MaterialUpdateHandler {...createProps()} />);
       expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
-    it('should render pre-filled form when material is preloaded', () => {
+    it('should render pre-filled form when material is preloaded', async () => {
       render(<MaterialUpdateHandler {...createProps({ preloaded: true })} />);
       expect(screen.getByDisplayValue('Material 1')).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
-    it('should render the name input field', () => {
+    it('should render the name input field', async () => {
       render(<MaterialUpdateHandler {...createProps()} />);
       expect(screen.getByRole('textbox', { name: 'Name' })).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
-    it('should render the unit input field', () => {
+    it('should render the unit input field', async () => {
       render(<MaterialUpdateHandler {...createProps()} />);
       expect(screen.getByRole('textbox', { name: 'Unit' })).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
   });
 

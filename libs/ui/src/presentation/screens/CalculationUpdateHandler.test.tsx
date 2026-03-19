@@ -60,10 +60,19 @@ describe('CalculationUpdateHandler', () => {
     jest.clearAllMocks();
   });
 
+  afterEach(async () => {
+    await act(async () => {
+      await flushPromises();
+    });
+  });
+
   describe('loading and data states', () => {
-    it('should show loading state while fetching calculation', () => {
+    it('should show loading state while fetching calculation', async () => {
       render(<CalculationUpdateHandler {...createProps()} />);
       expect(screen.getByText('Fetching Calculation...')).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
     it('should show the form after calculation data loads', async () => {
@@ -76,9 +85,12 @@ describe('CalculationUpdateHandler', () => {
       expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
     });
 
-    it('should render the form immediately when calculation is preloaded', () => {
+    it('should render the form immediately when calculation is preloaded', async () => {
       render(<CalculationUpdateHandler {...createProps({ preloaded: true })} />);
       expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
     it('should show error state when fetch fails', async () => {

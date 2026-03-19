@@ -52,9 +52,12 @@ describe('ExpenseListHandler', () => {
   });
 
   describe('loading and data states', () => {
-    it('should show loading state initially', () => {
+    it('should show loading state initially', async () => {
       render(<ExpenseListHandler {...createProps()} />);
       expect(screen.getByText('Fetching Expenses...')).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
     it('should show expense list after successful fetch', async () => {

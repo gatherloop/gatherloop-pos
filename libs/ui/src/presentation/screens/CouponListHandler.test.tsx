@@ -40,9 +40,12 @@ describe('CouponListHandler', () => {
   });
 
   describe('loading and data states', () => {
-    it('should show loading state initially', () => {
+    it('should show loading state initially', async () => {
       render(<CouponListHandler {...createProps()} />);
       expect(screen.getByText('Fetching Coupons...')).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
     it('should show coupon list after successful fetch', async () => {
