@@ -63,9 +63,12 @@ describe('ExpenseUpdateHandler', () => {
   });
 
   describe('loading and data states', () => {
-    it('should show loading state while fetching expense', () => {
+    it('should show loading state while fetching expense', async () => {
       render(<ExpenseUpdateHandler {...createProps()} />);
       expect(screen.getByText('Fetching Expense...')).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
     it('should show the form after expense data loads', async () => {
@@ -78,9 +81,12 @@ describe('ExpenseUpdateHandler', () => {
       expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
     });
 
-    it('should render the form immediately when expense is preloaded', () => {
+    it('should render the form immediately when expense is preloaded', async () => {
       render(<ExpenseUpdateHandler {...createProps({ preloaded: true })} />);
       expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
     it('should show error state when expense fetch fails', async () => {

@@ -45,10 +45,19 @@ describe('CategoryUpdateHandler', () => {
     jest.clearAllMocks();
   });
 
+  afterEach(async () => {
+    await act(async () => {
+      await flushPromises();
+    });
+  });
+
   describe('loading and data states', () => {
-    it('should show loading state while fetching category', () => {
+    it('should show loading state while fetching category', async () => {
       render(<CategoryUpdateHandler {...createProps()} />);
       expect(screen.getByText('Fetching Category...')).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
     it('should show the form after category data loads', async () => {
@@ -61,9 +70,12 @@ describe('CategoryUpdateHandler', () => {
       expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
     });
 
-    it('should render pre-filled form when category is preloaded', () => {
+    it('should render pre-filled form when category is preloaded', async () => {
       render(<CategoryUpdateHandler {...createProps({ preloaded: true })} />);
       expect(screen.getByDisplayValue('Mock Category 1')).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
     it('should show error state when category fetch fails', async () => {

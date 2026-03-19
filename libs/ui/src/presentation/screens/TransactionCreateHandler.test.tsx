@@ -71,9 +71,12 @@ describe('TransactionCreateHandler', () => {
   });
 
   describe('loading and data states', () => {
-    it('should show product loading state initially', () => {
+    it('should show product loading state initially', async () => {
       render(<TransactionCreateHandler {...createProps()} />);
       expect(screen.getByText('Fetching Products...')).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
     it('should show product list after successful fetch', async () => {
@@ -101,19 +104,28 @@ describe('TransactionCreateHandler', () => {
   });
 
   describe('form fields', () => {
-    it('should show customer name input field', () => {
+    it('should show customer name input field', async () => {
       render(<TransactionCreateHandler {...createProps()} />);
       expect(screen.getByRole('textbox', { name: 'Customer Name' })).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
-    it('should show order number input field', () => {
+    it('should show order number input field', async () => {
       render(<TransactionCreateHandler {...createProps()} />);
       expect(screen.getByRole('textbox', { name: 'Order Number' })).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
-    it('should show submit button', () => {
+    it('should show submit button', async () => {
       render(<TransactionCreateHandler {...createProps()} />);
       expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
   });
 

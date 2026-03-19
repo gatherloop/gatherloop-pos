@@ -48,9 +48,12 @@ describe('MaterialListHandler', () => {
   });
 
   describe('loading and data states', () => {
-    it('should show loading state initially', () => {
+    it('should show loading state initially', async () => {
       render(<MaterialListHandler {...createProps()} />);
       expect(screen.getByText('Fetching Materials...')).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
     it('should show material list after successful fetch', async () => {

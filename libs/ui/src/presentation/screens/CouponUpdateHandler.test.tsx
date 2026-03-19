@@ -46,9 +46,12 @@ describe('CouponUpdateHandler', () => {
   });
 
   describe('loading and data states', () => {
-    it('should show loading state while fetching coupon', () => {
+    it('should show loading state while fetching coupon', async () => {
       render(<CouponUpdateHandler {...createProps()} />);
       expect(screen.getByText('Fetching Coupon...')).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
     it('should show the form after coupon data loads', async () => {
@@ -61,9 +64,12 @@ describe('CouponUpdateHandler', () => {
       expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
     });
 
-    it('should render pre-filled form when coupon is preloaded', () => {
+    it('should render pre-filled form when coupon is preloaded', async () => {
       render(<CouponUpdateHandler {...createProps({ preloaded: true })} />);
       expect(screen.getByDisplayValue('DISCOUNT10')).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
     it('should show error state when coupon fetch fails', async () => {

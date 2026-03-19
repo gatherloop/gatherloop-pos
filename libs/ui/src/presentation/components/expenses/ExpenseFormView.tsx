@@ -66,10 +66,10 @@ export const ExpenseFormView = ({
                   />
                 </XStack>
                 {fields.map((_, index) => (
-                  <Card>
+                  <Card key={index}>
                     <Card.Header>
                       <YStack>
-                        <XStack gap="$3" key={index} flexWrap="wrap">
+                        <XStack gap="$3" flexWrap="wrap">
                           <Field
                             name={`expenseItems.${index}.name`}
                             label="Item Name"

@@ -48,9 +48,12 @@ describe('ProductListHandler', () => {
   });
 
   describe('loading and data states', () => {
-    it('should show loading state initially', () => {
+    it('should show loading state initially', async () => {
       render(<ProductListHandler {...createProps()} />);
       expect(screen.getByText('Fetching Products...')).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
     it('should show product list after successful fetch', async () => {

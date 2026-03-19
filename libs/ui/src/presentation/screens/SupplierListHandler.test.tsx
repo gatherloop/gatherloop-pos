@@ -48,9 +48,12 @@ describe('SupplierListHandler', () => {
   });
 
   describe('loading and data states', () => {
-    it('should show loading state initially', () => {
+    it('should show loading state initially', async () => {
       render(<SupplierListHandler {...createProps()} />);
       expect(screen.getByText('Fetching Suppliers...')).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
     it('should show supplier list after successful fetch', async () => {

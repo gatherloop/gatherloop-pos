@@ -40,9 +40,12 @@ describe('CategoryListHandler', () => {
   });
 
   describe('loading and data states', () => {
-    it('should show loading state initially', () => {
+    it('should show loading state initially', async () => {
       render(<CategoryListHandler {...createProps()} />);
       expect(screen.getByText('Fetching Categories...')).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
     it('should show category list after successful fetch', async () => {

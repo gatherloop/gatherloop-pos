@@ -57,9 +57,12 @@ describe('ExpenseCreateHandler', () => {
   });
 
   describe('loading and data states', () => {
-    it('should show loading state while fetching wallets and budgets', () => {
+    it('should show loading state while fetching wallets and budgets', async () => {
       render(<ExpenseCreateHandler {...createProps()} />);
       expect(screen.getByText('Fetching Expense...')).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
     it('should show the form after wallets and budgets are fetched', async () => {
@@ -82,9 +85,12 @@ describe('ExpenseCreateHandler', () => {
       expect(screen.getByRole('heading', { name: 'Failed to Fetch Expense' })).toBeTruthy();
     });
 
-    it('should render the form immediately when wallets and budgets are preloaded', () => {
+    it('should render the form immediately when wallets and budgets are preloaded', async () => {
       render(<ExpenseCreateHandler {...createProps({ preloaded: true })} />);
       expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
   });
 

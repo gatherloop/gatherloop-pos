@@ -35,9 +35,12 @@ describe('WalletListHandler', () => {
   });
 
   describe('loading and data states', () => {
-    it('should show loading state initially', () => {
+    it('should show loading state initially', async () => {
       render(<WalletListHandler {...createProps()} />);
       expect(screen.getByText('Fetching Wallets...')).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
     it('should show wallet list after successful fetch', async () => {

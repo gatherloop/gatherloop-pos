@@ -66,10 +66,19 @@ describe('ProductUpdateHandler', () => {
     jest.clearAllMocks();
   });
 
+  afterEach(async () => {
+    await act(async () => {
+      await flushPromises();
+    });
+  });
+
   describe('loading and data states', () => {
-    it('should show loading state while fetching product', () => {
+    it('should show loading state while fetching product', async () => {
       render(<ProductUpdateHandler {...createProps()} />);
       expect(screen.getByText('Fetching Product...')).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
     it('should show the form after product data loads', async () => {
@@ -82,9 +91,12 @@ describe('ProductUpdateHandler', () => {
       expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
     });
 
-    it('should render pre-filled form when product is preloaded', () => {
+    it('should render pre-filled form when product is preloaded', async () => {
       render(<ProductUpdateHandler {...createProps({ preloaded: true })} />);
       expect(screen.getByDisplayValue('Product 1')).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
     it('should show error state when product fetch fails', async () => {

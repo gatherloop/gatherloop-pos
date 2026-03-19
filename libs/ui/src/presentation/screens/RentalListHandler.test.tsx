@@ -59,9 +59,12 @@ describe('RentalListHandler', () => {
   });
 
   describe('loading and data states', () => {
-    it('should show loading state initially', () => {
+    it('should show loading state initially', async () => {
       render(<RentalListHandler {...createProps()} />);
       expect(screen.getByText('Fetching Rentals...')).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
     it('should show rental list after successful fetch', async () => {

@@ -54,10 +54,19 @@ describe('RentalCheckinHandler', () => {
     jest.clearAllMocks();
   });
 
+  afterEach(async () => {
+    await act(async () => {
+      await flushPromises();
+    });
+  });
+
   describe('loading and data states', () => {
-    it('should show product loading state initially', () => {
+    it('should show product loading state initially', async () => {
       render(<RentalCheckinHandler {...createProps()} />);
       expect(screen.getByText('Fetching Products...')).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
     it('should show product list after successful fetch', async () => {
@@ -87,14 +96,20 @@ describe('RentalCheckinHandler', () => {
   });
 
   describe('form fields', () => {
-    it('should show customer name input field', () => {
+    it('should show customer name input field', async () => {
       render(<RentalCheckinHandler {...createProps()} />);
       expect(screen.getByRole('textbox', { name: 'Customer Name' })).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
-    it('should show submit button', () => {
+    it('should show submit button', async () => {
       render(<RentalCheckinHandler {...createProps()} />);
       expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
   });
 

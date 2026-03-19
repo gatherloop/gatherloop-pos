@@ -47,24 +47,36 @@ describe('SupplierUpdateHandler', () => {
   });
 
   describe('form rendering', () => {
-    it('should render the update form', () => {
+    it('should render the update form', async () => {
       render(<SupplierUpdateHandler {...createProps()} />);
       expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
-    it('should render pre-filled form when supplier is preloaded', () => {
+    it('should render pre-filled form when supplier is preloaded', async () => {
       render(<SupplierUpdateHandler {...createProps({ preloaded: true })} />);
       expect(screen.getByDisplayValue('Supplier 1')).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
-    it('should render the name input field', () => {
+    it('should render the name input field', async () => {
       render(<SupplierUpdateHandler {...createProps()} />);
       expect(screen.getByRole('textbox', { name: 'Name' })).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
-    it('should render the address input field', () => {
+    it('should render the address input field', async () => {
       render(<SupplierUpdateHandler {...createProps()} />);
       expect(screen.getByRole('textbox', { name: 'Address' })).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
   });
 

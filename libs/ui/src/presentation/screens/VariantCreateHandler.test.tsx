@@ -66,9 +66,12 @@ describe('VariantCreateHandler', () => {
   });
 
   describe('loading and data states', () => {
-    it('should show loading state while fetching product', () => {
+    it('should show loading state while fetching product', async () => {
       render(<VariantCreateHandler {...createProps()} />);
       expect(screen.getByText('Fetching Variant...')).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
     it('should show the form after product is fetched', async () => {
@@ -91,9 +94,12 @@ describe('VariantCreateHandler', () => {
       expect(screen.getByRole('heading', { name: 'Failed to Fetch Variant' })).toBeTruthy();
     });
 
-    it('should render the form immediately when product is preloaded', () => {
+    it('should render the form immediately when product is preloaded', async () => {
       render(<VariantCreateHandler {...createProps({ preloaded: true })} />);
       expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
   });
 
@@ -101,6 +107,9 @@ describe('VariantCreateHandler', () => {
     it('should render the name input field', async () => {
       render(<VariantCreateHandler {...createProps({ preloaded: true })} />);
       expect(screen.getByRole('textbox', { name: 'Name' })).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
   });
 

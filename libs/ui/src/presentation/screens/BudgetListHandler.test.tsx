@@ -32,9 +32,12 @@ describe('BudgetListHandler', () => {
   });
 
   describe('loading and data states', () => {
-    it('should show loading state initially', () => {
+    it('should show loading state initially', async () => {
       render(<BudgetListHandler {...createProps()} />);
       expect(screen.getByText('Fetching Budgets...')).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
     it('should show budget list after successful fetch', async () => {

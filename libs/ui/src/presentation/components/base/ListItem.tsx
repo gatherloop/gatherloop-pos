@@ -1,5 +1,5 @@
 import { MoreVertical } from '@tamagui/lucide-icons';
-import { NamedExoticComponent } from 'react';
+import React, { NamedExoticComponent } from 'react';
 import {
   Image,
   Popover,
@@ -111,11 +111,10 @@ export const ListItem = ({
 
           <XStack gap="$3" flexWrap="wrap">
             {shownFooterItems.map((footerItem, index) => (
-              <>
+              <React.Fragment key={index}>
                 <XStack
                   gap="$2"
                   alignItems={footerItem.label ? 'flex-start' : 'center'}
-                  key={index}
                 >
                   {footerItem.icon && (
                     <YStack
@@ -137,7 +136,7 @@ export const ListItem = ({
                   </YStack>
                 </XStack>
                 <Separator vertical />
-              </>
+              </React.Fragment>
             ))}
           </XStack>
         </YStack>

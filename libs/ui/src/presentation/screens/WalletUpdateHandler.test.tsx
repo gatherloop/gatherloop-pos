@@ -44,9 +44,12 @@ describe('WalletUpdateHandler', () => {
   });
 
   describe('loading and data states', () => {
-    it('should show loading state while fetching wallet', () => {
+    it('should show loading state while fetching wallet', async () => {
       render(<WalletUpdateHandler {...createProps()} />);
       expect(screen.getByText('Fetching Wallet...')).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
     it('should show the form after wallet data loads', async () => {
@@ -59,9 +62,12 @@ describe('WalletUpdateHandler', () => {
       expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
     });
 
-    it('should render pre-filled form when wallet is preloaded', () => {
+    it('should render pre-filled form when wallet is preloaded', async () => {
       render(<WalletUpdateHandler {...createProps({ preloaded: true })} />);
       expect(screen.getByDisplayValue('Cash')).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
     });
 
     it('should show error state when wallet fetch fails', async () => {
