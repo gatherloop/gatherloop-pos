@@ -45,12 +45,22 @@ const config: StorybookConfig = {
         ],
       },
       optimizeDeps: {
-        // Prevent esbuild from pre-bundling (and failing on) react-native
-        // source files that contain Flow type syntax (import type / import
-        // typeof). The resolve.alias above redirects all imports of
-        // 'react-native' to 'react-native-web' at Rollup-level, so esbuild
-        // never needs to touch the raw react-native package.
-        exclude: ['react-native', 'react-native-svg'],
+        // These packages ship native-only code, Flow types, or pull in
+        // react-native-reanimated/moti chains that esbuild cannot process.
+        // The resolve.alias entries and Rollup handle them correctly at
+        // build time; esbuild pre-bundling should leave them alone.
+        exclude: [
+          'react-native',
+          'react-native-svg',
+          'react-native-reanimated',
+          'moti',
+          '@tamagui/animations-moti',
+          '@tamagui/animations-react-native',
+          '@tamagui/config',
+          'tamagui',
+          '@tamagui/core',
+          '@tamagui/lucide-icons',
+        ],
         esbuildOptions: {
           // Many React Native packages ship JSX in plain .js files (no .jsx
           // extension). Tell esbuild to treat every .js file as JSX so it
