@@ -58,7 +58,7 @@ export const WithThumbnailAndMenus: Story = {
 export const WithHiddenMenu: Story = {
   args: {
     menus: [
-      { title: 'Edit', icon: Edit, onPress: fn(), isShown: true },
+      { title: 'Edit', icon: Pencil, onPress: fn(), isShown: true },
       { title: 'Delete', icon: Trash, onPress: fn(), isShown: false },
     ],
   },
