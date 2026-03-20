@@ -21,6 +21,26 @@ const config: StorybookConfig = {
     const { mergeConfig } = await import('vite');
 
     return mergeConfig(viteConfig, {
+      plugins: [
+        // @react-native/normalize-colors ships a plain CJS file that uses
+        // `module.exports = fn`. Vite's esbuild pre-bundling treats all .js
+        // files as JSX (see esbuildOptions below), which strips the `module`
+        // global from the file's scope so `module.exports = …` throws
+        // "Cannot set properties of undefined". We fix it by transforming
+        // the file to ESM before it reaches the browser.
+        {
+          name: 'cjs-to-esm:normalize-colors',
+          transform(code: string, id: string) {
+            if (!id.includes('@react-native/normalize-colors/index.js')) return;
+            return {
+              code: code
+                .replace(/^'use strict';\n?/, '')
+                .replace(/module\.exports\s*=\s*(\w+);?\s*$/, 'export default $1;'),
+              map: null,
+            };
+          },
+        },
+      ],
       resolve: {
         alias: [
           // Redirect react-native-svg to its built-in web implementation
@@ -71,7 +91,7 @@ const config: StorybookConfig = {
         // use exports.default (CJS/babel). Pre-bundling wraps them in proper ESM
         // so the browser doesn't get a "does not provide an export named default" error.
         // @react-native/normalize-colors has the same CJS issue.
-        include: ['react-native-web', '@react-native/normalize-colors'],
+        include: ['react-native-web'],
         // These packages ship native-only code, Flow types, or JSX in .mjs
         // files that esbuild cannot process during pre-bundling.
         // Rollup (Vite's regular pipeline) handles them via resolve.alias.
