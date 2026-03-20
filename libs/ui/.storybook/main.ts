@@ -97,6 +97,25 @@ const config: StorybookConfig = {
           // `<Component ...>` syntax during pre-transform.
           loader: { '.js': 'jsx', '.mjs': 'jsx' },
           jsx: 'automatic',
+          // Vite's resolve.alias only applies to bare specifiers BEFORE
+          // pre-bundling. Once esbuild resolves an import to an absolute
+          // filesystem path, the alias is never consulted again.
+          // An esbuild plugin operates INSIDE the pre-bundler and redirects
+          // the import while esbuild is still building the dep chunk, so the
+          // ESM mock is inlined rather than the raw CJS file being referenced.
+          plugins: [
+            {
+              name: 'normalize-colors-esm',
+              setup(build: any) {
+                build.onResolve(
+                  { filter: /^@react-native\/normalize-colors$/ },
+                  () => ({
+                    path: path.resolve(__dirname, './mocks/normalize-colors.js'),
+                  }),
+                );
+              },
+            },
+          ],
         },
       },
       define: {
