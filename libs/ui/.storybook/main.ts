@@ -22,22 +22,28 @@ const config: StorybookConfig = {
 
     return mergeConfig(viteConfig, {
       plugins: [
-        // @react-native/normalize-colors ships a plain CJS file that uses
-        // `module.exports = fn`. Vite's esbuild pre-bundling treats all .js
-        // files as JSX (see esbuildOptions below), which strips the `module`
-        // global from the file's scope so `module.exports = …` throws
-        // "Cannot set properties of undefined". We fix it by transforming
-        // the file to ESM before it reaches the browser.
+        // @react-native/normalize-colors ships a plain CJS file (module.exports = fn).
+        // The global `module` is not available in the browser's ESM scope, causing
+        // "Cannot set properties of undefined (setting 'exports')".
+        // We intercept the import via a virtual module, read the CJS file on disk,
+        // strip the module.exports, and return proper ESM. This runs in both the
+        // esbuild pre-bundling pass AND Vite's dev-serve transform pipeline.
         {
           name: 'cjs-to-esm:normalize-colors',
-          transform(code: string, id: string) {
-            if (!id.includes('@react-native/normalize-colors/index.js')) return;
-            return {
-              code: code
-                .replace(/^'use strict';\n?/, '')
-                .replace(/module\.exports\s*=\s*(\w+);?\s*$/, 'export default $1;'),
-              map: null,
-            };
+          resolveId(source: string) {
+            if (source === '@react-native/normalize-colors') {
+              return '\0normalize-colors-esm';
+            }
+          },
+          load(id: string) {
+            if (id !== '\0normalize-colors-esm') return;
+            const filePath = path.resolve(
+              __dirname,
+              '../../../node_modules/@react-native/normalize-colors/index.js'
+            );
+            const code = fs.readFileSync(filePath, 'utf-8');
+            // The file ends with `module.exports = normalizeColor;` — replace with ESM.
+            return code.replace(/module\.exports\s*=\s*(\w+)\s*;/, 'export default $1;');
           },
         },
       ],
