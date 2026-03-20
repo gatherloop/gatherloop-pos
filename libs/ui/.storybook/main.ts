@@ -85,13 +85,15 @@ const config: StorybookConfig = {
         // use exports.default (CJS/babel). Pre-bundling wraps them in proper ESM
         // so the browser doesn't get a "does not provide an export named default" error.
         // @react-native/normalize-colors has the same CJS issue.
-        include: ['react-native-web'],
+        include: ['react-native-web', 'react-native-svg'],
         // These packages ship native-only code, Flow types, or JSX in .mjs
         // files that esbuild cannot process during pre-bundling.
         // Rollup (Vite's regular pipeline) handles them via resolve.alias.
+        // Note: react-native-svg is NOT excluded here — its alias points to
+        // ReactNativeSVG.web.js (plain CJS), which esbuild pre-bundles cleanly
+        // and wraps into proper ESM so named exports like `Path` are available.
         exclude: [
           'react-native',
-          'react-native-svg',
           'react-native-reanimated',
           'moti',
           'tamagui',
