@@ -44,6 +44,14 @@ const config: StorybookConfig = {
           },
         ],
       },
+      optimizeDeps: {
+        // Prevent esbuild from pre-bundling (and failing on) react-native
+        // source files that contain Flow type syntax (import type / import
+        // typeof). The resolve.alias above redirects all imports of
+        // 'react-native' to 'react-native-web' at Rollup-level, so esbuild
+        // never needs to touch the raw react-native package.
+        exclude: ['react-native', 'react-native-svg'],
+      },
       define: {
         'process.env': {},
       },
