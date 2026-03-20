@@ -21,34 +21,16 @@ const config: StorybookConfig = {
     const { mergeConfig } = await import('vite');
 
     return mergeConfig(viteConfig, {
-      plugins: [
-        // @react-native/normalize-colors ships a plain CJS file (module.exports = fn).
-        // The global `module` is not available in the browser's ESM scope, causing
-        // "Cannot set properties of undefined (setting 'exports')".
-        // We intercept the import via a virtual module, read the CJS file on disk,
-        // strip the module.exports, and return proper ESM. This runs in both the
-        // esbuild pre-bundling pass AND Vite's dev-serve transform pipeline.
-        {
-          name: 'cjs-to-esm:normalize-colors',
-          resolveId(source: string) {
-            if (source === '@react-native/normalize-colors') {
-              return '\0normalize-colors-esm';
-            }
-          },
-          load(id: string) {
-            if (id !== '\0normalize-colors-esm') return;
-            const filePath = path.resolve(
-              __dirname,
-              '../../../node_modules/@react-native/normalize-colors/index.js'
-            );
-            const code = fs.readFileSync(filePath, 'utf-8');
-            // The file ends with `module.exports = normalizeColor;` — replace with ESM.
-            return code.replace(/module\.exports\s*=\s*(\w+)\s*;/, 'export default $1;');
-          },
-        },
-      ],
       resolve: {
         alias: [
+          // @react-native/normalize-colors ships a plain CJS file (module.exports = fn).
+          // Vite's esbuild JSX loader strips the `module` global, causing
+          // "Cannot set properties of undefined (setting 'exports')".
+          // We redirect to a hand-written ESM copy that uses `export default`.
+          {
+            find: /^@react-native\/normalize-colors$/,
+            replacement: path.resolve(__dirname, './mocks/normalize-colors.js'),
+          },
           // Redirect react-native-svg to its built-in web implementation
           // (ReactNativeSVG.web.js) which uses DOM SVG and has zero
           // fabric/TurboModule imports. Must come before the react-native
