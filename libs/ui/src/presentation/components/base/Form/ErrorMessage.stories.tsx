@@ -1,14 +1,16 @@
 import type { Decorator, Meta, StoryObj } from '@storybook/react';
+import React, { useEffect } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { ErrorMessage } from './ErrorMessage';
 
 const withValidationError: Decorator = (Story) => {
   const form = useForm({ defaultValues: { username: '' } });
-  // Manually set an error to show the ErrorMessage
-  form.setError('username', {
-    type: 'required',
-    message: 'Username is required',
-  });
+  useEffect(() => {
+    form.setError('username', {
+      type: 'required',
+      message: 'Username is required',
+    });
+  }, []);
   return (
     <FormProvider {...form}>
       <Story />
@@ -48,7 +50,9 @@ export const RequiredError: Story = {
   decorators: [
     (Story) => {
       const form = useForm({ defaultValues: { email: '' } });
-      form.setError('email', { type: 'required', message: 'Email is required' });
+      useEffect(() => {
+        form.setError('email', { type: 'required', message: 'Email is required' });
+      }, []);
       return (
         <FormProvider {...form}>
           <Story />
@@ -65,10 +69,12 @@ export const MinLengthError: Story = {
   decorators: [
     (Story) => {
       const form = useForm({ defaultValues: { password: '' } });
-      form.setError('password', {
-        type: 'minLength',
-        message: 'Password must be at least 8 characters',
-      });
+      useEffect(() => {
+        form.setError('password', {
+          type: 'minLength',
+          message: 'Password must be at least 8 characters',
+        });
+      }, []);
       return (
         <FormProvider {...form}>
           <Story />
