@@ -1,5 +1,13 @@
 import type { StorybookConfig } from '@storybook/react-vite';
+import fs from 'fs';
 import path from 'path';
+
+// Exclude every @tamagui/* package from esbuild pre-bundling.
+// These packages ship JSX / native-only code that esbuild cannot process;
+// Rollup (Vite's regular pipeline) handles them correctly via resolve.alias.
+const tamaguiExcludes = fs
+  .readdirSync(path.resolve(__dirname, '../../../node_modules/@tamagui'))
+  .map((name) => `@tamagui/${name}`);
 
 const config: StorybookConfig = {
   framework: '@storybook/react-vite',
@@ -45,27 +53,22 @@ const config: StorybookConfig = {
         ],
       },
       optimizeDeps: {
-        // These packages ship native-only code, Flow types, or pull in
-        // react-native-reanimated/moti chains that esbuild cannot process.
-        // The resolve.alias entries and Rollup handle them correctly at
-        // build time; esbuild pre-bundling should leave them alone.
+        // These packages ship native-only code, Flow types, or JSX in .mjs
+        // files that esbuild cannot process during pre-bundling.
+        // Rollup (Vite's regular pipeline) handles them via resolve.alias.
         exclude: [
           'react-native',
           'react-native-svg',
           'react-native-reanimated',
           'moti',
-          '@tamagui/animations-moti',
-          '@tamagui/animations-react-native',
-          '@tamagui/config',
           'tamagui',
-          '@tamagui/core',
-          '@tamagui/lucide-icons',
+          ...tamaguiExcludes,
         ],
         esbuildOptions: {
-          // Many React Native packages ship JSX in plain .js files (no .jsx
-          // extension). Tell esbuild to treat every .js file as JSX so it
-          // doesn't choke on `<Component ...>` syntax at pre-transform time.
-          loader: { '.js': 'jsx' },
+          // React Native ecosystem packages ship JSX in plain .js AND .mjs
+          // files. Tell esbuild to treat both as JSX so it doesn't choke on
+          // `<Component ...>` syntax during pre-transform.
+          loader: { '.js': 'jsx', '.mjs': 'jsx' },
           jsx: 'automatic',
         },
       },
