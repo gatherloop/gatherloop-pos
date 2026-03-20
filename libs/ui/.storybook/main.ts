@@ -31,6 +31,12 @@ const config: StorybookConfig = {
             find: /^@react-native\/normalize-colors$/,
             replacement: path.resolve(__dirname, './mocks/normalize-colors.js'),
           },
+          // @tamagui/normalize-css-color imports the SINGULAR form of the same package.
+          // Both packages have identical content; the same ESM mock handles both.
+          {
+            find: /^@react-native\/normalize-color$/,
+            replacement: path.resolve(__dirname, './mocks/normalize-colors.js'),
+          },
           // Redirect react-native-svg to its built-in web implementation
           // (ReactNativeSVG.web.js) which uses DOM SVG and has zero
           // fabric/TurboModule imports. Must come before the react-native
@@ -107,11 +113,10 @@ const config: StorybookConfig = {
             {
               name: 'normalize-colors-esm',
               setup(build: any) {
+                const mockPath = path.resolve(__dirname, './mocks/normalize-colors.js');
                 build.onResolve(
-                  { filter: /^@react-native\/normalize-colors$/ },
-                  () => ({
-                    path: path.resolve(__dirname, './mocks/normalize-colors.js'),
-                  }),
+                  { filter: /^@react-native\/normalize-color[s]?$/ },
+                  () => ({ path: mockPath }),
                 );
               },
             },
