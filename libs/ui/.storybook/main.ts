@@ -51,6 +51,13 @@ const config: StorybookConfig = {
         // 'react-native' to 'react-native-web' at Rollup-level, so esbuild
         // never needs to touch the raw react-native package.
         exclude: ['react-native', 'react-native-svg'],
+        esbuildOptions: {
+          // Many React Native packages ship JSX in plain .js files (no .jsx
+          // extension). Tell esbuild to treat every .js file as JSX so it
+          // doesn't choke on `<Component ...>` syntax at pre-transform time.
+          loader: { '.js': 'jsx' },
+          jsx: 'automatic',
+        },
       },
       define: {
         'process.env': {},
