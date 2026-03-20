@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
+import React from 'react';
 import { Button } from 'tamagui';
 import { Plus } from '@tamagui/lucide-icons';
 import { Navbar } from './Navbar';
@@ -28,24 +29,34 @@ export const WithBackButton: Story = {
 export const WithRightAction: Story = {
   args: {
     title: 'Products',
-    rightActionItem: (
-      <Button icon={Plus} onPress={fn()} size="$3">
-        Add Product
-      </Button>
-    ),
   },
+  render: (args) => (
+    <Navbar
+      {...args}
+      rightActionItem={
+        <Button icon={Plus} onPress={fn()} size="$3">
+          Add Product
+        </Button>
+      }
+    />
+  ),
 };
 
 export const WithBackButtonAndRightAction: Story = {
   args: {
     title: 'Edit Product',
     showBackButton: true,
-    rightActionItem: (
-      <Button icon={Plus} onPress={fn()} size="$3">
-        Save
-      </Button>
-    ),
   },
+  render: (args) => (
+    <Navbar
+      {...args}
+      rightActionItem={
+        <Button icon={Plus} onPress={fn()} size="$3">
+          Save
+        </Button>
+      }
+    />
+  ),
 };
 
 export const LongTitle: Story = {
