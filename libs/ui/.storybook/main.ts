@@ -50,6 +50,18 @@ const config: StorybookConfig = {
             find: /^react-native$/,
             replacement: 'react-native-web',
           },
+          // Stub out react-native-reanimated and moti — these are native
+          // animation libraries that cannot run on web. @tamagui/animations-moti
+          // imports them, but tamagui falls back to CSS transitions in browsers
+          // so the actual native modules are never exercised.
+          {
+            find: /^react-native-reanimated$/,
+            replacement: path.resolve(__dirname, './mocks/react-native-reanimated.js'),
+          },
+          {
+            find: /^moti\/author$/,
+            replacement: path.resolve(__dirname, './mocks/moti-author.js'),
+          },
         ],
       },
       optimizeDeps: {
