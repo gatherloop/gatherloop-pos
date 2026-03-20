@@ -4,5 +4,12 @@
   "sourceRoot": "libs/ui/src",
   "projectType": "library",
   "tags": [],
-  "targets": {}
+  "targets": {
+    "storybook": {
+      "command": "storybook dev -p 6006 -c libs/ui/.storybook"
+    },
+    "build-storybook": {
+      "command": "storybook build -c libs/ui/.storybook -o dist/storybook/ui"
+    }
+  }
 }
