@@ -1,5 +1,4 @@
 import type { StorybookConfig } from '@storybook/react-vite';
-import { tamaguiPlugin } from '@tamagui/vite-plugin';
 
 const config: StorybookConfig = {
   framework: '@storybook/react-vite',
@@ -9,21 +8,13 @@ const config: StorybookConfig = {
     '@storybook/addon-interactions',
     '@storybook/addon-a11y',
   ],
-  viteFinalOptions: {},
-  async viteFinal(config) {
+  async viteFinal(viteConfig) {
     const { mergeConfig } = await import('vite');
 
-    return mergeConfig(config, {
-      plugins: [
-        tamaguiPlugin({
-          components: ['tamagui'],
-          config: '../src/config.ts',
-        }),
-      ],
+    return mergeConfig(viteConfig, {
       resolve: {
         alias: {
           'react-native': 'react-native-web',
-          'react-native-svg': 'react-native-svg-web',
         },
       },
       define: {
