@@ -65,6 +65,10 @@ const config: StorybookConfig = {
         ],
       },
       optimizeDeps: {
+        // CJS packages that need to be pre-bundled so Vite can wrap them with
+        // an ESM default export. Without this, Vite serves the raw CJS file
+        // which doesn't have a default export and causes a SyntaxError.
+        include: ['@react-native/normalize-colors'],
         // These packages ship native-only code, Flow types, or JSX in .mjs
         // files that esbuild cannot process during pre-bundling.
         // Rollup (Vite's regular pipeline) handles them via resolve.alias.
