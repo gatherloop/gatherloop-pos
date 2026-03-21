@@ -5,10 +5,10 @@ import { Field } from './Field';
 import { Select } from './Select';
 
 const categoryItems = [
-  { label: 'Food & Beverage', value: 'food' },
-  { label: 'Electronics', value: 'electronics' },
-  { label: 'Clothing', value: 'clothing' },
-  { label: 'Furniture', value: 'furniture' },
+  { label: 'Beverages', value: 'beverages' },
+  { label: 'Snacks', value: 'snacks' },
+  { label: 'Merchandise', value: 'merchandise' },
+  { label: 'Seasonal Menu', value: 'seasonal' },
 ];
 
 const statusItems = [
@@ -19,7 +19,7 @@ const statusItems = [
 
 const withFormProvider: Decorator = (Story) => {
   const form = useForm({
-    defaultValues: { category: 'food', status: 'active', saleType: null },
+    defaultValues: { category: 'beverages', status: 'active', saleType: null },
   });
   return (
     <FormProvider {...form}>

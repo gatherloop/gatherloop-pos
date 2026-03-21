@@ -12,9 +12,9 @@ const walletOptions = [
 ];
 
 const budgetOptions = [
-  { label: 'Operations', value: 1 },
+  { label: 'Raw Materials', value: 1 },
   { label: 'Marketing', value: 2 },
-  { label: 'Logistics', value: 3 },
+  { label: 'Operations', value: 3 },
 ];
 
 const defaultValues: ExpenseForm = {
@@ -44,8 +44,8 @@ const PopulatedStory = () => {
       walletId: 1,
       budgetId: 1,
       expenseItems: [
-        { name: 'Office Supplies', unit: 'pcs', price: 50000, amount: 5 },
-        { name: 'Printer Paper', unit: 'ream', price: 50000, amount: 1 },
+        { name: 'Coffee Beans', unit: 'kg', price: 80000, amount: 3 },
+        { name: 'Fresh Milk', unit: 'liter', price: 15000, amount: 5 },
       ],
     },
   });

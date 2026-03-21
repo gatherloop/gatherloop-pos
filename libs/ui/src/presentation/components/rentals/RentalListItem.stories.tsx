@@ -8,7 +8,7 @@ const meta: Meta<typeof RentalListItem> = {
   args: {
     code: 'RNT-001',
     name: 'John Doe',
-    variantName: 'iPhone 14 - Blue 128GB',
+    variantName: 'Coffee Equipment Set - Standard Package',
     checkinAt: '2024-01-20T08:00:00.000Z',
     checkoutAt: undefined,
     onDeleteMenuPress: fn(),

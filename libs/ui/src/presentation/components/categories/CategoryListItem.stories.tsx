@@ -6,7 +6,7 @@ const meta: Meta<typeof CategoryListItem> = {
   title: 'Features/Categories/CategoryListItem',
   component: CategoryListItem,
   args: {
-    name: 'Electronics',
+    name: 'Beverages',
     onEditMenuPress: fn(),
     onDeleteMenuPress: fn(),
   },
@@ -19,6 +19,6 @@ export const Default: Story = {};
 
 export const LongName: Story = {
   args: {
-    name: 'Food & Beverages — Premium Quality Products',
+    name: 'Specialty Coffee & Artisan Beverages — Premium Quality',
   },
 };

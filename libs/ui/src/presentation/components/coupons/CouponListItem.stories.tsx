@@ -6,7 +6,7 @@ const meta: Meta<typeof CouponListItem> = {
   title: 'Features/Coupons/CouponListItem',
   component: CouponListItem,
   args: {
-    code: 'DISCOUNT10',
+    code: 'COFFEE10',
     amount: 10,
     type: 'percentage',
     onEditMenuPress: fn(),
@@ -21,8 +21,8 @@ export const Percentage: Story = {};
 
 export const Fixed: Story = {
   args: {
-    code: 'FLAT50K',
-    amount: 50000,
+    code: 'FLAT5K',
+    amount: 5000,
     type: 'fixed',
   },
 };

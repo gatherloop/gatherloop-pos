@@ -11,11 +11,11 @@ const categorySelectOptions = mockCategories.map((c) => ({ label: c.name, value:
 const UpdateStory = () => {
   const form = useForm<ProductForm>({
     defaultValues: {
-      name: 'iPhone 14',
-      description: 'Latest Apple iPhone',
+      name: 'Iced Coffee Latte',
+      description: 'Refreshing iced coffee with fresh milk',
       categoryId: 1,
       imageUrl: 'https://placehold.jp/120x120.png',
-      options: [{ name: 'Color', values: [{ name: 'Blue' }, { name: 'Black' }] }],
+      options: [{ name: 'Temperature', values: [{ name: 'Iced' }, { name: 'Hot' }] }],
       saleType: 'purchase',
     },
   });

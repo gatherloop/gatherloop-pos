@@ -8,7 +8,7 @@ import type { SupplierForm } from '../../domain';
 const UpdateStory = () => {
   const form = useForm<SupplierForm>({
     defaultValues: {
-      name: 'PT. Supplier Utama',
+      name: 'PT. Kopi Nusantara',
       phone: '+6281234567890',
       address: 'Jl. Raya No. 1, Jakarta Selatan',
       mapsLink: 'https://maps.google.com/?q=-6.2,106.8',

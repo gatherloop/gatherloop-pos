@@ -7,9 +7,9 @@ import type { ProductForm } from '../../../domain';
 import { mockVariants } from '../../../../.storybook/mocks/mockData';
 
 const defaultCategoryOptions = [
-  { label: 'Electronics', value: 1 },
-  { label: 'Clothing', value: 2 },
-  { label: 'Food & Beverages', value: 3 },
+  { label: 'Beverages', value: 1 },
+  { label: 'Snacks', value: 2 },
+  { label: 'Merchandise', value: 3 },
 ];
 
 const defaultValues: ProductForm = {
@@ -43,15 +43,19 @@ const LoadedStory = () => {
 const PopulatedStory = () => {
   const form = useForm<ProductForm>({
     defaultValues: {
-      name: 'iPhone 14',
-      description: 'Latest Apple iPhone',
+      name: 'Iced Coffee Latte',
+      description: 'Refreshing iced coffee with fresh milk',
       categoryId: 1,
       imageUrl: 'https://placehold.jp/120x120.png',
       saleType: 'purchase',
       options: [
         {
-          name: 'Color',
-          values: [{ name: 'Blue' }, { name: 'Black' }],
+          name: 'Temperature',
+          values: [{ name: 'Iced' }, { name: 'Hot' }],
+        },
+        {
+          name: 'Size',
+          values: [{ name: 'Regular' }, { name: 'Large' }],
         },
       ],
     },

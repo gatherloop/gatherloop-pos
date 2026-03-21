@@ -20,54 +20,54 @@ import type {
 
 export const mockCategory: Category = {
   id: 1,
-  name: 'Electronics',
+  name: 'Beverages',
   createdAt: '2024-01-15T08:00:00.000Z',
 };
 
 export const mockCategories: Category[] = [
-  { id: 1, name: 'Electronics', createdAt: '2024-01-15T08:00:00.000Z' },
-  { id: 2, name: 'Clothing', createdAt: '2024-01-16T08:00:00.000Z' },
-  { id: 3, name: 'Food & Beverages', createdAt: '2024-01-17T08:00:00.000Z' },
+  { id: 1, name: 'Beverages', createdAt: '2024-01-15T08:00:00.000Z' },
+  { id: 2, name: 'Snacks', createdAt: '2024-01-16T08:00:00.000Z' },
+  { id: 3, name: 'Merchandise', createdAt: '2024-01-17T08:00:00.000Z' },
 ];
 
 // ─── Material ────────────────────────────────────────────────────────────────
 
 export const mockMaterial: Material = {
   id: 1,
-  name: 'Steel',
-  price: 50000,
+  name: 'Coffee Bean',
+  price: 80000,
   unit: 'kg',
-  description: 'High quality steel',
-  weeklyUsage: 10,
+  description: 'Premium Arabica coffee beans',
+  weeklyUsage: 20,
   createdAt: '2024-01-15T08:00:00.000Z',
 };
 
 export const mockMaterials: Material[] = [
   {
     id: 1,
-    name: 'Steel',
-    price: 50000,
+    name: 'Coffee Bean',
+    price: 80000,
     unit: 'kg',
-    description: 'High quality steel',
-    weeklyUsage: 10,
+    description: 'Premium Arabica coffee beans',
+    weeklyUsage: 20,
     createdAt: '2024-01-15T08:00:00.000Z',
   },
   {
     id: 2,
-    name: 'Aluminum',
-    price: 35000,
-    unit: 'kg',
-    description: 'Lightweight aluminum',
-    weeklyUsage: 5,
+    name: 'Fresh Milk',
+    price: 15000,
+    unit: 'liter',
+    description: 'Full cream fresh milk',
+    weeklyUsage: 50,
     createdAt: '2024-01-16T08:00:00.000Z',
   },
   {
     id: 3,
-    name: 'Cotton',
-    price: 20000,
-    unit: 'meter',
-    description: 'Premium cotton fabric',
-    weeklyUsage: 15,
+    name: 'Sugar',
+    price: 12000,
+    unit: 'kg',
+    description: 'Refined white sugar',
+    weeklyUsage: 10,
     createdAt: '2024-01-17T08:00:00.000Z',
   },
 ];
@@ -76,27 +76,26 @@ export const mockMaterials: Material[] = [
 
 export const mockProduct: Product = {
   id: 1,
-  name: 'iPhone 14',
-  description: 'Latest Apple iPhone with advanced features',
+  name: 'Iced Coffee Latte',
+  description: 'Refreshing iced coffee with fresh milk',
   category: mockCategory,
   imageUrl: 'https://placehold.jp/120x120.png',
   createdAt: '2024-01-15T08:00:00.000Z',
   options: [
     {
       id: 1,
-      name: 'Color',
+      name: 'Temperature',
       values: [
-        { id: 1, name: 'Blue' },
-        { id: 2, name: 'Black' },
-        { id: 3, name: 'White' },
+        { id: 1, name: 'Iced' },
+        { id: 2, name: 'Hot' },
       ],
     },
     {
       id: 2,
-      name: 'Storage',
+      name: 'Size',
       values: [
-        { id: 4, name: '128GB' },
-        { id: 5, name: '256GB' },
+        { id: 4, name: 'Regular' },
+        { id: 5, name: 'Large' },
       ],
     },
   ],
@@ -107,8 +106,8 @@ export const mockProducts: Product[] = [
   mockProduct,
   {
     id: 2,
-    name: 'Samsung Galaxy S23',
-    description: 'Flagship Samsung smartphone',
+    name: 'Cappuccino',
+    description: 'Classic Italian espresso with steamed milk foam',
     category: mockCategory,
     imageUrl: 'https://placehold.jp/120x120.png',
     createdAt: '2024-01-16T08:00:00.000Z',
@@ -117,8 +116,8 @@ export const mockProducts: Product[] = [
   },
   {
     id: 3,
-    name: 'Drone DJI Mini 3',
-    description: 'Compact aerial drone',
+    name: 'Coffee Equipment Set',
+    description: 'Professional coffee equipment for events',
     category: mockCategory,
     imageUrl: 'https://placehold.jp/120x120.png',
     createdAt: '2024-01-17T08:00:00.000Z',
@@ -129,33 +128,33 @@ export const mockProducts: Product[] = [
 
 // ─── OptionValue ─────────────────────────────────────────────────────────────
 
-export const mockOptionValue: OptionValue = { id: 1, name: 'Blue' };
+export const mockOptionValue: OptionValue = { id: 1, name: 'Iced' };
 
 export const mockOptionValues: OptionValue[] = [
-  { id: 1, name: 'Blue' },
-  { id: 4, name: '128GB' },
+  { id: 1, name: 'Iced' },
+  { id: 4, name: 'Regular' },
 ];
 
 // ─── Variant ─────────────────────────────────────────────────────────────────
 
 export const mockVariant: Variant = {
   id: 1,
-  name: 'iPhone 14 - Blue 128GB',
-  price: 15000000,
-  description: 'Blue 128GB variant',
+  name: 'Iced Coffee Latte - Iced Regular',
+  price: 35000,
+  description: 'Iced version, regular size',
   materials: [
     {
       id: 1,
       materialId: 1,
-      amount: 2,
+      amount: 0.015,
       material: mockMaterial,
     },
   ],
   product: mockProduct,
   createdAt: '2024-01-15T08:00:00.000Z',
   values: [
-    { id: 1, variantId: 1, optionValueId: 1, optionValue: { id: 1, name: 'Blue' } },
-    { id: 2, variantId: 1, optionValueId: 4, optionValue: { id: 4, name: '128GB' } },
+    { id: 1, variantId: 1, optionValueId: 1, optionValue: { id: 1, name: 'Iced' } },
+    { id: 2, variantId: 1, optionValueId: 4, optionValue: { id: 4, name: 'Regular' } },
   ],
 };
 
@@ -163,15 +162,15 @@ export const mockVariants: Variant[] = [
   mockVariant,
   {
     id: 2,
-    name: 'iPhone 14 - Black 256GB',
-    price: 17000000,
-    description: 'Black 256GB variant',
+    name: 'Iced Coffee Latte - Hot Large',
+    price: 40000,
+    description: 'Hot version, large size',
     materials: [],
     product: mockProduct,
     createdAt: '2024-01-16T08:00:00.000Z',
     values: [
-      { id: 3, variantId: 2, optionValueId: 2, optionValue: { id: 2, name: 'Black' } },
-      { id: 4, variantId: 2, optionValueId: 5, optionValue: { id: 5, name: '256GB' } },
+      { id: 3, variantId: 2, optionValueId: 2, optionValue: { id: 2, name: 'Hot' } },
+      { id: 4, variantId: 2, optionValueId: 5, optionValue: { id: 5, name: 'Large' } },
     ],
   },
 ];
@@ -211,7 +210,7 @@ export const mockWallets: Wallet[] = [
 
 export const mockBudget: Budget = {
   id: 1,
-  name: 'Operations',
+  name: 'Raw Materials',
   percentage: 30,
   balance: 1500000,
   createdAt: '2024-01-15T08:00:00.000Z',
@@ -228,7 +227,7 @@ export const mockBudgets: Budget[] = [
   },
   {
     id: 3,
-    name: 'Logistics',
+    name: 'Operations',
     percentage: 15,
     balance: 750000,
     createdAt: '2024-01-17T08:00:00.000Z',
@@ -239,7 +238,7 @@ export const mockBudgets: Budget[] = [
 
 export const mockCoupon: Coupon = {
   id: 1,
-  code: 'DISCOUNT10',
+  code: 'COFFEE10',
   type: 'percentage',
   amount: 10,
   createdAt: '2024-01-15T08:00:00.000Z',
@@ -249,14 +248,14 @@ export const mockCoupons: Coupon[] = [
   mockCoupon,
   {
     id: 2,
-    code: 'FLAT50K',
+    code: 'FLAT5K',
     type: 'fixed',
-    amount: 50000,
+    amount: 5000,
     createdAt: '2024-01-16T08:00:00.000Z',
   },
   {
     id: 3,
-    code: 'VIP20',
+    code: 'MEMBER20',
     type: 'percentage',
     amount: 20,
     createdAt: '2024-01-17T08:00:00.000Z',
@@ -269,9 +268,9 @@ export const mockTransactionItem: TransactionItem = {
   id: 1,
   variant: mockVariant,
   amount: 2,
-  price: 15000000,
+  price: 35000,
   discountAmount: 0,
-  subtotal: 30000000,
+  subtotal: 70000,
   note: '',
 };
 
@@ -280,13 +279,13 @@ export const mockTransaction: Transaction = {
   createdAt: '2024-01-20T10:00:00.000Z',
   name: 'Order #001',
   orderNumber: 1,
-  total: 30000000,
-  totalIncome: 28000000,
+  total: 70000,
+  totalIncome: 60000,
   transactionItems: [mockTransactionItem],
   transactionCoupons: [],
   wallet: mockWallet,
   paidAt: '2024-01-20T10:30:00.000Z',
-  paidAmount: 30000000,
+  paidAmount: 70000,
 };
 
 export const mockTransactions: Transaction[] = [
@@ -296,17 +295,17 @@ export const mockTransactions: Transaction[] = [
     createdAt: '2024-01-21T09:00:00.000Z',
     name: 'Order #002',
     orderNumber: 2,
-    total: 17000000,
-    totalIncome: 16000000,
+    total: 40000,
+    totalIncome: 35000,
     transactionItems: [
       {
         id: 2,
         variant: mockVariants[1],
         amount: 1,
-        price: 17000000,
+        price: 40000,
         discountAmount: 0,
-        subtotal: 17000000,
-        note: 'Gift wrap please',
+        subtotal: 40000,
+        note: 'Extra hot please',
       },
     ],
     transactionCoupons: [
@@ -330,10 +329,10 @@ export const mockExpense: Expense = {
   createdAt: '2024-01-20T10:00:00.000Z',
   wallet: mockWallet,
   budget: mockBudget,
-  total: 250000,
+  total: 315000,
   expenseItems: [
-    { id: 1, name: 'Office Supplies', unit: 'pcs', price: 50000, amount: 5 },
-    { id: 2, name: 'Printer Paper', unit: 'ream', price: 50000, amount: 1 },
+    { id: 1, name: 'Coffee Beans', unit: 'kg', price: 80000, amount: 3 },
+    { id: 2, name: 'Fresh Milk', unit: 'liter', price: 15000, amount: 5 },
   ],
 };
 
@@ -403,11 +402,22 @@ export const mockCalculations: Calculation[] = [
 
 // ─── Rental ──────────────────────────────────────────────────────────────────
 
+const mockRentalVariant: Variant = {
+  id: 3,
+  name: 'Coffee Equipment Set - Standard Package',
+  price: 500000,
+  description: 'Complete coffee setup for 2 hours',
+  materials: [],
+  product: mockProducts[2],
+  createdAt: '2024-01-17T08:00:00.000Z',
+  values: [],
+};
+
 export const mockRental: Rental = {
   id: 1,
   code: 'RNT-001',
   name: 'John Doe',
-  variant: mockVariant,
+  variant: mockRentalVariant,
   createdAt: '2024-01-20T10:00:00.000Z',
   checkinAt: '2024-01-20T08:00:00.000Z',
   checkoutAt: null,
@@ -427,7 +437,7 @@ export const mockRentals: Rental[] = [mockRental, mockRentalCheckedOut];
 
 export const mockSupplier: Supplier = {
   id: 1,
-  name: 'PT. Supplier Utama',
+  name: 'PT. Kopi Nusantara',
   phone: '+6281234567890',
   address: 'Jl. Raya No. 1, Jakarta Selatan',
   mapsLink: 'https://maps.google.com/?q=-6.2,106.8',
@@ -438,9 +448,9 @@ export const mockSuppliers: Supplier[] = [
   mockSupplier,
   {
     id: 2,
-    name: 'CV. Bahan Prima',
+    name: 'CV. Susu Segar',
     phone: '+6281298765432',
-    address: 'Jl. Industri No. 5, Bandung',
+    address: 'Jl. Peternakan No. 5, Bandung',
     mapsLink: 'https://maps.google.com/?q=-6.9,107.6',
     createdAt: '2024-01-16T08:00:00.000Z',
   },

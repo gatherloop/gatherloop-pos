@@ -19,7 +19,7 @@ const LoadedStory = () => {
 
 const PopulatedStory = () => {
   const form = useForm<CategoryForm>({
-    defaultValues: { name: 'Electronics' },
+    defaultValues: { name: 'Beverages' },
   });
   return (
     <CategoryFormView

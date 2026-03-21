@@ -6,8 +6,8 @@ const meta: Meta<typeof ExpenseListItem> = {
   title: 'Features/Expenses/ExpenseListItem',
   component: ExpenseListItem,
   args: {
-    budgetName: 'Operations',
-    total: 250000,
+    budgetName: 'Raw Materials',
+    total: 315000,
     createdAt: '2024-01-20T10:00:00.000Z',
     walletName: 'Cash',
     onEditMenuPress: fn(),
@@ -30,7 +30,7 @@ export const WithoutMenus: Story = {
 export const LargeExpense: Story = {
   args: {
     budgetName: 'Marketing',
-    total: 5000000,
+    total: 500000,
     walletName: 'Bank Transfer',
   },
 };

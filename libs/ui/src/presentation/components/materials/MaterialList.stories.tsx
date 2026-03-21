@@ -53,7 +53,7 @@ export const Error: Story = {
 export const WithSearch: Story = {
   args: {
     variant: { type: 'loaded', items: mockMaterials.slice(0, 1) },
-    searchValue: 'Steel',
+    searchValue: 'Coffee',
     totalItem: 1,
   },
 };

@@ -6,8 +6,8 @@ const meta: Meta<typeof ProductListItem> = {
   title: 'Features/Products/ProductListItem',
   component: ProductListItem,
   args: {
-    name: 'iPhone 14',
-    categoryName: 'Electronics',
+    name: 'Iced Coffee Latte',
+    categoryName: 'Beverages',
     saleType: 'purchase',
     imageUrl: 'https://placehold.jp/120x120.png',
     onEditMenuPress: fn(),
@@ -22,8 +22,8 @@ export const Default: Story = {};
 
 export const RentalType: Story = {
   args: {
-    name: 'Drone DJI Mini 3',
-    categoryName: 'Electronics',
+    name: 'Coffee Equipment Set',
+    categoryName: 'Merchandise',
     saleType: 'rental',
     imageUrl: 'https://placehold.jp/120x120.png',
   },
@@ -44,7 +44,7 @@ export const WithoutMenus: Story = {
 
 export const LongName: Story = {
   args: {
-    name: 'Samsung Galaxy S23 Ultra 5G Special Edition Premium Bundle',
-    categoryName: 'Mobile Phones & Accessories',
+    name: 'Arabica Single Origin Hand Drip Coffee Special Edition Bundle',
+    categoryName: 'Specialty Beverages & Artisan Coffee',
   },
 };
