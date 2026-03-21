@@ -1,6 +1,6 @@
 import type { Preview, Decorator } from '@storybook/react';
 import React, { useEffect } from 'react';
-import { PortalProvider, TamaguiProvider, Theme, createTamagui } from 'tamagui';
+import { PortalProvider, TamaguiProvider, createTamagui } from 'tamagui';
 import { config } from '@tamagui/config/v3';
 import { createAnimations } from '@tamagui/animations-css';
 
@@ -21,25 +21,26 @@ const storybookTamaguiConfig = createTamagui({
 const withTamagui: Decorator = (Story, context) => {
   const theme = (context.globals['theme'] as 'light' | 'dark') || 'light';
 
-  // Sync the document background so the Storybook canvas matches the theme.
+  // Switch theme by toggling Tamagui's CSS classes on the document root.
+  // Tamagui injects all theme CSS on mount (scoped to .t_light / .t_dark
+  // selectors), so we only need to flip the class — no React re-render or
+  // provider remount required. This avoids the "insertBefore" DOM crash that
+  // occurs when the Theme context provider re-renders and invalidates portals.
   useEffect(() => {
+    const root = document.documentElement;
+    root.classList.remove('t_light', 't_dark');
+    root.classList.add(`t_${theme}`);
     document.body.style.background = theme === 'dark' ? '#000' : '#fff';
-    return () => {
-      document.body.style.background = '';
-    };
   }, [theme]);
 
   return (
-    // TamaguiProvider is intentionally kept stable (no key prop) because it
-    // injects CSS for ALL themes on mount. Remounting it on every toggle
-    // causes React DOM reconciliation errors ("insertBefore" NotFoundError).
-    // The Theme component alone is sufficient to switch the active theme.
+    // TamaguiProvider is never remounted — it stays stable for the entire
+    // Storybook session. Theme switching is handled purely via CSS class
+    // manipulation above, keeping React's tree intact.
     <TamaguiProvider config={storybookTamaguiConfig} defaultTheme="light">
-      <Theme name={theme}>
-        <PortalProvider shouldAddRootHost>
-          <Story />
-        </PortalProvider>
-      </Theme>
+      <PortalProvider shouldAddRootHost>
+        <Story />
+      </PortalProvider>
     </TamaguiProvider>
   );
 };
