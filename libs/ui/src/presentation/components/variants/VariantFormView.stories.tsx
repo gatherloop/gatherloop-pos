@@ -85,42 +85,46 @@ export const Populated: Story = {
   render: () => <PopulatedStory />,
 };
 
+const LoadingStory = () => {
+  const form = useForm<VariantForm>({ defaultValues });
+  return (
+    <VariantFormView
+      variant={{ type: 'loading' }}
+      onRetryButtonPress={fn()}
+      form={form}
+      onSubmit={fn()}
+      product={null}
+      isMaterialSheetOpen={false}
+      onMaterialSheetOpenChange={fn()}
+      onRemoveMaterial={fn()}
+      isSubmitDisabled={true}
+      MaterialList={() => null}
+    />
+  );
+};
+
+const ErrorStory = () => {
+  const form = useForm<VariantForm>({ defaultValues });
+  return (
+    <VariantFormView
+      variant={{ type: 'error' }}
+      onRetryButtonPress={fn()}
+      form={form}
+      onSubmit={fn()}
+      product={null}
+      isMaterialSheetOpen={false}
+      onMaterialSheetOpenChange={fn()}
+      onRemoveMaterial={fn()}
+      isSubmitDisabled={true}
+      MaterialList={() => null}
+    />
+  );
+};
+
 export const Loading: Story = {
-  render: () => {
-    const form = useForm<VariantForm>({ defaultValues });
-    return (
-      <VariantFormView
-        variant={{ type: 'loading' }}
-        onRetryButtonPress={fn()}
-        form={form}
-        onSubmit={fn()}
-        product={null}
-        isMaterialSheetOpen={false}
-        onMaterialSheetOpenChange={fn()}
-        onRemoveMaterial={fn()}
-        isSubmitDisabled={true}
-        MaterialList={() => null}
-      />
-    );
-  },
+  render: () => <LoadingStory />,
 };
 
 export const Error: Story = {
-  render: () => {
-    const form = useForm<VariantForm>({ defaultValues });
-    return (
-      <VariantFormView
-        variant={{ type: 'error' }}
-        onRetryButtonPress={fn()}
-        form={form}
-        onSubmit={fn()}
-        product={null}
-        isMaterialSheetOpen={false}
-        onMaterialSheetOpenChange={fn()}
-        onRemoveMaterial={fn()}
-        isSubmitDisabled={true}
-        MaterialList={() => null}
-      />
-    );
-  },
+  render: () => <ErrorStory />,
 };

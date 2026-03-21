@@ -47,44 +47,50 @@ export const Populated: Story = {
   render: () => <PopulatedStory />,
 };
 
+const LoadingStory = () => {
+  const form = useForm<CategoryForm>({ defaultValues: { name: '' } });
+  return (
+    <CategoryFormView
+      variant={{ type: 'loading' }}
+      form={form}
+      onSubmit={fn()}
+      isSubmitDisabled={true}
+    />
+  );
+};
+
+const ErrorStory = () => {
+  const form = useForm<CategoryForm>({ defaultValues: { name: '' } });
+  return (
+    <CategoryFormView
+      variant={{ type: 'error', onRetryButtonPress: fn() }}
+      form={form}
+      onSubmit={fn()}
+      isSubmitDisabled={true}
+    />
+  );
+};
+
+const SubmitDisabledStory = () => {
+  const form = useForm<CategoryForm>({ defaultValues: { name: '' } });
+  return (
+    <CategoryFormView
+      variant={{ type: 'loaded' }}
+      form={form}
+      onSubmit={fn()}
+      isSubmitDisabled={true}
+    />
+  );
+};
+
 export const Loading: Story = {
-  render: () => {
-    const form = useForm<CategoryForm>({ defaultValues: { name: '' } });
-    return (
-      <CategoryFormView
-        variant={{ type: 'loading' }}
-        form={form}
-        onSubmit={fn()}
-        isSubmitDisabled={true}
-      />
-    );
-  },
+  render: () => <LoadingStory />,
 };
 
 export const Error: Story = {
-  render: () => {
-    const form = useForm<CategoryForm>({ defaultValues: { name: '' } });
-    return (
-      <CategoryFormView
-        variant={{ type: 'error', onRetryButtonPress: fn() }}
-        form={form}
-        onSubmit={fn()}
-        isSubmitDisabled={true}
-      />
-    );
-  },
+  render: () => <ErrorStory />,
 };
 
 export const SubmitDisabled: Story = {
-  render: () => {
-    const form = useForm<CategoryForm>({ defaultValues: { name: '' } });
-    return (
-      <CategoryFormView
-        variant={{ type: 'loaded' }}
-        form={form}
-        onSubmit={fn()}
-        isSubmitDisabled={true}
-      />
-    );
-  },
+  render: () => <SubmitDisabledStory />,
 };

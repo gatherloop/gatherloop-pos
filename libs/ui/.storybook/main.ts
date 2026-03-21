@@ -10,7 +10,19 @@ const tamaguiExcludes = fs
   .map((name) => `@tamagui/${name}`);
 
 const config: StorybookConfig = {
-  framework: '@storybook/react-vite',
+  framework: {
+    name: '@storybook/react-vite',
+    options: {
+      // Disable React Strict Mode to prevent the double-invocation of
+      // useLayoutEffect during development. Strict Mode simulates an
+      // unmount+remount cycle on every mount; Tamagui's internal effects
+      // create and clean up DOM nodes during this cycle in a way that can
+      // leave stale references, causing an insertBefore NotFoundError when
+      // React next tries to commit portal-based components (Sheet, Dialog,
+      // AlertDialog, etc.).
+      strictMode: false,
+    },
+  },
   stories: ['../src/**/*.stories.@(ts|tsx)'],
   addons: [
     '@storybook/addon-essentials',
