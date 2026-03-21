@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
 import React from 'react';
 import { useForm } from 'react-hook-form';
-import { LoginFormView } from './LoginFormView';
+import { LoginForm as LoginFormView } from './LoginFormView';
 import type { AuthLoginForm } from '../../../domain';
 
 const defaultValues: AuthLoginForm = {
@@ -35,7 +35,7 @@ const PrefilledStory = () => {
 };
 
 const meta: Meta<typeof LoginFormView> = {
-  title: 'Features/Auth/LoginFormView',
+  title: 'Features/Auth/LoginForm',
   component: LoginFormView,
 };
 
