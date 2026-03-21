@@ -3,10 +3,10 @@ import { QueryClient } from '@tanstack/react-query';
 import {
   budgetList,
   budgetListQueryKey,
-  Budget as ApiBudget,
 } from '../../../../api-contract/src';
 import { Budget, BudgetRepository } from '../../domain';
 import { RequestConfig } from '@kubb/swagger-client/client';
+import { toBudget } from './budget.transformer';
 
 export class ApiBudgetRepository implements BudgetRepository {
   client: QueryClient;
@@ -21,16 +21,6 @@ export class ApiBudgetRepository implements BudgetRepository {
         queryKey: budgetListQueryKey(),
         queryFn: () => budgetList(options),
       })
-      .then((data) => data.data.map(budgetTransformers.budget));
+      .then((data) => data.data.map(toBudget));
   };
 }
-
-export const budgetTransformers = {
-  budget: (budget: ApiBudget): Budget => ({
-    id: budget.id,
-    createdAt: budget.createdAt,
-    name: budget.name,
-    balance: budget.balance,
-    percentage: budget.percentage,
-  }),
-};

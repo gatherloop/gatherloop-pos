@@ -8,10 +8,10 @@ import {
   categoryList,
   categoryListQueryKey,
   categoryUpdateById,
-  Category as ApiCategory,
 } from '../../../../api-contract/src';
 import { Category, CategoryRepository } from '../../domain';
 import { RequestConfig } from '@kubb/swagger-client/client';
+import { toApiCategory, toCategory } from './category.transformer';
 
 export class ApiCategoryRepository implements CategoryRepository {
   client: QueryClient;
@@ -29,18 +29,18 @@ export class ApiCategoryRepository implements CategoryRepository {
         queryKey: categoryFindByIdQueryKey(categoryId),
         queryFn: () => categoryFindById(categoryId, options),
       })
-      .then(({ data }) => categoryTransformers.category(data));
+      .then(({ data }) => toCategory(data));
   };
 
   createCategory: CategoryRepository['createCategory'] = (formValues) => {
-    return categoryCreate(formValues).then();
+    return categoryCreate(toApiCategory(formValues)).then();
   };
 
   updateCategory: CategoryRepository['updateCategory'] = (
     formValues,
     categoryId
   ) => {
-    return categoryUpdateById(categoryId, formValues).then();
+    return categoryUpdateById(categoryId, toApiCategory(formValues)).then();
   };
 
   deleteCategoryById: CategoryRepository['deleteCategoryById'] = (
@@ -57,14 +57,6 @@ export class ApiCategoryRepository implements CategoryRepository {
         queryKey: categoryListQueryKey(),
         queryFn: () => categoryList(options),
       })
-      .then((data) => data.data.map(categoryTransformers.category));
+      .then((data) => data.data.map(toCategory));
   };
 }
-
-export const categoryTransformers = {
-  category: (category: ApiCategory): Category => ({
-    id: category.id,
-    createdAt: category.createdAt,
-    name: category.name,
-  }),
-};

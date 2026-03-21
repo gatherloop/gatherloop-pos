@@ -9,10 +9,10 @@ import {
   MaterialList200,
   materialListQueryKey,
   materialUpdateById,
-  Material as ApiMaterial,
 } from '../../../../api-contract/src';
 import { Material, MaterialRepository } from '../../domain';
 import { RequestConfig } from '@kubb/swagger-client/client';
+import { toApiMaterial, toMaterial } from './material.transformer';
 
 export class ApiMaterialRepository implements MaterialRepository {
   client: QueryClient;
@@ -30,18 +30,18 @@ export class ApiMaterialRepository implements MaterialRepository {
         queryKey: materialFindByIdQueryKey(materialId),
         queryFn: () => materialFindById(materialId, options),
       })
-      .then(({ data }) => materialTransformers.material(data));
+      .then(({ data }) => toMaterial(data));
   };
 
   createMaterial: MaterialRepository['createMaterial'] = (formValues) => {
-    return materialCreate(formValues).then();
+    return materialCreate(toApiMaterial(formValues)).then();
   };
 
   updateMaterial: MaterialRepository['updateMaterial'] = (
     formValues,
     materialId
   ) => {
-    return materialUpdateById(materialId, formValues).then();
+    return materialUpdateById(materialId, toApiMaterial(formValues)).then();
   };
 
   deleteMaterialById: MaterialRepository['deleteMaterialById'] = (
@@ -72,7 +72,7 @@ export class ApiMaterialRepository implements MaterialRepository {
     this.client.removeQueries({ queryKey: materialListQueryKey(params) });
 
     return {
-      materials: res?.data.map(materialTransformers.material) ?? [],
+      materials: res?.data.map(toMaterial) ?? [],
       totalItem: res?.meta.total ?? 0,
     };
   };
@@ -107,20 +107,8 @@ export class ApiMaterialRepository implements MaterialRepository {
         queryFn: () => materialList(params, options),
       })
       .then((data) => ({
-        materials: data.data.map(materialTransformers.material),
+        materials: data.data.map(toMaterial),
         totalItem: data.meta.total,
       }));
   };
 }
-
-export const materialTransformers = {
-  material: (material: ApiMaterial): Material => ({
-    id: material.id,
-    createdAt: material.createdAt,
-    name: material.name,
-    price: material.price,
-    unit: material.unit,
-    description: material.description ?? '',
-    weeklyUsage: material.weeklyUsage,
-  }),
-};

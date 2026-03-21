@@ -9,11 +9,10 @@ import {
   ProductList200,
   productListQueryKey,
   productUpdateById,
-  Product as ApiProduct,
-  Category as ApiCategory,
 } from '../../../../api-contract/src';
-import { Category, Product, ProductRepository } from '../../domain';
+import { Product, ProductRepository } from '../../domain';
 import { RequestConfig } from '@kubb/swagger-client/client';
+import { toApiProduct, toProduct } from './product.transformer';
 
 export class ApiProductRepository implements ProductRepository {
   client: QueryClient;
@@ -31,32 +30,18 @@ export class ApiProductRepository implements ProductRepository {
         queryKey: productFindByIdQueryKey(productId),
         queryFn: () => productFindById(productId, options),
       })
-      .then(({ data }) => productTransformers.product(data));
+      .then(({ data }) => toProduct(data));
   };
 
   createProduct: ProductRepository['createProduct'] = (formValues) => {
-    return productCreate({
-      name: formValues.name,
-      categoryId: formValues.categoryId,
-      imageUrl: formValues.imageUrl,
-      description: formValues.description,
-      options: formValues.options,
-      saleType: formValues.saleType,
-    }).then();
+    return productCreate(toApiProduct(formValues)).then();
   };
 
   updateProduct: ProductRepository['updateProduct'] = (
     formValues,
     productId
   ) => {
-    return productUpdateById(productId, {
-      name: formValues.name,
-      categoryId: formValues.categoryId,
-      imageUrl: formValues.imageUrl,
-      description: formValues.description,
-      options: formValues.options,
-      saleType: formValues.saleType,
-    }).then();
+    return productUpdateById(productId, toApiProduct(formValues)).then();
   };
 
   deleteProductById: ProductRepository['deleteProductById'] = (productId) => {
@@ -94,7 +79,7 @@ export class ApiProductRepository implements ProductRepository {
       sortBy: 'created_at',
       orderBy: 'desc',
       errorMessage: null,
-      products: res?.data.map(productTransformers.product) ?? [],
+      products: res?.data.map(toProduct) ?? [],
       totalItem: res?.meta.total ?? 0,
     };
   };
@@ -125,26 +110,8 @@ export class ApiProductRepository implements ProductRepository {
         queryFn: () => productList(queryParams, options),
       })
       .then((data) => ({
-        products: data.data.map(productTransformers.product),
+        products: data.data.map(toProduct),
         totalItem: data.meta.total,
       }));
   };
 }
-
-export const productTransformers = {
-  category: (category: ApiCategory): Category => ({
-    id: category.id,
-    name: category.name,
-    createdAt: category.createdAt,
-  }),
-  product: (product: ApiProduct): Product => ({
-    id: product.id,
-    createdAt: product.createdAt,
-    name: product.name,
-    imageUrl: product.imageUrl,
-    category: productTransformers.category(product.category),
-    description: product.description ?? '',
-    options: product.options,
-    saleType: product.saleType,
-  }),
-};

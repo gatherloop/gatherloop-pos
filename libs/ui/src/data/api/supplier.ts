@@ -9,10 +9,10 @@ import {
   SupplierList200,
   supplierListQueryKey,
   supplierUpdateById,
-  Supplier as ApiSupplier,
 } from '../../../../api-contract/src';
 import { Supplier, SupplierRepository } from '../../domain';
 import { RequestConfig } from '@kubb/swagger-client/client';
+import { toApiSupplier, toSupplier } from './supplier.transformer';
 
 export class ApiSupplierRepository implements SupplierRepository {
   client: QueryClient;
@@ -30,18 +30,18 @@ export class ApiSupplierRepository implements SupplierRepository {
         queryKey: supplierFindByIdQueryKey(supplierId),
         queryFn: () => supplierFindById(supplierId, options),
       })
-      .then(({ data }) => supplierTransformers.supplier(data));
+      .then(({ data }) => toSupplier(data));
   };
 
   createSupplier: SupplierRepository['createSupplier'] = (formValues) => {
-    return supplierCreate(formValues).then();
+    return supplierCreate(toApiSupplier(formValues)).then();
   };
 
   updateSupplier: SupplierRepository['updateSupplier'] = (
     formValues,
     supplierId
   ) => {
-    return supplierUpdateById(supplierId, formValues).then();
+    return supplierUpdateById(supplierId, toApiSupplier(formValues)).then();
   };
 
   deleteSupplierById: SupplierRepository['deleteSupplierById'] = (
@@ -72,7 +72,7 @@ export class ApiSupplierRepository implements SupplierRepository {
     this.client.removeQueries({ queryKey: supplierListQueryKey(params) });
 
     return {
-      suppliers: res?.data.map(supplierTransformers.supplier) ?? [],
+      suppliers: res?.data.map(toSupplier) ?? [],
       totalItem: res?.meta.total ?? 0,
     };
   };
@@ -107,19 +107,8 @@ export class ApiSupplierRepository implements SupplierRepository {
         queryFn: () => supplierList(params, options),
       })
       .then((data) => ({
-        suppliers: data.data.map(supplierTransformers.supplier),
+        suppliers: data.data.map(toSupplier),
         totalItem: data.meta.total,
       }));
   };
 }
-
-export const supplierTransformers = {
-  supplier: (supplier: ApiSupplier): Supplier => ({
-    id: supplier.id,
-    createdAt: supplier.createdAt,
-    name: supplier.name,
-    address: supplier.address,
-    mapsLink: supplier.mapsLink,
-    phone: supplier.phone ?? '',
-  }),
-};

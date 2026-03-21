@@ -7,12 +7,11 @@ import {
   RentalList200,
   rentalListQueryKey,
   rentalCheckout,
-  Rental as ApiRental,
   RentalListQueryParams,
 } from '../../../../api-contract/src';
 import { Rental, RentalRepository } from '../../domain';
 import { RequestConfig } from '@kubb/swagger-client/client';
-import { variantTransformers } from './variant';
+import { toApiRentalCheckin, toApiRentalCheckout, toRental } from './rental.transformer';
 
 export class ApiRentalRepository implements RentalRepository {
   client: QueryClient;
@@ -21,33 +20,12 @@ export class ApiRentalRepository implements RentalRepository {
     this.client = client;
   }
 
-  checkinRentals: RentalRepository['checkinRentals'] = ({
-    name,
-    checkinAt,
-    rentals,
-  }) => {
-    return rentalCheckin(
-      rentals.map((rental) => ({
-        code: rental.code,
-        name,
-        variantId: rental.variant.id,
-        checkinAt: checkinAt
-          ? new Date(
-              checkinAt.year,
-              checkinAt.month,
-              checkinAt.date,
-              checkinAt.hour,
-              checkinAt.minute,
-              0,
-              0
-            ).toISOString()
-          : new Date().toISOString(),
-      }))
-    ).then();
+  checkinRentals: RentalRepository['checkinRentals'] = (formValues) => {
+    return rentalCheckin(toApiRentalCheckin(formValues)).then();
   };
 
   checkoutRentals: RentalRepository['checkoutRentals'] = (formValues) => {
-    return rentalCheckout(formValues.rentals.map((rental) => rental.id)).then(
+    return rentalCheckout(toApiRentalCheckout(formValues)).then(
       ({ data: { id } }) => ({ transactionId: id })
     );
   };
@@ -79,7 +57,7 @@ export class ApiRentalRepository implements RentalRepository {
     this.client.removeQueries({ queryKey: rentalListQueryKey(params) });
 
     return {
-      rentals: res?.data.map(rentalTransformers.rental) ?? [],
+      rentals: res?.data.map(toRental) ?? [],
       totalItem: res?.meta.total ?? 0,
     };
   };
@@ -117,21 +95,9 @@ export class ApiRentalRepository implements RentalRepository {
       })
       .then((data) => {
         return {
-          rentals: data.data.map(rentalTransformers.rental),
+          rentals: data.data.map(toRental),
           totalItem: data.meta.total,
         };
       });
   };
 }
-
-export const rentalTransformers = {
-  rental: (rental: ApiRental): Rental => ({
-    id: rental.id,
-    code: rental.code,
-    name: rental.name,
-    checkinAt: rental.checkinAt,
-    checkoutAt: rental.checkoutAt ?? null,
-    createdAt: rental.createdAt,
-    variant: variantTransformers.variant(rental.variant),
-  }),
-};
