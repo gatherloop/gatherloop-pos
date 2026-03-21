@@ -30,9 +30,11 @@ const withTamagui: Decorator = (Story, context) => {
   }, [theme]);
 
   return (
-    // key forces TamaguiProvider to remount on theme change so CSS variables
-    // for the new theme are properly injected into the document.
-    <TamaguiProvider key={theme} config={storybookTamaguiConfig} defaultTheme={theme}>
+    // TamaguiProvider is intentionally kept stable (no key prop) because it
+    // injects CSS for ALL themes on mount. Remounting it on every toggle
+    // causes React DOM reconciliation errors ("insertBefore" NotFoundError).
+    // The Theme component alone is sufficient to switch the active theme.
+    <TamaguiProvider config={storybookTamaguiConfig} defaultTheme="light">
       <Theme name={theme}>
         <PortalProvider shouldAddRootHost>
           <Story />
