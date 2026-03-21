@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Separator, SizableText, Tabs as TamaguiTabs } from 'tamagui';
+import { SizableText, Tabs as TamaguiTabs } from 'tamagui';
 
 export type TabsProps = {
   tabs: {
@@ -20,31 +20,21 @@ export const Tabs = ({ tabs, defaultValue }: TabsProps) => {
       defaultValue={defaultValue}
       orientation="horizontal"
       flexDirection="column"
-      borderRadius="$4"
-      overflow="hidden"
-      borderColor="$borderColor"
       flex={1}
     >
-      <TamaguiTabs.List padded gap="$3" flexWrap="wrap">
+      <TamaguiTabs.List gap="$1" flexWrap="wrap">
         {shownTabs.map(({ value, label }) => (
-          <TamaguiTabs.Tab key={value} value={value} radiused>
+          <TamaguiTabs.Tab key={value} value={value} radiused borderWidth={0}>
             <SizableText fontFamily="$body">{label}</SizableText>
           </TamaguiTabs.Tab>
         ))}
       </TamaguiTabs.List>
-      <Separator />
       {shownTabs.map(({ value, content }) => (
         <TamaguiTabs.Content
-          backgroundColor="$background"
           key={value}
           value={value}
-          padding="$2"
           flex={1}
-          borderColor="$background"
-          borderRadius="$2"
-          borderTopLeftRadius={0}
-          borderTopRightRadius={0}
-          borderWidth="$2"
+          paddingTop="$3"
         >
           {content}
         </TamaguiTabs.Content>

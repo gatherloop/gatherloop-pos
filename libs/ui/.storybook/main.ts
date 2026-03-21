@@ -64,6 +64,16 @@ const config: StorybookConfig = {
             find: /^react-native$/,
             replacement: 'react-native-web',
           },
+          // Stub out solito router and link — these wrap expo-router/next/react-navigation
+          // which are not available in the Storybook web environment.
+          {
+            find: /^solito\/router$/,
+            replacement: path.resolve(__dirname, './mocks/solito-router.js'),
+          },
+          {
+            find: /^solito\/link$/,
+            replacement: path.resolve(__dirname, './mocks/solito-link.js'),
+          },
           // Stub out react-native-reanimated and moti — these are native
           // animation libraries that cannot run on web. @tamagui/animations-moti
           // imports them, but tamagui falls back to CSS transitions in browsers
