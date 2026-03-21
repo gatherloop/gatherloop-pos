@@ -57,15 +57,17 @@ export const Populated: Story = {
   render: () => <PopulatedStory />,
 };
 
+const SubmitDisabledStory = () => {
+  const form = useForm<SupplierForm>({ defaultValues });
+  return (
+    <SupplierFormView
+      form={form}
+      onSubmit={fn()}
+      isSubmitDisabled={true}
+    />
+  );
+};
+
 export const SubmitDisabled: Story = {
-  render: () => {
-    const form = useForm<SupplierForm>({ defaultValues });
-    return (
-      <SupplierFormView
-        form={form}
-        onSubmit={fn()}
-        isSubmitDisabled={true}
-      />
-    );
-  },
+  render: () => <SubmitDisabledStory />,
 };

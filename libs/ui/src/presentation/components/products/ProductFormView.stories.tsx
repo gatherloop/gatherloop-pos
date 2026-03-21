@@ -104,38 +104,42 @@ export const Populated: Story = {
   render: () => <PopulatedStory />,
 };
 
+const LoadingStory = () => {
+  const form = useForm<ProductForm>({ defaultValues });
+  return (
+    <ProductFormView
+      variant={{ type: 'loading' }}
+      form={form}
+      variants={[]}
+      onSubmit={fn()}
+      categorySelectOptions={defaultCategoryOptions}
+      isSubmitDisabled={true}
+      onRetryButtonPress={fn()}
+    />
+  );
+};
+
+const ErrorStory = () => {
+  const form = useForm<ProductForm>({ defaultValues });
+  return (
+    <ProductFormView
+      variant={{ type: 'error' }}
+      form={form}
+      variants={[]}
+      onSubmit={fn()}
+      categorySelectOptions={defaultCategoryOptions}
+      isSubmitDisabled={true}
+      onRetryButtonPress={fn()}
+    />
+  );
+};
+
 export const Loading: Story = {
-  render: () => {
-    const form = useForm<ProductForm>({ defaultValues });
-    return (
-      <ProductFormView
-        variant={{ type: 'loading' }}
-        form={form}
-        variants={[]}
-        onSubmit={fn()}
-        categorySelectOptions={defaultCategoryOptions}
-        isSubmitDisabled={true}
-        onRetryButtonPress={fn()}
-      />
-    );
-  },
+  render: () => <LoadingStory />,
 };
 
 export const Error: Story = {
-  render: () => {
-    const form = useForm<ProductForm>({ defaultValues });
-    return (
-      <ProductFormView
-        variant={{ type: 'error' }}
-        form={form}
-        variants={[]}
-        onSubmit={fn()}
-        categorySelectOptions={defaultCategoryOptions}
-        isSubmitDisabled={true}
-        onRetryButtonPress={fn()}
-      />
-    );
-  },
+  render: () => <ErrorStory />,
 };
 
 export const SubmitDisabled: Story = {

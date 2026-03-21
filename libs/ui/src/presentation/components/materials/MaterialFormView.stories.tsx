@@ -57,15 +57,17 @@ export const Populated: Story = {
   render: () => <PopulatedStory />,
 };
 
+const SubmitDisabledStory = () => {
+  const form = useForm<MaterialForm>({ defaultValues });
+  return (
+    <MaterialFormView
+      form={form}
+      onSubmit={fn()}
+      isSubmitDisabled={true}
+    />
+  );
+};
+
 export const SubmitDisabled: Story = {
-  render: () => {
-    const form = useForm<MaterialForm>({ defaultValues });
-    return (
-      <MaterialFormView
-        form={form}
-        onSubmit={fn()}
-        isSubmitDisabled={true}
-      />
-    );
-  },
+  render: () => <SubmitDisabledStory />,
 };

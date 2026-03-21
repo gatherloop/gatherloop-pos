@@ -40,22 +40,24 @@ export const Default: Story = {
   render: () => <DefaultStory />,
 };
 
+const SubmitDisabledStory = () => {
+  const form = useForm<RentalCheckoutForm>({ defaultValues });
+  const rentalsFieldArray = useFieldArray({
+    control: form.control,
+    name: 'rentals',
+    keyName: 'key',
+  });
+  return (
+    <RentalCheckoutFormView
+      form={form}
+      onSubmit={fn()}
+      isSubmitDisabled={true}
+      RentalItemSelect={() => <Text color="$color">+ Add Rental Item</Text>}
+      rentalsFieldArray={rentalsFieldArray}
+    />
+  );
+};
+
 export const SubmitDisabled: Story = {
-  render: () => {
-    const form = useForm<RentalCheckoutForm>({ defaultValues });
-    const rentalsFieldArray = useFieldArray({
-      control: form.control,
-      name: 'rentals',
-      keyName: 'key',
-    });
-    return (
-      <RentalCheckoutFormView
-        form={form}
-        onSubmit={fn()}
-        isSubmitDisabled={true}
-        RentalItemSelect={() => <Text color="$color">+ Add Rental Item</Text>}
-        rentalsFieldArray={rentalsFieldArray}
-      />
-    );
-  },
+  render: () => <SubmitDisabledStory />,
 };

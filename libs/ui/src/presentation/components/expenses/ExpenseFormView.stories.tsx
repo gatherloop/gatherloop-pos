@@ -78,36 +78,40 @@ export const Populated: Story = {
   render: () => <PopulatedStory />,
 };
 
+const LoadingStory = () => {
+  const form = useForm<ExpenseForm>({ defaultValues });
+  return (
+    <ExpenseFormView
+      variant={{ type: 'loading' }}
+      form={form}
+      onSubmit={fn()}
+      walletSelectOptions={walletOptions}
+      budgetSelectOptions={budgetOptions}
+      isSubmitDisabled={true}
+      onRetryButtonPress={fn()}
+    />
+  );
+};
+
+const ErrorStory = () => {
+  const form = useForm<ExpenseForm>({ defaultValues });
+  return (
+    <ExpenseFormView
+      variant={{ type: 'error' }}
+      form={form}
+      onSubmit={fn()}
+      walletSelectOptions={walletOptions}
+      budgetSelectOptions={budgetOptions}
+      isSubmitDisabled={true}
+      onRetryButtonPress={fn()}
+    />
+  );
+};
+
 export const Loading: Story = {
-  render: () => {
-    const form = useForm<ExpenseForm>({ defaultValues });
-    return (
-      <ExpenseFormView
-        variant={{ type: 'loading' }}
-        form={form}
-        onSubmit={fn()}
-        walletSelectOptions={walletOptions}
-        budgetSelectOptions={budgetOptions}
-        isSubmitDisabled={true}
-        onRetryButtonPress={fn()}
-      />
-    );
-  },
+  render: () => <LoadingStory />,
 };
 
 export const Error: Story = {
-  render: () => {
-    const form = useForm<ExpenseForm>({ defaultValues });
-    return (
-      <ExpenseFormView
-        variant={{ type: 'error' }}
-        form={form}
-        onSubmit={fn()}
-        walletSelectOptions={walletOptions}
-        budgetSelectOptions={budgetOptions}
-        isSubmitDisabled={true}
-        onRetryButtonPress={fn()}
-      />
-    );
-  },
+  render: () => <ErrorStory />,
 };

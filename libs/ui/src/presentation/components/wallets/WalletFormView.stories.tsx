@@ -59,30 +59,34 @@ export const Populated: Story = {
   render: () => <PopulatedStory />,
 };
 
+const LoadingStory = () => {
+  const form = useForm<WalletForm>({ defaultValues });
+  return (
+    <WalletFormView
+      variant={{ type: 'loading' }}
+      form={form}
+      onSubmit={fn()}
+      isSubmitDisabled={true}
+    />
+  );
+};
+
+const ErrorStory = () => {
+  const form = useForm<WalletForm>({ defaultValues });
+  return (
+    <WalletFormView
+      variant={{ type: 'error', onRetryButtonPress: fn() }}
+      form={form}
+      onSubmit={fn()}
+      isSubmitDisabled={true}
+    />
+  );
+};
+
 export const Loading: Story = {
-  render: () => {
-    const form = useForm<WalletForm>({ defaultValues });
-    return (
-      <WalletFormView
-        variant={{ type: 'loading' }}
-        form={form}
-        onSubmit={fn()}
-        isSubmitDisabled={true}
-      />
-    );
-  },
+  render: () => <LoadingStory />,
 };
 
 export const Error: Story = {
-  render: () => {
-    const form = useForm<WalletForm>({ defaultValues });
-    return (
-      <WalletFormView
-        variant={{ type: 'error', onRetryButtonPress: fn() }}
-        form={form}
-        onSubmit={fn()}
-        isSubmitDisabled={true}
-      />
-    );
-  },
+  render: () => <ErrorStory />,
 };

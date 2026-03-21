@@ -59,16 +59,18 @@ export const Populated: Story = {
   render: () => <PopulatedStory />,
 };
 
+const SubmitDisabledStory = () => {
+  const form = useForm<WalletTransferForm>({ defaultValues });
+  return (
+    <WalletTransferFormView
+      form={form}
+      onSubmit={fn()}
+      walletSelectOptions={walletOptions}
+      isSubmitDisabled={true}
+    />
+  );
+};
+
 export const SubmitDisabled: Story = {
-  render: () => {
-    const form = useForm<WalletTransferForm>({ defaultValues });
-    return (
-      <WalletTransferFormView
-        form={form}
-        onSubmit={fn()}
-        walletSelectOptions={walletOptions}
-        isSubmitDisabled={true}
-      />
-    );
-  },
+  render: () => <SubmitDisabledStory />,
 };

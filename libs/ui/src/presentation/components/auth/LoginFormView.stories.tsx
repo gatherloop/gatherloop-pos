@@ -50,15 +50,17 @@ export const Prefilled: Story = {
   render: () => <PrefilledStory />,
 };
 
+const SubmitDisabledStory = () => {
+  const form = useForm<AuthLoginForm>({ defaultValues });
+  return (
+    <LoginFormView
+      form={form}
+      onSubmit={fn()}
+      isSubmitDisabled={true}
+    />
+  );
+};
+
 export const SubmitDisabled: Story = {
-  render: () => {
-    const form = useForm<AuthLoginForm>({ defaultValues });
-    return (
-      <LoginFormView
-        form={form}
-        onSubmit={fn()}
-        isSubmitDisabled={true}
-      />
-    );
-  },
+  render: () => <SubmitDisabledStory />,
 };

@@ -73,43 +73,47 @@ export const Populated: Story = {
   render: () => <PopulatedStory />,
 };
 
+const LoadingStory = () => {
+  const form = useForm<CalculationForm>({ defaultValues });
+  return (
+    <CalculationFormView
+      variant={{ type: 'loading' }}
+      form={form}
+      onSubmit={fn()}
+      walletSelectOptions={walletOptions}
+      getTotalWallet={(totalWallet) => totalWallet}
+      isSubmitDisabled={true}
+      onRetryButtonPress={fn()}
+    />
+  );
+};
+
+const DisabledStory = () => {
+  const form = useForm<CalculationForm>({
+    defaultValues: {
+      walletId: 1,
+      totalWallet: 5000000,
+      calculationItems: [{ price: 100000, amount: 10 }],
+    },
+  });
+  return (
+    <CalculationFormView
+      variant={{ type: 'loaded' }}
+      form={form}
+      onSubmit={fn()}
+      walletSelectOptions={walletOptions}
+      getTotalWallet={(totalWallet) => totalWallet}
+      isSubmitDisabled={false}
+      isFormDisabled={true}
+      onRetryButtonPress={fn()}
+    />
+  );
+};
+
 export const Loading: Story = {
-  render: () => {
-    const form = useForm<CalculationForm>({ defaultValues });
-    return (
-      <CalculationFormView
-        variant={{ type: 'loading' }}
-        form={form}
-        onSubmit={fn()}
-        walletSelectOptions={walletOptions}
-        getTotalWallet={(totalWallet) => totalWallet}
-        isSubmitDisabled={true}
-        onRetryButtonPress={fn()}
-      />
-    );
-  },
+  render: () => <LoadingStory />,
 };
 
 export const Disabled: Story = {
-  render: () => {
-    const form = useForm<CalculationForm>({
-      defaultValues: {
-        walletId: 1,
-        totalWallet: 5000000,
-        calculationItems: [{ price: 100000, amount: 10 }],
-      },
-    });
-    return (
-      <CalculationFormView
-        variant={{ type: 'loaded' }}
-        form={form}
-        onSubmit={fn()}
-        walletSelectOptions={walletOptions}
-        getTotalWallet={(totalWallet) => totalWallet}
-        isSubmitDisabled={false}
-        isFormDisabled={true}
-        onRetryButtonPress={fn()}
-      />
-    );
-  },
+  render: () => <DisabledStory />,
 };
