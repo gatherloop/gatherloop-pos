@@ -24,7 +24,7 @@ export const Tabs = ({ tabs, defaultValue }: TabsProps) => {
     >
       <TamaguiTabs.List gap="$1" flexWrap="wrap">
         {shownTabs.map(({ value, label }) => (
-          <TamaguiTabs.Tab key={value} value={value} radiused>
+          <TamaguiTabs.Tab key={value} value={value} radiused borderWidth={0}>
             <SizableText fontFamily="$body">{label}</SizableText>
           </TamaguiTabs.Tab>
         ))}
