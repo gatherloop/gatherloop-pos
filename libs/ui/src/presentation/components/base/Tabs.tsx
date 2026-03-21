@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Separator, SizableText, Tabs as TamaguiTabs } from 'tamagui';
+import { SizableText, Tabs as TamaguiTabs } from 'tamagui';
 
 export type TabsProps = {
   tabs: {
@@ -29,12 +29,12 @@ export const Tabs = ({ tabs, defaultValue }: TabsProps) => {
           </TamaguiTabs.Tab>
         ))}
       </TamaguiTabs.List>
-      <Separator />
       {shownTabs.map(({ value, content }) => (
         <TamaguiTabs.Content
           key={value}
           value={value}
           flex={1}
+          paddingTop="$3"
         >
           {content}
         </TamaguiTabs.Content>
