@@ -1,6 +1,6 @@
 import type { Preview, Decorator } from '@storybook/react';
 import React, { useEffect } from 'react';
-import { PortalProvider, TamaguiProvider, createTamagui } from 'tamagui';
+import { TamaguiProvider, createTamagui } from 'tamagui';
 import { config } from '@tamagui/config/v3';
 import { createAnimations } from '@tamagui/animations-css';
 
@@ -37,10 +37,17 @@ const withTamagui: Decorator = (Story, context) => {
     // TamaguiProvider is never remounted — it stays stable for the entire
     // Storybook session. Theme switching is handled purely via CSS class
     // manipulation above, keeping React's tree intact.
+    //
+    // PortalProvider is intentionally omitted: Storybook provides a new
+    // Story reference on every globals update, causing React to unmount and
+    // remount the story subtree. PortalProvider with shouldAddRootHost
+    // creates DOM nodes outside #storybook-root; when those portal nodes are
+    // cleaned up during the unmount/remount cycle, React's insertBefore
+    // call fails with a NotFoundError. Without PortalProvider, Tamagui
+    // portal-based components (Sheet, Dialog, AlertDialog, etc.) fall back
+    // to rendering into document.body, which is always stable.
     <TamaguiProvider config={storybookTamaguiConfig} defaultTheme="light">
-      <PortalProvider shouldAddRootHost>
-        <Story />
-      </PortalProvider>
+      <Story />
     </TamaguiProvider>
   );
 };
