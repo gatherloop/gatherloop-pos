@@ -9,11 +9,9 @@ import {
   TransactionList200,
   transactionListQueryKey,
   transactionUpdateById,
-  Transaction as ApiTransaction,
   transactionPayById,
   transactionStatisticsQueryKey,
   transactionStatistics,
-  TransactionStatistic as ApiTransactionStatistic,
   TransactionStatistics200,
   TransactionListQueryParams,
   transactionUnpayById,
@@ -24,6 +22,7 @@ import {
   TransactionStatistic,
 } from '../../domain';
 import { RequestConfig } from '@kubb/swagger-client/client';
+import { toApiTransaction, toTransaction, toTransactionStatistic } from './transaction.transformer';
 
 export class ApiTransactionRepository implements TransactionRepository {
   client: QueryClient;
@@ -42,7 +41,7 @@ export class ApiTransactionRepository implements TransactionRepository {
         queryKey: transactionStatisticsQueryKey({ groupBy }),
       });
 
-      return res?.data.map(transactionTransformers.transactionStatistic) ?? [];
+      return res?.data.map(toTransactionStatistic) ?? [];
     };
 
   fetchTransactionStatisticList = (
@@ -54,7 +53,7 @@ export class ApiTransactionRepository implements TransactionRepository {
         queryKey: transactionStatisticsQueryKey({ groupBy }),
         queryFn: () => transactionStatistics({ groupBy }, options),
       })
-      .then((data) => data.data.map(transactionTransformers.transactionStatistic));
+      .then((data) => data.data.map(toTransactionStatistic));
   };
 
   payTransaction: TransactionRepository['payTransaction'] = (
@@ -80,25 +79,23 @@ export class ApiTransactionRepository implements TransactionRepository {
         queryKey: transactionFindByIdQueryKey(transactionId),
         queryFn: () => transactionFindById(transactionId, options),
       })
-      .then(({ data }) => transactionTransformers.transaction(data));
+      .then(({ data }) => toTransaction(data));
   };
 
   createTransaction: TransactionRepository['createTransaction'] = (
     formValues
   ) => {
+    const body = toApiTransaction(formValues);
     return transactionCreate({
-      name: formValues.name,
-      orderNumber: formValues.orderNumber,
-      transactionItems: formValues.transactionItems.map((item) => ({
+      name: body.name,
+      orderNumber: body.orderNumber,
+      transactionItems: body.transactionItems.map((item) => ({
         amount: item.amount,
-        variantId: item.variant.id,
+        variantId: item.variantId,
         discountAmount: item.discountAmount,
         note: item.note,
       })),
-      transactionCoupons: formValues.transactionCoupons.map((item) => ({
-        id: item.id,
-        couponId: item.coupon.id,
-      })),
+      transactionCoupons: body.transactionCoupons,
     }).then(({ data }) => ({ transactionId: data.id }));
   };
 
@@ -106,21 +103,7 @@ export class ApiTransactionRepository implements TransactionRepository {
     formValues,
     transactionId
   ) => {
-    return transactionUpdateById(transactionId, {
-      name: formValues.name,
-      orderNumber: formValues.orderNumber,
-      transactionItems: formValues.transactionItems.map((item) => ({
-        id: item.id,
-        amount: item.amount,
-        variantId: item.variant.id,
-        discountAmount: item.discountAmount,
-        note: item.note,
-      })),
-      transactionCoupons: formValues.transactionCoupons.map((item) => ({
-        id: item.id,
-        couponId: item.coupon.id,
-      })),
-    }).then();
+    return transactionUpdateById(transactionId, toApiTransaction(formValues)).then();
   };
 
   deleteTransactionById: TransactionRepository['deleteTransactionById'] = (
@@ -154,7 +137,7 @@ export class ApiTransactionRepository implements TransactionRepository {
     this.client.removeQueries({ queryKey: transactionListQueryKey(params) });
 
     return {
-      transactions: res?.data.map(transactionTransformers.transaction) ?? [],
+      transactions: res?.data.map(toTransaction) ?? [],
       totalItem: res?.meta.total ?? 0,
     };
   };
@@ -195,98 +178,9 @@ export class ApiTransactionRepository implements TransactionRepository {
       })
       .then((data) => {
         return {
-          transactions: data.data.map(transactionTransformers.transaction),
+          transactions: data.data.map(toTransaction),
           totalItem: data.meta.total,
         };
       });
   };
 }
-
-export const transactionTransformers = {
-  transactionStatistic: (
-    transactionStatistic: ApiTransactionStatistic
-  ): TransactionStatistic => ({
-    date: transactionStatistic.date,
-    total: transactionStatistic.total,
-    totalIncome: transactionStatistic.totalIncome,
-  }),
-  transaction: (transaction: ApiTransaction): Transaction => ({
-    id: transaction.id,
-    createdAt: transaction.createdAt,
-    name: transaction.name,
-    orderNumber: transaction.orderNumber,
-    total: transaction.total,
-    totalIncome: transaction.totalIncome,
-    transactionItems: transaction.transactionItems.map((item) => ({
-      amount: item.amount,
-      id: item.id,
-      price: item.price,
-      discountAmount: item.discountAmount,
-      subtotal: item.subtotal,
-      note: item.note,
-      variant: {
-        createdAt: item.variant.createdAt,
-        id: item.variant.id,
-        name: item.variant.name,
-        price: item.variant.price,
-        materials: (item.variant.materials ?? []).map((variantMaterial) => ({
-          id: variantMaterial.id,
-          materialId: variantMaterial.materialId,
-          amount: variantMaterial.amount,
-          material: {
-            id: variantMaterial.material.id,
-            name: variantMaterial.material.name,
-            price: variantMaterial.material.price,
-            unit: variantMaterial.material.unit,
-            createdAt: variantMaterial.material.createdAt,
-            weeklyUsage: variantMaterial.material.weeklyUsage,
-          },
-        })),
-        description: item.variant.description ?? '',
-        product: {
-          category: item.variant.product.category,
-          createdAt: item.variant.product.createdAt,
-          id: item.variant.product.id,
-          name: item.variant.product.name,
-          description: item.variant.product.description ?? '',
-          options: item.variant.product.options,
-          imageUrl: item.variant.product.imageUrl,
-          saleType: item.variant.product.saleType,
-        },
-        values: item.variant.values.map((value) => ({
-          id: value.id,
-          variantId: value.variantId,
-          optionValueId: value.optionValueId,
-          optionValue: {
-            id: value.optionValue.id,
-            name: value.optionValue.name,
-          },
-        })),
-      },
-    })),
-    transactionCoupons: transaction.transactionCoupons.map((item) => ({
-      id: item.id,
-      type: item.type,
-      amount: item.amount,
-      coupon: {
-        id: item.coupon.id,
-        amount: item.coupon.amount,
-        code: item.coupon.code,
-        type: item.coupon.type,
-        createdAt: item.coupon.createdAt,
-      },
-    })),
-    paidAt: transaction.paidAt ?? null,
-    wallet: transaction.wallet
-      ? {
-          balance: transaction.wallet.balance,
-          createdAt: transaction.wallet.createdAt,
-          id: transaction.wallet.id,
-          name: transaction.wallet.name,
-          paymentCostPercentage: transaction.wallet.paymentCostPercentage,
-          isCashless: transaction.wallet.isCashless,
-        }
-      : null,
-    paidAmount: transaction.paidAmount,
-  }),
-};

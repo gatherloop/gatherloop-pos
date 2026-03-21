@@ -8,11 +8,11 @@ import {
   calculationList,
   calculationListQueryKey,
   calculationUpdateById,
-  Calculation as ApiCalculation,
   calculationCompleteById,
 } from '../../../../api-contract/src';
 import { Calculation, CalculationRepository } from '../../domain';
 import { RequestConfig } from '@kubb/swagger-client/client';
+import { toApiCalculation, toCalculation } from './calculation.transformer';
 
 export class ApiCalculationRepository implements CalculationRepository {
   client: QueryClient;
@@ -30,26 +30,20 @@ export class ApiCalculationRepository implements CalculationRepository {
         queryKey: calculationFindByIdQueryKey(calculationId),
         queryFn: () => calculationFindById(calculationId, options),
       })
-      .then(({ data }) => calculationTransformers.calculation(data));
+      .then(({ data }) => toCalculation(data));
   };
 
   createCalculation: CalculationRepository['createCalculation'] = (
     formValues
   ) => {
-    return calculationCreate({
-      calculationItems: formValues.calculationItems,
-      walletId: formValues.walletId,
-    }).then();
+    return calculationCreate(toApiCalculation(formValues)).then();
   };
 
   updateCalculation: CalculationRepository['updateCalculation'] = (
     formValues,
     calculationId
   ) => {
-    return calculationUpdateById(calculationId, {
-      calculationItems: formValues.calculationItems,
-      walletId: formValues.walletId,
-    }).then();
+    return calculationUpdateById(calculationId, toApiCalculation(formValues)).then();
   };
 
   deleteCalculationById: CalculationRepository['deleteCalculationById'] = (
@@ -74,30 +68,6 @@ export class ApiCalculationRepository implements CalculationRepository {
         queryFn: () =>
           calculationList({ sortBy: 'created_at', order: 'desc' }, options),
       })
-      .then((data) => data.data.map(calculationTransformers.calculation));
+      .then((data) => data.data.map(toCalculation));
   };
 }
-
-export const calculationTransformers = {
-  calculation: (calculation: ApiCalculation): Calculation => ({
-    id: calculation.id,
-    createdAt: calculation.createdAt,
-    updatedAt: calculation.updatedAt,
-    completedAt: calculation.completedAt ?? null,
-    calculationItems: calculation.calculationItems.map((item) => ({
-      id: item.id,
-      amount: item.amount,
-      price: item.price,
-    })),
-    totalCalculation: calculation.totalCalculation,
-    totalWallet: calculation.totalWallet,
-    wallet: {
-      balance: calculation.wallet.balance,
-      createdAt: calculation.createdAt,
-      id: calculation.wallet.id,
-      name: calculation.wallet.name,
-      paymentCostPercentage: calculation.wallet.paymentCostPercentage,
-      isCashless: calculation.wallet.isCashless,
-    },
-  }),
-};

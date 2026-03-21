@@ -9,11 +9,10 @@ import {
   VariantList200,
   variantListQueryKey,
   variantUpdateById,
-  Variant as ApiVariant,
-  Category as ApiCategory,
 } from '../../../../api-contract/src';
-import { Category, Variant, VariantRepository } from '../../domain';
+import { Variant, VariantRepository } from '../../domain';
 import { RequestConfig } from '@kubb/swagger-client/client';
+import { toApiVariant, toVariant } from './variant.transformer';
 
 export class ApiVariantRepository implements VariantRepository {
   client: QueryClient;
@@ -31,46 +30,18 @@ export class ApiVariantRepository implements VariantRepository {
         queryKey: variantFindByIdQueryKey(variantId),
         queryFn: () => variantFindById(variantId, options),
       })
-      .then(({ data }) => variantTransformers.variant(data));
+      .then(({ data }) => toVariant(data));
   };
 
   createVariant: VariantRepository['createVariant'] = (formValues) => {
-    return variantCreate({
-      name: formValues.name,
-      productId: formValues.productId,
-      price: formValues.price,
-      materials: formValues.materials.map(({ materialId, amount, id }) => ({
-        id,
-        amount,
-        materialId: materialId,
-      })),
-      description: formValues.description,
-      values: formValues.values.map(({ id, optionValueId }) => ({
-        id,
-        optionValueId,
-      })),
-    }).then();
+    return variantCreate(toApiVariant(formValues)).then();
   };
 
   updateVariant: VariantRepository['updateVariant'] = (
     formValues,
     variantId
   ) => {
-    return variantUpdateById(variantId, {
-      name: formValues.name,
-      productId: formValues.productId,
-      price: formValues.price,
-      materials: formValues.materials.map(({ materialId, amount, id }) => ({
-        id,
-        amount,
-        materialId: materialId,
-      })),
-      description: formValues.description,
-      values: formValues.values.map(({ id, optionValueId }) => ({
-        id,
-        optionValueId,
-      })),
-    }).then();
+    return variantUpdateById(variantId, toApiVariant(formValues)).then();
   };
 
   deleteVariantById: VariantRepository['deleteVariantById'] = (variantId) => {
@@ -103,7 +74,7 @@ export class ApiVariantRepository implements VariantRepository {
     this.client.removeQueries({ queryKey: variantListQueryKey(params) });
 
     return {
-      variants: res?.data.map(variantTransformers.variant) ?? [],
+      variants: res?.data.map(toVariant) ?? [],
       totalItem: res?.meta.total ?? 0,
     };
   };
@@ -136,61 +107,8 @@ export class ApiVariantRepository implements VariantRepository {
         queryFn: () => variantList(queryParams, options),
       })
       .then((data) => ({
-        variants: data.data.map(variantTransformers.variant),
+        variants: data.data.map(toVariant),
         totalItem: data.meta.total,
       }));
   };
 }
-export const variantTransformers = {
-  category: (category: ApiCategory): Category => ({
-    id: category.id,
-    name: category.name,
-    createdAt: category.createdAt,
-  }),
-  variant: (variant: ApiVariant): Variant => ({
-    id: variant.id,
-    createdAt: variant.createdAt,
-    name: variant.name,
-    price: variant.price,
-    materials: variant.materials.map<Variant['materials'][number]>(
-      ({ amount, material, id }) => ({
-        id,
-        materialId: material.id,
-        material: {
-          id: material.id,
-          name: material.name,
-          description: material.description ?? '',
-          price: material.price,
-          unit: material.unit,
-          createdAt: material.createdAt,
-          weeklyUsage: material.weeklyUsage,
-        },
-        amount,
-      })
-    ),
-    description: variant.description ?? '',
-    product: {
-      category: {
-        createdAt: variant.product.category.createdAt,
-        id: variant.product.category.id,
-        name: variant.product.category.name,
-      },
-      createdAt: variant.product.createdAt,
-      id: variant.product.id,
-      name: variant.product.name,
-      description: variant.product.description ?? '',
-      options: variant.product.options,
-      imageUrl: variant.product.imageUrl,
-      saleType: variant.product.saleType,
-    },
-    values: variant.values.map((value) => ({
-      id: value.id,
-      variantId: value.variantId,
-      optionValueId: value.optionValue.id,
-      optionValue: {
-        id: value.optionValue.id,
-        name: value.optionValue.name,
-      },
-    })),
-  }),
-};

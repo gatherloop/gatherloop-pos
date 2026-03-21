@@ -7,14 +7,13 @@ import {
   walletList,
   walletListQueryKey,
   walletUpdateById,
-  Wallet as ApiWallet,
-  WalletTransfer as ApiWalletTransfer,
   walletTransferListQueryKey,
   walletTransferList,
   walletTransferCreate,
 } from '../../../../api-contract/src';
 import { Wallet, WalletRepository, WalletTransfer } from '../../domain';
 import { RequestConfig } from '@kubb/swagger-client/client';
+import { toApiWallet, toApiWalletTransfer, toWallet, toWalletTransfer } from './wallet.transformer';
 
 export class ApiWalletRepository implements WalletRepository {
   client: QueryClient;
@@ -43,15 +42,16 @@ export class ApiWalletRepository implements WalletRepository {
             options
           ),
       })
-      .then((data) => data.data.map(walletTransformers.walletTransfer));
+      .then((data) => data.data.map(toWalletTransfer));
   };
 
   createWalletTransfer: WalletRepository['createWalletTransfer'] = (
     formValues
   ) => {
-    return walletTransferCreate(formValues.fromWalletId, {
-      amount: formValues.amount,
-      toWalletId: formValues.toWalletId,
+    const body = toApiWalletTransfer(formValues);
+    return walletTransferCreate(body.fromWalletId, {
+      amount: body.amount,
+      toWalletId: body.toWalletId,
     }).then();
   };
 
@@ -61,15 +61,15 @@ export class ApiWalletRepository implements WalletRepository {
         queryKey: walletFindByIdQueryKey(walletId),
         queryFn: () => walletFindById(walletId, options),
       })
-      .then(({ data }) => walletTransformers.wallet(data));
+      .then(({ data }) => toWallet(data));
   };
 
   createWallet: WalletRepository['createWallet'] = (formValues) => {
-    return walletCreate(formValues).then();
+    return walletCreate(toApiWallet(formValues)).then();
   };
 
   updateWallet: WalletRepository['updateWallet'] = (formValues, walletId) => {
-    return walletUpdateById(walletId, formValues).then();
+    return walletUpdateById(walletId, toApiWallet(formValues)).then();
   };
 
   fetchWalletList = (options?: Partial<RequestConfig>) => {
@@ -78,38 +78,6 @@ export class ApiWalletRepository implements WalletRepository {
         queryKey: walletListQueryKey(),
         queryFn: () => walletList(options),
       })
-      .then((data) => data.data.map(walletTransformers.wallet));
+      .then((data) => data.data.map(toWallet));
   };
 }
-
-export const walletTransformers = {
-  wallet: (wallet: ApiWallet): Wallet => ({
-    id: wallet.id,
-    createdAt: wallet.createdAt,
-    name: wallet.name,
-    balance: wallet.balance,
-    paymentCostPercentage: wallet.paymentCostPercentage,
-    isCashless: wallet.isCashless,
-  }),
-  walletTransfer: (walletTransfer: ApiWalletTransfer): WalletTransfer => ({
-    id: walletTransfer.id,
-    amount: walletTransfer.amount,
-    createdAt: walletTransfer.createdAt,
-    fromWallet: {
-      balance: walletTransfer.fromWallet.balance,
-      createdAt: walletTransfer.fromWallet.createdAt,
-      id: walletTransfer.fromWallet.id,
-      name: walletTransfer.fromWallet.name,
-      paymentCostPercentage: walletTransfer.fromWallet.paymentCostPercentage,
-      isCashless: walletTransfer.fromWallet.isCashless,
-    },
-    toWallet: {
-      balance: walletTransfer.toWallet.balance,
-      createdAt: walletTransfer.toWallet.createdAt,
-      id: walletTransfer.toWallet.id,
-      name: walletTransfer.toWallet.name,
-      paymentCostPercentage: walletTransfer.toWallet.paymentCostPercentage,
-      isCashless: walletTransfer.toWallet.isCashless,
-    },
-  }),
-};

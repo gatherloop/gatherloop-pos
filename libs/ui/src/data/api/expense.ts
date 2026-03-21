@@ -8,12 +8,12 @@ import {
   expenseList,
   expenseListQueryKey,
   expenseUpdateById,
-  Expense as ApiExpense,
   ExpenseListQueryParams,
   ExpenseList200,
 } from '../../../../api-contract/src';
 import { Expense, ExpenseRepository } from '../../domain';
 import { RequestConfig } from '@kubb/swagger-client/client';
+import { toApiExpense, toExpense } from './expense.transformer';
 
 export class ApiExpenseRepository implements ExpenseRepository {
   client: QueryClient;
@@ -28,18 +28,18 @@ export class ApiExpenseRepository implements ExpenseRepository {
         queryKey: expenseFindByIdQueryKey(expenseId),
         queryFn: () => expenseFindById(expenseId, options),
       })
-      .then(({ data }) => expenseTransformers.expense(data));
+      .then(({ data }) => toExpense(data));
   };
 
   createExpense: ExpenseRepository['createExpense'] = (formValues) => {
-    return expenseCreate(formValues).then();
+    return expenseCreate(toApiExpense(formValues)).then();
   };
 
   updateExpense: ExpenseRepository['updateExpense'] = (
     formValues,
     expenseId
   ) => {
-    return expenseUpdateById(expenseId, formValues).then();
+    return expenseUpdateById(expenseId, toApiExpense(formValues)).then();
   };
 
   deleteExpenseById: ExpenseRepository['deleteExpenseById'] = (expenseId) => {
@@ -81,7 +81,7 @@ export class ApiExpenseRepository implements ExpenseRepository {
         queryFn: () => expenseList(params, options),
       })
       .then((data) => ({
-        expenses: data.data.map(expenseTransformers.expense),
+        expenses: data.data.map(toExpense),
         totalItem: data.meta.total,
       }));
   };
@@ -109,38 +109,8 @@ export class ApiExpenseRepository implements ExpenseRepository {
     )?.data;
     this.client.removeQueries({ queryKey: expenseListQueryKey(params) });
     return {
-      expenses: res?.data.map(expenseTransformers.expense) ?? [],
+      expenses: res?.data.map(toExpense) ?? [],
       totalItem: res?.meta.total ?? 0,
     };
   };
 }
-
-export const expenseTransformers = {
-  expense: (expense: ApiExpense): Expense => ({
-    id: expense.id,
-    createdAt: expense.createdAt,
-    budget: {
-      balance: expense.budget.balance,
-      createdAt: expense.budget.createdAt,
-      id: expense.budget.id,
-      name: expense.budget.name,
-      percentage: expense.budget.percentage,
-    },
-    expenseItems: expense.expenseItems.map((item) => ({
-      id: item.id,
-      amount: item.amount,
-      name: item.name,
-      price: item.price,
-      unit: item.unit,
-    })),
-    total: expense.total,
-    wallet: {
-      balance: expense.wallet.balance,
-      createdAt: expense.createdAt,
-      id: expense.wallet.id,
-      name: expense.wallet.name,
-      paymentCostPercentage: expense.wallet.paymentCostPercentage,
-      isCashless: expense.wallet.isCashless,
-    },
-  }),
-};

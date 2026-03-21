@@ -8,10 +8,10 @@ import {
   couponList,
   couponListQueryKey,
   couponUpdateById,
-  Coupon as ApiCoupon,
 } from '../../../../api-contract/src';
 import { Coupon, CouponRepository } from '../../domain';
 import { RequestConfig } from '@kubb/swagger-client/client';
+import { toApiCoupon, toCoupon } from './coupon.transformer';
 
 export class ApiCouponRepository implements CouponRepository {
   client: QueryClient;
@@ -26,15 +26,15 @@ export class ApiCouponRepository implements CouponRepository {
         queryKey: couponFindByIdQueryKey(couponId),
         queryFn: () => couponFindById(couponId, options),
       })
-      .then(({ data }) => couponTransformers.coupon(data));
+      .then(({ data }) => toCoupon(data));
   };
 
   createCoupon: CouponRepository['createCoupon'] = (formValues) => {
-    return couponCreate(formValues).then();
+    return couponCreate(toApiCoupon(formValues)).then();
   };
 
   updateCoupon: CouponRepository['updateCoupon'] = (formValues, couponId) => {
-    return couponUpdateById(couponId, formValues).then();
+    return couponUpdateById(couponId, toApiCoupon(formValues)).then();
   };
 
   deleteCouponById: CouponRepository['deleteCouponById'] = (couponId) => {
@@ -47,16 +47,6 @@ export class ApiCouponRepository implements CouponRepository {
         queryKey: couponListQueryKey(),
         queryFn: () => couponList(options),
       })
-      .then((data) => data.data.map(couponTransformers.coupon));
+      .then((data) => data.data.map(toCoupon));
   };
 }
-
-export const couponTransformers = {
-  coupon: (coupon: ApiCoupon): Coupon => ({
-    id: coupon.id,
-    amount: coupon.amount,
-    code: coupon.code,
-    type: coupon.type,
-    createdAt: coupon.createdAt,
-  }),
-};
