@@ -38,7 +38,7 @@ export const WithCoupon: Story = {
         id: 1,
         coupon: {
           id: 1,
-          code: 'DISCOUNT10',
+          code: 'COFFEE10',
           type: 'percentage',
           amount: 10,
           createdAt: '2024-01-15T08:00:00.000Z',

@@ -26,10 +26,10 @@ const LoadedStory = () => {
 const PopulatedStory = () => {
   const form = useForm<MaterialForm>({
     defaultValues: {
-      name: 'Steel',
-      price: 50000,
+      name: 'Coffee Bean',
+      price: 80000,
       unit: 'kg',
-      description: 'High quality steel',
+      description: 'Premium Arabica coffee beans',
     },
   });
   return (

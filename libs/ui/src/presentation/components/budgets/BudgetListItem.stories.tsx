@@ -6,7 +6,7 @@ const meta: Meta<typeof BudgetListItem> = {
   component: BudgetListItem,
   args: {
     id: 1,
-    name: 'Operations',
+    name: 'Raw Materials',
     balance: 1500000,
     percentage: 30,
   },
@@ -29,7 +29,7 @@ export const Marketing: Story = {
 export const LowBalance: Story = {
   args: {
     id: 3,
-    name: 'Logistics',
+    name: 'Operations',
     balance: 50000,
     percentage: 5,
   },

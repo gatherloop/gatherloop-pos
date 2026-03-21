@@ -7,8 +7,8 @@ const meta: Meta<typeof VariantListItem> = {
   title: 'Features/Variants/VariantListItem',
   component: VariantListItem,
   args: {
-    price: 15000000,
-    productName: 'iPhone 14',
+    price: 35000,
+    productName: 'Iced Coffee Latte',
     productImageUrl: 'https://placehold.jp/120x120.png',
     optionValues: mockOptionValues,
     onEditMenuPress: fn(),
@@ -36,11 +36,11 @@ export const WithoutMenus: Story = {
 
 export const HighPrice: Story = {
   args: {
-    price: 75000000,
-    productName: 'MacBook Pro 16"',
+    price: 55000,
+    productName: 'Arabica Single Origin',
     optionValues: [
-      { id: 1, name: 'Space Gray' },
-      { id: 2, name: '32GB RAM' },
+      { id: 1, name: 'Hot' },
+      { id: 2, name: 'Large' },
     ],
   },
 };

@@ -15,7 +15,7 @@ const UpdateStory = () => {
       walletId: 1,
       budgetId: 1,
       expenseItems: [
-        { name: 'Office Supplies', unit: 'pcs', price: 50000, amount: 5 },
+        { name: 'Coffee Beans', unit: 'kg', price: 80000, amount: 3 },
       ],
     },
   });

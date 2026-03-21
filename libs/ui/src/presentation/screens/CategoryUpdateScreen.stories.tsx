@@ -6,7 +6,7 @@ import { CategoryUpdateScreen } from './CategoryUpdateScreen';
 import type { CategoryForm } from '../../domain';
 
 const UpdateStory = () => {
-  const form = useForm<CategoryForm>({ defaultValues: { name: 'Electronics' } });
+  const form = useForm<CategoryForm>({ defaultValues: { name: 'Beverages' } });
   return (
     <CategoryUpdateScreen
       form={form}

@@ -8,7 +8,7 @@ const meta: Meta<typeof TransactionListItem> = {
   args: {
     name: 'Order #001',
     orderNumber: 1,
-    total: 30000000,
+    total: 70000,
     createdAt: '2024-01-20T10:00:00.000Z',
     paidAt: '2024-01-20T10:30:00.000Z',
     walletName: 'Cash',
@@ -37,7 +37,7 @@ export const HighValue: Story = {
   args: {
     name: 'Bulk Order #099',
     orderNumber: 99,
-    total: 150000000,
+    total: 350000,
     walletName: 'Bank Transfer',
   },
 };

@@ -6,10 +6,10 @@ const meta: Meta<typeof MaterialListItem> = {
   title: 'Features/Materials/MaterialListItem',
   component: MaterialListItem,
   args: {
-    name: 'Steel',
-    price: 50000,
+    name: 'Coffee Bean',
+    price: 80000,
     unit: 'kg',
-    weeklyUsage: 10,
+    weeklyUsage: 20,
     onEditMenuPress: fn(),
     onDeleteMenuPress: fn(),
   },
@@ -29,18 +29,18 @@ export const WithoutMenus: Story = {
 
 export const HighUsage: Story = {
   args: {
-    name: 'Cotton Fabric',
-    price: 20000,
-    unit: 'meter',
-    weeklyUsage: 250,
+    name: 'Fresh Milk',
+    price: 15000,
+    unit: 'liter',
+    weeklyUsage: 50,
   },
 };
 
 export const LowUsage: Story = {
   args: {
-    name: 'Aluminum Sheet',
-    price: 35000,
-    unit: 'sheet',
-    weeklyUsage: 2,
+    name: 'Sugar',
+    price: 12000,
+    unit: 'kg',
+    weeklyUsage: 10,
   },
 };

@@ -41,10 +41,10 @@ const LoadedStory = () => {
 const PopulatedStory = () => {
   const form = useForm<VariantForm>({
     defaultValues: {
-      name: 'iPhone 14 - Blue 128GB',
-      price: 15000000,
-      description: 'Blue 128GB variant',
-      materials: [{ materialId: 1, amount: 2, material: mockMaterial }],
+      name: 'Iced Coffee Latte - Iced Regular',
+      price: 35000,
+      description: 'Iced version, regular size',
+      materials: [{ materialId: 1, amount: 0.015, material: mockMaterial }],
       productId: 1,
       values: [{ optionValueId: 1 }],
     },

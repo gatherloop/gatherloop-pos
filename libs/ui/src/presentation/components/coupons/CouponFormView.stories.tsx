@@ -25,7 +25,7 @@ const LoadedStory = () => {
 
 const PopulatedStory = () => {
   const form = useForm<CouponForm>({
-    defaultValues: { code: 'DISCOUNT10', type: 'percentage', amount: 10 },
+    defaultValues: { code: 'COFFEE10', type: 'percentage', amount: 10 },
   });
   return (
     <CouponFormView
