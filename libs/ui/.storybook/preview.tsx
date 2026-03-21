@@ -1,6 +1,6 @@
 import type { Preview, Decorator } from '@storybook/react';
-import React from 'react';
-import { PortalProvider, TamaguiProvider, createTamagui } from 'tamagui';
+import React, { useEffect } from 'react';
+import { PortalProvider, TamaguiProvider, Theme, createTamagui } from 'tamagui';
 import { config } from '@tamagui/config/v3';
 import { createAnimations } from '@tamagui/animations-css';
 
@@ -18,15 +18,46 @@ const storybookTamaguiConfig = createTamagui({
   }),
 });
 
-const withTamagui: Decorator = (Story) => (
-  <TamaguiProvider config={storybookTamaguiConfig} defaultTheme="light">
-    <PortalProvider shouldAddRootHost>
-      <Story />
-    </PortalProvider>
-  </TamaguiProvider>
-);
+const withTamagui: Decorator = (Story, context) => {
+  const theme = (context.globals['theme'] as 'light' | 'dark') || 'light';
+
+  // Sync the document background so the Storybook canvas matches the theme.
+  useEffect(() => {
+    document.body.style.background = theme === 'dark' ? '#000' : '#fff';
+    return () => {
+      document.body.style.background = '';
+    };
+  }, [theme]);
+
+  return (
+    // key forces TamaguiProvider to remount on theme change so CSS variables
+    // for the new theme are properly injected into the document.
+    <TamaguiProvider key={theme} config={storybookTamaguiConfig} defaultTheme={theme}>
+      <Theme name={theme}>
+        <PortalProvider shouldAddRootHost>
+          <Story />
+        </PortalProvider>
+      </Theme>
+    </TamaguiProvider>
+  );
+};
 
 const preview: Preview = {
+  globalTypes: {
+    theme: {
+      description: 'Global theme for components',
+      defaultValue: 'light',
+      toolbar: {
+        title: 'Theme',
+        icon: 'circlehollow',
+        items: [
+          { value: 'light', icon: 'sun', title: 'Light' },
+          { value: 'dark', icon: 'moon', title: 'Dark' },
+        ],
+        dynamicTitle: true,
+      },
+    },
+  },
   decorators: [withTamagui],
   parameters: {
     controls: {
