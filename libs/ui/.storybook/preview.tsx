@@ -1,9 +1,8 @@
-import type { Preview, Decorator } from '@storybook/react';
-import React from 'react';
+import type { Preview, Decorator, StoryFn } from '@storybook/react';
+import React, { useEffect } from 'react';
 import { TamaguiProvider, createTamagui } from 'tamagui';
 import { config } from '@tamagui/config/v3';
 import { createAnimations } from '@tamagui/animations-css';
-import { addons } from '@storybook/preview-api';
 
 // Use CSS-based animations in Storybook instead of @tamagui/animations-moti.
 // The moti driver relies on react-native-reanimated which, even when mocked,
@@ -19,33 +18,53 @@ const storybookTamaguiConfig = createTamagui({
   }),
 });
 
-function applyTheme(theme: 'light' | 'dark') {
-  const root = document.documentElement;
-  root.classList.remove('t_light', 't_dark');
-  root.classList.add(`t_${theme}`);
-  document.body.style.background = theme === 'dark' ? '#000' : '#fff';
-}
+// StoryHost is defined at module level so its function reference is always
+// the same object. It renders the story by CALLING renderFn() as a plain
+// function rather than mounting it as a JSX element (<Story />).
+//
+// Why this matters: Storybook recreates the Story wrapper function on every
+// render call (globals change, args change, etc.). When a decorator renders
+// <Story /> and Story's reference changes, React sees a new component TYPE
+// and fully unmounts the old subtree before mounting the new one. During that
+// unmount, Tamagui's portal-based components (Sheet, Dialog, AlertDialog,
+// Select, etc.) remove their portal nodes from document.body. React then
+// tries to reinsert new portal nodes before the now-missing reference nodes,
+// throwing "insertBefore: node is not a child of this node".
+//
+// By calling renderFn() instead, the story's JSX output is inlined into
+// StoryHost's own fiber. React reconciles the JSX in-place across renders —
+// no component-type change, no unmount, no portal cleanup race.
+//
+// key={storyId} forces a clean remount when the user navigates to a
+// different story (new component tree, fresh hooks), without affecting
+// globals-only updates where storyId stays the same.
+const StoryHost: React.FC<{ renderFn: StoryFn; storyId: string }> = ({
+  renderFn,
+}) => <>{renderFn()}</>;
 
-// Set the initial theme class on the document root.
-applyTheme('light');
+const withTamagui: Decorator = (Story, context) => {
+  const theme = (context.globals['theme'] as 'light' | 'dark') || 'light';
 
-// Listen for globals changes on the Storybook channel and apply the theme
-// purely via CSS class manipulation — completely outside of React's rendering
-// cycle. This is the critical fix: because the decorator below does NOT read
-// context.globals, Storybook will not trigger a story re-render when the
-// theme global changes. No re-render = no new Story function reference =
-// no React unmount/remount = no insertBefore crash from portal cleanup.
-addons.getChannel().on('storybook/globals/globals-updated', ({ globals }: { globals: Record<string, unknown> }) => {
-  applyTheme((globals['theme'] as 'light' | 'dark') || 'light');
-});
+  // Apply theme by toggling Tamagui's root CSS classes. All theme CSS is
+  // already injected on mount; this is a pure DOM side-effect with no
+  // React re-rendering involved.
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.remove('t_light', 't_dark');
+    root.classList.add(`t_${theme}`);
+    document.body.style.background = theme === 'dark' ? '#000' : '#fff';
+  }, [theme]);
 
-// Decorator is intentionally stable: it does NOT read from context.globals.
-// Theme switching is handled by the channel listener above.
-const withTamagui: Decorator = (Story) => (
-  <TamaguiProvider config={storybookTamaguiConfig} defaultTheme="light">
-    <Story />
-  </TamaguiProvider>
-);
+  return (
+    <TamaguiProvider config={storybookTamaguiConfig} defaultTheme="light">
+      <StoryHost
+        key={context.id}
+        renderFn={Story}
+        storyId={context.id}
+      />
+    </TamaguiProvider>
+  );
+};
 
 const preview: Preview = {
   globalTypes: {
