@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-empty-function */
 // Stub for react-native-reanimated in the Storybook web environment.
 // Tamagui's moti-based animation driver imports reanimated directly, but on
 // web it falls back to CSS transitions so the actual native module is never
