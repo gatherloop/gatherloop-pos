@@ -68,12 +68,19 @@ async function openFormAndAddProduct(page: Page, productName: string) {
 
   // Use the search input to filter products so the target card is always
   // visible regardless of SSR ordering or client-side re-fetch timing.
-  // We wait for toBeVisible *after* search results settle, which means the
-  // state machine is back in 'loaded' state and the click reliably registers.
+  // After fill, the state machine debounces for 600ms then fetches from the
+  // API (CHANGE_PARAMS → loading → loaded).  We MUST wait for the API
+  // response before clicking because SELECT_PRODUCT is only handled in the
+  // 'loaded' state — clicking during 'changingParams' is silently ignored.
   await sel.transactionForm.productSearchInput(page).fill(productName);
+  await page.waitForResponse(
+    (resp) =>
+      resp.url().includes('/api/products') && resp.status() === 200,
+    { timeout: 15_000 }
+  );
 
   const productCard = sel.transactionForm.productCard(page, productName);
-  await expect(productCard).toBeVisible({ timeout: 15_000 });
+  await expect(productCard).toBeVisible({ timeout: 10_000 });
   await productCard.click();
 
   // Wait for the option-selection dialog to open.
