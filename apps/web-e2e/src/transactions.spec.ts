@@ -66,11 +66,12 @@ async function openFormAndAddProduct(page: Page, productName: string) {
 
   await sel.transactionForm.customerNameInput(page).fill(CUSTOMER_NAME);
 
-  // Products are loaded from SSR — the new product is the most recently created
-  // (sorted by created_at desc) and appears in the first tab of the selector.
-  // Clicking H4 directly bubbles up to the outer XStack's onPress handler.
-  // NOTE: Searching with the input triggers state machine re-renders that can
-  //       prevent the click from registering, so we rely on the SSR data.
+  // Use the search input to filter products so the target card is always
+  // visible regardless of SSR ordering or client-side re-fetch timing.
+  // We wait for toBeVisible *after* search results settle, which means the
+  // state machine is back in 'loaded' state and the click reliably registers.
+  await sel.transactionForm.productSearchInput(page).fill(productName);
+
   const productCard = sel.transactionForm.productCard(page, productName);
   await expect(productCard).toBeVisible({ timeout: 15_000 });
   await productCard.click();
