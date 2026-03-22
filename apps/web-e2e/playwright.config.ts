@@ -1,7 +1,10 @@
 import { defineConfig, devices } from '@playwright/test';
 import { nxE2EPreset } from '@nx/playwright/preset';
+import * as path from 'path';
 
 import { workspaceRoot } from '@nx/devkit';
+
+const STORAGE_STATE = path.join(__dirname, 'src/.auth/storageState.json');
 
 // For CI, you may want to set BASE_URL to the deployed application.
 const baseURL = process.env['BASE_URL'] || 'http://127.0.0.1:3000';
@@ -26,7 +29,7 @@ export default defineConfig({
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
     /* Reuse authenticated state from global setup (overridden per-project in auth.spec.ts) */
-    storageState: 'apps/web-e2e/src/.auth/storageState.json',
+    storageState: STORAGE_STATE,
     /* Navigation timeout */
     navigationTimeout: 15_000,
     /* Action timeout */
@@ -54,7 +57,7 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         /* Use saved auth state for all tests except auth.spec.ts */
-        storageState: 'apps/web-e2e/src/.auth/storageState.json',
+        storageState: STORAGE_STATE,
       },
       testIgnore: /auth\.spec\.ts/,
     },
@@ -76,8 +79,7 @@ export default defineConfig({
             name: 'firefox',
             use: {
               ...devices['Desktop Firefox'],
-              storageState:
-                'apps/web-e2e/src/.auth/storageState.json' as string,
+              storageState: STORAGE_STATE,
             },
             testIgnore: /auth\.spec\.ts/,
           },
@@ -85,8 +87,7 @@ export default defineConfig({
             name: 'webkit',
             use: {
               ...devices['Desktop Safari'],
-              storageState:
-                'apps/web-e2e/src/.auth/storageState.json' as string,
+              storageState: STORAGE_STATE,
             },
             testIgnore: /auth\.spec\.ts/,
           },
