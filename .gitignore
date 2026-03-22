@@ -122,3 +122,8 @@ __generated__
 
 # react-native-config codegen
 ios/tmp.xcconfig
+
+# Playwright E2E auth state (contains sensitive cookies)
+apps/web-e2e/src/.auth/storageState.json
+playwright-report/
+test-results/
