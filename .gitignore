@@ -127,3 +127,6 @@ ios/tmp.xcconfig
 apps/web-e2e/src/.auth/storageState.json
 playwright-report/
 test-results/
+
+# E2E local environment (contains credentials — never commit)
+apps/web-e2e/.env.local
