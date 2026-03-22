@@ -16,8 +16,8 @@
 import { test, expect } from '@playwright/test';
 import * as sel from './utils/selectors';
 
-const VALID_USERNAME = process.env['E2E_USERNAME'] ?? 'admin';
-const VALID_PASSWORD = process.env['E2E_PASSWORD'] ?? 'password';
+const VALID_USERNAME = process.env['E2E_USERNAME'] ?? 'mnindrazaka';
+const VALID_PASSWORD = process.env['E2E_PASSWORD'] ?? '((mnindrazaka))';
 
 /** Helper: log in via UI and wait for dashboard */
 async function loginViaUI(

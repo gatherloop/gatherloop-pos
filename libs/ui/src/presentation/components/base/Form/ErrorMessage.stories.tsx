@@ -52,7 +52,10 @@ export const RequiredError: Story = {
     (Story) => {
       const form = useForm({ defaultValues: { email: '' } });
       useEffect(() => {
-        form.setError('email', { type: 'required', message: 'Email is required' });
+        form.setError('email', {
+          type: 'required',
+          message: 'Email is required',
+        });
       }, []);
       return (
         <FormProvider {...form}>
