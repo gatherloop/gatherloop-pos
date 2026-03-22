@@ -25,8 +25,8 @@ export default async function globalSetup(config: FullConfig) {
   const baseURL =
     config.projects[0]?.use?.baseURL ?? 'http://127.0.0.1:3000';
 
-  const username = process.env['E2E_USERNAME'] ?? 'admin';
-  const password = process.env['E2E_PASSWORD'] ?? 'password';
+  const username = process.env['E2E_USERNAME'] ?? 'mnindrazaka';
+  const password = process.env['E2E_PASSWORD'] ?? '((mnindrazaka))';
 
   // Ensure the .auth directory exists
   const authDir = path.dirname(AUTH_STATE_PATH);
@@ -52,6 +52,14 @@ export default async function globalSetup(config: FullConfig) {
 
     // Persist auth cookies so all other tests skip login
     await context.storageState({ path: AUTH_STATE_PATH });
+
+    // Strip the Secure flag from saved cookies so that Playwright's APIRequestContext
+    // (used in beforeAll/afterAll for test-data setup) can send them over HTTP in dev.
+    const state = JSON.parse(fs.readFileSync(AUTH_STATE_PATH, 'utf-8'));
+    for (const cookie of state.cookies ?? []) {
+      cookie.secure = false;
+    }
+    fs.writeFileSync(AUTH_STATE_PATH, JSON.stringify(state, null, 2));
 
     console.log(`[global-setup] Auth state saved to ${AUTH_STATE_PATH}`);
   } catch (error) {

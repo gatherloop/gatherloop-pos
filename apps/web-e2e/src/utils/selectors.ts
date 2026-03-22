@@ -75,7 +75,7 @@ export const productList = {
       .last(),
   /** Menu option text (Edit / Delete) rendered inside a popover */
   menuOption: (page: Page, label: 'Edit' | 'Delete') =>
-    page.getByRole('button', { name: label }).last(),
+    page.locator('[data-state="open"] li').filter({ hasText: label }).last(),
 };
 
 // ---------------------------------------------------------------------------
@@ -84,7 +84,7 @@ export const productList = {
 
 export const productForm = {
   nameInput: (page: Page) => page.getByLabel('Name'),
-  categorySelect: (page: Page) => page.getByLabel('Category'),
+  categorySelect: (page: Page) => page.getByLabel('Category', { exact: true }),
   saleTypeSelect: (page: Page) => page.getByLabel('Sale Type'),
   imageUrlInput: (page: Page) => page.getByLabel('Image URL'),
   submitButton: (page: Page) => page.getByRole('button', { name: 'Submit' }),
@@ -107,7 +107,7 @@ export const walletList = {
       .getByRole('button')
       .last(),
   menuOption: (page: Page, label: 'Transfer' | 'Edit' | 'Delete') =>
-    page.getByRole('button', { name: label }).last(),
+    page.locator('[data-state="open"] li').filter({ hasText: label }).last(),
   /** Balance text for a wallet (rendered as subtitle paragraph) */
   walletBalance: (page: Page, name: string) =>
     page
