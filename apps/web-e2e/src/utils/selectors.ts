@@ -10,7 +10,7 @@
  *   await sel.auth.usernameInput(page).fill('admin');
  */
 
-import { type Page } from '@playwright/test';
+import { type Page, type Locator } from '@playwright/test';
 
 // ---------------------------------------------------------------------------
 // Auth
@@ -136,10 +136,24 @@ export const walletForm = {
 // ---------------------------------------------------------------------------
 
 export const transactionList = {
-  createLink: (page: Page) =>
-    page.locator('a[href="/transactions/create"]'),
+  createLink: (page: Page) => page.locator('a[href="/transactions/create"]'),
+  /** A transaction list item identified by customer name */
   transactionItem: (page: Page, name: string) =>
     page.locator('h4').filter({ hasText: name }).first(),
+  /** Search input — filters by customer name */
+  searchInput: (page: Page) =>
+    page.getByPlaceholder('Search Customer Name'),
+  /** MoreVertical menu button on the list item with the given customer name */
+  menuButton: (page: Page, name: string) =>
+    page
+      .locator('h4')
+      .filter({ hasText: name })
+      .locator('../../../..')
+      .getByRole('button')
+      .last(),
+  /** Menu option rendered inside the open popover */
+  menuOption: (page: Page, label: 'Pay' | 'Unpay' | 'Edit' | 'Delete') =>
+    page.locator('[data-state="open"] li').filter({ hasText: label }).last(),
 };
 
 // ---------------------------------------------------------------------------
@@ -154,10 +168,57 @@ export const transactionForm = {
   /** A product card in the item selector panel (left side) */
   productCard: (page: Page, name: string) =>
     page.locator('h4').filter({ hasText: name }).first(),
+  /**
+   * The "+" icon button that opens the coupon sheet.
+   * It sits inside an XStack next to the H4 "Coupons" heading.
+   */
   addCouponButton: (page: Page) =>
-    page.getByRole('button', { name: /coupons/i }).last(),
-  submitButton: (page: Page) => page.getByRole('button', { name: 'Submit' }),
+    page
+      .locator('h4')
+      .filter({ hasText: 'Coupons' })
+      .locator('xpath=..')
+      .getByRole('button'),
+  /** Main form Submit button (first one on the page) */
+  submitButton: (page: Page) =>
+    page.getByRole('button', { name: 'Submit' }).first(),
   totalHeading: (page: Page) => page.locator('h3').last(),
+};
+
+// ---------------------------------------------------------------------------
+// Transaction payment alert dialog
+// ---------------------------------------------------------------------------
+
+export const transactionPayDialog = {
+  /** "Wallet Name" Select trigger — scoped to the Pay alertdialog */
+  walletSelect: (page: Page) =>
+    page.getByRole('alertdialog').getByLabel('Wallet Name'),
+  /** Submit button inside the Pay alert dialog */
+  submitButton: (page: Page) =>
+    page.getByRole('alertdialog').getByRole('button', { name: 'Submit' }),
+};
+
+// ---------------------------------------------------------------------------
+// Print confirmation dialogs (appear after payment on the create page)
+// ---------------------------------------------------------------------------
+// Note: AlertDialog.Title does NOT render with role="heading" in a way
+// Playwright can find via getByRole. Detect dialogs by their text content.
+// The "No" button uses AlertDialog.Cancel which may override accessible name,
+// so we use locator('button').first() (Cancel/No is always the first button).
+
+export const transactionPrintDialog = {
+  /** The "Print Invoice?" confirmation dialog */
+  printInvoiceDialog: (page: Page) =>
+    page.locator('[role="alertdialog"]').filter({ hasText: 'Print Invoice' }),
+  /** The "Print Order Slip?" confirmation dialog */
+  printOrderSlipDialog: (page: Page) =>
+    page.locator('[role="alertdialog"]').filter({ hasText: 'Print Order Slip' }),
+  /**
+   * Clicks the "No" button within a print dialog.
+   * force: true is required because the Pay Transaction dialog overlay may
+   * sit in front of the print dialog at the pointer-events level.
+   */
+  clickNo: async (dialog: Locator) =>
+    dialog.locator('button').first().click({ force: true }),
 };
 
 // ---------------------------------------------------------------------------
