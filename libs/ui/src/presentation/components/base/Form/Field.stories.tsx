@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/rules-of-hooks */
 import type { Decorator, Meta, StoryObj } from '@storybook/react';
 import React from 'react';
 import { FormProvider, useForm } from 'react-hook-form';

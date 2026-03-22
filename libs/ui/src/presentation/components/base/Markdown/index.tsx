@@ -36,7 +36,7 @@ export const Markdown = (props: MarkdownProps) => {
             textDecorationLine="underline"
             cursor="pointer"
             tag="a"
-            // @ts-ignore
+            // @ts-expect-error href is a valid HTML attribute passed via tag="a"
             href={href}
           >
             {children}

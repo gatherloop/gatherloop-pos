@@ -13,6 +13,12 @@ const nextConfig = {
     // See: https://github.com/gregberge/svgr
     svgr: false,
   },
+  webpack(config) {
+    // On web, replace the React Native animation driver with the CSS one
+    config.resolve.alias['@tamagui/animations-moti'] =
+      require.resolve('@tamagui/animations-css');
+    return config;
+  },
   async rewrites() {
     return [
       {

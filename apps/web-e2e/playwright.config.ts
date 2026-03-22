@@ -63,7 +63,8 @@ export default defineConfig({
       name: 'chromium-no-auth',
       use: {
         ...devices['Desktop Chrome'],
-        storageState: undefined,
+        /* Explicitly empty storage — overrides the global storageState default */
+        storageState: { cookies: [], origins: [] },
       },
       testMatch: /auth\.spec\.ts/,
     },
