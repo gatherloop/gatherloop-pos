@@ -161,6 +161,31 @@ export const transactionForm = {
 };
 
 // ---------------------------------------------------------------------------
+// Wallet transfer form page (/wallets/[id]/transfers/create)
+// ---------------------------------------------------------------------------
+
+export const walletTransferForm = {
+  /** "Transfer To" select dropdown trigger */
+  transferToSelect: (page: Page) => page.getByLabel('Transfer To'),
+  /** "Amount" number input */
+  amountInput: (page: Page) => page.getByLabel('Amount'),
+  submitButton: (page: Page) => page.getByRole('button', { name: 'Submit' }),
+};
+
+// ---------------------------------------------------------------------------
+// Wallet transfer list page (/wallets/[id]/transfers)
+// ---------------------------------------------------------------------------
+
+export const walletTransferList = {
+  /** Create transfer link — walletId is needed because it appears in the href */
+  createLink: (page: Page, walletId: number) =>
+    page.locator(`a[href="/wallets/${walletId}/transfers/create"]`),
+  /** A transfer history item identified by the destination wallet name */
+  transferItem: (page: Page, toWalletName: string) =>
+    page.locator('h4').filter({ hasText: toWalletName }).first(),
+};
+
+// ---------------------------------------------------------------------------
 // Budget list / form pages (/budgets)
 // ---------------------------------------------------------------------------
 
