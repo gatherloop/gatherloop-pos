@@ -85,7 +85,7 @@ test.describe.serial('Product Management', () => {
   test('should display the created product in the product list', async ({
     page,
   }) => {
-    await page.goto('/products');
+    await page.goto('/products', { waitUntil: 'domcontentloaded' });
 
     await expect(
       sel.productList.productItem(page, PRODUCT_NAME)
@@ -97,7 +97,7 @@ test.describe.serial('Product Management', () => {
   // ---------------------------------------------------------------------------
 
   test('should search and find the product by name', async ({ page }) => {
-    await page.goto('/products');
+    await page.goto('/products', { waitUntil: 'domcontentloaded' });
 
     await sel.productList.searchInput(page).fill(PRODUCT_NAME);
 
@@ -112,7 +112,7 @@ test.describe.serial('Product Management', () => {
   // ---------------------------------------------------------------------------
 
   test('should update the product name', async ({ page }) => {
-    await page.goto('/products');
+    await page.goto('/products', { waitUntil: 'domcontentloaded' });
 
     // Open the context menu for the product
     await sel.productList.menuButton(page, PRODUCT_NAME).click();
@@ -148,7 +148,7 @@ test.describe.serial('Product Management', () => {
   test('should verify updated data persists after page reload', async ({
     page,
   }) => {
-    await page.goto('/products');
+    await page.goto('/products', { waitUntil: 'domcontentloaded' });
     await page.reload();
 
     // Updated name should be visible
@@ -169,7 +169,7 @@ test.describe.serial('Product Management', () => {
   test('should delete the product and verify it is removed from the list', async ({
     page,
   }) => {
-    await page.goto('/products');
+    await page.goto('/products', { waitUntil: 'domcontentloaded' });
 
     // Open context menu and trigger delete
     await sel.productList.menuButton(page, UPDATED_PRODUCT_NAME).click();

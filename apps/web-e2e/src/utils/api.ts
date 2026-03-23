@@ -176,6 +176,112 @@ export async function deleteProduct(
 }
 
 // ---------------------------------------------------------------------------
+// Coupon
+// ---------------------------------------------------------------------------
+
+export interface Coupon {
+  id: number;
+  code: string;
+  type: 'fixed' | 'percentage';
+  amount: number;
+  createdAt: string;
+}
+
+export interface CreateCouponInput {
+  code: string;
+  type: 'fixed' | 'percentage';
+  amount: number;
+}
+
+export async function createCoupon(
+  request: APIRequestContext,
+  data: CreateCouponInput
+): Promise<Coupon> {
+  return apiPost<Coupon>(request, '/api/coupons', data);
+}
+
+export async function deleteCoupon(
+  request: APIRequestContext,
+  id: number
+): Promise<void> {
+  return apiDelete(request, `/api/coupons/${id}`);
+}
+
+// ---------------------------------------------------------------------------
+// Variant
+// ---------------------------------------------------------------------------
+
+export interface Variant {
+  id: number;
+  productId: number;
+  name: string;
+  price: number;
+  createdAt: string;
+}
+
+export interface CreateVariantInput {
+  productId: number;
+  name: string;
+  price: number;
+  description?: string;
+  materials: Array<{ materialId: number; amount: number }>;
+  values: Array<{ optionValueId: number }>;
+}
+
+export async function createVariant(
+  request: APIRequestContext,
+  data: CreateVariantInput
+): Promise<Variant> {
+  return apiPost<Variant>(request, '/api/variants', data);
+}
+
+export async function deleteVariant(
+  request: APIRequestContext,
+  id: number
+): Promise<void> {
+  return apiDelete(request, `/api/variants/${id}`);
+}
+
+// ---------------------------------------------------------------------------
+// Transaction
+// ---------------------------------------------------------------------------
+
+export interface Transaction {
+  id: number;
+  name: string;
+  total: number;
+  createdAt: string;
+}
+
+export interface CreateTransactionInput {
+  name: string;
+  orderNumber: number;
+  transactionItems: Array<{
+    variantId: number;
+    amount: number;
+    discountAmount: number;
+    note: string;
+  }>;
+  transactionCoupons: Array<{
+    couponId: number;
+  }>;
+}
+
+export async function createTransaction(
+  request: APIRequestContext,
+  data: CreateTransactionInput
+): Promise<Transaction> {
+  return apiPost<Transaction>(request, '/api/transactions', data);
+}
+
+export async function deleteTransaction(
+  request: APIRequestContext,
+  id: number
+): Promise<void> {
+  return apiDelete(request, `/api/transactions/${id}`);
+}
+
+// ---------------------------------------------------------------------------
 // Budget
 // ---------------------------------------------------------------------------
 
