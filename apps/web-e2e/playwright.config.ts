@@ -20,6 +20,11 @@ const baseURL = process.env['BASE_URL'] || 'http://127.0.0.1:3000';
  */
 export default defineConfig({
   ...nxE2EPreset(__filename, { testDir: './src' }),
+  /* Run test files serially to prevent cross-file database race conditions.
+   * Tests in different files share the same database, so parallel execution
+   * can cause side effects (e.g. transaction payments updating all budget
+   * balances while another test suite is checking those balances). */
+  workers: 1,
   /* Global setup/teardown for auth state preparation */
   globalSetup: './src/global-setup.ts',
   globalTeardown: './src/global-teardown.ts',

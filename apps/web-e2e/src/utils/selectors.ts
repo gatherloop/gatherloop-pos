@@ -247,34 +247,60 @@ export const walletTransferList = {
 };
 
 // ---------------------------------------------------------------------------
-// Budget list / form pages (/budgets)
+// Budget list page (/budgets)
 // ---------------------------------------------------------------------------
 
 export const budgetList = {
-  createLink: (page: Page) => page.locator('a[href="/budgets/create"]'),
+  /** A budget list item identified by its name heading */
   budgetItem: (page: Page, name: string) =>
     page.locator('h4').filter({ hasText: name }).first(),
-};
-
-export const budgetForm = {
-  nameInput: (page: Page) => page.getByLabel('Name'),
-  percentageInput: (page: Page) => page.getByLabel('Percentage'),
-  balanceInput: (page: Page) => page.getByLabel('Balance'),
-  submitButton: (page: Page) => page.getByRole('button', { name: 'Submit' }),
+  /** Balance text for a budget (rendered as subtitle paragraph below the H4) */
+  budgetBalance: (page: Page, name: string) =>
+    page
+      .locator('h4')
+      .filter({ hasText: name })
+      .locator('..')
+      .locator('p')
+      .first(),
 };
 
 // ---------------------------------------------------------------------------
-// Expense list / form pages (/expenses)
+// Expense list page (/expenses)
 // ---------------------------------------------------------------------------
 
 export const expenseList = {
   createLink: (page: Page) => page.locator('a[href="/expenses/create"]'),
-  expenseItem: (page: Page, index = 0) =>
-    page.locator('h4').nth(index),
+  /** An expense list item identified by budget name (rendered as H4 title) */
+  expenseItemByBudget: (page: Page, budgetName: string) =>
+    page.locator('h4').filter({ hasText: budgetName }).first(),
+  /** The "Filter" popover trigger button */
+  filterButton: (page: Page) =>
+    page.getByRole('button', { name: 'Filter' }),
 };
 
+// ---------------------------------------------------------------------------
+// Expense form page (/expenses/create, /expenses/[id])
+// ---------------------------------------------------------------------------
+
 export const expenseForm = {
-  walletSelect: (page: Page) => page.getByLabel('Wallet'),
-  budgetSelect: (page: Page) => page.getByLabel('Budget'),
+  /** "Wallet Name" select — label is "Wallet Name" in ExpenseFormView */
+  walletSelect: (page: Page) => page.getByLabel('Wallet Name'),
+  /** "Budget Name" select — label is "Budget Name" in ExpenseFormView */
+  budgetSelect: (page: Page) => page.getByLabel('Budget Name'),
+  /** "+" circular button that appends a new expense item row */
+  addItemButton: (page: Page) =>
+    page
+      .locator('h4')
+      .filter({ hasText: 'Expense Items' })
+      .locator('xpath=..')
+      .getByRole('button'),
+  /** Item Name text input (first expense item row) */
+  itemNameInput: (page: Page) => page.getByLabel('Item Name').first(),
+  /** Amount number input (first expense item row) */
+  itemAmountInput: (page: Page) => page.getByLabel('Amount').first(),
+  /** Unit text input (first expense item row) */
+  itemUnitInput: (page: Page) => page.getByLabel('Unit').first(),
+  /** Price number input (first expense item row) */
+  itemPriceInput: (page: Page) => page.getByLabel('Price').first(),
   submitButton: (page: Page) => page.getByRole('button', { name: 'Submit' }),
 };
