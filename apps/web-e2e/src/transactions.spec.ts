@@ -292,7 +292,7 @@ test.describe.serial('Transaction Flow', () => {
 
     // Select the test wallet
     await sel.transactionPayDialog.walletSelect(page).click();
-    await page.getByRole('option', { name: WALLET_NAME, exact: true }).click();
+    await page.locator('span').getByText(WALLET_NAME, { exact: true }).click();
 
     // Submit the payment
     await sel.transactionPayDialog.submitButton(page).click();
@@ -382,7 +382,7 @@ test.describe.serial('Transaction Flow', () => {
 
     // Select the test wallet
     await sel.transactionPayDialog.walletSelect(page).click();
-    await page.getByRole('option', { name: WALLET_NAME, exact: true }).click();
+    await page.locator('span').getByText(WALLET_NAME, { exact: true }).click();
 
     // Submit the payment
     await sel.transactionPayDialog.submitButton(page).click();
