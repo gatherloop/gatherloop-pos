@@ -87,7 +87,7 @@
     "@swc/core": "~1.5.7",
     "@swc/helpers": "~0.5.11",
     "@swc/jest": "^0.2.39",
-    "@tamagui/animations-css": "^2.0.0-rc.29",
+    "@tamagui/animations-css": "^1.144.4",
     "@tamagui/vite-plugin": "^1.111.13",
     "@testing-library/jest-native": "~5.4.3",
     "@testing-library/react": "15.0.6",
