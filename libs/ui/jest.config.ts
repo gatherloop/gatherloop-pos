@@ -3,6 +3,7 @@ export default {
   displayName: 'ui',
   preset: '../../jest.preset.js',
   coverageDirectory: '../../coverage/libs/ui',
+  maxWorkers: '50%',
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'mjs', 'html'],
   moduleNameMapper: {
     '^react-native$': '<rootDir>/src/__mocks__/react-native.ts',
@@ -17,9 +18,15 @@ export default {
     '^react-markdown$': '<rootDir>/src/__mocks__/react-markdown.ts',
   },
   transform: {
-    '^.+\\.(ts|tsx|js|jsx|html)$': [
-      'ts-jest',
-      { tsconfig: '<rootDir>/tsconfig.spec.json', diagnostics: { warnOnly: true } },
+    '^.+\\.(ts|tsx|js|jsx)$': [
+      '@swc/jest',
+      {
+        jsc: {
+          parser: { syntax: 'typescript', tsx: true },
+          transform: { react: { runtime: 'automatic' } },
+          target: 'es2022',
+        },
+      },
     ],
   },
   transformIgnorePatterns: [
