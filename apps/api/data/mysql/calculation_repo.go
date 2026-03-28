@@ -28,14 +28,14 @@ func (repo Repository) GetCalculationList(ctx context.Context, sortBy domain.Sor
 
 	result = result.Find(&calculations)
 
-	return ToCalculationsListDomain(calculations), ToError(result.Error)
+	return ToCalculationsListDomain(calculations), ToErrorCtx(ctx, result.Error, "GetCalculationList")
 }
 
 func (repo Repository) GetCalculationById(ctx context.Context, id int64) (domain.Calculation, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	var calculation Calculation
 	result := db.Table("calculations").Where("id = ?", id).Preload("CalculationItems").Preload("Wallet").First(&calculation)
-	return ToCalculationDomain(calculation), ToError(result.Error)
+	return ToCalculationDomain(calculation), ToErrorCtx(ctx, result.Error, "GetCalculationById")
 }
 
 func (repo Repository) CreateCalculation(ctx context.Context, calculation domain.Calculation) (domain.Calculation, *domain.Error) {
@@ -43,12 +43,12 @@ func (repo Repository) CreateCalculation(ctx context.Context, calculation domain
 	payload := ToCalculationDB(calculation)
 	result := db.Table("calculations").Create(&payload)
 	if result.Error != nil {
-		return domain.Calculation{}, ToError(result.Error)
+		return domain.Calculation{}, ToErrorCtx(ctx, result.Error, "CreateCalculation")
 	}
 
 	var created Calculation
 	fetchResult := db.Table("calculations").Where("id = ?", payload.Id).Preload("CalculationItems").Preload("Wallet").First(&created)
-	return ToCalculationDomain(created), ToError(fetchResult.Error)
+	return ToCalculationDomain(created), ToErrorCtx(ctx, fetchResult.Error, "CreateCalculation")
 }
 
 func (repo Repository) UpdateCalculationById(ctx context.Context, calculation domain.Calculation, id int64) (domain.Calculation, *domain.Error) {
@@ -59,7 +59,7 @@ func (repo Repository) UpdateCalculationById(ctx context.Context, calculation do
 	calculationPayload := ToCalculationDB(calculation)
 	result := db.Session(&gorm.Session{FullSaveAssociations: true}).Table("calculations").Where("id = ?", id).Updates(&calculationPayload)
 	if result.Error != nil {
-		return domain.Calculation{}, ToError(result.Error)
+		return domain.Calculation{}, ToErrorCtx(ctx, result.Error, "UpdateCalculationById")
 	}
 
 	// Determine which existing item IDs to keep (those that are present in the incoming payload)
@@ -73,31 +73,31 @@ func (repo Repository) UpdateCalculationById(ctx context.Context, calculation do
 	if len(idsToKeep) > 0 {
 		// delete items that were present before but are not in the incoming idsToKeep
 		if err := db.Table("calculation_items").Where("calculation_id = ? AND id NOT IN ?", id, idsToKeep).Delete(&CalculationItem{}).Error; err != nil {
-			return domain.Calculation{}, ToError(err)
+			return domain.Calculation{}, ToErrorCtx(ctx, err, "UpdateCalculationById")
 		}
 	} else {
 		// If incoming payload has no existing IDs, remove all previously existing items
 		if err := db.Table("calculation_items").Where("calculation_id = ?", id).Delete(&CalculationItem{}).Error; err != nil {
-			return domain.Calculation{}, ToError(err)
+			return domain.Calculation{}, ToErrorCtx(ctx, err, "UpdateCalculationById")
 		}
 	}
 
 	// fetch updated record to return complete domain object with all associations
 	var updated Calculation
 	fetchResult := db.Table("calculations").Where("id = ?", id).Preload("CalculationItems").Preload("Wallet").First(&updated)
-	return ToCalculationDomain(updated), ToError(fetchResult.Error)
+	return ToCalculationDomain(updated), ToErrorCtx(ctx, fetchResult.Error, "UpdateCalculationById")
 }
 
 func (repo Repository) DeleteCalculationById(ctx context.Context, id int64) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	currentTime := time.Now()
 	result := db.Table("calculations").Where("id = ?", id).Update("deleted_at", currentTime)
-	return ToError(result.Error)
+	return ToErrorCtx(ctx, result.Error, "DeleteCalculationById")
 }
 
 func (repo Repository) CompleteCalculationById(ctx context.Context, id int64) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	currentTime := time.Now()
 	result := db.Table("calculations").Where("id = ?", id).Update("completed_at", currentTime)
-	return ToError(result.Error)
+	return ToErrorCtx(ctx, result.Error, "CompleteCalculationById")
 }

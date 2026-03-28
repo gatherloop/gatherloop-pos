@@ -32,7 +32,7 @@ func (repo Repository) GetMaterialList(ctx context.Context, query string, sortBy
 
 	result = result.Find(&materials)
 
-	return ToMaterialListDomain(materials), ToError(result.Error)
+	return ToMaterialListDomain(materials), ToErrorCtx(ctx, result.Error, "GetMaterialList")
 }
 
 func (repo Repository) GetMaterialListTotal(ctx context.Context, query string) (int64, *domain.Error) {
@@ -46,7 +46,7 @@ func (repo Repository) GetMaterialListTotal(ctx context.Context, query string) (
 
 	result = result.Count(&count)
 
-	return count, ToError(result.Error)
+	return count, ToErrorCtx(ctx, result.Error, "GetMaterialListTotal")
 }
 
 func (repo Repository) GetMaterialsWeeklyUsage(ctx context.Context, ids []int64) (map[int64]float32, *domain.Error) {
@@ -72,7 +72,7 @@ func (repo Repository) GetMaterialsWeeklyUsage(ctx context.Context, ids []int64)
 		Scan(&results).Error
 
 	if err != nil {
-		return nil, ToError(err)
+		return nil, ToErrorCtx(ctx, err, "GetMaterialsWeeklyUsage")
 	}
 
 	usageMap := make(map[int64]float32)
@@ -87,7 +87,7 @@ func (repo Repository) GetMaterialById(ctx context.Context, id int64) (domain.Ma
 	db := GetDbFromCtx(ctx, repo.db)
 	var material Material
 	result := db.Table("materials").Where("id = ?", id).Where("deleted_at", nil).First(&material)
-	return ToMaterialDomain(material), ToError(result.Error)
+	return ToMaterialDomain(material), ToErrorCtx(ctx, result.Error, "GetMaterialById")
 }
 
 func (repo Repository) CreateMaterial(ctx context.Context, material domain.Material) (domain.Material, *domain.Error) {
@@ -96,7 +96,7 @@ func (repo Repository) CreateMaterial(ctx context.Context, material domain.Mater
 	result := db.Table("materials").Create(&materialPayload)
 
 	if result.Error != nil {
-		return domain.Material{}, ToError(result.Error)
+		return domain.Material{}, ToErrorCtx(ctx, result.Error, "CreateMaterial")
 	}
 
 	return ToMaterialDomain(materialPayload), nil
@@ -106,18 +106,18 @@ func (repo Repository) UpdateMaterialById(ctx context.Context, material domain.M
 	db := GetDbFromCtx(ctx, repo.db)
 	materialPayload := ToMaterialDB(material)
 	if result := db.Table("materials").Where("id = ?", id).Updates(&materialPayload); result.Error != nil {
-		return domain.Material{}, ToError(result.Error)
+		return domain.Material{}, ToErrorCtx(ctx, result.Error, "UpdateMaterialById")
 	}
 
 	// Fetch the updated material to get all fields including timestamps
 	var updatedMaterial Material
 	fetchResult := db.Table("materials").Where("id = ?", id).First(&updatedMaterial)
-	return ToMaterialDomain(updatedMaterial), ToError(fetchResult.Error)
+	return ToMaterialDomain(updatedMaterial), ToErrorCtx(ctx, fetchResult.Error, "UpdateMaterialById")
 }
 
 func (repo Repository) DeleteMaterialById(ctx context.Context, id int64) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	currentTime := time.Now()
 	result := db.Table("materials").Where("id = ?", id).Update("deleted_at", currentTime)
-	return ToError(result.Error)
+	return ToErrorCtx(ctx, result.Error, "DeleteMaterialById")
 }

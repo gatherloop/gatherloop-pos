@@ -44,7 +44,7 @@ func (repo Repository) GetTransactionList(ctx context.Context, query string, sor
 
 	result = result.Find(&transactionResults)
 
-	return ToTransactionsListDomain(transactionResults), ToError(result.Error)
+	return ToTransactionsListDomain(transactionResults), ToErrorCtx(ctx, result.Error, "GetTransactionList")
 }
 
 func (repo Repository) GetTransactionListTotal(ctx context.Context, query string, paymentStatus domain.PaymentStatus, walletId *int) (int64, *domain.Error) {
@@ -69,7 +69,7 @@ func (repo Repository) GetTransactionListTotal(ctx context.Context, query string
 
 	result = result.Count(&count)
 
-	return count, ToError(result.Error)
+	return count, ToErrorCtx(ctx, result.Error, "GetTransactionListTotal")
 }
 
 func (repo Repository) GetTransactionById(ctx context.Context, id int64) (domain.Transaction, *domain.Error) {
@@ -77,7 +77,7 @@ func (repo Repository) GetTransactionById(ctx context.Context, id int64) (domain
 
 	var transaction Transaction
 	result := db.Table("transactions").Where("id = ?", id).Preload("TransactionItems").Preload("Wallet").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.Materials").Preload("TransactionItems.Variant.Materials.Material").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").Preload("TransactionCoupons").Preload("TransactionCoupons.Coupon").First(&transaction)
-	return ToTransactionDomain(transaction), ToError(result.Error)
+	return ToTransactionDomain(transaction), ToErrorCtx(ctx, result.Error, "GetTransactionById")
 }
 
 func (repo Repository) CreateTransaction(ctx context.Context, transaction domain.Transaction) (domain.Transaction, *domain.Error) {
@@ -85,12 +85,12 @@ func (repo Repository) CreateTransaction(ctx context.Context, transaction domain
 
 	dbTransaction := ToTransactionDB(transaction)
 	if result := db.Table("transactions").Create(&dbTransaction); result.Error != nil {
-		return domain.Transaction{}, ToError(result.Error)
+		return domain.Transaction{}, ToErrorCtx(ctx, result.Error, "CreateTransaction")
 	}
 
 	var created Transaction
 	fetch := db.Table("transactions").Where("id = ?", dbTransaction.Id).Preload("TransactionItems").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").Preload("TransactionCoupons").Preload("TransactionCoupons.Coupon").Preload("Wallet").First(&created)
-	return ToTransactionDomain(created), ToError(fetch.Error)
+	return ToTransactionDomain(created), ToErrorCtx(ctx, fetch.Error, "CreateTransaction")
 }
 
 func (repo Repository) UpdateTransactionById(ctx context.Context, transaction domain.Transaction, id int64) (domain.Transaction, *domain.Error) {
@@ -99,7 +99,7 @@ func (repo Repository) UpdateTransactionById(ctx context.Context, transaction do
 
 	dbTransaction := ToTransactionDB(transaction)
 	if result := db.Session(&gorm.Session{FullSaveAssociations: true}).Table("transactions").Where("id = ?", id).Updates(&dbTransaction); result.Error != nil {
-		return domain.Transaction{}, ToError(result.Error)
+		return domain.Transaction{}, ToErrorCtx(ctx, result.Error, "UpdateTransactionById")
 	}
 
 	if dbTransaction.TransactionItems != nil {
@@ -114,12 +114,12 @@ func (repo Repository) UpdateTransactionById(ctx context.Context, transaction do
 		if len(transactionItemIdsToKeep) > 0 {
 			// delete items that were present before but are not in the incoming idsToKeep
 			if result := db.Table("transaction_items").Where("transaction_id = ? AND id NOT IN ?", id, transactionItemIdsToKeep).Delete(&TransactionItem{}); result.Error != nil {
-				return domain.Transaction{}, ToError(result.Error)
+				return domain.Transaction{}, ToErrorCtx(ctx, result.Error, "UpdateTransactionById")
 			}
 		} else {
 			// If incoming payload has no existing IDs, remove all previously existing items
 			if result := db.Table("transaction_items").Where("transaction_id = ?", id).Delete(&TransactionItem{}); result.Error != nil {
-				return domain.Transaction{}, ToError(result.Error)
+				return domain.Transaction{}, ToErrorCtx(ctx, result.Error, "UpdateTransactionById")
 			}
 		}
 	}
@@ -136,32 +136,32 @@ func (repo Repository) UpdateTransactionById(ctx context.Context, transaction do
 		if len(transactionCouponIdsToKeep) > 0 {
 			// delete coupons that were present before but are not in the incoming idsToKeep
 			if result := db.Table("transaction_coupons").Where("transaction_id = ? AND id NOT IN ?", id, transactionCouponIdsToKeep).Delete(&TransactionCoupon{}); result.Error != nil {
-				return domain.Transaction{}, ToError(result.Error)
+				return domain.Transaction{}, ToErrorCtx(ctx, result.Error, "UpdateTransactionById")
 			}
 		} else {
 			// If incoming payload has no existing IDs, remove all previously existing items
 			if result := db.Table("transaction_coupons").Where("transaction_id = ?", id).Delete(&TransactionCoupon{}); result.Error != nil {
-				return domain.Transaction{}, ToError(result.Error)
+				return domain.Transaction{}, ToErrorCtx(ctx, result.Error, "UpdateTransactionById")
 			}
 		}
 	}
 
 	var updated Transaction
 	fetch := db.Table("transactions").Where("id = ?", id).Preload("TransactionItems").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.Materials").Preload("TransactionItems.Variant.Materials.Material").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").Preload("TransactionCoupons").Preload("TransactionCoupons.Coupon").Preload("Wallet").First(&updated)
-	return ToTransactionDomain(updated), ToError(fetch.Error)
+	return ToTransactionDomain(updated), ToErrorCtx(ctx, fetch.Error, "UpdateTransactionById")
 }
 
 func (repo Repository) DeleteTransactionById(ctx context.Context, id int64) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	currentTime := time.Now()
 	result := db.Table("transactions").Where("id = ?", id).Update("deleted_at", currentTime)
-	return ToError(result.Error)
+	return ToErrorCtx(ctx, result.Error, "DeleteTransactionById")
 }
 
 func (repo Repository) PayTransaction(ctx context.Context, walletId int64, paidAt time.Time, paidAmount float32, id int64) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	result := db.Table("transactions").Where("id = ?", id).Updates(Transaction{WalletId: &walletId, PaidAt: &paidAt, PaidAmount: paidAmount})
-	return ToError(result.Error)
+	return ToErrorCtx(ctx, result.Error, "PayTransaction")
 }
 
 func (repo Repository) UnpayTransaction(ctx context.Context, id int64) *domain.Error {
@@ -172,7 +172,7 @@ func (repo Repository) UnpayTransaction(ctx context.Context, id int64) *domain.E
 		"paid_at":      nil,
 		"paid_amount":  0,
 	})
-	return ToError(result.Error)
+	return ToErrorCtx(ctx, result.Error, "UnpayTransaction")
 }
 
 func (repo Repository) GetTransactionStatistics(ctx context.Context, groupBy string) ([]domain.TransactionStatistic, *domain.Error) {
@@ -189,5 +189,5 @@ func (repo Repository) GetTransactionStatistics(ctx context.Context, groupBy str
 	var transactionStatistics []TransactionStatistic
 	result := db.Table("transactions").Select(fmt.Sprintf("DATE_FORMAT(created_at, '%s') as date, SUM(total) as total, SUM(total_income) as total_income", dateFormat)).Where("deleted_at is NULL").Group(fmt.Sprintf("DATE_FORMAT(created_at, '%s')", dateFormat)).Find(&transactionStatistics)
 
-	return ToTransactionStatisticsListDomain(transactionStatistics), ToError(result.Error)
+	return ToTransactionStatisticsListDomain(transactionStatistics), ToErrorCtx(ctx, result.Error, "GetTransactionStatistics")
 }

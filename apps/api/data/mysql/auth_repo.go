@@ -15,5 +15,5 @@ func (repo Repository) GetUserByUsername(ctx context.Context, username string) (
 	db := GetDbFromCtx(ctx, repo.db)
 	var user User
 	result := db.Table("users").Where("username = ?", username).First(&user)
-	return ToUserDomain(user), ToError(result.Error)
+	return ToUserDomain(user), ToErrorCtx(ctx, result.Error, "GetUserByUsername")
 }

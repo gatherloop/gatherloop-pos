@@ -41,7 +41,7 @@ func (repo Repository) GetVariantList(ctx context.Context, query string, sortBy 
 
 	result = result.Find(&variants)
 
-	return ToVariantsListDomain(variants), ToError(result.Error)
+	return ToVariantsListDomain(variants), ToErrorCtx(ctx, result.Error, "GetVariantList")
 }
 
 func (repo Repository) GetVariantListTotal(ctx context.Context, query string) (int64, *domain.Error) {
@@ -55,27 +55,27 @@ func (repo Repository) GetVariantListTotal(ctx context.Context, query string) (i
 
 	result = result.Count(&count)
 
-	return count, ToError(result.Error)
+	return count, ToErrorCtx(ctx, result.Error, "GetVariantListTotal")
 }
 
 func (repo Repository) GetVariantById(ctx context.Context, id int64) (domain.Variant, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	var variant Variant
 	result := db.Table("variants").Preload("Product").Preload("Product.Category").Preload("Materials").Preload("Materials.Material").Preload("VariantValues").Preload("VariantValues.OptionValue").Where("id = ?", id).First(&variant)
-	return ToVariantDomain(variant), ToError(result.Error)
+	return ToVariantDomain(variant), ToErrorCtx(ctx, result.Error, "GetVariantById")
 }
 
 func (repo Repository) CreateVariant(ctx context.Context, variant domain.Variant) (domain.Variant, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	payload := ToVariantDB(variant)
 	if result := db.Table("variants").Create(&payload); result.Error != nil {
-		return domain.Variant{}, ToError(result.Error)
+		return domain.Variant{}, ToErrorCtx(ctx, result.Error, "CreateVariant")
 	}
 
 	// Fetch the created variant with all relations
 	var createdVariant Variant
 	fetchResult := db.Table("variants").Preload("Product").Preload("Product.Category").Preload("Materials").Preload("Materials.Material").Preload("VariantValues").Preload("VariantValues.OptionValue").Where("id = ?", payload.Id).First(&createdVariant)
-	return ToVariantDomain(createdVariant), ToError(fetchResult.Error)
+	return ToVariantDomain(createdVariant), ToErrorCtx(ctx, fetchResult.Error, "CreateVariant")
 }
 
 func (repo Repository) UpdateVariantById(ctx context.Context, variant domain.Variant, id int64) (domain.Variant, *domain.Error) {
@@ -85,7 +85,7 @@ func (repo Repository) UpdateVariantById(ctx context.Context, variant domain.Var
 	// Update the variant and its associations using FullSaveAssociations to ensure all related records are updated
 	variantPayload := ToVariantDB(variant)
 	if result := db.Session(&gorm.Session{FullSaveAssociations: true}).Table("variants").Where("id = ?", id).Updates(&variantPayload); result.Error != nil {
-		return domain.Variant{}, ToError(result.Error)
+		return domain.Variant{}, ToErrorCtx(ctx, result.Error, "UpdateVariantById")
 	}
 
 	// Handle deletion of removed materials
@@ -95,11 +95,11 @@ func (repo Repository) UpdateVariantById(ctx context.Context, variant domain.Var
 	}
 	if len(variantMaterialIdsToKeep) > 0 {
 		if result := db.Table("variant_materials").Where("variant_id = ? AND id NOT IN ?", id, variantMaterialIdsToKeep).Delete(&VariantMaterial{}); result.Error != nil {
-			return domain.Variant{}, ToError(result.Error)
+			return domain.Variant{}, ToErrorCtx(ctx, result.Error, "UpdateVariantById")
 		}
 	} else {
 		if result := db.Table("variant_materials").Where("variant_id = ?", id).Delete(&VariantMaterial{}); result.Error != nil {
-			return domain.Variant{}, ToError(result.Error)
+			return domain.Variant{}, ToErrorCtx(ctx, result.Error, "UpdateVariantById")
 		}
 	}
 
@@ -110,23 +110,23 @@ func (repo Repository) UpdateVariantById(ctx context.Context, variant domain.Var
 	}
 	if len(variantValueIdsToKeep) > 0 {
 		if result := db.Table("variant_values").Where("variant_id = ? AND id NOT IN ?", id, variantValueIdsToKeep).Delete(&VariantValue{}); result.Error != nil {
-			return domain.Variant{}, ToError(result.Error)
+			return domain.Variant{}, ToErrorCtx(ctx, result.Error, "UpdateVariantById")
 		}
 	} else {
 		if result := db.Table("variant_values").Where("variant_id = ?", id).Delete(&VariantValue{}); result.Error != nil {
-			return domain.Variant{}, ToError(result.Error)
+			return domain.Variant{}, ToErrorCtx(ctx, result.Error, "UpdateVariantById")
 		}
 	}
 
 	// Fetch the updated variant with all relations
 	var updatedVariant Variant
 	fetchResult := db.Table("variants").Preload("Product").Preload("Product.Category").Preload("Materials").Preload("Materials.Material").Preload("VariantValues").Preload("VariantValues.OptionValue").Where("id = ?", id).First(&updatedVariant)
-	return ToVariantDomain(updatedVariant), ToError(fetchResult.Error)
+	return ToVariantDomain(updatedVariant), ToErrorCtx(ctx, fetchResult.Error, "UpdateVariantById")
 }
 
 func (repo Repository) DeleteVariantById(ctx context.Context, id int64) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	currentTime := time.Now()
 	result := db.Table("variants").Where("id = ?", id).Update("deleted_at", currentTime)
-	return ToError(result.Error)
+	return ToErrorCtx(ctx, result.Error, "DeleteVariantById")
 }
