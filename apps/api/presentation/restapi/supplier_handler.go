@@ -23,19 +23,19 @@ func (handler SupplierHandler) GetSupplierList(w http.ResponseWriter, r *http.Re
 
 	skip, err := GetSkip(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
 	limit, err := GetLimit(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
 	suppliers, total, usecaseErr := handler.usecase.GetSupplierList(ctx, query, sortBy, order, skip, limit)
 	if usecaseErr != nil {
-		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
+		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
@@ -52,13 +52,13 @@ func (handler SupplierHandler) GetSupplierById(w http.ResponseWriter, r *http.Re
 
 	id, err := GetSupplierId(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
 	Supplier, usecaseErr := handler.usecase.GetSupplierById(ctx, id)
 	if usecaseErr != nil {
-		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
+		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
@@ -70,13 +70,13 @@ func (handler SupplierHandler) CreateSupplier(w http.ResponseWriter, r *http.Req
 
 	supplierRequest, err := GetSupplierRequest(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
 	supplier, usecaseErr := handler.usecase.CreateSupplier(ctx, ToSupplier(supplierRequest))
 	if usecaseErr != nil {
-		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
+		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
@@ -88,19 +88,19 @@ func (handler SupplierHandler) UpdateSupplierById(w http.ResponseWriter, r *http
 
 	id, err := GetSupplierId(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
 	supplierRequest, err := GetSupplierRequest(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
 	supplier, usecaseErr := handler.usecase.UpdateSupplierById(ctx, ToSupplier(supplierRequest), id)
 	if usecaseErr != nil {
-		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
+		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
@@ -112,12 +112,12 @@ func (handler SupplierHandler) DeleteSupplierById(w http.ResponseWriter, r *http
 
 	id, err := GetSupplierId(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
 	if err := handler.usecase.DeleteSupplierById(ctx, id); err != nil {
-		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
+		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
 		return
 	}
 

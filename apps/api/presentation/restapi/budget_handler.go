@@ -19,7 +19,7 @@ func (handler BudgetHandler) GetBudgetList(w http.ResponseWriter, r *http.Reques
 
 	budgets, err := handler.usecase.GetBudgetList(ctx)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
+		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
 		return
 	}
 
@@ -38,13 +38,13 @@ func (handler BudgetHandler) GetBudgetById(w http.ResponseWriter, r *http.Reques
 	id, err := GetBudgetId(r)
 
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
 	budget, usecaseErr := handler.usecase.GetBudgetById(ctx, id)
 	if usecaseErr != nil {
-		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
+		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
@@ -58,14 +58,14 @@ func (handler BudgetHandler) CreateBudget(w http.ResponseWriter, r *http.Request
 
 	budgetRequest, err := GetBudgetRequest(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
 	budget, usecaseErr := handler.usecase.CreateBudget(ctx, ToBudget(budgetRequest))
 
 	if usecaseErr != nil {
-		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
+		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
@@ -77,19 +77,19 @@ func (handler BudgetHandler) UpdateBudgetById(w http.ResponseWriter, r *http.Req
 
 	id, err := GetBudgetId(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
 	budgetRequest, err := GetBudgetRequest(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
 	budget, usecaseErr := handler.usecase.UpdateBudgetById(ctx, ToBudget(budgetRequest), id)
 	if usecaseErr != nil {
-		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
+		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
@@ -101,12 +101,12 @@ func (handler BudgetHandler) DeleteBudgetById(w http.ResponseWriter, r *http.Req
 
 	id, err := GetBudgetId(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
 	if err := handler.usecase.DeleteBudgetById(ctx, id); err != nil {
-		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
+		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
 		return
 	}
 

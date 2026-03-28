@@ -20,13 +20,13 @@ func (handler AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	loginRequest, err := GetLoginRequest(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
 	token, usecaseErr := handler.usecase.Login(ctx, ToLoginRequest(loginRequest))
 	if usecaseErr != nil {
-		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
+		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 

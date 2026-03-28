@@ -19,7 +19,7 @@ func (handler CouponHandler) GetCouponList(w http.ResponseWriter, r *http.Reques
 
 	coupons, err := handler.usecase.GetCouponList(ctx)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
+		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
 		return
 	}
 
@@ -36,13 +36,13 @@ func (handler CouponHandler) GetCouponById(w http.ResponseWriter, r *http.Reques
 
 	id, err := GetCouponId(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
 	coupon, baseError := handler.usecase.GetCouponById(ctx, id)
 	if baseError != nil {
-		WriteError(w, apiContract.Error{Code: ToErrorCode(baseError.Type), Message: baseError.Message})
+		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(baseError.Type), Message: baseError.Message})
 		return
 	}
 
@@ -54,13 +54,13 @@ func (handler CouponHandler) CreateCoupon(w http.ResponseWriter, r *http.Request
 
 	couponRequest, err := GetCouponRequest(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
 	coupon, usecaseErr := handler.usecase.CreateCoupon(ctx, ToCoupon(couponRequest))
 	if usecaseErr != nil {
-		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
+		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
@@ -72,19 +72,19 @@ func (handler CouponHandler) UpdateCouponById(w http.ResponseWriter, r *http.Req
 
 	id, err := GetCouponId(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
 	couponRequest, err := GetCouponRequest(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
 	coupon, usecaseErr := handler.usecase.UpdateCouponById(ctx, ToCoupon(couponRequest), id)
 	if usecaseErr != nil {
-		WriteError(w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
+		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
@@ -96,12 +96,12 @@ func (handler CouponHandler) DeleteCouponById(w http.ResponseWriter, r *http.Req
 
 	id, err := GetCouponId(r)
 	if err != nil {
-		WriteError(w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}
 
 	if err := handler.usecase.DeleteCouponById(ctx, id); err != nil {
-		WriteError(w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
+		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
 		return
 	}
 
