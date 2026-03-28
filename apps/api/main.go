@@ -3,9 +3,11 @@ package main
 import (
 	"apps/api/data/mysql"
 	"apps/api/domain"
+	"apps/api/pkg/logger"
 	"apps/api/presentation/restapi"
 	"apps/api/utils"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -13,11 +15,19 @@ import (
 
 func main() {
 	err := utils.LoadEnv()
-	if err == nil {
-		fmt.Println("Loading .env file")
-	}
 
 	env := utils.GetEnv()
+
+	rootLogger := logger.New(env.ServiceName, env.AppEnv, env.LogLevel)
+
+	if err == nil {
+		rootLogger.Info("loaded .env file")
+	}
+
+	rootLogger.Info("server starting",
+		slog.String("port", env.Port),
+		slog.String("env", env.AppEnv),
+	)
 
 	db, err := mysql.ConnectDB(mysql.ConnectDBParams{
 		DbUsername: env.DbUsername,
@@ -32,6 +42,7 @@ func main() {
 
 	router := mux.NewRouter().StrictSlash(true)
 	router.Use(restapi.EnableCORS)
+	router.Use(logger.RequestLogger(rootLogger))
 
 	walletRepository := mysql.NewWalletRepository(db)
 	variantRepository := mysql.NewVariantRepository(db)
@@ -93,5 +104,6 @@ func main() {
 		w.Write([]byte("health check success"))
 	})
 
+	rootLogger.Info("server listening", slog.String("port", env.Port))
 	http.ListenAndServe(fmt.Sprintf(":%s", env.Port), router)
 }
