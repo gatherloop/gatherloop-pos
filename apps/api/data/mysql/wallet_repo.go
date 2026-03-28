@@ -17,21 +17,21 @@ func (repo Repository) GetWalletList(ctx context.Context) ([]domain.Wallet, *dom
 	db := GetDbFromCtx(ctx, repo.db)
 	var wallets []Wallet
 	result := db.Table("wallets").Where("deleted_at", nil).Find(&wallets)
-	return ToWalletListDomain(wallets), ToError(result.Error)
+	return ToWalletListDomain(wallets), ToErrorCtx(ctx, result.Error, "GetWalletList")
 }
 
 func (repo Repository) GetWalletById(ctx context.Context, id int64) (domain.Wallet, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	var wallet Wallet
 	result := db.Table("wallets").Where("id = ?", id).First(&wallet)
-	return ToWalletDomain(wallet), ToError(result.Error)
+	return ToWalletDomain(wallet), ToErrorCtx(ctx, result.Error, "GetWalletById")
 }
 
 func (repo Repository) CreateWallet(ctx context.Context, wallet domain.Wallet) (domain.Wallet, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	walletPayload := ToWalletDB(wallet)
 	result := db.Table("wallets").Create(&walletPayload)
-	return ToWalletDomain(walletPayload), ToError(result.Error)
+	return ToWalletDomain(walletPayload), ToErrorCtx(ctx, result.Error, "CreateWallet")
 }
 
 func (repo Repository) UpdateWalletById(ctx context.Context, wallet domain.Wallet, id int64) (domain.Wallet, *domain.Error) {
@@ -45,14 +45,14 @@ func (repo Repository) UpdateWalletById(ctx context.Context, wallet domain.Walle
 
 	var updatedWallet Wallet
 	result = db.Table("wallets").Where("id = ?", id).First(&updatedWallet)
-	return ToWalletDomain(updatedWallet), ToError(result.Error)
+	return ToWalletDomain(updatedWallet), ToErrorCtx(ctx, result.Error, "UpdateWalletById")
 }
 
 func (repo Repository) DeleteWalletById(ctx context.Context, id int64) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	currentTime := time.Now()
 	result := db.Table("wallets").Where("id = ?", id).Update("deleted_at", currentTime)
-	return ToError(result.Error)
+	return ToErrorCtx(ctx, result.Error, "DeleteWalletById")
 }
 
 func (repo Repository) GetWalletTransferList(ctx context.Context, walletId int64, sortBy domain.SortBy, order domain.Order, skip int, limit int) ([]domain.WalletTransfer, *domain.Error) {
@@ -71,7 +71,7 @@ func (repo Repository) GetWalletTransferList(ctx context.Context, walletId int64
 
 	result = result.Find(&walletTransfers)
 
-	return ToWalletTransferListDomain(walletTransfers), ToError(result.Error)
+	return ToWalletTransferListDomain(walletTransfers), ToErrorCtx(ctx, result.Error, "GetWalletTransferList")
 }
 
 func (repo Repository) CreateWalletTransfer(ctx context.Context, walletTransfer domain.WalletTransfer, fromWalletId int64) (domain.WalletTransfer, *domain.Error) {
@@ -79,10 +79,10 @@ func (repo Repository) CreateWalletTransfer(ctx context.Context, walletTransfer 
 	walletTransferPayload := ToWalletTransferDB(walletTransfer)
 
 	if result := db.Table("wallet_transfers").Create(&walletTransferPayload); result.Error != nil {
-		return domain.WalletTransfer{}, ToError(result.Error)
+		return domain.WalletTransfer{}, ToErrorCtx(ctx, result.Error, "CreateWalletTransfer")
 	}
 
 	var createdWalletTransfer WalletTransfer
 	result := db.Table("wallet_transfers").Preload("FromWallet").Preload("ToWallet").Where("id = ?", walletTransferPayload.Id).First(&createdWalletTransfer)
-	return ToWalletTransferDomain(createdWalletTransfer), ToError(result.Error)
+	return ToWalletTransferDomain(createdWalletTransfer), ToErrorCtx(ctx, result.Error, "CreateWalletTransfer")
 }

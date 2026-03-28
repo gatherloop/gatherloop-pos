@@ -2,9 +2,11 @@ package mysql
 
 import (
 	"apps/api/domain"
+	"apps/api/pkg/logger"
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -16,14 +18,23 @@ type Repository struct {
 
 func (repo Repository) BeginTransaction(ctx context.Context, callback func(ctxWithTx context.Context) *domain.Error) *domain.Error {
 	var baseError *domain.Error = nil
+	log := logger.FromCtx(ctx, slog.Default())
+
+	log.DebugContext(ctx, "transaction begin")
 
 	repo.db.Transaction(func(tx *gorm.DB) error {
 		ctxWithTx := context.WithValue(ctx, "tx", tx)
 		baseError = callback(ctxWithTx)
 
 		if baseError != nil {
-			return errors.New(baseError.Message)
+			txErr := errors.New(baseError.Message)
+			log.ErrorContext(ctx, "transaction rollback",
+				slog.String("reason", txErr.Error()),
+			)
+			return txErr
 		}
+
+		log.DebugContext(ctx, "transaction commit")
 		return nil
 	})
 

@@ -16,43 +16,43 @@ func (repo Repository) GetBudgetList(ctx context.Context) ([]domain.Budget, *dom
 	db := GetDbFromCtx(ctx, repo.db)
 	var budgets []Budget
 	result := db.Table("budgets").Where("deleted_at is NULL").Find(&budgets)
-	return ToBudgetsListDomain(budgets), ToError(result.Error)
+	return ToBudgetsListDomain(budgets), ToErrorCtx(ctx, result.Error, "GetBudgetList")
 }
 
 func (repo Repository) GetBudgetById(ctx context.Context, id int64) (domain.Budget, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	var budget Budget
 	result := db.Table("budgets").Where("id = ?", id).First(&budget)
-	return ToBudgetDomain(budget), ToError(result.Error)
+	return ToBudgetDomain(budget), ToErrorCtx(ctx, result.Error, "GetBudgetById")
 }
 
 func (repo Repository) CreateBudget(ctx context.Context, budget domain.Budget) (domain.Budget, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	budgetPayload := ToBudgetDB(budget)
 	if result := db.Table("budgets").Create(&budgetPayload); result.Error != nil {
-		return domain.Budget{}, ToError(result.Error)
+		return domain.Budget{}, ToErrorCtx(ctx, result.Error, "CreateBudget")
 	}
 
 	var createdBudget Budget
 	fetchResult := db.Table("budgets").Where("id = ?", budgetPayload.Id).First(&createdBudget)
-	return ToBudgetDomain(createdBudget), ToError(fetchResult.Error)
+	return ToBudgetDomain(createdBudget), ToErrorCtx(ctx, fetchResult.Error, "CreateBudget")
 }
 
 func (repo Repository) UpdateBudgetById(ctx context.Context, budget domain.Budget, id int64) (domain.Budget, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	budgetPayload := ToBudgetDB(budget)
 	if result := db.Table("budgets").Where("id = ?", id).Updates(&budgetPayload); result.Error != nil {
-		return domain.Budget{}, ToError(result.Error)
+		return domain.Budget{}, ToErrorCtx(ctx, result.Error, "UpdateBudgetById")
 	}
 
 	var updatedBudget Budget
 	fetchResult := db.Table("budgets").Where("id = ?", id).First(&updatedBudget)
-	return ToBudgetDomain(updatedBudget), ToError(fetchResult.Error)
+	return ToBudgetDomain(updatedBudget), ToErrorCtx(ctx, fetchResult.Error, "UpdateBudgetById")
 }
 
 func (repo Repository) DeleteBudgetById(ctx context.Context, id int64) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	currentTime := time.Now()
 	result := db.Table("budgets").Where("id = ?", id).Update("deleted_at", currentTime)
-	return ToError(result.Error)
+	return ToErrorCtx(ctx, result.Error, "DeleteBudgetById")
 }

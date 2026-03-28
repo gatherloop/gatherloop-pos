@@ -32,7 +32,7 @@ func (repo Repository) GetSupplierList(ctx context.Context, query string, sortBy
 
 	result = result.Find(&suppliers)
 
-	return ToSupplierListDomain(suppliers), ToError(result.Error)
+	return ToSupplierListDomain(suppliers), ToErrorCtx(ctx, result.Error, "GetSupplierList")
 }
 
 func (repo Repository) GetSupplierListTotal(ctx context.Context, query string) (int64, *domain.Error) {
@@ -46,38 +46,38 @@ func (repo Repository) GetSupplierListTotal(ctx context.Context, query string) (
 
 	result = result.Count(&count)
 
-	return count, ToError(result.Error)
+	return count, ToErrorCtx(ctx, result.Error, "GetSupplierListTotal")
 }
 
 func (repo Repository) GetSupplierById(ctx context.Context, id int64) (domain.Supplier, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	var supplier Supplier
 	result := db.Table("suppliers").Where("id = ?", id).Where("deleted_at", nil).First(&supplier)
-	return ToSupplierDomain(supplier), ToError(result.Error)
+	return ToSupplierDomain(supplier), ToErrorCtx(ctx, result.Error, "GetSupplierById")
 }
 
 func (repo Repository) CreateSupplier(ctx context.Context, supplier domain.Supplier) (domain.Supplier, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	supplierPayload := ToSupplierDB(supplier)
 	result := db.Table("suppliers").Create(&supplierPayload)
-	return ToSupplierDomain(supplierPayload), ToError(result.Error)
+	return ToSupplierDomain(supplierPayload), ToErrorCtx(ctx, result.Error, "CreateSupplier")
 }
 
 func (repo Repository) UpdateSupplierById(ctx context.Context, supplier domain.Supplier, id int64) (domain.Supplier, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	supplierPayload := ToSupplierDB(supplier)
 	if result := db.Table("suppliers").Where("id = ?", id).Updates(&supplierPayload); result.Error != nil {
-		return domain.Supplier{}, ToError(result.Error)
+		return domain.Supplier{}, ToErrorCtx(ctx, result.Error, "UpdateSupplierById")
 	}
 
 	var updatedSupplier Supplier
 	result := db.Table("suppliers").Where("id = ?", id).First(&updatedSupplier)
-	return ToSupplierDomain(updatedSupplier), ToError(result.Error)
+	return ToSupplierDomain(updatedSupplier), ToErrorCtx(ctx, result.Error, "UpdateSupplierById")
 }
 
 func (repo Repository) DeleteSupplierById(ctx context.Context, id int64) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	currentTime := time.Now()
 	result := db.Table("suppliers").Where("id = ?", id).Update("deleted_at", currentTime)
-	return ToError(result.Error)
+	return ToErrorCtx(ctx, result.Error, "DeleteSupplierById")
 }

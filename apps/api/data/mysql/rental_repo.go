@@ -40,7 +40,7 @@ func (repo Repository) GetRentalList(ctx context.Context, query string, sortBy d
 
 	result = result.Find(&transactionResults)
 
-	return ToRentalListDomain(transactionResults), ToError(result.Error)
+	return ToRentalListDomain(transactionResults), ToErrorCtx(ctx, result.Error, "GetRentalList")
 }
 
 func (repo Repository) GetRentalListTotal(ctx context.Context, query string, checkoutStatus domain.CheckoutStatus) (int64, *domain.Error) {
@@ -61,7 +61,7 @@ func (repo Repository) GetRentalListTotal(ctx context.Context, query string, che
 
 	result = result.Count(&count)
 
-	return count, ToError(result.Error)
+	return count, ToErrorCtx(ctx, result.Error, "GetRentalListTotal")
 }
 
 func (repo Repository) GetRentalById(ctx context.Context, id int64) (domain.Rental, *domain.Error) {
@@ -69,7 +69,7 @@ func (repo Repository) GetRentalById(ctx context.Context, id int64) (domain.Rent
 
 	var rental Rental
 	result := db.Table("rentals").Where("id = ?", id).Preload("Variant").Preload("Variant.Materials").Preload("Variant.Materials.Material").Preload("Variant.VariantValues").Preload("Variant.VariantValues.OptionValue").Preload("Variant.Product").First(&rental)
-	return ToRentalDomain(rental), ToError(result.Error)
+	return ToRentalDomain(rental), ToErrorCtx(ctx, result.Error, "GetRentalById")
 }
 
 func (repo Repository) CheckinRentals(ctx context.Context, rentals []domain.Rental) ([]domain.Rental, *domain.Error) {
@@ -77,7 +77,7 @@ func (repo Repository) CheckinRentals(ctx context.Context, rentals []domain.Rent
 
 	dbRentals := ToRentalListDB(rentals)
 	if result := db.Table("rentals").Create(&dbRentals); result.Error != nil {
-		return []domain.Rental{}, ToError(result.Error)
+		return []domain.Rental{}, ToErrorCtx(ctx, result.Error, "CheckinRentals")
 	}
 
 	var ids []int64
@@ -87,18 +87,18 @@ func (repo Repository) CheckinRentals(ctx context.Context, rentals []domain.Rent
 
 	var created []Rental
 	fetch := db.Table("rentals").Where("id IN ?", ids).Preload("Variant").Preload("Variant.Materials").Preload("Variant.Materials.Material").Preload("Variant.VariantValues").Preload("Variant.VariantValues.OptionValue").Preload("Variant.Product").Find(&created)
-	return ToRentalListDomain(created), ToError(fetch.Error)
+	return ToRentalListDomain(created), ToErrorCtx(ctx, fetch.Error, "CheckinRentals")
 }
 
 func (repo Repository) CheckoutRental(ctx context.Context, rentalId int64) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	result := db.Table("rentals").Where("id = ?", rentalId).Update("checkout_at", time.Now())
-	return ToError(result.Error)
+	return ToErrorCtx(ctx, result.Error, "CheckoutRental")
 }
 
 func (repo Repository) DeleteRentalById(ctx context.Context, id int64) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	currentTime := time.Now()
 	result := db.Table("rentals").Where("id = ?", id).Update("deleted_at", currentTime)
-	return ToError(result.Error)
+	return ToErrorCtx(ctx, result.Error, "DeleteRentalById")
 }

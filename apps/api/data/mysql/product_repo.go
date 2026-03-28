@@ -42,7 +42,7 @@ func (repo Repository) GetProductList(ctx context.Context, query string, sortBy 
 
 	result = result.Find(&products)
 
-	return ToProductListDomain(products), ToError(result.Error)
+	return ToProductListDomain(products), ToErrorCtx(ctx, result.Error, "GetProductList")
 }
 
 func (repo Repository) GetProductListTotal(ctx context.Context, query string, saleType *domain.SaleType) (int64, *domain.Error) {
@@ -65,27 +65,27 @@ func (repo Repository) GetProductListTotal(ctx context.Context, query string, sa
 
 	result = result.Count(&count)
 
-	return count, ToError(result.Error)
+	return count, ToErrorCtx(ctx, result.Error, "GetProductListTotal")
 }
 
 func (repo Repository) GetProductById(ctx context.Context, id int64) (domain.Product, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	var product Product
 	result := db.Table("products").Preload("Category").Preload("Options").Preload("Options.Values").Where("id = ?", id).First(&product)
-	return ToProductDomain(product), ToError(result.Error)
+	return ToProductDomain(product), ToErrorCtx(ctx, result.Error, "GetProductById")
 }
 
 func (repo Repository) CreateProduct(ctx context.Context, product domain.Product) (domain.Product, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	payload := ToProductDB(product)
 	if result := db.Table("products").Create(&payload); result.Error != nil {
-		return domain.Product{}, ToError(result.Error)
+		return domain.Product{}, ToErrorCtx(ctx, result.Error, "CreateProduct")
 	}
 
 	// Fetch the created product with all relations
 	var createdProduct Product
 	fetchResult := db.Table("products").Preload("Category").Preload("Options").Preload("Options.Values").Where("id = ?", payload.Id).First(&createdProduct)
-	return ToProductDomain(createdProduct), ToError(fetchResult.Error)
+	return ToProductDomain(createdProduct), ToErrorCtx(ctx, fetchResult.Error, "CreateProduct")
 }
 
 func (repo Repository) UpdateProductById(ctx context.Context, product domain.Product, id int64) (domain.Product, *domain.Error) {
@@ -95,7 +95,7 @@ func (repo Repository) UpdateProductById(ctx context.Context, product domain.Pro
 	// update product
 	productPayload := ToProductDB(product)
 	if result := db.Session(&gorm.Session{FullSaveAssociations: true}).Table("products").Where("id = ?", id).Updates(&productPayload); result.Error != nil {
-		return domain.Product{}, ToError(result.Error)
+		return domain.Product{}, ToErrorCtx(ctx, result.Error, "UpdateProductById")
 	}
 
 	// Collect IDs of options and option values that should be kept (those that are present in the incoming payload)
@@ -115,44 +115,45 @@ func (repo Repository) UpdateProductById(ctx context.Context, product domain.Pro
 	if len(optionIdsToKeep) > 0 {
 		// delete items that were present before but are not in the incoming idsToKeep
 		if err := db.Table("options").Where("product_id = ? AND id NOT IN ?", id, optionIdsToKeep).Delete(&Option{}).Error; err != nil {
-			return domain.Product{}, ToError(err)
+			return domain.Product{}, ToErrorCtx(ctx, err, "UpdateProductById")
 		}
 	} else {
 		// If incoming payload has no existing IDs, remove all previously existing items
 		if err := db.Table("options").Where("product_id = ?", id).Delete(&Option{}).Error; err != nil {
-			return domain.Product{}, ToError(err)
+			return domain.Product{}, ToErrorCtx(ctx, err, "UpdateProductById")
 		}
 	}
 
 	if len(optionValueIdsToKeep) > 0 {
 		// delete items that were present before but are not in the incoming idsToKeep
 		if err := db.Table("option_values").Where("option_id IN (SELECT id FROM options WHERE product_id = ?) AND id NOT IN ?", id, optionValueIdsToKeep).Delete(&OptionValue{}).Error; err != nil {
-			return domain.Product{}, ToError(err)
+			return domain.Product{}, ToErrorCtx(ctx, err, "UpdateProductById")
 		}
 	} else {
 		// If incoming payload has no existing IDs, remove all previously existing items
 		if err := db.Table("option_values").Where("option_id IN (SELECT id FROM options WHERE product_id = ?)", id).Delete(&OptionValue{}).Error; err != nil {
-			return domain.Product{}, ToError(err)
+			return domain.Product{}, ToErrorCtx(ctx, err, "UpdateProductById")
 		}
 	}
 
 	// Fetch the updated product with all relations
 	var updatedProduct Product
 	fetchResult := db.Table("products").Preload("Category").Preload("Options").Preload("Options.Values").Where("id = ?", id).First(&updatedProduct)
-	return ToProductDomain(updatedProduct), ToError(fetchResult.Error)
+	return ToProductDomain(updatedProduct), ToErrorCtx(ctx, fetchResult.Error, "UpdateProductById")
 }
 
 func (repo Repository) DeleteProductById(ctx context.Context, id int64) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	currentTime := time.Now()
 	result := db.Table("products").Where("id = ?", id).Update("deleted_at", currentTime)
-	return ToError(result.Error)
+	return ToErrorCtx(ctx, result.Error, "DeleteProductById")
 }
 
 func (repo Repository) DeleteUnusedOptions(ctx context.Context, productId int64, idsToKeep []int64) *domain.Error {
 	if len(idsToKeep) > 0 {
 		db := GetDbFromCtx(ctx, repo.db)
-		return ToError(db.Where("product_id = ? AND id NOT IN ?", productId, idsToKeep).Delete(&domain.Option{}).Error)
+		err := db.Where("product_id = ? AND id NOT IN ?", productId, idsToKeep).Delete(&domain.Option{}).Error
+		return ToErrorCtx(ctx, err, "DeleteUnusedOptions")
 	} else {
 		return nil
 	}
@@ -161,7 +162,8 @@ func (repo Repository) DeleteUnusedOptions(ctx context.Context, productId int64,
 func (repo Repository) DeleteUnusedOptionValues(ctx context.Context, optionId int64, idsToKeep []int64) *domain.Error {
 	if len(idsToKeep) > 0 {
 		db := GetDbFromCtx(ctx, repo.db)
-		return ToError(db.Where("option_id = ? AND id NOT IN ?", optionId, idsToKeep).Delete(&domain.OptionValue{}).Error)
+		err := db.Where("option_id = ? AND id NOT IN ?", optionId, idsToKeep).Delete(&domain.OptionValue{}).Error
+		return ToErrorCtx(ctx, err, "DeleteUnusedOptionValues")
 	} else {
 		return nil
 	}
