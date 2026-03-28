@@ -51,6 +51,7 @@ var expectedTables = []string{
 }
 
 func TestMigrator_RunUp(t *testing.T) {
+	requireMySQL(t)
 	// Ensure we start from a clean state.
 	dropAllTables(t)
 
@@ -74,6 +75,7 @@ func TestMigrator_RunUp(t *testing.T) {
 }
 
 func TestMigrator_RunUp_Idempotent(t *testing.T) {
+	requireMySQL(t)
 	// Running up a second time should be a no-op (ErrNoChange is swallowed).
 	err := migrator.Run(migrator.Params{
 		DbUsername:   testDBUser,
@@ -87,6 +89,7 @@ func TestMigrator_RunUp_Idempotent(t *testing.T) {
 }
 
 func TestMigration_Down(t *testing.T) {
+	requireMySQL(t)
 	db := openDB(t)
 	defer db.Close()
 
@@ -108,6 +111,22 @@ func TestMigration_Down(t *testing.T) {
 }
 
 // helpers
+
+// requireMySQL skips the test when a MySQL instance is not reachable.
+// This prevents integration tests from failing in environments without a DB.
+func requireMySQL(t *testing.T) {
+	t.Helper()
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+		testDBUser, testDBPass, testDBHost, testDBPort, testDBName)
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		t.Skipf("skipping: cannot open MySQL DSN: %v", err)
+	}
+	defer db.Close()
+	if err := db.Ping(); err != nil {
+		t.Skipf("skipping: MySQL not reachable at %s:%s — %v", testDBHost, testDBPort, err)
+	}
+}
 
 func openDB(t *testing.T) *sql.DB {
 	t.Helper()
