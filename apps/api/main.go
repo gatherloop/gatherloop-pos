@@ -7,6 +7,7 @@ import (
 	"apps/api/pkg/logger"
 	"apps/api/pkg/migrator"
 	"apps/api/presentation/restapi"
+	"apps/api/seeds"
 	"apps/api/utils"
 	"flag"
 	"fmt"
@@ -18,6 +19,7 @@ import (
 
 func main() {
 	migrateOnly := flag.Bool("migrate-only", false, "run database migrations and exit")
+	seedFlag := flag.Bool("seed", false, "run database migrations then seeders and exit")
 	flag.Parse()
 
 	err := utils.LoadEnv()
@@ -63,6 +65,15 @@ func main() {
 	})
 	if err != nil {
 		panic("failed to connect database")
+	}
+
+	if *seedFlag {
+		rootLogger.Info("--seed flag set, running seeders")
+		if err := seeds.RunAll(db, seeds.All()); err != nil {
+			panic(fmt.Sprintf("failed to run seeders: %v", err))
+		}
+		rootLogger.Info("seeders completed successfully")
+		return
 	}
 
 	router := mux.NewRouter().StrictSlash(true)
