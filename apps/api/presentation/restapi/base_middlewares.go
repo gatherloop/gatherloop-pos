@@ -1,9 +1,11 @@
 package restapi
 
 import (
+	"apps/api/pkg/logger"
 	"apps/api/utils"
 	"fmt"
 	apiContract "libs/api-contract"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -52,7 +54,11 @@ func CheckAuth(next http.HandlerFunc) http.HandlerFunc {
 		})
 
 		if err != nil {
-			WriteError(w, apiContract.Error{Code: apiContract.UNAUTHORIZED, Message: "Credential Error"})
+			log := logger.FromCtx(r.Context(), slog.Default())
+			log.WarnContext(r.Context(), "authentication failed",
+				slog.String("error", err.Error()),
+			)
+			WriteError(r.Context(), w, apiContract.Error{Code: apiContract.UNAUTHORIZED, Message: "Credential Error"})
 			return
 		}
 

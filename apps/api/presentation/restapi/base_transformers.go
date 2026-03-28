@@ -2,15 +2,34 @@ package restapi
 
 import (
 	"apps/api/domain"
+	"apps/api/pkg/logger"
+	"context"
 	"encoding/json"
 	apiContract "libs/api-contract"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
 )
 
-func WriteError(w http.ResponseWriter, err apiContract.Error) {
-	w.WriteHeader(ToHttpStatus(err))
+func WriteError(ctx context.Context, w http.ResponseWriter, err apiContract.Error) {
+	httpStatus := ToHttpStatus(err)
+	log := logger.FromCtx(ctx, slog.Default())
+
+	attrs := []any{
+		slog.String("error_code", string(err.Code)),
+		slog.String("error_message", err.Message),
+		slog.Int("http_status", httpStatus),
+	}
+
+	switch err.Code {
+	case apiContract.BAD_REQUEST, apiContract.NOT_FOUND, apiContract.UNAUTHORIZED:
+		log.WarnContext(ctx, "request error", attrs...)
+	default:
+		log.ErrorContext(ctx, "request error", attrs...)
+	}
+
+	w.WriteHeader(httpStatus)
 	json.NewEncoder(w).Encode(err)
 }
 

@@ -19,6 +19,7 @@ func main() {
 	env := utils.GetEnv()
 
 	rootLogger := logger.New(env.ServiceName, env.AppEnv, env.LogLevel)
+	slog.SetDefault(rootLogger)
 
 	if err == nil {
 		rootLogger.Info("loaded .env file")
