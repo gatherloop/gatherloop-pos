@@ -37,6 +37,7 @@ func RunAll(db *gorm.DB, seeders []Seeder) error {
 // Independent tables are seeded first so that FK constraints are satisfied.
 func All() []Seeder {
 	return []Seeder{
+		// Phase 2: independent tables
 		UserSeeder{},
 		CategorySeeder{},
 		MaterialSeeder{},
@@ -44,5 +45,11 @@ func All() []Seeder {
 		WalletSeeder{},
 		BudgetSeeder{},
 		CouponSeeder{},
+		// Phase 3: relational tables (FK dependencies respected)
+		ProductSeeder{},     // depends on: categories
+		VariantSeeder{},     // depends on: products, materials, option_values
+		TransactionSeeder{}, // depends on: wallets, variants, coupons
+		ExpenseSeeder{},     // depends on: wallets, budgets
+		RentalSeeder{},      // depends on: variants
 	}
 }
