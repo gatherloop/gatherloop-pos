@@ -39,9 +39,11 @@ A **template-based checklist system** that allows the manager to define reusable
 | Concept | Description |
 |---|---|
 | **Checklist Template** | A reusable blueprint defining a set of actions for a specific operational context (e.g., "Opening Checklist"). Contains an ordered list of action items. |
-| **Template Item** | A single action within a template (e.g., "Turn on bar lamp", "Check coffee bean stock"). Has a name, optional description, and display order. |
+| **Template Item** | A single action within a template (e.g., "Turn on lamp", "Turn on music"). Has a name, optional description, and display order. May contain an ordered list of sub-items. |
+| **Template Sub-Item** | A specific step or component within a template item (e.g., "Bar Lamp" and "Door Lamp" under "Turn on lamp"). Has a name and display order. Allows a single item to be broken down into concrete sub-tasks. |
 | **Checklist Session** | An instance of a template created for a specific date. Represents "Opening Checklist for April 3, 2026". Tracks overall completion status. |
-| **Session Item** | A single action within a session, derived from the template item at the time of session creation. Can be checked/unchecked by staff. Optionally tracks who completed it and when. |
+| **Session Item** | A single action within a session, derived from the template item at the time of session creation. Can be checked/unchecked by staff. If the original template item had sub-items, this session item tracks completion per sub-item instead of at the item level. |
+| **Session Sub-Item** | A specific step within a session item, copied from the template sub-item at session creation. Can be checked/unchecked independently. A session item with sub-items is considered completed when all its sub-items are checked. |
 
 ### Why Template-Based?
 
@@ -63,13 +65,18 @@ The system shall allow users to create, view, edit, and delete checklist templat
 - **Name** (required): e.g., "Opening Checklist", "Closing Checklist", "Weekly Cleaning"
 - **Description** (optional): Additional context about when/how to use this checklist
 - **Items** (at least 1 required): An ordered list of action items, each with:
-  - **Name** (required): The action to perform, e.g., "Turn on bar lamp"
+  - **Name** (required): The action to perform, e.g., "Turn on lamp", "Turn on music"
   - **Description** (optional): Additional instructions or notes
   - **Display order**: Determines the sequence in which items appear
+  - **Sub-items** (optional): An ordered list of specific steps within this item, each with:
+    - **Name** (required): The specific component or step, e.g., "Bar Lamp", "Door Lamp"
+    - **Display order**: Determines the sequence in which sub-items appear
 
 **Rules:**
 - Template names must be unique
 - Items can be reordered via drag-and-drop or manual ordering
+- Sub-items can be reordered within their parent item
+- An item either has sub-items or is treated as a single checkable action — it cannot be both (i.e., if sub-items exist, the item itself is not directly checkable; completion is derived from its sub-items)
 - Deleting a template should not delete historical sessions (soft delete or archive)
 - Editing a template does NOT retroactively change existing sessions (sessions are snapshots)
 
@@ -82,26 +89,39 @@ The system shall allow users to create a checklist session from a template for a
 - **Date** (required): The date this checklist applies to (defaults to today)
 - **Status**: Derived from item completion — incomplete, or completed (all items checked)
 - **Session items**: Copied from template items at creation time, each with a checked/unchecked state
+  - If a template item had sub-items, the corresponding session item will have session sub-items (each independently checkable)
+  - If a template item had no sub-items, the session item itself is directly checkable
 - **Created at**: Timestamp of when the session was created
 - **Completed at**: Timestamp of when all items were checked (nullable)
 
 **Rules:**
 - Only one session per template per date (prevent duplicates, e.g., you can't have two "Opening Checklists" for April 3)
-- Session items are a snapshot of the template items at the time of creation
-- A session is marked as "completed" automatically when all its items are checked
+- Session items are a snapshot of the template items at the time of creation (including any sub-items)
+- A session item with sub-items is considered completed when all its sub-items are checked
+- A session is marked as "completed" automatically when all its items are completed
 
-### FR-3: Checking/Unchecking Session Items
+### FR-3: Checking/Unchecking Session Items and Sub-Items
 
-Staff shall be able to check and uncheck individual items within a session.
+Staff shall be able to check and uncheck individual items (or sub-items) within a session.
 
-**When checking an item:**
+**For items without sub-items — when checking:**
 - The item is marked as completed
 - A `completed_at` timestamp is recorded
-- If all items are now checked, the session is automatically marked as completed with a `completed_at` timestamp
+- If all items are now completed, the session is automatically marked as completed with a `completed_at` timestamp
 
-**When unchecking an item:**
+**For items without sub-items — when unchecking:**
 - The item is marked as incomplete
 - The `completed_at` timestamp is cleared
+- If the session was previously completed, its `completed_at` is also cleared
+
+**For items with sub-items — when checking a sub-item:**
+- The sub-item is marked as completed with a `completed_at` timestamp
+- If all sub-items under the parent item are now checked, the parent item is automatically marked as completed
+- If all items are now completed, the session is automatically marked as completed
+
+**For items with sub-items — when unchecking a sub-item:**
+- The sub-item is marked as incomplete; its `completed_at` is cleared
+- If the parent item was previously completed, its `completed_at` is cleared
 - If the session was previously completed, its `completed_at` is also cleared
 
 ### FR-4: Checklist Session List & Filtering
@@ -123,7 +143,8 @@ The system shall provide a list view of checklist sessions with filtering capabi
 
 The system shall provide a detail view for each session showing:
 - All items with their checked/unchecked state
-- Completion timestamps for checked items
+- For items with sub-items: all sub-items listed under the parent, each with their checked/unchecked state and completion timestamp
+- Completion timestamps for checked items (and sub-items)
 - Overall session completion status and timestamp
 - The date the session was created for
 
@@ -141,16 +162,19 @@ This serves as the **audit trail** for managers to review what was and wasn't do
 **Acceptance Criteria:**
 - User can enter a template name and optional description
 - User can add multiple items, each with a name and optional description
-- User can reorder items
+- For each item, user can optionally add sub-items (e.g., "Bar Lamp", "Door Lamp" under "Turn on lamp")
+- User can reorder items; user can reorder sub-items within their parent item
 - User can save the template
 - Validation: name is required, at least 1 item is required, template name must be unique
+- Sub-item names are required if a sub-item is added
 
 **US-2: Edit a checklist template**
-> As a manager, I want to edit an existing checklist template (rename, add/remove/reorder items), so that I can update procedures when operations change.
+> As a manager, I want to edit an existing checklist template (rename, add/remove/reorder items and sub-items), so that I can update procedures when operations change.
 
 **Acceptance Criteria:**
-- User can modify template name, description, and items
-- Adding/removing/reordering items is supported
+- User can modify template name, description, items, and sub-items
+- Adding/removing/reordering items and sub-items is supported
+- User can add sub-items to an existing item, or remove all sub-items to make it a directly-checkable item
 - Changes do NOT affect already-created sessions
 - Validation rules same as creation
 
@@ -183,21 +207,25 @@ This serves as the **audit trail** for managers to review what was and wasn't do
 - If a session for the same template and date already exists, the user is notified and directed to the existing session
 - Session items reflect the template's items at the time of creation
 
-**US-6: Check off completed items**
-> As a staff member, I want to check off items as I complete them, so that I can track my progress and ensure nothing is missed.
+**US-6: Check off completed items and sub-items**
+> As a staff member, I want to check off items (or their sub-items) as I complete them, so that I can track my progress and ensure nothing is missed.
 
 **Acceptance Criteria:**
-- User can tap/click an item to toggle its checked state
-- Checked items show a completion timestamp
-- Progress indicator updates in real time (e.g., "5/10 completed")
-- When all items are checked, the session is automatically marked as completed
+- For items without sub-items: user can tap/click the item to toggle its checked state
+- For items with sub-items: the item is expanded to show its sub-items; user checks each sub-item individually
+- Items with sub-items show a mini progress indicator (e.g., "2/3") until all sub-items are done, then display as completed
+- Checked items/sub-items show a completion timestamp
+- Overall progress indicator updates in real time (e.g., "5/10 completed")
+- When all items (and all their sub-items) are completed, the session is automatically marked as completed
 
-**US-7: Uncheck an item**
-> As a staff member, I want to uncheck an item if I marked it by mistake, so that the checklist accurately reflects what has been done.
+**US-7: Uncheck an item or sub-item**
+> As a staff member, I want to uncheck an item or sub-item if I marked it by mistake, so that the checklist accurately reflects what has been done.
 
 **Acceptance Criteria:**
-- User can uncheck a previously checked item
-- The completion timestamp is cleared
+- User can uncheck a previously checked item (for items without sub-items)
+- User can uncheck a previously checked sub-item (for items with sub-items)
+- The completion timestamp is cleared for the unchecked item/sub-item
+- If unchecking a sub-item causes the parent item to become incomplete, the parent item's completion is also reverted
 - If the session was marked as completed, the completion status is reverted
 
 ---
@@ -243,14 +271,14 @@ This feature is divided into **5 phases**, each producing a deployable increment
 **Goal:** Establish the database foundation and API endpoints for managing checklist templates and their items.
 
 **Deliverables:**
-- Database migrations for `checklist_templates` and `checklist_template_items` tables (including soft delete, unique constraints, and indexes)
+- Database migrations for `checklist_templates`, `checklist_template_items`, and `checklist_template_sub_items` tables (including soft delete, unique constraints, and indexes)
 - REST API endpoints:
   - `GET /checklist-templates` — list all templates (with item count)
-  - `GET /checklist-templates/:id` — get template detail with items
-  - `POST /checklist-templates` — create template with items
-  - `PUT /checklist-templates/:id` — update template (name, description, add/remove/reorder items)
+  - `GET /checklist-templates/:id` — get template detail with items and their sub-items
+  - `POST /checklist-templates` — create template with items and optional sub-items per item
+  - `PUT /checklist-templates/:id` — update template (name, description, add/remove/reorder items and sub-items)
   - `DELETE /checklist-templates/:id` — soft-delete template
-- Input validation (name required, unique name, at least 1 item)
+- Input validation (name required, unique name, at least 1 item, sub-item names required if sub-items provided)
 - Unit/integration tests for all endpoints
 
 **Covers:** FR-1
@@ -266,7 +294,7 @@ This feature is divided into **5 phases**, each producing a deployable increment
 **Deliverables:**
 - Add **"Checklists"** menu item to sidebar navigation
 - Template list screen — displays all templates with name, description, and item count
-- Template create screen — form with name, description, and dynamic item list (add/remove/reorder items)
+- Template create screen — form with name, description, and dynamic item list (add/remove/reorder items); each item supports an optional nested sub-item list (add/remove/reorder sub-items)
 - Template edit screen — pre-populated form, same capabilities as create
 - Template delete — confirmation dialog, triggers soft-delete API
 - Form validation with React Hook Form + Zod (name required, unique, at least 1 item)
@@ -284,15 +312,17 @@ This feature is divided into **5 phases**, each producing a deployable increment
 **Goal:** Implement the API layer for creating sessions from templates and checking/unchecking items.
 
 **Deliverables:**
-- Database migrations for `checklist_sessions` and `checklist_session_items` tables (including unique constraint on `template_id + date`)
+- Database migrations for `checklist_sessions`, `checklist_session_items`, and `checklist_session_sub_items` tables (including unique constraint on `template_id + date`)
 - REST API endpoints:
-  - `POST /checklist-sessions` — create a session from a template for a given date (snapshot items from template, enforce one-session-per-template-per-date)
-  - `GET /checklist-sessions/:id` — get session detail with all items and their completion state
-  - `PUT /checklist-session-items/:id/check` — mark item as completed (set `completed_at`; auto-complete session if all items checked)
-  - `PUT /checklist-session-items/:id/uncheck` — mark item as incomplete (clear `completed_at`; revert session completion if needed)
+  - `POST /checklist-sessions` — create a session from a template for a given date (snapshot items and sub-items from template, enforce one-session-per-template-per-date)
+  - `GET /checklist-sessions/:id` — get session detail with all items, their sub-items, and completion state
+  - `PUT /checklist-session-items/:id/check` — mark item as completed (only for items without sub-items; set `completed_at`; auto-complete session if all items done)
+  - `PUT /checklist-session-items/:id/uncheck` — mark item as incomplete (only for items without sub-items; clear `completed_at`; revert session completion if needed)
+  - `PUT /checklist-session-sub-items/:id/check` — mark sub-item as completed (set `completed_at`; auto-complete parent item if all sub-items checked; auto-complete session if all items done)
+  - `PUT /checklist-session-sub-items/:id/uncheck` — mark sub-item as incomplete (clear `completed_at`; revert parent item and session completion if needed)
   - `DELETE /checklist-sessions/:id` — soft-delete session
 - Input validation (template must exist and not be deleted, date required, duplicate session prevention)
-- Unit/integration tests for all endpoints, including edge cases (duplicate session, check/uncheck cascading logic)
+- Unit/integration tests for all endpoints, including edge cases (duplicate session, sub-item cascading to item completion, item cascading to session completion, uncheck cascading logic)
 
 **Covers:** FR-2, FR-3
 
@@ -308,9 +338,10 @@ This feature is divided into **5 phases**, each producing a deployable increment
 - Session creation flow — select a template, pick a date (defaults to today), create session (with duplicate detection and redirect to existing session)
 - Session execution screen:
   - Displays all items with large, tap-friendly checkboxes (optimized for tablet)
-  - Tap to check/uncheck items
+  - Items without sub-items: tap to check/uncheck directly
+  - Items with sub-items: displayed as a collapsible group; each sub-item has its own checkbox; parent item shows mini progress (e.g., "1/2") until all sub-items are done
   - Real-time progress indicator (e.g., "5/10 completed")
-  - Completion timestamps shown per item
+  - Completion timestamps shown per item or sub-item
   - Visual feedback when session is fully completed
 - React Query mutations for check/uncheck with optimistic updates
 - Session delete with confirmation dialog
@@ -397,6 +428,15 @@ checklist_template_items
 ├── updated_at
 └── deleted_at (nullable, soft delete)
 
+checklist_template_sub_items
+├── id (PK)
+├── checklist_template_item_id (FK → checklist_template_items)
+├── name (required)
+├── display_order (integer)
+├── created_at
+├── updated_at
+└── deleted_at (nullable, soft delete)
+
 checklist_sessions
 ├── id (PK)
 ├── checklist_template_id (FK → checklist_templates)
@@ -413,6 +453,16 @@ checklist_session_items
 ├── name (required, copied from template item)
 ├── description (nullable, copied from template item)
 ├── display_order (integer, copied from template item)
+├── completed_at (nullable — null if item has sub-items; derived from sub-item completion)
+├── created_at
+└── updated_at
+
+checklist_session_sub_items
+├── id (PK)
+├── checklist_session_item_id (FK → checklist_session_items)
+├── checklist_template_sub_item_id (FK → checklist_template_sub_items, nullable)
+├── name (required, copied from template sub-item)
+├── display_order (integer, copied from template sub-item)
 ├── completed_at (nullable)
 ├── created_at
 └── updated_at
@@ -420,10 +470,14 @@ checklist_session_items
 
 **Key relationships:**
 - A template has many template items (1:N)
+- A template item optionally has many template sub-items (1:N)
 - A template has many sessions (1:N)
 - A session has many session items (1:N)
+- A session item optionally has many session sub-items (1:N), mirroring the template item's sub-items at snapshot time
 - Unique constraint on `(checklist_template_id, date)` in sessions table
 - Session items store a copy of the template item data (snapshot pattern) plus a reference back to the original template item
+- Session sub-items store a copy of the template sub-item data plus a reference back to the original template sub-item
+- A session item's `completed_at` is set automatically when all its sub-items are checked; if it has no sub-items, it is set directly when the item is checked
 
 ---
 
