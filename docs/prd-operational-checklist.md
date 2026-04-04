@@ -234,6 +234,134 @@ This serves as the **audit trail** for managers to review what was and wasn't do
 
 ---
 
+## Delivery Phases
+
+This feature is divided into **5 phases**, each producing a deployable increment that delivers standalone value. Each phase builds on the previous one. Developers should complete all items within a phase before moving to the next.
+
+### Phase 1: Backend — Checklist Template CRUD
+
+**Goal:** Establish the database foundation and API endpoints for managing checklist templates and their items.
+
+**Deliverables:**
+- Database migrations for `checklist_templates` and `checklist_template_items` tables (including soft delete, unique constraints, and indexes)
+- REST API endpoints:
+  - `GET /checklist-templates` — list all templates (with item count)
+  - `GET /checklist-templates/:id` — get template detail with items
+  - `POST /checklist-templates` — create template with items
+  - `PUT /checklist-templates/:id` — update template (name, description, add/remove/reorder items)
+  - `DELETE /checklist-templates/:id` — soft-delete template
+- Input validation (name required, unique name, at least 1 item)
+- Unit/integration tests for all endpoints
+
+**Covers:** FR-1
+
+**Exit Criteria:** All template CRUD endpoints are functional and tested. A developer can create, read, update, and delete templates via API.
+
+---
+
+### Phase 2: Frontend — Checklist Template Management
+
+**Goal:** Provide a UI for managers to create, view, edit, and delete checklist templates.
+
+**Deliverables:**
+- Add **"Checklists"** menu item to sidebar navigation
+- Template list screen — displays all templates with name, description, and item count
+- Template create screen — form with name, description, and dynamic item list (add/remove/reorder items)
+- Template edit screen — pre-populated form, same capabilities as create
+- Template delete — confirmation dialog, triggers soft-delete API
+- Form validation with React Hook Form + Zod (name required, unique, at least 1 item)
+- Shared UI components (if needed) in the Tamagui-based UI library
+- React Query integration for server state
+
+**Covers:** US-1, US-2, US-3, US-4
+
+**Exit Criteria:** A user can fully manage checklist templates (list, create, edit, delete) from both the web and mobile apps.
+
+---
+
+### Phase 3: Backend — Checklist Session & Item Execution
+
+**Goal:** Implement the API layer for creating sessions from templates and checking/unchecking items.
+
+**Deliverables:**
+- Database migrations for `checklist_sessions` and `checklist_session_items` tables (including unique constraint on `template_id + date`)
+- REST API endpoints:
+  - `POST /checklist-sessions` — create a session from a template for a given date (snapshot items from template, enforce one-session-per-template-per-date)
+  - `GET /checklist-sessions/:id` — get session detail with all items and their completion state
+  - `PUT /checklist-session-items/:id/check` — mark item as completed (set `completed_at`; auto-complete session if all items checked)
+  - `PUT /checklist-session-items/:id/uncheck` — mark item as incomplete (clear `completed_at`; revert session completion if needed)
+  - `DELETE /checklist-sessions/:id` — soft-delete session
+- Input validation (template must exist and not be deleted, date required, duplicate session prevention)
+- Unit/integration tests for all endpoints, including edge cases (duplicate session, check/uncheck cascading logic)
+
+**Covers:** FR-2, FR-3
+
+**Exit Criteria:** A developer can create sessions, check/uncheck items, and observe automatic session completion via API.
+
+---
+
+### Phase 4: Frontend — Session Execution
+
+**Goal:** Allow staff to start a checklist session and check off items through a tablet-friendly UI.
+
+**Deliverables:**
+- Session creation flow — select a template, pick a date (defaults to today), create session (with duplicate detection and redirect to existing session)
+- Session execution screen:
+  - Displays all items with large, tap-friendly checkboxes (optimized for tablet)
+  - Tap to check/uncheck items
+  - Real-time progress indicator (e.g., "5/10 completed")
+  - Completion timestamps shown per item
+  - Visual feedback when session is fully completed
+- React Query mutations for check/uncheck with optimistic updates
+- Session delete with confirmation dialog
+
+**Covers:** US-5, US-6, US-7
+
+**Exit Criteria:** Staff can start a checklist for today, check off items in a smooth tablet-friendly experience, and see real-time progress. The session auto-completes when all items are checked.
+
+---
+
+### Phase 5: Session List, Filtering & Dashboard Overview
+
+**Goal:** Provide managers with review and accountability tools, and give all users a quick daily overview.
+
+**Deliverables:**
+- Session list screen with filters:
+  - `GET /checklist-sessions` — list endpoint with query params for `template_id`, `date_from`, `date_to`, `status` (completed/incomplete), and pagination
+  - Filter UI: template dropdown, date range picker, status toggle
+  - List displays: template name, date, progress fraction (e.g., "8/10"), status badge
+  - Default view: today's sessions
+- Session detail screen (audit view):
+  - All items with checked/unchecked state
+  - Completion timestamps for checked items
+  - Overall session status and completion timestamp
+  - Visual highlighting of missed (unchecked) items
+- Today's dashboard overview:
+  - All sessions for today, grouped by template
+  - Progress bar or completion fraction per session
+  - Visual distinction between completed and incomplete sessions
+  - Quick-start button for templates with no session today
+
+**Covers:** FR-4, FR-5, US-8, US-9, US-10
+
+**Exit Criteria:** Managers can browse, filter, and review historical sessions for accountability. All users see a dashboard of today's checklists with clear progress indicators.
+
+---
+
+### Phase Summary
+
+| Phase | Scope | Key FRs / User Stories | Dependency |
+|---|---|---|---|
+| **Phase 1** | Backend Template CRUD | FR-1 | None |
+| **Phase 2** | Frontend Template Management | US-1 – US-4 | Phase 1 |
+| **Phase 3** | Backend Session & Execution | FR-2, FR-3 | Phase 1 |
+| **Phase 4** | Frontend Session Execution | US-5 – US-7 | Phase 2, Phase 3 |
+| **Phase 5** | Session List, Filters & Dashboard | FR-4, FR-5, US-8 – US-10 | Phase 4 |
+
+> **Note:** Phases 2 and 3 can be developed **in parallel** by separate developers since they have no dependency on each other (both depend only on Phase 1).
+
+---
+
 ## Out of Scope (for v1)
 
 These features are intentionally excluded from the initial release to keep scope manageable:
