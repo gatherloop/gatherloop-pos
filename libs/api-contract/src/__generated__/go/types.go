@@ -690,3 +690,65 @@ type ChecklistTemplateListResponse struct {
 	Data []ChecklistTemplate `json:"data"`
 	Meta MetaPage            `json:"meta"`
 }
+
+// ChecklistSession
+type ChecklistSessionSubItem struct {
+	Id                           int64      `json:"id"`
+	ChecklistSessionItemId       int64      `json:"checklistSessionItemId"`
+	ChecklistTemplateSubItemId   *int64     `json:"checklistTemplateSubItemId,omitempty"`
+	Name                         string     `json:"name"`
+	DisplayOrder                 int        `json:"displayOrder"`
+	CompletedAt                  *time.Time `json:"completedAt,omitempty"`
+	CreatedAt                    time.Time  `json:"createdAt"`
+	UpdatedAt                    time.Time  `json:"updatedAt"`
+}
+
+type ChecklistSessionItem struct {
+	Id                         int64                     `json:"id"`
+	ChecklistSessionId         int64                     `json:"checklistSessionId"`
+	ChecklistTemplateItemId    *int64                    `json:"checklistTemplateItemId,omitempty"`
+	Name                       string                    `json:"name"`
+	Description                *string                   `json:"description,omitempty"`
+	DisplayOrder               int                       `json:"displayOrder"`
+	CompletedAt                *time.Time                `json:"completedAt,omitempty"`
+	SubItems                   []ChecklistSessionSubItem `json:"subItems"`
+	CreatedAt                  time.Time                 `json:"createdAt"`
+	UpdatedAt                  time.Time                 `json:"updatedAt"`
+}
+
+type ChecklistSession struct {
+	Id                    int64                  `json:"id"`
+	ChecklistTemplateId   int64                  `json:"checklistTemplateId"`
+	ChecklistTemplate     *ChecklistTemplate     `json:"checklistTemplate,omitempty"`
+	Date                  string                 `json:"date"`
+	CompletedAt           *time.Time             `json:"completedAt,omitempty"`
+	Items                 []ChecklistSessionItem `json:"items"`
+	CreatedAt             time.Time              `json:"createdAt"`
+	UpdatedAt             time.Time              `json:"updatedAt"`
+	DeletedAt             *time.Time             `json:"deletedAt,omitempty"`
+}
+
+type ChecklistSessionRequest struct {
+	ChecklistTemplateId int64  `json:"checklistTemplateId"`
+	Date                string `json:"date"`
+}
+
+type ChecklistSessionCreateResponse struct {
+	Data ChecklistSession `json:"data"`
+}
+
+type ChecklistSessionFindByIdResponse struct {
+	Data ChecklistSession `json:"data"`
+}
+
+type ChecklistSessionDeleteResponse struct {
+	Success bool `json:"success"`
+}
+
+type ChecklistSessionItemCheckResponse struct {
+	Data ChecklistSessionItem `json:"data"`
+}
+
+type ChecklistSessionSubItemCheckResponse struct {
+	Data ChecklistSessionSubItem `json:"data"`
+}
