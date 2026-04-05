@@ -13,3 +13,4 @@ export * from './rentals';
 export * from './wallets';
 export * from './suppliers';
 export * from './checklistTemplates';
+export * from './checklistSessions';

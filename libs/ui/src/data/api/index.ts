@@ -25,3 +25,5 @@ export * from './supplier';
 export * from './supplier.transformer';
 export * from './checklistTemplate';
 export * from './checklistTemplate.transformer';
+export * from './checklistSession';
+export * from './checklistSession.transformer';

@@ -344,7 +344,7 @@ func TestChecklistSessionUsecase_CheckSessionItem(t *testing.T) {
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				sessionRepo.EXPECT().GetChecklistSessionItemById(gomock.Any(), int64(20)).
 					Return(domain.ChecklistSessionItem{
-						Id:               20,
+						Id:                 20,
 						ChecklistSessionId: 1,
 						SubItems: []domain.ChecklistSessionSubItem{
 							{Id: 100, Name: "Bar Lamp"},
@@ -430,9 +430,9 @@ func TestChecklistSessionUsecase_UncheckSessionItem(t *testing.T) {
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				sessionRepo.EXPECT().GetChecklistSessionItemById(gomock.Any(), int64(20)).
 					Return(domain.ChecklistSessionItem{
-						Id:               20,
+						Id:                 20,
 						ChecklistSessionId: 1,
-						CompletedAt:      &now,
+						CompletedAt:        &now,
 						SubItems: []domain.ChecklistSessionSubItem{
 							{Id: 100, Name: "Bar Lamp"},
 						},

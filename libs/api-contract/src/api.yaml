@@ -431,6 +431,186 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /checklist-sessions:
+    post:
+      summary: Create checklist session
+      operationId: checklistSessionCreate
+      tags:
+        - checklistSession
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChecklistSessionRequest'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChecklistSessionCreateResponse'
+        '403':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /checklist-sessions/{checklistSessionId}:
+    get:
+      summary: Get checklist session by id
+      operationId: checklistSessionFindById
+      tags:
+        - checklistSession
+      parameters:
+        - $ref: '#/components/parameters/ChecklistSessionId'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChecklistSessionFindByIdResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Delete checklist session by id
+      operationId: checklistSessionDeleteById
+      tags:
+        - checklistSession
+      parameters:
+        - $ref: '#/components/parameters/ChecklistSessionId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /checklist-session-items/{checklistSessionItemId}/check:
+    put:
+      summary: Check checklist session item
+      operationId: checklistSessionItemCheck
+      tags:
+        - checklistSession
+      parameters:
+        - $ref: '#/components/parameters/ChecklistSessionItemId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChecklistSessionItemCheckResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /checklist-session-items/{checklistSessionItemId}/uncheck:
+    put:
+      summary: Uncheck checklist session item
+      operationId: checklistSessionItemUncheck
+      tags:
+        - checklistSession
+      parameters:
+        - $ref: '#/components/parameters/ChecklistSessionItemId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChecklistSessionItemUncheckResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /checklist-session-sub-items/{checklistSessionSubItemId}/check:
+    put:
+      summary: Check checklist session sub item
+      operationId: checklistSessionSubItemCheck
+      tags:
+        - checklistSession
+      parameters:
+        - $ref: '#/components/parameters/ChecklistSessionSubItemId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChecklistSessionSubItemCheckResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /checklist-session-sub-items/{checklistSessionSubItemId}/uncheck:
+    put:
+      summary: Uncheck checklist session sub item
+      operationId: checklistSessionSubItemUncheck
+      tags:
+        - checklistSession
+      parameters:
+        - $ref: '#/components/parameters/ChecklistSessionSubItemId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChecklistSessionSubItemUncheckResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /suppliers:
     get:
       summary: List all suppliers
@@ -2024,6 +2204,123 @@ components:
         updatedAt:
           type: string
           format: date-time
+    ChecklistSessionSubItem:
+      type: object
+      required:
+        - id
+        - checklistSessionItemId
+        - name
+        - displayOrder
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: integer
+          format: int64
+        checklistSessionItemId:
+          type: integer
+          format: int64
+        checklistTemplateSubItemId:
+          type: integer
+          format: int64
+        name:
+          type: string
+        displayOrder:
+          type: integer
+        completedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ChecklistSessionItem:
+      type: object
+      required:
+        - id
+        - checklistSessionId
+        - name
+        - displayOrder
+        - subItems
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: integer
+          format: int64
+        checklistSessionId:
+          type: integer
+          format: int64
+        checklistTemplateItemId:
+          type: integer
+          format: int64
+        name:
+          type: string
+        description:
+          type: string
+        displayOrder:
+          type: integer
+        completedAt:
+          type: string
+          format: date-time
+        subItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChecklistSessionSubItem'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ChecklistSession:
+      type: object
+      required:
+        - id
+        - checklistTemplateId
+        - date
+        - items
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: integer
+          format: int64
+        checklistTemplateId:
+          type: integer
+          format: int64
+        checklistTemplate:
+          $ref: '#/components/schemas/ChecklistTemplate'
+        date:
+          type: string
+          format: date
+        completedAt:
+          type: string
+          format: date-time
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChecklistSessionItem'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ChecklistSessionRequest:
+      type: object
+      required:
+        - checklistTemplateId
+        - date
+      properties:
+        checklistTemplateId:
+          type: integer
+          format: int64
+        date:
+          type: string
+          format: date
     ChecklistTemplateSubItemRequest:
       type: object
       required:
@@ -3011,6 +3308,48 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/Material'
+    ChecklistSessionCreateResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/ChecklistSession'
+    ChecklistSessionFindByIdResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/ChecklistSession'
+    ChecklistSessionItemCheckResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/ChecklistSessionItem'
+    ChecklistSessionItemUncheckResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/ChecklistSessionItem'
+    ChecklistSessionSubItemCheckResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/ChecklistSessionSubItem'
+    ChecklistSessionSubItemUncheckResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/ChecklistSessionSubItem'
     ChecklistTemplateFindByIdResponse:
       type: object
       required:
@@ -3573,6 +3912,24 @@ components:
         enum: [purchase, rental, all]
     ChecklistTemplateId:
       name: checklistTemplateId
+      in: path
+      schema:
+        type: integer
+      required: true
+    ChecklistSessionId:
+      name: checklistSessionId
+      in: path
+      schema:
+        type: integer
+      required: true
+    ChecklistSessionItemId:
+      name: checklistSessionItemId
+      in: path
+      schema:
+        type: integer
+      required: true
+    ChecklistSessionSubItemId:
+      name: checklistSessionSubItemId
       in: path
       schema:
         type: integer
