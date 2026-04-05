@@ -1,5 +1,6 @@
 import {
   Box,
+  ClipboardList,
   DollarSign,
   LayoutDashboard,
   ShoppingCart,
@@ -47,6 +48,13 @@ const items: MenuItem[] = [
       { title: 'Wallets', path: '/wallets' },
       { title: 'Calculations', path: '/calculations' },
       { title: 'Budgets', path: '/budgets' },
+    ],
+  },
+  {
+    title: 'Operations',
+    icon: ClipboardList,
+    subItems: [
+      { title: 'Checklists', path: '/checklist-templates' },
     ],
   },
 ];

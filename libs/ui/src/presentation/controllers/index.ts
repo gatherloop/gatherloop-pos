@@ -53,3 +53,7 @@ export * from './SupplierDeleteController';
 export * from './SupplierListController';
 export * from './SupplierCreateController';
 export * from './SupplierUpdateController';
+export * from './ChecklistTemplateDeleteController';
+export * from './ChecklistTemplateListController';
+export * from './ChecklistTemplateCreateController';
+export * from './ChecklistTemplateUpdateController';

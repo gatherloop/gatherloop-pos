@@ -41,3 +41,4 @@ export const LayoutDashboard = NullIcon;
 export const LogOut = NullIcon;
 export const Printer = NullIcon;
 export const XCircle = NullIcon;
+export const ClipboardList = NullIcon;

@@ -38,6 +38,9 @@ import {
   SupplierList,
   SupplierCreate,
   SupplierUpdate,
+  ChecklistTemplateList,
+  ChecklistTemplateCreate,
+  ChecklistTemplateUpdate,
 } from '@gatherloop-pos/ui';
 import { RootProvider } from '@gatherloop-pos/provider';
 import { NavigationContainer } from '@react-navigation/native';
@@ -89,6 +92,9 @@ export type RootStackParamList = {
   rentalList: undefined;
   rentalCheckin: undefined;
   rentalCheckout: undefined;
+  checklistTemplateList: undefined;
+  checklistTemplateCreate: undefined;
+  checklistTemplateUpdate: { checklistTemplateId: number };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -203,6 +209,15 @@ export const App = () => {
             rentalList: 'rentals',
             rentalCheckin: 'rentals/checkin',
             rentalCheckout: 'rentals/checkout',
+            checklistTemplateList: 'checklist-templates',
+            checklistTemplateCreate: 'checklist-templates/create',
+            checklistTemplateUpdate: {
+              path: 'checklist-templates/:checklistTemplateId',
+              parse: {
+                checklistTemplateId: (checklistTemplateId: string) =>
+                  parseInt(checklistTemplateId),
+              },
+            },
           },
         },
       }}
@@ -699,6 +714,43 @@ export const App = () => {
             ) => (
               <RentalCheckout
                 rentalListParams={{ rentals: [], totalItem: 0 }}
+              />
+            )}
+          />
+          <Stack.Screen
+            name="checklistTemplateList"
+            component={(
+              _props: NativeStackScreenProps<
+                RootStackParamList,
+                'checklistTemplateList'
+              >
+            ) => (
+              <ChecklistTemplateList
+                checklistTemplateListParams={{
+                  checklistTemplates: [],
+                  totalItem: 0,
+                }}
+              />
+            )}
+          />
+          <Stack.Screen
+            name="checklistTemplateCreate"
+            component={ChecklistTemplateCreate}
+          />
+          <Stack.Screen
+            name="checklistTemplateUpdate"
+            component={(
+              props: NativeStackScreenProps<
+                RootStackParamList,
+                'checklistTemplateUpdate'
+              >
+            ) => (
+              <ChecklistTemplateUpdate
+                checklistTemplateUpdateParams={{
+                  checklistTemplate: null,
+                  checklistTemplateId:
+                    props.route.params.checklistTemplateId,
+                }}
               />
             )}
           />

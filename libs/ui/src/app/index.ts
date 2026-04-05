@@ -37,3 +37,6 @@ export * from './RentalCheckout';
 export * from './SupplierList';
 export * from './SupplierCreate';
 export * from './SupplierUpdate';
+export * from './ChecklistTemplateList';
+export * from './ChecklistTemplateCreate';
+export * from './ChecklistTemplateUpdate';
