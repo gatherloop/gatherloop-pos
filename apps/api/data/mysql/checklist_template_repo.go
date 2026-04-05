@@ -145,10 +145,10 @@ func (repo Repository) UpdateChecklistTemplateById(ctx context.Context, template
 		if item.Id > 0 {
 			// Update existing item
 			if result := db.Table("checklist_template_items").Where("id = ?", item.Id).Updates(map[string]interface{}{
-				"name":         item.Name,
-				"description":  item.Description,
+				"name":          item.Name,
+				"description":   item.Description,
 				"display_order": item.DisplayOrder,
-				"deleted_at":   nil,
+				"deleted_at":    nil,
 			}); result.Error != nil {
 				return domain.ChecklistTemplate{}, ToErrorCtx(ctx, result.Error, "UpdateChecklistTemplateById-update-item")
 			}
@@ -190,9 +190,9 @@ func (repo Repository) UpdateChecklistTemplateById(ctx context.Context, template
 
 			if subItem.Id > 0 {
 				if result := db.Table("checklist_template_sub_items").Where("id = ?", subItem.Id).Updates(map[string]interface{}{
-					"name":         subItem.Name,
+					"name":          subItem.Name,
 					"display_order": subItem.DisplayOrder,
-					"deleted_at":   nil,
+					"deleted_at":    nil,
 				}); result.Error != nil {
 					return domain.ChecklistTemplate{}, ToErrorCtx(ctx, result.Error, "UpdateChecklistTemplateById-update-sub-item")
 				}

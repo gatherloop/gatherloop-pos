@@ -79,13 +79,13 @@ func TestChecklistTemplateHandler_GetChecklistTemplateList(t *testing.T) {
 
 func TestChecklistTemplateHandler_GetChecklistTemplateById(t *testing.T) {
 	tests := []struct {
-		name               string
+		name                string
 		checklistTemplateId string
-		setupMocks         func(repo *mock.MockChecklistTemplateRepository)
-		expectedStatus     int
+		setupMocks          func(repo *mock.MockChecklistTemplateRepository)
+		expectedStatus      int
 	}{
 		{
-			name:               "success",
+			name:                "success",
 			checklistTemplateId: "1",
 			setupMocks: func(repo *mock.MockChecklistTemplateRepository) {
 				repo.EXPECT().GetChecklistTemplateById(gomock.Any(), int64(1)).
@@ -94,7 +94,7 @@ func TestChecklistTemplateHandler_GetChecklistTemplateById(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:               "not found",
+			name:                "not found",
 			checklistTemplateId: "99",
 			setupMocks: func(repo *mock.MockChecklistTemplateRepository) {
 				repo.EXPECT().GetChecklistTemplateById(gomock.Any(), int64(99)).
@@ -103,7 +103,7 @@ func TestChecklistTemplateHandler_GetChecklistTemplateById(t *testing.T) {
 			expectedStatus: http.StatusNotFound,
 		},
 		{
-			name:               "invalid id",
+			name:                "invalid id",
 			checklistTemplateId: "abc",
 			setupMocks: func(repo *mock.MockChecklistTemplateRepository) {
 			},
@@ -206,16 +206,16 @@ func TestChecklistTemplateHandler_CreateChecklistTemplate(t *testing.T) {
 
 func TestChecklistTemplateHandler_UpdateChecklistTemplateById(t *testing.T) {
 	tests := []struct {
-		name               string
+		name                string
 		checklistTemplateId string
-		body               string
-		setupMocks         func(repo *mock.MockChecklistTemplateRepository)
-		expectedStatus     int
+		body                string
+		setupMocks          func(repo *mock.MockChecklistTemplateRepository)
+		expectedStatus      int
 	}{
 		{
-			name:               "success",
+			name:                "success",
 			checklistTemplateId: "1",
-			body:               `{"name": "Opening Checklist Updated", "items": [{"name": "Turn on lights", "displayOrder": 1, "subItems": []}]}`,
+			body:                `{"name": "Opening Checklist Updated", "items": [{"name": "Turn on lights", "displayOrder": 1, "subItems": []}]}`,
 			setupMocks: func(repo *mock.MockChecklistTemplateRepository) {
 				repo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
@@ -227,25 +227,25 @@ func TestChecklistTemplateHandler_UpdateChecklistTemplateById(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:               "invalid id",
+			name:                "invalid id",
 			checklistTemplateId: "abc",
-			body:               `{"name": "Opening", "items": [{"name": "Item", "displayOrder": 1, "subItems": []}]}`,
+			body:                `{"name": "Opening", "items": [{"name": "Item", "displayOrder": 1, "subItems": []}]}`,
 			setupMocks: func(repo *mock.MockChecklistTemplateRepository) {
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name:               "invalid JSON body",
+			name:                "invalid JSON body",
 			checklistTemplateId: "1",
-			body:               `{invalid`,
+			body:                `{invalid`,
 			setupMocks: func(repo *mock.MockChecklistTemplateRepository) {
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name:               "empty name validation",
+			name:                "empty name validation",
 			checklistTemplateId: "1",
-			body:               `{"name": "", "items": [{"name": "Item", "displayOrder": 1, "subItems": []}]}`,
+			body:                `{"name": "", "items": [{"name": "Item", "displayOrder": 1, "subItems": []}]}`,
 			setupMocks: func(repo *mock.MockChecklistTemplateRepository) {
 			},
 			expectedStatus: http.StatusBadRequest,
@@ -268,13 +268,13 @@ func TestChecklistTemplateHandler_UpdateChecklistTemplateById(t *testing.T) {
 
 func TestChecklistTemplateHandler_DeleteChecklistTemplateById(t *testing.T) {
 	tests := []struct {
-		name               string
+		name                string
 		checklistTemplateId string
-		setupMocks         func(repo *mock.MockChecklistTemplateRepository)
-		expectedStatus     int
+		setupMocks          func(repo *mock.MockChecklistTemplateRepository)
+		expectedStatus      int
 	}{
 		{
-			name:               "success",
+			name:                "success",
 			checklistTemplateId: "1",
 			setupMocks: func(repo *mock.MockChecklistTemplateRepository) {
 				repo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
@@ -286,14 +286,14 @@ func TestChecklistTemplateHandler_DeleteChecklistTemplateById(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:               "invalid id",
+			name:                "invalid id",
 			checklistTemplateId: "abc",
 			setupMocks: func(repo *mock.MockChecklistTemplateRepository) {
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name:               "not found",
+			name:                "not found",
 			checklistTemplateId: "99",
 			setupMocks: func(repo *mock.MockChecklistTemplateRepository) {
 				repo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
