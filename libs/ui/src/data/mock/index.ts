@@ -13,6 +13,7 @@ export * from './rental';
 export * from './rentalListQuery';
 export * from './supplier';
 export * from './supplierListQuery';
+export * from './checklistTemplate';
 export * from './transaction';
 export * from './transactionListQuery';
 export * from './transactionStatisticListQuery';

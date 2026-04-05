@@ -12,3 +12,4 @@ export * from './transactions';
 export * from './rentals';
 export * from './wallets';
 export * from './suppliers';
+export * from './checklistTemplates';

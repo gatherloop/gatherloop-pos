@@ -303,6 +303,134 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /checklist-templates:
+    get:
+      summary: List all checklist templates
+      operationId: checklistTemplateList
+      tags:
+        - checklistTemplate
+      parameters:
+        - $ref: '#/components/parameters/Query'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/Order'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Skip'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChecklistTemplateListResponse'
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Create checklist template
+      operationId: checklistTemplateCreate
+      tags:
+        - checklistTemplate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChecklistTemplateRequest'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChecklistTemplateCreateResponse'
+        '403':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /checklist-templates/{checklistTemplateId}:
+    get:
+      summary: Get checklist template by id
+      operationId: checklistTemplateFindById
+      tags:
+        - checklistTemplate
+      parameters:
+        - $ref: '#/components/parameters/ChecklistTemplateId'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChecklistTemplateFindByIdResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Update checklist template by id
+      operationId: checklistTemplateUpdateById
+      tags:
+        - checklistTemplate
+      parameters:
+        - $ref: '#/components/parameters/ChecklistTemplateId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChecklistTemplateRequest'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChecklistTemplateUpdateByIdResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Delete checklist template by id
+      operationId: checklistTemplateDeleteById
+      tags:
+        - checklistTemplate
+      parameters:
+        - $ref: '#/components/parameters/ChecklistTemplateId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /suppliers:
     get:
       summary: List all suppliers
@@ -1819,6 +1947,124 @@ components:
           type: number
         unit:
           type: string
+    ChecklistTemplateSubItem:
+      type: object
+      required:
+        - id
+        - name
+        - displayOrder
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        displayOrder:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ChecklistTemplateItem:
+      type: object
+      required:
+        - id
+        - name
+        - displayOrder
+        - subItems
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        description:
+          type: string
+        displayOrder:
+          type: integer
+        subItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChecklistTemplateSubItem'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ChecklistTemplate:
+      type: object
+      required:
+        - id
+        - name
+        - items
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        description:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChecklistTemplateItem'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ChecklistTemplateSubItemRequest:
+      type: object
+      required:
+        - name
+        - displayOrder
+      properties:
+        name:
+          type: string
+        displayOrder:
+          type: integer
+    ChecklistTemplateItemRequest:
+      type: object
+      required:
+        - name
+        - displayOrder
+        - subItems
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        displayOrder:
+          type: integer
+        subItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChecklistTemplateSubItemRequest'
+    ChecklistTemplateRequest:
+      type: object
+      required:
+        - name
+        - items
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChecklistTemplateItemRequest'
     Supplier:
       type: object
       required:
@@ -2765,6 +3011,39 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/Material'
+    ChecklistTemplateFindByIdResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/ChecklistTemplate'
+    ChecklistTemplateListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChecklistTemplate'
+        meta:
+          $ref: '#/components/schemas/MetaPage'
+    ChecklistTemplateCreateResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/ChecklistTemplate'
+    ChecklistTemplateUpdateByIdResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/ChecklistTemplate'
     SupplierFindByIdResponse:
       type: object
       required:
@@ -3292,3 +3571,9 @@ components:
       schema:
         type: string
         enum: [purchase, rental, all]
+    ChecklistTemplateId:
+      name: checklistTemplateId
+      in: path
+      schema:
+        type: integer
+      required: true

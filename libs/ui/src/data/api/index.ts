@@ -23,3 +23,5 @@ export * from './rental';
 export * from './rental.transformer';
 export * from './supplier';
 export * from './supplier.transformer';
+export * from './checklistTemplate';
+export * from './checklistTemplate.transformer';
