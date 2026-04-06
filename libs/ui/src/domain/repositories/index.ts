@@ -20,3 +20,4 @@ export * from './rentalListQuery';
 export * from './supplier';
 export * from './supplierListQuery';
 export * from './checklistTemplate';
+export * from './checklistSession';

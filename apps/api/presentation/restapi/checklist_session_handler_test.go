@@ -111,10 +111,10 @@ func TestChecklistSessionHandler_CreateChecklistSession(t *testing.T) {
 
 func TestChecklistSessionHandler_GetChecklistSessionById(t *testing.T) {
 	tests := []struct {
-		name              string
+		name               string
 		checklistSessionId string
-		setupMocks        func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository)
-		expectedStatus    int
+		setupMocks         func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository)
+		expectedStatus     int
 	}{
 		{
 			name:               "success",
@@ -212,10 +212,10 @@ func TestChecklistSessionHandler_CheckSessionItem(t *testing.T) {
 	now := time.Now()
 
 	tests := []struct {
-		name                     string
-		checklistSessionItemId   string
-		setupMocks               func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository)
-		expectedStatus           int
+		name                   string
+		checklistSessionItemId string
+		setupMocks             func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository)
+		expectedStatus         int
 	}{
 		{
 			name:                   "success",
@@ -249,9 +249,9 @@ func TestChecklistSessionHandler_CheckSessionItem(t *testing.T) {
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				sessionRepo.EXPECT().GetChecklistSessionItemById(gomock.Any(), int64(20)).
 					Return(domain.ChecklistSessionItem{
-						Id:               20,
+						Id:                 20,
 						ChecklistSessionId: 1,
-						SubItems:         []domain.ChecklistSessionSubItem{{Id: 100, Name: "Bar Lamp"}},
+						SubItems:           []domain.ChecklistSessionSubItem{{Id: 100, Name: "Bar Lamp"}},
 					}, nil)
 			},
 			expectedStatus: http.StatusBadRequest,
@@ -286,10 +286,10 @@ func TestChecklistSessionHandler_UncheckSessionItem(t *testing.T) {
 	now := time.Now()
 
 	tests := []struct {
-		name                     string
-		checklistSessionItemId   string
-		setupMocks               func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository)
-		expectedStatus           int
+		name                   string
+		checklistSessionItemId string
+		setupMocks             func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository)
+		expectedStatus         int
 	}{
 		{
 			name:                   "success",
@@ -320,10 +320,10 @@ func TestChecklistSessionHandler_UncheckSessionItem(t *testing.T) {
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				sessionRepo.EXPECT().GetChecklistSessionItemById(gomock.Any(), int64(20)).
 					Return(domain.ChecklistSessionItem{
-						Id:               20,
+						Id:                 20,
 						ChecklistSessionId: 1,
-						CompletedAt:      &now,
-						SubItems:         []domain.ChecklistSessionSubItem{{Id: 100, Name: "Bar Lamp"}},
+						CompletedAt:        &now,
+						SubItems:           []domain.ChecklistSessionSubItem{{Id: 100, Name: "Bar Lamp"}},
 					}, nil)
 			},
 			expectedStatus: http.StatusBadRequest,
@@ -347,10 +347,10 @@ func TestChecklistSessionHandler_CheckSessionSubItem(t *testing.T) {
 	now := time.Now()
 
 	tests := []struct {
-		name                        string
-		checklistSessionSubItemId   string
-		setupMocks                  func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository)
-		expectedStatus              int
+		name                      string
+		checklistSessionSubItemId string
+		setupMocks                func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository)
+		expectedStatus            int
 	}{
 		{
 			name:                      "success",
@@ -406,10 +406,10 @@ func TestChecklistSessionHandler_UncheckSessionSubItem(t *testing.T) {
 	now := time.Now()
 
 	tests := []struct {
-		name                        string
-		checklistSessionSubItemId   string
-		setupMocks                  func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository)
-		expectedStatus              int
+		name                      string
+		checklistSessionSubItemId string
+		setupMocks                func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository)
+		expectedStatus            int
 	}{
 		{
 			name:                      "success",

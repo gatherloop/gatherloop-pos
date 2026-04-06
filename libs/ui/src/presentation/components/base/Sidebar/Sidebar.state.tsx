@@ -54,7 +54,8 @@ const items: MenuItem[] = [
     title: 'Operations',
     icon: ClipboardList,
     subItems: [
-      { title: 'Checklists', path: '/checklist-templates' },
+      { title: 'Templates', path: '/checklist-templates' },
+      { title: 'Sessions', path: '/checklist-sessions/create' },
     ],
   },
 ];
