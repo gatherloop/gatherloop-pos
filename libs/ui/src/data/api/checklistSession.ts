@@ -7,6 +7,9 @@ import {
   checklistSessionFindByIdQueryKey,
   checklistSessionItemCheck,
   checklistSessionItemUncheck,
+  checklistSessionList,
+  checklistSessionListQueryKey,
+  ChecklistSessionListQueryResponse,
   checklistSessionSubItemCheck,
   checklistSessionSubItemUncheck,
 } from '../../../../api-contract/src';
@@ -33,6 +36,53 @@ export class ApiChecklistSessionRepository
   constructor(client: QueryClient) {
     this.client = client;
   }
+
+  getChecklistSessionList: ChecklistSessionRepository['getChecklistSessionList'] =
+    ({ page, itemPerPage, filter }) => {
+      const params = {
+        skip: (page - 1) * itemPerPage,
+        limit: itemPerPage,
+        ...(filter.templateId != null && { templateId: filter.templateId }),
+        ...(filter.dateFrom != null && { dateFrom: filter.dateFrom }),
+        ...(filter.dateTo != null && { dateTo: filter.dateTo }),
+        ...(filter.status != null && { status: filter.status }),
+      };
+
+      const res = this.client.getQueryState<ChecklistSessionListQueryResponse>(
+        checklistSessionListQueryKey(params)
+      )?.data;
+
+      this.client.removeQueries({
+        queryKey: checklistSessionListQueryKey(params),
+      });
+
+      return {
+        checklistSessions: res?.data.map(toChecklistSession) ?? [],
+        totalItem: res?.meta.total ?? 0,
+      };
+    };
+
+  fetchChecklistSessionList: ChecklistSessionRepository['fetchChecklistSessionList'] =
+    ({ page, itemPerPage, filter }) => {
+      const params = {
+        skip: (page - 1) * itemPerPage,
+        limit: itemPerPage,
+        ...(filter.templateId != null && { templateId: filter.templateId }),
+        ...(filter.dateFrom != null && { dateFrom: filter.dateFrom }),
+        ...(filter.dateTo != null && { dateTo: filter.dateTo }),
+        ...(filter.status != null && { status: filter.status }),
+      };
+
+      return this.client
+        .fetchQuery({
+          queryKey: checklistSessionListQueryKey(params),
+          queryFn: () => checklistSessionList(params),
+        })
+        .then((data) => ({
+          checklistSessions: data.data.map(toChecklistSession),
+          totalItem: data.meta.total,
+        }));
+    };
 
   fetchChecklistSessionById = (
     checklistSessionId: number,

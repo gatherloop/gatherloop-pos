@@ -7,10 +7,19 @@ import (
 	"time"
 )
 
+type ChecklistSessionFilter struct {
+	TemplateId *int64
+	DateFrom   *string
+	DateTo     *string
+	Status     *string // "completed" or "incomplete"
+}
+
 type ChecklistSessionRepository interface {
 	BeginTransaction(ctx context.Context, callback func(ctxWithTx context.Context) *Error) *Error
 	GetChecklistSessionById(ctx context.Context, id int64) (ChecklistSession, *Error)
 	GetChecklistSessionByTemplateAndDate(ctx context.Context, templateId int64, date string) (ChecklistSession, *Error)
+	GetChecklistSessionList(ctx context.Context, filter ChecklistSessionFilter, skip int, limit int) ([]ChecklistSession, *Error)
+	GetChecklistSessionListTotal(ctx context.Context, filter ChecklistSessionFilter) (int64, *Error)
 	CreateChecklistSession(ctx context.Context, session ChecklistSession) (ChecklistSession, *Error)
 	DeleteChecklistSessionById(ctx context.Context, id int64) *Error
 	GetChecklistSessionItemById(ctx context.Context, id int64) (ChecklistSessionItem, *Error)

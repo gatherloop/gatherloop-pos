@@ -85,6 +85,36 @@ func (mr *MockChecklistSessionRepositoryMockRecorder) GetChecklistSessionByTempl
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChecklistSessionByTemplateAndDate", reflect.TypeOf((*MockChecklistSessionRepository)(nil).GetChecklistSessionByTemplateAndDate), ctx, templateId, date)
 }
 
+// GetChecklistSessionList mocks base method.
+func (m *MockChecklistSessionRepository) GetChecklistSessionList(ctx context.Context, filter domain.ChecklistSessionFilter, skip int, limit int) ([]domain.ChecklistSession, *domain.Error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetChecklistSessionList", ctx, filter, skip, limit)
+	ret0, _ := ret[0].([]domain.ChecklistSession)
+	ret1, _ := ret[1].(*domain.Error)
+	return ret0, ret1
+}
+
+// GetChecklistSessionList indicates an expected call of GetChecklistSessionList.
+func (mr *MockChecklistSessionRepositoryMockRecorder) GetChecklistSessionList(ctx, filter, skip, limit any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChecklistSessionList", reflect.TypeOf((*MockChecklistSessionRepository)(nil).GetChecklistSessionList), ctx, filter, skip, limit)
+}
+
+// GetChecklistSessionListTotal mocks base method.
+func (m *MockChecklistSessionRepository) GetChecklistSessionListTotal(ctx context.Context, filter domain.ChecklistSessionFilter) (int64, *domain.Error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetChecklistSessionListTotal", ctx, filter)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(*domain.Error)
+	return ret0, ret1
+}
+
+// GetChecklistSessionListTotal indicates an expected call of GetChecklistSessionListTotal.
+func (mr *MockChecklistSessionRepositoryMockRecorder) GetChecklistSessionListTotal(ctx, filter any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChecklistSessionListTotal", reflect.TypeOf((*MockChecklistSessionRepository)(nil).GetChecklistSessionListTotal), ctx, filter)
+}
+
 // CreateChecklistSession mocks base method.
 func (m *MockChecklistSessionRepository) CreateChecklistSession(ctx context.Context, session domain.ChecklistSession) (domain.ChecklistSession, *domain.Error) {
 	m.ctrl.T.Helper()

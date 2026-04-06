@@ -4,7 +4,10 @@ import {
   ChecklistSessionItem,
   ChecklistSessionSubItem,
 } from '../../domain/entities';
-import { ChecklistSessionRepository } from '../../domain/repositories/checklistSession';
+import {
+  ChecklistSessionListFilter,
+  ChecklistSessionRepository,
+} from '../../domain/repositories/checklistSession';
 
 const now = '2024-03-20T00:00:00.000Z';
 
@@ -93,6 +96,63 @@ export class MockChecklistSessionRepository
 
   setDuplicateSessionError(value: boolean) {
     this.duplicateSessionError = value;
+  }
+
+  getChecklistSessionList({
+    page,
+    itemPerPage,
+    filter,
+  }: {
+    page: number;
+    itemPerPage: number;
+    filter: ChecklistSessionListFilter;
+  }): { checklistSessions: ChecklistSession[]; totalItem: number } {
+    let filtered = this.sessions;
+
+    if (filter.templateId != null) {
+      filtered = filtered.filter(
+        (s) => s.checklistTemplateId === filter.templateId
+      );
+    }
+    if (filter.dateFrom != null) {
+      filtered = filtered.filter((s) => s.date >= filter.dateFrom!);
+    }
+    if (filter.dateTo != null) {
+      filtered = filtered.filter((s) => s.date <= filter.dateTo!);
+    }
+    if (filter.status != null) {
+      if (filter.status === 'completed') {
+        filtered = filtered.filter((s) => s.completedAt != null);
+      } else if (filter.status === 'incomplete') {
+        filtered = filtered.filter((s) => s.completedAt == null);
+      }
+    }
+
+    const totalItem = filtered.length;
+    const start = (page - 1) * itemPerPage;
+    const paged = filtered.slice(start, start + itemPerPage);
+
+    return {
+      checklistSessions: paged.map((s) => ({
+        ...s,
+        items: s.items.map((i) => ({ ...i, subItems: [...i.subItems] })),
+      })),
+      totalItem,
+    };
+  }
+
+  async fetchChecklistSessionList({
+    page,
+    itemPerPage,
+    filter,
+  }: {
+    page: number;
+    itemPerPage: number;
+    filter: ChecklistSessionListFilter;
+  }): Promise<{ checklistSessions: ChecklistSession[]; totalItem: number }> {
+    if (this.shouldFail)
+      throw new Error('Failed to fetch checklist session list');
+    return this.getChecklistSessionList({ page, itemPerPage, filter });
   }
 
   async fetchChecklistSessionById(

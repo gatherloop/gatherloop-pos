@@ -41,6 +41,9 @@ import {
   ChecklistTemplateList,
   ChecklistTemplateCreate,
   ChecklistTemplateUpdate,
+  ChecklistSessionList,
+  ChecklistSessionCreate,
+  ChecklistSessionDetail,
 } from '@gatherloop-pos/ui';
 import { RootProvider } from '@gatherloop-pos/provider';
 import { NavigationContainer } from '@react-navigation/native';
@@ -95,6 +98,9 @@ export type RootStackParamList = {
   checklistTemplateList: undefined;
   checklistTemplateCreate: undefined;
   checklistTemplateUpdate: { checklistTemplateId: number };
+  checklistSessionList: undefined;
+  checklistSessionCreate: undefined;
+  checklistSessionDetail: { checklistSessionId: number };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -216,6 +222,15 @@ export const App = () => {
               parse: {
                 checklistTemplateId: (checklistTemplateId: string) =>
                   parseInt(checklistTemplateId),
+              },
+            },
+            checklistSessionList: 'checklist-sessions',
+            checklistSessionCreate: 'checklist-sessions/create',
+            checklistSessionDetail: {
+              path: 'checklist-sessions/:checklistSessionId',
+              parse: {
+                checklistSessionId: (checklistSessionId: string) =>
+                  parseInt(checklistSessionId),
               },
             },
           },
@@ -750,6 +765,55 @@ export const App = () => {
                   checklistTemplate: null,
                   checklistTemplateId:
                     props.route.params.checklistTemplateId,
+                }}
+              />
+            )}
+          />
+          <Stack.Screen
+            name="checklistSessionList"
+            component={(
+              _props: NativeStackScreenProps<
+                RootStackParamList,
+                'checklistSessionList'
+              >
+            ) => (
+              <ChecklistSessionList
+                checklistSessionListParams={{
+                  checklistSessions: [],
+                  totalItem: 0,
+                }}
+              />
+            )}
+          />
+          <Stack.Screen
+            name="checklistSessionCreate"
+            component={(
+              _props: NativeStackScreenProps<
+                RootStackParamList,
+                'checklistSessionCreate'
+              >
+            ) => (
+              <ChecklistSessionCreate
+                checklistSessionCreateParams={{
+                  checklistTemplateId: undefined,
+                  date: new Date().toISOString().split('T')[0],
+                }}
+                checklistTemplates={[]}
+              />
+            )}
+          />
+          <Stack.Screen
+            name="checklistSessionDetail"
+            component={(
+              props: NativeStackScreenProps<
+                RootStackParamList,
+                'checklistSessionDetail'
+              >
+            ) => (
+              <ChecklistSessionDetail
+                checklistSessionDetailParams={{
+                  checklistSession: null,
+                  checklistSessionId: props.route.params.checklistSessionId,
                 }}
               />
             )}

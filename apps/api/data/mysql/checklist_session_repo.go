@@ -138,3 +138,71 @@ func (repo Repository) GetChecklistSessionSubItemsByItemId(ctx context.Context, 
 		Find(&subItems)
 	return ToChecklistSessionSubItemsListDomain(subItems), ToErrorCtx(ctx, result.Error, "GetChecklistSessionSubItemsByItemId")
 }
+
+func (repo Repository) GetChecklistSessionList(ctx context.Context, filter domain.ChecklistSessionFilter, skip int, limit int) ([]domain.ChecklistSession, *domain.Error) {
+	db := GetDbFromCtx(ctx, repo.db)
+	var sessions []ChecklistSession
+	query := db.Table("checklist_sessions").
+		Where("checklist_sessions.deleted_at IS NULL").
+		Preload("ChecklistTemplate").
+		Preload("Items", func(db *gorm.DB) *gorm.DB {
+			return db.Order("display_order ASC")
+		}).
+		Preload("Items.SubItems", func(db *gorm.DB) *gorm.DB {
+			return db.Order("display_order ASC")
+		}).
+		Order("checklist_sessions.date DESC").
+		Offset(skip).
+		Limit(limit)
+
+	if filter.TemplateId != nil {
+		query = query.Where("checklist_sessions.checklist_template_id = ?", *filter.TemplateId)
+	}
+	if filter.DateFrom != nil {
+		query = query.Where("checklist_sessions.date >= ?", *filter.DateFrom)
+	}
+	if filter.DateTo != nil {
+		query = query.Where("checklist_sessions.date <= ?", *filter.DateTo)
+	}
+	if filter.Status != nil {
+		if *filter.Status == "completed" {
+			query = query.Where("checklist_sessions.completed_at IS NOT NULL")
+		} else if *filter.Status == "incomplete" {
+			query = query.Where("checklist_sessions.completed_at IS NULL")
+		}
+	}
+
+	result := query.Find(&sessions)
+	domainSessions := []domain.ChecklistSession{}
+	for _, s := range sessions {
+		domainSessions = append(domainSessions, ToChecklistSessionDomain(s))
+	}
+	return domainSessions, ToErrorCtx(ctx, result.Error, "GetChecklistSessionList")
+}
+
+func (repo Repository) GetChecklistSessionListTotal(ctx context.Context, filter domain.ChecklistSessionFilter) (int64, *domain.Error) {
+	db := GetDbFromCtx(ctx, repo.db)
+	var total int64
+	query := db.Table("checklist_sessions").
+		Where("deleted_at IS NULL")
+
+	if filter.TemplateId != nil {
+		query = query.Where("checklist_template_id = ?", *filter.TemplateId)
+	}
+	if filter.DateFrom != nil {
+		query = query.Where("date >= ?", *filter.DateFrom)
+	}
+	if filter.DateTo != nil {
+		query = query.Where("date <= ?", *filter.DateTo)
+	}
+	if filter.Status != nil {
+		if *filter.Status == "completed" {
+			query = query.Where("completed_at IS NOT NULL")
+		} else if *filter.Status == "incomplete" {
+			query = query.Where("completed_at IS NULL")
+		}
+	}
+
+	result := query.Count(&total)
+	return total, ToErrorCtx(ctx, result.Error, "GetChecklistSessionListTotal")
+}
