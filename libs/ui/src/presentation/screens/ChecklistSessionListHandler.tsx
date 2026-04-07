@@ -1,13 +1,17 @@
 import { useRouter } from 'solito/router';
 import { match, P } from 'ts-pattern';
+import { useEffect } from 'react';
 import {
   AuthLogoutUsecase,
   ChecklistSession,
+  ChecklistSessionCreateUsecase,
   ChecklistSessionListFilter,
   ChecklistSessionListUsecase,
+  ChecklistTemplate,
 } from '../../domain';
 import {
   useAuthLogoutController,
+  useChecklistSessionCreateController,
   useChecklistSessionListController,
 } from '../controllers';
 import {
@@ -18,17 +22,31 @@ import {
 export type ChecklistSessionListHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;
   checklistSessionListUsecase: ChecklistSessionListUsecase;
+  checklistSessionCreateUsecase: ChecklistSessionCreateUsecase;
+  checklistTemplates: ChecklistTemplate[];
 };
 
 export const ChecklistSessionListHandler = ({
   authLogoutUsecase,
   checklistSessionListUsecase,
+  checklistSessionCreateUsecase,
+  checklistTemplates,
 }: ChecklistSessionListHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
   const checklistSessionList = useChecklistSessionListController(
     checklistSessionListUsecase
   );
+  const checklistSessionCreate = useChecklistSessionCreateController(
+    checklistSessionCreateUsecase
+  );
   const router = useRouter();
+
+  useEffect(() => {
+    if (checklistSessionCreate.state.type === 'submitSuccess') {
+      const session = checklistSessionCreate.state.checklistSession;
+      router.push(`/checklist-sessions/${session.id}`);
+    }
+  }, [checklistSessionCreate.state, router]);
 
   return (
     <ChecklistSessionListScreen
@@ -65,6 +83,16 @@ export const ChecklistSessionListHandler = ({
       currentPage={checklistSessionList.state.page}
       totalItem={checklistSessionList.state.totalItem}
       itemPerPage={checklistSessionList.state.itemPerPage}
+      form={checklistSessionCreate.form}
+      onSubmit={(values) =>
+        checklistSessionCreate.dispatch({ type: 'SUBMIT', values })
+      }
+      isSubmitDisabled={
+        checklistSessionCreate.state.type === 'submitting' ||
+        checklistSessionCreate.state.type === 'submitError' ||
+        checklistSessionCreate.state.type === 'submitSuccess'
+      }
+      checklistTemplates={checklistTemplates}
     />
   );
 };

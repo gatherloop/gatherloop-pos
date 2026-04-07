@@ -1,4 +1,4 @@
-import { Button, Card, Form, XStack } from 'tamagui';
+import { Button, Card, Form, XStack, YStack } from 'tamagui';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
 import { Field, InputText, Select } from '../base';
 import { ChecklistSessionForm } from '../../../domain';
@@ -19,31 +19,36 @@ export const ChecklistSessionFormView = ({
 }: ChecklistSessionFormViewProps) => {
   return (
     <FormProvider {...form}>
-      <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
-        <Card padding="$3" gap="$3">
-          <Field name="checklistTemplateId" label="Checklist Template">
-            <Select<number>
-              items={checklistTemplates.map((t) => ({
-                label: t.name,
-                value: t.id,
-              }))}
-            />
-          </Field>
+      <Form onSubmit={form.handleSubmit(onSubmit)}>
+        <Card padding="$3">
+          <YStack gap="$3" $gtMd={{ flexDirection: 'row', alignItems: 'flex-end' }}>
+            <YStack flex={1}>
+              <Field name="checklistTemplateId" label="Checklist Template">
+                <Select<number>
+                  items={checklistTemplates.map((t) => ({
+                    label: t.name,
+                    value: t.id,
+                  }))}
+                />
+              </Field>
+            </YStack>
 
-          <Field name="date" label="Date">
-            <InputText placeholder="YYYY-MM-DD" />
-          </Field>
+            <YStack flex={1}>
+              <Field name="date" label="Date">
+                <InputText placeholder="YYYY-MM-DD" />
+              </Field>
+            </YStack>
+
+            <Button
+              disabled={isSubmitDisabled}
+              onPress={form.handleSubmit(onSubmit)}
+              theme="blue"
+              $gtMd={{ marginBottom: '$1' }}
+            >
+              Start Session
+            </Button>
+          </YStack>
         </Card>
-
-        <XStack justifyContent="flex-end">
-          <Button
-            disabled={isSubmitDisabled}
-            onPress={form.handleSubmit(onSubmit)}
-            theme="blue"
-          >
-            Start Session
-          </Button>
-        </XStack>
       </Form>
     </FormProvider>
   );

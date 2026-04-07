@@ -1,5 +1,6 @@
 import {
   ApiChecklistSessionRepository,
+  ApiChecklistTemplateRepository,
   ChecklistSessionList,
   ChecklistSessionListProps,
 } from '@gatherloop-pos/ui';
@@ -21,11 +22,12 @@ export const getServerSideProps: GetServerSideProps<
 
   const client = new QueryClient();
   const checklistSessionRepository = new ApiChecklistSessionRepository(client);
+  const checklistTemplateRepository = new ApiChecklistTemplateRepository(client);
 
   const today = new Date().toISOString().split('T')[0];
 
-  const { checklistSessions, totalItem } =
-    await checklistSessionRepository.fetchChecklistSessionList(
+  const [sessionResult, templateResult] = await Promise.all([
+    checklistSessionRepository.fetchChecklistSessionList(
       {
         page: 1,
         itemPerPage: 10,
@@ -34,15 +36,32 @@ export const getServerSideProps: GetServerSideProps<
       {
         headers: { Cookie: ctx.req.headers.cookie },
       }
-    );
+    ),
+    checklistTemplateRepository.fetchChecklistTemplateList(
+      {
+        page: 1,
+        itemPerPage: 100,
+        orderBy: 'asc',
+        query: '',
+        sortBy: 'created_at',
+      },
+      {
+        headers: { Cookie: ctx.req.headers.cookie },
+      }
+    ),
+  ]);
 
   return {
     props: {
       checklistSessionListParams: {
-        checklistSessions,
-        totalItem,
+        checklistSessions: sessionResult.checklistSessions,
+        totalItem: sessionResult.totalItem,
         filter: { dateFrom: today, dateTo: today },
       },
+      checklistSessionCreateParams: {
+        date: today,
+      },
+      checklistTemplates: templateResult.checklistTemplates,
     },
   };
 };

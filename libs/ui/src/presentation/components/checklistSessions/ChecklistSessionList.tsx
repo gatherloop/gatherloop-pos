@@ -1,8 +1,8 @@
-import { Paragraph, Select, Text, XStack, YStack } from 'tamagui';
-import { EmptyView, ErrorView, LoadingView, Pagination } from '../base';
+import { Select, XStack, YStack } from 'tamagui';
+import { EmptyView, ErrorView, ListItem, LoadingView, Pagination } from '../base';
 import { FlatList } from 'react-native';
 import { match } from 'ts-pattern';
-import { CheckCircle, Clock } from '@tamagui/lucide-icons';
+import { CheckCircle, Clock, Filter } from '@tamagui/lucide-icons';
 import { ChecklistSession, ChecklistSessionListFilter } from '../../../domain';
 
 export type ChecklistSessionListProps = {
@@ -30,6 +30,10 @@ function getCompletedCount(session: ChecklistSession): number {
   }).length;
 }
 
+function formatDate(dateStr: string): string {
+  return dateStr.split('T')[0];
+}
+
 export const ChecklistSessionList = ({
   onPageChange,
   onRetryButtonPress,
@@ -44,7 +48,8 @@ export const ChecklistSessionList = ({
   return (
     <YStack gap="$3" flex={1}>
       {/* Filter Controls */}
-      <XStack gap="$2" flexWrap="wrap">
+      <XStack gap="$2" alignItems="center" flexWrap="wrap">
+        <Filter size="$1" color="$gray10" />
         <Select
           value={filter.status ?? ''}
           onValueChange={(value) =>
@@ -98,43 +103,21 @@ export const ChecklistSessionList = ({
               const total = item.items.length;
               const isCompleted = item.completedAt != null;
               return (
-                <XStack
-                  padding="$3"
-                  borderRadius="$3"
-                  backgroundColor="$background"
-                  borderWidth={1}
-                  borderColor="$borderColor"
-                  justifyContent="space-between"
-                  alignItems="center"
+                <ListItem
+                  title={item.checklistTemplate?.name ?? `Session #${item.id}`}
+                  subtitle={formatDate(item.date)}
                   onPress={() => onItemPress(item)}
                   pressStyle={{ opacity: 0.7 }}
-                >
-                  <YStack gap="$1" flex={1}>
-                    <Text fontSize="$4" fontWeight="bold">
-                      {item.checklistTemplate?.name ?? `Session #${item.id}`}
-                    </Text>
-                    <Paragraph fontSize="$3" color="$gray10">
-                      {item.date}
-                    </Paragraph>
-                    <Text fontSize="$3" color="$gray10">
-                      {completed}/{total} completed
-                    </Text>
-                  </YStack>
-                  <XStack alignItems="center" gap="$2">
-                    {isCompleted ? (
-                      <CheckCircle size="$2" color="$green10" />
-                    ) : (
-                      <Clock size="$2" color="$orange10" />
-                    )}
-                    <Text
-                      fontSize="$3"
-                      fontWeight="bold"
-                      color={isCompleted ? '$green10' : '$orange10'}
-                    >
-                      {isCompleted ? 'Done' : 'Pending'}
-                    </Text>
-                  </XStack>
-                </XStack>
+                  footerItems={[
+                    {
+                      value: `${completed}/${total} completed`,
+                    },
+                    {
+                      icon: isCompleted ? CheckCircle : Clock,
+                      value: isCompleted ? 'Done' : 'Pending',
+                    },
+                  ]}
+                />
               );
             }}
             ItemSeparatorComponent={() => <YStack height="$1" />}

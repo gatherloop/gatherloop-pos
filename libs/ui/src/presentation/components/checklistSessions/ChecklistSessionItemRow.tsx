@@ -1,11 +1,11 @@
 import {
-  CheckCircle,
-  Circle,
+  Check,
   ChevronDown,
   ChevronUp,
 } from '@tamagui/lucide-icons';
 import {
   Card,
+  Checkbox,
   Paragraph,
   Separator,
   Spinner,
@@ -68,10 +68,17 @@ export function ChecklistSessionItemRow({
         {!hasSubItems &&
           (isToggling ? (
             <Spinner size="small" />
-          ) : isCompleted ? (
-            <CheckCircle size="$3" color="$green10" />
           ) : (
-            <Circle size="$3" color="$gray8" />
+            <YStack pointerEvents="none">
+              <Checkbox
+                checked={isCompleted}
+                size="$4"
+              >
+                <Checkbox.Indicator>
+                  <Check />
+                </Checkbox.Indicator>
+              </Checkbox>
+            </YStack>
           ))}
 
         {hasSubItems && (
@@ -105,7 +112,12 @@ export function ChecklistSessionItemRow({
           )}
           {isCompleted && !hasSubItems && item.completedAt && (
             <Paragraph fontSize="$2" color="$gray9">
-              Completed at {new Date(item.completedAt).toLocaleTimeString()}
+              Completed at{' '}
+              {new Date(item.completedAt).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false,
+              })}
             </Paragraph>
           )}
         </YStack>
