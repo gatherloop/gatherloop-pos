@@ -1,7 +1,7 @@
 import { Plus, Trash, X } from '@tamagui/lucide-icons';
 import { Button, Card, Form, H4, Separator, XStack, YStack } from 'tamagui';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
-import { Field, FieldArray, InputText, Textarea } from '../base';
+import { Field, FieldArray, InputText } from '../base';
 import { ChecklistTemplateForm } from '../../../domain';
 
 export type ChecklistTemplateFormViewProps = {
@@ -19,12 +19,18 @@ export const ChecklistTemplateFormView = ({
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
         <Card padding="$3" gap="$3">
-          <Field name="name" label="Template Name">
-            <InputText placeholder="e.g. Opening Checklist" />
-          </Field>
-          <Field name="description" label="Description (optional)">
-            <Textarea placeholder="When/how to use this checklist" />
-          </Field>
+          <XStack gap="$3">
+            <YStack flex={1}>
+              <Field name="name" label="Template Name">
+                <InputText placeholder="e.g. Opening Checklist" />
+              </Field>
+            </YStack>
+            <YStack flex={1}>
+              <Field name="description" label="Description (optional)">
+                <InputText placeholder="When/how to use this checklist" />
+              </Field>
+            </YStack>
+          </XStack>
         </Card>
 
         <FieldArray
