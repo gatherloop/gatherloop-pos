@@ -59,11 +59,9 @@ export const ChecklistSessionDetailHandler = ({
     ) {
       checklistSessionDetail.dispatch({ type: 'FETCH' });
     }
-  }, [
-    itemToggle.state.type,
-    subItemToggle.state.type,
-    checklistSessionDetail,
-  ]);
+  }, [itemToggle.state.type, subItemToggle.state.type, checklistSessionDetail]);
+
+  console.log('subItemToggle', subItemToggle.state.type);
 
   // Navigate back after deletion
   useEffect(() => {
@@ -77,7 +75,8 @@ export const ChecklistSessionDetailHandler = ({
   }, [checklistSessionDelete.state, router]);
 
   const togglingItemId =
-    itemToggle.state.type === 'checking' || itemToggle.state.type === 'unchecking'
+    itemToggle.state.type === 'checking' ||
+    itemToggle.state.type === 'unchecking'
       ? itemToggle.state.itemId
       : null;
 
@@ -123,15 +122,10 @@ export const ChecklistSessionDetailHandler = ({
           () => true
         )
         .otherwise(() => false)}
-      isDeleteButtonDisabled={
-        checklistSessionDelete.state.type === 'deleting'
-      }
+      isDeleteButtonDisabled={checklistSessionDelete.state.type === 'deleting'}
       variant={match(checklistSessionDetail.state)
         .returnType<ChecklistSessionDetailScreenProps['variant']>()
-        .with(
-          { type: P.union('idle', 'loading') },
-          () => ({ type: 'loading' })
-        )
+        .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))
         .with(
           { type: 'loaded', checklistSession: P.not(P.nullish) },
           ({ checklistSession }) => ({

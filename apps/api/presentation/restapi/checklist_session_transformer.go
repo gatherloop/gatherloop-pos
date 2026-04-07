@@ -114,7 +114,6 @@ func ToApiChecklistSession(d domain.ChecklistSession) apiContract.ChecklistSessi
 		Items:               items,
 		CreatedAt:           d.CreatedAt,
 		UpdatedAt:           d.UpdatedAt,
-		DeletedAt:           d.DeletedAt,
 	}
 }
 

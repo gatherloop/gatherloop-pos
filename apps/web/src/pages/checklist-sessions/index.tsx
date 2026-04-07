@@ -31,6 +31,9 @@ export const getServerSideProps: GetServerSideProps<
         itemPerPage: 10,
         filter: { dateFrom: today, dateTo: today },
       },
+      {
+        headers: { Cookie: ctx.req.headers.cookie },
+      }
     );
 
   return {

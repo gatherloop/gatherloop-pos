@@ -1,5 +1,18 @@
-import { CheckCircle, Circle, ChevronDown, ChevronUp } from '@tamagui/lucide-icons';
-import { Card, Paragraph, Separator, Spinner, Text, XStack, YStack } from 'tamagui';
+import {
+  CheckCircle,
+  Circle,
+  ChevronDown,
+  ChevronUp,
+} from '@tamagui/lucide-icons';
+import {
+  Card,
+  Paragraph,
+  Separator,
+  Spinner,
+  Text,
+  XStack,
+  YStack,
+} from 'tamagui';
 import { useState } from 'react';
 import { ChecklistSessionItem, ChecklistSessionSubItem } from '../../../domain';
 import { ChecklistSessionSubItemRow } from './ChecklistSessionSubItemRow';
@@ -52,15 +65,14 @@ export function ChecklistSessionItemRow({
         }}
         pressStyle={{ opacity: 0.7 }}
       >
-        {!hasSubItems && (
-          isToggling ? (
+        {!hasSubItems &&
+          (isToggling ? (
             <Spinner size="small" />
           ) : isCompleted ? (
             <CheckCircle size="$3" color="$green10" />
           ) : (
             <Circle size="$3" color="$gray8" />
-          )
-        )}
+          ))}
 
         {hasSubItems && (
           <XStack
@@ -79,7 +91,9 @@ export function ChecklistSessionItemRow({
           <Text
             fontSize="$5"
             fontWeight="bold"
-            textDecorationLine={isCompleted && !hasSubItems ? 'line-through' : 'none'}
+            textDecorationLine={
+              isCompleted && !hasSubItems ? 'line-through' : 'none'
+            }
             color={isCompleted && !hasSubItems ? '$gray9' : '$color'}
           >
             {item.name}
@@ -96,9 +110,8 @@ export function ChecklistSessionItemRow({
           )}
         </YStack>
 
-        {hasSubItems && (
-          isExpanded ? <ChevronUp size="$1" /> : <ChevronDown size="$1" />
-        )}
+        {hasSubItems &&
+          (isExpanded ? <ChevronUp size="$1" /> : <ChevronDown size="$1" />)}
       </XStack>
 
       {hasSubItems && isExpanded && (

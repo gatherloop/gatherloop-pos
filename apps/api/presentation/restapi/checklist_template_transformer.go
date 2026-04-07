@@ -25,13 +25,11 @@ func GetChecklistTemplateRequest(r *http.Request) (apiContract.ChecklistTemplate
 
 func ToApiChecklistTemplateSubItem(d domain.ChecklistTemplateSubItem) apiContract.ChecklistTemplateSubItem {
 	return apiContract.ChecklistTemplateSubItem{
-		Id:                      d.Id,
-		ChecklistTemplateItemId: d.ChecklistTemplateItemId,
-		Name:                    d.Name,
-		DisplayOrder:            d.DisplayOrder,
-		CreatedAt:               d.CreatedAt,
-		UpdatedAt:               d.UpdatedAt,
-		DeletedAt:               d.DeletedAt,
+		Id:           d.Id,
+		Name:         d.Name,
+		DisplayOrder: d.DisplayOrder,
+		CreatedAt:    d.CreatedAt,
+		UpdatedAt:    d.UpdatedAt,
 	}
 }
 
@@ -41,15 +39,13 @@ func ToApiChecklistTemplateItem(d domain.ChecklistTemplateItem) apiContract.Chec
 		subItems = append(subItems, ToApiChecklistTemplateSubItem(si))
 	}
 	return apiContract.ChecklistTemplateItem{
-		Id:                  d.Id,
-		ChecklistTemplateId: d.ChecklistTemplateId,
-		Name:                d.Name,
-		Description:         d.Description,
-		DisplayOrder:        d.DisplayOrder,
-		SubItems:            subItems,
-		CreatedAt:           d.CreatedAt,
-		UpdatedAt:           d.UpdatedAt,
-		DeletedAt:           d.DeletedAt,
+		Id:           d.Id,
+		Name:         d.Name,
+		Description:  d.Description,
+		DisplayOrder: d.DisplayOrder,
+		SubItems:     subItems,
+		CreatedAt:    d.CreatedAt,
+		UpdatedAt:    d.UpdatedAt,
 	}
 }
 
@@ -65,15 +61,14 @@ func ToApiChecklistTemplate(d domain.ChecklistTemplate) apiContract.ChecklistTem
 		Items:       items,
 		CreatedAt:   d.CreatedAt,
 		UpdatedAt:   d.UpdatedAt,
-		DeletedAt:   d.DeletedAt,
 	}
 }
 
 func ToChecklistTemplateSubItem(req apiContract.ChecklistTemplateSubItemRequest) domain.ChecklistTemplateSubItem {
 	var id int64
-	if req.Id != nil {
-		id = *req.Id
-	}
+	// if req.Id != nil {
+	// 	id = *req.Id
+	// }
 	return domain.ChecklistTemplateSubItem{
 		Id:           id,
 		Name:         req.Name,
@@ -83,9 +78,9 @@ func ToChecklistTemplateSubItem(req apiContract.ChecklistTemplateSubItemRequest)
 
 func ToChecklistTemplateItem(req apiContract.ChecklistTemplateItemRequest) domain.ChecklistTemplateItem {
 	var id int64
-	if req.Id != nil {
-		id = *req.Id
-	}
+	// if req.Id != nil {
+	// 	id = *req.Id
+	// }
 	subItems := []domain.ChecklistTemplateSubItem{}
 	for _, si := range req.SubItems {
 		subItems = append(subItems, ToChecklistTemplateSubItem(si))

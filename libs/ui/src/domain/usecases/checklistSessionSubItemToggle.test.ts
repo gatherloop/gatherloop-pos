@@ -72,7 +72,7 @@ describe('ChecklistSessionSubItemToggleUsecase', () => {
 
       const session = repository.sessions[0];
       const subItem = session.items[0].subItems.find((s) => s.id === 1);
-      expect(subItem?.completedAt).toBeUndefined();
+      expect(subItem?.completedAt).toBeNull();
     });
   });
 

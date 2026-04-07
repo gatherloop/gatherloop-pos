@@ -19,10 +19,10 @@ export function toChecklistSessionSubItem(
   return {
     id: sub.id,
     checklistSessionItemId: sub.checklistSessionItemId,
-    checklistTemplateSubItemId: sub.checklistTemplateSubItemId,
+    checklistTemplateSubItemId: sub.checklistTemplateSubItemId ?? null,
     name: sub.name,
     displayOrder: sub.displayOrder,
-    completedAt: sub.completedAt,
+    completedAt: sub.completedAt ?? null,
     createdAt: sub.createdAt,
     updatedAt: sub.updatedAt,
   };
@@ -34,28 +34,26 @@ export function toChecklistSessionItem(
   return {
     id: item.id,
     checklistSessionId: item.checklistSessionId,
-    checklistTemplateItemId: item.checklistTemplateItemId,
+    checklistTemplateItemId: item.checklistTemplateItemId ?? null,
     name: item.name,
-    description: item.description,
+    description: item.description ?? null,
     displayOrder: item.displayOrder,
-    completedAt: item.completedAt,
+    completedAt: item.completedAt ?? null,
     subItems: item.subItems.map(toChecklistSessionSubItem),
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
   };
 }
 
-export function toChecklistSession(
-  s: ApiChecklistSession
-): ChecklistSession {
+export function toChecklistSession(s: ApiChecklistSession): ChecklistSession {
   return {
     id: s.id,
     checklistTemplateId: s.checklistTemplateId,
     checklistTemplate: s.checklistTemplate
       ? toChecklistTemplate(s.checklistTemplate)
-      : undefined,
+      : null,
     date: s.date,
-    completedAt: s.completedAt,
+    completedAt: s.completedAt ?? null,
     items: s.items.map(toChecklistSessionItem),
     createdAt: s.createdAt,
     updatedAt: s.updatedAt,

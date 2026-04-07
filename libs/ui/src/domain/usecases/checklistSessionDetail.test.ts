@@ -95,31 +95,4 @@ describe('ChecklistSessionDetailUsecase', () => {
       expect(tester.state.type).toBe('loaded');
     });
   });
-
-  describe('UPDATE_SESSION action', () => {
-    it('should update session in loaded state', async () => {
-      const repository = new MockChecklistSessionRepository();
-      const params: ChecklistSessionDetailParams = {
-        checklistSessionId: 1,
-        checklistSession: repository.sessions[0],
-      };
-      const usecase = new ChecklistSessionDetailUsecase(repository, params);
-      const tester = new UsecaseTester<
-        ChecklistSessionDetailUsecase,
-        ChecklistSessionDetailState,
-        ChecklistSessionDetailAction,
-        ChecklistSessionDetailParams
-      >(usecase);
-
-      const updatedSession = {
-        ...repository.sessions[0],
-        completedAt: '2024-03-20T10:00:00.000Z',
-      };
-
-      tester.dispatch({ type: 'UPDATE_SESSION', checklistSession: updatedSession });
-      expect(tester.state.checklistSession?.completedAt).toBe(
-        '2024-03-20T10:00:00.000Z'
-      );
-    });
-  });
 });

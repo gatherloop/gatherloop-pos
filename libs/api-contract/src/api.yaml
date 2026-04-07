@@ -2185,6 +2185,7 @@ components:
           type: string
         displayOrder:
           type: integer
+          format: int64
         createdAt:
           type: string
           format: date-time
@@ -2210,6 +2211,7 @@ components:
           type: string
         displayOrder:
           type: integer
+          format: int64
         subItems:
           type: array
           items:
@@ -2269,6 +2271,7 @@ components:
           type: string
         displayOrder:
           type: integer
+          format: int64
         completedAt:
           type: string
           format: date-time
@@ -2304,6 +2307,7 @@ components:
           type: string
         displayOrder:
           type: integer
+          format: int64
         completedAt:
           type: string
           format: date-time
@@ -2373,6 +2377,7 @@ components:
           type: string
         displayOrder:
           type: integer
+          format: int64
     ChecklistTemplateItemRequest:
       type: object
       required:
@@ -2386,6 +2391,7 @@ components:
           type: string
         displayOrder:
           type: integer
+          format: int64
         subItems:
           type: array
           items:

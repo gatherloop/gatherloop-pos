@@ -3,10 +3,10 @@ import { ChecklistTemplate } from './ChecklistTemplate';
 export type ChecklistSessionSubItem = {
   id: number;
   checklistSessionItemId: number;
-  checklistTemplateSubItemId?: number;
+  checklistTemplateSubItemId: number | null;
   name: string;
   displayOrder: number;
-  completedAt?: string;
+  completedAt: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -14,11 +14,11 @@ export type ChecklistSessionSubItem = {
 export type ChecklistSessionItem = {
   id: number;
   checklistSessionId: number;
-  checklistTemplateItemId?: number;
+  checklistTemplateItemId: number | null;
   name: string;
-  description?: string;
+  description: string | null;
   displayOrder: number;
-  completedAt?: string;
+  completedAt: string | null;
   subItems: ChecklistSessionSubItem[];
   createdAt: string;
   updatedAt: string;
@@ -27,9 +27,9 @@ export type ChecklistSessionItem = {
 export type ChecklistSession = {
   id: number;
   checklistTemplateId: number;
-  checklistTemplate?: ChecklistTemplate;
+  checklistTemplate: ChecklistTemplate | null;
   date: string;
-  completedAt?: string;
+  completedAt: string | null;
   items: ChecklistSessionItem[];
   createdAt: string;
   updatedAt: string;

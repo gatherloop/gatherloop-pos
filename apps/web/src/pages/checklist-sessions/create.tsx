@@ -41,7 +41,7 @@ export const getServerSideProps: GetServerSideProps<
   const today = new Date().toISOString().split('T')[0];
   const templateId = ctx.query.templateId
     ? parseInt(ctx.query.templateId as string)
-    : undefined;
+    : null;
 
   return {
     props: {

@@ -1,5 +1,4 @@
 import { match } from 'ts-pattern';
-import { ChecklistSessionItem } from '../entities';
 import { ChecklistSessionRepository } from '../repositories';
 import { Usecase } from './IUsecase';
 
@@ -12,7 +11,7 @@ export type ChecklistSessionItemToggleState = (
   | { type: 'idle' }
   | { type: 'checking' }
   | { type: 'unchecking' }
-  | { type: 'toggleSuccess'; updatedItem: ChecklistSessionItem }
+  | { type: 'toggleSuccess' }
   | { type: 'toggleError' }
 ) &
   Context;
@@ -20,7 +19,7 @@ export type ChecklistSessionItemToggleState = (
 export type ChecklistSessionItemToggleAction =
   | { type: 'CHECK'; itemId: number }
   | { type: 'UNCHECK'; itemId: number }
-  | { type: 'TOGGLE_SUCCESS'; updatedItem: ChecklistSessionItem }
+  | { type: 'TOGGLE_SUCCESS' }
   | { type: 'TOGGLE_ERROR'; errorMessage: string }
   | { type: 'RESET' };
 
@@ -50,28 +49,27 @@ export class ChecklistSessionItemToggleUsecase extends Usecase<
   ): ChecklistSessionItemToggleState {
     return match([state, action])
       .returnType<ChecklistSessionItemToggleState>()
-      .with(
-        [{ type: 'idle' }, { type: 'CHECK' }],
-        ([state, { itemId }]) => ({ ...state, type: 'checking', itemId, errorMessage: null })
-      )
-      .with(
-        [{ type: 'idle' }, { type: 'UNCHECK' }],
-        ([state, { itemId }]) => ({ ...state, type: 'unchecking', itemId, errorMessage: null })
-      )
-      .with(
-        [{ type: 'checking' }, { type: 'TOGGLE_SUCCESS' }],
-        ([state, { updatedItem }]) => ({
-          ...state,
-          type: 'toggleSuccess',
-          updatedItem,
-        })
-      )
+      .with([{ type: 'idle' }, { type: 'CHECK' }], ([state, { itemId }]) => ({
+        ...state,
+        type: 'checking',
+        itemId,
+        errorMessage: null,
+      }))
+      .with([{ type: 'idle' }, { type: 'UNCHECK' }], ([state, { itemId }]) => ({
+        ...state,
+        type: 'unchecking',
+        itemId,
+        errorMessage: null,
+      }))
+      .with([{ type: 'checking' }, { type: 'TOGGLE_SUCCESS' }], ([state]) => ({
+        ...state,
+        type: 'toggleSuccess',
+      }))
       .with(
         [{ type: 'unchecking' }, { type: 'TOGGLE_SUCCESS' }],
-        ([state, { updatedItem }]) => ({
+        ([state]) => ({
           ...state,
           type: 'toggleSuccess',
-          updatedItem,
         })
       )
       .with(
@@ -90,14 +88,16 @@ export class ChecklistSessionItemToggleUsecase extends Usecase<
           errorMessage,
         })
       )
-      .with(
-        [{ type: 'toggleSuccess' }, { type: 'RESET' }],
-        ([state]) => ({ ...state, type: 'idle', itemId: null })
-      )
-      .with(
-        [{ type: 'toggleError' }, { type: 'RESET' }],
-        ([state]) => ({ ...state, type: 'idle', itemId: null })
-      )
+      .with([{ type: 'toggleSuccess' }, { type: 'RESET' }], ([state]) => ({
+        ...state,
+        type: 'idle',
+        itemId: null,
+      }))
+      .with([{ type: 'toggleError' }, { type: 'RESET' }], ([state]) => ({
+        ...state,
+        type: 'idle',
+        itemId: null,
+      }))
       .otherwise(() => state);
   }
 
@@ -110,22 +110,24 @@ export class ChecklistSessionItemToggleUsecase extends Usecase<
         if (itemId === null) return;
         this.repository
           .checkChecklistSessionItem(itemId)
-          .then((updatedItem) =>
-            dispatch({ type: 'TOGGLE_SUCCESS', updatedItem })
-          )
+          .then(() => dispatch({ type: 'TOGGLE_SUCCESS' }))
           .catch(() =>
-            dispatch({ type: 'TOGGLE_ERROR', errorMessage: 'Failed to check item' })
+            dispatch({
+              type: 'TOGGLE_ERROR',
+              errorMessage: 'Failed to check item',
+            })
           );
       })
       .with({ type: 'unchecking' }, ({ itemId }) => {
         if (itemId === null) return;
         this.repository
           .uncheckChecklistSessionItem(itemId)
-          .then((updatedItem) =>
-            dispatch({ type: 'TOGGLE_SUCCESS', updatedItem })
-          )
+          .then(() => dispatch({ type: 'TOGGLE_SUCCESS' }))
           .catch(() =>
-            dispatch({ type: 'TOGGLE_ERROR', errorMessage: 'Failed to uncheck item' })
+            dispatch({
+              type: 'TOGGLE_ERROR',
+              errorMessage: 'Failed to uncheck item',
+            })
           );
       })
       .with({ type: 'toggleSuccess' }, () => {

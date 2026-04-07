@@ -6,7 +6,7 @@ type ChecklistTemplateSubItem struct {
 	Id                      int64
 	ChecklistTemplateItemId int64
 	Name                    string
-	DisplayOrder            int
+	DisplayOrder            int64
 	CreatedAt               time.Time
 	UpdatedAt               time.Time
 	DeletedAt               *time.Time
@@ -17,7 +17,7 @@ type ChecklistTemplateItem struct {
 	ChecklistTemplateId int64
 	Name                string
 	Description         *string
-	DisplayOrder        int
+	DisplayOrder        int64
 	SubItems            []ChecklistTemplateSubItem `gorm:"foreignKey:ChecklistTemplateItemId"`
 	CreatedAt           time.Time
 	UpdatedAt           time.Time

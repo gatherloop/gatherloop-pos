@@ -16,6 +16,7 @@ import {
 import {
   ChecklistSession,
   ChecklistSessionItem,
+  ChecklistSessionListFilter,
   ChecklistSessionRepository,
   ChecklistSessionSubItem,
 } from '../../domain';
@@ -62,27 +63,37 @@ export class ApiChecklistSessionRepository
       };
     };
 
-  fetchChecklistSessionList: ChecklistSessionRepository['fetchChecklistSessionList'] =
-    ({ page, itemPerPage, filter }) => {
-      const params = {
-        skip: (page - 1) * itemPerPage,
-        limit: itemPerPage,
-        ...(filter.templateId != null && { templateId: filter.templateId }),
-        ...(filter.dateFrom != null && { dateFrom: filter.dateFrom }),
-        ...(filter.dateTo != null && { dateTo: filter.dateTo }),
-        ...(filter.status != null && { status: filter.status }),
-      };
-
-      return this.client
-        .fetchQuery({
-          queryKey: checklistSessionListQueryKey(params),
-          queryFn: () => checklistSessionList(params),
-        })
-        .then((data) => ({
-          checklistSessions: data.data.map(toChecklistSession),
-          totalItem: data.meta.total,
-        }));
+  fetchChecklistSessionList = (
+    {
+      page,
+      itemPerPage,
+      filter,
+    }: {
+      page: number;
+      itemPerPage: number;
+      filter: ChecklistSessionListFilter;
+    },
+    options?: Partial<RequestConfig>
+  ) => {
+    const params = {
+      skip: (page - 1) * itemPerPage,
+      limit: itemPerPage,
+      ...(filter.templateId != null && { templateId: filter.templateId }),
+      ...(filter.dateFrom != null && { dateFrom: filter.dateFrom }),
+      ...(filter.dateTo != null && { dateTo: filter.dateTo }),
+      ...(filter.status != null && { status: filter.status }),
     };
+
+    return this.client
+      .fetchQuery({
+        queryKey: checklistSessionListQueryKey(params),
+        queryFn: () => checklistSessionList(params, options),
+      })
+      .then((data) => ({
+        checklistSessions: data.data.map(toChecklistSession),
+        totalItem: data.meta.total,
+      }));
+  };
 
   fetchChecklistSessionById = (
     checklistSessionId: number,
@@ -91,17 +102,16 @@ export class ApiChecklistSessionRepository
     return this.client
       .fetchQuery({
         queryKey: checklistSessionFindByIdQueryKey(checklistSessionId),
-        queryFn: () =>
-          checklistSessionFindById(checklistSessionId, options),
+        queryFn: () => checklistSessionFindById(checklistSessionId, options),
       })
       .then(({ data }) => toChecklistSession(data));
   };
 
   createChecklistSession: ChecklistSessionRepository['createChecklistSession'] =
     (formValues: ChecklistSessionForm): Promise<ChecklistSession> => {
-      return checklistSessionCreate(
-        toApiChecklistSession(formValues)
-      ).then(({ data }) => toChecklistSession(data));
+      return checklistSessionCreate(toApiChecklistSession(formValues)).then(
+        ({ data }) => toChecklistSession(data)
+      );
     };
 
   deleteChecklistSessionById: ChecklistSessionRepository['deleteChecklistSessionById'] =
@@ -110,30 +120,22 @@ export class ApiChecklistSessionRepository
     };
 
   checkChecklistSessionItem: ChecklistSessionRepository['checkChecklistSessionItem'] =
-    (checklistSessionItemId: number): Promise<ChecklistSessionItem> => {
-      return checklistSessionItemCheck(checklistSessionItemId).then(
-        ({ data }) => toChecklistSessionItem(data)
-      );
+    (checklistSessionItemId: number): Promise<void> => {
+      return checklistSessionItemCheck(checklistSessionItemId).then();
     };
 
   uncheckChecklistSessionItem: ChecklistSessionRepository['uncheckChecklistSessionItem'] =
-    (checklistSessionItemId: number): Promise<ChecklistSessionItem> => {
-      return checklistSessionItemUncheck(checklistSessionItemId).then(
-        ({ data }) => toChecklistSessionItem(data)
-      );
+    (checklistSessionItemId: number): Promise<void> => {
+      return checklistSessionItemUncheck(checklistSessionItemId).then();
     };
 
   checkChecklistSessionSubItem: ChecklistSessionRepository['checkChecklistSessionSubItem'] =
-    (checklistSessionSubItemId: number): Promise<ChecklistSessionSubItem> => {
-      return checklistSessionSubItemCheck(checklistSessionSubItemId).then(
-        ({ data }) => toChecklistSessionSubItem(data)
-      );
+    (checklistSessionSubItemId: number): Promise<void> => {
+      return checklistSessionSubItemCheck(checklistSessionSubItemId).then();
     };
 
   uncheckChecklistSessionSubItem: ChecklistSessionRepository['uncheckChecklistSessionSubItem'] =
-    (checklistSessionSubItemId: number): Promise<ChecklistSessionSubItem> => {
-      return checklistSessionSubItemUncheck(checklistSessionSubItemId).then(
-        ({ data }) => toChecklistSessionSubItem(data)
-      );
+    (checklistSessionSubItemId: number): Promise<void> => {
+      return checklistSessionSubItemUncheck(checklistSessionSubItemId).then();
     };
 }

@@ -19,8 +19,7 @@ export type ChecklistSessionDetailState = (
 export type ChecklistSessionDetailAction =
   | { type: 'FETCH' }
   | { type: 'FETCH_SUCCESS'; checklistSession: ChecklistSession }
-  | { type: 'FETCH_ERROR'; errorMessage: string }
-  | { type: 'UPDATE_SESSION'; checklistSession: ChecklistSession };
+  | { type: 'FETCH_ERROR'; errorMessage: string };
 
 export type ChecklistSessionDetailParams = {
   checklistSessionId: number;
@@ -85,13 +84,10 @@ export class ChecklistSessionDetailUsecase extends Usecase<
           errorMessage,
         })
       )
-      .with(
-        [{ type: 'loaded' }, { type: 'UPDATE_SESSION' }],
-        ([state, { checklistSession }]) => ({
-          ...state,
-          checklistSession,
-        })
-      )
+      .with([{ type: 'loaded' }, { type: 'FETCH' }], ([state]) => ({
+        ...state,
+        type: 'loading',
+      }))
       .otherwise(() => state);
   }
 

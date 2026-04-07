@@ -15,8 +15,8 @@ const nextConfig = {
   },
   webpack(config) {
     // On web, replace the React Native animation driver with the CSS one
-    config.resolve.alias['@tamagui/animations-moti'] =
-      require.resolve('@tamagui/animations-css');
+    // config.resolve.alias['@tamagui/animations-moti'] =
+    //   require.resolve('@tamagui/animations-css');
     return config;
   },
   async rewrites() {

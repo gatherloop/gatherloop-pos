@@ -10,7 +10,7 @@ import {
   checklistTemplateListQueryKey,
   checklistTemplateUpdateById,
 } from '../../../../api-contract/src';
-import { ChecklistTemplate, ChecklistTemplateRepository } from '../../domain';
+import { ChecklistTemplateRepository } from '../../domain';
 import { RequestConfig } from '@kubb/swagger-client/client';
 import {
   toApiChecklistTemplate,
@@ -33,17 +33,14 @@ export class ApiChecklistTemplateRepository
     return this.client
       .fetchQuery({
         queryKey: checklistTemplateFindByIdQueryKey(checklistTemplateId),
-        queryFn: () =>
-          checklistTemplateFindById(checklistTemplateId, options),
+        queryFn: () => checklistTemplateFindById(checklistTemplateId, options),
       })
       .then(({ data }) => toChecklistTemplate(data));
   };
 
   createChecklistTemplate: ChecklistTemplateRepository['createChecklistTemplate'] =
     (formValues) => {
-      return checklistTemplateCreate(
-        toApiChecklistTemplate(formValues)
-      ).then();
+      return checklistTemplateCreate(toApiChecklistTemplate(formValues)).then();
     };
 
   updateChecklistTemplate: ChecklistTemplateRepository['updateChecklistTemplate'] =
