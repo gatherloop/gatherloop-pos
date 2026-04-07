@@ -10,6 +10,30 @@ import (
 	"github.com/gorilla/mux"
 )
 
+func GetChecklistSessionFilter(r *http.Request) domain.ChecklistSessionFilter {
+	filter := domain.ChecklistSessionFilter{}
+
+	if templateIdStr := r.URL.Query().Get("templateId"); templateIdStr != "" {
+		if id, err := strconv.ParseInt(templateIdStr, 10, 64); err == nil {
+			filter.TemplateId = &id
+		}
+	}
+
+	if dateFrom := r.URL.Query().Get("dateFrom"); dateFrom != "" {
+		filter.DateFrom = &dateFrom
+	}
+
+	if dateTo := r.URL.Query().Get("dateTo"); dateTo != "" {
+		filter.DateTo = &dateTo
+	}
+
+	if status := r.URL.Query().Get("status"); status != "" {
+		filter.Status = &status
+	}
+
+	return filter
+}
+
 func GetChecklistSessionId(r *http.Request) (int64, error) {
 	vars := mux.Vars(r)
 	idParam := vars["checklistSessionId"]

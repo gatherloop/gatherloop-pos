@@ -15,6 +15,7 @@ func NewChecklistSessionRouter(handler ChecklistSessionHandler) ChecklistSession
 }
 
 func (r ChecklistSessionRouter) AddRouter(router *mux.Router) {
+	router.HandleFunc("/checklist-sessions", CheckAuth(r.handler.GetChecklistSessionList)).Methods(http.MethodGet)
 	router.HandleFunc("/checklist-sessions", CheckAuth(r.handler.CreateChecklistSession)).Methods(http.MethodPost, http.MethodOptions)
 	router.HandleFunc("/checklist-sessions/{checklistSessionId}", CheckAuth(r.handler.GetChecklistSessionById)).Methods(http.MethodGet)
 	router.HandleFunc("/checklist-sessions/{checklistSessionId}", CheckAuth(r.handler.DeleteChecklistSessionById)).Methods(http.MethodDelete)

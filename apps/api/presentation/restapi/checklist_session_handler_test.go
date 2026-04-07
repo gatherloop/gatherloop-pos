@@ -25,6 +25,70 @@ func newChecklistSessionHandler(t *testing.T, setupMocks func(sessionRepo *mock.
 	return restapi.NewChecklistSessionHandler(usecase), ctrl
 }
 
+func TestChecklistSessionHandler_GetChecklistSessionList(t *testing.T) {
+	tests := []struct {
+		name           string
+		queryParams    string
+		setupMocks     func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository)
+		expectedStatus int
+	}{
+		{
+			name:        "success - no filters",
+			queryParams: "",
+			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+				sessionRepo.EXPECT().GetChecklistSessionList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return([]domain.ChecklistSession{
+						{Id: 1, ChecklistTemplateId: 1, Date: "2026-04-05"},
+						{Id: 2, ChecklistTemplateId: 1, Date: "2026-04-06"},
+					}, nil)
+				sessionRepo.EXPECT().GetChecklistSessionListTotal(gomock.Any(), gomock.Any()).
+					Return(int64(2), nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:        "success - with templateId filter",
+			queryParams: "?templateId=1&limit=5&skip=0",
+			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+				sessionRepo.EXPECT().GetChecklistSessionList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return([]domain.ChecklistSession{{Id: 1, ChecklistTemplateId: 1, Date: "2026-04-05"}}, nil)
+				sessionRepo.EXPECT().GetChecklistSessionListTotal(gomock.Any(), gomock.Any()).
+					Return(int64(1), nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:        "success - with status completed filter",
+			queryParams: "?status=completed",
+			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+				sessionRepo.EXPECT().GetChecklistSessionList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return([]domain.ChecklistSession{}, nil)
+				sessionRepo.EXPECT().GetChecklistSessionListTotal(gomock.Any(), gomock.Any()).
+					Return(int64(0), nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:        "invalid skip param",
+			queryParams: "?skip=abc",
+			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			handler, ctrl := newChecklistSessionHandler(t, tt.setupMocks)
+			defer ctrl.Finish()
+			req := httptest.NewRequest(http.MethodGet, "/checklist-sessions"+tt.queryParams, nil)
+			w := httptest.NewRecorder()
+			handler.GetChecklistSessionList(w, req)
+			assert.Equal(t, tt.expectedStatus, w.Code)
+		})
+	}
+}
+
 func TestChecklistSessionHandler_CreateChecklistSession(t *testing.T) {
 	now := time.Now()
 	_ = now

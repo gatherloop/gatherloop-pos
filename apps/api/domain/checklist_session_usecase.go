@@ -14,6 +14,20 @@ func NewChecklistSessionUsecase(repository ChecklistSessionRepository, templateR
 	return ChecklistSessionUsecase{repository: repository, templateRepository: templateRepository}
 }
 
+func (usecase ChecklistSessionUsecase) GetChecklistSessionList(ctx context.Context, filter ChecklistSessionFilter, skip int, limit int) ([]ChecklistSession, int64, *Error) {
+	sessions, err := usecase.repository.GetChecklistSessionList(ctx, filter, skip, limit)
+	if err != nil {
+		return []ChecklistSession{}, 0, err
+	}
+
+	total, err := usecase.repository.GetChecklistSessionListTotal(ctx, filter)
+	if err != nil {
+		return []ChecklistSession{}, 0, err
+	}
+
+	return sessions, total, nil
+}
+
 func (usecase ChecklistSessionUsecase) GetChecklistSessionById(ctx context.Context, id int64) (ChecklistSession, *Error) {
 	return usecase.repository.GetChecklistSessionById(ctx, id)
 }

@@ -733,6 +733,11 @@ type ChecklistSessionRequest struct {
 	Date                string `json:"date"`
 }
 
+type ChecklistSessionListResponse struct {
+	Data []ChecklistSession `json:"data"`
+	Meta MetaPage           `json:"meta"`
+}
+
 type ChecklistSessionCreateResponse struct {
 	Data ChecklistSession `json:"data"`
 }
