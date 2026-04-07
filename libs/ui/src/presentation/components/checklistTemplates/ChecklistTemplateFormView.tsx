@@ -19,7 +19,7 @@ export const ChecklistTemplateFormView = ({
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
         <Card padding="$3" gap="$3">
-          <XStack gap="$3">
+          <YStack gap="$3" $gtMd={{ flexDirection: 'row' }}>
             <YStack flex={1}>
               <Field name="name" label="Template Name">
                 <InputText placeholder="e.g. Opening Checklist" />
@@ -30,14 +30,10 @@ export const ChecklistTemplateFormView = ({
                 <InputText placeholder="When/how to use this checklist" />
               </Field>
             </YStack>
-          </XStack>
+          </YStack>
         </Card>
 
-        <FieldArray
-          control={form.control}
-          name="items"
-          keyName="key"
-        >
+        <FieldArray control={form.control} name="items" keyName="key">
           {(itemsArray) => (
             <YStack gap="$3">
               <XStack justifyContent="space-between" alignItems="center">
