@@ -7,8 +7,6 @@ import {
   ChecklistSessionDeleteUsecase,
   ChecklistSessionDetailParams,
   ChecklistSessionDetailUsecase,
-  ChecklistSessionItemToggleUsecase,
-  ChecklistSessionSubItemToggleUsecase,
 } from '../domain';
 import { ChecklistSessionDetailHandler } from '../presentation';
 import { QueryClient } from '@tanstack/react-query';
@@ -32,20 +30,12 @@ export function ChecklistSessionDetail({
   const checklistSessionDeleteUsecase = new ChecklistSessionDeleteUsecase(
     checklistSessionRepository
   );
-  const checklistSessionItemToggleUsecase =
-    new ChecklistSessionItemToggleUsecase(checklistSessionRepository);
-  const checklistSessionSubItemToggleUsecase =
-    new ChecklistSessionSubItemToggleUsecase(checklistSessionRepository);
 
   return (
     <ChecklistSessionDetailHandler
       authLogoutUsecase={authLogoutUsecase}
       checklistSessionDetailUsecase={checklistSessionDetailUsecase}
       checklistSessionDeleteUsecase={checklistSessionDeleteUsecase}
-      checklistSessionItemToggleUsecase={checklistSessionItemToggleUsecase}
-      checklistSessionSubItemToggleUsecase={
-        checklistSessionSubItemToggleUsecase
-      }
     />
   );
 }

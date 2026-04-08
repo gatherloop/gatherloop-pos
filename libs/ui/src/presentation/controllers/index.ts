@@ -61,5 +61,3 @@ export * from './ChecklistSessionCreateController';
 export * from './ChecklistSessionDetailController';
 export * from './ChecklistSessionDeleteController';
 export * from './ChecklistSessionListController';
-export * from './ChecklistSessionItemToggleController';
-export * from './ChecklistSessionSubItemToggleController';
