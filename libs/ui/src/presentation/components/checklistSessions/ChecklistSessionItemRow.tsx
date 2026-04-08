@@ -95,29 +95,31 @@ export function ChecklistSessionItemRow({
         )}
 
         <YStack flex={1} gap="$1">
-          <Text
-            fontSize="$5"
-            fontWeight="bold"
-            textDecorationLine={
-              isCompleted && !hasSubItems ? 'line-through' : 'none'
-            }
-            color={isCompleted && !hasSubItems ? '$gray9' : '$color'}
-          >
-            {item.name}
-          </Text>
+          <XStack alignItems="center" justifyContent="space-between" gap="$2">
+            <Text
+              flex={1}
+              fontSize="$5"
+              fontWeight="bold"
+              textDecorationLine={
+                isCompleted && !hasSubItems ? 'line-through' : 'none'
+              }
+              color={isCompleted && !hasSubItems ? '$gray9' : '$color'}
+            >
+              {item.name}
+            </Text>
+            {isCompleted && !hasSubItems && item.completedAt && (
+              <Paragraph fontSize="$2" color="$gray9" flexShrink={0}>
+                {new Date(item.completedAt).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false,
+                })}
+              </Paragraph>
+            )}
+          </XStack>
           {item.description && (
             <Paragraph fontSize="$3" color="$gray10">
               {item.description}
-            </Paragraph>
-          )}
-          {isCompleted && !hasSubItems && item.completedAt && (
-            <Paragraph fontSize="$2" color="$gray9">
-              Completed at{' '}
-              {new Date(item.completedAt).toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false,
-              })}
             </Paragraph>
           )}
         </YStack>

@@ -1,4 +1,4 @@
-import { Button, Card, Form, XStack, YStack } from 'tamagui';
+import { Button, Card, Form, Label, YStack } from 'tamagui';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
 import { Field, InputText, Select } from '../base';
 import { ChecklistSessionForm } from '../../../domain';
@@ -21,7 +21,7 @@ export const ChecklistSessionFormView = ({
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(onSubmit)}>
         <Card padding="$3">
-          <YStack gap="$3" $gtMd={{ flexDirection: 'row', alignItems: 'flex-end' }}>
+          <YStack gap="$3" $gtMd={{ flexDirection: 'row', alignItems: 'flex-start' }}>
             <YStack flex={1}>
               <Field name="checklistTemplateId" label="Checklist Template">
                 <Select<number>
@@ -39,14 +39,18 @@ export const ChecklistSessionFormView = ({
               </Field>
             </YStack>
 
-            <Button
-              disabled={isSubmitDisabled}
-              onPress={form.handleSubmit(onSubmit)}
-              theme="blue"
-              $gtMd={{ marginBottom: '$1' }}
-            >
-              Start Session
-            </Button>
+            <YStack gap="$3">
+              <Label opacity={0} pointerEvents="none" $gtMd={{ display: 'flex' }} display="none">
+                {' '}
+              </Label>
+              <Button
+                disabled={isSubmitDisabled}
+                onPress={form.handleSubmit(onSubmit)}
+                theme="blue"
+              >
+                Start Session
+              </Button>
+            </YStack>
           </YStack>
         </Card>
       </Form>

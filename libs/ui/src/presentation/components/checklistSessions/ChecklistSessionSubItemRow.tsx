@@ -45,8 +45,9 @@ export function ChecklistSessionSubItemRow({
         </YStack>
       )}
 
-      <YStack flex={1} gap="$1">
+      <XStack flex={1} alignItems="center" justifyContent="space-between" gap="$2">
         <Text
+          flex={1}
           fontSize="$4"
           textDecorationLine={isCompleted ? 'line-through' : 'none'}
           color={isCompleted ? '$gray9' : '$color'}
@@ -54,7 +55,7 @@ export function ChecklistSessionSubItemRow({
           {subItem.name}
         </Text>
         {isCompleted && subItem.completedAt && (
-          <Paragraph fontSize="$2" color="$gray9">
+          <Paragraph fontSize="$2" color="$gray9" flexShrink={0}>
             {new Date(subItem.completedAt).toLocaleTimeString([], {
               hour: '2-digit',
               minute: '2-digit',
@@ -62,7 +63,7 @@ export function ChecklistSessionSubItemRow({
             })}
           </Paragraph>
         )}
-      </YStack>
+      </XStack>
     </XStack>
   );
 }
