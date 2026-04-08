@@ -1,5 +1,5 @@
 import { Plus, Trash, X } from '@tamagui/lucide-icons';
-import { Button, Card, Form, H4, Separator, XStack, YStack } from 'tamagui';
+import { Button, Card, Form, H4, XStack, YStack } from 'tamagui';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
 import { Field, FieldArray, InputText } from '../base';
 import { ChecklistTemplateForm } from '../../../domain';
@@ -60,25 +60,30 @@ export const ChecklistTemplateFormView = ({
                   <XStack justifyContent="space-between" alignItems="center">
                     <H4 size="$4">Item {index + 1}</H4>
                     <Button
-                      size="$2"
+                      size="$3"
                       icon={Trash}
-                      variant="outlined"
+                      theme="red"
+                      color="$red8"
+                      circular
                       onPress={() => itemsArray.remove(index)}
                     />
                   </XStack>
 
-                  <Field name={`items.${index}.name`} label="Item Name">
-                    <InputText placeholder="e.g. Turn on lights" />
-                  </Field>
-
-                  <Field
-                    name={`items.${index}.description`}
-                    label="Description (optional)"
-                  >
-                    <InputText placeholder="Additional instructions" />
-                  </Field>
-
-                  <Separator />
+                  <YStack gap="$3" $gtMd={{ flexDirection: 'row' }}>
+                    <YStack flex={1}>
+                      <Field name={`items.${index}.name`} label="Item Name">
+                        <InputText placeholder="e.g. Turn on lights" />
+                      </Field>
+                    </YStack>
+                    <YStack flex={1}>
+                      <Field
+                        name={`items.${index}.description`}
+                        label="Description (optional)"
+                      >
+                        <InputText placeholder="Additional instructions" />
+                      </Field>
+                    </YStack>
+                  </YStack>
 
                   <FieldArray
                     control={form.control}
@@ -111,7 +116,7 @@ export const ChecklistTemplateFormView = ({
                           <XStack
                             key={subField.key}
                             gap="$2"
-                            alignItems="flex-end"
+                            alignItems="center"
                           >
                             <YStack flex={1}>
                               <Field
@@ -124,8 +129,9 @@ export const ChecklistTemplateFormView = ({
                             <Button
                               size="$2"
                               icon={X}
-                              variant="outlined"
-                              marginBottom="$1"
+                              theme="red"
+                              color="$red8"
+                              circular
                               onPress={() => subItemsArray.remove(subIndex)}
                             />
                           </XStack>

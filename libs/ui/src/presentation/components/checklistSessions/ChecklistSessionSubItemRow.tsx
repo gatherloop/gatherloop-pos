@@ -1,5 +1,5 @@
-import { CheckCircle, Circle } from '@tamagui/lucide-icons';
-import { Paragraph, Spinner, Text, XStack, YStack } from 'tamagui';
+import { Check } from '@tamagui/lucide-icons';
+import { Checkbox, Paragraph, Spinner, Text, XStack, YStack } from 'tamagui';
 import { ChecklistSessionSubItem } from '../../../domain';
 
 export type ChecklistSessionSubItemRowProps = {
@@ -35,10 +35,14 @@ export function ChecklistSessionSubItemRow({
     >
       {isToggling ? (
         <Spinner size="small" />
-      ) : isCompleted ? (
-        <CheckCircle size="$2" color="$green10" />
       ) : (
-        <Circle size="$2" color="$gray8" />
+        <YStack pointerEvents="none">
+          <Checkbox checked={isCompleted} size="$3">
+            <Checkbox.Indicator>
+              <Check />
+            </Checkbox.Indicator>
+          </Checkbox>
+        </YStack>
       )}
 
       <YStack flex={1} gap="$1">
@@ -51,7 +55,11 @@ export function ChecklistSessionSubItemRow({
         </Text>
         {isCompleted && subItem.completedAt && (
           <Paragraph fontSize="$2" color="$gray9">
-            {new Date(subItem.completedAt).toLocaleTimeString()}
+            {new Date(subItem.completedAt).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false,
+            })}
           </Paragraph>
         )}
       </YStack>

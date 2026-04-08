@@ -19,6 +19,10 @@ export type ChecklistSessionExecutionProps = {
     | { type: 'loaded'; checklistSession: ChecklistSession };
 };
 
+function formatDate(dateStr: string): string {
+  return dateStr.split('T')[0];
+}
+
 export const ChecklistSessionExecution = ({
   onCheckItem,
   onUncheckItem,
@@ -63,7 +67,7 @@ export const ChecklistSessionExecution = ({
                   {checklistSession.checklistTemplate?.name ?? 'Checklist'}
                 </Text>
                 <Paragraph fontSize="$3" color="$gray10">
-                  {checklistSession.date}
+                  {formatDate(checklistSession.date)}
                 </Paragraph>
               </YStack>
               <XStack alignItems="center" gap="$2">
@@ -90,7 +94,11 @@ export const ChecklistSessionExecution = ({
               {checklistSession.completedAt && (
                 <Paragraph fontSize="$2" color="$green9" marginTop="$1">
                   Completed at{' '}
-                  {new Date(checklistSession.completedAt).toLocaleTimeString()}
+                  {new Date(checklistSession.completedAt).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false,
+                  })}
                 </Paragraph>
               )}
             </Card>

@@ -1,8 +1,8 @@
-import { Button } from 'tamagui';
-import { Link } from 'solito/link';
-import { Plus } from '@tamagui/lucide-icons';
-import { ChecklistSessionList, Layout } from '../components';
-import { ChecklistSession, ChecklistSessionListFilter } from '../../domain';
+import { H4, ScrollView, YStack } from 'tamagui';
+import { ChecklistSessionFormView, ChecklistSessionList, Layout } from '../components';
+import { ChecklistSession, ChecklistSessionListFilter, ChecklistTemplate } from '../../domain';
+import { UseFormReturn } from 'react-hook-form';
+import { ChecklistSessionForm } from '../../domain';
 
 export type ChecklistSessionListScreenProps = {
   onLogoutPress: () => void;
@@ -19,6 +19,10 @@ export type ChecklistSessionListScreenProps = {
     | { type: 'error' }
     | { type: 'empty' }
     | { type: 'loaded'; items: ChecklistSession[] };
+  form: UseFormReturn<ChecklistSessionForm>;
+  onSubmit: (values: ChecklistSessionForm) => void;
+  isSubmitDisabled: boolean;
+  checklistTemplates: ChecklistTemplate[];
 };
 
 export const ChecklistSessionListScreen = ({
@@ -32,28 +36,41 @@ export const ChecklistSessionListScreen = ({
   totalItem,
   itemPerPage,
   variant,
+  form,
+  onSubmit,
+  isSubmitDisabled,
+  checklistTemplates,
 }: ChecklistSessionListScreenProps) => {
   return (
     <Layout
       onLogoutPress={onLogoutPress}
       title="Checklist Sessions"
-      rightActionItem={
-        <Link href="/checklist-sessions/create">
-          <Button size="$3" icon={Plus} variant="outlined" disabled />
-        </Link>
-      }
     >
-      <ChecklistSessionList
-        variant={variant}
-        filter={filter}
-        onFilterChange={onFilterChange}
-        onRetryButtonPress={onRetryButtonPress}
-        onPageChange={onPageChange}
-        onItemPress={onItemPress}
-        currentPage={currentPage}
-        totalItem={totalItem}
-        itemPerPage={itemPerPage}
-      />
+      <ScrollView>
+        <YStack gap="$4">
+          <YStack gap="$2">
+            <H4>Execute New Session</H4>
+            <ChecklistSessionFormView
+              form={form}
+              onSubmit={onSubmit}
+              isSubmitDisabled={isSubmitDisabled}
+              checklistTemplates={checklistTemplates}
+            />
+          </YStack>
+
+          <ChecklistSessionList
+            variant={variant}
+            filter={filter}
+            onFilterChange={onFilterChange}
+            onRetryButtonPress={onRetryButtonPress}
+            onPageChange={onPageChange}
+            onItemPress={onItemPress}
+            currentPage={currentPage}
+            totalItem={totalItem}
+            itemPerPage={itemPerPage}
+          />
+        </YStack>
+      </ScrollView>
     </Layout>
   );
 };
