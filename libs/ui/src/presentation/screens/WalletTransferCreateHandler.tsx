@@ -36,6 +36,7 @@ export const WalletTransferCreateHandler = ({
         walletTransferCreate.dispatch({ type: 'SUBMIT', values })
       }
       isSubmitDisabled={walletTransferCreate.state.type === 'submitting'}
+      isSubmitting={walletTransferCreate.state.type === 'submitting'}
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
       walletSelectOptions={walletTransferCreate.state.wallets
         .filter(

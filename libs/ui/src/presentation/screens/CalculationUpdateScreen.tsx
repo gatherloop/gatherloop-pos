@@ -12,6 +12,7 @@ export type CalculationUpdateScreenProps = {
   form: UseFormReturn<CalculationForm>;
   getTotalWallet: (totalWallet: number, walletId: number) => number;
   isSubmitDisabled: boolean;
+  isSubmitting: boolean;
   onRetryButtonPress: () => void;
   onSubmit: (values: CalculationForm) => void;
   variant: CalculationFormViewProps['variant'];
@@ -26,6 +27,7 @@ export const CalculationUpdateScreen = ({
   form,
   getTotalWallet,
   isSubmitDisabled,
+  isSubmitting,
   onRetryButtonPress,
   onSubmit,
   variant,
@@ -42,6 +44,7 @@ export const CalculationUpdateScreen = ({
           form={form}
           getTotalWallet={getTotalWallet}
           isSubmitDisabled={isSubmitDisabled}
+          isSubmitting={isSubmitting}
           onRetryButtonPress={onRetryButtonPress}
           onSubmit={onSubmit}
           variant={variant}

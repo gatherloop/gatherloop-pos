@@ -165,6 +165,54 @@ describe('CategoryUpdateHandler', () => {
     });
   });
 
+  describe('loading states', () => {
+    it('should disable submit button and show spinner while updating', async () => {
+      const user = userEvent.setup();
+      let resolveUpdate!: () => void;
+      const categoryRepo = new MockCategoryRepository();
+      jest.spyOn(categoryRepo, 'updateCategory').mockImplementation(
+        () => new Promise<void>((resolve) => { resolveUpdate = resolve; })
+      );
+      const preloadedCategory = categoryRepo.categories[0];
+
+      render(
+        <CategoryUpdateHandler
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          categoryUpdateUsecase={new CategoryUpdateUsecase(categoryRepo, {
+            categoryId: preloadedCategory.id,
+            category: preloadedCategory,
+          })}
+        />
+      );
+
+      const nameInput = screen.getByRole('textbox', { name: 'Name' });
+      await user.clear(nameInput);
+      await user.type(nameInput, 'Updated Category');
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      expect((screen.getByRole('button', { name: 'Submit' }) as HTMLButtonElement).disabled).toBe(true);
+      expect(screen.getByTestId('spinner')).toBeTruthy();
+
+      await act(async () => {
+        resolveUpdate();
+        await flushPromises();
+      });
+
+      expect(screen.queryByTestId('spinner')).toBeNull();
+      expect(mockRouterPush).toHaveBeenCalledWith('/categories');
+    });
+
+    it('should not disable submit button when form is loaded', async () => {
+      render(<CategoryUpdateHandler {...createProps({ preloaded: true })} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect((screen.getByRole('button', { name: 'Submit' }) as HTMLButtonElement).disabled).toBe(false);
+    });
+  });
+
   describe('toast notifications', () => {
     it('should show toast error message when update fails', async () => {
       const user = userEvent.setup();

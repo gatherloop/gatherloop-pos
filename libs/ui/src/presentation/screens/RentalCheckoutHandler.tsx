@@ -83,6 +83,7 @@ export const RentalCheckoutHandler = ({
         rentalCheckout.dispatch({ type: 'SUBMIT', values })
       }
       isSubmitDisabled={rentalCheckout.state.type === 'submitting'}
+      isSubmitting={rentalCheckout.state.type === 'submitting'}
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
       rentalsFieldArray={rentalCheckout.rentalsFieldArray}
       rentalList={{

@@ -1,13 +1,14 @@
 import { Field, InputNumber, Select } from '../base';
 import { WalletTransferForm } from '../../../domain';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
-import { Button, Form } from 'tamagui';
+import { Button, Form, Spinner } from 'tamagui';
 
 export type WalletTransferFormViewProps = {
   form: UseFormReturn<WalletTransferForm>;
   onSubmit: (values: WalletTransferForm) => void;
   walletSelectOptions: { label: string; value: number }[];
   isSubmitDisabled: boolean;
+  isSubmitting: boolean;
 };
 
 export const WalletTransferFormView = ({
@@ -15,6 +16,7 @@ export const WalletTransferFormView = ({
   onSubmit,
   walletSelectOptions,
   isSubmitDisabled,
+  isSubmitting,
 }: WalletTransferFormViewProps) => {
   return (
     <FormProvider {...form}>
@@ -29,6 +31,7 @@ export const WalletTransferFormView = ({
           disabled={isSubmitDisabled}
           onPress={form.handleSubmit(onSubmit)}
           theme="blue"
+          icon={isSubmitting ? <Spinner /> : undefined}
         >
           Submit
         </Button>

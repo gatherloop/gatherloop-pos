@@ -47,6 +47,7 @@ export const CalculationCreateHandler = ({
         calculationCreate.state.type === 'submitting' ||
         calculationCreate.state.type === 'submitSuccess'
       }
+      isSubmitting={calculationCreate.state.type === 'submitting'}
       onRetryButtonPress={() => calculationCreate.dispatch({ type: 'FETCH' })}
       onSubmit={(values) =>
         calculationCreate.dispatch({ type: 'SUBMIT', values })

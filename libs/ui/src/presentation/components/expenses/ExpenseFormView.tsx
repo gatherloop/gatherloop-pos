@@ -9,7 +9,7 @@ import {
   LoadingView,
   Select,
 } from '../base';
-import { Button, Card, Form, H3, H4, Paragraph, XStack, YStack } from 'tamagui';
+import { Button, Card, Form, H3, H4, Paragraph, Spinner, XStack, YStack } from 'tamagui';
 import { Plus, Trash } from '@tamagui/lucide-icons';
 import { ExpenseForm } from '../../../domain';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
@@ -21,6 +21,7 @@ export type ExpenseFormViewProps = {
   budgetSelectOptions: { label: string; value: number }[];
   walletSelectOptions: { label: string; value: number }[];
   isSubmitDisabled: boolean;
+  isSubmitting: boolean;
   onRetryButtonPress: () => void;
 };
 
@@ -31,6 +32,7 @@ export const ExpenseFormView = ({
   budgetSelectOptions,
   walletSelectOptions,
   isSubmitDisabled,
+  isSubmitting,
   onRetryButtonPress,
 }: ExpenseFormViewProps) => {
   return variant.type === 'loaded' ? (
@@ -164,6 +166,7 @@ export const ExpenseFormView = ({
           disabled={isSubmitDisabled}
           onPress={form.handleSubmit(onSubmit)}
           theme="blue"
+          icon={isSubmitting ? <Spinner /> : undefined}
         >
           Submit
         </Button>

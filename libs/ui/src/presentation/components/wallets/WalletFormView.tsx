@@ -7,7 +7,7 @@ import {
   Switch,
 } from '../base';
 import { WalletForm } from '../../../domain';
-import { Button, Form } from 'tamagui';
+import { Button, Form, Spinner } from 'tamagui';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
 
 export type WalletFormViewProps = {
@@ -18,6 +18,7 @@ export type WalletFormViewProps = {
   form: UseFormReturn<WalletForm>;
   onSubmit: (values: WalletForm) => void;
   isSubmitDisabled: boolean;
+  isSubmitting: boolean;
 };
 
 export const WalletFormView = ({
@@ -25,6 +26,7 @@ export const WalletFormView = ({
   form,
   onSubmit,
   isSubmitDisabled,
+  isSubmitting,
 }: WalletFormViewProps) => {
   return variant.type === 'loaded' ? (
     <FormProvider {...form}>
@@ -45,6 +47,7 @@ export const WalletFormView = ({
           disabled={isSubmitDisabled}
           onPress={form.handleSubmit(onSubmit)}
           theme="blue"
+          icon={isSubmitting ? <Spinner /> : undefined}
         >
           Submit
         </Button>

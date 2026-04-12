@@ -12,6 +12,7 @@ export type RentalCheckinScreenProps = {
   form: UseFormReturn<RentalCheckinForm>;
   onSubmit: (values: RentalCheckinForm) => void;
   isSubmitDisabled: boolean;
+  isSubmitting: boolean;
   onLogoutPress: () => void;
   rentalsFieldArray: UseFieldArrayReturn<RentalCheckinForm, 'rentals', 'key'>;
   onToggleCustomizeCheckinDateTime: (checked: boolean) => void;
@@ -48,6 +49,7 @@ export const RentalCheckinScreen = (props: RentalCheckinScreenProps) => {
           form={props.form}
           onSubmit={props.onSubmit}
           isSubmitDisabled={props.isSubmitDisabled}
+          isSubmitting={props.isSubmitting}
           rentalsFieldArray={props.rentalsFieldArray}
           onToggleCustomizeCheckinDateTime={
             props.onToggleCustomizeCheckinDateTime

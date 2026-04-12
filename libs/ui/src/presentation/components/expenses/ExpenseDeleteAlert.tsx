@@ -1,4 +1,4 @@
-import { AlertDialog, Button, XStack, YStack } from 'tamagui';
+import { AlertDialog, Button, Spinner, XStack, YStack } from 'tamagui';
 
 export type ExpenseDeleteAlertProps = {
   isOpen: boolean;
@@ -56,6 +56,7 @@ export const ExpenseDeleteAlert = ({
                 theme="active"
                 onPress={onButtonConfirmPress}
                 disabled={isButtonDisabled}
+                icon={isButtonDisabled ? <Spinner /> : undefined}
               >
                 Yes
               </Button>

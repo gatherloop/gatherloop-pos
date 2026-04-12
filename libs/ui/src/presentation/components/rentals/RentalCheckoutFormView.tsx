@@ -4,6 +4,7 @@ import {
   Form,
   Paragraph,
   Separator,
+  Spinner,
   XStack,
   YStack,
 } from 'tamagui';
@@ -22,6 +23,7 @@ export type RentalCheckoutFormViewProps = {
   form: UseFormReturn<RentalCheckoutForm>;
   onSubmit: (form: RentalCheckoutForm) => void;
   isSubmitDisabled: boolean;
+  isSubmitting: boolean;
   RentalItemSelect: () => ReactNode;
   rentalsFieldArray: UseFieldArrayReturn<RentalCheckoutForm, 'rentals', 'key'>;
 };
@@ -30,6 +32,7 @@ export const RentalCheckoutFormView = ({
   form,
   onSubmit,
   isSubmitDisabled,
+  isSubmitting,
   RentalItemSelect,
   rentalsFieldArray,
 }: RentalCheckoutFormViewProps) => {
@@ -112,6 +115,7 @@ export const RentalCheckoutFormView = ({
                   onPress={form.handleSubmit(onSubmit)}
                   size="$5"
                   theme="blue"
+                  icon={isSubmitting ? <Spinner /> : undefined}
                 >
                   Submit
                 </Button>

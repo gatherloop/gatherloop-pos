@@ -110,6 +110,43 @@ describe('CategoryCreateHandler', () => {
     });
   });
 
+  describe('loading states', () => {
+    it('should disable submit button and show spinner while submitting', async () => {
+      const user = userEvent.setup();
+      let resolveCreate!: () => void;
+      const categoryRepo = new MockCategoryRepository();
+      jest.spyOn(categoryRepo, 'createCategory').mockImplementation(
+        () => new Promise<void>((resolve) => { resolveCreate = resolve; })
+      );
+
+      render(
+        <CategoryCreateHandler
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          categoryCreateUsecase={new CategoryCreateUsecase(categoryRepo)}
+        />
+      );
+
+      await user.type(screen.getByRole('textbox', { name: 'Name' }), 'New Category');
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      expect((screen.getByRole('button', { name: 'Submit' }) as HTMLButtonElement).disabled).toBe(true);
+      expect(screen.getByTestId('spinner')).toBeTruthy();
+
+      await act(async () => {
+        resolveCreate();
+        await flushPromises();
+      });
+
+      expect(screen.queryByTestId('spinner')).toBeNull();
+      expect(mockRouterPush).toHaveBeenCalledWith('/categories');
+    });
+
+    it('should not disable submit button before any interaction', () => {
+      render(<CategoryCreateHandler {...createProps()} />);
+      expect((screen.getByRole('button', { name: 'Submit' }) as HTMLButtonElement).disabled).toBe(false);
+    });
+  });
+
   describe('toast notifications', () => {
     it('should show toast error message when creation fails', async () => {
       const user = userEvent.setup();

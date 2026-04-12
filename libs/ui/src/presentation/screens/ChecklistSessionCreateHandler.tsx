@@ -46,6 +46,7 @@ export const ChecklistSessionCreateHandler = ({
         checklistSessionCreate.state.type === 'submitError' ||
         checklistSessionCreate.state.type === 'submitSuccess'
       }
+      isSubmitting={checklistSessionCreate.state.type === 'submitting'}
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
       checklistTemplates={checklistTemplates}
     />

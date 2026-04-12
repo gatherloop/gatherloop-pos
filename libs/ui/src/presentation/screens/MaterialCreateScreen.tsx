@@ -7,6 +7,7 @@ export type MaterialCreateScreenProps = {
   form: UseFormReturn<MaterialForm>;
   onSubmit: (values: MaterialForm) => void;
   isSubmitDisabled: boolean;
+  isSubmitting: boolean;
   onLogoutPress: () => void;
 };
 
@@ -22,6 +23,7 @@ export const MaterialCreateScreen = (props: MaterialCreateScreenProps) => {
           form={props.form}
           onSubmit={props.onSubmit}
           isSubmitDisabled={props.isSubmitDisabled}
+          isSubmitting={props.isSubmitting}
         />
       </ScrollView>
     </Layout>

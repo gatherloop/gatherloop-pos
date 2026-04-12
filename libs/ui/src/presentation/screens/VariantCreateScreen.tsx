@@ -13,6 +13,7 @@ export type VariantCreateScreenProps = {
   form: UseFormReturn<VariantForm>;
   onSubmit: (values: VariantForm) => void;
   isSubmitDisabled: boolean;
+  isSubmitting: boolean;
   onLogoutPress: () => void;
   onRetryButtonPress: () => void;
   isMaterialSheetOpen: boolean;
@@ -51,6 +52,7 @@ export const VariantCreateScreen = (props: VariantCreateScreenProps) => {
           form={props.form}
           onSubmit={props.onSubmit}
           isSubmitDisabled={props.isSubmitDisabled}
+          isSubmitting={props.isSubmitting}
           isMaterialSheetOpen={props.isMaterialSheetOpen}
           onMaterialSheetOpenChange={props.onMaterialSheetOpenChange}
           onRetryButtonPress={props.onRetryButtonPress}

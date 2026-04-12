@@ -1,7 +1,7 @@
 import { Field, InputText, LoadingView, ErrorView } from '../base';
 import { CategoryForm } from '../../../domain';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
-import { Button, Form } from 'tamagui';
+import { Button, Form, Spinner } from 'tamagui';
 
 export type CategoryFormViewProps = {
   variant:
@@ -11,6 +11,7 @@ export type CategoryFormViewProps = {
   form: UseFormReturn<CategoryForm>;
   onSubmit: (values: CategoryForm) => void;
   isSubmitDisabled: boolean;
+  isSubmitting: boolean;
 };
 
 export const CategoryFormView = ({
@@ -18,6 +19,7 @@ export const CategoryFormView = ({
   form,
   onSubmit,
   isSubmitDisabled,
+  isSubmitting,
 }: CategoryFormViewProps) => {
   return variant.type === 'loaded' ? (
     <FormProvider {...form}>
@@ -29,6 +31,7 @@ export const CategoryFormView = ({
           disabled={isSubmitDisabled}
           onPress={form.handleSubmit(onSubmit)}
           theme="blue"
+          icon={isSubmitting ? <Spinner /> : undefined}
         >
           Submit
         </Button>

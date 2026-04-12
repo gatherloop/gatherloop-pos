@@ -11,6 +11,7 @@ export type CouponCreateScreenProps = {
   onLogoutPress: () => void;
   form: UseFormReturn<CouponForm>;
   isSubmitDisabled: boolean;
+  isSubmitting: boolean;
   onSubmit: (values: CouponForm) => void;
   variant: CouponFormViewProps['variant'];
 };
@@ -18,6 +19,7 @@ export type CouponCreateScreenProps = {
 export const CouponCreateScreen = ({
   form,
   isSubmitDisabled,
+  isSubmitting,
   onLogoutPress,
   onSubmit,
   variant,
@@ -32,6 +34,7 @@ export const CouponCreateScreen = ({
         <CouponFormView
           form={form}
           isSubmitDisabled={isSubmitDisabled}
+          isSubmitting={isSubmitting}
           onSubmit={onSubmit}
           variant={variant}
         />

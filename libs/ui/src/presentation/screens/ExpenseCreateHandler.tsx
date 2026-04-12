@@ -37,6 +37,7 @@ export const ExpenseCreateHandler = ({
         expenseCreate.state.type === 'submitting' ||
         expenseCreate.state.type === 'submitSuccess'
       }
+      isSubmitting={expenseCreate.state.type === 'submitting'}
       onRetryButtonPress={() => expenseCreate.dispatch({ type: 'FETCH' })}
       onSubmit={(values) =>
         expenseCreate.dispatch({ type: 'SUBMIT', values })

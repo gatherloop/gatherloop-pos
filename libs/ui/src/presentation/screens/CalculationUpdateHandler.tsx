@@ -41,6 +41,7 @@ export const CalculationUpdateHandler = ({
           : totalWallet;
       }}
       isSubmitDisabled={calculationUpdate.state.isComplete}
+      isSubmitting={calculationUpdate.state.type === 'submitting'}
       onRetryButtonPress={() => calculationUpdate.dispatch({ type: 'FETCH' })}
       onSubmit={(values) =>
         calculationUpdate.dispatch({ type: 'SUBMIT', values })

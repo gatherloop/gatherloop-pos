@@ -204,6 +204,7 @@ export const TransactionCreateHandler = ({
     onSubmit: (values) =>
       transactionCreateController.dispatch({ type: 'SUBMIT', values }),
     isSubmitDisabled: transactionCreateController.state.type === 'submitting',
+    isSubmitting: transactionCreateController.state.type === 'submitting',
     onLogoutPress: () => authLogoutController.dispatch({ type: 'LOGOUT' }),
     isCouponSheetOpen: transactionCreateController.isCouponSheetOpen,
     onCouponSheetOpenChange:

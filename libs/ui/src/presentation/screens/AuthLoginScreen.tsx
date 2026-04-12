@@ -6,6 +6,7 @@ import { UseFormReturn } from 'react-hook-form';
 export type AuthLoginScreenProps = {
   form: UseFormReturn<AuthLoginForm>;
   isSubmitDisabled: boolean;
+  isSubmitting: boolean;
   onSubmit: (values: AuthLoginForm) => void;
 };
 
@@ -21,6 +22,7 @@ export const AuthLoginScreen = (props: AuthLoginScreenProps) => {
           <LoginForm
             form={props.form}
             isSubmitDisabled={props.isSubmitDisabled}
+            isSubmitting={props.isSubmitting}
             onSubmit={props.onSubmit}
           />
         </Card.Header>

@@ -7,7 +7,7 @@ import {
   LoadingView,
   Select,
 } from '../base';
-import { Button, Card, Form, H4, Paragraph, XStack, YStack } from 'tamagui';
+import { Button, Card, Form, H4, Paragraph, Spinner, XStack, YStack } from 'tamagui';
 import { CalculationForm } from '../../../domain';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
 import { getCalculationStatus } from './utils';
@@ -19,6 +19,7 @@ export type CalculationFormViewProps = {
   walletSelectOptions: { label: string; value: number }[];
   getTotalWallet: (totalWallet: number, walletId: number) => number;
   isSubmitDisabled: boolean;
+  isSubmitting: boolean;
   isFormDisabled?: boolean;
   onRetryButtonPress: () => void;
 };
@@ -31,6 +32,7 @@ export const CalculationFormView = ({
   getTotalWallet,
   isFormDisabled,
   isSubmitDisabled,
+  isSubmitting,
   onRetryButtonPress,
 }: CalculationFormViewProps) => {
   return variant.type === 'loaded' ? (
@@ -146,6 +148,7 @@ export const CalculationFormView = ({
           disabled={isSubmitDisabled || isFormDisabled}
           onPress={form.handleSubmit(onSubmit)}
           theme="blue"
+          icon={isSubmitting ? <Spinner /> : undefined}
         >
           Submit
         </Button>

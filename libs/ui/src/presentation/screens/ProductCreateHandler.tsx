@@ -40,6 +40,7 @@ export const ProductCreateHandler = ({
         productCreate.state.type === 'submitting' ||
         productCreate.state.type === 'submitSuccess'
       }
+      isSubmitting={productCreate.state.type === 'submitting'}
       onRetryButtonPress={() => productCreate.dispatch({ type: 'FETCH' })}
       variant={match(productCreate.state)
         .returnType<ProductCreateScreenProps['variant']>()

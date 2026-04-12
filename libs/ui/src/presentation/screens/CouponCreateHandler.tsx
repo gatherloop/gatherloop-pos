@@ -37,6 +37,7 @@ export const CouponCreateHandler = ({
         couponCreate.state.type === 'submitting' ||
         couponCreate.state.type === 'submitSuccess'
       }
+      isSubmitting={couponCreate.state.type === 'submitting'}
       onSubmit={(values) =>
         couponCreate.dispatch({ type: 'SUBMIT', values })
       }

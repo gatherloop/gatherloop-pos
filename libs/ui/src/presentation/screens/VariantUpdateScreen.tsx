@@ -14,6 +14,7 @@ export type VariantUpdateScreenProps = {
   form: UseFormReturn<VariantForm>;
   onSubmit: (values: VariantForm) => void;
   isSubmitDisabled: boolean;
+  isSubmitting: boolean;
   onLogoutPress: () => void;
   isMaterialSheetOpen: boolean;
   onMaterialSheetOpenChange: (open: boolean) => void;
@@ -52,6 +53,7 @@ export const VariantUpdateScreen = (props: VariantUpdateScreenProps) => {
           form={props.form}
           onSubmit={props.onSubmit}
           isSubmitDisabled={props.isSubmitDisabled}
+          isSubmitting={props.isSubmitting}
           isMaterialSheetOpen={props.isMaterialSheetOpen}
           onMaterialSheetOpenChange={props.onMaterialSheetOpenChange}
           onRemoveMaterial={props.onRemoveMaterial}

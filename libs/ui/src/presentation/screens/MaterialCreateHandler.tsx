@@ -39,6 +39,7 @@ export const MaterialCreateHandler = ({
         materialCreate.state.type === 'submitError' ||
         materialCreate.state.type === 'submitSuccess'
       }
+      isSubmitting={materialCreate.state.type === 'submitting'}
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
     />
   );

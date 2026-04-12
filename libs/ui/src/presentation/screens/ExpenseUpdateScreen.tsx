@@ -11,6 +11,7 @@ export type ExpenseUpdateScreenProps = {
   onLogoutPress: () => void;
   form: UseFormReturn<ExpenseForm>;
   isSubmitDisabled: boolean;
+  isSubmitting: boolean;
   onSubmit: (values: ExpenseForm) => void;
   onRetryButtonPress: () => void;
   budgetSelectOptions: { label: string; value: number }[];
@@ -21,6 +22,7 @@ export type ExpenseUpdateScreenProps = {
 export const ExpenseUpdateScreen = ({
   form,
   isSubmitDisabled,
+  isSubmitting,
   onLogoutPress,
   onRetryButtonPress,
   onSubmit,
@@ -38,6 +40,7 @@ export const ExpenseUpdateScreen = ({
         <ExpenseFormView
           form={form}
           isSubmitDisabled={isSubmitDisabled}
+          isSubmitting={isSubmitting}
           onRetryButtonPress={onRetryButtonPress}
           onSubmit={onSubmit}
           budgetSelectOptions={budgetSelectOptions}

@@ -43,6 +43,7 @@ export const ChecklistTemplateUpdateHandler = ({
         checklistTemplateUpdate.state.type === 'submitError' ||
         checklistTemplateUpdate.state.type === 'submitSuccess'
       }
+      isSubmitting={checklistTemplateUpdate.state.type === 'submitting'}
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
       onRetryButtonPress={() =>
         checklistTemplateUpdate.dispatch({ type: 'FETCH' })

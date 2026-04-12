@@ -7,6 +7,7 @@ export type SupplierUpdateScreenProps = {
   form: UseFormReturn<SupplierForm>;
   onSubmit: (values: SupplierForm) => void;
   isSubmitDisabled: boolean;
+  isSubmitting: boolean;
   onLogoutPress: () => void;
 };
 
@@ -18,6 +19,7 @@ export const SupplierUpdateScreen = (props: SupplierUpdateScreenProps) => {
           form={props.form}
           onSubmit={props.onSubmit}
           isSubmitDisabled={props.isSubmitDisabled}
+          isSubmitting={props.isSubmitting}
         />
       </ScrollView>
     </Layout>

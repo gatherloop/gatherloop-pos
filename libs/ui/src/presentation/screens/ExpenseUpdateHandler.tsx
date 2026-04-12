@@ -37,6 +37,7 @@ export const ExpenseUpdateHandler = ({
         expenseUpdate.state.type === 'submitting' ||
         expenseUpdate.state.type === 'submitSuccess'
       }
+      isSubmitting={expenseUpdate.state.type === 'submitting'}
       onRetryButtonPress={() => expenseUpdate.dispatch({ type: 'FETCH' })}
       onSubmit={(values) =>
         expenseUpdate.dispatch({ type: 'SUBMIT', values })

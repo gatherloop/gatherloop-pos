@@ -8,6 +8,7 @@ export type WalletUpdateScreenProps = {
   form: UseFormReturn<WalletForm>;
   onSubmit: (values: WalletForm) => void;
   isSubmitDisabled: boolean;
+  isSubmitting: boolean;
   onLogoutPress: () => void;
   variant: WalletFormViewProps['variant'];
 };
@@ -20,6 +21,7 @@ export const WalletUpdateScreen = (props: WalletUpdateScreenProps) => {
           form={props.form}
           onSubmit={props.onSubmit}
           isSubmitDisabled={props.isSubmitDisabled}
+          isSubmitting={props.isSubmitting}
           variant={props.variant}
         />
       </ScrollView>

@@ -14,6 +14,7 @@ export type TransactionUpdateScreenProps = {
   form: UseFormReturn<TransactionForm>;
   onSubmit: (values: TransactionForm) => void;
   isSubmitDisabled: boolean;
+  isSubmitting: boolean;
   onLogoutPress: () => void;
   isCouponSheetOpen: boolean;
   onCouponSheetOpenChange: (open: boolean) => void;
@@ -67,6 +68,7 @@ export const TransactionUpdateScreen = (
           form={props.form}
           onSubmit={props.onSubmit}
           isSubmitDisabled={props.isSubmitDisabled}
+          isSubmitting={props.isSubmitting}
           isCouponSheetOpen={props.isCouponSheetOpen}
           onCouponSheetOpenChange={props.onCouponSheetOpenChange}
           itemsFieldArray={props.itemsFieldArray}
