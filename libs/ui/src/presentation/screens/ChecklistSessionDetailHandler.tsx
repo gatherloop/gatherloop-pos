@@ -6,15 +6,11 @@ import {
   ChecklistSession,
   ChecklistSessionDeleteUsecase,
   ChecklistSessionDetailUsecase,
-  ChecklistSessionItemToggleUsecase,
-  ChecklistSessionSubItemToggleUsecase,
 } from '../../domain';
 import {
   useAuthLogoutController,
   useChecklistSessionDeleteController,
   useChecklistSessionDetailController,
-  useChecklistSessionItemToggleController,
-  useChecklistSessionSubItemToggleController,
 } from '../controllers';
 import {
   ChecklistSessionDetailScreen,
@@ -25,16 +21,12 @@ export type ChecklistSessionDetailHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;
   checklistSessionDetailUsecase: ChecklistSessionDetailUsecase;
   checklistSessionDeleteUsecase: ChecklistSessionDeleteUsecase;
-  checklistSessionItemToggleUsecase: ChecklistSessionItemToggleUsecase;
-  checklistSessionSubItemToggleUsecase: ChecklistSessionSubItemToggleUsecase;
 };
 
 export const ChecklistSessionDetailHandler = ({
   authLogoutUsecase,
   checklistSessionDetailUsecase,
   checklistSessionDeleteUsecase,
-  checklistSessionItemToggleUsecase,
-  checklistSessionSubItemToggleUsecase,
 }: ChecklistSessionDetailHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
   const checklistSessionDetail = useChecklistSessionDetailController(
@@ -43,25 +35,7 @@ export const ChecklistSessionDetailHandler = ({
   const checklistSessionDelete = useChecklistSessionDeleteController(
     checklistSessionDeleteUsecase
   );
-  const itemToggle = useChecklistSessionItemToggleController(
-    checklistSessionItemToggleUsecase
-  );
-  const subItemToggle = useChecklistSessionSubItemToggleController(
-    checklistSessionSubItemToggleUsecase
-  );
   const router = useRouter();
-
-  // Refresh session after item toggle succeeds
-  useEffect(() => {
-    if (
-      itemToggle.state.type === 'toggleSuccess' ||
-      subItemToggle.state.type === 'toggleSuccess'
-    ) {
-      checklistSessionDetail.dispatch({ type: 'FETCH' });
-    }
-  }, [itemToggle.state.type, subItemToggle.state.type, checklistSessionDetail]);
-
-  console.log('subItemToggle', subItemToggle.state.type);
 
   // Navigate back after deletion
   useEffect(() => {
@@ -75,15 +49,15 @@ export const ChecklistSessionDetailHandler = ({
   }, [checklistSessionDelete.state, router]);
 
   const togglingItemId =
-    itemToggle.state.type === 'checking' ||
-    itemToggle.state.type === 'unchecking'
-      ? itemToggle.state.itemId
+    checklistSessionDetail.state.type === 'checkingItem' ||
+    checklistSessionDetail.state.type === 'uncheckingItem'
+      ? checklistSessionDetail.state.itemId
       : null;
 
   const togglingSubItemId =
-    subItemToggle.state.type === 'checking' ||
-    subItemToggle.state.type === 'unchecking'
-      ? subItemToggle.state.subItemId
+    checklistSessionDetail.state.type === 'checkingSubItem' ||
+    checklistSessionDetail.state.type === 'uncheckingSubItem'
+      ? checklistSessionDetail.state.subItemId
       : null;
 
   return (
@@ -92,15 +66,17 @@ export const ChecklistSessionDetailHandler = ({
       onRetryButtonPress={() =>
         checklistSessionDetail.dispatch({ type: 'FETCH' })
       }
-      onCheckItem={(itemId) => itemToggle.dispatch({ type: 'CHECK', itemId })}
+      onCheckItem={(itemId) =>
+        checklistSessionDetail.dispatch({ type: 'CHECK_ITEM', itemId })
+      }
       onUncheckItem={(itemId) =>
-        itemToggle.dispatch({ type: 'UNCHECK', itemId })
+        checklistSessionDetail.dispatch({ type: 'UNCHECK_ITEM', itemId })
       }
       onCheckSubItem={(subItemId) =>
-        subItemToggle.dispatch({ type: 'CHECK', subItemId })
+        checklistSessionDetail.dispatch({ type: 'CHECK_SUB_ITEM', subItemId })
       }
       onUncheckSubItem={(subItemId) =>
-        subItemToggle.dispatch({ type: 'UNCHECK', subItemId })
+        checklistSessionDetail.dispatch({ type: 'UNCHECK_SUB_ITEM', subItemId })
       }
       onDeletePress={(session: ChecklistSession) =>
         checklistSessionDelete.dispatch({
@@ -127,7 +103,17 @@ export const ChecklistSessionDetailHandler = ({
         .returnType<ChecklistSessionDetailScreenProps['variant']>()
         .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))
         .with(
-          { type: 'loaded', checklistSession: P.not(P.nullish) },
+          {
+            type: P.union(
+              'loaded',
+              'revalidating',
+              'checkingItem',
+              'uncheckingItem',
+              'checkingSubItem',
+              'uncheckingSubItem'
+            ),
+            checklistSession: P.not(P.nullish),
+          },
           ({ checklistSession }) => ({
             type: 'loaded',
             checklistSession: checklistSession as ChecklistSession,
