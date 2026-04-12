@@ -110,12 +110,13 @@ func (handler ChecklistSessionHandler) CheckSessionItem(w http.ResponseWriter, r
 		return
 	}
 
-	if usecaseErr := handler.usecase.CheckSessionItem(ctx, itemId); usecaseErr != nil {
+	item, usecaseErr := handler.usecase.CheckSessionItem(ctx, itemId)
+	if usecaseErr != nil {
 		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
-	WriteResponse(w, apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.ChecklistSessionItemCheckResponse{Data: ToApiChecklistSessionItem(item)})
 }
 
 func (handler ChecklistSessionHandler) UncheckSessionItem(w http.ResponseWriter, r *http.Request) {
@@ -127,12 +128,13 @@ func (handler ChecklistSessionHandler) UncheckSessionItem(w http.ResponseWriter,
 		return
 	}
 
-	if usecaseErr := handler.usecase.UncheckSessionItem(ctx, itemId); usecaseErr != nil {
+	item, usecaseErr := handler.usecase.UncheckSessionItem(ctx, itemId)
+	if usecaseErr != nil {
 		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
-	WriteResponse(w, apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.ChecklistSessionItemUncheckResponse{Data: ToApiChecklistSessionItem(item)})
 }
 
 func (handler ChecklistSessionHandler) CheckSessionSubItem(w http.ResponseWriter, r *http.Request) {
@@ -144,12 +146,13 @@ func (handler ChecklistSessionHandler) CheckSessionSubItem(w http.ResponseWriter
 		return
 	}
 
-	if usecaseErr := handler.usecase.CheckSessionSubItem(ctx, subItemId); usecaseErr != nil {
+	subItem, usecaseErr := handler.usecase.CheckSessionSubItem(ctx, subItemId)
+	if usecaseErr != nil {
 		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
-	WriteResponse(w, apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.ChecklistSessionSubItemCheckResponse{Data: ToApiChecklistSessionSubItem(subItem)})
 }
 
 func (handler ChecklistSessionHandler) UncheckSessionSubItem(w http.ResponseWriter, r *http.Request) {
@@ -161,10 +164,11 @@ func (handler ChecklistSessionHandler) UncheckSessionSubItem(w http.ResponseWrit
 		return
 	}
 
-	if usecaseErr := handler.usecase.UncheckSessionSubItem(ctx, subItemId); usecaseErr != nil {
+	subItem, usecaseErr := handler.usecase.UncheckSessionSubItem(ctx, subItemId)
+	if usecaseErr != nil {
 		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
-	WriteResponse(w, apiContract.SuccessResponse{Success: true})
+	WriteResponse(w, apiContract.ChecklistSessionSubItemUncheckResponse{Data: ToApiChecklistSessionSubItem(subItem)})
 }

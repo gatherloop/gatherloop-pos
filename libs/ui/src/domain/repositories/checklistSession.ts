@@ -35,17 +35,19 @@ export interface ChecklistSessionRepository {
 
   deleteChecklistSessionById: (checklistSessionId: number) => Promise<void>;
 
-  checkChecklistSessionItem: (checklistSessionItemId: number) => Promise<void>;
+  checkChecklistSessionItem: (
+    checklistSessionItemId: number
+  ) => Promise<ChecklistSessionItem>;
 
   uncheckChecklistSessionItem: (
     checklistSessionItemId: number
-  ) => Promise<void>;
+  ) => Promise<ChecklistSessionItem>;
 
   checkChecklistSessionSubItem: (
     checklistSessionSubItemId: number
-  ) => Promise<void>;
+  ) => Promise<ChecklistSessionSubItem>;
 
   uncheckChecklistSessionSubItem: (
     checklistSessionSubItemId: number
-  ) => Promise<void>;
+  ) => Promise<ChecklistSessionSubItem>;
 }
