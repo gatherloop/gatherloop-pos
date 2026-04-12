@@ -120,22 +120,30 @@ export class ApiChecklistSessionRepository
     };
 
   checkChecklistSessionItem: ChecklistSessionRepository['checkChecklistSessionItem'] =
-    (checklistSessionItemId: number): Promise<void> => {
-      return checklistSessionItemCheck(checklistSessionItemId).then();
+    (checklistSessionItemId: number): Promise<ChecklistSessionItem> => {
+      return checklistSessionItemCheck(checklistSessionItemId).then(
+        ({ data }) => toChecklistSessionItem(data)
+      );
     };
 
   uncheckChecklistSessionItem: ChecklistSessionRepository['uncheckChecklistSessionItem'] =
-    (checklistSessionItemId: number): Promise<void> => {
-      return checklistSessionItemUncheck(checklistSessionItemId).then();
+    (checklistSessionItemId: number): Promise<ChecklistSessionItem> => {
+      return checklistSessionItemUncheck(checklistSessionItemId).then(
+        ({ data }) => toChecklistSessionItem(data)
+      );
     };
 
   checkChecklistSessionSubItem: ChecklistSessionRepository['checkChecklistSessionSubItem'] =
-    (checklistSessionSubItemId: number): Promise<void> => {
-      return checklistSessionSubItemCheck(checklistSessionSubItemId).then();
+    (checklistSessionSubItemId: number): Promise<ChecklistSessionSubItem> => {
+      return checklistSessionSubItemCheck(checklistSessionSubItemId).then(
+        ({ data }) => toChecklistSessionSubItem(data)
+      );
     };
 
   uncheckChecklistSessionSubItem: ChecklistSessionRepository['uncheckChecklistSessionSubItem'] =
-    (checklistSessionSubItemId: number): Promise<void> => {
-      return checklistSessionSubItemUncheck(checklistSessionSubItemId).then();
+    (checklistSessionSubItemId: number): Promise<ChecklistSessionSubItem> => {
+      return checklistSessionSubItemUncheck(checklistSessionSubItemId).then(
+        ({ data }) => toChecklistSessionSubItem(data)
+      );
     };
 }

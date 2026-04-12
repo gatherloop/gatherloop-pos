@@ -100,8 +100,9 @@ func (usecase ChecklistSessionUsecase) DeleteChecklistSessionById(ctx context.Co
 	})
 }
 
-func (usecase ChecklistSessionUsecase) CheckSessionItem(ctx context.Context, itemId int64) *Error {
-	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+func (usecase ChecklistSessionUsecase) CheckSessionItem(ctx context.Context, itemId int64) (ChecklistSessionItem, *Error) {
+	var result ChecklistSessionItem
+	txErr := usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 		item, err := usecase.repository.GetChecklistSessionItemById(ctxWithTx, itemId)
 		if err != nil {
 			return err
@@ -116,12 +117,17 @@ func (usecase ChecklistSessionUsecase) CheckSessionItem(ctx context.Context, ite
 			return err
 		}
 
+		item.CompletedAt = &now
+		result = item
+
 		return usecase.autoCompleteSessionIfNeeded(ctxWithTx, item.ChecklistSessionId)
 	})
+	return result, txErr
 }
 
-func (usecase ChecklistSessionUsecase) UncheckSessionItem(ctx context.Context, itemId int64) *Error {
-	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+func (usecase ChecklistSessionUsecase) UncheckSessionItem(ctx context.Context, itemId int64) (ChecklistSessionItem, *Error) {
+	var result ChecklistSessionItem
+	txErr := usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 		item, err := usecase.repository.GetChecklistSessionItemById(ctxWithTx, itemId)
 		if err != nil {
 			return err
@@ -135,12 +141,17 @@ func (usecase ChecklistSessionUsecase) UncheckSessionItem(ctx context.Context, i
 			return err
 		}
 
+		item.CompletedAt = nil
+		result = item
+
 		return usecase.revertSessionCompletionIfNeeded(ctxWithTx, item.ChecklistSessionId)
 	})
+	return result, txErr
 }
 
-func (usecase ChecklistSessionUsecase) CheckSessionSubItem(ctx context.Context, subItemId int64) *Error {
-	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+func (usecase ChecklistSessionUsecase) CheckSessionSubItem(ctx context.Context, subItemId int64) (ChecklistSessionSubItem, *Error) {
+	var result ChecklistSessionSubItem
+	txErr := usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 		subItem, err := usecase.repository.GetChecklistSessionSubItemById(ctxWithTx, subItemId)
 		if err != nil {
 			return err
@@ -150,6 +161,9 @@ func (usecase ChecklistSessionUsecase) CheckSessionSubItem(ctx context.Context, 
 		if err := usecase.repository.UpdateChecklistSessionSubItemCompletedAt(ctxWithTx, subItemId, &now); err != nil {
 			return err
 		}
+
+		subItem.CompletedAt = &now
+		result = subItem
 
 		// Check if all sub-items are now completed → auto-complete parent item
 		subItems, err := usecase.repository.GetChecklistSessionSubItemsByItemId(ctxWithTx, subItem.ChecklistSessionItemId)
@@ -173,10 +187,12 @@ func (usecase ChecklistSessionUsecase) CheckSessionSubItem(ctx context.Context, 
 
 		return nil
 	})
+	return result, txErr
 }
 
-func (usecase ChecklistSessionUsecase) UncheckSessionSubItem(ctx context.Context, subItemId int64) *Error {
-	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+func (usecase ChecklistSessionUsecase) UncheckSessionSubItem(ctx context.Context, subItemId int64) (ChecklistSessionSubItem, *Error) {
+	var result ChecklistSessionSubItem
+	txErr := usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 		subItem, err := usecase.repository.GetChecklistSessionSubItemById(ctxWithTx, subItemId)
 		if err != nil {
 			return err
@@ -185,6 +201,9 @@ func (usecase ChecklistSessionUsecase) UncheckSessionSubItem(ctx context.Context
 		if err := usecase.repository.UpdateChecklistSessionSubItemCompletedAt(ctxWithTx, subItemId, nil); err != nil {
 			return err
 		}
+
+		subItem.CompletedAt = nil
+		result = subItem
 
 		// Check parent item completion → revert if needed
 		parentItem, err := usecase.repository.GetChecklistSessionItemById(ctxWithTx, subItem.ChecklistSessionItemId)
@@ -201,6 +220,7 @@ func (usecase ChecklistSessionUsecase) UncheckSessionSubItem(ctx context.Context
 
 		return nil
 	})
+	return result, txErr
 }
 
 // autoCompleteSessionIfNeeded checks if all items are completed and marks the session as completed.

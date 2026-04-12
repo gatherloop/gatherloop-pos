@@ -374,7 +374,7 @@ func TestChecklistSessionUsecase_CheckSessionItem(t *testing.T) {
 			usecase, sessionRepo, templateRepo := newChecklistSessionUsecase(ctrl)
 			tt.setupMock(sessionRepo, templateRepo)
 
-			err := usecase.CheckSessionItem(context.Background(), tt.itemId)
+			_, err := usecase.CheckSessionItem(context.Background(), tt.itemId)
 
 			if tt.expectedError != nil {
 				assert.NotNil(t, err)
@@ -461,7 +461,7 @@ func TestChecklistSessionUsecase_UncheckSessionItem(t *testing.T) {
 			usecase, sessionRepo, templateRepo := newChecklistSessionUsecase(ctrl)
 			tt.setupMock(sessionRepo, templateRepo)
 
-			err := usecase.UncheckSessionItem(context.Background(), tt.itemId)
+			_, err := usecase.UncheckSessionItem(context.Background(), tt.itemId)
 
 			if tt.expectedError != nil {
 				assert.NotNil(t, err)
@@ -568,7 +568,7 @@ func TestChecklistSessionUsecase_CheckSessionSubItem(t *testing.T) {
 			usecase, sessionRepo, templateRepo := newChecklistSessionUsecase(ctrl)
 			tt.setupMock(sessionRepo, templateRepo)
 
-			err := usecase.CheckSessionSubItem(context.Background(), tt.subItemId)
+			_, err := usecase.CheckSessionSubItem(context.Background(), tt.subItemId)
 
 			if tt.expectedError != nil {
 				assert.NotNil(t, err)
@@ -656,7 +656,7 @@ func TestChecklistSessionUsecase_UncheckSessionSubItem(t *testing.T) {
 			usecase, sessionRepo, templateRepo := newChecklistSessionUsecase(ctrl)
 			tt.setupMock(sessionRepo, templateRepo)
 
-			err := usecase.UncheckSessionSubItem(context.Background(), tt.subItemId)
+			_, err := usecase.UncheckSessionSubItem(context.Background(), tt.subItemId)
 
 			if tt.expectedError != nil {
 				assert.NotNil(t, err)

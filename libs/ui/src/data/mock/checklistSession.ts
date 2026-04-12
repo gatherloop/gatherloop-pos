@@ -1,4 +1,9 @@
-import { ChecklistSession, ChecklistSessionForm } from '../../domain/entities';
+import {
+  ChecklistSession,
+  ChecklistSessionForm,
+  ChecklistSessionItem,
+  ChecklistSessionSubItem,
+} from '../../domain/entities';
 import {
   ChecklistSessionListFilter,
   ChecklistSessionRepository,
@@ -191,7 +196,7 @@ export class MockChecklistSessionRepository
 
   async checkChecklistSessionItem(
     checklistSessionItemId: number
-  ): Promise<void> {
+  ): Promise<ChecklistSessionItem> {
     if (this.shouldFail) throw new Error('Failed to check session item');
     for (const session of this.sessions) {
       const item = session.items.find((i) => i.id === checklistSessionItemId);
@@ -207,7 +212,7 @@ export class MockChecklistSessionRepository
         if (allCompleted) {
           session.completedAt = new Date().toISOString();
         }
-        return;
+        return { ...item, subItems: [...item.subItems] };
       }
     }
     throw new Error('Session item not found');
@@ -215,14 +220,14 @@ export class MockChecklistSessionRepository
 
   async uncheckChecklistSessionItem(
     checklistSessionItemId: number
-  ): Promise<void> {
+  ): Promise<ChecklistSessionItem> {
     if (this.shouldFail) throw new Error('Failed to uncheck session item');
     for (const session of this.sessions) {
       const item = session.items.find((i) => i.id === checklistSessionItemId);
       if (item) {
         item.completedAt = null;
         session.completedAt = null;
-        return;
+        return { ...item, subItems: [...item.subItems] };
       }
     }
     throw new Error('Session item not found');
@@ -230,7 +235,7 @@ export class MockChecklistSessionRepository
 
   async checkChecklistSessionSubItem(
     checklistSessionSubItemId: number
-  ): Promise<void> {
+  ): Promise<ChecklistSessionSubItem> {
     if (this.shouldFail) throw new Error('Failed to check session sub item');
     for (const session of this.sessions) {
       for (const item of session.items) {
@@ -256,7 +261,7 @@ export class MockChecklistSessionRepository
           if (allItemsDone) {
             session.completedAt = new Date().toISOString();
           }
-          return;
+          return { ...subItem };
         }
       }
     }
@@ -265,7 +270,7 @@ export class MockChecklistSessionRepository
 
   async uncheckChecklistSessionSubItem(
     checklistSessionSubItemId: number
-  ): Promise<void> {
+  ): Promise<ChecklistSessionSubItem> {
     if (this.shouldFail) throw new Error('Failed to uncheck session sub item');
     for (const session of this.sessions) {
       for (const item of session.items) {
@@ -276,7 +281,7 @@ export class MockChecklistSessionRepository
           subItem.completedAt = null;
           item.completedAt = null;
           session.completedAt = null;
-          return;
+          return { ...subItem };
         }
       }
     }
