@@ -35,6 +35,7 @@ export const SupplierCreateHandler = ({
         supplierCreate.state.type === 'submitError' ||
         supplierCreate.state.type === 'submitSuccess'
       }
+      isSubmitting={supplierCreate.state.type === 'submitting'}
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
     />
   );

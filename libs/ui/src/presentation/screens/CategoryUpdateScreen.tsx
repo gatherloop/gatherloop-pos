@@ -11,6 +11,7 @@ export type CategoryUpdateScreenProps = {
   onLogoutPress: () => void;
   form: UseFormReturn<CategoryForm>;
   isSubmitDisabled: boolean;
+  isSubmitting: boolean;
   onSubmit: (values: CategoryForm) => void;
   variant: CategoryFormViewProps['variant'];
 };
@@ -18,6 +19,7 @@ export type CategoryUpdateScreenProps = {
 export const CategoryUpdateScreen = ({
   form,
   isSubmitDisabled,
+  isSubmitting,
   onLogoutPress,
   onSubmit,
   variant,
@@ -32,6 +34,7 @@ export const CategoryUpdateScreen = ({
         <CategoryFormView
           form={form}
           isSubmitDisabled={isSubmitDisabled}
+          isSubmitting={isSubmitting}
           onSubmit={onSubmit}
           variant={variant}
         />

@@ -54,6 +54,7 @@ export const VariantUpdateHandler = ({
         variantUpdate.state.type === 'submitting' ||
         variantUpdate.state.type === 'submitSuccess'
       }
+      isSubmitting={variantUpdate.state.type === 'submitting'}
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
       isMaterialSheetOpen={variantUpdate.isMaterialSheetOpen}
       onMaterialSheetOpenChange={variantUpdate.onMaterialSheetOpenChange}

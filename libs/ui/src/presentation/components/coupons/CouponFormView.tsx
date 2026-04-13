@@ -8,7 +8,7 @@ import {
 } from '../base';
 import { CouponForm } from '../../../domain';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
-import { Button, Form } from 'tamagui';
+import { Button, Form, Spinner } from 'tamagui';
 
 export type CouponFormViewProps = {
   variant:
@@ -18,6 +18,7 @@ export type CouponFormViewProps = {
   form: UseFormReturn<CouponForm>;
   onSubmit: (values: CouponForm) => void;
   isSubmitDisabled: boolean;
+  isSubmitting: boolean;
 };
 
 export const CouponFormView = ({
@@ -25,6 +26,7 @@ export const CouponFormView = ({
   form,
   onSubmit,
   isSubmitDisabled,
+  isSubmitting,
 }: CouponFormViewProps) => {
   return variant.type === 'loaded' ? (
     <FormProvider {...form}>
@@ -48,6 +50,7 @@ export const CouponFormView = ({
           disabled={isSubmitDisabled}
           onPress={form.handleSubmit(onSubmit)}
           theme="blue"
+          icon={isSubmitting ? <Spinner /> : undefined}
         >
           Submit
         </Button>

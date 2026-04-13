@@ -34,6 +34,7 @@ export const WalletCreateHandler = ({
         walletCreate.state.type === 'submitting' ||
         walletCreate.state.type === 'submitSuccess'
       }
+      isSubmitting={walletCreate.state.type === 'submitting'}
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
     />
   );

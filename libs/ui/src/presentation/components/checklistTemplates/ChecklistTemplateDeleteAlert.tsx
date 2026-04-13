@@ -1,4 +1,4 @@
-import { AlertDialog, Button, XStack, YStack } from 'tamagui';
+import { AlertDialog, Button, Spinner, XStack, YStack } from 'tamagui';
 
 export type ChecklistTemplateDeleteAlertProps = {
   isOpen: boolean;
@@ -57,6 +57,7 @@ export const ChecklistTemplateDeleteAlert = ({
                 theme="active"
                 onPress={onConfirm}
                 disabled={isButtonDisabled}
+                icon={isButtonDisabled ? <Spinner /> : undefined}
               >
                 Yes
               </Button>

@@ -7,6 +7,7 @@ import {
   Input,
   Label,
   Paragraph,
+  Spinner,
   XStack,
   YStack,
 } from 'tamagui';
@@ -26,6 +27,7 @@ export type RentalCheckinFormViewProps = {
   onToggleCustomizeCheckinDateTime: (checked: boolean) => void;
   onSubmit: (form: RentalCheckinForm) => void;
   isSubmitDisabled: boolean;
+  isSubmitting: boolean;
   RentalItemSelect: () => ReactNode;
   rentalsFieldArray: UseFieldArrayReturn<RentalCheckinForm, 'rentals', 'key'>;
 };
@@ -35,6 +37,7 @@ export const RentalCheckinFormView = ({
   onToggleCustomizeCheckinDateTime,
   onSubmit,
   isSubmitDisabled,
+  isSubmitting,
   RentalItemSelect,
   rentalsFieldArray,
 }: RentalCheckinFormViewProps) => {
@@ -243,6 +246,7 @@ export const RentalCheckinFormView = ({
               onPress={form.handleSubmit(onSubmit)}
               size="$5"
               theme="blue"
+              icon={isSubmitting ? <Spinner /> : undefined}
             >
               Submit
             </Button>

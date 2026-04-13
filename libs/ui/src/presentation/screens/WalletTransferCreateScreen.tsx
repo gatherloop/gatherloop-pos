@@ -7,6 +7,7 @@ export type WalletTransferCreateScreenProps = {
   form: UseFormReturn<WalletTransferForm>;
   onSubmit: (values: WalletTransferForm) => void;
   isSubmitDisabled: boolean;
+  isSubmitting: boolean;
   onLogoutPress: () => void;
   walletSelectOptions: Array<{ label: string; value: number }>;
 };
@@ -19,6 +20,7 @@ export const WalletTransferCreateScreen = (props: WalletTransferCreateScreenProp
           form={props.form}
           onSubmit={props.onSubmit}
           isSubmitDisabled={props.isSubmitDisabled}
+          isSubmitting={props.isSubmitting}
           walletSelectOptions={props.walletSelectOptions}
         />
       </ScrollView>

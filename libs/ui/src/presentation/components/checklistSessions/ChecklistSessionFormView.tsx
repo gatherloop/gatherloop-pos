@@ -1,4 +1,4 @@
-import { Button, Card, Form, Label, YStack } from 'tamagui';
+import { Button, Card, Form, Label, Spinner, YStack } from 'tamagui';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
 import { Field, InputText, Select } from '../base';
 import { ChecklistSessionForm } from '../../../domain';
@@ -8,6 +8,7 @@ export type ChecklistSessionFormViewProps = {
   form: UseFormReturn<ChecklistSessionForm>;
   onSubmit: (values: ChecklistSessionForm) => void;
   isSubmitDisabled: boolean;
+  isSubmitting: boolean;
   checklistTemplates: ChecklistTemplate[];
 };
 
@@ -15,6 +16,7 @@ export const ChecklistSessionFormView = ({
   form,
   onSubmit,
   isSubmitDisabled,
+  isSubmitting,
   checklistTemplates,
 }: ChecklistSessionFormViewProps) => {
   return (
@@ -47,6 +49,7 @@ export const ChecklistSessionFormView = ({
                 disabled={isSubmitDisabled}
                 onPress={form.handleSubmit(onSubmit)}
                 theme="blue"
+                icon={isSubmitting ? <Spinner /> : undefined}
               >
                 Start Session
               </Button>

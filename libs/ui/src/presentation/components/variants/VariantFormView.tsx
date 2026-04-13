@@ -20,6 +20,7 @@ import {
   H4,
   Paragraph,
   ScrollView,
+  Spinner,
   XStack,
   YStack,
 } from 'tamagui';
@@ -46,6 +47,7 @@ export type VariantFormViewProps = {
     fieldArray: UseFieldArrayReturn<VariantForm, 'materials', 'key'>
   ) => void;
   isSubmitDisabled: boolean;
+  isSubmitting: boolean;
   MaterialList: (
     fieldArray: UseFieldArrayReturn<VariantForm, 'materials', 'key'>
   ) => ReactNode;
@@ -57,6 +59,7 @@ export const VariantFormView = ({
   product,
   isMaterialSheetOpen,
   isSubmitDisabled,
+  isSubmitting,
   onMaterialSheetOpenChange,
   form,
   onRemoveMaterial,
@@ -262,6 +265,7 @@ export const VariantFormView = ({
           disabled={isSubmitDisabled}
           onPress={form.handleSubmit(onSubmit)}
           theme="blue"
+          icon={isSubmitting ? <Spinner /> : undefined}
         >
           Submit
         </Button>

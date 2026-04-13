@@ -8,6 +8,7 @@ export type ChecklistSessionCreateScreenProps = {
   form: UseFormReturn<ChecklistSessionForm>;
   onSubmit: (values: ChecklistSessionForm) => void;
   isSubmitDisabled: boolean;
+  isSubmitting: boolean;
   checklistTemplates: ChecklistTemplate[];
 };
 
@@ -16,6 +17,7 @@ export const ChecklistSessionCreateScreen = ({
   form,
   onSubmit,
   isSubmitDisabled,
+  isSubmitting,
   checklistTemplates,
 }: ChecklistSessionCreateScreenProps) => {
   return (
@@ -29,6 +31,7 @@ export const ChecklistSessionCreateScreen = ({
           form={form}
           onSubmit={onSubmit}
           isSubmitDisabled={isSubmitDisabled}
+          isSubmitting={isSubmitting}
           checklistTemplates={checklistTemplates}
         />
       </ScrollView>

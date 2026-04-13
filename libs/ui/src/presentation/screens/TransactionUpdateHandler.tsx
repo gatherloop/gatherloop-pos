@@ -70,6 +70,7 @@ export const TransactionUpdateHandler = ({
         transactionUpdate.dispatch({ type: 'SUBMIT', values })
       }
       isSubmitDisabled={transactionUpdate.state.type === 'submitting'}
+      isSubmitting={transactionUpdate.state.type === 'submitting'}
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
       isCouponSheetOpen={transactionUpdate.isCouponSheetOpen}
       onCouponSheetOpenChange={transactionUpdate.onCouponSheetOpenChange}

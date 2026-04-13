@@ -134,6 +134,35 @@ describe('CategoryListHandler', () => {
       expect(screen.queryByRole('heading', { name: 'Delete Category ?' })).toBeNull();
     });
 
+    it('should disable Yes button and show spinner during deletion', async () => {
+      const user = userEvent.setup();
+      let resolveDelete!: () => void;
+      const categoryRepo = new MockCategoryRepository();
+      jest.spyOn(categoryRepo, 'deleteCategoryById').mockImplementation(
+        () => new Promise<void>((resolve) => { resolveDelete = resolve; })
+      );
+
+      render(<CategoryListHandler {...createProps({ categoryRepo })} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      const deleteMenuItems = screen.getAllByRole('button', { name: 'Delete' });
+      await user.click(deleteMenuItems[0]);
+      await user.click(screen.getByRole('button', { name: 'Yes' }));
+
+      expect((screen.getByRole('button', { name: 'Yes' }) as HTMLButtonElement).disabled).toBe(true);
+      expect(screen.getByTestId('spinner')).toBeTruthy();
+
+      await act(async () => {
+        resolveDelete();
+        await flushPromises();
+      });
+
+      expect(screen.queryByTestId('spinner')).toBeNull();
+    });
+
     it('should refetch category list after successful delete', async () => {
       const user = userEvent.setup();
       const categoryRepo = new MockCategoryRepository();

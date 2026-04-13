@@ -1,18 +1,20 @@
 import { Field, InputText } from '../base';
 import { SupplierForm } from '../../../domain';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
-import { Button, Form } from 'tamagui';
+import { Button, Form, Spinner } from 'tamagui';
 
 export type SupplierFormViewProps = {
   form: UseFormReturn<SupplierForm>;
   onSubmit: (values: SupplierForm) => void;
   isSubmitDisabled: boolean;
+  isSubmitting: boolean;
 };
 
 export const SupplierFormView = ({
   form,
   onSubmit,
   isSubmitDisabled,
+  isSubmitting,
 }: SupplierFormViewProps) => {
   return (
     <FormProvider {...form}>
@@ -34,6 +36,7 @@ export const SupplierFormView = ({
           disabled={isSubmitDisabled}
           onPress={form.handleSubmit(onSubmit)}
           theme="blue"
+          icon={isSubmitting ? <Spinner /> : undefined}
         >
           Submit
         </Button>

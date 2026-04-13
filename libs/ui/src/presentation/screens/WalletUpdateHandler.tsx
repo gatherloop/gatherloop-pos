@@ -34,6 +34,7 @@ export const WalletUpdateHandler = ({
         walletUpdate.state.type === 'submitting' ||
         walletUpdate.state.type === 'submitSuccess'
       }
+      isSubmitting={walletUpdate.state.type === 'submitting'}
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
       variant={walletUpdate.variant}
     />

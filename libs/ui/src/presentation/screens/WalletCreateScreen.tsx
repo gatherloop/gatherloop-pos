@@ -7,6 +7,7 @@ export type WalletCreateScreenProps = {
   form: UseFormReturn<WalletForm>;
   onSubmit: (values: WalletForm) => void;
   isSubmitDisabled: boolean;
+  isSubmitting: boolean;
   onLogoutPress: () => void;
 };
 
@@ -18,6 +19,7 @@ export const WalletCreateScreen = (props: WalletCreateScreenProps) => {
           form={props.form}
           onSubmit={props.onSubmit}
           isSubmitDisabled={props.isSubmitDisabled}
+          isSubmitting={props.isSubmitting}
           variant={{ type: 'loaded' }}
         />
       </ScrollView>

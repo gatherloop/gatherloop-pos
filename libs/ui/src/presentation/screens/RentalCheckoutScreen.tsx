@@ -8,6 +8,7 @@ export type RentalCheckoutScreenProps = {
   form: UseFormReturn<RentalCheckoutForm>;
   onSubmit: (values: RentalCheckoutForm) => void;
   isSubmitDisabled: boolean;
+  isSubmitting: boolean;
   onLogoutPress: () => void;
   rentalsFieldArray: UseFieldArrayReturn<RentalCheckoutForm, 'rentals', 'key'>;
   rentalList: {
@@ -39,6 +40,7 @@ export const RentalCheckoutScreen = (props: RentalCheckoutScreenProps) => {
           form={props.form}
           onSubmit={props.onSubmit}
           isSubmitDisabled={props.isSubmitDisabled}
+          isSubmitting={props.isSubmitting}
           rentalsFieldArray={props.rentalsFieldArray}
           RentalItemSelect={() => <RentalList {...props.rentalList} />}
         />

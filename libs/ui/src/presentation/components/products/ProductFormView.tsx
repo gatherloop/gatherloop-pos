@@ -8,7 +8,7 @@ import {
   FieldArray,
   Tabs,
 } from '../base';
-import { Button, Card, Form, XStack, Paragraph, YStack } from 'tamagui';
+import { Button, Card, Form, Spinner, XStack, Paragraph, YStack } from 'tamagui';
 import { ProductForm, Variant } from '../../../domain';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
 import { Plus, X } from '@tamagui/lucide-icons';
@@ -23,6 +23,7 @@ export type ProductFormViewProps = {
   onSubmit: (values: ProductForm) => void;
   categorySelectOptions: { label: string; value: number }[];
   isSubmitDisabled: boolean;
+  isSubmitting: boolean;
   onVariantDeleteMenuPress?: (variant: Variant) => void;
   onVariantEditMenuPress?: (variant: Variant) => void;
   onVariantPress?: (variant: Variant) => void;
@@ -35,6 +36,7 @@ export const ProductFormView = ({
   onRetryButtonPress,
   categorySelectOptions,
   isSubmitDisabled,
+  isSubmitting,
   form,
   onSubmit,
   onVariantDeleteMenuPress,
@@ -245,6 +247,7 @@ export const ProductFormView = ({
           disabled={isSubmitDisabled}
           onPress={form.handleSubmit(onSubmit)}
           theme="blue"
+          icon={isSubmitting ? <Spinner /> : undefined}
         >
           Submit
         </Button>

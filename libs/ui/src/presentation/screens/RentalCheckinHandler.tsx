@@ -64,6 +64,7 @@ export const RentalCheckinHandler = ({
         rentalCheckin.dispatch({ type: 'SUBMIT', values })
       }
       isSubmitDisabled={rentalCheckin.state.type === 'submitting'}
+      isSubmitting={rentalCheckin.state.type === 'submitting'}
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
       rentalsFieldArray={rentalCheckin.rentalsFieldArray}
       onToggleCustomizeCheckinDateTime={

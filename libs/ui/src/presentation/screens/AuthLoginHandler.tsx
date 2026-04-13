@@ -24,6 +24,7 @@ export const AuthLoginHandler = (props: AuthLoginHandlerProps) => {
         authLoginController.state.type === 'submitError' ||
         authLoginController.state.type === 'submitSuccess'
       }
+      isSubmitting={authLoginController.state.type === 'submitting'}
       onSubmit={(values) => {
         authLoginController.dispatch({ type: 'SUBMIT', values });
       }}

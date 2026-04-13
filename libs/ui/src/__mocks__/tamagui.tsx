@@ -35,8 +35,8 @@ export const H5 = ({ children }: AnyProps) => React.createElement('h5', null, ch
 export const H6 = ({ children }: AnyProps) => React.createElement('h6', null, children);
 export const Text = ({ children }: AnyProps) => React.createElement('span', null, children);
 
-export const Button = ({ children, onPress, disabled }: AnyProps) =>
-  React.createElement('button', { onClick: onPress, disabled: disabled ?? false }, children);
+export const Button = ({ children, onPress, disabled, icon }: AnyProps) =>
+  React.createElement('button', { onClick: onPress, disabled: disabled ?? false }, icon ?? null, children);
 
 export const Input = React.forwardRef(({ value, placeholder, onChangeText, id }: AnyProps, ref) =>
   React.createElement('input', {

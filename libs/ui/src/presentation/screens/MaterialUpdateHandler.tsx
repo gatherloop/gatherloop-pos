@@ -39,6 +39,7 @@ export const MaterialUpdateHandler = ({
         materialUpdate.state.type === 'submitError' ||
         materialUpdate.state.type === 'submitSuccess'
       }
+      isSubmitting={materialUpdate.state.type === 'submitting'}
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
     />
   );

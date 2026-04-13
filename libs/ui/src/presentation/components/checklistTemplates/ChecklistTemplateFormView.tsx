@@ -1,5 +1,5 @@
 import { Plus, Trash, X } from '@tamagui/lucide-icons';
-import { Button, Card, Form, H4, XStack, YStack } from 'tamagui';
+import { Button, Card, Form, H4, Spinner, XStack, YStack } from 'tamagui';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
 import { Field, FieldArray, InputText } from '../base';
 import { ChecklistTemplateForm } from '../../../domain';
@@ -8,12 +8,14 @@ export type ChecklistTemplateFormViewProps = {
   form: UseFormReturn<ChecklistTemplateForm>;
   onSubmit: (values: ChecklistTemplateForm) => void;
   isSubmitDisabled: boolean;
+  isSubmitting: boolean;
 };
 
 export const ChecklistTemplateFormView = ({
   form,
   onSubmit,
   isSubmitDisabled,
+  isSubmitting,
 }: ChecklistTemplateFormViewProps) => {
   return (
     <FormProvider {...form}>
@@ -149,6 +151,7 @@ export const ChecklistTemplateFormView = ({
           disabled={isSubmitDisabled}
           onPress={form.handleSubmit(onSubmit)}
           theme="blue"
+          icon={isSubmitting ? <Spinner /> : undefined}
         >
           Submit
         </Button>

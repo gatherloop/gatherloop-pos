@@ -9,6 +9,7 @@ export type ChecklistTemplateUpdateScreenProps = {
   form: UseFormReturn<ChecklistTemplateForm>;
   onSubmit: (values: ChecklistTemplateForm) => void;
   isSubmitDisabled: boolean;
+  isSubmitting: boolean;
   onRetryButtonPress: () => void;
   variant: { type: 'loading' } | { type: 'loaded' } | { type: 'error' };
 };
@@ -18,6 +19,7 @@ export const ChecklistTemplateUpdateScreen = ({
   form,
   onSubmit,
   isSubmitDisabled,
+  isSubmitting,
   onRetryButtonPress,
   variant,
 }: ChecklistTemplateUpdateScreenProps) => {
@@ -44,6 +46,7 @@ export const ChecklistTemplateUpdateScreen = ({
               form={form}
               onSubmit={onSubmit}
               isSubmitDisabled={isSubmitDisabled}
+              isSubmitting={isSubmitting}
             />
           </ScrollView>
         ))

@@ -37,6 +37,7 @@ export const CategoryCreateHandler = ({
         categoryCreate.state.type === 'submitting' ||
         categoryCreate.state.type === 'submitSuccess'
       }
+      isSubmitting={categoryCreate.state.type === 'submitting'}
       onSubmit={(values) => categoryCreate.dispatch({ type: 'SUBMIT', values })}
       variant={match(categoryCreate.state)
         .returnType<CategoryCreateScreenProps['variant']>()

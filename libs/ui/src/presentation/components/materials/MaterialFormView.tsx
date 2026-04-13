@@ -1,18 +1,20 @@
 import { Field, InputText, InputNumber, MarkdownEditor } from '../base';
 import { MaterialForm } from '../../../domain';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
-import { Button, Form } from 'tamagui';
+import { Button, Form, Spinner } from 'tamagui';
 
 export type MaterialFormViewProps = {
   form: UseFormReturn<MaterialForm>;
   onSubmit: (values: MaterialForm) => void;
   isSubmitDisabled: boolean;
+  isSubmitting: boolean;
 };
 
 export const MaterialFormView = ({
   form,
   onSubmit,
   isSubmitDisabled,
+  isSubmitting,
 }: MaterialFormViewProps) => {
   return (
     <FormProvider {...form}>
@@ -35,6 +37,7 @@ export const MaterialFormView = ({
           disabled={isSubmitDisabled}
           onPress={form.handleSubmit(onSubmit)}
           theme="blue"
+          icon={isSubmitting ? <Spinner /> : undefined}
         >
           Submit
         </Button>

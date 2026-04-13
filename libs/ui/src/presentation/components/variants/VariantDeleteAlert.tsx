@@ -1,4 +1,4 @@
-import { AlertDialog, Button, XStack, YStack } from 'tamagui';
+import { AlertDialog, Button, Spinner, XStack, YStack } from 'tamagui';
 
 export type VariantDeleteAlertProps = {
   isOpen: boolean;
@@ -56,6 +56,7 @@ export const VariantDeleteAlert = ({
                 theme="active"
                 onPress={onConfirm}
                 disabled={isButtonDisabled}
+                icon={isButtonDisabled ? <Spinner /> : undefined}
               >
                 Yes
               </Button>

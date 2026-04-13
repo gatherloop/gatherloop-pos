@@ -7,6 +7,7 @@ import {
   H5,
   Paragraph,
   Separator,
+  Spinner,
   XStack,
   YStack,
 } from 'tamagui';
@@ -27,6 +28,7 @@ export type TransactionFormViewProps = {
   isCouponSheetOpen: boolean;
   onCouponSheetOpenChange: (isOpen: boolean) => void;
   isSubmitDisabled: boolean;
+  isSubmitting: boolean;
   TransactionItemSelect: () => ReactNode;
   TransactionCouponList: () => ReactNode;
   itemsFieldArray: UseFieldArrayReturn<
@@ -47,6 +49,7 @@ export const TransactionFormView = ({
   isCouponSheetOpen,
   onCouponSheetOpenChange,
   isSubmitDisabled,
+  isSubmitting,
   TransactionItemSelect,
   TransactionCouponList,
   itemsFieldArray,
@@ -332,6 +335,7 @@ export const TransactionFormView = ({
                 onPress={form.handleSubmit(onSubmit)}
                 size="$5"
                 theme="blue"
+                icon={isSubmitting ? <Spinner /> : undefined}
               >
                 Submit
               </Button>

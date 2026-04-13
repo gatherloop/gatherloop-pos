@@ -1,4 +1,4 @@
-import { AlertDialog, Button, XStack, YStack } from 'tamagui';
+import { AlertDialog, Button, Spinner, XStack, YStack } from 'tamagui';
 
 export type RentalDeleteAlertProps = {
   isOpen: boolean;
@@ -56,6 +56,7 @@ export const RentalDeleteAlert = ({
                 theme="active"
                 onPress={onButtonConfirmPress}
                 disabled={isButtonDisabled}
+                icon={isButtonDisabled ? <Spinner /> : undefined}
               >
                 Yes
               </Button>
