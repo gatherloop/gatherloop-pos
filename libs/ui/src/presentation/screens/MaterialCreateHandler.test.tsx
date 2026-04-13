@@ -131,4 +131,26 @@ describe('MaterialCreateHandler', () => {
       expect(mockToastShow).toHaveBeenCalledWith('Create Material Error');
     });
   });
+
+  describe('error banner', () => {
+    it('should show error banner when creation fails', async () => {
+      const user = userEvent.setup();
+      render(<MaterialCreateHandler {...createProps({ shouldFail: true })} />);
+
+      await user.type(screen.getByRole('textbox', { name: 'Name' }), 'New Material');
+      await user.type(screen.getByRole('textbox', { name: 'Unit' }), 'kg');
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByText('Failed to submit. Please try again.')).toBeTruthy();
+    });
+
+    it('should not show error banner before any submission', () => {
+      render(<MaterialCreateHandler {...createProps()} />);
+      expect(screen.queryByText('Failed to submit. Please try again.')).toBeNull();
+    });
+  });
 });

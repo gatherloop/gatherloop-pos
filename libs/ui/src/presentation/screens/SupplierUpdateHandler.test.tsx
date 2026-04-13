@@ -184,4 +184,40 @@ describe('SupplierUpdateHandler', () => {
       expect(mockToastShow).toHaveBeenCalledWith('Update Supplier Error');
     });
   });
+
+  describe('error banner', () => {
+    it('should show error banner when update fails', async () => {
+      const user = userEvent.setup();
+      const supplierRepo = new MockSupplierRepository();
+      const preloadedSupplier = supplierRepo.suppliers[0];
+      const supplierUpdateUsecase = new SupplierUpdateUsecase(supplierRepo, {
+        supplierId: preloadedSupplier.id,
+        supplier: preloadedSupplier,
+      });
+      supplierRepo.setShouldFail(true);
+
+      render(
+        <SupplierUpdateHandler
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          supplierUpdateUsecase={supplierUpdateUsecase}
+        />
+      );
+
+      const nameInput = screen.getByRole('textbox', { name: 'Name' });
+      await user.clear(nameInput);
+      await user.type(nameInput, 'Updated Supplier');
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByText('Failed to submit. Please try again.')).toBeTruthy();
+    });
+
+    it('should not show error banner before any submission', () => {
+      render(<SupplierUpdateHandler {...createProps({ preloaded: true })} />);
+      expect(screen.queryByText('Failed to submit. Please try again.')).toBeNull();
+    });
+  });
 });

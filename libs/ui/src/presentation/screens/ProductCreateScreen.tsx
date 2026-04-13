@@ -13,6 +13,7 @@ export type ProductCreateScreenProps = {
   categorySelectOptions: { label: string; value: number }[];
   variants: Variant[];
   onLogoutPress: () => void;
+  serverError?: string;
 };
 
 export const ProductCreateScreen = (props: ProductCreateScreenProps) => {
@@ -28,6 +29,7 @@ export const ProductCreateScreen = (props: ProductCreateScreenProps) => {
           variant={props.variant}
           categorySelectOptions={props.categorySelectOptions}
           variants={props.variants}
+          serverError={props.serverError}
         />
       </ScrollView>
     </Layout>

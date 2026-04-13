@@ -63,6 +63,7 @@ export type TransactionCreateScreenProps = {
     transactionTotal: number;
     walletSelectOptions: { label: string; value: Wallet }[];
   };
+  serverError?: string;
 };
 
 export const TransactionCreateScreen = (
@@ -84,6 +85,7 @@ export const TransactionCreateScreen = (
           onCouponSheetOpenChange={props.onCouponSheetOpenChange}
           itemsFieldArray={props.itemsFieldArray}
           couponsFieldArray={props.couponsFieldArray}
+          serverError={props.serverError}
           TransactionItemSelect={() => (
             <TransactionItemSelect
               amount={props.transactionItemSelect.amount}

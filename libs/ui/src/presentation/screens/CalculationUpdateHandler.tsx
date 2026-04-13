@@ -42,6 +42,11 @@ export const CalculationUpdateHandler = ({
       }}
       isSubmitDisabled={calculationUpdate.state.isComplete}
       isSubmitting={calculationUpdate.state.type === 'submitting'}
+      serverError={
+        calculationUpdate.state.type === 'submitError'
+          ? 'Failed to submit. Please try again.'
+          : undefined
+      }
       onRetryButtonPress={() => calculationUpdate.dispatch({ type: 'FETCH' })}
       onSubmit={(values) =>
         calculationUpdate.dispatch({ type: 'SUBMIT', values })

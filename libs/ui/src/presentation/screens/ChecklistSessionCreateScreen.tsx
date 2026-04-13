@@ -10,6 +10,7 @@ export type ChecklistSessionCreateScreenProps = {
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   checklistTemplates: ChecklistTemplate[];
+  serverError?: string;
 };
 
 export const ChecklistSessionCreateScreen = ({
@@ -19,6 +20,7 @@ export const ChecklistSessionCreateScreen = ({
   isSubmitDisabled,
   isSubmitting,
   checklistTemplates,
+  serverError,
 }: ChecklistSessionCreateScreenProps) => {
   return (
     <Layout
@@ -33,6 +35,7 @@ export const ChecklistSessionCreateScreen = ({
           isSubmitDisabled={isSubmitDisabled}
           isSubmitting={isSubmitting}
           checklistTemplates={checklistTemplates}
+          serverError={serverError}
         />
       </ScrollView>
     </Layout>

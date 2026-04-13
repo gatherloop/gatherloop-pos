@@ -8,6 +8,7 @@ export type AuthLoginScreenProps = {
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   onSubmit: (values: AuthLoginForm) => void;
+  serverError?: string;
 };
 
 export const AuthLoginScreen = (props: AuthLoginScreenProps) => {
@@ -24,6 +25,7 @@ export const AuthLoginScreen = (props: AuthLoginScreenProps) => {
             isSubmitDisabled={props.isSubmitDisabled}
             isSubmitting={props.isSubmitting}
             onSubmit={props.onSubmit}
+            serverError={props.serverError}
           />
         </Card.Header>
       </Card>

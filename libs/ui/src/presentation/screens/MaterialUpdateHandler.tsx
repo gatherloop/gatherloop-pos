@@ -40,6 +40,11 @@ export const MaterialUpdateHandler = ({
         materialUpdate.state.type === 'submitSuccess'
       }
       isSubmitting={materialUpdate.state.type === 'submitting'}
+      serverError={
+        materialUpdate.state.type === 'submitError'
+          ? 'Failed to submit. Please try again.'
+          : undefined
+      }
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
     />
   );

@@ -166,6 +166,41 @@ describe('CalculationCreateHandler', () => {
     });
   });
 
+  describe('error banner', () => {
+    it('should show error banner when creation fails', async () => {
+      const user = userEvent.setup();
+      const calculationRepo = new MockCalculationRepository();
+      const walletRepo = new MockWalletRepository();
+      const preloadedWallets = walletRepo.wallets;
+      calculationRepo.setShouldFail(true);
+
+      render(
+        <CalculationCreateHandler
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          calculationCreateUsecase={new CalculationCreateUsecase(
+            calculationRepo,
+            walletRepo,
+            { wallets: preloadedWallets }
+          )}
+        />
+      );
+
+      await user.click(screen.getByRole('option', { name: 'Cash' }));
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByText('Failed to submit. Please try again.')).toBeTruthy();
+    });
+
+    it('should not show error banner before any submission', () => {
+      render(<CalculationCreateHandler {...createProps()} />);
+      expect(screen.queryByText('Failed to submit. Please try again.')).toBeNull();
+    });
+  });
+
   describe('error recovery', () => {
     it('should show loading state and allow retry via retry button', async () => {
       const user = userEvent.setup();

@@ -26,6 +26,7 @@ export type RentalCheckoutScreenProps = {
     onItemPress: (rental: Rental) => void;
     isSearchAutoFocus: boolean;
   };
+  serverError?: string;
 };
 
 export const RentalCheckoutScreen = (props: RentalCheckoutScreenProps) => {
@@ -43,6 +44,7 @@ export const RentalCheckoutScreen = (props: RentalCheckoutScreenProps) => {
           isSubmitting={props.isSubmitting}
           rentalsFieldArray={props.rentalsFieldArray}
           RentalItemSelect={() => <RentalList {...props.rentalList} />}
+          serverError={props.serverError}
         />
       </ScrollView>
     </Layout>

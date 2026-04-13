@@ -12,6 +12,7 @@ export type ChecklistTemplateUpdateScreenProps = {
   isSubmitting: boolean;
   onRetryButtonPress: () => void;
   variant: { type: 'loading' } | { type: 'loaded' } | { type: 'error' };
+  serverError?: string;
 };
 
 export const ChecklistTemplateUpdateScreen = ({
@@ -22,6 +23,7 @@ export const ChecklistTemplateUpdateScreen = ({
   isSubmitting,
   onRetryButtonPress,
   variant,
+  serverError,
 }: ChecklistTemplateUpdateScreenProps) => {
   return (
     <Layout
@@ -47,6 +49,7 @@ export const ChecklistTemplateUpdateScreen = ({
               onSubmit={onSubmit}
               isSubmitDisabled={isSubmitDisabled}
               isSubmitting={isSubmitting}
+              serverError={serverError}
             />
           </ScrollView>
         ))

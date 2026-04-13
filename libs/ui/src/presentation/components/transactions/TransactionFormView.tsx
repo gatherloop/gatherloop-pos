@@ -1,4 +1,4 @@
-import { Field, FieldWatch, InputNumber, InputText, Sheet } from '../base';
+import { Field, FieldWatch, FormErrorBanner, InputNumber, InputText, Sheet } from '../base';
 import {
   Button,
   Card,
@@ -41,6 +41,7 @@ export type TransactionFormViewProps = {
     'transactionCoupons',
     'key'
   >;
+  serverError?: string;
 };
 
 export const TransactionFormView = ({
@@ -54,11 +55,13 @@ export const TransactionFormView = ({
   TransactionCouponList,
   itemsFieldArray,
   couponsFieldArray,
+  serverError,
 }: TransactionFormViewProps) => {
   return (
     <YStack>
       <FormProvider {...form}>
         <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
+          <FormErrorBanner message={serverError} />
           <XStack gap="$3">
             <YStack flex={1}>{TransactionItemSelect()}</YStack>
             <YStack gap="$3">

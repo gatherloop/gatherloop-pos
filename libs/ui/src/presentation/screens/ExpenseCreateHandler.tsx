@@ -38,6 +38,11 @@ export const ExpenseCreateHandler = ({
         expenseCreate.state.type === 'submitSuccess'
       }
       isSubmitting={expenseCreate.state.type === 'submitting'}
+      serverError={
+        expenseCreate.state.type === 'submitError'
+          ? 'Failed to submit. Please try again.'
+          : undefined
+      }
       onRetryButtonPress={() => expenseCreate.dispatch({ type: 'FETCH' })}
       onSubmit={(values) =>
         expenseCreate.dispatch({ type: 'SUBMIT', values })

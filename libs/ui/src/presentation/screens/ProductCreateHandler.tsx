@@ -41,6 +41,11 @@ export const ProductCreateHandler = ({
         productCreate.state.type === 'submitSuccess'
       }
       isSubmitting={productCreate.state.type === 'submitting'}
+      serverError={
+        productCreate.state.type === 'submitError'
+          ? 'Failed to submit. Please try again.'
+          : undefined
+      }
       onRetryButtonPress={() => productCreate.dispatch({ type: 'FETCH' })}
       variant={match(productCreate.state)
         .returnType<ProductCreateScreenProps['variant']>()

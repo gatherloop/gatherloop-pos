@@ -1,4 +1,4 @@
-import { Field, InputText, LoadingView, ErrorView } from '../base';
+import { Field, FormErrorBanner, InputText, LoadingView, ErrorView } from '../base';
 import { CategoryForm } from '../../../domain';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
 import { Button, Form, Spinner } from 'tamagui';
@@ -12,6 +12,7 @@ export type CategoryFormViewProps = {
   onSubmit: (values: CategoryForm) => void;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
+  serverError?: string;
 };
 
 export const CategoryFormView = ({
@@ -20,10 +21,12 @@ export const CategoryFormView = ({
   onSubmit,
   isSubmitDisabled,
   isSubmitting,
+  serverError,
 }: CategoryFormViewProps) => {
   return variant.type === 'loaded' ? (
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
+        <FormErrorBanner message={serverError} />
         <Field name="name" label="Name">
           <InputText />
         </Field>

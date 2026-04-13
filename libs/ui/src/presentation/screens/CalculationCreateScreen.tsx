@@ -20,6 +20,7 @@ export type CalculationCreateScreenProps = {
     label: string;
     value: number;
   }[];
+  serverError?: string;
 };
 
 export const CalculationCreateScreen = ({
@@ -32,6 +33,7 @@ export const CalculationCreateScreen = ({
   onSubmit,
   variant,
   walletSelectOptions,
+  serverError,
 }: CalculationCreateScreenProps) => {
   return (
     <Layout
@@ -49,6 +51,7 @@ export const CalculationCreateScreen = ({
           onSubmit={onSubmit}
           variant={variant}
           walletSelectOptions={walletSelectOptions}
+          serverError={serverError}
         />
       </ScrollView>
     </Layout>

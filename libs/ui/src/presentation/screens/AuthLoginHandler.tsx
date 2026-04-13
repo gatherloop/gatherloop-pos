@@ -25,6 +25,11 @@ export const AuthLoginHandler = (props: AuthLoginHandlerProps) => {
         authLoginController.state.type === 'submitSuccess'
       }
       isSubmitting={authLoginController.state.type === 'submitting'}
+      serverError={
+        authLoginController.state.type === 'submitError'
+          ? 'Failed to submit. Please try again.'
+          : undefined
+      }
       onSubmit={(values) => {
         authLoginController.dispatch({ type: 'SUBMIT', values });
       }}

@@ -71,6 +71,11 @@ export const TransactionUpdateHandler = ({
       }
       isSubmitDisabled={transactionUpdate.state.type === 'submitting'}
       isSubmitting={transactionUpdate.state.type === 'submitting'}
+      serverError={
+        transactionUpdate.state.type === 'submitError'
+          ? 'Failed to submit. Please try again.'
+          : undefined
+      }
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
       isCouponSheetOpen={transactionUpdate.isCouponSheetOpen}
       onCouponSheetOpenChange={transactionUpdate.onCouponSheetOpenChange}

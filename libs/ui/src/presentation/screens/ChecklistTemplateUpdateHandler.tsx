@@ -44,6 +44,11 @@ export const ChecklistTemplateUpdateHandler = ({
         checklistTemplateUpdate.state.type === 'submitSuccess'
       }
       isSubmitting={checklistTemplateUpdate.state.type === 'submitting'}
+      serverError={
+        checklistTemplateUpdate.state.type === 'submitError'
+          ? 'Failed to submit. Please try again.'
+          : undefined
+      }
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
       onRetryButtonPress={() =>
         checklistTemplateUpdate.dispatch({ type: 'FETCH' })

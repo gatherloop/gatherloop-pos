@@ -14,6 +14,7 @@ export type CouponUpdateScreenProps = {
   isSubmitting: boolean;
   onSubmit: (values: CouponForm) => void;
   variant: CouponFormViewProps['variant'];
+  serverError?: string;
 };
 
 export const CouponUpdateScreen = ({
@@ -23,6 +24,7 @@ export const CouponUpdateScreen = ({
   onLogoutPress,
   onSubmit,
   variant,
+  serverError,
 }: CouponUpdateScreenProps) => {
   return (
     <Layout
@@ -37,6 +39,7 @@ export const CouponUpdateScreen = ({
           isSubmitting={isSubmitting}
           onSubmit={onSubmit}
           variant={variant}
+          serverError={serverError}
         />
       </ScrollView>
     </Layout>

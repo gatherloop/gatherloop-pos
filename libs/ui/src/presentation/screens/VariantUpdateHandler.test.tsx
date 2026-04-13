@@ -191,6 +191,62 @@ describe('VariantUpdateHandler', () => {
     });
   });
 
+  describe('error banner', () => {
+    it('should show error banner when update fails', async () => {
+      const user = userEvent.setup();
+      const variantRepo = new MockVariantRepository();
+      const productRepo = new MockProductRepository();
+      const preloadedVariant = variantRepo.variants[0];
+      const preloadedProduct = { ...productRepo.products[0], options: [] };
+
+      const variantUpdateUsecase = new VariantUpdateUsecase(
+        variantRepo,
+        productRepo,
+        {
+          variantId: preloadedVariant.id,
+          productId: preloadedProduct.id,
+          variant: preloadedVariant,
+          product: preloadedProduct,
+        }
+      );
+      variantRepo.setShouldFail(true);
+
+      const materialRepo = new MockMaterialRepository();
+
+      render(
+        <VariantUpdateHandler
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          variantUpdateUsecase={variantUpdateUsecase}
+          materialListUsecase={new MaterialListUsecase(
+            materialRepo,
+            new MockMaterialListQueryRepository(),
+            { materials: materialRepo.materials, totalItem: materialRepo.materials.length }
+          )}
+        />
+      );
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      const nameInput = screen.getByRole('textbox', { name: 'Name' });
+      await user.clear(nameInput);
+      await user.type(nameInput, 'Updated Variant');
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByText('Failed to submit. Please try again.')).toBeTruthy();
+    });
+
+    it('should not show error banner before any submission', () => {
+      render(<VariantUpdateHandler {...createProps({ preloaded: true })} />);
+      expect(screen.queryByText('Failed to submit. Please try again.')).toBeNull();
+    });
+  });
+
   describe('error recovery', () => {
     it('should refetch variant when retry button is pressed after error', async () => {
       const user = userEvent.setup();

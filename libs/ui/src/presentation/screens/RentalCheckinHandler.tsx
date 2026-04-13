@@ -65,6 +65,11 @@ export const RentalCheckinHandler = ({
       }
       isSubmitDisabled={rentalCheckin.state.type === 'submitting'}
       isSubmitting={rentalCheckin.state.type === 'submitting'}
+      serverError={
+        rentalCheckin.state.type === 'submitError'
+          ? 'Failed to submit. Please try again.'
+          : undefined
+      }
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
       rentalsFieldArray={rentalCheckin.rentalsFieldArray}
       onToggleCustomizeCheckinDateTime={

@@ -56,6 +56,11 @@ export const VariantCreateHandler = ({
         variantCreate.state.type === 'submitSuccess'
       }
       isSubmitting={variantCreate.state.type === 'submitting'}
+      serverError={
+        variantCreate.state.type === 'submitError'
+          ? 'Failed to submit. Please try again.'
+          : undefined
+      }
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
       isMaterialSheetOpen={variantCreate.isMaterialSheetOpen}
       onMaterialSheetOpenChange={variantCreate.onMaterialSheetOpenChange}

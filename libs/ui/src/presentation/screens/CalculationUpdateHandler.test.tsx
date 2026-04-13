@@ -247,6 +247,45 @@ describe('CalculationUpdateHandler', () => {
     });
   });
 
+  describe('error banner', () => {
+    it('should show error banner when update fails', async () => {
+      const user = userEvent.setup();
+      const calculationRepo = new MockCalculationRepository();
+      const walletRepo = new MockWalletRepository();
+      const preloadedCalculation = calculationRepo.calculations[0];
+      const preloadedWallets = walletRepo.wallets;
+      calculationRepo.setShouldFail(true);
+
+      render(
+        <CalculationUpdateHandler
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          calculationUpdateUsecase={new CalculationUpdateUsecase(
+            calculationRepo,
+            walletRepo,
+            {
+              calculationId: preloadedCalculation.id,
+              calculation: preloadedCalculation,
+              wallets: preloadedWallets,
+            }
+          )}
+        />
+      );
+
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByText('Failed to submit. Please try again.')).toBeTruthy();
+    });
+
+    it('should not show error banner before any submission', () => {
+      render(<CalculationUpdateHandler {...createProps({ preloaded: true })} />);
+      expect(screen.queryByText('Failed to submit. Please try again.')).toBeNull();
+    });
+  });
+
   describe('error recovery', () => {
     it('should retry fetching when retry button is pressed after error', async () => {
       const user = userEvent.setup();

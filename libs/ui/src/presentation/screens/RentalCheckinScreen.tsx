@@ -35,6 +35,7 @@ export type RentalCheckinScreenProps = {
     variant: TransactionItemSelectProps['variant'];
     selectedProduct?: Product;
   };
+  serverError?: string;
 };
 
 export const RentalCheckinScreen = (props: RentalCheckinScreenProps) => {
@@ -54,6 +55,7 @@ export const RentalCheckinScreen = (props: RentalCheckinScreenProps) => {
           onToggleCustomizeCheckinDateTime={
             props.onToggleCustomizeCheckinDateTime
           }
+          serverError={props.serverError}
           RentalItemSelect={() => (
             <TransactionItemSelect
               amount={props.rentalItemSelect.amount}

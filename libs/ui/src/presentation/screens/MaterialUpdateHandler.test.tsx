@@ -184,4 +184,40 @@ describe('MaterialUpdateHandler', () => {
       expect(mockToastShow).toHaveBeenCalledWith('Update Material Error');
     });
   });
+
+  describe('error banner', () => {
+    it('should show error banner when update fails', async () => {
+      const user = userEvent.setup();
+      const materialRepo = new MockMaterialRepository();
+      const preloadedMaterial = materialRepo.materials[0];
+      const materialUpdateUsecase = new MaterialUpdateUsecase(materialRepo, {
+        materialId: preloadedMaterial.id,
+        material: preloadedMaterial,
+      });
+      materialRepo.shouldFail = true;
+
+      render(
+        <MaterialUpdateHandler
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          materialUpdateUsecase={materialUpdateUsecase}
+        />
+      );
+
+      const nameInput = screen.getByRole('textbox', { name: 'Name' });
+      await user.clear(nameInput);
+      await user.type(nameInput, 'Updated Material');
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByText('Failed to submit. Please try again.')).toBeTruthy();
+    });
+
+    it('should not show error banner before any submission', () => {
+      render(<MaterialUpdateHandler {...createProps({ preloaded: true })} />);
+      expect(screen.queryByText('Failed to submit. Please try again.')).toBeNull();
+    });
+  });
 });

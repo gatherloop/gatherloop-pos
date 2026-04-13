@@ -1,5 +1,6 @@
 import {
   Field,
+  FormErrorBanner,
   InputText,
   Select,
   LoadingView,
@@ -28,6 +29,7 @@ export type ProductFormViewProps = {
   onVariantEditMenuPress?: (variant: Variant) => void;
   onVariantPress?: (variant: Variant) => void;
   onVariantCreatePress?: () => void;
+  serverError?: string;
 };
 
 export const ProductFormView = ({
@@ -43,10 +45,12 @@ export const ProductFormView = ({
   onVariantEditMenuPress,
   onVariantPress,
   onVariantCreatePress,
+  serverError,
 }: ProductFormViewProps) => {
   return variant.type === 'loaded' ? (
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
+        <FormErrorBanner message={serverError} />
         <Card>
           <Card.Header>
             <XStack gap="$3" $sm={{ flexDirection: 'column' }}>

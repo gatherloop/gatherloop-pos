@@ -186,6 +186,58 @@ describe('VariantCreateHandler', () => {
     });
   });
 
+  describe('error banner', () => {
+    it('should show error banner when creation fails', async () => {
+      const user = userEvent.setup();
+      const productId = 1;
+      const productRepo = new MockProductRepository();
+      const variantRepo = new MockVariantRepository();
+      const materialRepo = new MockMaterialRepository();
+      const preloadedProduct = { ...productRepo.products[0], options: [] };
+
+      const variantCreateUsecase = new VariantCreateUsecase(
+        variantRepo,
+        productRepo,
+        { productId, product: preloadedProduct }
+      );
+      variantRepo.setShouldFail(true);
+
+      render(
+        <VariantCreateHandler
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          variantCreateUsecase={variantCreateUsecase}
+          materialListUsecase={new MaterialListUsecase(
+            materialRepo,
+            new MockMaterialListQueryRepository(),
+            { materials: [], totalItem: 0 }
+          )}
+        />
+      );
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      await user.type(screen.getByRole('textbox', { name: 'Name' }), 'New Variant');
+      await user.type(screen.getByRole('textbox', { name: 'Price' }), '100');
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByText('Failed to submit. Please try again.')).toBeTruthy();
+    });
+
+    it('should not show error banner before any submission', async () => {
+      render(<VariantCreateHandler {...createProps({ preloaded: true })} />);
+      expect(screen.queryByText('Failed to submit. Please try again.')).toBeNull();
+      await act(async () => {
+        await flushPromises();
+      });
+    });
+  });
+
   describe('error recovery', () => {
     it('should refetch product when retry button is pressed after error', async () => {
       const user = userEvent.setup();

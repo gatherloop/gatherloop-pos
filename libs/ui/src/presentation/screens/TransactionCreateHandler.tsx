@@ -205,6 +205,10 @@ export const TransactionCreateHandler = ({
       transactionCreateController.dispatch({ type: 'SUBMIT', values }),
     isSubmitDisabled: transactionCreateController.state.type === 'submitting',
     isSubmitting: transactionCreateController.state.type === 'submitting',
+    serverError:
+      transactionCreateController.state.type === 'submitError'
+        ? 'Failed to submit. Please try again.'
+        : undefined,
     onLogoutPress: () => authLogoutController.dispatch({ type: 'LOGOUT' }),
     isCouponSheetOpen: transactionCreateController.isCouponSheetOpen,
     onCouponSheetOpenChange:

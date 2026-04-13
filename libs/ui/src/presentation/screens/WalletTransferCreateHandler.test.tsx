@@ -162,4 +162,44 @@ describe('WalletTransferCreateHandler', () => {
       });
     });
   });
+
+  describe('error banner', () => {
+    it('should show error banner when transfer fails', async () => {
+      const user = userEvent.setup();
+      const walletRepo = new MockWalletRepository();
+      const preloadedWallets = walletRepo.wallets;
+      walletRepo.setShouldFail(true);
+
+      render(
+        <WalletTransferCreateHandler
+          walletId={1}
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          walletTransferCreateUsecase={new WalletTransferCreateUsecase(walletRepo, {
+            fromWalletId: 1,
+            wallets: preloadedWallets,
+          })}
+        />
+      );
+
+      await user.click(screen.getByRole('option', { name: 'Bank Transfer' }));
+      const amountInput = screen.getByRole('textbox', { name: 'Amount' });
+      await user.clear(amountInput);
+      await user.type(amountInput, '50000');
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByText('Failed to submit. Please try again.')).toBeTruthy();
+    });
+
+    it('should not show error banner before any submission', async () => {
+      render(<WalletTransferCreateHandler {...createProps({ preloaded: true, walletId: 1 })} />);
+      expect(screen.queryByText('Failed to submit. Please try again.')).toBeNull();
+      await act(async () => {
+        await flushPromises();
+      });
+    });
+  });
 });

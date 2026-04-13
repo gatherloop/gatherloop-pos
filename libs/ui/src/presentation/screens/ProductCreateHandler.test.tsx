@@ -118,6 +118,39 @@ describe('ProductCreateHandler', () => {
     });
   });
 
+  describe('error banner', () => {
+    it('should show error banner when creation fails', async () => {
+      const user = userEvent.setup();
+      const productRepo = new MockProductRepository();
+      const categoryRepo = new MockCategoryRepository();
+      const preloadedCategories = categoryRepo.categories;
+      productRepo.setShouldFail(true);
+
+      render(
+        <ProductCreateHandler
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          productCreateUsecase={new ProductCreateUsecase(productRepo, categoryRepo, {
+            categories: preloadedCategories,
+          })}
+        />
+      );
+
+      await user.type(screen.getByRole('textbox', { name: 'Name' }), 'New Product');
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByText('Failed to submit. Please try again.')).toBeTruthy();
+    });
+
+    it('should not show error banner before any submission', () => {
+      render(<ProductCreateHandler {...createProps({ preloadCategories: true })} />);
+      expect(screen.queryByText('Failed to submit. Please try again.')).toBeNull();
+    });
+  });
+
   describe('error recovery', () => {
     it('should refetch categories when retry button is pressed after error', async () => {
       const user = userEvent.setup();

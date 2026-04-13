@@ -121,4 +121,26 @@ describe('AuthLoginHandler', () => {
 
     expect(mockToastShow).toHaveBeenCalledWith('Login Error');
   });
+
+  describe('error banner', () => {
+    it('should show error banner when login fails', async () => {
+      const user = userEvent.setup();
+      render(<AuthLoginHandler {...createProps({ shouldFail: true })} />);
+
+      await user.type(screen.getByRole('textbox', { name: 'Username' }), 'admin');
+      await user.type(screen.getByRole('textbox', { name: 'Password' }), 'wrong');
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByText('Failed to submit. Please try again.')).toBeTruthy();
+    });
+
+    it('should not show error banner before any submission', () => {
+      render(<AuthLoginHandler {...createProps()} />);
+      expect(screen.queryByText('Failed to submit. Please try again.')).toBeNull();
+    });
+  });
 });

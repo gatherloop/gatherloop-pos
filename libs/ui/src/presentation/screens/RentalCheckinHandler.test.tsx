@@ -278,6 +278,55 @@ describe('RentalCheckinHandler', () => {
     });
   });
 
+  describe('error banner', () => {
+    it('should show error banner when checkin fails', async () => {
+      const user = userEvent.setup();
+      render(<RentalCheckinHandler {...createProps({ rentalShouldFail: true })} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('heading', { name: 'Product 1' }));
+      });
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      await user.click(screen.getAllByRole('button', { name: 'Submit' })[0]);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      const codeInput = screen.getByPlaceholderText('Code');
+      await user.type(codeInput, 'RENTAL001');
+
+      const nameInput = screen.getByRole('textbox', { name: 'Customer Name' });
+      await user.type(nameInput, 'John Doe');
+
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByText('Failed to submit. Please try again.')).toBeTruthy();
+    });
+
+    it('should not show error banner before any submission', async () => {
+      render(<RentalCheckinHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.queryByText('Failed to submit. Please try again.')).toBeNull();
+    });
+  });
+
   describe('error recovery', () => {
     it('should refetch products when retry button is pressed', async () => {
       const user = userEvent.setup();

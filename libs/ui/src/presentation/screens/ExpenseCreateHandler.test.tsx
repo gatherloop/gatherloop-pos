@@ -122,6 +122,13 @@ describe('ExpenseCreateHandler', () => {
     });
   });
 
+  describe('error banner', () => {
+    it('should not show error banner before any submission', () => {
+      render(<ExpenseCreateHandler {...createProps({ preloaded: true })} />);
+      expect(screen.queryByText('Failed to submit. Please try again.')).toBeNull();
+    });
+  });
+
   describe('error recovery', () => {
     it('should retry fetching when retry button is pressed after error', async () => {
       const user = userEvent.setup();

@@ -14,6 +14,7 @@ export type CategoryCreateScreenProps = {
   isSubmitting: boolean;
   onSubmit: (values: CategoryForm) => void;
   variant: CategoryFormViewProps['variant'];
+  serverError?: string;
 };
 
 export const CategoryCreateScreen = ({
@@ -23,6 +24,7 @@ export const CategoryCreateScreen = ({
   onLogoutPress,
   onSubmit,
   variant,
+  serverError,
 }: CategoryCreateScreenProps) => {
   return (
     <Layout
@@ -37,6 +39,7 @@ export const CategoryCreateScreen = ({
           isSubmitting={isSubmitting}
           onSubmit={onSubmit}
           variant={variant}
+          serverError={serverError}
         />
       </ScrollView>
     </Layout>

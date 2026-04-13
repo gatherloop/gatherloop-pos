@@ -23,6 +23,7 @@ export type ProductUpdateScreenProps = {
     isButtonDisabled: boolean;
   };
   onLogoutPress: () => void;
+  serverError?: string;
 };
 
 export const ProductUpdateScreen = (props: ProductUpdateScreenProps) => {
@@ -42,6 +43,7 @@ export const ProductUpdateScreen = (props: ProductUpdateScreenProps) => {
           onVariantDeleteMenuPress={props.onVariantDeleteMenuPress}
           onVariantEditMenuPress={props.onVariantEditMenuPress}
           onVariantCreatePress={props.onVariantCreatePress}
+          serverError={props.serverError}
         />
         <VariantDeleteAlert {...props.variantDeleteAlert} />
       </ScrollView>
