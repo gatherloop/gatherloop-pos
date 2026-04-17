@@ -51,6 +51,7 @@ export const CouponListHandler = ({
           couponId: coupon.id,
         })
       }
+      onEmptyActionPress={() => router.push('/coupons/create')}
       onRetryButtonPress={() => couponList.dispatch({ type: 'FETCH' })}
       isRevalidating={couponList.state.type === 'revalidating'}
       variant={match(couponList.state)

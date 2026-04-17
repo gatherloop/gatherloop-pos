@@ -96,6 +96,14 @@ export class CategoryUpdateUsecase extends Usecase<
         })
       )
       .with(
+        [{ type: 'submitError' }, { type: 'SUBMIT' }],
+        ([state, { values }]) => ({
+          ...state,
+          values,
+          type: 'submitting',
+        })
+      )
+      .with(
         [{ type: 'submitting' }, { type: 'SUBMIT_SUCCESS' }],
         ([state]) => ({
           ...state,
@@ -153,9 +161,6 @@ export class CategoryUpdateUsecase extends Usecase<
           .catch(() =>
             dispatch({ type: 'SUBMIT_ERROR', errorMessage: 'Submit failed' })
           );
-      })
-      .with({ type: 'submitError' }, () => {
-        dispatch({ type: 'SUBMIT_CANCEL' });
       })
       .otherwise(() => {
         // TODO: IMPLEMENT SOMETHING

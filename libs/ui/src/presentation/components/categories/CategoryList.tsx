@@ -7,6 +7,7 @@ import { Category } from '../../../domain';
 
 export type CategoryListProps = {
   onRetryButtonPress: () => void;
+  onEmptyActionPress?: () => void;
   onDeleteMenuPress: (category: Category) => void;
   onEditMenuPress: (category: Category) => void;
   onItemPress: (category: Category) => void;
@@ -20,6 +21,7 @@ export type CategoryListProps = {
 
 export const CategoryList = ({
   onRetryButtonPress,
+  onEmptyActionPress,
   onDeleteMenuPress,
   onEditMenuPress,
   onItemPress,
@@ -35,6 +37,8 @@ export const CategoryList = ({
           <EmptyView
             title="Oops, Category is Empty"
             subtitle="Please create a new category"
+            actionLabel="Create Category"
+            onActionPress={onEmptyActionPress}
           />
         ))
         .with({ type: 'loaded' }, ({ categories }) => (

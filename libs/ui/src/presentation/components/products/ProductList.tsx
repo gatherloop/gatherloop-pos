@@ -32,6 +32,7 @@ export type ProductListProps = {
   onEditMenuPress?: (product: Product) => void;
   onDeleteMenuPress?: (product: Product) => void;
   onItemPress: (product: Product) => void;
+  onEmptyActionPress?: () => void;
   isSearchAutoFocus?: boolean;
   currentPage: number;
   totalItem: number;
@@ -62,6 +63,7 @@ export const ProductList = ({
   isRevalidating,
   variant,
   numColumns = 1,
+  onEmptyActionPress,
 }: ProductListProps) => {
   return (
     <YStack gap="$3" flex={1}>
@@ -143,6 +145,8 @@ export const ProductList = ({
           <EmptyView
             title="Oops, Product is Empty"
             subtitle="Please create a new product"
+            actionLabel="Create Product"
+            onActionPress={onEmptyActionPress}
           />
         ))
         .with({ type: 'loaded' }, ({ items }) => (

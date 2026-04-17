@@ -17,6 +17,7 @@ export type CouponListScreenProps = {
   isDeleteButtonDisabled: boolean;
   onDeleteCancel: () => void;
   onDeleteConfirm: () => void;
+  onEmptyActionPress?: () => void;
 };
 
 export const CouponListScreen = ({
@@ -31,6 +32,7 @@ export const CouponListScreen = ({
   isDeleteButtonDisabled,
   onDeleteCancel,
   onDeleteConfirm,
+  onEmptyActionPress,
 }: CouponListScreenProps) => {
   return (
     <Layout
@@ -49,6 +51,7 @@ export const CouponListScreen = ({
         onItemPress={onItemPress}
         variant={variant}
         isRevalidating={isRevalidating}
+        onEmptyActionPress={onEmptyActionPress}
       />
       <CouponDeleteAlert
         isOpen={isDeleteModalOpen}

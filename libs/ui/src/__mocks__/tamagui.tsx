@@ -7,10 +7,14 @@ type AnyProps = {
 };
 
 const makeComponent = (name: string) => {
-  const Component = ({ children, onPress }: AnyProps) =>
+  const Component = ({ children, onPress, testID }: AnyProps) =>
     React.createElement(
       'div',
-      { 'data-component': name, ...(onPress ? { onClick: onPress } : {}) },
+      {
+        'data-component': name,
+        ...(onPress ? { onClick: onPress } : {}),
+        ...(testID ? { 'data-testid': testID } : {}),
+      },
       children
     );
   Component.displayName = name;

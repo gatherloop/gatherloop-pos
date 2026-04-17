@@ -16,6 +16,7 @@ export type WalletListProps = {
   onEditMenuPress: (wallet: Wallet) => void;
   onTransferMenuPress: (wallet: Wallet) => void;
   onItemPress: (wallet: Wallet) => void;
+  onEmptyActionPress?: () => void;
 };
 
 export const WalletList = ({
@@ -25,6 +26,7 @@ export const WalletList = ({
   onTransferMenuPress,
   onItemPress,
   variant,
+  onEmptyActionPress,
 }: WalletListProps) => {
   return (
     <YStack gap="$3" flex={1}>
@@ -35,6 +37,8 @@ export const WalletList = ({
           <EmptyView
             title="Oops, Wallet is Empty"
             subtitle="Please create a new wallet"
+            actionLabel="Create Wallet"
+            onActionPress={onEmptyActionPress}
           />
         ))
         .with({ type: 'loaded' }, ({ items }) => (

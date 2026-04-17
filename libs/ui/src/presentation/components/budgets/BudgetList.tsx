@@ -6,6 +6,7 @@ import { match } from 'ts-pattern';
 
 export type BudgetListProps = {
   onRetryButtonPress: () => void;
+  onEmptyActionPress?: () => void;
   isRevalidating?: boolean;
   variant:
     | { type: 'loading' }
@@ -16,6 +17,7 @@ export type BudgetListProps = {
 
 export const BudgetList = ({
   onRetryButtonPress,
+  onEmptyActionPress,
   isRevalidating,
   variant,
 }: BudgetListProps) => {
@@ -28,6 +30,8 @@ export const BudgetList = ({
           <EmptyView
             title="Oops, Budget is Empty"
             subtitle="Please create a new budget"
+            actionLabel="Create Budget"
+            onActionPress={onEmptyActionPress}
           />
         ))
         .with({ type: 'loaded' }, ({ items }) => (

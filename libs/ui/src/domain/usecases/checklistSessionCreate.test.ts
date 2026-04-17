@@ -69,7 +69,7 @@ describe('ChecklistSessionCreateUsecase', () => {
   });
 
   describe('error flow', () => {
-    it('should transition loaded → submitting → loaded (auto-recover on error)', async () => {
+    it('should transition loaded → submitting → submitError', async () => {
       const repository = new MockChecklistSessionRepository();
       repository.setShouldFail(true);
       const usecase = new ChecklistSessionCreateUsecase(repository);
@@ -87,8 +87,7 @@ describe('ChecklistSessionCreateUsecase', () => {
       expect(tester.state.type).toBe('submitting');
 
       await flushPromises();
-      // submitError auto-cancels to loaded
-      expect(tester.state.type).toBe('loaded');
+      expect(tester.state.type).toBe('submitError');
     });
   });
 });

@@ -55,6 +55,7 @@ export const VariantListHandler = ({
       onItemPress={(variant: Variant) =>
         router.push(`/variants/${variant.id}`)
       }
+      onEmptyActionPress={() => router.push('/variants/create')}
       onRetryButtonPress={() => variantList.dispatch({ type: 'FETCH' })}
       isRevalidating={variantList.state.type === 'revalidating'}
       variant={match(variantList.state)

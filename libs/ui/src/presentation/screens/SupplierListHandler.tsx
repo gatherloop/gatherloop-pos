@@ -58,6 +58,7 @@ export const SupplierListHandler = ({
       onItemPress={(supplier: Supplier) =>
         router.push(`/suppliers/${supplier.id}`)
       }
+      onEmptyActionPress={() => router.push('/suppliers/create')}
       onRetryButtonPress={() => supplierList.dispatch({ type: 'FETCH' })}
       isRevalidating={supplierList.state.type === 'revalidating'}
       variant={match(supplierList.state)

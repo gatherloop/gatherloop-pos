@@ -18,6 +18,7 @@ import { Filter } from '@tamagui/lucide-icons';
 
 export type ExpenseListProps = {
   onRetryButtonPress: () => void;
+  onEmptyActionPress?: () => void;
   onEditMenuPress: (expense: Expense) => void;
   onDeleteMenuPress: (expense: Expense) => void;
   onItemPress: (expense: Expense) => void;
@@ -53,6 +54,7 @@ export const ExpenseList = ({
   wallets,
   onWalletIdChange,
   onRetryButtonPress,
+  onEmptyActionPress,
   onDeleteMenuPress,
   onEditMenuPress,
   onItemPress,
@@ -206,6 +208,8 @@ export const ExpenseList = ({
           <EmptyView
             title="Oops, Expense is Empty"
             subtitle="Please create a new expense"
+            actionLabel="Create Expense"
+            onActionPress={onEmptyActionPress}
           />
         )
       ) : (

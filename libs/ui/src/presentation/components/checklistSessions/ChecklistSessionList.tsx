@@ -7,6 +7,7 @@ import { ChecklistSession, ChecklistSessionListFilter } from '../../../domain';
 
 export type ChecklistSessionListProps = {
   onRetryButtonPress: () => void;
+  onEmptyActionPress?: () => void;
   onPageChange: (page: number) => void;
   onItemPress: (checklistSession: ChecklistSession) => void;
   onFilterChange: (filter: ChecklistSessionListFilter) => void;
@@ -38,6 +39,7 @@ function formatDate(dateStr: string): string {
 export const ChecklistSessionList = ({
   onPageChange,
   onRetryButtonPress,
+  onEmptyActionPress,
   onItemPress,
   onFilterChange,
   filter,
@@ -91,6 +93,8 @@ export const ChecklistSessionList = ({
           <EmptyView
             title="Oops, Checklist Sessions is Empty"
             subtitle="Please create a new checklist session"
+            actionLabel="Create Session"
+            onActionPress={onEmptyActionPress}
           />
         ))
         .with({ type: 'loaded' }, ({ items }) => (

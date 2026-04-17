@@ -14,6 +14,7 @@ export type SupplierListProps = {
   onEditMenuPress?: (supplier: Supplier) => void;
   onDeleteMenuPress?: (supplier: Supplier) => void;
   onItemPress: (supplier: Supplier) => void;
+  onEmptyActionPress?: () => void;
   isSearchAutoFocus?: boolean;
   currentPage: number;
   totalItem: number;
@@ -41,6 +42,7 @@ export const SupplierList = ({
   itemPerPage,
   isRevalidating,
   variant,
+  onEmptyActionPress,
 }: SupplierListProps) => {
   return (
     <YStack gap="$3" flex={1}>
@@ -61,6 +63,8 @@ export const SupplierList = ({
           <EmptyView
             title="Oops, Supplier is Empty"
             subtitle="Please create a new supplier"
+            actionLabel="Create Supplier"
+            onActionPress={onEmptyActionPress}
           />
         ))
         .with({ type: 'loaded' }, ({ items }) => (

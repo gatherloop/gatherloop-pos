@@ -89,6 +89,24 @@ describe('WalletListHandler', () => {
 
       expect(screen.getByRole('heading', { name: 'Oops, Wallet is Empty' })).toBeTruthy();
     });
+
+    it('should show create CTA button in empty state', async () => {
+      const walletRepo = new MockWalletRepository();
+      walletRepo.wallets = [];
+      render(<WalletListHandler {...createProps({ walletRepo })} />);
+      await act(async () => { await flushPromises(); });
+      expect(screen.getByRole('button', { name: 'Create Wallet' })).toBeTruthy();
+    });
+
+    it('should navigate to create page when CTA button is pressed', async () => {
+      const user = userEvent.setup();
+      const walletRepo = new MockWalletRepository();
+      walletRepo.wallets = [];
+      render(<WalletListHandler {...createProps({ walletRepo })} />);
+      await act(async () => { await flushPromises(); });
+      await user.click(screen.getByRole('button', { name: 'Create Wallet' }));
+      expect(mockRouterPush).toHaveBeenCalledWith('/wallets/create');
+    });
   });
 
   describe('navigation', () => {

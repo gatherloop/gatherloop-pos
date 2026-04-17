@@ -62,6 +62,7 @@ export const ProductListHandler = ({
       onPageChange={(page: number) =>
         productList.dispatch({ type: 'CHANGE_PARAMS', page })
       }
+      onEmptyActionPress={() => router.push('/products/create')}
       onRetryButtonPress={() => productList.dispatch({ type: 'FETCH' })}
       isRevalidating={productList.state.type === 'revalidating'}
       onSaleTypeChange={(saleType?: SaleType) =>

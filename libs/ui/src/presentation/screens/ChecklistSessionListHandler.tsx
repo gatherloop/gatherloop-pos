@@ -54,6 +54,7 @@ export const ChecklistSessionListHandler = ({
       onItemPress={(checklistSession: ChecklistSession) =>
         router.push(`/checklist-sessions/${checklistSession.id}`)
       }
+      onEmptyActionPress={() => router.push('/checklist-sessions/create')}
       onRetryButtonPress={() =>
         checklistSessionList.dispatch({ type: 'FETCH' })
       }

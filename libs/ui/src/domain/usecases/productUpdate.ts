@@ -128,6 +128,15 @@ export class ProductUpdateUsecase extends Usecase<
           values,
           type: 'submitting',
         })
+      
+      )
+      .with(
+        [{ type: 'submitError' }, { type: 'SUBMIT' }],
+        ([state, { values }]) => ({
+          ...state,
+          values,
+          type: 'submitting',
+        })
       )
       .with([{ type: 'loaded' }, { type: 'FETCH' }], ([state]) => ({
         ...state,
@@ -209,9 +218,6 @@ export class ProductUpdateUsecase extends Usecase<
           .catch(() =>
             dispatch({ type: 'SUBMIT_ERROR', errorMessage: 'Submit failed' })
           );
-      })
-      .with({ type: 'submitError' }, () => {
-        dispatch({ type: 'SUBMIT_CANCEL' });
       })
       .otherwise(() => {
         // TODO: IMPLEMENT SOMETHING

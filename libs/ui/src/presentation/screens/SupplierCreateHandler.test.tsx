@@ -147,6 +147,8 @@ describe('SupplierCreateHandler', () => {
       render(<SupplierCreateHandler {...createProps({ shouldFail: true })} />);
 
       await user.type(screen.getByRole('textbox', { name: 'Name' }), 'New Supplier');
+      await user.type(screen.getByRole('textbox', { name: 'Address' }), 'New Supplier Address');
+      await user.type(screen.getByRole('textbox', { name: 'Maps Link' }), 'https://maps.example.com');
       await user.click(screen.getByRole('button', { name: 'Submit' }));
 
       await act(async () => {

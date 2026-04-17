@@ -33,6 +33,7 @@ export const WalletListHandler = ({
       onTransferMenuPress={(wallet: Wallet) =>
         router.push(`/wallets/${wallet.id}/transfers`)
       }
+      onEmptyActionPress={() => router.push('/wallets/create')}
       onRetryButtonPress={() => walletList.dispatch({ type: 'FETCH' })}
       isRevalidating={walletList.state.type === 'revalidating'}
       variant={match(walletList.state)

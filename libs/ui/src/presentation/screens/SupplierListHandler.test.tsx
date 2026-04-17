@@ -123,6 +123,28 @@ describe('SupplierListHandler', () => {
 
       expect(screen.getByRole('heading', { name: 'Oops, Supplier is Empty' })).toBeTruthy();
     });
+
+    it('should show create CTA button in empty state', async () => {
+      const supplierRepo = new MockSupplierRepository();
+      supplierRepo.suppliers = [];
+      render(<SupplierListHandler {...createProps({ supplierRepo })} />);
+      await act(async () => {
+        await flushPromises();
+      });
+      expect(screen.getByRole('button', { name: 'Create Supplier' })).toBeTruthy();
+    });
+
+    it('should navigate to create page when CTA button is pressed', async () => {
+      const user = userEvent.setup();
+      const supplierRepo = new MockSupplierRepository();
+      supplierRepo.suppliers = [];
+      render(<SupplierListHandler {...createProps({ supplierRepo })} />);
+      await act(async () => {
+        await flushPromises();
+      });
+      await user.click(screen.getByRole('button', { name: 'Create Supplier' }));
+      expect(mockRouterPush).toHaveBeenCalledWith('/suppliers/create');
+    });
   });
 
   describe('delete modal', () => {

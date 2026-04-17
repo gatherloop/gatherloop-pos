@@ -1,3 +1,4 @@
+import { useRouter } from 'solito/router';
 import {
   AuthLogoutUsecase,
   RentalDeleteUsecase,
@@ -26,6 +27,7 @@ export const RentalListHandler = ({
   const authLogout = useAuthLogoutController(authLogoutUsecase);
   const rentalList = useRentalListController(rentalListUsecase);
   const rentalDelete = useRentalDeleteController(rentalDeleteUsecase);
+  const router = useRouter();
   const debounceTimeoutRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
@@ -64,6 +66,7 @@ export const RentalListHandler = ({
           rentalId: rental.id,
         })
       }
+      onEmptyActionPress={() => router.push('/rentals/checkin')}
       onRetryButtonPress={() => rentalList.dispatch({ type: 'FETCH' })}
       isRevalidating={rentalList.state.type === 'revalidating'}
       variant={match(rentalList.state)

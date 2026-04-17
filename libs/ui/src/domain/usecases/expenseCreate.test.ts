@@ -64,7 +64,7 @@ describe('ExpenseCreateUsecase', () => {
   });
 
   describe('error flow - submit error', () => {
-    it('should transition loaded → submitting → loaded (auto-recovery)', async () => {
+    it('should transition loaded → submitting → submitError', async () => {
       const expenseRepository = new MockExpenseRepository();
       expenseRepository.setShouldFail(true);
       const budgetRepository = new MockBudgetRepository();
@@ -84,8 +84,7 @@ describe('ExpenseCreateUsecase', () => {
       expect(tester.state.type).toBe('submitting');
 
       await flushPromises();
-      // submitError auto-cancels to loaded via onStateChange(submitError) -> SUBMIT_CANCEL
-      expect(tester.state.type).toBe('loaded');
+      expect(tester.state.type).toBe('submitError');
     });
   });
 

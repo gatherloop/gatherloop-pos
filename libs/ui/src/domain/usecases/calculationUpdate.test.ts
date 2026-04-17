@@ -63,7 +63,7 @@ describe('CalculationUpdateUsecase', () => {
   });
 
   describe('error flow - submit error', () => {
-    it('should transition loaded → submitting → loaded (error recovery)', async () => {
+    it('should transition loaded → submitting → submitError', async () => {
       const calculationRepository = new MockCalculationRepository();
       calculationRepository.setShouldFail(true);
       const walletRepository = new MockWalletRepository();
@@ -83,8 +83,7 @@ describe('CalculationUpdateUsecase', () => {
       expect(tester.state.type).toBe('submitting');
 
       await flushPromises();
-      // submitError auto-cancels to loaded via onStateChange(submitError) -> SUBMIT_CANCEL
-      expect(tester.state.type).toBe('loaded');
+      expect(tester.state.type).toBe('submitError');
     });
   });
 

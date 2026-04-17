@@ -24,7 +24,7 @@ describe('AuthLoginUsecase', () => {
   });
 
   describe('error flow', () => {
-    it('should transition loaded → submitting → loaded (error auto-recovers)', async () => {
+    it('should transition loaded → submitting → submitError', async () => {
       const repository = new MockAuthRepository();
       repository.setShouldFail(true);
       const usecase = new AuthLoginUsecase(repository);
@@ -36,7 +36,7 @@ describe('AuthLoginUsecase', () => {
       expect(tester.state.type).toBe('submitting');
 
       await flushPromises();
-      expect(tester.state.type).toBe('loaded');
+      expect(tester.state.type).toBe('submitError');
     });
   });
 });

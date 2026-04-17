@@ -7,6 +7,7 @@ import { Coupon } from '../../../domain';
 
 export type CouponListProps = {
   onRetryButtonPress: () => void;
+  onEmptyActionPress?: () => void;
   onDeleteMenuPress?: (coupon: Coupon) => void;
   onEditMenuPress?: (coupon: Coupon) => void;
   onItemPress: (coupon: Coupon) => void;
@@ -20,6 +21,7 @@ export type CouponListProps = {
 
 export const CouponList = ({
   onRetryButtonPress,
+  onEmptyActionPress,
   onDeleteMenuPress,
   onEditMenuPress,
   onItemPress,
@@ -35,6 +37,8 @@ export const CouponList = ({
           <EmptyView
             title="Oops, Coupon is Empty"
             subtitle="Please create a new coupon"
+            actionLabel="Create Coupon"
+            onActionPress={onEmptyActionPress}
           />
         ))
         .with({ type: 'loaded' }, ({ coupons }) => (

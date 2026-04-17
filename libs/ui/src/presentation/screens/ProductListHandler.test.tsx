@@ -103,6 +103,24 @@ describe('ProductListHandler', () => {
       expect(screen.getByRole('heading', { name: 'Oops, Product is Empty' })).toBeTruthy();
     });
 
+    it('should show create CTA button in empty state', async () => {
+      const productRepo = new MockProductRepository();
+      productRepo.products = [];
+      render(<ProductListHandler {...createProps({ productRepo })} />);
+      await act(async () => { await flushPromises(); });
+      expect(screen.getByRole('button', { name: 'Create Product' })).toBeTruthy();
+    });
+
+    it('should navigate to create page when CTA button is pressed', async () => {
+      const user = userEvent.setup();
+      const productRepo = new MockProductRepository();
+      productRepo.products = [];
+      render(<ProductListHandler {...createProps({ productRepo })} />);
+      await act(async () => { await flushPromises(); });
+      await user.click(screen.getByRole('button', { name: 'Create Product' }));
+      expect(mockRouterPush).toHaveBeenCalledWith('/products/create');
+    });
+
     it('should preserve list content during revalidation after delete', async () => {
       const user = userEvent.setup();
       const productRepo = new MockProductRepository();

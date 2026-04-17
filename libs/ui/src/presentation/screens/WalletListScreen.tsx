@@ -12,6 +12,7 @@ export type WalletListScreenProps = {
   onRetryButtonPress: () => void;
   variant: { type: 'loading' } | { type: 'error' } | { type: 'empty' } | { type: 'loaded'; items: Wallet[] };
   isRevalidating?: boolean;
+  onEmptyActionPress?: () => void;
 };
 
 export const WalletListScreen = ({
@@ -22,6 +23,7 @@ export const WalletListScreen = ({
   onRetryButtonPress,
   variant,
   isRevalidating,
+  onEmptyActionPress,
 }: WalletListScreenProps) => {
   return (
     <Layout
@@ -40,6 +42,7 @@ export const WalletListScreen = ({
         onItemPress={onItemPress}
         onTransferMenuPress={onTransferMenuPress}
         isRevalidating={isRevalidating}
+        onEmptyActionPress={onEmptyActionPress}
       />
     </Layout>
   );

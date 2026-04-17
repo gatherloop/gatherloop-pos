@@ -55,6 +55,7 @@ export const MaterialListHandler = ({
           materialId: material.id,
         })
       }
+      onEmptyActionPress={() => router.push('/materials/create')}
       onRetryButtonPress={() => materialList.dispatch({ type: 'FETCH' })}
       isRevalidating={materialList.state.type === 'revalidating'}
       variant={match(materialList.state)

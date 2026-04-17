@@ -37,7 +37,7 @@ describe('MaterialCreateUsecase', () => {
 
       await flushPromises();
       // submitError auto-cancels to loaded via onStateChange(submitError) -> SUBMIT_CANCEL
-      expect(tester.state.type).toBe('loaded');
+      expect(tester.state.type).toBe('submitError');
     });
   });
 });

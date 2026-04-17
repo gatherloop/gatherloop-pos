@@ -62,6 +62,15 @@ export class TransactionCreateUsecase extends Usecase<
           values,
           type: 'submitting',
         })
+      
+      )
+      .with(
+        [{ type: 'submitError' }, { type: 'SUBMIT' }],
+        ([state, { values }]) => ({
+          ...state,
+          values,
+          type: 'submitting',
+        })
       )
       .with(
         [{ type: 'submitting' }, { type: 'SUBMIT_SUCCESS' }],
@@ -103,9 +112,6 @@ export class TransactionCreateUsecase extends Usecase<
           .catch(() =>
             dispatch({ type: 'SUBMIT_ERROR', errorMessage: 'Submit failed' })
           );
-      })
-      .with({ type: 'submitError' }, () => {
-        dispatch({ type: 'SUBMIT_CANCEL' });
       })
       .otherwise(() => {
         // TODO: IMPLEMENT SOMETHING

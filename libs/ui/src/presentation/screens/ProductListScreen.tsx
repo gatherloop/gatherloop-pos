@@ -29,6 +29,7 @@ export type ProductListScreenProps = {
   onDeleteCancel: () => void;
   onDeleteConfirm: () => void;
   isRevalidating?: boolean;
+  onEmptyActionPress?: () => void;
 };
 
 export const ProductListScreen = ({
@@ -51,6 +52,7 @@ export const ProductListScreen = ({
   totalItem,
   variant,
   isRevalidating,
+  onEmptyActionPress,
 }: ProductListScreenProps) => {
   return (
     <Layout
@@ -77,6 +79,7 @@ export const ProductListScreen = ({
         onEditMenuPress={onEditMenuPress}
         onDeleteMenuPress={onDeleteMenuPress}
         onItemPress={onItemPress}
+        onEmptyActionPress={onEmptyActionPress}
       />
       <ProductDeleteAlert
         isButtonDisabled={isDeleteButtonDisabled}

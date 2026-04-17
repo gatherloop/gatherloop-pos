@@ -5,6 +5,7 @@ import { WalletTransferListItem, WalletTransferListItemProps } from '..';
 
 export type WalletTransferListProps = {
   onRetryButtonPress: () => void;
+  onEmptyActionPress?: () => void;
   isRevalidating?: boolean;
   variant:
     | { type: 'loading' }
@@ -15,6 +16,7 @@ export type WalletTransferListProps = {
 export const WalletTransferList = ({
   variant,
   onRetryButtonPress,
+  onEmptyActionPress,
   isRevalidating,
 }: WalletTransferListProps) => {
   return (
@@ -33,6 +35,8 @@ export const WalletTransferList = ({
           <EmptyView
             title="Oops, Transfer History is Empty"
             subtitle="Please create a new transfer"
+            actionLabel="Create Transfer"
+            onActionPress={onEmptyActionPress}
           />
         )
       ) : (

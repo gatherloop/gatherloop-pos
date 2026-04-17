@@ -55,6 +55,7 @@ export const ExpenseListHandler = ({
           expenseId: expense.id,
         })
       }
+      onEmptyActionPress={() => router.push('/expenses/create')}
       onRetryButtonPress={() => expenseList.dispatch({ type: 'FETCH' })}
       isRevalidating={expenseList.state.type === 'revalidating'}
       variant={match(expenseList.state)
