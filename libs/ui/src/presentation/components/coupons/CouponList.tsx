@@ -1,6 +1,6 @@
-import { YStack } from 'tamagui';
+import { Spinner, YStack } from 'tamagui';
 import { CouponListItem } from './CouponListItem';
-import { EmptyView, ErrorView, LoadingView } from '../base';
+import { EmptyView, ErrorView, SkeletonList } from '../base';
 import { FlatList } from 'react-native';
 import { match } from 'ts-pattern';
 import { Coupon } from '../../../domain';
@@ -10,6 +10,7 @@ export type CouponListProps = {
   onDeleteMenuPress?: (coupon: Coupon) => void;
   onEditMenuPress?: (coupon: Coupon) => void;
   onItemPress: (coupon: Coupon) => void;
+  isRevalidating?: boolean;
   variant:
     | { type: 'loading' }
     | { type: 'error' }
@@ -22,14 +23,14 @@ export const CouponList = ({
   onDeleteMenuPress,
   onEditMenuPress,
   onItemPress,
+  isRevalidating,
   variant,
 }: CouponListProps) => {
   return (
     <YStack gap="$3" flex={1}>
+      {isRevalidating && <Spinner size="small" alignSelf="flex-end" />}
       {match(variant)
-        .with({ type: 'loading' }, () => (
-          <LoadingView title="Fetching Coupons..." />
-        ))
+        .with({ type: 'loading' }, () => <SkeletonList />)
         .with({ type: 'empty' }, () => (
           <EmptyView
             title="Oops, Coupon is Empty"

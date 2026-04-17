@@ -52,9 +52,9 @@ describe('ExpenseListHandler', () => {
   });
 
   describe('loading and data states', () => {
-    it('should show loading state initially', async () => {
+    it('should show skeleton list during initial loading', async () => {
       render(<ExpenseListHandler {...createProps()} />);
-      expect(screen.getByText('Fetching Expenses...')).toBeTruthy();
+      expect(screen.getByTestId('skeleton-list')).toBeTruthy();
       await act(async () => {
         await flushPromises();
       });
@@ -83,6 +83,37 @@ describe('ExpenseListHandler', () => {
       });
 
       expect(screen.getByRole('heading', { name: 'Failed to Fetch Expenses' })).toBeTruthy();
+    });
+
+    it('should not show skeleton after data is loaded', async () => {
+      render(<ExpenseListHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.queryByTestId('skeleton-list')).toBeNull();
+    });
+
+    it('should preserve list content during revalidation after delete', async () => {
+      const user = userEvent.setup();
+      render(<ExpenseListHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      const deleteMenuItems = screen.getAllByRole('button', { name: 'Delete' });
+      await user.click(deleteMenuItems[0]);
+      await user.click(screen.getByRole('button', { name: 'Yes' }));
+
+      expect(screen.queryByTestId('skeleton-list')).toBeNull();
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.queryByTestId('skeleton-list')).toBeNull();
     });
 
     it('should show empty state when no expenses exist', async () => {

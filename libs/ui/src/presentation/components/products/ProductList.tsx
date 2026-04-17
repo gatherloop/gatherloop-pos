@@ -5,6 +5,7 @@ import {
   Paragraph,
   Popover,
   RadioGroup,
+  Spinner,
   XStack,
   YStack,
 } from 'tamagui';
@@ -13,8 +14,8 @@ import {
   EmptyView,
   ErrorView,
   Focusable,
-  LoadingView,
   Pagination,
+  SkeletonList,
 } from '../base';
 import { FlatList } from 'react-native';
 import { match } from 'ts-pattern';
@@ -35,6 +36,7 @@ export type ProductListProps = {
   currentPage: number;
   totalItem: number;
   itemPerPage: number;
+  isRevalidating?: boolean;
   variant:
     | { type: 'loading' }
     | { type: 'error' }
@@ -57,6 +59,7 @@ export const ProductList = ({
   totalItem,
   currentPage,
   itemPerPage,
+  isRevalidating,
   variant,
   numColumns = 1,
 }: ProductListProps) => {
@@ -130,12 +133,12 @@ export const ProductList = ({
             </YStack>
           </Popover.Content>
         </Popover>
+
+        {isRevalidating && <Spinner size="small" color="$gray10" />}
       </XStack>
 
       {match(variant)
-        .with({ type: 'loading' }, () => (
-          <LoadingView title="Fetching Products..." />
-        ))
+        .with({ type: 'loading' }, () => <SkeletonList />)
         .with({ type: 'empty' }, () => (
           <EmptyView
             title="Oops, Product is Empty"

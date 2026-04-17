@@ -23,6 +23,7 @@ export type SupplierListScreenProps = {
   isDeleteButtonDisabled: boolean;
   onDeleteCancel: () => void;
   onDeleteConfirm: () => void;
+  isRevalidating?: boolean;
 };
 
 export const SupplierListScreen = ({
@@ -44,6 +45,7 @@ export const SupplierListScreen = ({
   isDeleteButtonDisabled,
   onDeleteCancel,
   onDeleteConfirm,
+  isRevalidating,
 }: SupplierListScreenProps) => {
   return (
     <Layout
@@ -68,6 +70,7 @@ export const SupplierListScreen = ({
         currentPage={currentPage}
         totalItem={totalItem}
         itemPerPage={itemPerPage}
+        isRevalidating={isRevalidating}
       />
       <SupplierDeleteAlert
         isOpen={isDeleteModalOpen}

@@ -52,6 +52,7 @@ export const CouponListHandler = ({
         })
       }
       onRetryButtonPress={() => couponList.dispatch({ type: 'FETCH' })}
+      isRevalidating={couponList.state.type === 'revalidating'}
       variant={match(couponList.state)
         .returnType<CouponListScreenProps['variant']>()
         .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))

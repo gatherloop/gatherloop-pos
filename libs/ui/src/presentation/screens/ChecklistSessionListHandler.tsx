@@ -57,6 +57,7 @@ export const ChecklistSessionListHandler = ({
       onRetryButtonPress={() =>
         checklistSessionList.dispatch({ type: 'FETCH' })
       }
+      isRevalidating={checklistSessionList.state.type === 'revalidating'}
       onFilterChange={(filter: ChecklistSessionListFilter) =>
         checklistSessionList.dispatch({ type: 'CHANGE_PARAMS', filter })
       }

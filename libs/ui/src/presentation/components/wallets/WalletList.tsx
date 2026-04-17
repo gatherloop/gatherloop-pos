@@ -1,12 +1,13 @@
-import { YStack } from 'tamagui';
+import { Spinner, YStack } from 'tamagui';
 import { WalletListItem } from './WalletListItem';
-import { EmptyView, ErrorView, LoadingView } from '../base';
+import { EmptyView, ErrorView, SkeletonList } from '../base';
 import { FlatList } from 'react-native';
 import { match } from 'ts-pattern';
 import { Wallet } from '../../../domain';
 
 export type WalletListProps = {
   onRetryButtonPress: () => void;
+  isRevalidating?: boolean;
   variant:
     | { type: 'loading' }
     | { type: 'error' }
@@ -19,6 +20,7 @@ export type WalletListProps = {
 
 export const WalletList = ({
   onRetryButtonPress,
+  isRevalidating,
   onEditMenuPress,
   onTransferMenuPress,
   onItemPress,
@@ -26,10 +28,9 @@ export const WalletList = ({
 }: WalletListProps) => {
   return (
     <YStack gap="$3" flex={1}>
+      {isRevalidating && <Spinner size="small" alignSelf="flex-end" />}
       {match(variant)
-        .with({ type: 'loading' }, () => (
-          <LoadingView title="Fetching Wallets..." />
-        ))
+        .with({ type: 'loading' }, () => <SkeletonList />)
         .with({ type: 'empty' }, () => (
           <EmptyView
             title="Oops, Wallet is Empty"

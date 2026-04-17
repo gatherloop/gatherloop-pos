@@ -56,6 +56,7 @@ export const ExpenseListHandler = ({
         })
       }
       onRetryButtonPress={() => expenseList.dispatch({ type: 'FETCH' })}
+      isRevalidating={expenseList.state.type === 'revalidating'}
       variant={match(expenseList.state)
         .returnType<ExpenseListScreenProps['variant']>()
         .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))

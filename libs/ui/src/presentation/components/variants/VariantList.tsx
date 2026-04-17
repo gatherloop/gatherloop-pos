@@ -1,11 +1,11 @@
-import { Input, YStack } from 'tamagui';
+import { Input, Spinner, XStack, YStack } from 'tamagui';
 import { VariantListItem } from './VariantListItem';
 import {
   EmptyView,
   ErrorView,
   Focusable,
-  LoadingView,
   Pagination,
+  SkeletonList,
 } from '../base';
 import { FlatList } from 'react-native';
 import { match } from 'ts-pattern';
@@ -23,6 +23,7 @@ export type VariantListProps = {
   currentPage: number;
   totalItem: number;
   itemPerPage: number;
+  isRevalidating?: boolean;
   variant:
     | { type: 'loading' }
     | { type: 'error' }
@@ -43,24 +44,25 @@ export const VariantList = ({
   totalItem,
   currentPage,
   itemPerPage,
+  isRevalidating,
   variant,
   numColumns = 1,
 }: VariantListProps) => {
   return (
     <YStack gap="$3" flex={1}>
-      <YStack>
+      <XStack alignItems="center" gap="$2">
         <Input
           placeholder="Search Variants by Name"
           value={searchValue}
           onChangeText={onSearchValueChange}
           autoFocus={isSearchAutoFocus}
+          flex={1}
         />
-      </YStack>
+        {isRevalidating && <Spinner size="small" color="$gray10" />}
+      </XStack>
 
       {match(variant)
-        .with({ type: 'loading' }, () => (
-          <LoadingView title="Fetching Variants..." />
-        ))
+        .with({ type: 'loading' }, () => <SkeletonList />)
         .with({ type: 'empty' }, () => (
           <EmptyView
             title="Oops, Variant is Empty"

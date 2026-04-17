@@ -63,6 +63,7 @@ export const ProductListHandler = ({
         productList.dispatch({ type: 'CHANGE_PARAMS', page })
       }
       onRetryButtonPress={() => productList.dispatch({ type: 'FETCH' })}
+      isRevalidating={productList.state.type === 'revalidating'}
       onSaleTypeChange={(saleType?: SaleType) =>
         productList.dispatch({ type: 'CHANGE_PARAMS', saleType })
       }

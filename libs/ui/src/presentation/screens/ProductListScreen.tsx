@@ -28,6 +28,7 @@ export type ProductListScreenProps = {
   isDeleteModalOpen: boolean;
   onDeleteCancel: () => void;
   onDeleteConfirm: () => void;
+  isRevalidating?: boolean;
 };
 
 export const ProductListScreen = ({
@@ -49,6 +50,7 @@ export const ProductListScreen = ({
   searchValue,
   totalItem,
   variant,
+  isRevalidating,
 }: ProductListScreenProps) => {
   return (
     <Layout
@@ -71,6 +73,7 @@ export const ProductListScreen = ({
         searchValue={searchValue}
         totalItem={totalItem}
         variant={variant}
+        isRevalidating={isRevalidating}
         onEditMenuPress={onEditMenuPress}
         onDeleteMenuPress={onDeleteMenuPress}
         onItemPress={onItemPress}

@@ -56,6 +56,7 @@ export const VariantListHandler = ({
         router.push(`/variants/${variant.id}`)
       }
       onRetryButtonPress={() => variantList.dispatch({ type: 'FETCH' })}
+      isRevalidating={variantList.state.type === 'revalidating'}
       variant={match(variantList.state)
         .returnType<VariantListScreenProps['variant']>()
         .with({ type: P.union('idle', 'loading') }, () => ({

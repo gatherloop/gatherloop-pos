@@ -1,11 +1,12 @@
-import { YStack } from 'tamagui';
+import { Spinner, YStack } from 'tamagui';
 import { BudgetListItem, BudgetListItemProps } from './BudgetListItem';
-import { EmptyView, ErrorView, LoadingView } from '../base';
+import { EmptyView, ErrorView, SkeletonList } from '../base';
 import { FlatList } from 'react-native';
 import { match } from 'ts-pattern';
 
 export type BudgetListProps = {
   onRetryButtonPress: () => void;
+  isRevalidating?: boolean;
   variant:
     | { type: 'loading' }
     | { type: 'error' }
@@ -15,14 +16,14 @@ export type BudgetListProps = {
 
 export const BudgetList = ({
   onRetryButtonPress,
+  isRevalidating,
   variant,
 }: BudgetListProps) => {
   return (
     <YStack gap="$3" flex={1}>
+      {isRevalidating && <Spinner size="small" alignSelf="flex-end" />}
       {match(variant)
-        .with({ type: 'loading' }, () => (
-          <LoadingView title="Fetching Budgets..." />
-        ))
+        .with({ type: 'loading' }, () => <SkeletonList />)
         .with({ type: 'empty' }, () => (
           <EmptyView
             title="Oops, Budget is Empty"

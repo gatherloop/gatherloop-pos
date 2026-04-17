@@ -159,6 +159,7 @@ export const TransactionListHandler = ({
         });
       }}
       onRetryButtonPress={() => transactionList.dispatch({ type: 'FETCH' })}
+      isRevalidating={transactionList.state.type === 'revalidating'}
       variant={match(transactionList.state)
         .returnType<TransactionListScreenProps['variant']>()
         .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))

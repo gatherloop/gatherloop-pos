@@ -32,12 +32,22 @@ describe('BudgetListHandler', () => {
   });
 
   describe('loading and data states', () => {
-    it('should show loading state initially', async () => {
+    it('should show skeleton list during initial loading', async () => {
       render(<BudgetListHandler {...createProps()} />);
-      expect(screen.getByText('Fetching Budgets...')).toBeTruthy();
+      expect(screen.getByTestId('skeleton-list')).toBeTruthy();
       await act(async () => {
         await flushPromises();
       });
+    });
+
+    it('should not show skeleton after data is loaded', async () => {
+      render(<BudgetListHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.queryByTestId('skeleton-list')).toBeNull();
     });
 
     it('should show budget list after successful fetch', async () => {

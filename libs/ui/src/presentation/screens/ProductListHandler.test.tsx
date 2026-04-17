@@ -48,12 +48,22 @@ describe('ProductListHandler', () => {
   });
 
   describe('loading and data states', () => {
-    it('should show loading state initially', async () => {
+    it('should show skeleton list during initial loading', async () => {
       render(<ProductListHandler {...createProps()} />);
-      expect(screen.getByText('Fetching Products...')).toBeTruthy();
+      expect(screen.getByTestId('skeleton-list')).toBeTruthy();
       await act(async () => {
         await flushPromises();
       });
+    });
+
+    it('should not show skeleton after data is loaded', async () => {
+      render(<ProductListHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.queryByTestId('skeleton-list')).toBeNull();
     });
 
     it('should show product list after successful fetch', async () => {
@@ -91,6 +101,29 @@ describe('ProductListHandler', () => {
       });
 
       expect(screen.getByRole('heading', { name: 'Oops, Product is Empty' })).toBeTruthy();
+    });
+
+    it('should preserve list content during revalidation after delete', async () => {
+      const user = userEvent.setup();
+      const productRepo = new MockProductRepository();
+      render(<ProductListHandler {...createProps({ productRepo })} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      const deleteMenuItems = screen.getAllByRole('button', { name: 'Delete' });
+      await user.click(deleteMenuItems[0]);
+      await user.click(screen.getByRole('button', { name: 'Yes' }));
+
+      expect(screen.queryByTestId('skeleton-list')).toBeNull();
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.queryByTestId('skeleton-list')).toBeNull();
+      expect(screen.getByRole('heading', { name: 'Product 2' })).toBeTruthy();
     });
   });
 
