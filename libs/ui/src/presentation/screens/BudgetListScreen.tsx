@@ -6,6 +6,7 @@ export type BudgetListScreenProps = {
   onRetryButtonPress: () => void;
   variant: BudgetListProps['variant'];
   isRevalidating?: boolean;
+  onEmptyActionPress?: () => void;
 };
 
 export const BudgetListScreen = ({
@@ -13,10 +14,11 @@ export const BudgetListScreen = ({
   onRetryButtonPress,
   variant,
   isRevalidating,
+  onEmptyActionPress,
 }: BudgetListScreenProps) => {
   return (
     <Layout title="Budgets" onLogoutPress={onLogoutPress}>
-      <BudgetList onRetryButtonPress={onRetryButtonPress} variant={variant} isRevalidating={isRevalidating} />
+      <BudgetList onRetryButtonPress={onRetryButtonPress} variant={variant} isRevalidating={isRevalidating} onEmptyActionPress={onEmptyActionPress} />
     </Layout>
   );
 };

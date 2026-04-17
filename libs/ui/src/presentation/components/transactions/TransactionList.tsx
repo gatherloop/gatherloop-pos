@@ -38,6 +38,7 @@ export type TransactionListProps = {
   wallets: Wallet[];
   walletId: number | null;
   onWalletIdChange: (walletId: number | null) => void;
+  onEmptyActionPress?: () => void;
   isRevalidating?: boolean;
 };
 
@@ -63,6 +64,7 @@ export const TransactionList = ({
   wallets,
   walletId,
   onWalletIdChange,
+  onEmptyActionPress,
   isRevalidating,
 }: TransactionListProps) => {
   return (
@@ -217,6 +219,8 @@ export const TransactionList = ({
           <EmptyView
             title="Oops, Transaction is Empty"
             subtitle="Please create a new transaction"
+            actionLabel="Create Transaction"
+            onActionPress={onEmptyActionPress}
           />
         )
       ) : variant.type === 'error' ? (

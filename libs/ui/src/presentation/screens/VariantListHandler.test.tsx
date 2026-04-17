@@ -124,6 +124,24 @@ describe('VariantListHandler', () => {
 
       expect(screen.getByRole('heading', { name: 'Oops, Variant is Empty' })).toBeTruthy();
     });
+
+    it('should show create CTA button in empty state', async () => {
+      const variantRepo = new MockVariantRepository();
+      variantRepo.variants = [];
+      render(<VariantListHandler {...createProps({ variantRepo })} />);
+      await act(async () => { await flushPromises(); });
+      expect(screen.getByRole('button', { name: 'Create Variant' })).toBeTruthy();
+    });
+
+    it('should navigate to create page when CTA button is pressed', async () => {
+      const user = userEvent.setup();
+      const variantRepo = new MockVariantRepository();
+      variantRepo.variants = [];
+      render(<VariantListHandler {...createProps({ variantRepo })} />);
+      await act(async () => { await flushPromises(); });
+      await user.click(screen.getByRole('button', { name: 'Create Variant' }));
+      expect(mockRouterPush).toHaveBeenCalledWith('/variants/create');
+    });
   });
 
   describe('delete modal', () => {

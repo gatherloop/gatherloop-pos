@@ -139,6 +139,10 @@ describe('MaterialCreateHandler', () => {
 
       await user.type(screen.getByRole('textbox', { name: 'Name' }), 'New Material');
       await user.type(screen.getByRole('textbox', { name: 'Unit' }), 'kg');
+      const priceInput = screen.getByRole('textbox', { name: 'Price' });
+      await user.click(priceInput);
+      await user.keyboard('{Control>}a{/Control}');
+      await user.keyboard('1');
       await user.click(screen.getByRole('button', { name: 'Submit' }));
 
       await act(async () => {

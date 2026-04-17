@@ -52,6 +52,15 @@ export class AuthLoginUsecase extends Usecase<AuthLoginState, AuthLoginAction> {
           values,
           type: 'submitting',
         })
+      
+      )
+      .with(
+        [{ type: 'submitError' }, { type: 'SUBMIT' }],
+        ([state, { values }]) => ({
+          ...state,
+          values,
+          type: 'submitting',
+        })
       )
       .with(
         [{ type: 'submitting' }, { type: 'SUBMIT_SUCCESS' }],
@@ -90,9 +99,6 @@ export class AuthLoginUsecase extends Usecase<AuthLoginState, AuthLoginAction> {
           .catch(() =>
             dispatch({ type: 'SUBMIT_ERROR', errorMessage: 'Login failed' })
           );
-      })
-      .with({ type: 'submitError' }, () => {
-        dispatch({ type: 'SUBMIT_CANCEL' });
       })
       .otherwise(() => {
         // TODO: IMPLEMENT SOMETHING

@@ -80,6 +80,7 @@ export const CalculationListHandler = ({
           calculationId: calculation.id,
         })
       }
+      onEmptyActionPress={() => router.push('/calculations/create')}
       onRetryButtonPress={() => calculationList.dispatch({ type: 'FETCH' })}
       isRevalidating={calculationList.state.type === 'revalidating'}
       variant={match(calculationList.state)

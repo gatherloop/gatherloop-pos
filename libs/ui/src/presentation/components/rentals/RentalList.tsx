@@ -30,6 +30,7 @@ export type RentalListProps = {
   onRetryButtonPress: () => void;
   onDeleteMenuPress?: (rental: Rental) => void;
   onItemPress?: (rental: Rental) => void;
+  onEmptyActionPress?: () => void;
   isSearchAutoFocus?: boolean;
   isRevalidating?: boolean;
 };
@@ -48,6 +49,7 @@ export const RentalList = ({
   onRetryButtonPress,
   onDeleteMenuPress,
   onItemPress,
+  onEmptyActionPress,
   isSearchAutoFocus,
   isRevalidating,
 }: RentalListProps) => {
@@ -181,6 +183,8 @@ export const RentalList = ({
           <EmptyView
             title="Oops, Rental is Empty"
             subtitle="Please checkin a new rental"
+            actionLabel="Checkin Rental"
+            onActionPress={onEmptyActionPress}
           />
         )
       ) : variant.type === 'error' ? (

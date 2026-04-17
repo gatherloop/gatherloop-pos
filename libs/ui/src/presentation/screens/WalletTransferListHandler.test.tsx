@@ -10,8 +10,9 @@ import {
 } from '../../domain';
 import { flushPromises } from '../../utils/testUtils';
 
+const mockRouterPush = jest.fn();
 jest.mock('solito/router', () => ({
-  useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn() }),
+  useRouter: () => ({ push: mockRouterPush, replace: jest.fn(), back: jest.fn() }),
 }));
 
 jest.mock('@tamagui/toast', () => ({
@@ -109,6 +110,28 @@ describe('WalletTransferListHandler', () => {
       });
 
       expect(screen.getByRole('heading', { name: 'Oops, Transfer History is Empty' })).toBeTruthy();
+    });
+
+    it('should show create CTA button in empty state', async () => {
+      const walletRepo = new MockWalletRepository();
+      walletRepo.walletTransfers = [];
+      render(<WalletTransferListHandler {...createProps({ walletRepo })} />);
+      await act(async () => {
+        await flushPromises();
+      });
+      expect(screen.getByRole('button', { name: 'Create Transfer' })).toBeTruthy();
+    });
+
+    it('should navigate to create page when CTA button is pressed', async () => {
+      const user = userEvent.setup();
+      const walletRepo = new MockWalletRepository();
+      walletRepo.walletTransfers = [];
+      render(<WalletTransferListHandler {...createProps({ walletRepo })} />);
+      await act(async () => {
+        await flushPromises();
+      });
+      await user.click(screen.getByRole('button', { name: 'Create Transfer' }));
+      expect(mockRouterPush).toHaveBeenCalledWith('/wallets/1/transfers/create');
     });
   });
 

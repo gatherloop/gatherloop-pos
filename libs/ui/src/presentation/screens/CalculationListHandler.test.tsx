@@ -119,6 +119,24 @@ describe('CalculationListHandler', () => {
 
       expect(screen.getByRole('heading', { name: 'Oops, Calculation is Empty' })).toBeTruthy();
     });
+
+    it('should show create CTA button in empty state', async () => {
+      const calculationRepo = new MockCalculationRepository();
+      calculationRepo.calculations = [];
+      render(<CalculationListHandler {...createProps({ calculationRepo })} />);
+      await act(async () => { await flushPromises(); });
+      expect(screen.getByRole('button', { name: 'Create Calculation' })).toBeTruthy();
+    });
+
+    it('should navigate to create page when CTA button is pressed', async () => {
+      const user = userEvent.setup();
+      const calculationRepo = new MockCalculationRepository();
+      calculationRepo.calculations = [];
+      render(<CalculationListHandler {...createProps({ calculationRepo })} />);
+      await act(async () => { await flushPromises(); });
+      await user.click(screen.getByRole('button', { name: 'Create Calculation' }));
+      expect(mockRouterPush).toHaveBeenCalledWith('/calculations/create');
+    });
   });
 
   describe('delete modal', () => {

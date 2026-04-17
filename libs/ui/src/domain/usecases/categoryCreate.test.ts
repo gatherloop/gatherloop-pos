@@ -24,7 +24,7 @@ describe('CategoryCreateUsecase', () => {
   });
 
   describe('error flow', () => {
-    it('should transition loaded → submitting → loaded (auto-recovery)', async () => {
+    it('should transition loaded → submitting → submitError', async () => {
       const repository = new MockCategoryRepository();
       repository.setShouldFail(true);
       const usecase = new CategoryCreateUsecase(repository);
@@ -36,8 +36,7 @@ describe('CategoryCreateUsecase', () => {
       expect(tester.state.type).toBe('submitting');
 
       await flushPromises();
-      // submitError auto-cancels to loaded via onStateChange(submitError) -> SUBMIT_CANCEL
-      expect(tester.state.type).toBe('loaded');
+      expect(tester.state.type).toBe('submitError');
     });
   });
 });

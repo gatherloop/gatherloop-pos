@@ -62,6 +62,7 @@ export const ChecklistTemplateListHandler = ({
       onItemPress={(checklistTemplate: ChecklistTemplate) =>
         router.push(`/checklist-templates/${checklistTemplate.id}`)
       }
+      onEmptyActionPress={() => router.push('/checklist-templates/create')}
       onRetryButtonPress={() =>
         checklistTemplateList.dispatch({ type: 'FETCH' })
       }

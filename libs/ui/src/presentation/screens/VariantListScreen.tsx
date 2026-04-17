@@ -23,6 +23,7 @@ export type VariantListScreenProps = {
   onDeleteCancel: () => void;
   onDeleteConfirm: () => void;
   isRevalidating?: boolean;
+  onEmptyActionPress?: () => void;
 };
 
 export const VariantListScreen = ({
@@ -44,6 +45,7 @@ export const VariantListScreen = ({
   onDeleteCancel,
   onDeleteConfirm,
   isRevalidating,
+  onEmptyActionPress,
 }: VariantListScreenProps) => {
   return (
     <Layout
@@ -68,6 +70,7 @@ export const VariantListScreen = ({
         totalItem={totalItem}
         itemPerPage={itemPerPage}
         isRevalidating={isRevalidating}
+        onEmptyActionPress={onEmptyActionPress}
       />
       <VariantDeleteAlert
         isOpen={isDeleteModalOpen}

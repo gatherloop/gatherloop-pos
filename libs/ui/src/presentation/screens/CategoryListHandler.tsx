@@ -55,6 +55,7 @@ export const CategoryListHandler = ({
           categoryId: category.id,
         })
       }
+      onEmptyActionPress={() => router.push('/categories/create')}
       onRetryButtonPress={() => categoryList.dispatch({ type: 'FETCH' })}
       isRevalidating={categoryList.state.type === 'revalidating'}
       variant={match(categoryList.state)

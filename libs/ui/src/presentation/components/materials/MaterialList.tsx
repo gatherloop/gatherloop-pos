@@ -9,6 +9,7 @@ export type MaterialListProps = {
   searchValue: string;
   onSearchValueChange: (value: string) => void;
   onRetryButtonPress: () => void;
+  onEmptyActionPress?: () => void;
   onPageChange: (page: number) => void;
   onEditMenuPress?: (material: Material) => void;
   onDeleteMenuPress?: (material: Material) => void;
@@ -28,6 +29,7 @@ export type MaterialListProps = {
 export const MaterialList = ({
   onPageChange,
   onRetryButtonPress,
+  onEmptyActionPress,
   onSearchValueChange,
   onEditMenuPress,
   onDeleteMenuPress,
@@ -59,6 +61,8 @@ export const MaterialList = ({
           <EmptyView
             title="Oops, Material is Empty"
             subtitle="Please create a new material"
+            actionLabel="Create Material"
+            onActionPress={onEmptyActionPress}
           />
         ))
         .with({ type: 'loaded' }, ({ items }) => (

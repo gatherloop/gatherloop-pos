@@ -6,6 +6,7 @@ import { Calculation } from '../../../domain';
 
 export type CalculationListProps = {
   onRetryButtonPress: () => void;
+  onEmptyActionPress?: () => void;
   onEditMenuPress: (calculation: Calculation) => void;
   onDeleteMenuPress: (calculation: Calculation) => void;
   onCompleteMenuPress: (calculation: Calculation) => void;
@@ -19,6 +20,7 @@ export type CalculationListProps = {
 
 export const CalculationList = ({
   onRetryButtonPress,
+  onEmptyActionPress,
   onDeleteMenuPress,
   onEditMenuPress,
   onCompleteMenuPress,
@@ -55,6 +57,8 @@ export const CalculationList = ({
           <EmptyView
             title="Oops, Calculation is Empty"
             subtitle="Please create a new calculation"
+            actionLabel="Create Calculation"
+            onActionPress={onEmptyActionPress}
           />
         )
       ) : (

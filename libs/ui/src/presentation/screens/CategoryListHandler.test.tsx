@@ -115,6 +115,24 @@ describe('CategoryListHandler', () => {
 
       expect(screen.getByRole('heading', { name: 'Oops, Category is Empty' })).toBeTruthy();
     });
+
+    it('should show create CTA button in empty state', async () => {
+      const categoryRepo = new MockCategoryRepository();
+      categoryRepo.categories = [];
+      render(<CategoryListHandler {...createProps({ categoryRepo })} />);
+      await act(async () => { await flushPromises(); });
+      expect(screen.getByRole('button', { name: 'Create Category' })).toBeTruthy();
+    });
+
+    it('should navigate to create page when CTA button is pressed', async () => {
+      const user = userEvent.setup();
+      const categoryRepo = new MockCategoryRepository();
+      categoryRepo.categories = [];
+      render(<CategoryListHandler {...createProps({ categoryRepo })} />);
+      await act(async () => { await flushPromises(); });
+      await user.click(screen.getByRole('button', { name: 'Create Category' }));
+      expect(mockRouterPush).toHaveBeenCalledWith('/categories/create');
+    });
   });
 
   describe('delete modal', () => {

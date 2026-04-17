@@ -124,6 +124,7 @@ describe('CouponCreateHandler', () => {
       render(<CouponCreateHandler {...createProps({ shouldFail: true })} />);
 
       await user.type(screen.getByRole('textbox', { name: 'Code' }), 'NEWCODE');
+      await user.type(screen.getByRole('textbox', { name: 'Amount' }), '1000');
       await user.click(screen.getByRole('button', { name: 'Submit' }));
 
       await act(async () => {

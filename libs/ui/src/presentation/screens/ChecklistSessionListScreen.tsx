@@ -24,6 +24,7 @@ export type ChecklistSessionListScreenProps = {
   isSubmitDisabled: boolean;
   checklistTemplates: ChecklistTemplate[];
   isRevalidating?: boolean;
+  onEmptyActionPress?: () => void;
 };
 
 export const ChecklistSessionListScreen = ({
@@ -42,6 +43,7 @@ export const ChecklistSessionListScreen = ({
   isSubmitDisabled,
   checklistTemplates,
   isRevalidating,
+  onEmptyActionPress,
 }: ChecklistSessionListScreenProps) => {
   return (
     <Layout
@@ -71,6 +73,7 @@ export const ChecklistSessionListScreen = ({
             totalItem={totalItem}
             itemPerPage={itemPerPage}
             isRevalidating={isRevalidating}
+            onEmptyActionPress={onEmptyActionPress}
           />
         </YStack>
       </ScrollView>

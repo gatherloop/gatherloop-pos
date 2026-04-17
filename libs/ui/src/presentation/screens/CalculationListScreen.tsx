@@ -29,6 +29,7 @@ export type CalculationListScreenProps = {
   isCompleteButtonDisabled: boolean;
   onCompleteCancel: () => void;
   onCompleteButtonConfirmPress: () => void;
+  onEmptyActionPress?: () => void;
 };
 
 export const CalculationListScreen = ({
@@ -48,6 +49,7 @@ export const CalculationListScreen = ({
   isCompleteButtonDisabled,
   onCompleteCancel,
   onCompleteButtonConfirmPress,
+  onEmptyActionPress,
 }: CalculationListScreenProps) => {
   return (
     <Layout
@@ -67,6 +69,7 @@ export const CalculationListScreen = ({
         onEditMenuPress={onEditMenuPress}
         onCompleteMenuPress={onCompleteMenuPress}
         onItemPress={onItemPress}
+        onEmptyActionPress={onEmptyActionPress}
       />
       <CalculationDeleteAlert
         isOpen={isDeleteModalOpen}

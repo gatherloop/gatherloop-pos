@@ -135,7 +135,10 @@ describe('ProductCreateHandler', () => {
         />
       );
 
+      await user.click(screen.getByRole('option', { name: 'Mock Category 1' }));
       await user.type(screen.getByRole('textbox', { name: 'Name' }), 'New Product');
+      await user.type(screen.getByRole('textbox', { name: 'Image URL' }), 'https://example.com/img.jpg');
+      await user.click(screen.getByRole('button', { name: 'Create Option' }));
       await user.click(screen.getByRole('button', { name: 'Submit' }));
 
       await act(async () => {

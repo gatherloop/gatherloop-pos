@@ -115,6 +115,28 @@ describe('CouponListHandler', () => {
 
       expect(screen.getByRole('heading', { name: 'Oops, Coupon is Empty' })).toBeTruthy();
     });
+
+    it('should show create CTA button in empty state', async () => {
+      const couponRepo = new MockCouponRepository();
+      couponRepo.coupons = [];
+      render(<CouponListHandler {...createProps({ couponRepo })} />);
+      await act(async () => {
+        await flushPromises();
+      });
+      expect(screen.getByRole('button', { name: 'Create Coupon' })).toBeTruthy();
+    });
+
+    it('should navigate to create page when CTA button is pressed', async () => {
+      const user = userEvent.setup();
+      const couponRepo = new MockCouponRepository();
+      couponRepo.coupons = [];
+      render(<CouponListHandler {...createProps({ couponRepo })} />);
+      await act(async () => {
+        await flushPromises();
+      });
+      await user.click(screen.getByRole('button', { name: 'Create Coupon' }));
+      expect(mockRouterPush).toHaveBeenCalledWith('/coupons/create');
+    });
   });
 
   describe('delete modal', () => {

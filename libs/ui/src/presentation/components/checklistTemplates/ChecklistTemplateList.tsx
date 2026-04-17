@@ -9,6 +9,7 @@ export type ChecklistTemplateListProps = {
   searchValue: string;
   onSearchValueChange: (value: string) => void;
   onRetryButtonPress: () => void;
+  onEmptyActionPress?: () => void;
   onPageChange: (page: number) => void;
   onEditMenuPress?: (checklistTemplate: ChecklistTemplate) => void;
   onDeleteMenuPress?: (checklistTemplate: ChecklistTemplate) => void;
@@ -28,6 +29,7 @@ export type ChecklistTemplateListProps = {
 export const ChecklistTemplateList = ({
   onPageChange,
   onRetryButtonPress,
+  onEmptyActionPress,
   onSearchValueChange,
   onEditMenuPress,
   onDeleteMenuPress,
@@ -59,6 +61,8 @@ export const ChecklistTemplateList = ({
           <EmptyView
             title="Oops, Checklist Template is Empty"
             subtitle="Please create a new checklist template"
+            actionLabel="Create Template"
+            onActionPress={onEmptyActionPress}
           />
         ))
         .with({ type: 'loaded' }, ({ items }) => (

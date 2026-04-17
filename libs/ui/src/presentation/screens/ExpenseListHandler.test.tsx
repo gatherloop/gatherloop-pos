@@ -128,6 +128,28 @@ describe('ExpenseListHandler', () => {
 
       expect(screen.getByRole('heading', { name: 'Oops, Expense is Empty' })).toBeTruthy();
     });
+
+    it('should show create CTA button in empty state', async () => {
+      const expenseRepo = new MockExpenseRepository();
+      expenseRepo.expenses = [];
+      render(<ExpenseListHandler {...createProps({ expenseRepo })} />);
+      await act(async () => {
+        await flushPromises();
+      });
+      expect(screen.getByRole('button', { name: 'Create Expense' })).toBeTruthy();
+    });
+
+    it('should navigate to create page when CTA button is pressed', async () => {
+      const user = userEvent.setup();
+      const expenseRepo = new MockExpenseRepository();
+      expenseRepo.expenses = [];
+      render(<ExpenseListHandler {...createProps({ expenseRepo })} />);
+      await act(async () => {
+        await flushPromises();
+      });
+      await user.click(screen.getByRole('button', { name: 'Create Expense' }));
+      expect(mockRouterPush).toHaveBeenCalledWith('/expenses/create');
+    });
   });
 
   describe('delete modal', () => {

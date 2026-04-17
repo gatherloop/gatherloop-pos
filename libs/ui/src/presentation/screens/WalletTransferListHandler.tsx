@@ -1,3 +1,4 @@
+import { useRouter } from 'solito/router';
 import { match, P } from 'ts-pattern';
 import {
   useAuthLogoutController,
@@ -30,6 +31,7 @@ export const WalletTransferListHandler = ({
   const walletTransfers = useWalletTransferListController(
     walletTransferListUsecase
   );
+  const router = useRouter();
 
   return (
     <WalletTransferListScreen
@@ -55,6 +57,7 @@ export const WalletTransferListHandler = ({
         }))
         .with({ type: 'error' }, () => ({ type: 'error' }))
         .exhaustive()}
+      onEmptyActionPress={() => router.push(`/wallets/${walletDetail.state.wallet?.id ?? initialWalletId}/transfers/create`)}
       onRetryButtonPress={() => walletTransfers.dispatch({ type: 'FETCH' })}
       isRevalidating={walletTransfers.state.type === 'revalidating'}
     />

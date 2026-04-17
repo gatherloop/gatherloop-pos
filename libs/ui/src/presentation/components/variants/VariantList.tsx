@@ -19,6 +19,7 @@ export type VariantListProps = {
   onEditMenuPress?: (variant: Variant) => void;
   onDeleteMenuPress?: (variant: Variant) => void;
   onItemPress: (variant: Variant) => void;
+  onEmptyActionPress?: () => void;
   isSearchAutoFocus?: boolean;
   currentPage: number;
   totalItem: number;
@@ -47,6 +48,7 @@ export const VariantList = ({
   isRevalidating,
   variant,
   numColumns = 1,
+  onEmptyActionPress,
 }: VariantListProps) => {
   return (
     <YStack gap="$3" flex={1}>
@@ -67,6 +69,8 @@ export const VariantList = ({
           <EmptyView
             title="Oops, Variant is Empty"
             subtitle="Please create a new variant"
+            actionLabel="Create Variant"
+            onActionPress={onEmptyActionPress}
           />
         ))
         .with({ type: 'loaded' }, ({ items }) => (

@@ -14,8 +14,9 @@ import {
 } from '../../domain';
 import { flushPromises } from '../../utils/testUtils';
 
+const mockRouterPush = jest.fn();
 jest.mock('solito/router', () => ({
-  useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn() }),
+  useRouter: () => ({ push: mockRouterPush, replace: jest.fn(), back: jest.fn() }),
 }));
 
 const mockToastShow = jest.fn();
@@ -102,7 +103,7 @@ describe('RentalListHandler', () => {
 
     it('should preserve list content during revalidation after delete', async () => {
       const user = userEvent.setup();
-      render(<RentalListHandler {...createProps()} />);
+      render(<RentalListHandler {...createProps({ rentalRepo: createRecentRentalRepo() })} />);
 
       await act(async () => {
         await flushPromises();
@@ -134,6 +135,28 @@ describe('RentalListHandler', () => {
       expect(
         screen.getByRole('heading', { name: 'Oops, Rental is Empty' })
       ).toBeTruthy();
+    });
+
+    it('should show create CTA button in empty state', async () => {
+      const rentalRepo = new MockRentalRepository();
+      rentalRepo.rentals = [];
+      render(<RentalListHandler {...createProps({ rentalRepo })} />);
+      await act(async () => {
+        await flushPromises();
+      });
+      expect(screen.getByRole('button', { name: 'Checkin Rental' })).toBeTruthy();
+    });
+
+    it('should navigate to create page when CTA button is pressed', async () => {
+      const user = userEvent.setup();
+      const rentalRepo = new MockRentalRepository();
+      rentalRepo.rentals = [];
+      render(<RentalListHandler {...createProps({ rentalRepo })} />);
+      await act(async () => {
+        await flushPromises();
+      });
+      await user.click(screen.getByRole('button', { name: 'Checkin Rental' }));
+      expect(mockRouterPush).toHaveBeenCalledWith('/rentals/checkin');
     });
   });
 

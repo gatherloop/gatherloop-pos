@@ -113,6 +113,14 @@ export class ChecklistTemplateUpdateUsecase extends Usecase<
         })
       )
       .with(
+        [{ type: 'submitError' }, { type: 'SUBMIT' }],
+        ([state, { values }]) => ({
+          ...state,
+          values,
+          type: 'submitting',
+        })
+      )
+      .with(
         [{ type: 'submitting' }, { type: 'SUBMIT_SUCCESS' }],
         ([state]) => ({
           ...state,

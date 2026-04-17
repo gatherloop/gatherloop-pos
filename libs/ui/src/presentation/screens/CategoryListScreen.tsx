@@ -21,6 +21,7 @@ export type CategoryListScreenProps = {
   isDeleteModalOpen: boolean;
   onDeleteCancel: () => void;
   onDeleteConfirm: () => void;
+  onEmptyActionPress?: () => void;
 };
 
 export const CategoryListScreen = ({
@@ -35,6 +36,7 @@ export const CategoryListScreen = ({
   isDeleteModalOpen,
   onDeleteCancel,
   onDeleteConfirm,
+  onEmptyActionPress,
 }: CategoryListScreenProps) => {
   return (
     <Layout
@@ -53,6 +55,7 @@ export const CategoryListScreen = ({
         onEditMenuPress={onEditMenuPress}
         onDeleteMenuPress={onDeleteMenuPress}
         onItemPress={onItemPress}
+        onEmptyActionPress={onEmptyActionPress}
       />
       <CategoryDeleteAlert
         isOpen={isDeleteModalOpen}
