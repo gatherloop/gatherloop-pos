@@ -12,6 +12,7 @@ export type CouponListScreenProps = {
   onItemPress: (coupon: Coupon) => void;
   onRetryButtonPress: () => void;
   variant: CouponListProps['variant'];
+  isRevalidating?: boolean;
   isDeleteModalOpen: boolean;
   isDeleteButtonDisabled: boolean;
   onDeleteCancel: () => void;
@@ -25,6 +26,7 @@ export const CouponListScreen = ({
   onItemPress,
   onRetryButtonPress,
   variant,
+  isRevalidating,
   isDeleteModalOpen,
   isDeleteButtonDisabled,
   onDeleteCancel,
@@ -46,6 +48,7 @@ export const CouponListScreen = ({
         onEditMenuPress={onEditMenuPress}
         onItemPress={onItemPress}
         variant={variant}
+        isRevalidating={isRevalidating}
       />
       <CouponDeleteAlert
         isOpen={isDeleteModalOpen}

@@ -30,6 +30,7 @@ export type ChecklistTemplateListScreenProps = {
   isDeleteButtonDisabled: boolean;
   onDeleteCancel: () => void;
   onDeleteConfirm: () => void;
+  isRevalidating?: boolean;
 };
 
 export const ChecklistTemplateListScreen = ({
@@ -50,6 +51,7 @@ export const ChecklistTemplateListScreen = ({
   isDeleteButtonDisabled,
   onDeleteCancel,
   onDeleteConfirm,
+  isRevalidating,
 }: ChecklistTemplateListScreenProps) => {
   return (
     <Layout
@@ -73,6 +75,7 @@ export const ChecklistTemplateListScreen = ({
         currentPage={currentPage}
         totalItem={totalItem}
         itemPerPage={itemPerPage}
+        isRevalidating={isRevalidating}
       />
       <ChecklistTemplateDeleteAlert
         isOpen={isDeleteModalOpen}

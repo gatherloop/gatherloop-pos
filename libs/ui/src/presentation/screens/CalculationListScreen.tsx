@@ -18,6 +18,7 @@ export type CalculationListScreenProps = {
   onItemPress: (calculation: Calculation) => void;
   onRetryButtonPress: () => void;
   variant: CalculationListProps['variant'];
+  isRevalidating?: boolean;
 
   isDeleteModalOpen: boolean;
   isDeleteButtonDisabled: boolean;
@@ -38,6 +39,7 @@ export const CalculationListScreen = ({
   onItemPress,
   onRetryButtonPress,
   variant,
+  isRevalidating,
   isDeleteModalOpen,
   isDeleteButtonDisabled,
   onDeleteCancel,
@@ -60,6 +62,7 @@ export const CalculationListScreen = ({
       <CalculationList
         onRetryButtonPress={onRetryButtonPress}
         variant={variant}
+        isRevalidating={isRevalidating}
         onDeleteMenuPress={onDeleteMenuPress}
         onEditMenuPress={onEditMenuPress}
         onCompleteMenuPress={onCompleteMenuPress}

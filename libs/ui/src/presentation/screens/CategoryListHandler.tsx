@@ -56,6 +56,7 @@ export const CategoryListHandler = ({
         })
       }
       onRetryButtonPress={() => categoryList.dispatch({ type: 'FETCH' })}
+      isRevalidating={categoryList.state.type === 'revalidating'}
       variant={match(categoryList.state)
         .returnType<CategoryListScreenProps['variant']>()
         .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))

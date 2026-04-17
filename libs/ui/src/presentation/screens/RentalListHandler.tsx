@@ -65,6 +65,7 @@ export const RentalListHandler = ({
         })
       }
       onRetryButtonPress={() => rentalList.dispatch({ type: 'FETCH' })}
+      isRevalidating={rentalList.state.type === 'revalidating'}
       variant={match(rentalList.state)
         .returnType<RentalListScreenProps['variant']>()
         .with({ type: P.union('idle', 'loading') }, () => ({

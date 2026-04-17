@@ -65,6 +65,7 @@ export const ChecklistTemplateListHandler = ({
       onRetryButtonPress={() =>
         checklistTemplateList.dispatch({ type: 'FETCH' })
       }
+      isRevalidating={checklistTemplateList.state.type === 'revalidating'}
       variant={match(checklistTemplateList.state)
         .returnType<ChecklistTemplateListScreenProps['variant']>()
         .with({ type: P.union('idle', 'loading') }, () => ({

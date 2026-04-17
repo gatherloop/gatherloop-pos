@@ -1,6 +1,6 @@
-import { Input, YStack } from 'tamagui';
+import { Input, Spinner, XStack, YStack } from 'tamagui';
 import { MaterialListItem } from './MaterialListItem';
-import { EmptyView, ErrorView, LoadingView, Pagination } from '../base';
+import { EmptyView, ErrorView, Pagination, SkeletonList } from '../base';
 import { FlatList } from 'react-native';
 import { match } from 'ts-pattern';
 import { Material } from '../../../domain';
@@ -17,6 +17,7 @@ export type MaterialListProps = {
   currentPage: number;
   totalItem: number;
   itemPerPage: number;
+  isRevalidating?: boolean;
   variant:
     | { type: 'loading' }
     | { type: 'error' }
@@ -36,23 +37,24 @@ export const MaterialList = ({
   totalItem,
   currentPage,
   itemPerPage,
+  isRevalidating,
   variant,
 }: MaterialListProps) => {
   return (
     <YStack gap="$3" flex={1}>
-      <YStack>
+      <XStack alignItems="center" gap="$2">
         <Input
           placeholder="Search Materials by Name"
           value={searchValue}
           onChangeText={onSearchValueChange}
           autoFocus={isSearchAutoFocus}
+          flex={1}
         />
-      </YStack>
+        {isRevalidating && <Spinner size="small" color="$gray10" />}
+      </XStack>
 
       {match(variant)
-        .with({ type: 'loading' }, () => (
-          <LoadingView title="Fetching Materials..." />
-        ))
+        .with({ type: 'loading' }, () => <SkeletonList />)
         .with({ type: 'empty' }, () => (
           <EmptyView
             title="Oops, Material is Empty"

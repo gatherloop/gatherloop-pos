@@ -1,18 +1,19 @@
-import { EmptyView, ErrorView, LoadingView, Pagination } from '../base';
+import { EmptyView, ErrorView, Pagination, SkeletonList } from '../base';
 import {
   Button,
   Input,
+  Label,
   Paragraph,
   Popover,
   RadioGroup,
   Separator,
+  Spinner,
   XStack,
   YStack,
 } from 'tamagui';
 import { FlatList } from 'react-native';
 import { TransactionListItem } from './TransactionListItem';
 import { PaymentStatus, Transaction, Wallet } from '../../../domain';
-import { Label } from 'tamagui';
 import { Filter } from '@tamagui/lucide-icons';
 
 export type TransactionListProps = {
@@ -37,6 +38,7 @@ export type TransactionListProps = {
   wallets: Wallet[];
   walletId: number | null;
   onWalletIdChange: (walletId: number | null) => void;
+  isRevalidating?: boolean;
 };
 
 export const TransactionList = ({
@@ -61,6 +63,7 @@ export const TransactionList = ({
   wallets,
   walletId,
   onWalletIdChange,
+  isRevalidating,
 }: TransactionListProps) => {
   return (
     <YStack gap="$3" flex={1}>
@@ -172,9 +175,11 @@ export const TransactionList = ({
             </YStack>
           </Popover.Content>
         </Popover>
+
+        {isRevalidating && <Spinner size="small" color="$gray10" />}
       </XStack>
       {variant.type === 'loading' ? (
-        <LoadingView title="Fetching Transactions..." />
+        <SkeletonList />
       ) : variant.type === 'loaded' ? (
         transactions.length > 0 ? (
           <>

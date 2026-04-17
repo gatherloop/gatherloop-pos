@@ -56,6 +56,7 @@ export const MaterialListHandler = ({
         })
       }
       onRetryButtonPress={() => materialList.dispatch({ type: 'FETCH' })}
+      isRevalidating={materialList.state.type === 'revalidating'}
       variant={match(materialList.state)
         .returnType<MaterialListScreenProps['variant']>()
         .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))

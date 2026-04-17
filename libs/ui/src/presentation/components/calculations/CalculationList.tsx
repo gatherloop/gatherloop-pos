@@ -1,5 +1,5 @@
-import { EmptyView, ErrorView, LoadingView } from '../base';
-import { YStack } from 'tamagui';
+import { EmptyView, ErrorView, SkeletonList } from '../base';
+import { Spinner, YStack } from 'tamagui';
 import { FlatList } from 'react-native';
 import { CalculationListItem } from './CalculationListItem';
 import { Calculation } from '../../../domain';
@@ -10,6 +10,7 @@ export type CalculationListProps = {
   onDeleteMenuPress: (calculation: Calculation) => void;
   onCompleteMenuPress: (calculation: Calculation) => void;
   onItemPress: (calculation: Calculation) => void;
+  isRevalidating?: boolean;
   variant:
     | { type: 'loading' }
     | { type: 'error' }
@@ -22,12 +23,14 @@ export const CalculationList = ({
   onEditMenuPress,
   onCompleteMenuPress,
   onItemPress,
+  isRevalidating,
   variant,
 }: CalculationListProps) => {
   return (
     <YStack gap="$3" flex={1}>
+      {isRevalidating && <Spinner size="small" alignSelf="flex-end" />}
       {variant.type === 'loading' ? (
-        <LoadingView title="Fetching Calculations..." />
+        <SkeletonList />
       ) : variant.type === 'loaded' ? (
         variant.items.length > 0 ? (
           <FlatList

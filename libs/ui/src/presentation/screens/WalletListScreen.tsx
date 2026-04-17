@@ -11,6 +11,7 @@ export type WalletListScreenProps = {
   onTransferMenuPress: (wallet: Wallet) => void;
   onRetryButtonPress: () => void;
   variant: { type: 'loading' } | { type: 'error' } | { type: 'empty' } | { type: 'loaded'; items: Wallet[] };
+  isRevalidating?: boolean;
 };
 
 export const WalletListScreen = ({
@@ -20,6 +21,7 @@ export const WalletListScreen = ({
   onTransferMenuPress,
   onRetryButtonPress,
   variant,
+  isRevalidating,
 }: WalletListScreenProps) => {
   return (
     <Layout
@@ -37,6 +39,7 @@ export const WalletListScreen = ({
         onEditMenuPress={onEditMenuPress}
         onItemPress={onItemPress}
         onTransferMenuPress={onTransferMenuPress}
+        isRevalidating={isRevalidating}
       />
     </Layout>
   );

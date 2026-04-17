@@ -13,3 +13,4 @@ export * from './Chart';
 export * from './Markdown';
 export * from './Tabs';
 export * from './ConfirmationAlert';
+export * from './SkeletonView';

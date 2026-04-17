@@ -21,6 +21,7 @@ export const BudgetListHandler = ({
     <BudgetListScreen
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
       onRetryButtonPress={() => budgetList.dispatch({ type: 'FETCH' })}
+      isRevalidating={budgetList.state.type === 'revalidating'}
       variant={match(budgetList.state)
         .returnType<BudgetListScreenProps['variant']>()
         .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))

@@ -22,6 +22,7 @@ export type RentalListScreenProps = {
   isDeleteButtonDisabled: boolean;
   onDeleteCancel: () => void;
   onDeleteConfirm: () => void;
+  isRevalidating?: boolean;
 };
 
 export const RentalListScreen = ({
@@ -42,6 +43,7 @@ export const RentalListScreen = ({
   isDeleteButtonDisabled,
   onDeleteCancel,
   onDeleteConfirm,
+  isRevalidating,
 }: RentalListScreenProps) => {
   return (
     <Layout
@@ -75,6 +77,7 @@ export const RentalListScreen = ({
         itemPerPage={itemPerPage}
         onRetryButtonPress={onRetryButtonPress}
         onDeleteMenuPress={onDeleteMenuPress}
+        isRevalidating={isRevalidating}
       />
       <RentalDeleteAlert
         isOpen={isDeleteModalOpen}

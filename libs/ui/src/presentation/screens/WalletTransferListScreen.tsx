@@ -16,6 +16,7 @@ export type WalletTransferListScreenProps = {
   paymentCostPercentage: number;
   variant: WalletTransferListProps['variant'];
   onRetryButtonPress: () => void;
+  isRevalidating?: boolean;
 };
 
 export const WalletTransferListScreen = ({
@@ -26,6 +27,7 @@ export const WalletTransferListScreen = ({
   paymentCostPercentage,
   variant,
   onRetryButtonPress,
+  isRevalidating,
 }: WalletTransferListScreenProps) => {
   return (
     <Layout
@@ -49,6 +51,7 @@ export const WalletTransferListScreen = ({
           <WalletTransferList
             variant={variant}
             onRetryButtonPress={onRetryButtonPress}
+            isRevalidating={isRevalidating}
           />
         </YStack>
       </YStack>

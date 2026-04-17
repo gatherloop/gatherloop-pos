@@ -1,17 +1,18 @@
-import { EmptyView, ErrorView, LoadingView, Pagination } from '../base';
+import { EmptyView, ErrorView, Pagination, SkeletonList } from '../base';
 import {
   Button,
   Input,
+  Label,
   Paragraph,
   Popover,
   RadioGroup,
+  Spinner,
   XStack,
   YStack,
 } from 'tamagui';
 import { FlatList, TextInput } from 'react-native';
 import { RentalListItem } from './RentalListItem';
 import { CheckoutStatus, Rental } from '../../../domain';
-import { Label } from 'tamagui';
 import { Filter, X } from '@tamagui/lucide-icons';
 import { useRef } from 'react';
 
@@ -30,6 +31,7 @@ export type RentalListProps = {
   onDeleteMenuPress?: (rental: Rental) => void;
   onItemPress?: (rental: Rental) => void;
   isSearchAutoFocus?: boolean;
+  isRevalidating?: boolean;
 };
 
 export const RentalList = ({
@@ -47,6 +49,7 @@ export const RentalList = ({
   onDeleteMenuPress,
   onItemPress,
   isSearchAutoFocus,
+  isRevalidating,
 }: RentalListProps) => {
   const textInputRef = useRef<TextInput>(null);
   return (
@@ -138,9 +141,11 @@ export const RentalList = ({
             </YStack>
           </Popover.Content>
         </Popover>
+
+        {isRevalidating && <Spinner size="small" color="$gray10" />}
       </XStack>
       {variant.type === 'loading' ? (
-        <LoadingView title="Fetching Rentals..." />
+        <SkeletonList />
       ) : variant.type === 'loaded' ? (
         rentals.length > 0 ? (
           <>

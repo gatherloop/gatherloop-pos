@@ -81,6 +81,7 @@ export const CalculationListHandler = ({
         })
       }
       onRetryButtonPress={() => calculationList.dispatch({ type: 'FETCH' })}
+      isRevalidating={calculationList.state.type === 'revalidating'}
       variant={match(calculationList.state)
         .returnType<CalculationListScreenProps['variant']>()
         .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))

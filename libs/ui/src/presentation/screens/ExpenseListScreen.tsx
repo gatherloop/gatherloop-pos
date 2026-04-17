@@ -33,6 +33,7 @@ export type ExpenseListScreenProps = {
   isDeleteButtonDisabled: boolean;
   onDeleteCancel: () => void;
   onDeleteButtonConfirmPress: () => void;
+  isRevalidating?: boolean;
 };
 
 export const ExpenseListScreen = ({
@@ -59,6 +60,7 @@ export const ExpenseListScreen = ({
   isDeleteButtonDisabled,
   onDeleteCancel,
   onDeleteButtonConfirmPress,
+  isRevalidating,
 }: ExpenseListScreenProps) => {
   return (
     <Layout
@@ -89,6 +91,7 @@ export const ExpenseListScreen = ({
         onDeleteMenuPress={onDeleteMenuPress}
         onEditMenuPress={onEditMenuPress}
         onItemPress={onItemPress}
+        isRevalidating={isRevalidating}
       />
       <ExpenseDeleteAlert
         isOpen={isDeleteModalOpen}

@@ -34,6 +34,7 @@ export const WalletListHandler = ({
         router.push(`/wallets/${wallet.id}/transfers`)
       }
       onRetryButtonPress={() => walletList.dispatch({ type: 'FETCH' })}
+      isRevalidating={walletList.state.type === 'revalidating'}
       variant={match(walletList.state)
         .returnType<WalletListScreenProps['variant']>()
         .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))

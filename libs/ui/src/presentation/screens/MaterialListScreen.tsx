@@ -27,6 +27,7 @@ export type MaterialListScreenProps = {
   isDeleteButtonDisabled: boolean;
   onDeleteCancel: () => void;
   onDeleteConfirm: () => void;
+  isRevalidating?: boolean;
 };
 
 export const MaterialListScreen = ({
@@ -46,6 +47,7 @@ export const MaterialListScreen = ({
   isDeleteButtonDisabled,
   onDeleteCancel,
   onDeleteConfirm,
+  isRevalidating,
 }: MaterialListScreenProps) => {
   return (
     <Layout
@@ -69,6 +71,7 @@ export const MaterialListScreen = ({
         onEditMenuPress={onEditMenuPress}
         onDeleteMenuPress={onDeleteMenuPress}
         onItemPress={onItemPress}
+        isRevalidating={isRevalidating}
       />
       <MaterialDeleteAlert
         isOpen={isDeleteModalOpen}

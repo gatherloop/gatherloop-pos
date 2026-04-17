@@ -1,10 +1,11 @@
-import { YStack } from 'tamagui';
-import { EmptyView, ErrorView, LoadingView } from '../base';
+import { Spinner, YStack } from 'tamagui';
+import { EmptyView, ErrorView, SkeletonList } from '../base';
 import { FlatList } from 'react-native';
 import { WalletTransferListItem, WalletTransferListItemProps } from '..';
 
 export type WalletTransferListProps = {
   onRetryButtonPress: () => void;
+  isRevalidating?: boolean;
   variant:
     | { type: 'loading' }
     | { type: 'loaded'; items: WalletTransferListItemProps[] }
@@ -14,11 +15,13 @@ export type WalletTransferListProps = {
 export const WalletTransferList = ({
   variant,
   onRetryButtonPress,
+  isRevalidating,
 }: WalletTransferListProps) => {
   return (
     <YStack gap="$3" flex={1}>
+      {isRevalidating && <Spinner size="small" alignSelf="flex-end" />}
       {variant.type === 'loading' ? (
-        <LoadingView title="Fetching Transfer Histories..." />
+        <SkeletonList />
       ) : variant.type === 'loaded' ? (
         variant.items.length > 0 ? (
           <FlatList

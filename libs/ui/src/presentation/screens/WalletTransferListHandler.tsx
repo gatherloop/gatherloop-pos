@@ -56,6 +56,7 @@ export const WalletTransferListHandler = ({
         .with({ type: 'error' }, () => ({ type: 'error' }))
         .exhaustive()}
       onRetryButtonPress={() => walletTransfers.dispatch({ type: 'FETCH' })}
+      isRevalidating={walletTransfers.state.type === 'revalidating'}
     />
   );
 };

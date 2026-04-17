@@ -16,6 +16,7 @@ export type CategoryListScreenProps = {
   onItemPress: (category: Category) => void;
   onRetryButtonPress: () => void;
   variant: CategoryListProps['variant'];
+  isRevalidating?: boolean;
   isDeleteButtonDisabled: boolean;
   isDeleteModalOpen: boolean;
   onDeleteCancel: () => void;
@@ -29,6 +30,7 @@ export const CategoryListScreen = ({
   onItemPress,
   onRetryButtonPress,
   variant,
+  isRevalidating,
   isDeleteButtonDisabled,
   isDeleteModalOpen,
   onDeleteCancel,
@@ -47,6 +49,7 @@ export const CategoryListScreen = ({
       <CategoryList
         onRetryButtonPress={onRetryButtonPress}
         variant={variant}
+        isRevalidating={isRevalidating}
         onEditMenuPress={onEditMenuPress}
         onDeleteMenuPress={onDeleteMenuPress}
         onItemPress={onItemPress}

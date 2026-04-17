@@ -23,6 +23,7 @@ export type ChecklistSessionListScreenProps = {
   onSubmit: (values: ChecklistSessionForm) => void;
   isSubmitDisabled: boolean;
   checklistTemplates: ChecklistTemplate[];
+  isRevalidating?: boolean;
 };
 
 export const ChecklistSessionListScreen = ({
@@ -40,6 +41,7 @@ export const ChecklistSessionListScreen = ({
   onSubmit,
   isSubmitDisabled,
   checklistTemplates,
+  isRevalidating,
 }: ChecklistSessionListScreenProps) => {
   return (
     <Layout
@@ -68,6 +70,7 @@ export const ChecklistSessionListScreen = ({
             currentPage={currentPage}
             totalItem={totalItem}
             itemPerPage={itemPerPage}
+            isRevalidating={isRevalidating}
           />
         </YStack>
       </ScrollView>

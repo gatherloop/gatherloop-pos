@@ -48,9 +48,9 @@ describe('VariantListHandler', () => {
   });
 
   describe('loading and data states', () => {
-    it('should show loading state initially', async () => {
+    it('should show skeleton list during initial loading', async () => {
       render(<VariantListHandler {...createProps()} />);
-      expect(screen.getByText('Fetching Variants...')).toBeTruthy();
+      expect(screen.getByTestId('skeleton-list')).toBeTruthy();
       await act(async () => {
         await flushPromises();
       });
@@ -79,6 +79,37 @@ describe('VariantListHandler', () => {
       });
 
       expect(screen.getByRole('heading', { name: 'Failed to Fetch Variants' })).toBeTruthy();
+    });
+
+    it('should not show skeleton after data is loaded', async () => {
+      render(<VariantListHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.queryByTestId('skeleton-list')).toBeNull();
+    });
+
+    it('should preserve list content during revalidation after delete', async () => {
+      const user = userEvent.setup();
+      render(<VariantListHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      const deleteMenuItems = screen.getAllByRole('button', { name: 'Delete' });
+      await user.click(deleteMenuItems[0]);
+      await user.click(screen.getByRole('button', { name: 'Yes' }));
+
+      expect(screen.queryByTestId('skeleton-list')).toBeNull();
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.queryByTestId('skeleton-list')).toBeNull();
     });
 
     it('should show empty state when no variants exist', async () => {

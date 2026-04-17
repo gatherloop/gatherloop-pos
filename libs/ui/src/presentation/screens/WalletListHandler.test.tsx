@@ -35,9 +35,9 @@ describe('WalletListHandler', () => {
   });
 
   describe('loading and data states', () => {
-    it('should show loading state initially', async () => {
+    it('should show skeleton list during initial loading', async () => {
       render(<WalletListHandler {...createProps()} />);
-      expect(screen.getByText('Fetching Wallets...')).toBeTruthy();
+      expect(screen.getByTestId('skeleton-list')).toBeTruthy();
       await act(async () => {
         await flushPromises();
       });
@@ -65,6 +65,16 @@ describe('WalletListHandler', () => {
       });
 
       expect(screen.getByRole('heading', { name: 'Failed to Fetch Wallets' })).toBeTruthy();
+    });
+
+    it('should not show skeleton after data is loaded', async () => {
+      render(<WalletListHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.queryByTestId('skeleton-list')).toBeNull();
     });
 
     it('should show empty state when no wallets exist', async () => {

@@ -1,5 +1,5 @@
-import { Select, XStack, YStack } from 'tamagui';
-import { EmptyView, ErrorView, ListItem, LoadingView, Pagination } from '../base';
+import { Select, Spinner, XStack, YStack } from 'tamagui';
+import { EmptyView, ErrorView, ListItem, Pagination, SkeletonList } from '../base';
 import { FlatList } from 'react-native';
 import { match } from 'ts-pattern';
 import { CheckCircle, Clock, Filter } from '@tamagui/lucide-icons';
@@ -14,6 +14,7 @@ export type ChecklistSessionListProps = {
   currentPage: number;
   totalItem: number;
   itemPerPage: number;
+  isRevalidating?: boolean;
   variant:
     | { type: 'loading' }
     | { type: 'error' }
@@ -43,11 +44,11 @@ export const ChecklistSessionList = ({
   totalItem,
   currentPage,
   itemPerPage,
+  isRevalidating,
   variant,
 }: ChecklistSessionListProps) => {
   return (
     <YStack gap="$3" flex={1}>
-      {/* Filter Controls */}
       <XStack gap="$2" alignItems="center" flexWrap="wrap">
         <Filter size="$1" color="$gray10" />
         <Select
@@ -81,12 +82,11 @@ export const ChecklistSessionList = ({
             <Select.ScrollDownButton />
           </Select.Content>
         </Select>
+        {isRevalidating && <Spinner size="small" color="$gray10" marginLeft="auto" />}
       </XStack>
 
       {match(variant)
-        .with({ type: 'loading' }, () => (
-          <LoadingView title="Fetching Checklist Sessions..." />
-        ))
+        .with({ type: 'loading' }, () => <SkeletonList />)
         .with({ type: 'empty' }, () => (
           <EmptyView
             title="Oops, Checklist Sessions is Empty"

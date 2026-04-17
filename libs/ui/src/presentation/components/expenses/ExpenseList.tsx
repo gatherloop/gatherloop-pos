@@ -1,4 +1,4 @@
-import { EmptyView, ErrorView, LoadingView, Pagination } from '../base';
+import { EmptyView, ErrorView, Pagination, SkeletonList } from '../base';
 import {
   Button,
   Input,
@@ -7,6 +7,7 @@ import {
   Popover,
   RadioGroup,
   Separator,
+  Spinner,
   XStack,
   YStack,
 } from 'tamagui';
@@ -34,6 +35,7 @@ export type ExpenseListProps = {
   budgets: Budget[];
   budgetId: number | null;
   onBudgetIdChange: (budgetId: number | null) => void;
+  isRevalidating?: boolean;
 };
 
 export const ExpenseList = ({
@@ -55,6 +57,7 @@ export const ExpenseList = ({
   onEditMenuPress,
   onItemPress,
   variant,
+  isRevalidating,
 }: ExpenseListProps) => {
   return (
     <YStack gap="$3" flex={1}>
@@ -168,9 +171,11 @@ export const ExpenseList = ({
             </YStack>
           </Popover.Content>
         </Popover>
+
+        {isRevalidating && <Spinner size="small" color="$gray10" />}
       </XStack>
       {variant.type === 'loading' ? (
-        <LoadingView title="Fetching Expenses..." />
+        <SkeletonList />
       ) : variant.type === 'loaded' ? (
         expenses.length > 0 ? (
           <>

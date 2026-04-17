@@ -59,6 +59,7 @@ export const SupplierListHandler = ({
         router.push(`/suppliers/${supplier.id}`)
       }
       onRetryButtonPress={() => supplierList.dispatch({ type: 'FETCH' })}
+      isRevalidating={supplierList.state.type === 'revalidating'}
       variant={match(supplierList.state)
         .returnType<SupplierListScreenProps['variant']>()
         .with({ type: P.union('idle', 'loading') }, () => ({
