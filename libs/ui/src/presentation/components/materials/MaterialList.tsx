@@ -1,13 +1,15 @@
-import { Input, Spinner, XStack, YStack } from 'tamagui';
+import { Button, Input, Spinner, XStack, YStack } from 'tamagui';
 import { MaterialListItem } from './MaterialListItem';
 import { EmptyView, ErrorView, Pagination, SkeletonList } from '../base';
 import { FlatList } from 'react-native';
 import { match } from 'ts-pattern';
 import { Material } from '../../../domain';
+import { X } from '@tamagui/lucide-icons';
 
 export type MaterialListProps = {
   searchValue: string;
   onSearchValueChange: (value: string) => void;
+  onSearchClear?: () => void;
   onRetryButtonPress: () => void;
   onEmptyActionPress?: () => void;
   onPageChange: (page: number) => void;
@@ -19,6 +21,7 @@ export type MaterialListProps = {
   totalItem: number;
   itemPerPage: number;
   isRevalidating?: boolean;
+  isChangingParams?: boolean;
   variant:
     | { type: 'loading' }
     | { type: 'error' }
@@ -31,6 +34,7 @@ export const MaterialList = ({
   onRetryButtonPress,
   onEmptyActionPress,
   onSearchValueChange,
+  onSearchClear,
   onEditMenuPress,
   onDeleteMenuPress,
   onItemPress,
@@ -40,6 +44,7 @@ export const MaterialList = ({
   currentPage,
   itemPerPage,
   isRevalidating,
+  isChangingParams,
   variant,
 }: MaterialListProps) => {
   return (
@@ -52,7 +57,18 @@ export const MaterialList = ({
           autoFocus={isSearchAutoFocus}
           flex={1}
         />
-        {isRevalidating && <Spinner size="small" color="$gray10" />}
+        {(isRevalidating || isChangingParams) && (
+          <Spinner size="small" color="$gray10" testID="search-spinner" />
+        )}
+        {searchValue.length > 0 && (
+          <Button
+            icon={X}
+            onPress={onSearchClear}
+            circular
+            size="$2"
+            accessibilityLabel="Clear search"
+          />
+        )}
       </XStack>
 
       {match(variant)

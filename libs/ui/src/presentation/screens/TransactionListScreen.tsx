@@ -53,6 +53,8 @@ export type TransactionListScreenProps = {
   onUnpayCancel: () => void;
   onUnpayConfirm: () => void;
   isRevalidating?: boolean;
+  isChangingParams?: boolean;
+  onSearchClear?: () => void;
   onEmptyActionPress?: () => void;
 };
 
@@ -95,6 +97,8 @@ export const TransactionListScreen = ({
   onUnpayCancel,
   onUnpayConfirm,
   isRevalidating,
+  isChangingParams,
+  onSearchClear,
   onEmptyActionPress,
 }: TransactionListScreenProps) => {
   return (
@@ -130,6 +134,8 @@ export const TransactionListScreen = ({
         walletId={walletId}
         onWalletIdChange={onWalletIdChange}
         isRevalidating={isRevalidating}
+        isChangingParams={isChangingParams}
+        onSearchClear={onSearchClear}
         onEmptyActionPress={onEmptyActionPress}
       />
       <TransactionDeleteAlert

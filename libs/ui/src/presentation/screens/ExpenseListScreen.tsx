@@ -34,6 +34,8 @@ export type ExpenseListScreenProps = {
   onDeleteCancel: () => void;
   onDeleteButtonConfirmPress: () => void;
   isRevalidating?: boolean;
+  isChangingParams?: boolean;
+  onSearchClear?: () => void;
   onEmptyActionPress?: () => void;
 };
 
@@ -62,6 +64,8 @@ export const ExpenseListScreen = ({
   onDeleteCancel,
   onDeleteButtonConfirmPress,
   isRevalidating,
+  isChangingParams,
+  onSearchClear,
   onEmptyActionPress,
 }: ExpenseListScreenProps) => {
   return (
@@ -94,6 +98,8 @@ export const ExpenseListScreen = ({
         onEditMenuPress={onEditMenuPress}
         onItemPress={onItemPress}
         isRevalidating={isRevalidating}
+        isChangingParams={isChangingParams}
+        onSearchClear={onSearchClear}
         onEmptyActionPress={onEmptyActionPress}
       />
       <ExpenseDeleteAlert

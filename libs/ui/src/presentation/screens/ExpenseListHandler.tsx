@@ -58,6 +58,7 @@ export const ExpenseListHandler = ({
       onEmptyActionPress={() => router.push('/expenses/create')}
       onRetryButtonPress={() => expenseList.dispatch({ type: 'FETCH' })}
       isRevalidating={expenseList.state.type === 'revalidating'}
+      isChangingParams={expenseList.state.type === 'changingParams'}
       variant={match(expenseList.state)
         .returnType<ExpenseListScreenProps['variant']>()
         .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))
@@ -71,6 +72,9 @@ export const ExpenseListHandler = ({
       searchValue={expenseList.state.query}
       onSearchValueChange={(q: string) =>
         expenseList.dispatch({ type: 'CHANGE_PARAMS', query: q, page: 1 })
+      }
+      onSearchClear={() =>
+        expenseList.dispatch({ type: 'CHANGE_PARAMS', query: '', page: 1 })
       }
       currentPage={expenseList.state.page}
       onPageChange={(page: number) =>

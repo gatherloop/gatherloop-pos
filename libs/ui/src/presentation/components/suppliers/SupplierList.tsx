@@ -1,13 +1,15 @@
-import { Input, Spinner, XStack, YStack } from 'tamagui';
+import { Button, Input, Spinner, XStack, YStack } from 'tamagui';
 import { SupplierListItem } from './SupplierListItem';
 import { EmptyView, ErrorView, Pagination, SkeletonList } from '../base';
 import { FlatList } from 'react-native';
 import { match } from 'ts-pattern';
 import { Supplier } from '../../../domain';
+import { X } from '@tamagui/lucide-icons';
 
 export type SupplierListProps = {
   searchValue: string;
   onSearchValueChange: (value: string) => void;
+  onSearchClear?: () => void;
   onRetryButtonPress: () => void;
   onPageChange: (page: number) => void;
   onOpenMapMenuPress?: (supplier: Supplier) => void;
@@ -20,6 +22,7 @@ export type SupplierListProps = {
   totalItem: number;
   itemPerPage: number;
   isRevalidating?: boolean;
+  isChangingParams?: boolean;
   variant:
     | { type: 'loading' }
     | { type: 'error' }
@@ -31,6 +34,7 @@ export const SupplierList = ({
   onPageChange,
   onRetryButtonPress,
   onSearchValueChange,
+  onSearchClear,
   onOpenMapMenuPress,
   onEditMenuPress,
   onDeleteMenuPress,
@@ -41,6 +45,7 @@ export const SupplierList = ({
   currentPage,
   itemPerPage,
   isRevalidating,
+  isChangingParams,
   variant,
   onEmptyActionPress,
 }: SupplierListProps) => {
@@ -54,7 +59,18 @@ export const SupplierList = ({
           autoFocus={isSearchAutoFocus}
           flex={1}
         />
-        {isRevalidating && <Spinner size="small" color="$gray10" />}
+        {(isRevalidating || isChangingParams) && (
+          <Spinner size="small" color="$gray10" testID="search-spinner" />
+        )}
+        {searchValue.length > 0 && (
+          <Button
+            icon={X}
+            onPress={onSearchClear}
+            circular
+            size="$2"
+            accessibilityLabel="Clear search"
+          />
+        )}
       </XStack>
 
       {match(variant)

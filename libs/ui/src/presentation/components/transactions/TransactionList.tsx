@@ -14,11 +14,12 @@ import {
 import { FlatList } from 'react-native';
 import { TransactionListItem } from './TransactionListItem';
 import { PaymentStatus, Transaction, Wallet } from '../../../domain';
-import { Filter } from '@tamagui/lucide-icons';
+import { Filter, X } from '@tamagui/lucide-icons';
 
 export type TransactionListProps = {
   searchValue: string;
   onSearchValueChange: (value: string) => void;
+  onSearchClear?: () => void;
   paymentStatus: PaymentStatus;
   onPaymentStatusChange: (paymentStatus: PaymentStatus) => void;
   variant: { type: 'loading' } | { type: 'loaded' } | { type: 'error' };
@@ -40,11 +41,13 @@ export type TransactionListProps = {
   onWalletIdChange: (walletId: number | null) => void;
   onEmptyActionPress?: () => void;
   isRevalidating?: boolean;
+  isChangingParams?: boolean;
 };
 
 export const TransactionList = ({
   searchValue,
   onSearchValueChange,
+  onSearchClear,
   paymentStatus,
   onPaymentStatusChange,
   variant,
@@ -66,6 +69,7 @@ export const TransactionList = ({
   onWalletIdChange,
   onEmptyActionPress,
   isRevalidating,
+  isChangingParams,
 }: TransactionListProps) => {
   return (
     <YStack gap="$3" flex={1}>
@@ -77,6 +81,15 @@ export const TransactionList = ({
           onChangeText={onSearchValueChange}
           flex={1}
         />
+        {searchValue.length > 0 && (
+          <Button
+            icon={X}
+            onPress={onSearchClear}
+            circular
+            size="$2"
+            accessibilityLabel="Clear search"
+          />
+        )}
 
         <Popover size="$5" allowFlip stayInFrame offset={15}>
           <Popover.Trigger asChild>
@@ -178,7 +191,9 @@ export const TransactionList = ({
           </Popover.Content>
         </Popover>
 
-        {isRevalidating && <Spinner size="small" color="$gray10" />}
+        {(isRevalidating || isChangingParams) && (
+          <Spinner size="small" color="$gray10" testID="search-spinner" />
+        )}
       </XStack>
       {variant.type === 'loading' ? (
         <SkeletonList />

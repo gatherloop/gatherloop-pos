@@ -14,7 +14,7 @@ import { FlatList, TextInput } from 'react-native';
 import { RentalListItem } from './RentalListItem';
 import { CheckoutStatus, Rental } from '../../../domain';
 import { Filter, X } from '@tamagui/lucide-icons';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 
 export type RentalListProps = {
   searchValue: string;
@@ -33,6 +33,7 @@ export type RentalListProps = {
   onEmptyActionPress?: () => void;
   isSearchAutoFocus?: boolean;
   isRevalidating?: boolean;
+  isChangingParams?: boolean;
 };
 
 export const RentalList = ({
@@ -52,36 +53,46 @@ export const RentalList = ({
   onEmptyActionPress,
   isSearchAutoFocus,
   isRevalidating,
+  isChangingParams,
 }: RentalListProps) => {
   const textInputRef = useRef<TextInput>(null);
+  const [inputHasText, setInputHasText] = useState(false);
   return (
     <YStack gap="$3" flex={1}>
       <XStack gap="$3" alignItems="center" $xs={{ flexDirection: 'column' }}>
-        <XStack gap="$3" flex={1}>
+        <XStack gap="$3" flex={1} alignItems="center">
           <Input
             id="search"
             placeholder="Search Rental by Code"
             ref={textInputRef}
-            // value={searchValue}
-            onChangeText={onSearchValueChange}
+            onChangeText={(value) => {
+              setInputHasText(value.length > 0);
+              onSearchValueChange(value);
+            }}
             onSubmitEditing={(event) => {
               event.preventDefault();
-              textInputRef.current?.clear();
+              textInputRef.current?.clear?.();
+              setInputHasText(false);
               setTimeout(() => {
-                textInputRef.current?.focus();
+                textInputRef.current?.focus?.();
               }, 100);
             }}
             autoFocus={isSearchAutoFocus}
             flex={1}
           />
-          <Button
-            icon={X}
-            onPress={() => {
-              textInputRef.current?.clear();
-              onSearchValueChange('');
-            }}
-            circular
-          />
+          {inputHasText && (
+            <Button
+              icon={X}
+              onPress={() => {
+                textInputRef.current?.clear?.();
+                setInputHasText(false);
+                onSearchValueChange('');
+              }}
+              circular
+              size="$2"
+              accessibilityLabel="Clear search"
+            />
+          )}
         </XStack>
 
         <Popover size="$5" allowFlip stayInFrame offset={15}>
@@ -144,7 +155,9 @@ export const RentalList = ({
           </Popover.Content>
         </Popover>
 
-        {isRevalidating && <Spinner size="small" color="$gray10" />}
+        {(isRevalidating || isChangingParams) && (
+          <Spinner size="small" color="$gray10" testID="search-spinner" />
+        )}
       </XStack>
       {variant.type === 'loading' ? (
         <SkeletonList />

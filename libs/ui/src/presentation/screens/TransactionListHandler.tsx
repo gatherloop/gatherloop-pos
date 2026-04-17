@@ -161,6 +161,7 @@ export const TransactionListHandler = ({
       onEmptyActionPress={() => router.push('/transactions/create')}
       onRetryButtonPress={() => transactionList.dispatch({ type: 'FETCH' })}
       isRevalidating={transactionList.state.type === 'revalidating'}
+      isChangingParams={transactionList.state.type === 'changingParams'}
       variant={match(transactionList.state)
         .returnType<TransactionListScreenProps['variant']>()
         .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))
@@ -178,6 +179,14 @@ export const TransactionListHandler = ({
           query,
           page: 1,
           fetchDebounceDelay: 600,
+        })
+      }
+      onSearchClear={() =>
+        transactionList.dispatch({
+          type: 'CHANGE_PARAMS',
+          query: '',
+          page: 1,
+          fetchDebounceDelay: 0,
         })
       }
       paymentStatus={transactionList.state.paymentStatus}
