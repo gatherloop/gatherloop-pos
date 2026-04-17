@@ -39,6 +39,7 @@ export type VariantUpdateScreenProps = {
     totalItem: number;
     variant: MaterialListProps['variant'];
   };
+  serverError?: string;
 };
 
 export const VariantUpdateScreen = (props: VariantUpdateScreenProps) => {
@@ -60,6 +61,7 @@ export const VariantUpdateScreen = (props: VariantUpdateScreenProps) => {
           variant={props.variant}
           onRetryButtonPress={props.onRetryButtonPress}
           product={props.product}
+          serverError={props.serverError}
           MaterialList={(fieldArray) => (
             <MaterialList
               isSearchAutoFocus

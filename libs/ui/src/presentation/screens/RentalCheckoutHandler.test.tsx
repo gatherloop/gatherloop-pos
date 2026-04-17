@@ -237,6 +237,50 @@ describe('RentalCheckoutHandler', () => {
     });
   });
 
+  describe('error banner', () => {
+    it('should show error banner when checkout fails', async () => {
+      const user = userEvent.setup();
+      const rentalRepo = new MockRentalRepository();
+
+      render(
+        <RentalCheckoutHandler
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          rentalCheckoutUsecase={new RentalCheckoutUsecase(rentalRepo)}
+          rentalListUsecase={new RentalListUsecase(
+            rentalRepo,
+            new MockRentalListQueryRepository(),
+            { rentals: [], totalItem: 0 }
+          )}
+        />
+      );
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      await user.click(screen.getByText('Rental 1'));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      rentalRepo.setShouldFail(true);
+
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByText('Failed to submit. Please try again.')).toBeTruthy();
+    });
+
+    it('should not show error banner before any submission', () => {
+      render(<RentalCheckoutHandler {...createProps()} />);
+      expect(screen.queryByText('Failed to submit. Please try again.')).toBeNull();
+    });
+  });
+
   describe('error recovery', () => {
     it('should refetch rentals when retry button is pressed', async () => {
       const user = userEvent.setup();

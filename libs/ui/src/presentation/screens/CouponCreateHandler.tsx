@@ -38,6 +38,11 @@ export const CouponCreateHandler = ({
         couponCreate.state.type === 'submitSuccess'
       }
       isSubmitting={couponCreate.state.type === 'submitting'}
+      serverError={
+        couponCreate.state.type === 'submitError'
+          ? 'Failed to submit. Please try again.'
+          : undefined
+      }
       onSubmit={(values) =>
         couponCreate.dispatch({ type: 'SUBMIT', values })
       }

@@ -8,6 +8,7 @@ import {
   XStack,
   YStack,
 } from 'tamagui';
+import { FormErrorBanner } from '../base';
 import { H4 } from 'tamagui';
 import { Calendar, QrCode, Trash } from '@tamagui/lucide-icons';
 import { RentalCheckoutForm } from '../../../domain';
@@ -26,6 +27,7 @@ export type RentalCheckoutFormViewProps = {
   isSubmitting: boolean;
   RentalItemSelect: () => ReactNode;
   rentalsFieldArray: UseFieldArrayReturn<RentalCheckoutForm, 'rentals', 'key'>;
+  serverError?: string;
 };
 
 export const RentalCheckoutFormView = ({
@@ -35,11 +37,13 @@ export const RentalCheckoutFormView = ({
   isSubmitting,
   RentalItemSelect,
   rentalsFieldArray,
+  serverError,
 }: RentalCheckoutFormViewProps) => {
   return (
     <YStack>
       <FormProvider {...form}>
         <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
+          <FormErrorBanner message={serverError} />
           <XStack gap="$5">
             <YStack flex={1}>{RentalItemSelect()}</YStack>
             <YStack gap="$3" width={400} flex={1}>

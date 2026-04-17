@@ -38,6 +38,11 @@ export const CategoryUpdateHandler = ({
         categoryUpdate.state.type === 'submitSuccess'
       }
       isSubmitting={categoryUpdate.state.type === 'submitting'}
+      serverError={
+        categoryUpdate.state.type === 'submitError'
+          ? 'Failed to submit. Please try again.'
+          : undefined
+      }
       onSubmit={(values) => categoryUpdate.dispatch({ type: 'SUBMIT', values })}
       variant={match(categoryUpdate.state)
         .returnType<CategoryUpdateScreenProps['variant']>()

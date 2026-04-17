@@ -9,6 +9,7 @@ export type ChecklistTemplateCreateScreenProps = {
   onSubmit: (values: ChecklistTemplateForm) => void;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
+  serverError?: string;
 };
 
 export const ChecklistTemplateCreateScreen = ({
@@ -17,6 +18,7 @@ export const ChecklistTemplateCreateScreen = ({
   onSubmit,
   isSubmitDisabled,
   isSubmitting,
+  serverError,
 }: ChecklistTemplateCreateScreenProps) => {
   return (
     <Layout
@@ -30,6 +32,7 @@ export const ChecklistTemplateCreateScreen = ({
           onSubmit={onSubmit}
           isSubmitDisabled={isSubmitDisabled}
           isSubmitting={isSubmitting}
+          serverError={serverError}
         />
       </ScrollView>
     </Layout>

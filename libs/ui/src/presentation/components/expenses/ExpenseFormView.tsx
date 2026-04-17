@@ -4,6 +4,7 @@ import {
   Field,
   FieldArray,
   FieldWatch,
+  FormErrorBanner,
   InputNumber,
   InputText,
   LoadingView,
@@ -23,6 +24,7 @@ export type ExpenseFormViewProps = {
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   onRetryButtonPress: () => void;
+  serverError?: string;
 };
 
 export const ExpenseFormView = ({
@@ -34,10 +36,12 @@ export const ExpenseFormView = ({
   isSubmitDisabled,
   isSubmitting,
   onRetryButtonPress,
+  serverError,
 }: ExpenseFormViewProps) => {
   return variant.type === 'loaded' ? (
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
+        <FormErrorBanner message={serverError} />
         <YStack gap="$3">
           <XStack gap="$3" $xs={{ flexDirection: 'column' }}>
             <Field name="budgetId" label="Budget Name" flex={1}>

@@ -17,6 +17,7 @@ export type ExpenseCreateScreenProps = {
   budgetSelectOptions: { label: string; value: number }[];
   walletSelectOptions: { label: string; value: number }[];
   variant: ExpenseFormViewProps['variant'];
+  serverError?: string;
 };
 
 export const ExpenseCreateScreen = ({
@@ -29,6 +30,7 @@ export const ExpenseCreateScreen = ({
   budgetSelectOptions,
   walletSelectOptions,
   variant,
+  serverError,
 }: ExpenseCreateScreenProps) => {
   return (
     <Layout
@@ -46,6 +48,7 @@ export const ExpenseCreateScreen = ({
           budgetSelectOptions={budgetSelectOptions}
           walletSelectOptions={walletSelectOptions}
           variant={variant}
+          serverError={serverError}
         />
       </ScrollView>
     </Layout>

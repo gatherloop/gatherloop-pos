@@ -1,5 +1,6 @@
 import {
   Field,
+  FormErrorBanner,
   InputText,
   LoadingView,
   ErrorView,
@@ -19,6 +20,7 @@ export type CouponFormViewProps = {
   onSubmit: (values: CouponForm) => void;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
+  serverError?: string;
 };
 
 export const CouponFormView = ({
@@ -27,10 +29,12 @@ export const CouponFormView = ({
   onSubmit,
   isSubmitDisabled,
   isSubmitting,
+  serverError,
 }: CouponFormViewProps) => {
   return variant.type === 'loaded' ? (
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
+        <FormErrorBanner message={serverError} />
         <Field name="code" label="Code">
           <InputText />
         </Field>

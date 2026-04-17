@@ -37,6 +37,11 @@ export const WalletTransferCreateHandler = ({
       }
       isSubmitDisabled={walletTransferCreate.state.type === 'submitting'}
       isSubmitting={walletTransferCreate.state.type === 'submitting'}
+      serverError={
+        walletTransferCreate.state.type === 'submitError'
+          ? 'Failed to submit. Please try again.'
+          : undefined
+      }
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
       walletSelectOptions={walletTransferCreate.state.wallets
         .filter(

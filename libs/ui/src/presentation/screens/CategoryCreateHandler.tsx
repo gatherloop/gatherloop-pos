@@ -38,6 +38,11 @@ export const CategoryCreateHandler = ({
         categoryCreate.state.type === 'submitSuccess'
       }
       isSubmitting={categoryCreate.state.type === 'submitting'}
+      serverError={
+        categoryCreate.state.type === 'submitError'
+          ? 'Failed to submit. Please try again.'
+          : undefined
+      }
       onSubmit={(values) => categoryCreate.dispatch({ type: 'SUBMIT', values })}
       variant={match(categoryCreate.state)
         .returnType<CategoryCreateScreenProps['variant']>()

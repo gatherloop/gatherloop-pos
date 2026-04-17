@@ -1,7 +1,7 @@
 import { Plus, Trash, X } from '@tamagui/lucide-icons';
 import { Button, Card, Form, H4, Spinner, XStack, YStack } from 'tamagui';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
-import { Field, FieldArray, InputText } from '../base';
+import { Field, FieldArray, FormErrorBanner, InputText } from '../base';
 import { ChecklistTemplateForm } from '../../../domain';
 
 export type ChecklistTemplateFormViewProps = {
@@ -9,6 +9,7 @@ export type ChecklistTemplateFormViewProps = {
   onSubmit: (values: ChecklistTemplateForm) => void;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
+  serverError?: string;
 };
 
 export const ChecklistTemplateFormView = ({
@@ -16,10 +17,12 @@ export const ChecklistTemplateFormView = ({
   onSubmit,
   isSubmitDisabled,
   isSubmitting,
+  serverError,
 }: ChecklistTemplateFormViewProps) => {
   return (
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
+        <FormErrorBanner message={serverError} />
         <Card padding="$3" gap="$3">
           <YStack gap="$3" $gtMd={{ flexDirection: 'row' }}>
             <YStack flex={1}>

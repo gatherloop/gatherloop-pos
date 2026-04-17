@@ -238,6 +238,53 @@ describe('ProductUpdateHandler', () => {
     });
   });
 
+  describe('error banner', () => {
+    it('should show error banner when update fails', async () => {
+      const user = userEvent.setup();
+      const productRepo = new MockProductRepository();
+      const categoryRepo = new MockCategoryRepository();
+      const variantRepo = new MockVariantRepository();
+      const preloadedProduct = productRepo.products[0];
+
+      const productUpdateUsecase = new ProductUpdateUsecase(
+        productRepo,
+        categoryRepo,
+        variantRepo,
+        {
+          productId: preloadedProduct.id,
+          product: preloadedProduct,
+          categories: categoryRepo.categories,
+          variants: [],
+        }
+      );
+      productRepo.setShouldFail(true);
+
+      render(
+        <ProductUpdateHandler
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          productUpdateUsecase={productUpdateUsecase}
+          variantDeleteUsecase={new VariantDeleteUsecase(variantRepo)}
+        />
+      );
+
+      const nameInput = screen.getByRole('textbox', { name: 'Name' });
+      await user.clear(nameInput);
+      await user.type(nameInput, 'Updated Product');
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByText('Failed to submit. Please try again.')).toBeTruthy();
+    });
+
+    it('should not show error banner before any submission', () => {
+      render(<ProductUpdateHandler {...createProps({ preloaded: true })} />);
+      expect(screen.queryByText('Failed to submit. Please try again.')).toBeNull();
+    });
+  });
+
   describe('variant delete modal', () => {
     it('should not show variant delete modal initially', async () => {
       render(<ProductUpdateHandler {...createProps({ preloaded: true })} />);

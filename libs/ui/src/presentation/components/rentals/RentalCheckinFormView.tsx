@@ -1,4 +1,4 @@
-import { Field, FieldWatch, InputText, Select } from '../base';
+import { Field, FieldWatch, FormErrorBanner, InputText, Select } from '../base';
 import {
   Button,
   Card,
@@ -30,6 +30,7 @@ export type RentalCheckinFormViewProps = {
   isSubmitting: boolean;
   RentalItemSelect: () => ReactNode;
   rentalsFieldArray: UseFieldArrayReturn<RentalCheckinForm, 'rentals', 'key'>;
+  serverError?: string;
 };
 
 export const RentalCheckinFormView = ({
@@ -40,12 +41,14 @@ export const RentalCheckinFormView = ({
   isSubmitting,
   RentalItemSelect,
   rentalsFieldArray,
+  serverError,
 }: RentalCheckinFormViewProps) => {
   const inputCodeRefs = useRef<(Input | null)[]>([]);
   return (
     <YStack>
       <FormProvider {...form}>
         <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
+          <FormErrorBanner message={serverError} />
           <YStack>
             <YStack gap="$3">
               <XStack gap="$3">

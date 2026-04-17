@@ -140,4 +140,25 @@ describe('SupplierCreateHandler', () => {
       expect(mockToastShow).toHaveBeenCalledWith('Create Supplier Error');
     });
   });
+
+  describe('error banner', () => {
+    it('should show error banner when creation fails', async () => {
+      const user = userEvent.setup();
+      render(<SupplierCreateHandler {...createProps({ shouldFail: true })} />);
+
+      await user.type(screen.getByRole('textbox', { name: 'Name' }), 'New Supplier');
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByText('Failed to submit. Please try again.')).toBeTruthy();
+    });
+
+    it('should not show error banner before any submission', () => {
+      render(<SupplierCreateHandler {...createProps()} />);
+      expect(screen.queryByText('Failed to submit. Please try again.')).toBeNull();
+    });
+  });
 });

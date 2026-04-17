@@ -56,6 +56,11 @@ export const ProductUpdateHandler = ({
         productUpdate.state.type === 'submitSuccess'
       }
       isSubmitting={productUpdate.state.type === 'submitting'}
+      serverError={
+        productUpdate.state.type === 'submitError'
+          ? 'Failed to submit. Please try again.'
+          : undefined
+      }
       onRetryButtonPress={() => productUpdate.dispatch({ type: 'FETCH' })}
       variant={match(productUpdate.state)
         .returnType<ProductUpdateScreenProps['variant']>()

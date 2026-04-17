@@ -9,6 +9,7 @@ export type MaterialCreateScreenProps = {
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   onLogoutPress: () => void;
+  serverError?: string;
 };
 
 export const MaterialCreateScreen = (props: MaterialCreateScreenProps) => {
@@ -24,6 +25,7 @@ export const MaterialCreateScreen = (props: MaterialCreateScreenProps) => {
           onSubmit={props.onSubmit}
           isSubmitDisabled={props.isSubmitDisabled}
           isSubmitting={props.isSubmitting}
+          serverError={props.serverError}
         />
       </ScrollView>
     </Layout>

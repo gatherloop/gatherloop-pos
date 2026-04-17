@@ -1,5 +1,6 @@
 import {
   Field,
+  FormErrorBanner,
   InputText,
   InputNumber,
   LoadingView,
@@ -19,6 +20,7 @@ export type WalletFormViewProps = {
   onSubmit: (values: WalletForm) => void;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
+  serverError?: string;
 };
 
 export const WalletFormView = ({
@@ -27,10 +29,12 @@ export const WalletFormView = ({
   onSubmit,
   isSubmitDisabled,
   isSubmitting,
+  serverError,
 }: WalletFormViewProps) => {
   return variant.type === 'loaded' ? (
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
+        <FormErrorBanner message={serverError} />
         <Field name="name" label="Name">
           <InputText />
         </Field>

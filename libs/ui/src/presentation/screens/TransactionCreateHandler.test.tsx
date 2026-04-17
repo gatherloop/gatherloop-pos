@@ -165,6 +165,18 @@ describe('TransactionCreateHandler', () => {
     });
   });
 
+  describe('error banner', () => {
+    it('should not show error banner before any submission', async () => {
+      render(<TransactionCreateHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.queryByText('Failed to submit. Please try again.')).toBeNull();
+    });
+  });
+
   describe('error recovery', () => {
     it('should refetch products when retry button is pressed', async () => {
       const user = userEvent.setup();

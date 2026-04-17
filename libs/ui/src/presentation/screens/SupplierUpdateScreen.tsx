@@ -9,6 +9,7 @@ export type SupplierUpdateScreenProps = {
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   onLogoutPress: () => void;
+  serverError?: string;
 };
 
 export const SupplierUpdateScreen = (props: SupplierUpdateScreenProps) => {
@@ -20,6 +21,7 @@ export const SupplierUpdateScreen = (props: SupplierUpdateScreenProps) => {
           onSubmit={props.onSubmit}
           isSubmitDisabled={props.isSubmitDisabled}
           isSubmitting={props.isSubmitting}
+          serverError={props.serverError}
         />
       </ScrollView>
     </Layout>

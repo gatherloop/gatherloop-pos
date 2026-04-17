@@ -1,4 +1,4 @@
-import { Field, InputText, InputNumber, MarkdownEditor } from '../base';
+import { Field, FormErrorBanner, InputText, InputNumber, MarkdownEditor } from '../base';
 import { MaterialForm } from '../../../domain';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
 import { Button, Form, Spinner } from 'tamagui';
@@ -8,6 +8,7 @@ export type MaterialFormViewProps = {
   onSubmit: (values: MaterialForm) => void;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
+  serverError?: string;
 };
 
 export const MaterialFormView = ({
@@ -15,10 +16,12 @@ export const MaterialFormView = ({
   onSubmit,
   isSubmitDisabled,
   isSubmitting,
+  serverError,
 }: MaterialFormViewProps) => {
   return (
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
+        <FormErrorBanner message={serverError} />
         <Field name="name" label="Name">
           <InputText />
         </Field>

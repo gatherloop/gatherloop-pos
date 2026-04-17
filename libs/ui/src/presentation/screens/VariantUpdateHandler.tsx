@@ -55,6 +55,11 @@ export const VariantUpdateHandler = ({
         variantUpdate.state.type === 'submitSuccess'
       }
       isSubmitting={variantUpdate.state.type === 'submitting'}
+      serverError={
+        variantUpdate.state.type === 'submitError'
+          ? 'Failed to submit. Please try again.'
+          : undefined
+      }
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
       isMaterialSheetOpen={variantUpdate.isMaterialSheetOpen}
       onMaterialSheetOpenChange={variantUpdate.onMaterialSheetOpenChange}

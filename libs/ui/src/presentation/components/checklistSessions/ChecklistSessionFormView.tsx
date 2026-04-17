@@ -1,6 +1,6 @@
 import { Button, Card, Form, Label, Spinner, YStack } from 'tamagui';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
-import { Field, InputText, Select } from '../base';
+import { Field, FormErrorBanner, InputText, Select } from '../base';
 import { ChecklistSessionForm } from '../../../domain';
 import { ChecklistTemplate } from '../../../domain';
 
@@ -10,6 +10,7 @@ export type ChecklistSessionFormViewProps = {
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   checklistTemplates: ChecklistTemplate[];
+  serverError?: string;
 };
 
 export const ChecklistSessionFormView = ({
@@ -18,10 +19,12 @@ export const ChecklistSessionFormView = ({
   isSubmitDisabled,
   isSubmitting,
   checklistTemplates,
+  serverError,
 }: ChecklistSessionFormViewProps) => {
   return (
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(onSubmit)}>
+        <FormErrorBanner message={serverError} />
         <Card padding="$3">
           <YStack gap="$3" $gtMd={{ flexDirection: 'row', alignItems: 'flex-start' }}>
             <YStack flex={1}>

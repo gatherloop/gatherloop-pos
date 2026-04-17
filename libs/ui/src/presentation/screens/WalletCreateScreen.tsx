@@ -9,6 +9,7 @@ export type WalletCreateScreenProps = {
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   onLogoutPress: () => void;
+  serverError?: string;
 };
 
 export const WalletCreateScreen = (props: WalletCreateScreenProps) => {
@@ -21,6 +22,7 @@ export const WalletCreateScreen = (props: WalletCreateScreenProps) => {
           isSubmitDisabled={props.isSubmitDisabled}
           isSubmitting={props.isSubmitting}
           variant={{ type: 'loaded' }}
+          serverError={props.serverError}
         />
       </ScrollView>
     </Layout>

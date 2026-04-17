@@ -3,6 +3,7 @@ import {
   Field,
   FieldArray,
   FieldWatch,
+  FormErrorBanner,
   InputNumber,
   LoadingView,
   Select,
@@ -22,6 +23,7 @@ export type CalculationFormViewProps = {
   isSubmitting: boolean;
   isFormDisabled?: boolean;
   onRetryButtonPress: () => void;
+  serverError?: string;
 };
 
 export const CalculationFormView = ({
@@ -34,10 +36,12 @@ export const CalculationFormView = ({
   isSubmitDisabled,
   isSubmitting,
   onRetryButtonPress,
+  serverError,
 }: CalculationFormViewProps) => {
   return variant.type === 'loaded' ? (
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
+        <FormErrorBanner message={serverError} />
         <YStack gap="$3">
           <XStack flexWrap="wrap" gap="$3">
             <Field name="walletId" label="Wallet Name" flex={1}>

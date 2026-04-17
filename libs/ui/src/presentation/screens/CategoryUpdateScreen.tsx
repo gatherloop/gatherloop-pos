@@ -14,6 +14,7 @@ export type CategoryUpdateScreenProps = {
   isSubmitting: boolean;
   onSubmit: (values: CategoryForm) => void;
   variant: CategoryFormViewProps['variant'];
+  serverError?: string;
 };
 
 export const CategoryUpdateScreen = ({
@@ -23,6 +24,7 @@ export const CategoryUpdateScreen = ({
   onLogoutPress,
   onSubmit,
   variant,
+  serverError,
 }: CategoryUpdateScreenProps) => {
   return (
     <Layout
@@ -37,6 +39,7 @@ export const CategoryUpdateScreen = ({
           isSubmitting={isSubmitting}
           onSubmit={onSubmit}
           variant={variant}
+          serverError={serverError}
         />
       </ScrollView>
     </Layout>

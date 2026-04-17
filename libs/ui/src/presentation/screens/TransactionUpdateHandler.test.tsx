@@ -236,6 +236,47 @@ describe('TransactionUpdateHandler', () => {
     });
   });
 
+  describe('error banner', () => {
+    it('should show error banner when update fails', async () => {
+      const user = userEvent.setup();
+      const transactionRepo = new MockTransactionRepository();
+      const preloadedTransaction = transactionRepo.transactions[0];
+      transactionRepo.setShouldFail(true);
+
+      render(
+        <TransactionUpdateHandler
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          transactionUpdateUsecase={new TransactionUpdateUsecase(transactionRepo, {
+            transactionId: preloadedTransaction.id,
+            transaction: preloadedTransaction,
+          })}
+          transactionItemSelectUsecase={new TransactionItemSelectUsecase(
+            new MockProductRepository(),
+            new MockVariantRepository(),
+            { products: [], totalItem: 0 }
+          )}
+          couponListUsecase={new CouponListUsecase(
+            new MockCouponRepository(),
+            { coupons: [] }
+          )}
+        />
+      );
+
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByText('Failed to submit. Please try again.')).toBeTruthy();
+    });
+
+    it('should not show error banner before any submission', () => {
+      render(<TransactionUpdateHandler {...createProps({ preloaded: true })} />);
+      expect(screen.queryByText('Failed to submit. Please try again.')).toBeNull();
+    });
+  });
+
   describe('product error recovery', () => {
     it('should refetch products when retry button is pressed', async () => {
       const user = userEvent.setup();

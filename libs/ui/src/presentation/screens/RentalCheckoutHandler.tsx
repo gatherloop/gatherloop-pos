@@ -84,6 +84,11 @@ export const RentalCheckoutHandler = ({
       }
       isSubmitDisabled={rentalCheckout.state.type === 'submitting'}
       isSubmitting={rentalCheckout.state.type === 'submitting'}
+      serverError={
+        rentalCheckout.state.type === 'submitError'
+          ? 'Failed to submit. Please try again.'
+          : undefined
+      }
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
       rentalsFieldArray={rentalCheckout.rentalsFieldArray}
       rentalList={{

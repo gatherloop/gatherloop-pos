@@ -188,6 +188,42 @@ describe('CouponUpdateHandler', () => {
     });
   });
 
+  describe('error banner', () => {
+    it('should show error banner when update fails', async () => {
+      const user = userEvent.setup();
+      const couponRepo = new MockCouponRepository();
+      const preloadedCoupon = couponRepo.coupons[0];
+      const couponUpdateUsecase = new CouponUpdateUsecase(couponRepo, {
+        couponId: preloadedCoupon.id,
+        coupon: preloadedCoupon,
+      });
+      couponRepo.setShouldFail(true);
+
+      render(
+        <CouponUpdateHandler
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          couponUpdateUsecase={couponUpdateUsecase}
+        />
+      );
+
+      const codeInput = screen.getByRole('textbox', { name: 'Code' });
+      await user.clear(codeInput);
+      await user.type(codeInput, 'UPDATEDCODE');
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByText('Failed to submit. Please try again.')).toBeTruthy();
+    });
+
+    it('should not show error banner before any submission', () => {
+      render(<CouponUpdateHandler {...createProps({ preloaded: true })} />);
+      expect(screen.queryByText('Failed to submit. Please try again.')).toBeNull();
+    });
+  });
+
   describe('error recovery', () => {
     it('should refetch coupon when retry button is pressed after error', async () => {
       const user = userEvent.setup();

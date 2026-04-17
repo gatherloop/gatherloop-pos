@@ -7,6 +7,7 @@ import {
   LoadingView,
   ErrorView,
   FieldWatch,
+  FormErrorBanner,
   MarkdownEditor,
   Tabs,
   FieldArray,
@@ -51,6 +52,7 @@ export type VariantFormViewProps = {
   MaterialList: (
     fieldArray: UseFieldArrayReturn<VariantForm, 'materials', 'key'>
   ) => ReactNode;
+  serverError?: string;
 };
 
 export const VariantFormView = ({
@@ -65,10 +67,12 @@ export const VariantFormView = ({
   onRemoveMaterial,
   onSubmit,
   MaterialList,
+  serverError,
 }: VariantFormViewProps) => {
   return variant.type === 'loaded' ? (
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
+        <FormErrorBanner message={serverError} />
         <Card>
           <Card.Header>
             <XStack gap="$3" $sm={{ flexDirection: 'column' }}>

@@ -36,6 +36,11 @@ export const SupplierCreateHandler = ({
         supplierCreate.state.type === 'submitSuccess'
       }
       isSubmitting={supplierCreate.state.type === 'submitting'}
+      serverError={
+        supplierCreate.state.type === 'submitError'
+          ? 'Failed to submit. Please try again.'
+          : undefined
+      }
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
     />
   );

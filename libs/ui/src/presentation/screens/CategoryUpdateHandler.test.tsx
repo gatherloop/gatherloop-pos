@@ -244,6 +244,42 @@ describe('CategoryUpdateHandler', () => {
     });
   });
 
+  describe('error banner', () => {
+    it('should show error banner when update fails', async () => {
+      const user = userEvent.setup();
+      const categoryRepo = new MockCategoryRepository();
+      const preloadedCategory = categoryRepo.categories[0];
+      const categoryUpdateUsecase = new CategoryUpdateUsecase(categoryRepo, {
+        categoryId: preloadedCategory.id,
+        category: preloadedCategory,
+      });
+      categoryRepo.setShouldFail(true);
+
+      render(
+        <CategoryUpdateHandler
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          categoryUpdateUsecase={categoryUpdateUsecase}
+        />
+      );
+
+      const nameInput = screen.getByRole('textbox', { name: 'Name' });
+      await user.clear(nameInput);
+      await user.type(nameInput, 'Updated Category');
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByText('Failed to submit. Please try again.')).toBeTruthy();
+    });
+
+    it('should not show error banner before any submission', () => {
+      render(<CategoryUpdateHandler {...createProps({ preloaded: true })} />);
+      expect(screen.queryByText('Failed to submit. Please try again.')).toBeNull();
+    });
+  });
+
   describe('error recovery', () => {
     it('should refetch category when retry button is pressed after error', async () => {
       const user = userEvent.setup();

@@ -117,6 +117,49 @@ describe('ExpenseUpdateHandler', () => {
     });
   });
 
+  describe('error banner', () => {
+    it('should show error banner when update fails', async () => {
+      const user = userEvent.setup();
+      const expenseRepo = new MockExpenseRepository();
+      const budgetRepo = new MockBudgetRepository();
+      const walletRepo = new MockWalletRepository();
+      const expenseId = 1;
+      const preloadedExpense = expenseRepo.expenses.find((e) => e.id === expenseId) ?? null;
+      const expenseUpdateUsecase = new ExpenseUpdateUsecase(
+        expenseRepo,
+        budgetRepo,
+        walletRepo,
+        {
+          expenseId,
+          expense: preloadedExpense,
+          budgets: budgetRepo.budgets,
+          wallets: walletRepo.wallets,
+        }
+      );
+      expenseRepo.setShouldFail(true);
+
+      render(
+        <ExpenseUpdateHandler
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          expenseUpdateUsecase={expenseUpdateUsecase}
+        />
+      );
+
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByText('Failed to submit. Please try again.')).toBeTruthy();
+    });
+
+    it('should not show error banner before any submission', () => {
+      render(<ExpenseUpdateHandler {...createProps({ preloaded: true })} />);
+      expect(screen.queryByText('Failed to submit. Please try again.')).toBeNull();
+    });
+  });
+
   describe('error recovery', () => {
     it('should refetch expense when retry button is pressed after error', async () => {
       const user = userEvent.setup();

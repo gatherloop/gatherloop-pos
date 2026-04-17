@@ -201,4 +201,40 @@ describe('WalletUpdateHandler', () => {
       expect(mockToastShow).toHaveBeenCalledWith('Update Wallet Error');
     });
   });
+
+  describe('error banner', () => {
+    it('should show error banner when update fails', async () => {
+      const user = userEvent.setup();
+      const walletRepo = new MockWalletRepository();
+      const preloadedWallet = walletRepo.wallets[0];
+      const walletUpdateUsecase = new WalletUpdateUsecase(walletRepo, {
+        walletId: preloadedWallet.id,
+        wallet: preloadedWallet,
+      });
+      walletRepo.setShouldFail(true);
+
+      render(
+        <WalletUpdateHandler
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          walletUpdateUsecase={walletUpdateUsecase}
+        />
+      );
+
+      const nameInput = screen.getByRole('textbox', { name: 'Name' });
+      await user.clear(nameInput);
+      await user.type(nameInput, 'Updated Wallet');
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByText('Failed to submit. Please try again.')).toBeTruthy();
+    });
+
+    it('should not show error banner before any submission', () => {
+      render(<WalletUpdateHandler {...createProps({ preloaded: true })} />);
+      expect(screen.queryByText('Failed to submit. Please try again.')).toBeNull();
+    });
+  });
 });

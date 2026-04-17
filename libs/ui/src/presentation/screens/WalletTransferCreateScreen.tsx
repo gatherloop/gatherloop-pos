@@ -10,6 +10,7 @@ export type WalletTransferCreateScreenProps = {
   isSubmitting: boolean;
   onLogoutPress: () => void;
   walletSelectOptions: Array<{ label: string; value: number }>;
+  serverError?: string;
 };
 
 export const WalletTransferCreateScreen = (props: WalletTransferCreateScreenProps) => {
@@ -22,6 +23,7 @@ export const WalletTransferCreateScreen = (props: WalletTransferCreateScreenProp
           isSubmitDisabled={props.isSubmitDisabled}
           isSubmitting={props.isSubmitting}
           walletSelectOptions={props.walletSelectOptions}
+          serverError={props.serverError}
         />
       </ScrollView>
     </Layout>

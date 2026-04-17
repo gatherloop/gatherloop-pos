@@ -35,6 +35,11 @@ export const WalletUpdateHandler = ({
         walletUpdate.state.type === 'submitSuccess'
       }
       isSubmitting={walletUpdate.state.type === 'submitting'}
+      serverError={
+        walletUpdate.state.type === 'submitError'
+          ? 'Failed to submit. Please try again.'
+          : undefined
+      }
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
       variant={walletUpdate.variant}
     />

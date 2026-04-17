@@ -52,6 +52,7 @@ export type TransactionUpdateScreenProps = {
     onRetryButtonPress: () => void;
     variant: CouponListProps['variant'];
   };
+  serverError?: string;
 };
 
 export const TransactionUpdateScreen = (
@@ -73,6 +74,7 @@ export const TransactionUpdateScreen = (
           onCouponSheetOpenChange={props.onCouponSheetOpenChange}
           itemsFieldArray={props.itemsFieldArray}
           couponsFieldArray={props.couponsFieldArray}
+          serverError={props.serverError}
           TransactionItemSelect={() => (
             <TransactionItemSelect {...props.transactionItemSelect} />
           )}
