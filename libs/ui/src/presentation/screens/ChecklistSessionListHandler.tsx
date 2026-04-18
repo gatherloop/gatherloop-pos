@@ -94,6 +94,7 @@ export const ChecklistSessionListHandler = ({
         checklistSessionCreate.state.type === 'submitError' ||
         checklistSessionCreate.state.type === 'submitSuccess'
       }
+      isSubmitting={checklistSessionCreate.state.type === 'submitting'}
       checklistTemplates={checklistTemplates}
     />
   );

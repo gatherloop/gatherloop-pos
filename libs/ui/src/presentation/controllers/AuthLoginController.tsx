@@ -13,7 +13,6 @@ export const useAuthLoginController = (usecase: AuthLoginUsecase) => {
 
   useEffect(() => {
     if (state.type === 'submitSuccess') toast.show('Login Success');
-    else if (state.type === 'submitError') toast.show('Login Error');
   }, [toast, state.type]);
 
   const form = useForm({

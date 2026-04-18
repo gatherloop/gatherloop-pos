@@ -1,5 +1,11 @@
 import { Select, Spinner, XStack, YStack } from 'tamagui';
-import { EmptyView, ErrorView, ListItem, Pagination, SkeletonList } from '../base';
+import {
+  EmptyView,
+  ErrorView,
+  ListItem,
+  Pagination,
+  SkeletonList,
+} from '../base';
 import { FlatList } from 'react-native';
 import { match } from 'ts-pattern';
 import { CheckCircle, Clock, Filter } from '@tamagui/lucide-icons';
@@ -7,7 +13,6 @@ import { ChecklistSession, ChecklistSessionListFilter } from '../../../domain';
 
 export type ChecklistSessionListProps = {
   onRetryButtonPress: () => void;
-  onEmptyActionPress?: () => void;
   onPageChange: (page: number) => void;
   onItemPress: (checklistSession: ChecklistSession) => void;
   onFilterChange: (filter: ChecklistSessionListFilter) => void;
@@ -39,7 +44,6 @@ function formatDate(dateStr: string): string {
 export const ChecklistSessionList = ({
   onPageChange,
   onRetryButtonPress,
-  onEmptyActionPress,
   onItemPress,
   onFilterChange,
   filter,
@@ -59,9 +63,7 @@ export const ChecklistSessionList = ({
             onFilterChange({
               ...filter,
               status:
-                value === ''
-                  ? null
-                  : (value as 'completed' | 'incomplete'),
+                value === '' ? null : (value as 'completed' | 'incomplete'),
             })
           }
         >
@@ -84,7 +86,9 @@ export const ChecklistSessionList = ({
             <Select.ScrollDownButton />
           </Select.Content>
         </Select>
-        {isRevalidating && <Spinner size="small" color="$gray10" marginLeft="auto" />}
+        {isRevalidating && (
+          <Spinner size="small" color="$gray10" marginLeft="auto" />
+        )}
       </XStack>
 
       {match(variant)
@@ -93,8 +97,6 @@ export const ChecklistSessionList = ({
           <EmptyView
             title="Oops, Checklist Sessions is Empty"
             subtitle="Please create a new checklist session"
-            actionLabel="Create Session"
-            onActionPress={onEmptyActionPress}
           />
         ))
         .with({ type: 'loaded' }, ({ items }) => (

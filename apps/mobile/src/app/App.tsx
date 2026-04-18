@@ -42,7 +42,6 @@ import {
   ChecklistTemplateCreate,
   ChecklistTemplateUpdate,
   ChecklistSessionList,
-  ChecklistSessionCreate,
   ChecklistSessionDetail,
 } from '@gatherloop-pos/ui';
 import { RootProvider } from '@gatherloop-pos/provider';
@@ -216,7 +215,6 @@ export const App = () => {
             rentalCheckin: 'rentals/checkin',
             rentalCheckout: 'rentals/checkout',
             checklistTemplateList: 'checklist-templates',
-            checklistTemplateCreate: 'checklist-templates/create',
             checklistTemplateUpdate: {
               path: 'checklist-templates/:checklistTemplateId',
               parse: {
@@ -264,10 +262,7 @@ export const App = () => {
               _props: NativeStackScreenProps<RootStackParamList, 'categoryList'>
             ) => <CategoryList categoryListParams={{ categories: [] }} />}
           />
-          <Stack.Screen
-            name="categoryCreate"
-            component={CategoryCreate}
-          />
+          <Stack.Screen name="categoryCreate" component={CategoryCreate} />
           <Stack.Screen
             name="categoryUpdate"
             component={(
@@ -317,10 +312,7 @@ export const App = () => {
               />
             )}
           />
-          <Stack.Screen
-            name="materialCreate"
-            component={MaterialCreate}
-          />
+          <Stack.Screen name="materialCreate" component={MaterialCreate} />
           <Stack.Screen
             name="materialUpdate"
             component={(
@@ -350,10 +342,7 @@ export const App = () => {
               />
             )}
           />
-          <Stack.Screen
-            name="supplierCreate"
-            component={SupplierCreate}
-          />
+          <Stack.Screen name="supplierCreate" component={SupplierCreate} />
           <Stack.Screen
             name="supplierUpdate"
             component={(
@@ -452,9 +441,7 @@ export const App = () => {
                 RootStackParamList,
                 'productCreate'
               >
-            ) => (
-              <ProductCreate productCreateParams={{ categories: [] }} />
-            )}
+            ) => <ProductCreate productCreateParams={{ categories: [] }} />}
           />
           <Stack.Screen
             name="productUpdate"
@@ -674,9 +661,7 @@ export const App = () => {
                 'calculationCreate'
               >
             ) => (
-              <CalculationCreate
-                calculationCreateParams={{ wallets: [] }}
-              />
+              <CalculationCreate calculationCreateParams={{ wallets: [] }} />
             )}
           />
           <Stack.Screen
@@ -701,9 +686,7 @@ export const App = () => {
             component={(
               _props: NativeStackScreenProps<RootStackParamList, 'rentalList'>
             ) => (
-              <RentalList
-                rentalListParams={{ rentals: [], totalItem: 0 }}
-              />
+              <RentalList rentalListParams={{ rentals: [], totalItem: 0 }} />
             )}
           />
           <Stack.Screen
@@ -763,8 +746,7 @@ export const App = () => {
               <ChecklistTemplateUpdate
                 checklistTemplateUpdateParams={{
                   checklistTemplate: null,
-                  checklistTemplateId:
-                    props.route.params.checklistTemplateId,
+                  checklistTemplateId: props.route.params.checklistTemplateId,
                 }}
               />
             )}
@@ -778,27 +760,12 @@ export const App = () => {
               >
             ) => (
               <ChecklistSessionList
+                checklistTemplates={[]}
+                checklistSessionCreateParams={{}}
                 checklistSessionListParams={{
                   checklistSessions: [],
                   totalItem: 0,
                 }}
-              />
-            )}
-          />
-          <Stack.Screen
-            name="checklistSessionCreate"
-            component={(
-              _props: NativeStackScreenProps<
-                RootStackParamList,
-                'checklistSessionCreate'
-              >
-            ) => (
-              <ChecklistSessionCreate
-                checklistSessionCreateParams={{
-                  checklistTemplateId: undefined,
-                  date: new Date().toISOString().split('T')[0],
-                }}
-                checklistTemplates={[]}
               />
             )}
           />

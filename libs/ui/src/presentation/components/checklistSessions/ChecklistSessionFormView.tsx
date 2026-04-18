@@ -26,7 +26,10 @@ export const ChecklistSessionFormView = ({
       <Form onSubmit={form.handleSubmit(onSubmit)}>
         <FormErrorBanner message={serverError} />
         <Card padding="$3">
-          <YStack gap="$3" $gtMd={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+          <YStack
+            gap="$3"
+            $gtMd={{ flexDirection: 'row', alignItems: 'flex-end' }}
+          >
             <YStack flex={1}>
               <Field name="checklistTemplateId" label="Checklist Template">
                 <Select<number>
@@ -45,7 +48,12 @@ export const ChecklistSessionFormView = ({
             </YStack>
 
             <YStack gap="$3">
-              <Label opacity={0} pointerEvents="none" $gtMd={{ display: 'flex' }} display="none">
+              <Label
+                opacity={0}
+                pointerEvents="none"
+                $gtMd={{ display: 'flex' }}
+                display="none"
+              >
                 {' '}
               </Label>
               <Button

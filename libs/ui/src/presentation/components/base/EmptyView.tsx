@@ -1,7 +1,7 @@
 import { AlertCircle } from '@tamagui/lucide-icons';
 import { Button, H4, Paragraph, YStack } from 'tamagui';
 
-export type ErrorType = 'network' | 'server' | 'unknown';
+type ErrorType = 'network' | 'server' | 'unknown';
 
 const errorTypeMessages: Record<ErrorType, string> = {
   network: 'Network error - please check your connection and try again.',

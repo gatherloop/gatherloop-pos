@@ -8,7 +8,11 @@ import { flushPromises } from '../../utils/testUtils';
 
 const mockRouterPush = jest.fn();
 jest.mock('solito/router', () => ({
-  useRouter: () => ({ push: mockRouterPush, replace: jest.fn(), back: jest.fn() }),
+  useRouter: () => ({
+    push: mockRouterPush,
+    replace: jest.fn(),
+    back: jest.fn(),
+  }),
 }));
 
 const mockToastShow = jest.fn();
@@ -45,7 +49,10 @@ describe('AuthLoginHandler', () => {
     render(<AuthLoginHandler {...createProps()} />);
 
     await user.type(screen.getByRole('textbox', { name: 'Username' }), 'admin');
-    await user.type(screen.getByRole('textbox', { name: 'Password' }), 'secret');
+    await user.type(
+      screen.getByRole('textbox', { name: 'Password' }),
+      'secret'
+    );
     await user.click(screen.getByRole('button', { name: 'Submit' }));
 
     await act(async () => {
@@ -103,23 +110,10 @@ describe('AuthLoginHandler', () => {
       await flushPromises();
     });
 
-    const errorMessages = screen.getAllByText('String must contain at least 1 character(s)');
+    const errorMessages = screen.getAllByText(
+      'String must contain at least 1 character(s)'
+    );
     expect(errorMessages.length).toBeGreaterThanOrEqual(2);
-  });
-
-  it('should show toast error message when login fails', async () => {
-    const user = userEvent.setup();
-    render(<AuthLoginHandler {...createProps({ shouldFail: true })} />);
-
-    await user.type(screen.getByRole('textbox', { name: 'Username' }), 'admin');
-    await user.type(screen.getByRole('textbox', { name: 'Password' }), 'wrong');
-    await user.click(screen.getByRole('button', { name: 'Submit' }));
-
-    await act(async () => {
-      await flushPromises();
-    });
-
-    expect(mockToastShow).toHaveBeenCalledWith('Login Error');
   });
 
   describe('error banner', () => {
@@ -127,20 +121,30 @@ describe('AuthLoginHandler', () => {
       const user = userEvent.setup();
       render(<AuthLoginHandler {...createProps({ shouldFail: true })} />);
 
-      await user.type(screen.getByRole('textbox', { name: 'Username' }), 'admin');
-      await user.type(screen.getByRole('textbox', { name: 'Password' }), 'wrong');
+      await user.type(
+        screen.getByRole('textbox', { name: 'Username' }),
+        'admin'
+      );
+      await user.type(
+        screen.getByRole('textbox', { name: 'Password' }),
+        'wrong'
+      );
       await user.click(screen.getByRole('button', { name: 'Submit' }));
 
       await act(async () => {
         await flushPromises();
       });
 
-      expect(screen.getByText('Failed to submit. Please try again.')).toBeTruthy();
+      expect(
+        screen.getByText('Failed to submit. Please try again.')
+      ).toBeTruthy();
     });
 
     it('should not show error banner before any submission', () => {
       render(<AuthLoginHandler {...createProps()} />);
-      expect(screen.queryByText('Failed to submit. Please try again.')).toBeNull();
+      expect(
+        screen.queryByText('Failed to submit. Please try again.')
+      ).toBeNull();
     });
   });
 });

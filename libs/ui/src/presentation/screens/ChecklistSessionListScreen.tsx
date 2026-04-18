@@ -1,6 +1,14 @@
 import { H4, ScrollView, YStack } from 'tamagui';
-import { ChecklistSessionFormView, ChecklistSessionList, Layout } from '../components';
-import { ChecklistSession, ChecklistSessionListFilter, ChecklistTemplate } from '../../domain';
+import {
+  ChecklistSessionFormView,
+  ChecklistSessionList,
+  Layout,
+} from '../components';
+import {
+  ChecklistSession,
+  ChecklistSessionListFilter,
+  ChecklistTemplate,
+} from '../../domain';
 import { UseFormReturn } from 'react-hook-form';
 import { ChecklistSessionForm } from '../../domain';
 
@@ -22,6 +30,7 @@ export type ChecklistSessionListScreenProps = {
   form: UseFormReturn<ChecklistSessionForm>;
   onSubmit: (values: ChecklistSessionForm) => void;
   isSubmitDisabled: boolean;
+  isSubmitting: boolean;
   checklistTemplates: ChecklistTemplate[];
   isRevalidating?: boolean;
   onEmptyActionPress?: () => void;
@@ -41,15 +50,13 @@ export const ChecklistSessionListScreen = ({
   form,
   onSubmit,
   isSubmitDisabled,
+  isSubmitting,
   checklistTemplates,
   isRevalidating,
   onEmptyActionPress,
 }: ChecklistSessionListScreenProps) => {
   return (
-    <Layout
-      onLogoutPress={onLogoutPress}
-      title="Checklist Sessions"
-    >
+    <Layout onLogoutPress={onLogoutPress} title="Checklist Sessions">
       <ScrollView>
         <YStack gap="$4">
           <YStack gap="$2">
@@ -57,6 +64,7 @@ export const ChecklistSessionListScreen = ({
             <ChecklistSessionFormView
               form={form}
               onSubmit={onSubmit}
+              isSubmitting={isSubmitting}
               isSubmitDisabled={isSubmitDisabled}
               checklistTemplates={checklistTemplates}
             />
@@ -73,7 +81,6 @@ export const ChecklistSessionListScreen = ({
             totalItem={totalItem}
             itemPerPage={itemPerPage}
             isRevalidating={isRevalidating}
-            onEmptyActionPress={onEmptyActionPress}
           />
         </YStack>
       </ScrollView>

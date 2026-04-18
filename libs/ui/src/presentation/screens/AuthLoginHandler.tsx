@@ -21,7 +21,6 @@ export const AuthLoginHandler = (props: AuthLoginHandlerProps) => {
       form={authLoginController.form}
       isSubmitDisabled={
         authLoginController.state.type === 'submitting' ||
-        authLoginController.state.type === 'submitError' ||
         authLoginController.state.type === 'submitSuccess'
       }
       isSubmitting={authLoginController.state.type === 'submitting'}

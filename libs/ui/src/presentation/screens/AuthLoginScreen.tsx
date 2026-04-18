@@ -15,7 +15,7 @@ export const AuthLoginScreen = (props: AuthLoginScreenProps) => {
   return (
     <ScrollView padding="$3" justifyContent="center" alignItems="center">
       <Card elevate size="$4" bordered>
-        <Card.Header padded>
+        <Card.Header padded gap="$3">
           <H2>Login</H2>
           <Paragraph theme="alt2">
             Input username and password to login into POS system

@@ -100,12 +100,11 @@ export const TransactionList = ({
             borderWidth={1}
             borderColor="$borderColor"
             width={300}
-            height={200}
             enterStyle={{ y: -10, opacity: 0 }}
             exitStyle={{ y: -10, opacity: 0 }}
             elevate
             animation={[
-              'quick',
+              'medium',
               {
                 opacity: {
                   overshootClamping: true,
@@ -125,7 +124,7 @@ export const TransactionList = ({
                     onWalletIdChange(value === 'all' ? null : parseInt(value))
                   }
                 >
-                  <XStack gap="$3">
+                  <XStack gap="$3" flexWrap="wrap">
                     <XStack gap="$2" alignItems="center">
                       <RadioGroup.Item value="all" id="all-wallet">
                         <RadioGroup.Indicator />

@@ -40,6 +40,5 @@ export * from './SupplierUpdate';
 export * from './ChecklistTemplateList';
 export * from './ChecklistTemplateCreate';
 export * from './ChecklistTemplateUpdate';
-export * from './ChecklistSessionCreate';
 export * from './ChecklistSessionDetail';
 export * from './ChecklistSessionList';
