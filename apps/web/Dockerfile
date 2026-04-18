@@ -9,6 +9,7 @@ WORKDIR /app
 COPY . .
 RUN apk add openjdk21-jre go
 RUN npm install
+RUN npx nx run api-contract:generate:ts
 RUN npx nx run web:build
 
 FROM node:22-alpine
