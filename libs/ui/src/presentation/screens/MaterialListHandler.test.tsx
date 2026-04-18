@@ -269,4 +269,42 @@ describe('MaterialListHandler', () => {
       expect(screen.getByRole('heading', { name: 'Material 1' })).toBeTruthy();
     });
   });
+
+  describe('search UX', () => {
+    it('should not show clear button when search is empty', async () => {
+      render(<MaterialListHandler {...createProps()} />);
+      await act(async () => { await flushPromises(); });
+      expect(screen.queryByRole('button', { name: 'Clear search' })).toBeNull();
+    });
+
+    it('should show clear button when search input has text', async () => {
+      const user = userEvent.setup();
+      render(<MaterialListHandler {...createProps()} />);
+      await act(async () => { await flushPromises(); });
+
+      await user.type(screen.getByPlaceholderText('Search Materials by Name'), 'test');
+
+      expect(screen.getByRole('button', { name: 'Clear search' })).toBeTruthy();
+    });
+
+    it('should hide clear button after clearing search', async () => {
+      const user = userEvent.setup();
+      render(<MaterialListHandler {...createProps()} />);
+      await act(async () => { await flushPromises(); });
+
+      await user.type(screen.getByPlaceholderText('Search Materials by Name'), 'test');
+      expect(screen.getByRole('button', { name: 'Clear search' })).toBeTruthy();
+
+      await user.click(screen.getByRole('button', { name: 'Clear search' }));
+      await act(async () => { await flushPromises(); });
+
+      expect(screen.queryByRole('button', { name: 'Clear search' })).toBeNull();
+    });
+
+    it('should not show search spinner when data is loaded and no changes pending', async () => {
+      render(<MaterialListHandler {...createProps()} />);
+      await act(async () => { await flushPromises(); });
+      expect(screen.queryByTestId('search-spinner')).toBeNull();
+    });
+  });
 });

@@ -23,6 +23,7 @@ export type RentalListScreenProps = {
   onDeleteCancel: () => void;
   onDeleteConfirm: () => void;
   isRevalidating?: boolean;
+  isChangingParams?: boolean;
   onEmptyActionPress?: () => void;
 };
 
@@ -45,6 +46,7 @@ export const RentalListScreen = ({
   onDeleteCancel,
   onDeleteConfirm,
   isRevalidating,
+  isChangingParams,
   onEmptyActionPress,
 }: RentalListScreenProps) => {
   return (
@@ -80,6 +82,7 @@ export const RentalListScreen = ({
         onRetryButtonPress={onRetryButtonPress}
         onDeleteMenuPress={onDeleteMenuPress}
         isRevalidating={isRevalidating}
+        isChangingParams={isChangingParams}
         onEmptyActionPress={onEmptyActionPress}
       />
       <RentalDeleteAlert

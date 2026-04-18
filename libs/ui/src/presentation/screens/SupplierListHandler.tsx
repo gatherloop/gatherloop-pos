@@ -61,6 +61,7 @@ export const SupplierListHandler = ({
       onEmptyActionPress={() => router.push('/suppliers/create')}
       onRetryButtonPress={() => supplierList.dispatch({ type: 'FETCH' })}
       isRevalidating={supplierList.state.type === 'revalidating'}
+      isChangingParams={supplierList.state.type === 'changingParams'}
       variant={match(supplierList.state)
         .returnType<SupplierListScreenProps['variant']>()
         .with({ type: P.union('idle', 'loading') }, () => ({
@@ -83,6 +84,14 @@ export const SupplierListHandler = ({
           query,
           page: 1,
           fetchDebounceDelay: 600,
+        })
+      }
+      onSearchClear={() =>
+        supplierList.dispatch({
+          type: 'CHANGE_PARAMS',
+          query: '',
+          page: 1,
+          fetchDebounceDelay: 0,
         })
       }
       currentPage={supplierList.state.page}

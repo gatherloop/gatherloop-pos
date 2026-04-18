@@ -69,6 +69,7 @@ export const RentalListHandler = ({
       onEmptyActionPress={() => router.push('/rentals/checkin')}
       onRetryButtonPress={() => rentalList.dispatch({ type: 'FETCH' })}
       isRevalidating={rentalList.state.type === 'revalidating'}
+      isChangingParams={rentalList.state.type === 'changingParams'}
       variant={match(rentalList.state)
         .returnType<RentalListScreenProps['variant']>()
         .with({ type: P.union('idle', 'loading') }, () => ({

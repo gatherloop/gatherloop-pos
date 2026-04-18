@@ -20,12 +20,13 @@ import {
 import { FlatList } from 'react-native';
 import { match } from 'ts-pattern';
 import { Product, SaleType } from '../../../domain';
-import { Filter } from '@tamagui/lucide-icons';
+import { Filter, X } from '@tamagui/lucide-icons';
 
 export type ProductListProps = {
   searchValue: string;
   saleType: SaleType;
   onSearchValueChange: (value: string) => void;
+  onSearchClear?: () => void;
   onSaleTypeChange: (value: SaleType) => void;
   onRetryButtonPress: () => void;
   onPageChange: (page: number) => void;
@@ -38,6 +39,7 @@ export type ProductListProps = {
   totalItem: number;
   itemPerPage: number;
   isRevalidating?: boolean;
+  isChangingParams?: boolean;
   variant:
     | { type: 'loading' }
     | { type: 'error' }
@@ -50,6 +52,7 @@ export const ProductList = ({
   onPageChange,
   onRetryButtonPress,
   onSearchValueChange,
+  onSearchClear,
   onSaleTypeChange,
   onDeleteMenuPress,
   onEditMenuPress,
@@ -61,6 +64,7 @@ export const ProductList = ({
   currentPage,
   itemPerPage,
   isRevalidating,
+  isChangingParams,
   variant,
   numColumns = 1,
   onEmptyActionPress,
@@ -75,6 +79,15 @@ export const ProductList = ({
           autoFocus={isSearchAutoFocus}
           flex={1}
         />
+        {searchValue.length > 0 && (
+          <Button
+            icon={X}
+            onPress={onSearchClear}
+            circular
+            size="$2"
+            accessibilityLabel="Clear search"
+          />
+        )}
 
         <Popover size="$5" allowFlip stayInFrame offset={15}>
           <Popover.Trigger asChild>
@@ -136,7 +149,9 @@ export const ProductList = ({
           </Popover.Content>
         </Popover>
 
-        {isRevalidating && <Spinner size="small" color="$gray10" />}
+        {(isRevalidating || isChangingParams) && (
+          <Spinner size="small" color="$gray10" testID="search-spinner" />
+        )}
       </XStack>
 
       {match(variant)

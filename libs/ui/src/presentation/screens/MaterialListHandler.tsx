@@ -58,6 +58,7 @@ export const MaterialListHandler = ({
       onEmptyActionPress={() => router.push('/materials/create')}
       onRetryButtonPress={() => materialList.dispatch({ type: 'FETCH' })}
       isRevalidating={materialList.state.type === 'revalidating'}
+      isChangingParams={materialList.state.type === 'changingParams'}
       variant={match(materialList.state)
         .returnType<MaterialListScreenProps['variant']>()
         .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))
@@ -77,6 +78,14 @@ export const MaterialListHandler = ({
           query,
           page: 1,
           fetchDebounceDelay: 600,
+        })
+      }
+      onSearchClear={() =>
+        materialList.dispatch({
+          type: 'CHANGE_PARAMS',
+          query: '',
+          page: 1,
+          fetchDebounceDelay: 0,
         })
       }
       currentPage={materialList.state.page}

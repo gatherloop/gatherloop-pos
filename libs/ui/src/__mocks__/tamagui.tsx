@@ -39,8 +39,17 @@ export const H5 = ({ children }: AnyProps) => React.createElement('h5', null, ch
 export const H6 = ({ children }: AnyProps) => React.createElement('h6', null, children);
 export const Text = ({ children }: AnyProps) => React.createElement('span', null, children);
 
-export const Button = ({ children, onPress, disabled, icon }: AnyProps) =>
-  React.createElement('button', { onClick: onPress, disabled: disabled ?? false }, icon ?? null, children);
+export const Button = ({ children, onPress, disabled, icon, accessibilityLabel }: AnyProps) =>
+  React.createElement(
+    'button',
+    {
+      onClick: onPress,
+      disabled: disabled ?? false,
+      ...(accessibilityLabel ? { 'aria-label': accessibilityLabel } : {}),
+    },
+    icon ?? null,
+    children
+  );
 
 export const Input = React.forwardRef(({ value, placeholder, onChangeText, id }: AnyProps, ref) =>
   React.createElement('input', {
@@ -57,8 +66,8 @@ export const Label = ({ children, htmlFor }: AnyProps) =>
 
 export const Separator = () => React.createElement('hr', null);
 
-export const Spinner = () =>
-  React.createElement('div', { 'data-testid': 'spinner' });
+export const Spinner = ({ testID }: AnyProps) =>
+  React.createElement('div', { 'data-testid': testID ?? 'spinner' });
 
 // Popover
 const PopoverBase = ({ children }: AnyProps) =>

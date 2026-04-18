@@ -24,6 +24,8 @@ export type SupplierListScreenProps = {
   onDeleteCancel: () => void;
   onDeleteConfirm: () => void;
   isRevalidating?: boolean;
+  isChangingParams?: boolean;
+  onSearchClear?: () => void;
   onEmptyActionPress?: () => void;
 };
 
@@ -47,6 +49,8 @@ export const SupplierListScreen = ({
   onDeleteCancel,
   onDeleteConfirm,
   isRevalidating,
+  isChangingParams,
+  onSearchClear,
   onEmptyActionPress,
 }: SupplierListScreenProps) => {
   return (
@@ -73,6 +77,8 @@ export const SupplierListScreen = ({
         totalItem={totalItem}
         itemPerPage={itemPerPage}
         isRevalidating={isRevalidating}
+        isChangingParams={isChangingParams}
+        onSearchClear={onSearchClear}
         onEmptyActionPress={onEmptyActionPress}
       />
       <SupplierDeleteAlert

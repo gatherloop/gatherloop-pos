@@ -29,6 +29,8 @@ export type ProductListScreenProps = {
   onDeleteCancel: () => void;
   onDeleteConfirm: () => void;
   isRevalidating?: boolean;
+  isChangingParams?: boolean;
+  onSearchClear?: () => void;
   onEmptyActionPress?: () => void;
 };
 
@@ -52,6 +54,8 @@ export const ProductListScreen = ({
   totalItem,
   variant,
   isRevalidating,
+  isChangingParams,
+  onSearchClear,
   onEmptyActionPress,
 }: ProductListScreenProps) => {
   return (
@@ -76,6 +80,8 @@ export const ProductListScreen = ({
         totalItem={totalItem}
         variant={variant}
         isRevalidating={isRevalidating}
+        isChangingParams={isChangingParams}
+        onSearchClear={onSearchClear}
         onEditMenuPress={onEditMenuPress}
         onDeleteMenuPress={onDeleteMenuPress}
         onItemPress={onItemPress}

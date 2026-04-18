@@ -65,11 +65,15 @@ export const ProductListHandler = ({
       onEmptyActionPress={() => router.push('/products/create')}
       onRetryButtonPress={() => productList.dispatch({ type: 'FETCH' })}
       isRevalidating={productList.state.type === 'revalidating'}
+      isChangingParams={productList.state.type === 'changingParams'}
       onSaleTypeChange={(saleType?: SaleType) =>
         productList.dispatch({ type: 'CHANGE_PARAMS', saleType })
       }
       onSearchValueChange={(query: string) =>
         productList.dispatch({ type: 'CHANGE_PARAMS', query })
+      }
+      onSearchClear={() =>
+        productList.dispatch({ type: 'CHANGE_PARAMS', query: '', page: 1 })
       }
       saleType={productList.state.saleType}
       searchValue={productList.state.query}

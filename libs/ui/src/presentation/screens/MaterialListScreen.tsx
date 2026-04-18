@@ -28,6 +28,8 @@ export type MaterialListScreenProps = {
   onDeleteCancel: () => void;
   onDeleteConfirm: () => void;
   isRevalidating?: boolean;
+  isChangingParams?: boolean;
+  onSearchClear?: () => void;
   onEmptyActionPress?: () => void;
 };
 
@@ -49,6 +51,8 @@ export const MaterialListScreen = ({
   onDeleteCancel,
   onDeleteConfirm,
   isRevalidating,
+  isChangingParams,
+  onSearchClear,
   onEmptyActionPress,
 }: MaterialListScreenProps) => {
   return (
@@ -74,6 +78,8 @@ export const MaterialListScreen = ({
         onDeleteMenuPress={onDeleteMenuPress}
         onItemPress={onItemPress}
         isRevalidating={isRevalidating}
+        isChangingParams={isChangingParams}
+        onSearchClear={onSearchClear}
         onEmptyActionPress={onEmptyActionPress}
       />
       <MaterialDeleteAlert

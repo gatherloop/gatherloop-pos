@@ -14,7 +14,7 @@ import {
 import { FlatList } from 'react-native';
 import { ExpenseListItem } from './ExpenseListItem';
 import { Budget, Expense, Wallet } from '../../../domain';
-import { Filter } from '@tamagui/lucide-icons';
+import { Filter, X } from '@tamagui/lucide-icons';
 
 export type ExpenseListProps = {
   onRetryButtonPress: () => void;
@@ -26,6 +26,7 @@ export type ExpenseListProps = {
   expenses: Expense[];
   searchValue: string;
   onSearchValueChange: (value: string) => void;
+  onSearchClear?: () => void;
   currentPage: number;
   onPageChange: (page: number) => void;
   totalItem: number;
@@ -37,6 +38,7 @@ export type ExpenseListProps = {
   budgetId: number | null;
   onBudgetIdChange: (budgetId: number | null) => void;
   isRevalidating?: boolean;
+  isChangingParams?: boolean;
 };
 
 export const ExpenseList = ({
@@ -48,6 +50,7 @@ export const ExpenseList = ({
   expenses,
   onPageChange,
   onSearchValueChange,
+  onSearchClear,
   searchValue,
   totalItem,
   walletId,
@@ -60,6 +63,7 @@ export const ExpenseList = ({
   onItemPress,
   variant,
   isRevalidating,
+  isChangingParams,
 }: ExpenseListProps) => {
   return (
     <YStack gap="$3" flex={1}>
@@ -67,10 +71,19 @@ export const ExpenseList = ({
         <Input
           id="search"
           placeholder="Search Item Name"
-          defaultValue={searchValue}
+          value={searchValue}
           onChangeText={onSearchValueChange}
           flex={1}
         />
+        {searchValue.length > 0 && (
+          <Button
+            icon={X}
+            onPress={onSearchClear}
+            circular
+            size="$2"
+            accessibilityLabel="Clear search"
+          />
+        )}
 
         <Popover size="$5" allowFlip stayInFrame offset={15}>
           <Popover.Trigger asChild>
@@ -174,7 +187,9 @@ export const ExpenseList = ({
           </Popover.Content>
         </Popover>
 
-        {isRevalidating && <Spinner size="small" color="$gray10" />}
+        {(isRevalidating || isChangingParams) && (
+          <Spinner size="small" color="$gray10" testID="search-spinner" />
+        )}
       </XStack>
       {variant.type === 'loading' ? (
         <SkeletonList />
