@@ -3,13 +3,9 @@ package main
 import (
 	"apps/api/data/mysql"
 	"apps/api/domain"
-	"apps/api/migrations"
 	"apps/api/pkg/logger"
-	"apps/api/pkg/migrator"
 	"apps/api/presentation/restapi"
-	"apps/api/seeds"
 	"apps/api/utils"
-	"flag"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -18,10 +14,6 @@ import (
 )
 
 func main() {
-	migrateOnly := flag.Bool("migrate-only", false, "run database migrations and exit")
-	seedFlag := flag.Bool("seed", false, "run database migrations then seeders and exit")
-	flag.Parse()
-
 	err := utils.LoadEnv()
 
 	env := utils.GetEnv()
@@ -38,24 +30,6 @@ func main() {
 		slog.String("env", env.AppEnv),
 	)
 
-	// Run database migrations before connecting the application.
-	rootLogger.Info("running database migrations")
-	if err := migrator.Run(migrator.Params{
-		DbUsername:   env.DbUsername,
-		DbPassword:   env.DbPassword,
-		DbHost:       env.DbHost,
-		DbPort:       env.DbPort,
-		DbName:       env.DbName,
-		MigrationsFS: migrations.FS,
-	}); err != nil {
-		panic(fmt.Sprintf("failed to run migrations: %v", err))
-	}
-
-	if *migrateOnly {
-		rootLogger.Info("--migrate-only flag set, exiting after migrations")
-		return
-	}
-
 	db, err := mysql.ConnectDB(mysql.ConnectDBParams{
 		DbUsername: env.DbUsername,
 		DbPassword: env.DbPassword,
@@ -65,15 +39,6 @@ func main() {
 	})
 	if err != nil {
 		panic("failed to connect database")
-	}
-
-	if *seedFlag {
-		rootLogger.Info("--seed flag set, running seeders")
-		if err := seeds.RunAll(db, seeds.All()); err != nil {
-			panic(fmt.Sprintf("failed to run seeders: %v", err))
-		}
-		rootLogger.Info("seeders completed successfully")
-		return
 	}
 
 	router := mux.NewRouter().StrictSlash(true)

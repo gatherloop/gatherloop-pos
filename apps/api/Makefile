@@ -7,13 +7,13 @@ export
 DB_URL ?= mysql://$(DB_USERNAME):$(DB_PASSWORD)@tcp($(DB_HOST):$(DB_PORT))/$(DB_NAME)
 MIGRATIONS_DIR ?= migrations
 
-.PHONY: migrate-up migrate-down migrate-create migrate-version dev build test
+.PHONY: migrate-up migrate-down migrate-create migrate-version dev build build-migrate build-seed migrate seed test
 
-## migrate-up: Run all pending migrations
+## migrate-up: Run all pending migrations (via migrate CLI)
 migrate-up:
 	migrate -path $(MIGRATIONS_DIR) -database "$(DB_URL)" up
 
-## migrate-down: Rollback the last migration
+## migrate-down: Rollback the last migration (via migrate CLI)
 migrate-down:
 	migrate -path $(MIGRATIONS_DIR) -database "$(DB_URL)" down 1
 
@@ -26,13 +26,29 @@ migrate-create:
 migrate-version:
 	migrate -path $(MIGRATIONS_DIR) -database "$(DB_URL)" version
 
-## dev: Run the API in development mode (with hot reload via `go run`)
+## dev: Run the API in development mode
 dev:
 	go run main.go
 
-## build: Build the API binary
+## build: Build the API server binary
 build:
 	go build -o dist/api main.go
+
+## build-migrate: Build the migration binary
+build-migrate:
+	go build -o dist/migrate cmd/migrate/main.go
+
+## build-seed: Build the seeder binary
+build-seed:
+	go build -o dist/seed cmd/seed/main.go
+
+## migrate: Run database migrations using the Go binary
+migrate:
+	go run cmd/migrate/main.go
+
+## seed: Run database seeders using the Go binary
+seed:
+	go run cmd/seed/main.go
 
 ## test: Run all tests
 test:
