@@ -89,11 +89,11 @@ export const ListItem = ({
             defaultSource={{
               uri: thumbnailSrc,
             }}
-            width={120}
-            height={120}
+            width={72}
+            height={72}
             borderTopLeftRadius="$5"
             borderBottomLeftRadius="$5"
-            $xs={{ display: 'none' }}
+            $gtMd={{ width: 120, height: 120 }}
           />
         )}
 
@@ -109,7 +109,7 @@ export const ListItem = ({
 
           <Separator />
 
-          <XStack gap="$3" flexWrap="wrap">
+          <XStack gap="$3" flexWrap="wrap" $xs={{ gap: '$2' }}>
             {shownFooterItems.map((footerItem, index) => (
               <React.Fragment key={index}>
                 <XStack

@@ -8,6 +8,7 @@ import {
   Spinner,
   XStack,
   YStack,
+  useMedia,
 } from 'tamagui';
 import { ProductListItem } from './ProductListItem';
 import {
@@ -66,18 +67,23 @@ export const ProductList = ({
   isRevalidating,
   isChangingParams,
   variant,
-  numColumns = 1,
+  numColumns,
   onEmptyActionPress,
 }: ProductListProps) => {
+  const media = useMedia();
+  const defaultNumColumns = media.gtLg ? 4 : media.gtMd ? 3 : media.gtSm ? 2 : 1;
+  const effectiveNumColumns = numColumns ?? defaultNumColumns;
+
   return (
     <YStack gap="$3" flex={1}>
-      <XStack gap="$3" justifyContent="space-between" alignItems="center">
+      <XStack gap="$2" justifyContent="space-between" alignItems="center" flexWrap="wrap">
         <Input
           placeholder="Search Products by Name"
           value={searchValue}
           onChangeText={onSearchValueChange}
           autoFocus={isSearchAutoFocus}
           flex={1}
+          $xs={{ width: '100%' }}
         />
         {searchValue.length > 0 && (
           <Button
@@ -166,11 +172,12 @@ export const ProductList = ({
         ))
         .with({ type: 'loaded' }, ({ items }) => (
           <FlatList
+            key={effectiveNumColumns}
             nestedScrollEnabled
             data={items}
-            numColumns={numColumns}
+            numColumns={effectiveNumColumns}
             contentContainerStyle={{ gap: 16 }}
-            columnWrapperStyle={numColumns > 1 ? { gap: 16 } : undefined}
+            columnWrapperStyle={effectiveNumColumns > 1 ? { gap: 16 } : undefined}
             renderItem={({ item }) => (
               <Focusable
                 onEnterPress={() => onItemPress(item)}
