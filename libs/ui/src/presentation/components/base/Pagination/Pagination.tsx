@@ -37,9 +37,14 @@ export const Pagination = ({
   );
 
   return totalPage <= 1 ? null : (
-    <XStack gap="$3">
+    <XStack gap="$3" flexWrap="wrap">
       {currentPage !== 1 && (
-        <Button size="$2" icon={ChevronsLeft} onPress={() => onChangePage(1)} />
+        <Button
+          size="$2"
+          icon={ChevronsLeft}
+          onPress={() => onChangePage(1)}
+          $xs={{ display: 'none' }}
+        />
       )}
 
       <Button
@@ -90,6 +95,7 @@ export const Pagination = ({
           size="$2"
           icon={ChevronsRight}
           onPress={() => onChangePage(totalPage)}
+          $xs={{ display: 'none' }}
         />
       )}
     </XStack>
