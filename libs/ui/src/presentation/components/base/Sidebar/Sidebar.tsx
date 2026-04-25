@@ -1,6 +1,5 @@
 import {
   ChevronDown,
-  ChevronsLeft,
   ChevronsRight,
   LogOut,
 } from '@tamagui/lucide-icons';
@@ -14,130 +13,146 @@ import {
   XStack,
   YGroup,
   YStack,
+  useMedia,
 } from 'tamagui';
 import { useSidebarState } from './Sidebar.state';
 import { Link } from 'solito/link';
+import { Sheet } from '../Sheet';
 
 export type SidebarProps = {
   onLogoutPress: () => void;
+  isShown: boolean;
+  onToggle: () => void;
+  onOpenChange: (isOpen: boolean) => void;
 };
 
 export const Sidebar = (props: SidebarProps) => {
-  const {
-    isShown,
-    onToggleButtonPress,
-    router,
-    items,
-    accordionValue,
-    setAccordionValue,
-    currentPath,
-  } = useSidebarState();
+  const { isShown, onToggle, onOpenChange } = props;
+  const media = useMedia();
+  const { router, items, accordionValue, setAccordionValue, currentPath } =
+    useSidebarState();
 
+  const sidebarContent = (
+    <YStack flex={1} backgroundColor="$gray3" justifyContent="space-between">
+      <YStack gap="$3">
+        <XStack padding="$3" paddingBottom="$0">
+          <H5>Gatherloop POS</H5>
+        </XStack>
+
+        <Accordion
+          overflow="hidden"
+          type="single"
+          value={accordionValue}
+          onValueChange={setAccordionValue}
+        >
+          {items.map((item) => (
+            <Accordion.Item value={item.title} key={item.title}>
+              <Accordion.Trigger
+                flexDirection="row"
+                justifyContent="space-between"
+                backgroundColor="$gray3"
+                onPress={(event) => {
+                  if (item.path) {
+                    event.preventDefault();
+                    router.push(item.path);
+                  }
+                }}
+              >
+                {({ open }: { open: boolean }) => (
+                  <>
+                    <XStack gap="$3">
+                      <item.icon size="$1" />
+                      <Paragraph>{item.title}</Paragraph>
+                    </XStack>
+                    {item.subItems && (
+                      <Square
+                        animation="quick"
+                        rotate={open ? '180deg' : '0deg'}
+                      >
+                        <ChevronDown size="$1" />
+                      </Square>
+                    )}
+                  </>
+                )}
+              </Accordion.Trigger>
+
+              {item.subItems && (
+                <Accordion.HeightAnimator animation="medium">
+                  <Accordion.Content
+                    animation="medium"
+                    exitStyle={{ opacity: 0 }}
+                    backgroundColor="$gray3"
+                  >
+                    {item.subItems.map((subItem, index) => (
+                      <YGroup.Item key={index}>
+                        <Link href={subItem.path}>
+                          <ListItem
+                            backgroundColor={
+                              subItem.path === currentPath
+                                ? undefined
+                                : '$colorTransparent'
+                            }
+                            hoverTheme
+                            size="$4"
+                            cursor="pointer"
+                            borderRadius="$3"
+                          >
+                            {subItem.title}
+                          </ListItem>
+                        </Link>
+                      </YGroup.Item>
+                    ))}
+                  </Accordion.Content>
+                </Accordion.HeightAnimator>
+              )}
+            </Accordion.Item>
+          ))}
+        </Accordion>
+      </YStack>
+
+      <YStack padding="$3" paddingTop="$0">
+        <Button
+          onPress={props.onLogoutPress}
+          icon={LogOut}
+          variant="outlined"
+        >
+          Logout
+        </Button>
+      </YStack>
+    </YStack>
+  );
+
+  // Mobile/tablet (md and below): off-canvas Sheet drawer
+  if (!media.gtMd) {
+    return (
+      <Sheet isOpen={isShown} onOpenChange={onOpenChange}>
+        {sidebarContent}
+      </Sheet>
+    );
+  }
+
+  // Desktop (gtMd): classic inline sidebar
   return (
     <>
       <YGroup
+        data-testid="sidebar"
+        flex={1}
         width={200}
-        $xs={{ position: 'absolute', top: 0, bottom: 0, zIndex: '$5' }}
         elevation="$1"
         backgroundColor="$gray3"
         borderRadius="$0"
+        animation="medium"
         marginLeft={isShown ? 0 : -200}
       >
-        <YStack flex={1} justifyContent="space-between">
-          <YStack gap="$3">
-            <XStack padding="$3" paddingBottom="$0">
-              <H5>Gatherloop POS</H5>
-            </XStack>
-
-            <Accordion
-              overflow="hidden"
-              type="single"
-              value={accordionValue}
-              onValueChange={setAccordionValue}
-            >
-              {items.map((item) => (
-                <Accordion.Item value={item.title} key={item.title}>
-                  <Accordion.Trigger
-                    flexDirection="row"
-                    justifyContent="space-between"
-                    backgroundColor={'$gray3'}
-                    onPress={(event) => {
-                      if (item.path) {
-                        event.preventDefault();
-                        router.push(item.path);
-                      }
-                    }}
-                  >
-                    {({ open }: { open: boolean }) => (
-                      <>
-                        <XStack gap="$3">
-                          <item.icon size="$1" />
-                          <Paragraph>{item.title}</Paragraph>
-                        </XStack>
-                        {item.subItems && (
-                          <Square
-                            animation="quick"
-                            rotate={open ? '180deg' : '0deg'}
-                          >
-                            <ChevronDown size="$1" />
-                          </Square>
-                        )}
-                      </>
-                    )}
-                  </Accordion.Trigger>
-
-                  {item.subItems && (
-                    <Accordion.HeightAnimator animation="medium">
-                      <Accordion.Content
-                        animation="medium"
-                        exitStyle={{ opacity: 0 }}
-                        backgroundColor="$gray3"
-                      >
-                        {item.subItems.map((subItem, index) => (
-                          <YGroup.Item key={index}>
-                            <Link href={subItem.path}>
-                              <ListItem
-                                backgroundColor={
-                                  subItem.path === currentPath
-                                    ? undefined
-                                    : '$colorTransparent'
-                                }
-                                hoverTheme
-                                size="$4"
-                                cursor="pointer"
-                                borderRadius="$3"
-                              >
-                                {subItem.title}
-                              </ListItem>
-                            </Link>
-                          </YGroup.Item>
-                        ))}
-                      </Accordion.Content>
-                    </Accordion.HeightAnimator>
-                  )}
-                </Accordion.Item>
-              ))}
-            </Accordion>
-          </YStack>
-
-          <YStack padding="$3" paddingTop="$0">
-            <Button
-              onPress={props.onLogoutPress}
-              icon={LogOut}
-              variant="outlined"
-            >
-              Logout
-            </Button>
-          </YStack>
-        </YStack>
+        {sidebarContent}
       </YGroup>
 
       {!isShown && (
         <Button
-          icon={isShown ? ChevronsLeft : ChevronsRight}
-          onPress={onToggleButtonPress}
+          icon={ChevronsRight}
+          onPress={onToggle}
           position="absolute"
-          left={isShown ? 200 : 0}
+          left={0}
           zIndex={999}
           animation="fast"
           size="$3"
@@ -146,7 +161,7 @@ export const Sidebar = (props: SidebarProps) => {
           bottom="$20"
           borderWidth="$0"
           theme="blue"
-        ></Button>
+        />
       )}
     </>
   );
