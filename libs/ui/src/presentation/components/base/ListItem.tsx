@@ -135,7 +135,7 @@ export const ListItem = ({
                     <Paragraph color="$gray12">{footerItem.value}</Paragraph>
                   </YStack>
                 </XStack>
-                <Separator vertical />
+                {index < shownFooterItems.length - 1 && <Separator vertical />}
               </React.Fragment>
             ))}
           </XStack>

@@ -5,9 +5,10 @@ export type SheetProps = {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   children: ReactNode;
+  showHandle?: boolean;
 };
 
-export const Sheet = ({ isOpen, onOpenChange, children }: SheetProps) => {
+export const Sheet = ({ isOpen, onOpenChange, children, showHandle = true }: SheetProps) => {
   return (
     <TamaguiSheet
       modal={true}
@@ -25,7 +26,7 @@ export const Sheet = ({ isOpen, onOpenChange, children }: SheetProps) => {
         enterStyle={{ opacity: 0 }}
         exitStyle={{ opacity: 0 }}
       />
-      <TamaguiSheet.Handle />
+      {showHandle && <TamaguiSheet.Handle />}
       <TamaguiSheet.Frame height="100vh">{children}</TamaguiSheet.Frame>
     </TamaguiSheet>
   );

@@ -55,6 +55,7 @@ export const Sidebar = (props: SidebarProps) => {
                   if (item.path) {
                     event.preventDefault();
                     router.push(item.path);
+                    if (!media.gtMd) onOpenChange(false);
                   }
                 }}
               >
@@ -96,6 +97,9 @@ export const Sidebar = (props: SidebarProps) => {
                             size="$4"
                             cursor="pointer"
                             borderRadius="$3"
+                            onPress={() => {
+                              if (!media.gtMd) onOpenChange(false);
+                            }}
                           >
                             {subItem.title}
                           </ListItem>
@@ -125,7 +129,7 @@ export const Sidebar = (props: SidebarProps) => {
   // Mobile/tablet (md and below): off-canvas Sheet drawer
   if (!media.gtMd) {
     return (
-      <Sheet isOpen={isShown} onOpenChange={onOpenChange}>
+      <Sheet isOpen={isShown} onOpenChange={onOpenChange} showHandle={false}>
         {sidebarContent}
       </Sheet>
     );
@@ -158,7 +162,7 @@ export const Sidebar = (props: SidebarProps) => {
           size="$3"
           borderTopLeftRadius="$0"
           borderBottomLeftRadius="$0"
-          bottom="$20"
+          top="$3"
           borderWidth="$0"
           theme="blue"
         />

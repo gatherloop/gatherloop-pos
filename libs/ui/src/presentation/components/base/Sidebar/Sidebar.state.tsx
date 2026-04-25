@@ -65,9 +65,24 @@ export const useSidebarState = () => {
   const [currentPath, setCurrentPath] = useState<string>();
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setCurrentPath(window.location.pathname);
-    }
+    if (typeof window === 'undefined') return;
+
+    const updatePath = () => setCurrentPath(window.location.pathname);
+    updatePath();
+
+    window.addEventListener('popstate', updatePath);
+
+    // Intercept pushState so active-item highlight updates on SPA navigation
+    const originalPushState = window.history.pushState.bind(window.history);
+    window.history.pushState = (...args: Parameters<typeof window.history.pushState>) => {
+      originalPushState(...args);
+      updatePath();
+    };
+
+    return () => {
+      window.removeEventListener('popstate', updatePath);
+      window.history.pushState = originalPushState;
+    };
   }, []);
 
   useEffect(() => {

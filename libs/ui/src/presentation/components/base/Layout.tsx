@@ -45,7 +45,7 @@ export const Layout = ({
 
   return (
     <PortalProvider shouldAddRootHost>
-      <XStack flex={1}>
+      <XStack flex={1} overflow="hidden">
         <Sidebar
           onLogoutPress={onLogoutPress}
           isShown={isSidebarShown}
