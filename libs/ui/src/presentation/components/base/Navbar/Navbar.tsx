@@ -7,26 +7,21 @@ export type NavbarProps = {
   title: string;
   showBackButton?: boolean;
   rightActionItem?: ReactNode;
-  leftActionItem?: ReactNode;
 };
 
 export const Navbar = ({
   title,
   showBackButton,
   rightActionItem,
-  leftActionItem,
 }: NavbarProps) => {
   const { onBackButtonPress } = useNavbarState();
   return (
     <XStack
       padding="$3"
       justifyContent="space-between"
-      alignItems="center"
       backgroundColor="$gray1"
-      $xs={{ flexDirection: 'column', alignItems: 'flex-start', gap: '$2' }}
     >
-      <XStack alignItems="center" gap="$3" flex={1}>
-        {leftActionItem}
+      <XStack alignItems="center" gap="$3">
         {showBackButton && (
           <Button
             icon={ArrowLeft}
@@ -36,9 +31,7 @@ export const Navbar = ({
             size="$3"
           />
         )}
-        <H4 numberOfLines={1} ellipsizeMode="tail" flex={1}>
-          {title}
-        </H4>
+        <H4>{title}</H4>
       </XStack>
       {rightActionItem}
     </XStack>

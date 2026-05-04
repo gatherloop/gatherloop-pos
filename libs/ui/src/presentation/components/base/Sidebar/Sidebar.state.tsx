@@ -7,6 +7,7 @@ import {
 } from '@tamagui/lucide-icons';
 import { NamedExoticComponent, useEffect, useState } from 'react';
 import { useRouter } from 'solito/router';
+import {} from 'solito';
 
 type MenuItem = {
   title: string;
@@ -60,14 +61,17 @@ const items: MenuItem[] = [
 ];
 
 export const useSidebarState = () => {
+  const [isShown, setIsShown] = useState(true);
+
+  const onToggleButtonPress = () => setIsShown((prev) => !prev);
+
   const router = useRouter();
+
   const [accordionValue, setAccordionValue] = useState<string>();
   const [currentPath, setCurrentPath] = useState<string>();
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setCurrentPath(window.location.pathname);
-    }
+    setCurrentPath(window.location.pathname);
   }, []);
 
   useEffect(() => {
@@ -85,6 +89,8 @@ export const useSidebarState = () => {
   }, [currentPath]);
 
   return {
+    isShown,
+    onToggleButtonPress,
     router,
     items,
     accordionValue,
