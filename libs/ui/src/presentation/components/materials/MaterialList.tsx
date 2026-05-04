@@ -49,14 +49,13 @@ export const MaterialList = ({
 }: MaterialListProps) => {
   return (
     <YStack gap="$3" flex={1}>
-      <XStack alignItems="center" gap="$2" flexWrap="wrap">
+      <XStack alignItems="center" gap="$2">
         <Input
           placeholder="Search Materials by Name"
           value={searchValue}
           onChangeText={onSearchValueChange}
           autoFocus={isSearchAutoFocus}
           flex={1}
-          $xs={{ width: '100%' }}
         />
         {(isRevalidating || isChangingParams) && (
           <Spinner size="small" color="$gray10" testID="search-spinner" />

@@ -73,14 +73,13 @@ export const TransactionList = ({
 }: TransactionListProps) => {
   return (
     <YStack gap="$3" flex={1}>
-      <XStack gap="$2" justifyContent="space-between" alignItems="center" flexWrap="wrap">
+      <XStack gap="$3" justifyContent="space-between" alignItems="center">
         <Input
           id="search"
           placeholder="Search Customer Name"
           value={searchValue}
           onChangeText={onSearchValueChange}
           flex={1}
-          $xs={{ width: '100%' }}
         />
         {searchValue.length > 0 && (
           <Button

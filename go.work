@@ -3,5 +3,3 @@ go 1.24.0
 toolchain go1.24.7
 
 use ./apps/api
-
-replace libs/api-contract => ./libs/api-contract/src/__generated__/go
