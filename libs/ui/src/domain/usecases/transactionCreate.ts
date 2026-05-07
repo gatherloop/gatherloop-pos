@@ -95,6 +95,13 @@ export class TransactionCreateUsecase extends Usecase<
           type: 'loaded',
         })
       )
+      .with(
+        [{ type: 'submitSuccess' }, { type: 'SUBMIT_CANCEL' }],
+        ([state]) => ({
+          ...state,
+          type: 'loaded',
+        })
+      )
       .otherwise(() => state);
   }
 

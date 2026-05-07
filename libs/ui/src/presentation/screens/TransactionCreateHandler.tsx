@@ -298,8 +298,74 @@ export const TransactionCreateHandler = ({
         transactionPayController.state.type === 'paying' ||
         transactionPayController.state.type === 'payingSuccess' ||
         transactionPayController.state.type === 'payingError',
-      onCancel: () =>
-        transactionPayController.dispatch({ type: 'HIDE_CONFIRMATION' }),
+      onCancel: () => {
+        const transaction: TransactionPrintPayload['transaction'] = {
+          createdAt: dayjs(new Date().toISOString()).format('DD/MM/YYYY HH:mm'),
+          name: transactionCreateController.form.getValues('name'),
+          orderNumber: transactionCreateController.form.getValues('orderNumber'),
+          items: transactionCreateController.form
+            .getValues('transactionItems')
+            .sort((a, b) =>
+              a.variant.product.name.localeCompare(b.variant.product.name)
+            )
+            .map(({ variant, amount, discountAmount, note }) => ({
+              name: `${variant.product.name} - ${variant.values
+                .map(({ optionValue: { name } }) => name)
+                .join(' - ')}`,
+              price: variant.price,
+              amount,
+              discountAmount,
+              note,
+            })),
+          coupons: transactionCreateController.form
+            .getValues('transactionCoupons')
+            .map(({ coupon }) => ({
+              amount: coupon.amount,
+              type: coupon.type === 'fixed' ? 'FIXED' : 'PERCENTAGE',
+              code: coupon.code,
+            })),
+          isCashless: false,
+          paidAmount: 0,
+        };
+        transactionPayController.dispatch({ type: 'HIDE_CONFIRMATION' });
+        transactionCreateController.dispatch({ type: 'SUBMIT_CANCEL' });
+        show({
+          title: 'Print Invoice',
+          description: 'Do you want to print invoice ?',
+          onConfirm: () => {
+            print({ type: 'INVOICE', transaction })
+              .then(() => {
+                show({
+                  title: 'Print Order Slip',
+                  description: 'Do you want to print order slip ?',
+                  onConfirm: () => {
+                    print({ type: 'ORDER_SLIP', transaction }).then(() => {
+                      router.push('/transactions');
+                    });
+                  },
+                  onCancel: () => router.push('/transactions'),
+                });
+              })
+              .catch(() => {
+                router.push('/transactions');
+              });
+          },
+          onCancel: () => {
+            setTimeout(() => {
+              show({
+                title: 'Print Order Slip',
+                description: 'Do you want to print order slip ?',
+                onConfirm: () => {
+                  print({ type: 'ORDER_SLIP', transaction }).then(() => {
+                    router.push('/transactions');
+                  });
+                },
+                onCancel: () => router.push('/transactions'),
+              });
+            }, 200);
+          },
+        });
+      },
       onSubmit: (values) =>
         transactionPayController.dispatch({
           type: 'PAY',
