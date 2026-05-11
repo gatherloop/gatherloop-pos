@@ -22,7 +22,9 @@ export const getServerSideProps: GetServerSideProps<
 
   const client = new QueryClient();
   const checklistSessionRepository = new ApiChecklistSessionRepository(client);
-  const checklistTemplateRepository = new ApiChecklistTemplateRepository(client);
+  const checklistTemplateRepository = new ApiChecklistTemplateRepository(
+    client
+  );
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -31,7 +33,7 @@ export const getServerSideProps: GetServerSideProps<
       {
         page: 1,
         itemPerPage: 10,
-        filter: { dateFrom: today, dateTo: today },
+        filter: {},
       },
       {
         headers: { Cookie: ctx.req.headers.cookie },

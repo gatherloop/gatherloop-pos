@@ -14,7 +14,10 @@ import {
   TransactionItemSelectUsecase,
   CouponListUsecase,
 } from '../../domain';
-import { TransactionCreateScreen, TransactionCreateScreenProps } from './TransactionCreateScreen';
+import {
+  TransactionCreateScreen,
+  TransactionCreateScreenProps,
+} from './TransactionCreateScreen';
 import {
   roundToNearest500,
   TransactionPrintPayload,
@@ -298,8 +301,7 @@ export const TransactionCreateHandler = ({
         transactionPayController.state.type === 'paying' ||
         transactionPayController.state.type === 'payingSuccess' ||
         transactionPayController.state.type === 'payingError',
-      onCancel: () =>
-        transactionPayController.dispatch({ type: 'HIDE_CONFIRMATION' }),
+      onCancel: () => router.push('/transactions'),
       onSubmit: (values) =>
         transactionPayController.dispatch({
           type: 'PAY',
