@@ -13,7 +13,7 @@ import {
 } from 'tamagui';
 import { H4 } from 'tamagui';
 import { Check, Trash } from '@tamagui/lucide-icons';
-import { RentalCheckinForm } from '../../../domain';
+import { PricingTier, RentalCheckinForm } from '../../../domain';
 import {
   FormProvider,
   UseFieldArrayReturn,
@@ -21,6 +21,20 @@ import {
 } from 'react-hook-form';
 import { ReactNode, useRef } from 'react';
 import { Separator } from 'tamagui';
+
+function formatPricingBadge(tiers: PricingTier[]): string | null {
+  if (tiers.length === 0) return null;
+  const fmtPrice = (price: number) => {
+    const k = price / 1000;
+    return Number.isInteger(k) ? `${k}K` : `${k.toFixed(1)}K`;
+  };
+  if (tiers.length === 1)
+    return `Flat: Rp. ${tiers[0].price.toLocaleString('id')} (≤${tiers[0].upToMinutes}min)`;
+  const fmtTier = (t: PricingTier) => `${t.upToMinutes}min: ${fmtPrice(t.price)}`;
+  if (tiers.length <= 3) return tiers.map(fmtTier).join(' | ');
+  const first = tiers.slice(0, 2).map(fmtTier).join(' | ');
+  return `${first} | … | cap: ${fmtPrice(tiers[tiers.length - 1].price)}`;
+}
 
 export type RentalCheckinFormViewProps = {
   form: UseFormReturn<RentalCheckinForm>;
@@ -188,6 +202,7 @@ export const RentalCheckinFormView = ({
 
                     <H4>Items</H4>
                     {rentalsFieldArray.fields.map(({ variant, key }, index) => {
+                      const pricingBadge = formatPricingBadge(variant.pricingTiers);
                       return (
                         <YStack key={key} gap="$3">
                           <XStack
@@ -214,6 +229,11 @@ export const RentalCheckinFormView = ({
                                     .map(({ optionValue }) => optionValue.name)
                                     .join(' - ')}
                                 </Paragraph>
+                                {pricingBadge !== null && (
+                                  <Paragraph size="$2" color="$gray10">
+                                    {pricingBadge}
+                                  </Paragraph>
+                                )}
                               </YStack>
                             </XStack>
                           </XStack>
