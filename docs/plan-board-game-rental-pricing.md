@@ -4,83 +4,74 @@ Companion to [`trd-board-game-rental-pricing.md`](./trd-board-game-rental-pricin
 
 ## Overview
 
-Introduce a single `PricingScheme` entity owned 1:1 by **every** variant (purchase + rental), with two pricing types: `flat` and `tiered`. Drop `variants.price` entirely. At check-in, the rental variant's scheme is snapshotted onto the rental row. At check-out, a `PricingCalculator` reads only from the snapshot. Purchase transactions read `variant.pricing_scheme.flat_price` directly (no separate snapshot — `transaction_items.price` already records the historical per-unit price).
+Introduce a `PricingScheme` entity owned 1:1 by **rental variants only**. A scheme is just a list of `(up_to_minutes, price_per_person)` tiers — there is no `flat` vs `tiered` discriminator. "All Day" is a single-tier scheme; "Hourly" is a multi-tier scheme. At check-in, the variant's tier list is JSON-snapshotted onto the rental row. At check-out, a `PricingCalculator` reads only from the snapshot.
+
+`variants.price` is **untouched** — purchase variants continue to use it exactly as today.
 
 The hardcoded `MAX_HOUR := 6.0` and `variant.Price × hours` math in `apps/api/domain/rental_usecase.go:107-128` is replaced.
 
 **Design rules driving this plan:**
-- One rental row = one person.
-- Every variant has exactly one `pricing_scheme_id` (no `variants.price`).
-- Purchase variants must be `flat`; rental variants can be `flat` or `tiered`.
-- Scheme is edited inside the variant form, not on a standalone page.
+- One rental row = one person. Groups create N rows.
+- Schemes are rental-only. Purchase variants keep `variants.price`.
+- Single pricing model: tiers. A 1-row table is the degenerate "flat" case.
+- Scheme is edited inside the rental variant form, not on a standalone page.
 - Scheme has no name — variant name is the display name.
 
-This is a **breaking change** for any external consumer of the variants API (the `price` field disappears).
-
-Phases are independently shippable: schema → domain → data → handler → contract → web → mobile → docs.
+This is **additive** for the variants API (no breaking change to existing purchase fields). Phases are independently shippable: schema → domain → data → handler → contract → web → mobile → docs.
 
 ---
 
-## Phase 1: Database Schema + Backfill
+## Phase 1: Database Schema + Seeds
 
-**Goal:** New tables exist; every variant has a scheme; rentals have snapshot columns; `variants.price` is gone. Nothing reads from the new columns yet (the old `variants.price` reads are migrated in Phase 4 — until then, the data layer keeps a derived getter that returns `pricing_scheme.flat_price`).
+**Goal:** New tables exist; existing rental variants point at a seeded "Hourly" scheme; existing rentals carry a snapshot. Purchase variants untouched.
 
 ### 1.1 Migration `000004_pricing_schemes`
 
 `apps/api/migrations/000004_pricing_schemes.up.sql`:
 
-1. `CREATE TABLE pricing_schemes (id, pricing_type ENUM('tiered','flat'), description, flat_price, created_at, deleted_at)` with the CHECK constraint per TRD.
+1. `CREATE TABLE pricing_schemes (id, description, created_at, deleted_at)`.
 2. `CREATE TABLE pricing_scheme_tiers (id, scheme_id, up_to_minutes, price_per_person, created_at, UNIQUE(scheme_id, up_to_minutes))`.
-3. `ALTER TABLE variants ADD COLUMN pricing_scheme_id BIGINT NULL` (nullable for backfill).
-4. **Backfill schemes for every variant**:
+3. `ALTER TABLE variants ADD COLUMN pricing_scheme_id BIGINT NULL` + FK to `pricing_schemes(id)`. `variants.price` is **untouched**.
+4. `ALTER TABLE rentals ADD COLUMN snapshot_tiers_json JSON NULL` (nullable for backfill).
+5. **Seed three schemes** (insert + their tier rows):
+   - "Hourly board game" → 7 tiers `{60→15K, 90→20K, 120→30K, 180→45K, 240→60K, 300→75K, 360→90K}`.
+   - "All day weekday" → 1 tier `{840→50K}`.
+   - "All day weekend" → 1 tier `{840→60K}`.
+6. **Attach Hourly to every existing rental variant:**
    ```sql
-   INSERT INTO pricing_schemes (pricing_type, flat_price, created_at)
-     SELECT 'flat', price, NOW() FROM variants ORDER BY id;
-   -- Map back via insertion order. Safest: a temp table + JOIN on row_number.
+   UPDATE variants v
+   JOIN products p ON p.id = v.product_id
+   SET v.pricing_scheme_id = <hourly_scheme_id>
+   WHERE p.sale_type = 'rental';
    ```
-   Then `UPDATE variants v JOIN <mapping> m ON m.variant_id = v.id SET v.pricing_scheme_id = m.scheme_id`.
-5. **Insert seeded "Hourly" tiered scheme** (not auto-attached to any variant — admin attaches it manually post-migration):
+7. **Backfill snapshots for existing rentals** with the Hourly tier list as JSON:
    ```sql
-   INSERT INTO pricing_schemes (pricing_type, description) VALUES ('tiered', 'Hourly board game rate');
-   -- Then 7 tier rows: 60→15K, 90→20K, 120→30K, 180→45K, 240→60K, 300→75K, 360→90K
+   UPDATE rentals
+   SET snapshot_tiers_json = '[{"up_to_minutes":60,"price_per_person":15000},{"up_to_minutes":90,"price_per_person":20000},{"up_to_minutes":120,"price_per_person":30000},{"up_to_minutes":180,"price_per_person":45000},{"up_to_minutes":240,"price_per_person":60000},{"up_to_minutes":300,"price_per_person":75000},{"up_to_minutes":360,"price_per_person":90000}]';
    ```
-6. `ALTER TABLE variants MODIFY COLUMN pricing_scheme_id BIGINT NOT NULL, ADD CONSTRAINT fk_variants_scheme ..., DROP COLUMN price`.
-7. `ALTER TABLE rentals ADD COLUMN snapshot_pricing_type ENUM('tiered','flat') NULL, ADD COLUMN snapshot_flat_price FLOAT NULL, ADD COLUMN snapshot_tiers_json JSON NULL`.
-8. **Backfill snapshots for existing rentals** (Open Question 1 in TRD — default to option A):
-   ```sql
-   UPDATE rentals r JOIN variants v ON v.id = r.variant_id JOIN pricing_schemes s ON s.id = v.pricing_scheme_id
-     SET r.snapshot_pricing_type = 'flat', r.snapshot_flat_price = s.flat_price;
-   ```
-9. `ALTER TABLE rentals MODIFY COLUMN snapshot_pricing_type ENUM('tiered','flat') NOT NULL`.
+8. `ALTER TABLE rentals MODIFY COLUMN snapshot_tiers_json JSON NOT NULL`.
 
-`apps/api/migrations/000004_pricing_schemes.down.sql`: reverse strictly:
-- Add back `variants.price FLOAT NOT NULL DEFAULT 0`.
-- `UPDATE variants v JOIN pricing_schemes s ON s.id = v.pricing_scheme_id SET v.price = COALESCE(s.flat_price, 0)`.
-- Drop snapshot columns from `rentals`.
-- Drop `pricing_scheme_id` from `variants`.
-- Drop `pricing_scheme_tiers` then `pricing_schemes`.
+`apps/api/migrations/000004_pricing_schemes.down.sql`: reverse strictly — drop snapshot column, drop scheme FK, drop tier rows, drop scheme rows, drop tables. (`variants.price` was never touched, so no restore needed.)
 
 ### 1.2 Verify
 
-- `go test ./apps/api/...` — should still pass; existing code reads `variants.price` so until Phase 4 lands, the data layer must expose a virtual `Price` getter that returns `pricing_scheme.flat_price`. This compatibility shim is added in Phase 3.
+- `go test ./apps/api/...` — still passes; no existing code references the new columns.
 - Migrate up → seeds present → migrate down → migrate up (idempotency).
+- `SELECT pricing_scheme_id FROM variants v JOIN products p ON p.id = v.product_id WHERE p.sale_type='rental'` — every rental variant has a scheme. `WHERE p.sale_type='purchase'` — every purchase variant has `NULL`.
+- `SELECT snapshot_tiers_json FROM rentals LIMIT 5` — populated with the Hourly tier JSON.
 
-**Exit criteria:** Migrations apply and revert cleanly on a fresh DB and on a DB with existing variants + rentals.
+**Exit criteria:** Migrations apply and revert cleanly. Purchase variants are observably untouched by `SELECT price FROM variants WHERE …`.
 
 ---
 
 ## Phase 2: Domain Layer (Go)
 
+**Goal:** Entities, repositories, and the calculator exist with unit tests. No handlers wired up yet.
+
 ### 2.1 New entities
 
 `apps/api/domain/pricing_scheme_entity.go`:
 ```go
-type PricingType string
-const (
-    PricingTypeTiered PricingType = "tiered"
-    PricingTypeFlat   PricingType = "flat"
-)
-
 type PricingSchemeTier struct {
     Id             int64
     SchemeId       int64
@@ -90,274 +81,285 @@ type PricingSchemeTier struct {
 
 type PricingScheme struct {
     Id          int64
-    PricingType PricingType
     Description *string
-    FlatPrice   *float32                 // only for flat
-    Tiers       []PricingSchemeTier      // only for tiered, sorted ASC
+    Tiers       []PricingSchemeTier   // sorted ASC by UpToMinutes, always >=1
     CreatedAt   time.Time
     DeletedAt   *time.Time
 }
 ```
 
-### 2.2 Modify Variant entity
+No `PricingType` enum, no `FlatPrice` field.
+
+### 2.2 Extend Variant entity
 
 `apps/api/domain/variant_entity.go`:
-- **Remove** `Price float32`.
-- **Add** `PricingSchemeId int64` and `PricingScheme PricingScheme`.
+- **Keep** `Price float32` exactly as it is.
+- **Add** `PricingSchemeId *int64` and `PricingScheme *PricingScheme` (nullable — only set for rental variants).
 
-Audit every reference to `variant.Price` in the domain layer; replace with `variant.PricingScheme.FlatPrice` (deref guard since it's nullable in transit, but always non-nil for `flat` schemes per FR-2 validation). Files to touch: `transaction_usecase.go`, `material_usecase.go` (if any), `calculation_usecase.go`, etc. — exhaustive grep before commit.
+No need to audit existing `variant.Price` references — they continue to work for purchase variants.
 
 ### 2.3 Extend Rental entity
 
 `apps/api/domain/rental_entity.go`: add
 ```go
-SnapshotPricingType PricingType
-SnapshotFlatPrice   *float32
-SnapshotTiersJSON   *string
+SnapshotTiersJSON string   // raw JSON; parsed by the calculator
 ```
+
+One column, not three.
 
 ### 2.4 Repository interface
 
 `apps/api/domain/pricing_scheme_repository.go`:
 - `CreateScheme(ctx, scheme) (PricingScheme, *Error)` — inserts scheme + tiers atomically.
-- `UpdateScheme(ctx, scheme) (PricingScheme, *Error)` — replaces tier rows; `pricing_type` is immutable.
+- `UpdateScheme(ctx, scheme) (PricingScheme, *Error)` — replaces tier rows wholesale.
 - `DeleteSchemeById(ctx, id) *Error` — soft delete.
-- `GetSchemeById(ctx, id) (PricingScheme, *Error)` — includes tiers.
+- `GetSchemeById(ctx, id) (PricingScheme, *Error)` — includes tiers, sorted ASC.
 
 ### 2.5 Pricing calculator
 
-`apps/api/domain/pricing_calculator.go` — pure function, no DB:
+`apps/api/domain/pricing_calculator.go` — pure function, no DB, single branch:
+
 ```go
 type SnapshotPricing struct {
-    Type      PricingType
-    FlatPrice *float32
-    Tiers     []PricingSchemeTier   // already parsed, sorted ASC
+    Tiers []PricingSchemeTier   // already parsed, sorted ASC, len >= 1
 }
 
 type PricingResult struct {
     Price float32   // total for this one rental (one person)
 }
 
-func CalculatePrice(snap SnapshotPricing, duration time.Duration) (PricingResult, *Error)
+func CalculatePrice(snap SnapshotPricing, duration time.Duration) (PricingResult, *Error) {
+    if len(snap.Tiers) == 0 {
+        return PricingResult{}, &Error{Type: BadRequest, Message: "snapshot has no tiers"}
+    }
+    durationMinutes := int(math.Ceil(duration.Minutes()))
+    for _, tier := range snap.Tiers {
+        if tier.UpToMinutes >= durationMinutes {
+            return PricingResult{Price: tier.PricePerPerson}, nil
+        }
+    }
+    return PricingResult{Price: snap.Tiers[len(snap.Tiers)-1].PricePerPerson}, nil   // cap
+}
 ```
-
-**`tiered`:**
-```
-durationMinutes = int(math.Ceil(duration.Minutes()))
-for tier in tiers ASC:
-    if tier.UpToMinutes >= durationMinutes: return tier.PricePerPerson
-return tiers[len-1].PricePerPerson  // exceeded all → cap at last
-```
-**`flat`:** `return *snap.FlatPrice`.
 
 Helper: `ParseSnapshotTiers(json string) ([]PricingSchemeTier, *Error)`.
 
 ### 2.6 Calculator tests
 
-`apps/api/domain/pricing_calculator_test.go` — table-driven, covering every TRD §FR-6 row 1-8. Plus:
-- `tiered` with empty tier list → error.
-- `flat` with nil `FlatPrice` → error.
+`apps/api/domain/pricing_calculator_test.go` — table-driven, covering every TRD §FR-5 row 1-8. Plus:
+- Empty tier list → error.
+- Duration exactly equal to a tier boundary (e.g., 60min against the 60-tier) → uses that tier.
+- Duration above the largest tier → returns the cap.
 - `ParseSnapshotTiers` malformed input → error.
-- `tiered` with duration exactly equal to a tier boundary → uses that tier.
+- `ParseSnapshotTiers` tiers out of order → error (defensive: snapshots should always be ASC, but verify the parse path).
 
 ### 2.7 Scheme usecase
 
 `apps/api/domain/pricing_scheme_usecase.go` — CRUD with validation:
-- `pricing_type` cannot change on update.
-- `tiered`: at least one tier; `up_to_minutes` strictly ascending; all positive; `flat_price` must be nil.
-- `flat`: `flat_price > 0`; `tiers` must be empty.
-- **Caller layer is responsible for the purchase=flat rule** (the variant usecase enforces it before calling the scheme usecase, since the scheme entity itself has no `sale_type` context).
+- `tiers` non-empty.
+- `up_to_minutes` strictly ascending and `> 0`.
+- `price_per_person >= 0`.
 
-`pricing_scheme_usecase_test.go` mirrors existing usecase test patterns.
+`apps/api/domain/pricing_scheme_usecase_test.go` mirrors existing usecase test patterns (see `category_usecase_test.go`).
 
-### 2.8 Verify
+### 2.8 Variant usecase validation
+
+Update `apps/api/domain/variant_usecase.go` (create + update paths):
+- When the parent product `SaleType == 'rental'`: require `PricingSchemeId != nil` (and the embedded scheme has ≥1 valid tier). Reject `400` otherwise.
+- When `SaleType == 'purchase'`: require `PricingSchemeId == nil`. Reject `400` if set.
+
+### 2.9 Verify
 
 `go test ./apps/api/domain/...` all green.
 
-**Exit criteria:** Domain layer complete and tested in isolation.
+**Exit criteria:** Domain layer complete and tested in isolation. No handlers, no SQL.
 
 ---
 
 ## Phase 3: Data Layer (MySQL)
 
+**Goal:** Repositories from Phase 2 have working GORM implementations.
+
 ### 3.1 GORM models
 
-- `apps/api/data/mysql/pricing_scheme_entity.go` + `pricing_scheme_tier_entity.go`.
-- `apps/api/data/mysql/pricing_scheme_transformer.go`.
-- `apps/api/data/mysql/variant_entity.go`: drop `Price`, add `PricingSchemeId int64` and `PricingScheme` relation.
-- `apps/api/data/mysql/rental_entity.go`: add the three snapshot columns.
+- `apps/api/data/mysql/pricing_scheme_entity.go` — GORM struct.
+- `apps/api/data/mysql/pricing_scheme_tier_entity.go` — GORM struct.
+- `apps/api/data/mysql/pricing_scheme_transformer.go` — domain ↔ data converters.
+- Extend `apps/api/data/mysql/variant_entity.go`: add `PricingSchemeId *int64` and `belongsTo` relation.
+- Extend `apps/api/data/mysql/rental_entity.go`: add `SnapshotTiersJSON string`.
 
 ### 3.2 Repository implementation
 
 `apps/api/data/mysql/pricing_scheme_repo.go`:
-- `Create`/`Update` are transactional (scheme row + tier rows replaced wholesale on update).
-- `GetSchemeById` preloads tiers ordered ASC.
-- Update `variant_repo.go` to **always preload** `PricingScheme` (with tiers) on every read — single-row, list, and association loads. Same for `transaction_repo.go` where it returns variants.
+- `Create` and `Update` are transactional (scheme row + tier rows replaced wholesale on update).
+- `GetSchemeById` preloads tiers ordered by `up_to_minutes ASC`.
+- Variant repo (`variant_repo.go`) preloads `PricingScheme` (with its tiers) on `GetVariantById` and on any list endpoint already returning embedded variants.
 
 ### 3.3 Wire into DI
 
 Update `apps/api/main.go`:
 - Construct `PricingSchemeRepository`.
-- Construct `PricingSchemeUsecase`, inject into the variant usecase (so it can enforce purchase=flat and create schemes atomically with variants).
-- Inject `PricingSchemeRepository` into the rental usecase (needed at check-in to read the variant's scheme into the snapshot).
+- Construct `PricingSchemeUsecase`.
+- Pass `PricingSchemeRepository` into the **rental** usecase constructor — it needs the scheme at check-in time.
 
 ### 3.4 Verify
 
-Existing tests still pass — every `variants.price` read should now be a `variant.PricingScheme.FlatPrice` deref. If any test references `Price`, fix it here.
+Existing tests still pass. If the project has a MySQL test harness, add a `CreateScheme` + `GetSchemeById` round-trip test asserting tier ordering.
 
-**Exit criteria:** Repos work against MySQL; existing tests untouched on behavior.
+**Exit criteria:** Repos work against MySQL; existing tests untouched.
 
 ---
 
 ## Phase 4: Modify Rental Usecase + Embed Scheme in Variant Handler
 
+**Goal:** Check-in snapshots the scheme; check-out uses the calculator; variant create/update accepts an embedded scheme block for rental variants.
+
 ### 4.1 Refactor `CheckinRentals`
 
 In `apps/api/domain/rental_usecase.go`:
-- For each rental: load variant → read embedded `PricingScheme` → set `SnapshotPricingType`, `SnapshotFlatPrice`, `SnapshotTiersJSON` (JSON-encode the tier slice).
-- No need for a separate scheme repo call if variant is already preloaded with scheme — confirm preload is configured (Phase 3.2).
+- Inject `VariantRepository` (already exists).
+- For each incoming rental:
+  1. Load the variant (with its preloaded scheme + tiers).
+  2. If the variant's product is `rental` and `variant.PricingSchemeId` is nil → reject `400`.
+  3. JSON-encode `variant.PricingScheme.Tiers` into `rental.SnapshotTiersJSON`.
+- Insert as today.
 
 ### 4.2 Refactor `CheckoutRentals`
 
-Replace `rental_usecase.go:107-128` with:
+Replace lines 107-128 of `rental_usecase.go` with:
 ```go
-var tiers []PricingSchemeTier
-if existingRental.SnapshotTiersJSON != nil {
-    tiers, err = ParseSnapshotTiers(*existingRental.SnapshotTiersJSON)
-    if err != nil { return err }
-}
-snap := SnapshotPricing{
-    Type:      existingRental.SnapshotPricingType,
-    FlatPrice: existingRental.SnapshotFlatPrice,
-    Tiers:     tiers,
-}
-result, err := CalculatePrice(snap, checkoutAt.Sub(existingRental.CheckinAt))
+tiers, parseErr := ParseSnapshotTiers(existingRental.SnapshotTiersJSON)
+if parseErr != nil { return parseErr }
+result, err := CalculatePrice(SnapshotPricing{Tiers: tiers}, checkoutAt.Sub(existingRental.CheckinAt))
+if err != nil { return err }
 ```
-TransactionItem: `Amount=1, Price=result.Price, Subtotal=result.Price`. Drop `math` import + `MAX_HOUR` + the now-unused variant fetch (already done as part of check-in snapshot).
+
+Build `TransactionItem` with `Amount=1`, `Price=result.Price`, `Subtotal=result.Price`. Drop the `math` import + the `MAX_HOUR` constant + the now-unused `variantRepository.GetVariantById` call (keep only if needed for display name).
 
 ### 4.3 Update `rental_usecase_test.go`
 
-Cover TRD §FR-6 rows 1, 3, 4, 5, 6, 8 single-rental scenarios. Group scenarios (rows 2, 7) verified at handler-test level.
+New cases:
+- Check-in of a rental-type variant with no scheme → 400.
+- Check-in of a purchase-type variant → unaffected (still uses existing flow).
+- Check-out reproducing TRD §FR-5 rows 1, 3, 4, 5, 6, 8. Group scenarios (rows 2, 7) covered at handler-test level.
 
 ### 4.4 Extend variant handler with embedded scheme
 
-In `apps/api/presentation/restapi/product_handler.go` (variants are nested under products) and `variant_usecase.go`:
-- `POST /products/{id}/variants` request body **requires** `pricing_scheme: { pricing_type, description?, flat_price?, tiers? }`. **Removes `price` field.** Server validates: if product is `purchase`-type, `pricing_type` must be `flat`. Then creates scheme atomically with variant.
-- `PUT /variants/{id}` accepts the same block. On update: replace fields/tiers (with `pricing_type` immutability check).
-- `GET /variants/{id}` responses embed the scheme + tiers. **No `price` field.**
+In `apps/api/presentation/restapi/product_handler.go` (variants live under products) and the variant usecase:
+- `POST /products/{id}/variants` request body adds optional `pricing_scheme: { description?, tiers: [{up_to_minutes, price_per_person}, ...] }`. Required when product is `rental`-type; forbidden when `purchase`.
+- `PUT /variants/{id}` accepts the same block. On update: if a scheme already exists, replace its tier rows; else create one.
+- `GET /variants/{id}` responses embed `pricing_scheme` + tiers (null for purchase variants).
 
 There is **no** standalone `/pricing-schemes` route.
 
-### 4.5 Update transaction handler
+### 4.5 Extend rental handler response
 
-`apps/api/presentation/restapi/transaction_handler.go` and its usecase: replace any read of `variant.Price` with `variant.PricingScheme.FlatPrice` (purchase variants are always `flat` per validation, so this is safe to deref).
-
-### 4.6 Extend rental handler response
-
-`apps/api/presentation/restapi/rental_handler.go`:
-- Rental list/get responses include the three snapshot fields.
+Edit `apps/api/presentation/restapi/rental_handler.go`:
+- Rental list/get responses include `snapshot_tiers` (parsed array, not raw JSON, for FE convenience).
 - For ongoing rentals (`CheckoutAt == nil`), include a server-computed `running_total` via `CalculatePrice` against `time.Now()`.
 
-### 4.7 Verify
+### 4.6 Verify
 
 `go test ./apps/api/...` all green. Manual `curl` smoke:
-- Create a purchase variant with embedded `flat` scheme → confirm `GET` returns the scheme, no `price` field.
-- Try to create a purchase variant with `tiered` scheme → expect 400.
-- Create a rental variant with `tiered` scheme → check in → check out → verify line item math against TRD §FR-6.
+1. Create a rental variant with the 7-tier Hourly scheme.
+2. Check in.
+3. Fudge timestamps; check out.
+4. Verify the line item amount matches the expected tier.
 
-**Exit criteria:** Backend matches every TRD §FR-6 row end-to-end.
+**Exit criteria:** Backend behavior matches every TRD §FR-5 row end-to-end.
 
 ---
 
 ## Phase 5: API Contract Update + Codegen
 
+**Goal:** TS clients reflect the new shapes.
+
 ### 5.1 Edit `libs/api-contract/src/api.yaml`
 
-- New schemas: `PricingScheme` (with `pricing_type`, `description`, `flat_price`, `tiers`), `PricingSchemeTier`.
-- `Variant` schema: **remove** `price`. Add `pricing_scheme_id` (read-only) + embedded `pricing_scheme` object.
-- `Variant` create/update bodies: **require** `pricing_scheme` block; **remove** `price`.
-- `Rental` schema: add `snapshot_pricing_type`, `snapshot_flat_price`, `snapshot_tiers` (parsed array, not raw JSON), `running_total` (read-only, present only when `checkout_at` is null).
+- New schemas: `PricingScheme { id, description?, tiers[] }`, `PricingSchemeTier { up_to_minutes, price_per_person }`.
+- `Variant` schema: add optional `pricing_scheme_id` (read-only) and embedded `pricing_scheme` object (null for purchase). `price` field unchanged.
+- `Variant` create/update request bodies: add optional `pricing_scheme` block.
+- `Rental` schema: add `snapshot_tiers` (parsed array) and `running_total` (read-only, present when `checkout_at` is null).
 - No path additions.
 
-### 5.2 Codegen + cleanup
+### 5.2 Codegen
 
-Run codegen (`libs/api-contract/package.json` script). Then grep both apps for any TS reference to `variant.price` and resolve.
+Run the project's existing codegen script (check `libs/api-contract/package.json` and `openapitools.json`).
 
 ### 5.3 Verify
 
 `nx build api-contract`, `nx build web`, `nx build mobile` all type-check.
 
-**Exit criteria:** Generated TS types include the new shapes; both apps compile.
+**Exit criteria:** Generated TS types include the new shapes; both apps still compile (purchase flow untouched).
 
 ---
 
 ## Phase 6: Web Frontend
 
+**Goal:** Admin manages tier tables inside the rental variant form; staff sees subtotals at check-out.
+
 ### 6.1 Variant create/edit form
 
 Edit `apps/web/src/pages/products/[productId]/variants/...`:
-- Replace the legacy `price` numeric input with an unconditional **Pricing** section.
-- Pricing Type radio: `flat` (always) and `tiered` (only enabled when parent product `sale_type === 'rental'`; disabled with tooltip otherwise).
-- For `tiered`: dynamic list of tier rows (`up_to_minutes` numeric, `price_per_person` numeric, Add/Remove buttons). Zod validates ascending minutes and positive prices, ≥1 tier.
-- For `flat`: single `flat_price` input.
-- Pricing Type radio is disabled on edit if the scheme already exists (immutability rule), with a tooltip: "To change pricing type, create a new variant."
+- Conditional section visible only when the parent product's `sale_type === 'rental'`:
+  - **Pricing Tiers** editor: dynamic list of `(up_to_minutes, price_per_person)` rows with Add/Remove. Zod validates ≥1 row, strictly ascending minutes, positive prices.
+  - Help text: *"A single tier behaves like a flat rate. e.g., 'All Day' = one tier at 840 minutes."*
+- Purchase variants keep the existing simple `price` input — no change.
+- On submit, the form posts the embedded `pricing_scheme` block for rental variants.
 
-### 6.2 Other web surfaces that read `variant.price`
+### 6.2 Check-in screen
 
-Audit and update:
-- Product list / detail pages displaying a price column.
-- Cart / sale flow.
-- Receipt printout.
-- Anywhere a price formatter is called on `variant.price`.
+Edit `apps/web/src/pages/rentals/checkin.tsx`:
+- **No new fields.** Picking the variant picks the tier list.
+- Render a small badge under the variant picker showing the tier list (e.g., "60min: 15K, 90min: 20K, …, cap: 90K" or "Flat: 50K up to 840min").
+- The existing form already supports adding multiple rental items for groups.
 
-Source new value from `variant.pricing_scheme.flat_price` (purchases are always flat).
+### 6.3 Rental list + check-out
 
-### 6.3 Check-in screen
+Edit `apps/web/src/pages/rentals/index.tsx` and `apps/web/src/pages/rentals/checkout.tsx`:
+- List view: show variant name, duration so far, and (for ongoing) `running_total`.
+- Check-out confirmation: per rental, show `variant name • duration → subtotal`. Show grand total.
 
-`apps/web/src/pages/rentals/checkin.tsx`:
-- No new fields. Show a small badge under the variant choice describing its pricing (e.g., "Tiered: 1h=15K, 1.5h=20K, ..." or "Flat: 50K"), pulled from the embedded scheme.
+### 6.4 Verify
 
-### 6.4 Rental list + check-out
+- `nx test web` passes — add component tests for the tier-editor's ascending-minutes validation.
+- `nx serve web` + manual walkthrough:
+  - Create "Board Game — Hourly" rental variant with the 7-tier scheme → check in 1 person → fudge timestamps to 1h15m → check out → expect **20,000**.
+  - Same at 1h35m → expect **30,000**.
+  - Create "Board Game — All Day Weekend" rental variant with `{840→60K}` → check in 2 people (2 rental rows) → check out together → expect **120,000**.
+  - Create a purchase variant — confirm the form still shows the simple `price` input and no tier editor.
 
-- List view: variant name + duration + `running_total` for ongoing.
-- Check-out confirmation: per rental, `variant name • duration → subtotal`.
-
-### 6.5 Verify
-
-- `nx test web` passes — add component tests for the tier-editor's strictly-ascending-minutes validation and for the purchase-=-flat-disabled-radio behavior.
-- `nx serve web` + manual walk:
-  - Create a "Board Game — Hourly" variant with the seeded tiers → check in 1 person → fudge to 1h15m → expect **20K** at check-out.
-  - Same with 1h35m → expect **30K**.
-  - Create "Board Game — All Day Weekend" variant with `flat 60K` → check in 2 people (2 rows) → check out together → expect **120K**.
-  - Create a purchase variant "T-shirt" with `flat 100K` → make a sale → confirm transaction line item is 100K.
-
-**Exit criteria:** Every TRD §FR-6 row reproduces end-to-end in the web UI; existing purchase flows still produce correct totals.
+**Exit criteria:** Every TRD §FR-5 row reproduces end-to-end in the web UI; purchase flow visibly unchanged.
 
 ---
 
 ## Phase 7: Mobile Frontend
 
-### 7.1 Update screens
+**Goal:** React Native parity for check-in and check-out. Scheme editing remains web-only for v1.
 
-Mobile parity for: variant form (pricing section), check-in (pricing badge), check-out (line breakdown), and any purchase-side screens that previously read `variant.price`.
+### 7.1 Mobile check-in / check-out
 
-Most form primitives are shared via `libs/ui` — identify which screens already live there.
+Update `apps/mobile/`:
+- Check-in: same variant picker + pricing badge.
+- Check-out: same line breakdown.
+
+Most form primitives are shared via `libs/ui`. Identify which screens already live there.
 
 ### 7.2 Verify
 
 - `nx test mobile` passes.
-- Walk the same 9 acceptance cases on a device/emulator.
+- Walk the same acceptance cases on a device/emulator.
 
-**Exit criteria:** Mobile parity.
+**Exit criteria:** Mobile staff can check in (1 row per person) and see correct totals at check-out.
 
 ---
 
 ## Phase 8: Documentation + Release
 
 1. Update `README.md` if it lists features.
-2. Add a "How to add or change a pricing scheme" guide for the cafe owner under `docs/`.
-3. Update `E2E_TEST_PLAN.md` with the new scenarios (rental tiered, rental flat, purchase flat).
-4. PR description links to the TRD, calls out the breaking API change (removal of `variants.price`), and lists every TRD §FR-6 case verified.
+2. Add a short "How to add or change a rental pricing scheme" guide for the cafe owner under `docs/`.
+3. Update `E2E_TEST_PLAN.md` with the new scenarios.
+4. PR description links to the TRD and lists every TRD §FR-5 case verified.
 
 ---
 
@@ -365,12 +367,11 @@ Most form primitives are shared via `libs/ui` — identify which screens already
 
 | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|
-| External API consumer breaks because `variants.price` is removed | Medium | High | Audit known consumers before the contract PR. If unavoidable, ship Phase 5 with a deprecated read-only `price` field (computed from `pricing_scheme.flat_price`) for one release cycle, then remove |
-| Backfill mapping (variant → its newly-created flat scheme) is wrong → all prices scrambled | Low | Critical | Use a temp table with explicit `(old_variant_id, new_scheme_id)` mapping rather than relying on insertion order; verify with row counts and a SQL diff |
-| Forgetting to preload `PricingScheme` on a variant read path causes nil deref in a transaction | Medium | High | Centralize preload in `variant_repo.go` for every read method; add a Go assertion in the variant transformer that `PricingSchemeId != 0` |
-| `pricing_type` immutability surprises admin | Low | Low | Disable radio on edit + tooltip |
-| JSON snapshot drift between FE and Go | Low | Medium | Both sides go through the OpenAPI-generated array type; server hides raw `snapshot_tiers_json` and exposes parsed `snapshot_tiers` |
-| Historical rental backfill (TRD Open Q1) chosen wrong | Low | Low | Old data is a small set; document choice in migration; can revisit with a corrective migration if needed |
+| Backfilling rental snapshots with the new 7-tier table doesn't exactly replay the old `price × hours, 6h cap` rule | Medium | Low | The seeded Hourly tiers are the new normal; document any drift in PR description. Only affects in-flight rentals that span the migration |
+| Admin edits a scheme and is surprised that ongoing rentals don't reflect the change | Medium | Low | Surface explicitly in the variant edit form: "Existing rentals keep the original pricing; only future check-ins use the new tiers" |
+| Forgetting to attach a scheme to a new rental variant blocks check-in | Medium | High | Variant usecase validation rejects rental variants without a scheme; FE form requires the tier editor for rental variants |
+| Purchase variants accidentally gain a scheme via API misuse | Low | Low | Variant usecase validation rejects scheme on purchase variants |
+| JSON snapshot drift between FE parsing and Go encoding | Low | Medium | Both sides go through OpenAPI-generated `PricingSchemeTier[]` arrays, not raw JSON; server hides the raw `snapshot_tiers_json` column and exposes `snapshot_tiers` as an array in responses |
 
 ---
 
@@ -378,13 +379,13 @@ Most form primitives are shared via `libs/ui` — identify which screens already
 
 | Phase | Est. effort | Blocks |
 |---|---|---|
-| 1 | 1 day (backfill mapping is fiddly) | 2 |
+| 1 | 0.5 day | 2 |
 | 2 | 1.5 days | 3, 4 |
-| 3 | 1.5 days (variant audit) | 4 |
-| 4 | 2 days (transaction handler also touched) | 5 |
+| 3 | 1 day | 4 |
+| 4 | 1.5 days | 5 |
 | 5 | 0.5 day | 6, 7 |
-| 6 | 2.5 days (purchase surfaces too) | 8 |
-| 7 | 1.5 days | 8 |
+| 6 | 2 days | 8 |
+| 7 | 1 day | 8 |
 | 8 | 0.5 day | — |
 
-**Total:** ~10.5 working days, single engineer. The unification adds about 2 days vs. rental-only because every purchase surface that read `variant.price` now reads through the scheme.
+**Total:** ~8.5 working days, single engineer.
