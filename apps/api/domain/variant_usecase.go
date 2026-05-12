@@ -5,16 +5,14 @@ import (
 )
 
 type VariantUsecase struct {
-	repository            VariantRepository
-	productRepository     ProductRepository
-	pricingTierRepository PricingTierRepository
+	repository        VariantRepository
+	productRepository ProductRepository
 }
 
-func NewVariantUsecase(repository VariantRepository, productRepository ProductRepository, pricingTierRepository PricingTierRepository) VariantUsecase {
+func NewVariantUsecase(repository VariantRepository, productRepository ProductRepository) VariantUsecase {
 	return VariantUsecase{
-		repository:            repository,
-		productRepository:     productRepository,
-		pricingTierRepository: pricingTierRepository,
+		repository:        repository,
+		productRepository: productRepository,
 	}
 }
 
@@ -46,20 +44,7 @@ func (usecase VariantUsecase) CreateVariant(ctx context.Context, variant Variant
 		return Variant{}, err
 	}
 
-	created, err := usecase.repository.CreateVariant(ctx, variant)
-	if err != nil {
-		return Variant{}, err
-	}
-
-	if product.SaleType == SaleTypeRental {
-		tiers := assignVariantId(variant.PricingTiers, created.Id)
-		if err := usecase.pricingTierRepository.ReplaceTiersForVariant(ctx, created.Id, tiers); err != nil {
-			return Variant{}, err
-		}
-		created.PricingTiers = tiers
-	}
-
-	return created, nil
+	return usecase.repository.CreateVariant(ctx, variant)
 }
 
 func (usecase VariantUsecase) UpdateVariantById(ctx context.Context, variant Variant, id int64) (Variant, *Error) {
@@ -82,14 +67,6 @@ func (usecase VariantUsecase) UpdateVariantById(ctx context.Context, variant Var
 		updated, err := usecase.repository.UpdateVariantById(ctxWithTx, variant, id)
 		if err != nil {
 			return err
-		}
-
-		if product.SaleType == SaleTypeRental {
-			tiers := assignVariantId(variant.PricingTiers, id)
-			if err := usecase.pricingTierRepository.ReplaceTiersForVariant(ctxWithTx, id, tiers); err != nil {
-				return err
-			}
-			updated.PricingTiers = tiers
 		}
 
 		updateResult = updated
@@ -129,13 +106,4 @@ func (usecase VariantUsecase) validateVariantForSaleType(saleType SaleType, vari
 		}
 	}
 	return nil
-}
-
-func assignVariantId(tiers []PricingTier, variantId int64) []PricingTier {
-	result := make([]PricingTier, len(tiers))
-	for i, t := range tiers {
-		t.VariantId = variantId
-		result[i] = t
-	}
-	return result
 }

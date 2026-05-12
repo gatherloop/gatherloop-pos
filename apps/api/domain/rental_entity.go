@@ -14,7 +14,7 @@ type Rental struct {
 	CheckoutAt   *time.Time
 	CreatedAt    time.Time
 	DeletedAt    *time.Time
-	PricingTiers []PricingTier // snapshot taken at check-in
+	PricingTiers []PricingTier
 }
 
 type CheckoutStatus int

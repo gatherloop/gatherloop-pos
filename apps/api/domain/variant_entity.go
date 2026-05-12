@@ -1,8 +1,14 @@
 package domain
 
-import (
-	"time"
-)
+import "time"
+
+type PricingTier struct {
+	Id          int64
+	VariantId   int64
+	UpToMinutes int
+	Price       float32
+	CreatedAt   time.Time
+}
 
 type VariantMaterial struct {
 	Id         int64
@@ -26,7 +32,6 @@ type Variant struct {
 	ProductId     int64
 	Product       Product
 	Name          string
-	// Price is always 0 for rental variants; use PricingTiers for rental billing.
 	Price         float32
 	Description   *string
 	Materials     []VariantMaterial
