@@ -12,6 +12,7 @@ The hardcoded `MAX_HOUR := 6.0` and `variant.Price × hours` math in `apps/api/d
 - One rental row = one person. Groups create N rows.
 - `sale_type` drives pricing source: purchase → `variants.price`; rental → `pricing_tiers` (snapshot).
 - No `pricing_schemes` table. Tiers attach directly to variants.
+- No standalone `PricingTierRepository`. Tier reads and writes are delegated to `VariantRepository`; the `Variant` payload carries tiers in and out.
 - `variants.price` stays `NOT NULL DEFAULT 0`. Rental variants store 0 — no nullability change, no contract change, no nullable-deref audit.
 - Uniform rental pricing model: every rental variant has ≥1 tier; "All Day" is a 1-tier variant at `up_to_minutes = 840`.
 - One snapshot column (`rentals.pricing_tiers JSON NOT NULL`), one calculator branch.
@@ -118,49 +119,36 @@ Phases are independently shippable: schema → domain → data → handler → c
 
 ## Phase 2: Domain Layer (Go)
 
-**Goal:** Entities, repository, and the calculator exist with unit tests. No handlers wired up yet.
+**Goal:** Entities and the calculator exist with unit tests. No handlers wired up yet.
 
-### 2.1 New entity
-
-`apps/api/domain/pricing_tier_entity.go`:
-```go
-type PricingTier struct {
-    Id          int64
-    VariantId   int64
-    UpToMinutes int
-    Price       float32
-    CreatedAt   time.Time
-}
-```
-
-No `PricingScheme` type, no `PricingType` enum.
-
-### 2.2 Extend Variant entity
+### 2.1 Extend Variant entity
 
 `apps/api/domain/variant_entity.go`:
+- Add `PricingTier` struct alongside the existing types in this file — it is a value object of `Variant`, not a top-level domain concept:
+  ```go
+  type PricingTier struct {
+      Id          int64
+      VariantId   int64
+      UpToMinutes int
+      Price       float32
+      CreatedAt   time.Time
+  }
+  ```
 - `Price float32` stays as-is. No nullability change.
-- Add `PricingTiers []PricingTier` (empty for purchase variants, ≥1 for rental variants, sorted ASC by `UpToMinutes`).
+- Add `PricingTiers []PricingTier` to `Variant` (empty for purchase variants, ≥1 for rental variants, sorted ASC by `UpToMinutes`).
 
-No nullable-deref audit needed — `variant.Price` keeps its current type and zero-value semantics. Existing call sites in `transaction_usecase.go` are unaffected.
+No separate `pricing_tier_entity.go` file. No `PricingScheme` type, no `PricingType` enum.
 
-### 2.3 Extend Rental entity
+### 2.2 Extend Rental entity
 
 `apps/api/domain/rental_entity.go`: add
 ```go
-PricingTiers []PricingTier   // snapshot taken at check-in
+PricingTiers []PricingTier
 ```
 
 The data layer marshals/unmarshals the JSON column transparently (GORM `datatypes.JSON` or a custom Scan/Value pair).
 
-### 2.4 Repository interface
-
-`apps/api/domain/pricing_tier_repository.go`:
-- `GetTiersByVariantId(ctx, variantId) ([]PricingTier, *Error)` — returns sorted ASC.
-- `ReplaceTiersForVariant(ctx, variantId, tiers []PricingTier) *Error` — deletes existing rows and inserts the new list atomically.
-
-Tier writes happen *through* the variant usecase, never independently — there is no `CreateTier` / `DeleteTier` standalone API.
-
-### 2.5 Pricing calculator
+### 2.3 Pricing calculator
 
 `apps/api/domain/pricing_calculator.go` — pure function, no DB, single branch:
 
@@ -183,26 +171,26 @@ func CalculatePrice(tiers []PricingTier, duration time.Duration) (PricingResult,
 }
 ```
 
-### 2.6 Calculator tests
+### 2.4 Calculator tests
 
 `apps/api/domain/pricing_calculator_test.go` — table-driven, covering every TRD §FR-5 row 1-9. Plus:
 - Empty tier list → error.
 - Duration exactly equal to a tier boundary (e.g., 60min against the 60-tier) → uses that tier.
 - Duration above the largest tier → returns the cap.
 
-### 2.7 Variant usecase validation
+### 2.5 Variant usecase validation
 
 Update `apps/api/domain/variant_usecase.go` (create + update paths):
+- Constructor takes `(VariantRepository, ProductRepository)` — no separate `PricingTierRepository`.
 - Load parent product to read `sale_type`.
-- If `purchase`: require `Price != nil`, `Tiers` empty.
-- If `rental`: ignore any `Price` from the request and force-set it to `0`; require `PricingTiers` non-empty with strictly ascending `UpToMinutes` and `Price >= 0`.
 - If `purchase`: require `Price > 0`; reject any `PricingTiers` in the request.
+- If `rental`: force-set `Price = 0`; require `PricingTiers` non-empty with strictly ascending `UpToMinutes` and `Price >= 0`.
 - Reject `400` on violation.
-- On update of a rental variant, call `ReplaceTiersForVariant` after persisting the variant row.
+- Pass the validated `Variant` (with `PricingTiers` populated) directly to `repository.CreateVariant` / `repository.UpdateVariantById`. The repository is responsible for persisting the tiers atomically with the variant row.
 
 Update `variant_usecase_test.go` with cases for both happy paths and the four rejection cases.
 
-### 2.8 Verify
+### 2.6 Verify
 
 `go test ./apps/api/domain/...` all green.
 
@@ -212,33 +200,35 @@ Update `variant_usecase_test.go` with cases for both happy paths and the four re
 
 ## Phase 3: Data Layer (MySQL)
 
-**Goal:** Repository from Phase 2 has a working GORM implementation.
+**Goal:** `VariantRepository` implementation handles tier reads and writes alongside the variant row.
 
 ### 3.1 GORM models
 
-- `apps/api/data/mysql/pricing_tier_entity.go` — GORM struct mapping the new table.
-- `apps/api/data/mysql/pricing_tier_transformer.go` — domain ↔ data converters.
-- Extend `apps/api/data/mysql/variant_entity.go`: add `PricingTiers []PricingTier` `hasMany` relation. **No change to the `Price` column type.**
+- Extend `apps/api/data/mysql/variant_entity.go`: add `PricingTiers []PricingTier` `hasMany` relation. The `PricingTier` GORM struct is defined here (mirrors the domain value object). **No change to the `Price` column type.**
+- Extend `apps/api/data/mysql/variant_transformer.go`: map `PricingTiers` in both directions.
 - Extend `apps/api/data/mysql/rental_entity.go`: add `PricingTiers datatypes.JSON` column (or `string` with custom Scan/Value); transformer marshals to/from `[]domain.PricingTier`.
+
+No separate `pricing_tier_entity.go` or `pricing_tier_transformer.go` files — tier data is managed as part of the variant files.
 
 ### 3.2 Repository implementation
 
-`apps/api/data/mysql/pricing_tier_repo.go`:
-- `GetTiersByVariantId` orders by `up_to_minutes ASC`.
-- `ReplaceTiersForVariant` runs in a transaction: `DELETE FROM pricing_tiers WHERE variant_id = ?` then `INSERT` the new rows.
+`apps/api/data/mysql/variant_repo.go`:
+- `GetVariantById` and list endpoints preload `PricingTiers` ordered ASC.
+- `CreateVariant`: after inserting the variant row, insert the tier rows (if `len(variant.PricingTiers) > 0`) within the same transaction.
+- `UpdateVariantById`: after updating the variant row, replace tiers atomically (`DELETE FROM pricing_tiers WHERE variant_id = ?` then bulk `INSERT`) within the same transaction.
 
-Variant repo (`variant_repo.go`) preloads `PricingTiers` ordered ASC on `GetVariantById` and on every list endpoint that returns embedded variants.
+Tier SQL lives entirely inside `variant_repo.go` — no separate `pricing_tier_repo.go`.
 
 ### 3.3 Wire into DI
 
-Update `apps/api/main.go`:
-- Construct `PricingTierRepository`.
-- Pass it into the variant usecase constructor.
-- The rental usecase doesn't need it directly — it reads tiers via the preloaded variant.
+`apps/api/main.go` — no new repository to construct. `VariantUsecase` already receives `(VariantRepository, ProductRepository)`:
+```go
+variantUsecase := domain.NewVariantUsecase(variantRepository, productRepository)
+```
 
 ### 3.4 Verify
 
-Existing tests still pass. Add a `GetTiersByVariantId` + `ReplaceTiersForVariant` round-trip test if the MySQL test harness exists.
+Existing tests still pass. Add a create + update round-trip test in `variant_repo_test.go` that confirms tiers are persisted and replaced correctly.
 
 **Exit criteria:** Repo works against MySQL; existing tests untouched.
 
@@ -401,7 +391,7 @@ Most form primitives are shared via `libs/ui`. Identify which screens already li
 | Admin edits tiers and is surprised that ongoing rentals don't reflect the change | Medium | Low | Surface explicitly in the variant edit form: "Existing rentals keep the original pricing; only future check-ins use the new tiers" |
 | Rental variant saved with zero tiers blocks check-in | Medium | High | Variant usecase validation rejects this at save time; FE form's tier editor requires ≥1 row |
 | Purchase variants accidentally gain tiers via API misuse | Low | Low | Variant usecase validation rejects tiers on purchase variants |
-| Rental variant's `price = 0` is read by accident (e.g., a future report sums `variants.price` blindly) | Low | Low | Convention only — but every rental price-read path goes through the snapshot, not the variant column. Document the convention in `variant_entity.go` |
+| Rental variant's `price = 0` is read by accident (e.g., a future report sums `variants.price` blindly) | Low | Low | Convention only — every rental price-read path goes through the snapshot, not the variant column. The `sale_type` discriminator is the authoritative gate; rely on it, not on the zero value |
 | JSON snapshot drift between FE parsing and Go encoding | Low | Medium | Both sides go through OpenAPI-generated `PricingTier[]` arrays, not raw JSON; the server exposes a typed `pricing_tiers` array in responses, never the raw column |
 
 ---
