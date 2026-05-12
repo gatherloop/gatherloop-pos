@@ -23,7 +23,7 @@ describe('VariantCreateUsecase', () => {
 
       tester.dispatch({
         type: 'SUBMIT',
-        values: { productId: 1, name: 'New Variant', price: 50000, description: '', materials: [], values: [] },
+        values: { productId: 1, name: 'New Variant', price: 50000, description: '', materials: [], values: [], pricingTiers: [] },
       });
       expect(tester.state.type).toBe('submitting');
 
@@ -69,7 +69,7 @@ describe('VariantCreateUsecase', () => {
 
       tester.dispatch({
         type: 'SUBMIT',
-        values: { productId: 1, name: 'New Variant', price: 50000, description: '', materials: [], values: [] },
+        values: { productId: 1, name: 'New Variant', price: 50000, description: '', materials: [], values: [], pricingTiers: [] },
       });
       expect(tester.state.type).toBe('submitting');
 

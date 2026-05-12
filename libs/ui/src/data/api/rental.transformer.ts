@@ -12,6 +12,11 @@ export function toRental(rental: ApiRental): Rental {
     checkoutAt: rental.checkoutAt ?? null,
     createdAt: rental.createdAt,
     variant: toVariant(rental.variant),
+    pricingTiers: rental.pricingTiers.map(({ upToMinutes, price }) => ({
+      upToMinutes,
+      price,
+    })),
+    runningTotal: rental.runningTotal,
   };
 }
 

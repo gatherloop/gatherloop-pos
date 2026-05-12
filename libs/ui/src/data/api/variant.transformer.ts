@@ -39,6 +39,10 @@ export function toVariant(variant: ApiVariant): Variant {
         name: value.optionValue.name,
       },
     })),
+    pricingTiers: variant.pricingTiers.map(({ upToMinutes, price }) => ({
+      upToMinutes,
+      price,
+    })),
   };
 }
 
@@ -56,6 +60,10 @@ export function toApiVariant(form: VariantForm) {
     values: form.values.map(({ id, optionValueId }) => ({
       id,
       optionValueId,
+    })),
+    pricingTiers: form.pricingTiers.map(({ upToMinutes, price }) => ({
+      upToMinutes,
+      price,
     })),
   };
 }

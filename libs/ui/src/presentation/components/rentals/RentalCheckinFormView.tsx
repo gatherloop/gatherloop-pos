@@ -188,6 +188,22 @@ export const RentalCheckinFormView = ({
 
                     <H4>Items</H4>
                     {rentalsFieldArray.fields.map(({ variant, key }, index) => {
+                      const tierSummary =
+                        variant.pricingTiers.length === 1
+                          ? `Flat: ${(variant.pricingTiers[0].price / 1000).toFixed(0)}K up to ${variant.pricingTiers[0].upToMinutes}min`
+                          : variant.pricingTiers.length > 1
+                          ? variant.pricingTiers
+                              .slice(0, 3)
+                              .map(
+                                (t) =>
+                                  `${t.upToMinutes}min: ${(t.price / 1000).toFixed(0)}K`
+                              )
+                              .join(', ') +
+                            (variant.pricingTiers.length > 3
+                              ? `, …, cap: ${(variant.pricingTiers[variant.pricingTiers.length - 1].price / 1000).toFixed(0)}K`
+                              : '')
+                          : null;
+
                       return (
                         <YStack key={key} gap="$3">
                           <XStack
@@ -214,12 +230,13 @@ export const RentalCheckinFormView = ({
                                     .map(({ optionValue }) => optionValue.name)
                                     .join(' - ')}
                                 </Paragraph>
+                                {tierSummary && (
+                                  <Paragraph size="$2" color="$gray10">
+                                    {tierSummary}
+                                  </Paragraph>
+                                )}
                               </YStack>
                             </XStack>
-
-                            <Paragraph textTransform="none" textAlign="left">
-                              Rp. {variant.price.toLocaleString('id')}
-                            </Paragraph>
                           </XStack>
                           <InputText
                             name={`rentals.${index}.code`}

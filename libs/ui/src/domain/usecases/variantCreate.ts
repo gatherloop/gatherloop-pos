@@ -62,6 +62,7 @@ export class VariantCreateUsecase extends Usecase<
       price: 0,
       description: '',
       values: [],
+      pricingTiers: [],
     };
     return this.params.product !== null
       ? {

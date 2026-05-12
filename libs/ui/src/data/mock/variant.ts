@@ -20,6 +20,7 @@ const initialVariants: Variant[] = [
     product: mockProduct,
     createdAt: '2024-03-20T00:00:00.000Z',
     values: [],
+    pricingTiers: [],
   },
   {
     id: 2,
@@ -29,6 +30,7 @@ const initialVariants: Variant[] = [
     product: mockProduct,
     createdAt: '2024-03-21T00:00:00.000Z',
     values: [],
+    pricingTiers: [],
   },
 ];
 
@@ -93,6 +95,7 @@ export class MockVariantRepository implements VariantRepository {
       product: mockProduct,
       createdAt: new Date().toISOString(),
       values: [],
+      pricingTiers: formValues.pricingTiers,
     });
   }
 

@@ -14,6 +14,7 @@ const defaultValues: VariantForm = {
   materials: [],
   productId: 1,
   values: [],
+  pricingTiers: [],
 };
 
 const LoadedStory = () => {
@@ -47,6 +48,7 @@ const PopulatedStory = () => {
       materials: [{ materialId: 1, amount: 0.015, material: mockMaterial }],
       productId: 1,
       values: [{ optionValueId: 1 }],
+      pricingTiers: [],
     },
   });
   return (
