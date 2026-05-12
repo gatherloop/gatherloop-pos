@@ -1,4 +1,4 @@
-import { Plus, Trash, X } from '@tamagui/lucide-icons';
+import { ArrowDown, ArrowUp, Plus, Trash, X } from '@tamagui/lucide-icons';
 import { Button, Card, Form, H4, Spinner, XStack, YStack } from 'tamagui';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
 import { Field, FieldArray, FormErrorBanner, InputText } from '../base';
@@ -64,14 +64,34 @@ export const ChecklistTemplateFormView = ({
                 <Card key={field.key} padding="$3" gap="$3">
                   <XStack justifyContent="space-between" alignItems="center">
                     <H4 size="$4">Item {index + 1}</H4>
-                    <Button
-                      size="$3"
-                      icon={Trash}
-                      theme="red"
-                      color="$red8"
-                      circular
-                      onPress={() => itemsArray.remove(index)}
-                    />
+                    <XStack gap="$2" alignItems="center">
+                      <Button
+                        size="$3"
+                        icon={ArrowUp}
+                        circular
+                        disabled={index === 0}
+                        opacity={index === 0 ? 0.4 : 1}
+                        onPress={() => itemsArray.move(index, index - 1)}
+                      />
+                      <Button
+                        size="$3"
+                        icon={ArrowDown}
+                        circular
+                        disabled={index === itemsArray.fields.length - 1}
+                        opacity={
+                          index === itemsArray.fields.length - 1 ? 0.4 : 1
+                        }
+                        onPress={() => itemsArray.move(index, index + 1)}
+                      />
+                      <Button
+                        size="$3"
+                        icon={Trash}
+                        theme="red"
+                        color="$red8"
+                        circular
+                        onPress={() => itemsArray.remove(index)}
+                      />
+                    </XStack>
                   </XStack>
 
                   <YStack gap="$3" $gtMd={{ flexDirection: 'row' }}>
@@ -131,6 +151,32 @@ export const ChecklistTemplateFormView = ({
                                 <InputText placeholder="e.g. Bar Lamp" />
                               </Field>
                             </YStack>
+                            <Button
+                              size="$2"
+                              icon={ArrowUp}
+                              circular
+                              disabled={subIndex === 0}
+                              opacity={subIndex === 0 ? 0.4 : 1}
+                              onPress={() =>
+                                subItemsArray.move(subIndex, subIndex - 1)
+                              }
+                            />
+                            <Button
+                              size="$2"
+                              icon={ArrowDown}
+                              circular
+                              disabled={
+                                subIndex === subItemsArray.fields.length - 1
+                              }
+                              opacity={
+                                subIndex === subItemsArray.fields.length - 1
+                                  ? 0.4
+                                  : 1
+                              }
+                              onPress={() =>
+                                subItemsArray.move(subIndex, subIndex + 1)
+                              }
+                            />
                             <Button
                               size="$2"
                               icon={X}
