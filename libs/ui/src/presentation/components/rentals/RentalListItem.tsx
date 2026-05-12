@@ -27,17 +27,6 @@ export const RentalListItem = ({
 }: RentalListItemProps) => {
   const target = dayjs(checkinAt).add(15, 'minute');
   const canDelete = dayjs().isBefore(target);
-  const durationMinutes = Math.ceil(
-    (Date.now() - new Date(checkinAt).getTime()) / 60000
-  );
-  const hours = Math.floor(durationMinutes / 60);
-  const minutes = durationMinutes % 60;
-  const durationLabel =
-    hours > 0 && minutes > 0
-      ? `${hours}h ${minutes}m`
-      : hours > 0
-      ? `${hours}h`
-      : `${minutes}m`;
 
   return (
     <ListItem
@@ -76,15 +65,9 @@ export const RentalListItem = ({
         },
         {
           icon: Calendar,
-          label: 'DURATION',
-          value: durationLabel,
-          isShown: !checkoutAt,
-        },
-        {
-          icon: Calendar,
-          label: 'RUNNING TOTAL',
+          label: checkoutAt ? 'TOTAL' : 'RUNNING TOTAL',
           value: `Rp. ${(runningTotal ?? 0).toLocaleString('id')}`,
-          isShown: !checkoutAt && runningTotal !== undefined,
+          isShown: runningTotal !== undefined,
         },
       ]}
       {...xStackProps}
