@@ -2,7 +2,6 @@ package domain
 
 import (
 	"context"
-	"math"
 	"time"
 )
 
@@ -58,6 +57,14 @@ func (usecase RentalUsecase) CheckinRentals(ctx context.Context, rentalRequests 
 
 	err := usecase.rentalRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 		for index := range rentalRequests {
+			variant, err := usecase.variantRepository.GetVariantById(ctxWithTx, rentalRequests[index].VariantId)
+			if err != nil {
+				return err
+			}
+			if len(variant.PricingTiers) == 0 {
+				return &Error{Type: BadRequest, Message: "rental variant has no pricing tiers"}
+			}
+			rentalRequests[index].PricingTiers = variant.PricingTiers
 			rentalRequests[index].CreatedAt = time.Now()
 		}
 		cr, err := usecase.rentalRepository.CheckinRentals(ctxWithTx, rentalRequests)
@@ -99,31 +106,18 @@ func (usecase RentalUsecase) CheckoutRentals(ctx context.Context, rentalIds []in
 				return err
 			}
 
-			variant, err := usecase.variantRepository.GetVariantById(ctxWithTx, existingRental.VariantId)
-			if err != nil {
-				return err
+			result, calcErr := CalculatePrice(existingRental.PricingTiers, checkoutAt.Sub(existingRental.CheckinAt))
+			if calcErr != nil {
+				return calcErr
 			}
-
-			// TODO: set these from DB
-			MAX_HOUR := 6.0
-
-			duration := checkoutAt.Sub(existingRental.CheckinAt)
-			hours := int(duration.Hours())
-			remainder := duration % time.Hour
-			if remainder >= 15*time.Minute {
-				hours++
-			}
-
-			resolvedHours := math.Min(float64(hours), MAX_HOUR)
-			checkoutPrice := float64(variant.Price) * resolvedHours
-			total += checkoutPrice
+			total += float64(result.Price)
 
 			transactionItems = append(transactionItems, TransactionItem{
 				VariantId:      existingRental.VariantId,
-				Amount:         float32(resolvedHours),
-				Price:          variant.Price,
+				Amount:         1,
+				Price:          result.Price,
 				DiscountAmount: 0,
-				Subtotal:       variant.Price * float32(resolvedHours),
+				Subtotal:       result.Price,
 				RentalId:       &existingRental.Id,
 			})
 
