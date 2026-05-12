@@ -22,6 +22,7 @@ const mockVariant = {
   },
   createdAt: '2024-03-20T00:00:00.000Z',
   values: [],
+  pricingTiers: [],
 };
 
 const initialRentals: Rental[] = [
@@ -33,6 +34,7 @@ const initialRentals: Rental[] = [
     createdAt: '2024-03-20T00:00:00.000Z',
     checkinAt: '2024-03-20T08:00:00.000Z',
     checkoutAt: null,
+    pricingTiers: [],
   },
   {
     id: 2,
@@ -42,6 +44,7 @@ const initialRentals: Rental[] = [
     createdAt: '2024-03-21T00:00:00.000Z',
     checkinAt: '2024-03-21T08:00:00.000Z',
     checkoutAt: null,
+    pricingTiers: [],
   },
 ];
 

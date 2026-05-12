@@ -11,7 +11,7 @@ import {
 import { FormErrorBanner } from '../base';
 import { H4 } from 'tamagui';
 import { Calendar, QrCode, Trash } from '@tamagui/lucide-icons';
-import { RentalCheckoutForm } from '../../../domain';
+import { PricingTier, RentalCheckoutForm } from '../../../domain';
 import {
   FormProvider,
   UseFieldArrayReturn,
@@ -19,6 +19,32 @@ import {
 } from 'react-hook-form';
 import { ReactNode } from 'react';
 import dayjs from 'dayjs';
+
+function calculateSubtotal(
+  tiers: PricingTier[],
+  checkinAt: string,
+  now: Date
+): number {
+  if (tiers.length === 0) return 0;
+  const durationMinutes = Math.ceil(
+    (now.getTime() - new Date(checkinAt).getTime()) / 60000
+  );
+  for (const tier of tiers) {
+    if (tier.upToMinutes >= durationMinutes) return tier.price;
+  }
+  return tiers[tiers.length - 1].price;
+}
+
+function formatDuration(checkinAt: string, now: Date): string {
+  const totalMinutes = Math.ceil(
+    (now.getTime() - new Date(checkinAt).getTime()) / 60000
+  );
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
+  if (hours > 0) return `${hours}h`;
+  return `${minutes}m`;
+}
 
 export type RentalCheckoutFormViewProps = {
   form: UseFormReturn<RentalCheckoutForm>;
@@ -39,6 +65,14 @@ export const RentalCheckoutFormView = ({
   rentalsFieldArray,
   serverError,
 }: RentalCheckoutFormViewProps) => {
+  const now = new Date();
+  const grandTotal = rentalsFieldArray.fields.reduce((sum, rental) => {
+    return (
+      sum +
+      calculateSubtotal(rental.pricingTiers, rental.checkinAt, now)
+    );
+  }, 0);
+
   return (
     <YStack>
       <FormProvider {...form}>
@@ -52,7 +86,14 @@ export const RentalCheckoutFormView = ({
                   <H4>Items</H4>
                   <YStack gap="$3">
                     {rentalsFieldArray.fields.map(
-                      ({ variant, checkinAt, code, name, key }, index) => {
+                      ({ variant, checkinAt, code, name, pricingTiers, key }, index) => {
+                        const subtotal = calculateSubtotal(
+                          pricingTiers,
+                          checkinAt,
+                          now
+                        );
+                        const duration = formatDuration(checkinAt, now);
+
                         return (
                           <YStack
                             key={key}
@@ -68,7 +109,7 @@ export const RentalCheckoutFormView = ({
                                 color="$red8"
                                 circular
                               />
-                              <YStack>
+                              <YStack flex={1}>
                                 <Paragraph>{name}</Paragraph>
                                 <Paragraph>
                                   {`${variant.product.name} - ${variant.values
@@ -103,6 +144,16 @@ export const RentalCheckoutFormView = ({
                                     </Paragraph>
                                   </XStack>
                                 </XStack>
+                                {pricingTiers.length > 0 && (
+                                  <XStack justifyContent="space-between" marginTop="$1">
+                                    <Paragraph size="$2" color="$gray10">
+                                      {duration}
+                                    </Paragraph>
+                                    <Paragraph size="$3" fontWeight="bold">
+                                      Rp. {subtotal.toLocaleString('id')}
+                                    </Paragraph>
+                                  </XStack>
+                                )}
                               </YStack>
                             </XStack>
                             <Separator />
@@ -111,6 +162,14 @@ export const RentalCheckoutFormView = ({
                       }
                     )}
                   </YStack>
+                  {rentalsFieldArray.fields.length > 0 && (
+                    <XStack justifyContent="space-between" paddingTop="$2">
+                      <Paragraph fontWeight="bold">Grand Total</Paragraph>
+                      <Paragraph fontWeight="bold">
+                        Rp. {grandTotal.toLocaleString('id')}
+                      </Paragraph>
+                    </XStack>
+                  )}
                 </YStack>
               </Card>
               <XStack justifyContent="flex-end" gap="$3">

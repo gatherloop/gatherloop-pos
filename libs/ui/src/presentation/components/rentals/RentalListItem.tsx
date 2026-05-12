@@ -9,6 +9,7 @@ export type RentalListItemProps = {
   variantName: string;
   checkinAt: string;
   checkoutAt?: string;
+  runningTotal?: number;
   onDeleteMenuPress?: () => void;
   onItemPress?: () => void;
 } & XStackProps;
@@ -19,12 +20,14 @@ export const RentalListItem = ({
   variantName,
   checkinAt,
   checkoutAt,
+  runningTotal,
   onDeleteMenuPress,
   onItemPress,
   ...xStackProps
 }: RentalListItemProps) => {
   const target = dayjs(checkinAt).add(15, 'minute');
   const canDelete = dayjs().isBefore(target);
+
   return (
     <ListItem
       title={name}
@@ -59,6 +62,12 @@ export const RentalListItem = ({
           label: 'CHECKOUT DATE',
           value: dayjs(checkoutAt).format('DD/MM/YYYY - HH:mm'),
           isShown: typeof checkoutAt === 'string',
+        },
+        {
+          icon: Calendar,
+          label: checkoutAt ? 'TOTAL' : 'RUNNING TOTAL',
+          value: `Rp. ${(runningTotal ?? 0).toLocaleString('id')}`,
+          isShown: runningTotal !== undefined,
         },
       ]}
       {...xStackProps}
