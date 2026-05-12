@@ -32,7 +32,20 @@ export const ChecklistTemplateCreateHandler = ({
     <ChecklistTemplateCreateScreen
       form={checklistTemplateCreate.form}
       onSubmit={(values) =>
-        checklistTemplateCreate.dispatch({ type: 'SUBMIT', values })
+        checklistTemplateCreate.dispatch({
+          type: 'SUBMIT',
+          values: {
+            ...values,
+            items: values.items.map((item, itemIndex) => ({
+              ...item,
+              displayOrder: itemIndex + 1,
+              subItems: item.subItems.map((subItem, subItemIndex) => ({
+                ...subItem,
+                displayOrder: subItemIndex + 1,
+              })),
+            })),
+          },
+        })
       }
       isSubmitDisabled={
         checklistTemplateCreate.state.type === 'submitting' ||

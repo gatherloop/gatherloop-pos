@@ -19,23 +19,9 @@ export const ChecklistTemplateFormView = ({
   isSubmitting,
   serverError,
 }: ChecklistTemplateFormViewProps) => {
-  const handleSubmit = (values: ChecklistTemplateForm) => {
-    onSubmit({
-      ...values,
-      items: values.items.map((item, itemIndex) => ({
-        ...item,
-        displayOrder: itemIndex + 1,
-        subItems: item.subItems.map((subItem, subItemIndex) => ({
-          ...subItem,
-          displayOrder: subItemIndex + 1,
-        })),
-      })),
-    });
-  };
-
   return (
     <FormProvider {...form}>
-      <Form onSubmit={form.handleSubmit(handleSubmit)} gap="$3">
+      <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
         <FormErrorBanner message={serverError} />
         <Card padding="$3" gap="$3">
           <YStack gap="$3" $gtMd={{ flexDirection: 'row' }}>
@@ -212,7 +198,7 @@ export const ChecklistTemplateFormView = ({
 
         <Button
           disabled={isSubmitDisabled}
-          onPress={form.handleSubmit(handleSubmit)}
+          onPress={form.handleSubmit(onSubmit)}
           theme="blue"
           icon={isSubmitting ? <Spinner /> : undefined}
         >

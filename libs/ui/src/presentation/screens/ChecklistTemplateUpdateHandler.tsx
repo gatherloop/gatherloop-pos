@@ -36,7 +36,20 @@ export const ChecklistTemplateUpdateHandler = ({
     <ChecklistTemplateUpdateScreen
       form={checklistTemplateUpdate.form}
       onSubmit={(values) =>
-        checklistTemplateUpdate.dispatch({ type: 'SUBMIT', values })
+        checklistTemplateUpdate.dispatch({
+          type: 'SUBMIT',
+          values: {
+            ...values,
+            items: values.items.map((item, itemIndex) => ({
+              ...item,
+              displayOrder: itemIndex + 1,
+              subItems: item.subItems.map((subItem, subItemIndex) => ({
+                ...subItem,
+                displayOrder: subItemIndex + 1,
+              })),
+            })),
+          },
+        })
       }
       isSubmitDisabled={
         checklistTemplateUpdate.state.type === 'submitting' ||
