@@ -26,10 +26,12 @@ type Variant struct {
 	ProductId     int64
 	Product       Product
 	Name          string
+	// Price is always 0 for rental variants; use PricingTiers for rental billing.
 	Price         float32
 	Description   *string
 	Materials     []VariantMaterial
 	DeletedAt     *time.Time
 	CreatedAt     time.Time
 	VariantValues []VariantValue
+	PricingTiers  []PricingTier
 }

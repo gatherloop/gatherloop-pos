@@ -15,6 +15,10 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
+func newTestVariantHandler(ctrl *gomock.Controller, variantRepo *mock.MockVariantRepository, productRepo *mock.MockProductRepository, tierRepo *mock.MockPricingTierRepository) restapi.VariantHandler {
+	return restapi.NewVariantHandler(domain.NewVariantUsecase(variantRepo, productRepo, tierRepo))
+}
+
 func TestVariantHandler_GetVariantList(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -51,9 +55,11 @@ func TestVariantHandler_GetVariantList(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockVariantRepository(ctrl)
-			tt.setupMock(mockRepo)
-			handler := restapi.NewVariantHandler(domain.NewVariantUsecase(mockRepo))
+			variantRepo := mock.NewMockVariantRepository(ctrl)
+			productRepo := mock.NewMockProductRepository(ctrl)
+			tierRepo := mock.NewMockPricingTierRepository(ctrl)
+			tt.setupMock(variantRepo)
+			handler := newTestVariantHandler(ctrl, variantRepo, productRepo, tierRepo)
 			req := httptest.NewRequest(http.MethodGet, tt.url, nil)
 			w := httptest.NewRecorder()
 			handler.GetVariantList(w, req)
@@ -97,9 +103,11 @@ func TestVariantHandler_GetVariantById(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockVariantRepository(ctrl)
-			tt.setupMock(mockRepo)
-			handler := restapi.NewVariantHandler(domain.NewVariantUsecase(mockRepo))
+			variantRepo := mock.NewMockVariantRepository(ctrl)
+			productRepo := mock.NewMockProductRepository(ctrl)
+			tierRepo := mock.NewMockPricingTierRepository(ctrl)
+			tt.setupMock(variantRepo)
+			handler := newTestVariantHandler(ctrl, variantRepo, productRepo, tierRepo)
 			req := httptest.NewRequest(http.MethodGet, "/variants/"+tt.variantId, nil)
 			req = mux.SetURLVars(req, map[string]string{"variantId": tt.variantId})
 			w := httptest.NewRecorder()
@@ -113,28 +121,29 @@ func TestVariantHandler_CreateVariant(t *testing.T) {
 	tests := []struct {
 		name           string
 		body           string
-		setupMock      func(r *mock.MockVariantRepository)
+		setupMock      func(vr *mock.MockVariantRepository, pr *mock.MockProductRepository, tr *mock.MockPricingTierRepository)
 		expectedStatus int
 	}{
 		{
 			name: "success",
 			body: `{"productId": 1, "name": "Regular", "price": 15000, "materials": [], "values": []}`,
-			setupMock: func(r *mock.MockVariantRepository) {
-				r.EXPECT().CreateVariant(gomock.Any(), gomock.Any()).Return(domain.Variant{Id: 1, Name: "Regular"}, nil)
+			setupMock: func(vr *mock.MockVariantRepository, pr *mock.MockProductRepository, tr *mock.MockPricingTierRepository) {
+				pr.EXPECT().GetProductById(gomock.Any(), int64(1)).Return(domain.Product{Id: 1, SaleType: domain.SaleTypePurchase}, nil)
+				vr.EXPECT().CreateVariant(gomock.Any(), gomock.Any()).Return(domain.Variant{Id: 1, Name: "Regular"}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
 		{
 			name:           "invalid JSON body",
 			body:           `{invalid`,
-			setupMock:      func(r *mock.MockVariantRepository) {},
+			setupMock:      func(vr *mock.MockVariantRepository, pr *mock.MockProductRepository, tr *mock.MockPricingTierRepository) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "repo error",
 			body: `{"productId": 1, "name": "Regular", "price": 15000, "materials": [], "values": []}`,
-			setupMock: func(r *mock.MockVariantRepository) {
-				r.EXPECT().CreateVariant(gomock.Any(), gomock.Any()).Return(domain.Variant{}, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
+			setupMock: func(vr *mock.MockVariantRepository, pr *mock.MockProductRepository, tr *mock.MockPricingTierRepository) {
+				pr.EXPECT().GetProductById(gomock.Any(), int64(1)).Return(domain.Product{}, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
 			expectedStatus: http.StatusInternalServerError,
 		},
@@ -144,9 +153,11 @@ func TestVariantHandler_CreateVariant(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockVariantRepository(ctrl)
-			tt.setupMock(mockRepo)
-			handler := restapi.NewVariantHandler(domain.NewVariantUsecase(mockRepo))
+			variantRepo := mock.NewMockVariantRepository(ctrl)
+			productRepo := mock.NewMockProductRepository(ctrl)
+			tierRepo := mock.NewMockPricingTierRepository(ctrl)
+			tt.setupMock(variantRepo, productRepo, tierRepo)
+			handler := newTestVariantHandler(ctrl, variantRepo, productRepo, tierRepo)
 			req := httptest.NewRequest(http.MethodPost, "/variants", bytes.NewBufferString(tt.body))
 			req.Header.Set("Content-Type", "application/json")
 			w := httptest.NewRecorder()
@@ -161,17 +172,19 @@ func TestVariantHandler_UpdateVariantById(t *testing.T) {
 		name           string
 		variantId      string
 		body           string
-		setupMock      func(r *mock.MockVariantRepository)
+		setupMock      func(vr *mock.MockVariantRepository, pr *mock.MockProductRepository, tr *mock.MockPricingTierRepository)
 		expectedStatus int
 	}{
 		{
 			name:      "success",
 			variantId: "1",
 			body:      `{"productId": 1, "name": "Large", "price": 20000, "materials": [], "values": []}`,
-			setupMock: func(r *mock.MockVariantRepository) {
-				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+			setupMock: func(vr *mock.MockVariantRepository, pr *mock.MockProductRepository, tr *mock.MockPricingTierRepository) {
+				vr.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
-				r.EXPECT().UpdateVariantById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Variant{Id: 1, Name: "Large"}, nil)
+				vr.EXPECT().GetVariantById(gomock.Any(), int64(1)).Return(domain.Variant{Id: 1, ProductId: 1}, nil)
+				pr.EXPECT().GetProductById(gomock.Any(), int64(1)).Return(domain.Product{Id: 1, SaleType: domain.SaleTypePurchase}, nil)
+				vr.EXPECT().UpdateVariantById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Variant{Id: 1, Name: "Large"}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -179,17 +192,17 @@ func TestVariantHandler_UpdateVariantById(t *testing.T) {
 			name:           "invalid id",
 			variantId:      "abc",
 			body:           `{}`,
-			setupMock:      func(r *mock.MockVariantRepository) {},
+			setupMock:      func(vr *mock.MockVariantRepository, pr *mock.MockProductRepository, tr *mock.MockPricingTierRepository) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:      "not found",
 			variantId: "99",
 			body:      `{"productId": 1, "name": "Large", "price": 20000, "materials": [], "values": []}`,
-			setupMock: func(r *mock.MockVariantRepository) {
-				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+			setupMock: func(vr *mock.MockVariantRepository, pr *mock.MockProductRepository, tr *mock.MockPricingTierRepository) {
+				vr.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
-				r.EXPECT().UpdateVariantById(gomock.Any(), gomock.Any(), int64(99)).Return(domain.Variant{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
+				vr.EXPECT().GetVariantById(gomock.Any(), int64(99)).Return(domain.Variant{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
 			expectedStatus: http.StatusNotFound,
 		},
@@ -199,9 +212,11 @@ func TestVariantHandler_UpdateVariantById(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockVariantRepository(ctrl)
-			tt.setupMock(mockRepo)
-			handler := restapi.NewVariantHandler(domain.NewVariantUsecase(mockRepo))
+			variantRepo := mock.NewMockVariantRepository(ctrl)
+			productRepo := mock.NewMockProductRepository(ctrl)
+			tierRepo := mock.NewMockPricingTierRepository(ctrl)
+			tt.setupMock(variantRepo, productRepo, tierRepo)
+			handler := newTestVariantHandler(ctrl, variantRepo, productRepo, tierRepo)
 			req := httptest.NewRequest(http.MethodPut, "/variants/"+tt.variantId, bytes.NewBufferString(tt.body))
 			req.Header.Set("Content-Type", "application/json")
 			req = mux.SetURLVars(req, map[string]string{"variantId": tt.variantId})
@@ -247,9 +262,11 @@ func TestVariantHandler_DeleteVariantById(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockVariantRepository(ctrl)
-			tt.setupMock(mockRepo)
-			handler := restapi.NewVariantHandler(domain.NewVariantUsecase(mockRepo))
+			variantRepo := mock.NewMockVariantRepository(ctrl)
+			productRepo := mock.NewMockProductRepository(ctrl)
+			tierRepo := mock.NewMockPricingTierRepository(ctrl)
+			tt.setupMock(variantRepo)
+			handler := newTestVariantHandler(ctrl, variantRepo, productRepo, tierRepo)
 			req := httptest.NewRequest(http.MethodDelete, "/variants/"+tt.variantId, nil)
 			req = mux.SetURLVars(req, map[string]string{"variantId": tt.variantId})
 			w := httptest.NewRecorder()

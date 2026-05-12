@@ -63,7 +63,8 @@ func main() {
 
 	walletUsecase := domain.NewWalletUsecase(walletRepository)
 	transactionUsecase := domain.NewTransactionUsecase(transactionRepository, variantRepository, couponRepository, walletRepository, budgetRepository)
-	variantUsecase := domain.NewVariantUsecase(variantRepository)
+	pricingTierRepository := mysql.NewPricingTierRepository(db)
+	variantUsecase := domain.NewVariantUsecase(variantRepository, productRepository, pricingTierRepository)
 	productUsecase := domain.NewProductUsecase(productRepository)
 	materialUsecase := domain.NewMaterialUsecase(materialRepository)
 	supplierUsecase := domain.NewSupplierUsecase(supplierRepository)
