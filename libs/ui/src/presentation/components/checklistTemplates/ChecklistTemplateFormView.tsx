@@ -1,4 +1,4 @@
-import { Plus, Trash, X } from '@tamagui/lucide-icons';
+import { ArrowDown, ArrowUp, Plus, Trash, X } from '@tamagui/lucide-icons';
 import { Button, Card, Form, H4, Spinner, XStack, YStack } from 'tamagui';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
 import { Field, FieldArray, FormErrorBanner, InputText } from '../base';
@@ -19,9 +19,23 @@ export const ChecklistTemplateFormView = ({
   isSubmitting,
   serverError,
 }: ChecklistTemplateFormViewProps) => {
+  const handleSubmit = (values: ChecklistTemplateForm) => {
+    onSubmit({
+      ...values,
+      items: values.items.map((item, itemIndex) => ({
+        ...item,
+        displayOrder: itemIndex + 1,
+        subItems: item.subItems.map((subItem, subItemIndex) => ({
+          ...subItem,
+          displayOrder: subItemIndex + 1,
+        })),
+      })),
+    });
+  };
+
   return (
     <FormProvider {...form}>
-      <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
+      <Form onSubmit={form.handleSubmit(handleSubmit)} gap="$3">
         <FormErrorBanner message={serverError} />
         <Card padding="$3" gap="$3">
           <YStack gap="$3" $gtMd={{ flexDirection: 'row' }}>
@@ -64,14 +78,34 @@ export const ChecklistTemplateFormView = ({
                 <Card key={field.key} padding="$3" gap="$3">
                   <XStack justifyContent="space-between" alignItems="center">
                     <H4 size="$4">Item {index + 1}</H4>
-                    <Button
-                      size="$3"
-                      icon={Trash}
-                      theme="red"
-                      color="$red8"
-                      circular
-                      onPress={() => itemsArray.remove(index)}
-                    />
+                    <XStack gap="$2" alignItems="center">
+                      <Button
+                        size="$3"
+                        icon={ArrowUp}
+                        circular
+                        disabled={index === 0}
+                        opacity={index === 0 ? 0.4 : 1}
+                        onPress={() => itemsArray.move(index, index - 1)}
+                      />
+                      <Button
+                        size="$3"
+                        icon={ArrowDown}
+                        circular
+                        disabled={index === itemsArray.fields.length - 1}
+                        opacity={
+                          index === itemsArray.fields.length - 1 ? 0.4 : 1
+                        }
+                        onPress={() => itemsArray.move(index, index + 1)}
+                      />
+                      <Button
+                        size="$3"
+                        icon={Trash}
+                        theme="red"
+                        color="$red8"
+                        circular
+                        onPress={() => itemsArray.remove(index)}
+                      />
+                    </XStack>
                   </XStack>
 
                   <YStack gap="$3" $gtMd={{ flexDirection: 'row' }}>
@@ -133,6 +167,32 @@ export const ChecklistTemplateFormView = ({
                             </YStack>
                             <Button
                               size="$2"
+                              icon={ArrowUp}
+                              circular
+                              disabled={subIndex === 0}
+                              opacity={subIndex === 0 ? 0.4 : 1}
+                              onPress={() =>
+                                subItemsArray.move(subIndex, subIndex - 1)
+                              }
+                            />
+                            <Button
+                              size="$2"
+                              icon={ArrowDown}
+                              circular
+                              disabled={
+                                subIndex === subItemsArray.fields.length - 1
+                              }
+                              opacity={
+                                subIndex === subItemsArray.fields.length - 1
+                                  ? 0.4
+                                  : 1
+                              }
+                              onPress={() =>
+                                subItemsArray.move(subIndex, subIndex + 1)
+                              }
+                            />
+                            <Button
+                              size="$2"
                               icon={X}
                               theme="red"
                               color="$red8"
@@ -152,7 +212,7 @@ export const ChecklistTemplateFormView = ({
 
         <Button
           disabled={isSubmitDisabled}
-          onPress={form.handleSubmit(onSubmit)}
+          onPress={form.handleSubmit(handleSubmit)}
           theme="blue"
           icon={isSubmitting ? <Spinner /> : undefined}
         >
