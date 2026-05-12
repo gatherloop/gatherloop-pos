@@ -2655,6 +2655,16 @@ components:
           format: int64
         name:
           type: string
+    PricingTier:
+      type: object
+      required:
+        - upToMinutes
+        - price
+      properties:
+        upToMinutes:
+          type: integer
+        price:
+          type: number
     Variant:
       type: object
       required:
@@ -2666,6 +2676,7 @@ components:
         - materials
         - values
         - createdAt
+        - pricingTiers
       properties:
         id:
           type: integer
@@ -2695,6 +2706,10 @@ components:
         createdAt:
           type: string
           format: date-time
+        pricingTiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/PricingTier'
     VariantRequest:
       type: object
       required:
@@ -2721,6 +2736,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/VariantValueRequest'
+        pricingTiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/PricingTier'
     VariantMaterial:
       type: object
       required:
@@ -3029,6 +3048,7 @@ components:
         - variant
         - checkinAt
         - createdAt
+        - pricingTiers
       properties:
         id:
           type: integer
@@ -3051,6 +3071,13 @@ components:
         createdAt:
           type: string
           format: date-time
+        pricingTiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/PricingTier'
+        runningTotal:
+          type: number
+          readOnly: true
     RentalRequest:
       type: object
       required:
