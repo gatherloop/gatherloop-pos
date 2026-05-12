@@ -57,6 +57,13 @@ func ToApiVariantMaterial(variantMaterial domain.VariantMaterial) apiContract.Va
 	}
 }
 
+func ToApiPricingTier(tier domain.PricingTier) apiContract.PricingTier {
+	return apiContract.PricingTier{
+		UpToMinutes: tier.UpToMinutes,
+		Price:       tier.Price,
+	}
+}
+
 func ToApiVariant(variant domain.Variant) apiContract.Variant {
 	apiMaterials := []apiContract.VariantMaterial{}
 	for _, variantMaterial := range variant.Materials {
@@ -76,17 +83,23 @@ func ToApiVariant(variant domain.Variant) apiContract.Variant {
 		})
 	}
 
+	apiPricingTiers := []apiContract.PricingTier{}
+	for _, tier := range variant.PricingTiers {
+		apiPricingTiers = append(apiPricingTiers, ToApiPricingTier(tier))
+	}
+
 	return apiContract.Variant{
-		Id:          variant.Id,
-		Name:        variant.Name,
-		Price:       variant.Price,
-		ProductId:   variant.ProductId,
-		Product:     ToApiProduct(variant.Product),
-		Materials:   apiMaterials,
-		DeletedAt:   variant.DeletedAt,
-		CreatedAt:   variant.CreatedAt,
-		Description: variant.Description,
-		Values:      apiVariantValues,
+		Id:           variant.Id,
+		Name:         variant.Name,
+		Price:        variant.Price,
+		ProductId:    variant.ProductId,
+		Product:      ToApiProduct(variant.Product),
+		Materials:    apiMaterials,
+		DeletedAt:    variant.DeletedAt,
+		CreatedAt:    variant.CreatedAt,
+		Description:  variant.Description,
+		Values:       apiVariantValues,
+		PricingTiers: apiPricingTiers,
 	}
 }
 
@@ -116,6 +129,14 @@ func ToVariant(variantRequest apiContract.VariantRequest) domain.Variant {
 		})
 	}
 
+	pricingTiers := []domain.PricingTier{}
+	for _, tier := range variantRequest.PricingTiers {
+		pricingTiers = append(pricingTiers, domain.PricingTier{
+			UpToMinutes: tier.UpToMinutes,
+			Price:       tier.Price,
+		})
+	}
+
 	return domain.Variant{
 		Name:          variantRequest.Name,
 		Price:         variantRequest.Price,
@@ -123,5 +144,6 @@ func ToVariant(variantRequest apiContract.VariantRequest) domain.Variant {
 		Materials:     variantMaterials,
 		Description:   variantRequest.Description,
 		VariantValues: variantValues,
+		PricingTiers:  pricingTiers,
 	}
 }

@@ -130,6 +130,7 @@ func TestRentalHandler_CheckinRentals(t *testing.T) {
 			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository) {
 				rentalRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(1)).Return(domain.Variant{Id: 1, PricingTiers: []domain.PricingTier{{UpToMinutes: 60, Price: 15000}}}, nil)
 				rentalRepo.EXPECT().CheckinRentals(gomock.Any(), gomock.Any()).Return([]domain.Rental{{Id: 1, Name: "John"}}, nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -147,6 +148,7 @@ func TestRentalHandler_CheckinRentals(t *testing.T) {
 			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository) {
 				rentalRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(1)).Return(domain.Variant{Id: 1, PricingTiers: []domain.PricingTier{{UpToMinutes: 60, Price: 15000}}}, nil)
 				rentalRepo.EXPECT().CheckinRentals(gomock.Any(), gomock.Any()).Return(nil, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
 			expectedStatus: http.StatusInternalServerError,
@@ -179,9 +181,14 @@ func TestRentalHandler_CheckoutRentals(t *testing.T) {
 			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository) {
 				rentalRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
-				rentalRepo.EXPECT().GetRentalById(gomock.Any(), int64(1)).Return(domain.Rental{Id: 1, Name: "John", VariantId: 1, CheckinAt: time.Now().Add(-2 * time.Hour)}, nil)
+				rentalRepo.EXPECT().GetRentalById(gomock.Any(), int64(1)).Return(domain.Rental{
+					Id:           1,
+					Name:         "John",
+					VariantId:    1,
+					CheckinAt:    time.Now().Add(-2 * time.Hour),
+					PricingTiers: []domain.PricingTier{{UpToMinutes: 480, Price: 120000}},
+				}, nil)
 				rentalRepo.EXPECT().CheckoutRental(gomock.Any(), int64(1)).Return(nil)
-				variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(1)).Return(domain.Variant{Id: 1, Price: 10000}, nil)
 				txRepo.EXPECT().CreateTransaction(gomock.Any(), gomock.Any()).Return(domain.Transaction{Id: 1}, nil)
 			},
 			expectedStatus: http.StatusOK,
