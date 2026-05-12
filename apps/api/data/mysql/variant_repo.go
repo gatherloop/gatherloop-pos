@@ -13,11 +13,24 @@ func NewVariantRepository(db *gorm.DB) domain.VariantRepository {
 	return Repository{db: db}
 }
 
+func preloadVariantPricingTiers(db *gorm.DB) *gorm.DB {
+	return db.Order("pricing_tiers.up_to_minutes ASC")
+}
+
 func (repo Repository) GetVariantList(ctx context.Context, query string, sortBy domain.SortBy, order domain.Order, skip int, limit int, productId *int, optionValueIds []int) ([]domain.Variant, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 
 	var variants []Variant
-	result := db.Table("variants").Preload("Product").Preload("Product.Category").Preload("Materials").Preload("Materials.Material").Preload("VariantValues").Preload("VariantValues.OptionValue").Where("variants.deleted_at", nil).Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
+	result := db.Table("variants").
+		Preload("Product").
+		Preload("Product.Category").
+		Preload("Materials").
+		Preload("Materials.Material").
+		Preload("VariantValues").
+		Preload("VariantValues.OptionValue").
+		Preload("PricingTiers", preloadVariantPricingTiers).
+		Where("variants.deleted_at", nil).
+		Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
 
 	if len(optionValueIds) > 0 {
 		result = result.Joins("JOIN variant_values ON variant_values.variant_id = variants.id").Where("variant_values.option_value_id IN ?", optionValueIds).Group("variants.id").Having("COUNT(*) = ?", len(optionValueIds))
@@ -61,20 +74,52 @@ func (repo Repository) GetVariantListTotal(ctx context.Context, query string) (i
 func (repo Repository) GetVariantById(ctx context.Context, id int64) (domain.Variant, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	var variant Variant
-	result := db.Table("variants").Preload("Product").Preload("Product.Category").Preload("Materials").Preload("Materials.Material").Preload("VariantValues").Preload("VariantValues.OptionValue").Where("id = ?", id).First(&variant)
+	result := db.Table("variants").
+		Preload("Product").
+		Preload("Product.Category").
+		Preload("Materials").
+		Preload("Materials.Material").
+		Preload("VariantValues").
+		Preload("VariantValues.OptionValue").
+		Preload("PricingTiers", preloadVariantPricingTiers).
+		Where("id = ?", id).
+		First(&variant)
 	return ToVariantDomain(variant), ToErrorCtx(ctx, result.Error, "GetVariantById")
 }
 
 func (repo Repository) CreateVariant(ctx context.Context, variant domain.Variant) (domain.Variant, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	payload := ToVariantDB(variant)
+
+	// Separate tiers so GORM doesn't auto-manage them; we insert manually after.
+	tiers := payload.PricingTiers
+	payload.PricingTiers = nil
+
 	if result := db.Table("variants").Create(&payload); result.Error != nil {
 		return domain.Variant{}, ToErrorCtx(ctx, result.Error, "CreateVariant")
 	}
 
-	// Fetch the created variant with all relations
+	if len(tiers) > 0 {
+		for i := range tiers {
+			tiers[i].Id = 0
+			tiers[i].VariantId = payload.Id
+		}
+		if result := db.Table("pricing_tiers").Create(&tiers); result.Error != nil {
+			return domain.Variant{}, ToErrorCtx(ctx, result.Error, "CreateVariant")
+		}
+	}
+
 	var createdVariant Variant
-	fetchResult := db.Table("variants").Preload("Product").Preload("Product.Category").Preload("Materials").Preload("Materials.Material").Preload("VariantValues").Preload("VariantValues.OptionValue").Where("id = ?", payload.Id).First(&createdVariant)
+	fetchResult := db.Table("variants").
+		Preload("Product").
+		Preload("Product.Category").
+		Preload("Materials").
+		Preload("Materials.Material").
+		Preload("VariantValues").
+		Preload("VariantValues.OptionValue").
+		Preload("PricingTiers", preloadVariantPricingTiers).
+		Where("id = ?", payload.Id).
+		First(&createdVariant)
 	return ToVariantDomain(createdVariant), ToErrorCtx(ctx, fetchResult.Error, "CreateVariant")
 }
 
@@ -82,8 +127,12 @@ func (repo Repository) UpdateVariantById(ctx context.Context, variant domain.Var
 	db := GetDbFromCtx(ctx, repo.db)
 	variant.Id = id
 
-	// Update the variant and its associations using FullSaveAssociations to ensure all related records are updated
 	variantPayload := ToVariantDB(variant)
+
+	// Separate tiers so GORM doesn't auto-manage them; we replace them manually.
+	tiers := variantPayload.PricingTiers
+	variantPayload.PricingTiers = nil
+
 	if result := db.Session(&gorm.Session{FullSaveAssociations: true}).Table("variants").Where("id = ?", id).Updates(&variantPayload); result.Error != nil {
 		return domain.Variant{}, ToErrorCtx(ctx, result.Error, "UpdateVariantById")
 	}
@@ -118,9 +167,31 @@ func (repo Repository) UpdateVariantById(ctx context.Context, variant domain.Var
 		}
 	}
 
-	// Fetch the updated variant with all relations
+	// Replace pricing tiers atomically: delete all existing, then insert the new set.
+	if result := db.Table("pricing_tiers").Where("variant_id = ?", id).Delete(&PricingTier{}); result.Error != nil {
+		return domain.Variant{}, ToErrorCtx(ctx, result.Error, "UpdateVariantById")
+	}
+	if len(tiers) > 0 {
+		for i := range tiers {
+			tiers[i].Id = 0
+			tiers[i].VariantId = id
+		}
+		if result := db.Table("pricing_tiers").Create(&tiers); result.Error != nil {
+			return domain.Variant{}, ToErrorCtx(ctx, result.Error, "UpdateVariantById")
+		}
+	}
+
 	var updatedVariant Variant
-	fetchResult := db.Table("variants").Preload("Product").Preload("Product.Category").Preload("Materials").Preload("Materials.Material").Preload("VariantValues").Preload("VariantValues.OptionValue").Where("id = ?", id).First(&updatedVariant)
+	fetchResult := db.Table("variants").
+		Preload("Product").
+		Preload("Product.Category").
+		Preload("Materials").
+		Preload("Materials.Material").
+		Preload("VariantValues").
+		Preload("VariantValues.OptionValue").
+		Preload("PricingTiers", preloadVariantPricingTiers).
+		Where("id = ?", id).
+		First(&updatedVariant)
 	return ToVariantDomain(updatedVariant), ToErrorCtx(ctx, fetchResult.Error, "UpdateVariantById")
 }
 
