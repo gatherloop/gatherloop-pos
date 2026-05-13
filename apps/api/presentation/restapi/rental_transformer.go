@@ -50,11 +50,17 @@ func ToApiRental(rental domain.Rental) apiContract.Rental {
 		apiPricingTiers = append(apiPricingTiers, ToApiPricingTier(tier))
 	}
 
-	runningTotal := float32(0)
-	if rental.CheckoutAt == nil && len(rental.PricingTiers) > 0 {
-		result, err := domain.CalculatePrice(rental.PricingTiers, time.Since(rental.CheckinAt))
+	total := float32(0)
+	if len(rental.PricingTiers) > 0 {
+		var duration time.Duration
+		if rental.CheckoutAt != nil {
+			duration = rental.CheckoutAt.Sub(rental.CheckinAt)
+		} else {
+			duration = time.Since(rental.CheckinAt)
+		}
+		result, err := domain.CalculatePrice(rental.PricingTiers, duration)
 		if err == nil {
-			runningTotal = result.Price
+			total = result.Price
 		}
 	}
 
@@ -68,7 +74,7 @@ func ToApiRental(rental domain.Rental) apiContract.Rental {
 		CheckoutAt:   rental.CheckoutAt,
 		CreatedAt:    rental.CreatedAt,
 		PricingTiers: apiPricingTiers,
-		RunningTotal: runningTotal,
+		Total:        total,
 	}
 }
 

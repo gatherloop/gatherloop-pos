@@ -15,7 +15,7 @@ export type RentalListItemProps = {
   variantName: string;
   checkinAt: string;
   checkoutAt?: string;
-  runningTotal?: number;
+  total?: number;
   onDeleteMenuPress?: () => void;
   onItemPress?: () => void;
 } & XStackProps;
@@ -26,7 +26,7 @@ export const RentalListItem = ({
   variantName,
   checkinAt,
   checkoutAt,
-  runningTotal,
+  total,
   onDeleteMenuPress,
   onItemPress,
   ...xStackProps
@@ -80,9 +80,9 @@ export const RentalListItem = ({
         },
         {
           icon: DollarSign,
-          label: checkoutAt ? 'TOTAL' : 'RUNNING TOTAL',
-          value: `Rp. ${(runningTotal ?? 0).toLocaleString('id')}`,
-          isShown: runningTotal !== undefined,
+          label: 'TOTAL',
+          value: `Rp. ${(total ?? 0).toLocaleString('id')}`,
+          isShown: total !== undefined,
         },
       ]}
       {...xStackProps}

@@ -3050,7 +3050,7 @@ components:
         - checkinAt
         - createdAt
         - pricingTiers
-        - runningTotal
+        - total
       properties:
         id:
           type: integer
@@ -3077,7 +3077,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PricingTier'
-        runningTotal:
+        total:
           type: number
           readOnly: true
     RentalRequest:

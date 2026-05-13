@@ -9,7 +9,7 @@ export type Rental = {
   checkinAt: string;
   checkoutAt: string | null;
   pricingTiers: PricingTier[];
-  runningTotal?: number;
+  total?: number;
 };
 
 export type RentalCheckinForm = {

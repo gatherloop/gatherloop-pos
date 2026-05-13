@@ -16,7 +16,7 @@ export function toRental(rental: ApiRental): Rental {
       upToMinutes,
       price,
     })),
-    runningTotal: rental.runningTotal,
+    total: rental.total,
   };
 }
 

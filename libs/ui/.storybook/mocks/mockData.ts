@@ -429,7 +429,7 @@ export const mockRental: Rental = {
   checkinAt: '2024-01-20T08:00:00.000Z',
   checkoutAt: null,
   pricingTiers: mockRentalVariant.pricingTiers,
-  runningTotal: 20000,
+  total: 20000,
 };
 
 export const mockRentalCheckedOut: Rental = {
@@ -438,7 +438,7 @@ export const mockRentalCheckedOut: Rental = {
   code: 'RNT-002',
   name: 'Jane Smith',
   checkoutAt: '2024-01-21T17:00:00.000Z',
-  runningTotal: undefined,
+  total: 30000,
 };
 
 export const mockRentals: Rental[] = [mockRental, mockRentalCheckedOut];
