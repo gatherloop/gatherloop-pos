@@ -57,7 +57,14 @@ export class TransactionUpdateUsecase extends Usecase<
       values: {
         name: this.params.transaction?.name ?? '',
         orderNumber: this.params.transaction?.orderNumber ?? 0,
-        transactionItems: this.params.transaction?.transactionItems ?? [],
+        transactionItems: this.params.transaction?.transactionItems.map((item) => ({
+          id: item.id,
+          amount: item.amount,
+          variant: item.variant,
+          price: item.price,
+          discountAmount: item.discountAmount,
+          note: item.note,
+        })) ?? [],
         transactionCoupons: this.params.transaction?.transactionCoupons ?? [],
       },
     };
@@ -157,6 +164,7 @@ export class TransactionUpdateUsecase extends Usecase<
                   amount: item.amount,
                   variantId: item.variant.id,
                   variant: item.variant,
+                  price: item.price,
                   discountAmount: item.discountAmount,
                   note: item.note,
                 })),
