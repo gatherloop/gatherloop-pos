@@ -149,7 +149,7 @@ export const TransactionFormView = ({
                                     name={[`transactionItems.${index}`]}
                                   >
                                     {([
-                                      { variant, amount, discountAmount },
+                                      { price, amount, discountAmount },
                                     ]) => (
                                       <H4
                                         textTransform="none"
@@ -157,7 +157,7 @@ export const TransactionFormView = ({
                                       >
                                         Rp.{' '}
                                         {(
-                                          variant.price * amount -
+                                          price * amount -
                                           discountAmount
                                         ).toLocaleString('id')}
                                       </H4>
@@ -236,7 +236,7 @@ export const TransactionFormView = ({
                                         transactionItems.reduce(
                                           (prev, curr) =>
                                             prev +
-                                            (curr.amount * curr.variant.price -
+                                            (curr.amount * curr.price -
                                               curr.discountAmount),
                                           0
                                         );
@@ -298,7 +298,7 @@ export const TransactionFormView = ({
                         const total = transactionItems.reduce(
                           (prev, curr) =>
                             prev +
-                            (curr.amount * curr.variant.price -
+                            (curr.amount * curr.price -
                               curr.discountAmount),
                           0
                         );
