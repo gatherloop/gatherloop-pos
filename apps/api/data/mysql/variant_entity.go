@@ -5,7 +5,7 @@ import "time"
 type PricingTier struct {
 	Id          int64     `json:"-"`
 	VariantId   int64     `json:"-"`
-	UpToMinutes int       `json:"up_to_minutes"`
+	UpToMinutes int64     `json:"up_to_minutes"`
 	Price       float32   `json:"price"`
 	CreatedAt   time.Time `json:"-"`
 }

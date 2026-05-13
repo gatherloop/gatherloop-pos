@@ -1,11 +1,12 @@
 import { Pencil, Trash } from '@tamagui/lucide-icons';
 import { ListItem } from '../base';
 import { XStackProps } from 'tamagui';
-import { OptionValue } from '../../../domain';
+import { OptionValue, ProductSaleType } from '../../../domain';
 
 export type VariantListItemProps = {
   price: number;
   productName: string;
+  productSaleType: ProductSaleType;
   productImageUrl: string;
   optionValues: OptionValue[];
   onEditMenuPress?: () => void;
@@ -15,6 +16,7 @@ export type VariantListItemProps = {
 export const VariantListItem = ({
   price,
   productName,
+  productSaleType,
   productImageUrl,
   optionValues,
   onEditMenuPress,
@@ -40,7 +42,11 @@ export const VariantListItem = ({
           isShown: typeof onDeleteMenuPress === 'function',
         },
       ]}
-      footerItems={[{ value: `Rp. ${price.toLocaleString('id')}` }]}
+      footerItems={
+        productSaleType === 'purchase'
+          ? [{ value: `Rp. ${price.toLocaleString('id')}` }]
+          : []
+      }
       {...xStackProps}
     />
   );

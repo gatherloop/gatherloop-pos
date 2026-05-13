@@ -2663,6 +2663,7 @@ components:
       properties:
         upToMinutes:
           type: integer
+          format: int64
         price:
           type: number
     Variant:
@@ -3049,6 +3050,7 @@ components:
         - checkinAt
         - createdAt
         - pricingTiers
+        - runningTotal
       properties:
         id:
           type: integer

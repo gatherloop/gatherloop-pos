@@ -107,38 +107,44 @@ export const ListItem = ({
             )}
           </YStack>
 
-          <Separator />
+          {shownFooterItems.length > 0 ? (
+            <>
+              <Separator />
 
-          <XStack gap="$3" flexWrap="wrap">
-            {shownFooterItems.map((footerItem, index) => (
-              <React.Fragment key={index}>
-                <XStack
-                  gap="$2"
-                  alignItems={footerItem.label ? 'flex-start' : 'center'}
-                >
-                  {footerItem.icon && (
-                    <YStack
-                      theme="active"
-                      backgroundColor="$background"
-                      padding="$2"
-                      justifyContent="center"
-                      alignItems="center"
-                      borderRadius="$12"
+              <XStack gap="$3" flexWrap="wrap">
+                {shownFooterItems.map((footerItem, index) => (
+                  <React.Fragment key={index}>
+                    <XStack
+                      gap="$2"
+                      alignItems={footerItem.label ? 'flex-start' : 'center'}
                     >
-                      <footerItem.icon size="$1" color="$gray12" />
-                    </YStack>
-                  )}
-                  <YStack>
-                    <Paragraph fontWeight="bold" color="$gray12">
-                      {footerItem.label}
-                    </Paragraph>
-                    <Paragraph color="$gray12">{footerItem.value}</Paragraph>
-                  </YStack>
-                </XStack>
-                <Separator vertical />
-              </React.Fragment>
-            ))}
-          </XStack>
+                      {footerItem.icon && (
+                        <YStack
+                          theme="active"
+                          backgroundColor="$background"
+                          padding="$2"
+                          justifyContent="center"
+                          alignItems="center"
+                          borderRadius="$12"
+                        >
+                          <footerItem.icon size="$1" color="$gray12" />
+                        </YStack>
+                      )}
+                      <YStack>
+                        <Paragraph fontWeight="bold" color="$gray12">
+                          {footerItem.label}
+                        </Paragraph>
+                        <Paragraph color="$gray12">
+                          {footerItem.value}
+                        </Paragraph>
+                      </YStack>
+                    </XStack>
+                    <Separator vertical />
+                  </React.Fragment>
+                ))}
+              </XStack>
+            </>
+          ) : null}
         </YStack>
 
         {shownMenus.length > 0 && (

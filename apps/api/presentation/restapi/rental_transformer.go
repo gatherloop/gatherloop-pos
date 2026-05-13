@@ -50,11 +50,11 @@ func ToApiRental(rental domain.Rental) apiContract.Rental {
 		apiPricingTiers = append(apiPricingTiers, ToApiPricingTier(tier))
 	}
 
-	var runningTotal *float32
+	runningTotal := float32(0)
 	if rental.CheckoutAt == nil && len(rental.PricingTiers) > 0 {
 		result, err := domain.CalculatePrice(rental.PricingTiers, time.Since(rental.CheckinAt))
 		if err == nil {
-			runningTotal = &result.Price
+			runningTotal = result.Price
 		}
 	}
 
