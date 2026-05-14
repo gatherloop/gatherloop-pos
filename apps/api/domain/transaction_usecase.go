@@ -350,13 +350,20 @@ func (usecase TransactionUsecase) GetTransactionStatistics(ctx context.Context, 
 	return usecase.transactionRepository.GetTransactionStatistics(ctx, groupBy)
 }
 
-// snapshotVariantValues copies the currently selected option-value names off
-// the variant so the transaction item keeps a stable record even if the
-// product's options are later edited or deleted.
+// snapshotVariantValues copies the currently selected option / option-value
+// names off the variant so the transaction item keeps a stable record even if
+// the product's options are later edited or deleted. The variant must have
+// Product.Options and VariantValues.OptionValue preloaded.
 func snapshotVariantValues(variant Variant) []TransactionItemValue {
+	optionNamesById := map[int64]string{}
+	for _, opt := range variant.Product.Options {
+		optionNamesById[opt.Id] = opt.Name
+	}
+
 	values := []TransactionItemValue{}
 	for _, vv := range variant.VariantValues {
 		values = append(values, TransactionItemValue{
+			OptionName:      optionNamesById[vv.OptionValue.OptionId],
 			OptionValueName: vv.OptionValue.Name,
 		})
 	}

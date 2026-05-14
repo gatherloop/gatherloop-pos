@@ -33,6 +33,7 @@ export function toTransaction(transaction: ApiTransaction): Transaction {
       note: item.note,
       values: (item.values ?? []).map((value) => ({
         id: value.id,
+        optionName: value.optionName,
         optionValueName: value.optionValueName,
       })),
       variant: {

@@ -21,6 +21,7 @@ type TransactionItem struct {
 type TransactionItemValue struct {
 	Id                int64
 	TransactionItemId int64
+	OptionName        string
 	OptionValueName   string
 }
 

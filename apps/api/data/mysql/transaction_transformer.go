@@ -144,6 +144,7 @@ func ToTransactionItemValueDomain(dbValue TransactionItemValue) domain.Transacti
 	return domain.TransactionItemValue{
 		Id:                dbValue.Id,
 		TransactionItemId: dbValue.TransactionItemId,
+		OptionName:        dbValue.OptionName,
 		OptionValueName:   dbValue.OptionValueName,
 	}
 }
@@ -152,6 +153,7 @@ func ToTransactionItemValueDB(domainValue domain.TransactionItemValue) Transacti
 	return TransactionItemValue{
 		Id:                domainValue.Id,
 		TransactionItemId: domainValue.TransactionItemId,
+		OptionName:        domainValue.OptionName,
 		OptionValueName:   domainValue.OptionValueName,
 	}
 }

@@ -4,6 +4,7 @@ import { Wallet } from './Wallet';
 
 export type TransactionItemValue = {
   id: number;
+  optionName: string;
   optionValueName: string;
 };
 

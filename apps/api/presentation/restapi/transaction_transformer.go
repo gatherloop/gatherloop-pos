@@ -51,6 +51,7 @@ func ToApiTransaction(transaction domain.Transaction) apiContract.Transaction {
 			apiValues = append(apiValues, apiContract.TransactionItemValue{
 				Id:                v.Id,
 				TransactionItemId: v.TransactionItemId,
+				OptionName:        v.OptionName,
 				OptionValueName:   v.OptionValueName,
 			})
 		}
