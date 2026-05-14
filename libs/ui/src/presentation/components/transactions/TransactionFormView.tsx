@@ -90,7 +90,9 @@ export const TransactionFormView = ({
                       <H4>Items</H4>
                       <YStack gap="$3">
                         {itemsFieldArray.fields.map(
-                          ({ variant, key }, index) => {
+                          ({ variant, price: fieldPrice, key }, index) => {
+                            const isRental =
+                              variant.product.saleType === 'rental';
                             return (
                               <YStack key={key} gap="$5">
                                 <XStack
@@ -129,7 +131,11 @@ export const TransactionFormView = ({
                                     textTransform="none"
                                     textAlign="left"
                                   >
-                                    Rp. {variant.price.toLocaleString('id')}
+                                    Rp.{' '}
+                                    {(isRental
+                                      ? fieldPrice
+                                      : variant.price
+                                    ).toLocaleString('id')}
                                   </Paragraph>
                                 </XStack>
 
@@ -138,11 +144,17 @@ export const TransactionFormView = ({
                                   justifyContent="flex-end"
                                   alignItems="center"
                                 >
-                                  <InputNumber
-                                    name={`transactionItems.${index}.amount`}
-                                    min={1}
-                                    maxWidth={50}
-                                  />
+                                  {isRental ? (
+                                    <Paragraph minWidth={50} textAlign="center">
+                                      1
+                                    </Paragraph>
+                                  ) : (
+                                    <InputNumber
+                                      name={`transactionItems.${index}.amount`}
+                                      min={1}
+                                      maxWidth={50}
+                                    />
+                                  )}
 
                                   <FieldWatch
                                     control={form.control}
