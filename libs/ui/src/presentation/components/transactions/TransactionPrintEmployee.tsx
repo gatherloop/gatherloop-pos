@@ -24,10 +24,17 @@ export const TransactionPrintEmployee = ({
         <Text fontSize="$4">{dayjs(createdAt).format('DD/MM/YYYY HH:mm')}</Text>
         <YStack borderWidth="$0.5" borderStyle="dashed" marginVertical="$2" />
         <YStack gap="$2">
-          {transactionItems.map(({ id, variant, amount }) => (
-            <Text key={id} fontSize="$4">
-              {variant.name} x {amount}
-            </Text>
+          {transactionItems.map(({ id, productName, values, amount }) => (
+            <YStack key={id}>
+              <Text fontSize="$4">
+                {productName} x {amount}
+              </Text>
+              {values.map((v) => (
+                <Text key={v.id} fontSize="$4">
+                  {v.optionName}: {v.optionValueName}
+                </Text>
+              ))}
+            </YStack>
           ))}
         </YStack>
       </YStack>

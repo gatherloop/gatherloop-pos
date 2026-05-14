@@ -120,6 +120,8 @@ func ToTransactionItemDomain(dbTransactionItem TransactionItem) domain.Transacti
 		Subtotal:       dbTransactionItem.Subtotal,
 		RentalId:       dbTransactionItem.RentalId,
 		Note:           dbTransactionItem.Note,
+		ProductName:    dbTransactionItem.ProductName,
+		Values:         ToTransactionItemValuesListDomain(dbTransactionItem.Values),
 	}
 }
 
@@ -135,7 +137,49 @@ func ToTransactionItemDB(domainTransactionItem domain.TransactionItem) Transacti
 		Subtotal:       domainTransactionItem.Subtotal,
 		RentalId:       domainTransactionItem.RentalId,
 		Note:           domainTransactionItem.Note,
+		ProductName:    domainTransactionItem.ProductName,
+		Values:         ToTransactionItemValuesListDB(domainTransactionItem.Values),
 	}
+}
+
+func ToTransactionItemValueDomain(dbValue TransactionItemValue) domain.TransactionItemValue {
+	return domain.TransactionItemValue{
+		Id:                dbValue.Id,
+		TransactionItemId: dbValue.TransactionItemId,
+		OptionName:        dbValue.OptionName,
+		OptionValueName:   dbValue.OptionValueName,
+	}
+}
+
+func ToTransactionItemValueDB(domainValue domain.TransactionItemValue) TransactionItemValue {
+	return TransactionItemValue{
+		Id:                domainValue.Id,
+		TransactionItemId: domainValue.TransactionItemId,
+		OptionName:        domainValue.OptionName,
+		OptionValueName:   domainValue.OptionValueName,
+	}
+}
+
+func ToTransactionItemValuesListDomain(dbValues []TransactionItemValue) []domain.TransactionItemValue {
+	if dbValues == nil {
+		return nil
+	}
+	domainValues := []domain.TransactionItemValue{}
+	for _, v := range dbValues {
+		domainValues = append(domainValues, ToTransactionItemValueDomain(v))
+	}
+	return domainValues
+}
+
+func ToTransactionItemValuesListDB(domainValues []domain.TransactionItemValue) []TransactionItemValue {
+	if domainValues == nil {
+		return nil
+	}
+	dbValues := []TransactionItemValue{}
+	for _, v := range domainValues {
+		dbValues = append(dbValues, ToTransactionItemValueDB(v))
+	}
+	return dbValues
 }
 
 func ToTransactionItemsListDomain(dbTransactionItems []TransactionItem) []domain.TransactionItem {

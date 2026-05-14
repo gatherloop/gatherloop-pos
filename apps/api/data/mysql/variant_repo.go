@@ -77,6 +77,7 @@ func (repo Repository) GetVariantById(ctx context.Context, id int64) (domain.Var
 	result := db.Table("variants").
 		Preload("Product").
 		Preload("Product.Category").
+		Preload("Product.Options").
 		Preload("Materials").
 		Preload("Materials.Material").
 		Preload("VariantValues").

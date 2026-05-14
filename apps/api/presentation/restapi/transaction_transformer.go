@@ -46,6 +46,16 @@ func GetPaymentStatus(r *http.Request) domain.PaymentStatus {
 func ToApiTransaction(transaction domain.Transaction) apiContract.Transaction {
 	apiTransactionItems := []apiContract.TransactionItem{}
 	for _, item := range transaction.TransactionItems {
+		apiValues := []apiContract.TransactionItemValue{}
+		for _, v := range item.Values {
+			apiValues = append(apiValues, apiContract.TransactionItemValue{
+				Id:                v.Id,
+				TransactionItemId: v.TransactionItemId,
+				OptionName:        v.OptionName,
+				OptionValueName:   v.OptionValueName,
+			})
+		}
+
 		apiTransactionItems = append(apiTransactionItems, apiContract.TransactionItem{
 			Id:             item.Id,
 			TransactionId:  item.TransactionId,
@@ -56,6 +66,8 @@ func ToApiTransaction(transaction domain.Transaction) apiContract.Transaction {
 			DiscountAmount: item.DiscountAmount,
 			Subtotal:       item.Subtotal,
 			Note:           item.Note,
+			ProductName:    item.ProductName,
+			Values:         apiValues,
 		})
 	}
 

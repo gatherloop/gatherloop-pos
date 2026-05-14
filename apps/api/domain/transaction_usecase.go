@@ -65,6 +65,8 @@ func (usecase TransactionUsecase) CreateTransaction(ctx context.Context, transac
 				Subtotal:       subTotal,
 				Price:          variant.Price,
 				Note:           item.Note,
+				ProductName:    variant.Product.Name,
+				Values:         snapshotVariantValues(variant),
 			}
 
 			transaction.TransactionItems[index] = transactionItem
@@ -139,6 +141,8 @@ func (usecase TransactionUsecase) UpdateTransactionById(ctx context.Context, tra
 				Subtotal:       subTotal,
 				Price:          variant.Price,
 				Note:           item.Note,
+				ProductName:    variant.Product.Name,
+				Values:         snapshotVariantValues(variant),
 			}
 
 			transaction.TransactionItems[index] = transactionItem
@@ -341,4 +345,24 @@ func (usecase TransactionUsecase) UnpayTransaction(ctx context.Context, id int64
 
 func (usecase TransactionUsecase) GetTransactionStatistics(ctx context.Context, groupBy string) ([]TransactionStatistic, *Error) {
 	return usecase.transactionRepository.GetTransactionStatistics(ctx, groupBy)
+}
+
+// snapshotVariantValues copies the currently selected option / option-value
+// names off the variant so the transaction item keeps a stable record even if
+// the product's options are later edited or deleted. The variant must have
+// Product.Options and VariantValues.OptionValue preloaded.
+func snapshotVariantValues(variant Variant) []TransactionItemValue {
+	optionNamesById := map[int64]string{}
+	for _, opt := range variant.Product.Options {
+		optionNamesById[opt.Id] = opt.Name
+	}
+
+	values := []TransactionItemValue{}
+	for _, vv := range variant.VariantValues {
+		values = append(values, TransactionItemValue{
+			OptionName:      optionNamesById[vv.OptionValue.OptionId],
+			OptionValueName: vv.OptionValue.Name,
+		})
+	}
+	return values
 }

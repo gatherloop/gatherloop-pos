@@ -274,6 +274,8 @@ export const mockTransactionItem: TransactionItem = {
   discountAmount: 0,
   subtotal: 70000,
   note: '',
+  productName: 'Kopi Susu',
+  values: [],
 };
 
 export const mockTransaction: Transaction = {
@@ -308,6 +310,8 @@ export const mockTransactions: Transaction[] = [
         discountAmount: 0,
         subtotal: 40000,
         note: 'Extra hot please',
+        productName: 'Es Teh Manis',
+        values: [],
       },
     ],
     transactionCoupons: [

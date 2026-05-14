@@ -31,6 +31,12 @@ export function toTransaction(transaction: ApiTransaction): Transaction {
       discountAmount: item.discountAmount,
       subtotal: item.subtotal,
       note: item.note,
+      values: (item.values ?? []).map((value) => ({
+        id: value.id,
+        optionName: value.optionName,
+        optionValueName: value.optionValueName,
+      })),
+      productName: item.productName,
       variant: {
         createdAt: item.variant.createdAt,
         id: item.variant.id,
