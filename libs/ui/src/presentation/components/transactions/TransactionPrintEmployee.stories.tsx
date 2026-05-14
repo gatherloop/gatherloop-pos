@@ -35,6 +35,7 @@ export const MultipleItems: Story = {
         discountAmount: 0,
         subtotal: 70000,
         note: 'Extra hot please',
+        productName: 'Cappuccino',
         values: [],
       },
     ],

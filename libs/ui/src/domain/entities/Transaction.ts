@@ -16,6 +16,7 @@ export type TransactionItem = {
   discountAmount: number;
   subtotal: number;
   note: string;
+  productName: string;
   values: TransactionItemValue[];
 };
 

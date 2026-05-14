@@ -15,6 +15,7 @@ type TransactionItem struct {
 	Subtotal       float32
 	RentalId       *int64
 	Note           string
+	ProductName    string
 	Values         []TransactionItemValue
 }
 

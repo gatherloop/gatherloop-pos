@@ -120,6 +120,7 @@ func ToTransactionItemDomain(dbTransactionItem TransactionItem) domain.Transacti
 		Subtotal:       dbTransactionItem.Subtotal,
 		RentalId:       dbTransactionItem.RentalId,
 		Note:           dbTransactionItem.Note,
+		ProductName:    dbTransactionItem.ProductName,
 		Values:         ToTransactionItemValuesListDomain(dbTransactionItem.Values),
 	}
 }
@@ -136,6 +137,7 @@ func ToTransactionItemDB(domainTransactionItem domain.TransactionItem) Transacti
 		Subtotal:       domainTransactionItem.Subtotal,
 		RentalId:       domainTransactionItem.RentalId,
 		Note:           domainTransactionItem.Note,
+		ProductName:    domainTransactionItem.ProductName,
 		Values:         ToTransactionItemValuesListDB(domainTransactionItem.Values),
 	}
 }

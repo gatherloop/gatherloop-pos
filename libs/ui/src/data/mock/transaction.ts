@@ -42,6 +42,7 @@ const initialTransactions: Transaction[] = [
         discountAmount: 0,
         subtotal: 50000,
         note: '',
+        productName: 'Product 1',
         values: [],
       },
     ],

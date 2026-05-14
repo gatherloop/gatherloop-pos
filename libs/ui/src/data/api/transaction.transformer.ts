@@ -36,6 +36,7 @@ export function toTransaction(transaction: ApiTransaction): Transaction {
         optionName: value.optionName,
         optionValueName: value.optionValueName,
       })),
+      productName: item.productName,
       variant: {
         createdAt: item.variant.createdAt,
         id: item.variant.id,

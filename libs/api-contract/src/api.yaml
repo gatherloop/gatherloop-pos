@@ -2933,6 +2933,7 @@ components:
         - discountAmount
         - subtotal
         - note
+        - productName
         - values
       properties:
         id:
@@ -2955,6 +2956,8 @@ components:
         subtotal:
           type: number
         note:
+          type: string
+        productName:
           type: string
         values:
           type: array

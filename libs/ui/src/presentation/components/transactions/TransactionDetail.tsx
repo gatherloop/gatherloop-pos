@@ -176,11 +176,12 @@ export const TransactionDetail = ({
             subtotal,
             discountAmount,
             note,
+            productName,
             values,
           }) => (
             <YStack key={id} gap="$3">
               <VariantListItem
-                productName={variant.product.name}
+                productName={productName}
                 productImageUrl={variant.product.imageUrl}
                 price={price}
                 optionValues={values.map((value) => ({

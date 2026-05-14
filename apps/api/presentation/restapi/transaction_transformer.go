@@ -66,6 +66,7 @@ func ToApiTransaction(transaction domain.Transaction) apiContract.Transaction {
 			DiscountAmount: item.DiscountAmount,
 			Subtotal:       item.Subtotal,
 			Note:           item.Note,
+			ProductName:    item.ProductName,
 			Values:         apiValues,
 		})
 	}
