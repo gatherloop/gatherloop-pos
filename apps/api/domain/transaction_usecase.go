@@ -141,15 +141,8 @@ func (usecase TransactionUsecase) UpdateTransactionById(ctx context.Context, tra
 				Subtotal:       subTotal,
 				Price:          variant.Price,
 				Note:           item.Note,
-			}
-
-			// Snapshot product name and option values only on newly added items;
-			// preserve existing snapshots so historical data stays intact.
-			if item.Id == 0 {
-				transactionItem.ProductName = variant.Product.Name
-				transactionItem.Values = snapshotVariantValues(variant)
-			} else {
-				transactionItem.ProductName = item.ProductName
+				ProductName:    variant.Product.Name,
+				Values:         snapshotVariantValues(variant),
 			}
 
 			transaction.TransactionItems[index] = transactionItem
