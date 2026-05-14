@@ -1,4 +1,11 @@
-import { Field, FieldWatch, FormErrorBanner, InputNumber, InputText, Sheet } from '../base';
+import {
+  Field,
+  FieldWatch,
+  FormErrorBanner,
+  InputNumber,
+  InputText,
+  Sheet,
+} from '../base';
 import {
   Button,
   Card,
@@ -91,8 +98,8 @@ export const TransactionFormView = ({
                       <YStack gap="$3">
                         {itemsFieldArray.fields.map(
                           ({ variant, price: fieldPrice, key }, index) => {
-                            const isRental =
-                              variant.product.saleType === 'rental';
+                            const isPurchase =
+                              variant.product.saleType === 'purchase';
                             return (
                               <YStack key={key} gap="$5">
                                 <XStack
@@ -127,16 +134,14 @@ export const TransactionFormView = ({
                                     </YStack>
                                   </XStack>
 
-                                  <Paragraph
-                                    textTransform="none"
-                                    textAlign="left"
-                                  >
-                                    Rp.{' '}
-                                    {(isRental
-                                      ? fieldPrice
-                                      : variant.price
-                                    ).toLocaleString('id')}
-                                  </Paragraph>
+                                  {isPurchase && (
+                                    <Paragraph
+                                      textTransform="none"
+                                      textAlign="left"
+                                    >
+                                      Rp. {variant.price.toLocaleString('id')}
+                                    </Paragraph>
+                                  )}
                                 </XStack>
 
                                 <XStack
@@ -144,11 +149,7 @@ export const TransactionFormView = ({
                                   justifyContent="flex-end"
                                   alignItems="center"
                                 >
-                                  {isRental ? (
-                                    <Paragraph minWidth={50} textAlign="center">
-                                      1
-                                    </Paragraph>
-                                  ) : (
+                                  {isPurchase && (
                                     <InputNumber
                                       name={`transactionItems.${index}.amount`}
                                       min={1}
@@ -160,9 +161,7 @@ export const TransactionFormView = ({
                                     control={form.control}
                                     name={[`transactionItems.${index}`]}
                                   >
-                                    {([
-                                      { price, amount, discountAmount },
-                                    ]) => (
+                                    {([{ price, amount, discountAmount }]) => (
                                       <H4
                                         textTransform="none"
                                         textAlign="right"
@@ -310,8 +309,7 @@ export const TransactionFormView = ({
                         const total = transactionItems.reduce(
                           (prev, curr) =>
                             prev +
-                            (curr.amount * curr.price -
-                              curr.discountAmount),
+                            (curr.amount * curr.price - curr.discountAmount),
                           0
                         );
 
