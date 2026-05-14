@@ -74,6 +74,7 @@ export const useTransactionCreateController = (
       itemsFieldArray.append({
         amount,
         variant: newVariant,
+        price: newVariant.price,
         discountAmount: 0,
         note: '',
       });

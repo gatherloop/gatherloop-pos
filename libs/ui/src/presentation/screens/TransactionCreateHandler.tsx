@@ -66,7 +66,7 @@ export const TransactionCreateHandler = ({
       let transactionTotal =
         transactionCreateController.state.values.transactionItems.reduce(
           (prev, curr) =>
-            prev + (curr.variant.price * curr.amount - curr.discountAmount),
+            prev + (curr.price * curr.amount - curr.discountAmount),
           0
         );
 
@@ -117,11 +117,11 @@ export const TransactionCreateHandler = ({
           .sort((a, b) =>
             a.variant.product.name.localeCompare(b.variant.product.name)
           )
-          .map(({ variant, amount, discountAmount, note }) => ({
+          .map(({ variant, price, amount, discountAmount, note }) => ({
             name: `${variant.product.name} - ${variant.values
               .map(({ optionValue: { name } }) => name)
               .join(' - ')}`,
-            price: variant.price,
+            price,
             amount,
             discountAmount,
             note,

@@ -37,6 +37,7 @@ type TransactionItemForm = {
   id?: number;
   variant: Variant;
   amount: number;
+  price: number;
   discountAmount: number;
   note: string;
 };
