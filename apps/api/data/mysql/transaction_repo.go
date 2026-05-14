@@ -17,7 +17,7 @@ func (repo Repository) GetTransactionList(ctx context.Context, query string, sor
 	db := GetDbFromCtx(ctx, repo.db)
 
 	var transactionResults []Transaction
-	result := db.Table("transactions").Where("deleted_at is NULL").Preload("TransactionItems").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").Preload("TransactionCoupons").Preload("TransactionCoupons.Coupon").Preload("Wallet").Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
+	result := db.Table("transactions").Where("deleted_at is NULL").Preload("TransactionItems").Preload("TransactionItems.Values").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").Preload("TransactionCoupons").Preload("TransactionCoupons.Coupon").Preload("Wallet").Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
 
 	if query != "" {
 		result = result.Where("name LIKE ?", "%"+query+"%")
@@ -76,7 +76,7 @@ func (repo Repository) GetTransactionById(ctx context.Context, id int64) (domain
 	db := GetDbFromCtx(ctx, repo.db)
 
 	var transaction Transaction
-	result := db.Table("transactions").Where("id = ?", id).Preload("TransactionItems").Preload("Wallet").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.Materials").Preload("TransactionItems.Variant.Materials.Material").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").Preload("TransactionCoupons").Preload("TransactionCoupons.Coupon").First(&transaction)
+	result := db.Table("transactions").Where("id = ?", id).Preload("TransactionItems").Preload("TransactionItems.Values").Preload("Wallet").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.Materials").Preload("TransactionItems.Variant.Materials.Material").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").Preload("TransactionCoupons").Preload("TransactionCoupons.Coupon").First(&transaction)
 	return ToTransactionDomain(transaction), ToErrorCtx(ctx, result.Error, "GetTransactionById")
 }
 
@@ -89,7 +89,7 @@ func (repo Repository) CreateTransaction(ctx context.Context, transaction domain
 	}
 
 	var created Transaction
-	fetch := db.Table("transactions").Where("id = ?", dbTransaction.Id).Preload("TransactionItems").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").Preload("TransactionCoupons").Preload("TransactionCoupons.Coupon").Preload("Wallet").First(&created)
+	fetch := db.Table("transactions").Where("id = ?", dbTransaction.Id).Preload("TransactionItems").Preload("TransactionItems.Values").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").Preload("TransactionCoupons").Preload("TransactionCoupons.Coupon").Preload("Wallet").First(&created)
 	return ToTransactionDomain(created), ToErrorCtx(ctx, fetch.Error, "CreateTransaction")
 }
 
@@ -147,7 +147,7 @@ func (repo Repository) UpdateTransactionById(ctx context.Context, transaction do
 	}
 
 	var updated Transaction
-	fetch := db.Table("transactions").Where("id = ?", id).Preload("TransactionItems").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.Materials").Preload("TransactionItems.Variant.Materials.Material").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").Preload("TransactionCoupons").Preload("TransactionCoupons.Coupon").Preload("Wallet").First(&updated)
+	fetch := db.Table("transactions").Where("id = ?", id).Preload("TransactionItems").Preload("TransactionItems.Values").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.Materials").Preload("TransactionItems.Variant.Materials.Material").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").Preload("TransactionCoupons").Preload("TransactionCoupons.Coupon").Preload("Wallet").First(&updated)
 	return ToTransactionDomain(updated), ToErrorCtx(ctx, fetch.Error, "UpdateTransactionById")
 }
 

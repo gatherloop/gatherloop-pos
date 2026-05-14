@@ -168,15 +168,25 @@ export const TransactionDetail = ({
       <H4>Transaction Items</H4>
       <YStack gap="$3">
         {transactionItems.map(
-          ({ price, variant, amount, subtotal, discountAmount, note }) => (
-            <YStack key={variant.id} gap="$3">
+          ({
+            id,
+            price,
+            variant,
+            amount,
+            subtotal,
+            discountAmount,
+            note,
+            values,
+          }) => (
+            <YStack key={id} gap="$3">
               <VariantListItem
                 productName={variant.product.name}
                 productImageUrl={variant.product.imageUrl}
                 price={price}
-                optionValues={variant.values.map(
-                  (variantValue) => variantValue.optionValue
-                )}
+                optionValues={values.map((value) => ({
+                  id: value.id,
+                  name: value.optionValueName,
+                }))}
                 flex={1}
               />
 

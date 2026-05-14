@@ -15,6 +15,13 @@ type TransactionItem struct {
 	Subtotal       float32
 	RentalId       *int64
 	Note           string
+	Values         []TransactionItemValue
+}
+
+type TransactionItemValue struct {
+	Id                int64
+	TransactionItemId int64
+	OptionValueName   string
 }
 
 type TransactionCoupon struct {

@@ -2933,6 +2933,7 @@ components:
         - discountAmount
         - subtotal
         - note
+        - values
       properties:
         id:
           type: integer
@@ -2954,6 +2955,25 @@ components:
         subtotal:
           type: number
         note:
+          type: string
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransactionItemValue'
+    TransactionItemValue:
+      type: object
+      required:
+        - id
+        - transactionItemId
+        - optionValueName
+      properties:
+        id:
+          type: integer
+          format: int64
+        transactionItemId:
+          type: integer
+          format: int64
+        optionValueName:
           type: string
     TransactionItemRequest:
       type: object

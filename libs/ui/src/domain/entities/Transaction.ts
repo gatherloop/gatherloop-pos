@@ -2,6 +2,11 @@ import { Coupon, CouponType } from './Coupon';
 import { Variant } from './Variant';
 import { Wallet } from './Wallet';
 
+export type TransactionItemValue = {
+  id: number;
+  optionValueName: string;
+};
+
 export type TransactionItem = {
   id: number;
   variant: Variant;
@@ -10,6 +15,7 @@ export type TransactionItem = {
   discountAmount: number;
   subtotal: number;
   note: string;
+  values: TransactionItemValue[];
 };
 
 export type TransactionCoupon = {
