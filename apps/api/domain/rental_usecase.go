@@ -2,6 +2,8 @@ package domain
 
 import (
 	"context"
+	"fmt"
+	"math"
 	"time"
 )
 
@@ -106,11 +108,24 @@ func (usecase RentalUsecase) CheckoutRentals(ctx context.Context, rentalIds []in
 				return err
 			}
 
-			result, calcErr := CalculatePrice(existingRental.PricingTiers, checkoutAt.Sub(existingRental.CheckinAt))
+			duration := checkoutAt.Sub(existingRental.CheckinAt)
+			result, calcErr := CalculatePrice(existingRental.PricingTiers, duration)
 			if calcErr != nil {
 				return calcErr
 			}
 			total += float64(result.Price)
+
+			totalMinutes := int(math.Ceil(duration.Minutes()))
+			hours := totalMinutes / 60
+			minutes := totalMinutes % 60
+			var durationNote string
+			if hours > 0 && minutes > 0 {
+				durationNote = fmt.Sprintf("%d hour(s) %d minute(s)", hours, minutes)
+			} else if hours > 0 {
+				durationNote = fmt.Sprintf("%d hour(s)", hours)
+			} else {
+				durationNote = fmt.Sprintf("%d minute(s)", totalMinutes)
+			}
 
 			transactionItems = append(transactionItems, TransactionItem{
 				VariantId:      existingRental.VariantId,
@@ -119,6 +134,7 @@ func (usecase RentalUsecase) CheckoutRentals(ctx context.Context, rentalIds []in
 				DiscountAmount: 0,
 				Subtotal:       result.Price,
 				RentalId:       &existingRental.Id,
+				Note:           durationNote,
 			})
 
 			transactionData.Name = existingRental.Name
