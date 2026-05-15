@@ -91,14 +91,12 @@ export const TransactionListHandler = ({
     name: transaction.name,
     orderNumber: transaction.orderNumber,
     items: transaction.transactionItems
-      .sort((a, b) =>
-        a.variant.product.name.localeCompare(b.variant.product.name)
-      )
-      .map(({ variant, amount, discountAmount, note }) => ({
-        name: `${variant.product.name} - ${variant.values
-          .map(({ optionValue: { name } }) => name)
+      .sort((a, b) => a.productName.localeCompare(b.productName))
+      .map(({ productName, values, price, amount, discountAmount, note }) => ({
+        name: `${productName} - ${values
+          .map(({ optionValueName }) => optionValueName)
           .join(' - ')}`,
-        price: variant.price,
+        price,
         amount,
         discountAmount,
         note,
