@@ -84,7 +84,7 @@ func (repo Repository) CreateTransaction(ctx context.Context, transaction domain
 	db := GetDbFromCtx(ctx, repo.db)
 
 	dbTransaction := ToTransactionDB(transaction)
-	if result := db.Table("transactions").Create(&dbTransaction); result.Error != nil {
+	if result := db.Session(&gorm.Session{FullSaveAssociations: true}).Table("transactions").Create(&dbTransaction); result.Error != nil {
 		return domain.Transaction{}, ToErrorCtx(ctx, result.Error, "CreateTransaction")
 	}
 
