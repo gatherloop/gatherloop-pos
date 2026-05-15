@@ -88,6 +88,7 @@ export const VariantList = ({
                 <VariantListItem
                   productName={item.product.name}
                   productImageUrl={item.product.imageUrl}
+                  productSaleType={item.product.saleType}
                   style={{ flex: 1 }}
                   optionValues={item.values.map(
                     (variantValue) => variantValue.optionValue

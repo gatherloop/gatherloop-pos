@@ -3,7 +3,11 @@ import {
   Transaction as ApiTransaction,
   TransactionStatistic as ApiTransactionStatistic,
 } from '../../../../api-contract/src';
-import { Transaction, TransactionForm, TransactionStatistic } from '../../domain';
+import {
+  Transaction,
+  TransactionForm,
+  TransactionStatistic,
+} from '../../domain';
 import { toWallet } from './wallet.transformer';
 
 export function toTransactionStatistic(
@@ -75,6 +79,12 @@ export function toTransaction(transaction: ApiTransaction): Transaction {
             name: value.optionValue.name,
           },
         })),
+        pricingTiers: item.variant.pricingTiers.map(
+          ({ price, upToMinutes }) => ({
+            price,
+            upToMinutes,
+          })
+        ),
       },
     })),
     transactionCoupons: transaction.transactionCoupons.map((item) => ({
