@@ -216,10 +216,6 @@ export const RentalCheckinFormView = ({
                                 </Paragraph>
                               </YStack>
                             </XStack>
-
-                            <Paragraph textTransform="none" textAlign="left">
-                              Rp. {variant.price.toLocaleString('id')}
-                            </Paragraph>
                           </XStack>
                           <InputText
                             name={`rentals.${index}.code`}

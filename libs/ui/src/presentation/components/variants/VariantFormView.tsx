@@ -69,6 +69,8 @@ export const VariantFormView = ({
   MaterialList,
   serverError,
 }: VariantFormViewProps) => {
+  const isRental = product?.saleType === 'rental';
+
   return variant.type === 'loaded' ? (
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
@@ -79,60 +81,137 @@ export const VariantFormView = ({
               <Field name="name" label="Name" flex={1}>
                 <InputText />
               </Field>
-              <Field name="price" label="Price" flex={1}>
-                <InputNumber min={0} />
-              </Field>
+              {!isRental && (
+                <Field name="price" label="Price" flex={1}>
+                  <InputNumber min={0} />
+                </Field>
+              )}
             </XStack>
           </Card.Header>
         </Card>
 
-        <XStack gap="$3">
-          <Card>
-            <Card.Header>
-              <Paragraph>Total Food Cost</Paragraph>
-              <FieldWatch control={form.control} name={['materials']}>
-                {([materials]) => (
-                  <H4>
-                    Rp.{' '}
-                    {materials
-                      .reduce(
-                        (prev, curr) =>
-                          prev + curr.material.price * curr.amount,
-                        0
-                      )
-                      .toLocaleString('id')}
-                  </H4>
-                )}
-              </FieldWatch>
-            </Card.Header>
-          </Card>
-          <Card>
-            <Card.Header>
-              <Paragraph>Food Cost Percentage</Paragraph>
-
-              <FieldWatch control={form.control} name={['price', 'materials']}>
-                {([price, materials]) => (
-                  <H4>
-                    {(price > 0
-                      ? (materials.reduce(
+        {!isRental && (
+          <XStack gap="$3">
+            <Card>
+              <Card.Header>
+                <Paragraph>Total Food Cost</Paragraph>
+                <FieldWatch control={form.control} name={['materials']}>
+                  {([materials]) => (
+                    <H4>
+                      Rp.{' '}
+                      {materials
+                        .reduce(
                           (prev, curr) =>
                             prev + curr.material.price * curr.amount,
                           0
-                        ) /
-                          price) *
-                        100
-                      : 0
-                    ).toFixed(1)}
-                    %
-                  </H4>
-                )}
-              </FieldWatch>
-            </Card.Header>
-          </Card>
-        </XStack>
+                        )
+                        .toLocaleString('id')}
+                    </H4>
+                  )}
+                </FieldWatch>
+              </Card.Header>
+            </Card>
+            <Card>
+              <Card.Header>
+                <Paragraph>Food Cost Percentage</Paragraph>
+
+                <FieldWatch control={form.control} name={['price', 'materials']}>
+                  {([price, materials]) => (
+                    <H4>
+                      {(price > 0
+                        ? (materials.reduce(
+                            (prev, curr) =>
+                              prev + curr.material.price * curr.amount,
+                            0
+                          ) /
+                            price) *
+                          100
+                        : 0
+                      ).toFixed(1)}
+                      %
+                    </H4>
+                  )}
+                </FieldWatch>
+              </Card.Header>
+            </Card>
+          </XStack>
+        )}
 
         <Tabs
           tabs={[
+            ...(isRental
+              ? [
+                  {
+                    value: 'pricing_tiers',
+                    label: 'Pricing Tiers',
+                    content: (
+                      <YStack gap="$3">
+                        <XStack justifyContent="space-between" alignItems="center">
+                          <H3>Pricing Tiers</H3>
+                          <Button
+                            icon={Plus}
+                            variant="outlined"
+                            circular
+                            size="$3"
+                            onPress={() =>
+                              form.setValue('pricingTiers', [
+                                ...form.getValues('pricingTiers'),
+                                { upToMinutes: 0, price: 0 },
+                              ])
+                            }
+                          />
+                        </XStack>
+                        <Paragraph size="$2" color="$gray10">
+                          A single tier behaves like a flat rate. e.g., "All Day" = one tier at 840 minutes (the cafe's 14-hour operating window).
+                        </Paragraph>
+                        <ErrorMessage name="pricingTiers" />
+                        <FieldArray
+                          control={form.control}
+                          name="pricingTiers"
+                          keyName="key"
+                        >
+                          {(fieldArray) => (
+                            <>
+                              {fieldArray.fields.map(({ key }, index) => (
+                                <XStack
+                                  key={key}
+                                  gap="$3"
+                                  alignItems="flex-end"
+                                  $sm={{ flexDirection: 'column' }}
+                                >
+                                  <Field
+                                    name={`pricingTiers.${index}.upToMinutes`}
+                                    label="Up To Minutes"
+                                    flex={1}
+                                  >
+                                    <InputNumber min={1} />
+                                  </Field>
+                                  <Field
+                                    name={`pricingTiers.${index}.price`}
+                                    label="Price"
+                                    flex={1}
+                                  >
+                                    <InputNumber min={0} />
+                                  </Field>
+                                  <Button
+                                    icon={Trash}
+                                    circular
+                                    size="$3"
+                                    theme="red"
+                                    color="$red8"
+                                    marginBottom="$2"
+                                    onPress={() => fieldArray.remove(index)}
+                                  />
+                                </XStack>
+                              ))}
+                            </>
+                          )}
+                        </FieldArray>
+                      </YStack>
+                    ),
+                  },
+                ]
+              : []),
             {
               value: 'values',
               label: 'Values',
@@ -262,7 +341,7 @@ export const VariantFormView = ({
               content: <MarkdownEditor name="description" defaultMode="edit" />,
             },
           ]}
-          defaultValue="materials"
+          defaultValue={isRental ? 'pricing_tiers' : 'materials'}
         />
 
         <Button

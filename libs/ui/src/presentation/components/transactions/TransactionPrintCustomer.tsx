@@ -48,11 +48,16 @@ export const TransactionPrintCustomer = ({
 
         <YStack>
           {transactionItems.map(
-            ({ id, price, variant, amount, subtotal, discountAmount }) => (
+            ({ id, price, productName, values, amount, subtotal, discountAmount }) => (
               <YStack key={id}>
                 <Text fontWeight="$10" fontSize="$1">
-                  {variant.name}
+                  {productName}
                 </Text>
+                {values.map((v) => (
+                  <Text key={v.id} fontSize="$1">
+                    {v.optionName}: {v.optionValueName}
+                  </Text>
+                ))}
                 <XStack gap="$2" justifyContent="space-between">
                   <Text fontSize="$1">
                     {`${amount} x ${price.toLocaleString('id')}`}

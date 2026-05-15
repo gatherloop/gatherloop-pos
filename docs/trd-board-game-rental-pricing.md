@@ -27,7 +27,7 @@ The owner needs to **add, edit, and price-change rental pricing from the admin U
 - **Rental domain today** (`apps/api/domain/`):
   - `rental_entity.go` — `Rental { Id, Code, Name, VariantId, CheckinAt, CheckoutAt, ... }`
   - `rental_usecase.go` — `CheckinRentals`, `CheckoutRentals`, `GetRentalList`, `DeleteRentalById`
-  - `variant_entity.go` — `Variant { Id, ProductId, Name, Price, ... }`
+  - `variant_entity.go` — `Variant { Id, ProductId, Name, Price, PricingTiers, ... }` and `PricingTier { Id, VariantId, UpToMinutes, Price, ... }`
   - `product_entity.go` — `Product { ..., SaleType: "purchase" | "rental" }`
 - **Rental DB** (`apps/api/migrations/000001_initial_schema.up.sql:258`):
   ```
@@ -46,6 +46,7 @@ The owner needs to **add, edit, and price-change rental pricing from the admin U
 4. **`variants.price` stays `NOT NULL DEFAULT 0`.** Rental variants store `0`; the discriminator is `sale_type`, not nullability. The form simply doesn't render a price input for rentals; the write path zeroes it server-side. Avoids a contract change and a cross-codebase nullable-deref audit.
 5. **Snapshot on the rental row.** At check-in, the variant's tier list is JSON-encoded into `rentals.pricing_tiers` (a MySQL `JSON` column). The check-out calculator reads only from this snapshot, so admin edits to the live tiers never alter the bill of a rental already in progress.
 6. **Uniform pricing model for rentals.** Every rental variant has tiers — no flat-vs-tiered discriminator anywhere in the code. The "flatness" of an All Day rental is just a 1-row tier table at `up_to_minutes = 840` (the cafe's operating window).
+7. **No standalone `PricingTierRepository`.** `PricingTier` is a value object of `Variant`, not an independent aggregate. Tier reads and writes are delegated to `VariantRepository`: `GetVariantById` preloads tiers; `CreateVariant` / `UpdateVariantById` persist tiers atomically with the variant row. The `VariantUsecase` constructor takes `(VariantRepository, ProductRepository)` only.
 
 ---
 

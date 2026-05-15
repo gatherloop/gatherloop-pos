@@ -1,4 +1,10 @@
-import { Calendar, QrCode, Trash } from '@tamagui/lucide-icons';
+import {
+  Calendar,
+  Clock,
+  DollarSign,
+  QrCode,
+  Trash,
+} from '@tamagui/lucide-icons';
 import { ListItem } from '../base';
 import dayjs from 'dayjs';
 import { XStackProps } from 'tamagui';
@@ -9,6 +15,7 @@ export type RentalListItemProps = {
   variantName: string;
   checkinAt: string;
   checkoutAt?: string;
+  total?: number;
   onDeleteMenuPress?: () => void;
   onItemPress?: () => void;
 } & XStackProps;
@@ -19,12 +26,18 @@ export const RentalListItem = ({
   variantName,
   checkinAt,
   checkoutAt,
+  total,
   onDeleteMenuPress,
   onItemPress,
   ...xStackProps
 }: RentalListItemProps) => {
-  const target = dayjs(checkinAt).add(15, 'minute');
-  const canDelete = dayjs().isBefore(target);
+  const end = checkoutAt ? dayjs(checkoutAt) : dayjs();
+  const totalMinutes = end.diff(dayjs(checkinAt), 'minute');
+  const durationLabel = `${Math.floor(totalMinutes / 60)}h ${
+    totalMinutes % 60
+  }m`;
+  const canDelete = totalMinutes < 15 && !checkoutAt;
+
   return (
     <ListItem
       title={name}
@@ -59,6 +72,17 @@ export const RentalListItem = ({
           label: 'CHECKOUT DATE',
           value: dayjs(checkoutAt).format('DD/MM/YYYY - HH:mm'),
           isShown: typeof checkoutAt === 'string',
+        },
+        {
+          icon: Clock,
+          label: 'DURATION',
+          value: durationLabel,
+        },
+        {
+          icon: DollarSign,
+          label: 'TOTAL',
+          value: `Rp. ${(total ?? 0).toLocaleString('id')}`,
+          isShown: total !== undefined,
         },
       ]}
       {...xStackProps}

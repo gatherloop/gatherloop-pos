@@ -1,4 +1,11 @@
-import { Field, FieldWatch, FormErrorBanner, InputNumber, InputText, Sheet } from '../base';
+import {
+  Field,
+  FieldWatch,
+  FormErrorBanner,
+  InputNumber,
+  InputText,
+  Sheet,
+} from '../base';
 import {
   Button,
   Card,
@@ -90,7 +97,9 @@ export const TransactionFormView = ({
                       <H4>Items</H4>
                       <YStack gap="$3">
                         {itemsFieldArray.fields.map(
-                          ({ variant, key }, index) => {
+                          ({ variant, price: fieldPrice, key }, index) => {
+                            const isPurchase =
+                              variant.product.saleType === 'purchase';
                             return (
                               <YStack key={key} gap="$5">
                                 <XStack
@@ -125,12 +134,14 @@ export const TransactionFormView = ({
                                     </YStack>
                                   </XStack>
 
-                                  <Paragraph
-                                    textTransform="none"
-                                    textAlign="left"
-                                  >
-                                    Rp. {variant.price.toLocaleString('id')}
-                                  </Paragraph>
+                                  {isPurchase && (
+                                    <Paragraph
+                                      textTransform="none"
+                                      textAlign="left"
+                                    >
+                                      Rp. {variant.price.toLocaleString('id')}
+                                    </Paragraph>
+                                  )}
                                 </XStack>
 
                                 <XStack
@@ -138,26 +149,26 @@ export const TransactionFormView = ({
                                   justifyContent="flex-end"
                                   alignItems="center"
                                 >
-                                  <InputNumber
-                                    name={`transactionItems.${index}.amount`}
-                                    min={1}
-                                    maxWidth={50}
-                                  />
+                                  {isPurchase && (
+                                    <InputNumber
+                                      name={`transactionItems.${index}.amount`}
+                                      min={1}
+                                      maxWidth={50}
+                                    />
+                                  )}
 
                                   <FieldWatch
                                     control={form.control}
                                     name={[`transactionItems.${index}`]}
                                   >
-                                    {([
-                                      { variant, amount, discountAmount },
-                                    ]) => (
+                                    {([{ price, amount, discountAmount }]) => (
                                       <H4
                                         textTransform="none"
                                         textAlign="right"
                                       >
                                         Rp.{' '}
                                         {(
-                                          variant.price * amount -
+                                          price * amount -
                                           discountAmount
                                         ).toLocaleString('id')}
                                       </H4>
@@ -236,7 +247,7 @@ export const TransactionFormView = ({
                                         transactionItems.reduce(
                                           (prev, curr) =>
                                             prev +
-                                            (curr.amount * curr.variant.price -
+                                            (curr.amount * curr.price -
                                               curr.discountAmount),
                                           0
                                         );
@@ -298,8 +309,7 @@ export const TransactionFormView = ({
                         const total = transactionItems.reduce(
                           (prev, curr) =>
                             prev +
-                            (curr.amount * curr.variant.price -
-                              curr.discountAmount),
+                            (curr.amount * curr.price - curr.discountAmount),
                           0
                         );
 

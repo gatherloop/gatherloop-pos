@@ -22,6 +22,7 @@ const mockVariant = {
   },
   createdAt: '2024-03-20T00:00:00.000Z',
   values: [],
+  pricingTiers: [],
 };
 
 const initialTransactions: Transaction[] = [
@@ -41,6 +42,8 @@ const initialTransactions: Transaction[] = [
         discountAmount: 0,
         subtotal: 50000,
         note: '',
+        productName: 'Product 1',
+        values: [],
       },
     ],
     transactionCoupons: [],

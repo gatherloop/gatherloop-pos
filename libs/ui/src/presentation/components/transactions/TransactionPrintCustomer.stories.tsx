@@ -42,6 +42,8 @@ export const MultipleItems: Story = {
         discountAmount: 0,
         subtotal: 40000,
         note: '',
+        productName: 'Iced Coffee Latte',
+        values: [],
       },
     ],
     total: 110000,

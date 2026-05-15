@@ -173,6 +173,7 @@ export const RentalList = ({
                   variantName={item.variant.name}
                   code={item.code}
                   name={item.name}
+                  total={item.total}
                   onDeleteMenuPress={
                     onDeleteMenuPress
                       ? () => onDeleteMenuPress(item)

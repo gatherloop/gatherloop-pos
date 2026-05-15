@@ -75,6 +75,7 @@ export class VariantUpdateUsecase extends Usecase<
             id: value.id,
             optionValueId: value.optionValueId,
           })) ?? [],
+        pricingTiers: this.params.variant?.pricingTiers ?? [],
       },
     };
   }
@@ -179,6 +180,7 @@ export class VariantUpdateUsecase extends Usecase<
                   id: value.id,
                   optionValueId: value.optionValueId,
                 })),
+                pricingTiers: variant.pricingTiers,
               },
             })
           )

@@ -1,6 +1,11 @@
 import { Material } from './Material';
 import { Product } from './Product';
 
+export type PricingTier = {
+  upToMinutes: number;
+  price: number;
+};
+
 export type Variant = {
   id: number;
   name: string;
@@ -15,6 +20,7 @@ export type Variant = {
   product: Product;
   createdAt: string;
   values: VariantValue[];
+  pricingTiers: PricingTier[];
 };
 
 export type VariantValue = {
@@ -42,4 +48,5 @@ export type VariantForm = {
     id?: number;
     optionValueId: number;
   }[];
+  pricingTiers: PricingTier[];
 };

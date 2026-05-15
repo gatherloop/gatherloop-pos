@@ -2655,6 +2655,17 @@ components:
           format: int64
         name:
           type: string
+    PricingTier:
+      type: object
+      required:
+        - upToMinutes
+        - price
+      properties:
+        upToMinutes:
+          type: integer
+          format: int64
+        price:
+          type: number
     Variant:
       type: object
       required:
@@ -2666,6 +2677,7 @@ components:
         - materials
         - values
         - createdAt
+        - pricingTiers
       properties:
         id:
           type: integer
@@ -2695,6 +2707,10 @@ components:
         createdAt:
           type: string
           format: date-time
+        pricingTiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/PricingTier'
     VariantRequest:
       type: object
       required:
@@ -2721,6 +2737,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/VariantValueRequest'
+        pricingTiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/PricingTier'
     VariantMaterial:
       type: object
       required:
@@ -2913,6 +2933,8 @@ components:
         - discountAmount
         - subtotal
         - note
+        - productName
+        - values
       properties:
         id:
           type: integer
@@ -2934,6 +2956,30 @@ components:
         subtotal:
           type: number
         note:
+          type: string
+        productName:
+          type: string
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransactionItemValue'
+    TransactionItemValue:
+      type: object
+      required:
+        - id
+        - transactionItemId
+        - optionName
+        - optionValueName
+      properties:
+        id:
+          type: integer
+          format: int64
+        transactionItemId:
+          type: integer
+          format: int64
+        optionName:
+          type: string
+        optionValueName:
           type: string
     TransactionItemRequest:
       type: object
@@ -3029,6 +3075,8 @@ components:
         - variant
         - checkinAt
         - createdAt
+        - pricingTiers
+        - total
       properties:
         id:
           type: integer
@@ -3051,6 +3099,13 @@ components:
         createdAt:
           type: string
           format: date-time
+        pricingTiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/PricingTier'
+        total:
+          type: number
+          readOnly: true
     RentalRequest:
       type: object
       required:

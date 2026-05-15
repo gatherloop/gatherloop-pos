@@ -1,5 +1,7 @@
 import { Category } from './Category';
 
+export type ProductSaleType = 'purchase' | 'rental';
+
 export type Product = {
   id: number;
   name: string;
@@ -8,7 +10,7 @@ export type Product = {
   imageUrl: string;
   createdAt: string;
   options: Option[];
-  saleType: 'purchase' | 'rental';
+  saleType: ProductSaleType;
 };
 
 export type Option = {

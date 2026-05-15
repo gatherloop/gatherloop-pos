@@ -1,4 +1,4 @@
-import { Variant } from './Variant';
+import { PricingTier, Variant } from './Variant';
 
 export type Rental = {
   id: number;
@@ -8,6 +8,8 @@ export type Rental = {
   createdAt: string;
   checkinAt: string;
   checkoutAt: string | null;
+  pricingTiers: PricingTier[];
+  total?: number;
 };
 
 export type RentalCheckinForm = {

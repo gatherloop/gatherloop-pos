@@ -1,8 +1,14 @@
 package domain
 
-import (
-	"time"
-)
+import "time"
+
+type PricingTier struct {
+	Id          int64
+	VariantId   int64
+	UpToMinutes int64
+	Price       float32
+	CreatedAt   time.Time
+}
 
 type VariantMaterial struct {
 	Id         int64
@@ -32,4 +38,5 @@ type Variant struct {
 	DeletedAt     *time.Time
 	CreatedAt     time.Time
 	VariantValues []VariantValue
+	PricingTiers  []PricingTier
 }

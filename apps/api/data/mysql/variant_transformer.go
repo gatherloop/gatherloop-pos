@@ -2,6 +2,42 @@ package mysql
 
 import "apps/api/domain"
 
+func ToPricingTierDomain(dbTier PricingTier) domain.PricingTier {
+	return domain.PricingTier{
+		Id:          dbTier.Id,
+		VariantId:   dbTier.VariantId,
+		UpToMinutes: dbTier.UpToMinutes,
+		Price:       dbTier.Price,
+		CreatedAt:   dbTier.CreatedAt,
+	}
+}
+
+func ToPricingTierDB(domainTier domain.PricingTier) PricingTier {
+	return PricingTier{
+		Id:          domainTier.Id,
+		VariantId:   domainTier.VariantId,
+		UpToMinutes: domainTier.UpToMinutes,
+		Price:       domainTier.Price,
+		CreatedAt:   domainTier.CreatedAt,
+	}
+}
+
+func ToPricingTierListDomain(dbTiers []PricingTier) []domain.PricingTier {
+	var result []domain.PricingTier
+	for _, t := range dbTiers {
+		result = append(result, ToPricingTierDomain(t))
+	}
+	return result
+}
+
+func ToPricingTierListDB(domainTiers []domain.PricingTier) []PricingTier {
+	var result []PricingTier
+	for _, t := range domainTiers {
+		result = append(result, ToPricingTierDB(t))
+	}
+	return result
+}
+
 func ToVariantDB(domainVariant domain.Variant) Variant {
 	return Variant{
 		Id:            domainVariant.Id,
@@ -14,6 +50,7 @@ func ToVariantDB(domainVariant domain.Variant) Variant {
 		Product:       ToProductDB(domainVariant.Product),
 		Materials:     ToVariantMaterialListDB(domainVariant.Materials),
 		VariantValues: ToVariantValueListDB(domainVariant.VariantValues),
+		PricingTiers:  ToPricingTierListDB(domainVariant.PricingTiers),
 	}
 }
 
@@ -29,6 +66,7 @@ func ToVariantDomain(dbVariant Variant) domain.Variant {
 		Product:       ToProductDomain(dbVariant.Product),
 		Materials:     ToVariantMaterialListDomain(dbVariant.Materials),
 		VariantValues: ToVariantValueListDomain(dbVariant.VariantValues),
+		PricingTiers:  ToPricingTierListDomain(dbVariant.PricingTiers),
 	}
 }
 

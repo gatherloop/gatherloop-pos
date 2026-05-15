@@ -156,6 +156,7 @@ export const mockVariant: Variant = {
     { id: 1, variantId: 1, optionValueId: 1, optionValue: { id: 1, name: 'Iced' } },
     { id: 2, variantId: 1, optionValueId: 4, optionValue: { id: 4, name: 'Regular' } },
   ],
+  pricingTiers: [],
 };
 
 export const mockVariants: Variant[] = [
@@ -172,6 +173,7 @@ export const mockVariants: Variant[] = [
       { id: 3, variantId: 2, optionValueId: 2, optionValue: { id: 2, name: 'Hot' } },
       { id: 4, variantId: 2, optionValueId: 5, optionValue: { id: 5, name: 'Large' } },
     ],
+    pricingTiers: [],
   },
 ];
 
@@ -272,6 +274,8 @@ export const mockTransactionItem: TransactionItem = {
   discountAmount: 0,
   subtotal: 70000,
   note: '',
+  productName: 'Kopi Susu',
+  values: [],
 };
 
 export const mockTransaction: Transaction = {
@@ -306,6 +310,8 @@ export const mockTransactions: Transaction[] = [
         discountAmount: 0,
         subtotal: 40000,
         note: 'Extra hot please',
+        productName: 'Es Teh Manis',
+        values: [],
       },
     ],
     transactionCoupons: [
@@ -405,12 +411,17 @@ export const mockCalculations: Calculation[] = [
 const mockRentalVariant: Variant = {
   id: 3,
   name: 'Coffee Equipment Set - Standard Package',
-  price: 500000,
+  price: 0,
   description: 'Complete coffee setup for 2 hours',
   materials: [],
   product: mockProducts[2],
   createdAt: '2024-01-17T08:00:00.000Z',
   values: [],
+  pricingTiers: [
+    { upToMinutes: 60, price: 15000 },
+    { upToMinutes: 90, price: 20000 },
+    { upToMinutes: 120, price: 30000 },
+  ],
 };
 
 export const mockRental: Rental = {
@@ -421,6 +432,8 @@ export const mockRental: Rental = {
   createdAt: '2024-01-20T10:00:00.000Z',
   checkinAt: '2024-01-20T08:00:00.000Z',
   checkoutAt: null,
+  pricingTiers: mockRentalVariant.pricingTiers,
+  total: 20000,
 };
 
 export const mockRentalCheckedOut: Rental = {
@@ -429,6 +442,7 @@ export const mockRentalCheckedOut: Rental = {
   code: 'RNT-002',
   name: 'Jane Smith',
   checkoutAt: '2024-01-21T17:00:00.000Z',
+  total: 30000,
 };
 
 export const mockRentals: Rental[] = [mockRental, mockRentalCheckedOut];
