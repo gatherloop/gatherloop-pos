@@ -35,20 +35,22 @@ Introduce two new concepts on top of the existing `Material` model:
 | Concept | Description |
 |---|---|
 | **Stock Check** | A dated snapshot, recorded by the closing crew, of how much of each material is currently in the storeroom. Equivalent to "Closing Stock Count for 2026-05-15". |
-| **Stock Check Item** | A row inside a Stock Check: `material_id` + `current_stock` (in recipe units). One row per material counted. |
+| **Stock Check Item** | A row inside a Stock Check: `material_id` + `current_stock` (in **purchase units**, e.g. "1.5 sacks"). One row per material counted. |
 | **Purchase List** | A **computed, non-persisted** view derived from the most recent Stock Check + each material's `minimum_stock` / `normal_stock` / `purchase_unit_size`. Tells the opening crew what to buy and how much. |
 
 Material itself is extended with four new fields (see FR-1).
 
+> **Unit convention.** All three stock-policy values (`minimum_stock`, `normal_stock`, `current_stock`) are expressed in **purchase units**, not recipe units. Rationale: when the closing crew physically counts the storeroom they see "3 sacks, 1.5 boxes", not "3000 grams, 1500 mL" — counting and configuring in purchase units removes a mental conversion and lets policy ("min 2 sacks") read directly against the count. The recipe/variant module is unaffected: it continues to consume materials in recipe units, and `price` continues to be price-per-recipe-unit. `purchase_unit_size` is what bridges the two when we need an estimated cost.
+
 ### Core Rule (Purchase Calculation)
 
-For each material `m` in the latest Stock Check:
+For each material `m` in the latest Stock Check (all stock values in purchase units):
 
 ```
 if current_stock <= minimum_stock:
-    needed_recipe_units = normal_stock - current_stock
-    purchase_qty       = ceil(needed_recipe_units / purchase_unit_size)
-    estimated_cost     = needed_recipe_units * price
+    needed_purchase_units = ceil(normal_stock - current_stock)
+    needed_recipe_units   = needed_purchase_units * purchase_unit_size
+    estimated_cost        = needed_recipe_units * price
 ```
 
 Materials whose `current_stock > minimum_stock` are **not** included in the purchase list. Materials missing from the latest Stock Check are surfaced separately as "not counted" so the crew can decide whether to skip or count now.
@@ -63,10 +65,10 @@ Add the following fields to `Material`:
 
 | Field | Type | Required | Meaning |
 |---|---|---|---|
-| `purchase_unit` | string | yes | Human-readable purchase unit, e.g. `"Kg"`, `"Box"`, `"Bottle"`. Displayed in the purchase list. |
-| `purchase_unit_size` | float | yes | How many **recipe units** are inside one purchase unit. E.g. if `unit = "Gram"` and `purchase_unit = "Kg"`, then `purchase_unit_size = 1000`. Used to translate recipe-unit shortage into purchase-unit quantity. Must be > 0. |
-| `minimum_stock` | float | yes | Threshold (in recipe units). If current stock falls at or below this, the material must be restocked. Must be ≥ 0. |
-| `normal_stock` | float | yes | Target stock level (in recipe units) to reach after restocking. Must be `> minimum_stock`. |
+| `purchase_unit` | string | yes | Human-readable purchase unit, e.g. `"Kg"`, `"Box"`, `"Bottle"`. Displayed everywhere stock is shown. |
+| `purchase_unit_size` | float | yes | How many **recipe units** are inside one purchase unit. E.g. if `unit = "Gram"` and `purchase_unit = "Kg"`, then `purchase_unit_size = 1000`. Used only to convert a purchase-unit shortage into recipe units for the estimated-cost calculation. Must be > 0. |
+| `minimum_stock` | float | yes | Threshold in **purchase units**. If current stock falls at or below this, the material must be restocked. Must be ≥ 0. |
+| `normal_stock` | float | yes | Target stock level in **purchase units** to reach after restocking. Must be `> minimum_stock`. |
 
 **Rules:**
 - Existing materials must be backfilled with sensible defaults during migration so the API does not break (`purchase_unit = unit`, `purchase_unit_size = 1`, `minimum_stock = 0`, `normal_stock = 0`). They will be excluded from the purchase list until a manager edits them.
@@ -82,11 +84,11 @@ The system shall let any logged-in user create a Stock Check, and list/view past
 - `check_date` (date, required, defaults to today). Stored as a date, not a timestamp.
 - `note` (optional free text — e.g. "weekend, dry storage only").
 - `created_at`, `created_by` (user id), `deleted_at`.
-- A list of **Stock Check Items**, each with `material_id` + `current_stock` (in recipe units, `≥ 0`).
+- A list of **Stock Check Items**, each with `material_id` + `current_stock` (in **purchase units**, `≥ 0`). Fractional values are allowed (e.g. `1.5` for a half-empty second sack).
 
 **Rules:**
 - One Stock Check per `check_date` (uniqueness on `check_date`, soft-deleted rows excluded). If the crew needs to correct a count, they edit the existing Stock Check rather than creating a duplicate.
-- The create screen pre-loads **all non-deleted materials** and lets the crew enter a current-stock value for each; materials without a value are simply not stored as items (treated as "not counted").
+- The create screen pre-loads **all non-deleted materials**, shows each material's `purchase_unit` next to its input as a label (e.g. *"Tepung … ___ Kg"*), and lets the crew enter a purchase-unit value for each. Materials without a value are simply not stored as items (treated as "not counted").
 - Stock Check Items snapshot the `material_id` only; they do not snapshot price/min/normal — those are read live when the purchase list is computed. Rationale: the purchase list is meant to be acted on the next morning, before policies drift.
 - Soft delete is supported. A deleted Stock Check is hidden from the "latest" lookup used by the purchase list.
 
@@ -94,14 +96,12 @@ The system shall let any logged-in user create a Stock Check, and list/view past
 
 The system shall expose a single endpoint and screen that returns the **purchase list for today**, computed from the **most recent non-deleted Stock Check**.
 
-**Response payload per row:**
+**Response payload per row** (all stock values in purchase units):
 - `material_id`, `material_name`
-- `current_stock` (recipe unit)
-- `minimum_stock`, `normal_stock` (recipe unit)
-- `needed_recipe_units` (= `normal_stock - current_stock`)
+- `current_stock`, `minimum_stock`, `normal_stock`
 - `purchase_unit`, `purchase_unit_size`
-- `purchase_quantity` (whole purchase units, rounded up)
-- `estimated_cost` (= `needed_recipe_units * price`)
+- `purchase_quantity` — whole purchase units to buy (= `ceil(normal_stock - current_stock)`)
+- `estimated_cost` (= `purchase_quantity * purchase_unit_size * price`)
 
 **Top-level metadata:**
 - `stock_check_id`, `stock_check_date` (which snapshot this was computed from)
@@ -137,7 +137,7 @@ The system shall expose a single endpoint and screen that returns the **purchase
 ## Open Questions
 
 1. Should `purchase_unit_size` allow non-integer values (e.g. a 750 mL bottle)? **Assumed yes** in this PRD (float).
-2. Should the purchase list round `purchase_quantity` up to whole purchase units, or allow fractional? **Assumed up to whole units** (ceil), since you can't buy half a sack.
+2. Should the purchase list round `purchase_quantity` up to whole purchase units, or allow fractional? **Assumed up to whole units** (ceil), since you can't buy half a sack — even though `current_stock` itself accepts fractional purchase units to reflect partially-used containers.
 3. If two Stock Checks exist for the same date (one soft-deleted), is the live one always "latest"? **Yes** — soft-deleted rows are excluded from the latest lookup.
 
 ---
@@ -211,8 +211,8 @@ Each phase below is sized to land as **one reviewable PR**. Phases are ordered s
 **Frontend only**
 - `libs/ui/src/domain/...`: `StockCheck` entity, repository, usecases (`stockCheckCreate`, `stockCheckList`, `stockCheckUpdate`).
 - Screens (mirror Material screens):
-  - **StockCheckCreateScreen / Handler**: header has date picker (defaults to today) + note; body is a virtualized list of all non-deleted materials with a numeric input per row for `current_stock`. Submit posts to `POST /stock-checks`. Empty inputs are omitted (treated as "not counted").
-  - **StockCheckListScreen**: paginated table — date, item count, total recipe-unit value, created-by; row click → detail.
+  - **StockCheckCreateScreen / Handler**: header has date picker (defaults to today) + note; body is a virtualized list of all non-deleted materials with a numeric input per row for `current_stock`, with the material's `purchase_unit` rendered as the input suffix (e.g. *"Tepung … ___ Kg"*). Submit posts to `POST /stock-checks`. Empty inputs are omitted (treated as "not counted").
+  - **StockCheckListScreen**: paginated table — date, item count, created-by; row click → detail.
   - **StockCheckUpdateScreen**: same form as create but pre-filled.
 - Web pages: `apps/web/src/pages/stock-checks/{index.tsx, create.tsx, [id].tsx}`.
 - Nav entry: "Inventory → Record Stock" (closing) and "Inventory → Stock Check History".
@@ -240,7 +240,8 @@ Each phase below is sized to land as **one reviewable PR**. Phases are ordered s
 - Unit tests covering: empty-state (no stock check), all-above-minimum (empty list), partial counting (not-counted surfaced), `ceil()` rounding of `purchase_quantity`, materials with unconfigured policy (`normal_stock == 0`) excluded.
 
 **Acceptance**
-- For a fixture stock check where `tepung` was counted at 200g, `minimum_stock = 500g`, `normal_stock = 2000g`, `purchase_unit_size = 1000g`, the endpoint returns `purchase_quantity = 2` and `needed_recipe_units = 1800`.
+- For a fixture stock check where `tepung` was counted at `current_stock = 0.5` (Kg-sacks), with `minimum_stock = 1`, `normal_stock = 5`, `purchase_unit = "Kg"`, `purchase_unit_size = 1000` (grams per Kg), `price = 15` (per gram), the endpoint returns `purchase_quantity = 5` and `estimated_cost = 5 * 1000 * 15 = 75000`.
+- A material with `current_stock = 1.2`, `minimum_stock = 1` is excluded from the list (above minimum).
 
 **Estimated diff size:** ~400–600 LoC.
 
