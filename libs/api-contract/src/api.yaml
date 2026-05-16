@@ -2133,6 +2133,10 @@ components:
         - price
         - unit
         - weeklyUsage
+        - purchaseUnit
+        - purchaseUnitSize
+        - minimumStock
+        - normalStock
         - createdAt
       properties:
         id:
@@ -2148,6 +2152,14 @@ components:
           type: string
         weeklyUsage:
           type: number
+        purchaseUnit:
+          type: string
+        purchaseUnitSize:
+          type: number
+        minimumStock:
+          type: integer
+        normalStock:
+          type: integer
         deletedAt:
           type: string
           format: date-time
@@ -2160,6 +2172,10 @@ components:
         - name
         - price
         - unit
+        - purchaseUnit
+        - purchaseUnitSize
+        - minimumStock
+        - normalStock
       properties:
         name:
           type: string
@@ -2169,6 +2185,14 @@ components:
           type: number
         unit:
           type: string
+        purchaseUnit:
+          type: string
+        purchaseUnitSize:
+          type: number
+        minimumStock:
+          type: integer
+        normalStock:
+          type: integer
     ChecklistTemplateSubItem:
       type: object
       required:

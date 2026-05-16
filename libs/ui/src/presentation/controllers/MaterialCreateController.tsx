@@ -23,6 +23,10 @@ export const useMaterialCreateController = (usecase: MaterialCreateUsecase) => {
         price: z.number().min(1),
         unit: z.string().min(1),
         description: z.string(),
+        purchaseUnit: z.string().min(1),
+        purchaseUnitSize: z.number().positive(),
+        minimumStock: z.number().int().min(0),
+        normalStock: z.number().int().min(0),
       })
     ),
   });

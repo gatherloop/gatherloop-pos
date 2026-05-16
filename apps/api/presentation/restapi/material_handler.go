@@ -74,6 +74,11 @@ func (handler MaterialHandler) CreateMaterial(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	if err := ValidateMaterialRequest(materialRequest); err != nil {
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
+		return
+	}
+
 	material, usecaseErr := handler.usecase.CreateMaterial(ctx, ToMaterial(materialRequest))
 	if usecaseErr != nil {
 		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
@@ -94,6 +99,11 @@ func (handler MaterialHandler) UpdateMaterialById(w http.ResponseWriter, r *http
 
 	materialRequest, err := GetMaterialRequest(r)
 	if err != nil {
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
+		return
+	}
+
+	if err := ValidateMaterialRequest(materialRequest); err != nil {
 		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
 		return
 	}

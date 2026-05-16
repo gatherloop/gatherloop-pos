@@ -4,25 +4,33 @@ import "apps/api/domain"
 
 func ToMaterialDB(domainMaterial domain.Material) Material {
 	return Material{
-		Id:          domainMaterial.Id,
-		Name:        domainMaterial.Name,
-		Price:       domainMaterial.Price,
-		Unit:        domainMaterial.Unit,
-		Description: domainMaterial.Description,
-		DeletedAt:   domainMaterial.DeletedAt,
-		CreatedAt:   domainMaterial.CreatedAt,
+		Id:               domainMaterial.Id,
+		Name:             domainMaterial.Name,
+		Price:            domainMaterial.Price,
+		Unit:             domainMaterial.Unit,
+		Description:      domainMaterial.Description,
+		PurchaseUnit:     domainMaterial.PurchaseUnit,
+		PurchaseUnitSize: domainMaterial.PurchaseUnitSize,
+		MinimumStock:     domainMaterial.MinimumStock,
+		NormalStock:      domainMaterial.NormalStock,
+		DeletedAt:        domainMaterial.DeletedAt,
+		CreatedAt:        domainMaterial.CreatedAt,
 	}
 }
 
 func ToMaterialDomain(dbMaterial Material) domain.Material {
 	return domain.Material{
-		Id:          dbMaterial.Id,
-		Name:        dbMaterial.Name,
-		Price:       dbMaterial.Price,
-		Unit:        dbMaterial.Unit,
-		Description: dbMaterial.Description,
-		DeletedAt:   dbMaterial.DeletedAt,
-		CreatedAt:   dbMaterial.CreatedAt,
+		Id:               dbMaterial.Id,
+		Name:             dbMaterial.Name,
+		Price:            dbMaterial.Price,
+		Unit:             dbMaterial.Unit,
+		Description:      dbMaterial.Description,
+		PurchaseUnit:     dbMaterial.PurchaseUnit,
+		PurchaseUnitSize: dbMaterial.PurchaseUnitSize,
+		MinimumStock:     dbMaterial.MinimumStock,
+		NormalStock:      dbMaterial.NormalStock,
+		DeletedAt:        dbMaterial.DeletedAt,
+		CreatedAt:        dbMaterial.CreatedAt,
 	}
 }
 

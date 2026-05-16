@@ -5,6 +5,10 @@ export type Material = {
   unit: string;
   description?: string;
   weeklyUsage: number;
+  purchaseUnit: string;
+  purchaseUnitSize: number;
+  minimumStock: number;
+  normalStock: number;
   createdAt: string;
 };
 
@@ -13,4 +17,8 @@ export type MaterialForm = {
   price: number;
   unit: string;
   description?: string;
+  purchaseUnit: string;
+  purchaseUnitSize: number;
+  minimumStock: number;
+  normalStock: number;
 };

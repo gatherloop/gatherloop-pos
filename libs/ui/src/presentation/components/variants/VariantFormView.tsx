@@ -289,6 +289,9 @@ export const VariantFormView = ({
                               price={material.price}
                               unit={material.unit}
                               weeklyUsage={material.weeklyUsage}
+                              purchaseUnit={material.purchaseUnit}
+                              minimumStock={material.minimumStock}
+                              normalStock={material.normalStock}
                               flex={1}
                             />
                             <YStack alignItems="flex-end" gap="$3">
