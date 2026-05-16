@@ -61,3 +61,7 @@ export * from './ChecklistSessionCreateController';
 export * from './ChecklistSessionDetailController';
 export * from './ChecklistSessionDeleteController';
 export * from './ChecklistSessionListController';
+export * from './StockCheckListController';
+export * from './StockCheckDeleteController';
+export * from './StockCheckCreateController';
+export * from './StockCheckUpdateController';
