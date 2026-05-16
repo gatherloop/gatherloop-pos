@@ -73,17 +73,7 @@ func (handler StockCheckHandler) CreateStockCheck(w http.ResponseWriter, r *http
 		return
 	}
 
-	if req.CheckDate == "" {
-		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: "check_date is required"})
-		return
-	}
-
-	stockCheck := domain.StockCheck{
-		CheckDate: req.CheckDate,
-		Note:      req.Note,
-	}
-
-	created, usecaseErr := handler.usecase.CreateStockCheck(ctx, stockCheck, ToStockCheckItemRequests(req.Items))
+	created, usecaseErr := handler.usecase.CreateStockCheck(ctx, ToStockCheckItemRequests(req.Items))
 	if usecaseErr != nil {
 		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
@@ -107,7 +97,7 @@ func (handler StockCheckHandler) UpdateStockCheckById(w http.ResponseWriter, r *
 		return
 	}
 
-	updated, usecaseErr := handler.usecase.UpdateStockCheckById(ctx, id, req.Note, ToStockCheckItemRequests(req.Items))
+	updated, usecaseErr := handler.usecase.UpdateStockCheckById(ctx, id, ToStockCheckItemRequests(req.Items))
 	if usecaseErr != nil {
 		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return

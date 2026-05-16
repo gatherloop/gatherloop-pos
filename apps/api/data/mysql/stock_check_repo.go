@@ -49,15 +49,6 @@ func (repo Repository) GetStockCheckById(ctx context.Context, id int64) (domain.
 	return ToStockCheckDomain(stockCheck), ToErrorCtx(ctx, result.Error, "GetStockCheckById")
 }
 
-func (repo Repository) GetStockCheckByDate(ctx context.Context, checkDate string) (domain.StockCheck, *domain.Error) {
-	db := GetDbFromCtx(ctx, repo.db)
-	var stockCheck StockCheck
-	result := db.Table("stock_checks").
-		Where("check_date = ? AND deleted_at IS NULL", checkDate).
-		First(&stockCheck)
-	return ToStockCheckDomain(stockCheck), ToErrorCtx(ctx, result.Error, "GetStockCheckByDate")
-}
-
 func (repo Repository) CreateStockCheck(ctx context.Context, stockCheck domain.StockCheck) (domain.StockCheck, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	payload := ToStockCheckDB(stockCheck)
@@ -80,13 +71,6 @@ func (repo Repository) CreateStockCheck(ctx context.Context, stockCheck domain.S
 
 func (repo Repository) UpdateStockCheckById(ctx context.Context, stockCheck domain.StockCheck, id int64) (domain.StockCheck, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
-
-	updates := map[string]interface{}{
-		"note": stockCheck.Note,
-	}
-	if err := db.Table("stock_checks").Where("id = ?", id).Updates(updates).Error; err != nil {
-		return domain.StockCheck{}, ToErrorCtx(ctx, err, "UpdateStockCheckById")
-	}
 
 	for _, item := range stockCheck.Items {
 		if err := db.Table("stock_check_items").

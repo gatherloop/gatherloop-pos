@@ -1,26 +1,23 @@
 package domain
 
-import (
-	"context"
-	"fmt"
-)
+import "context"
 
 type StockCheckUsecase struct {
-	repository         StockCheckRepository
-	materialRepository MaterialRepository
+	stockCheckRepository StockCheckRepository
+	materialRepository   MaterialRepository
 }
 
-func NewStockCheckUsecase(repository StockCheckRepository, materialRepository MaterialRepository) StockCheckUsecase {
-	return StockCheckUsecase{repository: repository, materialRepository: materialRepository}
+func NewStockCheckUsecase(stockCheckRepository StockCheckRepository, materialRepository MaterialRepository) StockCheckUsecase {
+	return StockCheckUsecase{stockCheckRepository: stockCheckRepository, materialRepository: materialRepository}
 }
 
 func (usecase StockCheckUsecase) GetStockCheckList(ctx context.Context, sortBy SortBy, order Order, skip int, limit int) ([]StockCheck, int64, *Error) {
-	stockChecks, err := usecase.repository.GetStockCheckList(ctx, sortBy, order, skip, limit)
+	stockChecks, err := usecase.stockCheckRepository.GetStockCheckList(ctx, sortBy, order, skip, limit)
 	if err != nil {
 		return []StockCheck{}, 0, err
 	}
 
-	total, err := usecase.repository.GetStockCheckListTotal(ctx)
+	total, err := usecase.stockCheckRepository.GetStockCheckListTotal(ctx)
 	if err != nil {
 		return []StockCheck{}, 0, err
 	}
@@ -29,18 +26,10 @@ func (usecase StockCheckUsecase) GetStockCheckList(ctx context.Context, sortBy S
 }
 
 func (usecase StockCheckUsecase) GetStockCheckById(ctx context.Context, id int64) (StockCheck, *Error) {
-	return usecase.repository.GetStockCheckById(ctx, id)
+	return usecase.stockCheckRepository.GetStockCheckById(ctx, id)
 }
 
-func (usecase StockCheckUsecase) CreateStockCheck(ctx context.Context, stockCheck StockCheck, itemRequests []StockCheckItemRequest) (StockCheck, *Error) {
-	existing, existErr := usecase.repository.GetStockCheckByDate(ctx, stockCheck.CheckDate)
-	if existErr == nil && existing.Id != 0 {
-		return StockCheck{}, &Error{
-			Type:    BadRequest,
-			Message: fmt.Sprintf("a stock check for %s already exists", stockCheck.CheckDate),
-		}
-	}
-
+func (usecase StockCheckUsecase) CreateStockCheck(ctx context.Context, itemRequests []StockCheckItemRequest) (StockCheck, *Error) {
 	materials, err := usecase.materialRepository.GetMaterialList(ctx, "", CreatedAt, Ascending, 0, 0)
 	if err != nil {
 		return StockCheck{}, err
@@ -58,23 +47,22 @@ func (usecase StockCheckUsecase) CreateStockCheck(ctx context.Context, stockChec
 			currentStock = cs
 		}
 		items = append(items, StockCheckItem{
-			MaterialId:               m.Id,
-			CurrentStock:             currentStock,
-			MaterialName:             m.Name,
-			PriceSnapshot:            m.Price,
-			PurchaseUnitSnapshot:     m.PurchaseUnit,
-			PurchaseUnitSizeSnapshot: m.PurchaseUnitSize,
-			MinimumStockSnapshot:     m.MinimumStock,
-			NormalStockSnapshot:      m.NormalStock,
+			MaterialId:       m.Id,
+			CurrentStock:     currentStock,
+			MaterialName:     m.Name,
+			Price:            m.Price,
+			PurchaseUnit:     m.PurchaseUnit,
+			PurchaseUnitSize: m.PurchaseUnitSize,
+			MinimumStock:     m.MinimumStock,
+			NormalStock:      m.NormalStock,
 		})
 	}
 
-	stockCheck.Items = items
-	return usecase.repository.CreateStockCheck(ctx, stockCheck)
+	return usecase.stockCheckRepository.CreateStockCheck(ctx, StockCheck{Items: items})
 }
 
-func (usecase StockCheckUsecase) UpdateStockCheckById(ctx context.Context, id int64, note *string, itemRequests []StockCheckItemRequest) (StockCheck, *Error) {
-	stockCheck, err := usecase.repository.GetStockCheckById(ctx, id)
+func (usecase StockCheckUsecase) UpdateStockCheckById(ctx context.Context, id int64, itemRequests []StockCheckItemRequest) (StockCheck, *Error) {
+	stockCheck, err := usecase.stockCheckRepository.GetStockCheckById(ctx, id)
 	if err != nil {
 		return StockCheck{}, err
 	}
@@ -90,19 +78,15 @@ func (usecase StockCheckUsecase) UpdateStockCheckById(ctx context.Context, id in
 		}
 	}
 
-	if note != nil {
-		stockCheck.Note = note
-	}
-
-	return usecase.repository.UpdateStockCheckById(ctx, stockCheck, id)
+	return usecase.stockCheckRepository.UpdateStockCheckById(ctx, stockCheck, id)
 }
 
 func (usecase StockCheckUsecase) DeleteStockCheckById(ctx context.Context, id int64) *Error {
-	return usecase.repository.DeleteStockCheckById(ctx, id)
+	return usecase.stockCheckRepository.DeleteStockCheckById(ctx, id)
 }
 
 func (usecase StockCheckUsecase) GetPurchaseList(ctx context.Context, stockCheckId int64) (PurchaseList, *Error) {
-	stockCheck, err := usecase.repository.GetStockCheckById(ctx, stockCheckId)
+	stockCheck, err := usecase.stockCheckRepository.GetStockCheckById(ctx, stockCheckId)
 	if err != nil {
 		return PurchaseList{}, err
 	}
@@ -111,18 +95,18 @@ func (usecase StockCheckUsecase) GetPurchaseList(ctx context.Context, stockCheck
 	totalEstimatedCost := float64(0)
 
 	for _, item := range stockCheck.Items {
-		if item.CurrentStock <= item.MinimumStockSnapshot && item.NormalStockSnapshot > item.MinimumStockSnapshot {
-			purchaseQuantity := item.NormalStockSnapshot - item.CurrentStock
-			estimatedCost := float64(purchaseQuantity) * float64(item.PurchaseUnitSizeSnapshot) * float64(item.PriceSnapshot)
+		if item.CurrentStock <= item.MinimumStock && item.NormalStock > item.MinimumStock {
+			purchaseQuantity := item.NormalStock - item.CurrentStock
+			estimatedCost := float64(purchaseQuantity) * float64(item.PurchaseUnitSize) * float64(item.Price)
 			totalEstimatedCost += estimatedCost
 			items = append(items, PurchaseListItem{
 				MaterialId:       item.MaterialId,
 				MaterialName:     item.MaterialName,
 				CurrentStock:     item.CurrentStock,
-				MinimumStock:     item.MinimumStockSnapshot,
-				NormalStock:      item.NormalStockSnapshot,
-				PurchaseUnit:     item.PurchaseUnitSnapshot,
-				PurchaseUnitSize: item.PurchaseUnitSizeSnapshot,
+				MinimumStock:     item.MinimumStock,
+				NormalStock:      item.NormalStock,
+				PurchaseUnit:     item.PurchaseUnit,
+				PurchaseUnitSize: item.PurchaseUnitSize,
 				PurchaseQuantity: purchaseQuantity,
 				EstimatedCost:    estimatedCost,
 			})
@@ -131,7 +115,7 @@ func (usecase StockCheckUsecase) GetPurchaseList(ctx context.Context, stockCheck
 
 	return PurchaseList{
 		StockCheckId:       stockCheck.Id,
-		StockCheckDate:     stockCheck.CheckDate,
+		StockCheckDate:     stockCheck.CreatedAt.Format("2006-01-02"),
 		TotalEstimatedCost: totalEstimatedCost,
 		Items:              items,
 	}, nil

@@ -73,7 +73,7 @@ func TestStockCheckHandler_GetStockCheckById(t *testing.T) {
 			name:         "success",
 			stockCheckId: "1",
 			setupMock: func(sc *mock.MockStockCheckRepository, m *mock.MockMaterialRepository) {
-				sc.EXPECT().GetStockCheckById(gomock.Any(), int64(1)).Return(domain.StockCheck{Id: 1, CheckDate: "2026-05-15"}, nil)
+				sc.EXPECT().GetStockCheckById(gomock.Any(), int64(1)).Return(domain.StockCheck{Id: 1}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -119,27 +119,12 @@ func TestStockCheckHandler_CreateStockCheck(t *testing.T) {
 	}{
 		{
 			name: "success",
-			body: `{"checkDate": "2026-05-15", "items": [{"materialId": 1, "currentStock": 3}]}`,
+			body: `{"items": [{"materialId": 1, "currentStock": 3}]}`,
 			setupMock: func(sc *mock.MockStockCheckRepository, m *mock.MockMaterialRepository) {
-				sc.EXPECT().GetStockCheckByDate(gomock.Any(), "2026-05-15").Return(domain.StockCheck{}, &domain.Error{Type: domain.NotFound})
 				m.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Material{{Id: 1, Name: "Tepung"}}, nil)
-				sc.EXPECT().CreateStockCheck(gomock.Any(), gomock.Any()).Return(domain.StockCheck{Id: 1, CheckDate: "2026-05-15"}, nil)
+				sc.EXPECT().CreateStockCheck(gomock.Any(), gomock.Any()).Return(domain.StockCheck{Id: 1}, nil)
 			},
 			expectedStatus: http.StatusOK,
-		},
-		{
-			name:           "missing check_date",
-			body:           `{"items": []}`,
-			setupMock:      func(sc *mock.MockStockCheckRepository, m *mock.MockMaterialRepository) {},
-			expectedStatus: http.StatusBadRequest,
-		},
-		{
-			name: "duplicate date returns bad request",
-			body: `{"checkDate": "2026-05-15", "items": []}`,
-			setupMock: func(sc *mock.MockStockCheckRepository, m *mock.MockMaterialRepository) {
-				sc.EXPECT().GetStockCheckByDate(gomock.Any(), "2026-05-15").Return(domain.StockCheck{Id: 1}, nil)
-			},
-			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "invalid JSON body",
@@ -149,9 +134,8 @@ func TestStockCheckHandler_CreateStockCheck(t *testing.T) {
 		},
 		{
 			name: "repo error",
-			body: `{"checkDate": "2026-05-15", "items": []}`,
+			body: `{"items": []}`,
 			setupMock: func(sc *mock.MockStockCheckRepository, m *mock.MockMaterialRepository) {
-				sc.EXPECT().GetStockCheckByDate(gomock.Any(), "2026-05-15").Return(domain.StockCheck{}, &domain.Error{Type: domain.NotFound})
 				m.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Material{}, nil)
 				sc.EXPECT().CreateStockCheck(gomock.Any(), gomock.Any()).Return(domain.StockCheck{}, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
@@ -190,7 +174,7 @@ func TestStockCheckHandler_UpdateStockCheckById(t *testing.T) {
 			body:         `{"items": [{"materialId": 1, "currentStock": 5}]}`,
 			setupMock: func(sc *mock.MockStockCheckRepository, m *mock.MockMaterialRepository) {
 				sc.EXPECT().GetStockCheckById(gomock.Any(), int64(1)).Return(domain.StockCheck{
-					Id: 1,
+					Id:    1,
 					Items: []domain.StockCheckItem{{Id: 10, MaterialId: 1, CurrentStock: 3}},
 				}, nil)
 				sc.EXPECT().UpdateStockCheckById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.StockCheck{Id: 1}, nil)
@@ -293,18 +277,17 @@ func TestStockCheckHandler_GetPurchaseList(t *testing.T) {
 			stockCheckId: "1",
 			setupMock: func(sc *mock.MockStockCheckRepository, m *mock.MockMaterialRepository) {
 				sc.EXPECT().GetStockCheckById(gomock.Any(), int64(1)).Return(domain.StockCheck{
-					Id:        1,
-					CheckDate: "2026-05-15",
+					Id: 1,
 					Items: []domain.StockCheckItem{
 						{
-							MaterialId:               1,
-							MaterialName:             "Tepung",
-							CurrentStock:             0,
-							PriceSnapshot:            15,
-							PurchaseUnitSnapshot:     "Kg",
-							PurchaseUnitSizeSnapshot: 1000,
-							MinimumStockSnapshot:     1,
-							NormalStockSnapshot:      5,
+							MaterialId:       1,
+							MaterialName:     "Tepung",
+							CurrentStock:     0,
+							Price:            15,
+							PurchaseUnit:     "Kg",
+							PurchaseUnitSize: 1000,
+							MinimumStock:     1,
+							NormalStock:      5,
 						},
 					},
 				}, nil)

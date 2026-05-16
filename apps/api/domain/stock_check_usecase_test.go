@@ -54,22 +54,6 @@ func TestStockCheckUsecase_GetStockCheckList(t *testing.T) {
 	}
 }
 
-func TestStockCheckUsecase_CreateStockCheck_DuplicateDate(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	scRepo := mock.NewMockStockCheckRepository(ctrl)
-	matRepo := mock.NewMockMaterialRepository(ctrl)
-
-	scRepo.EXPECT().GetStockCheckByDate(gomock.Any(), "2026-05-15").Return(domain.StockCheck{Id: 1}, nil)
-
-	usecase := domain.NewStockCheckUsecase(scRepo, matRepo)
-	_, err := usecase.CreateStockCheck(context.Background(), domain.StockCheck{CheckDate: "2026-05-15"}, nil)
-
-	assert.NotNil(t, err)
-	assert.Equal(t, domain.BadRequest, err.Type)
-}
-
 func TestStockCheckUsecase_CreateStockCheck_SnapshotsMaterialFields(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -77,7 +61,6 @@ func TestStockCheckUsecase_CreateStockCheck_SnapshotsMaterialFields(t *testing.T
 	scRepo := mock.NewMockStockCheckRepository(ctrl)
 	matRepo := mock.NewMockMaterialRepository(ctrl)
 
-	scRepo.EXPECT().GetStockCheckByDate(gomock.Any(), "2026-05-15").Return(domain.StockCheck{}, &domain.Error{Type: domain.NotFound})
 	matRepo.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Material{
 		{
 			Id:               1,
@@ -93,11 +76,11 @@ func TestStockCheckUsecase_CreateStockCheck_SnapshotsMaterialFields(t *testing.T
 	var captured domain.StockCheck
 	scRepo.EXPECT().CreateStockCheck(gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, sc domain.StockCheck) (domain.StockCheck, *domain.Error) {
 		captured = sc
-		return domain.StockCheck{Id: 1, CheckDate: "2026-05-15", Items: sc.Items}, nil
+		return domain.StockCheck{Id: 1, Items: sc.Items}, nil
 	})
 
 	usecase := domain.NewStockCheckUsecase(scRepo, matRepo)
-	_, err := usecase.CreateStockCheck(context.Background(), domain.StockCheck{CheckDate: "2026-05-15"}, []domain.StockCheckItemRequest{
+	_, err := usecase.CreateStockCheck(context.Background(), []domain.StockCheckItemRequest{
 		{MaterialId: 1, CurrentStock: 3},
 	})
 
@@ -105,11 +88,11 @@ func TestStockCheckUsecase_CreateStockCheck_SnapshotsMaterialFields(t *testing.T
 	assert.Len(t, captured.Items, 1)
 	assert.Equal(t, 3, captured.Items[0].CurrentStock)
 	assert.Equal(t, "Tepung", captured.Items[0].MaterialName)
-	assert.Equal(t, float32(15), captured.Items[0].PriceSnapshot)
-	assert.Equal(t, "Kg", captured.Items[0].PurchaseUnitSnapshot)
-	assert.Equal(t, float32(1000), captured.Items[0].PurchaseUnitSizeSnapshot)
-	assert.Equal(t, 1, captured.Items[0].MinimumStockSnapshot)
-	assert.Equal(t, 5, captured.Items[0].NormalStockSnapshot)
+	assert.Equal(t, float32(15), captured.Items[0].Price)
+	assert.Equal(t, "Kg", captured.Items[0].PurchaseUnit)
+	assert.Equal(t, float32(1000), captured.Items[0].PurchaseUnitSize)
+	assert.Equal(t, 1, captured.Items[0].MinimumStock)
+	assert.Equal(t, 5, captured.Items[0].NormalStock)
 }
 
 func TestStockCheckUsecase_CreateStockCheck_DefaultsToZeroForMissingItems(t *testing.T) {
@@ -119,7 +102,6 @@ func TestStockCheckUsecase_CreateStockCheck_DefaultsToZeroForMissingItems(t *tes
 	scRepo := mock.NewMockStockCheckRepository(ctrl)
 	matRepo := mock.NewMockMaterialRepository(ctrl)
 
-	scRepo.EXPECT().GetStockCheckByDate(gomock.Any(), "2026-05-15").Return(domain.StockCheck{}, &domain.Error{Type: domain.NotFound})
 	matRepo.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Material{
 		{Id: 1, Name: "Tepung"},
 		{Id: 2, Name: "Susu"},
@@ -133,7 +115,7 @@ func TestStockCheckUsecase_CreateStockCheck_DefaultsToZeroForMissingItems(t *tes
 
 	usecase := domain.NewStockCheckUsecase(scRepo, matRepo)
 	// Only provide currentStock for material 1; material 2 should default to 0
-	_, err := usecase.CreateStockCheck(context.Background(), domain.StockCheck{CheckDate: "2026-05-15"}, []domain.StockCheckItemRequest{
+	_, err := usecase.CreateStockCheck(context.Background(), []domain.StockCheckItemRequest{
 		{MaterialId: 1, CurrentStock: 5},
 	})
 
@@ -151,28 +133,27 @@ func TestStockCheckUsecase_GetPurchaseList(t *testing.T) {
 	matRepo := mock.NewMockMaterialRepository(ctrl)
 
 	scRepo.EXPECT().GetStockCheckById(gomock.Any(), int64(1)).Return(domain.StockCheck{
-		Id:        1,
-		CheckDate: "2026-05-15",
+		Id: 1,
 		Items: []domain.StockCheckItem{
 			{
-				MaterialId:               1,
-				MaterialName:             "Tepung",
-				CurrentStock:             0,
-				PriceSnapshot:            15,
-				PurchaseUnitSnapshot:     "Kg",
-				PurchaseUnitSizeSnapshot: 1000,
-				MinimumStockSnapshot:     1,
-				NormalStockSnapshot:      5,
+				MaterialId:       1,
+				MaterialName:     "Tepung",
+				CurrentStock:     0,
+				Price:            15,
+				PurchaseUnit:     "Kg",
+				PurchaseUnitSize: 1000,
+				MinimumStock:     1,
+				NormalStock:      5,
 			},
 			{
-				MaterialId:               2,
-				MaterialName:             "Susu",
-				CurrentStock:             3,
-				PriceSnapshot:            20,
-				PurchaseUnitSnapshot:     "L",
-				PurchaseUnitSizeSnapshot: 1000,
-				MinimumStockSnapshot:     0,
-				NormalStockSnapshot:      0, // unconfigured — excluded
+				MaterialId:       2,
+				MaterialName:     "Susu",
+				CurrentStock:     3,
+				Price:            20,
+				PurchaseUnit:     "L",
+				PurchaseUnitSize: 1000,
+				MinimumStock:     0,
+				NormalStock:      0, // unconfigured — excluded
 			},
 		},
 	}, nil)
@@ -182,7 +163,6 @@ func TestStockCheckUsecase_GetPurchaseList(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Equal(t, int64(1), pl.StockCheckId)
-	assert.Equal(t, "2026-05-15", pl.StockCheckDate)
 	assert.Len(t, pl.Items, 1)
 
 	item := pl.Items[0]
@@ -200,14 +180,13 @@ func TestStockCheckUsecase_GetPurchaseList_ExcludesUnconfiguredPolicy(t *testing
 	matRepo := mock.NewMockMaterialRepository(ctrl)
 
 	scRepo.EXPECT().GetStockCheckById(gomock.Any(), int64(1)).Return(domain.StockCheck{
-		Id:        1,
-		CheckDate: "2026-05-15",
+		Id: 1,
 		Items: []domain.StockCheckItem{
 			{
-				MaterialId:           1,
-				CurrentStock:         0,
-				MinimumStockSnapshot: 0,
-				NormalStockSnapshot:  0, // normal_stock <= minimum_stock → excluded
+				MaterialId:   1,
+				CurrentStock: 0,
+				MinimumStock: 0,
+				NormalStock:  0, // normal_stock <= minimum_stock → excluded
 			},
 		},
 	}, nil)

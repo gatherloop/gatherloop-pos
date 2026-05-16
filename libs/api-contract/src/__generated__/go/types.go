@@ -800,24 +800,21 @@ type ChecklistSessionSubItemUncheckResponse struct {
 // StockCheck
 
 type StockCheckItem struct {
-	Id                       int64     `json:"id"`
-	StockCheckId             int64     `json:"stockCheckId"`
-	MaterialId               int64     `json:"materialId"`
-	CurrentStock             int       `json:"currentStock"`
-	MaterialName             string    `json:"materialName"`
-	PriceSnapshot            float32   `json:"priceSnapshot"`
-	PurchaseUnitSnapshot     string    `json:"purchaseUnitSnapshot"`
-	PurchaseUnitSizeSnapshot float32   `json:"purchaseUnitSizeSnapshot"`
-	MinimumStockSnapshot     int       `json:"minimumStockSnapshot"`
-	NormalStockSnapshot      int       `json:"normalStockSnapshot"`
-	CreatedAt                time.Time `json:"createdAt"`
+	Id               int64     `json:"id"`
+	StockCheckId     int64     `json:"stockCheckId"`
+	MaterialId       int64     `json:"materialId"`
+	CurrentStock     int       `json:"currentStock"`
+	MaterialName     string    `json:"materialName"`
+	Price            float32   `json:"price"`
+	PurchaseUnit     string    `json:"purchaseUnit"`
+	PurchaseUnitSize float32   `json:"purchaseUnitSize"`
+	MinimumStock     int       `json:"minimumStock"`
+	NormalStock      int       `json:"normalStock"`
+	CreatedAt        time.Time `json:"createdAt"`
 }
 
 type StockCheck struct {
 	Id        int64            `json:"id"`
-	CheckDate string           `json:"checkDate"`
-	Note      *string          `json:"note,omitempty"`
-	CreatedBy int64            `json:"createdBy"`
 	CreatedAt time.Time        `json:"createdAt"`
 	DeletedAt *time.Time       `json:"deletedAt,omitempty"`
 	Items     []StockCheckItem `json:"items"`
@@ -829,13 +826,10 @@ type StockCheckItemRequest struct {
 }
 
 type StockCheckRequest struct {
-	CheckDate string                  `json:"checkDate"`
-	Note      *string                 `json:"note,omitempty"`
-	Items     []StockCheckItemRequest `json:"items"`
+	Items []StockCheckItemRequest `json:"items"`
 }
 
 type StockCheckUpdateRequest struct {
-	Note  *string                 `json:"note,omitempty"`
 	Items []StockCheckItemRequest `json:"items"`
 }
 

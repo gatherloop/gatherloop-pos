@@ -94,21 +94,6 @@ func (mr *MockStockCheckRepositoryMockRecorder) GetStockCheckById(ctx, id any) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStockCheckById", reflect.TypeOf((*MockStockCheckRepository)(nil).GetStockCheckById), ctx, id)
 }
 
-// GetStockCheckByDate mocks base method.
-func (m *MockStockCheckRepository) GetStockCheckByDate(ctx context.Context, checkDate string) (domain.StockCheck, *domain.Error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetStockCheckByDate", ctx, checkDate)
-	ret0, _ := ret[0].(domain.StockCheck)
-	ret1, _ := ret[1].(*domain.Error)
-	return ret0, ret1
-}
-
-// GetStockCheckByDate indicates an expected call of GetStockCheckByDate.
-func (mr *MockStockCheckRepositoryMockRecorder) GetStockCheckByDate(ctx, checkDate any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStockCheckByDate", reflect.TypeOf((*MockStockCheckRepository)(nil).GetStockCheckByDate), ctx, checkDate)
-}
-
 // CreateStockCheck mocks base method.
 func (m *MockStockCheckRepository) CreateStockCheck(ctx context.Context, stockCheck domain.StockCheck) (domain.StockCheck, *domain.Error) {
 	m.ctrl.T.Helper()

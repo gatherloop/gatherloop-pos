@@ -4,33 +4,33 @@ import "apps/api/domain"
 
 func ToStockCheckItemDB(d domain.StockCheckItem) StockCheckItem {
 	return StockCheckItem{
-		Id:                       d.Id,
-		StockCheckId:             d.StockCheckId,
-		MaterialId:               d.MaterialId,
-		CurrentStock:             d.CurrentStock,
-		MaterialName:             d.MaterialName,
-		PriceSnapshot:            d.PriceSnapshot,
-		PurchaseUnitSnapshot:     d.PurchaseUnitSnapshot,
-		PurchaseUnitSizeSnapshot: d.PurchaseUnitSizeSnapshot,
-		MinimumStockSnapshot:     d.MinimumStockSnapshot,
-		NormalStockSnapshot:      d.NormalStockSnapshot,
-		CreatedAt:                d.CreatedAt,
+		Id:               d.Id,
+		StockCheckId:     d.StockCheckId,
+		MaterialId:       d.MaterialId,
+		CurrentStock:     d.CurrentStock,
+		MaterialName:     d.MaterialName,
+		Price:            d.Price,
+		PurchaseUnit:     d.PurchaseUnit,
+		PurchaseUnitSize: d.PurchaseUnitSize,
+		MinimumStock:     d.MinimumStock,
+		NormalStock:      d.NormalStock,
+		CreatedAt:        d.CreatedAt,
 	}
 }
 
 func ToStockCheckItemDomain(db StockCheckItem) domain.StockCheckItem {
 	return domain.StockCheckItem{
-		Id:                       db.Id,
-		StockCheckId:             db.StockCheckId,
-		MaterialId:               db.MaterialId,
-		CurrentStock:             db.CurrentStock,
-		MaterialName:             db.MaterialName,
-		PriceSnapshot:            db.PriceSnapshot,
-		PurchaseUnitSnapshot:     db.PurchaseUnitSnapshot,
-		PurchaseUnitSizeSnapshot: db.PurchaseUnitSizeSnapshot,
-		MinimumStockSnapshot:     db.MinimumStockSnapshot,
-		NormalStockSnapshot:      db.NormalStockSnapshot,
-		CreatedAt:                db.CreatedAt,
+		Id:               db.Id,
+		StockCheckId:     db.StockCheckId,
+		MaterialId:       db.MaterialId,
+		CurrentStock:     db.CurrentStock,
+		MaterialName:     db.MaterialName,
+		Price:            db.Price,
+		PurchaseUnit:     db.PurchaseUnit,
+		PurchaseUnitSize: db.PurchaseUnitSize,
+		MinimumStock:     db.MinimumStock,
+		NormalStock:      db.NormalStock,
+		CreatedAt:        db.CreatedAt,
 	}
 }
 
@@ -41,9 +41,6 @@ func ToStockCheckDB(d domain.StockCheck) StockCheck {
 	}
 	return StockCheck{
 		Id:        d.Id,
-		CheckDate: d.CheckDate,
-		Note:      d.Note,
-		CreatedBy: d.CreatedBy,
 		CreatedAt: d.CreatedAt,
 		DeletedAt: d.DeletedAt,
 		Items:     items,
@@ -57,9 +54,6 @@ func ToStockCheckDomain(db StockCheck) domain.StockCheck {
 	}
 	return domain.StockCheck{
 		Id:        db.Id,
-		CheckDate: db.CheckDate,
-		Note:      db.Note,
-		CreatedBy: db.CreatedBy,
 		CreatedAt: db.CreatedAt,
 		DeletedAt: db.DeletedAt,
 		Items:     items,

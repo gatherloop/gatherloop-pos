@@ -30,17 +30,17 @@ func GetStockCheckUpdateRequest(r *http.Request) (apiContract.StockCheckUpdateRe
 
 func ToApiStockCheckItem(item domain.StockCheckItem) apiContract.StockCheckItem {
 	return apiContract.StockCheckItem{
-		Id:                       item.Id,
-		StockCheckId:             item.StockCheckId,
-		MaterialId:               item.MaterialId,
-		CurrentStock:             item.CurrentStock,
-		MaterialName:             item.MaterialName,
-		PriceSnapshot:            item.PriceSnapshot,
-		PurchaseUnitSnapshot:     item.PurchaseUnitSnapshot,
-		PurchaseUnitSizeSnapshot: item.PurchaseUnitSizeSnapshot,
-		MinimumStockSnapshot:     item.MinimumStockSnapshot,
-		NormalStockSnapshot:      item.NormalStockSnapshot,
-		CreatedAt:                item.CreatedAt,
+		Id:               item.Id,
+		StockCheckId:     item.StockCheckId,
+		MaterialId:       item.MaterialId,
+		CurrentStock:     item.CurrentStock,
+		MaterialName:     item.MaterialName,
+		Price:            item.Price,
+		PurchaseUnit:     item.PurchaseUnit,
+		PurchaseUnitSize: item.PurchaseUnitSize,
+		MinimumStock:     item.MinimumStock,
+		NormalStock:      item.NormalStock,
+		CreatedAt:        item.CreatedAt,
 	}
 }
 
@@ -51,9 +51,6 @@ func ToApiStockCheck(sc domain.StockCheck) apiContract.StockCheck {
 	}
 	return apiContract.StockCheck{
 		Id:        sc.Id,
-		CheckDate: sc.CheckDate,
-		Note:      sc.Note,
-		CreatedBy: sc.CreatedBy,
 		CreatedAt: sc.CreatedAt,
 		DeletedAt: sc.DeletedAt,
 		Items:     items,

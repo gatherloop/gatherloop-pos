@@ -9,7 +9,6 @@ type StockCheckRepository interface {
 	GetStockCheckList(ctx context.Context, sortBy SortBy, order Order, skip int, limit int) ([]StockCheck, *Error)
 	GetStockCheckListTotal(ctx context.Context) (int64, *Error)
 	GetStockCheckById(ctx context.Context, id int64) (StockCheck, *Error)
-	GetStockCheckByDate(ctx context.Context, checkDate string) (StockCheck, *Error)
 	CreateStockCheck(ctx context.Context, stockCheck StockCheck) (StockCheck, *Error)
 	UpdateStockCheckById(ctx context.Context, stockCheck StockCheck, id int64) (StockCheck, *Error)
 	DeleteStockCheckById(ctx context.Context, id int64) *Error
