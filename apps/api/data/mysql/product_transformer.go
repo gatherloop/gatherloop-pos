@@ -54,8 +54,9 @@ func ToOptionDomain(dbOption Option) domain.Option {
 
 func ToOptionValueDomain(dbOptionValue OptionValue) domain.OptionValue {
 	return domain.OptionValue{
-		Id:   dbOptionValue.Id,
-		Name: dbOptionValue.Name,
+		Id:       dbOptionValue.Id,
+		Name:     dbOptionValue.Name,
+		OptionId: dbOptionValue.OptionId,
 	}
 }
 
