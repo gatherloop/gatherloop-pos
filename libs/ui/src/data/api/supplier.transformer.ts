@@ -10,6 +10,7 @@ export function toSupplier(supplier: ApiSupplier): Supplier {
     address: supplier.address,
     mapsLink: supplier.mapsLink,
     phone: supplier.phone ?? '',
+    isOnline: supplier.isOnline,
   };
 }
 
@@ -19,5 +20,6 @@ export function toApiSupplier(form: SupplierForm) {
     phone: form.phone,
     address: form.address,
     mapsLink: form.mapsLink,
+    isOnline: form.isOnline,
   };
 }

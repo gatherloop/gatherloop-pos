@@ -4,6 +4,7 @@ export type Supplier = {
   phone?: string;
   address: string;
   mapsLink: string;
+  isOnline: boolean;
   createdAt: string;
 };
 
@@ -12,4 +13,5 @@ export type SupplierForm = {
   phone?: string;
   address: string;
   mapsLink: string;
+  isOnline: boolean;
 };

@@ -9,6 +9,7 @@ func ToSupplierDB(domainSupplier domain.Supplier) Supplier {
 		Phone:     domainSupplier.Phone,
 		Address:   domainSupplier.Address,
 		MapsLink:  domainSupplier.MapsLink,
+		IsOnline:  domainSupplier.IsOnline,
 		DeletedAt: domainSupplier.DeletedAt,
 		CreatedAt: domainSupplier.CreatedAt,
 	}
@@ -21,6 +22,7 @@ func ToSupplierDomain(dbSupplier Supplier) domain.Supplier {
 		Phone:     dbSupplier.Phone,
 		Address:   dbSupplier.Address,
 		MapsLink:  dbSupplier.MapsLink,
+		IsOnline:  dbSupplier.IsOnline,
 		DeletedAt: dbSupplier.DeletedAt,
 		CreatedAt: dbSupplier.CreatedAt,
 	}

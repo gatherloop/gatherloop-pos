@@ -25,6 +25,10 @@ func GetMaterialRequest(r *http.Request) (apiContract.MaterialRequest, error) {
 }
 
 func ToApiMaterial(material domain.Material) apiContract.Material {
+	suppliers := make([]apiContract.Supplier, 0, len(material.Suppliers))
+	for _, s := range material.Suppliers {
+		suppliers = append(suppliers, ToApiSupplier(s))
+	}
 	return apiContract.Material{
 		Id:               material.Id,
 		Name:             material.Name,
@@ -38,6 +42,7 @@ func ToApiMaterial(material domain.Material) apiContract.Material {
 		PurchaseUnitSize: material.PurchaseUnitSize,
 		MinimumStock:     int32(material.MinimumStock),
 		NormalStock:      int32(material.NormalStock),
+		Suppliers:        suppliers,
 	}
 }
 

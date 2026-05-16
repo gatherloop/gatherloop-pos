@@ -1,7 +1,7 @@
 import { Field, FormErrorBanner, InputText } from '../base';
 import { SupplierForm } from '../../../domain';
-import { FormProvider, UseFormReturn } from 'react-hook-form';
-import { Button, Form, Spinner } from 'tamagui';
+import { Controller, FormProvider, UseFormReturn } from 'react-hook-form';
+import { Button, Form, Label, Separator, SizableText, Spinner, Switch, XStack } from 'tamagui';
 
 export type SupplierFormViewProps = {
   form: UseFormReturn<SupplierForm>;
@@ -34,6 +34,30 @@ export const SupplierFormView = ({
         <Field name="mapsLink" label="Maps Link">
           <InputText />
         </Field>
+
+        <Separator />
+
+        <Controller
+          control={form.control}
+          name="isOnline"
+          render={({ field: { value, onChange } }) => (
+            <XStack alignItems="center" gap="$3">
+              <Switch
+                id="is-online-switch"
+                checked={value}
+                onCheckedChange={onChange}
+                theme={value ? 'blue' : undefined}
+              >
+                <Switch.Thumb animation="quick" />
+              </Switch>
+              <Label htmlFor="is-online-switch">
+                <SizableText>
+                  {value ? 'Online Store' : 'Offline Store'}
+                </SizableText>
+              </Label>
+            </XStack>
+          )}
+        />
 
         <Button
           disabled={isSubmitDisabled}

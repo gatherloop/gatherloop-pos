@@ -40,6 +40,7 @@ export class SupplierCreateUsecase extends Usecase<
       address: '',
       mapsLink: '',
       phone: '',
+      isOnline: false,
     };
     return {
       type: 'loaded',

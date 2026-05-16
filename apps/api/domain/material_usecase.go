@@ -31,8 +31,18 @@ func (usecase MaterialUsecase) GetMaterialList(ctx context.Context, query string
 	if err != nil {
 		return []Material{}, 0, err
 	}
+
+	suppliersByMaterial, err := usecase.repository.GetMaterialSuppliersByMaterialIds(ctx, materialIds)
+	if err != nil {
+		return []Material{}, 0, err
+	}
+
 	for index, material := range materials {
 		material.WeeklyUsage = materialWeeklyUsage[material.Id]
+		material.Suppliers = suppliersByMaterial[material.Id]
+		if material.Suppliers == nil {
+			material.Suppliers = []Supplier{}
+		}
 		materials[index] = material
 	}
 
@@ -50,13 +60,26 @@ func (usecase MaterialUsecase) GetMaterialById(ctx context.Context, id int64) (M
 		return Material{}, err
 	}
 
+	suppliersByMaterial, err := usecase.repository.GetMaterialSuppliersByMaterialIds(ctx, []int64{id})
+	if err != nil {
+		return Material{}, err
+	}
+
 	material.WeeklyUsage = materialsUsage[id]
+	material.Suppliers = suppliersByMaterial[id]
+	if material.Suppliers == nil {
+		material.Suppliers = []Supplier{}
+	}
 	return material, nil
 }
 
-func (usecase MaterialUsecase) CreateMaterial(ctx context.Context, material Material) (Material, *Error) {
+func (usecase MaterialUsecase) CreateMaterial(ctx context.Context, material Material, supplierIds []int64) (Material, *Error) {
 	createdMaterial, err := usecase.repository.CreateMaterial(ctx, material)
 	if err != nil {
+		return Material{}, err
+	}
+
+	if err := usecase.repository.SetMaterialSuppliers(ctx, createdMaterial.Id, supplierIds); err != nil {
 		return Material{}, err
 	}
 
@@ -65,13 +88,26 @@ func (usecase MaterialUsecase) CreateMaterial(ctx context.Context, material Mate
 		return Material{}, err
 	}
 
+	suppliersByMaterial, err := usecase.repository.GetMaterialSuppliersByMaterialIds(ctx, []int64{createdMaterial.Id})
+	if err != nil {
+		return Material{}, err
+	}
+
 	createdMaterial.WeeklyUsage = materialsUsage[createdMaterial.Id]
+	createdMaterial.Suppliers = suppliersByMaterial[createdMaterial.Id]
+	if createdMaterial.Suppliers == nil {
+		createdMaterial.Suppliers = []Supplier{}
+	}
 	return createdMaterial, nil
 }
 
-func (usecase MaterialUsecase) UpdateMaterialById(ctx context.Context, material Material, id int64) (Material, *Error) {
+func (usecase MaterialUsecase) UpdateMaterialById(ctx context.Context, material Material, id int64, supplierIds []int64) (Material, *Error) {
 	updatedMaterial, err := usecase.repository.UpdateMaterialById(ctx, material, id)
 	if err != nil {
+		return Material{}, err
+	}
+
+	if err := usecase.repository.SetMaterialSuppliers(ctx, id, supplierIds); err != nil {
 		return Material{}, err
 	}
 
@@ -80,7 +116,16 @@ func (usecase MaterialUsecase) UpdateMaterialById(ctx context.Context, material 
 		return Material{}, err
 	}
 
+	suppliersByMaterial, err := usecase.repository.GetMaterialSuppliersByMaterialIds(ctx, []int64{id})
+	if err != nil {
+		return Material{}, err
+	}
+
 	updatedMaterial.WeeklyUsage = materialsUsage[id]
+	updatedMaterial.Suppliers = suppliersByMaterial[id]
+	if updatedMaterial.Suppliers == nil {
+		updatedMaterial.Suppliers = []Supplier{}
+	}
 	return updatedMaterial, nil
 }
 

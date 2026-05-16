@@ -2273,6 +2273,7 @@ components:
         - purchaseUnitSize
         - minimumStock
         - normalStock
+        - suppliers
         - createdAt
       properties:
         id:
@@ -2296,6 +2297,10 @@ components:
           type: integer
         normalStock:
           type: integer
+        suppliers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Supplier'
         deletedAt:
           type: string
           format: date-time
@@ -2329,6 +2334,11 @@ components:
           type: integer
         normalStock:
           type: integer
+        supplierIds:
+          type: array
+          items:
+            type: integer
+            format: int64
     ChecklistTemplateSubItem:
       type: object
       required:
@@ -2577,6 +2587,7 @@ components:
         - name
         - address
         - mapsLink
+        - isOnline
         - createdAt
       properties:
         id:
@@ -2590,6 +2601,8 @@ components:
           type: string
         mapsLink:
           type: string
+        isOnline:
+          type: boolean
         deletedAt:
           type: string
           format: date-time
@@ -2602,6 +2615,7 @@ components:
         - name
         - address
         - mapsLink
+        - isOnline
       properties:
         name:
           type: string
@@ -2611,6 +2625,8 @@ components:
           type: string
         mapsLink:
           type: string
+        isOnline:
+          type: boolean
     Wallet:
       type: object
       required:
@@ -4169,6 +4185,7 @@ components:
         - purchaseUnitSize
         - purchaseQuantity
         - estimatedCost
+        - suppliers
       properties:
         materialId:
           type: integer
@@ -4189,6 +4206,10 @@ components:
           type: integer
         estimatedCost:
           type: number
+        suppliers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Supplier'
     PurchaseList:
       type: object
       required:

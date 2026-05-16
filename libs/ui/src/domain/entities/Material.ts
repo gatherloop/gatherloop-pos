@@ -1,3 +1,5 @@
+import { Supplier } from './Supplier';
+
 export type Material = {
   id: number;
   name: string;
@@ -9,6 +11,7 @@ export type Material = {
   purchaseUnitSize: number;
   minimumStock: number;
   normalStock: number;
+  suppliers: Supplier[];
   createdAt: string;
 };
 
@@ -21,4 +24,5 @@ export type MaterialForm = {
   purchaseUnitSize: number;
   minimumStock: number;
   normalStock: number;
+  supplierIds: number[];
 };

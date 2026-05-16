@@ -13,6 +13,7 @@ type Material struct {
 	PurchaseUnitSize float32
 	MinimumStock     int
 	NormalStock      int
+	Suppliers        []Supplier
 	DeletedAt        *time.Time
 	CreatedAt        time.Time
 }

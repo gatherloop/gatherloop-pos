@@ -1,7 +1,23 @@
-import { Field, FormErrorBanner, InputText, InputNumber, MarkdownEditor } from '../base';
-import { MaterialForm } from '../../../domain';
-import { FormProvider, UseFormReturn } from 'react-hook-form';
-import { Button, Form, SizableText, Spinner } from 'tamagui';
+import {
+  Field,
+  FormErrorBanner,
+  InputText,
+  InputNumber,
+  MarkdownEditor,
+} from '../base';
+import { MaterialForm, Supplier } from '../../../domain';
+import { Controller, FormProvider, UseFormReturn } from 'react-hook-form';
+import {
+  Button,
+  Checkbox,
+  Form,
+  Separator,
+  SizableText,
+  Spinner,
+  XStack,
+  YStack,
+} from 'tamagui';
+import { Check } from '@tamagui/lucide-icons';
 
 export type MaterialFormViewProps = {
   form: UseFormReturn<MaterialForm>;
@@ -9,6 +25,7 @@ export type MaterialFormViewProps = {
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   serverError?: string;
+  suppliers?: Supplier[];
 };
 
 export const MaterialFormView = ({
@@ -17,6 +34,7 @@ export const MaterialFormView = ({
   isSubmitDisabled,
   isSubmitting,
   serverError,
+  suppliers = [],
 }: MaterialFormViewProps) => {
   return (
     <FormProvider {...form}>
@@ -36,7 +54,8 @@ export const MaterialFormView = ({
         </Field>
         <Field name="purchaseUnitSize" label="Purchase Unit Size">
           <SizableText size="$2" color="$gray10">
-            How many recipe units are in 1 purchase unit (e.g. 1000 if unit=Gram and purchase unit=Kg)
+            How many recipe units are in 1 purchase unit (e.g. 1000 if
+            unit=Gram and purchase unit=Kg)
           </SizableText>
           <InputNumber fractionDigit={2} />
         </Field>
@@ -51,6 +70,64 @@ export const MaterialFormView = ({
             defaultMode={form.getValues('description') ? 'preview' : 'edit'}
           />
         </Field>
+
+        {suppliers.length > 0 && (
+          <>
+            <Separator />
+            <SizableText size="$4" fontWeight="bold">
+              Suppliers
+            </SizableText>
+            <Controller
+              control={form.control}
+              name="supplierIds"
+              render={({ field: { value, onChange } }) => (
+                <YStack gap="$2">
+                  {suppliers.map((supplier) => {
+                    const checked = value?.includes(supplier.id) ?? false;
+                    return (
+                      <XStack
+                        key={supplier.id}
+                        gap="$3"
+                        alignItems="center"
+                        onPress={() => {
+                          const next = checked
+                            ? (value ?? []).filter((id) => id !== supplier.id)
+                            : [...(value ?? []), supplier.id];
+                          onChange(next);
+                        }}
+                      >
+                        <Checkbox
+                          id={`supplier-${supplier.id}`}
+                          checked={checked}
+                          onCheckedChange={(val) => {
+                            const next = val
+                              ? [...(value ?? []), supplier.id]
+                              : (value ?? []).filter(
+                                  (id) => id !== supplier.id
+                                );
+                            onChange(next);
+                          }}
+                        >
+                          <Checkbox.Indicator>
+                            <Check />
+                          </Checkbox.Indicator>
+                        </Checkbox>
+                        <YStack flex={1}>
+                          <SizableText>{supplier.name}</SizableText>
+                          <SizableText size="$2" color="$gray10">
+                            {supplier.isOnline ? 'Online' : 'Offline'} •{' '}
+                            {supplier.address}
+                          </SizableText>
+                        </YStack>
+                      </XStack>
+                    );
+                  })}
+                </YStack>
+              )}
+            />
+          </>
+        )}
+
         <Button
           disabled={isSubmitDisabled}
           onPress={form.handleSubmit(onSubmit)}

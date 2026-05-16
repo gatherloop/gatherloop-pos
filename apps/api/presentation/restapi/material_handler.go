@@ -79,7 +79,7 @@ func (handler MaterialHandler) CreateMaterial(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	material, usecaseErr := handler.usecase.CreateMaterial(ctx, ToMaterial(materialRequest))
+	material, usecaseErr := handler.usecase.CreateMaterial(ctx, ToMaterial(materialRequest), materialRequest.SupplierIds)
 	if usecaseErr != nil {
 		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
@@ -108,7 +108,7 @@ func (handler MaterialHandler) UpdateMaterialById(w http.ResponseWriter, r *http
 		return
 	}
 
-	material, usecaseErr := handler.usecase.UpdateMaterialById(ctx, ToMaterial(materialRequest), id)
+	material, usecaseErr := handler.usecase.UpdateMaterialById(ctx, ToMaterial(materialRequest), id, materialRequest.SupplierIds)
 	if usecaseErr != nil {
 		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
