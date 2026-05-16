@@ -34,26 +34,25 @@ Introduce two new concepts on top of the existing `Material` model:
 
 | Concept | Description |
 |---|---|
-| **Stock Check** | A dated snapshot, recorded by the closing crew, of how much of each material is currently in the storeroom. Equivalent to "Closing Stock Count for 2026-05-15". |
-| **Stock Check Item** | A row inside a Stock Check: `material_id` + `current_stock` (in **purchase units**, e.g. "1.5 sacks"). One row per material counted. |
-| **Purchase List** | A **computed, non-persisted** view derived from the most recent Stock Check + each material's `minimum_stock` / `normal_stock` / `purchase_unit_size`. Tells the opening crew what to buy and how much. |
+| **Stock Check** | A dated record, created by the closing crew, of how much of each material is currently in the storeroom. Equivalent to "Closing Stock Count for 2026-05-15". Covers **every** material in the catalog. |
+| **Stock Check Item** | One row per material inside a Stock Check: `material_id` + `current_stock` (in **purchase units**, integer). Also **snapshots** the material's name, price, purchase unit, purchase unit size, minimum stock, and normal stock at the time the check is created — so the derived purchase list remains stable over time even if the manager later edits the material. |
+| **Purchase List** | A **computed, non-persisted** view derived from a **specific** Stock Check (via the snapshotted fields on its items). Tells the crew what to buy and how much. Surfaced as a per-row action on the Stock Check list — there is no separate "opening" route. |
 
-Material itself is extended with four new fields (see FR-1).
+Material itself is extended with four new fields (see FR-1) that configure the **next** Stock Check.
 
-> **Unit convention.** All three stock-policy values (`minimum_stock`, `normal_stock`, `current_stock`) are expressed in **purchase units**, not recipe units. Rationale: when the closing crew physically counts the storeroom they see "3 sacks, 1.5 boxes", not "3000 grams, 1500 mL" — counting and configuring in purchase units removes a mental conversion and lets policy ("min 2 sacks") read directly against the count. The recipe/variant module is unaffected: it continues to consume materials in recipe units, and `price` continues to be price-per-recipe-unit. `purchase_unit_size` is what bridges the two when we need an estimated cost.
+> **Unit conventions.** The three stock-policy values (`minimum_stock`, `normal_stock`, `current_stock`) are expressed in **purchase units** and are **integers**. Rationale: the staff is instructed to remove only whole containers from the storeroom (no opened/partially-used bags counted), and managers configure policy in the same units they buy in ("min 2 sacks, normal 5 sacks"). The recipe/variant module is unaffected: it continues to consume materials in recipe units, and `price` continues to be price-per-recipe-unit. `purchase_unit_size` (float) is what bridges the two when we compute the estimated cost.
 
 ### Core Rule (Purchase Calculation)
 
-For each material `m` in the latest Stock Check (all stock values in purchase units):
+For each `StockCheckItem` in a Stock Check, reading the snapshotted fields on that item:
 
 ```
-if current_stock <= minimum_stock:
-    needed_purchase_units = ceil(normal_stock - current_stock)
-    needed_recipe_units   = needed_purchase_units * purchase_unit_size
-    estimated_cost        = needed_recipe_units * price
+if current_stock <= minimum_stock AND normal_stock > minimum_stock:
+    purchase_quantity = normal_stock - current_stock          // integer, purchase units
+    estimated_cost    = purchase_quantity * purchase_unit_size * price
 ```
 
-Materials whose `current_stock > minimum_stock` are **not** included in the purchase list. Materials missing from the latest Stock Check are surfaced separately as "not counted" so the crew can decide whether to skip or count now.
+Items whose `current_stock > minimum_stock` are **not** included in the purchase list. Items whose policy is unconfigured (`normal_stock <= minimum_stock`) are also excluded — they're silently ignored until a manager sets a real policy on the material.
 
 ---
 
@@ -67,58 +66,70 @@ Add the following fields to `Material`:
 |---|---|---|---|
 | `purchase_unit` | string | yes | Human-readable purchase unit, e.g. `"Kg"`, `"Box"`, `"Bottle"`. Displayed everywhere stock is shown. |
 | `purchase_unit_size` | float | yes | How many **recipe units** are inside one purchase unit. E.g. if `unit = "Gram"` and `purchase_unit = "Kg"`, then `purchase_unit_size = 1000`. Used only to convert a purchase-unit shortage into recipe units for the estimated-cost calculation. Must be > 0. |
-| `minimum_stock` | float | yes | Threshold in **purchase units**. If current stock falls at or below this, the material must be restocked. Must be ≥ 0. |
-| `normal_stock` | float | yes | Target stock level in **purchase units** to reach after restocking. Must be `> minimum_stock`. |
+| `minimum_stock` | int | yes | Threshold in **whole purchase units**. If current stock falls at or below this, the material must be restocked. Must be ≥ 0. |
+| `normal_stock` | int | yes | Target stock level in **whole purchase units** to reach after restocking. Must be `> minimum_stock` for the material to appear on any purchase list. |
 
 **Rules:**
-- Existing materials must be backfilled with sensible defaults during migration so the API does not break (`purchase_unit = unit`, `purchase_unit_size = 1`, `minimum_stock = 0`, `normal_stock = 0`). They will be excluded from the purchase list until a manager edits them.
-- Validation: `purchase_unit_size > 0`, `normal_stock > minimum_stock`, `minimum_stock ≥ 0`.
+- Existing materials are backfilled with sensible defaults during migration so the API does not break (`purchase_unit = unit`, `purchase_unit_size = 1`, `minimum_stock = 0`, `normal_stock = 0`). They will be excluded from purchase lists until a manager edits them — this is intentional, not an error state.
+- Validation: `purchase_unit_size > 0`, `minimum_stock ≥ 0`, `normal_stock > minimum_stock` is **not** enforced at the material level (we allow `normal_stock = minimum_stock = 0` to mean "policy not configured yet"). The purchase-list calculation simply excludes such materials.
 - `price` keeps its existing semantic ("price per recipe unit") — it is **not** renamed, to avoid breaking the variant/recipe module.
 
 ### FR-2: Stock Check management
 
-The system shall let any logged-in user create a Stock Check, and list/view past Stock Checks.
+The system shall let any logged-in user create, view, edit, and soft-delete Stock Checks.
 
 **A Stock Check consists of:**
 - `id`
 - `check_date` (date, required, defaults to today). Stored as a date, not a timestamp.
 - `note` (optional free text — e.g. "weekend, dry storage only").
 - `created_at`, `created_by` (user id), `deleted_at`.
-- A list of **Stock Check Items**, each with `material_id` + `current_stock` (in **purchase units**, `≥ 0`). Fractional values are allowed (e.g. `1.5` for a half-empty second sack).
+- A list of **Stock Check Items** — one per non-deleted material at the moment the check was created.
+
+**A Stock Check Item consists of:**
+- `id`, `stock_check_id`, `material_id`
+- `current_stock` (int, ≥ 0, purchase units)
+- **Snapshotted material fields** (frozen at item creation time, dedicated columns each):
+  - `material_name` (string)
+  - `price_snapshot` (float, per recipe unit)
+  - `purchase_unit_snapshot` (string)
+  - `purchase_unit_size_snapshot` (float)
+  - `minimum_stock_snapshot` (int)
+  - `normal_stock_snapshot` (int)
 
 **Rules:**
-- One Stock Check per `check_date` (uniqueness on `check_date`, soft-deleted rows excluded). If the crew needs to correct a count, they edit the existing Stock Check rather than creating a duplicate.
-- The create screen pre-loads **all non-deleted materials**, shows each material's `purchase_unit` next to its input as a label (e.g. *"Tepung … ___ Kg"*), and lets the crew enter a purchase-unit value for each. Materials without a value are simply not stored as items (treated as "not counted").
-- Stock Check Items snapshot the `material_id` only; they do not snapshot price/min/normal — those are read live when the purchase list is computed. Rationale: the purchase list is meant to be acted on the next morning, before policies drift.
-- Soft delete is supported. A deleted Stock Check is hidden from the "latest" lookup used by the purchase list.
+- One Stock Check per `check_date` (uniqueness on `check_date`, soft-deleted rows excluded). To correct a count, the crew edits the existing Stock Check rather than creating a duplicate.
+- On `POST /stock-checks`, the backend reads the current `materials` table and emits one Stock Check Item per non-deleted material, populating both `current_stock` (from the request body, defaulting to `0` if the client omits a given material) and the six snapshot fields (from the live material row).
+- The create screen pre-loads **all non-deleted materials** with each input defaulting to `0`, and shows each material's `purchase_unit` as the input suffix (e.g. *"Tepung … `___ Kg`"*). The crew adjusts only the rows where they actually counted something. There is no "not counted" concept — every material gets an item, with `0` meaning "all gone".
+- Editing a Stock Check (`PUT`) updates `current_stock` values on the existing items only. The snapshot fields are **not** refreshed on edit — they remain frozen at the date of the original creation, which is the whole point of the snapshot.
+- Soft delete is supported. Deleted Stock Checks are excluded from the default list view but accessible to admin-style endpoints if needed later.
 
-### FR-3: Purchase List (opening view)
+### FR-3: Purchase List (per Stock Check)
 
-The system shall expose a single endpoint and screen that returns the **purchase list for today**, computed from the **most recent non-deleted Stock Check**.
+The system shall expose `GET /stock-checks/{id}/purchase-list` that computes the purchase list for one specific Stock Check from its snapshotted items.
 
-**Response payload per row** (all stock values in purchase units):
+**Response payload per row** (all stock values in purchase units, all snapshot-derived):
 - `material_id`, `material_name`
 - `current_stock`, `minimum_stock`, `normal_stock`
 - `purchase_unit`, `purchase_unit_size`
-- `purchase_quantity` — whole purchase units to buy (= `ceil(normal_stock - current_stock)`)
+- `purchase_quantity` (= `normal_stock - current_stock`, integer)
 - `estimated_cost` (= `purchase_quantity * purchase_unit_size * price`)
 
 **Top-level metadata:**
-- `stock_check_id`, `stock_check_date` (which snapshot this was computed from)
+- `stock_check_id`, `stock_check_date`
 - `total_estimated_cost`
-- `not_counted_materials`: list of `{material_id, material_name}` for materials that exist in the catalog but were not in the latest Stock Check. The UI surfaces these separately as a warning.
 
 **Rules:**
-- Only materials with `current_stock <= minimum_stock` AND `normal_stock > minimum_stock` (i.e. policy has been configured) are returned in the main list.
-- If there is no Stock Check yet, the endpoint returns an empty list with a flag the UI can render ("No closing count recorded — please do a stock check first").
-- Printing is **out of scope** for this PRD. The screen will simply render the list cleanly; a print/export action can be layered on later.
+- Only items where `current_stock <= minimum_stock` AND `normal_stock > minimum_stock` are returned. All other items are silently excluded.
+- The endpoint is computed on demand — no `purchase_lists` table exists. The snapshot lives on the Stock Check Items, which is enough.
+- Because everything is computed from snapshots, the same Stock Check returns the same purchase list forever, regardless of subsequent edits to the underlying Material rows.
+- Printing is **out of scope** for this PRD; the screen will render the list cleanly so an export action can be layered on later.
 
 ### FR-4: Navigation & Discoverability
 
-- Add an "Inventory" entry to the main nav with two sub-routes:
-  - **Closing → Record Stock** (FR-2 create flow)
-  - **Opening → Purchase List** (FR-3 view)
-- A "Stock Check History" list is available from the same nav so managers can audit past counts.
+- One main-nav entry: **"Stock Check"**.
+- Clicking it opens the Stock Check list (paginated, sorted by `check_date` desc).
+- Each row has a triple-dot menu: **View Details**, **Edit**, **View Purchase List**, **Print Purchase List** (disabled — future scope), **Delete**.
+- A "Create Stock Check" button is the primary CTA on the list page.
 
 ---
 
@@ -131,20 +142,22 @@ The system shall expose a single endpoint and screen that returns the **purchase
 - Supplier assignment per material on the purchase list.
 - Forecasting / smart reorder points beyond the simple `min → normal` rule.
 - Mobile-app-specific UX polish beyond what Tamagui shared screens give for free.
+- Tracking partially-used containers — staff are instructed to take whole containers only, so the count is always an integer count of whole containers in the storeroom.
 
 ---
 
 ## Open Questions
 
-1. Should `purchase_unit_size` allow non-integer values (e.g. a 750 mL bottle)? **Assumed yes** in this PRD (float).
-2. Should the purchase list round `purchase_quantity` up to whole purchase units, or allow fractional? **Assumed up to whole units** (ceil), since you can't buy half a sack — even though `current_stock` itself accepts fractional purchase units to reflect partially-used containers.
-3. If two Stock Checks exist for the same date (one soft-deleted), is the live one always "latest"? **Yes** — soft-deleted rows are excluded from the latest lookup.
+1. Should there be a soft constraint preventing a Stock Check from being created on a future date? **Assumed no** — we leave the `check_date` open so a manager can back-date if they forgot to log yesterday's count.
+2. If a material is added to the catalog *after* a Stock Check was created, the old Stock Check will not have a row for it. **Confirmed expected** — Stock Check items snapshot the catalog at creation time; this is the desired historical behaviour.
 
 ---
 
 # Implementation Plan — Phased PRs
 
 Each phase below is sized to land as **one reviewable PR**. Phases are ordered so that every PR keeps `main` green: the API stays backward-compatible after each merge, and no UI ships without its supporting endpoint.
+
+The plan is **four PRs**: Material extension; Stock Check API (including the per-stock-check purchase-list endpoint); Stock Check UI (list, create, edit); Purchase List screen reached via the triple-dot menu.
 
 ---
 
@@ -154,118 +167,103 @@ Each phase below is sized to land as **one reviewable PR**. Phases are ordered s
 
 **Backend**
 - Migration `000008_extend_materials_inventory.up.sql` / `.down.sql`:
-  - Add nullable columns `purchase_unit VARCHAR(64)`, `purchase_unit_size FLOAT`, `minimum_stock FLOAT`, `normal_stock FLOAT`.
+  - Add nullable columns `purchase_unit VARCHAR(64)`, `purchase_unit_size FLOAT`, `minimum_stock INT`, `normal_stock INT`.
   - Backfill existing rows: `purchase_unit = unit`, `purchase_unit_size = 1`, `minimum_stock = 0`, `normal_stock = 0`.
   - `ALTER` columns to `NOT NULL DEFAULT 0` (and `''` for `purchase_unit`) after backfill.
 - Update `apps/api/domain/material_entity.go`, `apps/api/data/mysql/material_*`, handler, transformer to include the new fields.
-- Add validation in the create/update handlers: `purchase_unit_size > 0`, `minimum_stock >= 0`, `normal_stock > minimum_stock`.
+- Add validation in the create/update handlers: `purchase_unit_size > 0`, `minimum_stock >= 0`, `normal_stock >= 0`.
 - Update `libs/api-contract/src/api.yaml` for the four new fields on the Material schema and on create/update requests. Regenerate Go + TS clients.
 - Update existing material seeds (`apps/api/seeds/`) so test data has realistic values.
 
 **Frontend**
 - Extend the `Material` entity, repository, and Zod schema in `libs/ui/src/domain/...`.
-- Add the four fields to the Material create/update form (`MaterialCreateScreen`, `MaterialUpdateScreen`) with inline help (e.g. *"Purchase unit size: how many recipe units in 1 purchase unit"*).
+- Add the four fields to the Material create/update form (`MaterialCreateScreen`, `MaterialUpdateScreen`) with inline help (e.g. *"Purchase unit size: how many recipe units in 1 purchase unit"*). Render `minimum_stock` and `normal_stock` as integer-only inputs.
 - Add `Purchase Unit`, `Min Stock`, `Normal Stock` columns to the material list table (collapsible/secondary on mobile to avoid clutter).
 
 **Acceptance**
 - Existing materials still load and edit correctly with defaulted values.
-- Creating a material with `normal_stock <= minimum_stock` returns a 400.
+- A non-integer value submitted for `minimum_stock` or `normal_stock` is rejected by the form and by the API.
 - Generated TS hooks reflect the new fields.
 
 **Estimated diff size:** ~600–900 LoC. Self-contained.
 
 ---
 
-### Phase 2 — Stock Check backend (FR-2 API)
+### Phase 2 — Stock Check API (FR-2 + FR-3 backend)
 
-**Goal:** Stand up the persistence + REST surface for Stock Checks, with no UI yet.
+**Goal:** Stand up the full backend surface — persistence, CRUD, and the on-demand purchase-list computation — with no UI yet. Folding the purchase-list endpoint into this PR keeps it small (it's just one extra handler on the same resource and shares the same fixtures) and removes the need for a follow-up backend PR.
 
 **Backend**
 - Migration `000009_create_stock_checks.up.sql` / `.down.sql`:
   - `stock_checks (id, check_date DATE NOT NULL, note TEXT NULL, created_by BIGINT, created_at, deleted_at)` with a unique partial index on `check_date` where `deleted_at IS NULL`.
-  - `stock_check_items (id, stock_check_id, material_id, current_stock FLOAT NOT NULL, created_at)` with FK to `materials` and `stock_checks` (ON DELETE CASCADE for items when the check is hard-deleted).
-- Domain layer: `StockCheck`, `StockCheckItem` entities; repository interface; usecases for `List`, `GetById`, `GetLatest`, `Create`, `Update`, `SoftDelete`.
+  - `stock_check_items (id, stock_check_id, material_id, current_stock INT NOT NULL, material_name VARCHAR(255), price_snapshot FLOAT, purchase_unit_snapshot VARCHAR(64), purchase_unit_size_snapshot FLOAT, minimum_stock_snapshot INT, normal_stock_snapshot INT, created_at)` with FK to `materials` and `stock_checks` (ON DELETE CASCADE for items when the check is hard-deleted).
+- Domain layer: `StockCheck`, `StockCheckItem`, `PurchaseList`, `PurchaseListItem` entities; repository interface; usecases for `List`, `GetById`, `Create`, `Update`, `SoftDelete`, `GetPurchaseList`.
+- `Create` usecase: read all non-deleted materials, emit one `StockCheckItem` per material (using request body for `current_stock`, defaulting to `0` when absent; reading live material fields for the six snapshot columns).
+- `GetPurchaseList` usecase: load the Stock Check and its items, filter by the rule in FR-3, compute `purchase_quantity` and `estimated_cost` per row, sum `total_estimated_cost`.
 - Data layer: GORM structs + repository implementation.
 - Presentation layer: handlers + transformers + routes:
   - `GET /stock-checks` (paginated)
-  - `GET /stock-checks/latest`
   - `GET /stock-checks/{id}`
   - `POST /stock-checks` (accepts `check_date`, `note`, and `items: [{material_id, current_stock}]`)
-  - `PUT /stock-checks/{id}` (replace items)
+  - `PUT /stock-checks/{id}` (updates `current_stock` on existing items only; snapshot fields untouched)
   - `DELETE /stock-checks/{id}` (soft delete)
+  - `GET /stock-checks/{id}/purchase-list`
 - OpenAPI spec update + regenerate clients.
 - Backend unit + handler tests mirroring the `material_*_test.go` pattern.
 
 **Acceptance**
 - `POST /stock-checks` with a duplicate `check_date` returns 409.
-- `GET /stock-checks/latest` returns the most recent non-deleted check, or 404 when none exist.
+- A new Stock Check has one item per non-deleted material, even for materials the client didn't include in the request body (their `current_stock` defaults to `0`).
+- Editing a Material's price/min/normal **after** a Stock Check exists does **not** change that Stock Check's purchase-list output.
+- For a fixture Stock Check where `tepung` was counted at `current_stock = 0`, with `minimum_stock_snapshot = 1`, `normal_stock_snapshot = 5`, `purchase_unit_snapshot = "Kg"`, `purchase_unit_size_snapshot = 1000`, `price_snapshot = 15`, `GET /stock-checks/{id}/purchase-list` returns `purchase_quantity = 5` and `estimated_cost = 5 * 1000 * 15 = 75000`.
+- An item with `minimum_stock_snapshot = normal_stock_snapshot = 0` is excluded (policy unconfigured).
 
-**Estimated diff size:** ~800–1100 LoC, almost all new files.
+**Estimated diff size:** ~1000–1300 LoC, almost all new files. Slightly above the earlier Phase 2 budget because the purchase-list endpoint comes with it, but still reviewable since it's one cohesive resource.
 
 ---
 
-### Phase 3 — Stock Check frontend (closing-night flow)
+### Phase 3 — Stock Check frontend (list + create/edit)
 
-**Goal:** Ship the screens the closing crew will actually use.
+**Goal:** Ship the screens that the closing crew uses to record nightly counts.
 
 **Frontend only**
-- `libs/ui/src/domain/...`: `StockCheck` entity, repository, usecases (`stockCheckCreate`, `stockCheckList`, `stockCheckUpdate`).
-- Screens (mirror Material screens):
-  - **StockCheckCreateScreen / Handler**: header has date picker (defaults to today) + note; body is a virtualized list of all non-deleted materials with a numeric input per row for `current_stock`, with the material's `purchase_unit` rendered as the input suffix (e.g. *"Tepung … ___ Kg"*). Submit posts to `POST /stock-checks`. Empty inputs are omitted (treated as "not counted").
-  - **StockCheckListScreen**: paginated table — date, item count, created-by; row click → detail.
-  - **StockCheckUpdateScreen**: same form as create but pre-filled.
-- Web pages: `apps/web/src/pages/stock-checks/{index.tsx, create.tsx, [id].tsx}`.
-- Nav entry: "Inventory → Record Stock" (closing) and "Inventory → Stock Check History".
-- Optimistic UI: invalidate `stock-checks/latest` cache on successful create/update so Phase 5 sees fresh data immediately.
+- `libs/ui/src/domain/...`: `StockCheck`, `StockCheckItem` entities, repository, usecases (`stockCheckCreate`, `stockCheckList`, `stockCheckUpdate`, `stockCheckDelete`).
+- Screens:
+  - **StockCheckListScreen / Handler**: paginated table — `check_date`, item count, created-by; each row has a triple-dot menu (View / Edit / View Purchase List / Print (disabled) / Delete). Primary CTA: "Create Stock Check".
+  - **StockCheckCreateScreen / Handler**: header has date picker (defaults to today) + note; body is a virtualized list of all non-deleted materials with an integer input per row for `current_stock` (defaulted to `0`), with the material's `purchase_unit` rendered as the input suffix. Submit posts to `POST /stock-checks`.
+  - **StockCheckUpdateScreen / Handler**: same form as create but pre-filled from the existing items. Only `current_stock` is editable.
+- Web pages: `apps/web/src/pages/stock-checks/{index.tsx, create.tsx, [id].tsx, [id]/edit.tsx}`.
+- Nav entry: a single "Stock Check" item in the main nav.
+- React Query: invalidate the stock-check list cache on successful create/update/delete.
 
 **Acceptance**
-- Manual smoke: create a stock check from the web app, see it in the history list, edit it, soft-delete it.
+- Manual smoke: create a Stock Check from the web app (with most rows left at `0`), see it in the list, edit one row's count, soft-delete it.
+- Non-integer values in the count input are rejected client-side.
 
 **Estimated diff size:** ~700–1000 LoC.
 
 ---
 
-### Phase 4 — Purchase List backend (FR-3 API)
+### Phase 4 — Purchase List screen (FR-3 frontend)
 
-**Goal:** Add the single computed endpoint that the morning screen will consume.
-
-**Backend**
-- New domain object `PurchaseList` (in-memory only — no migration).
-- New usecase `PurchaseListGet` that:
-  1. Loads the latest non-deleted Stock Check (and its items).
-  2. Loads all non-deleted Materials.
-  3. Computes the per-row payload defined in FR-3, plus `not_counted_materials`.
-- New endpoint `GET /purchase-list` (optional query `?stock_check_id=...` so a manager can view the list as of an older check; defaults to latest).
-- OpenAPI spec update + regenerate clients.
-- Unit tests covering: empty-state (no stock check), all-above-minimum (empty list), partial counting (not-counted surfaced), `ceil()` rounding of `purchase_quantity`, materials with unconfigured policy (`normal_stock == 0`) excluded.
-
-**Acceptance**
-- For a fixture stock check where `tepung` was counted at `current_stock = 0.5` (Kg-sacks), with `minimum_stock = 1`, `normal_stock = 5`, `purchase_unit = "Kg"`, `purchase_unit_size = 1000` (grams per Kg), `price = 15` (per gram), the endpoint returns `purchase_quantity = 5` and `estimated_cost = 5 * 1000 * 15 = 75000`.
-- A material with `current_stock = 1.2`, `minimum_stock = 1` is excluded from the list (above minimum).
-
-**Estimated diff size:** ~400–600 LoC.
-
----
-
-### Phase 5 — Purchase List frontend (opening flow)
-
-**Goal:** Ship FR-3's screen and close out the user-facing feature.
+**Goal:** Ship FR-3's screen, reached from the Stock Check list's triple-dot menu, and close out the user-facing feature.
 
 **Frontend only**
-- `libs/ui/src/domain/...`: `PurchaseList` entity, repository, usecase.
+- `libs/ui/src/domain/...`: `PurchaseList`, `PurchaseListItem` entities, repository, usecase (`purchaseListGet` keyed by `stockCheckId`).
 - **PurchaseListScreen / Handler**:
-  - Header shows which stock check it was computed from (`"Based on closing count for 2026-05-14"`) and total estimated cost.
-  - Main table: material name, current / min / normal, purchase qty + unit, estimated cost.
-  - Secondary section: "Not counted last night" with a CTA back to Record Stock.
-  - Empty state: "No closing count recorded yet — record stock first."
-- Web page: `apps/web/src/pages/inventory/purchase-list.tsx`. Mobile screen wired through the shared handler.
-- Nav entry: "Inventory → Purchase List" (opening).
-- E2E smoke test (Playwright, web only) covering: create stock check with low stock → open purchase list → assert expected rows.
+  - Header: `"Purchase list for closing count of {check_date}"` plus `total_estimated_cost`.
+  - Main table: material name, `current_stock`, `minimum_stock`, `normal_stock`, `purchase_quantity` + `purchase_unit`, `estimated_cost`.
+  - Empty state (when no items meet the threshold): "Nothing to restock — everything is above its minimum."
+  - "Print" button rendered but disabled with a tooltip — explicitly future scope.
+- Web page: `apps/web/src/pages/stock-checks/[id]/purchase-list.tsx`. Mobile screen wired through the shared handler.
+- Wire the **View Purchase List** triple-dot action from the Stock Check list (added in Phase 3) to navigate here.
+- E2E smoke test (Playwright, web only): create a Stock Check with several materials at `0`, open its Purchase List, assert expected rows and total.
 
 **Acceptance**
-- Manual smoke: full happy path (configure material with min/normal/purchase fields → record closing stock under the minimum → next session, open Purchase List → verify correct quantities and cost).
+- Manual smoke: full happy path (configure material with min/normal/purchase fields → create Stock Check leaving most rows at `0` → open Purchase List via triple-dot → verify correct quantities and cost).
+- Subsequent edits to a Material's `price`/`minimum_stock`/`normal_stock` do not change an already-created Stock Check's Purchase List (snapshot is honoured end-to-end).
 
-**Estimated diff size:** ~500–800 LoC.
+**Estimated diff size:** ~500–700 LoC.
 
 ---
 
@@ -274,9 +272,8 @@ Each phase below is sized to land as **one reviewable PR**. Phases are ordered s
 | Phase | Layer | Depends on | Ship-without-UI-safe? |
 |---|---|---|---|
 | 1 | Material extension (full-stack) | — | Yes (additive) |
-| 2 | Stock Check API | 1 | Yes (no UI yet) |
-| 3 | Stock Check UI | 2 | — |
-| 4 | Purchase List API | 1, 2 | Yes |
-| 5 | Purchase List UI | 4 | — |
+| 2 | Stock Check API + Purchase List API | 1 | Yes (no UI yet) |
+| 3 | Stock Check UI (list + create + edit) | 2 | — |
+| 4 | Purchase List UI (per-row) | 2, 3 | — |
 
-After Phase 3 the cafe can already start recording closing counts (gathering data) before the morning view ships. After Phase 5, the feature is complete per this PRD.
+After Phase 3 the cafe can already start recording closing counts (gathering data) before the morning view ships. After Phase 4, the feature is complete per this PRD.
