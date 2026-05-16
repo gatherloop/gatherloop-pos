@@ -6,3 +6,4 @@ export * from './expenseListQuery';
 export * from './transactionStatisticListQuery';
 export * from './rentalListQuery';
 export * from './supplierListQuery';
+export * from './stockCheckListQuery';

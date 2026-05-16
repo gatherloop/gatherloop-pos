@@ -21,3 +21,5 @@ export * from './transactionStatisticListQuery';
 export * from './variant';
 export * from './variantListQuery';
 export * from './wallet';
+export * from './stockCheck';
+export * from './stockCheckListQuery';
