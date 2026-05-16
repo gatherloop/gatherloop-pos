@@ -11,6 +11,10 @@ export function toMaterial(material: ApiMaterial): Material {
     unit: material.unit,
     description: material.description ?? '',
     weeklyUsage: material.weeklyUsage,
+    purchaseUnit: material.purchaseUnit,
+    purchaseUnitSize: material.purchaseUnitSize,
+    minimumStock: material.minimumStock,
+    normalStock: material.normalStock,
   };
 }
 
@@ -20,5 +24,9 @@ export function toApiMaterial(form: MaterialForm) {
     price: form.price,
     unit: form.unit,
     description: form.description,
+    purchaseUnit: form.purchaseUnit,
+    purchaseUnitSize: form.purchaseUnitSize,
+    minimumStock: form.minimumStock,
+    normalStock: form.normalStock,
   };
 }

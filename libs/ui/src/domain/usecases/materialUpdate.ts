@@ -53,6 +53,10 @@ export class MaterialUpdateUsecase extends Usecase<
       price: this.params.material?.price ?? 0,
       unit: this.params.material?.unit ?? '',
       description: this.params.material?.description ?? '',
+      purchaseUnit: this.params.material?.purchaseUnit ?? '',
+      purchaseUnitSize: this.params.material?.purchaseUnitSize ?? 1,
+      minimumStock: this.params.material?.minimumStock ?? 0,
+      normalStock: this.params.material?.normalStock ?? 0,
     };
 
     return {
@@ -153,6 +157,11 @@ export class MaterialUpdateUsecase extends Usecase<
                 name: material.name,
                 price: material.price,
                 unit: material.unit,
+                description: material.description,
+                purchaseUnit: material.purchaseUnit,
+                purchaseUnitSize: material.purchaseUnitSize,
+                minimumStock: material.minimumStock,
+                normalStock: material.normalStock,
               },
             })
           )

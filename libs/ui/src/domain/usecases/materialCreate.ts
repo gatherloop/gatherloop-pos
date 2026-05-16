@@ -40,6 +40,10 @@ export class MaterialCreateUsecase extends Usecase<
       price: 0,
       unit: '',
       description: '',
+      purchaseUnit: '',
+      purchaseUnitSize: 1,
+      minimumStock: 0,
+      normalStock: 0,
     };
     return {
       type: 'loaded',
