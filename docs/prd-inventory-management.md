@@ -80,7 +80,6 @@ The system shall let any logged-in user create, view, edit, and soft-delete Stoc
 
 **A Stock Check consists of:**
 - `id`
-- `check_date` (date, required, defaults to today). Stored as a date, not a timestamp.
 - `note` (optional free text — e.g. "weekend, dry storage only").
 - `created_at`, `created_by` (user id), `deleted_at`.
 - A list of **Stock Check Items** — one per non-deleted material at the moment the check was created.
@@ -90,17 +89,16 @@ The system shall let any logged-in user create, view, edit, and soft-delete Stoc
 - `current_stock` (int, ≥ 0, purchase units)
 - **Snapshotted material fields** (frozen at item creation time, dedicated columns each):
   - `material_name` (string)
-  - `price_snapshot` (float, per recipe unit)
-  - `purchase_unit_snapshot` (string)
-  - `purchase_unit_size_snapshot` (float)
-  - `minimum_stock_snapshot` (int)
-  - `normal_stock_snapshot` (int)
+  - `price` (float, per recipe unit)
+  - `purchase_unit` (string)
+  - `purchase_unit_size` (float)
+  - `minimum_stock` (int)
+  - `normal_stock` (int)
 
 **Rules:**
-- One Stock Check per `check_date` (uniqueness on `check_date`, soft-deleted rows excluded). To correct a count, the crew edits the existing Stock Check rather than creating a duplicate.
-- On `POST /stock-checks`, the backend reads the current `materials` table and emits one Stock Check Item per non-deleted material, populating both `current_stock` (from the request body, defaulting to `0` if the client omits a given material) and the six snapshot fields (from the live material row).
+- On `POST /stock-checks`, the backend reads the current `materials` table and emits one Stock Check Item per non-deleted material, populating both `current_stock` (from the request body, defaulting to `0` if the client omits a given material) and the six snapshot fields (from the live material row). Items are saved in a single operation using GORM's `FullSaveAssociations` mode.
 - The create screen pre-loads **all non-deleted materials** with each input defaulting to `0`, and shows each material's `purchase_unit` as the input suffix (e.g. *"Tepung … `___ Kg`"*). The crew adjusts only the rows where they actually counted something. There is no "not counted" concept — every material gets an item, with `0` meaning "all gone".
-- Editing a Stock Check (`PUT`) updates `current_stock` values on the existing items only. The snapshot fields are **not** refreshed on edit — they remain frozen at the date of the original creation, which is the whole point of the snapshot.
+- Editing a Stock Check (`PUT`) updates `current_stock` values on the existing items only. The snapshot fields are **not** refreshed on edit — they remain frozen at `created_at` time, which is the whole point of the snapshot. Updates also use `FullSaveAssociations` mode.
 - Soft delete is supported. Deleted Stock Checks are excluded from the default list view but accessible to admin-style endpoints if needed later.
 
 ### FR-3: Purchase List (per Stock Check)
@@ -115,7 +113,7 @@ The system shall expose `GET /stock-checks/{id}/purchase-list` that computes the
 - `estimated_cost` (= `purchase_quantity * purchase_unit_size * price`)
 
 **Top-level metadata:**
-- `stock_check_id`, `stock_check_date`
+- `stock_check_id`, `stock_check_created_at`
 - `total_estimated_cost`
 
 **Rules:**
@@ -127,7 +125,7 @@ The system shall expose `GET /stock-checks/{id}/purchase-list` that computes the
 ### FR-4: Navigation & Discoverability
 
 - One main-nav entry: **"Stock Check"**.
-- Clicking it opens the Stock Check list (paginated, sorted by `check_date` desc).
+- Clicking it opens the Stock Check list (paginated, sorted by `created_at` desc).
 - Each row has a triple-dot menu: **View Details**, **Edit**, **View Purchase List**, **Print Purchase List** (disabled — future scope), **Delete**.
 - A "Create Stock Check" button is the primary CTA on the list page.
 
@@ -148,8 +146,7 @@ The system shall expose `GET /stock-checks/{id}/purchase-list` that computes the
 
 ## Open Questions
 
-1. Should there be a soft constraint preventing a Stock Check from being created on a future date? **Assumed no** — we leave the `check_date` open so a manager can back-date if they forgot to log yesterday's count.
-2. If a material is added to the catalog *after* a Stock Check was created, the old Stock Check will not have a row for it. **Confirmed expected** — Stock Check items snapshot the catalog at creation time; this is the desired historical behaviour.
+1. If a material is added to the catalog *after* a Stock Check was created, the old Stock Check will not have a row for it. **Confirmed expected** — Stock Check items snapshot the catalog at creation time; this is the desired historical behaviour.
 
 ---
 
@@ -195,16 +192,16 @@ The plan is **four PRs**: Material extension; Stock Check API (including the per
 
 **Backend**
 - Migration `000009_create_stock_checks.up.sql` / `.down.sql`:
-  - `stock_checks (id, check_date DATE NOT NULL, note TEXT NULL, created_by BIGINT, created_at, deleted_at)` with a unique partial index on `check_date` where `deleted_at IS NULL`.
-  - `stock_check_items (id, stock_check_id, material_id, current_stock INT NOT NULL, material_name VARCHAR(255), price_snapshot FLOAT, purchase_unit_snapshot VARCHAR(64), purchase_unit_size_snapshot FLOAT, minimum_stock_snapshot INT, normal_stock_snapshot INT, created_at)` with FK to `materials` and `stock_checks` (ON DELETE CASCADE for items when the check is hard-deleted).
-- Domain layer: `StockCheck`, `StockCheckItem`, `PurchaseList`, `PurchaseListItem` entities; repository interface; usecases for `List`, `GetById`, `Create`, `Update`, `SoftDelete`, `GetPurchaseList`.
-- `Create` usecase: read all non-deleted materials, emit one `StockCheckItem` per material (using request body for `current_stock`, defaulting to `0` when absent; reading live material fields for the six snapshot columns).
+  - `stock_checks (id, note TEXT NULL, created_by BIGINT, created_at, deleted_at)`.
+  - `stock_check_items (id, stock_check_id, material_id, current_stock INT NOT NULL, material_name VARCHAR(255), price FLOAT, purchase_unit VARCHAR(64), purchase_unit_size FLOAT, minimum_stock INT, normal_stock INT, created_at)` with FK to `materials` and `stock_checks` (ON DELETE CASCADE for items when the check is hard-deleted).
+- Domain layer: `StockCheck`, `StockCheckItem`, `PurchaseList`, `PurchaseListItem` entities; repository interface; usecases for `List`, `GetById`, `Create`, `Update`, `SoftDelete`, `GetPurchaseList`. The `stockCheckRepository` variable name is used consistently throughout the usecase layer.
+- `Create` usecase: read all non-deleted materials, emit one `StockCheckItem` per material (using request body for `current_stock`, defaulting to `0` when absent; reading live material fields for the six snapshot columns). Persist via GORM `FullSaveAssociations` — no manual item insertion loop.
 - `GetPurchaseList` usecase: load the Stock Check and its items, filter by the rule in FR-3, compute `purchase_quantity` and `estimated_cost` per row, sum `total_estimated_cost`.
 - Data layer: GORM structs + repository implementation.
 - Presentation layer: handlers + transformers + routes:
   - `GET /stock-checks` (paginated)
   - `GET /stock-checks/{id}`
-  - `POST /stock-checks` (accepts `check_date`, `note`, and `items: [{material_id, current_stock}]`)
+  - `POST /stock-checks` (accepts `note` and `items: [{material_id, current_stock}]`)
   - `PUT /stock-checks/{id}` (updates `current_stock` on existing items only; snapshot fields untouched)
   - `DELETE /stock-checks/{id}` (soft delete)
   - `GET /stock-checks/{id}/purchase-list`
@@ -212,11 +209,10 @@ The plan is **four PRs**: Material extension; Stock Check API (including the per
 - Backend unit + handler tests mirroring the `material_*_test.go` pattern.
 
 **Acceptance**
-- `POST /stock-checks` with a duplicate `check_date` returns 409.
 - A new Stock Check has one item per non-deleted material, even for materials the client didn't include in the request body (their `current_stock` defaults to `0`).
 - Editing a Material's price/min/normal **after** a Stock Check exists does **not** change that Stock Check's purchase-list output.
-- For a fixture Stock Check where `tepung` was counted at `current_stock = 0`, with `minimum_stock_snapshot = 1`, `normal_stock_snapshot = 5`, `purchase_unit_snapshot = "Kg"`, `purchase_unit_size_snapshot = 1000`, `price_snapshot = 15`, `GET /stock-checks/{id}/purchase-list` returns `purchase_quantity = 5` and `estimated_cost = 5 * 1000 * 15 = 75000`.
-- An item with `minimum_stock_snapshot = normal_stock_snapshot = 0` is excluded (policy unconfigured).
+- For a fixture Stock Check where `tepung` was counted at `current_stock = 0`, with `minimum_stock = 1`, `normal_stock = 5`, `purchase_unit = "Kg"`, `purchase_unit_size = 1000`, `price = 15`, `GET /stock-checks/{id}/purchase-list` returns `purchase_quantity = 5` and `estimated_cost = 5 * 1000 * 15 = 75000`.
+- An item with `minimum_stock = normal_stock = 0` is excluded (policy unconfigured).
 
 **Estimated diff size:** ~1000–1300 LoC, almost all new files. Slightly above the earlier Phase 2 budget because the purchase-list endpoint comes with it, but still reviewable since it's one cohesive resource.
 
@@ -229,8 +225,8 @@ The plan is **four PRs**: Material extension; Stock Check API (including the per
 **Frontend only**
 - `libs/ui/src/domain/...`: `StockCheck`, `StockCheckItem` entities, repository, usecases (`stockCheckCreate`, `stockCheckList`, `stockCheckUpdate`, `stockCheckDelete`).
 - Screens:
-  - **StockCheckListScreen / Handler**: paginated table — `check_date`, item count, created-by; each row has a triple-dot menu (View / Edit / View Purchase List / Print (disabled) / Delete). Primary CTA: "Create Stock Check".
-  - **StockCheckCreateScreen / Handler**: header has date picker (defaults to today) + note; body is a virtualized list of all non-deleted materials with an integer input per row for `current_stock` (defaulted to `0`), with the material's `purchase_unit` rendered as the input suffix. Submit posts to `POST /stock-checks`.
+  - **StockCheckListScreen / Handler**: paginated table — `created_at` (displayed as date), item count, created-by; each row has a triple-dot menu (View / Edit / View Purchase List / Print (disabled) / Delete). Primary CTA: "Create Stock Check".
+  - **StockCheckCreateScreen / Handler**: header has a note input; body is a virtualized list of all non-deleted materials with an integer input per row for `current_stock` (defaulted to `0`), with the material's `purchase_unit` rendered as the input suffix. Submit posts to `POST /stock-checks`.
   - **StockCheckUpdateScreen / Handler**: same form as create but pre-filled from the existing items. Only `current_stock` is editable.
 - Web pages: `apps/web/src/pages/stock-checks/{index.tsx, create.tsx, [id].tsx, [id]/edit.tsx}`.
 - Nav entry: a single "Stock Check" item in the main nav.
@@ -251,7 +247,7 @@ The plan is **four PRs**: Material extension; Stock Check API (including the per
 **Frontend only**
 - `libs/ui/src/domain/...`: `PurchaseList`, `PurchaseListItem` entities, repository, usecase (`purchaseListGet` keyed by `stockCheckId`).
 - **PurchaseListScreen / Handler**:
-  - Header: `"Purchase list for closing count of {check_date}"` plus `total_estimated_cost`.
+  - Header: `"Purchase list for closing count of {created_at date}"` plus `total_estimated_cost`.
   - Main table: material name, `current_stock`, `minimum_stock`, `normal_stock`, `purchase_quantity` + `purchase_unit`, `estimated_cost`.
   - Empty state (when no items meet the threshold): "Nothing to restock — everything is above its minimum."
   - "Print" button rendered but disabled with a tooltip — explicitly future scope.
