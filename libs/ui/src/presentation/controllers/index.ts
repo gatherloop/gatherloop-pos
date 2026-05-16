@@ -65,3 +65,4 @@ export * from './StockCheckListController';
 export * from './StockCheckDeleteController';
 export * from './StockCheckCreateController';
 export * from './StockCheckUpdateController';
+export * from './PurchaseListGetController';
