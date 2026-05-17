@@ -121,3 +121,67 @@ func (repo Repository) DeleteMaterialById(ctx context.Context, id int64) *domain
 	result := db.Table("materials").Where("id = ?", id).Update("deleted_at", currentTime)
 	return ToErrorCtx(ctx, result.Error, "DeleteMaterialById")
 }
+
+func (repo Repository) GetMaterialSuppliersByMaterialIds(ctx context.Context, materialIds []int64) (map[int64][]domain.MaterialSupplier, *domain.Error) {
+	if len(materialIds) == 0 {
+		return map[int64][]domain.MaterialSupplier{}, nil
+	}
+
+	db := GetDbFromCtx(ctx, repo.db)
+	var rows []materialSupplierRow
+
+	err := db.Table("material_suppliers").
+		Select("material_suppliers.material_id, suppliers.id AS supplier_id, suppliers.name, suppliers.phone, suppliers.address, material_suppliers.purchase_type, COALESCE(material_suppliers.purchase_url, '') AS purchase_url").
+		Joins("JOIN suppliers ON material_suppliers.supplier_id = suppliers.id").
+		Where("material_suppliers.material_id IN ?", materialIds).
+		Where("suppliers.deleted_at IS NULL").
+		Scan(&rows).Error
+
+	if err != nil {
+		return nil, ToErrorCtx(ctx, err, "GetMaterialSuppliersByMaterialIds")
+	}
+
+	result := make(map[int64][]domain.MaterialSupplier)
+	for _, row := range rows {
+		phone := ""
+		if row.Phone != nil {
+			phone = *row.Phone
+		}
+		result[row.MaterialId] = append(result[row.MaterialId], domain.MaterialSupplier{
+			SupplierId:   row.SupplierId,
+			SupplierName: row.Name,
+			Address:      row.Address,
+			Phone:        phone,
+			PurchaseType: domain.PurchaseType(row.PurchaseType),
+			PurchaseUrl:  row.PurchaseUrl,
+		})
+	}
+	return result, nil
+}
+
+func (repo Repository) SetMaterialSuppliers(ctx context.Context, materialId int64, suppliers []domain.MaterialSupplier) *domain.Error {
+	db := GetDbFromCtx(ctx, repo.db)
+
+	if err := db.Table("material_suppliers").Where("material_id = ?", materialId).Delete(nil).Error; err != nil {
+		return ToErrorCtx(ctx, err, "SetMaterialSuppliers")
+	}
+
+	if len(suppliers) == 0 {
+		return nil
+	}
+
+	rows := make([]materialSupplierInsertRow, 0, len(suppliers))
+	for _, ms := range suppliers {
+		rows = append(rows, materialSupplierInsertRow{
+			MaterialId:   materialId,
+			SupplierId:   ms.SupplierId,
+			PurchaseType: string(ms.PurchaseType),
+			PurchaseUrl:  ms.PurchaseUrl,
+		})
+	}
+
+	if err := db.Table("material_suppliers").Create(&rows).Error; err != nil {
+		return ToErrorCtx(ctx, err, "SetMaterialSuppliers")
+	}
+	return nil
+}

@@ -1,3 +1,5 @@
+import { MaterialSupplier } from './Material';
+
 export type PurchaseListItem = {
   materialId: number;
   materialName: string;
@@ -8,6 +10,7 @@ export type PurchaseListItem = {
   purchaseUnitSize: number;
   purchaseQuantity: number;
   estimatedCost: number;
+  suppliers: MaterialSupplier[];
 };
 
 export type PurchaseList = {

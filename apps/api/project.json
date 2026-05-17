@@ -36,7 +36,11 @@
       "executor": "@nx-go/nx-go:test"
     },
     "lint": {
-      "executor": "@nx-go/nx-go:lint"
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "go fmt ./...",
+        "cwd": "{projectRoot}"
+      }
     },
     "tidy": {
       "executor": "@nx-go/nx-go:tidy"

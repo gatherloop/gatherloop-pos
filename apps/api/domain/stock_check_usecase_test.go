@@ -157,6 +157,7 @@ func TestStockCheckUsecase_GetPurchaseList(t *testing.T) {
 			},
 		},
 	}, nil)
+	matRepo.EXPECT().GetMaterialSuppliersByMaterialIds(gomock.Any(), gomock.Any()).Return(map[int64][]domain.MaterialSupplier{}, nil)
 
 	usecase := domain.NewStockCheckUsecase(scRepo, matRepo)
 	pl, err := usecase.GetPurchaseList(context.Background(), 1)
@@ -190,6 +191,7 @@ func TestStockCheckUsecase_GetPurchaseList_ExcludesUnconfiguredPolicy(t *testing
 			},
 		},
 	}, nil)
+	matRepo.EXPECT().GetMaterialSuppliersByMaterialIds(gomock.Any(), []int64{}).Return(map[int64][]domain.MaterialSupplier{}, nil)
 
 	usecase := domain.NewStockCheckUsecase(scRepo, matRepo)
 	pl, err := usecase.GetPurchaseList(context.Background(), 1)

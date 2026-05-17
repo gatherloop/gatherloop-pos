@@ -20,3 +20,20 @@ type MaterialUsage struct {
 	ID     int64   `gorm:"column:id"`
 	Amount float32 `gorm:"column:amount"`
 }
+
+type materialSupplierRow struct {
+	MaterialId   int64 `gorm:"column:material_id"`
+	SupplierId   int64 `gorm:"column:supplier_id"`
+	Name         string
+	Phone        *string
+	Address      string
+	PurchaseType string `gorm:"column:purchase_type"`
+	PurchaseUrl  string `gorm:"column:purchase_url"`
+}
+
+type materialSupplierInsertRow struct {
+	MaterialId   int64  `gorm:"column:material_id"`
+	SupplierId   int64  `gorm:"column:supplier_id"`
+	PurchaseType string `gorm:"column:purchase_type"`
+	PurchaseUrl  string `gorm:"column:purchase_url"`
+}
