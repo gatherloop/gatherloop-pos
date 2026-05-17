@@ -196,5 +196,5 @@ func TestStockCheckUsecase_GetPurchaseList_ExcludesUnconfiguredPolicy(t *testing
 
 	assert.Nil(t, err)
 	assert.Empty(t, pl.Items)
-	assert.Equal(t, float64(0), pl.TotalEstimatedCost)
+	assert.Equal(t, float32(0), pl.TotalEstimatedCost)
 }
