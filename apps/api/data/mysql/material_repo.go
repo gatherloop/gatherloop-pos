@@ -86,8 +86,77 @@ func (repo Repository) GetMaterialsWeeklyUsage(ctx context.Context, ids []int64)
 func (repo Repository) GetMaterialById(ctx context.Context, id int64) (domain.Material, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	var material Material
-	result := db.Table("materials").Where("id = ?", id).Where("deleted_at", nil).First(&material)
+	result := db.Table("materials").
+		Preload("Suppliers", "deleted_at IS NULL").
+		Preload("Suppliers.Supplier").
+		Where("id = ?", id).
+		Where("deleted_at", nil).
+		First(&material)
 	return ToMaterialDomain(material), ToErrorCtx(ctx, result.Error, "GetMaterialById")
+}
+
+func (repo Repository) ReplaceSuppliers(ctx context.Context, materialId int64, payload []domain.MaterialSupplier) *domain.Error {
+	db := GetDbFromCtx(ctx, repo.db)
+
+	var existing []MaterialSupplier
+	if err := db.Table("material_suppliers").
+		Where("material_id = ? AND deleted_at IS NULL", materialId).
+		Find(&existing).Error; err != nil {
+		return ToErrorCtx(ctx, err, "ReplaceSuppliers")
+	}
+
+	type lookupKey struct {
+		SupplierId   int64
+		PurchaseType string
+	}
+
+	existingMap := make(map[lookupKey]MaterialSupplier)
+	for _, e := range existing {
+		existingMap[lookupKey{e.SupplierId, e.PurchaseType}] = e
+	}
+
+	now := time.Now()
+	keptIds := make([]int64, 0)
+
+	for _, p := range payload {
+		k := lookupKey{p.SupplierId, string(p.PurchaseType)}
+		if e, ok := existingMap[k]; ok {
+			if e.PurchaseUrl != p.PurchaseUrl {
+				if err := db.Table("material_suppliers").Where("id = ?", e.Id).Update("purchase_url", p.PurchaseUrl).Error; err != nil {
+					return ToErrorCtx(ctx, err, "ReplaceSuppliers")
+				}
+			}
+			keptIds = append(keptIds, e.Id)
+		} else {
+			newRow := MaterialSupplier{
+				MaterialId:   materialId,
+				SupplierId:   p.SupplierId,
+				PurchaseType: string(p.PurchaseType),
+				PurchaseUrl:  p.PurchaseUrl,
+				CreatedAt:    now,
+			}
+			if err := db.Table("material_suppliers").Create(&newRow).Error; err != nil {
+				return ToErrorCtx(ctx, err, "ReplaceSuppliers")
+			}
+			keptIds = append(keptIds, newRow.Id)
+		}
+	}
+
+	if len(keptIds) > 0 {
+		if err := db.Table("material_suppliers").
+			Where("material_id = ? AND id NOT IN ? AND deleted_at IS NULL", materialId, keptIds).
+			Update("deleted_at", now).Error; err != nil {
+			return ToErrorCtx(ctx, err, "ReplaceSuppliers")
+		}
+	} else {
+		if err := db.Table("material_suppliers").
+			Where("material_id = ? AND deleted_at IS NULL", materialId).
+			Update("deleted_at", now).Error; err != nil {
+			return ToErrorCtx(ctx, err, "ReplaceSuppliers")
+		}
+	}
+
+	return nil
 }
 
 func (repo Repository) CreateMaterial(ctx context.Context, material domain.Material) (domain.Material, *domain.Error) {

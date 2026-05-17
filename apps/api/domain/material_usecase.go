@@ -2,14 +2,16 @@ package domain
 
 import (
 	"context"
+	"net/url"
 )
 
 type MaterialUsecase struct {
-	repository MaterialRepository
+	repository         MaterialRepository
+	supplierRepository SupplierRepository
 }
 
-func NewMaterialUsecase(repository MaterialRepository) MaterialUsecase {
-	return MaterialUsecase{repository: repository}
+func NewMaterialUsecase(repository MaterialRepository, supplierRepository SupplierRepository) MaterialUsecase {
+	return MaterialUsecase{repository: repository, supplierRepository: supplierRepository}
 }
 
 func (usecase MaterialUsecase) GetMaterialList(ctx context.Context, query string, sortBy SortBy, order Order, skip int, limit int) ([]Material, int64, *Error) {
@@ -86,4 +88,39 @@ func (usecase MaterialUsecase) UpdateMaterialById(ctx context.Context, material 
 
 func (usecase MaterialUsecase) DeleteMaterialById(ctx context.Context, id int64) *Error {
 	return usecase.repository.DeleteMaterialById(ctx, id)
+}
+
+func (usecase MaterialUsecase) SetMaterialSuppliers(ctx context.Context, materialId int64, payload []MaterialSupplier) *Error {
+	for _, p := range payload {
+		switch p.PurchaseType {
+		case PurchaseTypeOnline:
+			if !isValidHttpUrl(p.PurchaseUrl) {
+				return &Error{Type: BadRequest, Message: "purchase_url must be a valid http(s):// URL for online purchase type"}
+			}
+		case PurchaseTypeOffline, PurchaseTypeDelivery:
+			if p.PurchaseUrl != "" {
+				return &Error{Type: BadRequest, Message: "purchase_url must be empty for offline and delivery purchase types"}
+			}
+		default:
+			return &Error{Type: BadRequest, Message: "invalid purchase_type: must be online, offline, or delivery"}
+		}
+
+		_, err := usecase.supplierRepository.GetSupplierById(ctx, p.SupplierId)
+		if err != nil {
+			return &Error{Type: BadRequest, Message: "supplier not found or has been deleted"}
+		}
+	}
+
+	return usecase.repository.ReplaceSuppliers(ctx, materialId, payload)
+}
+
+func isValidHttpUrl(raw string) bool {
+	if raw == "" || len(raw) > 2048 {
+		return false
+	}
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		return false
+	}
+	return (parsed.Scheme == "http" || parsed.Scheme == "https") && parsed.Host != ""
 }

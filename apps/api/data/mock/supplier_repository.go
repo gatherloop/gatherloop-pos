@@ -143,3 +143,17 @@ func (mr *MockSupplierRepositoryMockRecorder) UpdateSupplierById(ctx, supplier, 
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSupplierById", reflect.TypeOf((*MockSupplierRepository)(nil).UpdateSupplierById), ctx, supplier, id)
 }
+
+// SoftDeleteMaterialSuppliersBySupplierId mocks base method.
+func (m *MockSupplierRepository) SoftDeleteMaterialSuppliersBySupplierId(ctx context.Context, supplierId int64) *domain.Error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SoftDeleteMaterialSuppliersBySupplierId", ctx, supplierId)
+	ret0, _ := ret[0].(*domain.Error)
+	return ret0
+}
+
+// SoftDeleteMaterialSuppliersBySupplierId indicates an expected call of SoftDeleteMaterialSuppliersBySupplierId.
+func (mr *MockSupplierRepositoryMockRecorder) SoftDeleteMaterialSuppliersBySupplierId(ctx, supplierId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SoftDeleteMaterialSuppliersBySupplierId", reflect.TypeOf((*MockSupplierRepository)(nil).SoftDeleteMaterialSuppliersBySupplierId), ctx, supplierId)
+}

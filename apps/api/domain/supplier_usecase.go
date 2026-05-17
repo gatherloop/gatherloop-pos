@@ -44,5 +44,10 @@ func (usecase SupplierUsecase) UpdateSupplierById(ctx context.Context, supplier 
 }
 
 func (usecase SupplierUsecase) DeleteSupplierById(ctx context.Context, id int64) *Error {
-	return usecase.repository.DeleteSupplierById(ctx, id)
+	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		if err := usecase.repository.DeleteSupplierById(ctxWithTx, id); err != nil {
+			return err
+		}
+		return usecase.repository.SoftDeleteMaterialSuppliersBySupplierId(ctxWithTx, id)
+	})
 }

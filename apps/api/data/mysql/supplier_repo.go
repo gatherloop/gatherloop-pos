@@ -81,3 +81,12 @@ func (repo Repository) DeleteSupplierById(ctx context.Context, id int64) *domain
 	result := db.Table("suppliers").Where("id = ?", id).Update("deleted_at", currentTime)
 	return ToErrorCtx(ctx, result.Error, "DeleteSupplierById")
 }
+
+func (repo Repository) SoftDeleteMaterialSuppliersBySupplierId(ctx context.Context, supplierId int64) *domain.Error {
+	db := GetDbFromCtx(ctx, repo.db)
+	currentTime := time.Now()
+	result := db.Table("material_suppliers").
+		Where("supplier_id = ? AND deleted_at IS NULL", supplierId).
+		Update("deleted_at", currentTime)
+	return ToErrorCtx(ctx, result.Error, "SoftDeleteMaterialSuppliersBySupplierId")
+}

@@ -14,4 +14,5 @@ type SupplierRepository interface {
 	CreateSupplier(ctx context.Context, supplier Supplier) (Supplier, *Error)
 	UpdateSupplierById(ctx context.Context, supplier Supplier, id int64) (Supplier, *Error)
 	DeleteSupplierById(ctx context.Context, id int64) *Error
+	SoftDeleteMaterialSuppliersBySupplierId(ctx context.Context, supplierId int64) *Error
 }
