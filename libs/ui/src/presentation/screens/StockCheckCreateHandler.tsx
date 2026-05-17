@@ -17,7 +17,9 @@ export const StockCheckCreateHandler = ({
   stockCheckCreateUsecase,
 }: StockCheckCreateHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const stockCheckCreate = useStockCheckCreateController(stockCheckCreateUsecase);
+  const stockCheckCreate = useStockCheckCreateController(
+    stockCheckCreateUsecase
+  );
   const router = useRouter();
 
   useEffect(() => {
@@ -34,7 +36,6 @@ export const StockCheckCreateHandler = ({
       }
       isSubmitDisabled={
         stockCheckCreate.state.type === 'submitting' ||
-        stockCheckCreate.state.type === 'submitError' ||
         stockCheckCreate.state.type === 'submitSuccess'
       }
       isSubmitting={stockCheckCreate.state.type === 'submitting'}

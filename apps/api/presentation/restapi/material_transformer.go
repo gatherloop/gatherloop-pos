@@ -49,8 +49,8 @@ func ToMaterial(materialRequest apiContract.MaterialRequest) domain.Material {
 		Description:      materialRequest.Description,
 		PurchaseUnit:     materialRequest.PurchaseUnit,
 		PurchaseUnitSize: materialRequest.PurchaseUnitSize,
-		MinimumStock:     int(materialRequest.MinimumStock),
-		NormalStock:      int(materialRequest.NormalStock),
+		MinimumStock:     materialRequest.MinimumStock,
+		NormalStock:      materialRequest.NormalStock,
 	}
 }
 

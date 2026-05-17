@@ -1,6 +1,14 @@
 import { FormProvider, useFieldArray, UseFormReturn } from 'react-hook-form';
-import { Button, Form, Input, SizableText, Spinner, XStack, YStack } from 'tamagui';
-import { FormErrorBanner } from '../base';
+import {
+  Button,
+  Form,
+  Input,
+  SizableText,
+  Spinner,
+  XStack,
+  YStack,
+} from 'tamagui';
+import { FormErrorBanner, InputNumber } from '../base';
 import { StockCheckForm } from '../../../domain';
 import { Controller } from 'react-hook-form';
 
@@ -32,22 +40,7 @@ export const StockCheckFormView = ({
               <SizableText flex={1} numberOfLines={1}>
                 {field.materialName}
               </SizableText>
-              <Controller
-                control={form.control}
-                name={`items.${index}.currentStock`}
-                render={({ field: { value, onChange } }) => (
-                  <Input
-                    width={80}
-                    keyboardType="numeric"
-                    value={value.toString()}
-                    onChangeText={(text) => {
-                      const num = parseInt(text, 10);
-                      onChange(isNaN(num) ? 0 : num);
-                    }}
-                    textAlign="right"
-                  />
-                )}
-              />
+              <InputNumber name={`items.${index}.currentStock`} width={100} />
               <SizableText width={60} color="$gray10">
                 {field.purchaseUnit}
               </SizableText>

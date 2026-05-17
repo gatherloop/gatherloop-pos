@@ -15,7 +15,6 @@ export type StockCheckItem = {
 export type StockCheck = {
   id: number;
   createdAt: string;
-  deletedAt?: string;
   items: StockCheckItem[];
 };
 

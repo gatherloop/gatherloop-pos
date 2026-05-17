@@ -25,7 +25,6 @@ export function toStockCheck(stockCheck: ApiStockCheck): StockCheck {
   return {
     id: stockCheck.id,
     createdAt: stockCheck.createdAt,
-    deletedAt: stockCheck.deletedAt,
     items: stockCheck.items.map(toStockCheckItem),
   };
 }

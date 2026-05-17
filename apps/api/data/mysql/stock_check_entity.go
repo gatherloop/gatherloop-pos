@@ -13,12 +13,12 @@ type StockCheckItem struct {
 	Id               int64
 	StockCheckId     int64
 	MaterialId       int64
-	CurrentStock     int
+	CurrentStock     int64
 	MaterialName     string
 	Price            float32
 	PurchaseUnit     string
 	PurchaseUnitSize float32
-	MinimumStock     int
-	NormalStock      int
+	MinimumStock     int64
+	NormalStock      int64
 	CreatedAt        time.Time
 }

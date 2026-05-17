@@ -18,6 +18,7 @@ func (repo Repository) GetStockCheckList(ctx context.Context, sortBy domain.Sort
 	var stockChecks []StockCheck
 
 	result := db.Table("stock_checks").
+		Preload("Items").
 		Where("deleted_at IS NULL").
 		Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
 
@@ -55,15 +56,6 @@ func (repo Repository) CreateStockCheck(ctx context.Context, stockCheck domain.S
 
 	if err := db.Table("stock_checks").Create(&payload).Error; err != nil {
 		return domain.StockCheck{}, ToErrorCtx(ctx, err, "CreateStockCheck")
-	}
-
-	for i := range payload.Items {
-		payload.Items[i].StockCheckId = payload.Id
-	}
-	if len(payload.Items) > 0 {
-		if err := db.Table("stock_check_items").Create(&payload.Items).Error; err != nil {
-			return domain.StockCheck{}, ToErrorCtx(ctx, err, "CreateStockCheckItems")
-		}
 	}
 
 	return ToStockCheckDomain(payload), nil

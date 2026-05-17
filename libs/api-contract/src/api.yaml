@@ -2327,8 +2327,10 @@ components:
           type: number
         minimumStock:
           type: integer
+          format: int64
         normalStock:
           type: integer
+          format: int64
     ChecklistTemplateSubItem:
       type: object
       required:
@@ -4064,6 +4066,7 @@ components:
           format: int64
         currentStock:
           type: integer
+          format: int64
         materialName:
           type: string
         price:
@@ -4074,8 +4077,10 @@ components:
           type: number
         minimumStock:
           type: integer
+          format: int64
         normalStock:
           type: integer
+          format: int64
         createdAt:
           type: string
           format: date-time
@@ -4110,6 +4115,7 @@ components:
           format: int64
         currentStock:
           type: integer
+          format: int64
     StockCheckRequest:
       type: object
       properties:
@@ -4177,16 +4183,20 @@ components:
           type: string
         currentStock:
           type: integer
+          format: int64
         minimumStock:
           type: integer
+          format: int64
         normalStock:
           type: integer
+          format: int64
         purchaseUnit:
           type: string
         purchaseUnitSize:
           type: number
         purchaseQuantity:
           type: integer
+          format: int64
         estimatedCost:
           type: number
     PurchaseList:

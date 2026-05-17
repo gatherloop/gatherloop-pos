@@ -35,14 +35,14 @@ func (usecase StockCheckUsecase) CreateStockCheck(ctx context.Context, itemReque
 		return StockCheck{}, err
 	}
 
-	itemMap := make(map[int64]int, len(itemRequests))
+	itemMap := make(map[int64]int64, len(itemRequests))
 	for _, req := range itemRequests {
 		itemMap[req.MaterialId] = req.CurrentStock
 	}
 
 	items := make([]StockCheckItem, 0, len(materials))
 	for _, m := range materials {
-		currentStock := 0
+		currentStock := int64(0)
 		if cs, ok := itemMap[m.Id]; ok {
 			currentStock = cs
 		}
@@ -67,7 +67,7 @@ func (usecase StockCheckUsecase) UpdateStockCheckById(ctx context.Context, id in
 		return StockCheck{}, err
 	}
 
-	itemMap := make(map[int64]int, len(itemRequests))
+	itemMap := make(map[int64]int64, len(itemRequests))
 	for _, req := range itemRequests {
 		itemMap[req.MaterialId] = req.CurrentStock
 	}
@@ -92,12 +92,12 @@ func (usecase StockCheckUsecase) GetPurchaseList(ctx context.Context, stockCheck
 	}
 
 	items := []PurchaseListItem{}
-	totalEstimatedCost := float64(0)
+	totalEstimatedCost := float32(0)
 
 	for _, item := range stockCheck.Items {
 		if item.CurrentStock <= item.MinimumStock && item.NormalStock > item.MinimumStock {
 			purchaseQuantity := item.NormalStock - item.CurrentStock
-			estimatedCost := float64(purchaseQuantity) * float64(item.PurchaseUnitSize) * float64(item.Price)
+			estimatedCost := float32(purchaseQuantity) * float32(item.PurchaseUnitSize) * float32(item.Price)
 			totalEstimatedCost += estimatedCost
 			items = append(items, PurchaseListItem{
 				MaterialId:       item.MaterialId,

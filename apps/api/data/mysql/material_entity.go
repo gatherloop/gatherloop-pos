@@ -10,8 +10,8 @@ type Material struct {
 	Description      *string
 	PurchaseUnit     string
 	PurchaseUnitSize float32
-	MinimumStock     int
-	NormalStock      int
+	MinimumStock     int64
+	NormalStock      int64
 	DeletedAt        *time.Time
 	CreatedAt        time.Time
 }

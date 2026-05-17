@@ -86,13 +86,13 @@ func TestStockCheckUsecase_CreateStockCheck_SnapshotsMaterialFields(t *testing.T
 
 	assert.Nil(t, err)
 	assert.Len(t, captured.Items, 1)
-	assert.Equal(t, 3, captured.Items[0].CurrentStock)
+	assert.Equal(t, int64(3), captured.Items[0].CurrentStock)
 	assert.Equal(t, "Tepung", captured.Items[0].MaterialName)
 	assert.Equal(t, float32(15), captured.Items[0].Price)
 	assert.Equal(t, "Kg", captured.Items[0].PurchaseUnit)
 	assert.Equal(t, float32(1000), captured.Items[0].PurchaseUnitSize)
-	assert.Equal(t, 1, captured.Items[0].MinimumStock)
-	assert.Equal(t, 5, captured.Items[0].NormalStock)
+	assert.Equal(t, int64(1), captured.Items[0].MinimumStock)
+	assert.Equal(t, int64(5), captured.Items[0].NormalStock)
 }
 
 func TestStockCheckUsecase_CreateStockCheck_DefaultsToZeroForMissingItems(t *testing.T) {
@@ -121,8 +121,8 @@ func TestStockCheckUsecase_CreateStockCheck_DefaultsToZeroForMissingItems(t *tes
 
 	assert.Nil(t, err)
 	assert.Len(t, captured.Items, 2)
-	assert.Equal(t, 5, captured.Items[0].CurrentStock) // material 1
-	assert.Equal(t, 0, captured.Items[1].CurrentStock) // material 2 defaults to 0
+	assert.Equal(t, int64(5), captured.Items[0].CurrentStock) // material 1
+	assert.Equal(t, int64(0), captured.Items[1].CurrentStock) // material 2 defaults to 0
 }
 
 func TestStockCheckUsecase_GetPurchaseList(t *testing.T) {
@@ -167,7 +167,7 @@ func TestStockCheckUsecase_GetPurchaseList(t *testing.T) {
 
 	item := pl.Items[0]
 	assert.Equal(t, int64(1), item.MaterialId)
-	assert.Equal(t, 5, item.PurchaseQuantity)
+	assert.Equal(t, int64(5), item.PurchaseQuantity)
 	assert.InDelta(t, float64(5*1000*15), item.EstimatedCost, 0.01) // 75000
 	assert.InDelta(t, float64(5*1000*15), pl.TotalEstimatedCost, 0.01)
 }
