@@ -1,7 +1,8 @@
 import { Field, FormErrorBanner, InputText, InputNumber, MarkdownEditor } from '../base';
-import { MaterialForm } from '../../../domain';
+import { MaterialForm, Supplier } from '../../../domain';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
 import { Button, Form, SizableText, Spinner } from 'tamagui';
+import { MaterialSuppliersForm } from './MaterialSuppliersForm';
 
 export type MaterialFormViewProps = {
   form: UseFormReturn<MaterialForm>;
@@ -9,6 +10,8 @@ export type MaterialFormViewProps = {
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   serverError?: string;
+  availableSuppliers: Supplier[];
+  isLoadingSuppliers?: boolean;
 };
 
 export const MaterialFormView = ({
@@ -17,6 +20,8 @@ export const MaterialFormView = ({
   isSubmitDisabled,
   isSubmitting,
   serverError,
+  availableSuppliers,
+  isLoadingSuppliers,
 }: MaterialFormViewProps) => {
   return (
     <FormProvider {...form}>
@@ -51,6 +56,10 @@ export const MaterialFormView = ({
             defaultMode={form.getValues('description') ? 'preview' : 'edit'}
           />
         </Field>
+        <MaterialSuppliersForm
+          availableSuppliers={availableSuppliers}
+          isLoadingSuppliers={isLoadingSuppliers}
+        />
         <Button
           disabled={isSubmitDisabled}
           onPress={form.handleSubmit(onSubmit)}

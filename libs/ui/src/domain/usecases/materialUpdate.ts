@@ -57,6 +57,11 @@ export class MaterialUpdateUsecase extends Usecase<
       purchaseUnitSize: this.params.material?.purchaseUnitSize ?? 1,
       minimumStock: this.params.material?.minimumStock ?? 0,
       normalStock: this.params.material?.normalStock ?? 0,
+      suppliers: (this.params.material?.suppliers ?? []).map((s) => ({
+        supplierId: s.supplierId,
+        purchaseType: s.purchaseType,
+        purchaseUrl: s.purchaseUrl,
+      })),
     };
 
     return {
@@ -162,6 +167,11 @@ export class MaterialUpdateUsecase extends Usecase<
                 purchaseUnitSize: material.purchaseUnitSize,
                 minimumStock: material.minimumStock,
                 normalStock: material.normalStock,
+                suppliers: material.suppliers.map((s) => ({
+                  supplierId: s.supplierId,
+                  purchaseType: s.purchaseType,
+                  purchaseUrl: s.purchaseUrl,
+                })),
               },
             })
           )

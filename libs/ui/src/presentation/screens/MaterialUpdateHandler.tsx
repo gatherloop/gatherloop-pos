@@ -1,9 +1,10 @@
 import { useRouter } from 'solito/router';
-import { AuthLogoutUsecase, MaterialUpdateUsecase } from '../../domain';
+import { AuthLogoutUsecase, MaterialUpdateUsecase, SupplierListUsecase } from '../../domain';
 import { useEffect } from 'react';
 import {
   useAuthLogoutController,
   useMaterialUpdateController,
+  useSupplierListController,
 } from '../controllers';
 import {
   MaterialUpdateScreen,
@@ -12,14 +13,17 @@ import {
 export type MaterialUpdateHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;
   materialUpdateUsecase: MaterialUpdateUsecase;
+  supplierListUsecase: SupplierListUsecase;
 };
 
 export const MaterialUpdateHandler = ({
   authLogoutUsecase,
   materialUpdateUsecase,
+  supplierListUsecase,
 }: MaterialUpdateHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
   const materialUpdate = useMaterialUpdateController(materialUpdateUsecase);
+  const supplierList = useSupplierListController(supplierListUsecase);
   const router = useRouter();
 
   useEffect(() => {
@@ -46,6 +50,11 @@ export const MaterialUpdateHandler = ({
           : undefined
       }
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
+      availableSuppliers={supplierList.state.suppliers}
+      isLoadingSuppliers={
+        supplierList.state.type === 'idle' ||
+        supplierList.state.type === 'loading'
+      }
     />
   );
 };

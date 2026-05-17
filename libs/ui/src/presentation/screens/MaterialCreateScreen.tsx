@@ -1,6 +1,6 @@
 import { ScrollView } from 'tamagui';
 import { MaterialFormView, Layout } from '../components';
-import { MaterialForm } from '../../domain';
+import { MaterialForm, Supplier } from '../../domain';
 import { UseFormReturn } from 'react-hook-form';
 
 export type MaterialCreateScreenProps = {
@@ -10,6 +10,8 @@ export type MaterialCreateScreenProps = {
   isSubmitting: boolean;
   onLogoutPress: () => void;
   serverError?: string;
+  availableSuppliers: Supplier[];
+  isLoadingSuppliers?: boolean;
 };
 
 export const MaterialCreateScreen = (props: MaterialCreateScreenProps) => {
@@ -26,6 +28,8 @@ export const MaterialCreateScreen = (props: MaterialCreateScreenProps) => {
           isSubmitDisabled={props.isSubmitDisabled}
           isSubmitting={props.isSubmitting}
           serverError={props.serverError}
+          availableSuppliers={props.availableSuppliers}
+          isLoadingSuppliers={props.isLoadingSuppliers}
         />
       </ScrollView>
     </Layout>

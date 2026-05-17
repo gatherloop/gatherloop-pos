@@ -2,8 +2,17 @@ import React from 'react';
 import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MaterialUpdateHandler } from './MaterialUpdateHandler';
-import { MockAuthRepository, MockMaterialRepository } from '../../data/mock';
-import { AuthLogoutUsecase, MaterialUpdateUsecase } from '../../domain';
+import {
+  MockAuthRepository,
+  MockMaterialRepository,
+  MockSupplierRepository,
+  MockSupplierListQueryRepository,
+} from '../../data/mock';
+import {
+  AuthLogoutUsecase,
+  MaterialUpdateUsecase,
+  SupplierListUsecase,
+} from '../../domain';
 import { flushPromises } from '../../utils/testUtils';
 
 const mockRouterPush = jest.fn();
@@ -15,6 +24,13 @@ const mockToastShow = jest.fn();
 jest.mock('@tamagui/toast', () => ({
   useToastController: () => ({ show: mockToastShow }),
 }));
+
+const createSupplierListUsecase = () =>
+  new SupplierListUsecase(
+    new MockSupplierRepository(),
+    new MockSupplierListQueryRepository(),
+    { suppliers: [], totalItem: 0 }
+  );
 
 const createProps = (
   options: {
@@ -38,6 +54,7 @@ const createProps = (
       materialId,
       material: preloadedMaterial,
     }),
+    supplierListUsecase: createSupplierListUsecase(),
   };
 };
 
@@ -111,6 +128,7 @@ describe('MaterialUpdateHandler', () => {
         <MaterialUpdateHandler
           authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
           materialUpdateUsecase={materialUpdateUsecase}
+          supplierListUsecase={createSupplierListUsecase()}
         />
       );
 
@@ -169,6 +187,7 @@ describe('MaterialUpdateHandler', () => {
         <MaterialUpdateHandler
           authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
           materialUpdateUsecase={materialUpdateUsecase}
+          supplierListUsecase={createSupplierListUsecase()}
         />
       );
 
@@ -200,6 +219,7 @@ describe('MaterialUpdateHandler', () => {
         <MaterialUpdateHandler
           authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
           materialUpdateUsecase={materialUpdateUsecase}
+          supplierListUsecase={createSupplierListUsecase()}
         />
       );
 
