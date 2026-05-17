@@ -8,7 +8,6 @@ const initialSuppliers: Supplier[] = [
     phone: '081234567890',
     address: 'Jl. Supplier 1 No. 1',
     mapsLink: 'https://maps.google.com/?q=supplier1',
-    isOnline: false,
     createdAt: '2024-03-20T00:00:00.000Z',
   },
   {
@@ -17,7 +16,6 @@ const initialSuppliers: Supplier[] = [
     phone: '082345678901',
     address: 'Jl. Supplier 2 No. 2',
     mapsLink: 'https://maps.google.com/?q=supplier2',
-    isOnline: true,
     createdAt: '2024-03-21T00:00:00.000Z',
   },
 ];
@@ -79,7 +77,6 @@ export class MockSupplierRepository implements SupplierRepository {
       phone: formValues.phone,
       address: formValues.address,
       mapsLink: formValues.mapsLink,
-      isOnline: formValues.isOnline,
       createdAt: new Date().toISOString(),
     });
   }
@@ -97,7 +94,6 @@ export class MockSupplierRepository implements SupplierRepository {
       phone: formValues.phone,
       address: formValues.address,
       mapsLink: formValues.mapsLink,
-      isOnline: formValues.isOnline,
     };
   }
 

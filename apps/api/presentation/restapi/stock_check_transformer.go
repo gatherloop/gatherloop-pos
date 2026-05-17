@@ -58,21 +58,21 @@ func ToApiStockCheck(sc domain.StockCheck) apiContract.StockCheck {
 }
 
 func ToApiPurchaseListItem(item domain.PurchaseListItem) apiContract.PurchaseListItem {
-	suppliers := make([]apiContract.Supplier, 0, len(item.Suppliers))
-	for _, s := range item.Suppliers {
-		suppliers = append(suppliers, ToApiSupplier(s))
+	materialSuppliers := make([]apiContract.MaterialSupplierItem, 0, len(item.MaterialSuppliers))
+	for _, ms := range item.MaterialSuppliers {
+		materialSuppliers = append(materialSuppliers, ToApiMaterialSupplier(ms))
 	}
 	return apiContract.PurchaseListItem{
-		MaterialId:       item.MaterialId,
-		MaterialName:     item.MaterialName,
-		CurrentStock:     item.CurrentStock,
-		MinimumStock:     item.MinimumStock,
-		NormalStock:      item.NormalStock,
-		PurchaseUnit:     item.PurchaseUnit,
-		PurchaseUnitSize: item.PurchaseUnitSize,
-		PurchaseQuantity: item.PurchaseQuantity,
-		EstimatedCost:    item.EstimatedCost,
-		Suppliers:        suppliers,
+		MaterialId:        item.MaterialId,
+		MaterialName:      item.MaterialName,
+		CurrentStock:      item.CurrentStock,
+		MinimumStock:      item.MinimumStock,
+		NormalStock:       item.NormalStock,
+		PurchaseUnit:      item.PurchaseUnit,
+		PurchaseUnitSize:  item.PurchaseUnitSize,
+		PurchaseQuantity:  item.PurchaseQuantity,
+		EstimatedCost:     item.EstimatedCost,
+		MaterialSuppliers: materialSuppliers,
 	}
 }
 

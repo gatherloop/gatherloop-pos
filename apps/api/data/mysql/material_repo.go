@@ -123,25 +123,25 @@ func (repo Repository) DeleteMaterialById(ctx context.Context, id int64) *domain
 }
 
 type materialSupplierRow struct {
-	MaterialId int64 `gorm:"column:material_id"`
-	SupplierId int64 `gorm:"column:supplier_id"`
-	Name       string
-	Phone      *string
-	Address    string
-	MapsLink   string `gorm:"column:maps_link"`
-	IsOnline   bool   `gorm:"column:is_online"`
+	MaterialId   int64   `gorm:"column:material_id"`
+	SupplierId   int64   `gorm:"column:supplier_id"`
+	Name         string
+	Phone        *string
+	Address      string
+	PurchaseType string `gorm:"column:purchase_type"`
+	PurchaseUrl  string `gorm:"column:purchase_url"`
 }
 
-func (repo Repository) GetMaterialSuppliersByMaterialIds(ctx context.Context, materialIds []int64) (map[int64][]domain.Supplier, *domain.Error) {
+func (repo Repository) GetMaterialSuppliersByMaterialIds(ctx context.Context, materialIds []int64) (map[int64][]domain.MaterialSupplier, *domain.Error) {
 	if len(materialIds) == 0 {
-		return map[int64][]domain.Supplier{}, nil
+		return map[int64][]domain.MaterialSupplier{}, nil
 	}
 
 	db := GetDbFromCtx(ctx, repo.db)
 	var rows []materialSupplierRow
 
 	err := db.Table("material_suppliers").
-		Select("material_suppliers.material_id, suppliers.id AS supplier_id, suppliers.name, suppliers.phone, suppliers.address, suppliers.maps_link, suppliers.is_online").
+		Select("material_suppliers.material_id, suppliers.id AS supplier_id, suppliers.name, suppliers.phone, suppliers.address, material_suppliers.purchase_type, COALESCE(material_suppliers.purchase_url, '') AS purchase_url").
 		Joins("JOIN suppliers ON material_suppliers.supplier_id = suppliers.id").
 		Where("material_suppliers.material_id IN ?", materialIds).
 		Where("suppliers.deleted_at IS NULL").
@@ -151,38 +151,49 @@ func (repo Repository) GetMaterialSuppliersByMaterialIds(ctx context.Context, ma
 		return nil, ToErrorCtx(ctx, err, "GetMaterialSuppliersByMaterialIds")
 	}
 
-	result := make(map[int64][]domain.Supplier)
+	result := make(map[int64][]domain.MaterialSupplier)
 	for _, row := range rows {
-		result[row.MaterialId] = append(result[row.MaterialId], domain.Supplier{
-			Id:       row.SupplierId,
-			Name:     row.Name,
-			Phone:    row.Phone,
-			Address:  row.Address,
-			MapsLink: row.MapsLink,
-			IsOnline: row.IsOnline,
+		phone := ""
+		if row.Phone != nil {
+			phone = *row.Phone
+		}
+		result[row.MaterialId] = append(result[row.MaterialId], domain.MaterialSupplier{
+			SupplierId:   row.SupplierId,
+			SupplierName: row.Name,
+			Address:      row.Address,
+			Phone:        phone,
+			PurchaseType: row.PurchaseType,
+			PurchaseUrl:  row.PurchaseUrl,
 		})
 	}
 	return result, nil
 }
 
-func (repo Repository) SetMaterialSuppliers(ctx context.Context, materialId int64, supplierIds []int64) *domain.Error {
+func (repo Repository) SetMaterialSuppliers(ctx context.Context, materialId int64, materialSuppliers []domain.MaterialSupplierInput) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 
 	if err := db.Table("material_suppliers").Where("material_id = ?", materialId).Delete(nil).Error; err != nil {
 		return ToErrorCtx(ctx, err, "SetMaterialSuppliers")
 	}
 
-	if len(supplierIds) == 0 {
+	if len(materialSuppliers) == 0 {
 		return nil
 	}
 
 	type row struct {
-		MaterialId int64 `gorm:"column:material_id"`
-		SupplierId int64 `gorm:"column:supplier_id"`
+		MaterialId   int64  `gorm:"column:material_id"`
+		SupplierId   int64  `gorm:"column:supplier_id"`
+		PurchaseType string `gorm:"column:purchase_type"`
+		PurchaseUrl  string `gorm:"column:purchase_url"`
 	}
-	rows := make([]row, 0, len(supplierIds))
-	for _, sid := range supplierIds {
-		rows = append(rows, row{MaterialId: materialId, SupplierId: sid})
+	rows := make([]row, 0, len(materialSuppliers))
+	for _, ms := range materialSuppliers {
+		rows = append(rows, row{
+			MaterialId:   materialId,
+			SupplierId:   ms.SupplierId,
+			PurchaseType: ms.PurchaseType,
+			PurchaseUrl:  ms.PurchaseUrl,
+		})
 	}
 
 	if err := db.Table("material_suppliers").Create(&rows).Error; err != nil {

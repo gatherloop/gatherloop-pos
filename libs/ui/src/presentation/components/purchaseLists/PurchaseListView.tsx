@@ -1,16 +1,16 @@
-import { H4, Paragraph, Separator, Spinner, XStack, YStack } from 'tamagui';
+import { H4, Paragraph, Separator, Spinner, YStack } from 'tamagui';
 import { match } from 'ts-pattern';
 import { FlatList } from 'react-native';
 import { PurchaseListItemView } from './PurchaseListItemView';
 import { EmptyView, ErrorView, SkeletonList } from '../base';
 import { PurchaseList, PurchaseListItem } from '../../../domain';
 
-export type StoreTypeFilter = 'all' | 'online' | 'offline';
+export type PurchaseTypeFilter = 'all' | 'offline' | 'online' | 'delivery';
 
 export type PurchaseListViewProps = {
   onRetryButtonPress: () => void;
   isRevalidating?: boolean;
-  storeTypeFilter?: StoreTypeFilter;
+  purchaseTypeFilter?: PurchaseTypeFilter;
   variant:
     | { type: 'loading' }
     | { type: 'error' }
@@ -18,19 +18,17 @@ export type PurchaseListViewProps = {
     | { type: 'loaded'; purchaseList: PurchaseList };
 };
 
-function filterItems(items: PurchaseListItem[], filter: StoreTypeFilter): PurchaseListItem[] {
+function filterItems(items: PurchaseListItem[], filter: PurchaseTypeFilter): PurchaseListItem[] {
   if (filter === 'all') return items;
   return items.filter((item) =>
-    item.suppliers.some((s) =>
-      filter === 'online' ? s.isOnline : !s.isOnline
-    )
+    item.materialSuppliers.some((ms) => ms.purchaseType === filter)
   );
 }
 
 export const PurchaseListView = ({
   onRetryButtonPress,
   isRevalidating,
-  storeTypeFilter = 'all',
+  purchaseTypeFilter = 'all',
   variant,
 }: PurchaseListViewProps) => {
   return (
@@ -56,7 +54,7 @@ export const PurchaseListView = ({
           </YStack>
         ))
         .with({ type: 'loaded' }, ({ purchaseList }) => {
-          const filteredItems = filterItems(purchaseList.items, storeTypeFilter);
+          const filteredItems = filterItems(purchaseList.items, purchaseTypeFilter);
           return (
             <YStack gap="$3" flex={1}>
               <PurchaseListHeader

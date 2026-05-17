@@ -44,7 +44,7 @@ export class MaterialCreateUsecase extends Usecase<
       purchaseUnitSize: 1,
       minimumStock: 0,
       normalStock: 0,
-      supplierIds: [],
+      materialSuppliers: [],
     };
     return {
       type: 'loaded',

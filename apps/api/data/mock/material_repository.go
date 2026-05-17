@@ -160,10 +160,10 @@ func (mr *MockMaterialRepositoryMockRecorder) UpdateMaterialById(ctx, material, 
 }
 
 // GetMaterialSuppliersByMaterialIds mocks base method.
-func (m *MockMaterialRepository) GetMaterialSuppliersByMaterialIds(ctx context.Context, materialIds []int64) (map[int64][]domain.Supplier, *domain.Error) {
+func (m *MockMaterialRepository) GetMaterialSuppliersByMaterialIds(ctx context.Context, materialIds []int64) (map[int64][]domain.MaterialSupplier, *domain.Error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetMaterialSuppliersByMaterialIds", ctx, materialIds)
-	ret0, _ := ret[0].(map[int64][]domain.Supplier)
+	ret0, _ := ret[0].(map[int64][]domain.MaterialSupplier)
 	ret1, _ := ret[1].(*domain.Error)
 	return ret0, ret1
 }
@@ -175,15 +175,15 @@ func (mr *MockMaterialRepositoryMockRecorder) GetMaterialSuppliersByMaterialIds(
 }
 
 // SetMaterialSuppliers mocks base method.
-func (m *MockMaterialRepository) SetMaterialSuppliers(ctx context.Context, materialId int64, supplierIds []int64) *domain.Error {
+func (m *MockMaterialRepository) SetMaterialSuppliers(ctx context.Context, materialId int64, materialSuppliers []domain.MaterialSupplierInput) *domain.Error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetMaterialSuppliers", ctx, materialId, supplierIds)
+	ret := m.ctrl.Call(m, "SetMaterialSuppliers", ctx, materialId, materialSuppliers)
 	ret0, _ := ret[0].(*domain.Error)
 	return ret0
 }
 
 // SetMaterialSuppliers indicates an expected call of SetMaterialSuppliers.
-func (mr *MockMaterialRepositoryMockRecorder) SetMaterialSuppliers(ctx, materialId, supplierIds any) *gomock.Call {
+func (mr *MockMaterialRepositoryMockRecorder) SetMaterialSuppliers(ctx, materialId, materialSuppliers any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetMaterialSuppliers", reflect.TypeOf((*MockMaterialRepository)(nil).SetMaterialSuppliers), ctx, materialId, supplierIds)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetMaterialSuppliers", reflect.TypeOf((*MockMaterialRepository)(nil).SetMaterialSuppliers), ctx, materialId, materialSuppliers)
 }

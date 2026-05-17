@@ -30,7 +30,6 @@ func ToApiSupplier(supplier domain.Supplier) apiContract.Supplier {
 		Phone:     supplier.Phone,
 		Address:   supplier.Address,
 		MapsLink:  supplier.MapsLink,
-		IsOnline:  supplier.IsOnline,
 		DeletedAt: supplier.DeletedAt,
 		CreatedAt: supplier.CreatedAt,
 	}
@@ -42,6 +41,16 @@ func ToSupplier(supplierRequest apiContract.SupplierRequest) domain.Supplier {
 		Phone:    supplierRequest.Phone,
 		Address:  supplierRequest.Address,
 		MapsLink: supplierRequest.MapsLink,
-		IsOnline: supplierRequest.IsOnline,
+	}
+}
+
+func ToApiMaterialSupplier(ms domain.MaterialSupplier) apiContract.MaterialSupplierItem {
+	return apiContract.MaterialSupplierItem{
+		SupplierId:   ms.SupplierId,
+		SupplierName: ms.SupplierName,
+		Address:      ms.Address,
+		Phone:        ms.Phone,
+		PurchaseType: ms.PurchaseType,
+		PurchaseUrl:  ms.PurchaseUrl,
 	}
 }

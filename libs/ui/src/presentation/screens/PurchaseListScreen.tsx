@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Printer } from '@tamagui/lucide-icons';
 import { Button, Tooltip, XStack } from 'tamagui';
 import { Layout, PurchaseListView, PurchaseListViewProps } from '../components';
-import { StoreTypeFilter } from '../components/purchaseLists/PurchaseListView';
+import { PurchaseTypeFilter } from '../components/purchaseLists/PurchaseListView';
 
 export type PurchaseListScreenProps = {
   onLogoutPress: () => void;
@@ -11,10 +11,11 @@ export type PurchaseListScreenProps = {
   isRevalidating?: boolean;
 };
 
-const FILTER_OPTIONS: { label: string; value: StoreTypeFilter }[] = [
+const FILTER_OPTIONS: { label: string; value: PurchaseTypeFilter }[] = [
   { label: 'All', value: 'all' },
-  { label: 'Online', value: 'online' },
   { label: 'Offline', value: 'offline' },
+  { label: 'Online', value: 'online' },
+  { label: 'Delivery', value: 'delivery' },
 ];
 
 export const PurchaseListScreen = ({
@@ -23,7 +24,7 @@ export const PurchaseListScreen = ({
   variant,
   isRevalidating,
 }: PurchaseListScreenProps) => {
-  const [storeTypeFilter, setStoreTypeFilter] = useState<StoreTypeFilter>('all');
+  const [purchaseTypeFilter, setPurchaseTypeFilter] = useState<PurchaseTypeFilter>('all');
 
   return (
     <Layout
@@ -52,9 +53,9 @@ export const PurchaseListScreen = ({
           <Button
             key={option.value}
             size="$2"
-            theme={storeTypeFilter === option.value ? 'blue' : undefined}
-            variant={storeTypeFilter === option.value ? undefined : 'outlined'}
-            onPress={() => setStoreTypeFilter(option.value)}
+            theme={purchaseTypeFilter === option.value ? 'blue' : undefined}
+            variant={purchaseTypeFilter === option.value ? undefined : 'outlined'}
+            onPress={() => setPurchaseTypeFilter(option.value)}
           >
             {option.label}
           </Button>
@@ -64,7 +65,7 @@ export const PurchaseListScreen = ({
         variant={variant}
         onRetryButtonPress={onRetryButtonPress}
         isRevalidating={isRevalidating}
-        storeTypeFilter={storeTypeFilter}
+        purchaseTypeFilter={purchaseTypeFilter}
       />
     </Layout>
   );

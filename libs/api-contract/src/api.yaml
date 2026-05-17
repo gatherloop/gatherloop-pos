@@ -2297,16 +2297,54 @@ components:
           type: integer
         normalStock:
           type: integer
-        suppliers:
+        materialSuppliers:
           type: array
           items:
-            $ref: '#/components/schemas/Supplier'
+            $ref: '#/components/schemas/MaterialSupplierItem'
         deletedAt:
           type: string
           format: date-time
         createdAt:
           type: string
           format: date-time
+    MaterialSupplierItem:
+      type: object
+      required:
+        - supplierId
+        - supplierName
+        - address
+        - phone
+        - purchaseType
+        - purchaseUrl
+      properties:
+        supplierId:
+          type: integer
+          format: int64
+        supplierName:
+          type: string
+        address:
+          type: string
+        phone:
+          type: string
+        purchaseType:
+          type: string
+          enum: [offline, online, delivery]
+        purchaseUrl:
+          type: string
+    MaterialSupplierInput:
+      type: object
+      required:
+        - supplierId
+        - purchaseType
+      properties:
+        supplierId:
+          type: integer
+          format: int64
+        purchaseType:
+          type: string
+          enum: [offline, online, delivery]
+        purchaseUrl:
+          type: string
     MaterialRequest:
       type: object
       required:
@@ -2334,11 +2372,10 @@ components:
           type: integer
         normalStock:
           type: integer
-        supplierIds:
+        materialSuppliers:
           type: array
           items:
-            type: integer
-            format: int64
+            $ref: '#/components/schemas/MaterialSupplierInput'
     ChecklistTemplateSubItem:
       type: object
       required:
@@ -2587,7 +2624,6 @@ components:
         - name
         - address
         - mapsLink
-        - isOnline
         - createdAt
       properties:
         id:
@@ -2601,8 +2637,6 @@ components:
           type: string
         mapsLink:
           type: string
-        isOnline:
-          type: boolean
         deletedAt:
           type: string
           format: date-time
@@ -2615,7 +2649,6 @@ components:
         - name
         - address
         - mapsLink
-        - isOnline
       properties:
         name:
           type: string
@@ -2625,8 +2658,6 @@ components:
           type: string
         mapsLink:
           type: string
-        isOnline:
-          type: boolean
     Wallet:
       type: object
       required:
@@ -4185,7 +4216,7 @@ components:
         - purchaseUnitSize
         - purchaseQuantity
         - estimatedCost
-        - suppliers
+        - materialSuppliers
       properties:
         materialId:
           type: integer
@@ -4206,10 +4237,10 @@ components:
           type: integer
         estimatedCost:
           type: number
-        suppliers:
+        materialSuppliers:
           type: array
           items:
-            $ref: '#/components/schemas/Supplier'
+            $ref: '#/components/schemas/MaterialSupplierItem'
     PurchaseList:
       type: object
       required:

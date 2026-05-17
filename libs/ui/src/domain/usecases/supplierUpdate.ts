@@ -53,7 +53,6 @@ export class SupplierUpdateUsecase extends Usecase<
       phone: this.params.supplier?.phone ?? '',
       address: this.params.supplier?.address ?? '',
       mapsLink: this.params.supplier?.mapsLink ?? '',
-      isOnline: this.params.supplier?.isOnline ?? false,
     };
 
     return {
@@ -155,7 +154,6 @@ export class SupplierUpdateUsecase extends Usecase<
                 address: supplier.address,
                 mapsLink: supplier.mapsLink,
                 phone: supplier.phone,
-                isOnline: supplier.isOnline,
               },
             })
           )

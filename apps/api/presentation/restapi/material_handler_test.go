@@ -28,7 +28,7 @@ func TestMaterialHandler_GetMaterialList(t *testing.T) {
 				r.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Material{{Id: 1}}, nil)
 				r.EXPECT().GetMaterialListTotal(gomock.Any(), gomock.Any()).Return(int64(1), nil)
 				r.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), gomock.Any()).Return(map[int64]float32{1: 0}, nil)
-				r.EXPECT().GetMaterialSuppliersByMaterialIds(gomock.Any(), gomock.Any()).Return(map[int64][]domain.Supplier{}, nil)
+				r.EXPECT().GetMaterialSuppliersByMaterialIds(gomock.Any(), gomock.Any()).Return(map[int64][]domain.MaterialSupplier{}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -76,7 +76,7 @@ func TestMaterialHandler_GetMaterialById(t *testing.T) {
 			setupMock: func(r *mock.MockMaterialRepository) {
 				r.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), []int64{1}).Return(map[int64]float32{1: 0}, nil)
 				r.EXPECT().GetMaterialById(gomock.Any(), int64(1)).Return(domain.Material{Id: 1, Name: "Sugar"}, nil)
-				r.EXPECT().GetMaterialSuppliersByMaterialIds(gomock.Any(), gomock.Any()).Return(map[int64][]domain.Supplier{}, nil)
+				r.EXPECT().GetMaterialSuppliersByMaterialIds(gomock.Any(), gomock.Any()).Return(map[int64][]domain.MaterialSupplier{}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -127,7 +127,7 @@ func TestMaterialHandler_CreateMaterial(t *testing.T) {
 				r.EXPECT().CreateMaterial(gomock.Any(), gomock.Any()).Return(domain.Material{Id: 1, Name: "Sugar"}, nil)
 				r.EXPECT().SetMaterialSuppliers(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 				r.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), []int64{1}).Return(map[int64]float32{1: 0}, nil)
-				r.EXPECT().GetMaterialSuppliersByMaterialIds(gomock.Any(), gomock.Any()).Return(map[int64][]domain.Supplier{}, nil)
+				r.EXPECT().GetMaterialSuppliersByMaterialIds(gomock.Any(), gomock.Any()).Return(map[int64][]domain.MaterialSupplier{}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -185,7 +185,7 @@ func TestMaterialHandler_UpdateMaterialById(t *testing.T) {
 				r.EXPECT().UpdateMaterialById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Material{Id: 1, Name: "Salt"}, nil)
 				r.EXPECT().SetMaterialSuppliers(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 				r.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), []int64{1}).Return(map[int64]float32{1: 0}, nil)
-				r.EXPECT().GetMaterialSuppliersByMaterialIds(gomock.Any(), gomock.Any()).Return(map[int64][]domain.Supplier{}, nil)
+				r.EXPECT().GetMaterialSuppliersByMaterialIds(gomock.Any(), gomock.Any()).Return(map[int64][]domain.MaterialSupplier{}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},

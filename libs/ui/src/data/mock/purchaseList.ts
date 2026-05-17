@@ -21,7 +21,7 @@ export class MockPurchaseListRepository implements PurchaseListRepository {
           purchaseUnitSize: 1000,
           purchaseQuantity: 5,
           estimatedCost: 75000,
-          suppliers: [],
+          materialSuppliers: [],
         },
       ],
     };
