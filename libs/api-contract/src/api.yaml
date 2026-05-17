@@ -2261,6 +2261,49 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/Category'
+    MaterialSupplier:
+      type: object
+      required:
+        - id
+        - supplierId
+        - purchaseType
+        - purchaseUrl
+        - supplier
+      properties:
+        id:
+          type: integer
+          format: int64
+        supplierId:
+          type: integer
+          format: int64
+        purchaseType:
+          type: string
+          enum:
+            - online
+            - offline
+            - delivery
+        purchaseUrl:
+          type: string
+        supplier:
+          $ref: '#/components/schemas/Supplier'
+    MaterialSupplierRequest:
+      type: object
+      required:
+        - supplierId
+        - purchaseType
+        - purchaseUrl
+      properties:
+        supplierId:
+          type: integer
+          format: int64
+        purchaseType:
+          type: string
+          enum:
+            - online
+            - offline
+            - delivery
+        purchaseUrl:
+          type: string
     Material:
       type: object
       required:
@@ -2273,6 +2316,7 @@ components:
         - purchaseUnitSize
         - minimumStock
         - normalStock
+        - suppliers
         - createdAt
       properties:
         id:
@@ -2296,6 +2340,10 @@ components:
           type: integer
         normalStock:
           type: integer
+        suppliers:
+          type: array
+          items:
+            $ref: '#/components/schemas/MaterialSupplier'
         deletedAt:
           type: string
           format: date-time
@@ -2331,6 +2379,10 @@ components:
         normalStock:
           type: integer
           format: int64
+        suppliers:
+          type: array
+          items:
+            $ref: '#/components/schemas/MaterialSupplierRequest'
     ChecklistTemplateSubItem:
       type: object
       required:

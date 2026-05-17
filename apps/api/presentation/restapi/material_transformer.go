@@ -24,7 +24,21 @@ func GetMaterialRequest(r *http.Request) (apiContract.MaterialRequest, error) {
 	return materialRequest, err
 }
 
+func ToApiMaterialSupplier(ms domain.MaterialSupplier) apiContract.MaterialSupplier {
+	return apiContract.MaterialSupplier{
+		Id:           ms.Id,
+		SupplierId:   ms.SupplierId,
+		PurchaseType: string(ms.PurchaseType),
+		PurchaseUrl:  ms.PurchaseUrl,
+		Supplier:     ToApiSupplier(ms.Supplier),
+	}
+}
+
 func ToApiMaterial(material domain.Material) apiContract.Material {
+	suppliers := []apiContract.MaterialSupplier{}
+	for _, ms := range material.Suppliers {
+		suppliers = append(suppliers, ToApiMaterialSupplier(ms))
+	}
 	return apiContract.Material{
 		Id:               material.Id,
 		Name:             material.Name,
@@ -38,10 +52,19 @@ func ToApiMaterial(material domain.Material) apiContract.Material {
 		PurchaseUnitSize: material.PurchaseUnitSize,
 		MinimumStock:     int32(material.MinimumStock),
 		NormalStock:      int32(material.NormalStock),
+		Suppliers:        suppliers,
 	}
 }
 
 func ToMaterial(materialRequest apiContract.MaterialRequest) domain.Material {
+	suppliers := []domain.MaterialSupplier{}
+	for _, s := range materialRequest.Suppliers {
+		suppliers = append(suppliers, domain.MaterialSupplier{
+			SupplierId:   s.SupplierId,
+			PurchaseType: domain.PurchaseType(s.PurchaseType),
+			PurchaseUrl:  s.PurchaseUrl,
+		})
+	}
 	return domain.Material{
 		Name:             materialRequest.Name,
 		Price:            materialRequest.Price,
@@ -51,6 +74,7 @@ func ToMaterial(materialRequest apiContract.MaterialRequest) domain.Material {
 		PurchaseUnitSize: materialRequest.PurchaseUnitSize,
 		MinimumStock:     materialRequest.MinimumStock,
 		NormalStock:      materialRequest.NormalStock,
+		Suppliers:        suppliers,
 	}
 }
 

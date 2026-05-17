@@ -5,6 +5,7 @@ import (
 	"apps/api/domain"
 	"apps/api/presentation/restapi"
 	"bytes"
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -218,7 +219,13 @@ func TestSupplierHandler_DeleteSupplierById(t *testing.T) {
 			name:       "success",
 			supplierId: "1",
 			setupMock: func(r *mock.MockSupplierRepository) {
+				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, callback func(context.Context) *domain.Error) *domain.Error {
+						return callback(ctx)
+					},
+				)
 				r.EXPECT().DeleteSupplierById(gomock.Any(), int64(1)).Return(nil)
+				r.EXPECT().SoftDeleteMaterialSuppliersBySupplierId(gomock.Any(), int64(1)).Return(nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -232,6 +239,11 @@ func TestSupplierHandler_DeleteSupplierById(t *testing.T) {
 			name:       "not found",
 			supplierId: "99",
 			setupMock: func(r *mock.MockSupplierRepository) {
+				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, callback func(context.Context) *domain.Error) *domain.Error {
+						return callback(ctx)
+					},
+				)
 				r.EXPECT().DeleteSupplierById(gomock.Any(), int64(99)).Return(&domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
 			expectedStatus: http.StatusNotFound,
