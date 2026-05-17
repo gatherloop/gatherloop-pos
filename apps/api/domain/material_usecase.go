@@ -1,15 +1,17 @@
 package domain
 
 import (
+	"apps/api/utils"
 	"context"
 )
 
 type MaterialUsecase struct {
-	repository MaterialRepository
+	repository         MaterialRepository
+	supplierRepository SupplierRepository
 }
 
-func NewMaterialUsecase(repository MaterialRepository) MaterialUsecase {
-	return MaterialUsecase{repository: repository}
+func NewMaterialUsecase(repository MaterialRepository, supplierRepository SupplierRepository) MaterialUsecase {
+	return MaterialUsecase{repository: repository, supplierRepository: supplierRepository}
 }
 
 func (usecase MaterialUsecase) GetMaterialList(ctx context.Context, query string, sortBy SortBy, order Order, skip int, limit int) ([]Material, int64, *Error) {
@@ -55,22 +57,30 @@ func (usecase MaterialUsecase) GetMaterialById(ctx context.Context, id int64) (M
 }
 
 func (usecase MaterialUsecase) CreateMaterial(ctx context.Context, material Material) (Material, *Error) {
-	createdMaterial, err := usecase.repository.CreateMaterial(ctx, material)
+	if err := usecase.validateSuppliers(ctx, material.Suppliers); err != nil {
+		return Material{}, err
+	}
+
+	created, err := usecase.repository.CreateMaterial(ctx, material)
 	if err != nil {
 		return Material{}, err
 	}
 
-	materialsUsage, err := usecase.repository.GetMaterialsWeeklyUsage(ctx, []int64{createdMaterial.Id})
+	materialsUsage, err := usecase.repository.GetMaterialsWeeklyUsage(ctx, []int64{created.Id})
 	if err != nil {
 		return Material{}, err
 	}
 
-	createdMaterial.WeeklyUsage = materialsUsage[createdMaterial.Id]
-	return createdMaterial, nil
+	created.WeeklyUsage = materialsUsage[created.Id]
+	return created, nil
 }
 
 func (usecase MaterialUsecase) UpdateMaterialById(ctx context.Context, material Material, id int64) (Material, *Error) {
-	updatedMaterial, err := usecase.repository.UpdateMaterialById(ctx, material, id)
+	if err := usecase.validateSuppliers(ctx, material.Suppliers); err != nil {
+		return Material{}, err
+	}
+
+	updated, err := usecase.repository.UpdateMaterialById(ctx, material, id)
 	if err != nil {
 		return Material{}, err
 	}
@@ -80,10 +90,33 @@ func (usecase MaterialUsecase) UpdateMaterialById(ctx context.Context, material 
 		return Material{}, err
 	}
 
-	updatedMaterial.WeeklyUsage = materialsUsage[id]
-	return updatedMaterial, nil
+	updated.WeeklyUsage = materialsUsage[id]
+	return updated, nil
 }
 
 func (usecase MaterialUsecase) DeleteMaterialById(ctx context.Context, id int64) *Error {
 	return usecase.repository.DeleteMaterialById(ctx, id)
+}
+
+func (usecase MaterialUsecase) validateSuppliers(ctx context.Context, suppliers []MaterialSupplier) *Error {
+	for _, p := range suppliers {
+		switch p.PurchaseType {
+		case PurchaseTypeOnline:
+			if !utils.IsValidHttpUrl(p.PurchaseUrl) {
+				return &Error{Type: BadRequest, Message: "purchase_url must be a valid http(s):// URL for online purchase type"}
+			}
+		case PurchaseTypeOffline, PurchaseTypeDelivery:
+			if p.PurchaseUrl != "" {
+				return &Error{Type: BadRequest, Message: "purchase_url must be empty for offline and delivery purchase types"}
+			}
+		default:
+			return &Error{Type: BadRequest, Message: "invalid purchase_type: must be online, offline, or delivery"}
+		}
+
+		_, err := usecase.supplierRepository.GetSupplierById(ctx, p.SupplierId)
+		if err != nil {
+			return &Error{Type: BadRequest, Message: "supplier not found or has been deleted"}
+		}
+	}
+	return nil
 }

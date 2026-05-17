@@ -158,3 +158,4 @@ func (mr *MockMaterialRepositoryMockRecorder) UpdateMaterialById(ctx, material, 
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateMaterialById", reflect.TypeOf((*MockMaterialRepository)(nil).UpdateMaterialById), ctx, material, id)
 }
+

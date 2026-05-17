@@ -91,7 +91,7 @@ The Material update screen gains a **"Suppliers"** section underneath the existi
 - For `Offline`: show a read-only preview of the selected supplier's `address` + `maps_link`.
 - For `Delivery`: show a read-only preview of the selected supplier's `phone`. If the selected supplier has no phone, the row is invalid and the form blocks submit with a clear error.
 - Remove a row (soft-deletes on save).
-- The whole list is saved as one replace-style request (`PUT /materials/{id}/suppliers`) — matches the diff/upsert pattern in `variant_repo.go`.
+- The whole list is saved together with the material in the **same form submission**: `POST /materials` on create, `PUT /materials/{id}` on update. The `suppliers` array is included in the same request body and uses replace semantics — the full desired list must be sent on every save.
 
 Read-only summary of linked suppliers should also be visible on the Material **detail** page (`apps/web/src/pages/materials/[materialId].tsx`) so the manager can see linkage without entering edit mode.
 
@@ -122,7 +122,7 @@ Above the grouped list, a segmented control: **All | Online | Offline | Delivery
 - Extend `Material` response schema with `suppliers: MaterialSupplier[]` (always present, possibly empty).
 - New `MaterialSupplier` schema: `id`, `supplier_id`, `purchase_type` (enum), `purchase_url` (empty string when not applicable, never null), embedded `supplier` (id, name, address, maps_link, phone).
 - Extend `PurchaseListItem` schema with the same `suppliers` array. The backend populates it from the already-extended `Material`.
-- New endpoint `PUT /materials/{materialId}/suppliers` (replace semantics). Request body is an array of `{supplier_id, purchase_type, purchase_url}` (`purchase_url` is always a string, empty for non-online types).
+- Extend `POST /materials` and `PUT /materials/{id}` request bodies with an optional `suppliers: [{supplier_id, purchase_type, purchase_url}]` field. Omitting the field is equivalent to sending an empty array (clears all links). `purchase_url` is always a string, empty for non-online types.
 - All changes go through `libs/api-contract/src/api.yaml`; Kubb codegen is run and the generated client is committed.
 
 ---
@@ -177,10 +177,13 @@ Each phase is one small reviewable PR (~150–400 LOC). Phases 1–3 are backend
 - Extend `apps/api/data/mysql/material_repo.go`:
   - `FindById` adds `Preload("Suppliers").Preload("Suppliers.Supplier")` (chain mirrors `variant_repo.go`).
   - New `ReplaceSuppliers(materialId int64, payload []MaterialSupplier)` — diff/upsert/soft-delete pattern lifted from `variant_repo.go`.
-- Extend `apps/api/domain/material_usecase.go` with `SetMaterialSuppliers(materialId, payload)`:
-  - Rejects when `purchase_type='online'` and `purchase_url` is empty or not a valid `http(s)://` URL.
-  - Rejects when `purchase_type!='online'` and `purchase_url` is non-empty.
-  - Rejects supplier_ids that don't exist or are soft-deleted.
+- Integrate supplier handling directly into `CreateMaterial` and `UpdateMaterialById` in `apps/api/domain/material_usecase.go`:
+  - Both methods accept `material.Suppliers []MaterialSupplier` in the payload.
+  - Validate each supplier link before any DB operation:
+    - `purchase_type='online'`: `purchase_url` must be a valid `http(s)://` URL (max 2048 chars).
+    - `purchase_type!='online'`: `purchase_url` must be empty.
+    - `supplier_id` must exist and not be soft-deleted.
+  - Wrap create/update + `ReplaceSuppliers` in a single transaction for atomicity.
 - Extend `apps/api/domain/supplier_usecase.go` `Delete` to soft-delete the supplier's `material_suppliers` rows in the same transaction.
 - Go unit tests for the validator and the diff logic.
 
@@ -194,14 +197,13 @@ Each phase is one small reviewable PR (~150–400 LOC). Phases 1–3 are backend
 
 **Changes:**
 - `apps/api/presentation/restapi/material_handler.go`:
-  - `PUT /materials/{materialId}/suppliers` (replace semantics).
+  - `POST /materials` and `PUT /materials/{id}` request parsing extended to include `suppliers` array and pass it to the usecase.
   - `GET /materials/{materialId}` response now includes `suppliers` (auto, since Phase 2 loaded them).
 - New transformer: `apps/api/presentation/restapi/material_supplier_transformer.go`.
-- Register route in `apps/api/presentation/restapi/material_route.go`.
 - `libs/api-contract/src/api.yaml`:
   - New schema `MaterialSupplier` (with `purchase_type` enum).
   - Add `suppliers` array on `Material`.
-  - Add the `PUT /materials/{materialId}/suppliers` operation.
+  - Add `suppliers` field to `CreateMaterialRequest` and `UpdateMaterialRequest` schemas.
 - Run Kubb codegen and commit the generated client. Call out generated files in the PR description so reviewers can collapse them.
 
 **Verification:** OpenAPI lints cleanly; generated TS client compiles; `curl` against the new endpoint round-trips both create and edit cases.

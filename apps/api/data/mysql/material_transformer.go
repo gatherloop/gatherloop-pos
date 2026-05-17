@@ -19,6 +19,10 @@ func ToMaterialDB(domainMaterial domain.Material) Material {
 }
 
 func ToMaterialDomain(dbMaterial Material) domain.Material {
+	var suppliers []domain.MaterialSupplier
+	for _, s := range dbMaterial.Suppliers {
+		suppliers = append(suppliers, ToMaterialSupplierDomain(s))
+	}
 	return domain.Material{
 		Id:               dbMaterial.Id,
 		Name:             dbMaterial.Name,
@@ -29,6 +33,7 @@ func ToMaterialDomain(dbMaterial Material) domain.Material {
 		PurchaseUnitSize: dbMaterial.PurchaseUnitSize,
 		MinimumStock:     dbMaterial.MinimumStock,
 		NormalStock:      dbMaterial.NormalStock,
+		Suppliers:        suppliers,
 		DeletedAt:        dbMaterial.DeletedAt,
 		CreatedAt:        dbMaterial.CreatedAt,
 	}
