@@ -2273,7 +2273,6 @@ components:
         - purchaseUnitSize
         - minimumStock
         - normalStock
-        - suppliers
         - createdAt
       properties:
         id:
@@ -2297,54 +2296,12 @@ components:
           type: integer
         normalStock:
           type: integer
-        suppliers:
-          type: array
-          items:
-            $ref: '#/components/schemas/MaterialSupplierItem'
         deletedAt:
           type: string
           format: date-time
         createdAt:
           type: string
           format: date-time
-    MaterialSupplierItem:
-      type: object
-      required:
-        - supplierId
-        - supplierName
-        - address
-        - phone
-        - purchaseType
-        - purchaseUrl
-      properties:
-        supplierId:
-          type: integer
-          format: int64
-        supplierName:
-          type: string
-        address:
-          type: string
-        phone:
-          type: string
-        purchaseType:
-          type: string
-          enum: [offline, online, delivery]
-        purchaseUrl:
-          type: string
-    MaterialSupplierRequest:
-      type: object
-      required:
-        - supplierId
-        - purchaseType
-      properties:
-        supplierId:
-          type: integer
-          format: int64
-        purchaseType:
-          type: string
-          enum: [offline, online, delivery]
-        purchaseUrl:
-          type: string
     MaterialRequest:
       type: object
       required:
@@ -2355,7 +2312,6 @@ components:
         - purchaseUnitSize
         - minimumStock
         - normalStock
-        - suppliers
       properties:
         name:
           type: string
@@ -2373,10 +2329,6 @@ components:
           type: integer
         normalStock:
           type: integer
-        suppliers:
-          type: array
-          items:
-            $ref: '#/components/schemas/MaterialSupplierRequest'
     ChecklistTemplateSubItem:
       type: object
       required:
@@ -4217,7 +4169,6 @@ components:
         - purchaseUnitSize
         - purchaseQuantity
         - estimatedCost
-        - suppliers
       properties:
         materialId:
           type: integer
@@ -4238,10 +4189,6 @@ components:
           type: integer
         estimatedCost:
           type: number
-        suppliers:
-          type: array
-          items:
-            $ref: '#/components/schemas/MaterialSupplierItem'
     PurchaseList:
       type: object
       required:

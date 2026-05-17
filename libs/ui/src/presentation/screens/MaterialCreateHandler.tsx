@@ -5,7 +5,9 @@ import {
   useAuthLogoutController,
   useMaterialCreateController,
 } from '../controllers';
-import { MaterialCreateScreen } from './MaterialCreateScreen';
+import {
+  MaterialCreateScreen,
+} from './MaterialCreateScreen';
 
 export type MaterialCreateHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;
@@ -44,7 +46,6 @@ export const MaterialCreateHandler = ({
           : undefined
       }
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
-      suppliers={materialCreate.suppliers}
     />
   );
 };

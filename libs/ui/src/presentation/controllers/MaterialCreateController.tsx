@@ -1,13 +1,10 @@
 import { useEffect } from 'react';
-import { MaterialCreateUsecase, Supplier } from '../../domain';
+import { MaterialCreateUsecase } from '../../domain';
 import { useController } from './controller';
 import { useToastController } from '@tamagui/toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-// eslint-disable-next-line @nx/enforce-module-boundaries
-import { useSupplierList } from '../../../../api-contract/src';
-import { toSupplier } from '../../data/api/supplier.transformer';
 
 export const useMaterialCreateController = (usecase: MaterialCreateUsecase) => {
   const { state, dispatch } = useController(usecase);
@@ -34,17 +31,9 @@ export const useMaterialCreateController = (usecase: MaterialCreateUsecase) => {
     ),
   });
 
-  const { data: supplierData } = useSupplierList({
-    limit: 1000,
-    sortBy: 'created_at',
-    order: 'asc',
-  });
-  const suppliers: Supplier[] = supplierData?.data?.map(toSupplier) ?? [];
-
   return {
     state,
     dispatch,
     form,
-    suppliers,
   };
 };

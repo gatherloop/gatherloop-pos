@@ -3,14 +3,11 @@ import { match } from 'ts-pattern';
 import { FlatList } from 'react-native';
 import { PurchaseListItemView } from './PurchaseListItemView';
 import { EmptyView, ErrorView, SkeletonList } from '../base';
-import { PurchaseList, PurchaseListItem } from '../../../domain';
-
-export type PurchaseTypeFilter = 'all' | 'offline' | 'online' | 'delivery';
+import { PurchaseList } from '../../../domain';
 
 export type PurchaseListViewProps = {
   onRetryButtonPress: () => void;
   isRevalidating?: boolean;
-  purchaseTypeFilter?: PurchaseTypeFilter;
   variant:
     | { type: 'loading' }
     | { type: 'error' }
@@ -18,17 +15,9 @@ export type PurchaseListViewProps = {
     | { type: 'loaded'; purchaseList: PurchaseList };
 };
 
-function filterItems(items: PurchaseListItem[], filter: PurchaseTypeFilter): PurchaseListItem[] {
-  if (filter === 'all') return items;
-  return items.filter((item) =>
-    item.suppliers.some((ms) => ms.purchaseType === filter)
-  );
-}
-
 export const PurchaseListView = ({
   onRetryButtonPress,
   isRevalidating,
-  purchaseTypeFilter = 'all',
   variant,
 }: PurchaseListViewProps) => {
   return (
@@ -53,30 +42,20 @@ export const PurchaseListView = ({
             />
           </YStack>
         ))
-        .with({ type: 'loaded' }, ({ purchaseList }) => {
-          const filteredItems = filterItems(purchaseList.items, purchaseTypeFilter);
-          return (
-            <YStack gap="$3" flex={1}>
-              <PurchaseListHeader
-                stockCheckDate={purchaseList.stockCheckDate}
-                totalEstimatedCost={purchaseList.totalEstimatedCost}
-              />
-              {filteredItems.length === 0 ? (
-                <EmptyView
-                  title="No Items"
-                  subtitle="No items match the selected filter."
-                />
-              ) : (
-                <FlatList
-                  nestedScrollEnabled
-                  data={filteredItems}
-                  renderItem={({ item }) => <PurchaseListItemView item={item} />}
-                  ItemSeparatorComponent={() => <YStack height="$1" />}
-                />
-              )}
-            </YStack>
-          );
-        })
+        .with({ type: 'loaded' }, ({ purchaseList }) => (
+          <YStack gap="$3" flex={1}>
+            <PurchaseListHeader
+              stockCheckDate={purchaseList.stockCheckDate}
+              totalEstimatedCost={purchaseList.totalEstimatedCost}
+            />
+            <FlatList
+              nestedScrollEnabled
+              data={purchaseList.items}
+              renderItem={({ item }) => <PurchaseListItemView item={item} />}
+              ItemSeparatorComponent={() => <YStack height="$1" />}
+            />
+          </YStack>
+        ))
         .with({ type: 'error' }, () => (
           <ErrorView
             title="Failed to Fetch Purchase List"
