@@ -68,7 +68,7 @@ CREATE TABLE material_suppliers (
   material_id BIGINT NOT NULL,
   supplier_id BIGINT NOT NULL,
   purchase_type ENUM('online','offline','delivery') NOT NULL,
-  purchase_url VARCHAR(2048) NULL,
+  purchase_url VARCHAR(2048) NOT NULL DEFAULT '',
   created_at DATETIME NOT NULL,
   deleted_at DATETIME NULL,
   INDEX idx_material (material_id),
@@ -80,7 +80,7 @@ CREATE TABLE material_suppliers (
 **Rules:**
 - The unique key includes `deleted_at` so a soft-deleted row doesn't block re-adding the same combination.
 - No FK constraints in MySQL (matches the repo's existing convention — referential integrity enforced in the usecase layer, see `variant_repo.go`).
-- `purchase_url` must be a valid `http(s)://` URL when set; max 2048 chars.
+- `purchase_url` stores an empty string `''` when not applicable (no NULL). When non-empty it must be a valid `http(s)://` URL; max 2048 chars. Using an empty string avoids pointer types in Go and simplifies validation logic.
 
 ### FR-2: Manage a material's suppliers from the Material detail page
 
@@ -120,9 +120,9 @@ Above the grouped list, a segmented control: **All | Online | Offline | Delivery
 ### FR-5: API contract changes
 
 - Extend `Material` response schema with `suppliers: MaterialSupplier[]` (always present, possibly empty).
-- New `MaterialSupplier` schema: `id`, `supplier_id`, `purchase_type` (enum), `purchase_url` (nullable), embedded `supplier` (id, name, address, maps_link, phone).
+- New `MaterialSupplier` schema: `id`, `supplier_id`, `purchase_type` (enum), `purchase_url` (empty string when not applicable, never null), embedded `supplier` (id, name, address, maps_link, phone).
 - Extend `PurchaseListItem` schema with the same `suppliers` array. The backend populates it from the already-extended `Material`.
-- New endpoint `PUT /materials/{materialId}/suppliers` (replace semantics). Request body is an array of `{supplier_id, purchase_type, purchase_url?}`.
+- New endpoint `PUT /materials/{materialId}/suppliers` (replace semantics). Request body is an array of `{supplier_id, purchase_type, purchase_url}` (`purchase_url` is always a string, empty for non-online types).
 - All changes go through `libs/api-contract/src/api.yaml`; Kubb codegen is run and the generated client is committed.
 
 ---
@@ -159,11 +159,11 @@ Each phase is one small reviewable PR (~150–400 LOC). Phases 1–3 are backend
 
 **Changes:**
 - `apps/api/migrations/000010_create_material_suppliers.up.sql` (+ `.down.sql`).
-- `apps/api/domain/material_supplier_entity.go`:
+- Extend `apps/api/domain/material_entity.go` with:
   - `PurchaseType` string-enum (`PurchaseTypeOnline | PurchaseTypeOffline | PurchaseTypeDelivery`).
   - `MaterialSupplier` struct (with embedded `Supplier`).
-- Extend `domain.Material` to include `Suppliers []MaterialSupplier` (nil by default — does not change existing JSON responses unless populated by the repository).
-- `apps/api/data/mysql/material_supplier_entity.go` (GORM model + table mapping).
+  - `Suppliers []MaterialSupplier` field on `Material` (nil by default — does not change existing JSON responses unless populated by the repository).
+- Extend `apps/api/data/mysql/material_entity.go` with the `MaterialSupplier` GORM model.
 
 **Verification:** `migrate up && migrate down` round-trips cleanly on a fresh DB; `go build ./...` passes.
 
