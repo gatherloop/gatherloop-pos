@@ -214,21 +214,35 @@ Each phase is one small reviewable PR (~150–400 LOC). Phases 1–3 are backend
 
 **Scope:** UI for "go to material page → add suppliers → pick purchase type".
 
-**Changes:**
-- Extend `libs/ui/src/domain/entities/Material.ts` with `MaterialSupplier`, `PurchaseType`.
-- Extend repository interface `libs/ui/src/domain/repositories/material.ts` with `setMaterialSuppliers`.
-- Implement in `libs/ui/src/data/api/material.ts` (use generated client) and `libs/ui/src/data/api/material.transformer.ts`.
-- New usecase `libs/ui/src/domain/usecases/materialSuppliersSet.ts`.
-- New component `libs/ui/src/presentation/components/materials/MaterialSuppliersForm.tsx`:
-  - Supplier picker reusing the existing `supplierList` usecase.
-  - Per-row purchase-type radio.
-  - Conditional `purchase_url` input (shown + required only for `online`).
-  - Conditional read-only previews: address+maps for `offline`, phone for `delivery`. Blocks submit if `delivery` is chosen on a supplier with no phone.
-  - React Hook Form validation matching backend rules.
-- Embed in `libs/ui/src/presentation/screens/MaterialUpdateScreen.tsx`.
-- Add a read-only summary on `apps/web/src/pages/materials/[materialId].tsx`.
+**Key design decision (agreed in Phase 3):** Suppliers are submitted together with the material in a single request — `POST /materials` on create, `PUT /materials/{id}` on update. The `suppliers` array is already part of `MaterialRequest` / `MaterialSupplierRequest` in the API contract. There is no separate "set suppliers" endpoint and no separate usecase for supplier management.
 
-**Verification:** `nx serve web` → create a supplier; on a material detail page, add it with each of the three purchase types; reload and confirm persistence; submit an invalid URL → form rejects with the same message as the API would.
+**Changes:**
+- Extend `libs/ui/src/domain/entities/Material.ts`:
+  - Add `PurchaseType` string-enum type (`'online' | 'offline' | 'delivery'`).
+  - Add `MaterialSupplier` type: `{ id: number; supplierId: number; purchaseType: PurchaseType; purchaseUrl: string; supplier: Supplier }`.
+  - Add `MaterialSupplierForm` type: `{ supplierId: number; purchaseType: PurchaseType; purchaseUrl: string }`.
+  - Extend `Material` with `suppliers: MaterialSupplier[]`.
+  - Extend `MaterialForm` with `suppliers: MaterialSupplierForm[]`.
+- Update `libs/ui/src/data/api/material.transformer.ts`:
+  - `toMaterial`: map `material.suppliers` → `MaterialSupplier[]` (including embedded `supplier`).
+  - `toApiMaterial`: map `form.suppliers` → `MaterialSupplierRequest[]` and include in the request body.
+- No new repository method. The existing `createMaterial` and `updateMaterial` on `MaterialRepository` already accept `MaterialForm` (which now includes `suppliers`) and call `POST /materials` / `PUT /materials/{id}` respectively.
+- Extend existing usecases (no new usecase):
+  - `MaterialCreateUsecase` initial `values.suppliers` defaults to `[]`.
+  - `MaterialUpdateUsecase` populates `values.suppliers` from the fetched `Material.suppliers` when dispatching `FETCH_SUCCESS`.
+- New component `libs/ui/src/presentation/components/materials/MaterialSuppliersForm.tsx`:
+  - Renders a dynamic list of supplier rows; each row has:
+    - Supplier picker (searches existing suppliers via the `supplierList` usecase).
+    - Purchase-type radio: `Online | Offline | Delivery`.
+    - For `online`: `purchaseUrl` text input (required, `http(s)://` URL-validated).
+    - For `offline`: read-only preview of the selected supplier's `address` + `maps_link`.
+    - For `delivery`: read-only preview of the selected supplier's `phone`. If the supplier has no phone, the row is invalid and the form blocks submit with a clear error.
+  - Add / remove row buttons. React Hook Form field-array (`useFieldArray`).
+  - Validation rules mirror the backend: `purchase_url` required iff `purchase_type = 'online'`; must be empty otherwise.
+- Embed `MaterialSuppliersForm` inside the existing `MaterialFormView.tsx` as a new "Suppliers" section below the existing fields (both create and update screens share this form component, so both get the section for free).
+- Add a read-only suppliers summary on `apps/web/src/pages/materials/[materialId].tsx` so the manager can see linkage without entering edit mode.
+
+**Verification:** `nx serve web` → create a supplier; on a material detail page, add it with each of the three purchase types in a single form submit; reload and confirm persistence; submit an invalid URL → form rejects before the request is sent; submit a `delivery` row for a supplier with no phone → form blocks with an inline error.
 
 **Size:** ~400 LOC.
 
