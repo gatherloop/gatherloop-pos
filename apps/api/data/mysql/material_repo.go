@@ -96,10 +96,10 @@ func (repo Repository) GetMaterialById(ctx context.Context, id int64) (domain.Ma
 }
 
 func (repo Repository) CreateMaterial(ctx context.Context, material domain.Material) (domain.Material, *domain.Error) {
-	outerDb := GetDbFromCtx(ctx, repo.db)
+	db := GetDbFromCtx(ctx, repo.db)
 
 	var createdId int64
-	err := outerDb.Transaction(func(tx *gorm.DB) error {
+	err := db.Transaction(func(tx *gorm.DB) error {
 		payload := ToMaterialDB(material)
 		if result := tx.Table("materials").Create(&payload); result.Error != nil {
 			return result.Error
@@ -112,7 +112,7 @@ func (repo Repository) CreateMaterial(ctx context.Context, material domain.Mater
 	}
 
 	var created Material
-	fetchResult := outerDb.Table("materials").
+	fetchResult := db.Table("materials").
 		Preload("Suppliers", "deleted_at IS NULL").
 		Preload("Suppliers.Supplier").
 		Where("id = ?", createdId).
@@ -121,9 +121,9 @@ func (repo Repository) CreateMaterial(ctx context.Context, material domain.Mater
 }
 
 func (repo Repository) UpdateMaterialById(ctx context.Context, material domain.Material, id int64) (domain.Material, *domain.Error) {
-	outerDb := GetDbFromCtx(ctx, repo.db)
+	db := GetDbFromCtx(ctx, repo.db)
 
-	err := outerDb.Transaction(func(tx *gorm.DB) error {
+	err := db.Transaction(func(tx *gorm.DB) error {
 		materialPayload := ToMaterialDB(material)
 		if result := tx.Table("materials").Where("id = ?", id).Updates(&materialPayload); result.Error != nil {
 			return result.Error
@@ -135,7 +135,7 @@ func (repo Repository) UpdateMaterialById(ctx context.Context, material domain.M
 	}
 
 	var updated Material
-	fetchResult := outerDb.Table("materials").
+	fetchResult := db.Table("materials").
 		Preload("Suppliers", "deleted_at IS NULL").
 		Preload("Suppliers.Supplier").
 		Where("id = ?", id).
