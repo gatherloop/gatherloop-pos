@@ -50,7 +50,7 @@ export const MaterialCreateHandler = ({
           : undefined
       }
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
-      availableSuppliers={supplierList.state.suppliers}
+      suppliers={supplierList.state.suppliers}
       isLoadingSuppliers={
         supplierList.state.type === 'idle' ||
         supplierList.state.type === 'loading'

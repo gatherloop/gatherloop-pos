@@ -2,7 +2,7 @@ import {
   ApiAuthRepository,
   ApiMaterialRepository,
   ApiSupplierRepository,
-  MockSupplierListQueryRepository,
+  UrlSupplierListQueryRepository,
 } from '../data';
 import {
   AuthLogoutUsecase,
@@ -27,7 +27,7 @@ export function MaterialUpdate({
   const authRepository = new ApiAuthRepository();
   const materialRepository = new ApiMaterialRepository(client);
   const supplierRepository = new ApiSupplierRepository(client);
-  const supplierListQueryRepository = new MockSupplierListQueryRepository();
+  const supplierListQueryRepository = new UrlSupplierListQueryRepository();
 
   const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
   const materialUpdateUsecase = new MaterialUpdateUsecase(

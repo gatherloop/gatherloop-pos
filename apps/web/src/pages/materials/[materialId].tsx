@@ -3,7 +3,7 @@ import {
   ApiSupplierRepository,
   MaterialUpdate,
   MaterialUpdateProps,
-  MockSupplierListQueryRepository,
+  UrlSupplierListQueryRepository,
 } from '@gatherloop-pos/ui';
 import { GetServerSideProps } from 'next';
 import { QueryClient } from '@tanstack/react-query';
@@ -25,7 +25,7 @@ export const getServerSideProps: GetServerSideProps<
   const client = new QueryClient();
   const materialRepository = new ApiMaterialRepository(client);
   const supplierRepository = new ApiSupplierRepository(client);
-  const supplierListQueryRepository = new MockSupplierListQueryRepository();
+  const supplierListQueryRepository = new UrlSupplierListQueryRepository();
 
   const materialId = parseInt(ctx.params?.materialId ?? '');
   const [material, { suppliers, totalItem }] = await Promise.all([

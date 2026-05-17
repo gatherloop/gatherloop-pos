@@ -2,7 +2,7 @@ import {
   ApiSupplierRepository,
   MaterialCreate,
   MaterialCreateProps,
-  MockSupplierListQueryRepository,
+  UrlSupplierListQueryRepository,
 } from '@gatherloop-pos/ui';
 import { GetServerSideProps } from 'next';
 import { QueryClient } from '@tanstack/react-query';
@@ -17,7 +17,7 @@ export const getServerSideProps: GetServerSideProps<
 
   const client = new QueryClient();
   const supplierRepository = new ApiSupplierRepository(client);
-  const supplierListQueryRepository = new MockSupplierListQueryRepository();
+  const supplierListQueryRepository = new UrlSupplierListQueryRepository();
 
   const { suppliers, totalItem } = await supplierRepository.fetchSupplierList(
     {

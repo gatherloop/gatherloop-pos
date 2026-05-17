@@ -10,7 +10,7 @@ export type MaterialUpdateScreenProps = {
   isSubmitting: boolean;
   onLogoutPress: () => void;
   serverError?: string;
-  availableSuppliers: Supplier[];
+  suppliers: Supplier[];
   isLoadingSuppliers?: boolean;
 };
 
@@ -28,7 +28,7 @@ export const MaterialUpdateScreen = (props: MaterialUpdateScreenProps) => {
           isSubmitDisabled={props.isSubmitDisabled}
           isSubmitting={props.isSubmitting}
           serverError={props.serverError}
-          availableSuppliers={props.availableSuppliers}
+          suppliers={props.suppliers}
           isLoadingSuppliers={props.isLoadingSuppliers}
         />
       </ScrollView>
