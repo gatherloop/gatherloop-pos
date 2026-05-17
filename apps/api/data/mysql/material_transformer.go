@@ -88,4 +88,3 @@ func ToMaterialSupplierListDB(ds []domain.MaterialSupplier) []MaterialSupplier {
 	}
 	return result
 }
-
