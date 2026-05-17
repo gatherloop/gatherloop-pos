@@ -57,24 +57,48 @@ func (usecase MaterialUsecase) GetMaterialById(ctx context.Context, id int64) (M
 }
 
 func (usecase MaterialUsecase) CreateMaterial(ctx context.Context, material Material) (Material, *Error) {
-	createdMaterial, err := usecase.repository.CreateMaterial(ctx, material)
+	if err := usecase.validateSuppliers(ctx, material.Suppliers); err != nil {
+		return Material{}, err
+	}
+
+	var created Material
+	txErr := usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		var err *Error
+		created, err = usecase.repository.CreateMaterial(ctxWithTx, material)
+		if err != nil {
+			return err
+		}
+		return usecase.repository.ReplaceSuppliers(ctxWithTx, created.Id, material.Suppliers)
+	})
+	if txErr != nil {
+		return Material{}, txErr
+	}
+
+	materialsUsage, err := usecase.repository.GetMaterialsWeeklyUsage(ctx, []int64{created.Id})
 	if err != nil {
 		return Material{}, err
 	}
 
-	materialsUsage, err := usecase.repository.GetMaterialsWeeklyUsage(ctx, []int64{createdMaterial.Id})
-	if err != nil {
-		return Material{}, err
-	}
-
-	createdMaterial.WeeklyUsage = materialsUsage[createdMaterial.Id]
-	return createdMaterial, nil
+	created.WeeklyUsage = materialsUsage[created.Id]
+	return created, nil
 }
 
 func (usecase MaterialUsecase) UpdateMaterialById(ctx context.Context, material Material, id int64) (Material, *Error) {
-	updatedMaterial, err := usecase.repository.UpdateMaterialById(ctx, material, id)
-	if err != nil {
+	if err := usecase.validateSuppliers(ctx, material.Suppliers); err != nil {
 		return Material{}, err
+	}
+
+	var updated Material
+	txErr := usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		var err *Error
+		updated, err = usecase.repository.UpdateMaterialById(ctxWithTx, material, id)
+		if err != nil {
+			return err
+		}
+		return usecase.repository.ReplaceSuppliers(ctxWithTx, id, material.Suppliers)
+	})
+	if txErr != nil {
+		return Material{}, txErr
 	}
 
 	materialsUsage, err := usecase.repository.GetMaterialsWeeklyUsage(ctx, []int64{id})
@@ -82,16 +106,16 @@ func (usecase MaterialUsecase) UpdateMaterialById(ctx context.Context, material 
 		return Material{}, err
 	}
 
-	updatedMaterial.WeeklyUsage = materialsUsage[id]
-	return updatedMaterial, nil
+	updated.WeeklyUsage = materialsUsage[id]
+	return updated, nil
 }
 
 func (usecase MaterialUsecase) DeleteMaterialById(ctx context.Context, id int64) *Error {
 	return usecase.repository.DeleteMaterialById(ctx, id)
 }
 
-func (usecase MaterialUsecase) SetMaterialSuppliers(ctx context.Context, materialId int64, payload []MaterialSupplier) *Error {
-	for _, p := range payload {
+func (usecase MaterialUsecase) validateSuppliers(ctx context.Context, suppliers []MaterialSupplier) *Error {
+	for _, p := range suppliers {
 		switch p.PurchaseType {
 		case PurchaseTypeOnline:
 			if !utils.IsValidHttpUrl(p.PurchaseUrl) {
@@ -110,7 +134,5 @@ func (usecase MaterialUsecase) SetMaterialSuppliers(ctx context.Context, materia
 			return &Error{Type: BadRequest, Message: "supplier not found or has been deleted"}
 		}
 	}
-
-	return usecase.repository.ReplaceSuppliers(ctx, materialId, payload)
+	return nil
 }
-

@@ -14,6 +14,10 @@ func newMaterialUsecase(ctrl *gomock.Controller, matRepo *mock.MockMaterialRepos
 	return domain.NewMaterialUsecase(matRepo, suppRepo)
 }
 
+func execTx(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error {
+	return cb(ctx)
+}
+
 func TestMaterialUsecase_GetMaterialList(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -153,24 +157,90 @@ func TestMaterialUsecase_CreateMaterial(t *testing.T) {
 	tests := []struct {
 		name          string
 		input         domain.Material
-		setupMock     func(r *mock.MockMaterialRepository)
+		setupMock     func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository)
 		expectedId    int64
 		expectedError *domain.Error
 	}{
 		{
-			name:  "success",
+			name:  "success — no suppliers",
 			input: domain.Material{Name: "Salt", Price: 5000},
-			setupMock: func(r *mock.MockMaterialRepository) {
-				r.EXPECT().CreateMaterial(gomock.Any(), gomock.Any()).Return(domain.Material{Id: 3, Name: "Salt"}, nil)
-				r.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), []int64{3}).Return(map[int64]float32{3: 0}, nil)
+			setupMock: func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {
+				matRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(execTx)
+				matRepo.EXPECT().CreateMaterial(gomock.Any(), gomock.Any()).Return(domain.Material{Id: 3, Name: "Salt"}, nil)
+				matRepo.EXPECT().ReplaceSuppliers(gomock.Any(), int64(3), gomock.Any()).Return(nil)
+				matRepo.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), []int64{3}).Return(map[int64]float32{3: 0}, nil)
 			},
 			expectedId: 3,
 		},
 		{
+			name: "success — with valid online supplier",
+			input: domain.Material{
+				Name:  "Coffee",
+				Price: 80000,
+				Suppliers: []domain.MaterialSupplier{
+					{SupplierId: 10, PurchaseType: domain.PurchaseTypeOnline, PurchaseUrl: "https://shop.example.com/coffee"},
+				},
+			},
+			setupMock: func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {
+				suppRepo.EXPECT().GetSupplierById(gomock.Any(), int64(10)).Return(domain.Supplier{Id: 10, Name: "Acme"}, nil)
+				matRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(execTx)
+				matRepo.EXPECT().CreateMaterial(gomock.Any(), gomock.Any()).Return(domain.Material{Id: 4, Name: "Coffee"}, nil)
+				matRepo.EXPECT().ReplaceSuppliers(gomock.Any(), int64(4), gomock.Any()).Return(nil)
+				matRepo.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), []int64{4}).Return(map[int64]float32{4: 0}, nil)
+			},
+			expectedId: 4,
+		},
+		{
+			name: "reject — online supplier with empty purchase_url",
+			input: domain.Material{
+				Name: "Coffee",
+				Suppliers: []domain.MaterialSupplier{
+					{SupplierId: 10, PurchaseType: domain.PurchaseTypeOnline, PurchaseUrl: ""},
+				},
+			},
+			setupMock:     func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {},
+			expectedError: &domain.Error{Type: domain.BadRequest},
+		},
+		{
+			name: "reject — offline supplier with non-empty purchase_url",
+			input: domain.Material{
+				Name: "Sugar",
+				Suppliers: []domain.MaterialSupplier{
+					{SupplierId: 10, PurchaseType: domain.PurchaseTypeOffline, PurchaseUrl: "https://shop.example.com"},
+				},
+			},
+			setupMock:     func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {},
+			expectedError: &domain.Error{Type: domain.BadRequest},
+		},
+		{
+			name: "reject — supplier not found",
+			input: domain.Material{
+				Name: "Sugar",
+				Suppliers: []domain.MaterialSupplier{
+					{SupplierId: 99, PurchaseType: domain.PurchaseTypeOffline, PurchaseUrl: ""},
+				},
+			},
+			setupMock: func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {
+				suppRepo.EXPECT().GetSupplierById(gomock.Any(), int64(99)).Return(domain.Supplier{}, &domain.Error{Type: domain.NotFound})
+			},
+			expectedError: &domain.Error{Type: domain.BadRequest},
+		},
+		{
 			name:  "repository error on create",
 			input: domain.Material{Name: "Salt"},
-			setupMock: func(r *mock.MockMaterialRepository) {
-				r.EXPECT().CreateMaterial(gomock.Any(), gomock.Any()).Return(domain.Material{}, &domain.Error{Type: domain.InternalServerError})
+			setupMock: func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {
+				matRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(execTx)
+				matRepo.EXPECT().CreateMaterial(gomock.Any(), gomock.Any()).Return(domain.Material{}, &domain.Error{Type: domain.InternalServerError})
+			},
+			expectedError: &domain.Error{Type: domain.InternalServerError},
+		},
+		{
+			name:  "repository error on ReplaceSuppliers",
+			input: domain.Material{Name: "Salt"},
+			setupMock: func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {
+				matRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(execTx)
+				matRepo.EXPECT().CreateMaterial(gomock.Any(), gomock.Any()).Return(domain.Material{Id: 3, Name: "Salt"}, nil)
+				matRepo.EXPECT().ReplaceSuppliers(gomock.Any(), int64(3), gomock.Any()).Return(&domain.Error{Type: domain.InternalServerError})
 			},
 			expectedError: &domain.Error{Type: domain.InternalServerError},
 		},
@@ -183,7 +253,7 @@ func TestMaterialUsecase_CreateMaterial(t *testing.T) {
 
 			mockRepo := mock.NewMockMaterialRepository(ctrl)
 			mockSupplierRepo := mock.NewMockSupplierRepository(ctrl)
-			tt.setupMock(mockRepo)
+			tt.setupMock(mockRepo, mockSupplierRepo)
 
 			usecase := newMaterialUsecase(ctrl, mockRepo, mockSupplierRepo)
 			material, err := usecase.CreateMaterial(context.Background(), tt.input)
@@ -194,6 +264,104 @@ func TestMaterialUsecase_CreateMaterial(t *testing.T) {
 			} else {
 				assert.Nil(t, err)
 				assert.Equal(t, tt.expectedId, material.Id)
+			}
+		})
+	}
+}
+
+func TestMaterialUsecase_UpdateMaterialById(t *testing.T) {
+	tests := []struct {
+		name          string
+		id            int64
+		input         domain.Material
+		setupMock     func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository)
+		expectedName  string
+		expectedError *domain.Error
+	}{
+		{
+			name:  "success — no suppliers",
+			id:    1,
+			input: domain.Material{Name: "Salt", Price: 5000},
+			setupMock: func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {
+				matRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(execTx)
+				matRepo.EXPECT().UpdateMaterialById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Material{Id: 1, Name: "Salt"}, nil)
+				matRepo.EXPECT().ReplaceSuppliers(gomock.Any(), int64(1), gomock.Any()).Return(nil)
+				matRepo.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), []int64{1}).Return(map[int64]float32{1: 0}, nil)
+			},
+			expectedName: "Salt",
+		},
+		{
+			name: "success — with offline supplier",
+			id:   2,
+			input: domain.Material{
+				Name:  "Flour",
+				Price: 12000,
+				Suppliers: []domain.MaterialSupplier{
+					{SupplierId: 10, PurchaseType: domain.PurchaseTypeOffline, PurchaseUrl: ""},
+				},
+			},
+			setupMock: func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {
+				suppRepo.EXPECT().GetSupplierById(gomock.Any(), int64(10)).Return(domain.Supplier{Id: 10, Name: "Market"}, nil)
+				matRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(execTx)
+				matRepo.EXPECT().UpdateMaterialById(gomock.Any(), gomock.Any(), int64(2)).Return(domain.Material{Id: 2, Name: "Flour"}, nil)
+				matRepo.EXPECT().ReplaceSuppliers(gomock.Any(), int64(2), gomock.Any()).Return(nil)
+				matRepo.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), []int64{2}).Return(map[int64]float32{2: 0}, nil)
+			},
+			expectedName: "Flour",
+		},
+		{
+			name: "reject — invalid supplier in payload",
+			id:   1,
+			input: domain.Material{
+				Name: "Salt",
+				Suppliers: []domain.MaterialSupplier{
+					{SupplierId: 10, PurchaseType: domain.PurchaseTypeOnline, PurchaseUrl: "not-a-url"},
+				},
+			},
+			setupMock:     func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {},
+			expectedError: &domain.Error{Type: domain.BadRequest},
+		},
+		{
+			name:  "not found",
+			id:    99,
+			input: domain.Material{Name: "Salt", Price: 5000},
+			setupMock: func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {
+				matRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(execTx)
+				matRepo.EXPECT().UpdateMaterialById(gomock.Any(), gomock.Any(), int64(99)).Return(domain.Material{}, &domain.Error{Type: domain.NotFound})
+			},
+			expectedError: &domain.Error{Type: domain.NotFound},
+		},
+		{
+			name:  "repository error on ReplaceSuppliers",
+			id:    1,
+			input: domain.Material{Name: "Salt"},
+			setupMock: func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {
+				matRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(execTx)
+				matRepo.EXPECT().UpdateMaterialById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Material{Id: 1, Name: "Salt"}, nil)
+				matRepo.EXPECT().ReplaceSuppliers(gomock.Any(), int64(1), gomock.Any()).Return(&domain.Error{Type: domain.InternalServerError})
+			},
+			expectedError: &domain.Error{Type: domain.InternalServerError},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockRepo := mock.NewMockMaterialRepository(ctrl)
+			mockSupplierRepo := mock.NewMockSupplierRepository(ctrl)
+			tt.setupMock(mockRepo, mockSupplierRepo)
+
+			usecase := newMaterialUsecase(ctrl, mockRepo, mockSupplierRepo)
+			material, err := usecase.UpdateMaterialById(context.Background(), tt.input, tt.id)
+
+			if tt.expectedError != nil {
+				assert.NotNil(t, err)
+				assert.Equal(t, tt.expectedError.Type, err.Type)
+			} else {
+				assert.Nil(t, err)
+				assert.Equal(t, tt.expectedName, material.Name)
 			}
 		})
 	}
@@ -234,167 +402,6 @@ func TestMaterialUsecase_DeleteMaterialById(t *testing.T) {
 
 			usecase := newMaterialUsecase(ctrl, mockRepo, mockSupplierRepo)
 			err := usecase.DeleteMaterialById(context.Background(), tt.id)
-
-			if tt.expectedError != nil {
-				assert.NotNil(t, err)
-				assert.Equal(t, tt.expectedError.Type, err.Type)
-			} else {
-				assert.Nil(t, err)
-			}
-		})
-	}
-}
-
-func TestMaterialUsecase_SetMaterialSuppliers(t *testing.T) {
-	tests := []struct {
-		name          string
-		materialId    int64
-		payload       []domain.MaterialSupplier
-		setupMock     func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository)
-		expectedError *domain.Error
-	}{
-		{
-			name:       "success — online with valid URL",
-			materialId: 1,
-			payload: []domain.MaterialSupplier{
-				{SupplierId: 10, PurchaseType: domain.PurchaseTypeOnline, PurchaseUrl: "https://shop.example.com/item/1"},
-			},
-			setupMock: func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {
-				suppRepo.EXPECT().GetSupplierById(gomock.Any(), int64(10)).Return(domain.Supplier{Id: 10, Name: "Acme"}, nil)
-				matRepo.EXPECT().ReplaceSuppliers(gomock.Any(), int64(1), gomock.Any()).Return(nil)
-			},
-		},
-		{
-			name:       "success — offline with empty URL",
-			materialId: 1,
-			payload: []domain.MaterialSupplier{
-				{SupplierId: 10, PurchaseType: domain.PurchaseTypeOffline, PurchaseUrl: ""},
-			},
-			setupMock: func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {
-				suppRepo.EXPECT().GetSupplierById(gomock.Any(), int64(10)).Return(domain.Supplier{Id: 10, Name: "Acme"}, nil)
-				matRepo.EXPECT().ReplaceSuppliers(gomock.Any(), int64(1), gomock.Any()).Return(nil)
-			},
-		},
-		{
-			name:       "success — delivery with empty URL",
-			materialId: 1,
-			payload: []domain.MaterialSupplier{
-				{SupplierId: 10, PurchaseType: domain.PurchaseTypeDelivery, PurchaseUrl: ""},
-			},
-			setupMock: func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {
-				suppRepo.EXPECT().GetSupplierById(gomock.Any(), int64(10)).Return(domain.Supplier{Id: 10, Name: "Acme"}, nil)
-				matRepo.EXPECT().ReplaceSuppliers(gomock.Any(), int64(1), gomock.Any()).Return(nil)
-			},
-		},
-		{
-			name:       "success — empty payload clears all suppliers",
-			materialId: 1,
-			payload:    []domain.MaterialSupplier{},
-			setupMock: func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {
-				matRepo.EXPECT().ReplaceSuppliers(gomock.Any(), int64(1), gomock.Any()).Return(nil)
-			},
-		},
-		{
-			name:       "reject — online with empty purchase_url",
-			materialId: 1,
-			payload: []domain.MaterialSupplier{
-				{SupplierId: 10, PurchaseType: domain.PurchaseTypeOnline, PurchaseUrl: ""},
-			},
-			setupMock:     func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {},
-			expectedError: &domain.Error{Type: domain.BadRequest},
-		},
-		{
-			name:       "reject — online with non-http URL",
-			materialId: 1,
-			payload: []domain.MaterialSupplier{
-				{SupplierId: 10, PurchaseType: domain.PurchaseTypeOnline, PurchaseUrl: "ftp://shop.example.com"},
-			},
-			setupMock:     func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {},
-			expectedError: &domain.Error{Type: domain.BadRequest},
-		},
-		{
-			name:       "reject — online with URL exceeding 2048 chars",
-			materialId: 1,
-			payload: []domain.MaterialSupplier{
-				{SupplierId: 10, PurchaseType: domain.PurchaseTypeOnline, PurchaseUrl: "https://example.com/" + string(make([]byte, 2048))},
-			},
-			setupMock:     func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {},
-			expectedError: &domain.Error{Type: domain.BadRequest},
-		},
-		{
-			name:       "reject — offline with non-empty purchase_url",
-			materialId: 1,
-			payload: []domain.MaterialSupplier{
-				{SupplierId: 10, PurchaseType: domain.PurchaseTypeOffline, PurchaseUrl: "https://shop.example.com"},
-			},
-			setupMock:     func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {},
-			expectedError: &domain.Error{Type: domain.BadRequest},
-		},
-		{
-			name:       "reject — delivery with non-empty purchase_url",
-			materialId: 1,
-			payload: []domain.MaterialSupplier{
-				{SupplierId: 10, PurchaseType: domain.PurchaseTypeDelivery, PurchaseUrl: "https://shop.example.com"},
-			},
-			setupMock:     func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {},
-			expectedError: &domain.Error{Type: domain.BadRequest},
-		},
-		{
-			name:       "reject — invalid purchase_type",
-			materialId: 1,
-			payload: []domain.MaterialSupplier{
-				{SupplierId: 10, PurchaseType: "cash", PurchaseUrl: ""},
-			},
-			setupMock:     func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {},
-			expectedError: &domain.Error{Type: domain.BadRequest},
-		},
-		{
-			name:       "reject — supplier not found",
-			materialId: 1,
-			payload: []domain.MaterialSupplier{
-				{SupplierId: 99, PurchaseType: domain.PurchaseTypeOffline, PurchaseUrl: ""},
-			},
-			setupMock: func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {
-				suppRepo.EXPECT().GetSupplierById(gomock.Any(), int64(99)).Return(domain.Supplier{}, &domain.Error{Type: domain.NotFound})
-			},
-			expectedError: &domain.Error{Type: domain.BadRequest},
-		},
-		{
-			name:       "reject — supplier is soft-deleted",
-			materialId: 1,
-			payload: []domain.MaterialSupplier{
-				{SupplierId: 5, PurchaseType: domain.PurchaseTypeDelivery, PurchaseUrl: ""},
-			},
-			setupMock: func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {
-				suppRepo.EXPECT().GetSupplierById(gomock.Any(), int64(5)).Return(domain.Supplier{}, &domain.Error{Type: domain.NotFound})
-			},
-			expectedError: &domain.Error{Type: domain.BadRequest},
-		},
-		{
-			name:       "repo error on ReplaceSuppliers",
-			materialId: 1,
-			payload: []domain.MaterialSupplier{
-				{SupplierId: 10, PurchaseType: domain.PurchaseTypeOffline, PurchaseUrl: ""},
-			},
-			setupMock: func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {
-				suppRepo.EXPECT().GetSupplierById(gomock.Any(), int64(10)).Return(domain.Supplier{Id: 10}, nil)
-				matRepo.EXPECT().ReplaceSuppliers(gomock.Any(), int64(1), gomock.Any()).Return(&domain.Error{Type: domain.InternalServerError})
-			},
-			expectedError: &domain.Error{Type: domain.InternalServerError},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			mockRepo := mock.NewMockMaterialRepository(ctrl)
-			mockSupplierRepo := mock.NewMockSupplierRepository(ctrl)
-			tt.setupMock(mockRepo, mockSupplierRepo)
-
-			usecase := newMaterialUsecase(ctrl, mockRepo, mockSupplierRepo)
-			err := usecase.SetMaterialSuppliers(context.Background(), tt.materialId, tt.payload)
 
 			if tt.expectedError != nil {
 				assert.NotNil(t, err)
