@@ -36,14 +36,14 @@ type PurchaseList struct {
 }
 
 type PurchaseListItem struct {
-	MaterialId       int64
-	MaterialName     string
-	CurrentStock     int
-	MinimumStock     int
-	NormalStock      int
-	PurchaseUnit     string
-	PurchaseUnitSize float32
-	PurchaseQuantity int
-	EstimatedCost    float64
+	MaterialId        int64
+	MaterialName      string
+	CurrentStock      int
+	MinimumStock      int
+	NormalStock       int
+	PurchaseUnit      string
+	PurchaseUnitSize  float32
+	PurchaseQuantity  int
+	EstimatedCost     float64
 	MaterialSuppliers []MaterialSupplier
 }

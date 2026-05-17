@@ -123,8 +123,8 @@ func (repo Repository) DeleteMaterialById(ctx context.Context, id int64) *domain
 }
 
 type materialSupplierRow struct {
-	MaterialId   int64   `gorm:"column:material_id"`
-	SupplierId   int64   `gorm:"column:supplier_id"`
+	MaterialId   int64 `gorm:"column:material_id"`
+	SupplierId   int64 `gorm:"column:supplier_id"`
 	Name         string
 	Phone        *string
 	Address      string
