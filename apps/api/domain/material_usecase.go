@@ -61,17 +61,9 @@ func (usecase MaterialUsecase) CreateMaterial(ctx context.Context, material Mate
 		return Material{}, err
 	}
 
-	var created Material
-	txErr := usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		var err *Error
-		created, err = usecase.repository.CreateMaterial(ctxWithTx, material)
-		if err != nil {
-			return err
-		}
-		return usecase.repository.ReplaceSuppliers(ctxWithTx, created.Id, material.Suppliers)
-	})
-	if txErr != nil {
-		return Material{}, txErr
+	created, err := usecase.repository.CreateMaterial(ctx, material)
+	if err != nil {
+		return Material{}, err
 	}
 
 	materialsUsage, err := usecase.repository.GetMaterialsWeeklyUsage(ctx, []int64{created.Id})
@@ -88,17 +80,9 @@ func (usecase MaterialUsecase) UpdateMaterialById(ctx context.Context, material 
 		return Material{}, err
 	}
 
-	var updated Material
-	txErr := usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		var err *Error
-		updated, err = usecase.repository.UpdateMaterialById(ctxWithTx, material, id)
-		if err != nil {
-			return err
-		}
-		return usecase.repository.ReplaceSuppliers(ctxWithTx, id, material.Suppliers)
-	})
-	if txErr != nil {
-		return Material{}, txErr
+	updated, err := usecase.repository.UpdateMaterialById(ctx, material, id)
+	if err != nil {
+		return Material{}, err
 	}
 
 	materialsUsage, err := usecase.repository.GetMaterialsWeeklyUsage(ctx, []int64{id})

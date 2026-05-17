@@ -14,10 +14,6 @@ func newMaterialUsecase(ctrl *gomock.Controller, matRepo *mock.MockMaterialRepos
 	return domain.NewMaterialUsecase(matRepo, suppRepo)
 }
 
-func execTx(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error {
-	return cb(ctx)
-}
-
 func TestMaterialUsecase_GetMaterialList(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -165,9 +161,7 @@ func TestMaterialUsecase_CreateMaterial(t *testing.T) {
 			name:  "success — no suppliers",
 			input: domain.Material{Name: "Salt", Price: 5000},
 			setupMock: func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {
-				matRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(execTx)
 				matRepo.EXPECT().CreateMaterial(gomock.Any(), gomock.Any()).Return(domain.Material{Id: 3, Name: "Salt"}, nil)
-				matRepo.EXPECT().ReplaceSuppliers(gomock.Any(), int64(3), gomock.Any()).Return(nil)
 				matRepo.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), []int64{3}).Return(map[int64]float32{3: 0}, nil)
 			},
 			expectedId: 3,
@@ -183,9 +177,7 @@ func TestMaterialUsecase_CreateMaterial(t *testing.T) {
 			},
 			setupMock: func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {
 				suppRepo.EXPECT().GetSupplierById(gomock.Any(), int64(10)).Return(domain.Supplier{Id: 10, Name: "Acme"}, nil)
-				matRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(execTx)
 				matRepo.EXPECT().CreateMaterial(gomock.Any(), gomock.Any()).Return(domain.Material{Id: 4, Name: "Coffee"}, nil)
-				matRepo.EXPECT().ReplaceSuppliers(gomock.Any(), int64(4), gomock.Any()).Return(nil)
 				matRepo.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), []int64{4}).Return(map[int64]float32{4: 0}, nil)
 			},
 			expectedId: 4,
@@ -229,18 +221,7 @@ func TestMaterialUsecase_CreateMaterial(t *testing.T) {
 			name:  "repository error on create",
 			input: domain.Material{Name: "Salt"},
 			setupMock: func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {
-				matRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(execTx)
 				matRepo.EXPECT().CreateMaterial(gomock.Any(), gomock.Any()).Return(domain.Material{}, &domain.Error{Type: domain.InternalServerError})
-			},
-			expectedError: &domain.Error{Type: domain.InternalServerError},
-		},
-		{
-			name:  "repository error on ReplaceSuppliers",
-			input: domain.Material{Name: "Salt"},
-			setupMock: func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {
-				matRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(execTx)
-				matRepo.EXPECT().CreateMaterial(gomock.Any(), gomock.Any()).Return(domain.Material{Id: 3, Name: "Salt"}, nil)
-				matRepo.EXPECT().ReplaceSuppliers(gomock.Any(), int64(3), gomock.Any()).Return(&domain.Error{Type: domain.InternalServerError})
 			},
 			expectedError: &domain.Error{Type: domain.InternalServerError},
 		},
@@ -283,9 +264,7 @@ func TestMaterialUsecase_UpdateMaterialById(t *testing.T) {
 			id:    1,
 			input: domain.Material{Name: "Salt", Price: 5000},
 			setupMock: func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {
-				matRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(execTx)
 				matRepo.EXPECT().UpdateMaterialById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Material{Id: 1, Name: "Salt"}, nil)
-				matRepo.EXPECT().ReplaceSuppliers(gomock.Any(), int64(1), gomock.Any()).Return(nil)
 				matRepo.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), []int64{1}).Return(map[int64]float32{1: 0}, nil)
 			},
 			expectedName: "Salt",
@@ -302,9 +281,7 @@ func TestMaterialUsecase_UpdateMaterialById(t *testing.T) {
 			},
 			setupMock: func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {
 				suppRepo.EXPECT().GetSupplierById(gomock.Any(), int64(10)).Return(domain.Supplier{Id: 10, Name: "Market"}, nil)
-				matRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(execTx)
 				matRepo.EXPECT().UpdateMaterialById(gomock.Any(), gomock.Any(), int64(2)).Return(domain.Material{Id: 2, Name: "Flour"}, nil)
-				matRepo.EXPECT().ReplaceSuppliers(gomock.Any(), int64(2), gomock.Any()).Return(nil)
 				matRepo.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), []int64{2}).Return(map[int64]float32{2: 0}, nil)
 			},
 			expectedName: "Flour",
@@ -326,19 +303,16 @@ func TestMaterialUsecase_UpdateMaterialById(t *testing.T) {
 			id:    99,
 			input: domain.Material{Name: "Salt", Price: 5000},
 			setupMock: func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {
-				matRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(execTx)
 				matRepo.EXPECT().UpdateMaterialById(gomock.Any(), gomock.Any(), int64(99)).Return(domain.Material{}, &domain.Error{Type: domain.NotFound})
 			},
 			expectedError: &domain.Error{Type: domain.NotFound},
 		},
 		{
-			name:  "repository error on ReplaceSuppliers",
+			name:  "repository error on UpdateMaterialById",
 			id:    1,
 			input: domain.Material{Name: "Salt"},
 			setupMock: func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {
-				matRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(execTx)
-				matRepo.EXPECT().UpdateMaterialById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Material{Id: 1, Name: "Salt"}, nil)
-				matRepo.EXPECT().ReplaceSuppliers(gomock.Any(), int64(1), gomock.Any()).Return(&domain.Error{Type: domain.InternalServerError})
+				matRepo.EXPECT().UpdateMaterialById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Material{}, &domain.Error{Type: domain.InternalServerError})
 			},
 			expectedError: &domain.Error{Type: domain.InternalServerError},
 		},

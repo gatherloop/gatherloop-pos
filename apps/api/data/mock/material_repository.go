@@ -159,16 +159,3 @@ func (mr *MockMaterialRepositoryMockRecorder) UpdateMaterialById(ctx, material, 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateMaterialById", reflect.TypeOf((*MockMaterialRepository)(nil).UpdateMaterialById), ctx, material, id)
 }
 
-// ReplaceSuppliers mocks base method.
-func (m *MockMaterialRepository) ReplaceSuppliers(ctx context.Context, materialId int64, payload []domain.MaterialSupplier) *domain.Error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ReplaceSuppliers", ctx, materialId, payload)
-	ret0, _ := ret[0].(*domain.Error)
-	return ret0
-}
-
-// ReplaceSuppliers indicates an expected call of ReplaceSuppliers.
-func (mr *MockMaterialRepositoryMockRecorder) ReplaceSuppliers(ctx, materialId, payload any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReplaceSuppliers", reflect.TypeOf((*MockMaterialRepository)(nil).ReplaceSuppliers), ctx, materialId, payload)
-}

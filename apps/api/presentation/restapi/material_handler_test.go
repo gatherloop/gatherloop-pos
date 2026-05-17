@@ -5,7 +5,6 @@ import (
 	"apps/api/domain"
 	"apps/api/presentation/restapi"
 	"bytes"
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -14,10 +13,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
-
-func execTxMaterial(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error {
-	return cb(ctx)
-}
 
 func TestMaterialHandler_GetMaterialList(t *testing.T) {
 	tests := []struct {
@@ -127,9 +122,7 @@ func TestMaterialHandler_CreateMaterial(t *testing.T) {
 			name: "success",
 			body: `{"name": "Sugar", "price": 15000, "unit": "gram", "purchaseUnit": "Kg", "purchaseUnitSize": 1000, "minimumStock": 2, "normalStock": 5}`,
 			setupMock: func(r *mock.MockMaterialRepository) {
-				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(execTxMaterial)
 				r.EXPECT().CreateMaterial(gomock.Any(), gomock.Any()).Return(domain.Material{Id: 1, Name: "Sugar"}, nil)
-				r.EXPECT().ReplaceSuppliers(gomock.Any(), int64(1), gomock.Any()).Return(nil)
 				r.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), []int64{1}).Return(map[int64]float32{1: 0}, nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -150,7 +143,6 @@ func TestMaterialHandler_CreateMaterial(t *testing.T) {
 			name: "repo error",
 			body: `{"name": "Sugar", "price": 15000, "unit": "gram", "purchaseUnit": "Kg", "purchaseUnitSize": 1000, "minimumStock": 2, "normalStock": 5}`,
 			setupMock: func(r *mock.MockMaterialRepository) {
-				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(execTxMaterial)
 				r.EXPECT().CreateMaterial(gomock.Any(), gomock.Any()).Return(domain.Material{}, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
 			expectedStatus: http.StatusInternalServerError,
@@ -186,9 +178,7 @@ func TestMaterialHandler_UpdateMaterialById(t *testing.T) {
 			materialId: "1",
 			body:       `{"name": "Salt", "price": 5000, "unit": "gram", "purchaseUnit": "Kg", "purchaseUnitSize": 1000, "minimumStock": 1, "normalStock": 3}`,
 			setupMock: func(r *mock.MockMaterialRepository) {
-				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(execTxMaterial)
 				r.EXPECT().UpdateMaterialById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Material{Id: 1, Name: "Salt"}, nil)
-				r.EXPECT().ReplaceSuppliers(gomock.Any(), int64(1), gomock.Any()).Return(nil)
 				r.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), []int64{1}).Return(map[int64]float32{1: 0}, nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -212,7 +202,6 @@ func TestMaterialHandler_UpdateMaterialById(t *testing.T) {
 			materialId: "99",
 			body:       `{"name": "Salt", "price": 5000, "unit": "gram", "purchaseUnit": "Kg", "purchaseUnitSize": 1000, "minimumStock": 1, "normalStock": 3}`,
 			setupMock: func(r *mock.MockMaterialRepository) {
-				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(execTxMaterial)
 				r.EXPECT().UpdateMaterialById(gomock.Any(), gomock.Any(), int64(99)).Return(domain.Material{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
 			expectedStatus: http.StatusNotFound,
