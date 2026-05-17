@@ -1,1 +1,0 @@
-ALTER TABLE `suppliers` ADD COLUMN `is_online` TINYINT(1) NOT NULL DEFAULT 0;

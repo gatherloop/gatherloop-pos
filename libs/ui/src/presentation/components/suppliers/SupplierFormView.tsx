@@ -26,7 +26,7 @@ export const SupplierFormView = ({
           <InputText />
         </Field>
         <Field name="phone" label="Phone">
-          <InputText placeholder="e.g. 08123456789" />
+          <InputText />
         </Field>
         <Field name="address" label="Address">
           <InputText />

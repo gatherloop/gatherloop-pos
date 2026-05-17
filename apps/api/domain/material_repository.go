@@ -15,6 +15,4 @@ type MaterialRepository interface {
 	CreateMaterial(ctx context.Context, material Material) (Material, *Error)
 	UpdateMaterialById(ctx context.Context, material Material, id int64) (Material, *Error)
 	DeleteMaterialById(ctx context.Context, id int64) *Error
-	GetMaterialSuppliersByMaterialIds(ctx context.Context, materialIds []int64) (map[int64][]MaterialSupplier, *Error)
-	SetMaterialSuppliers(ctx context.Context, materialId int64, suppliers []MaterialSupplier) *Error
 }

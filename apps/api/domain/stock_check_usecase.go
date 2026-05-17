@@ -93,28 +93,12 @@ func (usecase StockCheckUsecase) GetPurchaseList(ctx context.Context, stockCheck
 
 	items := []PurchaseListItem{}
 	totalEstimatedCost := float64(0)
-	materialIds := []int64{}
-
-	for _, item := range stockCheck.Items {
-		if item.CurrentStock <= item.MinimumStock && item.NormalStock > item.MinimumStock {
-			materialIds = append(materialIds, item.MaterialId)
-		}
-	}
-
-	materialSuppliersByMaterial, err := usecase.materialRepository.GetMaterialSuppliersByMaterialIds(ctx, materialIds)
-	if err != nil {
-		return PurchaseList{}, err
-	}
 
 	for _, item := range stockCheck.Items {
 		if item.CurrentStock <= item.MinimumStock && item.NormalStock > item.MinimumStock {
 			purchaseQuantity := item.NormalStock - item.CurrentStock
 			estimatedCost := float64(purchaseQuantity) * float64(item.PurchaseUnitSize) * float64(item.Price)
 			totalEstimatedCost += estimatedCost
-			suppliers := materialSuppliersByMaterial[item.MaterialId]
-			if suppliers == nil {
-				suppliers = []MaterialSupplier{}
-			}
 			items = append(items, PurchaseListItem{
 				MaterialId:       item.MaterialId,
 				MaterialName:     item.MaterialName,
@@ -125,7 +109,6 @@ func (usecase StockCheckUsecase) GetPurchaseList(ctx context.Context, stockCheck
 				PurchaseUnitSize: item.PurchaseUnitSize,
 				PurchaseQuantity: purchaseQuantity,
 				EstimatedCost:    estimatedCost,
-				Suppliers:        suppliers,
 			})
 		}
 	}

@@ -43,14 +43,3 @@ func ToSupplier(supplierRequest apiContract.SupplierRequest) domain.Supplier {
 		MapsLink: supplierRequest.MapsLink,
 	}
 }
-
-func ToApiMaterialSupplier(ms domain.MaterialSupplier) apiContract.MaterialSupplierItem {
-	return apiContract.MaterialSupplierItem{
-		SupplierId:   ms.SupplierId,
-		SupplierName: ms.SupplierName,
-		Address:      ms.Address,
-		Phone:        ms.Phone,
-		PurchaseType: string(ms.PurchaseType),
-		PurchaseUrl:  ms.PurchaseUrl,
-	}
-}

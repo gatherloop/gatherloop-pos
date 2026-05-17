@@ -18,7 +18,7 @@ func TestMaterialUsecase_GetMaterialList(t *testing.T) {
 		expectedError *domain.Error
 	}{
 		{
-			name: "success — enriches with weekly usage and suppliers",
+			name: "success — enriches with weekly usage",
 			setupMock: func(r *mock.MockMaterialRepository) {
 				r.EXPECT().GetMaterialList(gomock.Any(), "", domain.CreatedAt, domain.Ascending, 0, 10).Return([]domain.Material{
 					{Id: 1, Name: "Sugar"},
@@ -26,7 +26,6 @@ func TestMaterialUsecase_GetMaterialList(t *testing.T) {
 				}, nil)
 				r.EXPECT().GetMaterialListTotal(gomock.Any(), "").Return(int64(2), nil)
 				r.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), []int64{1, 2}).Return(map[int64]float32{1: 5.0, 2: 3.0}, nil)
-				r.EXPECT().GetMaterialSuppliersByMaterialIds(gomock.Any(), []int64{1, 2}).Return(map[int64][]domain.MaterialSupplier{}, nil)
 			},
 			expectedLen: 2,
 		},
@@ -55,18 +54,6 @@ func TestMaterialUsecase_GetMaterialList(t *testing.T) {
 					Return([]domain.Material{{Id: 1, Name: "Sugar"}}, nil)
 				r.EXPECT().GetMaterialListTotal(gomock.Any(), gomock.Any()).Return(int64(1), nil)
 				r.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), gomock.Any()).
-					Return(nil, &domain.Error{Type: domain.InternalServerError})
-			},
-			expectedError: &domain.Error{Type: domain.InternalServerError},
-		},
-		{
-			name: "error on GetMaterialSuppliersByMaterialIds",
-			setupMock: func(r *mock.MockMaterialRepository) {
-				r.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-					Return([]domain.Material{{Id: 1, Name: "Sugar"}}, nil)
-				r.EXPECT().GetMaterialListTotal(gomock.Any(), gomock.Any()).Return(int64(1), nil)
-				r.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), gomock.Any()).Return(map[int64]float32{}, nil)
-				r.EXPECT().GetMaterialSuppliersByMaterialIds(gomock.Any(), gomock.Any()).
 					Return(nil, &domain.Error{Type: domain.InternalServerError})
 			},
 			expectedError: &domain.Error{Type: domain.InternalServerError},
@@ -105,12 +92,11 @@ func TestMaterialUsecase_GetMaterialById(t *testing.T) {
 		expectedError       *domain.Error
 	}{
 		{
-			name: "success — enriched with weekly usage and suppliers",
+			name: "success — enriched with weekly usage",
 			id:   1,
 			setupMock: func(r *mock.MockMaterialRepository) {
 				r.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), []int64{1}).Return(map[int64]float32{1: 7.5}, nil)
 				r.EXPECT().GetMaterialById(gomock.Any(), int64(1)).Return(domain.Material{Id: 1, Name: "Sugar"}, nil)
-				r.EXPECT().GetMaterialSuppliersByMaterialIds(gomock.Any(), []int64{1}).Return(map[int64][]domain.MaterialSupplier{}, nil)
 			},
 			expectedName:        "Sugar",
 			expectedWeeklyUsage: 7.5,
@@ -167,18 +153,16 @@ func TestMaterialUsecase_CreateMaterial(t *testing.T) {
 	}{
 		{
 			name:  "success",
-			input: domain.Material{Name: "Salt", Price: 5000, Suppliers: []domain.MaterialSupplier{}},
+			input: domain.Material{Name: "Salt", Price: 5000},
 			setupMock: func(r *mock.MockMaterialRepository) {
 				r.EXPECT().CreateMaterial(gomock.Any(), gomock.Any()).Return(domain.Material{Id: 3, Name: "Salt"}, nil)
-				r.EXPECT().SetMaterialSuppliers(gomock.Any(), int64(3), []domain.MaterialSupplier{}).Return(nil)
 				r.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), []int64{3}).Return(map[int64]float32{3: 0}, nil)
-				r.EXPECT().GetMaterialSuppliersByMaterialIds(gomock.Any(), []int64{3}).Return(map[int64][]domain.MaterialSupplier{}, nil)
 			},
 			expectedId: 3,
 		},
 		{
 			name:  "repository error on create",
-			input: domain.Material{Name: "Salt", Suppliers: []domain.MaterialSupplier{}},
+			input: domain.Material{Name: "Salt"},
 			setupMock: func(r *mock.MockMaterialRepository) {
 				r.EXPECT().CreateMaterial(gomock.Any(), gomock.Any()).Return(domain.Material{}, &domain.Error{Type: domain.InternalServerError})
 			},
