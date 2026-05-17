@@ -38,9 +38,9 @@ export function PurchaseListItemView({
         ]}
         {...xStackProps}
       />
-      {item.materialSuppliers && item.materialSuppliers.length > 0 && (
+      {item.suppliers && item.suppliers.length > 0 && (
         <YStack gap="$1" paddingHorizontal="$3" paddingBottom="$2">
-          {item.materialSuppliers.map((ms) => (
+          {item.suppliers.map((ms) => (
             <YStack key={ms.supplierId} gap="$1">
               <XStack gap="$2" alignItems="center">
                 {ms.purchaseType === 'online' ? (

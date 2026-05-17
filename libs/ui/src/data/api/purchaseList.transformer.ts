@@ -17,7 +17,7 @@ export function toPurchaseListItem(item: ApiPurchaseListItem): PurchaseListItem 
     purchaseUnitSize: item.purchaseUnitSize,
     purchaseQuantity: item.purchaseQuantity,
     estimatedCost: item.estimatedCost,
-    materialSuppliers: (item.materialSuppliers ?? []).map(toMaterialSupplier),
+    suppliers: (item.suppliers ?? []).map(toMaterialSupplier),
   };
 }
 

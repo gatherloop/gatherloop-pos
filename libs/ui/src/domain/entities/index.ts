@@ -13,7 +13,6 @@ export * from './Transaction';
 export * from './TransactionStatistic';
 export * from './Rental';
 export * from './Supplier';
-export * from './MaterialSupplier';
 export * from './ChecklistTemplate';
 export * from './ChecklistSession';
 export * from './StockCheck';

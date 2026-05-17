@@ -81,9 +81,9 @@ type Material struct {
 	PurchaseUnitSize  float32                `json:"purchaseUnitSize"`
 	MinimumStock      int32                  `json:"minimumStock"`
 	NormalStock       int32                  `json:"normalStock"`
-	MaterialSuppliers []MaterialSupplierItem `json:"materialSuppliers"`
-	CreatedAt         time.Time              `json:"createdAt"`
-	DeletedAt         *time.Time             `json:"deletedAt,omitempty"`
+	Suppliers []MaterialSupplierItem `json:"suppliers"`
+	CreatedAt time.Time              `json:"createdAt"`
+	DeletedAt *time.Time             `json:"deletedAt,omitempty"`
 }
 
 type MaterialSupplierItem struct {
@@ -95,22 +95,22 @@ type MaterialSupplierItem struct {
 	PurchaseUrl  string `json:"purchaseUrl"`
 }
 
-type MaterialSupplierInput struct {
+type MaterialSupplierRequest struct {
 	SupplierId   int64  `json:"supplierId"`
 	PurchaseType string `json:"purchaseType"`
 	PurchaseUrl  string `json:"purchaseUrl,omitempty"`
 }
 
 type MaterialRequest struct {
-	Name              string                  `json:"name"`
-	Description       *string                 `json:"description,omitempty"`
-	Price             float32                 `json:"price"`
-	Unit              string                  `json:"unit"`
-	PurchaseUnit      string                  `json:"purchaseUnit"`
-	PurchaseUnitSize  float32                 `json:"purchaseUnitSize"`
-	MinimumStock      int32                   `json:"minimumStock"`
-	NormalStock       int32                   `json:"normalStock"`
-	MaterialSuppliers []MaterialSupplierInput `json:"materialSuppliers"`
+	Name             string                   `json:"name"`
+	Description      *string                  `json:"description,omitempty"`
+	Price            float32                  `json:"price"`
+	Unit             string                   `json:"unit"`
+	PurchaseUnit     string                   `json:"purchaseUnit"`
+	PurchaseUnitSize float32                  `json:"purchaseUnitSize"`
+	MinimumStock     int32                    `json:"minimumStock"`
+	NormalStock      int32                    `json:"normalStock"`
+	Suppliers        []MaterialSupplierRequest `json:"suppliers"`
 }
 
 type MaterialCreateResponse struct {
@@ -879,7 +879,7 @@ type PurchaseListItem struct {
 	PurchaseUnitSize  float32                `json:"purchaseUnitSize"`
 	PurchaseQuantity  int                    `json:"purchaseQuantity"`
 	EstimatedCost     float64                `json:"estimatedCost"`
-	MaterialSuppliers []MaterialSupplierItem `json:"materialSuppliers"`
+	Suppliers []MaterialSupplierItem `json:"suppliers"`
 }
 
 type PurchaseList struct {

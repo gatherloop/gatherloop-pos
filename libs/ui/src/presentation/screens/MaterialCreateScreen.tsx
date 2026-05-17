@@ -10,7 +10,7 @@ export type MaterialCreateScreenProps = {
   isSubmitting: boolean;
   onLogoutPress: () => void;
   serverError?: string;
-  suppliers?: Supplier[];
+  suppliers: Supplier[];
 };
 
 export const MaterialCreateScreen = (props: MaterialCreateScreenProps) => {

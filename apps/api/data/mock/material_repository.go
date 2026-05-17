@@ -175,15 +175,15 @@ func (mr *MockMaterialRepositoryMockRecorder) GetMaterialSuppliersByMaterialIds(
 }
 
 // SetMaterialSuppliers mocks base method.
-func (m *MockMaterialRepository) SetMaterialSuppliers(ctx context.Context, materialId int64, materialSuppliers []domain.MaterialSupplierInput) *domain.Error {
+func (m *MockMaterialRepository) SetMaterialSuppliers(ctx context.Context, materialId int64, suppliers []domain.MaterialSupplier) *domain.Error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetMaterialSuppliers", ctx, materialId, materialSuppliers)
+	ret := m.ctrl.Call(m, "SetMaterialSuppliers", ctx, materialId, suppliers)
 	ret0, _ := ret[0].(*domain.Error)
 	return ret0
 }
 
 // SetMaterialSuppliers indicates an expected call of SetMaterialSuppliers.
-func (mr *MockMaterialRepositoryMockRecorder) SetMaterialSuppliers(ctx, materialId, materialSuppliers any) *gomock.Call {
+func (mr *MockMaterialRepositoryMockRecorder) SetMaterialSuppliers(ctx, materialId, suppliers any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetMaterialSuppliers", reflect.TypeOf((*MockMaterialRepository)(nil).SetMaterialSuppliers), ctx, materialId, materialSuppliers)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetMaterialSuppliers", reflect.TypeOf((*MockMaterialRepository)(nil).SetMaterialSuppliers), ctx, materialId, suppliers)
 }

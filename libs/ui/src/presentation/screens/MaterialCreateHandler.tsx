@@ -6,9 +6,6 @@ import {
   useMaterialCreateController,
 } from '../controllers';
 import { MaterialCreateScreen } from './MaterialCreateScreen';
-// eslint-disable-next-line @nx/enforce-module-boundaries
-import { useSupplierList } from '../../../../api-contract/src';
-import { toSupplier } from '../../data/api/supplier.transformer';
 
 export type MaterialCreateHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;
@@ -22,9 +19,6 @@ export const MaterialCreateHandler = ({
   const authLogout = useAuthLogoutController(authLogoutUsecase);
   const materialCreate = useMaterialCreateController(materialCreateUsecase);
   const router = useRouter();
-
-  const { data: supplierData } = useSupplierList({ limit: 1000, sortBy: 'created_at', order: 'asc' });
-  const suppliers = supplierData?.data?.map(toSupplier) ?? [];
 
   useEffect(() => {
     if (materialCreate.state.type === 'submitSuccess') {
@@ -50,7 +44,7 @@ export const MaterialCreateHandler = ({
           : undefined
       }
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
-      suppliers={suppliers}
+      suppliers={materialCreate.suppliers}
     />
   );
 };

@@ -2297,7 +2297,7 @@ components:
           type: integer
         normalStock:
           type: integer
-        materialSuppliers:
+        suppliers:
           type: array
           items:
             $ref: '#/components/schemas/MaterialSupplierItem'
@@ -2331,7 +2331,7 @@ components:
           enum: [offline, online, delivery]
         purchaseUrl:
           type: string
-    MaterialSupplierInput:
+    MaterialSupplierRequest:
       type: object
       required:
         - supplierId
@@ -2355,6 +2355,7 @@ components:
         - purchaseUnitSize
         - minimumStock
         - normalStock
+        - suppliers
       properties:
         name:
           type: string
@@ -2372,10 +2373,10 @@ components:
           type: integer
         normalStock:
           type: integer
-        materialSuppliers:
+        suppliers:
           type: array
           items:
-            $ref: '#/components/schemas/MaterialSupplierInput'
+            $ref: '#/components/schemas/MaterialSupplierRequest'
     ChecklistTemplateSubItem:
       type: object
       required:
@@ -4216,7 +4217,7 @@ components:
         - purchaseUnitSize
         - purchaseQuantity
         - estimatedCost
-        - materialSuppliers
+        - suppliers
       properties:
         materialId:
           type: integer
@@ -4237,7 +4238,7 @@ components:
           type: integer
         estimatedCost:
           type: number
-        materialSuppliers:
+        suppliers:
           type: array
           items:
             $ref: '#/components/schemas/MaterialSupplierItem'

@@ -122,16 +122,6 @@ func (repo Repository) DeleteMaterialById(ctx context.Context, id int64) *domain
 	return ToErrorCtx(ctx, result.Error, "DeleteMaterialById")
 }
 
-type materialSupplierRow struct {
-	MaterialId   int64 `gorm:"column:material_id"`
-	SupplierId   int64 `gorm:"column:supplier_id"`
-	Name         string
-	Phone        *string
-	Address      string
-	PurchaseType string `gorm:"column:purchase_type"`
-	PurchaseUrl  string `gorm:"column:purchase_url"`
-}
-
 func (repo Repository) GetMaterialSuppliersByMaterialIds(ctx context.Context, materialIds []int64) (map[int64][]domain.MaterialSupplier, *domain.Error) {
 	if len(materialIds) == 0 {
 		return map[int64][]domain.MaterialSupplier{}, nil
@@ -162,36 +152,30 @@ func (repo Repository) GetMaterialSuppliersByMaterialIds(ctx context.Context, ma
 			SupplierName: row.Name,
 			Address:      row.Address,
 			Phone:        phone,
-			PurchaseType: row.PurchaseType,
+			PurchaseType: domain.PurchaseType(row.PurchaseType),
 			PurchaseUrl:  row.PurchaseUrl,
 		})
 	}
 	return result, nil
 }
 
-func (repo Repository) SetMaterialSuppliers(ctx context.Context, materialId int64, materialSuppliers []domain.MaterialSupplierInput) *domain.Error {
+func (repo Repository) SetMaterialSuppliers(ctx context.Context, materialId int64, suppliers []domain.MaterialSupplier) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 
 	if err := db.Table("material_suppliers").Where("material_id = ?", materialId).Delete(nil).Error; err != nil {
 		return ToErrorCtx(ctx, err, "SetMaterialSuppliers")
 	}
 
-	if len(materialSuppliers) == 0 {
+	if len(suppliers) == 0 {
 		return nil
 	}
 
-	type row struct {
-		MaterialId   int64  `gorm:"column:material_id"`
-		SupplierId   int64  `gorm:"column:supplier_id"`
-		PurchaseType string `gorm:"column:purchase_type"`
-		PurchaseUrl  string `gorm:"column:purchase_url"`
-	}
-	rows := make([]row, 0, len(materialSuppliers))
-	for _, ms := range materialSuppliers {
-		rows = append(rows, row{
+	rows := make([]materialSupplierInsertRow, 0, len(suppliers))
+	for _, ms := range suppliers {
+		rows = append(rows, materialSupplierInsertRow{
 			MaterialId:   materialId,
 			SupplierId:   ms.SupplierId,
-			PurchaseType: ms.PurchaseType,
+			PurchaseType: string(ms.PurchaseType),
 			PurchaseUrl:  ms.PurchaseUrl,
 		})
 	}

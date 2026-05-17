@@ -159,29 +159,26 @@ func TestMaterialUsecase_GetMaterialById(t *testing.T) {
 
 func TestMaterialUsecase_CreateMaterial(t *testing.T) {
 	tests := []struct {
-		name              string
-		input             domain.Material
-		materialSuppliers []domain.MaterialSupplierInput
-		setupMock         func(r *mock.MockMaterialRepository)
-		expectedId        int64
-		expectedError     *domain.Error
+		name          string
+		input         domain.Material
+		setupMock     func(r *mock.MockMaterialRepository)
+		expectedId    int64
+		expectedError *domain.Error
 	}{
 		{
-			name:              "success",
-			input:             domain.Material{Name: "Salt", Price: 5000},
-			materialSuppliers: []domain.MaterialSupplierInput{},
+			name:  "success",
+			input: domain.Material{Name: "Salt", Price: 5000, Suppliers: []domain.MaterialSupplier{}},
 			setupMock: func(r *mock.MockMaterialRepository) {
 				r.EXPECT().CreateMaterial(gomock.Any(), gomock.Any()).Return(domain.Material{Id: 3, Name: "Salt"}, nil)
-				r.EXPECT().SetMaterialSuppliers(gomock.Any(), int64(3), []domain.MaterialSupplierInput{}).Return(nil)
+				r.EXPECT().SetMaterialSuppliers(gomock.Any(), int64(3), []domain.MaterialSupplier{}).Return(nil)
 				r.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), []int64{3}).Return(map[int64]float32{3: 0}, nil)
 				r.EXPECT().GetMaterialSuppliersByMaterialIds(gomock.Any(), []int64{3}).Return(map[int64][]domain.MaterialSupplier{}, nil)
 			},
 			expectedId: 3,
 		},
 		{
-			name:              "repository error on create",
-			input:             domain.Material{Name: "Salt"},
-			materialSuppliers: []domain.MaterialSupplierInput{},
+			name:  "repository error on create",
+			input: domain.Material{Name: "Salt", Suppliers: []domain.MaterialSupplier{}},
 			setupMock: func(r *mock.MockMaterialRepository) {
 				r.EXPECT().CreateMaterial(gomock.Any(), gomock.Any()).Return(domain.Material{}, &domain.Error{Type: domain.InternalServerError})
 			},
@@ -198,7 +195,7 @@ func TestMaterialUsecase_CreateMaterial(t *testing.T) {
 			tt.setupMock(mockRepo)
 
 			usecase := domain.NewMaterialUsecase(mockRepo)
-			material, err := usecase.CreateMaterial(context.Background(), tt.input, tt.materialSuppliers)
+			material, err := usecase.CreateMaterial(context.Background(), tt.input)
 
 			if tt.expectedError != nil {
 				assert.NotNil(t, err)

@@ -50,7 +50,7 @@ func ToApiMaterialSupplier(ms domain.MaterialSupplier) apiContract.MaterialSuppl
 		SupplierName: ms.SupplierName,
 		Address:      ms.Address,
 		Phone:        ms.Phone,
-		PurchaseType: ms.PurchaseType,
+		PurchaseType: string(ms.PurchaseType),
 		PurchaseUrl:  ms.PurchaseUrl,
 	}
 }

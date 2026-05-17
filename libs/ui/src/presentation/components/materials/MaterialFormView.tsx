@@ -26,7 +26,7 @@ export type MaterialFormViewProps = {
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   serverError?: string;
-  suppliers?: Supplier[];
+  suppliers: Supplier[];
 };
 
 const PURCHASE_TYPE_OPTIONS: { label: string; value: PurchaseType }[] = [
@@ -41,7 +41,7 @@ export const MaterialFormView = ({
   isSubmitDisabled,
   isSubmitting,
   serverError,
-  suppliers = [],
+  suppliers,
 }: MaterialFormViewProps) => {
   return (
     <FormProvider {...form}>
@@ -86,7 +86,7 @@ export const MaterialFormView = ({
             </SizableText>
             <Controller
               control={form.control}
-              name="materialSuppliers"
+              name="suppliers"
               render={({ field: { value, onChange } }) => (
                 <YStack gap="$3">
                   {suppliers.map((supplier) => {

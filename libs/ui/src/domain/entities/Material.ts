@@ -1,4 +1,19 @@
-import { MaterialSupplier, MaterialSupplierInput } from './MaterialSupplier';
+export type PurchaseType = 'offline' | 'online' | 'delivery';
+
+export type MaterialSupplier = {
+  supplierId: number;
+  supplierName: string;
+  address: string;
+  phone: string;
+  purchaseType: PurchaseType;
+  purchaseUrl: string;
+};
+
+export type MaterialSupplierInput = {
+  supplierId: number;
+  purchaseType: PurchaseType;
+  purchaseUrl: string;
+};
 
 export type Material = {
   id: number;
@@ -11,7 +26,7 @@ export type Material = {
   purchaseUnitSize: number;
   minimumStock: number;
   normalStock: number;
-  materialSuppliers: MaterialSupplier[];
+  suppliers: MaterialSupplier[];
   createdAt: string;
 };
 
@@ -24,5 +39,5 @@ export type MaterialForm = {
   purchaseUnitSize: number;
   minimumStock: number;
   normalStock: number;
-  materialSuppliers: MaterialSupplierInput[];
+  suppliers: MaterialSupplierInput[];
 };

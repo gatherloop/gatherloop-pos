@@ -21,7 +21,7 @@ export type PurchaseListViewProps = {
 function filterItems(items: PurchaseListItem[], filter: PurchaseTypeFilter): PurchaseListItem[] {
   if (filter === 'all') return items;
   return items.filter((item) =>
-    item.materialSuppliers.some((ms) => ms.purchaseType === filter)
+    item.suppliers.some((ms) => ms.purchaseType === filter)
   );
 }
 

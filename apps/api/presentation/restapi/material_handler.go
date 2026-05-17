@@ -79,15 +79,7 @@ func (handler MaterialHandler) CreateMaterial(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	materialSuppliers := make([]domain.MaterialSupplierInput, 0, len(materialRequest.MaterialSuppliers))
-	for _, ms := range materialRequest.MaterialSuppliers {
-		materialSuppliers = append(materialSuppliers, domain.MaterialSupplierInput{
-			SupplierId:   ms.SupplierId,
-			PurchaseType: ms.PurchaseType,
-			PurchaseUrl:  ms.PurchaseUrl,
-		})
-	}
-	material, usecaseErr := handler.usecase.CreateMaterial(ctx, ToMaterial(materialRequest), materialSuppliers)
+	material, usecaseErr := handler.usecase.CreateMaterial(ctx, ToMaterial(materialRequest))
 	if usecaseErr != nil {
 		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
@@ -116,15 +108,7 @@ func (handler MaterialHandler) UpdateMaterialById(w http.ResponseWriter, r *http
 		return
 	}
 
-	updateMaterialSuppliers := make([]domain.MaterialSupplierInput, 0, len(materialRequest.MaterialSuppliers))
-	for _, ms := range materialRequest.MaterialSuppliers {
-		updateMaterialSuppliers = append(updateMaterialSuppliers, domain.MaterialSupplierInput{
-			SupplierId:   ms.SupplierId,
-			PurchaseType: ms.PurchaseType,
-			PurchaseUrl:  ms.PurchaseUrl,
-		})
-	}
-	material, usecaseErr := handler.usecase.UpdateMaterialById(ctx, ToMaterial(materialRequest), id, updateMaterialSuppliers)
+	material, usecaseErr := handler.usecase.UpdateMaterialById(ctx, ToMaterial(materialRequest), id)
 	if usecaseErr != nil {
 		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return

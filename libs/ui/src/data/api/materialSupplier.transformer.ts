@@ -1,6 +1,6 @@
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { MaterialSupplierItem as ApiMaterialSupplierItem } from '../../../../api-contract/src';
-import { MaterialSupplier, MaterialSupplierInput, PurchaseType } from '../../domain';
+import { MaterialSupplier, PurchaseType } from '../../domain';
 
 export function toMaterialSupplier(item: ApiMaterialSupplierItem): MaterialSupplier {
   return {
@@ -10,13 +10,5 @@ export function toMaterialSupplier(item: ApiMaterialSupplierItem): MaterialSuppl
     phone: item.phone,
     purchaseType: item.purchaseType as PurchaseType,
     purchaseUrl: item.purchaseUrl,
-  };
-}
-
-export function toApiMaterialSupplierInput(input: MaterialSupplierInput) {
-  return {
-    supplierId: input.supplierId,
-    purchaseType: input.purchaseType,
-    purchaseUrl: input.purchaseUrl,
   };
 }
