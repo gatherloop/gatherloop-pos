@@ -1,8 +1,8 @@
 package domain
 
 import (
+	"apps/api/utils"
 	"context"
-	"net/url"
 )
 
 type MaterialUsecase struct {
@@ -94,7 +94,7 @@ func (usecase MaterialUsecase) SetMaterialSuppliers(ctx context.Context, materia
 	for _, p := range payload {
 		switch p.PurchaseType {
 		case PurchaseTypeOnline:
-			if !isValidHttpUrl(p.PurchaseUrl) {
+			if !utils.IsValidHttpUrl(p.PurchaseUrl) {
 				return &Error{Type: BadRequest, Message: "purchase_url must be a valid http(s):// URL for online purchase type"}
 			}
 		case PurchaseTypeOffline, PurchaseTypeDelivery:
@@ -114,13 +114,3 @@ func (usecase MaterialUsecase) SetMaterialSuppliers(ctx context.Context, materia
 	return usecase.repository.ReplaceSuppliers(ctx, materialId, payload)
 }
 
-func isValidHttpUrl(raw string) bool {
-	if raw == "" || len(raw) > 2048 {
-		return false
-	}
-	parsed, err := url.Parse(raw)
-	if err != nil {
-		return false
-	}
-	return (parsed.Scheme == "http" || parsed.Scheme == "https") && parsed.Host != ""
-}
