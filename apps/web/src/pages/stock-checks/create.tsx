@@ -40,7 +40,7 @@ export const getServerSideProps: GetServerSideProps<
           materialId: material.id,
           materialName: material.name,
           purchaseUnit: material.purchaseUnit,
-          currentStock: 0,
+          currentStock: null,
         })),
       },
     },

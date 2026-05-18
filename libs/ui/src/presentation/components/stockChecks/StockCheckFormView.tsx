@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react';
-import { FormProvider, useFieldArray, UseFormReturn } from 'react-hook-form';
+import {
+  Control,
+  FormProvider,
+  useFieldArray,
+  UseFormReturn,
+  useWatch,
+} from 'react-hook-form';
 import {
   Button,
   Form,
@@ -113,32 +119,19 @@ export const StockCheckFormView = ({
           )}
 
           {fields.map((field, index) => {
-            const inputId = `stock-check-item-${field.id}`;
             const hidden =
               hasQuery &&
               !field.materialName.toLowerCase().includes(lowerQuery);
             return (
-              <XStack
+              <StockCheckRow
                 key={field.id}
-                gap="$2"
-                alignItems="center"
-                paddingVertical="$2"
-                borderBottomWidth={1}
-                borderBottomColor="$borderColor"
-                display={hidden ? 'none' : 'flex'}
-              >
-                <Label flex={1} numberOfLines={1} htmlFor={inputId}>
-                  {field.materialName}
-                </Label>
-                <InputNumber
-                  name={`items.${index}.currentStock`}
-                  width={100}
-                  id={inputId}
-                />
-                <SizableText width={60} color="$gray10">
-                  {field.purchaseUnit}
-                </SizableText>
-              </XStack>
+                rowId={field.id}
+                index={index}
+                materialName={field.materialName}
+                purchaseUnit={field.purchaseUnit}
+                hidden={hidden}
+                control={form.control}
+              />
             );
           })}
         </YStack>
@@ -153,5 +146,55 @@ export const StockCheckFormView = ({
         </Button>
       </Form>
     </FormProvider>
+  );
+};
+
+type StockCheckRowProps = {
+  rowId: string;
+  index: number;
+  materialName: string;
+  purchaseUnit: string;
+  hidden: boolean;
+  control: Control<StockCheckForm>;
+};
+
+const StockCheckRow = ({
+  rowId,
+  index,
+  materialName,
+  purchaseUnit,
+  hidden,
+  control,
+}: StockCheckRowProps) => {
+  const value = useWatch({
+    control,
+    name: `items.${index}.currentStock`,
+  });
+  const isUnfilled = value === null || value === undefined;
+  const inputId = `stock-check-item-${rowId}`;
+
+  return (
+    <XStack
+      gap="$2"
+      alignItems="center"
+      paddingVertical="$2"
+      paddingHorizontal="$2"
+      borderBottomWidth={1}
+      borderBottomColor={isUnfilled ? '$red8' : '$borderColor'}
+      backgroundColor={isUnfilled ? '$red2' : undefined}
+      display={hidden ? 'none' : 'flex'}
+    >
+      <Label flex={1} numberOfLines={1} htmlFor={inputId}>
+        {materialName}
+      </Label>
+      <InputNumber
+        name={`items.${index}.currentStock`}
+        width={100}
+        id={inputId}
+      />
+      <SizableText width={60} color="$gray10">
+        {purchaseUnit}
+      </SizableText>
+    </XStack>
   );
 };

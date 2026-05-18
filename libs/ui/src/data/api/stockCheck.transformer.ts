@@ -33,7 +33,8 @@ export function toApiStockCheckForm(form: StockCheckForm) {
   return {
     items: form.items.map((item) => ({
       materialId: item.materialId,
-      currentStock: item.currentStock,
+      // zod validation guarantees a number by submission time; fall back to 0 to satisfy the API type.
+      currentStock: item.currentStock ?? 0,
     })),
   };
 }
