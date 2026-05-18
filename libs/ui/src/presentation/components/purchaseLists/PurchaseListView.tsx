@@ -1,13 +1,14 @@
 import { H4, Paragraph, Separator, Spinner, YStack } from 'tamagui';
 import { match } from 'ts-pattern';
-import { FlatList } from 'react-native';
-import { PurchaseListItemView } from './PurchaseListItemView';
+import { ScrollView } from 'react-native';
 import { EmptyView, ErrorView, SkeletonList } from '../base';
 import { PurchaseList } from '../../../domain';
+import { PurchaseListGroupedView } from './PurchaseListGroupedView';
 
 export type PurchaseListViewProps = {
   onRetryButtonPress: () => void;
   isRevalidating?: boolean;
+  getMaterialEditUrl: (materialId: number) => string;
   variant:
     | { type: 'loading' }
     | { type: 'error' }
@@ -18,6 +19,7 @@ export type PurchaseListViewProps = {
 export const PurchaseListView = ({
   onRetryButtonPress,
   isRevalidating,
+  getMaterialEditUrl,
   variant,
 }: PurchaseListViewProps) => {
   return (
@@ -48,12 +50,12 @@ export const PurchaseListView = ({
               stockCheckDate={purchaseList.stockCheckDate}
               totalEstimatedCost={purchaseList.totalEstimatedCost}
             />
-            <FlatList
-              nestedScrollEnabled
-              data={purchaseList.items}
-              renderItem={({ item }) => <PurchaseListItemView item={item} />}
-              ItemSeparatorComponent={() => <YStack height="$1" />}
-            />
+            <ScrollView nestedScrollEnabled>
+              <PurchaseListGroupedView
+                purchaseList={purchaseList}
+                getMaterialEditUrl={getMaterialEditUrl}
+              />
+            </ScrollView>
           </YStack>
         ))
         .with({ type: 'error' }, () => (

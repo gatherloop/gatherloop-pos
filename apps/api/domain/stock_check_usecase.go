@@ -99,6 +99,13 @@ func (usecase StockCheckUsecase) GetPurchaseList(ctx context.Context, stockCheck
 			purchaseQuantity := item.NormalStock - item.CurrentStock
 			estimatedCost := float32(purchaseQuantity) * float32(item.PurchaseUnitSize) * float32(item.Price)
 			totalEstimatedCost += estimatedCost
+
+			material, materialErr := usecase.materialRepository.GetMaterialById(ctx, item.MaterialId)
+			suppliers := []MaterialSupplier{}
+			if materialErr == nil {
+				suppliers = material.Suppliers
+			}
+
 			items = append(items, PurchaseListItem{
 				MaterialId:       item.MaterialId,
 				MaterialName:     item.MaterialName,
@@ -109,6 +116,7 @@ func (usecase StockCheckUsecase) GetPurchaseList(ctx context.Context, stockCheck
 				PurchaseUnitSize: item.PurchaseUnitSize,
 				PurchaseQuantity: purchaseQuantity,
 				EstimatedCost:    estimatedCost,
+				Suppliers:        suppliers,
 			})
 		}
 	}

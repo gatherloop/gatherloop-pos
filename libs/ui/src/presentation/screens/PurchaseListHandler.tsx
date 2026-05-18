@@ -20,6 +20,7 @@ export const PurchaseListHandler = ({
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
       onRetryButtonPress={() => purchaseListGet.dispatch({ type: 'FETCH' })}
       isRevalidating={purchaseListGet.state.type === 'revalidating'}
+      getMaterialEditUrl={(materialId) => `/materials/${materialId}`}
       variant={match(purchaseListGet.state)
         .returnType<PurchaseListScreenProps['variant']>()
         .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))

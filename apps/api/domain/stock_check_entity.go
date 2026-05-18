@@ -45,4 +45,5 @@ type PurchaseListItem struct {
 	PurchaseUnitSize float32
 	PurchaseQuantity int64
 	EstimatedCost    float32
+	Suppliers        []MaterialSupplier
 }
