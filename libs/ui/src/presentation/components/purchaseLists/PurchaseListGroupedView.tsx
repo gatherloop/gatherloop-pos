@@ -11,8 +11,12 @@ import {
 import { Button, H5, Paragraph, Separator, XStack, YStack } from 'tamagui';
 import { Linking, Platform } from 'react-native';
 import { PurchaseList, PurchaseListItem } from '../../../domain';
-import { MaterialSupplier, PurchaseType } from '../../../domain/entities/Material';
-import { ListItem } from '../base';
+import {
+  MaterialSupplier,
+  PurchaseType,
+  PurchaseTypeFilter,
+} from '../../../domain/entities/Material';
+import { EmptyView, ListItem } from '../base';
 
 type SupplierGroup = {
   supplierId: number | null;
@@ -270,18 +274,44 @@ function buildSupplierGroups(purchaseList: PurchaseList): SupplierGroup[] {
   return assigned;
 }
 
+function applyFilter(
+  groups: SupplierGroup[],
+  filter: PurchaseTypeFilter
+): SupplierGroup[] {
+  if (filter === 'all') return groups;
+
+  return groups
+    .filter((group) => group.supplierId !== null)
+    .map((group) => ({
+      ...group,
+      items: group.items.filter(({ supplier }) => supplier?.purchaseType === filter),
+    }))
+    .filter((group) => group.items.length > 0);
+}
+
 export type PurchaseListGroupedViewProps = {
   purchaseList: PurchaseList;
   getMaterialEditUrl?: (materialId: number) => string;
+  purchaseTypeFilter: PurchaseTypeFilter;
 };
 
 export function PurchaseListGroupedView({
   purchaseList,
   getMaterialEditUrl,
+  purchaseTypeFilter,
 }: PurchaseListGroupedViewProps) {
-  const groups = buildSupplierGroups(purchaseList);
+  const allGroups = buildSupplierGroups(purchaseList);
+  const groups = applyFilter(allGroups, purchaseTypeFilter);
 
   if (groups.length === 0) {
+    if (purchaseTypeFilter !== 'all') {
+      return (
+        <EmptyView
+          title={`No ${purchaseTypeFilter.charAt(0).toUpperCase() + purchaseTypeFilter.slice(1)} Purchases`}
+          subtitle={`No materials need to be purchased via ${purchaseTypeFilter} right now.`}
+        />
+      );
+    }
     return null;
   }
 
