@@ -99,15 +99,17 @@ func (repo Repository) UpdateTransactionById(ctx context.Context, transaction do
 
 	dbTransaction := ToTransactionDB(transaction)
 
-	// Values are re-snapshotted on every update, so clear existing rows before
-	// FullSaveAssociations inserts the new ones to avoid duplicates.
-	var existingItemIds []int64
-	if err := db.Model(&TransactionItem{}).Where("transaction_id = ?", id).Pluck("id", &existingItemIds).Error; err != nil {
-		return domain.Transaction{}, ToErrorCtx(ctx, err, "UpdateTransactionById")
-	}
-	if len(existingItemIds) > 0 {
-		if result := db.Where("transaction_item_id IN ?", existingItemIds).Delete(&TransactionItemValue{}); result.Error != nil {
-			return domain.Transaction{}, ToErrorCtx(ctx, result.Error, "UpdateTransactionById")
+	if dbTransaction.TransactionItems != nil {
+		// Values are re-snapshotted on every update, so clear existing rows before
+		// FullSaveAssociations inserts the new ones to avoid duplicates.
+		var existingItemIds []int64
+		if err := db.Model(&TransactionItem{}).Where("transaction_id = ?", id).Pluck("id", &existingItemIds).Error; err != nil {
+			return domain.Transaction{}, ToErrorCtx(ctx, err, "UpdateTransactionById")
+		}
+		if len(existingItemIds) > 0 {
+			if result := db.Where("transaction_item_id IN ?", existingItemIds).Delete(&TransactionItemValue{}); result.Error != nil {
+				return domain.Transaction{}, ToErrorCtx(ctx, result.Error, "UpdateTransactionById")
+			}
 		}
 	}
 
