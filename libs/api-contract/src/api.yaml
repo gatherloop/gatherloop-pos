@@ -2077,6 +2077,142 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /stock-checks:
+    get:
+      summary: List all stock checks
+      operationId: stockCheckList
+      tags:
+        - stock-check
+      parameters:
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/Order'
+        - $ref: '#/components/parameters/Skip'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockCheckListResponse'
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Create a stock check
+      operationId: stockCheckCreate
+      tags:
+        - stock-check
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StockCheckRequest'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockCheckCreateResponse'
+        '400':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /stock-checks/{stockCheckId}:
+    get:
+      summary: Get stock check by id
+      operationId: stockCheckFindById
+      tags:
+        - stock-check
+      parameters:
+        - $ref: '#/components/parameters/StockCheckId'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockCheckFindByIdResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Update stock check by id
+      operationId: stockCheckUpdateById
+      tags:
+        - stock-check
+      parameters:
+        - $ref: '#/components/parameters/StockCheckId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StockCheckUpdateRequest'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockCheckUpdateByIdResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Delete stock check by id
+      operationId: stockCheckDeleteById
+      tags:
+        - stock-check
+      parameters:
+        - $ref: '#/components/parameters/StockCheckId'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /stock-checks/{stockCheckId}/purchase-list:
+    get:
+      summary: Get purchase list for a stock check
+      operationId: stockCheckGetPurchaseList
+      tags:
+        - stock-check
+      parameters:
+        - $ref: '#/components/parameters/StockCheckId'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseListResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 components:
   schemas:
     AuthLoginRequest:
@@ -2125,6 +2261,49 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/Category'
+    MaterialSupplier:
+      type: object
+      required:
+        - id
+        - supplierId
+        - purchaseType
+        - purchaseUrl
+        - supplier
+      properties:
+        id:
+          type: integer
+          format: int64
+        supplierId:
+          type: integer
+          format: int64
+        purchaseType:
+          type: string
+          enum:
+            - online
+            - offline
+            - delivery
+        purchaseUrl:
+          type: string
+        supplier:
+          $ref: '#/components/schemas/Supplier'
+    MaterialSupplierRequest:
+      type: object
+      required:
+        - supplierId
+        - purchaseType
+        - purchaseUrl
+      properties:
+        supplierId:
+          type: integer
+          format: int64
+        purchaseType:
+          type: string
+          enum:
+            - online
+            - offline
+            - delivery
+        purchaseUrl:
+          type: string
     Material:
       type: object
       required:
@@ -2133,6 +2312,11 @@ components:
         - price
         - unit
         - weeklyUsage
+        - purchaseUnit
+        - purchaseUnitSize
+        - minimumStock
+        - normalStock
+        - suppliers
         - createdAt
       properties:
         id:
@@ -2148,6 +2332,18 @@ components:
           type: string
         weeklyUsage:
           type: number
+        purchaseUnit:
+          type: string
+        purchaseUnitSize:
+          type: number
+        minimumStock:
+          type: integer
+        normalStock:
+          type: integer
+        suppliers:
+          type: array
+          items:
+            $ref: '#/components/schemas/MaterialSupplier'
         deletedAt:
           type: string
           format: date-time
@@ -2160,6 +2356,10 @@ components:
         - name
         - price
         - unit
+        - purchaseUnit
+        - purchaseUnitSize
+        - minimumStock
+        - normalStock
       properties:
         name:
           type: string
@@ -2169,6 +2369,20 @@ components:
           type: number
         unit:
           type: string
+        purchaseUnit:
+          type: string
+        purchaseUnitSize:
+          type: number
+        minimumStock:
+          type: integer
+          format: int64
+        normalStock:
+          type: integer
+          format: int64
+        suppliers:
+          type: array
+          items:
+            $ref: '#/components/schemas/MaterialSupplierRequest'
     ChecklistTemplateSubItem:
       type: object
       required:
@@ -3878,6 +4092,197 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/Coupon'
+    StockCheckItem:
+      type: object
+      required:
+        - id
+        - stockCheckId
+        - materialId
+        - currentStock
+        - materialName
+        - price
+        - purchaseUnit
+        - purchaseUnitSize
+        - minimumStock
+        - normalStock
+        - createdAt
+      properties:
+        id:
+          type: integer
+          format: int64
+        stockCheckId:
+          type: integer
+          format: int64
+        materialId:
+          type: integer
+          format: int64
+        currentStock:
+          type: integer
+          format: int64
+        materialName:
+          type: string
+        price:
+          type: number
+        purchaseUnit:
+          type: string
+        purchaseUnitSize:
+          type: number
+        minimumStock:
+          type: integer
+          format: int64
+        normalStock:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+    StockCheck:
+      type: object
+      required:
+        - id
+        - createdAt
+        - items
+      properties:
+        id:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        deletedAt:
+          type: string
+          format: date-time
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/StockCheckItem'
+    StockCheckItemRequest:
+      type: object
+      required:
+        - materialId
+        - currentStock
+      properties:
+        materialId:
+          type: integer
+          format: int64
+        currentStock:
+          type: integer
+          format: int64
+    StockCheckRequest:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/StockCheckItemRequest'
+    StockCheckUpdateRequest:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/StockCheckItemRequest'
+    StockCheckCreateResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/StockCheck'
+    StockCheckUpdateByIdResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/StockCheck'
+    StockCheckFindByIdResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/StockCheck'
+    StockCheckListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/StockCheck'
+        meta:
+          $ref: '#/components/schemas/MetaPage'
+    PurchaseListItem:
+      type: object
+      required:
+        - materialId
+        - materialName
+        - currentStock
+        - minimumStock
+        - normalStock
+        - purchaseUnit
+        - purchaseUnitSize
+        - purchaseQuantity
+        - estimatedCost
+        - suppliers
+      properties:
+        materialId:
+          type: integer
+          format: int64
+        materialName:
+          type: string
+        currentStock:
+          type: integer
+          format: int64
+        minimumStock:
+          type: integer
+          format: int64
+        normalStock:
+          type: integer
+          format: int64
+        purchaseUnit:
+          type: string
+        purchaseUnitSize:
+          type: number
+        purchaseQuantity:
+          type: integer
+          format: int64
+        estimatedCost:
+          type: number
+        suppliers:
+          type: array
+          items:
+            $ref: '#/components/schemas/MaterialSupplier'
+    PurchaseList:
+      type: object
+      required:
+        - stockCheckId
+        - stockCheckDate
+        - totalEstimatedCost
+        - items
+      properties:
+        stockCheckId:
+          type: integer
+          format: int64
+        stockCheckDate:
+          type: string
+          format: date
+        totalEstimatedCost:
+          type: number
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchaseListItem'
+    PurchaseListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/PurchaseList'
   parameters:
     CategoryId:
       name: categoryId
@@ -4045,6 +4450,12 @@ components:
       required: true
     ChecklistSessionSubItemId:
       name: checklistSessionSubItemId
+      in: path
+      schema:
+        type: integer
+      required: true
+    StockCheckId:
+      name: stockCheckId
       in: path
       schema:
         type: integer

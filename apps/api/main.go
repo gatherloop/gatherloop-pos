@@ -60,12 +60,13 @@ func main() {
 	rentalRepository := mysql.NewRentalRepository(db)
 	checklistTemplateRepository := mysql.NewChecklistTemplateRepository(db)
 	checklistSessionRepository := mysql.NewChecklistSessionRepository(db)
+	stockCheckRepository := mysql.NewStockCheckRepository(db)
 
 	walletUsecase := domain.NewWalletUsecase(walletRepository)
 	transactionUsecase := domain.NewTransactionUsecase(transactionRepository, variantRepository, couponRepository, walletRepository, budgetRepository)
 	variantUsecase := domain.NewVariantUsecase(variantRepository, productRepository)
 	productUsecase := domain.NewProductUsecase(productRepository)
-	materialUsecase := domain.NewMaterialUsecase(materialRepository)
+	materialUsecase := domain.NewMaterialUsecase(materialRepository, supplierRepository)
 	supplierUsecase := domain.NewSupplierUsecase(supplierRepository)
 	expenseUsecase := domain.NewExpenseUsecase(expenseRepository, budgetRepository, walletRepository)
 	categoryUsecase := domain.NewCategoryUsecase(categoryRepository)
@@ -76,6 +77,7 @@ func main() {
 	rentalUsecase := domain.NewRentalUsecase(rentalRepository, variantRepository, transactionRepository)
 	checklistTemplateUsecase := domain.NewChecklistTemplateUsecase(checklistTemplateRepository)
 	checklistSessionUsecase := domain.NewChecklistSessionUsecase(checklistSessionRepository, checklistTemplateRepository)
+	stockCheckUsecase := domain.NewStockCheckUsecase(stockCheckRepository, materialRepository)
 
 	walletHandler := restapi.NewWalletHandler(walletUsecase)
 	transactionHandler := restapi.NewTransactionHandler(transactionUsecase)
@@ -92,6 +94,7 @@ func main() {
 	rentalHandler := restapi.NewRentalHandler(rentalUsecase)
 	checklistTemplateHandler := restapi.NewChecklistTemplateHandler(checklistTemplateUsecase)
 	checklistSessionHandler := restapi.NewChecklistSessionHandler(checklistSessionUsecase)
+	stockCheckHandler := restapi.NewStockCheckHandler(stockCheckUsecase)
 
 	restapi.NewAuthRouter(authHandler).AddRouter(router)
 	restapi.NewBudgetRouter(budgetHandler).AddRouter(router)
@@ -108,6 +111,7 @@ func main() {
 	restapi.NewRentalRouter(rentalHandler).AddRouter(router)
 	restapi.NewChecklistTemplateRouter(checklistTemplateHandler).AddRouter(router)
 	restapi.NewChecklistSessionRouter(checklistSessionHandler).AddRouter(router)
+	restapi.NewStockCheckRouter(stockCheckHandler).AddRouter(router)
 
 	router.HandleFunc("/health-check", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("health check success"))

@@ -174,19 +174,41 @@ func TestSupplierUsecase_DeleteSupplierById(t *testing.T) {
 		expectedError *domain.Error
 	}{
 		{
-			name: "success",
+			name: "success — soft-deletes material_suppliers in same transaction",
 			id:   1,
 			setupMock: func(r *mock.MockSupplierRepository) {
+				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error {
+						return cb(ctx)
+					})
 				r.EXPECT().DeleteSupplierById(gomock.Any(), int64(1)).Return(nil)
+				r.EXPECT().SoftDeleteMaterialSuppliersBySupplierId(gomock.Any(), int64(1)).Return(nil)
 			},
 		},
 		{
-			name: "not found",
+			name: "not found — rolls back transaction",
 			id:   99,
 			setupMock: func(r *mock.MockSupplierRepository) {
+				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error {
+						return cb(ctx)
+					})
 				r.EXPECT().DeleteSupplierById(gomock.Any(), int64(99)).Return(&domain.Error{Type: domain.NotFound})
 			},
 			expectedError: &domain.Error{Type: domain.NotFound},
+		},
+		{
+			name: "cascade failure rolls back transaction",
+			id:   2,
+			setupMock: func(r *mock.MockSupplierRepository) {
+				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error {
+						return cb(ctx)
+					})
+				r.EXPECT().DeleteSupplierById(gomock.Any(), int64(2)).Return(nil)
+				r.EXPECT().SoftDeleteMaterialSuppliersBySupplierId(gomock.Any(), int64(2)).Return(&domain.Error{Type: domain.InternalServerError})
+			},
+			expectedError: &domain.Error{Type: domain.InternalServerError},
 		},
 	}
 

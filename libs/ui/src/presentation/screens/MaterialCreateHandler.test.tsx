@@ -2,8 +2,17 @@ import React from 'react';
 import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MaterialCreateHandler } from './MaterialCreateHandler';
-import { MockAuthRepository, MockMaterialRepository } from '../../data/mock';
-import { AuthLogoutUsecase, MaterialCreateUsecase } from '../../domain';
+import {
+  MockAuthRepository,
+  MockMaterialRepository,
+  MockSupplierRepository,
+  MockSupplierListQueryRepository,
+} from '../../data/mock';
+import {
+  AuthLogoutUsecase,
+  MaterialCreateUsecase,
+  SupplierListUsecase,
+} from '../../domain';
 import { flushPromises } from '../../utils/testUtils';
 
 const mockRouterPush = jest.fn();
@@ -19,9 +28,16 @@ jest.mock('@tamagui/toast', () => ({
 const createProps = (options: { shouldFail?: boolean } = {}) => {
   const materialRepo = new MockMaterialRepository();
   if (options.shouldFail) materialRepo.shouldFail = true;
+  const supplierRepo = new MockSupplierRepository();
+  const supplierListQueryRepo = new MockSupplierListQueryRepository();
   return {
     authLogoutUsecase: new AuthLogoutUsecase(new MockAuthRepository()),
     materialCreateUsecase: new MaterialCreateUsecase(materialRepo),
+    supplierListUsecase: new SupplierListUsecase(
+      supplierRepo,
+      supplierListQueryRepo,
+      { suppliers: [], totalItem: 0 }
+    ),
   };
 };
 
@@ -53,11 +69,12 @@ describe('MaterialCreateHandler', () => {
       render(<MaterialCreateHandler {...createProps()} />);
 
       await user.type(screen.getByRole('textbox', { name: 'Name' }), 'New Material');
-      await user.type(screen.getByRole('textbox', { name: 'Unit' }), 'kg');
+      await user.type(screen.getByRole('textbox', { name: 'Unit' }), 'gram');
       const priceInput = screen.getByRole('textbox', { name: 'Price' });
       await user.click(priceInput);
       await user.keyboard('{Control>}a{/Control}');
       await user.keyboard('1');
+      await user.type(screen.getByRole('textbox', { name: 'Purchase Unit' }), 'Kg');
       await user.click(screen.getByRole('button', { name: 'Submit' }));
 
       await act(async () => {
@@ -117,11 +134,12 @@ describe('MaterialCreateHandler', () => {
       render(<MaterialCreateHandler {...createProps({ shouldFail: true })} />);
 
       await user.type(screen.getByRole('textbox', { name: 'Name' }), 'New Material');
-      await user.type(screen.getByRole('textbox', { name: 'Unit' }), 'kg');
+      await user.type(screen.getByRole('textbox', { name: 'Unit' }), 'gram');
       const priceInput = screen.getByRole('textbox', { name: 'Price' });
       await user.click(priceInput);
       await user.keyboard('{Control>}a{/Control}');
       await user.keyboard('1');
+      await user.type(screen.getByRole('textbox', { name: 'Purchase Unit' }), 'Kg');
       await user.click(screen.getByRole('button', { name: 'Submit' }));
 
       await act(async () => {
@@ -138,11 +156,12 @@ describe('MaterialCreateHandler', () => {
       render(<MaterialCreateHandler {...createProps({ shouldFail: true })} />);
 
       await user.type(screen.getByRole('textbox', { name: 'Name' }), 'New Material');
-      await user.type(screen.getByRole('textbox', { name: 'Unit' }), 'kg');
+      await user.type(screen.getByRole('textbox', { name: 'Unit' }), 'gram');
       const priceInput = screen.getByRole('textbox', { name: 'Price' });
       await user.click(priceInput);
       await user.keyboard('{Control>}a{/Control}');
       await user.keyboard('1');
+      await user.type(screen.getByRole('textbox', { name: 'Purchase Unit' }), 'Kg');
       await user.click(screen.getByRole('button', { name: 'Submit' }));
 
       await act(async () => {
