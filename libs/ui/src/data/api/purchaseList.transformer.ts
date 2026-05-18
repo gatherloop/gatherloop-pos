@@ -4,6 +4,7 @@ import {
   PurchaseListItem as ApiPurchaseListItem,
 } from '../../../../api-contract/src';
 import { PurchaseList, PurchaseListItem } from '../../domain';
+import { toSupplier } from './supplier.transformer';
 
 export function toPurchaseListItem(item: ApiPurchaseListItem): PurchaseListItem {
   return {
@@ -16,6 +17,13 @@ export function toPurchaseListItem(item: ApiPurchaseListItem): PurchaseListItem 
     purchaseUnitSize: item.purchaseUnitSize,
     purchaseQuantity: item.purchaseQuantity,
     estimatedCost: item.estimatedCost,
+    suppliers: (item.suppliers ?? []).map((s) => ({
+      id: s.id,
+      supplierId: s.supplierId,
+      purchaseType: s.purchaseType,
+      purchaseUrl: s.purchaseUrl,
+      supplier: toSupplier(s.supplier),
+    })),
   };
 }
 

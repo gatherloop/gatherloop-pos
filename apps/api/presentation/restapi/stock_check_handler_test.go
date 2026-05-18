@@ -291,6 +291,7 @@ func TestStockCheckHandler_GetPurchaseList(t *testing.T) {
 						},
 					},
 				}, nil)
+				m.EXPECT().GetMaterialById(gomock.Any(), int64(1)).Return(domain.Material{Id: 1, Suppliers: []domain.MaterialSupplier{}}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},

@@ -4227,6 +4227,7 @@ components:
         - purchaseUnitSize
         - purchaseQuantity
         - estimatedCost
+        - suppliers
       properties:
         materialId:
           type: integer
@@ -4251,6 +4252,10 @@ components:
           format: int64
         estimatedCost:
           type: number
+        suppliers:
+          type: array
+          items:
+            $ref: '#/components/schemas/MaterialSupplier'
     PurchaseList:
       type: object
       required:

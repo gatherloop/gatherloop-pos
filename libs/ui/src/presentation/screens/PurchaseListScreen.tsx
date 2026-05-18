@@ -7,6 +7,7 @@ export type PurchaseListScreenProps = {
   onRetryButtonPress: () => void;
   variant: PurchaseListViewProps['variant'];
   isRevalidating?: boolean;
+  getMaterialEditUrl?: (materialId: number) => string;
 };
 
 export const PurchaseListScreen = ({
@@ -14,6 +15,7 @@ export const PurchaseListScreen = ({
   onRetryButtonPress,
   variant,
   isRevalidating,
+  getMaterialEditUrl,
 }: PurchaseListScreenProps) => {
   return (
     <Layout
@@ -41,6 +43,7 @@ export const PurchaseListScreen = ({
         variant={variant}
         onRetryButtonPress={onRetryButtonPress}
         isRevalidating={isRevalidating}
+        getMaterialEditUrl={getMaterialEditUrl}
       />
     </Layout>
   );

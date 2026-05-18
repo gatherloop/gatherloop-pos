@@ -870,15 +870,16 @@ type StockCheckListResponse struct {
 // PurchaseList
 
 type PurchaseListItem struct {
-	MaterialId       int64   `json:"materialId"`
-	MaterialName     string  `json:"materialName"`
-	CurrentStock     int64   `json:"currentStock"`
-	MinimumStock     int64   `json:"minimumStock"`
-	NormalStock      int64   `json:"normalStock"`
-	PurchaseUnit     string  `json:"purchaseUnit"`
-	PurchaseUnitSize float32 `json:"purchaseUnitSize"`
-	PurchaseQuantity int64   `json:"purchaseQuantity"`
-	EstimatedCost    float32 `json:"estimatedCost"`
+	MaterialId       int64              `json:"materialId"`
+	MaterialName     string             `json:"materialName"`
+	CurrentStock     int64              `json:"currentStock"`
+	MinimumStock     int64              `json:"minimumStock"`
+	NormalStock      int64              `json:"normalStock"`
+	PurchaseUnit     string             `json:"purchaseUnit"`
+	PurchaseUnitSize float32            `json:"purchaseUnitSize"`
+	PurchaseQuantity int64              `json:"purchaseQuantity"`
+	EstimatedCost    float32            `json:"estimatedCost"`
+	Suppliers        []MaterialSupplier `json:"suppliers"`
 }
 
 type PurchaseList struct {

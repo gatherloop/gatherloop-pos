@@ -157,6 +157,7 @@ func TestStockCheckUsecase_GetPurchaseList(t *testing.T) {
 			},
 		},
 	}, nil)
+	matRepo.EXPECT().GetMaterialById(gomock.Any(), int64(1)).Return(domain.Material{Id: 1, Suppliers: []domain.MaterialSupplier{}}, nil)
 
 	usecase := domain.NewStockCheckUsecase(scRepo, matRepo)
 	pl, err := usecase.GetPurchaseList(context.Background(), 1)
