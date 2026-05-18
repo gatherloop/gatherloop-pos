@@ -9,12 +9,10 @@ import { QueryClient } from '@tanstack/react-query';
 
 export type StockCheckPurchaseListProps = {
   purchaseListGetParams: PurchaseListGetParams;
-  getMaterialEditUrl?: (materialId: number) => string;
 };
 
 export function StockCheckPurchaseList({
   purchaseListGetParams,
-  getMaterialEditUrl,
 }: StockCheckPurchaseListProps) {
   const client = new QueryClient();
   const purchaseListRepository = new ApiPurchaseListRepository(client);
@@ -30,7 +28,6 @@ export function StockCheckPurchaseList({
     <PurchaseListHandler
       authLogoutUsecase={authLogoutUsecase}
       purchaseListGetUsecase={purchaseListGetUsecase}
-      getMaterialEditUrl={getMaterialEditUrl}
     />
   );
 }

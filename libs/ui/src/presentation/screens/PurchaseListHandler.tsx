@@ -6,13 +6,11 @@ import { useAuthLogoutController, usePurchaseListGetController } from '../contro
 export type PurchaseListHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;
   purchaseListGetUsecase: PurchaseListGetUsecase;
-  getMaterialEditUrl?: (materialId: number) => string;
 };
 
 export const PurchaseListHandler = ({
   authLogoutUsecase,
   purchaseListGetUsecase,
-  getMaterialEditUrl,
 }: PurchaseListHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
   const purchaseListGet = usePurchaseListGetController(purchaseListGetUsecase);
@@ -22,7 +20,7 @@ export const PurchaseListHandler = ({
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
       onRetryButtonPress={() => purchaseListGet.dispatch({ type: 'FETCH' })}
       isRevalidating={purchaseListGet.state.type === 'revalidating'}
-      getMaterialEditUrl={getMaterialEditUrl}
+      getMaterialEditUrl={(materialId) => `/materials/${materialId}`}
       variant={match(purchaseListGet.state)
         .returnType<PurchaseListScreenProps['variant']>()
         .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))

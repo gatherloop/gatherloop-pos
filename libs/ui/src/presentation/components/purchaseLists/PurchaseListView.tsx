@@ -8,7 +8,7 @@ import { PurchaseListGroupedView } from './PurchaseListGroupedView';
 export type PurchaseListViewProps = {
   onRetryButtonPress: () => void;
   isRevalidating?: boolean;
-  getMaterialEditUrl?: (materialId: number) => string;
+  getMaterialEditUrl: (materialId: number) => string;
   variant:
     | { type: 'loading' }
     | { type: 'error' }

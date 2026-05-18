@@ -39,13 +39,4 @@ export const getServerSideProps: GetServerSideProps<
   };
 };
 
-function PurchaseListPage(props: StockCheckPurchaseListProps) {
-  return (
-    <StockCheckPurchaseList
-      {...props}
-      getMaterialEditUrl={(materialId) => `/materials/${materialId}`}
-    />
-  );
-}
-
-export default PurchaseListPage;
+export default StockCheckPurchaseList;
