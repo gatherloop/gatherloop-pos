@@ -30,7 +30,13 @@ export const StockCheckFormView = ({
   serverError,
 }: StockCheckFormViewProps) => {
   const { fields } = useFieldArray({ control: form.control, name: 'items' });
+  const [inputValue, setInputValue] = useState('');
   const [query, setQuery] = useState('');
+
+  useEffect(() => {
+    const timer = setTimeout(() => setQuery(inputValue), 300);
+    return () => clearTimeout(timer);
+  }, [inputValue]);
 
   const lowerQuery = query.toLowerCase();
   const matchCount = lowerQuery
@@ -38,13 +44,14 @@ export const StockCheckFormView = ({
         .length
     : fields.length;
   const hasQuery = query.length > 0;
+  const hasInputValue = inputValue.length > 0;
   const noMatches = hasQuery && matchCount === 0;
 
   // FR-3: if submit surfaces errors on rows hidden by the filter, clear the
   // filter so the user can see the offending row.
   const errors = form.formState.errors;
   useEffect(() => {
-    if (!hasQuery) return;
+    if (!hasInputValue) return;
     const itemErrors = errors.items;
     if (!itemErrors) return;
     const errorIndexes = Object.keys(itemErrors).map(Number);
@@ -52,7 +59,10 @@ export const StockCheckFormView = ({
       const name = fields[i]?.materialName ?? '';
       return !name.toLowerCase().includes(lowerQuery);
     });
-    if (hasHiddenError) setQuery('');
+    if (hasHiddenError) {
+      setInputValue('');
+      setQuery('');
+    }
   }, [errors]);
 
   return (
@@ -73,20 +83,23 @@ export const StockCheckFormView = ({
           <Input
             flex={1}
             placeholder="Search material by name"
-            value={query}
-            onChangeText={setQuery}
+            value={inputValue}
+            onChangeText={setInputValue}
           />
-          {hasQuery && (
+          {hasInputValue && (
             <SizableText color="$gray10" flexShrink={0}>
               {matchCount}/{fields.length}
             </SizableText>
           )}
-          {hasQuery && (
+          {hasInputValue && (
             <Button
               icon={X}
               circular
               size="$2"
-              onPress={() => setQuery('')}
+              onPress={() => {
+                setInputValue('');
+                setQuery('');
+              }}
               accessibilityLabel="Clear search"
             />
           )}
@@ -95,7 +108,7 @@ export const StockCheckFormView = ({
         <YStack maxWidth={640} alignSelf="center" width="100%">
           {noMatches && (
             <SizableText color="$gray10" textAlign="center" paddingVertical="$4">
-              No materials match &quot;{query}&quot;
+              No materials match &quot;{inputValue}&quot;
             </SizableText>
           )}
 
