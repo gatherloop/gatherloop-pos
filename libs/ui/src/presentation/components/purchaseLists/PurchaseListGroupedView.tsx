@@ -1,6 +1,6 @@
 import {
   ExternalLink,
-  Map,
+  Map as MapIcon,
   Phone,
   MessageCircle,
   Link,
@@ -35,7 +35,9 @@ function normalizePhoneForWhatsApp(phone: string): string {
 
 function getMapsUrl(mapsLink: string, address: string): string {
   if (mapsLink) return mapsLink;
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+    address
+  )}`;
 }
 
 function openUrl(url: string) {
@@ -52,7 +54,11 @@ type ActionButtonsProps = {
   materialId: number;
 };
 
-function ActionButtons({ purchaseType, supplier, materialId }: ActionButtonsProps) {
+function ActionButtons({
+  purchaseType,
+  supplier,
+  materialId,
+}: ActionButtonsProps) {
   if (purchaseType === 'online') {
     return (
       <Button
@@ -72,11 +78,7 @@ function ActionButtons({ purchaseType, supplier, materialId }: ActionButtonsProp
       supplier.supplier.address
     );
     return (
-      <Button
-        size="$2"
-        icon={Map}
-        onPress={() => openUrl(mapsUrl)}
-      >
+      <Button size="$2" icon={MapIcon} onPress={() => openUrl(mapsUrl)}>
         Open Map
       </Button>
     );
@@ -180,7 +182,13 @@ function SupplierGroupSection({
   getMaterialEditUrl,
 }: SupplierGroupSectionProps) {
   return (
-    <YStack gap="$2" borderRadius="$4" borderWidth={1} borderColor="$gray4" overflow="hidden">
+    <YStack
+      gap="$2"
+      borderRadius="$4"
+      borderWidth={1}
+      borderColor="$gray4"
+      overflow="hidden"
+    >
       <XStack
         backgroundColor="$gray3"
         paddingHorizontal="$3"
@@ -195,13 +203,19 @@ function SupplierGroupSection({
       </XStack>
       <YStack gap="$2" padding="$2">
         {group.items.map(({ item, supplier }, index) => (
-          <YStack key={`${item.materialId}-${supplier?.supplierId ?? 'unassigned'}-${index}`}>
+          <YStack
+            key={`${item.materialId}-${
+              supplier?.supplierId ?? 'unassigned'
+            }-${index}`}
+          >
             {index > 0 && <Separator marginVertical="$1" />}
             <PurchaseListGroupItem
               item={item}
               supplier={supplier}
               materialEditUrl={
-                getMaterialEditUrl ? getMaterialEditUrl(item.materialId) : undefined
+                getMaterialEditUrl
+                  ? getMaterialEditUrl(item.materialId)
+                  : undefined
               }
             />
           </YStack>
@@ -224,7 +238,7 @@ function getOrCreateGroup(
 }
 
 function buildSupplierGroups(purchaseList: PurchaseList): SupplierGroup[] {
-  const groupMap = new Map<string, SupplierGroup>();
+  const groupMap = new Map<string, SupplierGroup>([]);
 
   for (const item of purchaseList.items) {
     if (item.suppliers.length === 0) {
@@ -284,7 +298,9 @@ function applyFilter(
     .filter((group) => group.supplierId !== null)
     .map((group) => ({
       ...group,
-      items: group.items.filter(({ supplier }) => supplier?.purchaseType === filter),
+      items: group.items.filter(
+        ({ supplier }) => supplier?.purchaseType === filter
+      ),
     }))
     .filter((group) => group.items.length > 0);
 }
@@ -307,7 +323,10 @@ export function PurchaseListGroupedView({
     if (purchaseTypeFilter !== 'all') {
       return (
         <EmptyView
-          title={`No ${purchaseTypeFilter.charAt(0).toUpperCase() + purchaseTypeFilter.slice(1)} Purchases`}
+          title={`No ${
+            purchaseTypeFilter.charAt(0).toUpperCase() +
+            purchaseTypeFilter.slice(1)
+          } Purchases`}
           subtitle={`No materials need to be purchased via ${purchaseTypeFilter} right now.`}
         />
       );
