@@ -32,7 +32,7 @@ export const getServerSideProps: GetServerSideProps<
 
   return {
     props: {
-      supplierListParams: { suppliers, totalItem },
+      supplierListParams: { suppliers, totalItem, itemPerPage: 100 },
     },
   };
 };
