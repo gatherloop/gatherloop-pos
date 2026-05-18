@@ -55,6 +55,8 @@ export const StockCheckFormView = ({
         <XStack
           alignItems="center"
           gap="$2"
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-expect-error
           position="sticky"
           top={0}
           zIndex={10}
