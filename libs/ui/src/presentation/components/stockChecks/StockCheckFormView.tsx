@@ -2,7 +2,7 @@ import { FormProvider, useFieldArray, UseFormReturn } from 'react-hook-form';
 import {
   Button,
   Form,
-  Input,
+  Label,
   SizableText,
   Spinner,
   XStack,
@@ -10,7 +10,6 @@ import {
 } from 'tamagui';
 import { FormErrorBanner, InputNumber } from '../base';
 import { StockCheckForm } from '../../../domain';
-import { Controller } from 'react-hook-form';
 
 export type StockCheckFormViewProps = {
   form: UseFormReturn<StockCheckForm>;
@@ -34,18 +33,32 @@ export const StockCheckFormView = ({
       <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
         <FormErrorBanner message={serverError} />
 
-        <YStack gap="$2">
-          {fields.map((field, index) => (
-            <XStack key={field.id} gap="$2" alignItems="center">
-              <SizableText flex={1} numberOfLines={1}>
-                {field.materialName}
-              </SizableText>
-              <InputNumber name={`items.${index}.currentStock`} width={100} />
-              <SizableText width={60} color="$gray10">
-                {field.purchaseUnit}
-              </SizableText>
-            </XStack>
-          ))}
+        <YStack maxWidth={640} alignSelf="center" width="100%">
+          {fields.map((field, index) => {
+            const inputId = `stock-check-item-${field.id}`;
+            return (
+              <XStack
+                key={field.id}
+                gap="$2"
+                alignItems="center"
+                paddingVertical="$2"
+                borderBottomWidth={1}
+                borderBottomColor="$borderColor"
+              >
+                <Label flex={1} numberOfLines={1} htmlFor={inputId}>
+                  {field.materialName}
+                </Label>
+                <InputNumber
+                  name={`items.${index}.currentStock`}
+                  width={100}
+                  id={inputId}
+                />
+                <SizableText width={60} color="$gray10">
+                  {field.purchaseUnit}
+                </SizableText>
+              </XStack>
+            );
+          })}
         </YStack>
 
         <Button
