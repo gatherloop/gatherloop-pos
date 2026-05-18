@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { FormProvider, useFieldArray, UseFormReturn } from 'react-hook-form';
 import {
   Button,
@@ -13,6 +13,9 @@ import {
 import { X } from '@tamagui/lucide-icons';
 import { FormErrorBanner, InputNumber } from '../base';
 import { StockCheckForm } from '../../../domain';
+import { createDebounce } from '../../../utils';
+
+const changeQueryDebounce = createDebounce();
 
 export type StockCheckFormViewProps = {
   form: UseFormReturn<StockCheckForm>;
@@ -30,13 +33,7 @@ export const StockCheckFormView = ({
   serverError,
 }: StockCheckFormViewProps) => {
   const { fields } = useFieldArray({ control: form.control, name: 'items' });
-  const [inputValue, setInputValue] = useState('');
   const [query, setQuery] = useState('');
-
-  useEffect(() => {
-    const timer = setTimeout(() => setQuery(inputValue), 300);
-    return () => clearTimeout(timer);
-  }, [inputValue]);
 
   const lowerQuery = query.toLowerCase();
   const matchCount = lowerQuery
@@ -44,33 +41,17 @@ export const StockCheckFormView = ({
         .length
     : fields.length;
   const hasQuery = query.length > 0;
-  const hasInputValue = inputValue.length > 0;
   const noMatches = hasQuery && matchCount === 0;
 
-  // FR-3: if submit surfaces errors on rows hidden by the filter, clear the
-  // filter so the user can see the offending row.
-  const errors = form.formState.errors;
-  useEffect(() => {
-    if (!hasInputValue) return;
-    const itemErrors = errors.items;
-    if (!itemErrors) return;
-    const errorIndexes = Object.keys(itemErrors).map(Number);
-    const hasHiddenError = errorIndexes.some((i) => {
-      const name = fields[i]?.materialName ?? '';
-      return !name.toLowerCase().includes(lowerQuery);
-    });
-    if (hasHiddenError) {
-      setInputValue('');
-      setQuery('');
-    }
-  }, [errors]);
+  const handleChange = (value: string) => {
+    changeQueryDebounce(() => setQuery(value), 400);
+  };
 
   return (
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
         <FormErrorBanner message={serverError} />
 
-        {/* Sticky search bar */}
         <XStack
           alignItems="center"
           gap="$2"
@@ -83,22 +64,15 @@ export const StockCheckFormView = ({
           <Input
             flex={1}
             placeholder="Search material by name"
-            value={inputValue}
-            onChangeText={setInputValue}
+            onChangeText={handleChange}
           />
-          {hasInputValue && (
-            <SizableText color="$gray10" flexShrink={0}>
-              {matchCount}/{fields.length}
-            </SizableText>
-          )}
-          {hasInputValue && (
+          {hasQuery && (
             <Button
               icon={X}
               circular
               size="$2"
               onPress={() => {
-                setInputValue('');
-                setQuery('');
+                handleChange('');
               }}
               accessibilityLabel="Clear search"
             />
@@ -107,8 +81,12 @@ export const StockCheckFormView = ({
 
         <YStack maxWidth={640} alignSelf="center" width="100%">
           {noMatches && (
-            <SizableText color="$gray10" textAlign="center" paddingVertical="$4">
-              No materials match &quot;{inputValue}&quot;
+            <SizableText
+              color="$gray10"
+              textAlign="center"
+              paddingVertical="$4"
+            >
+              No materials match &quot;{query}&quot;
             </SizableText>
           )}
 
