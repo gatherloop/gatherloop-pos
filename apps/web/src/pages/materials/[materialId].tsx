@@ -1,7 +1,9 @@
 import {
   ApiMaterialRepository,
+  ApiSupplierRepository,
   MaterialUpdate,
   MaterialUpdateProps,
+  UrlSupplierListQueryRepository,
 } from '@gatherloop-pos/ui';
 import { GetServerSideProps } from 'next';
 import { QueryClient } from '@tanstack/react-query';
@@ -22,13 +24,32 @@ export const getServerSideProps: GetServerSideProps<
 
   const client = new QueryClient();
   const materialRepository = new ApiMaterialRepository(client);
+  const supplierRepository = new ApiSupplierRepository(client);
+  const supplierListQueryRepository = new UrlSupplierListQueryRepository();
 
   const materialId = parseInt(ctx.params?.materialId ?? '');
-  const material = await materialRepository.fetchMaterialById(materialId, {
-    headers: { Cookie: ctx.req.headers.cookie },
-  });
+  const [material, { suppliers, totalItem }] = await Promise.all([
+    materialRepository.fetchMaterialById(materialId, {
+      headers: { Cookie: ctx.req.headers.cookie },
+    }),
+    supplierRepository.fetchSupplierList(
+      {
+        page: supplierListQueryRepository.getPage(),
+        itemPerPage: 100,
+        query: '',
+        sortBy: supplierListQueryRepository.getSortBy(),
+        orderBy: supplierListQueryRepository.getOrderBy(),
+      },
+      { headers: { Cookie: ctx.req.headers.cookie } }
+    ),
+  ]);
 
-  return { props: { materialUpdateParams: { material, materialId } } };
+  return {
+    props: {
+      materialUpdateParams: { material, materialId },
+      supplierListParams: { suppliers, totalItem },
+    },
+  };
 };
 
 export default MaterialUpdate;
