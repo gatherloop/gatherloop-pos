@@ -1,14 +1,24 @@
-import { H4, Paragraph, Separator, Spinner, YStack } from 'tamagui';
+import { Button, H4, Paragraph, Separator, Spinner, XStack, YStack } from 'tamagui';
 import { match } from 'ts-pattern';
 import { ScrollView } from 'react-native';
 import { EmptyView, ErrorView, SkeletonList } from '../base';
 import { PurchaseList } from '../../../domain';
+import { PurchaseTypeFilter } from '../../../domain/entities/Material';
 import { PurchaseListGroupedView } from './PurchaseListGroupedView';
+
+const FILTER_OPTIONS: { value: PurchaseTypeFilter; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'online', label: 'Online' },
+  { value: 'offline', label: 'Offline' },
+  { value: 'delivery', label: 'Delivery' },
+];
 
 export type PurchaseListViewProps = {
   onRetryButtonPress: () => void;
   isRevalidating?: boolean;
   getMaterialEditUrl: (materialId: number) => string;
+  purchaseTypeFilter: PurchaseTypeFilter;
+  onPurchaseTypeFilterChange: (filter: PurchaseTypeFilter) => void;
   variant:
     | { type: 'loading' }
     | { type: 'error' }
@@ -20,6 +30,8 @@ export const PurchaseListView = ({
   onRetryButtonPress,
   isRevalidating,
   getMaterialEditUrl,
+  purchaseTypeFilter,
+  onPurchaseTypeFilterChange,
   variant,
 }: PurchaseListViewProps) => {
   return (
@@ -50,10 +62,15 @@ export const PurchaseListView = ({
               stockCheckDate={purchaseList.stockCheckDate}
               totalEstimatedCost={purchaseList.totalEstimatedCost}
             />
+            <PurchaseTypeFilterControl
+              purchaseTypeFilter={purchaseTypeFilter}
+              onPurchaseTypeFilterChange={onPurchaseTypeFilterChange}
+            />
             <ScrollView nestedScrollEnabled>
               <PurchaseListGroupedView
                 purchaseList={purchaseList}
                 getMaterialEditUrl={getMaterialEditUrl}
+                purchaseTypeFilter={purchaseTypeFilter}
               />
             </ScrollView>
           </YStack>
@@ -69,6 +86,29 @@ export const PurchaseListView = ({
     </YStack>
   );
 };
+
+function PurchaseTypeFilterControl({
+  purchaseTypeFilter,
+  onPurchaseTypeFilterChange,
+}: {
+  purchaseTypeFilter: PurchaseTypeFilter;
+  onPurchaseTypeFilterChange: (filter: PurchaseTypeFilter) => void;
+}) {
+  return (
+    <XStack gap="$2" flexWrap="wrap">
+      {FILTER_OPTIONS.map(({ value, label }) => (
+        <Button
+          key={value}
+          size="$3"
+          onPress={() => onPurchaseTypeFilterChange(value)}
+          variant={purchaseTypeFilter === value ? undefined : 'outlined'}
+        >
+          {label}
+        </Button>
+      ))}
+    </XStack>
+  );
+}
 
 function PurchaseListHeader({
   stockCheckDate,

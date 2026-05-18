@@ -21,6 +21,10 @@ export const PurchaseListHandler = ({
       onRetryButtonPress={() => purchaseListGet.dispatch({ type: 'FETCH' })}
       isRevalidating={purchaseListGet.state.type === 'revalidating'}
       getMaterialEditUrl={(materialId) => `/materials/${materialId}`}
+      purchaseTypeFilter={purchaseListGet.state.purchaseTypeFilter}
+      onPurchaseTypeFilterChange={(filter) =>
+        purchaseListGet.dispatch({ type: 'CHANGE_PURCHASE_TYPE_FILTER', filter })
+      }
       variant={match(purchaseListGet.state)
         .returnType<PurchaseListScreenProps['variant']>()
         .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))

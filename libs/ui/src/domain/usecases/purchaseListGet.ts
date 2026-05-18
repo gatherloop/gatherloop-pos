@@ -1,11 +1,13 @@
 import { match, P } from 'ts-pattern';
 import { PurchaseList } from '../entities';
-import { PurchaseListRepository } from '../repositories';
+import { PurchaseListQueryRepository, PurchaseListRepository } from '../repositories';
+import { PurchaseTypeFilter } from '../entities/Material';
 import { Usecase } from './IUsecase';
 
 type Context = {
   purchaseList: PurchaseList | null;
   errorMessage: string | null;
+  purchaseTypeFilter: PurchaseTypeFilter;
 };
 
 export type PurchaseListGetState = (
@@ -20,7 +22,8 @@ export type PurchaseListGetState = (
 export type PurchaseListGetAction =
   | { type: 'FETCH' }
   | { type: 'FETCH_SUCCESS'; purchaseList: PurchaseList }
-  | { type: 'FETCH_ERROR'; message: string };
+  | { type: 'FETCH_ERROR'; message: string }
+  | { type: 'CHANGE_PURCHASE_TYPE_FILTER'; filter: PurchaseTypeFilter };
 
 export type PurchaseListGetParams = {
   stockCheckId: number;
@@ -34,13 +37,16 @@ export class PurchaseListGetUsecase extends Usecase<
 > {
   params: PurchaseListGetParams;
   purchaseListRepository: PurchaseListRepository;
+  purchaseListQueryRepository: PurchaseListQueryRepository;
 
   constructor(
     purchaseListRepository: PurchaseListRepository,
+    purchaseListQueryRepository: PurchaseListQueryRepository,
     params: PurchaseListGetParams
   ) {
     super();
     this.purchaseListRepository = purchaseListRepository;
+    this.purchaseListQueryRepository = purchaseListQueryRepository;
     this.params = params;
   }
 
@@ -49,6 +55,7 @@ export class PurchaseListGetUsecase extends Usecase<
       type: this.params.purchaseList !== null ? 'loaded' : 'idle',
       purchaseList: this.params.purchaseList,
       errorMessage: null,
+      purchaseTypeFilter: this.purchaseListQueryRepository.getPurchaseTypeFilter(),
     };
   }
 
@@ -96,6 +103,10 @@ export class PurchaseListGetUsecase extends Usecase<
         ...state,
         type: 'loaded',
       }))
+      .with(
+        [P.any, { type: 'CHANGE_PURCHASE_TYPE_FILTER' }],
+        ([state, { filter }]) => ({ ...state, purchaseTypeFilter: filter })
+      )
       .otherwise(() => state);
   }
 
@@ -117,6 +128,9 @@ export class PurchaseListGetUsecase extends Usecase<
               message: 'Failed to fetch purchase list',
             })
           );
+      })
+      .with({ type: 'loaded' }, ({ purchaseTypeFilter }) => {
+        this.purchaseListQueryRepository.setPurchaseTypeFilter(purchaseTypeFilter);
       })
       .otherwise(() => {
         // noop

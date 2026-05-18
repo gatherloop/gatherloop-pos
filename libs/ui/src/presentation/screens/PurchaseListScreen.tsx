@@ -1,6 +1,7 @@
 import { Printer } from '@tamagui/lucide-icons';
 import { Button, Tooltip } from 'tamagui';
 import { Layout, PurchaseListView, PurchaseListViewProps } from '../components';
+import { PurchaseTypeFilter } from '../../domain/entities/Material';
 
 export type PurchaseListScreenProps = {
   onLogoutPress: () => void;
@@ -8,6 +9,8 @@ export type PurchaseListScreenProps = {
   variant: PurchaseListViewProps['variant'];
   isRevalidating?: boolean;
   getMaterialEditUrl: (materialId: number) => string;
+  purchaseTypeFilter: PurchaseTypeFilter;
+  onPurchaseTypeFilterChange: (filter: PurchaseTypeFilter) => void;
 };
 
 export const PurchaseListScreen = ({
@@ -16,6 +19,8 @@ export const PurchaseListScreen = ({
   variant,
   isRevalidating,
   getMaterialEditUrl,
+  purchaseTypeFilter,
+  onPurchaseTypeFilterChange,
 }: PurchaseListScreenProps) => {
   return (
     <Layout
@@ -44,6 +49,8 @@ export const PurchaseListScreen = ({
         onRetryButtonPress={onRetryButtonPress}
         isRevalidating={isRevalidating}
         getMaterialEditUrl={getMaterialEditUrl}
+        purchaseTypeFilter={purchaseTypeFilter}
+        onPurchaseTypeFilterChange={onPurchaseTypeFilterChange}
       />
     </Layout>
   );

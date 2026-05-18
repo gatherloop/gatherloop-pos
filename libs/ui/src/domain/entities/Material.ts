@@ -2,6 +2,8 @@ import { Supplier } from './Supplier';
 
 export type PurchaseType = 'online' | 'offline' | 'delivery';
 
+export type PurchaseTypeFilter = 'all' | PurchaseType;
+
 export type MaterialSupplier = {
   id: number;
   supplierId: number;

@@ -24,3 +24,4 @@ export * from './wallet';
 export * from './stockCheck';
 export * from './stockCheckListQuery';
 export * from './purchaseList';
+export * from './purchaseListQuery';

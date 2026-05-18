@@ -1,4 +1,4 @@
-import { ApiAuthRepository, ApiPurchaseListRepository } from '../data';
+import { ApiAuthRepository, ApiPurchaseListRepository, UrlPurchaseListQueryRepository } from '../data';
 import {
   AuthLogoutUsecase,
   PurchaseListGetParams,
@@ -16,11 +16,13 @@ export function StockCheckPurchaseList({
 }: StockCheckPurchaseListProps) {
   const client = new QueryClient();
   const purchaseListRepository = new ApiPurchaseListRepository(client);
+  const purchaseListQueryRepository = new UrlPurchaseListQueryRepository();
   const authRepository = new ApiAuthRepository();
 
   const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
   const purchaseListGetUsecase = new PurchaseListGetUsecase(
     purchaseListRepository,
+    purchaseListQueryRepository,
     purchaseListGetParams
   );
 
