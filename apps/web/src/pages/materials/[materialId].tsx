@@ -47,7 +47,7 @@ export const getServerSideProps: GetServerSideProps<
   return {
     props: {
       materialUpdateParams: { material, materialId },
-      supplierListParams: { suppliers, totalItem },
+      supplierListParams: { suppliers, totalItem, itemPerPage: 100 },
     },
   };
 };
