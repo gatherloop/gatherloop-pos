@@ -16,7 +16,11 @@ func NewMaterialRepository(db *gorm.DB) domain.MaterialRepository {
 func (repo Repository) GetMaterialList(ctx context.Context, query string, sortBy domain.SortBy, order domain.Order, skip int, limit int) ([]domain.Material, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	var materials []Material
-	result := db.Table("materials").Where("deleted_at", nil).Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
+	result := db.Table("materials").
+		Preload("Suppliers", "deleted_at IS NULL").
+		Preload("Suppliers.Supplier").
+		Where("deleted_at", nil).
+		Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
 
 	if query != "" {
 		result = result.Where("name LIKE ?", "%"+query+"%")
