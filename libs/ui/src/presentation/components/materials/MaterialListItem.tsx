@@ -1,4 +1,4 @@
-import { Box, Layers, Pencil, ShoppingCart, Trash } from '@tamagui/lucide-icons';
+import { Layers, Pencil, ShoppingCart, Store, Trash } from '@tamagui/lucide-icons';
 import { ListItem } from '../base';
 import { XStackProps } from 'tamagui';
 
@@ -10,6 +10,7 @@ export type MaterialListItemProps = {
   purchaseUnit: string;
   minimumStock: number;
   normalStock: number;
+  supplierName?: string;
   onEditMenuPress?: () => void;
   onDeleteMenuPress?: () => void;
 } & XStackProps;
@@ -22,6 +23,7 @@ export function MaterialListItem({
   purchaseUnit,
   minimumStock,
   normalStock,
+  supplierName,
   onEditMenuPress,
   onDeleteMenuPress,
   ...xStackProps
@@ -46,23 +48,22 @@ export function MaterialListItem({
       ]}
       footerItems={[
         {
-          value: weeklyUsage.toString(),
+          value: `${weeklyUsage} ${unit}`,
           icon: ShoppingCart,
           label: 'Weekly Usage',
           isShown: weeklyUsage > 0,
         },
-        { value: unit, icon: Box, label: 'Unit' },
         {
-          value: purchaseUnit,
-          icon: Layers,
-          label: 'Purchase Unit',
-          isShown: purchaseUnit.length > 0,
-        },
-        {
-          value: `${minimumStock} / ${normalStock}`,
+          value: `${minimumStock} / ${normalStock} ${purchaseUnit}`,
           icon: Layers,
           label: 'Min / Normal Stock',
           isShown: normalStock > 0,
+        },
+        {
+          value: supplierName ?? '',
+          icon: Store,
+          label: 'Supplier',
+          isShown: (supplierName ?? '').length > 0,
         },
       ]}
       {...xStackProps}
