@@ -56,11 +56,22 @@ export const PurchaseListView = ({
             />
           </YStack>
         ))
-        .with({ type: 'loaded' }, ({ purchaseList }) => (
+        .with({ type: 'loaded' }, ({ purchaseList }) => {
+          const filteredTotalEstimatedCost =
+            purchaseTypeFilter === 'all'
+              ? purchaseList.totalEstimatedCost
+              : purchaseList.items
+                  .filter((item) =>
+                    item.suppliers.some(
+                      (s) => s.purchaseType === purchaseTypeFilter
+                    )
+                  )
+                  .reduce((sum, item) => sum + item.estimatedCost, 0);
+          return (
           <YStack gap="$3" flex={1}>
             <PurchaseListHeader
               stockCheckDate={purchaseList.stockCheckDate}
-              totalEstimatedCost={purchaseList.totalEstimatedCost}
+              totalEstimatedCost={filteredTotalEstimatedCost}
             />
             <PurchaseTypeFilterControl
               purchaseTypeFilter={purchaseTypeFilter}
@@ -74,7 +85,8 @@ export const PurchaseListView = ({
               />
             </ScrollView>
           </YStack>
-        ))
+          );
+        })
         .with({ type: 'error' }, () => (
           <ErrorView
             title="Failed to Fetch Purchase List"
