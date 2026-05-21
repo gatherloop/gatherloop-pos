@@ -2673,6 +2673,7 @@ components:
         - balance
         - paymentCostPercentage
         - isCashless
+        - isPaymentTarget
         - createdAt
       properties:
         id:
@@ -2687,6 +2688,8 @@ components:
           format: float
         isCashless:
           type: boolean
+        isPaymentTarget:
+          type: boolean
         deletedAt:
           type: string
           format: date-time
@@ -2700,6 +2703,7 @@ components:
         - balance
         - paymentCostPercentage
         - isCashless
+        - isPaymentTarget
       properties:
         name:
           type: string
@@ -2709,6 +2713,8 @@ components:
           type: number
           format: float
         isCashless:
+          type: boolean
+        isPaymentTarget:
           type: boolean
     WalletTransfer:
       type: object

@@ -40,6 +40,7 @@ func (repo Repository) UpdateWalletById(ctx context.Context, wallet domain.Walle
 		"name":                    wallet.Name,
 		"balance":                 wallet.Balance,
 		"is_cashless":             wallet.IsCashless,
+		"is_payment_target":       wallet.IsPaymentTarget,
 		"payment_cost_percentage": wallet.PaymentCostPercentage,
 	})
 

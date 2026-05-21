@@ -9,6 +9,7 @@ func ToWalletDB(domainWallet domain.Wallet) Wallet {
 		Balance:               domainWallet.Balance,
 		PaymentCostPercentage: domainWallet.PaymentCostPercentage,
 		IsCashless:            domainWallet.IsCashless,
+		IsPaymentTarget:       domainWallet.IsPaymentTarget,
 		CreatedAt:             domainWallet.CreatedAt,
 		DeletedAt:             domainWallet.DeletedAt,
 	}
@@ -21,6 +22,7 @@ func ToWalletDomain(dbWallet Wallet) domain.Wallet {
 		Balance:               dbWallet.Balance,
 		PaymentCostPercentage: dbWallet.PaymentCostPercentage,
 		IsCashless:            dbWallet.IsCashless,
+		IsPaymentTarget:       dbWallet.IsPaymentTarget,
 		CreatedAt:             dbWallet.CreatedAt,
 		DeletedAt:             dbWallet.DeletedAt,
 	}
