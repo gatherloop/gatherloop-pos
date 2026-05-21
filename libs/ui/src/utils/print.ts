@@ -1,37 +1,57 @@
 import { useToastController } from '@tamagui/toast';
 
 export type TransactionPrintPayload = {
-  type: 'INVOICE' | 'ORDER_SLIP';
-  transaction: {
-    createdAt: string;
-    paidAt?: string;
+  createdAt: string;
+  paidAt?: string;
+  name: string;
+  orderNumber: number;
+  items: {
     name: string;
-    orderNumber: number;
-    items: {
-      name: string;
-      price: number;
-      amount: number;
-      discountAmount: number;
-      note: string;
-    }[];
-    coupons: {
-      code: string;
-      type: 'FIXED' | 'PERCENTAGE';
-      amount: number;
-    }[];
-    isCashless: boolean;
-    paidAmount: number;
-  };
+    price: number;
+    amount: number;
+    discountAmount: number;
+    note: string;
+  }[];
+  coupons: {
+    code: string;
+    type: 'FIXED' | 'PERCENTAGE';
+    amount: number;
+  }[];
+  isCashless: boolean;
+  paidAmount: number;
 };
+
+export type PurchaseListPrintPayload = {
+  stockCheckDate: string;
+  totalEstimatedCost: number;
+  supplierNames: string[];
+  items: {
+    materialName: string;
+    purchaseQuantity: number;
+    purchaseUnit: string;
+    estimatedCost: number;
+    supplierName: string;
+  }[];
+};
+
+export type PrintPayload =
+  | {
+      type: 'INVOICE' | 'ORDER_SLIP';
+      transaction: TransactionPrintPayload;
+    }
+  | {
+      type: 'PURCHASE_LIST';
+      purchaseList: PurchaseListPrintPayload;
+    };
 
 export const usePrinter = () => {
   const toast = useToastController();
 
-  const print = (transaction: TransactionPrintPayload): Promise<void> => {
+  const print = (payload: PrintPayload): Promise<void> => {
     return new Promise((resolve, reject) => {
       const socket = new WebSocket('ws://localhost:8080');
       socket.onopen = () => {
-        socket.send(JSON.stringify(transaction));
+        socket.send(JSON.stringify(payload));
       };
 
       socket.onmessage = (event) => {

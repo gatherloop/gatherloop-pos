@@ -1,5 +1,5 @@
 import { Printer } from '@tamagui/lucide-icons';
-import { Button, Tooltip } from 'tamagui';
+import { Button } from 'tamagui';
 import { Layout, PurchaseListView, PurchaseListViewProps } from '../components';
 import { PurchaseTypeFilter } from '../../domain/entities/Material';
 
@@ -11,6 +11,7 @@ export type PurchaseListScreenProps = {
   getMaterialEditUrl: (materialId: number) => string;
   purchaseTypeFilter: PurchaseTypeFilter;
   onPurchaseTypeFilterChange: (filter: PurchaseTypeFilter) => void;
+  onPrintButtonPress: () => void;
 };
 
 export const PurchaseListScreen = ({
@@ -21,27 +22,21 @@ export const PurchaseListScreen = ({
   getMaterialEditUrl,
   purchaseTypeFilter,
   onPurchaseTypeFilterChange,
+  onPrintButtonPress,
 }: PurchaseListScreenProps) => {
   return (
     <Layout
       onLogoutPress={onLogoutPress}
       title="Purchase List"
       rightActionItem={
-        <Tooltip>
-          <Tooltip.Trigger asChild>
-            <Button
-              size="$3"
-              icon={Printer}
-              variant="outlined"
-              disabled
-              opacity={0.5}
-            />
-          </Tooltip.Trigger>
-          <Tooltip.Content>
-            <Tooltip.Arrow />
-            Print — coming soon
-          </Tooltip.Content>
-        </Tooltip>
+        <Button
+          size="$3"
+          icon={Printer}
+          variant="outlined"
+          disabled
+          opacity={0.5}
+          onPress={onPrintButtonPress}
+        />
       }
     >
       <PurchaseListView

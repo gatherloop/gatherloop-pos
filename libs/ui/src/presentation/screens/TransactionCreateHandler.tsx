@@ -107,7 +107,7 @@ export const TransactionCreateHandler = ({
       transactionPayController.state.type === 'payingSuccess' &&
       selectedWallet
     ) {
-      const transaction: TransactionPrintPayload['transaction'] = {
+      const transaction: TransactionPrintPayload = {
         createdAt: dayjs(new Date().toISOString()).format('DD/MM/YYYY HH:mm'),
         paidAt: dayjs(new Date().toISOString()).format('DD/MM/YYYY HH:mm'),
         name: transactionCreateController.form.getValues('name'),

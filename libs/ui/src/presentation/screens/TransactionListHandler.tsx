@@ -83,7 +83,7 @@ export const TransactionListHandler = ({
 
   const buildPrintTransaction = (
     transaction: Transaction
-  ): TransactionPrintPayload['transaction'] => ({
+  ): TransactionPrintPayload => ({
     createdAt: dayjs(transaction.createdAt).format('DD/MM/YYYY HH:mm'),
     paidAt: transaction.paidAt
       ? dayjs(transaction.paidAt).format('DD/MM/YYYY HH:mm')
