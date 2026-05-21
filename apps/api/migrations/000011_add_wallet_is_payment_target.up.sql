@@ -1,0 +1,1 @@
+ALTER TABLE wallets ADD COLUMN is_payment_target TINYINT(1) NOT NULL DEFAULT 1;

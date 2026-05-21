@@ -8,6 +8,7 @@ type Wallet struct {
 	Balance               float32
 	PaymentCostPercentage float32
 	IsCashless            bool
+	IsPaymentTarget       bool
 	DeletedAt             *time.Time
 	CreatedAt             time.Time
 }

@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { WalletCreateScreen } from './WalletCreateScreen';
 import type { WalletForm } from '../../domain';
 
-const defaultValues: WalletForm = { name: '', balance: 0, paymentCostPercentage: 0, isCashless: false };
+const defaultValues: WalletForm = { name: '', balance: 0, paymentCostPercentage: 0, isCashless: false, isPaymentTarget: true };
 
 const CreateStory = () => {
   const form = useForm<WalletForm>({ defaultValues });

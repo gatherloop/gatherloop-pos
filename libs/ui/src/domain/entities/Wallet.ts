@@ -4,6 +4,7 @@ export type Wallet = {
   balance: number;
   paymentCostPercentage: number;
   isCashless: boolean;
+  isPaymentTarget: boolean;
   createdAt: string;
 };
 
@@ -12,4 +13,5 @@ export type WalletForm = {
   balance: number;
   paymentCostPercentage: number;
   isCashless: boolean;
+  isPaymentTarget: boolean;
 };

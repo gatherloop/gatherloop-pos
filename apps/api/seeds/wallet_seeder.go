@@ -18,6 +18,7 @@ func (WalletSeeder) Seed(tx *gorm.DB) error {
 		Balance               float32
 		PaymentCostPercentage float32
 		IsCashless            bool
+		IsPaymentTarget       bool
 		CreatedAt             time.Time
 		DeletedAt             *time.Time
 	}
@@ -28,6 +29,7 @@ func (WalletSeeder) Seed(tx *gorm.DB) error {
 			Balance:               0,
 			PaymentCostPercentage: 0,
 			IsCashless:            false,
+			IsPaymentTarget:       true,
 			CreatedAt:             time.Now(),
 		},
 		{
@@ -35,6 +37,15 @@ func (WalletSeeder) Seed(tx *gorm.DB) error {
 			Balance:               0,
 			PaymentCostPercentage: 0.5,
 			IsCashless:            true,
+			IsPaymentTarget:       true,
+			CreatedAt:             time.Now(),
+		},
+		{
+			Name:                  "Brankas",
+			Balance:               0,
+			PaymentCostPercentage: 0,
+			IsCashless:            false,
+			IsPaymentTarget:       false,
 			CreatedAt:             time.Now(),
 		},
 	}

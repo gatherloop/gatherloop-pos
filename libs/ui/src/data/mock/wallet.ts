@@ -13,6 +13,7 @@ const initialWallets: Wallet[] = [
     balance: 1000000,
     paymentCostPercentage: 0,
     isCashless: false,
+    isPaymentTarget: true,
     createdAt: '2024-03-20T00:00:00.000Z',
   },
   {
@@ -21,6 +22,7 @@ const initialWallets: Wallet[] = [
     balance: 5000000,
     paymentCostPercentage: 2,
     isCashless: true,
+    isPaymentTarget: true,
     createdAt: '2024-03-21T00:00:00.000Z',
   },
 ];
@@ -67,6 +69,7 @@ export class MockWalletRepository implements WalletRepository {
       balance: formValues.balance,
       paymentCostPercentage: formValues.paymentCostPercentage,
       isCashless: formValues.isCashless,
+      isPaymentTarget: formValues.isPaymentTarget,
       createdAt: new Date().toISOString(),
     });
   }
@@ -84,6 +87,7 @@ export class MockWalletRepository implements WalletRepository {
       balance: formValues.balance,
       paymentCostPercentage: formValues.paymentCostPercentage,
       isCashless: formValues.isCashless,
+      isPaymentTarget: formValues.isPaymentTarget,
     };
   }
 

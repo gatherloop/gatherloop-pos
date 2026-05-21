@@ -13,6 +13,7 @@ export function toWallet(wallet: ApiWallet): Wallet {
     balance: wallet.balance,
     paymentCostPercentage: wallet.paymentCostPercentage,
     isCashless: wallet.isCashless,
+    isPaymentTarget: wallet.isPaymentTarget,
   };
 }
 
@@ -22,6 +23,7 @@ export function toApiWallet(form: WalletForm) {
     balance: form.balance,
     paymentCostPercentage: form.paymentCostPercentage,
     isCashless: form.isCashless,
+    isPaymentTarget: form.isPaymentTarget,
   };
 }
 

@@ -7,6 +7,7 @@ const mockWallet = {
   balance: 1000,
   paymentCostPercentage: 0,
   isCashless: false,
+  isPaymentTarget: true,
   createdAt: '2024-03-20T00:00:00.000Z',
 };
 

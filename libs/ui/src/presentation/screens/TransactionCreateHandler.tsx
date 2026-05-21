@@ -309,12 +309,12 @@ export const TransactionCreateHandler = ({
           paidAmount: values.paidAmount,
         }),
       transactionTotal: transactionPayController.state.transactionTotal,
-      walletSelectOptions: transactionPayController.state.wallets.map(
-        (wallet) => ({
+      walletSelectOptions: transactionPayController.state.wallets
+        .filter((wallet) => wallet.isPaymentTarget)
+        .map((wallet) => ({
           label: wallet.name,
           value: wallet,
-        })
-      ),
+        })),
     },
   };
 

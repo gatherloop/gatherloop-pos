@@ -43,6 +43,7 @@ export class WalletCreateUsecase extends Usecase<
         balance: 0,
         paymentCostPercentage: 0,
         isCashless: false,
+        isPaymentTarget: true,
       },
     };
   }

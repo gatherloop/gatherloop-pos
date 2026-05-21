@@ -47,6 +47,7 @@ func ToApiWallet(wallet domain.Wallet) apiContract.Wallet {
 		Balance:               wallet.Balance,
 		PaymentCostPercentage: wallet.PaymentCostPercentage,
 		IsCashless:            wallet.IsCashless,
+		IsPaymentTarget:       wallet.IsPaymentTarget,
 		DeletedAt:             wallet.DeletedAt,
 		CreatedAt:             wallet.CreatedAt,
 	}
@@ -58,6 +59,7 @@ func ToWalletRequest(walletRequest apiContract.WalletRequest) domain.Wallet {
 		Balance:               walletRequest.Balance,
 		PaymentCostPercentage: walletRequest.PaymentCostPercentage,
 		IsCashless:            walletRequest.IsCashless,
+		IsPaymentTarget:       walletRequest.IsPaymentTarget,
 	}
 }
 
