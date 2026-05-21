@@ -25,6 +25,7 @@ export const useWalletUpdateController = (usecase: WalletUpdateUsecase) => {
         balance: z.number(),
         paymentCostPercentage: z.number(),
         isCashless: z.boolean(),
+        isPaymentTarget: z.boolean(),
       })
     ),
   });

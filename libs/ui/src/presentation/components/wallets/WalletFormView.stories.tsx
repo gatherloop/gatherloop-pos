@@ -10,6 +10,7 @@ const defaultValues: WalletForm = {
   balance: 0,
   paymentCostPercentage: 0,
   isCashless: false,
+  isPaymentTarget: true,
 };
 
 const LoadedStory = () => {
@@ -31,6 +32,7 @@ const PopulatedStory = () => {
       balance: 5000000,
       paymentCostPercentage: 0,
       isCashless: false,
+      isPaymentTarget: true,
     },
   });
   return (

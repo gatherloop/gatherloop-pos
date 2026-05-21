@@ -54,6 +54,16 @@ describe('WalletListHandler', () => {
       expect(screen.getByRole('heading', { name: 'Bank Transfer' })).toBeTruthy();
     });
 
+    it('should show Payment Target badge for each wallet', async () => {
+      render(<WalletListHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getAllByText('Yes').length).toBeGreaterThan(0);
+    });
+
     it('should show error state when fetch fails', async () => {
       const walletRepo = new MockWalletRepository();
       walletRepo.setShouldFail(true);

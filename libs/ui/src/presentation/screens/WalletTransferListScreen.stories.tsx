@@ -15,6 +15,7 @@ const defaultArgs = {
   name: mockWallet.name,
   balance: mockWallet.balance,
   paymentCostPercentage: mockWallet.paymentCostPercentage,
+  isPaymentTarget: mockWallet.isPaymentTarget,
   onRetryButtonPress: fn(),
 };
 

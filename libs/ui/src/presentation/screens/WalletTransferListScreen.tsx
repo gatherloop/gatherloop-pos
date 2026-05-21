@@ -14,6 +14,7 @@ export type WalletTransferListScreenProps = {
   name: string;
   balance: number;
   paymentCostPercentage: number;
+  isPaymentTarget: boolean;
   variant: WalletTransferListProps['variant'];
   onRetryButtonPress: () => void;
   isRevalidating?: boolean;
@@ -26,6 +27,7 @@ export const WalletTransferListScreen = ({
   name,
   balance,
   paymentCostPercentage,
+  isPaymentTarget,
   variant,
   onRetryButtonPress,
   isRevalidating,
@@ -42,6 +44,7 @@ export const WalletTransferListScreen = ({
           name={name}
           balance={balance}
           paymentCostPercentage={paymentCostPercentage}
+          isPaymentTarget={isPaymentTarget}
         />
         <YStack flex={1} gap="$3">
           <XStack gap="$3" justifyContent="space-between">

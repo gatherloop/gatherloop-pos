@@ -8,7 +8,7 @@ import {
   Switch,
 } from '../base';
 import { WalletForm } from '../../../domain';
-import { Button, Form, Spinner } from 'tamagui';
+import { Button, Form, Paragraph, Spinner } from 'tamagui';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
 
 export type WalletFormViewProps = {
@@ -46,6 +46,12 @@ export const WalletFormView = ({
         </Field>
         <Field name="isCashless" label="Cashless">
           <Switch />
+        </Field>
+        <Field name="isPaymentTarget" label="Can receive transaction payments">
+          <Switch />
+          <Paragraph size="$2" color="$gray10">
+            Turn this off for internal wallets (e.g. a safe or holding account) that should not appear in the checkout payment modal.
+          </Paragraph>
         </Field>
         <Button
           disabled={isSubmitDisabled}

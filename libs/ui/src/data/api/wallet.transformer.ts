@@ -23,6 +23,7 @@ export function toApiWallet(form: WalletForm) {
     balance: form.balance,
     paymentCostPercentage: form.paymentCostPercentage,
     isCashless: form.isCashless,
+    isPaymentTarget: form.isPaymentTarget,
   };
 }
 

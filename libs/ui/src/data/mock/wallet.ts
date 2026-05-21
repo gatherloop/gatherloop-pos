@@ -69,7 +69,7 @@ export class MockWalletRepository implements WalletRepository {
       balance: formValues.balance,
       paymentCostPercentage: formValues.paymentCostPercentage,
       isCashless: formValues.isCashless,
-      isPaymentTarget: true,
+      isPaymentTarget: formValues.isPaymentTarget,
       createdAt: new Date().toISOString(),
     });
   }
@@ -87,6 +87,7 @@ export class MockWalletRepository implements WalletRepository {
       balance: formValues.balance,
       paymentCostPercentage: formValues.paymentCostPercentage,
       isCashless: formValues.isCashless,
+      isPaymentTarget: formValues.isPaymentTarget,
     };
   }
 
