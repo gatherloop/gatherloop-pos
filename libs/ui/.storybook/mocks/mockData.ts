@@ -185,6 +185,7 @@ export const mockWallet: Wallet = {
   balance: 5000000,
   paymentCostPercentage: 0,
   isCashless: false,
+  isPaymentTarget: true,
   createdAt: '2024-01-15T08:00:00.000Z',
 };
 
@@ -196,6 +197,7 @@ export const mockWallets: Wallet[] = [
     balance: 25000000,
     paymentCostPercentage: 1.5,
     isCashless: true,
+    isPaymentTarget: true,
     createdAt: '2024-01-16T08:00:00.000Z',
   },
   {
@@ -204,6 +206,7 @@ export const mockWallets: Wallet[] = [
     balance: 8000000,
     paymentCostPercentage: 0.7,
     isCashless: true,
+    isPaymentTarget: true,
     createdAt: '2024-01-17T08:00:00.000Z',
   },
 ];

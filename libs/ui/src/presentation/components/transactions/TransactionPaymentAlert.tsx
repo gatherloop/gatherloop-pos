@@ -1,4 +1,4 @@
-import { AlertDialog, Button, H4, Label, XStack, YStack } from 'tamagui';
+import { AlertDialog, Button, H4, Label, Paragraph, XStack, YStack } from 'tamagui';
 import { Field, FieldWatch, InputNumber, Select } from '../base';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
 import { Wallet } from '../../../domain';
@@ -59,9 +59,16 @@ export const TransactionPaymentAlert = ({
               </AlertDialog.Description>
 
               <XStack gap="$5" alignItems="center">
-                <Field name="wallet" label="Wallet Name" flex={1}>
-                  <Select items={walletSelectOptions} />
-                </Field>
+                {walletSelectOptions.length === 0 ? (
+                  <Paragraph color="$red10" flex={1}>
+                    No wallets are configured to receive payments. Configure one
+                    in Wallet Settings.
+                  </Paragraph>
+                ) : (
+                  <Field name="wallet" label="Wallet Name" flex={1}>
+                    <Select items={walletSelectOptions} />
+                  </Field>
+                )}
 
                 <YStack gap="$3" flex={1}>
                   <Label>Total Amount</Label>
@@ -96,7 +103,7 @@ export const TransactionPaymentAlert = ({
                   <Button disabled={isButtonDisabled}>Cancel</Button>
                 </AlertDialog.Cancel>
                 <Button
-                  disabled={isButtonDisabled}
+                  disabled={isButtonDisabled || walletSelectOptions.length === 0}
                   onPress={form.handleSubmit(onSubmit)}
                   theme="active"
                   flex={1}
