@@ -23,6 +23,7 @@ export const useWalletCreateController = (usecase: WalletCreateUsecase) => {
         balance: z.number(),
         paymentCostPercentage: z.number(),
         isCashless: z.boolean(),
+        isPaymentTarget: z.boolean(),
       })
     ),
   });

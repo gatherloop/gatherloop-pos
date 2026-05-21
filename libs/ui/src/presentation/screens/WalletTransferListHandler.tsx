@@ -42,6 +42,7 @@ export const WalletTransferListHandler = ({
       paymentCostPercentage={
         walletDetail.state.wallet?.paymentCostPercentage ?? 0
       }
+      isPaymentTarget={walletDetail.state.wallet?.isPaymentTarget ?? true}
       variant={match(walletTransfers.state)
         .returnType<WalletTransferListProps['variant']>()
         .with({ type: P.union('idle', 'loading') }, () => ({

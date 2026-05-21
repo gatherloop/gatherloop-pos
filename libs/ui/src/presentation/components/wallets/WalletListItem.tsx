@@ -1,4 +1,4 @@
-import { CreditCard, MinusSquare, Pencil, Trash } from '@tamagui/lucide-icons';
+import { CreditCard, MinusSquare, Pencil, ShoppingCart, Trash } from '@tamagui/lucide-icons';
 import { ListItem } from '../base';
 import { XStackProps } from 'tamagui';
 
@@ -6,6 +6,7 @@ export type WalletListItemProps = {
   name: string;
   balance: number;
   paymentCostPercentage: number;
+  isPaymentTarget: boolean;
   onTransferMenuPress?: () => void;
   onEditMenuPress?: () => void;
   onDeleteMenuPress?: () => void;
@@ -15,6 +16,7 @@ export const WalletListItem = ({
   name,
   balance,
   paymentCostPercentage,
+  isPaymentTarget,
   onTransferMenuPress,
   onEditMenuPress,
   onDeleteMenuPress,
@@ -45,7 +47,14 @@ export const WalletListItem = ({
           isShown: typeof onDeleteMenuPress === 'function',
         },
       ]}
-      footerItems={[{ value: `${paymentCostPercentage}%`, icon: MinusSquare }]}
+      footerItems={[
+        { value: `${paymentCostPercentage}%`, icon: MinusSquare },
+        {
+          label: 'Payment Target',
+          value: isPaymentTarget ? 'Yes' : 'No',
+          icon: ShoppingCart,
+        },
+      ]}
       {...xStackProps}
     />
   );

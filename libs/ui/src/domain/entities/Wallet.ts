@@ -13,4 +13,5 @@ export type WalletForm = {
   balance: number;
   paymentCostPercentage: number;
   isCashless: boolean;
+  isPaymentTarget: boolean;
 };

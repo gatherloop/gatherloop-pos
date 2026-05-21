@@ -22,7 +22,7 @@ describe('WalletUpdateUsecase', () => {
 
       tester.dispatch({
         type: 'SUBMIT',
-        values: { name: 'Updated Wallet', balance: 500000, paymentCostPercentage: 0, isCashless: false },
+        values: { name: 'Updated Wallet', balance: 500000, paymentCostPercentage: 0, isCashless: false, isPaymentTarget: true },
       });
       expect(tester.state.type).toBe('submitting');
 
@@ -66,7 +66,7 @@ describe('WalletUpdateUsecase', () => {
 
       tester.dispatch({
         type: 'SUBMIT',
-        values: { name: 'Updated Wallet', balance: 500000, paymentCostPercentage: 0, isCashless: false },
+        values: { name: 'Updated Wallet', balance: 500000, paymentCostPercentage: 0, isCashless: false, isPaymentTarget: true },
       });
       expect(tester.state.type).toBe('submitting');
 

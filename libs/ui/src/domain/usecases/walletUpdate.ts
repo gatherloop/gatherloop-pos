@@ -56,6 +56,7 @@ export class WalletUpdateUsecase extends Usecase<
         balance: this.params.wallet?.balance ?? 0,
         paymentCostPercentage: this.params.wallet?.paymentCostPercentage ?? 0,
         isCashless: this.params.wallet?.isCashless ?? false,
+        isPaymentTarget: this.params.wallet?.isPaymentTarget ?? true,
       },
     };
   }
@@ -151,6 +152,7 @@ export class WalletUpdateUsecase extends Usecase<
                 balance: wallet.balance,
                 paymentCostPercentage: wallet.paymentCostPercentage,
                 isCashless: wallet.isCashless,
+                isPaymentTarget: wallet.isPaymentTarget,
               },
             })
           )

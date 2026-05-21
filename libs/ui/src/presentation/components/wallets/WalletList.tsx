@@ -50,6 +50,7 @@ export const WalletList = ({
                 balance={item.balance}
                 name={item.name}
                 paymentCostPercentage={item.paymentCostPercentage}
+                isPaymentTarget={item.isPaymentTarget}
                 onEditMenuPress={() => onEditMenuPress(item)}
                 onTransferMenuPress={() => onTransferMenuPress(item)}
                 onPress={() => onItemPress(item)}

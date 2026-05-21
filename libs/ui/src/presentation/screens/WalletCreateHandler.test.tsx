@@ -40,6 +40,16 @@ describe('WalletCreateHandler', () => {
       render(<WalletCreateHandler {...createProps()} />);
       expect(screen.getByRole('textbox', { name: 'Name' })).toBeTruthy();
     });
+
+    it('should render the isPaymentTarget switch field', () => {
+      render(<WalletCreateHandler {...createProps()} />);
+      expect(screen.getByRole('switch', { name: 'Can receive transaction payments' })).toBeTruthy();
+    });
+
+    it('should render the isPaymentTarget switch as checked by default', () => {
+      render(<WalletCreateHandler {...createProps()} />);
+      expect(screen.getByRole('switch', { name: 'Can receive transaction payments', checked: true })).toBeTruthy();
+    });
   });
 
   describe('navigation', () => {

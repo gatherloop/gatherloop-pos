@@ -7,7 +7,7 @@ import type { WalletForm } from '../../domain';
 
 const UpdateStory = () => {
   const form = useForm<WalletForm>({
-    defaultValues: { name: 'BCA', balance: 5000000, paymentCostPercentage: 0, isCashless: true },
+    defaultValues: { name: 'BCA', balance: 5000000, paymentCostPercentage: 0, isCashless: true, isPaymentTarget: true },
   });
   return (
     <WalletUpdateScreen
@@ -22,7 +22,7 @@ const UpdateStory = () => {
 
 const LoadingStory = () => {
   const form = useForm<WalletForm>({
-    defaultValues: { name: '', balance: 0, paymentCostPercentage: 0, isCashless: false },
+    defaultValues: { name: '', balance: 0, paymentCostPercentage: 0, isCashless: false, isPaymentTarget: true },
   });
   return (
     <WalletUpdateScreen

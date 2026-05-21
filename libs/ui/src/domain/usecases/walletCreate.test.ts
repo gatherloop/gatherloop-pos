@@ -17,7 +17,7 @@ describe('WalletCreateUsecase', () => {
 
       tester.dispatch({
         type: 'SUBMIT',
-        values: { name: 'New Wallet', balance: 0, paymentCostPercentage: 0, isCashless: false },
+        values: { name: 'New Wallet', balance: 0, paymentCostPercentage: 0, isCashless: false, isPaymentTarget: true },
       });
       expect(tester.state.type).toBe('submitting');
 
@@ -37,7 +37,7 @@ describe('WalletCreateUsecase', () => {
 
       tester.dispatch({
         type: 'SUBMIT',
-        values: { name: 'New Wallet', balance: 0, paymentCostPercentage: 0, isCashless: false },
+        values: { name: 'New Wallet', balance: 0, paymentCostPercentage: 0, isCashless: false, isPaymentTarget: true },
       });
       expect(tester.state.type).toBe('submitting');
 

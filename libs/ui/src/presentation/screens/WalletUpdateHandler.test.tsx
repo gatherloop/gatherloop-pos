@@ -70,6 +70,22 @@ describe('WalletUpdateHandler', () => {
       });
     });
 
+    it('should render the isPaymentTarget switch field', async () => {
+      render(<WalletUpdateHandler {...createProps({ preloaded: true })} />);
+      await act(async () => {
+        await flushPromises();
+      });
+      expect(screen.getByRole('switch', { name: 'Can receive transaction payments' })).toBeTruthy();
+    });
+
+    it('should pre-fill isPaymentTarget switch from fetched wallet data', async () => {
+      render(<WalletUpdateHandler {...createProps()} />);
+      await act(async () => {
+        await flushPromises();
+      });
+      expect(screen.getByRole('switch', { name: 'Can receive transaction payments', checked: true })).toBeTruthy();
+    });
+
     it('should show error state when wallet fetch fails', async () => {
       render(<WalletUpdateHandler {...createProps({ shouldFail: true })} />);
 
