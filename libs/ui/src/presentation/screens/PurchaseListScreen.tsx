@@ -33,8 +33,6 @@ export const PurchaseListScreen = ({
           size="$3"
           icon={Printer}
           variant="outlined"
-          disabled
-          opacity={0.5}
           onPress={onPrintButtonPress}
         />
       }
