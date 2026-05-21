@@ -25,6 +25,20 @@ export const PurchaseListHandler = ({
 }: PurchaseListHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
   const purchaseListGet = usePurchaseListGetController(purchaseListGetUsecase);
+  const filteredItems =
+    purchaseListGet.state.purchaseList?.items.filter((item) =>
+      purchaseListGet.state.purchaseTypeFilter === 'all'
+        ? true
+        : item.suppliers.some(
+            (supplier) =>
+              supplier.purchaseType === purchaseListGet.state.purchaseTypeFilter
+          )
+    ) ?? [];
+  const totalEstimatedCost = filteredItems.reduce(
+    (total, item) => total + item.estimatedCost,
+    0
+  );
+
   const { print } = usePrinter();
 
   return (
@@ -49,12 +63,13 @@ export const PurchaseListHandler = ({
             type: 'PURCHASE_LIST',
             purchaseList: {
               stockCheckDate: purchaseListGet.state.purchaseList.stockCheckDate,
-              totalEstimatedCost:
-                purchaseListGet.state.purchaseList.totalEstimatedCost,
-              supplierNames: purchaseListGet.state.purchaseList.items.map(
-                (item) => item.suppliers[0]?.supplier?.name
-              ),
-              items: purchaseListGet.state.purchaseList.items.map((item) => ({
+              totalEstimatedCost,
+              supplierNames: [
+                ...new Set(
+                  filteredItems.map((item) => item.suppliers[0]?.supplier?.name)
+                ),
+              ],
+              items: filteredItems.map((item) => ({
                 materialName: item.materialName,
                 purchaseQuantity: item.purchaseQuantity,
                 purchaseUnit: item.purchaseUnit,
