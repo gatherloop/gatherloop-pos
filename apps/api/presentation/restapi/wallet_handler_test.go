@@ -108,9 +108,17 @@ func TestWalletHandler_CreateWallet(t *testing.T) {
 	}{
 		{
 			name: "success",
-			body: `{"name": "Cash", "balance": 0, "paymentCostPercentage": 0, "isCashless": false}`,
+			body: `{"name": "Cash", "balance": 0, "paymentCostPercentage": 0, "isCashless": false, "isPaymentTarget": true}`,
 			setupMock: func(r *mock.MockWalletRepository) {
-				r.EXPECT().CreateWallet(gomock.Any(), gomock.Any()).Return(domain.Wallet{Id: 1, Name: "Cash"}, nil)
+				r.EXPECT().CreateWallet(gomock.Any(), gomock.Any()).Return(domain.Wallet{Id: 1, Name: "Cash", IsPaymentTarget: true}, nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name: "success with isPaymentTarget false",
+			body: `{"name": "Brankas", "balance": 0, "paymentCostPercentage": 0, "isCashless": false, "isPaymentTarget": false}`,
+			setupMock: func(r *mock.MockWalletRepository) {
+				r.EXPECT().CreateWallet(gomock.Any(), gomock.Any()).Return(domain.Wallet{Id: 2, Name: "Brankas", IsPaymentTarget: false}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -122,7 +130,7 @@ func TestWalletHandler_CreateWallet(t *testing.T) {
 		},
 		{
 			name: "repo error",
-			body: `{"name": "Cash", "balance": 0, "paymentCostPercentage": 0, "isCashless": false}`,
+			body: `{"name": "Cash", "balance": 0, "paymentCostPercentage": 0, "isCashless": false, "isPaymentTarget": true}`,
 			setupMock: func(r *mock.MockWalletRepository) {
 				r.EXPECT().CreateWallet(gomock.Any(), gomock.Any()).Return(domain.Wallet{}, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
@@ -157,9 +165,18 @@ func TestWalletHandler_UpdateWalletById(t *testing.T) {
 		{
 			name:     "success",
 			walletId: "1",
-			body:     `{"name": "Debit", "balance": 0, "paymentCostPercentage": 1, "isCashless": true}`,
+			body:     `{"name": "Debit", "balance": 0, "paymentCostPercentage": 1, "isCashless": true, "isPaymentTarget": true}`,
 			setupMock: func(r *mock.MockWalletRepository) {
-				r.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, Name: "Debit"}, nil)
+				r.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, Name: "Debit", IsPaymentTarget: true}, nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:     "success setting isPaymentTarget to false",
+			walletId: "1",
+			body:     `{"name": "Brankas", "balance": 0, "paymentCostPercentage": 0, "isCashless": false, "isPaymentTarget": false}`,
+			setupMock: func(r *mock.MockWalletRepository) {
+				r.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, Name: "Brankas", IsPaymentTarget: false}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -173,7 +190,7 @@ func TestWalletHandler_UpdateWalletById(t *testing.T) {
 		{
 			name:     "not found",
 			walletId: "99",
-			body:     `{"name": "Debit", "balance": 0, "paymentCostPercentage": 1, "isCashless": true}`,
+			body:     `{"name": "Debit", "balance": 0, "paymentCostPercentage": 1, "isCashless": true, "isPaymentTarget": true}`,
 			setupMock: func(r *mock.MockWalletRepository) {
 				r.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(99)).Return(domain.Wallet{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
