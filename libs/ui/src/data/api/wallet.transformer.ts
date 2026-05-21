@@ -13,6 +13,7 @@ export function toWallet(wallet: ApiWallet): Wallet {
     balance: wallet.balance,
     paymentCostPercentage: wallet.paymentCostPercentage,
     isCashless: wallet.isCashless,
+    isPaymentTarget: wallet.isPaymentTarget,
   };
 }
 

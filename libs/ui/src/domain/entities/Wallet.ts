@@ -4,6 +4,7 @@ export type Wallet = {
   balance: number;
   paymentCostPercentage: number;
   isCashless: boolean;
+  isPaymentTarget: boolean;
   createdAt: string;
 };
 
