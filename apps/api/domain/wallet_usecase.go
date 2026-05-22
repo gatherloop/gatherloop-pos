@@ -54,6 +54,7 @@ func (usecase WalletUsecase) CreateWalletTransfer(ctx context.Context, walletTra
 			Name:                  fromWallet.Name,
 			PaymentCostPercentage: fromWallet.PaymentCostPercentage,
 			IsCashless:            fromWallet.IsCashless,
+			IsPaymentTarget:       fromWallet.IsPaymentTarget,
 			Balance:               fromWallet.Balance - walletTransfer.Amount,
 		}, fromWalletId); err != nil {
 			return err
@@ -68,6 +69,7 @@ func (usecase WalletUsecase) CreateWalletTransfer(ctx context.Context, walletTra
 			Name:                  toWallet.Name,
 			PaymentCostPercentage: toWallet.PaymentCostPercentage,
 			IsCashless:            toWallet.IsCashless,
+			IsPaymentTarget:       toWallet.IsPaymentTarget,
 			Balance:               toWallet.Balance + walletTransfer.Amount,
 		}, walletTransfer.ToWalletId); err != nil {
 			return err
