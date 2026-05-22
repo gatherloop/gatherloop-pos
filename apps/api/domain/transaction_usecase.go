@@ -224,6 +224,7 @@ func (usecase TransactionUsecase) PayTransaction(ctx context.Context, walletId i
 			PaymentCostPercentage: paymentWallet.PaymentCostPercentage,
 			Balance:               newBalance,
 			IsCashless:            paymentWallet.IsCashless,
+			IsPaymentTarget:       paymentWallet.IsPaymentTarget,
 		},
 			walletId); err != nil {
 			return err
@@ -300,6 +301,7 @@ func (usecase TransactionUsecase) UnpayTransaction(ctx context.Context, id int64
 			PaymentCostPercentage: paymentWallet.PaymentCostPercentage,
 			Balance:               newBalance,
 			IsCashless:            paymentWallet.IsCashless,
+			IsPaymentTarget:       paymentWallet.IsPaymentTarget,
 		},
 			*transaction.WalletId); err != nil {
 			return err
