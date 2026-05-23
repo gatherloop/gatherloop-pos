@@ -64,6 +64,7 @@ func (usecase ExpenseUsecase) CreateExpense(ctx context.Context, expense Expense
 			Balance:               expenseWallet.Balance - expense.Total,
 			PaymentCostPercentage: expenseWallet.PaymentCostPercentage,
 			IsCashless:            expenseWallet.IsCashless,
+			IsPaymentTarget:       expenseWallet.IsPaymentTarget,
 		}, expense.WalletId); err != nil {
 			return err
 		}
@@ -106,6 +107,7 @@ func (usecase ExpenseUsecase) UpdateExpenseById(ctx context.Context, expense Exp
 			Balance:               expenseWallet.Balance + existingExpense.Total,
 			PaymentCostPercentage: expenseWallet.PaymentCostPercentage,
 			IsCashless:            expenseWallet.IsCashless,
+			IsPaymentTarget:       expenseWallet.IsPaymentTarget,
 		}, existingExpense.WalletId); err != nil {
 			return err
 		}
@@ -135,6 +137,7 @@ func (usecase ExpenseUsecase) UpdateExpenseById(ctx context.Context, expense Exp
 			Balance:               expenseWallet.Balance - expense.Total,
 			PaymentCostPercentage: expenseWallet.PaymentCostPercentage,
 			IsCashless:            expenseWallet.IsCashless,
+			IsPaymentTarget:       expenseWallet.IsPaymentTarget,
 		}, expense.WalletId); err != nil {
 			return err
 		}
@@ -178,6 +181,7 @@ func (usecase ExpenseUsecase) DeleteExpenseById(ctx context.Context, id int64) *
 			Balance:               expenseWallet.Balance + existingExpense.Total,
 			PaymentCostPercentage: expenseWallet.PaymentCostPercentage,
 			IsCashless:            expenseWallet.IsCashless,
+			IsPaymentTarget:       expenseWallet.IsPaymentTarget,
 		}, existingExpense.WalletId); err != nil {
 			return err
 		}
