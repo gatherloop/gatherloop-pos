@@ -10,7 +10,10 @@ const stockCheckItemSchema = z.object({
   materialId: z.number().int().positive(),
   materialName: z.string(),
   purchaseUnit: z.string(),
-  currentStock: z.number().int().min(0),
+  currentStock: z
+    .number({ invalid_type_error: 'Please enter the current stock' })
+    .int()
+    .min(0),
 });
 
 const stockCheckSchema = z.object({
