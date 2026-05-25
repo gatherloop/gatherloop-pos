@@ -44,6 +44,13 @@ export const StockCheckUpdateHandler = ({
           : undefined
       }
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
+      query={stockCheckUpdate.query}
+      onQueryChange={stockCheckUpdate.handleQueryChange}
+      showOnlyPending={stockCheckUpdate.showOnlyPending}
+      onShowOnlyPendingToggle={stockCheckUpdate.toggleShowOnlyPending}
+      filled={stockCheckUpdate.filled}
+      total={stockCheckUpdate.total}
+      pendingRows={stockCheckUpdate.pendingRows}
     />
   );
 };

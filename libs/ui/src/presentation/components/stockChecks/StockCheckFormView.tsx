@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { FormProvider, useFieldArray, UseFormReturn } from 'react-hook-form';
 import {
   Button,
@@ -10,12 +9,9 @@ import {
   XStack,
   YStack,
 } from 'tamagui';
-import { X } from '@tamagui/lucide-icons';
+import { Filter, X } from '@tamagui/lucide-icons';
 import { FormErrorBanner, InputNumber } from '../base';
 import { StockCheckForm } from '../../../domain';
-import { createDebounce } from '../../../utils';
-
-const changeQueryDebounce = createDebounce();
 
 export type StockCheckFormViewProps = {
   form: UseFormReturn<StockCheckForm>;
@@ -23,6 +19,13 @@ export type StockCheckFormViewProps = {
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   serverError?: string;
+  query: string;
+  onQueryChange: (value: string) => void;
+  showOnlyPending: boolean;
+  onShowOnlyPendingToggle: () => void;
+  filled: number;
+  total: number;
+  pendingRows: boolean[];
 };
 
 export const StockCheckFormView = ({
@@ -31,9 +34,15 @@ export const StockCheckFormView = ({
   isSubmitDisabled,
   isSubmitting,
   serverError,
+  query,
+  onQueryChange,
+  showOnlyPending,
+  onShowOnlyPendingToggle,
+  filled,
+  total,
+  pendingRows,
 }: StockCheckFormViewProps) => {
   const { fields } = useFieldArray({ control: form.control, name: 'items' });
-  const [query, setQuery] = useState('');
 
   const lowerQuery = query.toLowerCase();
   const matchCount = lowerQuery
@@ -42,10 +51,6 @@ export const StockCheckFormView = ({
     : fields.length;
   const hasQuery = query.length > 0;
   const noMatches = hasQuery && matchCount === 0;
-
-  const handleChange = (value: string) => {
-    changeQueryDebounce(() => setQuery(value), 400);
-  };
 
   return (
     <FormProvider {...form}>
@@ -66,22 +71,34 @@ export const StockCheckFormView = ({
           <Input
             flex={1}
             placeholder="Search material by name"
-            onChangeText={handleChange}
+            onChangeText={onQueryChange}
           />
           {hasQuery && (
             <Button
               icon={X}
               circular
               size="$2"
-              onPress={() => {
-                handleChange('');
-              }}
+              onPress={() => onQueryChange('')}
               accessibilityLabel="Clear search"
             />
           )}
+          <Button
+            icon={Filter}
+            circular
+            size="$2"
+            onPress={onShowOnlyPendingToggle}
+            theme={showOnlyPending ? 'yellow' : undefined}
+            accessibilityLabel={
+              showOnlyPending ? 'Show all materials' : 'Show only pending'
+            }
+          />
         </XStack>
 
         <YStack maxWidth={640} alignSelf="center" width="100%">
+          <SizableText color="$gray10" paddingBottom="$2">
+            {filled} / {total} materials checked
+          </SizableText>
+
           {noMatches && (
             <SizableText
               color="$gray10"
@@ -94,18 +111,26 @@ export const StockCheckFormView = ({
 
           {fields.map((field, index) => {
             const inputId = `stock-check-item-${field.id}`;
-            const hidden =
+            const isPending = pendingRows[index] ?? false;
+
+            const hiddenBySearch =
               hasQuery &&
               !field.materialName.toLowerCase().includes(lowerQuery);
+            const hiddenByPendingFilter = showOnlyPending && !isPending;
+            const hidden = hiddenBySearch || hiddenByPendingFilter;
+
             return (
               <XStack
                 key={field.id}
                 gap="$2"
                 alignItems="center"
                 paddingVertical="$2"
+                paddingHorizontal="$2"
                 borderBottomWidth={1}
                 borderBottomColor="$borderColor"
                 display={hidden ? 'none' : 'flex'}
+                backgroundColor={isPending ? '$yellow3' : undefined}
+                borderRadius="$2"
               >
                 <Label flex={1} numberOfLines={1} htmlFor={inputId}>
                   {field.materialName}
@@ -118,6 +143,18 @@ export const StockCheckFormView = ({
                 <SizableText width={60} color="$gray10">
                   {field.purchaseUnit}
                 </SizableText>
+                {isPending && (
+                  <XStack
+                    backgroundColor="$yellow5"
+                    paddingHorizontal="$2"
+                    paddingVertical="$1"
+                    borderRadius="$10"
+                  >
+                    <SizableText size="$1" color="$yellow11">
+                      Pending
+                    </SizableText>
+                  </XStack>
+                )}
               </XStack>
             );
           })}
