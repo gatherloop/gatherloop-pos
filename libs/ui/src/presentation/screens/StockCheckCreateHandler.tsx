@@ -47,6 +47,7 @@ export const StockCheckCreateHandler = ({
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
       query={stockCheckCreate.query}
       onQueryChange={stockCheckCreate.handleQueryChange}
+      onClearQuery={stockCheckCreate.clearQuery}
       showOnlyPending={stockCheckCreate.showOnlyPending}
       onShowOnlyPendingToggle={stockCheckCreate.toggleShowOnlyPending}
       filled={stockCheckCreate.filled}
