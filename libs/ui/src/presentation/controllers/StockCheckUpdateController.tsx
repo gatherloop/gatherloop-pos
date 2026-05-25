@@ -48,6 +48,8 @@ export const useStockCheckUpdateController = (usecase: StockCheckUpdateUsecase) 
     debounceRef.current(() => setQuery(value), 400);
   };
 
+  const clearQuery = () => setQuery('');
+
   const toggleShowOnlyPending = () => setShowOnlyPending((prev) => !prev);
 
   return {
@@ -56,6 +58,7 @@ export const useStockCheckUpdateController = (usecase: StockCheckUpdateUsecase) 
     form,
     query,
     handleQueryChange,
+    clearQuery,
     showOnlyPending,
     toggleShowOnlyPending,
     filled,

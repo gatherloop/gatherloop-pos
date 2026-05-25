@@ -10,6 +10,7 @@ export type InputNumberProps = {
   max?: number;
   fractionDigit?: number;
   step?: number;
+  error?: boolean;
 } & InputProps;
 
 type InputNumberFieldProps = {
@@ -20,6 +21,7 @@ type InputNumberFieldProps = {
   fractionDigit: number;
   step: number;
   inputProps: InputProps;
+  error?: boolean;
 };
 
 const InputNumberField = ({
@@ -30,6 +32,7 @@ const InputNumberField = ({
   fractionDigit,
   step,
   inputProps,
+  error,
 }: InputNumberFieldProps) => {
   const isNullableRef = useRef(field.value === null);
   const isNull = field.value === null;
@@ -60,6 +63,7 @@ const InputNumberField = ({
         {...inputProps}
         id={fieldName}
         placeholder={isNull ? '—' : inputProps.placeholder}
+        borderColor={error ? '$red8' : undefined}
         onChangeText={(text: string) => {
           if (text.trim() === '') {
             field.onChange(isNullableRef.current ? null : (min ?? 0));
@@ -107,6 +111,7 @@ export const InputNumber = ({
   max,
   fractionDigit = 0,
   step = 1,
+  error,
   ...inputProps
 }: InputNumberProps) => {
   const fieldContext = useFieldContext();
@@ -123,6 +128,7 @@ export const InputNumber = ({
           fractionDigit={fractionDigit}
           step={step}
           inputProps={inputProps}
+          error={error}
         />
       )}
     />
