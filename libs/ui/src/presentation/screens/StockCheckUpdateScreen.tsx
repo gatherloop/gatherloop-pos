@@ -10,6 +10,13 @@ export type StockCheckUpdateScreenProps = {
   isSubmitting: boolean;
   onLogoutPress: () => void;
   serverError?: string;
+  query: string;
+  onQueryChange: (value: string) => void;
+  showOnlyPending: boolean;
+  onShowOnlyPendingToggle: () => void;
+  filled: number;
+  total: number;
+  pendingRows: boolean[];
 };
 
 export const StockCheckUpdateScreen = (props: StockCheckUpdateScreenProps) => {
@@ -26,6 +33,13 @@ export const StockCheckUpdateScreen = (props: StockCheckUpdateScreenProps) => {
           isSubmitDisabled={props.isSubmitDisabled}
           isSubmitting={props.isSubmitting}
           serverError={props.serverError}
+          query={props.query}
+          onQueryChange={props.onQueryChange}
+          showOnlyPending={props.showOnlyPending}
+          onShowOnlyPendingToggle={props.onShowOnlyPendingToggle}
+          filled={props.filled}
+          total={props.total}
+          pendingRows={props.pendingRows}
         />
       </ScrollView>
     </Layout>

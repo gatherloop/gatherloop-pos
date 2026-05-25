@@ -45,6 +45,13 @@ export const StockCheckCreateHandler = ({
           : undefined
       }
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
+      query={stockCheckCreate.query}
+      onQueryChange={stockCheckCreate.handleQueryChange}
+      showOnlyPending={stockCheckCreate.showOnlyPending}
+      onShowOnlyPendingToggle={stockCheckCreate.toggleShowOnlyPending}
+      filled={stockCheckCreate.filled}
+      total={stockCheckCreate.total}
+      pendingRows={stockCheckCreate.pendingRows}
     />
   );
 };

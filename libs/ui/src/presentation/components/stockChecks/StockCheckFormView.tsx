@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { FormProvider, useFieldArray, UseFormReturn, useWatch } from 'react-hook-form';
+import { FormProvider, useFieldArray, UseFormReturn } from 'react-hook-form';
 import {
   Button,
   Form,
@@ -13,9 +12,6 @@ import {
 import { Filter, X } from '@tamagui/lucide-icons';
 import { FormErrorBanner, InputNumber } from '../base';
 import { StockCheckForm } from '../../../domain';
-import { createDebounce } from '../../../utils';
-
-const changeQueryDebounce = createDebounce();
 
 export type StockCheckFormViewProps = {
   form: UseFormReturn<StockCheckForm>;
@@ -23,6 +19,13 @@ export type StockCheckFormViewProps = {
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   serverError?: string;
+  query: string;
+  onQueryChange: (value: string) => void;
+  showOnlyPending: boolean;
+  onShowOnlyPendingToggle: () => void;
+  filled: number;
+  total: number;
+  pendingRows: boolean[];
 };
 
 export const StockCheckFormView = ({
@@ -31,15 +34,15 @@ export const StockCheckFormView = ({
   isSubmitDisabled,
   isSubmitting,
   serverError,
+  query,
+  onQueryChange,
+  showOnlyPending,
+  onShowOnlyPendingToggle,
+  filled,
+  total,
+  pendingRows,
 }: StockCheckFormViewProps) => {
   const { fields } = useFieldArray({ control: form.control, name: 'items' });
-  const [query, setQuery] = useState('');
-  const [showOnlyPending, setShowOnlyPending] = useState(false);
-
-  const watchedItems = useWatch({ control: form.control, name: 'items' });
-
-  const total = fields.length;
-  const filled = watchedItems.filter((item) => item.currentStock !== null).length;
 
   const lowerQuery = query.toLowerCase();
   const matchCount = lowerQuery
@@ -48,10 +51,6 @@ export const StockCheckFormView = ({
     : fields.length;
   const hasQuery = query.length > 0;
   const noMatches = hasQuery && matchCount === 0;
-
-  const handleChange = (value: string) => {
-    changeQueryDebounce(() => setQuery(value), 400);
-  };
 
   return (
     <FormProvider {...form}>
@@ -72,16 +71,14 @@ export const StockCheckFormView = ({
           <Input
             flex={1}
             placeholder="Search material by name"
-            onChangeText={handleChange}
+            onChangeText={onQueryChange}
           />
           {hasQuery && (
             <Button
               icon={X}
               circular
               size="$2"
-              onPress={() => {
-                handleChange('');
-              }}
+              onPress={() => onQueryChange('')}
               accessibilityLabel="Clear search"
             />
           )}
@@ -89,7 +86,7 @@ export const StockCheckFormView = ({
             icon={Filter}
             circular
             size="$2"
-            onPress={() => setShowOnlyPending((prev) => !prev)}
+            onPress={onShowOnlyPendingToggle}
             theme={showOnlyPending ? 'yellow' : undefined}
             accessibilityLabel={
               showOnlyPending ? 'Show all materials' : 'Show only pending'
@@ -114,8 +111,7 @@ export const StockCheckFormView = ({
 
           {fields.map((field, index) => {
             const inputId = `stock-check-item-${field.id}`;
-            const currentStock = watchedItems[index]?.currentStock ?? null;
-            const isPending = currentStock === null;
+            const isPending = pendingRows[index] ?? false;
 
             const hiddenBySearch =
               hasQuery &&
