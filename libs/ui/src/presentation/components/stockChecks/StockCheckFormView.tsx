@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FormProvider, useFieldArray, UseFormReturn } from 'react-hook-form';
+import { FormProvider, useFieldArray, UseFormReturn, useWatch } from 'react-hook-form';
 import {
   Button,
   Form,
@@ -10,7 +10,7 @@ import {
   XStack,
   YStack,
 } from 'tamagui';
-import { X } from '@tamagui/lucide-icons';
+import { Filter, X } from '@tamagui/lucide-icons';
 import { FormErrorBanner, InputNumber } from '../base';
 import { StockCheckForm } from '../../../domain';
 import { createDebounce } from '../../../utils';
@@ -34,6 +34,12 @@ export const StockCheckFormView = ({
 }: StockCheckFormViewProps) => {
   const { fields } = useFieldArray({ control: form.control, name: 'items' });
   const [query, setQuery] = useState('');
+  const [showOnlyPending, setShowOnlyPending] = useState(false);
+
+  const watchedItems = useWatch({ control: form.control, name: 'items' });
+
+  const total = fields.length;
+  const filled = watchedItems.filter((item) => item.currentStock !== null).length;
 
   const lowerQuery = query.toLowerCase();
   const matchCount = lowerQuery
@@ -79,9 +85,23 @@ export const StockCheckFormView = ({
               accessibilityLabel="Clear search"
             />
           )}
+          <Button
+            icon={Filter}
+            circular
+            size="$2"
+            onPress={() => setShowOnlyPending((prev) => !prev)}
+            theme={showOnlyPending ? 'yellow' : undefined}
+            accessibilityLabel={
+              showOnlyPending ? 'Show all materials' : 'Show only pending'
+            }
+          />
         </XStack>
 
         <YStack maxWidth={640} alignSelf="center" width="100%">
+          <SizableText color="$gray10" paddingBottom="$2">
+            {filled} / {total} materials checked
+          </SizableText>
+
           {noMatches && (
             <SizableText
               color="$gray10"
@@ -94,18 +114,27 @@ export const StockCheckFormView = ({
 
           {fields.map((field, index) => {
             const inputId = `stock-check-item-${field.id}`;
-            const hidden =
+            const currentStock = watchedItems[index]?.currentStock ?? null;
+            const isPending = currentStock === null;
+
+            const hiddenBySearch =
               hasQuery &&
               !field.materialName.toLowerCase().includes(lowerQuery);
+            const hiddenByPendingFilter = showOnlyPending && !isPending;
+            const hidden = hiddenBySearch || hiddenByPendingFilter;
+
             return (
               <XStack
                 key={field.id}
                 gap="$2"
                 alignItems="center"
                 paddingVertical="$2"
+                paddingHorizontal="$2"
                 borderBottomWidth={1}
                 borderBottomColor="$borderColor"
                 display={hidden ? 'none' : 'flex'}
+                backgroundColor={isPending ? '$yellow3' : undefined}
+                borderRadius="$2"
               >
                 <Label flex={1} numberOfLines={1} htmlFor={inputId}>
                   {field.materialName}
@@ -118,6 +147,18 @@ export const StockCheckFormView = ({
                 <SizableText width={60} color="$gray10">
                   {field.purchaseUnit}
                 </SizableText>
+                {isPending && (
+                  <XStack
+                    backgroundColor="$yellow5"
+                    paddingHorizontal="$2"
+                    paddingVertical="$1"
+                    borderRadius="$10"
+                  >
+                    <SizableText size="$1" color="$yellow11">
+                      Pending
+                    </SizableText>
+                  </XStack>
+                )}
               </XStack>
             );
           })}
