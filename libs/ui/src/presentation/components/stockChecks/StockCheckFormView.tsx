@@ -114,7 +114,6 @@ export const StockCheckFormView = ({
                   name={`items.${index}.currentStock`}
                   width={100}
                   id={inputId}
-                  allowNull
                 />
                 <SizableText width={60} color="$gray10">
                   {field.purchaseUnit}
