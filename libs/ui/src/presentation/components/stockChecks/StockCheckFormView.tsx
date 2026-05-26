@@ -132,7 +132,7 @@ export const StockCheckFormView = ({
           />
         </XStack>
 
-        <YStack maxWidth={640} alignSelf="center" width="100%">
+        <YStack maxWidth={640} alignSelf="center" width="100%" gap="$2">
           <SizableText color="$gray10" paddingBottom="$2">
             {filled} / {total} materials checked
           </SizableText>
@@ -163,15 +163,15 @@ export const StockCheckFormView = ({
                 key={field.id}
                 gap="$2"
                 alignItems="center"
-                paddingVertical="$2"
-                paddingHorizontal="$2"
-                borderBottomWidth={1}
-                borderBottomColor="$borderColor"
+                paddingVertical="$3"
+                paddingHorizontal="$4"
+                borderWidth={1}
+                borderColor="$borderColor"
                 display={hidden ? 'none' : 'flex'}
                 backgroundColor={
                   isErrorRow ? '$red3' : isPending ? '$yellow3' : undefined
                 }
-                borderRadius="$2"
+                borderRadius="$4"
                 ref={(el: any) => {
                   rowRefs.current[index] = el;
                 }}
