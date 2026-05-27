@@ -202,21 +202,23 @@ export const StockCheckFormView = ({
                 <SizableText width={60} color="$gray10">
                   {field.purchaseUnit}
                 </SizableText>
-                {isPending && (
-                  <XStack
-                    backgroundColor={isErrorRow ? '$red5' : '$yellow5'}
-                    paddingHorizontal="$2"
-                    paddingVertical="$1"
-                    borderRadius="$10"
-                  >
-                    <SizableText
-                      size="$1"
-                      color={isErrorRow ? '$red11' : '$yellow11'}
+                <XStack width={60} justifyContent="center">
+                  {isPending && (
+                    <XStack
+                      backgroundColor={isErrorRow ? '$red5' : '$yellow5'}
+                      paddingHorizontal="$2"
+                      paddingVertical="$1"
+                      borderRadius="$10"
                     >
-                      Pending
-                    </SizableText>
-                  </XStack>
-                )}
+                      <SizableText
+                        size="$1"
+                        color={isErrorRow ? '$red11' : '$yellow11'}
+                      >
+                        Pending
+                      </SizableText>
+                    </XStack>
+                  )}
+                </XStack>
               </XStack>
             );
           })}
