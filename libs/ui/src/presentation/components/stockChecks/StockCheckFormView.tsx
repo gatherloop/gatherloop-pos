@@ -8,7 +8,6 @@ import {
 import {
   Button,
   Form,
-  Input,
   Label,
   SizableText,
   Spinner,
@@ -16,7 +15,7 @@ import {
   YStack,
 } from 'tamagui';
 import { Filter, X } from '@tamagui/lucide-icons';
-import { FormErrorBanner, InputNumber } from '../base';
+import { DebouncedInput, FormErrorBanner, InputNumber } from '../base';
 import { StockCheckForm } from '../../../domain';
 
 export type StockCheckFormViewProps = {
@@ -27,7 +26,6 @@ export type StockCheckFormViewProps = {
   serverError?: string;
   query: string;
   onQueryChange: (value: string) => void;
-  onClearQuery: () => void;
   showOnlyPending: boolean;
   onShowOnlyPendingToggle: () => void;
   filled: number;
@@ -43,7 +41,6 @@ export const StockCheckFormView = ({
   serverError,
   query,
   onQueryChange,
-  onClearQuery,
   showOnlyPending,
   onShowOnlyPendingToggle,
   filled,
@@ -66,7 +63,7 @@ export const StockCheckFormView = ({
 
   const handleSubmit = () => {
     if (pendingCount > 0) {
-      onClearQuery();
+      onQueryChange('');
       if (!showOnlyPending) onShowOnlyPendingToggle();
       const firstPendingIndex = pendingRows.findIndex(Boolean);
       if (firstPendingIndex >= 0) {
@@ -105,11 +102,12 @@ export const StockCheckFormView = ({
           backgroundColor="$background"
           paddingVertical="$2"
         >
-          <Input
+          <DebouncedInput
             flex={1}
             placeholder="Search material by name"
             value={query}
             onChangeText={onQueryChange}
+            delay={400}
           />
           {hasQuery && (
             <Button

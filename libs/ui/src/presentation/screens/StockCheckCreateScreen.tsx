@@ -12,7 +12,6 @@ export type StockCheckCreateScreenProps = {
   serverError?: string;
   query: string;
   onQueryChange: (value: string) => void;
-  onClearQuery: () => void;
   showOnlyPending: boolean;
   onShowOnlyPendingToggle: () => void;
   filled: number;
@@ -36,7 +35,6 @@ export const StockCheckCreateScreen = (props: StockCheckCreateScreenProps) => {
           serverError={props.serverError}
           query={props.query}
           onQueryChange={props.onQueryChange}
-          onClearQuery={props.onClearQuery}
           showOnlyPending={props.showOnlyPending}
           onShowOnlyPendingToggle={props.onShowOnlyPendingToggle}
           filled={props.filled}
