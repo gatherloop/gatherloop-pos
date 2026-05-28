@@ -2,6 +2,7 @@
 import {
   StockCheck as ApiStockCheck,
   StockCheckItem as ApiStockCheckItem,
+  StockCheckRequest as ApiStockCheckRequest,
 } from '../../../../api-contract/src';
 import { StockCheck, StockCheckForm, StockCheckItem } from '../../domain';
 
@@ -29,11 +30,13 @@ export function toStockCheck(stockCheck: ApiStockCheck): StockCheck {
   };
 }
 
-export function toApiStockCheckForm(form: StockCheckForm) {
+export function toApiStockCheckRequest(
+  form: StockCheckForm
+): ApiStockCheckRequest {
   return {
     items: form.items.map((item) => ({
       materialId: item.materialId,
-      currentStock: item.currentStock,
+      currentStock: item.currentStock ?? 0,
     })),
   };
 }

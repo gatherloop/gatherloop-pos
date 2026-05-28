@@ -17,7 +17,9 @@ export const StockCheckUpdateHandler = ({
   stockCheckUpdateUsecase,
 }: StockCheckUpdateHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const stockCheckUpdate = useStockCheckUpdateController(stockCheckUpdateUsecase);
+  const stockCheckUpdate = useStockCheckUpdateController(
+    stockCheckUpdateUsecase
+  );
   const router = useRouter();
 
   useEffect(() => {
@@ -45,8 +47,7 @@ export const StockCheckUpdateHandler = ({
       }
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
       query={stockCheckUpdate.query}
-      onQueryChange={stockCheckUpdate.handleQueryChange}
-      onClearQuery={stockCheckUpdate.clearQuery}
+      onQueryChange={stockCheckUpdate.setQuery}
       showOnlyPending={stockCheckUpdate.showOnlyPending}
       onShowOnlyPendingToggle={stockCheckUpdate.toggleShowOnlyPending}
       filled={stockCheckUpdate.filled}

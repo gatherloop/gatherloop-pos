@@ -8,7 +8,6 @@ import {
 import {
   Button,
   Form,
-  Input,
   Label,
   SizableText,
   Spinner,
@@ -16,7 +15,7 @@ import {
   YStack,
 } from 'tamagui';
 import { Filter, X } from '@tamagui/lucide-icons';
-import { FormErrorBanner, InputNumber } from '../base';
+import { DebouncedInput, FormErrorBanner, InputNumber } from '../base';
 import { StockCheckForm } from '../../../domain';
 
 export type StockCheckFormViewProps = {
@@ -27,7 +26,6 @@ export type StockCheckFormViewProps = {
   serverError?: string;
   query: string;
   onQueryChange: (value: string) => void;
-  onClearQuery: () => void;
   showOnlyPending: boolean;
   onShowOnlyPendingToggle: () => void;
   filled: number;
@@ -43,7 +41,6 @@ export const StockCheckFormView = ({
   serverError,
   query,
   onQueryChange,
-  onClearQuery,
   showOnlyPending,
   onShowOnlyPendingToggle,
   filled,
@@ -66,7 +63,7 @@ export const StockCheckFormView = ({
 
   const handleSubmit = () => {
     if (pendingCount > 0) {
-      onClearQuery();
+      onQueryChange('');
       if (!showOnlyPending) onShowOnlyPendingToggle();
       const firstPendingIndex = pendingRows.findIndex(Boolean);
       if (firstPendingIndex >= 0) {
@@ -90,7 +87,9 @@ export const StockCheckFormView = ({
         <FormErrorBanner message={serverError} />
         {isSubmitted && pendingCount > 0 && (
           <FormErrorBanner
-            message={`${pendingCount} material${pendingCount !== 1 ? 's' : ''} still need a stock count`}
+            message={`${pendingCount} material${
+              pendingCount !== 1 ? 's' : ''
+            } still need a stock count`}
           />
         )}
 
@@ -105,11 +104,12 @@ export const StockCheckFormView = ({
           backgroundColor="$background"
           paddingVertical="$2"
         >
-          <Input
+          <DebouncedInput
             flex={1}
             placeholder="Search material by name"
             value={query}
             onChangeText={onQueryChange}
+            delay={400}
           />
           {hasQuery && (
             <Button
@@ -132,7 +132,7 @@ export const StockCheckFormView = ({
           />
         </XStack>
 
-        <YStack maxWidth={640} alignSelf="center" width="100%">
+        <YStack maxWidth={640} alignSelf="center" width="100%" gap="$2">
           <SizableText color="$gray10" paddingBottom="$2">
             {filled} / {total} materials checked
           </SizableText>
@@ -163,15 +163,15 @@ export const StockCheckFormView = ({
                 key={field.id}
                 gap="$2"
                 alignItems="center"
-                paddingVertical="$2"
-                paddingHorizontal="$2"
-                borderBottomWidth={1}
-                borderBottomColor="$borderColor"
+                paddingVertical="$3"
+                paddingHorizontal="$4"
+                borderWidth={1}
+                borderColor="$borderColor"
                 display={hidden ? 'none' : 'flex'}
                 backgroundColor={
                   isErrorRow ? '$red3' : isPending ? '$yellow3' : undefined
                 }
-                borderRadius="$2"
+                borderRadius="$4"
                 ref={(el: any) => {
                   rowRefs.current[index] = el;
                 }}
@@ -188,13 +188,7 @@ export const StockCheckFormView = ({
                     aria-invalid={isErrorRow || undefined}
                   />
                   {isErrorRow && (
-                    <SizableText
-                      size="$1"
-                      color="$red10"
-                      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                      // @ts-expect-error
-                      role="alert"
-                    >
+                    <SizableText size="$1" color="$red10" role="alert">
                       Please enter the current stock
                     </SizableText>
                   )}
@@ -202,21 +196,23 @@ export const StockCheckFormView = ({
                 <SizableText width={60} color="$gray10">
                   {field.purchaseUnit}
                 </SizableText>
-                {isPending && (
-                  <XStack
-                    backgroundColor={isErrorRow ? '$red5' : '$yellow5'}
-                    paddingHorizontal="$2"
-                    paddingVertical="$1"
-                    borderRadius="$10"
-                  >
-                    <SizableText
-                      size="$1"
-                      color={isErrorRow ? '$red11' : '$yellow11'}
+                <XStack width={60} justifyContent="center">
+                  {isPending && (
+                    <XStack
+                      backgroundColor={isErrorRow ? '$red5' : '$yellow5'}
+                      paddingHorizontal="$2"
+                      paddingVertical="$1"
+                      borderRadius="$10"
                     >
-                      Pending
-                    </SizableText>
-                  </XStack>
-                )}
+                      <SizableText
+                        size="$1"
+                        color={isErrorRow ? '$red11' : '$yellow11'}
+                      >
+                        Pending
+                      </SizableText>
+                    </XStack>
+                  )}
+                </XStack>
               </XStack>
             );
           })}

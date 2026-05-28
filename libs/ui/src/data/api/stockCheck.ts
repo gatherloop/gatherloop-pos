@@ -12,7 +12,7 @@ import {
 } from '../../../../api-contract/src';
 import { StockCheck, StockCheckRepository } from '../../domain';
 import { RequestConfig } from '@kubb/swagger-client/client';
-import { toStockCheck, toApiStockCheckForm } from './stockCheck.transformer';
+import { toStockCheck, toApiStockCheckRequest } from './stockCheck.transformer';
 
 export class ApiStockCheckRepository implements StockCheckRepository {
   client: QueryClient;
@@ -34,14 +34,17 @@ export class ApiStockCheckRepository implements StockCheckRepository {
   };
 
   createStockCheck: StockCheckRepository['createStockCheck'] = (form) => {
-    return stockCheckCreate(toApiStockCheckForm(form)).then();
+    return stockCheckCreate(toApiStockCheckRequest(form)).then();
   };
 
   updateStockCheck: StockCheckRepository['updateStockCheck'] = (
     form,
     stockCheckId
   ) => {
-    return stockCheckUpdateById(stockCheckId, toApiStockCheckForm(form)).then();
+    return stockCheckUpdateById(
+      stockCheckId,
+      toApiStockCheckRequest(form)
+    ).then();
   };
 
   deleteStockCheckById: StockCheckRepository['deleteStockCheckById'] = (
