@@ -1,21 +1,22 @@
-import { useState } from 'react';
-import { FormProvider, useFieldArray, UseFormReturn } from 'react-hook-form';
+import { useRef } from 'react';
+import {
+  FormProvider,
+  useFieldArray,
+  useFormState,
+  UseFormReturn,
+} from 'react-hook-form';
 import {
   Button,
   Form,
-  Input,
   Label,
   SizableText,
   Spinner,
   XStack,
   YStack,
 } from 'tamagui';
-import { X } from '@tamagui/lucide-icons';
-import { FormErrorBanner, InputNumber } from '../base';
+import { Filter, X } from '@tamagui/lucide-icons';
+import { DebouncedInput, FormErrorBanner, InputNumber } from '../base';
 import { StockCheckForm } from '../../../domain';
-import { createDebounce } from '../../../utils';
-
-const changeQueryDebounce = createDebounce();
 
 export type StockCheckFormViewProps = {
   form: UseFormReturn<StockCheckForm>;
@@ -23,6 +24,13 @@ export type StockCheckFormViewProps = {
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   serverError?: string;
+  query: string;
+  onQueryChange: (value: string) => void;
+  showOnlyPending: boolean;
+  onShowOnlyPendingToggle: () => void;
+  filled: number;
+  total: number;
+  pendingRows: boolean[];
 };
 
 export const StockCheckFormView = ({
@@ -31,9 +39,19 @@ export const StockCheckFormView = ({
   isSubmitDisabled,
   isSubmitting,
   serverError,
+  query,
+  onQueryChange,
+  showOnlyPending,
+  onShowOnlyPendingToggle,
+  filled,
+  total,
+  pendingRows,
 }: StockCheckFormViewProps) => {
   const { fields } = useFieldArray({ control: form.control, name: 'items' });
-  const [query, setQuery] = useState('');
+  const { isSubmitted } = useFormState({ control: form.control });
+  const rowRefs = useRef<any[]>([]);
+
+  const pendingCount = pendingRows.filter(Boolean).length;
 
   const lowerQuery = query.toLowerCase();
   const matchCount = lowerQuery
@@ -43,14 +61,35 @@ export const StockCheckFormView = ({
   const hasQuery = query.length > 0;
   const noMatches = hasQuery && matchCount === 0;
 
-  const handleChange = (value: string) => {
-    changeQueryDebounce(() => setQuery(value), 400);
+  const handleSubmit = () => {
+    if (pendingCount > 0) {
+      onQueryChange('');
+      if (!showOnlyPending) onShowOnlyPendingToggle();
+      const firstPendingIndex = pendingRows.findIndex(Boolean);
+      if (firstPendingIndex >= 0) {
+        requestAnimationFrame(() => {
+          rowRefs.current[firstPendingIndex]?.scrollIntoView?.({
+            behavior: 'smooth',
+            block: 'center',
+          });
+          const input =
+            rowRefs.current[firstPendingIndex]?.querySelector?.('input');
+          (input as HTMLInputElement | null)?.focus?.();
+        });
+      }
+    }
+    form.handleSubmit(onSubmit)();
   };
 
   return (
     <FormProvider {...form}>
-      <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
+      <Form onSubmit={handleSubmit} gap="$3">
         <FormErrorBanner message={serverError} />
+        {isSubmitted && pendingCount > 0 && (
+          <FormErrorBanner
+            message={`${pendingCount} material${pendingCount !== 1 ? 's' : ''} still need a stock count`}
+          />
+        )}
 
         <XStack
           alignItems="center"
@@ -63,25 +102,39 @@ export const StockCheckFormView = ({
           backgroundColor="$background"
           paddingVertical="$2"
         >
-          <Input
+          <DebouncedInput
             flex={1}
             placeholder="Search material by name"
-            onChangeText={handleChange}
+            value={query}
+            onChangeText={onQueryChange}
+            delay={400}
           />
           {hasQuery && (
             <Button
               icon={X}
               circular
               size="$2"
-              onPress={() => {
-                handleChange('');
-              }}
+              onPress={() => onQueryChange('')}
               accessibilityLabel="Clear search"
             />
           )}
+          <Button
+            icon={Filter}
+            circular
+            size="$2"
+            onPress={onShowOnlyPendingToggle}
+            theme={showOnlyPending ? 'yellow' : undefined}
+            accessibilityLabel={
+              showOnlyPending ? 'Show all materials' : 'Show only pending'
+            }
+          />
         </XStack>
 
-        <YStack maxWidth={640} alignSelf="center" width="100%">
+        <YStack maxWidth={640} alignSelf="center" width="100%" gap="$2">
+          <SizableText color="$gray10" paddingBottom="$2">
+            {filled} / {total} materials checked
+          </SizableText>
+
           {noMatches && (
             <SizableText
               color="$gray10"
@@ -94,30 +147,76 @@ export const StockCheckFormView = ({
 
           {fields.map((field, index) => {
             const inputId = `stock-check-item-${field.id}`;
-            const hidden =
+            const isPending = pendingRows[index] ?? false;
+            const isErrorRow = isSubmitted && isPending;
+
+            const hiddenBySearch =
               hasQuery &&
               !field.materialName.toLowerCase().includes(lowerQuery);
+            const hiddenByPendingFilter = showOnlyPending && !isPending;
+            const hidden = hiddenBySearch || hiddenByPendingFilter;
+
             return (
               <XStack
                 key={field.id}
                 gap="$2"
                 alignItems="center"
-                paddingVertical="$2"
-                borderBottomWidth={1}
-                borderBottomColor="$borderColor"
+                paddingVertical="$3"
+                paddingHorizontal="$4"
+                borderWidth={1}
+                borderColor="$borderColor"
                 display={hidden ? 'none' : 'flex'}
+                backgroundColor={
+                  isErrorRow ? '$red3' : isPending ? '$yellow3' : undefined
+                }
+                borderRadius="$4"
+                ref={(el: any) => {
+                  rowRefs.current[index] = el;
+                }}
               >
                 <Label flex={1} numberOfLines={1} htmlFor={inputId}>
                   {field.materialName}
                 </Label>
-                <InputNumber
-                  name={`items.${index}.currentStock`}
-                  width={100}
-                  id={inputId}
-                />
+                <YStack>
+                  <InputNumber
+                    name={`items.${index}.currentStock`}
+                    width={100}
+                    id={inputId}
+                    error={isErrorRow}
+                    aria-invalid={isErrorRow || undefined}
+                  />
+                  {isErrorRow && (
+                    <SizableText
+                      size="$1"
+                      color="$red10"
+                      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                      // @ts-expect-error
+                      role="alert"
+                    >
+                      Please enter the current stock
+                    </SizableText>
+                  )}
+                </YStack>
                 <SizableText width={60} color="$gray10">
                   {field.purchaseUnit}
                 </SizableText>
+                <XStack width={60} justifyContent="center">
+                  {isPending && (
+                    <XStack
+                      backgroundColor={isErrorRow ? '$red5' : '$yellow5'}
+                      paddingHorizontal="$2"
+                      paddingVertical="$1"
+                      borderRadius="$10"
+                    >
+                      <SizableText
+                        size="$1"
+                        color={isErrorRow ? '$red11' : '$yellow11'}
+                      >
+                        Pending
+                      </SizableText>
+                    </XStack>
+                  )}
+                </XStack>
               </XStack>
             );
           })}
@@ -125,7 +224,7 @@ export const StockCheckFormView = ({
 
         <Button
           disabled={isSubmitDisabled}
-          onPress={form.handleSubmit(onSubmit)}
+          onPress={handleSubmit}
           theme="blue"
           icon={isSubmitting ? <Spinner /> : undefined}
         >

@@ -22,7 +22,7 @@ export type StockCheckItemForm = {
   materialId: number;
   materialName: string;
   purchaseUnit: string;
-  currentStock: number;
+  currentStock: number | null;
 };
 
 export type StockCheckForm = {
