@@ -1,11 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StockCheckUpdateUsecase } from '../../domain';
 import { useController } from './controller';
 import { useToastController } from '@tamagui/toast';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { createDebounce } from '../../utils';
 
 const stockCheckItemSchema = z.object({
   materialId: z.number().int().positive(),
@@ -37,18 +36,11 @@ export const useStockCheckUpdateController = (usecase: StockCheckUpdateUsecase) 
 
   const [query, setQuery] = useState('');
   const [showOnlyPending, setShowOnlyPending] = useState(false);
-  const debounceRef = useRef(createDebounce());
 
   const watchedItems = useWatch({ control: form.control, name: 'items' });
   const total = watchedItems.length;
   const filled = watchedItems.filter((item) => item.currentStock !== null).length;
   const pendingRows = watchedItems.map((item) => item.currentStock === null);
-
-  const handleQueryChange = (value: string) => {
-    debounceRef.current(() => setQuery(value), 400);
-  };
-
-  const clearQuery = () => setQuery('');
 
   const toggleShowOnlyPending = () => setShowOnlyPending((prev) => !prev);
 
@@ -57,8 +49,7 @@ export const useStockCheckUpdateController = (usecase: StockCheckUpdateUsecase) 
     dispatch,
     form,
     query,
-    handleQueryChange,
-    clearQuery,
+    setQuery,
     showOnlyPending,
     toggleShowOnlyPending,
     filled,
