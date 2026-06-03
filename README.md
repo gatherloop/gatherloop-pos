@@ -1,4 +1,4 @@
-# Gatherloop POS (Pint Of Sale)
+# Gatherloop POS (Point Of Sale)
 
 ## 1. Overviews
 
