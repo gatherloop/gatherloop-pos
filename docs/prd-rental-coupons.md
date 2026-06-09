@@ -126,6 +126,8 @@ For a rental: staff checks out as today → opens the resulting transaction → 
 | D8 | Reusability / limits | Coupons stay reusable rules; no usage limits, single-use codes, or expiry introduced here. Two students in one checkout each attach STUDENT DISCOUNT to their own ticket. | Matches today's coupon semantics. |
 | D9 | Percentage rounding | Reuse `RoundToNearest500` for item-scoped percentage discounts, same as transaction scope today. | Consistency with existing IDR rounding. |
 | D10 | Backward compatibility | `coupons.scope` defaults to `'transaction'`; `transaction_coupons.transaction_item_id` is nullable (null = whole-transaction). OpenAPI changes are additive. | No existing coupon, transaction, or consumer changes. |
+| D11 | STUDENT DISCOUNT eligibility | **Board-game rentals only, staff-enforced.** No system restriction on which line type can take an `item` coupon. | The item-scope mechanism is intentionally generic; limiting STUDENT to rental tickets is a usage rule staff apply, keeping the model simple and reusable for future per-item discounts. |
+| D12 | Coupon code format | **Free text**, unique (existing `UNIQUE(code)`). No slug/normalization rule. | Owner enters human-readable codes directly; no added validation. |
 
 ---
 
@@ -246,9 +248,10 @@ Rental checkout (`POST /rentals/checkout`) is **unchanged**. OpenAPI edits in `l
 
 ## Resolved
 
-- **All-day / capped rentals + FREE 1 HOUR** (was Open Q): the owner confirms this is **staff-controlled** — staff don't apply FREE 1/2 HOUR to all-day or capped rentals, and the 2-hour minimum is enforced by staff judgment. The system stays simple and does not block either case. (See D1, D6.)
+- **All-day / capped rentals + FREE 1 HOUR**: the owner confirms this is **staff-controlled** — staff don't apply FREE 1/2 HOUR to all-day or capped rentals, and the 2-hour minimum is enforced by staff judgment. The system stays simple and does not block either case. (See D1, D6.)
+- **STUDENT DISCOUNT eligibility**: applies to **board-game rentals only**, enforced by **staff judgment** — staff attach it only to a rental ticket, not to food/drink lines. The item-scope mechanism is generic (any line item *could* take it), so no system restriction is added; this is a usage rule, not a constraint. (See D5, D11.)
+- **Coupon codes are free text.** No slug/format rule. Codes remain unique (existing `UNIQUE(code)` constraint) and user-entered as-is (e.g. `FREE 1 HOUR`, `STUDENT DISCOUNT`). (See D12.)
 
 ## Open Questions
 
-1. **STUDENT DISCOUNT on food/drinks in the same transaction.** Scoped to rental tickets here. If students should also get % off snacks, the item-scope generalizes to any line item — confirm whether that's wanted now or later.
-2. **Exact coupon code strings** — `FREE 1 HOUR` / `FREE 2 HOUR` / `STUDENT DISCOUNT` with spaces, or slugs? Codes are unique and user-facing.
+_None outstanding. The PRD is ready to build against._
