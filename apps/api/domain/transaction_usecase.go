@@ -123,7 +123,35 @@ func (usecase TransactionUsecase) UpdateTransactionById(ctx context.Context, tra
 			return &Error{Type: BadRequest, Message: "cannot update paid transaction"}
 		}
 
+		// Index existing items so rental-linked items keep the duration-based
+		// price/subtotal that was calculated at checkout. The update request
+		// payload does not carry Price or RentalId, so recalculating these
+		// items from the variant's base price would corrupt their values and
+		// drop the rental link.
+		existingItemsById := map[int64]TransactionItem{}
+		for _, existingItem := range existingTransaction.TransactionItems {
+			existingItemsById[existingItem.Id] = existingItem
+		}
+
 		for index, item := range transaction.TransactionItems {
+			if existingItem, ok := existingItemsById[item.Id]; ok && existingItem.RentalId != nil {
+				transaction.Total += existingItem.Subtotal
+				transaction.TransactionItems[index] = TransactionItem{
+					Id:             existingItem.Id,
+					TransactionId:  id,
+					VariantId:      existingItem.VariantId,
+					Amount:         existingItem.Amount,
+					DiscountAmount: existingItem.DiscountAmount,
+					Subtotal:       existingItem.Subtotal,
+					Price:          existingItem.Price,
+					RentalId:       existingItem.RentalId,
+					Note:           existingItem.Note,
+					ProductName:    existingItem.ProductName,
+					Values:         existingItem.Values,
+				}
+				continue
+			}
+
 			variant, err := usecase.variantRepository.GetVariantById(ctxWithTx, item.VariantId)
 			if err != nil {
 				return err
