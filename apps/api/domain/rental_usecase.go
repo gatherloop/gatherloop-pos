@@ -127,6 +127,15 @@ func (usecase RentalUsecase) CheckoutRentals(ctx context.Context, rentalIds []in
 				durationNote = fmt.Sprintf("%d minute(s)", totalMinutes)
 			}
 
+			// Snapshot the product name and option values off the variant so the
+			// rental's transaction item keeps a stable record, mirroring how
+			// TransactionUsecase.CreateTransaction snapshots regular items. Without
+			// this the transaction detail renders rental items with a blank name.
+			variant, err := usecase.variantRepository.GetVariantById(ctxWithTx, existingRental.VariantId)
+			if err != nil {
+				return err
+			}
+
 			transactionItems = append(transactionItems, TransactionItem{
 				VariantId:      existingRental.VariantId,
 				Amount:         1,
@@ -135,6 +144,8 @@ func (usecase RentalUsecase) CheckoutRentals(ctx context.Context, rentalIds []in
 				Subtotal:       result.Price,
 				RentalId:       &existingRental.Id,
 				Note:           durationNote,
+				ProductName:    variant.Product.Name,
+				Values:         snapshotVariantValues(variant),
 			})
 
 			transactionData.Name = existingRental.Name
