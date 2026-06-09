@@ -19,7 +19,7 @@ Coupons are attached **after checkout, on the transaction edit screen** (PRD D2)
 - "Free N hours" = fixed rupiah, clamped to the item price. (D1, D3)
 - ≤ 1 item-coupon per line, no stacking. (D4)
 - 2-hour minimum for FREE 1 HOUR is staff discretion, shown via the line's duration note. (D6)
-- **Prerequisite:** make the transaction create/update path preserve rental-item prices (today it re-derives them from `variants.price = 0`). (D7 / Phase 3)
+- **Prerequisite — ✅ done on main (#131):** `UpdateTransactionById` now preserves rental-item prices instead of re-deriving them from `variants.price = 0`. Phase 3 builds on it. (D7)
 - All schema and contract changes additive. (D10)
 
 Phases are independently shippable and ordered: schema/seed → domain → rental-safe update + item-coupon application → data layer → contract → coupon admin UI → transaction edit UI → mobile → docs. Each phase is one small PR.
@@ -109,30 +109,33 @@ func CalculateItemDiscount(base float32, coupon Coupon) (float32, *Error) {
 
 ---
 
-## Phase 3: Rental-Safe Update + Item-Coupon Application (core PR)
+## Phase 3: Item-Coupon Application (core PR)
 
-**Goal:** Editing a rental transaction no longer destroys its prices, and item-scoped coupons discount the right line.
+**Goal:** Item-scoped coupons discount the right line — including rental tickets — on both create and update.
 
-### 3.1 Preserve rental-item prices (PRD FR-2 / D7)
-In `transaction_usecase.go`, both `CreateTransaction` (~:51-73) and `UpdateTransactionById` (~:126-149): for items with `RentalId != nil`, take `base` from the item's **stored** price (`item.Price * item.Amount`, or the persisted subtotal on update) instead of `variant.Price`. Non-rental items keep `base = variant.Price * item.Amount`.
+### 3.1 Rental-price preservation — ✅ DONE on main (#131)
+`UpdateTransactionById` already preserves the stored `Price`/`Subtotal`/`DiscountAmount`/`RentalId`/`Note` of rental items and ships a regression test. **No work here** — but note its shape: rental items hit an early `if existingItem.RentalId != nil { … continue }` branch (`transaction_usecase.go`, ~:137-152) that copies stored values and skips the variant recompute. Phase 3.2 hooks coupons *into* that branch. (`CreateTransaction` never receives rental items, so it needed no preservation fix.)
 
 ### 3.2 Apply item-scoped coupons
-Refactor the coupon loops (`:75-98`, `:151-174`):
+Update the coupon loop (`transaction.TransactionCoupons`) in **both** `CreateTransaction` and `UpdateTransactionById` (~:178-202):
 - For each `TransactionCoupon`:
   - If `TransactionItemId == nil` → transaction-scope: subtract from `Total` exactly as today.
-  - If set → load coupon, call `CalculateItemDiscount(itemBase, coupon)`, add to that item's `DiscountAmount`, recompute that item's `Subtotal = base − discount`. Enforce ≤1 item-coupon per line (D4).
-- Compute `Total = Σ item.Subtotal` first, then apply transaction-scope coupons. Snapshot `{type, amount, transaction_item_id}` into the `transaction_coupons` rows.
+  - If set → locate the target item in `transaction.TransactionItems`, derive its `base`, call `CalculateItemDiscount(base, coupon)`, set that item's `DiscountAmount = discount` and `Subtotal = base − discount`, adjust the running `Total` by the delta. Enforce ≤1 item-coupon per line (D4); reject a non-`item` coupon carrying a `TransactionItemId` (D5, 400).
+- **Base derivation (matches #131):** rental item → `base = existingItem.Price * existingItem.Amount` (full duration-based price; recompute from `Price` each save so discounts never compound). Non-rental → `base = variant.Price * item.Amount`.
+- **Rental-branch hook:** in `UpdateTransactionById`, when a rental item has an attached item-coupon, recompute its `DiscountAmount`/`Subtotal` from `Price` instead of blindly copying the stored `Subtotal`. A rental ticket with no item-coupon stays byte-for-byte as #131 leaves it.
+- Snapshot `{type, amount, transaction_item_id}` into the `transaction_coupons` rows (the current loop drops `transaction_item_id` — add it).
 
 ### 3.3 Tests
-`transaction_usecase_test.go`:
-- **Regression:** edit + re-save a rental transaction → line prices and total unchanged (guards FR-2).
-- FREE 1 HOUR on a 30K item → subtotal 15K (FR-4 #1).
+Extend `transaction_usecase_test.go` (keep #131's rental-regression test):
+- FREE 1 HOUR on a 30K **rental** item → DiscountAmount 15K, subtotal 15K, `RentalId` intact (rental-branch hook).
+- Re-save the same transaction twice → discount stays 15K, does not compound (base-from-`Price`).
 - FREE 2 HOUR on a 15K item → subtotal 0 (FR-4 #4, clamp).
 - STUDENT on a 30K item → 17,500 (FR-4 #5).
 - Multi-item: 3 items, STUDENT on the middle → only it discounted (FR-5).
-- Item coupon with a `transaction` scope → 400 (D5).
+- `transaction`-scope coupon carrying a `TransactionItemId` → 400 (D5).
+- Item-coupon on a new transaction via `CreateTransaction` (non-rental path).
 
-**Exit criteria:** Backend reproduces every FR-4/FR-5 case; rental transactions survive an edit.
+**Exit criteria:** Backend reproduces every FR-4/FR-5 case; a coupon on a rental ticket re-prices it without breaking #131's preservation guarantee.
 
 ---
 
@@ -220,7 +223,7 @@ Run the project codegen (`libs/api-contract/package.json` / `openapitools.json`)
 
 | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|
-| Editing a rental transaction zeroes its prices (current bug) | High if unaddressed | High | Phase 3.1 preserves stored prices for `RentalId != nil` items; Phase 3.3 regression test asserts unchanged totals. Hard prerequisite, done before any UI ships. |
+| Editing a rental transaction zeroes its prices (was a live bug) | — | High | **Resolved on main (#131):** rental items keep stored price/subtotal on update, covered by a regression test. Phase 3.2's coupon hook must preserve this guarantee for the no-coupon case. |
 | Fixed 15K/30K over-discounts all-day or capped rentals (D1) | Medium | Low | Documented; staff only apply FREE 1/2 HOUR to standard hourly rentals. Open Question #1 confirms with owner. Duration note shown on the line. |
 | Income/budget math regresses | Low | High | Discount always lands on `DiscountAmount`; `Subtotal = base − discount`; `Total = Σ subtotals`. Regression test on the no-coupon path. |
 | A `transaction` coupon attached to a line (or vice versa) | Low | Medium | Calculator rejects wrong scope (Phase 2.2); UI offers only the matching scope per surface (D5). |
@@ -235,7 +238,7 @@ Run the project codegen (`libs/api-contract/package.json` / `openapitools.json`)
 |---|---|---|
 | 1 Schema + seed | 0.5 day | 2 |
 | 2 Domain + calculator | 0.5 day | 3 |
-| 3 Rental-safe update + item application (core) | 1.5 days | 4 |
+| 3 Item-coupon application (core; rental-safe update already done #131) | 1 day | 4 |
 | 4 Data layer | 0.5 day | 5 |
 | 5 Contract + codegen | 0.5 day | 6, 7 |
 | 6 Coupon admin UI | 0.5 day | 7 |
@@ -243,4 +246,4 @@ Run the project codegen (`libs/api-contract/package.json` / `openapitools.json`)
 | 8 Mobile parity | 1 day | 9 |
 | 9 Docs + release | 0.5 day | — |
 
-**Total:** ~7 working days, single engineer. Each phase is one reviewable PR.
+**Total:** ~6.5 working days, single engineer (the rental-safe update prerequisite already shipped in #131). Each phase is one reviewable PR.

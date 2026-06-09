@@ -51,16 +51,13 @@ The transaction stays the single source of truth for money. No second applicatio
 
 Rental checkout (`apps/api/domain/rental_usecase.go:83-155`) computes each ticket's price from the tier snapshot and creates a plain transaction. **This PRD changes nothing here.** Coupons are added afterward by editing the resulting transaction.
 
-### ⚠️ The blocker for "edit the transaction afterward"
+### ✅ The blocker for "edit the transaction afterward" — RESOLVED on main (#131)
 
-The transaction **update** path recomputes every item's price from the variant:
+The transaction **update** path used to recompute every item's price from the variant (`variants.price = 0` for rentals), so saving a rental transaction zeroed its prices. **This is now fixed on `main` by [#131](../../pull/131)** (`fix: preserve rental item pricing on transaction update`): `UpdateTransactionById` indexes the existing items and, for any item with `RentalId != nil`, **preserves the checkout-calculated `Price`, `Subtotal`, `DiscountAmount`, `RentalId`, and `Note`** instead of re-deriving them, then `continue`s past the variant recompute.
 
-```go
-// transaction_usecase.go:132 (UpdateTransactionById), mirror at :57 (CreateTransaction)
-subTotal := (variant.Price * item.Amount) - item.DiscountAmount
-```
-
-For **rental** items, `variants.price` is **0** (rental price lives on the item, from the tier snapshot). So saving a rental transaction through the current update path **zeroes out the rental prices**. Attaching a coupon requires saving the transaction — so this path must first be made **rental-aware**: items with `RentalId != nil` keep their stored price instead of re-deriving it from the variant. This is FR-2 and a hard prerequisite.
+Two consequences for this feature:
+- **The prerequisite is done.** FR-2 / D7 below are satisfied upstream; this PRD builds on them.
+- **A rental line is now treated as immutable on update.** It copies the stored `Subtotal`/`DiscountAmount` and skips the recompute branch. So to *attach a coupon to a rental ticket*, the item-coupon logic (FR-3) must **extend that rental branch**: compute the discount against the stored full `Price` (the pre-discount base, since at checkout `Subtotal == Price` and `DiscountAmount == 0`) and write the new `DiscountAmount`/`Subtotal` — recomputing from `Price` each save so the discount never compounds across edits.
 
 ---
 
@@ -122,7 +119,7 @@ For a rental: staff checks out as today → opens the resulting transaction → 
 | D4 | Coupons per item | **At most one `item` coupon per line item** in v1 (no stacking). | Keeps math and UI simple; covers all three target coupons. |
 | D5 | Scope enforcement | An `item` coupon can only be attached to a line item; a `transaction` coupon only to the whole bill. The server validates scope on both paths. | Each scope is offered only where it makes sense. |
 | D6 | 2-hour minimum for FREE 1 HOUR | **Staff discretion. Confirmed by the owner.** Not auto-enforced. | After checkout, the transaction item carries duration only as a display note (`"2 hour(s)"`), not structured minutes — there's nothing reliable to gate on. The duration note is shown on the line so staff can judge. Auto-enforcement is a future enhancement (carry played-minutes onto the item). |
-| D7 | Rental-item price preservation | The transaction **create/update** path must keep the stored price of items with `RentalId != nil` instead of recomputing from `variants.price` (which is 0 for rentals). | Hard prerequisite for editing rental transactions; the current path silently zeroes rental prices. (FR-2) |
+| D7 | Rental-item price preservation | **Done on main (#131).** `UpdateTransactionById` preserves the stored `Price`/`Subtotal`/`DiscountAmount`/`RentalId`/`Note` of items with `RentalId != nil` instead of recomputing from `variants.price` (0 for rentals). The item-coupon work (FR-3) extends this same branch. | Was a hard prerequisite for editing rental transactions; the old path silently zeroed rental prices. |
 | D8 | Reusability / limits | Coupons stay reusable rules; no usage limits, single-use codes, or expiry introduced here. Two students in one checkout each attach STUDENT DISCOUNT to their own ticket. | Matches today's coupon semantics. |
 | D9 | Percentage rounding | Reuse `RoundToNearest500` for item-scoped percentage discounts, same as transaction scope today. | Consistency with existing IDR rounding. |
 | D10 | Backward compatibility | `coupons.scope` defaults to `'transaction'`; `transaction_coupons.transaction_item_id` is nullable (null = whole-transaction). OpenAPI changes are additive. | No existing coupon, transaction, or consumer changes. |
@@ -141,15 +138,17 @@ Coupon create/update validation:
 - `scope ∈ {transaction, item}`.
 - `percentage` ⇒ `0 < amount ≤ 100`; `fixed` ⇒ `amount > 0`.
 
-### FR-2: Rental-Safe Transaction Update (Prerequisite)
+### FR-2: Rental-Safe Transaction Update — ✅ DONE (#131)
 
-`CreateTransaction` and `UpdateTransactionById` (`transaction_usecase.go`) must, for any item with `RentalId != nil`, use the item's **stored** price as `base` rather than `variant.Price`. Non-rental items keep today's `base = variant.Price × amount`. A regression test must assert that editing and re-saving a rental transaction leaves its line prices and total unchanged.
+`UpdateTransactionById` (`transaction_usecase.go`) preserves the stored `Price`/`Subtotal`/`DiscountAmount`/`RentalId`/`Note` of any item with `RentalId != nil` instead of re-deriving from `variant.Price`, with a regression test asserting an edit+resave leaves rental line prices and total unchanged. (`CreateTransaction` never receives rental items — rentals enter only via `CheckoutRentals` → `repository.CreateTransaction`, not the create usecase — so no change was needed there.) **No further work; FR-3 builds on this.**
 
 ### FR-3: Item-Scoped Coupon Application
 
 `transaction_coupons` gains a nullable `transaction_item_id`. When a coupon row carries one:
 - The coupon must be `item`-scoped (else 400).
 - Its discount is computed per §3 against that item's `base` and written to `item.DiscountAmount`; `item.Subtotal = base − discount`.
+- **Base derivation:** for a **rental** item (`RentalId != nil`) `base` is the stored full `Price × Amount` (pre-discount; the discount is recomputed from `Price` each save so it never compounds). For a non-rental item `base = variant.Price × Amount`, matching the existing line math.
+- **Integration with #131:** the rental branch of `UpdateTransactionById` currently copies the stored `Subtotal`/`DiscountAmount` and `continue`s. Item-coupon application must hook into that branch so a coupon attached to a rental ticket actually re-prices its `DiscountAmount`/`Subtotal` (and the running `Total`), while a rental ticket with *no* item-coupon stays exactly as #131 leaves it. Item-scope must also be applied in `CreateTransaction`'s coupon loop for new (non-rental) transactions.
 
 Transaction-scope coupons (no `transaction_item_id`) behave exactly as today, subtracting from `Total` after item subtotals are summed.
 
