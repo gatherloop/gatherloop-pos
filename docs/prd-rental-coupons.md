@@ -116,12 +116,12 @@ For a rental: staff checks out as today → opens the resulting transaction → 
 
 | # | Decision | Choice | Rationale |
 |---|---|---|---|
-| D1 | "Free N hours" model | **Fixed rupiah** (15K / 30K), item-scoped, clamped to the ticket price. **Not** duration re-pricing. | The hourly table adds 15K/hour, so a fixed amount is *exact* for standard 2–6h hourly rentals and keeps the model to two coupon types. **Trade-off:** it over-discounts on all-day passes (a flat day rate where a "free hour" is really worth 0) and past the tier cap (where a removed hour saves < 15K). Accepted because FREE 1/2 HOUR are intended for standard hourly rentals; staff simply don't apply them to all-day passes. |
+| D1 | "Free N hours" model | **Fixed rupiah** (15K / 30K), item-scoped, clamped to the ticket price. **Not** duration re-pricing. | The hourly table adds 15K/hour, so a fixed amount is *exact* for standard 2–6h hourly rentals and keeps the model to two coupon types. **Trade-off:** it over-discounts on all-day passes (a flat day rate where a "free hour" is really worth 0) and past the tier cap (where a removed hour saves < 15K). **Confirmed by the owner:** this is a staff-controlled rule — staff do not apply FREE 1/2 HOUR to all-day or capped rentals. The system does not block it. |
 | D2 | Where coupons attach | **On the transaction edit screen, after checkout.** Rental checkout is unchanged. | Reuses the existing coupon UI and the transaction as the single coupon authority. No checkout-endpoint change, no second application path. |
 | D3 | Fixed > item price | **Clamp to the item subtotal** (discount never exceeds base; subtotal floors at 0). | FREE 2 HOUR (30K) on a 1-hour ticket (15K) → ticket is free, not negative. Gives "short rental fully covered" for free. |
 | D4 | Coupons per item | **At most one `item` coupon per line item** in v1 (no stacking). | Keeps math and UI simple; covers all three target coupons. |
 | D5 | Scope enforcement | An `item` coupon can only be attached to a line item; a `transaction` coupon only to the whole bill. The server validates scope on both paths. | Each scope is offered only where it makes sense. |
-| D6 | 2-hour minimum for FREE 1 HOUR | **Staff discretion** in v1. Not auto-enforced. | After checkout, the transaction item carries duration only as a display note (`"2 hour(s)"`), not structured minutes — there's nothing reliable to gate on. The duration note is shown on the line so staff can judge. Auto-enforcement is a future enhancement (carry played-minutes onto the item). |
+| D6 | 2-hour minimum for FREE 1 HOUR | **Staff discretion. Confirmed by the owner.** Not auto-enforced. | After checkout, the transaction item carries duration only as a display note (`"2 hour(s)"`), not structured minutes — there's nothing reliable to gate on. The duration note is shown on the line so staff can judge. Auto-enforcement is a future enhancement (carry played-minutes onto the item). |
 | D7 | Rental-item price preservation | The transaction **create/update** path must keep the stored price of items with `RentalId != nil` instead of recomputing from `variants.price` (which is 0 for rentals). | Hard prerequisite for editing rental transactions; the current path silently zeroes rental prices. (FR-2) |
 | D8 | Reusability / limits | Coupons stay reusable rules; no usage limits, single-use codes, or expiry introduced here. Two students in one checkout each attach STUDENT DISCOUNT to their own ticket. | Matches today's coupon semantics. |
 | D9 | Percentage rounding | Reuse `RoundToNearest500` for item-scoped percentage discounts, same as transaction scope today. | Consistency with existing IDR rounding. |
@@ -244,8 +244,11 @@ Rental checkout (`POST /rentals/checkout`) is **unchanged**. OpenAPI edits in `l
 
 ---
 
+## Resolved
+
+- **All-day / capped rentals + FREE 1 HOUR** (was Open Q): the owner confirms this is **staff-controlled** — staff don't apply FREE 1/2 HOUR to all-day or capped rentals, and the 2-hour minimum is enforced by staff judgment. The system stays simple and does not block either case. (See D1, D6.)
+
 ## Open Questions
 
-1. **All-day / capped rentals + FREE 1 HOUR.** D1 accepts that a fixed 15K over-discounts these. Confirm staff will only apply FREE 1/2 HOUR to standard hourly rentals — if not, we'd need the duration-aware model after all.
-2. **STUDENT DISCOUNT on food/drinks in the same transaction.** Scoped to rental tickets here. If students should also get % off snacks, the item-scope generalizes to any line item — confirm whether that's wanted now or later.
-3. **Exact coupon code strings** — `FREE 1 HOUR` / `FREE 2 HOUR` / `STUDENT DISCOUNT` with spaces, or slugs? Codes are unique and user-facing.
+1. **STUDENT DISCOUNT on food/drinks in the same transaction.** Scoped to rental tickets here. If students should also get % off snacks, the item-scope generalizes to any line item — confirm whether that's wanted now or later.
+2. **Exact coupon code strings** — `FREE 1 HOUR` / `FREE 2 HOUR` / `STUDENT DISCOUNT` with spaces, or slugs? Codes are unique and user-facing.
