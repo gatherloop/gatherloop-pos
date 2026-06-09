@@ -11,6 +11,8 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
+func int64Ptr(v int64) *int64 { return &v }
+
 func TestTransactionUsecase_GetTransactionList(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -379,18 +381,59 @@ func TestTransactionUsecase_UpdateTransactionById(t *testing.T) {
 	tests := []struct {
 		name          string
 		id            int64
+		input         domain.Transaction
 		setupMock     func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository)
+		expectedTotal float32
+		expectedItems []domain.TransactionItem
 		expectedError *domain.Error
 	}{
 		{
 			name: "success",
 			id:   1,
+			input: domain.Transaction{
+				TransactionItems: []domain.TransactionItem{
+					{VariantId: 1, Amount: 2, DiscountAmount: 0, Note: ""},
+				},
+				TransactionCoupons: []domain.TransactionCoupon{},
+			},
 			setupMock: func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository) {
 				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(1)).Return(domain.Transaction{Id: 1, PaidAt: nil}, nil)
 				variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(1)).Return(domain.Variant{Id: 1, Price: 15000}, nil)
 				txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Transaction{Id: 1}, nil)
+			},
+		},
+		{
+			name: "rental item keeps checkout price and rental link",
+			id:   3,
+			input: domain.Transaction{
+				// The update screen submits the rental item with no Price/RentalId,
+				// matching what the frontend actually sends back.
+				TransactionItems: []domain.TransactionItem{
+					{Id: 10, VariantId: 1, Amount: 1, DiscountAmount: 0, Note: "edited note"},
+				},
+				TransactionCoupons: []domain.TransactionCoupon{},
+			},
+			setupMock: func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository) {
+				rentalId := int64(7)
+				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(3)).Return(domain.Transaction{
+					Id: 3, PaidAt: nil,
+					TransactionItems: []domain.TransactionItem{
+						{Id: 10, VariantId: 1, Amount: 1, Price: 25000, Subtotal: 25000, RentalId: &rentalId, Note: "2 hour(s)"},
+					},
+				}, nil)
+				// No GetVariantById call expected: the rental item must not be recalculated.
+				txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(3)).DoAndReturn(
+					func(ctx context.Context, tx domain.Transaction, id int64) (domain.Transaction, *domain.Error) {
+						return tx, nil
+					})
+			},
+			expectedTotal: 25000,
+			expectedItems: []domain.TransactionItem{
+				{Id: 10, TransactionId: 3, VariantId: 1, Amount: 1, Price: 25000, Subtotal: 25000, RentalId: int64Ptr(7), Note: "2 hour(s)"},
 			},
 		},
 		{
@@ -428,20 +471,18 @@ func TestTransactionUsecase_UpdateTransactionById(t *testing.T) {
 			budgetRepo := mock.NewMockBudgetRepository(ctrl)
 			tt.setupMock(txRepo, variantRepo, couponRepo)
 
-			transaction := domain.Transaction{
-				TransactionItems: []domain.TransactionItem{
-					{VariantId: 1, Amount: 2, DiscountAmount: 0, Note: ""},
-				},
-				TransactionCoupons: []domain.TransactionCoupon{},
-			}
 			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, budgetRepo)
-			_, err := usecase.UpdateTransactionById(context.Background(), transaction, tt.id)
+			updated, err := usecase.UpdateTransactionById(context.Background(), tt.input, tt.id)
 
 			if tt.expectedError != nil {
 				assert.NotNil(t, err)
 				assert.Equal(t, tt.expectedError.Type, err.Type)
 			} else {
 				assert.Nil(t, err)
+				if tt.expectedItems != nil {
+					assert.Equal(t, tt.expectedTotal, updated.Total)
+					assert.Equal(t, tt.expectedItems, updated.TransactionItems)
+				}
 			}
 		})
 	}
