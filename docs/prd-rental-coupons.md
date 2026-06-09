@@ -1,114 +1,114 @@
-# PRD: Rental Coupons — Time-Aware & Per-Ticket Discounts
+# PRD: Per-Item Coupons — Per-Ticket Discounts on Transactions
 
 ## Problem Statement
 
-The cafe wants to run three new coupons for board-game **rentals**:
+The cafe wants three new discounts for board-game **rentals**:
 
 | Coupon | Rule |
 |---|---|
-| **FREE 1 HOUR** | Customer plays at least **2 hours** → bill **1 hour less**. |
-| **FREE 2 HOUR** | No minimum play time → bill **2 hours less**. |
-| **STUDENT DISCOUNT** | **40% off a single ticket** only. One checkout can contain several tickets; only the student's ticket is discounted, not the whole bill. |
+| **FREE 1 HOUR** | Customer who plays ≥ 2 hours gets one hour's worth (Rp 15,000) off their ticket. |
+| **FREE 2 HOUR** | Two hours' worth (Rp 30,000) off a ticket, no minimum. |
+| **STUDENT DISCOUNT** | **40% off a single ticket** only. One checkout can contain several tickets; only the student's ticket is discounted. |
 
-The current coupon system cannot express any of these:
+The current coupon system can't express these because **a coupon only discounts the whole transaction total**. Applying logic lives in `apps/api/domain/transaction_usecase.go:75-98` / `151-174`:
 
-1. **No play-time context.** Coupons are only applied inside `CreateTransaction` / `UpdateTransactionById` (`apps/api/domain/transaction_usecase.go:75-98`), i.e. the manual transaction-create screen. The **rental checkout** path (`apps/api/domain/rental_usecase.go:83-155`) builds its transaction directly and **never applies any coupon**. Yet rental duration — the thing "FREE 1 HOUR" depends on — only exists at checkout, computed from `checkout_at − checkin_at`. So a time-conditional coupon is impossible today.
+```go
+transaction.Total -= float32(couponDiscountAmount)   // whole-bill only
+```
 
-2. **No per-ticket scope.** A coupon discounts the **whole transaction total** — `transaction.Total -= couponDiscountAmount` (`transaction_usecase.go:90`). A checkout of three rental tickets gets one transaction-wide discount. "40% off **his** ticket only" cannot be modeled when only some of the tickets qualify.
+A checkout of three rental tickets becomes one transaction with three line items (`TransactionItem`s). There is no way to land a discount on **one** of those items. "40% off *his* ticket only," when only some tickets qualify, is impossible.
 
-3. **No "free duration" discount type.** The only types are `fixed` (subtract rupiah) and `percentage` (subtract a % of total) — see `apps/api/domain/coupon_entity.go:7-10`. "Bill one hour less" is neither: in a tiered pricing model the price of an hour is not a fixed number, so it must be expressed as *reduce the billable minutes, then re-price*.
+### Why this is now an *item-scoped coupon* problem (not a checkout problem)
 
-4. **No eligibility rule.** Nothing stores or checks a minimum play time. "FREE 1 HOUR requires ≥ 2 hours" has nowhere to live.
+An earlier draft of this PRD modeled "free hours" as a special `free_duration` coupon applied during rental checkout (re-pricing the ticket at a reduced duration). We are **not** doing that. Two decisions (below) collapse the whole feature into a single, simpler idea:
 
-This PRD extends the coupon model so coupons can be **scoped to a single rental ticket**, **conditioned on play time**, and can express **free duration**, and makes them selectable **at the rental checkout screen** where duration is finally known.
+1. **"Free N hours" is just a fixed-rupiah discount.** The cafe's hourly tier table adds Rp 15,000 per hour, so "1 free hour" = Rp 15,000 off and "2 free hours" = Rp 30,000 off. No duration math, no new coupon type. (See D1 for the edge cases this trades away.)
+2. **Coupons are attached on the transaction, per item.** The student case is *already* a per-item discount; the free-hour cases become per-item `fixed` discounts. So the entire feature is: **let a coupon target one `TransactionItem` instead of the whole transaction.**
+
+The transaction stays the single source of truth for money. No second application path, no rental-specific coupon type, no duration leaking into the coupon layer.
 
 ---
 
 ## Context: Existing System
 
-- **Backend**: Go REST API, MySQL + GORM, Clean Architecture (`domain → data → presentation`). Migrations under `apps/api/migrations/` via `golang-migrate` (next free number is **000012**).
-- **Frontend**: Next.js web (`apps/web/`) + React Native mobile (`apps/mobile/`) sharing a Tamagui UI library (`libs/ui/`). React Query for server state, Zod + React Hook Form for forms.
+- **Backend**: Go REST API, MySQL + GORM, Clean Architecture (`domain → data → presentation`). Migrations under `apps/api/migrations/` (next free number **000012**).
+- **Frontend**: Next.js web (`apps/web/`) + React Native (`apps/mobile/`) sharing a Tamagui UI library (`libs/ui/`). React Query + Zod + React Hook Form.
 - **API contract**: OpenAPI at `libs/api-contract/src/api.yaml`, codegen consumed by both frontends.
 
 ### Coupon domain today
 
-- **Entity** (`apps/api/domain/coupon_entity.go`):
-  ```go
-  type CouponType string
-  const ( Fixed CouponType = "fixed"; Percentage CouponType = "percentage" )
-  type Coupon struct { Id; Code; Type; Amount int64; CreatedAt; DeletedAt }
-  ```
-- **Schema** (`apps/api/migrations/000001_initial_schema.up.sql:65-74`):
-  ```
-  coupons(id, code, type, amount, created_at, deleted_at)   UNIQUE(code)
-  ```
-- **Junction** (same file, `transaction_coupons`): snapshots `(transaction_id, coupon_id, type, amount)` — the coupon's type/amount at apply time, so later coupon edits don't rewrite history.
-- **Application math** (`transaction_usecase.go:82-90`): `fixed` subtracts `amount`; `percentage` subtracts `RoundToNearest500(total * amount / 100)`.
-- **Frontend**: `libs/ui/src/domain/entities/Coupon.ts` (`CouponType = 'fixed' | 'percentage'`), coupon picker `CouponList.tsx` (a bottom sheet) used inside the **transaction** create screen only.
+- **Entity** (`apps/api/domain/coupon_entity.go`): `Coupon { Id, Code, Type CouponType (fixed|percentage), Amount int64, ... }`.
+- **Schema** (`apps/api/migrations/000001_initial_schema.up.sql:65-74`): `coupons(id, code, type, amount, created_at, deleted_at)`, `UNIQUE(code)`.
+- **Junction** (same file): `transaction_coupons(id, transaction_id, coupon_id, type, amount)` — snapshots the coupon's type/amount at apply time so later edits don't rewrite history.
+- **Application math** (`transaction_usecase.go:82-90`): `fixed` subtracts `amount`; `percentage` subtracts `RoundToNearest500(total * amount / 100)`. Both subtract from `transaction.Total`.
+- **Frontend**: `libs/ui/src/domain/entities/Coupon.ts`; a coupon picker bottom-sheet `CouponList.tsx`, used in the transaction create/edit screens.
 
-### Rental domain today
+### Transaction items already support a discount
 
-- **One rental row = one person = one "ticket."** A group of three players is three rental rows (design rule from `trd-board-game-rental-pricing.md`).
-- **Check-in** snapshots the variant's pricing tiers onto `rentals.pricing_tiers` (JSON). Billing reads only the snapshot.
-- **Check-out** (`rental_usecase.go:83-155`): for each `rentalId`, compute `duration = now − checkin_at`, price via `CalculatePrice(snapshot, duration)` (`apps/api/domain/pricing_calculator.go`), and emit **one `TransactionItem`** per rental (`Amount=1`, `Price`, `Subtotal=Price`, `RentalId`, `Note="<duration>"`). The items become one `Transaction`. **No coupon is ever consulted.**
-- **Checkout request** today carries only a list of rental IDs; the transaction is created server-side. The frontend usecase is `libs/ui/src/domain/usecases/rentalCheckout.ts`, screen rendered by `apps/web/src/pages/rentals/checkout.tsx`.
-- **`TransactionItem.DiscountAmount`** already exists (`transaction_entity.go:14`, column `transaction_items.discount_amount`) and already flows into `Subtotal = Price − DiscountAmount` for manual transactions. **Per-ticket discounts have a home in the data model already** — they just aren't produced by the rental flow.
+`TransactionItem.DiscountAmount` exists (`apps/api/domain/transaction_entity.go:14`; column `transaction_items.discount_amount`) and already flows into `Subtotal = (price × amount) − DiscountAmount`. **Per-item discounts have a home in the data model already** — there is just no coupon that targets it.
 
-### The pricing calculator (the lever for "free duration")
+### The rental flow stays untouched
+
+Rental checkout (`apps/api/domain/rental_usecase.go:83-155`) computes each ticket's price from the tier snapshot and creates a plain transaction. **This PRD changes nothing here.** Coupons are added afterward by editing the resulting transaction.
+
+### ⚠️ The blocker for "edit the transaction afterward"
+
+The transaction **update** path recomputes every item's price from the variant:
 
 ```go
-// pricing_calculator.go
-func CalculatePrice(tiers []PricingTier, duration time.Duration) (PricingResult, *Error) {
-    durationMinutes := ceil(duration.Minutes())
-    for _, tier := range tiers { if tier.UpToMinutes >= durationMinutes { return tier.Price } }
-    return tiers[last].Price // cap
-}
+// transaction_usecase.go:132 (UpdateTransactionById), mirror at :57 (CreateTransaction)
+subTotal := (variant.Price * item.Amount) - item.DiscountAmount
 ```
 
-"Bill one hour less" = call this with `duration − 60min`. That is the whole trick, and it reuses the audited calculator unchanged.
+For **rental** items, `variants.price` is **0** (rental price lives on the item, from the tier snapshot). So saving a rental transaction through the current update path **zeroes out the rental prices**. Attaching a coupon requires saving the transaction — so this path must first be made **rental-aware**: items with `RentalId != nil` keep their stored price instead of re-deriving it from the variant. This is FR-2 and a hard prerequisite.
 
 ---
 
 ## Proposed Solution
 
-Add three orthogonal capabilities to coupons, then surface coupon selection on the rental checkout screen.
+One new dimension on coupons, plus a ticket link on the junction, plus a rental-safe update path, plus per-item coupon UI on the transaction edit screen.
 
-### 1. Coupon **scope** — where the discount lands
+### 1. Coupon **scope**
 
-A new `scope` field:
+A new `scope` field on `coupons`:
 
-| Scope | Meaning | Applies to |
-|---|---|---|
-| `transaction` | Whole-bill discount (today's behavior). | Manual transaction create screen, unchanged. |
-| `rental_item` | Discount one rental **ticket** (one `TransactionItem`). | Rental checkout screen. |
+| Scope | Meaning |
+|---|---|
+| `transaction` | Whole-bill discount (today's behavior; the default). |
+| `item` | Discount one `TransactionItem` (one rental ticket). |
 
-`scope` defaults to `transaction`, so every existing coupon keeps behaving exactly as it does now.
+`scope` defaults to `transaction`, so every existing coupon is unchanged.
 
-### 2. A new coupon **type** — `free_duration`
+### 2. The three coupons, in the model
 
-`type` extends from `{fixed, percentage}` to `{fixed, percentage, free_duration}`. For `free_duration`, `amount` is **minutes of free play** (FREE 1 HOUR = `60`, FREE 2 HOUR = `120`). It only makes sense with `scope = rental_item`.
+| Coupon | `type` | `amount` | `scope` |
+|---|---|---:|---|
+| FREE 1 HOUR | `fixed` | 15,000 | `item` |
+| FREE 2 HOUR | `fixed` | 30,000 | `item` |
+| STUDENT DISCOUNT | `percentage` | 40 | `item` |
 
-### 3. Coupon **eligibility** — `min_play_minutes`
+No new `type`. `fixed` and `percentage` are all we need.
 
-A new `min_play_minutes` integer (default `0`). A `rental_item` coupon may be applied to a ticket only if the ticket's **actual** played minutes ≥ `min_play_minutes`. FREE 1 HOUR sets `120`; FREE 2 HOUR and STUDENT DISCOUNT set `0`.
+### 3. Per-item application math
 
-### 4. The three coupons, expressed in the model
+When a coupon is attached to a specific item, its discount is computed against **that item's pre-discount subtotal** (`base = price × amount`) and stored on that item:
 
-| Coupon | `type` | `amount` | `scope` | `min_play_minutes` |
-|---|---|---:|---|---:|
-| FREE 1 HOUR | `free_duration` | 60 | `rental_item` | 120 |
-| FREE 2 HOUR | `free_duration` | 120 | `rental_item` | 0 |
-| STUDENT DISCOUNT | `percentage` | 40 | `rental_item` | 0 |
+```
+fixed:      discount = min(amount, base)                    // never negative
+percentage: discount = RoundToNearest500(base × amount / 100)
 
-### 5. Apply coupons **at checkout**, per ticket
+item.DiscountAmount = discount
+item.Subtotal       = base − discount
+transaction.Total   = Σ item.Subtotal  − (transaction-scope coupon discounts)
+```
 
-`POST /rentals/checkout` is extended so each rental in the request may carry an **optional `couponId`**. At checkout the server, per rental, computes duration, validates the coupon's scope + eligibility against the actual play time, computes the discount, writes it to that ticket's `TransactionItem.DiscountAmount`, and records a `transaction_coupons` row linked to that specific item.
+Because the discount lands on `Subtotal` and `Total` is the sum of subtotals, the existing income/budget math in `PayTransaction` is untouched.
 
-### 6. Checkout screen gets a per-ticket coupon picker
+### 4. Attach coupons on the transaction edit screen
 
-The rental checkout screen lists each ticket with its duration and computed subtotal. Each ticket gets an "Apply coupon" affordance offering only `rental_item` coupons; ineligible coupons (e.g. FREE 1 HOUR on a 40-minute ticket) are disabled with the reason shown. Selecting one updates that ticket's subtotal and the grand total live.
+The transaction edit screen already has a whole-bill coupon picker. It gains a **per-item** coupon picker: each line item can have at most one `item`-scoped coupon attached, showing the resulting discount and new subtotal, with the grand total updating live. The whole-bill picker continues to offer only `transaction`-scoped coupons.
 
-The existing **transaction** create screen and its whole-bill coupon picker are **untouched**.
+For a rental: staff checks out as today → opens the resulting transaction → attaches FREE 1 HOUR / STUDENT DISCOUNT to the relevant ticket(s) → saves.
 
 ---
 
@@ -116,15 +116,16 @@ The existing **transaction** create screen and its whole-bill coupon picker are 
 
 | # | Decision | Choice | Rationale |
 |---|---|---|---|
-| D1 | "Free X hours" semantics | **Reduce billable minutes by `amount`, then re-price through `CalculatePrice`.** Not "subtract the rupiah value of X hours." | In a tiered model the marginal hour has no single price. Reducing duration and re-pricing is the faithful, unambiguous meaning and reuses the audited calculator. Worked examples in FR-3. |
-| D2 | Free duration ≥ actual play time | **Ticket is fully free (subtotal = 0).** Billable minutes clamp at 0. | FREE 2 HOUR on a 1-hour rental = nothing to pay. Note: `CalculatePrice(…, 0)` would otherwise return the smallest tier, so the usecase must short-circuit `billable ≤ 0 → price 0`. |
-| D3 | Discount representation | Store the **rupiah discount** on `TransactionItem.DiscountAmount`; `Subtotal = base price − discount`. Record the coupon link + snapshot in `transaction_coupons` (now with a nullable `transaction_item_id`). | Keeps `transaction.Total` = Σ subtotals, so the existing income/budget math in `PayTransaction` flows unchanged. The free-duration discount is materialized as money at checkout time, when duration is known. |
-| D4 | Coupons per ticket | **At most one coupon per rental ticket** in v1 (no stacking). | Keeps math and UI simple; covers all three target coupons. Stacking is a future PRD. |
-| D5 | Scope enforcement | A `rental_item` coupon **cannot** be selected on the manual transaction screen; a `transaction` coupon cannot be selected per-ticket at checkout. | Each scope is offered only where it makes sense; the server validates scope on both paths. |
-| D6 | Eligibility failure | Server **rejects checkout with 400** if a chosen coupon fails its `min_play_minutes` check; the UI **disables** the coupon up front so this is unreachable through normal use. | Defense in depth — the UI prevents it, the server guarantees it. |
-| D7 | Same coupon on multiple tickets | **Allowed.** Two students in one checkout each apply STUDENT DISCOUNT to their own ticket. | Coupons are reusable rules, not single-use codes, in the current system. No usage-limit concept is introduced here. |
-| D8 | Percentage rounding for tickets | Reuse `RoundToNearest500` for `rental_item` percentage discounts, same as transaction-scope today. | Consistency with existing IDR rounding behavior. |
-| D9 | Backward compatibility | New columns are additive with defaults (`scope='transaction'`, `min_play_minutes=0`); `transaction_coupons.transaction_item_id` is nullable (null = whole-transaction). The OpenAPI changes are additive; the checkout request's `couponId` is optional. | No existing coupon, transaction, or consumer needs changing. |
+| D1 | "Free N hours" model | **Fixed rupiah** (15K / 30K), item-scoped, clamped to the ticket price. **Not** duration re-pricing. | The hourly table adds 15K/hour, so a fixed amount is *exact* for standard 2–6h hourly rentals and keeps the model to two coupon types. **Trade-off:** it over-discounts on all-day passes (a flat day rate where a "free hour" is really worth 0) and past the tier cap (where a removed hour saves < 15K). Accepted because FREE 1/2 HOUR are intended for standard hourly rentals; staff simply don't apply them to all-day passes. |
+| D2 | Where coupons attach | **On the transaction edit screen, after checkout.** Rental checkout is unchanged. | Reuses the existing coupon UI and the transaction as the single coupon authority. No checkout-endpoint change, no second application path. |
+| D3 | Fixed > item price | **Clamp to the item subtotal** (discount never exceeds base; subtotal floors at 0). | FREE 2 HOUR (30K) on a 1-hour ticket (15K) → ticket is free, not negative. Gives "short rental fully covered" for free. |
+| D4 | Coupons per item | **At most one `item` coupon per line item** in v1 (no stacking). | Keeps math and UI simple; covers all three target coupons. |
+| D5 | Scope enforcement | An `item` coupon can only be attached to a line item; a `transaction` coupon only to the whole bill. The server validates scope on both paths. | Each scope is offered only where it makes sense. |
+| D6 | 2-hour minimum for FREE 1 HOUR | **Staff discretion** in v1. Not auto-enforced. | After checkout, the transaction item carries duration only as a display note (`"2 hour(s)"`), not structured minutes — there's nothing reliable to gate on. The duration note is shown on the line so staff can judge. Auto-enforcement is a future enhancement (carry played-minutes onto the item). |
+| D7 | Rental-item price preservation | The transaction **create/update** path must keep the stored price of items with `RentalId != nil` instead of recomputing from `variants.price` (which is 0 for rentals). | Hard prerequisite for editing rental transactions; the current path silently zeroes rental prices. (FR-2) |
+| D8 | Reusability / limits | Coupons stay reusable rules; no usage limits, single-use codes, or expiry introduced here. Two students in one checkout each attach STUDENT DISCOUNT to their own ticket. | Matches today's coupon semantics. |
+| D9 | Percentage rounding | Reuse `RoundToNearest500` for item-scoped percentage discounts, same as transaction scope today. | Consistency with existing IDR rounding. |
+| D10 | Backward compatibility | `coupons.scope` defaults to `'transaction'`; `transaction_coupons.transaction_item_id` is nullable (null = whole-transaction). OpenAPI changes are additive. | No existing coupon, transaction, or consumer changes. |
 
 ---
 
@@ -132,107 +133,58 @@ The existing **transaction** create screen and its whole-bill coupon picker are 
 
 ### FR-1: Extended Coupon Model
 
-`coupons` gains:
-- `scope VARCHAR(50) NOT NULL DEFAULT 'transaction'` — `transaction` | `rental_item`.
-- `min_play_minutes INT NOT NULL DEFAULT 0`.
-- `type` value set extends to include `free_duration` (no DDL change — already `VARCHAR(50)`).
+`coupons` gains `scope VARCHAR(50) NOT NULL DEFAULT 'transaction'` (`transaction` | `item`). Type set is unchanged (`fixed`, `percentage`).
 
-Validation in the coupon create/update usecase:
-- `type = free_duration` ⇒ `scope` must be `rental_item` and `amount > 0` (minutes).
-- `type = percentage` ⇒ `0 < amount ≤ 100`.
-- `type = fixed` ⇒ `amount > 0`.
-- `min_play_minutes ≥ 0`; only meaningful for `rental_item` scope (ignored for `transaction`).
+Coupon create/update validation:
+- `scope ∈ {transaction, item}`.
+- `percentage` ⇒ `0 < amount ≤ 100`; `fixed` ⇒ `amount > 0`.
 
-### FR-2: Seed the Three Coupons
+### FR-2: Rental-Safe Transaction Update (Prerequisite)
 
-A migration seeds exactly these rows (idempotent on `code`):
+`CreateTransaction` and `UpdateTransactionById` (`transaction_usecase.go`) must, for any item with `RentalId != nil`, use the item's **stored** price as `base` rather than `variant.Price`. Non-rental items keep today's `base = variant.Price × amount`. A regression test must assert that editing and re-saving a rental transaction leaves its line prices and total unchanged.
 
-| code | type | amount | scope | min_play_minutes |
-|---|---|---:|---|---:|
-| `FREE 1 HOUR` | `free_duration` | 60 | `rental_item` | 120 |
-| `FREE 2 HOUR` | `free_duration` | 120 | `rental_item` | 0 |
-| `STUDENT DISCOUNT` | `percentage` | 40 | `rental_item` | 0 |
+### FR-3: Item-Scoped Coupon Application
 
-(The owner can later also create/edit these via the admin UI — FR-6.)
+`transaction_coupons` gains a nullable `transaction_item_id`. When a coupon row carries one:
+- The coupon must be `item`-scoped (else 400).
+- Its discount is computed per §3 against that item's `base` and written to `item.DiscountAmount`; `item.Subtotal = base − discount`.
 
-### FR-3: Per-Ticket Discount Calculator (Acceptance Tests)
+Transaction-scope coupons (no `transaction_item_id`) behave exactly as today, subtracting from `Total` after item subtotals are summed.
 
-A pure function computes a ticket's discount from `(snapshotTiers, actualDuration, coupon)`:
+### FR-4: Discount Calculator (Acceptance Tests)
 
-```
-base       = CalculatePrice(tiers, actualDuration).Price
-actualMin  = ceil(actualDuration.minutes)
+A pure function computes one item's discount from `(base, coupon)`:
 
-if coupon == nil:                      discount = 0
-elif coupon.scope != rental_item:      ERROR (wrong scope)
-elif actualMin < coupon.minPlayMinutes: ERROR (not eligible)
-else switch coupon.type:
-  free_duration:
-      billableMin = max(0, actualMin - coupon.amount)
-      discounted  = billableMin <= 0 ? 0 : CalculatePrice(tiers, billableMin*time.Minute).Price
-      discount    = base - discounted
-  percentage:
-      discount    = RoundToNearest500(base * coupon.amount / 100)
-  fixed:
-      discount    = min(coupon.amount, base)     // never negative subtotal
+| # | Coupon | Item base | Discount | Subtotal |
+|---|---|---:|---:|---:|
+| 1 | FREE 1 HOUR (`fixed 15000`) | 30,000 | 15,000 | 15,000 |
+| 2 | FREE 1 HOUR (`fixed 15000`) | 45,000 | 15,000 | 30,000 |
+| 3 | FREE 2 HOUR (`fixed 30000`) | 45,000 | 30,000 | 15,000 |
+| 4 | FREE 2 HOUR (`fixed 30000`) | 15,000 | 15,000 (clamped, D3) | 0 |
+| 5 | STUDENT (`percentage 40`) | 30,000 | 12,500 (`round500(30000×40/100)`) | 17,500 |
+| 6 | STUDENT (`percentage 40`) | 20,000 | 8,000 | 12,000 |
+| 7 | (none) | 30,000 | 0 | 30,000 |
 
-subtotal = base - discount
-```
+### FR-5: Multi-Ticket Behavior
 
-Worked examples against the seeded Hourly tier set (60→15K, 90→20K, 120→30K, 150→35K, 180→45K, …):
-
-| # | Coupon | Played | Base | Billed minutes | Subtotal | Discount |
-|---|---|---|---:|---|---:|---:|
-| 1 | FREE 1 HOUR | 2h 0m (120m) | 30,000 | 60m → 15K | 15,000 | 15,000 |
-| 2 | FREE 1 HOUR | 3h 0m (180m) | 45,000 | 120m → 30K | 30,000 | 15,000 |
-| 3 | FREE 1 HOUR | 1h 30m (90m) | 20,000 | — | — | **rejected** (90 < 120) |
-| 4 | FREE 2 HOUR | 3h 0m (180m) | 45,000 | 60m → 15K | 15,000 | 30,000 |
-| 5 | FREE 2 HOUR | 1h 0m (60m) | 15,000 | 0m → free (D2) | 0 | 15,000 |
-| 6 | STUDENT DISCOUNT | 2h 0m (120m) | 30,000 | n/a | 17,500 | 12,500 (`round500(30000×40/100)`) |
-| 7 | (none) | 2h 0m | 30,000 | n/a | 30,000 | 0 |
-
-### FR-4: Checkout Applies Per-Ticket Coupons
-
-`POST /rentals/checkout` request shape extends from a list of IDs to a list of `{ rentalId, couponId? }`. Per rental the server:
-1. Loads the rental, guards against double-checkout (unchanged).
-2. Computes `duration` and `base` (unchanged).
-3. If `couponId` present: loads the coupon, runs the FR-3 calculator. On scope/eligibility error → **400**, whole checkout rolls back (it already runs in one DB transaction).
-4. Emits the `TransactionItem` with `DiscountAmount = discount`, `Subtotal = base − discount`.
-5. Records a `transaction_coupons` row `{ transaction_id, coupon_id, transaction_item_id, type, amount }` (snapshotting type+amount) for each applied coupon.
-
-`transaction.Total` remains Σ of item subtotals, so `PayTransaction` income/budget math is untouched.
-
-### FR-5: Multi-Ticket Checkout Behavior
-
-A checkout of 3 tickets where ticket B has STUDENT DISCOUNT and tickets A, C have none:
-- A and C: full price.
-- B: 40% off B's subtotal only.
-- Grand total = A + (0.6×B rounded) + C.
-
-This is the requirement's "not all tickets can use STUDENT DISCOUNT" case, working by construction because the discount is per-`TransactionItem`.
+A transaction with three rental tickets where only ticket B has STUDENT DISCOUNT: A and C keep full price; B is 40%-off; `Total = A + round(0.6×B) + C`. Works by construction because the discount is per-`TransactionItem`. This is the requirement's "not all tickets can use STUDENT DISCOUNT" case.
 
 ### FR-6: Coupon Admin UI
 
-The coupon create/edit form (`libs/ui/src/presentation/...` coupon form + `apps/web/src/pages/coupons/...`) gains:
-- A **scope** selector (`transaction` / `rental_item`).
-- The **type** selector gains `free_duration` (shown/relevant only when scope is `rental_item`).
-- A **min play minutes** numeric input (shown only for `rental_item`).
-- Amount field label adapts: "Amount (Rp)" for fixed, "Percent (%)" for percentage, "Free minutes" for free_duration.
-- Zod mirrors the FR-1 validation.
+The coupon create/edit form gains a **scope** selector (`transaction` / `item`). The amount label adapts ("Amount (Rp)" for fixed, "Percent (%)" for percentage). Zod mirrors FR-1. The owner can thereby create FREE 1 HOUR, FREE 2 HOUR, STUDENT DISCOUNT.
 
-### FR-7: Checkout Screen UI
+### FR-7: Transaction Edit Screen — Per-Item Coupon Picker
 
-The rental checkout screen (`apps/web/src/pages/rentals/checkout.tsx` → its `libs/ui` screen) renders, per ticket:
-- Player name • variant • duration • **base price**.
-- An "Apply coupon" control listing only `rental_item` coupons. Coupons failing the ticket's eligibility (actual minutes < `min_play_minutes`) are **disabled** with a hint ("needs ≥ 2h play").
-- On selection: show the discount and the new subtotal for that ticket; update the **grand total** live.
-- Allow clearing the coupon. At most one coupon per ticket (D4).
-
-The submitted checkout payload carries each ticket's optional `couponId`.
+On the transaction create/edit screen:
+- Each line item gains an "Apply coupon" control listing only `item`-scoped coupons.
+- Selecting one shows the discount and the new subtotal for that line; the grand total updates live. At most one item-coupon per line (D4); allow clearing.
+- The existing whole-bill picker is filtered to `transaction`-scoped coupons.
+- For rental items, the duration note (e.g. "2 hour(s)") is shown next to the line so staff can apply the 2-hour-minimum rule by eye (D6).
+- The submitted form carries each line's optional attached `couponId`.
 
 ### FR-8: Mobile Parity
 
-React Native checkout screen (`apps/mobile/`) offers the same per-ticket coupon picker. Coupon **admin** editing may remain web-only for v1 (consistent with how rental pricing tier editing was scoped). Most primitives are shared through `libs/ui`.
+The React Native transaction edit screen offers the same per-item coupon picker, reusing shared `libs/ui` primitives. Coupon **admin** editing may stay web-only for v1.
 
 ---
 
@@ -241,10 +193,8 @@ React Native checkout screen (`apps/mobile/`) offers the same per-ticket coupon 
 ### Altered: `coupons`
 ```sql
 ALTER TABLE coupons
-  ADD COLUMN scope            VARCHAR(50) NOT NULL DEFAULT 'transaction',
-  ADD COLUMN min_play_minutes INT         NOT NULL DEFAULT 0;
+  ADD COLUMN scope VARCHAR(50) NOT NULL DEFAULT 'transaction';
 ```
-`type` stays `VARCHAR(50)` — `free_duration` needs no DDL.
 
 ### Altered: `transaction_coupons`
 ```sql
@@ -257,39 +207,45 @@ ALTER TABLE transaction_coupons
 `null` ⇒ whole-transaction coupon (today's rows). Non-null ⇒ the discounted ticket.
 
 ### Unchanged
-`transaction_items.discount_amount` already exists and is the storage for per-ticket discounts. No change to `transactions`, `rentals`, `pricing_tiers`, or `variants`.
+`transaction_items.discount_amount` already stores per-item discounts. No change to `transactions`, `rentals`, `pricing_tiers`, or `variants`.
 
-### Seed
-The three coupons of FR-2, inserted idempotently keyed on `code`.
+### Seed (FR-2 of the plan)
+```sql
+INSERT INTO coupons (code, type, amount, scope) VALUES
+  ('FREE 1 HOUR',      'fixed',      15000, 'item'),
+  ('FREE 2 HOUR',      'fixed',      30000, 'item'),
+  ('STUDENT DISCOUNT', 'percentage',    40, 'item');
+```
+Idempotent on `code`.
 
 ---
 
-## API Changes
+## API Changes (all additive)
 
 | Method | Path | Change |
 |---|---|---|
-| `POST /coupons`, `PUT /coupons/{id}` | Request/response gain `scope` and `min_play_minutes`; `type` enum gains `free_duration`. Additive. |
-| `GET /coupons`, `GET /coupons/{id}` | Response gains `scope`, `min_play_minutes`. Additive. |
-| `POST /rentals/checkout` | Request changes from `{ rentalIds: number[] }` to `{ rentals: [{ rentalId: number, couponId?: number }] }`. The transaction response gains per-item `discountAmount` (already present in the transaction schema). |
-| `GET /transactions/{id}` | `transaction_coupons` entries gain optional `transactionItemId`. Additive. |
+| `POST /coupons`, `PUT /coupons/{id}` | Request/response gain `scope`. |
+| `GET /coupons`, `GET /coupons/{id}` | Response gains `scope`. |
+| `POST /transactions`, `PUT /transactions/{id}` | Each transaction-coupon entry may carry an optional `transactionItemId`. Rental-item prices are preserved server-side (FR-2). |
+| `GET /transactions/{id}` | `transaction_coupons` entries gain optional `transactionItemId`. |
 
-OpenAPI edits live in `libs/api-contract/src/api.yaml`; codegen regenerates the TS clients. The only **non-additive** change is the checkout request body — coordinated in one phase across backend + contract + both frontends.
+Rental checkout (`POST /rentals/checkout`) is **unchanged**. OpenAPI edits in `libs/api-contract/src/api.yaml`; codegen regenerates TS clients. No breaking changes.
 
 ---
 
 ## Out of Scope
 
-- **Coupon stacking** (more than one coupon per ticket, or per-ticket + whole-bill together). D4.
-- **Usage limits / single-use codes / expiry dates.** Coupons remain reusable rules.
-- **Auto-applying** coupons (e.g. auto-grant FREE 1 HOUR when ≥ 2h). Staff selects manually.
-- **Per-ticket coupons on the manual transaction screen** (non-rental product items). The `rental_item` scope is built generically but only surfaced at rental checkout in v1.
-- **Discounts on purchase (non-rental) items.** Unchanged.
-- **Time-of-day / weekday-weekend coupon conditions.** Only `min_play_minutes` is introduced.
+- **Coupon stacking** (more than one coupon per item, or per-item + whole-bill on the same line). D4.
+- **Duration-accurate free-hour pricing** (re-pricing through the tier table for all-day/capped rentals). Explicitly traded away in D1.
+- **Auto-enforcing the 2-hour minimum.** Staff discretion in v1 (D6); a follow-up could carry structured played-minutes onto items.
+- **Auto-applying coupons** at checkout. Staff attach manually on the transaction.
+- **Usage limits / single-use codes / expiry.** Coupons remain reusable rules.
+- **Discounts on purchase (non-rental) items** beyond what item-scope already allows — the feature is generic but targeted at rental tickets in v1.
 
 ---
 
 ## Open Questions
 
-1. **FREE 2 HOUR on a sub-2-hour rental → fully free (D2).** Confirm the cafe wants "2 free hours" to be able to zero out a short rental, rather than capping the free benefit at the played time only (which would also yield 0 here, but differs for "free duration as rupiah-credit" interpretations — already excluded by D1).
-2. **Does STUDENT DISCOUNT apply to the food/drink items in the same checkout, or rentals only?** This PRD scopes it to rental tickets (the requirement says "ticket"). If students should also get % off snacks, that needs the `rental_item` scope generalized to all transaction items — a follow-up.
-3. **Should the seeded coupon codes be exactly `FREE 1 HOUR` / `FREE 2 HOUR` / `STUDENT DISCOUNT`** (with spaces), or slugs (`FREE_1_HOUR`)? Codes are unique and user-facing; confirm the preferred display form.
+1. **All-day / capped rentals + FREE 1 HOUR.** D1 accepts that a fixed 15K over-discounts these. Confirm staff will only apply FREE 1/2 HOUR to standard hourly rentals — if not, we'd need the duration-aware model after all.
+2. **STUDENT DISCOUNT on food/drinks in the same transaction.** Scoped to rental tickets here. If students should also get % off snacks, the item-scope generalizes to any line item — confirm whether that's wanted now or later.
+3. **Exact coupon code strings** — `FREE 1 HOUR` / `FREE 2 HOUR` / `STUDENT DISCOUNT` with spaces, or slugs? Codes are unique and user-facing.

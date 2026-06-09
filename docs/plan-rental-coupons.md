@@ -1,34 +1,41 @@
-# Implementation Plan: Rental Coupons
+# Implementation Plan: Per-Item Coupons
 
 Companion to [`prd-rental-coupons.md`](./prd-rental-coupons.md).
 
 ## Overview
 
-Give coupons three new dimensions — **scope** (`transaction` | `rental_item`), a **`free_duration`** type, and a **`min_play_minutes`** eligibility gate — then apply them **per ticket at rental checkout**, where play-time is finally known. The discount is materialized as money on `TransactionItem.DiscountAmount` (which already exists), so `transaction.Total = Σ subtotals` and the existing income/budget math in `PayTransaction` is untouched.
+Let a coupon target **one `TransactionItem`** instead of the whole transaction. That single capability covers all three requested coupons:
 
-**Design rules driving this plan (from the PRD):**
-- One rental row = one ticket = one `TransactionItem`. Per-ticket discounts live on that item.
-- "Free X hours" = reduce billable minutes by `amount`, then re-price through the existing `CalculatePrice`. (PRD D1)
-- Billable minutes ≤ 0 ⇒ ticket is free. (PRD D2)
-- ≤ 1 coupon per ticket, no stacking. (PRD D4)
-- All new columns are additive with defaults; only the checkout request body is a non-additive change, isolated to Phase 5–7. (PRD D9)
-- Reuse `RoundToNearest500` for percentage discounts. (PRD D8)
+| Coupon | type | amount | scope |
+|---|---|---:|---|
+| FREE 1 HOUR | `fixed` | 15,000 | `item` |
+| FREE 2 HOUR | `fixed` | 30,000 | `item` |
+| STUDENT DISCOUNT | `percentage` | 40 | `item` |
 
-Phases are independently shippable and ordered: schema/seed → domain → data → checkout usecase+handler → contract → coupon admin UI → checkout UI → mobile → docs. Each phase is one small PR.
+Coupons are attached **after checkout, on the transaction edit screen** (PRD D2). Rental checkout is unchanged. The discount lands on `TransactionItem.DiscountAmount`, so `Total = Σ subtotals` and the `PayTransaction` income/budget math is untouched.
+
+**Design rules (from the PRD):**
+- New coupon dimension is just `scope` (`transaction` | `item`); types stay `fixed`/`percentage`. (No `free_duration`.)
+- "Free N hours" = fixed rupiah, clamped to the item price. (D1, D3)
+- ≤ 1 item-coupon per line, no stacking. (D4)
+- 2-hour minimum for FREE 1 HOUR is staff discretion, shown via the line's duration note. (D6)
+- **Prerequisite:** make the transaction create/update path preserve rental-item prices (today it re-derives them from `variants.price = 0`). (D7 / Phase 3)
+- All schema and contract changes additive. (D10)
+
+Phases are independently shippable and ordered: schema/seed → domain → rental-safe update + item-coupon application → data layer → contract → coupon admin UI → transaction edit UI → mobile → docs. Each phase is one small PR.
 
 ---
 
 ## Phase 1: Database Schema + Seed
 
-**Goal:** Coupons can carry scope/eligibility; `transaction_coupons` can point at a ticket; the three coupons exist. Existing data untouched and behaviorally identical.
+**Goal:** Coupons carry a scope; `transaction_coupons` can point at an item; the three coupons exist. Existing data behaviorally identical.
 
-### 1.1 Migration `000012_rental_coupons`
+### 1.1 Migration `000012_item_coupons`
 
-`apps/api/migrations/000012_rental_coupons.up.sql`:
+`apps/api/migrations/000012_item_coupons.up.sql`:
 ```sql
 ALTER TABLE coupons
-  ADD COLUMN scope            VARCHAR(50) NOT NULL DEFAULT 'transaction',
-  ADD COLUMN min_play_minutes INT         NOT NULL DEFAULT 0;
+  ADD COLUMN scope VARCHAR(50) NOT NULL DEFAULT 'transaction';
 
 ALTER TABLE transaction_coupons
   ADD COLUMN transaction_item_id BIGINT NULL,
@@ -36,243 +43,176 @@ ALTER TABLE transaction_coupons
   ADD CONSTRAINT fk_tc_transaction_item
       FOREIGN KEY (transaction_item_id) REFERENCES transaction_items(id);
 
--- Seed the three coupons, idempotent on unique code
-INSERT INTO coupons (code, type, amount, scope, min_play_minutes)
+INSERT INTO coupons (code, type, amount, scope)
 SELECT * FROM (
-  SELECT 'FREE 1 HOUR'      AS code, 'free_duration' AS type, 60  AS amount, 'rental_item' AS scope, 120 AS min_play_minutes UNION ALL
-  SELECT 'FREE 2 HOUR',           'free_duration',          120,        'rental_item',                 0 UNION ALL
-  SELECT 'STUDENT DISCOUNT',      'percentage',              40,        'rental_item',                 0
+  SELECT 'FREE 1 HOUR'      AS code, 'fixed'      AS type, 15000 AS amount, 'item' AS scope UNION ALL
+  SELECT 'FREE 2 HOUR',           'fixed',            30000,        'item' UNION ALL
+  SELECT 'STUDENT DISCOUNT',      'percentage',          40,        'item'
 ) seed
 WHERE NOT EXISTS (SELECT 1 FROM coupons c WHERE c.code = seed.code);
 ```
 
-`apps/api/migrations/000012_rental_coupons.down.sql`:
+`...down.sql`:
 ```sql
 DELETE FROM coupons WHERE code IN ('FREE 1 HOUR','FREE 2 HOUR','STUDENT DISCOUNT');
 ALTER TABLE transaction_coupons
   DROP FOREIGN KEY fk_tc_transaction_item,
   DROP KEY idx_tc_transaction_item_id,
   DROP COLUMN transaction_item_id;
-ALTER TABLE coupons DROP COLUMN min_play_minutes, DROP COLUMN scope;
+ALTER TABLE coupons DROP COLUMN scope;
 ```
 
 ### 1.2 Verify
-- Migrate up → down → up (idempotency); seed insert does not duplicate on re-run.
-- `SELECT scope, min_play_minutes FROM coupons` — pre-existing coupons all `('transaction', 0)`.
-- `go test ./apps/api/...` still green (no Go reads the new columns yet).
+- Up → down → up; seed does not duplicate on re-run.
+- Pre-existing coupons all read `scope = 'transaction'`.
+- `go test ./apps/api/...` green (no Go reads the new columns yet).
 
 **Exit criteria:** Migration applies/reverts cleanly on a DB with existing coupons + transactions.
 
 ---
 
-## Phase 2: Domain Layer (Go)
+## Phase 2: Domain Entities + Item-Discount Calculator
 
-**Goal:** Entity + a pure per-ticket discount calculator with exhaustive unit tests. No handlers wired.
+**Goal:** Entity changes + a pure per-item discount function with exhaustive tests. No usecase wiring yet.
 
-### 2.1 Extend the coupon entity
+### 2.1 Entities
+- `apps/api/domain/coupon_entity.go`: add `CouponScope` (`ScopeTransaction`/`ScopeItem`) and `Scope CouponScope` on `Coupon`.
+- `apps/api/domain/transaction_entity.go`: add `TransactionItemId *int64` to `TransactionCoupon`.
 
-`apps/api/domain/coupon_entity.go`:
+### 2.2 Calculator
+
+New `apps/api/domain/coupon_calculator.go` — pure, implements PRD §3 / FR-4:
 ```go
-const FreeDuration CouponType = "free_duration"
-
-type CouponScope string
-const ( ScopeTransaction CouponScope = "transaction"; ScopeRentalItem CouponScope = "rental_item" )
-
-type Coupon struct {
-    Id; Code; Type CouponType; Amount int64
-    Scope          CouponScope   // new
-    MinPlayMinutes int64         // new
-    CreatedAt; DeletedAt
-}
-```
-Add `Scope`/`MinPlayMinutes` to `TransactionCoupon` snapshot only if needed for display; otherwise add a nullable `TransactionItemId *int64` to `TransactionCoupon` in `transaction_entity.go`.
-
-### 2.2 Per-ticket discount calculator
-
-New `apps/api/domain/coupon_calculator.go` — pure, no DB, implements PRD FR-3:
-```go
-type TicketDiscount struct { Base, Discount, Subtotal float32 }
-
-func CalculateRentalCouponDiscount(
-    tiers []PricingTier, duration time.Duration, coupon *Coupon,
-) (TicketDiscount, *Error) {
-    base, err := CalculatePrice(tiers, duration)
-    if err != nil { return TicketDiscount{}, err }
-    if coupon == nil { return TicketDiscount{base.Price, 0, base.Price}, nil }
-    if coupon.Scope != ScopeRentalItem {
-        return TicketDiscount{}, &Error{Type: BadRequest, Message: "coupon not applicable to rental ticket"}
+func CalculateItemDiscount(base float32, coupon Coupon) (float32, *Error) {
+    if coupon.Scope != ScopeItem {
+        return 0, &Error{Type: BadRequest, Message: "coupon is not item-scoped"}
     }
-    actualMin := int64(math.Ceil(duration.Minutes()))
-    if actualMin < coupon.MinPlayMinutes {
-        return TicketDiscount{}, &Error{Type: BadRequest, Message: "play time below coupon minimum"}
-    }
-    var discount float32
     switch coupon.Type {
-    case FreeDuration:
-        billable := actualMin - coupon.Amount
-        var discounted float32
-        if billable > 0 {
-            d, _ := CalculatePrice(tiers, time.Duration(billable)*time.Minute)
-            discounted = d.Price
-        } // billable <= 0 -> discounted stays 0 (PRD D2)
-        discount = base.Price - discounted
-    case Percentage:
-        discount = float32(utils.RoundToNearest500(int(base.Price) * int(coupon.Amount) / 100))
     case Fixed:
-        discount = float32(coupon.Amount)
-        if discount > base.Price { discount = base.Price }
+        d := float32(coupon.Amount)
+        if d > base { d = base }            // clamp (D3)
+        return d, nil
+    case Percentage:
+        return float32(utils.RoundToNearest500(int(base) * int(coupon.Amount) / 100)), nil
     }
-    return TicketDiscount{base.Price, discount, base.Price - discount}, nil
+    return 0, &Error{Type: BadRequest, Message: "unsupported coupon type"}
 }
 ```
 
-### 2.3 Calculator tests
-
-`apps/api/domain/coupon_calculator_test.go` — table-driven, covering **every PRD FR-3 row 1–7**, plus:
-- Wrong scope (`transaction` coupon) → error.
-- `free_duration` exactly reducing to a tier boundary.
-- `fixed` larger than base → clamped, subtotal 0, no negative.
-- `nil` coupon → zero discount.
+### 2.3 Tests
+`apps/api/domain/coupon_calculator_test.go` — table-driven over **every PRD FR-4 row 1–7**, plus: non-item scope → error; fixed exactly equal to base → subtotal 0.
 
 ### 2.4 Coupon usecase validation
+`apps/api/domain/coupon_usecase.go` create/update: enforce FR-1 (`scope` valid; `percentage` 0<amt≤100; `fixed` amt>0). Add tests.
 
-`apps/api/domain/coupon_usecase.go` create/update: enforce PRD FR-1 (`free_duration ⇒ rental_item & amount>0`; `percentage ⇒ 0<amount≤100`; `fixed ⇒ amount>0`; `min_play_minutes ≥ 0`). Add tests.
-
-### 2.5 Verify
-`go test ./apps/api/domain/...` green.
-
-**Exit criteria:** Domain complete and tested in isolation; no SQL, no handlers.
+**Exit criteria:** Domain compiles; calculator + validation tested in isolation.
 
 ---
 
-## Phase 3: Data Layer (MySQL)
+## Phase 3: Rental-Safe Update + Item-Coupon Application (core PR)
 
-**Goal:** Repos read/write the new columns and the ticket link.
+**Goal:** Editing a rental transaction no longer destroys its prices, and item-scoped coupons discount the right line.
 
-### 3.1 GORM models + transformers
-- `apps/api/data/mysql/coupon_entity.go` + transformer: map `scope`, `min_play_minutes` both ways.
-- `apps/api/data/mysql/transaction_entity.go` (transaction_coupons model) + transformer: map nullable `transaction_item_id`.
+### 3.1 Preserve rental-item prices (PRD FR-2 / D7)
+In `transaction_usecase.go`, both `CreateTransaction` (~:51-73) and `UpdateTransactionById` (~:126-149): for items with `RentalId != nil`, take `base` from the item's **stored** price (`item.Price * item.Amount`, or the persisted subtotal on update) instead of `variant.Price`. Non-rental items keep `base = variant.Price * item.Amount`.
 
-### 3.2 Verify
-- Existing coupon repo tests pass.
-- Round-trip test: create a `rental_item` coupon → read back scope + min_play intact.
+### 3.2 Apply item-scoped coupons
+Refactor the coupon loops (`:75-98`, `:151-174`):
+- For each `TransactionCoupon`:
+  - If `TransactionItemId == nil` → transaction-scope: subtract from `Total` exactly as today.
+  - If set → load coupon, call `CalculateItemDiscount(itemBase, coupon)`, add to that item's `DiscountAmount`, recompute that item's `Subtotal = base − discount`. Enforce ≤1 item-coupon per line (D4).
+- Compute `Total = Σ item.Subtotal` first, then apply transaction-scope coupons. Snapshot `{type, amount, transaction_item_id}` into the `transaction_coupons` rows.
 
-**Exit criteria:** Repos persist/read new fields; existing tests untouched.
+### 3.3 Tests
+`transaction_usecase_test.go`:
+- **Regression:** edit + re-save a rental transaction → line prices and total unchanged (guards FR-2).
+- FREE 1 HOUR on a 30K item → subtotal 15K (FR-4 #1).
+- FREE 2 HOUR on a 15K item → subtotal 0 (FR-4 #4, clamp).
+- STUDENT on a 30K item → 17,500 (FR-4 #5).
+- Multi-item: 3 items, STUDENT on the middle → only it discounted (FR-5).
+- Item coupon with a `transaction` scope → 400 (D5).
+
+**Exit criteria:** Backend reproduces every FR-4/FR-5 case; rental transactions survive an edit.
 
 ---
 
-## Phase 4: Rental Checkout Usecase + Handler
+## Phase 4: Data Layer (MySQL)
 
-**Goal:** Checkout accepts an optional coupon per ticket, applies the discount, records the link. This is the core behavioral PR.
+**Goal:** Repos map the new columns and the item link.
 
-### 4.1 Change the checkout input shape (backend)
+- `apps/api/data/mysql/coupon_entity.go` + transformer: map `scope`.
+- `apps/api/data/mysql/transaction_entity.go` (transaction_coupons model) + transformer: map nullable `transaction_item_id`. Ensure item-coupon rows persist/read the link, and `transaction_items.discount_amount`/`subtotal` round-trip.
+- Round-trip test: create a transaction with an item-scoped coupon → reload → discount + link intact.
 
-`apps/api/domain/rental_usecase.go` — `CheckoutRentals` signature changes from `rentalIds []int64` to a slice of `{ RentalId int64; CouponId *int64 }`. For each rental:
-1. Load rental, guard double-checkout (unchanged).
-2. `duration = checkoutAt − checkin_at`.
-3. If `CouponId != nil`: load coupon via `couponRepository.GetCouponById`, call `CalculateRentalCouponDiscount(snapshot, duration, &coupon)`. On error → return it (the surrounding `BeginTransaction` rolls everything back).
-4. Build `TransactionItem` with `Price=base`, `DiscountAmount=discount`, `Subtotal=base−discount`.
-5. After the transaction is created, insert a `transaction_coupons` row `{transaction_id, coupon_id, transaction_item_id, type, amount}` per applied coupon.
+**Exit criteria:** Repos persist/read the new fields; existing tests untouched.
 
-`RentalUsecase` needs a `couponRepository` dependency — add it to the constructor and `apps/api/main.go` DI wiring.
-
-### 4.2 Handler
-
-`apps/api/presentation/restapi/rental_handler.go` — checkout handler parses the new request `{ rentals: [{ rentalId, couponId? }] }`. Keep accepting the old `rentalIds` shape for one release **only if** any non-frontend consumer exists; otherwise change outright (internal API, both frontends updated in Phase 5–7).
-
-### 4.3 Tests
-
-`rental_usecase_test.go`:
-- Checkout, no coupons → unchanged totals (regression).
-- FREE 1 HOUR on a 2h ticket → subtotal 15K (PRD FR-3 #1).
-- FREE 1 HOUR on a 90m ticket → 400.
-- FREE 2 HOUR on a 1h ticket → subtotal 0 (PRD FR-3 #5).
-- Multi-ticket: 3 tickets, STUDENT on the middle one → only it discounted (PRD FR-5).
-- `transaction_coupons` row written with correct `transaction_item_id`.
-
-### 4.4 Verify
-`go test ./apps/api/...` green; `curl` smoke for one free-duration and one percentage checkout.
-
-**Exit criteria:** Backend reproduces every PRD FR-3/FR-5 case end-to-end.
+> Note: domain tests in Phases 2–3 mock the repositories, so the order (domain before data) is fine; this phase makes the core PR runnable end-to-end against MySQL.
 
 ---
 
 ## Phase 5: API Contract + Codegen
 
-**Goal:** TS clients reflect new shapes; both apps compile.
+**Goal:** TS clients reflect the additive shapes; both apps compile.
 
 ### 5.1 Edit `libs/api-contract/src/api.yaml`
-- `Coupon` + `CouponForm`: add `scope` enum, `minPlayMinutes`; `type` enum gains `free_duration`. (additive)
-- Checkout request: `{ rentals: [{ rentalId, couponId? }] }`. (**breaking** — coordinated here)
-- `TransactionCoupon`: add optional `transactionItemId`. (additive)
+- `Coupon` + `CouponForm`: add `scope` enum (`transaction`|`item`).
+- `TransactionCoupon` (in transaction request + response): add optional `transactionItemId`.
+- All additive — no breaking changes; `POST /rentals/checkout` untouched.
 
-### 5.2 Codegen
-Run the project's codegen (per `libs/api-contract/package.json` / `openapitools.json`).
+### 5.2 Codegen + verify
+Run the project codegen (`libs/api-contract/package.json` / `openapitools.json`). `nx build api-contract`, `nx build web`, `nx build mobile`, `nx test ui` green.
 
-### 5.3 Update the FE checkout usecase signature
-`libs/ui/src/domain/usecases/rentalCheckout.ts` + its test: pass `{ rentalId, couponId? }[]`. Keep callers compiling (Phase 7 wires real UI; here just default `couponId` undefined so behavior is identical).
-
-### 5.4 Verify
-`nx build api-contract`, `nx build web`, `nx build mobile`, `nx test ui` all green.
-
-**Exit criteria:** Generated types include new shapes; checkout still works with no coupons selected.
+**Exit criteria:** Generated types include `scope` and `transactionItemId`; existing flows compile unchanged.
 
 ---
 
 ## Phase 6: Coupon Admin UI
 
-**Goal:** Owner can create/edit all coupon kinds, including the three rental coupons.
+**Goal:** Owner can create/edit coupons of either scope, including the three rental coupons.
 
-### 6.1 Frontend entity + form
-- `libs/ui/src/domain/entities/Coupon.ts`: extend `CouponType` with `'free_duration'`; add `scope`, `minPlayMinutes` to `Coupon` and `CouponForm`.
-- Coupon form component + Zod schema (PRD FR-6): scope selector; `free_duration` type; conditional `min_play_minutes` input; adaptive amount label ("Amount (Rp)" / "Percent (%)" / "Free minutes"). Mirror Phase 2.4 validation.
+- `libs/ui/src/domain/entities/Coupon.ts`: add `scope` to `Coupon` and `CouponForm`.
+- Coupon form + Zod: **scope** selector; adaptive amount label ("Amount (Rp)" / "Percent (%)"); mirror Phase 2.4 validation.
 - `apps/web/src/pages/coupons/...` create/edit pages render the extended form.
+- `nx test web`/`nx test ui`; manually create FREE 1 HOUR / FREE 2 HOUR / STUDENT DISCOUNT.
 
-### 6.2 Verify
-`nx test web`/`nx test ui`; manually create FREE 1 HOUR / FREE 2 HOUR / STUDENT DISCOUNT and confirm they persist with correct scope + min play.
-
-**Exit criteria:** All three coupons are creatable/editable from the web admin.
+**Exit criteria:** All three coupons creatable/editable from the web admin.
 
 ---
 
-## Phase 7: Web Checkout Screen
+## Phase 7: Transaction Edit Screen — Per-Item Coupon Picker
 
-**Goal:** Per-ticket coupon selection with eligibility + live totals (PRD FR-7).
+**Goal:** Staff attach an item-scoped coupon to a specific line (PRD FR-7).
 
-### 7.1 Checkout screen
-The `libs/ui` screen behind `apps/web/src/pages/rentals/checkout.tsx`:
-- Per ticket: player • variant • duration • base price.
-- "Apply coupon" control listing only `rental_item` coupons; disable coupons where `ceil(actualMinutes) < minPlayMinutes` with a hint.
-- On select: show discount + new subtotal for that ticket; recompute the grand total live. Allow clearing. One coupon per ticket.
-- Submit sends `{ rentals: [{ rentalId, couponId? }] }`.
+- The `libs/ui` transaction screen (`TransactionCreateScreen.tsx` and its update counterpart): each line item gains an "Apply coupon" control listing only `item`-scoped coupons (reuse the `CouponList.tsx` sheet, filtered by scope).
+- On select: show the line discount + new subtotal; recompute the grand total live; allow clearing; ≤1 per line.
+- Filter the existing whole-bill picker to `transaction`-scoped coupons.
+- Show the rental duration note next to each rental line (D6).
+- Form submits each line's optional `couponId`; map into `transactionCoupons[].transactionItemId` on save.
 
-Reuse the existing `CouponList` sheet pattern (`libs/ui/src/presentation/components/coupons/CouponList.tsx`), filtered to `rental_item` scope and parameterized by per-ticket eligibility.
+### Verify
+`nx serve web` walkthrough: check out a 2h rental → open the transaction → apply FREE 1 HOUR → subtotal 15K; apply STUDENT to one of several tickets → only that line discounts (FR-5). `nx test web`.
 
-### 7.2 Verify
-`nx serve web` walkthrough reproducing PRD FR-3 #1, #3 (disabled), #5, #6 and the FR-5 multi-ticket case. `nx test web`.
-
-**Exit criteria:** Every PRD FR-3/FR-5 case reproduces in the web checkout UI; transaction-create screen visibly unchanged.
+**Exit criteria:** Every FR-4/FR-5 case reproduces in the web transaction edit UI; whole-bill coupon behavior unchanged.
 
 ---
 
 ## Phase 8: Mobile Parity
 
-**Goal:** React Native checkout offers the same per-ticket coupon picker (PRD FR-8).
+**Goal:** React Native transaction edit screen offers the same per-item picker (PRD FR-8).
 
-- `apps/mobile/` checkout screen: same per-ticket picker, reusing shared `libs/ui` primitives where possible.
-- Coupon **admin** editing stays web-only for v1.
+- `apps/mobile/` transaction screen: per-item coupon picker reusing shared `libs/ui` primitives. Coupon **admin** editing stays web-only for v1.
 - `nx test mobile`; walk the same acceptance cases on emulator.
 
-**Exit criteria:** Mobile staff can apply per-ticket coupons at checkout with correct totals.
+**Exit criteria:** Mobile staff can attach per-item coupons with correct totals.
 
 ---
 
 ## Phase 9: Documentation + Release
 
-1. Short owner guide under `docs/`: "Rental coupons — how FREE 1 HOUR / FREE 2 HOUR / STUDENT DISCOUNT work and when each applies."
-2. Update `E2E_TEST_PLAN.md` with the new checkout-coupon scenarios.
+1. Short owner guide under `docs/`: "Rental coupons — what FREE 1 HOUR / FREE 2 HOUR / STUDENT DISCOUNT do and how to apply them on a transaction."
+2. Update `E2E_TEST_PLAN.md` with the per-item coupon scenarios.
 3. Update `README.md` feature list if present.
-4. PR description links the PRD and lists every FR-3/FR-5 case verified.
+4. PR description links the PRD and lists every FR-4/FR-5 case verified.
 
 ---
 
@@ -280,12 +220,12 @@ Reuse the existing `CouponList` sheet pattern (`libs/ui/src/presentation/compone
 
 | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|
-| Checkout request shape change breaks an un-updated consumer | Low | High | Internal API; both frontends updated in Phases 5/7/8 in lockstep with the contract. Optionally accept the legacy `rentalIds` shape for one release. |
-| Free-duration math drifts from staff expectation (D1/D2) | Medium | Medium | PRD worked examples are the acceptance tests; surface "Billed as Xh (1h free)" on the checkout line so staff see the reasoning. Open Question #1 confirms D2 with the owner. |
-| Income/budget math regresses if discount isn't on `Subtotal` | Low | High | Discount always lands on `TransactionItem.DiscountAmount`; `Subtotal = base − discount`; `Total = Σ subtotals`. Phase 4 regression test asserts unchanged totals for the no-coupon path. |
-| A `transaction`-scope coupon gets applied to a ticket (or vice versa) | Low | Medium | Calculator rejects wrong scope (Phase 2.2); UI offers only the matching scope per surface (PRD D5). |
-| Negative subtotal from an over-large `fixed` coupon | Low | Medium | `fixed` discount clamped to base in the calculator. |
-| Eligible-coupon UI lets staff pick an ineligible one | Low | Medium | UI disables ineligible coupons **and** the server re-validates (PRD D6); checkout rolls back on violation. |
+| Editing a rental transaction zeroes its prices (current bug) | High if unaddressed | High | Phase 3.1 preserves stored prices for `RentalId != nil` items; Phase 3.3 regression test asserts unchanged totals. Hard prerequisite, done before any UI ships. |
+| Fixed 15K/30K over-discounts all-day or capped rentals (D1) | Medium | Low | Documented; staff only apply FREE 1/2 HOUR to standard hourly rentals. Open Question #1 confirms with owner. Duration note shown on the line. |
+| Income/budget math regresses | Low | High | Discount always lands on `DiscountAmount`; `Subtotal = base − discount`; `Total = Σ subtotals`. Regression test on the no-coupon path. |
+| A `transaction` coupon attached to a line (or vice versa) | Low | Medium | Calculator rejects wrong scope (Phase 2.2); UI offers only the matching scope per surface (D5). |
+| Fixed coupon drives a negative subtotal | Low | Medium | Clamp to base in the calculator (D3). |
+| Stacking accidentally allowed | Low | Low | ≤1 item-coupon per line enforced in usecase + UI (D4). |
 
 ---
 
@@ -294,13 +234,13 @@ Reuse the existing `CouponList` sheet pattern (`libs/ui/src/presentation/compone
 | Phase | Est. effort | Blocks |
 |---|---|---|
 | 1 Schema + seed | 0.5 day | 2 |
-| 2 Domain + calculator | 1 day | 3, 4 |
-| 3 Data layer | 0.5 day | 4 |
-| 4 Checkout usecase + handler | 1.5 days | 5 |
+| 2 Domain + calculator | 0.5 day | 3 |
+| 3 Rental-safe update + item application (core) | 1.5 days | 4 |
+| 4 Data layer | 0.5 day | 5 |
 | 5 Contract + codegen | 0.5 day | 6, 7 |
-| 6 Coupon admin UI | 1 day | 7 |
-| 7 Web checkout UI | 1.5 days | 8 |
+| 6 Coupon admin UI | 0.5 day | 7 |
+| 7 Transaction edit UI | 1.5 days | 8 |
 | 8 Mobile parity | 1 day | 9 |
 | 9 Docs + release | 0.5 day | — |
 
-**Total:** ~8 working days, single engineer. Each phase is one reviewable PR.
+**Total:** ~7 working days, single engineer. Each phase is one reviewable PR.
