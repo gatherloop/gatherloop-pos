@@ -74,12 +74,13 @@ func ToApiTransaction(transaction domain.Transaction) apiContract.Transaction {
 	apiTransactionCoupons := []apiContract.TransactionCoupon{}
 	for _, transactionCoupon := range transaction.TransactionCoupons {
 		apiTransactionCoupons = append(apiTransactionCoupons, apiContract.TransactionCoupon{
-			Id:            transactionCoupon.Id,
-			CouponId:      transactionCoupon.CouponId,
-			Coupon:        ToApiCoupon(transactionCoupon.Coupon),
-			Type:          string(transactionCoupon.Type),
-			Amount:        transactionCoupon.Amount,
-			TransactionId: transactionCoupon.TransactionId,
+			Id:                transactionCoupon.Id,
+			CouponId:          transactionCoupon.CouponId,
+			Coupon:            ToApiCoupon(transactionCoupon.Coupon),
+			Type:              string(transactionCoupon.Type),
+			Amount:            transactionCoupon.Amount,
+			TransactionId:     transactionCoupon.TransactionId,
+			TransactionItemId: transactionCoupon.TransactionItemId,
 		})
 	}
 
@@ -123,8 +124,9 @@ func ToTransaction(transactionRequest apiContract.TransactionRequest) domain.Tra
 			id = *transactionCoupon.Id
 		}
 		transactionCoupons = append(transactionCoupons, domain.TransactionCoupon{
-			Id:       id,
-			CouponId: transactionCoupon.CouponId,
+			Id:                id,
+			CouponId:          transactionCoupon.CouponId,
+			TransactionItemId: transactionCoupon.TransactionItemId,
 		})
 	}
 
