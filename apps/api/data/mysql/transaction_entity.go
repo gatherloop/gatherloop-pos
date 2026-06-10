@@ -25,12 +25,13 @@ type TransactionItemValue struct {
 }
 
 type TransactionCoupon struct {
-	Id            int64
-	TransactionId int64
-	CouponId      int64
-	Coupon        Coupon
-	Type          string
-	Amount        int64
+	Id                int64
+	TransactionId     int64
+	CouponId          int64
+	Coupon            Coupon
+	Type              string
+	Amount            int64
+	TransactionItemId *int64
 }
 
 type Transaction struct {
