@@ -277,6 +277,56 @@ describe('TransactionUpdateHandler', () => {
     });
   });
 
+  describe('per-line coupon picker', () => {
+    it('applies, displays, and removes a coupon on a single transaction item line', async () => {
+      const user = userEvent.setup();
+      const transactionRepo = new MockTransactionRepository();
+      const couponRepo = new MockCouponRepository();
+      const preloadedTransaction = transactionRepo.transactions[0];
+
+      render(
+        <TransactionUpdateHandler
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          transactionUpdateUsecase={new TransactionUpdateUsecase(transactionRepo, {
+            transactionId: preloadedTransaction.id,
+            transaction: preloadedTransaction,
+          })}
+          transactionItemSelectUsecase={new TransactionItemSelectUsecase(
+            new MockProductRepository(),
+            new MockVariantRepository(),
+            { products: [], totalItem: 0 }
+          )}
+          couponListUsecase={new CouponListUsecase(couponRepo, {
+            coupons: couponRepo.coupons,
+          })}
+        />
+      );
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      // unit price, item subtotal, and grand total are all Rp. 50.000
+      expect(screen.getAllByText('Rp. 50.000')).toHaveLength(3);
+
+      await user.click(screen.getByRole('button', { name: 'Apply Coupon' }));
+      await user.click(screen.getByRole('heading', { name: 'FIXED5000' }));
+
+      expect(screen.getByText('FIXED5000')).toBeTruthy();
+      expect(screen.getByText('- Rp. 5.000')).toBeTruthy();
+      // unit price stays Rp. 50.000, item subtotal and grand total drop to Rp. 45.000
+      expect(screen.getAllByText('Rp. 50.000')).toHaveLength(1);
+      expect(screen.getAllByText('Rp. 45.000')).toHaveLength(2);
+      expect(screen.queryByRole('button', { name: 'Apply Coupon' })).toBeNull();
+
+      await user.click(screen.getByRole('button', { name: 'Remove Coupon' }));
+
+      expect(screen.getByRole('button', { name: 'Apply Coupon' })).toBeTruthy();
+      expect(screen.queryByText('FIXED5000')).toBeNull();
+      expect(screen.getAllByText('Rp. 50.000')).toHaveLength(3);
+    });
+  });
+
   describe('product error recovery', () => {
     it('should refetch products when retry button is pressed', async () => {
       const user = userEvent.setup();

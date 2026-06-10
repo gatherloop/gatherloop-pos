@@ -216,6 +216,8 @@ export const TransactionCreateHandler = ({
     isCouponSheetOpen: transactionCreateController.isCouponSheetOpen,
     onCouponSheetOpenChange:
       transactionCreateController.onCouponSheetOpenChange,
+    onItemCouponSheetOpen: transactionCreateController.onItemCouponSheetOpen,
+    onRemoveItemCoupon: transactionCreateController.onRemoveItemCoupon,
     itemsFieldArray: transactionCreateController.itemsFieldArray,
     couponsFieldArray: transactionCreateController.couponsFieldArray,
     couponList: {

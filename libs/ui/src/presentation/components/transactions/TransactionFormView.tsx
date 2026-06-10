@@ -34,6 +34,8 @@ export type TransactionFormViewProps = {
   onSubmit: (form: TransactionForm) => void;
   isCouponSheetOpen: boolean;
   onCouponSheetOpenChange: (isOpen: boolean) => void;
+  onItemCouponSheetOpen: (index: number) => void;
+  onRemoveItemCoupon: (index: number) => void;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   TransactionItemSelect: () => ReactNode;
@@ -56,6 +58,8 @@ export const TransactionFormView = ({
   onSubmit,
   isCouponSheetOpen,
   onCouponSheetOpenChange,
+  onItemCouponSheetOpen,
+  onRemoveItemCoupon,
   isSubmitDisabled,
   isSubmitting,
   TransactionItemSelect,
@@ -97,7 +101,7 @@ export const TransactionFormView = ({
                       <H4>Items</H4>
                       <YStack gap="$3">
                         {itemsFieldArray.fields.map(
-                          ({ variant, price: fieldPrice, key }, index) => {
+                          ({ variant, price: fieldPrice, coupon, key }, index) => {
                             const isPurchase =
                               variant.product.saleType === 'purchase';
                             return (
@@ -181,6 +185,58 @@ export const TransactionFormView = ({
                                   placeholder="Add Notes"
                                   flex={1}
                                 />
+
+                                <XStack
+                                  gap="$3"
+                                  alignItems="center"
+                                  justifyContent="space-between"
+                                  flexWrap="wrap"
+                                >
+                                  {coupon ? (
+                                    <XStack gap="$3" alignItems="center">
+                                      <Button
+                                        icon={Trash}
+                                        size="$2"
+                                        onPress={() =>
+                                          onRemoveItemCoupon(index)
+                                        }
+                                        theme="red"
+                                        color="$red8"
+                                        circular
+                                        accessibilityLabel="Remove Coupon"
+                                      />
+                                      <Paragraph>
+                                        {coupon.coupon.code}
+                                      </Paragraph>
+                                      <FieldWatch
+                                        control={form.control}
+                                        name={[
+                                          `transactionItems.${index}.discountAmount`,
+                                        ]}
+                                      >
+                                        {([discountAmount]) => (
+                                          <Paragraph>
+                                            - Rp.{' '}
+                                            {discountAmount.toLocaleString(
+                                              'id'
+                                            )}
+                                          </Paragraph>
+                                        )}
+                                      </FieldWatch>
+                                    </XStack>
+                                  ) : (
+                                    <Button
+                                      size="$2"
+                                      icon={Plus}
+                                      variant="outlined"
+                                      onPress={() =>
+                                        onItemCouponSheetOpen(index)
+                                      }
+                                    >
+                                      Apply Coupon
+                                    </Button>
+                                  )}
+                                </XStack>
 
                                 <Separator />
                               </YStack>

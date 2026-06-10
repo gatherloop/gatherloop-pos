@@ -10,6 +10,7 @@ import { useToastController } from '@tamagui/toast';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { applyCouponToBase } from '../../utils';
 
 export const useTransactionUpdateController = (
   usecase: TransactionUpdateUsecase
@@ -17,7 +18,19 @@ export const useTransactionUpdateController = (
   const { state, dispatch } = useController(usecase);
 
   const [isCouponSheetOpen, setIsCouponSheetOpen] = useState<boolean>(false);
-  const onCouponSheetOpenChange = setIsCouponSheetOpen;
+  const [couponSheetItemIndex, setCouponSheetItemIndex] = useState<
+    number | null
+  >(null);
+
+  const onCouponSheetOpenChange = (open: boolean) => {
+    setIsCouponSheetOpen(open);
+    setCouponSheetItemIndex(null);
+  };
+
+  const onItemCouponSheetOpen = (index: number) => {
+    setCouponSheetItemIndex(index);
+    setIsCouponSheetOpen(true);
+  };
 
   const toast = useToastController();
   useEffect(() => {
@@ -92,21 +105,43 @@ export const useTransactionUpdateController = (
   });
 
   const onAddCoupon = (newCoupon: Coupon) => {
-    const couponIndex = couponsFieldArray.fields.findIndex(
-      ({ coupon }) => newCoupon.id === coupon.id
-    );
-    const isCouponExist = couponIndex !== -1;
-    if (isCouponExist) {
-      couponsFieldArray.update(couponIndex, {
-        ...form.getValues('transactionCoupons')[couponIndex],
+    if (couponSheetItemIndex !== null) {
+      const item = form.getValues(
+        `transactionItems.${couponSheetItemIndex}`
+      );
+      const base = item.price * item.amount;
+      itemsFieldArray.update(couponSheetItemIndex, {
+        ...item,
+        coupon: { id: item.coupon?.id, coupon: newCoupon },
+        discountAmount: applyCouponToBase(base, newCoupon),
       });
     } else {
-      couponsFieldArray.append({
-        coupon: newCoupon,
-      });
+      const couponIndex = couponsFieldArray.fields.findIndex(
+        ({ coupon }) => newCoupon.id === coupon.id
+      );
+      const isCouponExist = couponIndex !== -1;
+      if (isCouponExist) {
+        couponsFieldArray.update(couponIndex, {
+          ...form.getValues('transactionCoupons')[couponIndex],
+        });
+      } else {
+        couponsFieldArray.append({
+          coupon: newCoupon,
+        });
+      }
     }
 
     setIsCouponSheetOpen(false);
+    setCouponSheetItemIndex(null);
+  };
+
+  const onRemoveItemCoupon = (index: number) => {
+    const item = form.getValues(`transactionItems.${index}`);
+    itemsFieldArray.update(index, {
+      ...item,
+      coupon: undefined,
+      discountAmount: 0,
+    });
   };
 
   return {
@@ -114,9 +149,11 @@ export const useTransactionUpdateController = (
     dispatch,
     isCouponSheetOpen,
     onCouponSheetOpenChange,
+    onItemCouponSheetOpen,
     form,
     onAddItem,
     onAddCoupon,
+    onRemoveItemCoupon,
     itemsFieldArray,
     couponsFieldArray,
   };
