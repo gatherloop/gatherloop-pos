@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"apps/api/utils"
 	"context"
 	"time"
 )
@@ -58,6 +57,7 @@ func (usecase TransactionUsecase) CreateTransaction(ctx context.Context, transac
 			transaction.Total += subTotal
 
 			transactionItem := TransactionItem{
+				Id:             item.Id,
 				TransactionId:  createdTransaction.Id,
 				VariantId:      item.VariantId,
 				Amount:         item.Amount,
@@ -72,29 +72,9 @@ func (usecase TransactionUsecase) CreateTransaction(ctx context.Context, transac
 			transaction.TransactionItems[index] = transactionItem
 		}
 
-		// Calculate total with coupon
-		for index, transactionCoupon := range transaction.TransactionCoupons {
-			couponItem, err := usecase.couponRepository.GetCouponById(ctxWithTx, transactionCoupon.CouponId)
-			if err != nil {
-				return err
-			}
-
-			couponDiscountAmount := 0
-			switch couponItem.Type {
-			case Fixed:
-				couponDiscountAmount = int(couponItem.Amount)
-			case Percentage:
-				couponDiscountAmount = utils.RoundToNearest500(int(transaction.Total) * int(couponItem.Amount) / 100)
-			}
-
-			transaction.Total -= float32(couponDiscountAmount)
-
-			transaction.TransactionCoupons[index] = TransactionCoupon{
-				CouponId:      transactionCoupon.CouponId,
-				Type:          couponItem.Type,
-				Amount:        couponItem.Amount,
-				TransactionId: createdTransaction.Id,
-			}
+		// Apply whole-bill and item-linked coupons
+		if err := usecase.applyTransactionCoupons(ctxWithTx, &transaction, createdTransaction.Id); err != nil {
+			return err
 		}
 
 		// Create transaction
@@ -176,29 +156,9 @@ func (usecase TransactionUsecase) UpdateTransactionById(ctx context.Context, tra
 			transaction.TransactionItems[index] = transactionItem
 		}
 
-		for index, transactionCoupon := range transaction.TransactionCoupons {
-			couponItem, err := usecase.couponRepository.GetCouponById(ctxWithTx, transactionCoupon.CouponId)
-			if err != nil {
-				return err
-			}
-
-			couponDiscountAmount := 0
-			switch couponItem.Type {
-			case Fixed:
-				couponDiscountAmount = int(couponItem.Amount)
-			case Percentage:
-				couponDiscountAmount = utils.RoundToNearest500(int(transaction.Total) * int(couponItem.Amount) / 100)
-			}
-
-			transaction.Total -= float32(couponDiscountAmount)
-
-			transaction.TransactionCoupons[index] = TransactionCoupon{
-				CouponId:      transactionCoupon.CouponId,
-				Type:          couponItem.Type,
-				Amount:        couponItem.Amount,
-				TransactionId: id,
-				Id:            transactionCoupon.Id,
-			}
+		// Apply whole-bill and item-linked coupons
+		if err := usecase.applyTransactionCoupons(ctxWithTx, &transaction, id); err != nil {
+			return err
 		}
 
 		ut, err := usecase.transactionRepository.UpdateTransactionById(ctxWithTx, transaction, id)
@@ -375,6 +335,84 @@ func (usecase TransactionUsecase) UnpayTransaction(ctx context.Context, id int64
 
 func (usecase TransactionUsecase) GetTransactionStatistics(ctx context.Context, groupBy string) ([]TransactionStatistic, *Error) {
 	return usecase.transactionRepository.GetTransactionStatistics(ctx, groupBy)
+}
+
+// applyTransactionCoupons resolves each TransactionCoupon against the coupon
+// repository and applies its discount via ApplyCouponToBase.
+//
+// A coupon with TransactionItemId set discounts that line: the discount is
+// computed against the line's pre-discount base (Price * Amount, which #131
+// keeps stable across edits for rental items) and written to the item's
+// DiscountAmount/Subtotal, with transaction.Total adjusted by the resulting
+// delta. Item-linked coupons are applied first so that a whole-bill coupon
+// (TransactionItemId == nil) is computed against the item-adjusted Total, per
+// the PRD's Total = Σ item.Subtotal − whole-bill discounts.
+//
+// Every TransactionCoupon is rewritten with a {type, amount, transactionItemId}
+// snapshot of the coupon at apply time.
+func (usecase TransactionUsecase) applyTransactionCoupons(ctx context.Context, transaction *Transaction, transactionId int64) *Error {
+	itemIndexById := map[int64]int{}
+	for index, item := range transaction.TransactionItems {
+		itemIndexById[item.Id] = index
+	}
+
+	usedItemIds := map[int64]bool{}
+	wholeBillCoupons := []Coupon{}
+
+	for index, transactionCoupon := range transaction.TransactionCoupons {
+		coupon, err := usecase.couponRepository.GetCouponById(ctx, transactionCoupon.CouponId)
+		if err != nil {
+			return err
+		}
+
+		if transactionCoupon.TransactionItemId == nil {
+			wholeBillCoupons = append(wholeBillCoupons, coupon)
+		} else {
+			itemId := *transactionCoupon.TransactionItemId
+
+			if usedItemIds[itemId] {
+				return &Error{Type: BadRequest, Message: "only one coupon allowed per transaction item"}
+			}
+			usedItemIds[itemId] = true
+
+			itemIndex, ok := itemIndexById[itemId]
+			if !ok {
+				return &Error{Type: BadRequest, Message: "transaction item not found for coupon"}
+			}
+
+			item := &transaction.TransactionItems[itemIndex]
+			base := item.Price * item.Amount
+
+			discount, err := ApplyCouponToBase(base, coupon)
+			if err != nil {
+				return err
+			}
+
+			newSubtotal := base - discount
+			transaction.Total += newSubtotal - item.Subtotal
+			item.DiscountAmount = discount
+			item.Subtotal = newSubtotal
+		}
+
+		transaction.TransactionCoupons[index] = TransactionCoupon{
+			Id:                transactionCoupon.Id,
+			TransactionId:     transactionId,
+			CouponId:          transactionCoupon.CouponId,
+			Type:              coupon.Type,
+			Amount:            coupon.Amount,
+			TransactionItemId: transactionCoupon.TransactionItemId,
+		}
+	}
+
+	for _, coupon := range wholeBillCoupons {
+		discount, err := ApplyCouponToBase(transaction.Total, coupon)
+		if err != nil {
+			return err
+		}
+		transaction.Total -= discount
+	}
+
+	return nil
 }
 
 // snapshotVariantValues copies the currently selected option / option-value

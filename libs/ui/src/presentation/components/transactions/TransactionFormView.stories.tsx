@@ -31,6 +31,8 @@ const TransactionFormStory = () => {
       onSubmit={fn()}
       isCouponSheetOpen={false}
       onCouponSheetOpenChange={fn()}
+      onItemCouponSheetOpen={fn()}
+      onRemoveItemCoupon={fn()}
       isSubmitDisabled={false}
       TransactionItemSelect={() => <Text color="$color">+ Add Item</Text>}
       TransactionCouponList={() => null}
@@ -58,6 +60,8 @@ const CouponSheetOpenStory = () => {
       onSubmit={fn()}
       isCouponSheetOpen={true}
       onCouponSheetOpenChange={fn()}
+      onItemCouponSheetOpen={fn()}
+      onRemoveItemCoupon={fn()}
       isSubmitDisabled={false}
       TransactionItemSelect={() => <Text color="$color">+ Add Item</Text>}
       TransactionCouponList={() => <Text color="$color">Coupon List Here</Text>}

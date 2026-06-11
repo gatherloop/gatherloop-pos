@@ -323,6 +323,7 @@ export const mockTransactions: Transaction[] = [
         coupon: mockCoupon,
         type: 'percentage',
         amount: 10,
+        transactionItemId: null,
       },
     ],
     wallet: null,

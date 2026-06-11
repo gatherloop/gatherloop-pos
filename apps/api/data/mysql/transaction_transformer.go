@@ -64,23 +64,25 @@ func ToTransactionsListDomain(dbTransactions []Transaction) []domain.Transaction
 
 func ToTransactionCouponDomain(dbTransactionCoupon TransactionCoupon) domain.TransactionCoupon {
 	return domain.TransactionCoupon{
-		Id:            dbTransactionCoupon.Id,
-		TransactionId: dbTransactionCoupon.TransactionId,
-		CouponId:      dbTransactionCoupon.CouponId,
-		Coupon:        ToCouponDomain(dbTransactionCoupon.Coupon),
-		Type:          domain.CouponType(dbTransactionCoupon.Type),
-		Amount:        dbTransactionCoupon.Amount,
+		Id:                dbTransactionCoupon.Id,
+		TransactionId:     dbTransactionCoupon.TransactionId,
+		CouponId:          dbTransactionCoupon.CouponId,
+		Coupon:            ToCouponDomain(dbTransactionCoupon.Coupon),
+		Type:              domain.CouponType(dbTransactionCoupon.Type),
+		Amount:            dbTransactionCoupon.Amount,
+		TransactionItemId: dbTransactionCoupon.TransactionItemId,
 	}
 }
 
 func ToTransactionCouponDB(domainTransactionCoupon domain.TransactionCoupon) TransactionCoupon {
 	return TransactionCoupon{
-		Id:            domainTransactionCoupon.Id,
-		TransactionId: domainTransactionCoupon.TransactionId,
-		CouponId:      domainTransactionCoupon.CouponId,
-		Coupon:        ToCouponDB(domainTransactionCoupon.Coupon),
-		Type:          string(domainTransactionCoupon.Type),
-		Amount:        domainTransactionCoupon.Amount,
+		Id:                domainTransactionCoupon.Id,
+		TransactionId:     domainTransactionCoupon.TransactionId,
+		CouponId:          domainTransactionCoupon.CouponId,
+		Coupon:            ToCouponDB(domainTransactionCoupon.Coupon),
+		Type:              string(domainTransactionCoupon.Type),
+		Amount:            domainTransactionCoupon.Amount,
+		TransactionItemId: domainTransactionCoupon.TransactionItemId,
 	}
 }
 
