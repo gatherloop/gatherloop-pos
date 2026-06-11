@@ -83,4 +83,57 @@ describe('TransactionUpdateUsecase', () => {
     const tester = new UsecaseTester<TransactionUpdateUsecase, TransactionUpdateState, TransactionUpdateAction, TransactionUpdateParams>(usecase);
     expect(tester.state.type).toBe('loaded');
   });
+
+  describe('toFormValues mapping', () => {
+    it('splits item-linked coupons from whole-bill coupons', () => {
+      const repository = new MockTransactionRepository();
+      const existing = repository.transactions[0];
+
+      const itemCoupon = {
+        id: 10,
+        type: 'fixed' as const,
+        amount: 15000,
+        transactionItemId: existing.transactionItems[0].id,
+        coupon: {
+          id: 1,
+          code: 'FREE1HOUR',
+          type: 'fixed' as const,
+          amount: 15000,
+          createdAt: '2024-03-20T00:00:00.000Z',
+        },
+      };
+      const billCoupon = {
+        id: 11,
+        type: 'percentage' as const,
+        amount: 40,
+        transactionItemId: null,
+        coupon: {
+          id: 2,
+          code: 'STUDENT',
+          type: 'percentage' as const,
+          amount: 40,
+          createdAt: '2024-03-20T00:00:00.000Z',
+        },
+      };
+
+      const transactionWithCoupons = {
+        ...existing,
+        transactionCoupons: [itemCoupon, billCoupon],
+      };
+
+      const usecase = new TransactionUpdateUsecase(repository, {
+        transactionId: existing.id,
+        transaction: transactionWithCoupons,
+      });
+      const tester = new UsecaseTester<TransactionUpdateUsecase, TransactionUpdateState, TransactionUpdateAction, TransactionUpdateParams>(usecase);
+
+      expect(tester.state.values.transactionItems[0].coupon).toEqual({
+        id: itemCoupon.id,
+        coupon: itemCoupon.coupon,
+      });
+      expect(tester.state.values.transactionCoupons).toEqual([
+        { id: billCoupon.id, coupon: billCoupon.coupon },
+      ]);
+    });
+  });
 });

@@ -8,6 +8,39 @@ type Context = {
   values: TransactionForm;
 };
 
+function toFormValues(transaction: Transaction): TransactionForm {
+  const itemCouponsByItemId = new Map(
+    transaction.transactionCoupons
+      .filter((transactionCoupon) => transactionCoupon.transactionItemId !== null)
+      .map((transactionCoupon) => [transactionCoupon.transactionItemId, transactionCoupon])
+  );
+
+  return {
+    name: transaction.name,
+    orderNumber: transaction.orderNumber,
+    transactionItems: transaction.transactionItems.map((item) => {
+      const itemCoupon = itemCouponsByItemId.get(item.id);
+      return {
+        id: item.id,
+        amount: item.amount,
+        variant: item.variant,
+        price: item.price,
+        discountAmount: item.discountAmount,
+        note: item.note,
+        coupon: itemCoupon
+          ? { id: itemCoupon.id, coupon: itemCoupon.coupon }
+          : undefined,
+      };
+    }),
+    transactionCoupons: transaction.transactionCoupons
+      .filter((transactionCoupon) => transactionCoupon.transactionItemId === null)
+      .map((transactionCoupon) => ({
+        id: transactionCoupon.id,
+        coupon: transactionCoupon.coupon,
+      })),
+  };
+}
+
 export type TransactionUpdateState = (
   | { type: 'idle' }
   | { type: 'loading' }
@@ -54,19 +87,14 @@ export class TransactionUpdateUsecase extends Usecase<
     return {
       type: this.params.transaction !== null ? 'loaded' : 'idle',
       errorMessage: null,
-      values: {
-        name: this.params.transaction?.name ?? '',
-        orderNumber: this.params.transaction?.orderNumber ?? 0,
-        transactionItems: this.params.transaction?.transactionItems.map((item) => ({
-          id: item.id,
-          amount: item.amount,
-          variant: item.variant,
-          price: item.price,
-          discountAmount: item.discountAmount,
-          note: item.note,
-        })) ?? [],
-        transactionCoupons: this.params.transaction?.transactionCoupons ?? [],
-      },
+      values: this.params.transaction
+        ? toFormValues(this.params.transaction)
+        : {
+            name: '',
+            orderNumber: 0,
+            transactionItems: [],
+            transactionCoupons: [],
+          },
     };
   }
 
@@ -156,25 +184,7 @@ export class TransactionUpdateUsecase extends Usecase<
           .then((transaction) =>
             dispatch({
               type: 'FETCH_SUCCESS',
-              values: {
-                name: transaction.name,
-                orderNumber: transaction.orderNumber,
-                transactionItems: transaction.transactionItems.map((item) => ({
-                  id: item.id,
-                  amount: item.amount,
-                  variantId: item.variant.id,
-                  variant: item.variant,
-                  price: item.price,
-                  discountAmount: item.discountAmount,
-                  note: item.note,
-                })),
-                transactionCoupons: transaction.transactionCoupons.map(
-                  (couponItem) => ({
-                    id: couponItem.id,
-                    coupon: couponItem.coupon,
-                  })
-                ),
-              },
+              values: toFormValues(transaction),
             })
           )
           .catch(() =>

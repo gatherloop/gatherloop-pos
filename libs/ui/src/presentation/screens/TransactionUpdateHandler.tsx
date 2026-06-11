@@ -79,6 +79,8 @@ export const TransactionUpdateHandler = ({
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
       isCouponSheetOpen={transactionUpdate.isCouponSheetOpen}
       onCouponSheetOpenChange={transactionUpdate.onCouponSheetOpenChange}
+      onItemCouponSheetOpen={transactionUpdate.onItemCouponSheetOpen}
+      onRemoveItemCoupon={transactionUpdate.onRemoveItemCoupon}
       itemsFieldArray={transactionUpdate.itemsFieldArray}
       couponsFieldArray={transactionUpdate.couponsFieldArray}
       couponList={{

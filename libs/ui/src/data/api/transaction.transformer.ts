@@ -96,6 +96,7 @@ export function toTransaction(transaction: ApiTransaction): Transaction {
       id: item.id,
       type: item.type,
       amount: item.amount,
+      transactionItemId: item.transactionItemId ?? null,
       coupon: {
         id: item.coupon.id,
         amount: item.coupon.amount,
@@ -121,9 +122,22 @@ export function toApiTransaction(form: TransactionForm) {
       discountAmount: item.discountAmount,
       note: item.note,
     })),
-    transactionCoupons: form.transactionCoupons.map((item) => ({
-      id: item.id,
-      couponId: item.coupon.id,
-    })),
+    transactionCoupons: [
+      ...form.transactionCoupons.map((item) => ({
+        id: item.id,
+        couponId: item.coupon.id,
+      })),
+      ...form.transactionItems.flatMap((item) =>
+        item.coupon
+          ? [
+              {
+                id: item.coupon.id,
+                couponId: item.coupon.coupon.id,
+                transactionItemId: item.id,
+              },
+            ]
+          : []
+      ),
+    ],
   };
 }

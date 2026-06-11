@@ -20,6 +20,8 @@ export type TransactionCreateScreenProps = {
   onLogoutPress: () => void;
   isCouponSheetOpen: boolean;
   onCouponSheetOpenChange: (open: boolean) => void;
+  onItemCouponSheetOpen: (index: number) => void;
+  onRemoveItemCoupon: (index: number) => void;
   itemsFieldArray: UseFieldArrayReturn<
     TransactionForm,
     'transactionItems',
@@ -83,6 +85,8 @@ export const TransactionCreateScreen = (
           isSubmitting={props.isSubmitting}
           isCouponSheetOpen={props.isCouponSheetOpen}
           onCouponSheetOpenChange={props.onCouponSheetOpenChange}
+          onItemCouponSheetOpen={props.onItemCouponSheetOpen}
+          onRemoveItemCoupon={props.onRemoveItemCoupon}
           itemsFieldArray={props.itemsFieldArray}
           couponsFieldArray={props.couponsFieldArray}
           serverError={props.serverError}

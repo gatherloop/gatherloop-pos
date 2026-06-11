@@ -25,6 +25,7 @@ export type TransactionCoupon = {
   coupon: Coupon;
   type: CouponType;
   amount: number;
+  transactionItemId: number | null;
 };
 
 export type Transaction = {
@@ -41,6 +42,11 @@ export type Transaction = {
   paidAmount: number;
 };
 
+export type TransactionCouponForm = {
+  id?: number;
+  coupon: Coupon;
+};
+
 type TransactionItemForm = {
   id?: number;
   variant: Variant;
@@ -48,11 +54,7 @@ type TransactionItemForm = {
   price: number;
   discountAmount: number;
   note: string;
-};
-
-type TransactionCouponForm = {
-  id?: number;
-  coupon: Coupon;
+  coupon?: TransactionCouponForm;
 };
 
 export type TransactionForm = {

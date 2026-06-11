@@ -26,6 +26,8 @@ const UpdateStory = () => {
       onLogoutPress={fn()}
       isCouponSheetOpen={false}
       onCouponSheetOpenChange={fn()}
+      onItemCouponSheetOpen={fn()}
+      onRemoveItemCoupon={fn()}
       itemsFieldArray={itemsFieldArray}
       couponsFieldArray={couponsFieldArray}
       transactionItemSelect={{
