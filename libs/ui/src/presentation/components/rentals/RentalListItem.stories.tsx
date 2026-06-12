@@ -7,6 +7,7 @@ const meta: Meta<typeof RentalListItem> = {
   component: RentalListItem,
   args: {
     code: 'RNT-001',
+    ticketName: 'Ticket 01',
     name: 'John Doe',
     variantName: 'Coffee Equipment Set - Standard Package',
     checkinAt: '2024-01-20T08:00:00.000Z',
@@ -25,7 +26,16 @@ export const CheckedOut: Story = {
   args: {
     name: 'Jane Smith',
     code: 'RNT-002',
+    ticketName: 'Ticket 02',
     checkoutAt: '2024-01-21T17:00:00.000Z',
+  },
+};
+
+export const UnmappedCard: Story = {
+  args: {
+    name: 'Jane Smith',
+    code: 'RNT-002',
+    ticketName: null,
   },
 };
 

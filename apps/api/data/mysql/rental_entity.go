@@ -44,6 +44,8 @@ type Rental struct {
 	PricingTiers PricingTiersJSON
 	CreatedAt    time.Time
 	DeletedAt    *time.Time
+	TicketId     *int64
+	TicketName   *string
 }
 
 // toPricingTierList unmarshals the JSON snapshot into a slice of PricingTier.

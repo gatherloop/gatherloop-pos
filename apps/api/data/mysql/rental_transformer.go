@@ -14,6 +14,8 @@ func ToRentalDB(domainRental domain.Rental) Rental {
 		PricingTiers: pricingTierListToJSON(ToPricingTierListDB(domainRental.PricingTiers)),
 		CreatedAt:    domainRental.CreatedAt,
 		DeletedAt:    domainRental.DeletedAt,
+		TicketId:     domainRental.TicketId,
+		TicketName:   domainRental.TicketName,
 	}
 }
 
@@ -29,6 +31,8 @@ func ToRentalDomain(dbRental Rental) domain.Rental {
 		PricingTiers: ToPricingTierListDomain(dbRental.PricingTiers.toPricingTierList()),
 		CreatedAt:    dbRental.CreatedAt,
 		DeletedAt:    dbRental.DeletedAt,
+		TicketId:     dbRental.TicketId,
+		TicketName:   dbRental.TicketName,
 	}
 }
 

@@ -11,6 +11,7 @@ import { XStackProps } from 'tamagui';
 
 export type RentalListItemProps = {
   code: string;
+  ticketName?: string | null;
   name: string;
   variantName: string;
   checkinAt: string;
@@ -22,6 +23,7 @@ export type RentalListItemProps = {
 
 export const RentalListItem = ({
   code,
+  ticketName,
   name,
   variantName,
   checkinAt,
@@ -59,8 +61,8 @@ export const RentalListItem = ({
       footerItems={[
         {
           icon: QrCode,
-          label: 'CODE',
-          value: code,
+          label: 'TICKET',
+          value: ticketName ?? code,
         },
         {
           icon: Calendar,

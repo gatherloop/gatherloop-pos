@@ -35,6 +35,8 @@ const initialRentals: Rental[] = [
     checkinAt: '2024-03-20T08:00:00.000Z',
     checkoutAt: null,
     pricingTiers: [],
+    ticketId: 1,
+    ticketName: 'Ticket 01',
   },
   {
     id: 2,
@@ -45,6 +47,8 @@ const initialRentals: Rental[] = [
     checkinAt: '2024-03-21T08:00:00.000Z',
     checkoutAt: null,
     pricingTiers: [],
+    ticketId: null,
+    ticketName: null,
   },
 ];
 
