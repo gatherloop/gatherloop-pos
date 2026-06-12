@@ -7,6 +7,7 @@ export * from './material';
 export * from './materialListQuery';
 export * from './category';
 export * from './coupon';
+export * from './ticket';
 export * from './calculation';
 export * from './budget';
 export * from './wallet';
