@@ -3,6 +3,7 @@ export * from './budget';
 export * from './calculation';
 export * from './category';
 export * from './coupon';
+export * from './ticket';
 export * from './expense';
 export * from './expenseListQuery';
 export * from './material';
