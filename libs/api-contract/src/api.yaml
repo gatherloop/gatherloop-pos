@@ -2077,128 +2077,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  /tickets:
-    get:
-      summary: List all tickets
-      operationId: ticketList
-      tags:
-        - ticket
-      responses:
-        '200':
-          description: success response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TicketListResponse'
-        '500':
-          description: server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-    post:
-      summary: Create ticket
-      operationId: ticketCreate
-      tags:
-        - ticket
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TicketRequest'
-      responses:
-        '200':
-          description: success response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TicketCreateResponse'
-        '403':
-          description: validation error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-  /tickets/{ticketId}:
-    get:
-      summary: Get ticket by id
-      operationId: ticketFindById
-      tags:
-        - ticket
-      parameters:
-        - $ref: '#/components/parameters/TicketId'
-      responses:
-        '200':
-          description: success response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TicketFindByIdResponse'
-        '404':
-          description: not found error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-    put:
-      summary: Update ticket by id
-      operationId: ticketUpdateById
-      tags:
-        - ticket
-      parameters:
-        - $ref: '#/components/parameters/TicketId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TicketRequest'
-      responses:
-        '200':
-          description: success response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TicketUpdateByIdResponse'
-        '404':
-          description: not found error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: validation error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-    delete:
-      summary: Delete ticket by id
-      operationId: ticketDeleteById
-      tags:
-        - ticket
-      parameters:
-        - $ref: '#/components/parameters/TicketId'
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
-      responses:
-        '200':
-          description: success response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SuccessResponse'
-        '404':
-          description: not found error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
   /stock-checks:
     get:
       summary: List all stock checks
@@ -3706,37 +3584,6 @@ components:
         amount:
           type: integer
           format: int64
-    Ticket:
-      type: object
-      required:
-        - id
-        - code
-        - name
-        - createdAt
-      properties:
-        id:
-          type: integer
-          format: int64
-        code:
-          type: string
-        name:
-          type: string
-        createdAt:
-          type: string
-          format: date-time
-        deletedAt:
-          type: string
-          format: date-time
-    TicketRequest:
-      type: object
-      required:
-        - code
-        - name
-      properties:
-        code:
-          type: string
-        name:
-          type: string
     Error:
       type: object
       required:
@@ -3961,13 +3808,6 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/Coupon'
-    TicketFindByIdResponse:
-      type: object
-      required:
-        - data
-      properties:
-        data:
-          $ref: '#/components/schemas/Ticket'
     CategoryListResponse:
       type: object
       required:
@@ -4106,15 +3946,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Coupon'
-    TicketListResponse:
-      type: object
-      required:
-        - data
-      properties:
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/Ticket'
     TransactionStatisticResponse:
       type: object
       required:
@@ -4173,13 +4004,6 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/Coupon'
-    TicketCreateResponse:
-      type: object
-      required:
-        - data
-      properties:
-        data:
-          $ref: '#/components/schemas/Ticket'
     WalletTransferCreateResponse:
       type: object
       required:
@@ -4280,13 +4104,6 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/Coupon'
-    TicketUpdateByIdResponse:
-      type: object
-      required:
-        - data
-      properties:
-        data:
-          $ref: '#/components/schemas/Ticket'
     StockCheckItem:
       type: object
       required:
@@ -4558,12 +4375,6 @@ components:
       required: true
     CouponId:
       name: couponId
-      in: path
-      schema:
-        type: integer
-      required: true
-    TicketId:
-      name: ticketId
       in: path
       schema:
         type: integer
