@@ -331,22 +331,26 @@ function, no schema/API change (depends on Phase 4's snapshot).
   appending the ticket number to the item's `note` string — FR-5; pricing/fields are untouched.)
 - Blocking checkin on unregistered cards / auto-creating tickets at checkin (D3 — possible
   follow-up).
-- Ticket **availability/状态** tracking (which tickets are currently out on rental) — a natural
+- Ticket **availability** tracking (which tickets are currently out on rental) — a natural
   future feature once the link exists, but not part of this PRD.
 - Bulk import of tickets / RFID hardware integration.
 - Code/name normalization or formatting rules beyond DB uniqueness (D8).
 
 ---
 
+## Resolved (was Open Questions)
+
+1. **Sidebar placement** → **under Sales**, beside Rentals/Coupons. Tickets is master data used
+   during the Sales flow; no separate "Master Data" group. (Confirmed.) Reflected in FR-2 / Phase 3
+   (`{ title: 'Tickets', path: '/tickets' }`).
+2. **Unregistered card at checkin (D3)** → **non-blocking** in v1: store the raw `code`, leave
+   `ticket_id`/`ticket_name` NULL, surface "unmapped" in the UI; the optional scan-time warning
+   lands in **Phase 6**. (Confirmed.)
+3. **Backfilling existing rentals** → **optional one-off backfill migration** run *after* the ticket
+   registry is seeded — `UPDATE rentals r JOIN tickets t ON r.code = t.code SET r.ticket_id = t.id,
+   r.ticket_name = t.name WHERE r.ticket_id IS NULL`. Not required for correctness (history still
+   resolves via `code`); ships as its own migration when desired, separate from Phase 4. (Confirmed.)
+
 ## Open Questions
 
-1. **Sidebar placement.** Tickets is master data used during Sales. Put it under **Sales** (next to
-   Rentals/Coupons) or start a small **Master Data** group? *Recommendation: under Sales, beside
-   Rentals.*
-2. **Unregistered card at checkin (D3).** Confirmed approach is non-blocking + null `ticket_id`.
-   Is that acceptable for v1, or should checkin warn/soft-block? *Recommendation: non-blocking in
-   v1, add a Phase 5 warning.*
-3. **Backfilling existing rentals.** Existing `rentals.code` values may match codes we register
-   later. Do we want a one-off backfill (`UPDATE rentals SET ticket_id = ... WHERE code = ...`)
-   after the ticket registry is populated, or leave history resolving via `code`? *Recommendation:
-   optional backfill migration once tickets are seeded; not required for correctness.*
+_None outstanding. The PRD is ready to build against._
