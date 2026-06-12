@@ -45,7 +45,6 @@ func All() []Seeder {
 		WalletSeeder{},
 		BudgetSeeder{},
 		CouponSeeder{},
-		TicketSeeder{},
 		// Phase 3: relational tables (FK dependencies respected)
 		ProductSeeder{},     // depends on: categories
 		VariantSeeder{},     // depends on: products, materials, option_values
