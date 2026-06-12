@@ -134,6 +134,11 @@ func (usecase RentalUsecase) CheckoutRentals(ctx context.Context, rentalIds []in
 				durationNote = fmt.Sprintf("%d minute(s)", totalMinutes)
 			}
 
+			note := durationNote
+			if existingRental.TicketName != nil {
+				note = fmt.Sprintf("%s - %s", *existingRental.TicketName, durationNote)
+			}
+
 			transactionItems = append(transactionItems, TransactionItem{
 				VariantId:      existingRental.VariantId,
 				Amount:         1,
@@ -141,7 +146,7 @@ func (usecase RentalUsecase) CheckoutRentals(ctx context.Context, rentalIds []in
 				DiscountAmount: 0,
 				Subtotal:       result.Price,
 				RentalId:       &existingRental.Id,
-				Note:           durationNote,
+				Note:           note,
 			})
 
 			transactionData.Name = existingRental.Name
