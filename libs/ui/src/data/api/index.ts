@@ -9,6 +9,8 @@ export * from './category';
 export * from './category.transformer';
 export * from './coupon';
 export * from './coupon.transformer';
+export * from './ticket';
+export * from './ticket.transformer';
 export * from './calculation';
 export * from './calculation.transformer';
 export * from './budget';

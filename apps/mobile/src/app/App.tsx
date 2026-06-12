@@ -32,6 +32,9 @@ import {
   CouponList,
   CouponCreate,
   CouponUpdate,
+  TicketList,
+  TicketCreate,
+  TicketUpdate,
   RentalList,
   RentalCheckin,
   RentalCheckout,
@@ -60,6 +63,9 @@ export type RootStackParamList = {
   couponList: undefined;
   couponCreate: undefined;
   couponUpdate: { couponId: number };
+  ticketList: undefined;
+  ticketCreate: undefined;
+  ticketUpdate: { ticketId: number };
   materialList: undefined;
   materialCreate: undefined;
   materialUpdate: { materialId: number };
@@ -128,6 +134,14 @@ export const App = () => {
               path: 'coupons/:couponId',
               parse: {
                 couponId: (couponId) => parseInt(couponId),
+              },
+            },
+            ticketList: 'tickets',
+            ticketCreate: 'tickets/create',
+            ticketUpdate: {
+              path: 'tickets/:ticketId',
+              parse: {
+                ticketId: (ticketId) => parseInt(ticketId),
               },
             },
             materialList: 'materials',
@@ -295,6 +309,26 @@ export const App = () => {
                 couponUpdateParams={{
                   coupon: null,
                   couponId: props.route.params?.couponId,
+                }}
+              />
+            )}
+          />
+          <Stack.Screen
+            name="ticketList"
+            component={(
+              _props: NativeStackScreenProps<RootStackParamList, 'ticketList'>
+            ) => <TicketList ticketListParams={{ tickets: [] }} />}
+          />
+          <Stack.Screen name="ticketCreate" component={TicketCreate} />
+          <Stack.Screen
+            name="ticketUpdate"
+            component={(
+              props: NativeStackScreenProps<RootStackParamList, 'ticketUpdate'>
+            ) => (
+              <TicketUpdate
+                ticketUpdateParams={{
+                  ticket: null,
+                  ticketId: props.route.params?.ticketId,
                 }}
               />
             )}
