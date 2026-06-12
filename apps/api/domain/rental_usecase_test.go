@@ -263,6 +263,7 @@ func TestRentalUsecase_CheckoutRentals(t *testing.T) {
 		setupMock     func(rentalRepo *mock.MockRentalRepository, txRepo *mock.MockTransactionRepository, checkinAt time.Time)
 		checkinAt     int // minutes ago
 		expectedPrice float32
+		expectedNote  *string
 		expectedError *domain.Error
 	}{
 		{
@@ -281,6 +282,43 @@ func TestRentalUsecase_CheckoutRentals(t *testing.T) {
 					})
 			},
 			expectedPrice: 30000,
+			expectedNote:  ptrString("2 hour(s)"),
+		},
+		{
+			name:      "FR-5 (Phase 5): mapped ticket prepends ticket name to note",
+			rentalIds: []int64{1},
+			checkinAt: 119,
+			setupMock: func(rentalRepo *mock.MockRentalRepository, txRepo *mock.MockTransactionRepository, checkinAt time.Time) {
+				rentalRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				rentalRepo.EXPECT().GetRentalById(gomock.Any(), int64(1)).
+					Return(domain.Rental{Id: 1, VariantId: 10, PricingTiers: hourlyTiers, CheckinAt: checkinAt, TicketName: ptrString("Ticket 01")}, nil)
+				rentalRepo.EXPECT().CheckoutRental(gomock.Any(), int64(1)).Return(nil)
+				txRepo.EXPECT().CreateTransaction(gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ context.Context, tx domain.Transaction) (domain.Transaction, *domain.Error) {
+						return tx, nil
+					})
+			},
+			expectedPrice: 30000,
+			expectedNote:  ptrString("Ticket 01 - 2 hour(s)"),
+		},
+		{
+			name:      "FR-5 (Phase 5): unmapped rental keeps duration-only note",
+			rentalIds: []int64{1},
+			checkinAt: 119,
+			setupMock: func(rentalRepo *mock.MockRentalRepository, txRepo *mock.MockTransactionRepository, checkinAt time.Time) {
+				rentalRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				rentalRepo.EXPECT().GetRentalById(gomock.Any(), int64(1)).
+					Return(domain.Rental{Id: 1, VariantId: 10, PricingTiers: hourlyTiers, CheckinAt: checkinAt, TicketName: nil}, nil)
+				rentalRepo.EXPECT().CheckoutRental(gomock.Any(), int64(1)).Return(nil)
+				txRepo.EXPECT().CreateTransaction(gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ context.Context, tx domain.Transaction) (domain.Transaction, *domain.Error) {
+						return tx, nil
+					})
+			},
+			expectedPrice: 30000,
+			expectedNote:  ptrString("2 hour(s)"),
 		},
 		{
 			name:      "FR-5 row 3: 1h15m → first tier ≥75 is 90 → 20K",
@@ -420,6 +458,9 @@ func TestRentalUsecase_CheckoutRentals(t *testing.T) {
 				assert.Equal(t, float32(1), tx.TransactionItems[0].Amount)
 				assert.Equal(t, tt.expectedPrice, tx.TransactionItems[0].Price)
 				assert.Equal(t, tt.expectedPrice, tx.TransactionItems[0].Subtotal)
+				if tt.expectedNote != nil {
+					assert.Equal(t, *tt.expectedNote, tx.TransactionItems[0].Note)
+				}
 			}
 		})
 	}
