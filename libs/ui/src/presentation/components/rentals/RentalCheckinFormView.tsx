@@ -12,8 +12,8 @@ import {
   YStack,
 } from 'tamagui';
 import { H4 } from 'tamagui';
-import { Check, Trash } from '@tamagui/lucide-icons';
-import { RentalCheckinForm } from '../../../domain';
+import { AlertCircle, Check, CheckCircle, Trash } from '@tamagui/lucide-icons';
+import { RentalCheckinForm, Ticket } from '../../../domain';
 import {
   FormProvider,
   UseFieldArrayReturn,
@@ -30,6 +30,7 @@ export type RentalCheckinFormViewProps = {
   isSubmitting: boolean;
   RentalItemSelect: () => ReactNode;
   rentalsFieldArray: UseFieldArrayReturn<RentalCheckinForm, 'rentals', 'key'>;
+  tickets: Ticket[];
   serverError?: string;
 };
 
@@ -41,6 +42,7 @@ export const RentalCheckinFormView = ({
   isSubmitting,
   RentalItemSelect,
   rentalsFieldArray,
+  tickets,
   serverError,
 }: RentalCheckinFormViewProps) => {
   const inputCodeRefs = useRef<(Input | null)[]>([]);
@@ -230,6 +232,32 @@ export const RentalCheckinFormView = ({
                               }
                             }}
                           />
+                          <FieldWatch
+                            control={form.control}
+                            name={[`rentals.${index}.code`]}
+                          >
+                            {([code]) => {
+                              if (!code) return null;
+                              const ticket = tickets.find(
+                                (ticket) => ticket.code === code
+                              );
+                              return ticket ? (
+                                <XStack alignItems="center" gap="$2">
+                                  <CheckCircle size="$1" color="$green10" />
+                                  <Paragraph color="$green10">
+                                    → {ticket.name}
+                                  </Paragraph>
+                                </XStack>
+                              ) : (
+                                <XStack alignItems="center" gap="$2">
+                                  <AlertCircle size="$1" color="$yellow10" />
+                                  <Paragraph color="$yellow10">
+                                    Unregistered card
+                                  </Paragraph>
+                                </XStack>
+                              );
+                            }}
+                          </FieldWatch>
                           <Separator />
                         </YStack>
                       );

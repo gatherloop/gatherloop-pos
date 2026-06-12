@@ -6,11 +6,13 @@ import {
   MockAuthRepository,
   MockProductRepository,
   MockRentalRepository,
+  MockTicketRepository,
   MockVariantRepository,
 } from '../../data/mock';
 import {
   AuthLogoutUsecase,
   RentalCheckinUsecase,
+  TicketListUsecase,
   TransactionItemSelectUsecase,
 } from '../../domain';
 import { flushPromises } from '../../utils/testUtils';
@@ -46,6 +48,9 @@ const createProps = (
       variantRepo,
       { products: [], totalItem: 0 }
     ),
+    ticketListUsecase: new TicketListUsecase(new MockTicketRepository(), {
+      tickets: [],
+    }),
   };
 };
 
@@ -110,6 +115,78 @@ describe('RentalCheckinHandler', () => {
       await act(async () => {
         await flushPromises();
       });
+    });
+  });
+
+  describe('scan resolution hint', () => {
+    const addRentalItem = async (user: ReturnType<typeof userEvent.setup>) => {
+      await act(async () => {
+        fireEvent.click(screen.getByRole('heading', { name: 'Product 1' }));
+      });
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      await user.click(screen.getAllByRole('button', { name: 'Submit' })[0]);
+
+      await act(async () => {
+        await flushPromises();
+      });
+    };
+
+    it('should show the resolved ticket name for a registered code', async () => {
+      const user = userEvent.setup();
+      render(<RentalCheckinHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      await addRentalItem(user);
+
+      const codeInput = screen.getByPlaceholderText('Code');
+      await user.type(codeInput, '0xA3F19C82');
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByText('→ Ticket 01')).toBeTruthy();
+    });
+
+    it('should show an unregistered card hint for an unknown code', async () => {
+      const user = userEvent.setup();
+      render(<RentalCheckinHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      await addRentalItem(user);
+
+      const codeInput = screen.getByPlaceholderText('Code');
+      await user.type(codeInput, 'UNKNOWNCODE');
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByText('Unregistered card')).toBeTruthy();
+    });
+
+    it('should not show a hint when the code is empty', async () => {
+      render(<RentalCheckinHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      const user = userEvent.setup();
+      await addRentalItem(user);
+
+      expect(screen.queryByText('Unregistered card')).toBeNull();
+      expect(screen.queryByText(/→ Ticket/)).toBeNull();
     });
   });
 
@@ -342,6 +419,9 @@ describe('RentalCheckinHandler', () => {
             new MockVariantRepository(),
             { products: [], totalItem: 0 }
           )}
+          ticketListUsecase={new TicketListUsecase(new MockTicketRepository(), {
+            tickets: [],
+          })}
         />
       );
 

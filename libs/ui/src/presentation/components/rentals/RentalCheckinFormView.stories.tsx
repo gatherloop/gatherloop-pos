@@ -5,6 +5,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { Text } from 'tamagui';
 import { RentalCheckinFormView } from './RentalCheckinFormView';
 import type { RentalCheckinForm } from '../../../domain';
+import { mockTickets, mockVariant } from '../../../../.storybook/mocks/mockData';
 
 const defaultValues: RentalCheckinForm = {
   name: '',
@@ -27,6 +28,7 @@ const DefaultStory = () => {
       isSubmitDisabled={false}
       RentalItemSelect={() => <Text color="$color">+ Add Rental Item</Text>}
       rentalsFieldArray={rentalsFieldArray}
+      tickets={mockTickets}
     />
   );
 };
@@ -52,6 +54,37 @@ const PopulatedStory = () => {
       isSubmitDisabled={false}
       RentalItemSelect={() => <Text color="$color">+ Add Rental Item</Text>}
       rentalsFieldArray={rentalsFieldArray}
+      tickets={mockTickets}
+    />
+  );
+};
+
+const ScanResolutionStory = () => {
+  const form = useForm<RentalCheckinForm>({
+    defaultValues: {
+      name: 'John Doe',
+      rentals: [
+        { code: mockTickets[0].code, variant: mockVariant },
+        { code: '0xDEADBEEF', variant: mockVariant },
+        { code: '', variant: mockVariant },
+      ],
+      checkinAt: null,
+    },
+  });
+  const rentalsFieldArray = useFieldArray({
+    control: form.control,
+    name: 'rentals',
+    keyName: 'key',
+  });
+  return (
+    <RentalCheckinFormView
+      form={form}
+      onToggleCustomizeCheckinDateTime={fn()}
+      onSubmit={fn()}
+      isSubmitDisabled={false}
+      RentalItemSelect={() => <Text color="$color">+ Add Rental Item</Text>}
+      rentalsFieldArray={rentalsFieldArray}
+      tickets={mockTickets}
     />
   );
 };
@@ -70,4 +103,8 @@ export const Default: Story = {
 
 export const Populated: Story = {
   render: () => <PopulatedStory />,
+};
+
+export const ScanResolution: Story = {
+  render: () => <ScanResolutionStory />,
 };

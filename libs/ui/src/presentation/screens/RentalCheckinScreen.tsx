@@ -5,7 +5,7 @@ import {
   TransactionItemSelect,
   TransactionItemSelectProps,
 } from '../components';
-import { OptionValue, Product, RentalCheckinForm } from '../../domain';
+import { OptionValue, Product, RentalCheckinForm, Ticket } from '../../domain';
 import { UseFormReturn, UseFieldArrayReturn } from 'react-hook-form';
 
 export type RentalCheckinScreenProps = {
@@ -16,6 +16,7 @@ export type RentalCheckinScreenProps = {
   onLogoutPress: () => void;
   rentalsFieldArray: UseFieldArrayReturn<RentalCheckinForm, 'rentals', 'key'>;
   onToggleCustomizeCheckinDateTime: (checked: boolean) => void;
+  tickets: Ticket[];
   rentalItemSelect: {
     amount: number;
     currentPage: number;
@@ -55,6 +56,7 @@ export const RentalCheckinScreen = (props: RentalCheckinScreenProps) => {
           onToggleCustomizeCheckinDateTime={
             props.onToggleCustomizeCheckinDateTime
           }
+          tickets={props.tickets}
           serverError={props.serverError}
           RentalItemSelect={() => (
             <TransactionItemSelect
