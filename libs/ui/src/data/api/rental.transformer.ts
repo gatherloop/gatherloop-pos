@@ -17,6 +17,8 @@ export function toRental(rental: ApiRental): Rental {
       price,
     })),
     total: rental.total,
+    ticketId: rental.ticketId ?? null,
+    ticketName: rental.ticketName ?? null,
   };
 }
 

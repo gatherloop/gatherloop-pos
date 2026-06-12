@@ -11,13 +11,15 @@ type RentalUsecase struct {
 	rentalRepository      RentalRepository
 	variantRepository     VariantRepository
 	transactionRepository TransactionRepository
+	ticketRepository      TicketRepository
 }
 
-func NewRentalUsecase(rentalRepository RentalRepository, variantRepository VariantRepository, transactionRepository TransactionRepository) RentalUsecase {
+func NewRentalUsecase(rentalRepository RentalRepository, variantRepository VariantRepository, transactionRepository TransactionRepository, ticketRepository TicketRepository) RentalUsecase {
 	return RentalUsecase{
 		rentalRepository:      rentalRepository,
 		variantRepository:     variantRepository,
 		transactionRepository: transactionRepository,
+		ticketRepository:      ticketRepository,
 	}
 }
 
@@ -68,6 +70,11 @@ func (usecase RentalUsecase) CheckinRentals(ctx context.Context, rentalRequests 
 			}
 			rentalRequests[index].PricingTiers = variant.PricingTiers
 			rentalRequests[index].CreatedAt = time.Now()
+
+			if ticket, ticketErr := usecase.ticketRepository.GetTicketByCode(ctxWithTx, rentalRequests[index].Code); ticketErr == nil && ticket.Id > 0 {
+				rentalRequests[index].TicketId = &ticket.Id
+				rentalRequests[index].TicketName = &ticket.Name
+			}
 		}
 		cr, err := usecase.rentalRepository.CheckinRentals(ctxWithTx, rentalRequests)
 		if err != nil {

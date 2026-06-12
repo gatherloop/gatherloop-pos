@@ -76,7 +76,7 @@ func main() {
 	budgetUsecase := domain.NewBudgetUsecase(budgetRepository)
 	authUsecase := domain.NewAuthUsecase(authRepository)
 	calculationUsecase := domain.NewCalculationUsecase(calculationRepository, walletRepository)
-	rentalUsecase := domain.NewRentalUsecase(rentalRepository, variantRepository, transactionRepository)
+	rentalUsecase := domain.NewRentalUsecase(rentalRepository, variantRepository, transactionRepository, ticketRepository)
 	checklistTemplateUsecase := domain.NewChecklistTemplateUsecase(checklistTemplateRepository)
 	checklistSessionUsecase := domain.NewChecklistSessionUsecase(checklistSessionRepository, checklistTemplateRepository)
 	stockCheckUsecase := domain.NewStockCheckUsecase(stockCheckRepository, materialRepository)

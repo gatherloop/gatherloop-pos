@@ -75,6 +75,8 @@ func ToApiRental(rental domain.Rental) apiContract.Rental {
 		CreatedAt:    rental.CreatedAt,
 		PricingTiers: apiPricingTiers,
 		Total:        total,
+		TicketId:     rental.TicketId,
+		TicketName:   rental.TicketName,
 	}
 }
 

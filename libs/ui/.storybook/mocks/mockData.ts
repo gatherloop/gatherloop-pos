@@ -464,6 +464,8 @@ export const mockRental: Rental = {
   checkoutAt: null,
   pricingTiers: mockRentalVariant.pricingTiers,
   total: 20000,
+  ticketId: 1,
+  ticketName: 'Ticket 01',
 };
 
 export const mockRentalCheckedOut: Rental = {
@@ -473,6 +475,8 @@ export const mockRentalCheckedOut: Rental = {
   name: 'Jane Smith',
   checkoutAt: '2024-01-21T17:00:00.000Z',
   total: 30000,
+  ticketId: null,
+  ticketName: null,
 };
 
 export const mockRentals: Rental[] = [mockRental, mockRentalCheckedOut];

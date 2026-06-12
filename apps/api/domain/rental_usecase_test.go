@@ -11,6 +11,14 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
+func ptrInt64(v int64) *int64 {
+	return &v
+}
+
+func ptrString(v string) *string {
+	return &v
+}
+
 func TestRentalUsecase_GetRentalList(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -45,9 +53,10 @@ func TestRentalUsecase_GetRentalList(t *testing.T) {
 			rentalRepo := mock.NewMockRentalRepository(ctrl)
 			variantRepo := mock.NewMockVariantRepository(ctrl)
 			txRepo := mock.NewMockTransactionRepository(ctrl)
+			ticketRepo := mock.NewMockTicketRepository(ctrl)
 			tt.setupMock(rentalRepo)
 
-			usecase := domain.NewRentalUsecase(rentalRepo, variantRepo, txRepo)
+			usecase := domain.NewRentalUsecase(rentalRepo, variantRepo, txRepo, ticketRepo)
 			rentals, _, err := usecase.GetRentalList(context.Background(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.CheckoutStatusAll)
 
 			if tt.expectedError != nil {
@@ -109,9 +118,10 @@ func TestRentalUsecase_DeleteRentalById(t *testing.T) {
 			rentalRepo := mock.NewMockRentalRepository(ctrl)
 			variantRepo := mock.NewMockVariantRepository(ctrl)
 			txRepo := mock.NewMockTransactionRepository(ctrl)
+			ticketRepo := mock.NewMockTicketRepository(ctrl)
 			tt.setupMock(rentalRepo)
 
-			usecase := domain.NewRentalUsecase(rentalRepo, variantRepo, txRepo)
+			usecase := domain.NewRentalUsecase(rentalRepo, variantRepo, txRepo, ticketRepo)
 			err := usecase.DeleteRentalById(context.Background(), tt.id)
 
 			if tt.expectedError != nil {
@@ -126,21 +136,25 @@ func TestRentalUsecase_DeleteRentalById(t *testing.T) {
 
 func TestRentalUsecase_CheckinRentals(t *testing.T) {
 	tests := []struct {
-		name              string
-		input             []domain.Rental
-		setupMock         func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository)
-		expectedLen       int
-		expectedTierCount int
-		expectedError     *domain.Error
+		name               string
+		input              []domain.Rental
+		setupMock          func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, ticketRepo *mock.MockTicketRepository)
+		expectedLen        int
+		expectedTierCount  int
+		expectedTicketId   *int64
+		expectedTicketName *string
+		expectedError      *domain.Error
 	}{
 		{
 			name:  "success — tiers snapshot copied from variant",
 			input: []domain.Rental{{Code: "A1", VariantId: 10}},
-			setupMock: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository) {
+			setupMock: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, ticketRepo *mock.MockTicketRepository) {
 				rentalRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(10)).
 					Return(domain.Variant{Id: 10, PricingTiers: hourlyTiers}, nil)
+				ticketRepo.EXPECT().GetTicketByCode(gomock.Any(), "A1").
+					Return(domain.Ticket{}, &domain.Error{Type: domain.NotFound})
 				rentalRepo.EXPECT().CheckinRentals(gomock.Any(), gomock.Any()).
 					DoAndReturn(func(_ context.Context, rentals []domain.Rental) ([]domain.Rental, *domain.Error) {
 						return rentals, nil
@@ -150,9 +164,29 @@ func TestRentalUsecase_CheckinRentals(t *testing.T) {
 			expectedTierCount: 15,
 		},
 		{
+			name:  "success — registered ticket resolved and snapshotted (FR-3)",
+			input: []domain.Rental{{Code: "0xA3F19C82", VariantId: 10}},
+			setupMock: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, ticketRepo *mock.MockTicketRepository) {
+				rentalRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(10)).
+					Return(domain.Variant{Id: 10, PricingTiers: hourlyTiers}, nil)
+				ticketRepo.EXPECT().GetTicketByCode(gomock.Any(), "0xA3F19C82").
+					Return(domain.Ticket{Id: 7, Code: "0xA3F19C82", Name: "Ticket 01"}, nil)
+				rentalRepo.EXPECT().CheckinRentals(gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ context.Context, rentals []domain.Rental) ([]domain.Rental, *domain.Error) {
+						return rentals, nil
+					})
+			},
+			expectedLen:        1,
+			expectedTierCount:  15,
+			expectedTicketId:   ptrInt64(7),
+			expectedTicketName: ptrString("Ticket 01"),
+		},
+		{
 			name:  "error — rental variant has no pricing tiers",
 			input: []domain.Rental{{Code: "A1", VariantId: 10}},
-			setupMock: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository) {
+			setupMock: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, ticketRepo *mock.MockTicketRepository) {
 				rentalRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(10)).
@@ -163,7 +197,7 @@ func TestRentalUsecase_CheckinRentals(t *testing.T) {
 		{
 			name:  "error — variant not found",
 			input: []domain.Rental{{Code: "A1", VariantId: 99}},
-			setupMock: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository) {
+			setupMock: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, ticketRepo *mock.MockTicketRepository) {
 				rentalRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(99)).
@@ -174,11 +208,13 @@ func TestRentalUsecase_CheckinRentals(t *testing.T) {
 		{
 			name:  "error — repository error on insert",
 			input: []domain.Rental{{Code: "A1", VariantId: 10}},
-			setupMock: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository) {
+			setupMock: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, ticketRepo *mock.MockTicketRepository) {
 				rentalRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(10)).
 					Return(domain.Variant{Id: 10, PricingTiers: hourlyTiers}, nil)
+				ticketRepo.EXPECT().GetTicketByCode(gomock.Any(), "A1").
+					Return(domain.Ticket{}, &domain.Error{Type: domain.NotFound})
 				rentalRepo.EXPECT().CheckinRentals(gomock.Any(), gomock.Any()).
 					Return(nil, &domain.Error{Type: domain.InternalServerError})
 			},
@@ -194,9 +230,10 @@ func TestRentalUsecase_CheckinRentals(t *testing.T) {
 			rentalRepo := mock.NewMockRentalRepository(ctrl)
 			variantRepo := mock.NewMockVariantRepository(ctrl)
 			txRepo := mock.NewMockTransactionRepository(ctrl)
-			tt.setupMock(rentalRepo, variantRepo)
+			ticketRepo := mock.NewMockTicketRepository(ctrl)
+			tt.setupMock(rentalRepo, variantRepo, ticketRepo)
 
-			usecase := domain.NewRentalUsecase(rentalRepo, variantRepo, txRepo)
+			usecase := domain.NewRentalUsecase(rentalRepo, variantRepo, txRepo, ticketRepo)
 			rentals, err := usecase.CheckinRentals(context.Background(), tt.input)
 
 			if tt.expectedError != nil {
@@ -208,6 +245,8 @@ func TestRentalUsecase_CheckinRentals(t *testing.T) {
 				if tt.expectedTierCount > 0 {
 					assert.Len(t, rentals[0].PricingTiers, tt.expectedTierCount)
 				}
+				assert.Equal(t, tt.expectedTicketId, rentals[0].TicketId)
+				assert.Equal(t, tt.expectedTicketName, rentals[0].TicketName)
 			}
 		})
 	}
@@ -366,9 +405,10 @@ func TestRentalUsecase_CheckoutRentals(t *testing.T) {
 			rentalRepo := mock.NewMockRentalRepository(ctrl)
 			variantRepo := mock.NewMockVariantRepository(ctrl)
 			txRepo := mock.NewMockTransactionRepository(ctrl)
+			ticketRepo := mock.NewMockTicketRepository(ctrl)
 			tt.setupMock(rentalRepo, txRepo, checkinAt)
 
-			usecase := domain.NewRentalUsecase(rentalRepo, variantRepo, txRepo)
+			usecase := domain.NewRentalUsecase(rentalRepo, variantRepo, txRepo, ticketRepo)
 			tx, err := usecase.CheckoutRentals(context.Background(), tt.rentalIds)
 
 			if tt.expectedError != nil {

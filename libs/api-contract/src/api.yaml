@@ -3454,6 +3454,11 @@ components:
         total:
           type: number
           readOnly: true
+        ticketId:
+          type: integer
+          format: int64
+        ticketName:
+          type: string
     RentalRequest:
       type: object
       required:

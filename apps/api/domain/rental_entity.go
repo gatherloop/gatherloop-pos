@@ -15,6 +15,8 @@ type Rental struct {
 	CreatedAt    time.Time
 	DeletedAt    *time.Time
 	PricingTiers []PricingTier
+	TicketId     *int64
+	TicketName   *string
 }
 
 type CheckoutStatus int

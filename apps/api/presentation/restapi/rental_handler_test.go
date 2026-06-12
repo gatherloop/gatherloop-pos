@@ -16,13 +16,14 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func newRentalHandler(t *testing.T, setupMocks func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository)) (restapi.RentalHandler, *gomock.Controller) {
+func newRentalHandler(t *testing.T, setupMocks func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository, ticketRepo *mock.MockTicketRepository)) (restapi.RentalHandler, *gomock.Controller) {
 	ctrl := gomock.NewController(t)
 	rentalRepo := mock.NewMockRentalRepository(ctrl)
 	variantRepo := mock.NewMockVariantRepository(ctrl)
 	txRepo := mock.NewMockTransactionRepository(ctrl)
-	setupMocks(rentalRepo, variantRepo, txRepo)
-	usecase := domain.NewRentalUsecase(rentalRepo, variantRepo, txRepo)
+	ticketRepo := mock.NewMockTicketRepository(ctrl)
+	setupMocks(rentalRepo, variantRepo, txRepo, ticketRepo)
+	usecase := domain.NewRentalUsecase(rentalRepo, variantRepo, txRepo, ticketRepo)
 	return restapi.NewRentalHandler(usecase), ctrl
 }
 
@@ -30,13 +31,13 @@ func TestRentalHandler_GetRentalList(t *testing.T) {
 	tests := []struct {
 		name           string
 		url            string
-		setupMocks     func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository)
+		setupMocks     func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository, ticketRepo *mock.MockTicketRepository)
 		expectedStatus int
 	}{
 		{
 			name: "success",
 			url:  "/rentals",
-			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository) {
+			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository, ticketRepo *mock.MockTicketRepository) {
 				rentalRepo.EXPECT().GetRentalList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Rental{{Id: 1}}, nil)
 				rentalRepo.EXPECT().GetRentalListTotal(gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(1), nil)
 			},
@@ -45,14 +46,14 @@ func TestRentalHandler_GetRentalList(t *testing.T) {
 		{
 			name: "invalid skip param",
 			url:  "/rentals?skip=abc",
-			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository) {
+			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository, ticketRepo *mock.MockTicketRepository) {
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "repo error",
 			url:  "/rentals",
-			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository) {
+			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository, ticketRepo *mock.MockTicketRepository) {
 				rentalRepo.EXPECT().GetRentalList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
 			expectedStatus: http.StatusInternalServerError,
@@ -75,13 +76,13 @@ func TestRentalHandler_GetRentalById(t *testing.T) {
 	tests := []struct {
 		name           string
 		rentalId       string
-		setupMocks     func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository)
+		setupMocks     func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository, ticketRepo *mock.MockTicketRepository)
 		expectedStatus int
 	}{
 		{
 			name:     "success",
 			rentalId: "1",
-			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository) {
+			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository, ticketRepo *mock.MockTicketRepository) {
 				rentalRepo.EXPECT().GetRentalById(gomock.Any(), int64(1)).Return(domain.Rental{Id: 1, Name: "John"}, nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -89,7 +90,7 @@ func TestRentalHandler_GetRentalById(t *testing.T) {
 		{
 			name:     "not found",
 			rentalId: "99",
-			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository) {
+			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository, ticketRepo *mock.MockTicketRepository) {
 				rentalRepo.EXPECT().GetRentalById(gomock.Any(), int64(99)).Return(domain.Rental{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
 			expectedStatus: http.StatusNotFound,
@@ -97,7 +98,7 @@ func TestRentalHandler_GetRentalById(t *testing.T) {
 		{
 			name:     "invalid id",
 			rentalId: "abc",
-			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository) {
+			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository, ticketRepo *mock.MockTicketRepository) {
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
@@ -121,16 +122,17 @@ func TestRentalHandler_CheckinRentals(t *testing.T) {
 	tests := []struct {
 		name           string
 		body           string
-		setupMocks     func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository)
+		setupMocks     func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository, ticketRepo *mock.MockTicketRepository)
 		expectedStatus int
 	}{
 		{
 			name: "success",
 			body: `[{"code": "R001", "name": "John", "variantId": 1, "checkinAt": "` + checkinAt + `"}]`,
-			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository) {
+			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository, ticketRepo *mock.MockTicketRepository) {
 				rentalRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(1)).Return(domain.Variant{Id: 1, PricingTiers: []domain.PricingTier{{UpToMinutes: 60, Price: 15000}}}, nil)
+				ticketRepo.EXPECT().GetTicketByCode(gomock.Any(), "R001").Return(domain.Ticket{}, &domain.Error{Type: domain.NotFound})
 				rentalRepo.EXPECT().CheckinRentals(gomock.Any(), gomock.Any()).Return([]domain.Rental{{Id: 1, Name: "John"}}, nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -138,17 +140,18 @@ func TestRentalHandler_CheckinRentals(t *testing.T) {
 		{
 			name: "invalid JSON body",
 			body: `{invalid`,
-			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository) {
+			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository, ticketRepo *mock.MockTicketRepository) {
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "repo error",
 			body: `[{"code": "R001", "name": "John", "variantId": 1, "checkinAt": "` + checkinAt + `"}]`,
-			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository) {
+			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository, ticketRepo *mock.MockTicketRepository) {
 				rentalRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(1)).Return(domain.Variant{Id: 1, PricingTiers: []domain.PricingTier{{UpToMinutes: 60, Price: 15000}}}, nil)
+				ticketRepo.EXPECT().GetTicketByCode(gomock.Any(), "R001").Return(domain.Ticket{}, &domain.Error{Type: domain.NotFound})
 				rentalRepo.EXPECT().CheckinRentals(gomock.Any(), gomock.Any()).Return(nil, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
 			expectedStatus: http.StatusInternalServerError,
@@ -172,13 +175,13 @@ func TestRentalHandler_CheckoutRentals(t *testing.T) {
 	tests := []struct {
 		name           string
 		body           string
-		setupMocks     func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository)
+		setupMocks     func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository, ticketRepo *mock.MockTicketRepository)
 		expectedStatus int
 	}{
 		{
 			name: "success",
 			body: `[1]`,
-			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository) {
+			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository, ticketRepo *mock.MockTicketRepository) {
 				rentalRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				rentalRepo.EXPECT().GetRentalById(gomock.Any(), int64(1)).Return(domain.Rental{
@@ -196,14 +199,14 @@ func TestRentalHandler_CheckoutRentals(t *testing.T) {
 		{
 			name: "invalid JSON body",
 			body: `{invalid`,
-			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository) {
+			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository, ticketRepo *mock.MockTicketRepository) {
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "rental not found",
 			body: `[99]`,
-			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository) {
+			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository, ticketRepo *mock.MockTicketRepository) {
 				rentalRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				rentalRepo.EXPECT().GetRentalById(gomock.Any(), int64(99)).Return(domain.Rental{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
@@ -229,13 +232,13 @@ func TestRentalHandler_DeleteRentalById(t *testing.T) {
 	tests := []struct {
 		name           string
 		rentalId       string
-		setupMocks     func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository)
+		setupMocks     func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository, ticketRepo *mock.MockTicketRepository)
 		expectedStatus int
 	}{
 		{
 			name:     "success",
 			rentalId: "1",
-			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository) {
+			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository, ticketRepo *mock.MockTicketRepository) {
 				rentalRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				rentalRepo.EXPECT().GetRentalById(gomock.Any(), int64(1)).Return(domain.Rental{Id: 1, Name: "John"}, nil)
@@ -246,14 +249,14 @@ func TestRentalHandler_DeleteRentalById(t *testing.T) {
 		{
 			name:     "invalid id",
 			rentalId: "abc",
-			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository) {
+			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository, ticketRepo *mock.MockTicketRepository) {
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:     "not found",
 			rentalId: "99",
-			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository) {
+			setupMocks: func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository, ticketRepo *mock.MockTicketRepository) {
 				rentalRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				rentalRepo.EXPECT().GetRentalById(gomock.Any(), int64(99)).Return(domain.Rental{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
