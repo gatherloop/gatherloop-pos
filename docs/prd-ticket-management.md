@@ -19,7 +19,8 @@ resolves to a recognizable ticket name instead of an opaque RFID string.
 
 ### What this is *not*
 
-- It is **not** a change to rental pricing, checkout, or the transaction flow.
+- It is **not** a change to rental **pricing** or the transaction model. The only checkout-side
+  change is appending the ticket number to the transaction item's `note` text (FR-5).
 - It does **not** conflate the ticket name with the **customer name**. Today `rentals.name`
   holds the *customer* name (it flows into `transaction.Name` at checkout —
   `apps/api/domain/rental_usecase.go:140`). That stays exactly as-is. The ticket name is a
@@ -108,25 +109,38 @@ Ticket {
 
 ### How rentals link to tickets
 
-`rentals` gains **`ticket_id BIGINT NULL`** (FK → `tickets.id`). At checkin:
+`rentals` gains two nullable columns — **`ticket_id BIGINT NULL`** (FK → `tickets.id`, the durable
+link) and **`ticket_name VARCHAR(255) NULL`** (a **snapshot** of the printed number, frozen at
+checkin). The existing `rentals.code` already holds the scanned RFID. At checkin:
 
 ```
 scanned code ──▶ lookup tickets WHERE code = ? AND deleted_at IS NULL
                    │
-       found ──────┼──▶ rental.ticket_id = ticket.id ; rental.code = scanned code (snapshot)
+       found ──────┼──▶ rental.ticket_id   = ticket.id
+                   │    rental.ticket_name = ticket.name   (snapshot, frozen here)
+                   │    rental.code         = scanned code   (existing column)
                    │
-   not found ──────┴──▶ rental.ticket_id = NULL ; rental.code = scanned code (checkin NOT blocked, v1 — D3)
+   not found ──────┴──▶ rental.ticket_id = NULL ; rental.ticket_name = NULL
+                        rental.code = scanned code   (checkin NOT blocked, v1 — D3)
 ```
 
-`ticket_id` is **nullable** so (a) every pre-existing rental remains valid with `ticket_id = NULL`,
-and (b) an unregistered card never blocks the floor. The snapshot `code` means re-coding or
-deleting a ticket later never rewrites rental history.
+Both new columns are **nullable** so every pre-existing rental stays valid (`NULL`/`NULL`) and an
+unregistered card never blocks the floor.
+
+**Why snapshot the name, not just resolve it live (your comment #1):** the same convention the
+codebase already uses for `transaction_coupons` (snapshots coupon `type`/`amount`) and
+`rentals.pricing_tiers` (JSON snapshot). The rental list must show "Ticket 01" forever — renaming
+the master ticket to "Ticket A" later must **not** rewrite history. Storing `ticket_name` on the
+rental row freezes the historical label **and** lets the rental list render **join-free**. The
+`ticket_id` FK is kept alongside (it's free — checkin already looked the ticket up by code) for the
+durable link: "rentals per physical ticket" analytics and rental→ticket navigation that survive
+renames/re-codes.
 
 ### Surfacing the name
 
-`GET /rentals` and `GET /rentals/{id}` include an optional `ticket` object (`{ id, code, name }`)
-resolved via the FK. The rental list/detail render `ticket.name` when present, falling back to the
-raw `code` when null (legacy rows / unmapped cards).
+`GET /rentals` and `GET /rentals/{id}` expose flat `ticketId` (nullable) and `ticketName`
+(nullable snapshot) fields — no join required. The rental list/detail render `ticketName` when
+present, falling back to the raw `code` when null (legacy rows / unmapped cards).
 
 ---
 
@@ -135,13 +149,14 @@ raw `code` when null (legacy rows / unmapped cards).
 | # | Decision | Choice (recommendation) | Rationale |
 |---|---|---|---|
 | D1 | Ticket fields | `{ code (RFID, unique), name (printed number, unique) }`, soft-deleted. | Mirrors `Coupon`; both fields uniquely identify the physical card, so both are unique. |
-| D2 | How rentals link | New **nullable `rentals.ticket_id` FK**; keep `rentals.code` as a **snapshot**. | Nullable = zero migration risk for existing rentals and unregistered cards. Snapshot keeps history stable across re-coding/deletion. |
-| D3 | Unregistered RFID at checkin | **Do not block checkin** in v1: store the raw `code`, leave `ticket_id` NULL, surface "unmapped" in the UI. | The floor must never be blocked by a card that isn't registered yet. Staff register it later; a follow-up can warn at scan time (Phase 5). *(Alternative considered: reject checkin, or auto-create a ticket — both rejected for v1; see Open Questions.)* |
-| D4 | Re-coding a lost/replaced card | Edit the ticket's `code`; `ticket_id` is stable, so the printed number stays consistent. Past rentals keep their snapshot `code` unchanged. | A new RFID card for "Ticket 01" shouldn't fork its identity or rewrite history. |
-| D5 | Deleting a ticket | **Soft delete.** Existing rentals keep `ticket_id` and still resolve the (soft-deleted) ticket's name for history; a deleted ticket's `code` no longer resolves for *new* checkins. | Consistent with `deleted_at` everywhere; preserves historical readability. |
-| D6 | Ticket name vs customer name | **Separate.** `rentals.name` stays the customer name; the ticket name is the physical number. No conflation. | They are different concepts; conflating them would break checkout (`transaction.Name`). |
-| D7 | Backward compatibility | `tickets` is new; `rentals.ticket_id` is nullable; all OpenAPI changes are additive. No existing row, endpoint, or consumer changes. | Safe, incremental rollout. |
+| D2 | How rentals link | New **nullable `rentals.ticket_id` FK** (durable link) **+ nullable `rentals.ticket_name` snapshot** (display label frozen at checkin); existing `rentals.code` keeps the scanned RFID. | Nullable = zero migration risk for existing rentals and unregistered cards. **Snapshotting the name** (not resolving it live) keeps history stable across rename/re-code/delete and lets the rental list render join-free — same convention as `transaction_coupons` and `rentals.pricing_tiers`. The FK is kept for analytics + navigation. (Your comment #1.) |
+| D3 | Unregistered RFID at checkin | **Do not block checkin** in v1: store the raw `code`, leave `ticket_id`/`ticket_name` NULL, surface "unmapped" in the UI. | The floor must never be blocked by a card that isn't registered yet. Staff register it later; a follow-up can warn at scan time (Phase 5). *(Alternative considered: reject checkin, or auto-create a ticket — both rejected for v1; see Open Questions.)* |
+| D4 | Re-coding a lost/replaced card | Edit the ticket's `code`; `ticket_id` is stable, so the printed number stays consistent. Past rentals keep their snapshot `ticket_name`/`code` unchanged. | A new RFID card for "Ticket 01" shouldn't fork its identity or rewrite history. |
+| D5 | Deleting a ticket | **Soft delete.** Existing rentals keep their `ticket_id` + `ticket_name` snapshot, so history still reads "Ticket 01" with no dependence on the live row; a deleted ticket's `code` no longer resolves for *new* checkins. | Consistent with `deleted_at` everywhere; the snapshot makes history fully self-contained. |
+| D6 | Ticket name vs customer name | **Separate.** `rentals.name` stays the customer name; `rentals.ticket_name` is the physical number. No conflation. | They are different concepts; conflating them would break checkout (`transaction.Name`). |
+| D7 | Backward compatibility | `tickets` is new; `rentals.ticket_id`/`ticket_name` are nullable; all OpenAPI changes are additive. No existing row, endpoint, or consumer changes. | Safe, incremental rollout. |
 | D8 | Code/name normalization | Free text, trimmed; uniqueness enforced by DB (`UNIQUE`). No casing/slug rule in v1. | Matches `coupons.code` (free text + unique). |
+| D9 | Ticket number in checkout note | **Yes — prepend the ticket name to the transaction item's note**, e.g. `"Ticket 01 - 2 hour(s)"`; fall back to just `"2 hour(s)"` when no ticket is mapped. | The note already carries the duration (`rental_usecase.go:118-137`); the ticket number is the other thing staff want on the receipt/transaction line. Free to add — `CheckoutRentals` already has `rental.ticket_name` (the D2 snapshot) in hand. (Your comment #2.) |
 
 ---
 
@@ -160,19 +175,29 @@ from the sidebar (under **Sales** or a small **Master Data** group — see Open 
 available on both web and mobile.
 
 ### FR-3: Rental → ticket link
-`rentals.ticket_id` (nullable FK). `CheckinRentals` resolves each scanned `code` to a ticket
-(`ticket_id = match.Id`, or `NULL` if unmatched — D3), storing the raw `code` as a snapshot.
+`rentals` gains nullable `ticket_id` (FK) and `ticket_name` (snapshot). `CheckinRentals` resolves
+each scanned `code` to a ticket and, on a match, sets `ticket_id = match.Id` **and**
+`ticket_name = match.Name` (frozen snapshot — D2); on no match both stay `NULL` (D3). The existing
+`code` column keeps the scanned RFID.
 
 ### FR-4: Surface ticket name on rentals
-`Rental` reads include the resolved `ticket` (`{ id, code, name }` or null). The rental list and
-detail display `ticket.name`, falling back to `code` when null.
+`Rental` reads expose flat `ticketId` (nullable) and `ticketName` (nullable snapshot) fields — no
+join. The rental list and detail display `ticketName`, falling back to `code` when null. Renaming
+or deleting the master ticket later does **not** change what an existing rental shows (D4/D5).
 
-### FR-5: Checkin UX (optional, Phase 5)
+### FR-5: Ticket number in checkout note
+`CheckoutRentals` prepends the rental's `ticket_name` to the transaction item's note:
+`"<ticket_name> - <durationNote>"`, e.g. `"Ticket 01 - 2 hour(s)"`. When `ticket_name` is null
+(legacy / unmapped), the note is just the duration (`"2 hour(s)"`) — i.e. **unchanged from today**.
+Touches only the note-building block at `apps/api/domain/rental_usecase.go:118-137`; pricing and
+every other field are untouched. (Your comment #2.)
+
+### FR-6: Checkin UX (optional, Phase 6)
 Inline resolution on the checkin form: as staff scan/type a code, show the matched "→ Ticket 01"
 (or an "unregistered card" hint), optionally via a ticket picker. No behavior change to checkin
 submission — purely assistive.
 
-### FR-6: Mobile parity
+### FR-7: Mobile parity
 Every screen above exists on React Native too, reusing shared `libs/ui` primitives, mirroring how
 Coupon/Wallet do it.
 
@@ -194,16 +219,18 @@ CREATE TABLE IF NOT EXISTS `tickets` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ```
 
-### Altered: `rentals` (migration `000014_add_rental_ticket_id`)
+### Altered: `rentals` (migration `000014_add_rental_ticket`)
 ```sql
 ALTER TABLE `rentals`
-  ADD COLUMN `ticket_id` BIGINT NULL,
+  ADD COLUMN `ticket_id`   BIGINT       NULL,
+  ADD COLUMN `ticket_name` VARCHAR(255) NULL,   -- snapshot of the printed number at checkin
   ADD KEY `idx_rentals_ticket_id` (`ticket_id`),
   ADD CONSTRAINT `fk_rentals_ticket`
       FOREIGN KEY (`ticket_id`) REFERENCES `tickets` (`id`);
 ```
-`NULL` ⇒ legacy rental or unmapped card (resolve display from `code`). Each migration has a
-matching `.down.sql`.
+`ticket_id`/`ticket_name` `NULL` ⇒ legacy rental or unmapped card (display falls back to `code`).
+`ticket_name` is a frozen snapshot, so renaming/deleting the master ticket never rewrites a
+rental's history (D2/D4/D5). Each migration has a matching `.down.sql`.
 
 ---
 
@@ -212,8 +239,9 @@ matching `.down.sql`.
 | Method | Path | Change |
 |---|---|---|
 | `GET/POST/PUT/DELETE` | `/tickets`, `/tickets/{ticketId}` | New `Ticket` / `TicketRequest` schemas + paths. |
-| `GET` | `/rentals`, `/rentals/{rentalId}` | `Rental` gains optional `ticket` (`{ id, code, name }`). |
-| `POST` | `/rentals/checkin` | Unchanged request shape (`RentalRequest.code` reused); server resolves `ticket_id`. |
+| `GET` | `/rentals`, `/rentals/{rentalId}` | `Rental` gains optional `ticketId` + `ticketName` (snapshot). |
+| `POST` | `/rentals/checkin` | Unchanged request shape (`RentalRequest.code` reused); server resolves `ticket_id` + snapshots `ticket_name`. |
+| `POST` | `/rentals/checkout` | Unchanged shape; the resulting transaction item's `note` now includes the ticket number (FR-5). |
 
 OpenAPI edits in `libs/api-contract/src/api.yaml`; codegen regenerates TS clients. No breaking
 changes.
@@ -262,19 +290,31 @@ compiles. **Reviewable in isolation** — additive endpoints, no consumer yet.
 **Why standalone:** depends only on Phase 2; rentals untouched. Delivers a usable ticket registry
 on its own.
 
-### Phase 4 — Link rentals to tickets
-**Goal:** every rental resolves to a ticket name.
-- `apps/api/migrations/000014_add_rental_ticket_id.{up,down}.sql`
-- `Rental` domain entity gains `TicketId *int64` + `Ticket *Ticket`; `CheckinRentals` resolves
-  `code → ticket_id` (D3 fallback to null); rental read queries join/load the ticket.
-- `libs/api-contract/src/api.yaml`: `Rental` gains optional `ticket`; regenerate clients.
-- `libs/ui` `Rental` entity + `RentalListItem` show `ticket.name` (fallback to `code`).
+### Phase 4 — Link rentals to tickets (snapshot + display)
+**Goal:** every rental resolves to a stable ticket name.
+- `apps/api/migrations/000014_add_rental_ticket.{up,down}.sql` (adds `ticket_id` + `ticket_name`).
+- `Rental` domain entity gains `TicketId *int64` + `TicketName *string`; `CheckinRentals` resolves
+  `code → ticket` and snapshots `ticket_id` + `ticket_name` (D3 fallback to null/null). No join
+  needed on read — the snapshot is on the row.
+- `libs/api-contract/src/api.yaml`: `Rental` gains optional `ticketId` + `ticketName`; regenerate.
+- `libs/ui` `Rental` entity + `RentalListItem` show `ticketName` (fallback to `code`).
 
-**Acceptance:** checking in a registered card stores `ticket_id`; an unknown card stores null and
-doesn't block; rental list shows "Ticket 01"; existing rentals still render via `code`. Regression
-test: checkin/checkout pricing unchanged.
+**Acceptance:** checking in a registered card stores `ticket_id` + `ticket_name`; an unknown card
+stores null/null and doesn't block; rental list shows "Ticket 01"; **renaming the master ticket
+afterward leaves existing rentals showing the old name** (snapshot test); legacy rentals still
+render via `code`. Regression test: checkin/checkout pricing unchanged.
 
-### Phase 5 *(optional)* — Checkin scan-resolution UX
+### Phase 5 — Ticket number in checkout note *(your comment #2)*
+**Goal:** the transaction line records which ticket it was.
+- In `CheckoutRentals` (`apps/api/domain/rental_usecase.go:118-137`), prepend the rental's
+  `ticket_name` to `durationNote`: `"Ticket 01 - 2 hour(s)"`; emit the duration alone when
+  `ticket_name` is null.
+
+**Acceptance:** unit test asserts a checked-out item with a mapped ticket has note
+`"Ticket 01 - 2 hour(s)"`, and an unmapped one keeps `"2 hour(s)"`. Tiny, isolated diff — one
+function, no schema/API change (depends on Phase 4's snapshot).
+
+### Phase 6 *(optional)* — Checkin scan-resolution UX
 **Goal:** assistive inline feedback while scanning.
 - On `RentalCheckinFormView`, resolve the typed/scanned code to a ticket name live (query
   `/tickets` or a lookup endpoint); show "→ Ticket 01" or an "unregistered card" hint; optional
@@ -287,7 +327,8 @@ test: checkin/checkout pricing unchanged.
 
 ## Out of Scope
 
-- Changes to rental **pricing**, **checkout**, or the **transaction** model.
+- Changes to rental **pricing** or the **transaction** model. (The only checkout change is
+  appending the ticket number to the item's `note` string — FR-5; pricing/fields are untouched.)
 - Blocking checkin on unregistered cards / auto-creating tickets at checkin (D3 — possible
   follow-up).
 - Ticket **availability/状态** tracking (which tickets are currently out on rental) — a natural
