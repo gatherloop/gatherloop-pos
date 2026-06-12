@@ -17,6 +17,9 @@ import {
   RentalCheckinScreen,
   RentalCheckinScreenProps,
 } from './RentalCheckinScreen';
+import { CheckinPrintPayload, usePrinter } from '../../utils';
+import { useConfirmationAlert } from '../components';
+import dayjs from 'dayjs';
 
 export type RentalCheckinHandlerProps = {
   rentalCheckinUsecase: RentalCheckinUsecase;
@@ -32,6 +35,8 @@ export const RentalCheckinHandler = ({
   ticketListUsecase,
 }: RentalCheckinHandlerProps) => {
   const router = useRouter();
+  const { print } = usePrinter();
+  const { show } = useConfirmationAlert();
   const rentalCheckin = useRentalCheckinController(rentalCheckinUsecase);
   const authLogout = useAuthLogoutController(authLogoutUsecase);
   const transactionItemSelect = useTransactionItemSelectController(
@@ -58,9 +63,40 @@ export const RentalCheckinHandler = ({
 
   useEffect(() => {
     if (rentalCheckin.state.type === 'submitSuccess') {
-      router.push(`/rentals`);
+      const checkin: CheckinPrintPayload = {
+        createdAt: dayjs(new Date().toISOString()).format('DD/MM/YYYY HH:mm'),
+        name: rentalCheckin.form.getValues('name'),
+        tickets: rentalCheckin.form
+          .getValues('rentals')
+          .map(({ code, variant }) => ({
+            name:
+              ticketList.state.tickets.find((ticket) => ticket.code === code)
+                ?.name ?? '',
+            variant: variant.values
+              .map(({ optionValue }) => optionValue.name)
+              .join(' - '),
+          })),
+      };
+
+      show({
+        title: 'Print Checkin Slip',
+        description: 'Do you want to print checkin slip ?',
+        onConfirm: () => {
+          print({ type: 'CHECKIN_SLIP', checkin })
+            .then(() => router.push('/rentals'))
+            .catch(() => router.push('/rentals'));
+        },
+        onCancel: () => router.push('/rentals'),
+      });
     }
-  }, [rentalCheckin.state.type, router]);
+  }, [
+    rentalCheckin.form,
+    rentalCheckin.state.type,
+    ticketList.state.tickets,
+    router,
+    show,
+    print,
+  ]);
 
   return (
     <RentalCheckinScreen

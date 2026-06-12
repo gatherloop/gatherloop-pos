@@ -34,6 +34,15 @@ export type PurchaseListPrintPayload = {
   }[];
 };
 
+export type CheckinPrintPayload = {
+  createdAt: string;
+  name: string;
+  tickets: {
+    name: string;
+    variant: string;
+  }[];
+};
+
 export type PrintPayload =
   | {
       type: 'INVOICE' | 'ORDER_SLIP';
@@ -42,6 +51,10 @@ export type PrintPayload =
   | {
       type: 'PURCHASE_LIST';
       purchaseList: PurchaseListPrintPayload;
+    }
+  | {
+      type: 'CHECKIN_SLIP';
+      checkin: CheckinPrintPayload;
     };
 
 export const usePrinter = () => {
