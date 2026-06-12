@@ -66,12 +66,16 @@ export const RentalCheckinHandler = ({
       const checkin: CheckinPrintPayload = {
         createdAt: dayjs(new Date().toISOString()).format('DD/MM/YYYY HH:mm'),
         name: rentalCheckin.form.getValues('name'),
-        tickets: rentalCheckin.form.getValues('rentals').map(({ variant }) => ({
-          name: variant.product.name,
-          variant: variant.values
-            .map(({ optionValue }) => optionValue.name)
-            .join(' - '),
-        })),
+        tickets: rentalCheckin.form
+          .getValues('rentals')
+          .map(({ code, variant }) => ({
+            name:
+              ticketList.state.tickets.find((ticket) => ticket.code === code)
+                ?.name ?? '',
+            variant: variant.values
+              .map(({ optionValue }) => optionValue.name)
+              .join(' - '),
+          })),
       };
 
       show({
@@ -85,7 +89,14 @@ export const RentalCheckinHandler = ({
         onCancel: () => router.push('/rentals'),
       });
     }
-  }, [rentalCheckin.form, rentalCheckin.state.type, router, show, print]);
+  }, [
+    rentalCheckin.form,
+    rentalCheckin.state.type,
+    ticketList.state.tickets,
+    router,
+    show,
+    print,
+  ]);
 
   return (
     <RentalCheckinScreen
