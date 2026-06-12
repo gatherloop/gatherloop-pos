@@ -5,11 +5,13 @@ import {
   useRentalCheckinController,
   useAuthLogoutController,
   useTransactionItemSelectController,
+  useTicketListController,
 } from '../controllers';
 import {
   AuthLogoutUsecase,
   RentalCheckinUsecase,
   TransactionItemSelectUsecase,
+  TicketListUsecase,
 } from '../../domain';
 import {
   RentalCheckinScreen,
@@ -20,12 +22,14 @@ export type RentalCheckinHandlerProps = {
   rentalCheckinUsecase: RentalCheckinUsecase;
   transactionItemSelectUsecase: TransactionItemSelectUsecase;
   authLogoutUsecase: AuthLogoutUsecase;
+  ticketListUsecase: TicketListUsecase;
 };
 
 export const RentalCheckinHandler = ({
   rentalCheckinUsecase,
   transactionItemSelectUsecase,
   authLogoutUsecase,
+  ticketListUsecase,
 }: RentalCheckinHandlerProps) => {
   const router = useRouter();
   const rentalCheckin = useRentalCheckinController(rentalCheckinUsecase);
@@ -33,6 +37,7 @@ export const RentalCheckinHandler = ({
   const transactionItemSelect = useTransactionItemSelectController(
     transactionItemSelectUsecase
   );
+  const ticketList = useTicketListController(ticketListUsecase);
 
   useEffect(() => {
     if (
@@ -75,6 +80,7 @@ export const RentalCheckinHandler = ({
       onToggleCustomizeCheckinDateTime={
         rentalCheckin.onToggleCustomizeCheckinDateTime
       }
+      tickets={ticketList.state.tickets}
       rentalItemSelect={{
         amount: transactionItemSelect.state.amount,
         currentPage: transactionItemSelect.state.page,

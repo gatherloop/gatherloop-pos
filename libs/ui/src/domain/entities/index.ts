@@ -1,6 +1,7 @@
 export * from './Auth';
 export * from './Category';
 export * from './Coupon';
+export * from './Ticket';
 export * from './Calculation';
 export * from './Material';
 export * from './Variant';

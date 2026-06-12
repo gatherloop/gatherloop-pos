@@ -10,6 +10,8 @@ export type Rental = {
   checkoutAt: string | null;
   pricingTiers: PricingTier[];
   total?: number;
+  ticketId: number | null;
+  ticketName: string | null;
 };
 
 export type RentalCheckinForm = {

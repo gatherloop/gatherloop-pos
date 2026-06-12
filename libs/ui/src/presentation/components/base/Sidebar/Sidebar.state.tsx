@@ -28,6 +28,7 @@ const items: MenuItem[] = [
       { title: 'Transactions', path: '/transactions' },
       { title: 'Rentals', path: '/rentals' },
       { title: 'Coupons', path: '/coupons' },
+      { title: 'Tickets', path: '/tickets' },
     ],
   },
   {

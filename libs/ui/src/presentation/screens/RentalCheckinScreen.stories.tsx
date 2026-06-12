@@ -4,7 +4,7 @@ import React from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { RentalCheckinScreen } from './RentalCheckinScreen';
 import type { RentalCheckinForm } from '../../domain';
-import { mockProducts } from '../../../.storybook/mocks/mockData';
+import { mockProducts, mockTickets } from '../../../.storybook/mocks/mockData';
 
 const defaultValues: RentalCheckinForm = {
   name: '',
@@ -24,6 +24,7 @@ const CheckinStory = () => {
       onLogoutPress={fn()}
       rentalsFieldArray={rentalsFieldArray}
       onToggleCustomizeCheckinDateTime={fn()}
+      tickets={mockTickets}
       rentalItemSelect={{
         amount: 1,
         currentPage: 1,

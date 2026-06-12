@@ -172,6 +172,7 @@ export const RentalList = ({
                   checkoutAt={item.checkoutAt ?? undefined}
                   variantName={item.variant.name}
                   code={item.code}
+                  ticketName={item.ticketName}
                   name={item.name}
                   total={item.total}
                   onDeleteMenuPress={

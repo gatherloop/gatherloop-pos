@@ -6,6 +6,7 @@ import type {
   Wallet,
   Budget,
   Coupon,
+  Ticket,
   Transaction,
   TransactionItem,
   Expense,
@@ -267,6 +268,31 @@ export const mockCoupons: Coupon[] = [
   },
 ];
 
+// ─── Ticket ──────────────────────────────────────────────────────────────────
+
+export const mockTicket: Ticket = {
+  id: 1,
+  code: '0xA3F19C82',
+  name: 'Ticket 01',
+  createdAt: '2024-01-15T08:00:00.000Z',
+};
+
+export const mockTickets: Ticket[] = [
+  mockTicket,
+  {
+    id: 2,
+    code: '0xB7E20D14',
+    name: 'Ticket 02',
+    createdAt: '2024-01-16T08:00:00.000Z',
+  },
+  {
+    id: 3,
+    code: '0xC9D31E45',
+    name: 'Ticket 03',
+    createdAt: '2024-01-17T08:00:00.000Z',
+  },
+];
+
 // ─── Transaction ─────────────────────────────────────────────────────────────
 
 export const mockTransactionItem: TransactionItem = {
@@ -438,6 +464,8 @@ export const mockRental: Rental = {
   checkoutAt: null,
   pricingTiers: mockRentalVariant.pricingTiers,
   total: 20000,
+  ticketId: 1,
+  ticketName: 'Ticket 01',
 };
 
 export const mockRentalCheckedOut: Rental = {
@@ -447,6 +475,8 @@ export const mockRentalCheckedOut: Rental = {
   name: 'Jane Smith',
   checkoutAt: '2024-01-21T17:00:00.000Z',
   total: 30000,
+  ticketId: null,
+  ticketName: null,
 };
 
 export const mockRentals: Rental[] = [mockRental, mockRentalCheckedOut];

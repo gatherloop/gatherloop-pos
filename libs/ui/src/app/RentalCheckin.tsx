@@ -3,12 +3,14 @@ import {
   ApiVariantRepository,
   ApiRentalRepository,
   ApiProductRepository,
+  ApiTicketRepository,
 } from '../data';
 import {
   AuthLogoutUsecase,
   RentalCheckinUsecase,
   TransactionItemSelectUsecase,
   TransactionItemSelectParams,
+  TicketListUsecase,
 } from '../domain';
 import { RentalCheckinHandler } from '../presentation';
 import { QueryClient } from '@tanstack/react-query';
@@ -24,10 +26,14 @@ export function RentalCheckin({
   const rentalRepository = new ApiRentalRepository(client);
   const variantRepository = new ApiVariantRepository(client);
   const productRepository = new ApiProductRepository(client);
+  const ticketRepository = new ApiTicketRepository(client);
   const authRepository = new ApiAuthRepository();
 
   const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
   const rentalCheckinUsecase = new RentalCheckinUsecase(rentalRepository);
+  const ticketListUsecase = new TicketListUsecase(ticketRepository, {
+    tickets: [],
+  });
 
   const transactionItemSelectUsecase = new TransactionItemSelectUsecase(
     productRepository,
@@ -40,6 +46,7 @@ export function RentalCheckin({
       rentalCheckinUsecase={rentalCheckinUsecase}
       transactionItemSelectUsecase={transactionItemSelectUsecase}
       authLogoutUsecase={authLogoutUsecase}
+      ticketListUsecase={ticketListUsecase}
     />
   );
 }
