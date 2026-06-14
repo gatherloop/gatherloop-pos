@@ -21,6 +21,33 @@ const itemWithDescription: ChecklistSessionItem = {
   description: '- Bar lamp\n- Door lamp\n\n**Switches are behind the cashier**',
 };
 
+const itemWithSubItems: ChecklistSessionItem = {
+  ...baseItem,
+  name: 'Clean tables',
+  subItems: [
+    {
+      id: 1,
+      checklistSessionItemId: 1,
+      checklistTemplateSubItemId: 1,
+      name: 'Table 1',
+      displayOrder: 1,
+      completedAt: '2024-03-20T00:00:00.000Z',
+      createdAt: '2024-03-20T00:00:00.000Z',
+      updatedAt: '2024-03-20T00:00:00.000Z',
+    },
+    {
+      id: 2,
+      checklistSessionItemId: 1,
+      checklistTemplateSubItemId: 2,
+      name: 'Table 2',
+      displayOrder: 2,
+      completedAt: null,
+      createdAt: '2024-03-20T00:00:00.000Z',
+      updatedAt: '2024-03-20T00:00:00.000Z',
+    },
+  ],
+};
+
 const noop = () => undefined;
 
 const renderRow = (
@@ -92,5 +119,27 @@ describe('ChecklistSessionItemRow', () => {
     fireEvent.click(screen.getByText('Turn on lamp'));
 
     expect(onCheckItem).toHaveBeenCalledWith(itemWithDescription.id);
+  });
+
+  it('collapses sub-items by default, showing only the completed/total badge', () => {
+    renderRow(itemWithSubItems);
+
+    expect(screen.getByText('1/2')).toBeTruthy();
+    expect(screen.queryByText('Table 1')).toBeNull();
+    expect(screen.queryByText('Table 2')).toBeNull();
+  });
+
+  it('expands sub-items when the row is pressed, and collapses again on a second press', () => {
+    renderRow(itemWithSubItems);
+
+    fireEvent.click(screen.getByText('Clean tables'));
+
+    expect(screen.getByText('Table 1')).toBeTruthy();
+    expect(screen.getByText('Table 2')).toBeTruthy();
+
+    fireEvent.click(screen.getByText('Clean tables'));
+
+    expect(screen.queryByText('Table 1')).toBeNull();
+    expect(screen.queryByText('Table 2')).toBeNull();
   });
 });
