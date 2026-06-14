@@ -1,5 +1,5 @@
 import { useRouter } from 'solito/router';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { match, P } from 'ts-pattern';
 import {
   useRentalCheckinController,
@@ -43,6 +43,7 @@ export const RentalCheckinHandler = ({
     transactionItemSelectUsecase
   );
   const ticketList = useTicketListController(ticketListUsecase);
+  const hasShownPrintDialogRef = useRef(false);
 
   useEffect(() => {
     if (
@@ -62,33 +63,43 @@ export const RentalCheckinHandler = ({
   ]);
 
   useEffect(() => {
-    if (rentalCheckin.state.type === 'submitSuccess') {
-      const checkin: CheckinPrintPayload = {
-        createdAt: dayjs(new Date().toISOString()).format('DD/MM/YYYY HH:mm'),
-        name: rentalCheckin.form.getValues('name'),
-        tickets: rentalCheckin.form
-          .getValues('rentals')
-          .map(({ code, variant }) => ({
-            name:
-              ticketList.state.tickets.find((ticket) => ticket.code === code)
-                ?.name ?? '',
-            variant: variant.values
-              .map(({ optionValue }) => optionValue.name)
-              .join(' - '),
-          })),
-      };
-
-      show({
-        title: 'Print Checkin Slip',
-        description: 'Do you want to print checkin slip ?',
-        onConfirm: () => {
-          print({ type: 'CHECKIN_SLIP', checkin })
-            .then(() => router.push('/rentals'))
-            .catch(() => router.push('/rentals'));
-        },
-        onCancel: () => router.push('/rentals'),
-      });
+    if (rentalCheckin.state.type !== 'submitSuccess') {
+      hasShownPrintDialogRef.current = false;
+      return;
     }
+
+    // The checkin state machine stays in `submitSuccess` permanently, so this
+    // effect can re-run on later re-renders (e.g. while navigation is in
+    // flight). Guard with a ref so the print confirmation dialog is shown
+    // exactly once and never re-opens to block the redirect to /rentals.
+    if (hasShownPrintDialogRef.current) return;
+    hasShownPrintDialogRef.current = true;
+
+    const checkin: CheckinPrintPayload = {
+      createdAt: dayjs(new Date().toISOString()).format('DD/MM/YYYY HH:mm'),
+      name: rentalCheckin.form.getValues('name'),
+      tickets: rentalCheckin.form
+        .getValues('rentals')
+        .map(({ code, variant }) => ({
+          name:
+            ticketList.state.tickets.find((ticket) => ticket.code === code)
+              ?.name ?? '',
+          variant: variant.values
+            .map(({ optionValue }) => optionValue.name)
+            .join(' - '),
+        })),
+    };
+
+    show({
+      title: 'Print Checkin Slip',
+      description: 'Do you want to print checkin slip ?',
+      onConfirm: () => {
+        print({ type: 'CHECKIN_SLIP', checkin })
+          .then(() => router.push('/rentals'))
+          .catch(() => router.push('/rentals'));
+      },
+      onCancel: () => router.push('/rentals'),
+    });
   }, [
     rentalCheckin.form,
     rentalCheckin.state.type,
