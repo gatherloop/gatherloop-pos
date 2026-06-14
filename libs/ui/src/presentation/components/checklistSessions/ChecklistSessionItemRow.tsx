@@ -38,7 +38,7 @@ export function ChecklistSessionItemRow({
   togglingItemId,
   togglingSubItemId,
 }: ChecklistSessionItemRowProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const hasSubItems = item.subItems.length > 0;
   const isCompleted = item.completedAt != null;
@@ -103,10 +103,8 @@ export function ChecklistSessionItemRow({
               flex={1}
               fontSize="$5"
               fontWeight="bold"
-              textDecorationLine={
-                isCompleted && !hasSubItems ? 'line-through' : 'none'
-              }
-              color={isCompleted && !hasSubItems ? '$gray9' : '$color'}
+              textDecorationLine={isCompleted ? 'line-through' : 'none'}
+              color={isCompleted ? '$gray9' : '$color'}
             >
               {item.name}
             </Text>
