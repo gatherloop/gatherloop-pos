@@ -1,7 +1,22 @@
 import { ArrowDown, ArrowUp, Plus, Trash, X } from '@tamagui/lucide-icons';
-import { Button, Card, Form, H4, Spinner, XStack, YStack } from 'tamagui';
+import {
+  Button,
+  Card,
+  Form,
+  H4,
+  SizableText,
+  Spinner,
+  XStack,
+  YStack,
+} from 'tamagui';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
-import { Field, FieldArray, FormErrorBanner, InputText } from '../base';
+import {
+  Field,
+  FieldArray,
+  FormErrorBanner,
+  InputText,
+  MarkdownEditor,
+} from '../base';
 import { ChecklistTemplateForm } from '../../../domain';
 
 export type ChecklistTemplateFormViewProps = {
@@ -24,18 +39,20 @@ export const ChecklistTemplateFormView = ({
       <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
         <FormErrorBanner message={serverError} />
         <Card padding="$3" gap="$3">
-          <YStack gap="$3" $gtMd={{ flexDirection: 'row' }}>
-            <YStack flex={1}>
-              <Field name="name" label="Template Name">
-                <InputText placeholder="e.g. Opening Checklist" />
-              </Field>
-            </YStack>
-            <YStack flex={1}>
-              <Field name="description" label="Description (optional)">
-                <InputText placeholder="When/how to use this checklist" />
-              </Field>
-            </YStack>
-          </YStack>
+          <Field name="name" label="Template Name">
+            <InputText placeholder="e.g. Opening Checklist" />
+          </Field>
+          <Field name="description" label="Description (optional)">
+            <SizableText size="$2" color="$gray10">
+              Explain when/how to use this checklist. Markdown is supported
+              (lists, bold, headings), so you can add detail without creating
+              more checklist items.
+            </SizableText>
+            <MarkdownEditor
+              name="description"
+              defaultMode={form.getValues('description') ? 'preview' : 'edit'}
+            />
+          </Field>
         </Card>
 
         <FieldArray control={form.control} name="items" keyName="key">
@@ -94,21 +111,29 @@ export const ChecklistTemplateFormView = ({
                     </XStack>
                   </XStack>
 
-                  <YStack gap="$3" $gtMd={{ flexDirection: 'row' }}>
-                    <YStack flex={1}>
-                      <Field name={`items.${index}.name`} label="Item Name">
-                        <InputText placeholder="e.g. Turn on lights" />
-                      </Field>
-                    </YStack>
-                    <YStack flex={1}>
-                      <Field
-                        name={`items.${index}.description`}
-                        label="Description (optional)"
-                      >
-                        <InputText placeholder="Additional instructions" />
-                      </Field>
-                    </YStack>
-                  </YStack>
+                  <Field name={`items.${index}.name`} label="Item Name">
+                    <InputText placeholder="e.g. Turn on lights" />
+                  </Field>
+
+                  <Field
+                    name={`items.${index}.description`}
+                    label="Description (optional)"
+                  >
+                    <SizableText size="$2" color="$gray10">
+                      Use Markdown to clarify this item (e.g. list which
+                      lamps to turn on, or the steps to follow). Only add
+                      sub-items below when each step must be checked off
+                      individually.
+                    </SizableText>
+                    <MarkdownEditor
+                      name={`items.${index}.description`}
+                      defaultMode={
+                        form.getValues(`items.${index}.description`)
+                          ? 'preview'
+                          : 'edit'
+                      }
+                    />
+                  </Field>
 
                   <FieldArray
                     control={form.control}
