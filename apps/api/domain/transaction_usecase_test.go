@@ -598,6 +598,37 @@ func TestTransactionUsecase_UpdateTransactionById_ItemCoupons(t *testing.T) {
 		assert.Equal(t, float32(15000), secondSave.TransactionItems[0].Subtotal)
 	})
 
+	t.Run("removing a rental item coupon restores the full price", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		// The stored item already has the coupon's discount baked in from a
+		// previous save (Subtotal 15000, DiscountAmount 15000 on a 30K rental).
+		rentalId := int64(103)
+		txRepo, variantRepo, couponRepo, walletRepo, budgetRepo := setupUpdateTransactionMocks(ctrl, 1, domain.Transaction{
+			Id: 1, PaidAt: nil,
+			TransactionItems: []domain.TransactionItem{
+				{Id: 13, VariantId: 1, Amount: 1, Price: 30000, Subtotal: 15000, DiscountAmount: 15000, RentalId: &rentalId, Note: "2 hour(s)"},
+			},
+		})
+
+		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, budgetRepo)
+		// The frontend removes the coupon: no coupon row, DiscountAmount back to 0.
+		updated, err := usecase.UpdateTransactionById(context.Background(), domain.Transaction{
+			TransactionItems: []domain.TransactionItem{
+				{Id: 13, VariantId: 1, Amount: 1, DiscountAmount: 0, Note: "2 hour(s)"},
+			},
+			TransactionCoupons: []domain.TransactionCoupon{},
+		}, 1)
+
+		assert.Nil(t, err)
+		assert.Equal(t, float32(30000), updated.Total)
+		assert.Equal(t, float32(0), updated.TransactionItems[0].DiscountAmount)
+		assert.Equal(t, float32(30000), updated.TransactionItems[0].Subtotal)
+		assert.Equal(t, &rentalId, updated.TransactionItems[0].RentalId)
+		assert.Empty(t, updated.TransactionCoupons)
+	})
+
 	t.Run("FREE 2 HOUR on a 15K rental item clamps to the base (FR-4 #4)", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()

@@ -115,14 +115,23 @@ func (usecase TransactionUsecase) UpdateTransactionById(ctx context.Context, tra
 
 		for index, item := range transaction.TransactionItems {
 			if existingItem, ok := existingItemsById[item.Id]; ok && existingItem.RentalId != nil {
-				transaction.Total += existingItem.Subtotal
+				// Preserve the duration-based Price and the rental link (#131):
+				// the update payload carries neither, and recalculating from the
+				// variant's base price would corrupt them. The DiscountAmount,
+				// however, must come from the request so a per-item coupon can be
+				// removed — otherwise the discount baked in at apply time would be
+				// re-preserved here forever. Subtotal is re-derived from the
+				// preserved Price; if a coupon row still targets this item,
+				// applyTransactionCoupons overwrites both below.
+				subTotal := (existingItem.Price * existingItem.Amount) - item.DiscountAmount
+				transaction.Total += subTotal
 				transaction.TransactionItems[index] = TransactionItem{
 					Id:             existingItem.Id,
 					TransactionId:  id,
 					VariantId:      existingItem.VariantId,
 					Amount:         existingItem.Amount,
-					DiscountAmount: existingItem.DiscountAmount,
-					Subtotal:       existingItem.Subtotal,
+					DiscountAmount: item.DiscountAmount,
+					Subtotal:       subTotal,
 					Price:          existingItem.Price,
 					RentalId:       existingItem.RentalId,
 					Note:           existingItem.Note,
