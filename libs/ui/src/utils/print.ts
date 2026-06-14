@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { useToastController } from '@tamagui/toast';
 
 export type TransactionPrintPayload = {
@@ -60,24 +61,27 @@ export type PrintPayload =
 export const usePrinter = () => {
   const toast = useToastController();
 
-  const print = (payload: PrintPayload): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      const socket = new WebSocket('ws://localhost:8080');
-      socket.onopen = () => {
-        socket.send(JSON.stringify(payload));
-      };
+  const print = useCallback(
+    (payload: PrintPayload): Promise<void> => {
+      return new Promise((resolve, reject) => {
+        const socket = new WebSocket('ws://localhost:8080');
+        socket.onopen = () => {
+          socket.send(JSON.stringify(payload));
+        };
 
-      socket.onmessage = (event) => {
-        toast.show('Printing info', { message: event.data });
-        resolve();
-      };
+        socket.onmessage = (event) => {
+          toast.show('Printing info', { message: event.data });
+          resolve();
+        };
 
-      socket.onerror = () => {
-        toast.show('Printing info', { message: 'Cannot connect to printer' });
-        reject();
-      };
-    });
-  };
+        socket.onerror = () => {
+          toast.show('Printing info', { message: 'Cannot connect to printer' });
+          reject();
+        };
+      });
+    },
+    [toast]
+  );
 
   return { print };
 };

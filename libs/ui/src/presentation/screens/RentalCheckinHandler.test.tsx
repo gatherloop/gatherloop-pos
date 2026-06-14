@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, act, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { RentalCheckinHandler } from './RentalCheckinHandler';
+import { ConfirmationAlertProvider } from '../components';
 import {
   MockAuthRepository,
   MockProductRepository,
@@ -223,7 +224,11 @@ describe('RentalCheckinHandler', () => {
   describe('navigation', () => {
     it('should navigate to "/rentals" after successful checkin', async () => {
       const user = userEvent.setup();
-      render(<RentalCheckinHandler {...createProps()} />);
+      render(
+        <ConfirmationAlertProvider>
+          <RentalCheckinHandler {...createProps()} />
+        </ConfirmationAlertProvider>
+      );
 
       await act(async () => {
         await flushPromises();
@@ -259,6 +264,68 @@ describe('RentalCheckinHandler', () => {
         await flushPromises();
       });
 
+      // After a successful checkin the print confirmation dialog appears.
+      // Declining it ("No") must still redirect to the rental list screen.
+      await user.click(screen.getByRole('button', { name: 'No' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(mockRouterPush).toHaveBeenCalledWith('/rentals');
+    });
+
+    it('should redirect to "/rentals" only once even after re-renders', async () => {
+      const user = userEvent.setup();
+      render(
+        <ConfirmationAlertProvider>
+          <RentalCheckinHandler {...createProps()} />
+        </ConfirmationAlertProvider>
+      );
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('heading', { name: 'Product 1' }));
+      });
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      await user.click(screen.getAllByRole('button', { name: 'Submit' })[0]);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      const codeInput = screen.getByPlaceholderText('Code');
+      await user.type(codeInput, 'RENTAL001');
+
+      const nameInput = screen.getByRole('textbox', { name: 'Customer Name' });
+      await user.type(nameInput, 'John Doe');
+
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      // The print confirmation dialog must be shown exactly once. A second
+      // dialog would mean the effect re-fired and could block the redirect.
+      expect(screen.getAllByText('Print Checkin Slip')).toHaveLength(1);
+
+      await user.click(screen.getByRole('button', { name: 'No' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      // Declining closes the dialog and redirects without re-opening it.
+      expect(screen.queryByText('Print Checkin Slip')).toBeNull();
+      expect(mockRouterPush).toHaveBeenCalledTimes(1);
       expect(mockRouterPush).toHaveBeenCalledWith('/rentals');
     });
 
