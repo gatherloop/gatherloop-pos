@@ -15,6 +15,7 @@ import {
 } from 'tamagui';
 import { useState } from 'react';
 import { ChecklistSessionItem, ChecklistSessionSubItem } from '../../../domain';
+import { Markdown } from '../base';
 import { ChecklistSessionSubItemRow } from './ChecklistSessionSubItemRow';
 
 export type ChecklistSessionItemRowProps = {
@@ -118,9 +119,9 @@ export function ChecklistSessionItemRow({
             )}
           </XStack>
           {item.description && (
-            <Paragraph fontSize="$3" color="$gray10">
-              {item.description}
-            </Paragraph>
+            <YStack theme="alt2">
+              <Markdown content={item.description} />
+            </YStack>
           )}
         </YStack>
 
