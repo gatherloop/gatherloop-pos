@@ -18,6 +18,7 @@ export const Clock = NullIcon;
 export const CreditCard = NullIcon;
 export const Eye = NullIcon;
 export const Filter = NullIcon;
+export const Info = NullIcon;
 export const Map = NullIcon;
 export const MapPin = NullIcon;
 export const Minus = NullIcon;

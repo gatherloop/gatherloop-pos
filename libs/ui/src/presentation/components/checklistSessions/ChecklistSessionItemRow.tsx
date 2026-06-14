@@ -2,6 +2,7 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
+  Info,
 } from '@tamagui/lucide-icons';
 import {
   Card,
@@ -38,6 +39,7 @@ export function ChecklistSessionItemRow({
   togglingSubItemId,
 }: ChecklistSessionItemRowProps) {
   const [isExpanded, setIsExpanded] = useState(true);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const hasSubItems = item.subItems.length > 0;
   const isCompleted = item.completedAt != null;
   const isToggling = togglingItemId === item.id;
@@ -108,6 +110,26 @@ export function ChecklistSessionItemRow({
             >
               {item.name}
             </Text>
+            {item.description && (
+              <XStack
+                testID="description-toggle"
+                accessibilityLabel={
+                  isDescriptionExpanded ? 'Hide description' : 'Show description'
+                }
+                onPress={(event) => {
+                  event.stopPropagation();
+                  setIsDescriptionExpanded((prev) => !prev);
+                }}
+                pressStyle={{ opacity: 0.6 }}
+                padding="$1"
+                flexShrink={0}
+              >
+                <Info
+                  size="$1"
+                  color={isDescriptionExpanded ? '$blue10' : '$gray9'}
+                />
+              </XStack>
+            )}
             {isCompleted && !hasSubItems && item.completedAt && (
               <Paragraph fontSize="$2" color="$gray9" flexShrink={0}>
                 {new Date(item.completedAt).toLocaleTimeString([], {
@@ -118,7 +140,7 @@ export function ChecklistSessionItemRow({
               </Paragraph>
             )}
           </XStack>
-          {item.description && (
+          {item.description && isDescriptionExpanded && (
             <YStack theme="alt2">
               <Markdown content={item.description} />
             </YStack>
