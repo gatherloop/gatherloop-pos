@@ -1,8 +1,4 @@
-import {
-  Check,
-  ChevronDown,
-  ChevronUp,
-} from '@tamagui/lucide-icons';
+import { Check, ChevronDown, ChevronUp, Info } from '@tamagui/lucide-icons';
 import {
   Card,
   Checkbox,
@@ -15,6 +11,7 @@ import {
 } from 'tamagui';
 import { useState } from 'react';
 import { ChecklistSessionItem, ChecklistSessionSubItem } from '../../../domain';
+import { Markdown } from '../base';
 import { ChecklistSessionSubItemRow } from './ChecklistSessionSubItemRow';
 
 export type ChecklistSessionItemRowProps = {
@@ -36,7 +33,8 @@ export function ChecklistSessionItemRow({
   togglingItemId,
   togglingSubItemId,
 }: ChecklistSessionItemRowProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const hasSubItems = item.subItems.length > 0;
   const isCompleted = item.completedAt != null;
   const isToggling = togglingItemId === item.id;
@@ -70,10 +68,7 @@ export function ChecklistSessionItemRow({
             <Spinner size="small" />
           ) : (
             <YStack pointerEvents="none">
-              <Checkbox
-                checked={isCompleted}
-                size="$4"
-              >
+              <Checkbox checked={isCompleted} size="$4">
                 <Checkbox.Indicator>
                   <Check />
                 </Checkbox.Indicator>
@@ -100,13 +95,33 @@ export function ChecklistSessionItemRow({
               flex={1}
               fontSize="$5"
               fontWeight="bold"
-              textDecorationLine={
-                isCompleted && !hasSubItems ? 'line-through' : 'none'
-              }
-              color={isCompleted && !hasSubItems ? '$gray9' : '$color'}
+              textDecorationLine={isCompleted ? 'line-through' : 'none'}
+              color={isCompleted ? '$gray9' : '$color'}
             >
               {item.name}
             </Text>
+            {item.description && (
+              <XStack
+                testID="description-toggle"
+                accessibilityLabel={
+                  isDescriptionExpanded
+                    ? 'Hide description'
+                    : 'Show description'
+                }
+                onPress={(event) => {
+                  event.stopPropagation();
+                  setIsDescriptionExpanded((prev) => !prev);
+                }}
+                pressStyle={{ opacity: 0.6 }}
+                padding="$1"
+                flexShrink={0}
+              >
+                <Info
+                  size="$1"
+                  color={isDescriptionExpanded ? '$blue10' : '$gray9'}
+                />
+              </XStack>
+            )}
             {isCompleted && !hasSubItems && item.completedAt && (
               <Paragraph fontSize="$2" color="$gray9" flexShrink={0}>
                 {new Date(item.completedAt).toLocaleTimeString([], {
@@ -117,10 +132,10 @@ export function ChecklistSessionItemRow({
               </Paragraph>
             )}
           </XStack>
-          {item.description && (
-            <Paragraph fontSize="$3" color="$gray10">
-              {item.description}
-            </Paragraph>
+          {item.description && isDescriptionExpanded && (
+            <YStack theme="alt1">
+              <Markdown content={item.description} />
+            </YStack>
           )}
         </YStack>
 

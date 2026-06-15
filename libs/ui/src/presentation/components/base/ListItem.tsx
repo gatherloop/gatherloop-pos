@@ -1,5 +1,5 @@
 import { MoreVertical } from '@tamagui/lucide-icons';
-import React, { NamedExoticComponent } from 'react';
+import React, { NamedExoticComponent, ReactNode } from 'react';
 import {
   Image,
   Popover,
@@ -57,7 +57,7 @@ export type ListItemFooterItem = {
 
 export type ListItemProps = {
   title: string;
-  subtitle?: string;
+  subtitle?: ReactNode;
   thumbnailSrc?: string;
   menus?: ListItemMenu[];
   footerItems?: ListItemFooterItem[];
@@ -100,11 +100,14 @@ export const ListItem = ({
         <YStack padding="$3" flex={1} gap="$3">
           <YStack flex={1} justifyContent="center">
             <H4 ellipse>{title}</H4>
-            {subtitle && (
-              <Paragraph textTransform="none" ellipse size="$6">
-                {subtitle}
-              </Paragraph>
-            )}
+            {subtitle &&
+              (typeof subtitle === 'string' ? (
+                <Paragraph textTransform="none" ellipse size="$6">
+                  {subtitle}
+                </Paragraph>
+              ) : (
+                subtitle
+              ))}
           </YStack>
 
           {shownFooterItems.length > 0 ? (

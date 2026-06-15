@@ -26,6 +26,24 @@ const withEmptyFormProvider: Decorator = (Story) => {
   );
 };
 
+const withNestedFormProvider: Decorator = (Story) => {
+  const form = useForm({
+    defaultValues: {
+      items: [
+        {
+          description:
+            '# Nested Item\n\nThis previews `items.0.description`, not the top-level `description` field.',
+        },
+      ],
+    },
+  });
+  return (
+    <FormProvider {...form}>
+      <Story />
+    </FormProvider>
+  );
+};
+
 const meta: Meta<typeof MarkdownEditor> = {
   title: 'Base/Form/MarkdownEditor',
   component: MarkdownEditor,
@@ -55,5 +73,13 @@ export const EmptyContent: Story = {
   decorators: [withEmptyFormProvider],
   args: {
     defaultMode: 'edit',
+  },
+};
+
+export const NestedFieldPreview: Story = {
+  decorators: [withNestedFormProvider],
+  args: {
+    name: 'items.0.description',
+    defaultMode: 'preview',
   },
 };

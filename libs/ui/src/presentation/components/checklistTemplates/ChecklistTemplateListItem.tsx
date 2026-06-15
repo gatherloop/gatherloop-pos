@@ -1,6 +1,6 @@
 import { ClipboardList, Pencil, Trash } from '@tamagui/lucide-icons';
-import { ListItem } from '../base';
-import { XStackProps } from 'tamagui';
+import { ListItem, Markdown } from '../base';
+import { XStackProps, YStack } from 'tamagui';
 
 export type ChecklistTemplateListItemProps = {
   name: string;
@@ -21,7 +21,13 @@ export function ChecklistTemplateListItem({
   return (
     <ListItem
       title={name}
-      subtitle={description}
+      subtitle={
+        description ? (
+          <YStack theme="alt2" maxHeight={80} overflow="hidden">
+            <Markdown content={description} />
+          </YStack>
+        ) : undefined
+      }
       menus={[
         {
           title: 'Edit',
