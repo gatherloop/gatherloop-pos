@@ -1,9 +1,4 @@
-import {
-  Check,
-  ChevronDown,
-  ChevronUp,
-  Info,
-} from '@tamagui/lucide-icons';
+import { Check, ChevronDown, ChevronUp, Info } from '@tamagui/lucide-icons';
 import {
   Card,
   Checkbox,
@@ -73,10 +68,7 @@ export function ChecklistSessionItemRow({
             <Spinner size="small" />
           ) : (
             <YStack pointerEvents="none">
-              <Checkbox
-                checked={isCompleted}
-                size="$4"
-              >
+              <Checkbox checked={isCompleted} size="$4">
                 <Checkbox.Indicator>
                   <Check />
                 </Checkbox.Indicator>
@@ -112,7 +104,9 @@ export function ChecklistSessionItemRow({
               <XStack
                 testID="description-toggle"
                 accessibilityLabel={
-                  isDescriptionExpanded ? 'Hide description' : 'Show description'
+                  isDescriptionExpanded
+                    ? 'Hide description'
+                    : 'Show description'
                 }
                 onPress={(event) => {
                   event.stopPropagation();
@@ -139,7 +133,7 @@ export function ChecklistSessionItemRow({
             )}
           </XStack>
           {item.description && isDescriptionExpanded && (
-            <YStack theme="alt2">
+            <YStack theme="alt1">
               <Markdown content={item.description} />
             </YStack>
           )}
