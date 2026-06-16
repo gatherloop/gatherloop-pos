@@ -156,16 +156,20 @@ reusable date-range pattern.
 
 ---
 
-## 6. Open Questions (for the owner / reviewer)
+## 6. Resolved Decisions
 
-1. **Layout:** one Dashboard page with three sections (recommended), or three separate
-   pages under a Dashboard menu?
-2. **Sales metric:** for product/variant sales, do we chart **units sold (quantity)**,
-   **revenue (subtotal)**, or both toggleable? (Plan assumes quantity primary, revenue
-   secondary.)
-3. **Material usage unit:** display raw consumed quantity in each material's `unit`,
-   and/or convert to `purchaseUnit` for restock decisions?
-4. **Default range:** last 30 days assumed when no range is selected — acceptable?
-5. **Deleted/unpaid transactions:** sales & usage currently should likely include only
-   non-deleted transactions (matching existing stat). Should unpaid transactions be
-   included or excluded?
+These were confirmed with the owner and are now binding for implementation:
+
+1. **Layout:** ONE Dashboard page with three stacked sections (Transactions,
+   Product/Variant Sales, Material Usage) sharing a single date-range + groupBy control.
+2. **Sales metric:** chart **units sold (quantity)** as the primary metric; show
+   revenue (subtotal) as a secondary value.
+3. **Material usage unit:** display the raw consumed quantity in each material's own
+   **base `unit`** (no purchase-unit conversion for now).
+4. **Transaction scope:** include **all non-deleted** transactions (paid and unpaid),
+   matching the existing transaction statistic — i.e. only the `deleted_at IS NULL`
+   filter, no `paid_at` filter.
+
+### Still-open (non-blocking) item
+- **Default range:** last 30 days assumed when no range is selected — revisit during
+  Phase 0 FE if a different default is preferred.
