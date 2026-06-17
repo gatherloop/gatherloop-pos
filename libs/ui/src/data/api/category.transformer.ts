@@ -1,5 +1,8 @@
 // eslint-disable-next-line @nx/enforce-module-boundaries
-import { Category as ApiCategory } from '../../../../api-contract/src';
+import {
+  Category as ApiCategory,
+  categoryRequestStation,
+} from '../../../../api-contract/src';
 import { Category, CategoryForm } from '../../domain';
 
 export function toCategory(category: ApiCategory): Category {
@@ -13,6 +16,6 @@ export function toCategory(category: ApiCategory): Category {
 export function toApiCategory(form: CategoryForm) {
   return {
     name: form.name,
-    station: 'NONE' as const,
+    station: categoryRequestStation.NONE,
   };
 }
