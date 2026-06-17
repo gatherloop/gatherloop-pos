@@ -18,7 +18,12 @@ import {
   TransactionUnpayUsecase,
   Wallet,
 } from '../../domain';
-import { TransactionPrintPayload, usePrinter } from '../../utils';
+import {
+  buildOrderSlipPayload,
+  OrderSlipSource,
+  TransactionPrintPayload,
+  usePrinter,
+} from '../../utils';
 import {
   TransactionListScreen,
   TransactionListScreenProps,
@@ -110,6 +115,11 @@ export const TransactionListHandler = ({
     paidAmount: transaction.paidAmount,
   });
 
+  const buildOrderSlipSource = (transaction: Transaction): OrderSlipSource => ({
+    ...buildPrintTransaction(transaction),
+    items: transaction.transactionItems,
+  });
+
   return (
     <TransactionListScreen
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
@@ -150,11 +160,19 @@ export const TransactionListHandler = ({
           transaction: buildPrintTransaction(transaction),
         });
       }}
-      onPrintOrderSlipMenuPress={(transaction) => {
-        print({
-          type: 'ORDER_SLIP',
-          transaction: buildPrintTransaction(transaction),
-        });
+      onPrintKitchenSlipMenuPress={(transaction) => {
+        const payload = buildOrderSlipPayload(
+          buildOrderSlipSource(transaction),
+          'KITCHEN'
+        );
+        if (payload) print(payload);
+      }}
+      onPrintBarSlipMenuPress={(transaction) => {
+        const payload = buildOrderSlipPayload(
+          buildOrderSlipSource(transaction),
+          'BAR'
+        );
+        if (payload) print(payload);
       }}
       onEmptyActionPress={() => router.push('/transactions/create')}
       onRetryButtonPress={() => transactionList.dispatch({ type: 'FETCH' })}
