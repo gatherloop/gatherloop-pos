@@ -21,6 +21,7 @@ export function toVariant(variant: ApiVariant): Variant {
         createdAt: variant.product.category.createdAt,
         id: variant.product.category.id,
         name: variant.product.category.name,
+        station: variant.product.category.station,
       },
       createdAt: variant.product.createdAt,
       id: variant.product.id,
