@@ -5,7 +5,7 @@ const initialProducts: Product[] = [
   {
     id: 1,
     name: 'Product 1',
-    category: { id: 1, name: 'Category 1', createdAt: '2024-03-20T00:00:00.000Z' },
+    category: { id: 1, name: 'Category 1', station: 'NONE' as const, createdAt: '2024-03-20T00:00:00.000Z' },
     imageUrl: 'https://example.com/1.jpg',
     saleType: 'purchase',
     options: [
@@ -23,7 +23,7 @@ const initialProducts: Product[] = [
   {
     id: 2,
     name: 'Product 2',
-    category: { id: 1, name: 'Category 1', createdAt: '2024-03-20T00:00:00.000Z' },
+    category: { id: 1, name: 'Category 1', station: 'NONE' as const, createdAt: '2024-03-20T00:00:00.000Z' },
     imageUrl: 'https://example.com/2.jpg',
     saleType: 'purchase',
     options: [
@@ -94,7 +94,7 @@ export class MockProductRepository implements ProductRepository {
       id: this.nextId++,
       name: formValues.name,
       description: formValues.description,
-      category: { id: formValues.categoryId, name: '', createdAt: new Date().toISOString() },
+      category: { id: formValues.categoryId, name: '', station: 'NONE' as const, createdAt: new Date().toISOString() },
       imageUrl: formValues.imageUrl,
       saleType: formValues.saleType,
       options: [],

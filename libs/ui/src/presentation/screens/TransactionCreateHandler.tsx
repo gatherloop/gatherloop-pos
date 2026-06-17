@@ -19,6 +19,8 @@ import {
   TransactionCreateScreenProps,
 } from './TransactionCreateScreen';
 import {
+  buildOrderSlipPayload,
+  OrderSlipSource,
   roundToNearest500,
   TransactionPrintPayload,
   usePrinter,
@@ -107,17 +109,19 @@ export const TransactionCreateHandler = ({
       transactionPayController.state.type === 'payingSuccess' &&
       selectedWallet
     ) {
+      const transactionItems = transactionCreateController.form
+        .getValues('transactionItems')
+        .sort((a, b) =>
+          a.variant.product.name.localeCompare(b.variant.product.name)
+        );
+
       const transaction: TransactionPrintPayload = {
         createdAt: dayjs(new Date().toISOString()).format('DD/MM/YYYY HH:mm'),
         paidAt: dayjs(new Date().toISOString()).format('DD/MM/YYYY HH:mm'),
         name: transactionCreateController.form.getValues('name'),
         orderNumber: transactionCreateController.form.getValues('orderNumber'),
-        items: transactionCreateController.form
-          .getValues('transactionItems')
-          .sort((a, b) =>
-            a.variant.product.name.localeCompare(b.variant.product.name)
-          )
-          .map(({ variant, price, amount, discountAmount, note }) => ({
+        items: transactionItems.map(
+          ({ variant, price, amount, discountAmount, note }) => ({
             name: `${variant.product.name} - ${variant.values
               .map(({ optionValue: { name } }) => name)
               .join(' - ')}`,
@@ -125,7 +129,8 @@ export const TransactionCreateHandler = ({
             amount,
             discountAmount,
             note,
-          })),
+          })
+        ),
         coupons: transactionCreateController.form
           .getValues('transactionCoupons')
           .map(({ coupon }) => ({
@@ -137,41 +142,57 @@ export const TransactionCreateHandler = ({
         paidAmount: transactionPayController.state.paidAmount,
       };
 
+      const orderSlipSource: OrderSlipSource = {
+        ...transaction,
+        items: transactionItems,
+      };
+
+      const kitchenSlip = buildOrderSlipPayload(orderSlipSource, 'KITCHEN');
+      const barSlip = buildOrderSlipPayload(orderSlipSource, 'BAR');
+
+      const promptBarSlip = () => {
+        if (!barSlip) {
+          router.push('/transactions');
+          return;
+        }
+
+        show({
+          title: 'Print Bar Slip',
+          description: 'Do you want to print bar slip ?',
+          onConfirm: () => {
+            print(barSlip).then(() => router.push('/transactions'));
+          },
+          onCancel: () => router.push('/transactions'),
+        });
+      };
+
+      const promptKitchenSlip = () => {
+        if (!kitchenSlip) {
+          promptBarSlip();
+          return;
+        }
+
+        show({
+          title: 'Print Kitchen Slip',
+          description: 'Do you want to print kitchen slip ?',
+          onConfirm: () => {
+            print(kitchenSlip).then(promptBarSlip);
+          },
+          onCancel: () => setTimeout(promptBarSlip, 200),
+        });
+      };
+
       show({
         title: 'Print Invoice',
         description: 'Do you want to print invoice ?',
         onConfirm: () => {
           print({ type: 'INVOICE', transaction })
-            .then(() => {
-              show({
-                title: 'Print Order Slip',
-                description: 'Do you want to print order slip ?',
-                onConfirm: () => {
-                  print({ type: 'ORDER_SLIP', transaction }).then(() => {
-                    router.push('/transactions');
-                  });
-                },
-                onCancel: () => router.push('/transactions'),
-              });
-            })
+            .then(promptKitchenSlip)
             .catch(() => {
               router.push('/transactions');
             });
         },
-        onCancel: () => {
-          setTimeout(() => {
-            show({
-              title: 'Print Order Slip',
-              description: 'Do you want to print order slip ?',
-              onConfirm: () => {
-                print({ type: 'ORDER_SLIP', transaction }).then(() => {
-                  router.push('/transactions');
-                });
-              },
-              onCancel: () => router.push('/transactions'),
-            });
-          }, 200);
-        },
+        onCancel: () => setTimeout(promptKitchenSlip, 200),
       });
     }
   }, [
