@@ -65,6 +65,253 @@ products inherit a sensible station automatically from their category.
 
 ---
 
+## System Design
+
+### 1. Where the marking is stored
+
+A single new column on the existing `categories` table. No new tables, no new
+relationships — products already reference a category via `products.category_id`,
+so a product's station is `product → category → station`.
+
+**`categories` table — before:**
+
+```sql
+CREATE TABLE IF NOT EXISTS `categories` (
+    `id`         BIGINT       NOT NULL AUTO_INCREMENT,
+    `name`       VARCHAR(255) NOT NULL,
+    `created_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `deleted_at` DATETIME     NULL,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
+
+**`categories` table — after (new column shown):**
+
+```sql
+CREATE TABLE IF NOT EXISTS `categories` (
+    `id`         BIGINT       NOT NULL AUTO_INCREMENT,
+    `name`       VARCHAR(255) NOT NULL,
+    `station`    VARCHAR(20)  NOT NULL DEFAULT 'NONE',  -- KITCHEN | BAR | NONE
+    `created_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `deleted_at` DATETIME     NULL,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
+
+> **Why `VARCHAR(20)` and not a native `ENUM`?** It matches the existing
+> convention in this codebase — `products.sale_type` and other status-like fields
+> are stored as `VARCHAR` and validated at the application/contract layer (Zod +
+> Go), keeping the enum's source of truth in the OpenAPI spec rather than split
+> across the DB. `NOT NULL DEFAULT 'NONE'` means every existing row is valid
+> immediately and no backfill is required.
+
+**Migration** (`apps/api/migrations/0000NN_add_category_station.up.sql`):
+
+```sql
+ALTER TABLE categories ADD COLUMN station VARCHAR(20) NOT NULL DEFAULT 'NONE';
+```
+
+**Down** (`...down.sql`):
+
+```sql
+ALTER TABLE categories DROP COLUMN station;
+```
+
+This mirrors the existing `000011_add_wallet_is_payment_target` migration pattern.
+
+### 2. Entity-relationship view
+
+```
+┌──────────────┐        ┌──────────────┐        ┌──────────────────────┐
+│  categories  │ 1    * │   products   │ 1    * │      variants        │
+│──────────────│◄───────│──────────────│◄───────│──────────────────────│
+│ id           │        │ id           │        │ id                   │
+│ name         │        │ category_id  │        │ product_id           │
+│ station ◄NEW │        │ name         │        │ ...                  │
+│ created_at   │        │ sale_type    │        └──────────┬───────────┘
+│ deleted_at   │        └──────────────┘                   │ 1
+└──────────────┘                                           │
+                                                           │ *
+                                              ┌────────────▼───────────┐
+                                              │   transaction_items    │
+                                              │────────────────────────│
+                                              │ id                     │
+                                              │ transaction_id         │
+                                              │ variant_id             │
+                                              │ product_name           │
+                                              └────────────────────────┘
+```
+
+A transaction item resolves its station by walking
+`transaction_item → variant → product → category → station`. No schema change is
+needed on `transactions` / `transaction_items`; the station is derived, not
+copied. (See §5 for the one nuance this creates.)
+
+### 3. Type changes per layer (the contract is the source of truth)
+
+All of these flow from one edit to `libs/api-contract/src/api.yaml`, then `@kubb`
+regenerates the Go and TS types.
+
+**OpenAPI — `Category` schema** (`api.yaml`, add to `properties` + `required`):
+
+```yaml
+Category:
+  required:
+    - id
+    - name
+    - station        # NEW
+    - createdAt
+  properties:
+    id: { type: integer, format: int64 }
+    name: { type: string }
+    station:         # NEW
+      type: string
+      enum: [KITCHEN, BAR, NONE]
+    createdAt: { type: string, format: date-time }
+    deletedAt: { type: string, format: date-time }
+
+CategoryRequest:
+  required:
+    - name
+    - station        # NEW
+  properties:
+    name: { type: string }
+    station:         # NEW
+      type: string
+      enum: [KITCHEN, BAR, NONE]
+```
+
+**Backend Go — three structs + four transformers must carry the field:**
+
+| Layer | File | Change |
+| --- | --- | --- |
+| Domain entity | `apps/api/domain/category_entity.go` | add `Station string` |
+| DB model | `apps/api/data/mysql/category_entity.go` | add `Station string` |
+| DB ↔ domain | `apps/api/data/mysql/category_transformer.go` | map `Station` in `ToCategoryDB` + `ToCategoryDomain` |
+| domain ↔ API | `apps/api/presentation/restapi/category_transformer.go` | map `Station` in `ToApiCategory` + `ToCategory` (request→domain) |
+
+GORM here uses `db.Table("categories")` with field-name→column mapping, so adding
+`Station` to the struct is enough for it to be selected/inserted/updated — no
+extra tags required.
+
+**Frontend TS — `libs/ui/src/domain/entities/Category.ts`:**
+
+```ts
+export type CategoryStation = 'KITCHEN' | 'BAR' | 'NONE';
+
+export type Category = {
+  id: number;
+  name: string;
+  station: CategoryStation;   // NEW
+  createdAt: string;
+};
+
+export type CategoryForm = {
+  name: string;
+  station: CategoryStation;   // NEW
+};
+```
+
+### 4. Print payload design
+
+The order slip is not rendered by the app — it is serialized to JSON and sent
+over a WebSocket to an external printer service (`ws://localhost:8080`). So
+"two slips" = **two messages, each carrying only that station's items**, plus a
+field telling the service which header to print.
+
+**`libs/ui/src/utils/print.ts` — `PrintPayload` change:**
+
+```ts
+// before
+{ type: 'INVOICE' | 'ORDER_SLIP'; transaction: TransactionPrintPayload }
+
+// after
+| { type: 'INVOICE'; transaction: TransactionPrintPayload }
+| { type: 'ORDER_SLIP';
+    station: 'KITCHEN' | 'BAR';        // NEW — tells the service which slip
+    transaction: TransactionPrintPayload }  // items already filtered to station
+```
+
+> Keeping `type: 'ORDER_SLIP'` + a `station` discriminator (rather than two new
+> types `ORDER_SLIP_KITCHEN` / `ORDER_SLIP_BAR`) is backward compatible and means
+> the printer service only needs to read one new field. Final choice is a
+> coordination point with the printer-service owner.
+
+**Shared helper** (filtering lives in one place, used by both the create flow and
+the list menu):
+
+```ts
+function buildOrderSlipPayload(
+  transaction: Transaction,
+  station: 'KITCHEN' | 'BAR'
+): PrintPayload | null {
+  const items = transaction.transactionItems.filter(
+    (item) => item.variant.product.category.station === station
+  );
+  if (items.length === 0) return null;          // skip empty slip
+  return { type: 'ORDER_SLIP', station, transaction: { ...mapped, items } };
+}
+```
+
+Items whose category station is `NONE` (e.g. Board Game Ticket) match neither
+filter, so they never appear on an order slip — but they still appear on the
+INVOICE, which is unfiltered.
+
+### 5. Data-availability check (important)
+
+For filtering to work at print time, every code path that prints must be able to
+read `item.variant.product.category.station`:
+
+- **Create flow** (`TransactionCreateHandler`): builds the payload from the
+  **form** values (`variant.product...`). The products loaded into the create
+  screen already include their `category`, so the field is present once the TS
+  type carries it. ✅ Low risk.
+- **List menu** (`TransactionListHandler`): builds from the **fetched
+  transaction**. We must confirm the `GET /transactions` (and
+  `/transactions/{id}`) response serializes the nested
+  `transactionItems[].variant.product.category` **including the new `station`
+  field**. Adding `station` to the `Category` schema makes it available wherever
+  Category is already nested; the task is to **verify** it is not stripped by an
+  intermediate transformer. This verification is an explicit step in Phase 1/3.
+
+> Design note: because station is *derived* from the live category, re-printing an
+> old transaction reflects the category's **current** station, not the station at
+> the time of sale. That is the desired behavior here (a slip is an operational
+> routing document, not a historical record), and it avoids denormalizing station
+> onto `transaction_items` the way `product_name` was snapshotted. If historical
+> accuracy were ever required, the alternative would be to copy `station` onto
+> `transaction_items` at creation time — explicitly **not** chosen.
+
+### 6. End-to-end sequence (create flow)
+
+```
+Cashier submits transaction
+        │
+        ▼
+  Payment success
+        │
+        ▼
+  "Print Invoice?" ──Yes──► print({type:'INVOICE', ...all items})
+        │                                │
+        └──No──────────────┐             ▼
+                           ▼     "Print Kitchen Slip?"  (only if kitchen items exist)
+                                          │
+                                   Yes──► print({type:'ORDER_SLIP', station:'KITCHEN', kitchen items})
+                                          │
+                                          ▼
+                                 "Print Bar Slip?"      (only if bar items exist)
+                                          │
+                                   Yes──► print({type:'ORDER_SLIP', station:'BAR', bar items})
+                                          │
+                                          ▼
+                                  navigate to /transactions
+```
+
+The list-menu flow (Phase 5) reuses the same `buildOrderSlipPayload` helper but
+is triggered per-station directly from the menu, with no chained dialogs.
+
+---
+
 ## Phase 1 — Add `station` to Category (backend + contract only)
 
 **Goal:** the data model supports the marking. No UI, no behavior change yet —
