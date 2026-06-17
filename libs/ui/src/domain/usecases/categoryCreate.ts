@@ -40,6 +40,7 @@ export class CategoryCreateUsecase extends Usecase<
       errorMessage: null,
       values: {
         name: '',
+        station: 'NONE',
       },
     };
   }

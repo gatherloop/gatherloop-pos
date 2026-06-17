@@ -1,11 +1,23 @@
 import { Category, CategoryForm } from '../../domain/entities/Category';
 import { CategoryRepository } from '../../domain/repositories/category';
 
+const initialCategories: Category[] = [
+  {
+    id: 1,
+    name: 'Mock Category 1',
+    station: 'NONE',
+    createdAt: '2024-03-20T00:00:00.000Z',
+  },
+  {
+    id: 2,
+    name: 'Mock Category 2',
+    station: 'NONE',
+    createdAt: '2024-03-21T00:00:00.000Z',
+  },
+];
+
 export class MockCategoryRepository implements CategoryRepository {
-  categories: Category[] = [
-    { id: 1, name: 'Mock Category 1', createdAt: '2024-03-20T00:00:00.000Z' },
-    { id: 2, name: 'Mock Category 2', createdAt: '2024-03-21T00:00:00.000Z' },
-  ];
+  categories: Category[] = [...initialCategories];
 
   private nextId = 3;
   private shouldFail = false;
@@ -44,6 +56,7 @@ export class MockCategoryRepository implements CategoryRepository {
     this.categories.push({
       id: this.nextId++,
       name: formValues.name,
+      station: formValues.station,
       createdAt: new Date().toISOString(),
     });
   }
@@ -60,14 +73,12 @@ export class MockCategoryRepository implements CategoryRepository {
     this.categories[idx] = {
       ...this.categories[idx],
       name: formValues.name,
+      station: formValues.station,
     };
   }
 
   reset() {
-    this.categories = [
-      { id: 1, name: 'Mock Category 1', createdAt: '2024-03-20T00:00:00.000Z' },
-      { id: 2, name: 'Mock Category 2', createdAt: '2024-03-21T00:00:00.000Z' },
-    ];
+    this.categories = [...initialCategories];
     this.nextId = 3;
     this.shouldFail = false;
   }

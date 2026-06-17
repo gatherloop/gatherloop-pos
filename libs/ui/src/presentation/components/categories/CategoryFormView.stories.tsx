@@ -6,7 +6,7 @@ import { CategoryFormView } from './CategoryFormView';
 import type { CategoryForm } from '../../../domain';
 
 const LoadedStory = () => {
-  const form = useForm<CategoryForm>({ defaultValues: { name: '' } });
+  const form = useForm<CategoryForm>({ defaultValues: { name: '', station: 'NONE' } });
   return (
     <CategoryFormView
       variant={{ type: 'loaded' }}
@@ -19,7 +19,7 @@ const LoadedStory = () => {
 
 const PopulatedStory = () => {
   const form = useForm<CategoryForm>({
-    defaultValues: { name: 'Beverages' },
+    defaultValues: { name: 'Beverages', station: 'BAR' },
   });
   return (
     <CategoryFormView
@@ -48,7 +48,7 @@ export const Populated: Story = {
 };
 
 const LoadingStory = () => {
-  const form = useForm<CategoryForm>({ defaultValues: { name: '' } });
+  const form = useForm<CategoryForm>({ defaultValues: { name: '', station: 'NONE' } });
   return (
     <CategoryFormView
       variant={{ type: 'loading' }}
@@ -60,7 +60,7 @@ const LoadingStory = () => {
 };
 
 const ErrorStory = () => {
-  const form = useForm<CategoryForm>({ defaultValues: { name: '' } });
+  const form = useForm<CategoryForm>({ defaultValues: { name: '', station: 'NONE' } });
   return (
     <CategoryFormView
       variant={{ type: 'error', onRetryButtonPress: fn() }}
@@ -72,7 +72,7 @@ const ErrorStory = () => {
 };
 
 const SubmitDisabledStory = () => {
-  const form = useForm<CategoryForm>({ defaultValues: { name: '' } });
+  const form = useForm<CategoryForm>({ defaultValues: { name: '', station: 'NONE' } });
   return (
     <CategoryFormView
       variant={{ type: 'loaded' }}

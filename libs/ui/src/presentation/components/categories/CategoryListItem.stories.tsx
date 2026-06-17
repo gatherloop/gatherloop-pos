@@ -7,6 +7,7 @@ const meta: Meta<typeof CategoryListItem> = {
   component: CategoryListItem,
   args: {
     name: 'Beverages',
+    station: 'BAR',
     onEditMenuPress: fn(),
     onDeleteMenuPress: fn(),
   },

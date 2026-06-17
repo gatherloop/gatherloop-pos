@@ -53,6 +53,7 @@ export class CategoryUpdateUsecase extends Usecase<
       errorMessage: null,
       values: {
         name: this.params.category?.name ?? '',
+        station: this.params.category?.station ?? 'NONE',
       },
     };
   }
@@ -144,6 +145,7 @@ export class CategoryUpdateUsecase extends Usecase<
               type: 'FETCH_SUCCESS',
               values: {
                 name: category.name,
+                station: category.station,
               },
             })
           )

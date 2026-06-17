@@ -18,7 +18,12 @@ export const useCategoryCreateController = (usecase: CategoryCreateUsecase) => {
 
   const form = useForm({
     defaultValues: state.values,
-    resolver: zodResolver(z.object({ name: z.string().min(1) })),
+    resolver: zodResolver(
+      z.object({
+        name: z.string().min(1),
+        station: z.enum(['KITCHEN', 'BAR', 'NONE']),
+      })
+    ),
   });
 
   return {

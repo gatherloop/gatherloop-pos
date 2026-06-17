@@ -1,4 +1,11 @@
-import { Field, FormErrorBanner, InputText, LoadingView, ErrorView } from '../base';
+import {
+  Field,
+  FormErrorBanner,
+  InputText,
+  Select,
+  LoadingView,
+  ErrorView,
+} from '../base';
 import { CategoryForm } from '../../../domain';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
 import { Button, Form, Spinner } from 'tamagui';
@@ -29,6 +36,15 @@ export const CategoryFormView = ({
         <FormErrorBanner message={serverError} />
         <Field name="name" label="Name">
           <InputText />
+        </Field>
+        <Field name="station" label="Station">
+          <Select
+            items={[
+              { label: 'Kitchen', value: 'KITCHEN' },
+              { label: 'Bar', value: 'BAR' },
+              { label: 'None', value: 'NONE' },
+            ]}
+          />
         </Field>
         <Button
           disabled={isSubmitDisabled}
