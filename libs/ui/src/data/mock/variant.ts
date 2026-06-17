@@ -4,7 +4,7 @@ import { VariantRepository } from '../../domain/repositories/variant';
 const mockProduct = {
   id: 1,
   name: 'Product 1',
-  category: { id: 1, name: 'Category 1', createdAt: '2024-03-20T00:00:00.000Z' },
+  category: { id: 1, name: 'Category 1', station: 'NONE' as const, createdAt: '2024-03-20T00:00:00.000Z' },
   imageUrl: 'https://example.com/1.jpg',
   saleType: 'purchase' as const,
   options: [],

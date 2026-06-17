@@ -23,7 +23,7 @@ func TestCategoryHandler_GetCategoryList(t *testing.T) {
 		{
 			name: "success",
 			setupMock: func(r *mock.MockCategoryRepository) {
-				r.EXPECT().GetCategoryList(gomock.Any()).Return([]domain.Category{{Id: 1, Name: "Food"}, {Id: 2, Name: "Drink"}}, nil)
+				r.EXPECT().GetCategoryList(gomock.Any()).Return([]domain.Category{{Id: 1, Name: "Food", Station: "KITCHEN"}, {Id: 2, Name: "Drink", Station: "BAR"}}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -62,7 +62,7 @@ func TestCategoryHandler_GetCategoryById(t *testing.T) {
 			name:       "success",
 			categoryId: "1",
 			setupMock: func(r *mock.MockCategoryRepository) {
-				r.EXPECT().GetCategoryById(gomock.Any(), int64(1)).Return(domain.Category{Id: 1, Name: "Food"}, nil)
+				r.EXPECT().GetCategoryById(gomock.Any(), int64(1)).Return(domain.Category{Id: 1, Name: "Food", Station: "KITCHEN"}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -107,9 +107,9 @@ func TestCategoryHandler_CreateCategory(t *testing.T) {
 	}{
 		{
 			name: "success",
-			body: `{"name": "Snacks"}`,
+			body: `{"name": "Snacks", "station": "KITCHEN"}`,
 			setupMock: func(r *mock.MockCategoryRepository) {
-				r.EXPECT().CreateCategory(gomock.Any(), gomock.Any()).Return(domain.Category{Id: 3, Name: "Snacks"}, nil)
+				r.EXPECT().CreateCategory(gomock.Any(), domain.Category{Name: "Snacks", Station: "KITCHEN"}).Return(domain.Category{Id: 3, Name: "Snacks", Station: "KITCHEN"}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -121,7 +121,7 @@ func TestCategoryHandler_CreateCategory(t *testing.T) {
 		},
 		{
 			name: "repo error",
-			body: `{"name": "Snacks"}`,
+			body: `{"name": "Snacks", "station": "KITCHEN"}`,
 			setupMock: func(r *mock.MockCategoryRepository) {
 				r.EXPECT().CreateCategory(gomock.Any(), gomock.Any()).Return(domain.Category{}, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
@@ -156,23 +156,23 @@ func TestCategoryHandler_UpdateCategoryById(t *testing.T) {
 		{
 			name:       "success",
 			categoryId: "2",
-			body:       `{"name": "Beverages"}`,
+			body:       `{"name": "Beverages", "station": "BAR"}`,
 			setupMock: func(r *mock.MockCategoryRepository) {
-				r.EXPECT().UpdateCategoryById(gomock.Any(), gomock.Any(), int64(2)).Return(domain.Category{Id: 2, Name: "Beverages"}, nil)
+				r.EXPECT().UpdateCategoryById(gomock.Any(), domain.Category{Name: "Beverages", Station: "BAR"}, int64(2)).Return(domain.Category{Id: 2, Name: "Beverages", Station: "BAR"}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
 		{
 			name:           "invalid id",
 			categoryId:     "abc",
-			body:           `{"name": "Beverages"}`,
+			body:           `{"name": "Beverages", "station": "BAR"}`,
 			setupMock:      func(r *mock.MockCategoryRepository) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:       "not found",
 			categoryId: "99",
-			body:       `{"name": "Beverages"}`,
+			body:       `{"name": "Beverages", "station": "BAR"}`,
 			setupMock: func(r *mock.MockCategoryRepository) {
 				r.EXPECT().UpdateCategoryById(gomock.Any(), gomock.Any(), int64(99)).Return(domain.Category{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
 			},

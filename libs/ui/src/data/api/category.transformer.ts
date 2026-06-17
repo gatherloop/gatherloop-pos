@@ -7,11 +7,13 @@ export function toCategory(category: ApiCategory): Category {
     id: category.id,
     createdAt: category.createdAt,
     name: category.name,
+    station: category.station,
   };
 }
 
 export function toApiCategory(form: CategoryForm) {
   return {
     name: form.name,
+    station: form.station,
   };
 }

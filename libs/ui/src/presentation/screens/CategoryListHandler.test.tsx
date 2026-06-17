@@ -59,6 +59,16 @@ describe('CategoryListHandler', () => {
       expect(screen.getByRole('heading', { name: 'Mock Category 2' })).toBeTruthy();
     });
 
+    it('should show the station for each category', async () => {
+      render(<CategoryListHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getAllByText('Station: None').length).toBe(2);
+    });
+
     it('should show error state when fetch fails', async () => {
       const categoryRepo = new MockCategoryRepository();
       categoryRepo.setShouldFail(true);

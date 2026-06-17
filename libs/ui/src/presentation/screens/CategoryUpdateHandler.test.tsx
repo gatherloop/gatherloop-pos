@@ -78,6 +78,16 @@ describe('CategoryUpdateHandler', () => {
       });
     });
 
+    it('should render the station select field with the current value', async () => {
+      render(<CategoryUpdateHandler {...createProps({ preloaded: true })} />);
+      expect(screen.getByRole('option', { name: 'Kitchen' })).toBeTruthy();
+      expect(screen.getByRole('option', { name: 'Bar' })).toBeTruthy();
+      expect(screen.getByRole('option', { name: 'None' })).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
+    });
+
     it('should show error state when category fetch fails', async () => {
       render(<CategoryUpdateHandler {...createProps({ shouldFail: true })} />);
 
@@ -104,6 +114,34 @@ describe('CategoryUpdateHandler', () => {
       });
 
       expect(mockRouterPush).toHaveBeenCalledWith('/categories');
+    });
+
+    it('should update category with the selected station', async () => {
+      const user = userEvent.setup();
+      const categoryRepo = new MockCategoryRepository();
+      const preloadedCategory = categoryRepo.categories[0];
+
+      render(
+        <CategoryUpdateHandler
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          categoryUpdateUsecase={new CategoryUpdateUsecase(categoryRepo, {
+            categoryId: preloadedCategory.id,
+            category: preloadedCategory,
+          })}
+        />
+      );
+
+      await user.click(screen.getByRole('option', { name: 'Bar' }));
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(
+        categoryRepo.categories.find((c) => c.id === preloadedCategory.id)
+          ?.station
+      ).toBe('BAR');
     });
 
     it('should not navigate when update fails', async () => {

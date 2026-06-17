@@ -5,6 +5,7 @@ import "time"
 type Category struct {
 	Id        int64
 	Name      string
+	Station   string
 	CreatedAt time.Time
 	DeletedAt *time.Time
 }

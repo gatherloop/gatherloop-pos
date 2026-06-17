@@ -17,7 +17,8 @@ const meta: Meta<typeof TransactionListItem> = {
     onEditMenuPress: fn(),
     onDeleteMenuPress: fn(),
     onPrintInvoiceMenuPress: fn(),
-    onPrintOrderSlipMenuPress: fn(),
+    onPrintKitchenSlipMenuPress: fn(),
+    onPrintBarSlipMenuPress: fn(),
   },
 };
 

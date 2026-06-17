@@ -48,6 +48,7 @@ export const CategoryList = ({
             renderItem={({ item }) => (
               <CategoryListItem
                 name={item.name}
+                station={item.station}
                 onDeleteMenuPress={() => onDeleteMenuPress(item)}
                 onEditMenuPress={() => onEditMenuPress(item)}
                 onPress={() => onItemPress(item)}
