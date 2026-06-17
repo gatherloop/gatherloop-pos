@@ -27,6 +27,7 @@ func ToApiCategory(category domain.Category) apiContract.Category {
 	return apiContract.Category{
 		Id:        category.Id,
 		Name:      category.Name,
+		Station:   category.Station,
 		DeletedAt: category.DeletedAt,
 		CreatedAt: category.CreatedAt,
 	}
@@ -34,6 +35,7 @@ func ToApiCategory(category domain.Category) apiContract.Category {
 
 func ToCategory(categoryRequest apiContract.CategoryRequest) domain.Category {
 	return domain.Category{
-		Name: categoryRequest.Name,
+		Name:    categoryRequest.Name,
+		Station: categoryRequest.Station,
 	}
 }

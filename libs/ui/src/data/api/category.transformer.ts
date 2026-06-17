@@ -13,5 +13,6 @@ export function toCategory(category: ApiCategory): Category {
 export function toApiCategory(form: CategoryForm) {
   return {
     name: form.name,
+    station: 'NONE' as const,
   };
 }

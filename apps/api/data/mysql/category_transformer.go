@@ -6,6 +6,7 @@ func ToCategoryDB(domainCategory domain.Category) Category {
 	return Category{
 		Id:        domainCategory.Id,
 		Name:      domainCategory.Name,
+		Station:   domainCategory.Station,
 		CreatedAt: domainCategory.CreatedAt,
 		DeletedAt: domainCategory.DeletedAt,
 	}
@@ -15,6 +16,7 @@ func ToCategoryDomain(dbCategory Category) domain.Category {
 	return domain.Category{
 		Id:        dbCategory.Id,
 		Name:      dbCategory.Name,
+		Station:   dbCategory.Station,
 		CreatedAt: dbCategory.CreatedAt,
 		DeletedAt: dbCategory.DeletedAt,
 	}
