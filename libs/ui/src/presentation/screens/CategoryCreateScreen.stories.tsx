@@ -6,7 +6,7 @@ import { CategoryCreateScreen } from './CategoryCreateScreen';
 import type { CategoryForm } from '../../domain';
 
 const CreateStory = () => {
-  const form = useForm<CategoryForm>({ defaultValues: { name: '' } });
+  const form = useForm<CategoryForm>({ defaultValues: { name: '', station: 'NONE' } });
   return (
     <CategoryCreateScreen
       form={form}
@@ -19,7 +19,7 @@ const CreateStory = () => {
 };
 
 const LoadingStory = () => {
-  const form = useForm<CategoryForm>({ defaultValues: { name: '' } });
+  const form = useForm<CategoryForm>({ defaultValues: { name: '', station: 'NONE' } });
   return (
     <CategoryCreateScreen
       form={form}

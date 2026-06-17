@@ -22,13 +22,29 @@ import type {
 export const mockCategory: Category = {
   id: 1,
   name: 'Beverages',
+  station: 'BAR',
   createdAt: '2024-01-15T08:00:00.000Z',
 };
 
 export const mockCategories: Category[] = [
-  { id: 1, name: 'Beverages', createdAt: '2024-01-15T08:00:00.000Z' },
-  { id: 2, name: 'Snacks', createdAt: '2024-01-16T08:00:00.000Z' },
-  { id: 3, name: 'Merchandise', createdAt: '2024-01-17T08:00:00.000Z' },
+  {
+    id: 1,
+    name: 'Beverages',
+    station: 'BAR',
+    createdAt: '2024-01-15T08:00:00.000Z',
+  },
+  {
+    id: 2,
+    name: 'Snacks',
+    station: 'KITCHEN',
+    createdAt: '2024-01-16T08:00:00.000Z',
+  },
+  {
+    id: 3,
+    name: 'Merchandise',
+    station: 'NONE',
+    createdAt: '2024-01-17T08:00:00.000Z',
+  },
 ];
 
 // ─── Material ────────────────────────────────────────────────────────────────

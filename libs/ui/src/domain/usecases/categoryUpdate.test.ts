@@ -20,7 +20,7 @@ describe('CategoryUpdateUsecase', () => {
       await flushPromises();
       expect(tester.state.type).toBe('loaded');
 
-      tester.dispatch({ type: 'SUBMIT', values: { name: 'Updated Category' } });
+      tester.dispatch({ type: 'SUBMIT', values: { name: 'Updated Category', station: 'NONE' } });
       expect(tester.state.type).toBe('submitting');
 
       await flushPromises();
@@ -61,7 +61,7 @@ describe('CategoryUpdateUsecase', () => {
 
       expect(tester.state.type).toBe('loaded');
 
-      tester.dispatch({ type: 'SUBMIT', values: { name: 'Updated Category' } });
+      tester.dispatch({ type: 'SUBMIT', values: { name: 'Updated Category', station: 'NONE' } });
       expect(tester.state.type).toBe('submitting');
 
       await flushPromises();

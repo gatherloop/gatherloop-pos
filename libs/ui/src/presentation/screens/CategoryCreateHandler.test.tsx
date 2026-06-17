@@ -40,6 +40,13 @@ describe('CategoryCreateHandler', () => {
       render(<CategoryCreateHandler {...createProps()} />);
       expect(screen.getByRole('textbox', { name: 'Name' })).toBeTruthy();
     });
+
+    it('should render the station select field', () => {
+      render(<CategoryCreateHandler {...createProps()} />);
+      expect(screen.getByRole('option', { name: 'Kitchen' })).toBeTruthy();
+      expect(screen.getByRole('option', { name: 'Bar' })).toBeTruthy();
+      expect(screen.getByRole('option', { name: 'None' })).toBeTruthy();
+    });
   });
 
   describe('navigation', () => {
@@ -55,6 +62,28 @@ describe('CategoryCreateHandler', () => {
       });
 
       expect(mockRouterPush).toHaveBeenCalledWith('/categories');
+    });
+
+    it('should create category with the selected station', async () => {
+      const user = userEvent.setup();
+      const categoryRepo = new MockCategoryRepository();
+
+      render(
+        <CategoryCreateHandler
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          categoryCreateUsecase={new CategoryCreateUsecase(categoryRepo)}
+        />
+      );
+
+      await user.type(screen.getByRole('textbox', { name: 'Name' }), 'New Category');
+      await user.click(screen.getByRole('option', { name: 'Kitchen' }));
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(categoryRepo.categories.at(-1)?.station).toBe('KITCHEN');
     });
 
     it('should not navigate when creation fails', async () => {
