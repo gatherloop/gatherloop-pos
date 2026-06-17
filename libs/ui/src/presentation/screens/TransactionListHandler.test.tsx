@@ -9,11 +9,13 @@ import {
 } from '../../data/mock';
 import {
   AuthLogoutUsecase,
+  Transaction,
   TransactionDeleteUsecase,
   TransactionListUsecase,
   TransactionPayUsecase,
   TransactionUnpayUsecase,
 } from '../../domain';
+import type { TransactionListScreenProps } from './TransactionListScreen';
 
 const mockRouterPush = jest.fn();
 jest.mock('solito/router', () => ({
@@ -25,16 +27,70 @@ jest.mock('@tamagui/toast', () => ({
 }));
 
 // usePrinter uses WebSocket — mock it to avoid runtime errors
+const mockPrint = jest.fn();
 jest.mock('../../utils', () => ({
   ...jest.requireActual('../../utils'),
-  usePrinter: () => ({ print: jest.fn() }),
+  usePrinter: () => ({ print: mockPrint }),
 }));
 
 // Mock the Screen — avoids form rendering issues (payForm.handleSubmit) when
-// modal is not open; tests focus on handler orchestration logic
+// modal is not open; tests focus on handler orchestration logic. We capture
+// the props passed in so individual menu-press handlers can be invoked.
+let latestScreenProps: TransactionListScreenProps;
 jest.mock('./TransactionListScreen', () => ({
-  TransactionListScreen: () => null,
+  TransactionListScreen: (props: TransactionListScreenProps) => {
+    latestScreenProps = props;
+    return null;
+  },
 }));
+
+const buildTransaction = (
+  stations: ('KITCHEN' | 'BAR' | 'NONE')[]
+): Transaction => ({
+  id: 1,
+  createdAt: '2024-01-01T00:00:00.000Z',
+  name: 'Table 1',
+  orderNumber: 1,
+  total: 30000,
+  totalIncome: 30000,
+  paidAt: null,
+  paidAmount: 0,
+  wallet: null,
+  transactionCoupons: [],
+  transactionItems: stations.map((station, index) => ({
+    id: index + 1,
+    amount: 1,
+    price: 10000,
+    discountAmount: 0,
+    subtotal: 10000,
+    note: '',
+    productName: `Product ${index}`,
+    values: [],
+    variant: {
+      id: index + 1,
+      name: 'Variant',
+      price: 10000,
+      materials: [],
+      product: {
+        id: index + 1,
+        name: `Product ${index}`,
+        category: {
+          id: index + 1,
+          name: 'Category',
+          station,
+          createdAt: '2024-01-01T00:00:00.000Z',
+        },
+        imageUrl: '',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        options: [],
+        saleType: 'purchase',
+      },
+      createdAt: '2024-01-01T00:00:00.000Z',
+      values: [],
+      pricingTiers: [],
+    },
+  })),
+});
 
 const transactionListCtrl = {
   state: {
@@ -117,6 +173,7 @@ const createProps = () => ({
 describe('TransactionListHandler', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    latestScreenProps = undefined;
     transactionListCtrl.state = {
       type: 'loaded',
       transactions: [],
@@ -243,6 +300,60 @@ describe('TransactionListHandler', () => {
       // We verify that CHANGE_PARAMS is dispatched with query: '' when clear fires
       // This is validated via the handler's prop wiring in the source code
       expect(transactionListCtrl.dispatch).toBeDefined();
+    });
+  });
+
+  describe('print kitchen/bar slip menu', () => {
+    it('prints a kitchen slip with only kitchen items when pressed', async () => {
+      await act(async () => {
+        render(<TransactionListHandler {...createProps()} />);
+      });
+
+      latestScreenProps.onPrintKitchenSlipMenuPress(
+        buildTransaction(['KITCHEN', 'BAR'])
+      );
+
+      expect(mockPrint).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'ORDER_SLIP',
+          station: 'KITCHEN',
+          transaction: expect.objectContaining({
+            items: [expect.objectContaining({ name: 'Product 0 - ' })],
+          }),
+        })
+      );
+    });
+
+    it('prints a bar slip with only bar items when pressed', async () => {
+      await act(async () => {
+        render(<TransactionListHandler {...createProps()} />);
+      });
+
+      latestScreenProps.onPrintBarSlipMenuPress(
+        buildTransaction(['KITCHEN', 'BAR'])
+      );
+
+      expect(mockPrint).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'ORDER_SLIP',
+          station: 'BAR',
+          transaction: expect.objectContaining({
+            items: [expect.objectContaining({ name: 'Product 1 - ' })],
+          }),
+        })
+      );
+    });
+
+    it('does not print when the station has no items', async () => {
+      await act(async () => {
+        render(<TransactionListHandler {...createProps()} />);
+      });
+
+      latestScreenProps.onPrintKitchenSlipMenuPress(
+        buildTransaction(['BAR', 'NONE'])
+      );
+
+      expect(mockPrint).not.toHaveBeenCalled();
     });
   });
 });

@@ -34,7 +34,8 @@ export type TransactionListProps = {
   onPayMenuPress: (transaction: Transaction) => void;
   onUnpayMenuPress: (transaction: Transaction) => void;
   onPrintInvoiceMenuPress: (transaction: Transaction) => void;
-  onPrintOrderSlipMenuPress: (transaction: Transaction) => void;
+  onPrintKitchenSlipMenuPress: (transaction: Transaction) => void;
+  onPrintBarSlipMenuPress: (transaction: Transaction) => void;
   onItemPress: (transaction: Transaction) => void;
   wallets: Wallet[];
   walletId: number | null;
@@ -63,7 +64,8 @@ export const TransactionList = ({
   onPayMenuPress,
   onUnpayMenuPress,
   onPrintInvoiceMenuPress,
-  onPrintOrderSlipMenuPress,
+  onPrintKitchenSlipMenuPress,
+  onPrintBarSlipMenuPress,
   wallets,
   walletId,
   onWalletIdChange,
@@ -214,9 +216,17 @@ export const TransactionList = ({
                   onPayMenuPress={() => onPayMenuPress(item)}
                   onUnpayMenuPress={() => onUnpayMenuPress(item)}
                   onPrintInvoiceMenuPress={() => onPrintInvoiceMenuPress(item)}
-                  onPrintOrderSlipMenuPress={() =>
-                    onPrintOrderSlipMenuPress(item)
+                  onPrintKitchenSlipMenuPress={() =>
+                    onPrintKitchenSlipMenuPress(item)
                   }
+                  onPrintBarSlipMenuPress={() => onPrintBarSlipMenuPress(item)}
+                  isPrintKitchenSlipMenuShown={item.transactionItems.some(
+                    ({ variant }) =>
+                      variant.product.category.station === 'KITCHEN'
+                  )}
+                  isPrintBarSlipMenuShown={item.transactionItems.some(
+                    ({ variant }) => variant.product.category.station === 'BAR'
+                  )}
                   onPress={() => onItemPress(item)}
                 />
               )}
