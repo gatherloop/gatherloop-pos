@@ -2352,6 +2352,7 @@ components:
       required:
         - id
         - name
+        - station
         - createdAt
       properties:
         id:
@@ -2359,6 +2360,9 @@ components:
           format: int64
         name:
           type: string
+        station:
+          type: string
+          enum: [KITCHEN, BAR, NONE]
         createdAt:
           type: string
           format: date-time
@@ -2368,9 +2372,13 @@ components:
     CategoryRequest:
       required:
         - name
+        - station
       properties:
         name:
           type: string
+        station:
+          type: string
+          enum: [KITCHEN, BAR, NONE]
     CategoryCreateResponse:
       required:
         - data
