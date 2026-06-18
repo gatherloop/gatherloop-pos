@@ -172,7 +172,19 @@ func (handler TransactionHandler) GetTransactionStatistics(w http.ResponseWriter
 
 	groupBy := GetGroupBy(r)
 
-	transactionStatistics, err := handler.usecase.GetTransactionStatistics(ctx, groupBy)
+	startDate, parseErr := GetStartDate(r)
+	if parseErr != nil {
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: parseErr.Error()})
+		return
+	}
+
+	endDate, parseErr := GetEndDate(r)
+	if parseErr != nil {
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: parseErr.Error()})
+		return
+	}
+
+	transactionStatistics, err := handler.usecase.GetTransactionStatistics(ctx, groupBy, startDate, endDate)
 	if err != nil {
 		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
 		return

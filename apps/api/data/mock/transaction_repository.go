@@ -131,18 +131,18 @@ func (mr *MockTransactionRepositoryMockRecorder) GetTransactionListTotal(ctx, qu
 }
 
 // GetTransactionStatistics mocks base method.
-func (m *MockTransactionRepository) GetTransactionStatistics(ctx context.Context, groupBy string) ([]domain.TransactionStatistic, *domain.Error) {
+func (m *MockTransactionRepository) GetTransactionStatistics(ctx context.Context, groupBy string, startDate, endDate *time.Time) ([]domain.TransactionStatistic, *domain.Error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetTransactionStatistics", ctx, groupBy)
+	ret := m.ctrl.Call(m, "GetTransactionStatistics", ctx, groupBy, startDate, endDate)
 	ret0, _ := ret[0].([]domain.TransactionStatistic)
 	ret1, _ := ret[1].(*domain.Error)
 	return ret0, ret1
 }
 
 // GetTransactionStatistics indicates an expected call of GetTransactionStatistics.
-func (mr *MockTransactionRepositoryMockRecorder) GetTransactionStatistics(ctx, groupBy any) *gomock.Call {
+func (mr *MockTransactionRepositoryMockRecorder) GetTransactionStatistics(ctx, groupBy, startDate, endDate any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTransactionStatistics", reflect.TypeOf((*MockTransactionRepository)(nil).GetTransactionStatistics), ctx, groupBy)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTransactionStatistics", reflect.TypeOf((*MockTransactionRepository)(nil).GetTransactionStatistics), ctx, groupBy, startDate, endDate)
 }
 
 // PayTransaction mocks base method.
