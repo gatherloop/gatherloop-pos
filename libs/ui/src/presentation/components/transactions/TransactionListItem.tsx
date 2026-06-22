@@ -25,10 +25,7 @@ export type TransactionListItemProps = {
   onEditMenuPress: () => void;
   onDeleteMenuPress: () => void;
   onPrintInvoiceMenuPress: () => void;
-  onPrintKitchenSlipMenuPress: () => void;
-  onPrintBarSlipMenuPress: () => void;
-  isPrintKitchenSlipMenuShown?: boolean;
-  isPrintBarSlipMenuShown?: boolean;
+  onPrintOrderSlipMenuPress: () => void;
 } & XStackProps;
 
 export const TransactionListItem = ({
@@ -43,10 +40,7 @@ export const TransactionListItem = ({
   onEditMenuPress,
   onDeleteMenuPress,
   onPrintInvoiceMenuPress,
-  onPrintKitchenSlipMenuPress,
-  onPrintBarSlipMenuPress,
-  isPrintKitchenSlipMenuShown = true,
-  isPrintBarSlipMenuShown = true,
+  onPrintOrderSlipMenuPress,
   ...xStackProps
 }: TransactionListItemProps) => {
   return (
@@ -76,16 +70,10 @@ export const TransactionListItem = ({
           isShown: Platform.OS === 'web',
         },
         {
-          title: 'Print Kitchen Slip',
+          title: 'Print Order Slip',
           icon: Printer,
-          onPress: onPrintKitchenSlipMenuPress,
-          isShown: Platform.OS === 'web' && isPrintKitchenSlipMenuShown,
-        },
-        {
-          title: 'Print Bar Slip',
-          icon: Printer,
-          onPress: onPrintBarSlipMenuPress,
-          isShown: Platform.OS === 'web' && isPrintBarSlipMenuShown,
+          onPress: onPrintOrderSlipMenuPress,
+          isShown: Platform.OS === 'web',
         },
         {
           title: 'Edit',

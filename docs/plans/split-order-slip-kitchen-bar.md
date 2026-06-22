@@ -1,17 +1,26 @@
-# Plan: Split Order Slip into Kitchen & Bar Slips
+# Plan: One Order Slip Grouped by Kitchen & Bar Stations
+
+> **Update (2026-06-22):** an earlier iteration of this plan printed **two
+> separate** slips (one kitchen, one bar) at separate times. That confused the
+> bar: after finishing the drinks they couldn't tell whether the kitchen still
+> owed the customer food, because the kitchen items weren't on the bar slip. The
+> current design instead prints **one combined `ORDER_SLIP`** whose items are
+> **grouped by station** (`bars` / `kitchens`), so both stations see the whole
+> order. Sections below have been updated to match; the backend `station`-on-
+> `Category` work (Phases 1–2) is unchanged.
 
 ## Background
 
 Currently, when a transaction is created, a single "order slip" is printed
-containing **all** order items. In reality, after the cashier prints the slip,
-the order has to be communicated to **two separate stations** — the **bar** and
-the **kitchen** — each of which should only see the items it is responsible for
-making.
+containing **all** order items. Items still need to be routed to the **bar** and
+the **kitchen**, but printing two separate slips at separate times meant neither
+station could see the other's items — so the bar never knew if the kitchen had
+finished, or whether to call the customer.
 
 This plan introduces a way to mark which products belong to the kitchen, which
 belong to the bar, and which belong to neither (e.g. a "Board Game Ticket",
-which is not made by either station). From that marking we produce **two order
-slips** — one for the kitchen and one for the bar — both after creating a
+which is not made by either station). From that marking we produce **one order
+slip whose items are grouped by station**, printed once after creating a
 transaction and from the transaction list menu.
 
 ## Design Summary
@@ -19,12 +28,12 @@ transaction and from the transaction list menu.
 - **Station lives on `Category`**: add a `station` enum =
   `KITCHEN | BAR | NONE`. Every product inherits its station from its category.
   Products in a `NONE` category (e.g. "Board Game Ticket") appear on the invoice
-  but on **neither** order slip.
+  but on **neither** group of the order slip.
 - **Print flow after create**: sequential confirmations —
-  *Print Invoice?* → *Print Kitchen Slip?* → *Print Bar Slip?* — where a slip
-  dialog only appears if that station actually has items.
-- **Transaction menu**: replace the single *Print Order Slip* with
-  *Print Kitchen Slip* and *Print Bar Slip*.
+  *Print Invoice?* → *Print Order Slip?* — where the order slip dialog only
+  appears if at least one item belongs to the bar or kitchen.
+- **Transaction menu**: a single *Print Order Slip* action (shown when the
+  transaction has any bar/kitchen item).
 
 ### Why station on Category (not Product)?
 
@@ -215,9 +224,10 @@ export type CategoryForm = {
 ### 4. Print payload design
 
 The order slip is not rendered by the app — it is serialized to JSON and sent
-over a WebSocket to an external printer service (`ws://localhost:8080`). So
-"two slips" = **two messages, each carrying only that station's items**, plus a
-field telling the service which header to print.
+over a WebSocket to an external printer service (`ws://localhost:8080`). The app
+sends **one** `ORDER_SLIP` message whose items are pre-grouped into `bars` and
+`kitchens`; the printer service prints both groups under their own headers on a
+single slip.
 
 **`libs/ui/src/utils/print.ts` — `PrintPayload` change:**
 
@@ -227,34 +237,39 @@ field telling the service which header to print.
 
 // after
 | { type: 'INVOICE'; transaction: TransactionPrintPayload }
-| { type: 'ORDER_SLIP';
-    station: 'KITCHEN' | 'BAR';        // NEW — tells the service which slip
-    transaction: TransactionPrintPayload }  // items already filtered to station
+| { type: 'ORDER_SLIP'; orderSlip: OrderSlipPrintPayload }
+
+// where the order slip transaction is grouped by station and only carries the
+// fields the slip needs (no price/coupons):
+type OrderSlipItem = { name: string; amount: number; note: string };
+type OrderSlipPrintPayload = {
+  createdAt: string;
+  paidAt?: string;
+  name: string;
+  orderNumber: number;
+  items: { bars: OrderSlipItem[]; kitchens: OrderSlipItem[] };
+};
 ```
 
-> Keeping `type: 'ORDER_SLIP'` + a `station` discriminator (rather than two new
-> types `ORDER_SLIP_KITCHEN` / `ORDER_SLIP_BAR`) is backward compatible and means
-> the printer service only needs to read one new field. Final choice is a
-> coordination point with the printer-service owner.
-
-**Shared helper** (filtering lives in one place, used by both the create flow and
+**Shared helper** (grouping lives in one place, used by both the create flow and
 the list menu):
 
 ```ts
-function buildOrderSlipPayload(
-  transaction: Transaction,
-  station: 'KITCHEN' | 'BAR'
-): PrintPayload | null {
-  const items = transaction.transactionItems.filter(
-    (item) => item.variant.product.category.station === station
-  );
-  if (items.length === 0) return null;          // skip empty slip
-  return { type: 'ORDER_SLIP', station, transaction: { ...mapped, items } };
+function buildOrderSlipPayload(transaction: OrderSlipSource): PrintPayload | null {
+  const group = (station: 'KITCHEN' | 'BAR') =>
+    transaction.items
+      .filter((item) => item.variant.product.category.station === station)
+      .map(({ variant, amount, note }) => ({ name: nameOf(variant), amount, note }));
+
+  const bars = group('BAR');
+  const kitchens = group('KITCHEN');
+  if (bars.length === 0 && kitchens.length === 0) return null; // skip empty slip
+  return { type: 'ORDER_SLIP', orderSlip: { ...mapped, items: { bars, kitchens } } };
 }
 ```
 
 Items whose category station is `NONE` (e.g. Board Game Ticket) match neither
-filter, so they never appear on an order slip — but they still appear on the
+group, so they never appear on the order slip — but they still appear on the
 INVOICE, which is unfiltered.
 
 ### 5. Data-availability check (important)
@@ -294,21 +309,16 @@ Cashier submits transaction
   "Print Invoice?" ──Yes──► print({type:'INVOICE', ...all items})
         │                                │
         └──No──────────────┐             ▼
-                           ▼     "Print Kitchen Slip?"  (only if kitchen items exist)
+                           ▼     "Print Order Slip?"  (only if any bar/kitchen item exists)
                                           │
-                                   Yes──► print({type:'ORDER_SLIP', station:'KITCHEN', kitchen items})
-                                          │
-                                          ▼
-                                 "Print Bar Slip?"      (only if bar items exist)
-                                          │
-                                   Yes──► print({type:'ORDER_SLIP', station:'BAR', bar items})
+                                   Yes──► print({type:'ORDER_SLIP', items:{bars, kitchens}})
                                           │
                                           ▼
                                   navigate to /transactions
 ```
 
 The list-menu flow (Phase 5) reuses the same `buildOrderSlipPayload` helper but
-is triggered per-station directly from the menu, with no chained dialogs.
+is triggered directly from a single menu action, with no chained dialogs.
 
 ---
 
@@ -345,45 +355,43 @@ a safe, isolated PR.
 **Reviewable as:** a focused UI PR. After this ships, categories can be
 classified in production ahead of the print change.
 
-## Phase 3 — Station-aware print payload + filtering helper
+## Phase 3 — Station-grouped print payload + helper
 
-**Goal:** the core logic to produce a per-station order slip. Pure utility,
-unit-testable in isolation.
+**Goal:** the core logic to produce one order slip grouped by station. Pure
+utility, unit-testable in isolation.
 
-1. `libs/ui/src/utils/print.ts`: extend the order-slip payload with a
-   `station: 'KITCHEN' | 'BAR'` field (keep `type: 'ORDER_SLIP'` for backward
-   compatibility, or introduce `ORDER_SLIP_KITCHEN` / `ORDER_SLIP_BAR` — decide
-   with the printer-service owner). The service prints the station as a header.
-2. Add a shared helper, e.g. `buildOrderSlipPayload(transaction, station)`, that
-   **filters items to that station** via `category.station` and returns
-   `null`/empty when no items — so callers can skip empty slips.
-3. **Coordinate the printer service** (separate component/repo) to render the
-   station header. This is an external dependency to flag and scope.
+1. `libs/ui/src/utils/print.ts`: give `ORDER_SLIP` its own
+   `OrderSlipPrintPayload` whose `items` is `{ bars, kitchens }`, each an
+   `OrderSlipItem` (`name`, `amount`, `note`). The service prints both groups
+   under their own headers on a single slip.
+2. Add a shared helper `buildOrderSlipPayload(transaction)` that **groups items
+   by `category.station`** and returns `null` when no item belongs to the bar or
+   kitchen — so callers can skip an empty slip.
+3. **Coordinate the printer service** (separate component/repo) to render the two
+   station groups. This is an external dependency to flag and scope.
 
 **Reviewable as:** pure utility + types.
-**Tests:** items across stations → correct split; `NONE` excluded from both.
+**Tests:** items across stations → correct grouping; `NONE` excluded from both.
 
 ## Phase 4 — Wire the create-transaction flow
 
 **Goal:** sequential confirmations after payment.
 
 1. `TransactionCreateHandler.tsx` (the `payingSuccess` effect): change the chain
-   to *Invoice → Kitchen slip → Bar slip*, each dialog shown only if that station
-   has items (using the Phase 3 helper). Preserve the existing cancel/skip and
-   navigation-to-`/transactions` behavior.
+   to *Invoice → Order Slip*, where the order slip dialog is shown only if at
+   least one item belongs to the bar or kitchen (using the Phase 3 helper).
+   Preserve the existing cancel/skip and navigation-to-`/transactions` behavior.
 
 **Reviewable as:** one screen-handler change, behavior visible end-to-end.
 
 ## Phase 5 — Wire the transaction-list menu
 
-**Goal:** per-station menu actions.
+**Goal:** a single order-slip menu action.
 
-1. `TransactionListItem.tsx`: replace `onPrintOrderSlipMenuPress` with
-   `onPrintKitchenSlipMenuPress` + `onPrintBarSlipMenuPress` (two "Printer" menu
-   entries, web-only as today). Optionally hide a station's entry when the
-   transaction has no items for it.
-2. `TransactionListHandler.tsx`: implement both handlers using the Phase 3
-   helper.
+1. `TransactionListItem.tsx`: a single `onPrintOrderSlipMenuPress` "Printer" menu
+   entry (web-only as today). A transaction always has items, so the entry is
+   always shown on web.
+2. `TransactionListHandler.tsx`: implement the handler using the Phase 3 helper.
 
 **Reviewable as:** menu + handler change, mirrors Phase 4.
 
@@ -396,14 +404,15 @@ unit-testable in isolation.
 - Phases **4 & 5** depend on **3** (and on the printer service being updated). If
   the printer-service update lags, Phases 4/5 can still send filtered items; only
   the printed header would be missing.
-- Default `NONE` means that until categories are classified, **both order slips
-  would be empty** — so Phase 2 classification must happen before Phases 4/5
-  reach production. Good candidate for a feature flag, or simply order the merges
-  accordingly.
+- Default `NONE` means that until categories are classified, **both groups on
+  the order slip would be empty** — so Phase 2 classification must happen before
+  Phases 4/5 reach production. Good candidate for a feature flag, or simply order
+  the merges accordingly.
 
 ## Open Coordination Item
 
 The **printer service** at `ws://localhost:8080` is external to this repo's
-frontend. Confirming how it should distinguish/label kitchen vs bar is the one
-cross-team dependency. We should check whether that service lives in an
-accessible repo so its change can be scoped alongside Phase 3.
+frontend. Confirming how it should render the two station groups (`bars` /
+`kitchens`) under their own headers on a single slip is the one cross-team
+dependency. We should check whether that service lives in an accessible repo so
+its change can be scoped alongside Phase 3.

@@ -19,8 +19,7 @@ export type TransactionListScreenProps = {
   onUnpayMenuPress: (transaction: Transaction) => void;
   onItemPress: (transaction: Transaction) => void;
   onPrintInvoiceMenuPress: (transaction: Transaction) => void;
-  onPrintKitchenSlipMenuPress: (transaction: Transaction) => void;
-  onPrintBarSlipMenuPress: (transaction: Transaction) => void;
+  onPrintOrderSlipMenuPress: (transaction: Transaction) => void;
   onRetryButtonPress: () => void;
   variant: { type: 'loading' } | { type: 'loaded' } | { type: 'error' };
   transactions: Transaction[];
@@ -67,8 +66,7 @@ export const TransactionListScreen = ({
   onUnpayMenuPress,
   onItemPress,
   onPrintInvoiceMenuPress,
-  onPrintKitchenSlipMenuPress,
-  onPrintBarSlipMenuPress,
+  onPrintOrderSlipMenuPress,
   onRetryButtonPress,
   variant,
   transactions,
@@ -130,8 +128,7 @@ export const TransactionListScreen = ({
         onPayMenuPress={onPayMenuPress}
         onUnpayMenuPress={onUnpayMenuPress}
         onPrintInvoiceMenuPress={onPrintInvoiceMenuPress}
-        onPrintKitchenSlipMenuPress={onPrintKitchenSlipMenuPress}
-        onPrintBarSlipMenuPress={onPrintBarSlipMenuPress}
+        onPrintOrderSlipMenuPress={onPrintOrderSlipMenuPress}
         onItemPress={onItemPress}
         wallets={wallets}
         walletId={walletId}

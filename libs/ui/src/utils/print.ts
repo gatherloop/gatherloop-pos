@@ -47,13 +47,34 @@ export type CheckinPrintPayload = {
   }[];
 };
 
+export type OrderSlipItem = {
+  name: string;
+  amount: number;
+  note: string;
+};
+
+// A single combined order slip whose items are grouped by station, so the bar
+// and the kitchen see one slip listing each other's items (the bar can tell
+// whether the kitchen still owes the customer food before calling them).
+export type OrderSlipPrintPayload = {
+  createdAt: string;
+  paidAt?: string;
+  name: string;
+  orderNumber: number;
+  items: {
+    bars: OrderSlipItem[];
+    kitchens: OrderSlipItem[];
+  };
+};
+
 export type PrintPayload =
   | {
-      type: 'INVOICE' | 'ORDER_SLIP';
-      // Present once a slip has been split by station (see buildOrderSlipPayload).
-      // Optional for now so existing unsplit ORDER_SLIP call sites still type-check.
-      station?: OrderSlipStation;
+      type: 'INVOICE';
       transaction: TransactionPrintPayload;
+    }
+  | {
+      type: 'ORDER_SLIP';
+      orderSlip: OrderSlipPrintPayload;
     }
   | {
       type: 'PURCHASE_LIST';
@@ -72,36 +93,47 @@ export type OrderSlipSourceItem = {
   note: string;
 };
 
-export type OrderSlipSource = Omit<TransactionPrintPayload, 'items'> & {
+export type OrderSlipSource = {
+  createdAt: string;
+  paidAt?: string;
+  name: string;
+  orderNumber: number;
   items: OrderSlipSourceItem[];
 };
 
+// Builds a single ORDER_SLIP payload with items grouped by station. Items in a
+// NONE-station category (e.g. a Board Game Ticket) belong on neither group, so
+// they are excluded. Returns null when no item belongs to the bar or kitchen,
+// letting callers skip an empty slip.
 export const buildOrderSlipPayload = (
-  transaction: OrderSlipSource,
-  station: OrderSlipStation
+  transaction: OrderSlipSource
 ): PrintPayload | null => {
-  const items = transaction.items.filter(
-    ({ variant }) => variant.product.category.station === station
-  );
+  const toOrderSlipItems = (station: OrderSlipStation): OrderSlipItem[] =>
+    transaction.items
+      .filter(({ variant }) => variant.product.category.station === station)
+      .map(({ variant, amount, note }) => ({
+        name: `${variant.product.name} - ${variant.values
+          .map(({ optionValue: { name } }) => name)
+          .join(' - ')}`,
+        amount,
+        note,
+      }));
 
-  if (items.length === 0) {
+  const bars = toOrderSlipItems('BAR');
+  const kitchens = toOrderSlipItems('KITCHEN');
+
+  if (bars.length === 0 && kitchens.length === 0) {
     return null;
   }
 
   return {
     type: 'ORDER_SLIP',
-    station,
-    transaction: {
-      ...transaction,
-      items: items.map(({ variant, price, amount, discountAmount, note }) => ({
-        name: `${variant.product.name} - ${variant.values
-          .map(({ optionValue: { name } }) => name)
-          .join(' - ')}`,
-        price,
-        amount,
-        discountAmount,
-        note,
-      })),
+    orderSlip: {
+      createdAt: transaction.createdAt,
+      paidAt: transaction.paidAt,
+      name: transaction.name,
+      orderNumber: transaction.orderNumber,
+      items: { bars, kitchens },
     },
   };
 };
