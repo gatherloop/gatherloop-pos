@@ -217,11 +217,6 @@ export const TransactionList = ({
                   onPrintOrderSlipMenuPress={() =>
                     onPrintOrderSlipMenuPress(item)
                   }
-                  isPrintOrderSlipMenuShown={item.transactionItems.some(
-                    ({ variant }) =>
-                      variant.product.category.station === 'KITCHEN' ||
-                      variant.product.category.station === 'BAR'
-                  )}
                   onPress={() => onItemPress(item)}
                 />
               )}

@@ -316,7 +316,7 @@ describe('TransactionListHandler', () => {
       expect(mockPrint).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'ORDER_SLIP',
-          transaction: expect.objectContaining({
+          orderSlip: expect.objectContaining({
             items: {
               kitchens: [expect.objectContaining({ name: 'Product 0 - ' })],
               bars: [expect.objectContaining({ name: 'Product 1 - ' })],

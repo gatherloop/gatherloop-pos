@@ -237,7 +237,7 @@ single slip.
 
 // after
 | { type: 'INVOICE'; transaction: TransactionPrintPayload }
-| { type: 'ORDER_SLIP'; transaction: OrderSlipPrintPayload }
+| { type: 'ORDER_SLIP'; orderSlip: OrderSlipPrintPayload }
 
 // where the order slip transaction is grouped by station and only carries the
 // fields the slip needs (no price/coupons):
@@ -264,7 +264,7 @@ function buildOrderSlipPayload(transaction: OrderSlipSource): PrintPayload | nul
   const bars = group('BAR');
   const kitchens = group('KITCHEN');
   if (bars.length === 0 && kitchens.length === 0) return null; // skip empty slip
-  return { type: 'ORDER_SLIP', transaction: { ...mapped, items: { bars, kitchens } } };
+  return { type: 'ORDER_SLIP', orderSlip: { ...mapped, items: { bars, kitchens } } };
 }
 ```
 
@@ -389,8 +389,8 @@ utility, unit-testable in isolation.
 **Goal:** a single order-slip menu action.
 
 1. `TransactionListItem.tsx`: a single `onPrintOrderSlipMenuPress` "Printer" menu
-   entry (web-only as today), hidden when the transaction has no bar/kitchen
-   item (`isPrintOrderSlipMenuShown`).
+   entry (web-only as today). A transaction always has items, so the entry is
+   always shown on web.
 2. `TransactionListHandler.tsx`: implement the handler using the Phase 3 helper.
 
 **Reviewable as:** menu + handler change, mirrors Phase 4.

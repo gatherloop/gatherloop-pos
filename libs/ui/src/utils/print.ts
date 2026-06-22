@@ -74,7 +74,7 @@ export type PrintPayload =
     }
   | {
       type: 'ORDER_SLIP';
-      transaction: OrderSlipPrintPayload;
+      orderSlip: OrderSlipPrintPayload;
     }
   | {
       type: 'PURCHASE_LIST';
@@ -128,7 +128,7 @@ export const buildOrderSlipPayload = (
 
   return {
     type: 'ORDER_SLIP',
-    transaction: {
+    orderSlip: {
       createdAt: transaction.createdAt,
       paidAt: transaction.paidAt,
       name: transaction.name,

@@ -57,7 +57,7 @@ const orderSlipItems = (payload: ReturnType<typeof buildOrderSlipPayload>) => {
   if (!payload || payload.type !== 'ORDER_SLIP') {
     throw new Error('expected an ORDER_SLIP payload');
   }
-  return payload.transaction.items;
+  return payload.orderSlip.items;
 };
 
 describe('buildOrderSlipPayload', () => {
