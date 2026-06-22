@@ -147,38 +147,21 @@ export const TransactionCreateHandler = ({
         items: transactionItems,
       };
 
-      const kitchenSlip = buildOrderSlipPayload(orderSlipSource, 'KITCHEN');
-      const barSlip = buildOrderSlipPayload(orderSlipSource, 'BAR');
+      const orderSlip = buildOrderSlipPayload(orderSlipSource);
 
-      const promptBarSlip = () => {
-        if (!barSlip) {
+      const promptOrderSlip = () => {
+        if (!orderSlip) {
           router.push('/transactions');
           return;
         }
 
         show({
-          title: 'Print Bar Slip',
-          description: 'Do you want to print bar slip ?',
+          title: 'Print Order Slip',
+          description: 'Do you want to print order slip ?',
           onConfirm: () => {
-            print(barSlip).then(() => router.push('/transactions'));
+            print(orderSlip).then(() => router.push('/transactions'));
           },
           onCancel: () => router.push('/transactions'),
-        });
-      };
-
-      const promptKitchenSlip = () => {
-        if (!kitchenSlip) {
-          promptBarSlip();
-          return;
-        }
-
-        show({
-          title: 'Print Kitchen Slip',
-          description: 'Do you want to print kitchen slip ?',
-          onConfirm: () => {
-            print(kitchenSlip).then(promptBarSlip);
-          },
-          onCancel: () => setTimeout(promptBarSlip, 200),
         });
       };
 
@@ -187,12 +170,12 @@ export const TransactionCreateHandler = ({
         description: 'Do you want to print invoice ?',
         onConfirm: () => {
           print({ type: 'INVOICE', transaction })
-            .then(promptKitchenSlip)
+            .then(promptOrderSlip)
             .catch(() => {
               router.push('/transactions');
             });
         },
-        onCancel: () => setTimeout(promptKitchenSlip, 200),
+        onCancel: () => setTimeout(promptOrderSlip, 200),
       });
     }
   }, [

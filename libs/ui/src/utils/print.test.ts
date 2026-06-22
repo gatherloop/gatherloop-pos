@@ -44,9 +44,6 @@ const buildSource = (
   createdAt: '17/06/2026 10:00',
   name: 'Table 1',
   orderNumber: 1,
-  coupons: [],
-  isCashless: false,
-  paidAmount: 0,
   items: items.map(({ productName, station }) => ({
     variant: buildVariant(productName, station),
     price: 10000,
@@ -56,51 +53,60 @@ const buildSource = (
   })),
 });
 
+const orderSlipItems = (payload: ReturnType<typeof buildOrderSlipPayload>) => {
+  if (!payload || payload.type !== 'ORDER_SLIP') {
+    throw new Error('expected an ORDER_SLIP payload');
+  }
+  return payload.transaction.items;
+};
+
 describe('buildOrderSlipPayload', () => {
-  it('splits items into a KITCHEN slip containing only kitchen items', () => {
+  it('groups items into a single slip by station', () => {
     const transaction = buildSource([
       { productName: 'Fried Rice', station: 'KITCHEN' },
       { productName: 'Beer', station: 'BAR' },
       { productName: 'Board Game Ticket', station: 'NONE' },
     ]);
 
-    const payload = buildOrderSlipPayload(transaction, 'KITCHEN');
+    const payload = buildOrderSlipPayload(transaction);
 
     expect(payload?.type).toBe('ORDER_SLIP');
-    expect(payload && 'station' in payload && payload.station).toBe(
-      'KITCHEN'
-    );
-    expect(payload?.transaction.items).toHaveLength(1);
-    expect(payload?.transaction.items[0].name).toBe('Fried Rice - Large');
+    const items = orderSlipItems(payload);
+    expect(items.kitchens).toHaveLength(1);
+    expect(items.kitchens[0].name).toBe('Fried Rice - Large');
+    expect(items.bars).toHaveLength(1);
+    expect(items.bars[0].name).toBe('Beer - Large');
   });
 
-  it('splits items into a BAR slip containing only bar items', () => {
+  it('excludes NONE-station items from both groups', () => {
     const transaction = buildSource([
       { productName: 'Fried Rice', station: 'KITCHEN' },
-      { productName: 'Beer', station: 'BAR' },
       { productName: 'Board Game Ticket', station: 'NONE' },
     ]);
 
-    const payload = buildOrderSlipPayload(transaction, 'BAR');
-
-    expect(payload?.transaction.items).toHaveLength(1);
-    expect(payload?.transaction.items[0].name).toBe('Beer - Large');
+    const items = orderSlipItems(buildOrderSlipPayload(transaction));
+    expect(items.kitchens).toHaveLength(1);
+    expect(items.bars).toHaveLength(0);
   });
 
-  it('excludes NONE-station items from both slips', () => {
+  it('returns null when no item belongs to the bar or kitchen', () => {
     const transaction = buildSource([
       { productName: 'Board Game Ticket', station: 'NONE' },
     ]);
 
-    expect(buildOrderSlipPayload(transaction, 'KITCHEN')).toBeNull();
-    expect(buildOrderSlipPayload(transaction, 'BAR')).toBeNull();
+    expect(buildOrderSlipPayload(transaction)).toBeNull();
   });
 
-  it('returns null when the station has no items', () => {
+  it('keeps only name, amount and note on each order slip item', () => {
     const transaction = buildSource([
       { productName: 'Beer', station: 'BAR' },
     ]);
 
-    expect(buildOrderSlipPayload(transaction, 'KITCHEN')).toBeNull();
+    const items = orderSlipItems(buildOrderSlipPayload(transaction));
+    expect(items.bars[0]).toEqual({
+      name: 'Beer - Large',
+      amount: 1,
+      note: '',
+    });
   });
 });

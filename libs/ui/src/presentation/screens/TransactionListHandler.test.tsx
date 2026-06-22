@@ -303,55 +303,36 @@ describe('TransactionListHandler', () => {
     });
   });
 
-  describe('print kitchen/bar slip menu', () => {
-    it('prints a kitchen slip with only kitchen items when pressed', async () => {
+  describe('print order slip menu', () => {
+    it('prints a single order slip grouped by station when pressed', async () => {
       await act(async () => {
         render(<TransactionListHandler {...createProps()} />);
       });
 
-      latestScreenProps.onPrintKitchenSlipMenuPress(
+      latestScreenProps.onPrintOrderSlipMenuPress(
         buildTransaction(['KITCHEN', 'BAR'])
       );
 
       expect(mockPrint).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'ORDER_SLIP',
-          station: 'KITCHEN',
           transaction: expect.objectContaining({
-            items: [expect.objectContaining({ name: 'Product 0 - ' })],
+            items: {
+              kitchens: [expect.objectContaining({ name: 'Product 0 - ' })],
+              bars: [expect.objectContaining({ name: 'Product 1 - ' })],
+            },
           }),
         })
       );
+      expect(mockPrint).toHaveBeenCalledTimes(1);
     });
 
-    it('prints a bar slip with only bar items when pressed', async () => {
+    it('does not print when no item belongs to a station', async () => {
       await act(async () => {
         render(<TransactionListHandler {...createProps()} />);
       });
 
-      latestScreenProps.onPrintBarSlipMenuPress(
-        buildTransaction(['KITCHEN', 'BAR'])
-      );
-
-      expect(mockPrint).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: 'ORDER_SLIP',
-          station: 'BAR',
-          transaction: expect.objectContaining({
-            items: [expect.objectContaining({ name: 'Product 1 - ' })],
-          }),
-        })
-      );
-    });
-
-    it('does not print when the station has no items', async () => {
-      await act(async () => {
-        render(<TransactionListHandler {...createProps()} />);
-      });
-
-      latestScreenProps.onPrintKitchenSlipMenuPress(
-        buildTransaction(['BAR', 'NONE'])
-      );
+      latestScreenProps.onPrintOrderSlipMenuPress(buildTransaction(['NONE']));
 
       expect(mockPrint).not.toHaveBeenCalled();
     });

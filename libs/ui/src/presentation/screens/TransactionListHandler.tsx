@@ -160,18 +160,8 @@ export const TransactionListHandler = ({
           transaction: buildPrintTransaction(transaction),
         });
       }}
-      onPrintKitchenSlipMenuPress={(transaction) => {
-        const payload = buildOrderSlipPayload(
-          buildOrderSlipSource(transaction),
-          'KITCHEN'
-        );
-        if (payload) print(payload);
-      }}
-      onPrintBarSlipMenuPress={(transaction) => {
-        const payload = buildOrderSlipPayload(
-          buildOrderSlipSource(transaction),
-          'BAR'
-        );
+      onPrintOrderSlipMenuPress={(transaction) => {
+        const payload = buildOrderSlipPayload(buildOrderSlipSource(transaction));
         if (payload) print(payload);
       }}
       onEmptyActionPress={() => router.push('/transactions/create')}

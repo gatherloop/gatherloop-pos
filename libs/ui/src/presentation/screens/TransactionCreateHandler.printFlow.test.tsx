@@ -176,7 +176,7 @@ describe('TransactionCreateHandler print flow', () => {
     };
   });
 
-  it('prompts invoice, kitchen slip, and bar slip in sequence when both stations have items', async () => {
+  it('prompts invoice then a single order slip grouped by station', async () => {
     transactionItemsValue = [
       { variant: buildVariant('Fried Rice', 'KITCHEN'), price: 10000, amount: 1, discountAmount: 0, note: '' },
       { variant: buildVariant('Beer', 'BAR'), price: 20000, amount: 1, discountAmount: 0, note: '' },
@@ -192,35 +192,51 @@ describe('TransactionCreateHandler print flow', () => {
       expect.objectContaining({ type: 'INVOICE' })
     );
 
-    await confirmLatestPrompt('Print Kitchen Slip');
+    await confirmLatestPrompt('Print Order Slip');
     expect(mockPrint).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'ORDER_SLIP',
-        station: 'KITCHEN',
         transaction: expect.objectContaining({
-          items: [expect.objectContaining({ name: 'Fried Rice - Large' })],
+          items: {
+            kitchens: [expect.objectContaining({ name: 'Fried Rice - Large' })],
+            bars: [expect.objectContaining({ name: 'Beer - Large' })],
+          },
         }),
       })
     );
 
-    await confirmLatestPrompt('Print Bar Slip');
-    expect(mockPrint).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'ORDER_SLIP',
-        station: 'BAR',
-        transaction: expect.objectContaining({
-          items: [expect.objectContaining({ name: 'Beer - Large' })],
-        }),
-      })
-    );
-
-    expect(mockPrint).toHaveBeenCalledTimes(3);
+    expect(mockPrint).toHaveBeenCalledTimes(2);
     expect(mockRouterPush).toHaveBeenCalledWith('/transactions');
   });
 
-  it('skips the kitchen slip prompt when there are no kitchen items', async () => {
+  it('shows the order slip prompt only once even when both stations have items', async () => {
     transactionItemsValue = [
+      { variant: buildVariant('Fried Rice', 'KITCHEN'), price: 10000, amount: 1, discountAmount: 0, note: '' },
       { variant: buildVariant('Beer', 'BAR'), price: 20000, amount: 1, discountAmount: 0, note: '' },
+    ];
+
+    await act(async () => {
+      render(<TransactionCreateHandler {...usecaseProps} />);
+      await flushPromises();
+    });
+
+    await confirmLatestPrompt('Print Invoice');
+
+    const orderSlipPrompts = mockConfirmationShow.mock.calls.filter(
+      ([params]) => params.title === 'Print Order Slip'
+    );
+    expect(orderSlipPrompts).toHaveLength(1);
+
+    expect(mockConfirmationShow).not.toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Print Kitchen Slip' })
+    );
+    expect(mockConfirmationShow).not.toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Print Bar Slip' })
+    );
+  });
+
+  it('skips the order slip prompt when no item belongs to a station', async () => {
+    transactionItemsValue = [
       { variant: buildVariant('Board Game Ticket', 'NONE'), price: 10000, amount: 1, discountAmount: 0, note: '' },
     ];
 
@@ -232,16 +248,13 @@ describe('TransactionCreateHandler print flow', () => {
     await confirmLatestPrompt('Print Invoice');
 
     expect(mockConfirmationShow).not.toHaveBeenCalledWith(
-      expect.objectContaining({ title: 'Print Kitchen Slip' })
+      expect.objectContaining({ title: 'Print Order Slip' })
     );
-
-    await confirmLatestPrompt('Print Bar Slip');
-
-    expect(mockPrint).toHaveBeenCalledTimes(2);
+    expect(mockPrint).toHaveBeenCalledTimes(1);
     expect(mockRouterPush).toHaveBeenCalledWith('/transactions');
   });
 
-  it('navigates to /transactions when every slip prompt is cancelled', async () => {
+  it('navigates to /transactions when every prompt is cancelled', async () => {
     transactionItemsValue = [
       { variant: buildVariant('Fried Rice', 'KITCHEN'), price: 10000, amount: 1, discountAmount: 0, note: '' },
     ];
@@ -252,12 +265,8 @@ describe('TransactionCreateHandler print flow', () => {
     });
 
     await cancelLatestPrompt('Print Invoice');
-    await cancelLatestPrompt('Print Kitchen Slip');
+    await cancelLatestPrompt('Print Order Slip');
 
-    // No bar items, so the bar prompt is skipped entirely and we navigate away.
-    expect(mockConfirmationShow).not.toHaveBeenCalledWith(
-      expect.objectContaining({ title: 'Print Bar Slip' })
-    );
     expect(mockPrint).not.toHaveBeenCalled();
     expect(mockRouterPush).toHaveBeenCalledWith('/transactions');
   });
