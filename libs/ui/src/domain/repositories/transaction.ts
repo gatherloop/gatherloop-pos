@@ -53,11 +53,15 @@ export interface TransactionRepository {
 
   unpayTransaction: (transactionId: number) => Promise<void>;
 
-  getTransactionStatisticList: (
-    groupBy: 'date' | 'month'
-  ) => TransactionStatistic[];
+  getTransactionStatisticList: (params: {
+    groupBy: 'date' | 'month';
+    startDate: string | null;
+    endDate: string | null;
+  }) => TransactionStatistic[];
 
-  fetchTransactionStatisticList: (
-    groupBy: 'date' | 'month'
-  ) => Promise<TransactionStatistic[]>;
+  fetchTransactionStatisticList: (params: {
+    groupBy: 'date' | 'month';
+    startDate: string | null;
+    endDate: string | null;
+  }) => Promise<TransactionStatistic[]>;
 }

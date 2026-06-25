@@ -32,26 +32,40 @@ export class ApiTransactionRepository implements TransactionRepository {
   }
 
   getTransactionStatisticList: TransactionRepository['getTransactionStatisticList'] =
-    (groupBy: 'date' | 'month') => {
+    ({ groupBy, startDate, endDate }) => {
+      const params = {
+        groupBy,
+        startDate: startDate ?? undefined,
+        endDate: endDate ?? undefined,
+      };
       const res = this.client.getQueryState<TransactionStatistics200>(
-        transactionStatisticsQueryKey({ groupBy })
+        transactionStatisticsQueryKey(params)
       )?.data;
 
       this.client.removeQueries({
-        queryKey: transactionStatisticsQueryKey({ groupBy }),
+        queryKey: transactionStatisticsQueryKey(params),
       });
 
       return res?.data.map(toTransactionStatistic) ?? [];
     };
 
   fetchTransactionStatisticList = (
-    groupBy: 'date' | 'month',
+    {
+      groupBy,
+      startDate,
+      endDate,
+    }: { groupBy: 'date' | 'month'; startDate: string | null; endDate: string | null },
     options?: Partial<RequestConfig>
   ) => {
+    const params = {
+      groupBy,
+      startDate: startDate ?? undefined,
+      endDate: endDate ?? undefined,
+    };
     return this.client
       .fetchQuery({
-        queryKey: transactionStatisticsQueryKey({ groupBy }),
-        queryFn: () => transactionStatistics({ groupBy }, options),
+        queryKey: transactionStatisticsQueryKey(params),
+        queryFn: () => transactionStatistics(params, options),
       })
       .then((data) => data.data.map(toTransactionStatistic));
   };

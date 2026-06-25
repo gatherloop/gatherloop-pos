@@ -25,14 +25,24 @@ export const getServerSideProps: GetServerSideProps<
     new UrlTransactionStatisticListQueryRepository();
 
   const groupBy = transactionStatisticListQueryRepository.getGroupBy(url);
+  const preset = transactionStatisticListQueryRepository.getPreset(url);
+  const startDate = transactionStatisticListQueryRepository.getStartDate(url);
+  const endDate = transactionStatisticListQueryRepository.getEndDate(url);
   const transactionStatistics =
-    await transactionRepository.fetchTransactionStatisticList(groupBy, {
-      headers: { Cookie: ctx.req.headers.cookie },
-    });
+    await transactionRepository.fetchTransactionStatisticList(
+      { groupBy, startDate, endDate },
+      { headers: { Cookie: ctx.req.headers.cookie } }
+    );
 
   return {
     props: {
-      transactionStatisticListParams: { transactionStatistics, groupBy },
+      transactionStatisticListParams: {
+        transactionStatistics,
+        groupBy,
+        preset,
+        startDate,
+        endDate,
+      },
     },
   };
 };

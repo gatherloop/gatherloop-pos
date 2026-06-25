@@ -1,5 +1,5 @@
 import { match } from 'ts-pattern';
-import { TransactionStatistic } from '../entities';
+import { TransactionStatistic, TransactionStatisticPreset } from '../entities';
 import {
   TransactionRepository,
   TransactionStatisticListQueryRepository,
@@ -10,6 +10,9 @@ type Context = {
   errorMessage: string | null;
   transactionStatistics: TransactionStatistic[];
   groupBy: 'date' | 'month';
+  preset: TransactionStatisticPreset;
+  startDate: string | null;
+  endDate: string | null;
 };
 
 export type TransactionStatisticListState = (
@@ -24,11 +27,21 @@ export type TransactionStatisticListAction =
   | { type: 'FETCH' }
   | { type: 'FETCH_SUCCESS'; transactionStatistics: TransactionStatistic[] }
   | { type: 'FETCH_ERROR'; errorMessage: string }
-  | { type: 'SET_GROUP_BY'; groupBy: 'date' | 'month' };
+  | { type: 'SET_GROUP_BY'; groupBy: 'date' | 'month' }
+  | {
+      type: 'SET_DATE_RANGE';
+      preset: TransactionStatisticPreset;
+      startDate: string | null;
+      endDate: string | null;
+      groupBy: 'date' | 'month';
+    };
 
 export type TransactionStatisticListParams = {
   transactionStatistics: TransactionStatistic[];
   groupBy?: 'date' | 'month';
+  preset?: TransactionStatisticPreset;
+  startDate?: string | null;
+  endDate?: string | null;
 };
 
 export class TransactionStatisticListUsecase extends Usecase<
@@ -58,6 +71,9 @@ export class TransactionStatisticListUsecase extends Usecase<
       errorMessage: null,
       transactionStatistics: this.params.transactionStatistics,
       groupBy: this.params.groupBy ?? 'date',
+      preset: this.params.preset ?? 'last30Days',
+      startDate: this.params.startDate ?? null,
+      endDate: this.params.endDate ?? null,
     };
   }
 
@@ -100,6 +116,17 @@ export class TransactionStatisticListUsecase extends Usecase<
           groupBy,
         })
       )
+      .with(
+        [{ type: 'loaded' }, { type: 'SET_DATE_RANGE' }],
+        ([state, { preset, startDate, endDate, groupBy }]) => ({
+          ...state,
+          type: 'loading',
+          preset,
+          startDate,
+          endDate,
+          groupBy,
+        })
+      )
       .otherwise(() => state);
   }
 
@@ -111,10 +138,15 @@ export class TransactionStatisticListUsecase extends Usecase<
       .with({ type: 'idle' }, () => {
         dispatch({ type: 'FETCH' });
       })
-      .with({ type: 'loading' }, ({ groupBy }) => {
+      .with({ type: 'loading' }, ({ groupBy, preset, startDate, endDate }) => {
         this.transactionStatisticListQueryRepository.setGroupBy(groupBy);
+        this.transactionStatisticListQueryRepository.setDateRange({
+          preset,
+          startDate,
+          endDate,
+        });
         this.transactionRepository
-          .fetchTransactionStatisticList(groupBy)
+          .fetchTransactionStatisticList({ groupBy, startDate, endDate })
           .then((transactionStatistics) =>
             dispatch({
               type: 'FETCH_SUCCESS',
