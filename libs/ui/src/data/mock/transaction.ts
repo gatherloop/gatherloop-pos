@@ -185,15 +185,19 @@ export class MockTransactionRepository implements TransactionRepository {
     };
   }
 
-  getTransactionStatisticList(
-    _groupBy: 'date' | 'month'
-  ): TransactionStatistic[] {
+  getTransactionStatisticList(_params: {
+    groupBy: 'date' | 'month';
+    startDate: string | null;
+    endDate: string | null;
+  }): TransactionStatistic[] {
     return [...this.statistics];
   }
 
-  async fetchTransactionStatisticList(
-    _groupBy: 'date' | 'month'
-  ): Promise<TransactionStatistic[]> {
+  async fetchTransactionStatisticList(_params: {
+    groupBy: 'date' | 'month';
+    startDate: string | null;
+    endDate: string | null;
+  }): Promise<TransactionStatistic[]> {
     if (this.shouldFail)
       throw new Error('Failed to fetch transaction statistics');
     return Promise.resolve([...this.statistics]);

@@ -12,6 +12,7 @@ export * from './WalletTransfer';
 export * from './Expense';
 export * from './Transaction';
 export * from './TransactionStatistic';
+export * from './TransactionStatisticDateRange';
 export * from './Rental';
 export * from './Supplier';
 export * from './ChecklistTemplate';
