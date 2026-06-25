@@ -261,11 +261,11 @@ func TestTransactionRepository_GetTransactionStatistics_RangeAndOrdering(t *test
 		stats, err := transactionRepo.GetTransactionStatistics(ctx, "date", &startDate, &endDate)
 		require.Nil(t, err)
 
-		var total int32
+		var total float32
 		for _, s := range stats {
 			total += s.Total
 		}
-		assert.Equal(t, int32(500), total, "expected only the two January transactions (200 + 300)")
+		assert.Equal(t, float32(500), total, "expected only the two January transactions (200 + 300)")
 	})
 
 	t.Run("inclusive endDate includes the whole day", func(t *testing.T) {
@@ -275,10 +275,10 @@ func TestTransactionRepository_GetTransactionStatistics_RangeAndOrdering(t *test
 		stats, err := transactionRepo.GetTransactionStatistics(ctx, "date", &startDate, &endDate)
 		require.Nil(t, err)
 
-		var total int32
+		var total float32
 		for _, s := range stats {
 			total += s.Total
 		}
-		assert.Equal(t, int32(300), total, "endDate=2025-01-20 must include the 23:59 transaction on that day")
+		assert.Equal(t, float32(300), total, "endDate=2025-01-20 must include the 23:59 transaction on that day")
 	})
 }
