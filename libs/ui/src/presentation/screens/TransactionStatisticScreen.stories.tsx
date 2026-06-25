@@ -22,9 +22,13 @@ const defaultArgs = {
   onLogoutPress: fn(),
   onGroupByChange: fn(),
   onRetryButtonPress: fn(),
+  onDateRangeChange: fn(),
   totalStatistics: mockTotalStatistics,
   totalIncomeStatistics: mockTotalIncomeStatistics,
   groupBy: 'date' as const,
+  preset: 'last30Days' as const,
+  startDate: '2024-01-15',
+  endDate: '2024-01-19',
 };
 
 const meta: Meta<typeof TransactionStatisticScreen> = {

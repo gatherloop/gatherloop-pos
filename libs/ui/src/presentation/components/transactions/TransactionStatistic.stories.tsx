@@ -21,6 +21,10 @@ const meta: Meta<typeof TransactionStatistic> = {
     groupBy: 'date',
     onGroupByChange: fn(),
     onRetryButtonPress: fn(),
+    onDateRangeChange: fn(),
+    preset: 'last30Days',
+    startDate: '2024-01-15',
+    endDate: '2024-01-21',
     totalStatistics: mockDailyData,
     totalIncomeStatistics: mockIncomeData,
   },
@@ -51,6 +55,7 @@ export const MonthlyGroupBy: Story = {
   args: {
     variant: { type: 'loaded' },
     groupBy: 'month',
+    preset: 'last12Months',
     totalStatistics: [
       { x: '2024-01', y: 45000000 },
       { x: '2024-02', y: 52000000 },
@@ -61,5 +66,23 @@ export const MonthlyGroupBy: Story = {
       { x: '2024-02', y: 44000000 },
       { x: '2024-03', y: 32000000 },
     ],
+  },
+};
+
+export const CustomRangeSelected: Story = {
+  args: {
+    variant: { type: 'loaded' },
+    preset: 'custom',
+    startDate: '2024-01-15',
+    endDate: '2024-01-21',
+  },
+};
+
+export const EmptyRange: Story = {
+  args: {
+    variant: { type: 'loaded' },
+    preset: 'thisMonth',
+    totalStatistics: [],
+    totalIncomeStatistics: [],
   },
 };
