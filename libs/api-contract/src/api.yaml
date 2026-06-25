@@ -1536,6 +1536,16 @@ paths:
           in: query
           schema:
             type: string
+        - name: startDate
+          in: query
+          description: 'Inclusive lower bound on created_at, format YYYY-MM-DD'
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          description: 'Inclusive upper bound on created_at, format YYYY-MM-DD'
+          schema:
+            type: string
       responses:
         '200':
           description: success response
@@ -1543,6 +1553,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TransactionStatisticResponse'
+        '400':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: server error
           content:
