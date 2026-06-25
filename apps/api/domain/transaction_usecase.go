@@ -342,8 +342,12 @@ func (usecase TransactionUsecase) UnpayTransaction(ctx context.Context, id int64
 	})
 }
 
-func (usecase TransactionUsecase) GetTransactionStatistics(ctx context.Context, groupBy string) ([]TransactionStatistic, *Error) {
-	return usecase.transactionRepository.GetTransactionStatistics(ctx, groupBy)
+func (usecase TransactionUsecase) GetTransactionStatistics(ctx context.Context, groupBy string, startDate *time.Time, endDate *time.Time) ([]TransactionStatistic, *Error) {
+	if startDate != nil && endDate != nil && startDate.After(*endDate) {
+		return []TransactionStatistic{}, &Error{Type: BadRequest, Message: "startDate must be on or before endDate"}
+	}
+
+	return usecase.transactionRepository.GetTransactionStatistics(ctx, groupBy, startDate, endDate)
 }
 
 // applyTransactionCoupons resolves each TransactionCoupon against the coupon

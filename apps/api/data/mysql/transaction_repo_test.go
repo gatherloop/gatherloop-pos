@@ -201,3 +201,84 @@ func TestTransactionRepository_WholeBillCouponRoundTrip(t *testing.T) {
 	require.Len(t, reloaded.TransactionCoupons, 1)
 	assert.Nil(t, reloaded.TransactionCoupons[0].TransactionItemId)
 }
+
+// createTransactionAt creates a transaction via the repository and then
+// backdates its created_at with a raw UPDATE, since CreateTransaction always
+// stamps "now" and the statistics tests need deterministic, spread-out dates.
+func createTransactionAt(t *testing.T, db *gorm.DB, transactionRepo domain.TransactionRepository, name string, total float32, createdAt time.Time) int64 {
+	t.Helper()
+
+	created, err := transactionRepo.CreateTransaction(context.Background(), domain.Transaction{Name: name, Total: total})
+	require.Nil(t, err)
+	t.Cleanup(func() { db.Exec("DELETE FROM transactions WHERE id = ?", created.Id) })
+
+	require.NoError(t, db.Exec("UPDATE transactions SET created_at = ? WHERE id = ?", createdAt, created.Id).Error)
+
+	return created.Id
+}
+
+// TestTransactionRepository_GetTransactionStatistics_RangeAndOrdering covers
+// Phase 1 of the dashboard date-range filter (PRD FR-1/FR-2): bounded results,
+// inclusive endDate, and chronological (not string) ordering across the
+// year boundary that exposes the "01-2025" < "12-2024" string-sort bug.
+func TestTransactionRepository_GetTransactionStatistics_RangeAndOrdering(t *testing.T) {
+	db := setupTestDB(t)
+	ctx := context.Background()
+	transactionRepo := mysql.NewTransactionRepository(db)
+
+	dec := createTransactionAt(t, db, transactionRepo, "Stats Dec 2024", 100, time.Date(2024, 12, 15, 10, 0, 0, 0, time.Local))
+	jan10 := createTransactionAt(t, db, transactionRepo, "Stats Jan 10 2025", 200, time.Date(2025, 1, 10, 10, 0, 0, 0, time.Local))
+	jan20 := createTransactionAt(t, db, transactionRepo, "Stats Jan 20 2025", 300, time.Date(2025, 1, 20, 23, 59, 0, 0, time.Local))
+	feb := createTransactionAt(t, db, transactionRepo, "Stats Feb 2025", 400, time.Date(2025, 2, 5, 10, 0, 0, 0, time.Local))
+	_ = dec
+	_ = jan10
+	_ = jan20
+	_ = feb
+
+	t.Run("month grouping orders chronologically across year boundary", func(t *testing.T) {
+		stats, err := transactionRepo.GetTransactionStatistics(ctx, "month", nil, nil)
+		require.Nil(t, err)
+		require.True(t, len(stats) >= 2)
+
+		decIndex, janIndex := -1, -1
+		for i, s := range stats {
+			if s.Date == "12-2024" {
+				decIndex = i
+			}
+			if s.Date == "01-2025" {
+				janIndex = i
+			}
+		}
+		require.NotEqual(t, -1, decIndex, "expected 12-2024 in results")
+		require.NotEqual(t, -1, janIndex, "expected 01-2025 in results")
+		assert.Less(t, decIndex, janIndex, "12-2024 must come before 01-2025 in real chronological order")
+	})
+
+	t.Run("bounded range excludes rows outside the window", func(t *testing.T) {
+		startDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.Local)
+		endDate := time.Date(2025, 1, 31, 0, 0, 0, 0, time.Local)
+
+		stats, err := transactionRepo.GetTransactionStatistics(ctx, "date", &startDate, &endDate)
+		require.Nil(t, err)
+
+		var total int32
+		for _, s := range stats {
+			total += s.Total
+		}
+		assert.Equal(t, int32(500), total, "expected only the two January transactions (200 + 300)")
+	})
+
+	t.Run("inclusive endDate includes the whole day", func(t *testing.T) {
+		startDate := time.Date(2025, 1, 20, 0, 0, 0, 0, time.Local)
+		endDate := time.Date(2025, 1, 20, 0, 0, 0, 0, time.Local)
+
+		stats, err := transactionRepo.GetTransactionStatistics(ctx, "date", &startDate, &endDate)
+		require.Nil(t, err)
+
+		var total int32
+		for _, s := range stats {
+			total += s.Total
+		}
+		assert.Equal(t, int32(300), total, "endDate=2025-01-20 must include the 23:59 transaction on that day")
+	})
+}

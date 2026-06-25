@@ -377,22 +377,54 @@ func TestTransactionHandler_UnpayTransaction(t *testing.T) {
 func TestTransactionHandler_GetTransactionStatistics(t *testing.T) {
 	tests := []struct {
 		name           string
+		url            string
 		setupMocks     func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository, budgetRepo *mock.MockBudgetRepository)
 		expectedStatus int
 	}{
 		{
 			name: "success",
+			url:  "/transactions/statistics",
 			setupMocks: func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository, budgetRepo *mock.MockBudgetRepository) {
-				txRepo.EXPECT().GetTransactionStatistics(gomock.Any(), gomock.Any()).Return([]domain.TransactionStatistic{{Date: "2024-01", Total: 10000}}, nil)
+				txRepo.EXPECT().GetTransactionStatistics(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.TransactionStatistic{{Date: "2024-01", Total: 10000}}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
 		{
 			name: "repo error",
+			url:  "/transactions/statistics",
 			setupMocks: func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository, budgetRepo *mock.MockBudgetRepository) {
-				txRepo.EXPECT().GetTransactionStatistics(gomock.Any(), gomock.Any()).Return(nil, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
+				txRepo.EXPECT().GetTransactionStatistics(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
 			expectedStatus: http.StatusInternalServerError,
+		},
+		{
+			name: "valid range",
+			url:  "/transactions/statistics?startDate=2024-01-01&endDate=2024-01-31",
+			setupMocks: func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository, budgetRepo *mock.MockBudgetRepository) {
+				txRepo.EXPECT().GetTransactionStatistics(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.TransactionStatistic{{Date: "2024-01", Total: 10000}}, nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name: "malformed startDate",
+			url:  "/transactions/statistics?startDate=not-a-date",
+			setupMocks: func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository, budgetRepo *mock.MockBudgetRepository) {
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "malformed endDate",
+			url:  "/transactions/statistics?endDate=not-a-date",
+			setupMocks: func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository, budgetRepo *mock.MockBudgetRepository) {
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "startDate after endDate",
+			url:  "/transactions/statistics?startDate=2024-02-01&endDate=2024-01-01",
+			setupMocks: func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository, budgetRepo *mock.MockBudgetRepository) {
+			},
+			expectedStatus: http.StatusBadRequest,
 		},
 	}
 
@@ -400,7 +432,7 @@ func TestTransactionHandler_GetTransactionStatistics(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			handler, ctrl := newTransactionHandler(t, tt.setupMocks)
 			defer ctrl.Finish()
-			req := httptest.NewRequest(http.MethodGet, "/transactions/statistics", nil)
+			req := httptest.NewRequest(http.MethodGet, tt.url, nil)
 			w := httptest.NewRecorder()
 			handler.GetTransactionStatistics(w, req)
 			assert.Equal(t, tt.expectedStatus, w.Code)
