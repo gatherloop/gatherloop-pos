@@ -25,6 +25,8 @@ import {
   ExpenseCreate,
   ExpenseUpdate,
   TransactionStatisticApp,
+  DEFAULT_TRANSACTION_STATISTIC_PRESET,
+  getDateRangeForPreset,
   AuthLogin,
   CalculationList,
   CalculationCreate,
@@ -261,13 +263,22 @@ export const App = () => {
           />
           <Stack.Screen
             name="dashboard"
-            component={() => (
-              <TransactionStatisticApp
-                transactionStatisticListParams={{
-                  transactionStatistics: [],
-                }}
-              />
-            )}
+            component={() => {
+              const defaultRange = getDateRangeForPreset(
+                DEFAULT_TRANSACTION_STATISTIC_PRESET
+              );
+              return (
+                <TransactionStatisticApp
+                  transactionStatisticListParams={{
+                    transactionStatistics: [],
+                    preset: DEFAULT_TRANSACTION_STATISTIC_PRESET,
+                    groupBy: defaultRange.groupBy,
+                    startDate: defaultRange.startDate,
+                    endDate: defaultRange.endDate,
+                  }}
+                />
+              );
+            }}
             options={{ title: 'Dashboard' }}
           />
           <Stack.Screen
