@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
 
@@ -829,10 +830,19 @@ func TestTransactionUsecase_CreateTransaction_ItemCoupon(t *testing.T) {
 	})
 }
 
+func mustParseDate(t *testing.T, s string) *time.Time {
+	t.Helper()
+	parsed, err := time.Parse("2006-01-02", s)
+	require.NoError(t, err)
+	return &parsed
+}
+
 func TestTransactionUsecase_GetTransactionStatistics(t *testing.T) {
 	tests := []struct {
 		name          string
 		groupBy       string
+		startDate     func(t *testing.T) *time.Time
+		endDate       func(t *testing.T) *time.Time
 		setupMock     func(txRepo *mock.MockTransactionRepository)
 		expectedLen   int
 		expectedError *domain.Error
@@ -841,7 +851,7 @@ func TestTransactionUsecase_GetTransactionStatistics(t *testing.T) {
 			name:    "success",
 			groupBy: "day",
 			setupMock: func(txRepo *mock.MockTransactionRepository) {
-				txRepo.EXPECT().GetTransactionStatistics(gomock.Any(), "day").Return([]domain.TransactionStatistic{{Total: 100000}}, nil)
+				txRepo.EXPECT().GetTransactionStatistics(gomock.Any(), "day", (*time.Time)(nil), (*time.Time)(nil)).Return([]domain.TransactionStatistic{{Total: 100000}}, nil)
 			},
 			expectedLen: 1,
 		},
@@ -849,9 +859,37 @@ func TestTransactionUsecase_GetTransactionStatistics(t *testing.T) {
 			name:    "repo error",
 			groupBy: "day",
 			setupMock: func(txRepo *mock.MockTransactionRepository) {
-				txRepo.EXPECT().GetTransactionStatistics(gomock.Any(), "day").Return(nil, &domain.Error{Type: domain.InternalServerError})
+				txRepo.EXPECT().GetTransactionStatistics(gomock.Any(), "day", (*time.Time)(nil), (*time.Time)(nil)).Return(nil, &domain.Error{Type: domain.InternalServerError})
 			},
 			expectedError: &domain.Error{Type: domain.InternalServerError},
+		},
+		{
+			name:      "both empty delegates unchanged",
+			groupBy:   "",
+			startDate: func(t *testing.T) *time.Time { return nil },
+			endDate:   func(t *testing.T) *time.Time { return nil },
+			setupMock: func(txRepo *mock.MockTransactionRepository) {
+				txRepo.EXPECT().GetTransactionStatistics(gomock.Any(), "", (*time.Time)(nil), (*time.Time)(nil)).Return([]domain.TransactionStatistic{{Total: 100000}}, nil)
+			},
+			expectedLen: 1,
+		},
+		{
+			name:      "valid range forwarded to repo",
+			groupBy:   "date",
+			startDate: func(t *testing.T) *time.Time { return mustParseDate(t, "2024-01-01") },
+			endDate:   func(t *testing.T) *time.Time { return mustParseDate(t, "2024-01-31") },
+			setupMock: func(txRepo *mock.MockTransactionRepository) {
+				txRepo.EXPECT().GetTransactionStatistics(gomock.Any(), "date", mustParseDate(t, "2024-01-01"), mustParseDate(t, "2024-01-31")).Return([]domain.TransactionStatistic{{Total: 100000}}, nil)
+			},
+			expectedLen: 1,
+		},
+		{
+			name:          "startDate after endDate returns bad request",
+			groupBy:       "date",
+			startDate:     func(t *testing.T) *time.Time { return mustParseDate(t, "2024-02-01") },
+			endDate:       func(t *testing.T) *time.Time { return mustParseDate(t, "2024-01-01") },
+			setupMock:     func(txRepo *mock.MockTransactionRepository) {},
+			expectedError: &domain.Error{Type: domain.BadRequest},
 		},
 	}
 
@@ -867,8 +905,16 @@ func TestTransactionUsecase_GetTransactionStatistics(t *testing.T) {
 			budgetRepo := mock.NewMockBudgetRepository(ctrl)
 			tt.setupMock(txRepo)
 
+			var startDate, endDate *time.Time
+			if tt.startDate != nil {
+				startDate = tt.startDate(t)
+			}
+			if tt.endDate != nil {
+				endDate = tt.endDate(t)
+			}
+
 			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, budgetRepo)
-			result, err := usecase.GetTransactionStatistics(context.Background(), tt.groupBy)
+			result, err := usecase.GetTransactionStatistics(context.Background(), tt.groupBy, startDate, endDate)
 
 			if tt.expectedError != nil {
 				assert.NotNil(t, err)

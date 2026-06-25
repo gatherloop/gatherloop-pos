@@ -5,11 +5,13 @@ import (
 	"apps/api/pkg/logger"
 	"context"
 	"encoding/json"
+	"fmt"
 	apiContract "libs/api-contract"
 	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func WriteError(ctx context.Context, w http.ResponseWriter, err apiContract.Error) {
@@ -112,6 +114,28 @@ func GetQuery(r *http.Request) string {
 
 func GetGroupBy(r *http.Request) string {
 	return r.URL.Query().Get("groupBy")
+}
+
+func GetStartDate(r *http.Request) (*time.Time, error) {
+	return parseDateQuery(r, "startDate")
+}
+
+func GetEndDate(r *http.Request) (*time.Time, error) {
+	return parseDateQuery(r, "endDate")
+}
+
+func parseDateQuery(r *http.Request, param string) (*time.Time, error) {
+	value := r.URL.Query().Get(param)
+	if value == "" {
+		return nil, nil
+	}
+
+	parsed, err := time.Parse("2006-01-02", value)
+	if err != nil {
+		return nil, fmt.Errorf("%s must be YYYY-MM-DD", param)
+	}
+
+	return &parsed, nil
 }
 
 func GetLimit(r *http.Request) (int, error) {

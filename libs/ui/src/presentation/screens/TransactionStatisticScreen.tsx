@@ -1,14 +1,23 @@
 import { H4 } from 'tamagui';
-import { TransactionStatistic, Layout } from '../components';
+import {
+  TransactionStatistic,
+  TransactionStatisticDateRangeChange,
+  Layout,
+} from '../components';
+import { TransactionStatisticPreset } from '../../domain';
 
 export type TransactionStatisticScreenProps = {
   onLogoutPress: () => void;
   onGroupByChange: (groupBy: 'date' | 'month') => void;
   onRetryButtonPress: () => void;
+  onDateRangeChange: (range: TransactionStatisticDateRangeChange) => void;
   variant: { type: 'loading' } | { type: 'loaded' } | { type: 'error' };
   totalStatistics: { x: string; y: number }[];
   totalIncomeStatistics: { x: string; y: number }[];
   groupBy: 'date' | 'month';
+  preset: TransactionStatisticPreset;
+  startDate: string | null;
+  endDate: string | null;
 };
 
 export const TransactionStatisticScreen = (
@@ -20,10 +29,14 @@ export const TransactionStatisticScreen = (
       <TransactionStatistic
         onGroupByChange={props.onGroupByChange}
         onRetryButtonPress={props.onRetryButtonPress}
+        onDateRangeChange={props.onDateRangeChange}
         variant={props.variant}
         totalStatistics={props.totalStatistics}
         totalIncomeStatistics={props.totalIncomeStatistics}
         groupBy={props.groupBy}
+        preset={props.preset}
+        startDate={props.startDate}
+        endDate={props.endDate}
       />
     </Layout>
   );

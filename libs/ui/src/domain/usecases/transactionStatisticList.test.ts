@@ -8,6 +8,7 @@ import {
   MockTransactionRepository,
   MockTransactionStatisticListQueryRepository,
 } from '../../data/mock';
+import { getDateRangeForPreset } from '../entities';
 import { UsecaseTester, flushPromises } from '../../utils/usecase';
 
 describe('TransactionStatisticListUsecase', () => {
@@ -29,11 +30,16 @@ describe('TransactionStatisticListUsecase', () => {
         TransactionStatisticListParams
       >(usecase);
 
+      const { startDate, endDate } = getDateRangeForPreset('last30Days');
+
       expect(transactionStatisticList.state).toEqual({
         type: 'loading',
         transactionStatistics: [],
         errorMessage: null,
         groupBy: 'date',
+        preset: 'last30Days',
+        startDate: null,
+        endDate: null,
       });
 
       await flushPromises();
@@ -42,6 +48,9 @@ describe('TransactionStatisticListUsecase', () => {
         transactionStatistics: repository.statistics,
         errorMessage: null,
         groupBy: 'date',
+        preset: 'last30Days',
+        startDate: null,
+        endDate: null,
       });
 
       transactionStatisticList.dispatch({
@@ -53,6 +62,9 @@ describe('TransactionStatisticListUsecase', () => {
         transactionStatistics: repository.statistics,
         errorMessage: null,
         groupBy: 'month',
+        preset: 'last30Days',
+        startDate: null,
+        endDate: null,
       });
 
       await flushPromises();
@@ -61,6 +73,37 @@ describe('TransactionStatisticListUsecase', () => {
         transactionStatistics: repository.statistics,
         errorMessage: null,
         groupBy: 'month',
+        preset: 'last30Days',
+        startDate: null,
+        endDate: null,
+      });
+
+      transactionStatisticList.dispatch({
+        type: 'SET_DATE_RANGE',
+        preset: 'last7Days',
+        startDate,
+        endDate,
+        groupBy: 'date',
+      });
+      expect(transactionStatisticList.state).toEqual({
+        type: 'loading',
+        transactionStatistics: repository.statistics,
+        errorMessage: null,
+        groupBy: 'date',
+        preset: 'last7Days',
+        startDate,
+        endDate,
+      });
+
+      await flushPromises();
+      expect(transactionStatisticList.state).toEqual({
+        type: 'loaded',
+        transactionStatistics: repository.statistics,
+        errorMessage: null,
+        groupBy: 'date',
+        preset: 'last7Days',
+        startDate,
+        endDate,
       });
     });
   });
@@ -89,6 +132,9 @@ describe('TransactionStatisticListUsecase', () => {
         transactionStatistics: [],
         errorMessage: null,
         groupBy: 'date',
+        preset: 'last30Days',
+        startDate: null,
+        endDate: null,
       });
 
       await flushPromises();
@@ -97,6 +143,9 @@ describe('TransactionStatisticListUsecase', () => {
         transactionStatistics: [],
         errorMessage: 'Failed to fetch transaction',
         groupBy: 'date',
+        preset: 'last30Days',
+        startDate: null,
+        endDate: null,
       });
 
       repository.setShouldFail(false);
@@ -106,6 +155,9 @@ describe('TransactionStatisticListUsecase', () => {
         transactionStatistics: [],
         errorMessage: null,
         groupBy: 'date',
+        preset: 'last30Days',
+        startDate: null,
+        endDate: null,
       });
 
       await flushPromises();
@@ -114,6 +166,9 @@ describe('TransactionStatisticListUsecase', () => {
         transactionStatistics: repository.statistics,
         errorMessage: null,
         groupBy: 'date',
+        preset: 'last30Days',
+        startDate: null,
+        endDate: null,
       });
     });
   });
@@ -143,6 +198,9 @@ describe('TransactionStatisticListUsecase', () => {
       transactionStatistics,
       errorMessage: null,
       groupBy: 'date',
+      preset: 'last30Days',
+      startDate: null,
+      endDate: null,
     });
   });
 });

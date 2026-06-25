@@ -52,6 +52,6 @@ type Transaction struct {
 
 type TransactionStatistic struct {
 	Date        string
-	Total       int32
+	Total       float32
 	TotalIncome float32
 }

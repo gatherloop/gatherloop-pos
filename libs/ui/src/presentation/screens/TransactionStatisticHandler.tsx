@@ -34,6 +34,15 @@ export const TransactionStatisticHandler = ({
       onRetryButtonPress={() =>
         transactionStatisticList.dispatch({ type: 'FETCH' })
       }
+      onDateRangeChange={({ preset, startDate, endDate, groupBy }) =>
+        transactionStatisticList.dispatch({
+          type: 'SET_DATE_RANGE',
+          preset,
+          startDate,
+          endDate,
+          groupBy,
+        })
+      }
       variant={match(transactionStatisticList.state)
         .returnType<TransactionStatisticScreenProps['variant']>()
         .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))
@@ -47,6 +56,9 @@ export const TransactionStatisticHandler = ({
         (statistic) => ({ y: statistic.totalIncome, x: statistic.date })
       )}
       groupBy={transactionStatisticList.state.groupBy}
+      preset={transactionStatisticList.state.preset}
+      startDate={transactionStatisticList.state.startDate}
+      endDate={transactionStatisticList.state.endDate}
     />
   );
 };

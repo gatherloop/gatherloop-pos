@@ -190,7 +190,7 @@ func (repo Repository) UnpayTransaction(ctx context.Context, id int64) *domain.E
 	return ToErrorCtx(ctx, result.Error, "UnpayTransaction")
 }
 
-func (repo Repository) GetTransactionStatistics(ctx context.Context, groupBy string) ([]domain.TransactionStatistic, *domain.Error) {
+func (repo Repository) GetTransactionStatistics(ctx context.Context, groupBy string, startDate *time.Time, endDate *time.Time) ([]domain.TransactionStatistic, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 
 	dateFormat := ""
@@ -201,8 +201,22 @@ func (repo Repository) GetTransactionStatistics(ctx context.Context, groupBy str
 		dateFormat = "%m-%Y"
 	}
 
+	groupExpr := fmt.Sprintf("DATE_FORMAT(created_at, '%s')", dateFormat)
+
+	query := db.Table("transactions").
+		Select(fmt.Sprintf("%s as date, SUM(total) as total, SUM(total_income) as total_income", groupExpr)).
+		Where("deleted_at is NULL")
+
+	if startDate != nil {
+		query = query.Where("created_at >= ?", *startDate)
+	}
+
+	if endDate != nil {
+		query = query.Where("created_at < ?", endDate.AddDate(0, 0, 1))
+	}
+
 	var transactionStatistics []TransactionStatistic
-	result := db.Table("transactions").Select(fmt.Sprintf("DATE_FORMAT(created_at, '%s') as date, SUM(total) as total, SUM(total_income) as total_income", dateFormat)).Where("deleted_at is NULL").Group(fmt.Sprintf("DATE_FORMAT(created_at, '%s')", dateFormat)).Find(&transactionStatistics)
+	result := query.Group(groupExpr).Order("MIN(created_at) ASC").Find(&transactionStatistics)
 
 	return ToTransactionStatisticsListDomain(transactionStatistics), ToErrorCtx(ctx, result.Error, "GetTransactionStatistics")
 }
