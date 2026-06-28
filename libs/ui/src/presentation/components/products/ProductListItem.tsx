@@ -1,10 +1,12 @@
-import { Pencil, Tag, Trash } from '@tamagui/lucide-icons';
+import { FileText, Pencil, Tag, Trash } from '@tamagui/lucide-icons';
 import { ListItem } from '../base';
 import { XStackProps } from 'tamagui';
+import { ProductStatus } from '../../../domain';
 
 export type ProductListItemProps = {
   name: string;
   saleType: 'purchase' | 'rental';
+  status: ProductStatus;
   categoryName: string;
   imageUrl?: string;
   onEditMenuPress?: () => void;
@@ -15,6 +17,7 @@ export const ProductListItem = ({
   name,
   categoryName,
   saleType,
+  status,
   imageUrl,
   onEditMenuPress,
   onDeleteMenuPress,
@@ -30,6 +33,11 @@ export const ProductListItem = ({
           icon: Tag,
           label: 'SALE TYPE',
           value: saleType === 'purchase' ? 'Purchase' : 'Rental',
+        },
+        {
+          icon: FileText,
+          label: 'STATUS',
+          value: status === 'draft' ? 'Draft' : 'Published',
         },
       ]}
       menus={[

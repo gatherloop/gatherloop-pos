@@ -5,6 +5,7 @@ import {
   ProductDeleteUsecase,
   ProductListUsecase,
   SaleType,
+  StatusFilter,
 } from '../../domain';
 import { ProductListScreen, ProductListScreenProps } from './ProductListScreen';
 import { match, P } from 'ts-pattern';
@@ -69,6 +70,9 @@ export const ProductListHandler = ({
       onSaleTypeChange={(saleType?: SaleType) =>
         productList.dispatch({ type: 'CHANGE_PARAMS', saleType })
       }
+      onStatusChange={(status?: StatusFilter) =>
+        productList.dispatch({ type: 'CHANGE_PARAMS', status })
+      }
       onSearchValueChange={(query: string) =>
         productList.dispatch({ type: 'CHANGE_PARAMS', query })
       }
@@ -76,6 +80,7 @@ export const ProductListHandler = ({
         productList.dispatch({ type: 'CHANGE_PARAMS', query: '', page: 1 })
       }
       saleType={productList.state.saleType}
+      status={productList.state.status}
       searchValue={productList.state.query}
       variant={match(productList.state)
         .returnType<ProductListScreenProps['variant']>()

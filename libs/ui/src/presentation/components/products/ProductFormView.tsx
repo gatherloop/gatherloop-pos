@@ -17,6 +17,7 @@ import {
   XStack,
   Paragraph,
   YStack,
+  SizableText,
 } from 'tamagui';
 import { ProductForm, Variant } from '../../../domain';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
@@ -78,6 +79,21 @@ export const ProductFormView = ({
               </Field>
               <Field name="imageUrl" label="Image URL" flex={1}>
                 <InputText />
+              </Field>
+            </XStack>
+
+            <XStack gap="$3" $sm={{ flexDirection: 'column' }}>
+              <Field name="status" label="Status" flex={1}>
+                <Select
+                  items={[
+                    { label: 'Draft', value: 'draft' },
+                    { label: 'Published', value: 'published' },
+                  ]}
+                />
+                <SizableText size="$2" color="$gray10">
+                  Draft products are hidden from checkout — use Draft to
+                  research a new product before releasing it for sale.
+                </SizableText>
               </Field>
             </XStack>
           </Card.Header>

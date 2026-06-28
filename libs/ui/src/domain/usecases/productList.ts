@@ -10,6 +10,8 @@ type OrderBy = 'asc' | 'desc';
 
 export type SaleType = 'all' | 'purchase' | 'rental';
 
+export type StatusFilter = 'all' | 'draft' | 'published';
+
 type Context = {
   products: Product[];
   page: number;
@@ -18,6 +20,7 @@ type Context = {
   sortBy: SortBy;
   orderBy: OrderBy;
   saleType: SaleType;
+  status: StatusFilter;
   itemPerPage: number;
   totalItem: number;
   fetchDebounceDelay: number;
@@ -42,6 +45,7 @@ export type ProductListAction =
       page?: number;
       query?: string;
       saleType?: SaleType;
+      status?: StatusFilter;
       fetchDebounceDelay?: number;
     }
   | { type: 'REVALIDATE'; products: Product[]; totalItem: number }
@@ -53,6 +57,7 @@ export type ProductListParams = {
   page?: number;
   query?: string;
   saleType?: SaleType;
+  status?: StatusFilter;
   sortBy?: SortBy;
   orderBy?: OrderBy;
   itemPerPage?: number;
@@ -94,6 +99,8 @@ export class ProductListUsecase extends Usecase<
       this.params.orderBy ?? this.productListQueryRepository.getOrderBy();
     const saleType =
       this.params.saleType ?? this.productListQueryRepository.getSaleType();
+    const status =
+      this.params.status ?? this.productListQueryRepository.getStatus();
 
     return {
       type: this.params.products.length >= 1 ? 'loaded' : 'idle',
@@ -102,6 +109,7 @@ export class ProductListUsecase extends Usecase<
       page,
       query,
       saleType,
+      status,
       errorMessage: null,
       sortBy,
       orderBy,
@@ -190,7 +198,7 @@ export class ProductListUsecase extends Usecase<
       .with({ type: 'idle' }, () => dispatch({ type: 'FETCH' }))
       .with(
         { type: 'loading' },
-        ({ page, itemPerPage, orderBy, query, sortBy, saleType }) =>
+        ({ page, itemPerPage, orderBy, query, sortBy, saleType, status }) =>
           this.productRepository
             .fetchProductList({
               page,
@@ -199,6 +207,7 @@ export class ProductListUsecase extends Usecase<
               query,
               sortBy,
               saleType,
+              status,
             })
             .then(({ products, totalItem }) =>
               dispatch({ type: 'FETCH_SUCCESS', products, totalItem })
@@ -219,6 +228,7 @@ export class ProductListUsecase extends Usecase<
           query,
           sortBy,
           saleType,
+          status,
           fetchDebounceDelay,
         }) => {
           this.productListQueryRepository.setPage(page);
@@ -227,6 +237,7 @@ export class ProductListUsecase extends Usecase<
           this.productListQueryRepository.setSearchQuery(query);
           this.productListQueryRepository.setSortBy(sortBy);
           this.productListQueryRepository.setSaleType(saleType);
+          this.productListQueryRepository.setStatus(status);
 
           changeParamsDebounce(() => {
             const { products, totalItem } =
@@ -237,6 +248,7 @@ export class ProductListUsecase extends Usecase<
                 query,
                 sortBy,
                 saleType,
+                status,
               });
 
             if (products.length > 0) {
@@ -258,6 +270,7 @@ export class ProductListUsecase extends Usecase<
           products,
           totalItem,
           saleType,
+          status,
         }) => {
           this.productRepository
             .fetchProductList({
@@ -267,6 +280,7 @@ export class ProductListUsecase extends Usecase<
               query,
               sortBy,
               saleType,
+              status,
             })
             .then(({ products, totalItem }) =>
               dispatch({ type: 'REVALIDATE_FINISH', products, totalItem })

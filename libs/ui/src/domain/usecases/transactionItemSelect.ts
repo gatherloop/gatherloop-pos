@@ -9,6 +9,8 @@ type SortBy = 'created_at';
 
 type OrderBy = 'asc' | 'desc';
 
+type Status = 'draft' | 'published' | 'all';
+
 type Context = {
   products: Product[];
   selectedProduct?: Product;
@@ -18,6 +20,7 @@ type Context = {
   page: number;
   query: string;
   saleType: SaleType;
+  status: Status;
   errorMessage: string | null;
   sortBy: SortBy;
   orderBy: OrderBy;
@@ -69,6 +72,7 @@ export type TransactionItemSelectParams = {
   orderBy?: OrderBy;
   itemPerPage?: number;
   saleType?: SaleType;
+  status?: Status;
 };
 
 const changeParamsDebounce = createDebounce();
@@ -100,6 +104,7 @@ export class TransactionItemSelectUsecase extends Usecase<
     const sortBy = this.params.sortBy ?? 'created_at';
     const orderBy = this.params.orderBy ?? 'desc';
     const saleType = this.params.saleType ?? 'all';
+    const status = this.params.status ?? 'published';
 
     return {
       type: this.params.products.length >= 1 ? 'loaded' : 'idle',
@@ -116,6 +121,7 @@ export class TransactionItemSelectUsecase extends Usecase<
       orderBy,
       itemPerPage,
       saleType,
+      status,
       fetchDebounceDelay: 0,
     };
   }
@@ -276,7 +282,7 @@ export class TransactionItemSelectUsecase extends Usecase<
       .with({ type: 'idle' }, () => dispatch({ type: 'FETCH' }))
       .with(
         { type: 'loading' },
-        ({ page, itemPerPage, orderBy, query, sortBy, saleType }) =>
+        ({ page, itemPerPage, orderBy, query, sortBy, saleType, status }) =>
           this.productRepository
             .fetchProductList({
               page,
@@ -285,6 +291,7 @@ export class TransactionItemSelectUsecase extends Usecase<
               query,
               sortBy,
               saleType,
+              status,
             })
             .then(({ products, totalItem }) =>
               dispatch({ type: 'FETCH_SUCCESS', products, totalItem })
@@ -305,6 +312,7 @@ export class TransactionItemSelectUsecase extends Usecase<
           query,
           sortBy,
           saleType,
+          status,
           fetchDebounceDelay,
         }) => {
           changeParamsDebounce(() => {
@@ -316,6 +324,7 @@ export class TransactionItemSelectUsecase extends Usecase<
                 query,
                 sortBy,
                 saleType,
+                status,
               });
 
             if (products.length > 0) {
@@ -337,6 +346,7 @@ export class TransactionItemSelectUsecase extends Usecase<
           products,
           totalItem,
           saleType,
+          status,
         }) => {
           this.productRepository
             .fetchProductList({
@@ -346,6 +356,7 @@ export class TransactionItemSelectUsecase extends Usecase<
               query,
               sortBy,
               saleType,
+              status,
             })
             .then(({ products, totalItem }) =>
               dispatch({ type: 'REVALIDATE_FINISH', products, totalItem })

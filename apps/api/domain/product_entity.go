@@ -11,6 +11,13 @@ const (
 	SaleTypeRental   SaleType = "rental"
 )
 
+type ProductStatus string
+
+const (
+	ProductStatusDraft     ProductStatus = "draft"
+	ProductStatusPublished ProductStatus = "published"
+)
+
 type Product struct {
 	Id          int64
 	CategoryId  int64
@@ -22,6 +29,7 @@ type Product struct {
 	CreatedAt   time.Time
 	Options     []Option
 	SaleType    SaleType
+	Status      ProductStatus
 }
 
 type Option struct {

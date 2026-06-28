@@ -61,6 +61,15 @@ export class UrlProductListQueryRepository
   setSaleType: ProductListQueryRepository['setSaleType'] = (saleType) => {
     setQueryParam('saleType', saleType);
   };
+
+  getStatus = (url?: string) => {
+    const statusQuery = getQueryParam('status', url);
+    return statusQuery ? toStatus(statusQuery) ?? 'all' : 'all';
+  };
+
+  setStatus: ProductListQueryRepository['setStatus'] = (status) => {
+    setQueryParam('status', status);
+  };
 }
 
 const toSortBy = createStringUnionParser<'created_at'[]>(['created_at']);
@@ -68,5 +77,10 @@ const toOrderBy = createStringUnionParser<('asc' | 'desc')[]>(['asc', 'desc']);
 const toSaleType = createStringUnionParser<('rental' | 'purchase' | 'all')[]>([
   'rental',
   'purchase',
+  'all',
+]);
+const toStatus = createStringUnionParser<('draft' | 'published' | 'all')[]>([
+  'draft',
+  'published',
   'all',
 ]);

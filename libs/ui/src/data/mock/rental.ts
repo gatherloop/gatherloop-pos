@@ -19,6 +19,7 @@ const mockVariant = {
     createdAt: '2024-03-20T00:00:00.000Z',
     options: [],
     saleType: 'rental' as const,
+    status: 'published' as const,
   },
   createdAt: '2024-03-20T00:00:00.000Z',
   values: [],

@@ -13,6 +13,7 @@ export function toProduct(product: ApiProduct): Product {
     description: product.description ?? '',
     options: product.options,
     saleType: product.saleType,
+    status: product.status,
   };
 }
 
@@ -24,5 +25,6 @@ export function toApiProduct(form: ProductForm) {
     description: form.description,
     options: form.options,
     saleType: form.saleType,
+    status: form.status,
   };
 }

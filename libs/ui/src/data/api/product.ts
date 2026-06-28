@@ -55,6 +55,7 @@ export class ApiProductRepository implements ProductRepository {
     query,
     sortBy,
     saleType,
+    status,
   }) => {
     const params = {
       query,
@@ -63,6 +64,7 @@ export class ApiProductRepository implements ProductRepository {
       order: orderBy,
       sortBy,
       saleType,
+      status,
     };
 
     const res = this.client.getQueryState<ProductList200>(
@@ -92,6 +94,7 @@ export class ApiProductRepository implements ProductRepository {
       orderBy: 'asc' | 'desc';
       sortBy: 'created_at';
       saleType: 'purchase' | 'rental' | 'all';
+      status: 'draft' | 'published' | 'all';
     },
     options?: Partial<RequestConfig>
   ) => {
@@ -102,6 +105,7 @@ export class ApiProductRepository implements ProductRepository {
       order: params.orderBy,
       sortBy: params.sortBy,
       saleType: params.saleType,
+      status: params.status,
     };
 
     return this.client

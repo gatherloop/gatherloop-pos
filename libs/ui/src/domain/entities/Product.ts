@@ -2,6 +2,8 @@ import { Category } from './Category';
 
 export type ProductSaleType = 'purchase' | 'rental';
 
+export type ProductStatus = 'draft' | 'published';
+
 export type Product = {
   id: number;
   name: string;
@@ -11,6 +13,7 @@ export type Product = {
   createdAt: string;
   options: Option[];
   saleType: ProductSaleType;
+  status: ProductStatus;
 };
 
 export type Option = {
@@ -38,4 +41,5 @@ export type ProductForm = {
     }[];
   }[];
   saleType: 'purchase' | 'rental';
+  status: ProductStatus;
 };

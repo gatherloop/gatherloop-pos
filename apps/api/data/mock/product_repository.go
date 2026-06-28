@@ -100,33 +100,33 @@ func (mr *MockProductRepositoryMockRecorder) GetProductById(ctx, id any) *gomock
 }
 
 // GetProductList mocks base method.
-func (m *MockProductRepository) GetProductList(ctx context.Context, query string, sortBy domain.SortBy, order domain.Order, skip, limit int, saleType *domain.SaleType) ([]domain.Product, *domain.Error) {
+func (m *MockProductRepository) GetProductList(ctx context.Context, query string, sortBy domain.SortBy, order domain.Order, skip, limit int, saleType *domain.SaleType, status *domain.ProductStatus) ([]domain.Product, *domain.Error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetProductList", ctx, query, sortBy, order, skip, limit, saleType)
+	ret := m.ctrl.Call(m, "GetProductList", ctx, query, sortBy, order, skip, limit, saleType, status)
 	ret0, _ := ret[0].([]domain.Product)
 	ret1, _ := ret[1].(*domain.Error)
 	return ret0, ret1
 }
 
 // GetProductList indicates an expected call of GetProductList.
-func (mr *MockProductRepositoryMockRecorder) GetProductList(ctx, query, sortBy, order, skip, limit, saleType any) *gomock.Call {
+func (mr *MockProductRepositoryMockRecorder) GetProductList(ctx, query, sortBy, order, skip, limit, saleType, status any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProductList", reflect.TypeOf((*MockProductRepository)(nil).GetProductList), ctx, query, sortBy, order, skip, limit, saleType)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProductList", reflect.TypeOf((*MockProductRepository)(nil).GetProductList), ctx, query, sortBy, order, skip, limit, saleType, status)
 }
 
 // GetProductListTotal mocks base method.
-func (m *MockProductRepository) GetProductListTotal(ctx context.Context, query string, saleType *domain.SaleType) (int64, *domain.Error) {
+func (m *MockProductRepository) GetProductListTotal(ctx context.Context, query string, saleType *domain.SaleType, status *domain.ProductStatus) (int64, *domain.Error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetProductListTotal", ctx, query, saleType)
+	ret := m.ctrl.Call(m, "GetProductListTotal", ctx, query, saleType, status)
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(*domain.Error)
 	return ret0, ret1
 }
 
 // GetProductListTotal indicates an expected call of GetProductListTotal.
-func (mr *MockProductRepositoryMockRecorder) GetProductListTotal(ctx, query, saleType any) *gomock.Call {
+func (mr *MockProductRepositoryMockRecorder) GetProductListTotal(ctx, query, saleType, status any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProductListTotal", reflect.TypeOf((*MockProductRepository)(nil).GetProductListTotal), ctx, query, saleType)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProductListTotal", reflect.TypeOf((*MockProductRepository)(nil).GetProductListTotal), ctx, query, saleType, status)
 }
 
 // UpdateProductById mocks base method.

@@ -117,6 +117,7 @@ export const mockProduct: Product = {
     },
   ],
   saleType: 'purchase',
+  status: 'published',
 };
 
 export const mockProducts: Product[] = [
@@ -130,6 +131,7 @@ export const mockProducts: Product[] = [
     createdAt: '2024-01-16T08:00:00.000Z',
     options: [],
     saleType: 'purchase',
+    status: 'published',
   },
   {
     id: 3,
@@ -140,6 +142,7 @@ export const mockProducts: Product[] = [
     createdAt: '2024-01-17T08:00:00.000Z',
     options: [],
     saleType: 'rental',
+    status: 'published',
   },
 ];
 

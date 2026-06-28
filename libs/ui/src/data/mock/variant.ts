@@ -7,6 +7,7 @@ const mockProduct = {
   category: { id: 1, name: 'Category 1', station: 'NONE' as const, createdAt: '2024-03-20T00:00:00.000Z' },
   imageUrl: 'https://example.com/1.jpg',
   saleType: 'purchase' as const,
+  status: 'published' as const,
   options: [],
   createdAt: '2024-03-20T00:00:00.000Z',
 };

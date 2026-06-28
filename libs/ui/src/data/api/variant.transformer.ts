@@ -30,6 +30,7 @@ export function toVariant(variant: ApiVariant): Variant {
       options: variant.product.options,
       imageUrl: variant.product.imageUrl,
       saleType: variant.product.saleType,
+      status: variant.product.status,
     },
     values: variant.values.map((value) => ({
       id: value.id,

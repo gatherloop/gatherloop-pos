@@ -16,4 +16,7 @@ export interface ProductListQueryRepository {
 
   getSaleType: () => 'purchase' | 'rental' | 'all';
   setSaleType: (saleType: 'purchase' | 'rental' | 'all') => void;
+
+  getStatus: () => 'draft' | 'published' | 'all';
+  setStatus: (status: 'draft' | 'published' | 'all') => void;
 }
