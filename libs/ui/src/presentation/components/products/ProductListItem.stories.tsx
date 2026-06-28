@@ -9,6 +9,7 @@ const meta: Meta<typeof ProductListItem> = {
     name: 'Iced Coffee Latte',
     categoryName: 'Beverages',
     saleType: 'purchase',
+    status: 'published',
     imageUrl: 'https://placehold.jp/120x120.png',
     onEditMenuPress: fn(),
     onDeleteMenuPress: fn(),
@@ -26,6 +27,13 @@ export const RentalType: Story = {
     categoryName: 'Merchandise',
     saleType: 'rental',
     imageUrl: 'https://placehold.jp/120x120.png',
+  },
+};
+
+export const DraftStatus: Story = {
+  args: {
+    name: 'Experimental Matcha Latte',
+    status: 'draft',
   },
 };
 

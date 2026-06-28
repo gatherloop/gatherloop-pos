@@ -23,7 +23,7 @@ describe('ProductCreateUsecase', () => {
 
       tester.dispatch({
         type: 'SUBMIT',
-        values: { categoryId: 1, name: 'New Product', imageUrl: '', description: '', options: [], saleType: 'purchase' },
+        values: { categoryId: 1, name: 'New Product', imageUrl: '', description: '', options: [], saleType: 'purchase', status: 'published' },
       });
       expect(tester.state.type).toBe('submitting');
 
@@ -68,7 +68,7 @@ describe('ProductCreateUsecase', () => {
 
       tester.dispatch({
         type: 'SUBMIT',
-        values: { categoryId: 1, name: 'New Product', imageUrl: '', description: '', options: [], saleType: 'purchase' },
+        values: { categoryId: 1, name: 'New Product', imageUrl: '', description: '', options: [], saleType: 'purchase', status: 'published' },
       });
       expect(tester.state.type).toBe('submitting');
 
@@ -86,5 +86,33 @@ describe('ProductCreateUsecase', () => {
     });
     const tester = new UsecaseTester<ProductCreateUsecase, ProductCreateState, ProductCreateAction, ProductCreateParams>(usecase);
     expect(tester.state.type).toBe('loaded');
+  });
+
+  it('defaults status to published for a new product', () => {
+    const productRepository = new MockProductRepository();
+    const categoryRepository = new MockCategoryRepository();
+    const usecase = new ProductCreateUsecase(productRepository, categoryRepository, {
+      categories: categoryRepository.categories,
+    });
+    const tester = new UsecaseTester<ProductCreateUsecase, ProductCreateState, ProductCreateAction, ProductCreateParams>(usecase);
+    expect(tester.state.values.status).toBe('published');
+  });
+
+  it('persists status: draft when submitting a draft product', async () => {
+    const productRepository = new MockProductRepository();
+    const categoryRepository = new MockCategoryRepository();
+    const usecase = new ProductCreateUsecase(productRepository, categoryRepository, {
+      categories: categoryRepository.categories,
+    });
+    const tester = new UsecaseTester<ProductCreateUsecase, ProductCreateState, ProductCreateAction, ProductCreateParams>(usecase);
+
+    tester.dispatch({
+      type: 'SUBMIT',
+      values: { categoryId: 1, name: 'Draft Product', imageUrl: '', description: '', options: [], saleType: 'purchase', status: 'draft' },
+    });
+
+    await flushPromises();
+    expect(tester.state.type).toBe('submitSuccess');
+    expect(productRepository.products.at(-1)?.status).toBe('draft');
   });
 });

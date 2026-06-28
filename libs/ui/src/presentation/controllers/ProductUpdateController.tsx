@@ -22,6 +22,7 @@ export const useProductUpdateController = (usecase: ProductUpdateUsecase) => {
         categoryId: z.number(),
         name: z.string().min(1),
         saleType: z.string().min(1),
+        status: z.string().min(1),
         imageUrl: z.string().min(1).url(),
         description: z.string(),
       }),

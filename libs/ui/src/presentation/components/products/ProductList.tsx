@@ -19,15 +19,17 @@ import {
 } from '../base';
 import { FlatList } from 'react-native';
 import { match } from 'ts-pattern';
-import { Product, SaleType } from '../../../domain';
+import { Product, SaleType, StatusFilter } from '../../../domain';
 import { Filter, X } from '@tamagui/lucide-icons';
 
 export type ProductListProps = {
   searchValue: string;
   saleType: SaleType;
+  status: StatusFilter;
   onSearchValueChange: (value: string) => void;
   onSearchClear?: () => void;
   onSaleTypeChange: (value: SaleType) => void;
+  onStatusChange: (value: StatusFilter) => void;
   onRetryButtonPress: () => void;
   onPageChange: (page: number) => void;
   onEditMenuPress?: (product: Product) => void;
@@ -54,11 +56,13 @@ export const ProductList = ({
   onSearchValueChange,
   onSearchClear,
   onSaleTypeChange,
+  onStatusChange,
   onDeleteMenuPress,
   onEditMenuPress,
   onItemPress,
   searchValue,
   saleType,
+  status,
   isSearchAutoFocus,
   totalItem,
   currentPage,
@@ -98,7 +102,7 @@ export const ProductList = ({
             borderWidth={1}
             borderColor="$borderColor"
             width={300}
-            height={200}
+            height={280}
             enterStyle={{ y: -10, opacity: 0 }}
             exitStyle={{ y: -10, opacity: 0 }}
             elevate
@@ -145,6 +149,40 @@ export const ProductList = ({
                   </XStack>
                 </RadioGroup>
               </YStack>
+
+              <YStack>
+                <Paragraph>Status</Paragraph>
+                <RadioGroup
+                  value={status}
+                  onValueChange={(value) =>
+                    onStatusChange(value as StatusFilter)
+                  }
+                  gap="$2"
+                >
+                  <XStack gap="$3">
+                    <XStack gap="$2" alignItems="center">
+                      <RadioGroup.Item value="all" id="all-status">
+                        <RadioGroup.Indicator />
+                      </RadioGroup.Item>
+                      <Label htmlFor="all-status">All</Label>
+                    </XStack>
+
+                    <XStack gap="$2" alignItems="center">
+                      <RadioGroup.Item value="draft" id="draft">
+                        <RadioGroup.Indicator />
+                      </RadioGroup.Item>
+                      <Label htmlFor="draft">Draft</Label>
+                    </XStack>
+
+                    <XStack gap="$2" alignItems="center">
+                      <RadioGroup.Item value="published" id="published">
+                        <RadioGroup.Indicator />
+                      </RadioGroup.Item>
+                      <Label htmlFor="published">Published</Label>
+                    </XStack>
+                  </XStack>
+                </RadioGroup>
+              </YStack>
             </YStack>
           </Popover.Content>
         </Popover>
@@ -179,6 +217,7 @@ export const ProductList = ({
                 <ProductListItem
                   categoryName={item.category.name}
                   saleType={item.saleType}
+                  status={item.status}
                   style={{ flex: 1 }}
                   name={item.name}
                   imageUrl={item.imageUrl}

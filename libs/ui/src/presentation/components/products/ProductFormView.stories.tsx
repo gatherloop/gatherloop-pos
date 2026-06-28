@@ -19,6 +19,7 @@ const defaultValues: ProductForm = {
   imageUrl: '',
   options: [],
   saleType: 'purchase',
+  status: 'published',
 };
 
 const LoadedStory = () => {
@@ -48,6 +49,7 @@ const PopulatedStory = () => {
       categoryId: 1,
       imageUrl: 'https://placehold.jp/120x120.png',
       saleType: 'purchase',
+      status: 'published',
       options: [
         {
           name: 'Temperature',
