@@ -269,6 +269,7 @@ export const TransactionItemSelect = ({
                                 imageUrl={item.imageUrl}
                                 onPress={() => onSelectProduct(item)}
                                 saleType={item.saleType}
+                                status={item.status}
                               />
                             </Focusable>
                           )}

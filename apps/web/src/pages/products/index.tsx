@@ -8,9 +8,9 @@ import {
 import { GetServerSideProps } from 'next';
 import { QueryClient } from '@tanstack/react-query';
 
-export const getServerSideProps: GetServerSideProps<
-  ProductListProps
-> = async (ctx) => {
+export const getServerSideProps: GetServerSideProps<ProductListProps> = async (
+  ctx
+) => {
   const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
   if (!isLoggedIn) {
     return {
@@ -29,9 +29,10 @@ export const getServerSideProps: GetServerSideProps<
   const orderBy = productListQueryRepository.getOrderBy(url);
   const sortBy = productListQueryRepository.getSortBy(url);
   const saleType = productListQueryRepository.getSaleType(url);
+  const status = productListQueryRepository.getStatus(url);
 
   const { products, totalItem } = await productRepository.fetchProductList(
-    { page, itemPerPage, orderBy, query, sortBy, saleType },
+    { page, itemPerPage, orderBy, query, sortBy, saleType, status },
     { headers: { Cookie: ctx.req.headers.cookie } }
   );
 
