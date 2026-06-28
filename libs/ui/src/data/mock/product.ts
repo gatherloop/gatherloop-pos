@@ -8,6 +8,7 @@ const initialProducts: Product[] = [
     category: { id: 1, name: 'Category 1', station: 'NONE' as const, createdAt: '2024-03-20T00:00:00.000Z' },
     imageUrl: 'https://example.com/1.jpg',
     saleType: 'purchase',
+    status: 'published',
     options: [
       {
         id: 1,
@@ -26,6 +27,7 @@ const initialProducts: Product[] = [
     category: { id: 1, name: 'Category 1', station: 'NONE' as const, createdAt: '2024-03-20T00:00:00.000Z' },
     imageUrl: 'https://example.com/2.jpg',
     saleType: 'purchase',
+    status: 'published',
     options: [
       {
         id: 2,
@@ -57,6 +59,7 @@ export class MockProductRepository implements ProductRepository {
     sortBy: 'created_at';
     orderBy: 'asc' | 'desc';
     saleType: 'purchase' | 'rental' | 'all';
+    status: 'draft' | 'published' | 'all';
   }): { products: Product[]; totalItem: number } {
     return { products: [...this.products], totalItem: this.products.length };
   }
@@ -68,6 +71,7 @@ export class MockProductRepository implements ProductRepository {
     sortBy: 'created_at';
     orderBy: 'asc' | 'desc';
     saleType: 'purchase' | 'rental' | 'all';
+    status: 'draft' | 'published' | 'all';
   }): Promise<{ products: Product[]; totalItem: number }> {
     if (this.shouldFail) throw new Error('Failed to fetch products');
     return Promise.resolve({
@@ -97,6 +101,7 @@ export class MockProductRepository implements ProductRepository {
       category: { id: formValues.categoryId, name: '', station: 'NONE' as const, createdAt: new Date().toISOString() },
       imageUrl: formValues.imageUrl,
       saleType: formValues.saleType,
+      status: 'published',
       options: [],
       createdAt: new Date().toISOString(),
     });

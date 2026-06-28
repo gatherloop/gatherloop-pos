@@ -199,6 +199,7 @@ export class ProductListUsecase extends Usecase<
               query,
               sortBy,
               saleType,
+              status: 'all',
             })
             .then(({ products, totalItem }) =>
               dispatch({ type: 'FETCH_SUCCESS', products, totalItem })
@@ -237,6 +238,7 @@ export class ProductListUsecase extends Usecase<
                 query,
                 sortBy,
                 saleType,
+                status: 'all',
               });
 
             if (products.length > 0) {
@@ -267,6 +269,7 @@ export class ProductListUsecase extends Usecase<
               query,
               sortBy,
               saleType,
+              status: 'all',
             })
             .then(({ products, totalItem }) =>
               dispatch({ type: 'REVALIDATE_FINISH', products, totalItem })

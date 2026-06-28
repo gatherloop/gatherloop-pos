@@ -74,6 +74,7 @@ export function toTransaction(transaction: ApiTransaction): Transaction {
           options: item.variant.product.options,
           imageUrl: item.variant.product.imageUrl,
           saleType: item.variant.product.saleType,
+          status: item.variant.product.status,
         },
         values: item.variant.values.map((value) => ({
           id: value.id,
