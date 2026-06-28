@@ -13,6 +13,7 @@ export function toProduct(product: ApiProduct): Product {
     description: product.description ?? '',
     options: product.options,
     saleType: product.saleType,
+    status: product.status,
   };
 }
 

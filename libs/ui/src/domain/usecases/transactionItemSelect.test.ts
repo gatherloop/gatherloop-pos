@@ -110,6 +110,43 @@ describe('TransactionItemSelectUsecase', () => {
     });
   });
 
+  describe('status filter', () => {
+    it('requests only published products by default', async () => {
+      const productRepository = new MockProductRepository();
+      const fetchProductListSpy = jest.spyOn(productRepository, 'fetchProductList');
+      const variantRepository = new MockVariantRepository();
+      const usecase = new TransactionItemSelectUsecase(productRepository, variantRepository, {
+        products: [],
+        totalItem: 0,
+      });
+      new UsecaseTester<TransactionItemSelectUsecase, TransactionItemSelectState, TransactionItemSelectAction, TransactionItemSelectParams>(usecase);
+
+      await flushPromises();
+
+      expect(fetchProductListSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'published' })
+      );
+    });
+
+    it('allows overriding the status filter via params', async () => {
+      const productRepository = new MockProductRepository();
+      const fetchProductListSpy = jest.spyOn(productRepository, 'fetchProductList');
+      const variantRepository = new MockVariantRepository();
+      const usecase = new TransactionItemSelectUsecase(productRepository, variantRepository, {
+        products: [],
+        totalItem: 0,
+        status: 'all',
+      });
+      new UsecaseTester<TransactionItemSelectUsecase, TransactionItemSelectState, TransactionItemSelectAction, TransactionItemSelectParams>(usecase);
+
+      await flushPromises();
+
+      expect(fetchProductListSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'all' })
+      );
+    });
+  });
+
   it('starts in loaded state when products are preloaded', () => {
     const productRepository = new MockProductRepository();
     const variantRepository = new MockVariantRepository();
