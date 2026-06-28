@@ -9,6 +9,7 @@ export class MockProductListQueryRepository
   getSortBy = () => 'created_at' as const;
   getOrderBy = () => 'asc' as const;
   getSaleType = () => 'all' as const;
+  getStatus = () => 'all' as const;
 
   setPage = (page: number) => {
     console.log(`Setting page to ${page}`);
@@ -27,5 +28,8 @@ export class MockProductListQueryRepository
   };
   setSaleType = (saleType: 'purchase' | 'rental' | 'all') => {
     console.log(`Setting sale type to ${saleType}`);
+  };
+  setStatus = (status: 'draft' | 'published' | 'all') => {
+    console.log(`Setting status to ${status}`);
   };
 }

@@ -38,6 +38,7 @@ describe('ProductListUsecase', () => {
         sortBy: productListQueryRepository.getSortBy(),
         orderBy: productListQueryRepository.getOrderBy(),
         saleType: productListQueryRepository.getSaleType(),
+        status: productListQueryRepository.getStatus(),
         itemPerPage: productListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
@@ -53,6 +54,7 @@ describe('ProductListUsecase', () => {
         sortBy: productListQueryRepository.getSortBy(),
         orderBy: productListQueryRepository.getOrderBy(),
         saleType: productListQueryRepository.getSaleType(),
+        status: productListQueryRepository.getStatus(),
         itemPerPage: productListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
@@ -68,6 +70,7 @@ describe('ProductListUsecase', () => {
         sortBy: productListQueryRepository.getSortBy(),
         orderBy: productListQueryRepository.getOrderBy(),
         saleType: productListQueryRepository.getSaleType(),
+        status: productListQueryRepository.getStatus(),
         itemPerPage: productListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
@@ -83,6 +86,7 @@ describe('ProductListUsecase', () => {
         sortBy: productListQueryRepository.getSortBy(),
         orderBy: productListQueryRepository.getOrderBy(),
         saleType: productListQueryRepository.getSaleType(),
+        status: productListQueryRepository.getStatus(),
         itemPerPage: productListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
@@ -98,6 +102,7 @@ describe('ProductListUsecase', () => {
         sortBy: productListQueryRepository.getSortBy(),
         orderBy: productListQueryRepository.getOrderBy(),
         saleType: productListQueryRepository.getSaleType(),
+        status: productListQueryRepository.getStatus(),
         itemPerPage: productListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
@@ -132,6 +137,7 @@ describe('ProductListUsecase', () => {
         sortBy: productListQueryRepository.getSortBy(),
         orderBy: productListQueryRepository.getOrderBy(),
         saleType: productListQueryRepository.getSaleType(),
+        status: productListQueryRepository.getStatus(),
         itemPerPage: productListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
@@ -147,6 +153,7 @@ describe('ProductListUsecase', () => {
         sortBy: productListQueryRepository.getSortBy(),
         orderBy: productListQueryRepository.getOrderBy(),
         saleType: productListQueryRepository.getSaleType(),
+        status: productListQueryRepository.getStatus(),
         itemPerPage: productListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
@@ -163,6 +170,7 @@ describe('ProductListUsecase', () => {
         sortBy: productListQueryRepository.getSortBy(),
         orderBy: productListQueryRepository.getOrderBy(),
         saleType: productListQueryRepository.getSaleType(),
+        status: productListQueryRepository.getStatus(),
         itemPerPage: productListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
@@ -178,6 +186,7 @@ describe('ProductListUsecase', () => {
         sortBy: productListQueryRepository.getSortBy(),
         orderBy: productListQueryRepository.getOrderBy(),
         saleType: productListQueryRepository.getSaleType(),
+        status: productListQueryRepository.getStatus(),
         itemPerPage: productListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
@@ -203,5 +212,31 @@ describe('ProductListUsecase', () => {
     expect(productList.state.type).toBe('loaded');
     expect(productList.state.products).toEqual(products);
     expect(productList.state.totalItem).toBe(products.length);
+  });
+
+  it('updates state and persists the query param via CHANGE_PARAMS status filter', async () => {
+    const productRepository = new MockProductRepository();
+    const productListQueryRepository = new MockProductListQueryRepository();
+    const setStatusSpy = jest.spyOn(productListQueryRepository, 'setStatus');
+    const usecase = new ProductListUsecase(
+      productRepository,
+      productListQueryRepository,
+      { products: [], totalItem: 0 }
+    );
+
+    const productList = new UsecaseTester<
+      ProductListUsecase,
+      ProductListState,
+      ProductListAction,
+      ProductListParams
+    >(usecase);
+
+    await flushPromises();
+    expect(productList.state.type).toBe('loaded');
+
+    productList.dispatch({ type: 'CHANGE_PARAMS', status: 'draft' });
+    expect(productList.state.type).toBe('changingParams');
+    expect(productList.state.status).toBe('draft');
+    expect(setStatusSpy).toHaveBeenCalledWith('draft');
   });
 });

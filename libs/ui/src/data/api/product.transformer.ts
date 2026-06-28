@@ -25,5 +25,6 @@ export function toApiProduct(form: ProductForm) {
     description: form.description,
     options: form.options,
     saleType: form.saleType,
+    status: form.status,
   };
 }

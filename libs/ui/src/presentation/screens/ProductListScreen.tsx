@@ -7,7 +7,7 @@ import {
   Layout,
   ProductListProps,
 } from '../components';
-import { Product, SaleType } from '../../domain';
+import { Product, SaleType, StatusFilter } from '../../domain';
 
 export type ProductListScreenProps = {
   onLogoutPress: () => void;
@@ -20,8 +20,10 @@ export type ProductListScreenProps = {
   onPageChange: (page: number) => void;
   onRetryButtonPress: () => void;
   onSaleTypeChange: (saleType: SaleType) => void;
+  onStatusChange: (status: StatusFilter) => void;
   onSearchValueChange: (value: string) => void;
   saleType: SaleType;
+  status: StatusFilter;
   searchValue: string;
   variant: ProductListProps['variant'];
   isDeleteButtonDisabled: boolean;
@@ -48,8 +50,10 @@ export const ProductListScreen = ({
   onPageChange,
   onRetryButtonPress,
   onSaleTypeChange,
+  onStatusChange,
   onSearchValueChange,
   saleType,
+  status,
   searchValue,
   totalItem,
   variant,
@@ -74,8 +78,10 @@ export const ProductListScreen = ({
         onPageChange={onPageChange}
         onRetryButtonPress={onRetryButtonPress}
         onSaleTypeChange={onSaleTypeChange}
+        onStatusChange={onStatusChange}
         onSearchValueChange={onSearchValueChange}
         saleType={saleType}
+        status={status}
         searchValue={searchValue}
         totalItem={totalItem}
         variant={variant}

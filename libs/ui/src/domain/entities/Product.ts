@@ -41,4 +41,5 @@ export type ProductForm = {
     }[];
   }[];
   saleType: 'purchase' | 'rental';
+  status: ProductStatus;
 };

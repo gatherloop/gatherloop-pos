@@ -101,7 +101,7 @@ export class MockProductRepository implements ProductRepository {
       category: { id: formValues.categoryId, name: '', station: 'NONE' as const, createdAt: new Date().toISOString() },
       imageUrl: formValues.imageUrl,
       saleType: formValues.saleType,
-      status: 'published',
+      status: formValues.status,
       options: [],
       createdAt: new Date().toISOString(),
     });
@@ -120,6 +120,7 @@ export class MockProductRepository implements ProductRepository {
       description: formValues.description,
       imageUrl: formValues.imageUrl,
       saleType: formValues.saleType,
+      status: formValues.status,
     };
   }
 

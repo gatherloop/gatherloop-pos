@@ -85,6 +85,7 @@ export class ProductUpdateUsecase extends Usecase<
         description: this.params.product?.description ?? '',
         options: this.params.product?.options ?? [],
         saleType: this.params.product?.saleType ?? 'purchase',
+        status: this.params.product?.status ?? 'published',
       },
     };
   }
@@ -201,6 +202,7 @@ export class ProductUpdateUsecase extends Usecase<
                 description: product.description,
                 options: product.options,
                 saleType: product.saleType,
+                status: product.status,
               },
             })
           )

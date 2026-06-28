@@ -6,8 +6,10 @@ import { mockProducts } from '../../../../.storybook/mocks/mockData';
 const defaultArgs = {
   searchValue: '',
   saleType: 'all' as const,
+  status: 'all' as const,
   onSearchValueChange: fn(),
   onSaleTypeChange: fn(),
+  onStatusChange: fn(),
   onRetryButtonPress: fn(),
   onPageChange: fn(),
   onEditMenuPress: fn(),
