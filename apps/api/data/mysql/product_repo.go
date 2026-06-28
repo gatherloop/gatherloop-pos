@@ -13,7 +13,7 @@ func NewProductRepository(db *gorm.DB) domain.ProductRepository {
 	return Repository{db: db}
 }
 
-func (repo Repository) GetProductList(ctx context.Context, query string, sortBy domain.SortBy, order domain.Order, skip int, limit int, saleType *domain.SaleType) ([]domain.Product, *domain.Error) {
+func (repo Repository) GetProductList(ctx context.Context, query string, sortBy domain.SortBy, order domain.Order, skip int, limit int, saleType *domain.SaleType, status *domain.ProductStatus) ([]domain.Product, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 
 	var products []Product
@@ -32,6 +32,15 @@ func (repo Repository) GetProductList(ctx context.Context, query string, sortBy 
 		}
 	}
 
+	if status != nil {
+		switch *status {
+		case domain.ProductStatusDraft:
+			result = result.Where("status = 'draft'")
+		case domain.ProductStatusPublished:
+			result = result.Where("status = 'published'")
+		}
+	}
+
 	if skip > 0 {
 		result = result.Offset(skip)
 	}
@@ -45,7 +54,7 @@ func (repo Repository) GetProductList(ctx context.Context, query string, sortBy 
 	return ToProductListDomain(products), ToErrorCtx(ctx, result.Error, "GetProductList")
 }
 
-func (repo Repository) GetProductListTotal(ctx context.Context, query string, saleType *domain.SaleType) (int64, *domain.Error) {
+func (repo Repository) GetProductListTotal(ctx context.Context, query string, saleType *domain.SaleType, status *domain.ProductStatus) (int64, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	var count int64
 	result := db.Table("products").Where("deleted_at", nil)
@@ -60,6 +69,15 @@ func (repo Repository) GetProductListTotal(ctx context.Context, query string, sa
 			result = result.Where("sale_type = 'purchase'")
 		case domain.SaleTypeRental:
 			result = result.Where("sale_type = 'rental'")
+		}
+	}
+
+	if status != nil {
+		switch *status {
+		case domain.ProductStatusDraft:
+			result = result.Where("status = 'draft'")
+		case domain.ProductStatusPublished:
+			result = result.Where("status = 'published'")
 		}
 	}
 

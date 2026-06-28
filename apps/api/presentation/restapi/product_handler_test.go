@@ -26,8 +26,8 @@ func TestProductHandler_GetProductList(t *testing.T) {
 			name: "success",
 			url:  "/products",
 			setupMock: func(r *mock.MockProductRepository) {
-				r.EXPECT().GetProductList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Product{{Id: 1}}, nil)
-				r.EXPECT().GetProductListTotal(gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(1), nil)
+				r.EXPECT().GetProductList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Product{{Id: 1}}, nil)
+				r.EXPECT().GetProductListTotal(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(1), nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -38,10 +38,20 @@ func TestProductHandler_GetProductList(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
+			name: "filters by draft status",
+			url:  "/products?status=draft",
+			setupMock: func(r *mock.MockProductRepository) {
+				draft := domain.ProductStatusDraft
+				r.EXPECT().GetProductList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), &draft).Return([]domain.Product{{Id: 1, Status: domain.ProductStatusDraft}}, nil)
+				r.EXPECT().GetProductListTotal(gomock.Any(), gomock.Any(), gomock.Any(), &draft).Return(int64(1), nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
 			name: "repo error",
 			url:  "/products",
 			setupMock: func(r *mock.MockProductRepository) {
-				r.EXPECT().GetProductList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
+				r.EXPECT().GetProductList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
 			expectedStatus: http.StatusInternalServerError,
 		},
@@ -118,7 +128,7 @@ func TestProductHandler_CreateProduct(t *testing.T) {
 	}{
 		{
 			name: "success",
-			body: `{"categoryId": 1, "name": "Nasi Goreng", "imageUrl": "", "options": [], "saleType": "retail"}`,
+			body: `{"categoryId": 1, "name": "Nasi Goreng", "imageUrl": "", "options": [], "saleType": "retail", "status": "published"}`,
 			setupMock: func(r *mock.MockProductRepository) {
 				r.EXPECT().CreateProduct(gomock.Any(), gomock.Any()).Return(domain.Product{Id: 1, Name: "Nasi Goreng"}, nil)
 			},
@@ -132,7 +142,7 @@ func TestProductHandler_CreateProduct(t *testing.T) {
 		},
 		{
 			name: "repo error",
-			body: `{"categoryId": 1, "name": "Nasi Goreng", "imageUrl": "", "options": [], "saleType": "retail"}`,
+			body: `{"categoryId": 1, "name": "Nasi Goreng", "imageUrl": "", "options": [], "saleType": "retail", "status": "published"}`,
 			setupMock: func(r *mock.MockProductRepository) {
 				r.EXPECT().CreateProduct(gomock.Any(), gomock.Any()).Return(domain.Product{}, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
@@ -167,7 +177,7 @@ func TestProductHandler_UpdateProductById(t *testing.T) {
 		{
 			name:      "success",
 			productId: "1",
-			body:      `{"categoryId": 1, "name": "Mie Goreng", "imageUrl": "", "options": [], "saleType": "retail"}`,
+			body:      `{"categoryId": 1, "name": "Mie Goreng", "imageUrl": "", "options": [], "saleType": "retail", "status": "published"}`,
 			setupMock: func(r *mock.MockProductRepository) {
 				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
@@ -185,7 +195,7 @@ func TestProductHandler_UpdateProductById(t *testing.T) {
 		{
 			name:      "not found",
 			productId: "99",
-			body:      `{"categoryId": 1, "name": "Mie Goreng", "imageUrl": "", "options": [], "saleType": "retail"}`,
+			body:      `{"categoryId": 1, "name": "Mie Goreng", "imageUrl": "", "options": [], "saleType": "retail", "status": "published"}`,
 			setupMock: func(r *mock.MockProductRepository) {
 				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })

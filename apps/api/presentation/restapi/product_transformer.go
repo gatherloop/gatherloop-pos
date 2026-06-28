@@ -79,6 +79,7 @@ func ToApiProduct(product domain.Product) apiContract.Product {
 		ImageUrl:    product.ImageUrl,
 		Options:     apiOptions,
 		SaleType:    string(product.SaleType),
+		Status:      string(product.Status),
 	}
 }
 
@@ -119,6 +120,7 @@ func ToProduct(productRequest apiContract.ProductRequest) domain.Product {
 		Description: productRequest.Description,
 		Options:     options,
 		SaleType:    domain.SaleType(productRequest.SaleType),
+		Status:      domain.ProductStatus(productRequest.Status),
 	}
 }
 
@@ -131,6 +133,20 @@ func GetSaleType(r *http.Request) *domain.SaleType {
 	case "purchase":
 		saleTypeValue := domain.SaleTypePurchase
 		return &saleTypeValue
+	default:
+		return nil
+	}
+}
+
+func GetProductStatus(r *http.Request) *domain.ProductStatus {
+	statusQuery := r.URL.Query().Get("status")
+	switch statusQuery {
+	case "draft":
+		statusValue := domain.ProductStatusDraft
+		return &statusValue
+	case "published":
+		statusValue := domain.ProductStatusPublished
+		return &statusValue
 	default:
 		return nil
 	}
