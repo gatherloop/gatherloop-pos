@@ -13,6 +13,7 @@ type Product struct {
 	CreatedAt   time.Time
 	Options     []Option
 	SaleType    string
+	Status      string
 }
 
 type Option struct {

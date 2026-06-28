@@ -24,6 +24,7 @@ func (ProductSeeder) Seed(tx *gorm.DB) error {
 		Description *string
 		ImageUrl    string
 		SaleType    string
+		Status      string
 		CreatedAt   time.Time
 		DeletedAt   *time.Time
 	}
@@ -53,6 +54,7 @@ func (ProductSeeder) Seed(tx *gorm.DB) error {
 		Category    string
 		Description string
 		SaleType    string
+		Status      string
 		// ordered slice of [option name, value1, value2, ...]
 		Options [][]string
 	}
@@ -63,6 +65,7 @@ func (ProductSeeder) Seed(tx *gorm.DB) error {
 			Category:    "Beverages",
 			Description: "Rich and bold espresso shot",
 			SaleType:    "purchase",
+			Status:      "published",
 			Options:     [][]string{{"Size", "Small", "Medium", "Large"}},
 		},
 		{
@@ -70,6 +73,7 @@ func (ProductSeeder) Seed(tx *gorm.DB) error {
 			Category:    "Beverages",
 			Description: "Espresso with steamed milk foam",
 			SaleType:    "purchase",
+			Status:      "published",
 			Options:     [][]string{{"Size", "Small", "Medium", "Large"}},
 		},
 		{
@@ -77,6 +81,7 @@ func (ProductSeeder) Seed(tx *gorm.DB) error {
 			Category:    "Beverages",
 			Description: "Premium matcha with steamed milk",
 			SaleType:    "purchase",
+			Status:      "draft",
 			Options:     [][]string{{"Size", "Small", "Medium", "Large"}},
 		},
 		{
@@ -84,6 +89,7 @@ func (ProductSeeder) Seed(tx *gorm.DB) error {
 			Category:    "Desserts",
 			Description: "Moist chocolate layer cake",
 			SaleType:    "purchase",
+			Status:      "published",
 			Options:     [][]string{{"Serving", "Slice", "Whole"}},
 		},
 		{
@@ -91,6 +97,7 @@ func (ProductSeeder) Seed(tx *gorm.DB) error {
 			Category:    "Food",
 			Description: "Grilled chicken in a soft bun",
 			SaleType:    "purchase",
+			Status:      "published",
 			Options:     [][]string{{"Spicy Level", "Mild", "Spicy", "Extra Spicy"}},
 		},
 		{
@@ -98,6 +105,7 @@ func (ProductSeeder) Seed(tx *gorm.DB) error {
 			Category:    "Beverages",
 			Description: "600ml bottled mineral water",
 			SaleType:    "purchase",
+			Status:      "published",
 			Options:     nil,
 		},
 	}
@@ -122,6 +130,7 @@ func (ProductSeeder) Seed(tx *gorm.DB) error {
 			Description: desc(pd.Description),
 			ImageUrl:    "",
 			SaleType:    pd.SaleType,
+			Status:      pd.Status,
 			CreatedAt:   time.Now(),
 		}
 		if err := tx.Table("products").Create(&product).Error; err != nil {

@@ -967,6 +967,7 @@ paths:
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Skip'
         - $ref: '#/components/parameters/SaleType'
+        - $ref: '#/components/parameters/ProductStatus'
       responses:
         '200':
           description: success response
@@ -2916,6 +2917,7 @@ components:
         - createdAt
         - options
         - saleType
+        - status
       properties:
         id:
           type: integer
@@ -2938,6 +2940,9 @@ components:
         saleType:
           type: string
           enum: [purchase, rental]
+        status:
+          type: string
+          enum: [draft, published]
         deletedAt:
           type: string
           format: date-time
@@ -2952,6 +2957,7 @@ components:
         - imageUrl
         - options
         - saleType
+        - status
       properties:
         categoryId:
           type: integer
@@ -2969,6 +2975,9 @@ components:
         saleType:
           type: string
           enum: [purchase, rental]
+        status:
+          type: string
+          enum: [draft, published]
     Option:
       type: object
       required:
@@ -4660,6 +4669,12 @@ components:
       schema:
         type: string
         enum: [purchase, rental, all]
+    ProductStatus:
+      name: status
+      in: query
+      schema:
+        type: string
+        enum: [draft, published, all]
     ChecklistTemplateId:
       name: checklistTemplateId
       in: path

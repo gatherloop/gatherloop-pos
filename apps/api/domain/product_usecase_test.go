@@ -11,8 +11,11 @@ import (
 )
 
 func TestProductUsecase_GetProductList(t *testing.T) {
+	draft := domain.ProductStatusDraft
+
 	tests := []struct {
 		name          string
+		status        *domain.ProductStatus
 		setupMock     func(r *mock.MockProductRepository)
 		expectedLen   int
 		expectedError *domain.Error
@@ -20,16 +23,26 @@ func TestProductUsecase_GetProductList(t *testing.T) {
 		{
 			name: "success",
 			setupMock: func(r *mock.MockProductRepository) {
-				r.EXPECT().GetProductList(gomock.Any(), "", domain.CreatedAt, domain.Ascending, 0, 10, nil).
+				r.EXPECT().GetProductList(gomock.Any(), "", domain.CreatedAt, domain.Ascending, 0, 10, nil, nil).
 					Return([]domain.Product{{Id: 1, Name: "Coffee"}, {Id: 2, Name: "Tea"}}, nil)
-				r.EXPECT().GetProductListTotal(gomock.Any(), "", nil).Return(int64(2), nil)
+				r.EXPECT().GetProductListTotal(gomock.Any(), "", nil, nil).Return(int64(2), nil)
 			},
 			expectedLen: 2,
 		},
 		{
+			name:   "filters by status",
+			status: &draft,
+			setupMock: func(r *mock.MockProductRepository) {
+				r.EXPECT().GetProductList(gomock.Any(), "", domain.CreatedAt, domain.Ascending, 0, 10, nil, &draft).
+					Return([]domain.Product{{Id: 1, Name: "Coffee", Status: domain.ProductStatusDraft}}, nil)
+				r.EXPECT().GetProductListTotal(gomock.Any(), "", nil, &draft).Return(int64(1), nil)
+			},
+			expectedLen: 1,
+		},
+		{
 			name: "error on list",
 			setupMock: func(r *mock.MockProductRepository) {
-				r.EXPECT().GetProductList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				r.EXPECT().GetProductList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil, &domain.Error{Type: domain.InternalServerError})
 			},
 			expectedError: &domain.Error{Type: domain.InternalServerError},
@@ -45,7 +58,7 @@ func TestProductUsecase_GetProductList(t *testing.T) {
 			tt.setupMock(mockRepo)
 
 			usecase := domain.NewProductUsecase(mockRepo)
-			products, _, err := usecase.GetProductList(context.Background(), "", domain.CreatedAt, domain.Ascending, 0, 10, nil)
+			products, _, err := usecase.GetProductList(context.Background(), "", domain.CreatedAt, domain.Ascending, 0, 10, nil, tt.status)
 
 			if tt.expectedError != nil {
 				assert.NotNil(t, err)

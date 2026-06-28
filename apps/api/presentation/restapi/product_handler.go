@@ -34,8 +34,9 @@ func (handler ProductHandler) GetProductList(w http.ResponseWriter, r *http.Requ
 	}
 
 	saleType := GetSaleType(r)
+	status := GetProductStatus(r)
 
-	products, total, usecaseErr := handler.usecase.GetProductList(ctx, query, sortBy, order, skip, limit, saleType)
+	products, total, usecaseErr := handler.usecase.GetProductList(ctx, query, sortBy, order, skip, limit, saleType, status)
 	if usecaseErr != nil {
 		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
