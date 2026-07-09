@@ -129,7 +129,7 @@ export const MaterialList = ({
                       <RadioGroup.Item value="required" id="required">
                         <RadioGroup.Indicator />
                       </RadioGroup.Item>
-                      <Label htmlFor="required">Stock check</Label>
+                      <Label htmlFor="required">Required</Label>
                     </XStack>
 
                     <XStack gap="$2" alignItems="center">
