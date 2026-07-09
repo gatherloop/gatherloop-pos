@@ -59,6 +59,7 @@ export const useMaterialUpdateController = (usecase: MaterialUpdateUsecase) => {
         purchaseUnitSize: z.number().positive(),
         minimumStock: z.number().int().min(0),
         normalStock: z.number().int().min(0),
+        isStockCheckRequired: z.boolean(),
         suppliers: suppliersSchema,
       })
     ),

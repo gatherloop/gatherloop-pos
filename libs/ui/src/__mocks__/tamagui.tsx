@@ -84,10 +84,31 @@ export const Popover = Object.assign(PopoverBase, {
 });
 
 // RadioGroup
-const RadioGroupBase = ({ children }: AnyProps) =>
-  React.createElement('div', { 'data-component': 'RadioGroup' }, children);
-const RadioGroupItem = ({ children }: AnyProps) =>
-  React.createElement('div', { 'data-component': 'RadioGroup.Item' }, children);
+const RadioGroupContext = React.createContext<{
+  value?: string;
+  onValueChange?: (value: string) => void;
+}>({});
+
+const RadioGroupBase = ({ children, value, onValueChange }: AnyProps) =>
+  React.createElement(
+    RadioGroupContext.Provider,
+    { value: { value: value as string, onValueChange: onValueChange as (value: string) => void } },
+    React.createElement('div', { 'data-component': 'RadioGroup' }, children)
+  );
+const RadioGroupItem = ({ children, value: itemValue, id }: AnyProps) => {
+  const { value, onValueChange } = React.useContext(RadioGroupContext);
+  return React.createElement(
+    'div',
+    { 'data-component': 'RadioGroup.Item' },
+    React.createElement('input', {
+      type: 'radio',
+      id,
+      checked: value === itemValue,
+      onChange: () => onValueChange?.(itemValue as string),
+    }),
+    children
+  );
+};
 const RadioGroupIndicator = () => null;
 export const RadioGroup = Object.assign(RadioGroupBase, {
   Item: RadioGroupItem,

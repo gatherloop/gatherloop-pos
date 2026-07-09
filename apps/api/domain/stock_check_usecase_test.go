@@ -61,7 +61,7 @@ func TestStockCheckUsecase_CreateStockCheck_SnapshotsMaterialFields(t *testing.T
 	scRepo := mock.NewMockStockCheckRepository(ctrl)
 	matRepo := mock.NewMockMaterialRepository(ctrl)
 
-	matRepo.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Material{
+	matRepo.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Material{
 		{
 			Id:               1,
 			Name:             "Tepung",
@@ -102,7 +102,7 @@ func TestStockCheckUsecase_CreateStockCheck_DefaultsToZeroForMissingItems(t *tes
 	scRepo := mock.NewMockStockCheckRepository(ctrl)
 	matRepo := mock.NewMockMaterialRepository(ctrl)
 
-	matRepo.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Material{
+	matRepo.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Material{
 		{Id: 1, Name: "Tepung"},
 		{Id: 2, Name: "Susu"},
 	}, nil)

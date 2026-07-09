@@ -16,6 +16,7 @@ export function toMaterial(material: ApiMaterial): Material {
     purchaseUnitSize: material.purchaseUnitSize,
     minimumStock: material.minimumStock,
     normalStock: material.normalStock,
+    isStockCheckRequired: material.isStockCheckRequired ?? true,
     suppliers: (material.suppliers ?? []).map((s) => ({
       id: s.id,
       supplierId: s.supplierId,
@@ -36,6 +37,7 @@ export function toApiMaterial(form: MaterialForm) {
     purchaseUnitSize: form.purchaseUnitSize,
     minimumStock: form.minimumStock,
     normalStock: form.normalStock,
+    isStockCheckRequired: form.isStockCheckRequired,
     suppliers: form.suppliers.map((s) => ({
       supplierId: s.supplierId,
       purchaseType: s.purchaseType,

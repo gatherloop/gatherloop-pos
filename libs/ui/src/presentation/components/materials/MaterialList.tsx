@@ -1,15 +1,27 @@
-import { Button, Input, Spinner, XStack, YStack } from 'tamagui';
+import {
+  Button,
+  Input,
+  Label,
+  Paragraph,
+  Popover,
+  RadioGroup,
+  Spinner,
+  XStack,
+  YStack,
+} from 'tamagui';
 import { MaterialListItem } from './MaterialListItem';
 import { EmptyView, ErrorView, Pagination, SkeletonList } from '../base';
 import { FlatList } from 'react-native';
 import { match } from 'ts-pattern';
-import { Material } from '../../../domain';
-import { X } from '@tamagui/lucide-icons';
+import { Material, MaterialStockCheckStatus } from '../../../domain';
+import { Filter, X } from '@tamagui/lucide-icons';
 
 export type MaterialListProps = {
   searchValue: string;
   onSearchValueChange: (value: string) => void;
   onSearchClear?: () => void;
+  stockCheckStatus?: MaterialStockCheckStatus;
+  onStockCheckStatusChange?: (status: MaterialStockCheckStatus) => void;
   onRetryButtonPress: () => void;
   onEmptyActionPress?: () => void;
   onPageChange: (page: number) => void;
@@ -35,6 +47,8 @@ export const MaterialList = ({
   onEmptyActionPress,
   onSearchValueChange,
   onSearchClear,
+  stockCheckStatus,
+  onStockCheckStatusChange,
   onEditMenuPress,
   onDeleteMenuPress,
   onItemPress,
@@ -69,6 +83,67 @@ export const MaterialList = ({
             accessibilityLabel="Clear search"
           />
         )}
+
+        {onStockCheckStatusChange && (
+          <Popover size="$5" allowFlip stayInFrame offset={15}>
+            <Popover.Trigger asChild>
+              <Button icon={Filter}>Filter</Button>
+            </Popover.Trigger>
+
+            <Popover.Content
+              borderWidth={1}
+              borderColor="$borderColor"
+              width={300}
+              enterStyle={{ y: -10, opacity: 0 }}
+              exitStyle={{ y: -10, opacity: 0 }}
+              elevate
+              animation={[
+                'quick',
+                {
+                  opacity: {
+                    overshootClamping: true,
+                  },
+                },
+              ]}
+            >
+              <Popover.Arrow borderWidth={1} borderColor="$borderColor" />
+
+              <YStack>
+                <Paragraph>Stock Check</Paragraph>
+                <RadioGroup
+                  value={stockCheckStatus ?? 'all'}
+                  onValueChange={(value) =>
+                    onStockCheckStatusChange(value as MaterialStockCheckStatus)
+                  }
+                  gap="$2"
+                >
+                  <XStack gap="$3">
+                    <XStack gap="$2" alignItems="center">
+                      <RadioGroup.Item value="all" id="all-stock-check-status">
+                        <RadioGroup.Indicator />
+                      </RadioGroup.Item>
+                      <Label htmlFor="all-stock-check-status">All</Label>
+                    </XStack>
+
+                    <XStack gap="$2" alignItems="center">
+                      <RadioGroup.Item value="required" id="required">
+                        <RadioGroup.Indicator />
+                      </RadioGroup.Item>
+                      <Label htmlFor="required">Required</Label>
+                    </XStack>
+
+                    <XStack gap="$2" alignItems="center">
+                      <RadioGroup.Item value="excluded" id="excluded">
+                        <RadioGroup.Indicator />
+                      </RadioGroup.Item>
+                      <Label htmlFor="excluded">Excluded</Label>
+                    </XStack>
+                  </XStack>
+                </RadioGroup>
+              </YStack>
+            </Popover.Content>
+          </Popover>
+        )}
       </XStack>
 
       {match(variant)
@@ -94,6 +169,7 @@ export const MaterialList = ({
                 purchaseUnit={item.purchaseUnit}
                 minimumStock={item.minimumStock}
                 normalStock={item.normalStock}
+                isStockCheckRequired={item.isStockCheckRequired}
                 supplierName={item.suppliers[0]?.supplier.name}
                 onEditMenuPress={
                   onEditMenuPress ? () => onEditMenuPress(item) : undefined

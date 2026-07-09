@@ -52,7 +52,23 @@ export class UrlMaterialListQueryRepository
   setOrderBy: MaterialListQueryRepository['setOrderBy'] = (orderBy) => {
     setQueryParam('orderBy', orderBy);
   };
+
+  getStockCheckStatus = (url?: string) => {
+    const stockCheckStatusQuery = getQueryParam('stockCheckStatus', url);
+    return stockCheckStatusQuery
+      ? toStockCheckStatus(stockCheckStatusQuery) ?? 'all'
+      : 'all';
+  };
+
+  setStockCheckStatus: MaterialListQueryRepository['setStockCheckStatus'] = (
+    stockCheckStatus
+  ) => {
+    setQueryParam('stockCheckStatus', stockCheckStatus);
+  };
 }
 
 const toSortBy = createStringUnionParser<'created_at'[]>(['created_at']);
 const toOrderBy = createStringUnionParser<('asc' | 'desc')[]>(['asc', 'desc']);
+const toStockCheckStatus = createStringUnionParser<
+  ('required' | 'excluded' | 'all')[]
+>(['required', 'excluded', 'all']);

@@ -61,6 +61,16 @@ describe('MaterialCreateHandler', () => {
       render(<MaterialCreateHandler {...createProps()} />);
       expect(screen.getByRole('textbox', { name: 'Unit' })).toBeTruthy();
     });
+
+    it('should render the isStockCheckRequired switch field', () => {
+      render(<MaterialCreateHandler {...createProps()} />);
+      expect(screen.getByRole('switch', { name: 'Include in stock checks' })).toBeTruthy();
+    });
+
+    it('should render the isStockCheckRequired switch as checked by default', () => {
+      render(<MaterialCreateHandler {...createProps()} />);
+      expect(screen.getByRole('switch', { name: 'Include in stock checks', checked: true })).toBeTruthy();
+    });
   });
 
   describe('navigation', () => {
@@ -82,6 +92,69 @@ describe('MaterialCreateHandler', () => {
       });
 
       expect(mockRouterPush).toHaveBeenCalledWith('/materials');
+    });
+
+    it('should persist isStockCheckRequired as true when the switch is left untouched', async () => {
+      const user = userEvent.setup();
+      const materialRepo = new MockMaterialRepository();
+      render(
+        <MaterialCreateHandler
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          materialCreateUsecase={new MaterialCreateUsecase(materialRepo)}
+          supplierListUsecase={new SupplierListUsecase(
+            new MockSupplierRepository(),
+            new MockSupplierListQueryRepository(),
+            { suppliers: [], totalItem: 0 }
+          )}
+        />
+      );
+
+      await user.type(screen.getByRole('textbox', { name: 'Name' }), 'New Material');
+      await user.type(screen.getByRole('textbox', { name: 'Unit' }), 'gram');
+      const priceInput = screen.getByRole('textbox', { name: 'Price' });
+      await user.click(priceInput);
+      await user.keyboard('{Control>}a{/Control}');
+      await user.keyboard('1');
+      await user.type(screen.getByRole('textbox', { name: 'Purchase Unit' }), 'Kg');
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(materialRepo.materials[materialRepo.materials.length - 1].isStockCheckRequired).toBe(true);
+    });
+
+    it('should persist isStockCheckRequired as false when the switch is turned off', async () => {
+      const user = userEvent.setup();
+      const materialRepo = new MockMaterialRepository();
+      render(
+        <MaterialCreateHandler
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          materialCreateUsecase={new MaterialCreateUsecase(materialRepo)}
+          supplierListUsecase={new SupplierListUsecase(
+            new MockSupplierRepository(),
+            new MockSupplierListQueryRepository(),
+            { suppliers: [], totalItem: 0 }
+          )}
+        />
+      );
+
+      await user.type(screen.getByRole('textbox', { name: 'Name' }), 'New Material');
+      await user.type(screen.getByRole('textbox', { name: 'Unit' }), 'gram');
+      const priceInput = screen.getByRole('textbox', { name: 'Price' });
+      await user.click(priceInput);
+      await user.keyboard('{Control>}a{/Control}');
+      await user.keyboard('1');
+      await user.type(screen.getByRole('textbox', { name: 'Purchase Unit' }), 'Kg');
+      await user.click(screen.getByRole('switch', { name: 'Include in stock checks' }));
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(materialRepo.materials[materialRepo.materials.length - 1].isStockCheckRequired).toBe(false);
     });
 
     it('should not navigate when creation fails', async () => {

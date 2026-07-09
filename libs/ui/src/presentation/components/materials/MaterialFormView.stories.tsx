@@ -10,6 +10,12 @@ const defaultValues: MaterialForm = {
   price: 0,
   unit: '',
   description: '',
+  purchaseUnit: '',
+  purchaseUnitSize: 1,
+  minimumStock: 0,
+  normalStock: 0,
+  isStockCheckRequired: true,
+  suppliers: [],
 };
 
 const LoadedStory = () => {
@@ -19,6 +25,8 @@ const LoadedStory = () => {
       form={form}
       onSubmit={fn()}
       isSubmitDisabled={false}
+      isSubmitting={false}
+      suppliers={[]}
     />
   );
 };
@@ -26,10 +34,15 @@ const LoadedStory = () => {
 const PopulatedStory = () => {
   const form = useForm<MaterialForm>({
     defaultValues: {
+      ...defaultValues,
       name: 'Coffee Bean',
       price: 80000,
       unit: 'kg',
       description: 'Premium Arabica coffee beans',
+      purchaseUnit: 'Kg',
+      purchaseUnitSize: 1000,
+      minimumStock: 5,
+      normalStock: 10,
     },
   });
   return (
@@ -37,6 +50,29 @@ const PopulatedStory = () => {
       form={form}
       onSubmit={fn()}
       isSubmitDisabled={false}
+      isSubmitting={false}
+      suppliers={[]}
+    />
+  );
+};
+
+const ExcludedFromStockCheckStory = () => {
+  const form = useForm<MaterialForm>({
+    defaultValues: {
+      ...defaultValues,
+      name: 'Cleaning Cloth',
+      price: 5000,
+      unit: 'pcs',
+      isStockCheckRequired: false,
+    },
+  });
+  return (
+    <MaterialFormView
+      form={form}
+      onSubmit={fn()}
+      isSubmitDisabled={false}
+      isSubmitting={false}
+      suppliers={[]}
     />
   );
 };
@@ -57,6 +93,10 @@ export const Populated: Story = {
   render: () => <PopulatedStory />,
 };
 
+export const ExcludedFromStockCheck: Story = {
+  render: () => <ExcludedFromStockCheckStory />,
+};
+
 const SubmitDisabledStory = () => {
   const form = useForm<MaterialForm>({ defaultValues });
   return (
@@ -64,6 +104,8 @@ const SubmitDisabledStory = () => {
       form={form}
       onSubmit={fn()}
       isSubmitDisabled={true}
+      isSubmitting={false}
+      suppliers={[]}
     />
   );
 };

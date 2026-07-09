@@ -307,4 +307,68 @@ describe('MaterialListHandler', () => {
       expect(screen.queryByTestId('search-spinner')).toBeNull();
     });
   });
+
+  describe('stock check filter and badge', () => {
+    it('should show the No stock check badge only for excluded materials', async () => {
+      const materialRepo = new MockMaterialRepository();
+      materialRepo.materials = [
+        ...materialRepo.materials,
+        {
+          id: 5,
+          name: 'Cleaning Equipment',
+          price: 500,
+          unit: 'pcs',
+          createdAt: '2024-03-24T00:00:00.000Z',
+          weeklyUsage: 0,
+          purchaseUnit: 'Pack',
+          purchaseUnitSize: 1,
+          minimumStock: 0,
+          normalStock: 0,
+          isStockCheckRequired: false,
+          suppliers: [],
+        },
+      ];
+
+      render(<MaterialListHandler {...createProps({ materialRepo })} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(
+        screen.getByRole('heading', { name: 'Cleaning Equipment' })
+      ).toBeTruthy();
+      expect(screen.getAllByText('No stock check')).toHaveLength(1);
+    });
+
+    it('should show the stock check filter defaulted to All', async () => {
+      render(<MaterialListHandler {...createProps()} />);
+      await act(async () => {
+        await flushPromises();
+      });
+
+      await userEvent.setup().click(screen.getByRole('button', { name: 'Filter' }));
+
+      const allOption = screen.getByRole('radio', { name: 'All' });
+      expect((allOption as HTMLInputElement).checked).toBe(true);
+    });
+
+    it('should reset to page 1 when the stock check filter changes', async () => {
+      const user = userEvent.setup();
+      render(<MaterialListHandler {...createProps()} />);
+      await act(async () => {
+        await flushPromises();
+      });
+
+      await user.click(screen.getByRole('button', { name: 'Filter' }));
+      await user.click(screen.getByRole('radio', { name: 'Excluded' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      const excludedOption = screen.getByRole('radio', { name: 'Excluded' });
+      expect((excludedOption as HTMLInputElement).checked).toBe(true);
+    });
+  });
 });

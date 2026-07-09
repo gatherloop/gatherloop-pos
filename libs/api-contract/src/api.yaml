@@ -187,6 +187,7 @@ paths:
         - $ref: '#/components/parameters/Order'
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Skip'
+        - $ref: '#/components/parameters/MaterialStockCheckStatus'
       responses:
         '200':
           description: success response
@@ -2464,6 +2465,7 @@ components:
         - minimumStock
         - normalStock
         - suppliers
+        - isStockCheckRequired
         - createdAt
       properties:
         id:
@@ -2491,6 +2493,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MaterialSupplier'
+        isStockCheckRequired:
+          type: boolean
         deletedAt:
           type: string
           format: date-time
@@ -2507,6 +2511,7 @@ components:
         - purchaseUnitSize
         - minimumStock
         - normalStock
+        - isStockCheckRequired
       properties:
         name:
           type: string
@@ -2530,6 +2535,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MaterialSupplierRequest'
+        isStockCheckRequired:
+          type: boolean
     ChecklistTemplateSubItem:
       type: object
       required:
@@ -4675,6 +4682,12 @@ components:
       schema:
         type: string
         enum: [draft, published, all]
+    MaterialStockCheckStatus:
+      name: stockCheckStatus
+      in: query
+      schema:
+        type: string
+        enum: [required, excluded, all]
     ChecklistTemplateId:
       name: checklistTemplateId
       in: path

@@ -121,7 +121,7 @@ func TestStockCheckHandler_CreateStockCheck(t *testing.T) {
 			name: "success",
 			body: `{"items": [{"materialId": 1, "currentStock": 3}]}`,
 			setupMock: func(sc *mock.MockStockCheckRepository, m *mock.MockMaterialRepository) {
-				m.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Material{{Id: 1, Name: "Tepung"}}, nil)
+				m.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Material{{Id: 1, Name: "Tepung"}}, nil)
 				sc.EXPECT().CreateStockCheck(gomock.Any(), gomock.Any()).Return(domain.StockCheck{Id: 1}, nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -136,7 +136,7 @@ func TestStockCheckHandler_CreateStockCheck(t *testing.T) {
 			name: "repo error",
 			body: `{"items": []}`,
 			setupMock: func(sc *mock.MockStockCheckRepository, m *mock.MockMaterialRepository) {
-				m.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Material{}, nil)
+				m.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Material{}, nil)
 				sc.EXPECT().CreateStockCheck(gomock.Any(), gomock.Any()).Return(domain.StockCheck{}, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
 			expectedStatus: http.StatusInternalServerError,

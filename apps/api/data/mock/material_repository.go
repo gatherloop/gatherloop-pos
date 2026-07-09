@@ -100,33 +100,33 @@ func (mr *MockMaterialRepositoryMockRecorder) GetMaterialById(ctx, id any) *gomo
 }
 
 // GetMaterialList mocks base method.
-func (m *MockMaterialRepository) GetMaterialList(ctx context.Context, query string, sortBy domain.SortBy, order domain.Order, skip, limit int) ([]domain.Material, *domain.Error) {
+func (m *MockMaterialRepository) GetMaterialList(ctx context.Context, query string, sortBy domain.SortBy, order domain.Order, skip, limit int, stockCheckStatus *domain.MaterialStockCheckStatus) ([]domain.Material, *domain.Error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetMaterialList", ctx, query, sortBy, order, skip, limit)
+	ret := m.ctrl.Call(m, "GetMaterialList", ctx, query, sortBy, order, skip, limit, stockCheckStatus)
 	ret0, _ := ret[0].([]domain.Material)
 	ret1, _ := ret[1].(*domain.Error)
 	return ret0, ret1
 }
 
 // GetMaterialList indicates an expected call of GetMaterialList.
-func (mr *MockMaterialRepositoryMockRecorder) GetMaterialList(ctx, query, sortBy, order, skip, limit any) *gomock.Call {
+func (mr *MockMaterialRepositoryMockRecorder) GetMaterialList(ctx, query, sortBy, order, skip, limit, stockCheckStatus any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMaterialList", reflect.TypeOf((*MockMaterialRepository)(nil).GetMaterialList), ctx, query, sortBy, order, skip, limit)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMaterialList", reflect.TypeOf((*MockMaterialRepository)(nil).GetMaterialList), ctx, query, sortBy, order, skip, limit, stockCheckStatus)
 }
 
 // GetMaterialListTotal mocks base method.
-func (m *MockMaterialRepository) GetMaterialListTotal(ctx context.Context, query string) (int64, *domain.Error) {
+func (m *MockMaterialRepository) GetMaterialListTotal(ctx context.Context, query string, stockCheckStatus *domain.MaterialStockCheckStatus) (int64, *domain.Error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetMaterialListTotal", ctx, query)
+	ret := m.ctrl.Call(m, "GetMaterialListTotal", ctx, query, stockCheckStatus)
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(*domain.Error)
 	return ret0, ret1
 }
 
 // GetMaterialListTotal indicates an expected call of GetMaterialListTotal.
-func (mr *MockMaterialRepositoryMockRecorder) GetMaterialListTotal(ctx, query any) *gomock.Call {
+func (mr *MockMaterialRepositoryMockRecorder) GetMaterialListTotal(ctx, query, stockCheckStatus any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMaterialListTotal", reflect.TypeOf((*MockMaterialRepository)(nil).GetMaterialListTotal), ctx, query)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMaterialListTotal", reflect.TypeOf((*MockMaterialRepository)(nil).GetMaterialListTotal), ctx, query, stockCheckStatus)
 }
 
 // GetMaterialsWeeklyUsage mocks base method.

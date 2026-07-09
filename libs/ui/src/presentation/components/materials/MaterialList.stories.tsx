@@ -6,6 +6,8 @@ import { mockMaterials } from '../../../../.storybook/mocks/mockData';
 const defaultArgs = {
   searchValue: '',
   onSearchValueChange: fn(),
+  stockCheckStatus: 'all' as const,
+  onStockCheckStatusChange: fn(),
   onRetryButtonPress: fn(),
   onPageChange: fn(),
   onEditMenuPress: fn(),
@@ -55,5 +57,16 @@ export const WithSearch: Story = {
     variant: { type: 'loaded', items: mockMaterials.slice(0, 1) },
     searchValue: 'Coffee',
     totalItem: 1,
+  },
+};
+
+export const ExcludedFilter: Story = {
+  args: {
+    variant: {
+      type: 'loaded',
+      items: mockMaterials.filter((m) => !m.isStockCheckRequired),
+    },
+    stockCheckStatus: 'excluded' as const,
+    totalItem: mockMaterials.filter((m) => !m.isStockCheckRequired).length,
   },
 };

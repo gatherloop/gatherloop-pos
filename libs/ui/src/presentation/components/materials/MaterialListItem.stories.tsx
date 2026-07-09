@@ -13,6 +13,7 @@ const meta: Meta<typeof MaterialListItem> = {
     purchaseUnit: 'Kg',
     minimumStock: 1,
     normalStock: 2,
+    isStockCheckRequired: true,
     supplierName: 'PT. Coffee Supplier',
     onEditMenuPress: fn(),
     onDeleteMenuPress: fn(),
@@ -59,5 +60,12 @@ export const LowUsage: Story = {
     purchaseUnit: 'Kg',
     minimumStock: 2,
     normalStock: 5,
+  },
+};
+
+export const ExcludedFromStockCheck: Story = {
+  args: {
+    name: 'Cleaning Equipment',
+    isStockCheckRequired: false,
   },
 };

@@ -7,6 +7,8 @@ import {
 import { createDebounce } from '../../utils/debounce';
 import { Usecase } from './IUsecase';
 
+export type MaterialStockCheckStatus = 'required' | 'excluded' | 'all';
+
 type Context = {
   materials: Material[];
   page: number;
@@ -14,6 +16,7 @@ type Context = {
   errorMessage: string | null;
   sortBy: 'created_at';
   orderBy: 'asc' | 'desc';
+  stockCheckStatus: MaterialStockCheckStatus;
   itemPerPage: number;
   totalItem: number;
   fetchDebounceDelay: number;
@@ -37,6 +40,7 @@ export type MaterialListAction =
       type: 'CHANGE_PARAMS';
       page?: number;
       query?: string;
+      stockCheckStatus?: MaterialStockCheckStatus;
       fetchDebounceDelay?: number;
     }
   | { type: 'REVALIDATE'; materials: Material[]; totalItem: number }
@@ -51,6 +55,7 @@ export type MaterialListParams = {
   query?: string;
   sortBy?: 'created_at';
   orderBy?: 'asc' | 'desc';
+  stockCheckStatus?: MaterialStockCheckStatus;
   itemPerPage?: number;
 };
 
@@ -86,6 +91,9 @@ export class MaterialListUsecase extends Usecase<
         this.params.sortBy || this.materialListQueryRepository.getSortBy(),
       orderBy:
         this.params.orderBy || this.materialListQueryRepository.getOrderBy(),
+      stockCheckStatus:
+        this.params.stockCheckStatus ||
+        this.materialListQueryRepository.getStockCheckStatus(),
       itemPerPage:
         this.params.itemPerPage ||
         this.materialListQueryRepository.getItemPerPage(),
@@ -177,9 +185,16 @@ export class MaterialListUsecase extends Usecase<
       .with({ type: 'idle' }, () => dispatch({ type: 'FETCH' }))
       .with(
         { type: 'loading' },
-        ({ page, itemPerPage, orderBy, query, sortBy }) =>
+        ({ page, itemPerPage, orderBy, query, sortBy, stockCheckStatus }) =>
           this.materialRepository
-            .fetchMaterialList({ page, itemPerPage, orderBy, query, sortBy })
+            .fetchMaterialList({
+              page,
+              itemPerPage,
+              orderBy,
+              query,
+              sortBy,
+              stockCheckStatus,
+            })
             .then(({ materials, totalItem }) =>
               dispatch({ type: 'FETCH_SUCCESS', materials, totalItem })
             )
@@ -192,12 +207,23 @@ export class MaterialListUsecase extends Usecase<
       )
       .with(
         { type: 'changingParams' },
-        ({ page, itemPerPage, orderBy, query, sortBy, fetchDebounceDelay }) => {
+        ({
+          page,
+          itemPerPage,
+          orderBy,
+          query,
+          sortBy,
+          stockCheckStatus,
+          fetchDebounceDelay,
+        }) => {
           this.materialListQueryRepository.setPage(page);
           this.materialListQueryRepository.setItemPerPage(itemPerPage);
           this.materialListQueryRepository.setOrderBy(orderBy);
           this.materialListQueryRepository.setSearchQuery(query);
           this.materialListQueryRepository.setSortBy(sortBy);
+          this.materialListQueryRepository.setStockCheckStatus(
+            stockCheckStatus
+          );
 
           changeParamsDebounce(() => {
             const { materials, totalItem } =
@@ -207,6 +233,7 @@ export class MaterialListUsecase extends Usecase<
                 orderBy,
                 query,
                 sortBy,
+                stockCheckStatus,
               });
 
             if (materials.length > 0) {
@@ -225,6 +252,7 @@ export class MaterialListUsecase extends Usecase<
           orderBy,
           query,
           sortBy,
+          stockCheckStatus,
           materials,
           totalItem,
         }) => {
@@ -235,6 +263,7 @@ export class MaterialListUsecase extends Usecase<
               orderBy,
               query,
               sortBy,
+              stockCheckStatus,
             })
             .then(({ materials, totalItem }) =>
               dispatch({ type: 'REVALIDATE_FINISH', materials, totalItem })

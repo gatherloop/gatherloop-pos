@@ -14,13 +14,13 @@ func NewMaterialUsecase(repository MaterialRepository, supplierRepository Suppli
 	return MaterialUsecase{repository: repository, supplierRepository: supplierRepository}
 }
 
-func (usecase MaterialUsecase) GetMaterialList(ctx context.Context, query string, sortBy SortBy, order Order, skip int, limit int) ([]Material, int64, *Error) {
-	materials, err := usecase.repository.GetMaterialList(ctx, query, sortBy, order, skip, limit)
+func (usecase MaterialUsecase) GetMaterialList(ctx context.Context, query string, sortBy SortBy, order Order, skip int, limit int, stockCheckStatus *MaterialStockCheckStatus) ([]Material, int64, *Error) {
+	materials, err := usecase.repository.GetMaterialList(ctx, query, sortBy, order, skip, limit, stockCheckStatus)
 	if err != nil {
 		return []Material{}, 0, err
 	}
 
-	total, err := usecase.repository.GetMaterialListTotal(ctx, query)
+	total, err := usecase.repository.GetMaterialListTotal(ctx, query, stockCheckStatus)
 	if err != nil {
 		return []Material{}, 0, err
 	}
