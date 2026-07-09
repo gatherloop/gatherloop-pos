@@ -29,6 +29,7 @@ export const getServerSideProps: GetServerSideProps<
       orderBy: 'asc',
       query: '',
       sortBy: 'created_at',
+      stockCheckStatus: 'required',
     },
     { headers: { Cookie: ctx.req.headers.cookie } }
   );
