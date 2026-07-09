@@ -13,7 +13,7 @@ func NewMaterialRepository(db *gorm.DB) domain.MaterialRepository {
 	return Repository{db: db}
 }
 
-func (repo Repository) GetMaterialList(ctx context.Context, query string, sortBy domain.SortBy, order domain.Order, skip int, limit int) ([]domain.Material, *domain.Error) {
+func (repo Repository) GetMaterialList(ctx context.Context, query string, sortBy domain.SortBy, order domain.Order, skip int, limit int, stockCheckStatus *domain.MaterialStockCheckStatus) ([]domain.Material, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	var materials []Material
 	result := db.Table("materials").
@@ -24,6 +24,15 @@ func (repo Repository) GetMaterialList(ctx context.Context, query string, sortBy
 
 	if query != "" {
 		result = result.Where("name LIKE ?", "%"+query+"%")
+	}
+
+	if stockCheckStatus != nil {
+		switch *stockCheckStatus {
+		case domain.MaterialStockCheckStatusRequired:
+			result = result.Where("is_stock_check_required = 1")
+		case domain.MaterialStockCheckStatusExcluded:
+			result = result.Where("is_stock_check_required = 0")
+		}
 	}
 
 	if skip > 0 {
@@ -39,13 +48,22 @@ func (repo Repository) GetMaterialList(ctx context.Context, query string, sortBy
 	return ToMaterialListDomain(materials), ToErrorCtx(ctx, result.Error, "GetMaterialList")
 }
 
-func (repo Repository) GetMaterialListTotal(ctx context.Context, query string) (int64, *domain.Error) {
+func (repo Repository) GetMaterialListTotal(ctx context.Context, query string, stockCheckStatus *domain.MaterialStockCheckStatus) (int64, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	var count int64
 	result := db.Table("materials").Where("deleted_at", nil)
 
 	if query != "" {
 		result = result.Where("name LIKE ?", "%"+query+"%")
+	}
+
+	if stockCheckStatus != nil {
+		switch *stockCheckStatus {
+		case domain.MaterialStockCheckStatusRequired:
+			result = result.Where("is_stock_check_required = 1")
+		case domain.MaterialStockCheckStatusExcluded:
+			result = result.Where("is_stock_check_required = 0")
+		}
 	}
 
 	result = result.Count(&count)

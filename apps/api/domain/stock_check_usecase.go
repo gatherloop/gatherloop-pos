@@ -30,7 +30,7 @@ func (usecase StockCheckUsecase) GetStockCheckById(ctx context.Context, id int64
 }
 
 func (usecase StockCheckUsecase) CreateStockCheck(ctx context.Context, itemRequests []StockCheckItemRequest) (StockCheck, *Error) {
-	materials, err := usecase.materialRepository.GetMaterialList(ctx, "", CreatedAt, Ascending, 0, 0)
+	materials, err := usecase.materialRepository.GetMaterialList(ctx, "", CreatedAt, Ascending, 0, 0, nil)
 	if err != nil {
 		return StockCheck{}, err
 	}

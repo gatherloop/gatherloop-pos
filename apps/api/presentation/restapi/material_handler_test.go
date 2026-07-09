@@ -25,8 +25,8 @@ func TestMaterialHandler_GetMaterialList(t *testing.T) {
 			name: "success",
 			url:  "/materials",
 			setupMock: func(r *mock.MockMaterialRepository) {
-				r.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Material{{Id: 1}}, nil)
-				r.EXPECT().GetMaterialListTotal(gomock.Any(), gomock.Any()).Return(int64(1), nil)
+				r.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Material{{Id: 1}}, nil)
+				r.EXPECT().GetMaterialListTotal(gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(1), nil)
 				r.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), gomock.Any()).Return(map[int64]float32{1: 0}, nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -41,9 +41,51 @@ func TestMaterialHandler_GetMaterialList(t *testing.T) {
 			name: "repo error",
 			url:  "/materials",
 			setupMock: func(r *mock.MockMaterialRepository) {
-				r.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
+				r.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
 			expectedStatus: http.StatusInternalServerError,
+		},
+		{
+			name: "stockCheckStatus=required is passed to the repository",
+			url:  "/materials?stockCheckStatus=required",
+			setupMock: func(r *mock.MockMaterialRepository) {
+				requiredStatus := domain.MaterialStockCheckStatusRequired
+				r.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), &requiredStatus).Return([]domain.Material{{Id: 1}}, nil)
+				r.EXPECT().GetMaterialListTotal(gomock.Any(), gomock.Any(), &requiredStatus).Return(int64(1), nil)
+				r.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), gomock.Any()).Return(map[int64]float32{1: 0}, nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name: "stockCheckStatus=excluded is passed to the repository",
+			url:  "/materials?stockCheckStatus=excluded",
+			setupMock: func(r *mock.MockMaterialRepository) {
+				excludedStatus := domain.MaterialStockCheckStatusExcluded
+				r.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), &excludedStatus).Return([]domain.Material{}, nil)
+				r.EXPECT().GetMaterialListTotal(gomock.Any(), gomock.Any(), &excludedStatus).Return(int64(0), nil)
+				r.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), gomock.Any()).Return(map[int64]float32{}, nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name: "stockCheckStatus=all and omission behave identically (nil filter)",
+			url:  "/materials?stockCheckStatus=all",
+			setupMock: func(r *mock.MockMaterialRepository) {
+				r.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), (*domain.MaterialStockCheckStatus)(nil)).Return([]domain.Material{{Id: 1}}, nil)
+				r.EXPECT().GetMaterialListTotal(gomock.Any(), gomock.Any(), (*domain.MaterialStockCheckStatus)(nil)).Return(int64(1), nil)
+				r.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), gomock.Any()).Return(map[int64]float32{1: 0}, nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name: "invalid stockCheckStatus value falls back to nil filter",
+			url:  "/materials?stockCheckStatus=bogus",
+			setupMock: func(r *mock.MockMaterialRepository) {
+				r.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), (*domain.MaterialStockCheckStatus)(nil)).Return([]domain.Material{{Id: 1}}, nil)
+				r.EXPECT().GetMaterialListTotal(gomock.Any(), gomock.Any(), (*domain.MaterialStockCheckStatus)(nil)).Return(int64(1), nil)
+				r.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), gomock.Any()).Return(map[int64]float32{1: 0}, nil)
+			},
+			expectedStatus: http.StatusOK,
 		},
 	}
 
