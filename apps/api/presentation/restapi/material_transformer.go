@@ -80,6 +80,20 @@ func ToMaterial(materialRequest apiContract.MaterialRequest) domain.Material {
 	}
 }
 
+func GetMaterialStockCheckStatus(r *http.Request) *domain.MaterialStockCheckStatus {
+	stockCheckStatusQuery := r.URL.Query().Get("stockCheckStatus")
+	switch stockCheckStatusQuery {
+	case "required":
+		stockCheckStatusValue := domain.MaterialStockCheckStatusRequired
+		return &stockCheckStatusValue
+	case "excluded":
+		stockCheckStatusValue := domain.MaterialStockCheckStatusExcluded
+		return &stockCheckStatusValue
+	default:
+		return nil
+	}
+}
+
 func ValidateMaterialRequest(req apiContract.MaterialRequest) error {
 	if req.PurchaseUnitSize <= 0 {
 		return fmt.Errorf("purchase_unit_size must be greater than 0")

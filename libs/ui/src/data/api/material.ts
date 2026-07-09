@@ -56,6 +56,7 @@ export class ApiMaterialRepository implements MaterialRepository {
     page,
     query,
     sortBy,
+    stockCheckStatus = 'all',
   }) => {
     const params = {
       query,
@@ -63,6 +64,7 @@ export class ApiMaterialRepository implements MaterialRepository {
       limit: itemPerPage,
       order: orderBy,
       sortBy,
+      stockCheckStatus,
     };
 
     const res = this.client.getQueryState<MaterialList200>(
@@ -84,12 +86,14 @@ export class ApiMaterialRepository implements MaterialRepository {
       page,
       query,
       sortBy,
+      stockCheckStatus = 'all',
     }: {
       page: number;
       itemPerPage: number;
       query: string;
       sortBy: 'created_at';
       orderBy: 'asc' | 'desc';
+      stockCheckStatus?: 'required' | 'excluded' | 'all';
     },
     options?: Partial<RequestConfig>
   ) => {
@@ -99,6 +103,7 @@ export class ApiMaterialRepository implements MaterialRepository {
       limit: itemPerPage,
       order: orderBy,
       sortBy,
+      stockCheckStatus,
     };
 
     return this.client

@@ -187,6 +187,7 @@ paths:
         - $ref: '#/components/parameters/Order'
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Skip'
+        - $ref: '#/components/parameters/MaterialStockCheckStatus'
       responses:
         '200':
           description: success response
@@ -4681,6 +4682,12 @@ components:
       schema:
         type: string
         enum: [draft, published, all]
+    MaterialStockCheckStatus:
+      name: stockCheckStatus
+      in: query
+      schema:
+        type: string
+        enum: [required, excluded, all]
     ChecklistTemplateId:
       name: checklistTemplateId
       in: path

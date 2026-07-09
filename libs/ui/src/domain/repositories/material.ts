@@ -7,6 +7,7 @@ export interface MaterialRepository {
     query: string;
     sortBy: 'created_at';
     orderBy: 'asc' | 'desc';
+    stockCheckStatus?: 'required' | 'excluded' | 'all';
   }) => {
     materials: Material[];
     totalItem: number;
@@ -18,6 +19,7 @@ export interface MaterialRepository {
     query: string;
     sortBy: 'created_at';
     orderBy: 'asc' | 'desc';
+    stockCheckStatus?: 'required' | 'excluded' | 'all';
   }) => Promise<{ materials: Material[]; totalItem: number }>;
 
   fetchMaterialById: (materialId: number) => Promise<Material>;

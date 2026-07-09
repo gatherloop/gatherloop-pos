@@ -33,7 +33,9 @@ func (handler MaterialHandler) GetMaterialList(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	materials, total, usecaseErr := handler.usecase.GetMaterialList(ctx, query, sortBy, order, skip, limit)
+	stockCheckStatus := GetMaterialStockCheckStatus(r)
+
+	materials, total, usecaseErr := handler.usecase.GetMaterialList(ctx, query, sortBy, order, skip, limit, stockCheckStatus)
 	if usecaseErr != nil {
 		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return

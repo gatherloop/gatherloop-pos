@@ -2,6 +2,13 @@ package domain
 
 import "time"
 
+type MaterialStockCheckStatus string
+
+const (
+	MaterialStockCheckStatusRequired MaterialStockCheckStatus = "required"
+	MaterialStockCheckStatusExcluded MaterialStockCheckStatus = "excluded"
+)
+
 type PurchaseType string
 
 const (

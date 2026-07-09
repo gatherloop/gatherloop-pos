@@ -15,28 +15,43 @@ func newMaterialUsecase(ctrl *gomock.Controller, matRepo *mock.MockMaterialRepos
 }
 
 func TestMaterialUsecase_GetMaterialList(t *testing.T) {
+	requiredStatus := domain.MaterialStockCheckStatusRequired
+
 	tests := []struct {
-		name          string
-		setupMock     func(r *mock.MockMaterialRepository)
-		expectedLen   int
-		expectedError *domain.Error
+		name             string
+		stockCheckStatus *domain.MaterialStockCheckStatus
+		setupMock        func(r *mock.MockMaterialRepository)
+		expectedLen      int
+		expectedError    *domain.Error
 	}{
 		{
 			name: "success — enriches with weekly usage",
 			setupMock: func(r *mock.MockMaterialRepository) {
-				r.EXPECT().GetMaterialList(gomock.Any(), "", domain.CreatedAt, domain.Ascending, 0, 10).Return([]domain.Material{
+				r.EXPECT().GetMaterialList(gomock.Any(), "", domain.CreatedAt, domain.Ascending, 0, 10, (*domain.MaterialStockCheckStatus)(nil)).Return([]domain.Material{
 					{Id: 1, Name: "Sugar"},
 					{Id: 2, Name: "Flour"},
 				}, nil)
-				r.EXPECT().GetMaterialListTotal(gomock.Any(), "").Return(int64(2), nil)
+				r.EXPECT().GetMaterialListTotal(gomock.Any(), "", (*domain.MaterialStockCheckStatus)(nil)).Return(int64(2), nil)
 				r.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), []int64{1, 2}).Return(map[int64]float32{1: 5.0, 2: 3.0}, nil)
 			},
 			expectedLen: 2,
 		},
 		{
+			name:             "success — passes stockCheckStatus through to repository",
+			stockCheckStatus: &requiredStatus,
+			setupMock: func(r *mock.MockMaterialRepository) {
+				r.EXPECT().GetMaterialList(gomock.Any(), "", domain.CreatedAt, domain.Ascending, 0, 10, &requiredStatus).Return([]domain.Material{
+					{Id: 1, Name: "Sugar"},
+				}, nil)
+				r.EXPECT().GetMaterialListTotal(gomock.Any(), "", &requiredStatus).Return(int64(1), nil)
+				r.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), []int64{1}).Return(map[int64]float32{1: 5.0}, nil)
+			},
+			expectedLen: 1,
+		},
+		{
 			name: "error on GetMaterialList",
 			setupMock: func(r *mock.MockMaterialRepository) {
-				r.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				r.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil, &domain.Error{Type: domain.InternalServerError})
 			},
 			expectedError: &domain.Error{Type: domain.InternalServerError},
@@ -44,9 +59,9 @@ func TestMaterialUsecase_GetMaterialList(t *testing.T) {
 		{
 			name: "error on GetMaterialListTotal",
 			setupMock: func(r *mock.MockMaterialRepository) {
-				r.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				r.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return([]domain.Material{{Id: 1, Name: "Sugar"}}, nil)
-				r.EXPECT().GetMaterialListTotal(gomock.Any(), gomock.Any()).
+				r.EXPECT().GetMaterialListTotal(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(int64(0), &domain.Error{Type: domain.InternalServerError})
 			},
 			expectedError: &domain.Error{Type: domain.InternalServerError},
@@ -54,9 +69,9 @@ func TestMaterialUsecase_GetMaterialList(t *testing.T) {
 		{
 			name: "error on GetMaterialsWeeklyUsage",
 			setupMock: func(r *mock.MockMaterialRepository) {
-				r.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				r.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return([]domain.Material{{Id: 1, Name: "Sugar"}}, nil)
-				r.EXPECT().GetMaterialListTotal(gomock.Any(), gomock.Any()).Return(int64(1), nil)
+				r.EXPECT().GetMaterialListTotal(gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(1), nil)
 				r.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), gomock.Any()).
 					Return(nil, &domain.Error{Type: domain.InternalServerError})
 			},
@@ -74,7 +89,7 @@ func TestMaterialUsecase_GetMaterialList(t *testing.T) {
 			tt.setupMock(mockRepo)
 
 			usecase := newMaterialUsecase(ctrl, mockRepo, mockSupplierRepo)
-			materials, _, err := usecase.GetMaterialList(context.Background(), "", domain.CreatedAt, domain.Ascending, 0, 10)
+			materials, _, err := usecase.GetMaterialList(context.Background(), "", domain.CreatedAt, domain.Ascending, 0, 10, tt.stockCheckStatus)
 
 			if tt.expectedError != nil {
 				assert.NotNil(t, err)
