@@ -27,6 +27,7 @@ export const useMaterialCreateController = (usecase: MaterialCreateUsecase) => {
         purchaseUnitSize: z.number().positive(),
         minimumStock: z.number().int().min(0),
         normalStock: z.number().int().min(0),
+        isStockCheckRequired: z.boolean(),
         suppliers: z.array(
           z
             .object({

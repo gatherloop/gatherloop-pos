@@ -19,6 +19,7 @@ export class MockMaterialRepository implements MaterialRepository {
         purchaseUnitSize: 1000,
         minimumStock: 2,
         normalStock: 5,
+        isStockCheckRequired: true,
         suppliers: [],
       },
       {
@@ -32,6 +33,7 @@ export class MockMaterialRepository implements MaterialRepository {
         purchaseUnitSize: 1000,
         minimumStock: 3,
         normalStock: 10,
+        isStockCheckRequired: true,
         suppliers: [],
       },
       {
@@ -45,6 +47,7 @@ export class MockMaterialRepository implements MaterialRepository {
         purchaseUnitSize: 50,
         minimumStock: 1,
         normalStock: 4,
+        isStockCheckRequired: true,
         suppliers: [],
       },
       {
@@ -58,6 +61,7 @@ export class MockMaterialRepository implements MaterialRepository {
         purchaseUnitSize: 1000,
         minimumStock: 0,
         normalStock: 0,
+        isStockCheckRequired: true,
         suppliers: [],
       },
     ];
@@ -134,6 +138,7 @@ export class MockMaterialRepository implements MaterialRepository {
       purchaseUnitSize: 1000,
       minimumStock: 2,
       normalStock: 5,
+      isStockCheckRequired: true,
       suppliers: [],
     });
   }
@@ -167,6 +172,7 @@ export class MockMaterialRepository implements MaterialRepository {
       purchaseUnitSize: formValues.purchaseUnitSize,
       minimumStock: formValues.minimumStock,
       normalStock: formValues.normalStock,
+      isStockCheckRequired: formValues.isStockCheckRequired,
       suppliers: [],
     };
     this.materials.push(newMaterial);
