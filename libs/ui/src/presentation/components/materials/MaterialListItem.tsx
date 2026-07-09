@@ -1,6 +1,6 @@
 import { Layers, Pencil, ShoppingCart, Store, Trash } from '@tamagui/lucide-icons';
 import { ListItem } from '../base';
-import { XStackProps } from 'tamagui';
+import { Paragraph, XStack, XStackProps } from 'tamagui';
 
 export type MaterialListItemProps = {
   name: string;
@@ -10,6 +10,7 @@ export type MaterialListItemProps = {
   purchaseUnit: string;
   minimumStock: number;
   normalStock: number;
+  isStockCheckRequired: boolean;
   supplierName?: string;
   onEditMenuPress?: () => void;
   onDeleteMenuPress?: () => void;
@@ -23,6 +24,7 @@ export function MaterialListItem({
   purchaseUnit,
   minimumStock,
   normalStock,
+  isStockCheckRequired,
   supplierName,
   onEditMenuPress,
   onDeleteMenuPress,
@@ -31,7 +33,25 @@ export function MaterialListItem({
   return (
     <ListItem
       title={name}
-      subtitle={`Rp. ${price.toLocaleString('id')}`}
+      subtitle={
+        <XStack alignItems="center" gap="$2">
+          <Paragraph textTransform="none" ellipse size="$6">
+            {`Rp. ${price.toLocaleString('id')}`}
+          </Paragraph>
+          {!isStockCheckRequired && (
+            <XStack
+              backgroundColor="$gray5"
+              borderRadius="$2"
+              paddingHorizontal="$2"
+              paddingVertical="$1"
+            >
+              <Paragraph fontSize="$2" color="$gray11">
+                No stock check
+              </Paragraph>
+            </XStack>
+          )}
+        </XStack>
+      }
       menus={[
         {
           title: 'Edit',

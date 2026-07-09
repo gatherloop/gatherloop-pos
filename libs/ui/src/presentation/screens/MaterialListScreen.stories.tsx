@@ -11,6 +11,8 @@ const defaultArgs = {
   onRetryButtonPress: fn(),
   searchValue: '',
   onSearchValueChange: fn(),
+  stockCheckStatus: 'all' as const,
+  onStockCheckStatusChange: fn(),
   currentPage: 1,
   onPageChange: fn(),
   totalItem: 3,

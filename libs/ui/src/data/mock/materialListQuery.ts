@@ -8,6 +8,7 @@ export class MockMaterialListQueryRepository
   getSortBy = () => 'created_at' as const;
   getOrderBy = () => 'asc' as const;
   getItemPerPage = () => 10;
+  getStockCheckStatus = () => 'all' as const;
   setPage = (page: number) => {
     console.log(`Setting page to ${page}`);
   };
@@ -22,5 +23,10 @@ export class MockMaterialListQueryRepository
   };
   setSortBy = (sortBy: 'created_at') => {
     console.log(`Setting sort by to ${sortBy}`);
+  };
+  setStockCheckStatus = (
+    stockCheckStatus: 'required' | 'excluded' | 'all'
+  ) => {
+    console.log(`Setting stock check status to ${stockCheckStatus}`);
   };
 }

@@ -7,7 +7,7 @@ import {
   Layout,
   MaterialListProps,
 } from '../components';
-import { Material } from '../../domain';
+import { Material, MaterialStockCheckStatus } from '../../domain';
 
 export type MaterialListScreenProps = {
   onLogoutPress: () => void;
@@ -18,6 +18,8 @@ export type MaterialListScreenProps = {
   variant: MaterialListProps['variant'];
   searchValue: string;
   onSearchValueChange: (value: string) => void;
+  stockCheckStatus: MaterialStockCheckStatus;
+  onStockCheckStatusChange: (status: MaterialStockCheckStatus) => void;
   currentPage: number;
   onPageChange: (page: number) => void;
   totalItem: number;
@@ -42,6 +44,8 @@ export const MaterialListScreen = ({
   variant,
   searchValue,
   onSearchValueChange,
+  stockCheckStatus,
+  onStockCheckStatusChange,
   currentPage,
   onPageChange,
   totalItem,
@@ -69,6 +73,8 @@ export const MaterialListScreen = ({
         variant={variant}
         searchValue={searchValue}
         onSearchValueChange={onSearchValueChange}
+        stockCheckStatus={stockCheckStatus}
+        onStockCheckStatusChange={onStockCheckStatusChange}
         currentPage={currentPage}
         onPageChange={onPageChange}
         totalItem={totalItem}

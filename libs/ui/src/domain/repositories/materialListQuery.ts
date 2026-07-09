@@ -13,4 +13,9 @@ export interface MaterialListQueryRepository {
 
   getOrderBy: () => 'asc' | 'desc';
   setOrderBy: (orderBy: 'asc' | 'desc') => void;
+
+  getStockCheckStatus: () => 'required' | 'excluded' | 'all';
+  setStockCheckStatus: (
+    stockCheckStatus: 'required' | 'excluded' | 'all'
+  ) => void;
 }
