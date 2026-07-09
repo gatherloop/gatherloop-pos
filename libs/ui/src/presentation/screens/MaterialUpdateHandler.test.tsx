@@ -95,6 +95,48 @@ describe('MaterialUpdateHandler', () => {
         await flushPromises();
       });
     });
+
+    it('should render the isStockCheckRequired switch field', async () => {
+      render(<MaterialUpdateHandler {...createProps()} />);
+      expect(screen.getByRole('switch', { name: 'Include in stock checks' })).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
+    });
+
+    it('should pre-fill isStockCheckRequired switch as checked when the saved material requires stock checks', async () => {
+      render(<MaterialUpdateHandler {...createProps({ preloaded: true })} />);
+      expect(
+        screen.getByRole('switch', { name: 'Include in stock checks', checked: true })
+      ).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
+    });
+
+    it('should pre-fill isStockCheckRequired switch as unchecked when the saved material is excluded', async () => {
+      const materialRepo = new MockMaterialRepository();
+      const excludedMaterial = { ...materialRepo.materials[0], isStockCheckRequired: false };
+      materialRepo.materials[0] = excludedMaterial;
+
+      render(
+        <MaterialUpdateHandler
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          materialUpdateUsecase={new MaterialUpdateUsecase(materialRepo, {
+            materialId: excludedMaterial.id,
+            material: excludedMaterial,
+          })}
+          supplierListUsecase={createSupplierListUsecase()}
+        />
+      );
+
+      expect(
+        screen.getByRole('switch', { name: 'Include in stock checks', checked: false })
+      ).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
+    });
   });
 
   describe('navigation', () => {
@@ -112,6 +154,33 @@ describe('MaterialUpdateHandler', () => {
       });
 
       expect(mockRouterPush).toHaveBeenCalledWith('/materials');
+    });
+
+    it('should persist isStockCheckRequired as false when the switch is turned off and saved', async () => {
+      const user = userEvent.setup();
+      const materialRepo = new MockMaterialRepository();
+      const preloadedMaterial = materialRepo.materials[0];
+      render(
+        <MaterialUpdateHandler
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          materialUpdateUsecase={new MaterialUpdateUsecase(materialRepo, {
+            materialId: preloadedMaterial.id,
+            material: preloadedMaterial,
+          })}
+          supplierListUsecase={createSupplierListUsecase()}
+        />
+      );
+
+      await user.click(screen.getByRole('switch', { name: 'Include in stock checks' }));
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(
+        materialRepo.materials.find((m) => m.id === preloadedMaterial.id)?.isStockCheckRequired
+      ).toBe(false);
     });
 
     it('should not navigate when update fails', async () => {

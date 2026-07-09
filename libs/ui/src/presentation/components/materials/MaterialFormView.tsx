@@ -14,7 +14,7 @@ import {
   YStack,
 } from 'tamagui';
 import { Plus, Trash } from '@tamagui/lucide-icons';
-import { Field, FormErrorBanner, InputText, InputNumber, MarkdownEditor, FieldArray, ErrorMessage, Select } from '../base';
+import { Field, FormErrorBanner, InputText, InputNumber, MarkdownEditor, FieldArray, ErrorMessage, Select, Switch } from '../base';
 import { MaterialForm, PurchaseType, Supplier } from '../../../domain';
 
 export type MaterialFormViewProps = {
@@ -155,6 +155,12 @@ export const MaterialFormView = ({
         </Field>
         <Field name="normalStock" label="Normal Stock (purchase units)">
           <InputNumber fractionDigit={0} />
+        </Field>
+        <Field name="isStockCheckRequired" label="Include in stock checks">
+          <Switch />
+          <Paragraph size="$2" color="$gray10">
+            When off, this material will not appear on restock check forms.
+          </Paragraph>
         </Field>
         <Field name="description" label="Description">
           <MarkdownEditor
