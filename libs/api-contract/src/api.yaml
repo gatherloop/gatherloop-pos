@@ -2464,6 +2464,7 @@ components:
         - minimumStock
         - normalStock
         - suppliers
+        - isStockCheckRequired
         - createdAt
       properties:
         id:
@@ -2491,6 +2492,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MaterialSupplier'
+        isStockCheckRequired:
+          type: boolean
         deletedAt:
           type: string
           format: date-time
@@ -2507,6 +2510,7 @@ components:
         - purchaseUnitSize
         - minimumStock
         - normalStock
+        - isStockCheckRequired
       properties:
         name:
           type: string
@@ -2530,6 +2534,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MaterialSupplierRequest'
+        isStockCheckRequired:
+          type: boolean
     ChecklistTemplateSubItem:
       type: object
       required:

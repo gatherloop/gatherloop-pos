@@ -61,6 +61,8 @@ export function toTransaction(transaction: ApiTransaction): Transaction {
             purchaseUnitSize: variantMaterial.material.purchaseUnitSize,
             minimumStock: variantMaterial.material.minimumStock,
             normalStock: variantMaterial.material.normalStock,
+            isStockCheckRequired:
+              variantMaterial.material.isStockCheckRequired ?? true,
             suppliers: [],
           },
         })),

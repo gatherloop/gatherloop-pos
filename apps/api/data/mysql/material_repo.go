@@ -132,6 +132,11 @@ func (repo Repository) UpdateMaterialById(ctx context.Context, material domain.M
 		if result := tx.Table("materials").Where("id = ?", id).Updates(&materialPayload); result.Error != nil {
 			return result.Error
 		}
+		// Updates(&struct) skips zero-value fields, so a bool being set to
+		// false (e.g. IsStockCheckRequired) would otherwise never persist.
+		if err := tx.Table("materials").Where("id = ?", id).Update("is_stock_check_required", material.IsStockCheckRequired).Error; err != nil {
+			return err
+		}
 		return replaceSuppliers(tx, id, material.Suppliers)
 	})
 	if err != nil {

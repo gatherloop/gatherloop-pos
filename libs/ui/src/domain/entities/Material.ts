@@ -30,6 +30,7 @@ export type Material = {
   minimumStock: number;
   normalStock: number;
   suppliers: MaterialSupplier[];
+  isStockCheckRequired: boolean;
   createdAt: string;
 };
 
@@ -43,4 +44,5 @@ export type MaterialForm = {
   minimumStock: number;
   normalStock: number;
   suppliers: MaterialSupplierForm[];
+  isStockCheckRequired: boolean;
 };
