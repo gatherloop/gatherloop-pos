@@ -4,6 +4,7 @@ import {
   Material,
   MaterialDeleteUsecase,
   MaterialListUsecase,
+  MaterialStockCheckStatus,
 } from '../../domain';
 import { MaterialListScreen, MaterialListScreenProps } from './MaterialListScreen';
 import { match, P } from 'ts-pattern';
@@ -86,6 +87,14 @@ export const MaterialListHandler = ({
           query: '',
           page: 1,
           fetchDebounceDelay: 0,
+        })
+      }
+      stockCheckStatus={materialList.state.stockCheckStatus}
+      onStockCheckStatusChange={(stockCheckStatus: MaterialStockCheckStatus) =>
+        materialList.dispatch({
+          type: 'CHANGE_PARAMS',
+          stockCheckStatus,
+          page: 1,
         })
       }
       currentPage={materialList.state.page}

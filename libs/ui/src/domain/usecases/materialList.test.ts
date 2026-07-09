@@ -37,6 +37,7 @@ describe('MaterialListUsecase', () => {
         errorMessage: null,
         sortBy: materialListQueryRepository.getSortBy(),
         orderBy: materialListQueryRepository.getOrderBy(),
+        stockCheckStatus: materialListQueryRepository.getStockCheckStatus(),
         itemPerPage: materialListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
@@ -51,6 +52,7 @@ describe('MaterialListUsecase', () => {
         errorMessage: null,
         sortBy: materialListQueryRepository.getSortBy(),
         orderBy: materialListQueryRepository.getOrderBy(),
+        stockCheckStatus: materialListQueryRepository.getStockCheckStatus(),
         itemPerPage: materialListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
@@ -65,6 +67,7 @@ describe('MaterialListUsecase', () => {
         errorMessage: null,
         sortBy: materialListQueryRepository.getSortBy(),
         orderBy: materialListQueryRepository.getOrderBy(),
+        stockCheckStatus: materialListQueryRepository.getStockCheckStatus(),
         itemPerPage: materialListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
@@ -79,6 +82,7 @@ describe('MaterialListUsecase', () => {
         errorMessage: null,
         sortBy: materialListQueryRepository.getSortBy(),
         orderBy: materialListQueryRepository.getOrderBy(),
+        stockCheckStatus: materialListQueryRepository.getStockCheckStatus(),
         itemPerPage: materialListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
@@ -93,6 +97,7 @@ describe('MaterialListUsecase', () => {
         errorMessage: null,
         sortBy: materialListQueryRepository.getSortBy(),
         orderBy: materialListQueryRepository.getOrderBy(),
+        stockCheckStatus: materialListQueryRepository.getStockCheckStatus(),
         itemPerPage: materialListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
@@ -126,6 +131,7 @@ describe('MaterialListUsecase', () => {
         errorMessage: null,
         sortBy: materialListQueryRepository.getSortBy(),
         orderBy: materialListQueryRepository.getOrderBy(),
+        stockCheckStatus: materialListQueryRepository.getStockCheckStatus(),
         itemPerPage: materialListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
@@ -140,6 +146,7 @@ describe('MaterialListUsecase', () => {
         errorMessage: 'Failed to fetch materials',
         sortBy: materialListQueryRepository.getSortBy(),
         orderBy: materialListQueryRepository.getOrderBy(),
+        stockCheckStatus: materialListQueryRepository.getStockCheckStatus(),
         itemPerPage: materialListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
@@ -155,6 +162,7 @@ describe('MaterialListUsecase', () => {
         errorMessage: null,
         sortBy: materialListQueryRepository.getSortBy(),
         orderBy: materialListQueryRepository.getOrderBy(),
+        stockCheckStatus: materialListQueryRepository.getStockCheckStatus(),
         itemPerPage: materialListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
@@ -169,6 +177,7 @@ describe('MaterialListUsecase', () => {
         errorMessage: null,
         sortBy: materialListQueryRepository.getSortBy(),
         orderBy: materialListQueryRepository.getOrderBy(),
+        stockCheckStatus: materialListQueryRepository.getStockCheckStatus(),
         itemPerPage: materialListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
@@ -203,5 +212,39 @@ describe('MaterialListUsecase', () => {
     expect(materialList.state.type).toBe('loaded');
     expect(materialList.state.materials).toEqual(materials);
     expect(materialList.state.totalItem).toBe(materials.length);
+  });
+
+  it('updates state, resets page and persists the query param via CHANGE_PARAMS stock check status filter', async () => {
+    const materialRepository = new MockMaterialRepository();
+    const materialListQueryRepository = new MockMaterialListQueryRepository();
+    const setStockCheckStatusSpy = jest.spyOn(
+      materialListQueryRepository,
+      'setStockCheckStatus'
+    );
+    const usecase = new MaterialListUsecase(
+      materialRepository,
+      materialListQueryRepository,
+      { materials: [], totalItem: 0 }
+    );
+
+    const materialList = new UsecaseTester<
+      MaterialListUsecase,
+      MaterialListState,
+      MaterialListAction,
+      MaterialListParams
+    >(usecase);
+
+    await flushPromises();
+    expect(materialList.state.type).toBe('loaded');
+
+    materialList.dispatch({
+      type: 'CHANGE_PARAMS',
+      stockCheckStatus: 'excluded',
+      page: 1,
+    });
+    expect(materialList.state.type).toBe('changingParams');
+    expect(materialList.state.stockCheckStatus).toBe('excluded');
+    expect(materialList.state.page).toBe(1);
+    expect(setStockCheckStatusSpy).toHaveBeenCalledWith('excluded');
   });
 });

@@ -30,6 +30,7 @@ export const getServerSideProps: GetServerSideProps<
   const sortBy = materialListQueryRepository.getSortBy(url);
   const orderBy = materialListQueryRepository.getOrderBy(url);
   const query = materialListQueryRepository.getSearchQuery(url);
+  const stockCheckStatus = materialListQueryRepository.getStockCheckStatus(url);
   const { materials, totalItem } = await materialRepository.fetchMaterialList(
     {
       page,
@@ -37,6 +38,7 @@ export const getServerSideProps: GetServerSideProps<
       orderBy,
       query,
       sortBy,
+      stockCheckStatus,
     },
     {
       headers: { Cookie: ctx.req.headers.cookie },
@@ -53,6 +55,7 @@ export const getServerSideProps: GetServerSideProps<
         page,
         query,
         sortBy,
+        stockCheckStatus,
       },
     },
   };
