@@ -35,6 +35,7 @@ export * from './expenseList';
 export * from './expenseDelete';
 export * from './expenseUpdate';
 export * from './expenseCreate';
+export * from './expenseStatisticList';
 export * from './transactionList';
 export * from './transactionItemSelect';
 export * from './transactionDelete';

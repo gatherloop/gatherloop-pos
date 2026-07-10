@@ -23,3 +23,10 @@ type Expense struct {
 	Total        float32
 	ExpenseItems []ExpenseItem
 }
+
+type ExpenseStatistic struct {
+	Date       string
+	BudgetId   int64
+	BudgetName string
+	Total      float32
+}

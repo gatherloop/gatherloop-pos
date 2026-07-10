@@ -19,7 +19,6 @@ const mockTotalIncomeStatistics = [
 ];
 
 const defaultArgs = {
-  onLogoutPress: fn(),
   onGroupByChange: fn(),
   onRetryButtonPress: fn(),
   onDateRangeChange: fn(),
@@ -34,7 +33,6 @@ const defaultArgs = {
 const meta: Meta<typeof TransactionStatisticScreen> = {
   title: 'Screens/Transactions/TransactionStatisticScreen',
   component: TransactionStatisticScreen,
-  parameters: { layout: 'fullscreen' },
   args: defaultArgs,
 };
 

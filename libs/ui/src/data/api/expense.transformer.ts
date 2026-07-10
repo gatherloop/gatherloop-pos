@@ -1,8 +1,22 @@
 // eslint-disable-next-line @nx/enforce-module-boundaries
-import { Expense as ApiExpense } from '../../../../api-contract/src';
-import { Expense, ExpenseForm } from '../../domain';
+import {
+  Expense as ApiExpense,
+  ExpenseStatistic as ApiExpenseStatistic,
+} from '../../../../api-contract/src';
+import { Expense, ExpenseForm, ExpenseStatistic } from '../../domain';
 import { toBudget } from './budget.transformer';
 import { toWallet } from './wallet.transformer';
+
+export function toExpenseStatistic(
+  expenseStatistic: ApiExpenseStatistic
+): ExpenseStatistic {
+  return {
+    date: expenseStatistic.date,
+    budgetId: expenseStatistic.budgetId,
+    budgetName: expenseStatistic.budgetName,
+    total: expenseStatistic.total,
+  };
+}
 
 export function toExpense(expense: ApiExpense): Expense {
   return {

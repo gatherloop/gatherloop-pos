@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"time"
 )
 
 type ExpenseUsecase struct {
@@ -188,4 +189,12 @@ func (usecase ExpenseUsecase) DeleteExpenseById(ctx context.Context, id int64) *
 
 		return usecase.expenseRepository.DeleteExpenseById(ctxWithTx, id)
 	})
+}
+
+func (usecase ExpenseUsecase) GetExpenseStatistics(ctx context.Context, groupBy string, startDate *time.Time, endDate *time.Time) ([]ExpenseStatistic, *Error) {
+	if startDate != nil && endDate != nil && startDate.After(*endDate) {
+		return []ExpenseStatistic{}, &Error{Type: BadRequest, Message: "startDate must be on or before endDate"}
+	}
+
+	return usecase.expenseRepository.GetExpenseStatistics(ctx, groupBy, startDate, endDate)
 }

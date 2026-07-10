@@ -1,15 +1,17 @@
 import {
+  ApiExpenseRepository,
   ApiTransactionRepository,
   getUrlFromCtx,
-  TransactionStatisticApp,
-  TransactionStatisticAppProps,
+  DashboardApp,
+  DashboardAppProps,
+  UrlExpenseStatisticListQueryRepository,
   UrlTransactionStatisticListQueryRepository,
 } from '@gatherloop-pos/ui';
 import { GetServerSideProps } from 'next';
 import { QueryClient } from '@tanstack/react-query';
 
 export const getServerSideProps: GetServerSideProps<
-  TransactionStatisticAppProps
+  DashboardAppProps
 > = async (ctx) => {
   const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
   if (!isLoggedIn) {
@@ -23,6 +25,9 @@ export const getServerSideProps: GetServerSideProps<
   const transactionRepository = new ApiTransactionRepository(client);
   const transactionStatisticListQueryRepository =
     new UrlTransactionStatisticListQueryRepository();
+  const expenseRepository = new ApiExpenseRepository(client);
+  const expenseStatisticListQueryRepository =
+    new UrlExpenseStatisticListQueryRepository();
 
   const groupBy = transactionStatisticListQueryRepository.getGroupBy(url);
   const preset = transactionStatisticListQueryRepository.getPreset(url);
@@ -31,6 +36,22 @@ export const getServerSideProps: GetServerSideProps<
   const transactionStatistics =
     await transactionRepository.fetchTransactionStatisticList(
       { groupBy, startDate, endDate },
+      { headers: { Cookie: ctx.req.headers.cookie } }
+    );
+
+  const expenseView = expenseStatisticListQueryRepository.getView(url);
+  const expenseGroupBy = expenseStatisticListQueryRepository.getGroupBy(url);
+  const expensePreset = expenseStatisticListQueryRepository.getPreset(url);
+  const expenseStartDate =
+    expenseStatisticListQueryRepository.getStartDate(url);
+  const expenseEndDate = expenseStatisticListQueryRepository.getEndDate(url);
+  const expenseStatistics =
+    await expenseRepository.fetchExpenseStatisticList(
+      {
+        groupBy: expenseGroupBy,
+        startDate: expenseStartDate,
+        endDate: expenseEndDate,
+      },
       { headers: { Cookie: ctx.req.headers.cookie } }
     );
 
@@ -43,8 +64,16 @@ export const getServerSideProps: GetServerSideProps<
         startDate,
         endDate,
       },
+      expenseStatisticListParams: {
+        expenseStatistics,
+        view: expenseView,
+        groupBy: expenseGroupBy,
+        preset: expensePreset,
+        startDate: expenseStartDate,
+        endDate: expenseEndDate,
+      },
     },
   };
 };
 
-export default TransactionStatisticApp;
+export default DashboardApp;

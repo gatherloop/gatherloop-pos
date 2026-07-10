@@ -1,12 +1,6 @@
 import { match, P } from 'ts-pattern';
-import {
-  useAuthLogoutController,
-  useTransactionStatisticListController,
-} from '../controllers';
-import {
-  AuthLogoutUsecase,
-  TransactionStatisticListUsecase,
-} from '../../domain';
+import { useTransactionStatisticListController } from '../controllers';
+import { TransactionStatisticListUsecase } from '../../domain';
 import {
   TransactionStatisticScreen,
   TransactionStatisticScreenProps,
@@ -14,20 +8,16 @@ import {
 
 export type TransactionStatisticHandlerProps = {
   transactionStatisticListUsecase: TransactionStatisticListUsecase;
-  authLogoutUsecase: AuthLogoutUsecase;
 };
 
 export const TransactionStatisticHandler = ({
   transactionStatisticListUsecase,
-  authLogoutUsecase,
 }: TransactionStatisticHandlerProps) => {
-  const authLogout = useAuthLogoutController(authLogoutUsecase);
   const transactionStatisticList =
     useTransactionStatisticListController(transactionStatisticListUsecase);
 
   return (
     <TransactionStatisticScreen
-      onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
       onGroupByChange={(groupBy) =>
         transactionStatisticList.dispatch({ type: 'SET_GROUP_BY', groupBy })
       }

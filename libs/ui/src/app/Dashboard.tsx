@@ -1,27 +1,36 @@
 import {
   ApiAuthRepository,
+  ApiExpenseRepository,
   ApiTransactionRepository,
+  UrlExpenseStatisticListQueryRepository,
   UrlTransactionStatisticListQueryRepository,
 } from '../data';
 import {
   AuthLogoutUsecase,
+  ExpenseStatisticListParams,
+  ExpenseStatisticListUsecase,
   TransactionStatisticListParams,
   TransactionStatisticListUsecase,
 } from '../domain';
-import { TransactionStatisticHandler } from '../presentation';
+import { DashboardHandler } from '../presentation';
 import { QueryClient } from '@tanstack/react-query';
 
-export type TransactionStatisticAppProps = {
+export type DashboardAppProps = {
   transactionStatisticListParams: TransactionStatisticListParams;
+  expenseStatisticListParams?: ExpenseStatisticListParams;
 };
 
-export function TransactionStatisticApp({
+export function DashboardApp({
   transactionStatisticListParams,
-}: TransactionStatisticAppProps) {
+  expenseStatisticListParams = { expenseStatistics: [] },
+}: DashboardAppProps) {
   const client = new QueryClient();
   const transactionRepository = new ApiTransactionRepository(client);
   const transactionStatisticListQueryRepository =
     new UrlTransactionStatisticListQueryRepository();
+  const expenseRepository = new ApiExpenseRepository(client);
+  const expenseStatisticListQueryRepository =
+    new UrlExpenseStatisticListQueryRepository();
   const authRepository = new ApiAuthRepository();
 
   const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
@@ -30,11 +39,17 @@ export function TransactionStatisticApp({
     transactionStatisticListQueryRepository,
     transactionStatisticListParams
   );
+  const expenseStatisticListUsecase = new ExpenseStatisticListUsecase(
+    expenseRepository,
+    expenseStatisticListQueryRepository,
+    expenseStatisticListParams
+  );
 
   return (
-    <TransactionStatisticHandler
-      transactionStatisticListUsecase={transactionStatisticListUsecase}
+    <DashboardHandler
       authLogoutUsecase={authLogoutUsecase}
+      transactionStatisticListUsecase={transactionStatisticListUsecase}
+      expenseStatisticListUsecase={expenseStatisticListUsecase}
     />
   );
 }

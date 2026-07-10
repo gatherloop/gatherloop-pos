@@ -16,6 +16,7 @@ func NewExpenseRouter(handler ExpenseHandler) ExpenseRouter {
 
 func (expenseRouter ExpenseRouter) AddRouter(router *mux.Router) {
 	router.HandleFunc("/expenses", CheckAuth(expenseRouter.handler.GetExpenseList)).Methods(http.MethodGet)
+	router.HandleFunc("/expenses/statistics", CheckAuth(expenseRouter.handler.GetExpenseStatistics)).Methods(http.MethodGet)
 	router.HandleFunc("/expenses/{expenseId}", CheckAuth(expenseRouter.handler.GetExpenseById)).Methods(http.MethodGet)
 	router.HandleFunc("/expenses/{expenseId}", CheckAuth(expenseRouter.handler.UpdateExpenseById)).Methods(http.MethodPut, http.MethodOptions)
 	router.HandleFunc("/expenses/{expenseId}", CheckAuth(expenseRouter.handler.DeleteExpenseById)).Methods(http.MethodDelete)
