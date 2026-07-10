@@ -13,6 +13,7 @@ export * from './budget';
 export * from './wallet';
 export * from './expense';
 export * from './expenseListQuery';
+export * from './expenseStatisticListQuery';
 export * from './transaction';
 export * from './transactionListQuery';
 export * from './transactionStatisticListQuery';

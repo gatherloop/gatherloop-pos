@@ -6,6 +6,7 @@ export * from './coupon';
 export * from './ticket';
 export * from './expense';
 export * from './expenseListQuery';
+export * from './expenseStatisticListQuery';
 export * from './material';
 export * from './materialListQuery';
 export * from './product';
