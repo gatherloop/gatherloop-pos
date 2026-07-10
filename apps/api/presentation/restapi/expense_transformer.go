@@ -77,3 +77,12 @@ func ToExpense(expenseRequest apiContract.ExpenseRequest) domain.Expense {
 		Total:        total,
 	}
 }
+
+func ToApiExpenseStatistic(expenseStatistic domain.ExpenseStatistic) apiContract.ExpenseStatistic {
+	return apiContract.ExpenseStatistic{
+		Date:       expenseStatistic.Date,
+		BudgetId:   expenseStatistic.BudgetId,
+		BudgetName: expenseStatistic.BudgetName,
+		Total:      expenseStatistic.Total,
+	}
+}

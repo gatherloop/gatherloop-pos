@@ -1746,6 +1746,46 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /expenses/statistics:
+    get:
+      summary: Get expenses statistics
+      operationId: expenseStatistics
+      tags:
+        - expense
+      parameters:
+        - name: groupBy
+          in: query
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          description: 'Inclusive lower bound on created_at, format YYYY-MM-DD'
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          description: 'Inclusive upper bound on created_at, format YYYY-MM-DD'
+          schema:
+            type: string
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpenseStatisticResponse'
+        '400':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /expenses/{expenseId}:
     get:
       summary: Get expense by id
@@ -3453,6 +3493,23 @@ components:
           type: number
         totalIncome:
           type: number
+    ExpenseStatistic:
+      type: object
+      required:
+        - date
+        - budgetId
+        - budgetName
+        - total
+      properties:
+        date:
+          type: string
+        budgetId:
+          type: integer
+          format: int64
+        budgetName:
+          type: string
+        total:
+          type: number
     Rental:
       type: object
       required:
@@ -4169,6 +4226,15 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TransactionStatistic'
+    ExpenseStatisticResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExpenseStatistic'
     MaterialCreateResponse:
       type: object
       required:

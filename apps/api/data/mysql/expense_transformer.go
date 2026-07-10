@@ -77,3 +77,24 @@ func ToExpenseItemsListDB(domainExpenseItems []domain.ExpenseItem) []ExpenseItem
 	}
 	return dbExpenseItems
 }
+
+func ToExpenseStatisticDomain(dbExpenseStatistic ExpenseStatistic) domain.ExpenseStatistic {
+	return domain.ExpenseStatistic{
+		Date:       dbExpenseStatistic.Date,
+		BudgetId:   dbExpenseStatistic.BudgetId,
+		BudgetName: dbExpenseStatistic.BudgetName,
+		Total:      dbExpenseStatistic.Total,
+	}
+}
+
+func ToExpenseStatisticsListDomain(dbExpenseStatistics []ExpenseStatistic) []domain.ExpenseStatistic {
+	if dbExpenseStatistics == nil {
+		return nil
+	}
+
+	domainExpenseStatistics := []domain.ExpenseStatistic{}
+	for _, dbExpStat := range dbExpenseStatistics {
+		domainExpenseStatistics = append(domainExpenseStatistics, ToExpenseStatisticDomain(dbExpStat))
+	}
+	return domainExpenseStatistics
+}

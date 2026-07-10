@@ -221,3 +221,69 @@ func TestExpenseHandler_DeleteExpenseById(t *testing.T) {
 		})
 	}
 }
+
+func TestExpenseHandler_GetExpenseStatistics(t *testing.T) {
+	tests := []struct {
+		name           string
+		url            string
+		setupMocks     func(expRepo *mock.MockExpenseRepository, budgetRepo *mock.MockBudgetRepository, walletRepo *mock.MockWalletRepository)
+		expectedStatus int
+	}{
+		{
+			name: "success",
+			url:  "/expenses/statistics",
+			setupMocks: func(expRepo *mock.MockExpenseRepository, budgetRepo *mock.MockBudgetRepository, walletRepo *mock.MockWalletRepository) {
+				expRepo.EXPECT().GetExpenseStatistics(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.ExpenseStatistic{{Date: "01-2024", BudgetId: 1, BudgetName: "Restock", Total: 10000}}, nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name: "repo error",
+			url:  "/expenses/statistics",
+			setupMocks: func(expRepo *mock.MockExpenseRepository, budgetRepo *mock.MockBudgetRepository, walletRepo *mock.MockWalletRepository) {
+				expRepo.EXPECT().GetExpenseStatistics(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
+			},
+			expectedStatus: http.StatusInternalServerError,
+		},
+		{
+			name: "valid range",
+			url:  "/expenses/statistics?startDate=2024-01-01&endDate=2024-01-31",
+			setupMocks: func(expRepo *mock.MockExpenseRepository, budgetRepo *mock.MockBudgetRepository, walletRepo *mock.MockWalletRepository) {
+				expRepo.EXPECT().GetExpenseStatistics(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.ExpenseStatistic{{Date: "01-2024", BudgetId: 1, BudgetName: "Restock", Total: 10000}}, nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name: "malformed startDate",
+			url:  "/expenses/statistics?startDate=not-a-date",
+			setupMocks: func(expRepo *mock.MockExpenseRepository, budgetRepo *mock.MockBudgetRepository, walletRepo *mock.MockWalletRepository) {
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "malformed endDate",
+			url:  "/expenses/statistics?endDate=not-a-date",
+			setupMocks: func(expRepo *mock.MockExpenseRepository, budgetRepo *mock.MockBudgetRepository, walletRepo *mock.MockWalletRepository) {
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "startDate after endDate",
+			url:  "/expenses/statistics?startDate=2024-02-01&endDate=2024-01-01",
+			setupMocks: func(expRepo *mock.MockExpenseRepository, budgetRepo *mock.MockBudgetRepository, walletRepo *mock.MockWalletRepository) {
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			handler, ctrl := newExpenseHandler(t, tt.setupMocks)
+			defer ctrl.Finish()
+			req := httptest.NewRequest(http.MethodGet, tt.url, nil)
+			w := httptest.NewRecorder()
+			handler.GetExpenseStatistics(w, req)
+			assert.Equal(t, tt.expectedStatus, w.Code)
+		})
+	}
+}

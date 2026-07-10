@@ -126,3 +126,34 @@ func (handler ExpenseHandler) DeleteExpenseById(w http.ResponseWriter, r *http.R
 
 	WriteResponse(w, apiContract.SuccessResponse{Success: true})
 }
+
+func (handler ExpenseHandler) GetExpenseStatistics(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	groupBy := GetGroupBy(r)
+
+	startDate, parseErr := GetStartDate(r)
+	if parseErr != nil {
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: parseErr.Error()})
+		return
+	}
+
+	endDate, parseErr := GetEndDate(r)
+	if parseErr != nil {
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: parseErr.Error()})
+		return
+	}
+
+	expenseStatistics, err := handler.usecase.GetExpenseStatistics(ctx, groupBy, startDate, endDate)
+	if err != nil {
+		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
+		return
+	}
+
+	apiExpenseStatistics := []apiContract.ExpenseStatistic{}
+	for _, expenseStatistic := range expenseStatistics {
+		apiExpenseStatistics = append(apiExpenseStatistics, ToApiExpenseStatistic(expenseStatistic))
+	}
+
+	WriteResponse(w, apiContract.ExpenseStatisticResponse{Data: apiExpenseStatistics})
+}
