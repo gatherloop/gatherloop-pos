@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { YStack } from 'tamagui';
+import { ScrollView, YStack } from 'tamagui';
 import { Layout } from '../components';
 
 export type DashboardScreenProps = {
@@ -13,7 +13,9 @@ export const DashboardScreen = ({
 }: DashboardScreenProps) => {
   return (
     <Layout onLogoutPress={onLogoutPress} title="Dashboard">
-      <YStack gap="$5">{children}</YStack>
+      <ScrollView>
+        <YStack gap="$5">{children}</YStack>
+      </ScrollView>
     </Layout>
   );
 };
