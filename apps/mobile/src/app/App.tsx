@@ -24,7 +24,7 @@ import {
   ExpenseList,
   ExpenseCreate,
   ExpenseUpdate,
-  TransactionStatisticApp,
+  DashboardApp,
   DEFAULT_TRANSACTION_STATISTIC_PRESET,
   getDateRangeForPreset,
   AuthLogin,
@@ -268,7 +268,7 @@ export const App = () => {
                 DEFAULT_TRANSACTION_STATISTIC_PRESET
               );
               return (
-                <TransactionStatisticApp
+                <DashboardApp
                   transactionStatisticListParams={{
                     transactionStatistics: [],
                     preset: DEFAULT_TRANSACTION_STATISTIC_PRESET,

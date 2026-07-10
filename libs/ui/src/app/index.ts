@@ -30,7 +30,7 @@ export * from './TransactionList';
 export * from './TransactionCreate';
 export * from './TransactionUpdate';
 export * from './TransactionDetail';
-export * from './TransactionStatistic';
+export * from './Dashboard';
 export * from './CalculationList';
 export * from './CalculationCreate';
 export * from './CalculationUpdate';

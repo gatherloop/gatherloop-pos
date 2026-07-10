@@ -1,13 +1,11 @@
-import { H4 } from 'tamagui';
+import { H4, YStack } from 'tamagui';
 import {
   TransactionStatistic,
   TransactionStatisticDateRangeChange,
-  Layout,
 } from '../components';
 import { TransactionStatisticPreset } from '../../domain';
 
 export type TransactionStatisticScreenProps = {
-  onLogoutPress: () => void;
   onGroupByChange: (groupBy: 'date' | 'month') => void;
   onRetryButtonPress: () => void;
   onDateRangeChange: (range: TransactionStatisticDateRangeChange) => void;
@@ -24,7 +22,7 @@ export const TransactionStatisticScreen = (
   props: TransactionStatisticScreenProps
 ) => {
   return (
-    <Layout onLogoutPress={props.onLogoutPress} title="Dashboard">
+    <YStack gap="$3">
       <H4>Transaction Statistic</H4>
       <TransactionStatistic
         onGroupByChange={props.onGroupByChange}
@@ -38,6 +36,6 @@ export const TransactionStatisticScreen = (
         startDate={props.startDate}
         endDate={props.endDate}
       />
-    </Layout>
+    </YStack>
   );
 };

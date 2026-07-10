@@ -3,14 +3,10 @@ import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TransactionStatisticHandler } from './TransactionStatisticHandler';
 import {
-  MockAuthRepository,
   MockTransactionRepository,
   MockTransactionStatisticListQueryRepository,
 } from '../../data/mock';
-import {
-  AuthLogoutUsecase,
-  TransactionStatisticListUsecase,
-} from '../../domain';
+import { TransactionStatisticListUsecase } from '../../domain';
 import { flushPromises } from '../../utils/testUtils';
 
 jest.mock('solito/router', () => ({
@@ -32,7 +28,6 @@ const createProps = (
   if (options.shouldFail) transactionRepo.setShouldFail(true);
 
   return {
-    authLogoutUsecase: new AuthLogoutUsecase(new MockAuthRepository()),
     transactionStatisticListUsecase: new TransactionStatisticListUsecase(
       transactionRepo,
       new MockTransactionStatisticListQueryRepository(),
