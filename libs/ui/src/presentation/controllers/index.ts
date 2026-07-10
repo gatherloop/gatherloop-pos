@@ -44,6 +44,7 @@ export * from './TransactionUnpayController';
 export * from './TransactionDetailController';
 export * from './TransactionItemSelectController';
 export * from './TransactionStatisticListController';
+export * from './ExpenseStatisticListController';
 export * from './CalculationDeleteController';
 export * from './CalculationListController';
 export * from './CalculationCreateController';

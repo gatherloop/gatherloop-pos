@@ -1,16 +1,23 @@
 import { useAuthLogoutController } from '../controllers';
-import { AuthLogoutUsecase, TransactionStatisticListUsecase } from '../../domain';
+import {
+  AuthLogoutUsecase,
+  ExpenseStatisticListUsecase,
+  TransactionStatisticListUsecase,
+} from '../../domain';
 import { DashboardScreen } from './DashboardScreen';
 import { TransactionStatisticHandler } from './TransactionStatisticHandler';
+import { ExpenseStatisticHandler } from './ExpenseStatisticHandler';
 
 export type DashboardHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;
   transactionStatisticListUsecase: TransactionStatisticListUsecase;
+  expenseStatisticListUsecase: ExpenseStatisticListUsecase;
 };
 
 export const DashboardHandler = ({
   authLogoutUsecase,
   transactionStatisticListUsecase,
+  expenseStatisticListUsecase,
 }: DashboardHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
 
@@ -20,6 +27,9 @@ export const DashboardHandler = ({
     >
       <TransactionStatisticHandler
         transactionStatisticListUsecase={transactionStatisticListUsecase}
+      />
+      <ExpenseStatisticHandler
+        expenseStatisticListUsecase={expenseStatisticListUsecase}
       />
     </DashboardScreen>
   );
