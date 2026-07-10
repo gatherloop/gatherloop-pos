@@ -52,6 +52,8 @@ export * from './TransactionListScreen';
 export * from './TransactionListHandler';
 export * from './TransactionStatisticScreen';
 export * from './TransactionStatisticHandler';
+export * from './DashboardScreen';
+export * from './DashboardHandler';
 export * from './TransactionUpdateScreen';
 export * from './TransactionUpdateHandler';
 export * from './WalletCreateScreen';

@@ -8,16 +8,16 @@ import {
   TransactionStatisticListParams,
   TransactionStatisticListUsecase,
 } from '../domain';
-import { TransactionStatisticHandler } from '../presentation';
+import { DashboardHandler } from '../presentation';
 import { QueryClient } from '@tanstack/react-query';
 
-export type TransactionStatisticAppProps = {
+export type DashboardAppProps = {
   transactionStatisticListParams: TransactionStatisticListParams;
 };
 
-export function TransactionStatisticApp({
+export function DashboardApp({
   transactionStatisticListParams,
-}: TransactionStatisticAppProps) {
+}: DashboardAppProps) {
   const client = new QueryClient();
   const transactionRepository = new ApiTransactionRepository(client);
   const transactionStatisticListQueryRepository =
@@ -32,9 +32,9 @@ export function TransactionStatisticApp({
   );
 
   return (
-    <TransactionStatisticHandler
-      transactionStatisticListUsecase={transactionStatisticListUsecase}
+    <DashboardHandler
       authLogoutUsecase={authLogoutUsecase}
+      transactionStatisticListUsecase={transactionStatisticListUsecase}
     />
   );
 }
