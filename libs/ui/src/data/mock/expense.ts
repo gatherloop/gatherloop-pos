@@ -1,4 +1,4 @@
-import { Expense, ExpenseForm } from '../../domain/entities';
+import { Expense, ExpenseForm, ExpenseStatistic } from '../../domain/entities';
 import { ExpenseRepository } from '../../domain/repositories/expense';
 
 const mockWallet = {
@@ -42,8 +42,13 @@ const initialExpenses: Expense[] = [
   },
 ];
 
+const initialStatistics: ExpenseStatistic[] = [
+  { date: '2024-03-20', budgetId: 1, budgetName: 'Operating', total: 100000 },
+];
+
 export class MockExpenseRepository implements ExpenseRepository {
   expenses: Expense[] = [...initialExpenses];
+  statistics: ExpenseStatistic[] = [...initialStatistics];
 
   private nextId = 3;
   private shouldFail = false;
@@ -113,8 +118,27 @@ export class MockExpenseRepository implements ExpenseRepository {
     if (idx === -1) throw new Error('Expense not found');
   }
 
+  getExpenseStatisticList(_params: {
+    groupBy: 'date' | 'month';
+    startDate: string | null;
+    endDate: string | null;
+  }): ExpenseStatistic[] {
+    return [...this.statistics];
+  }
+
+  async fetchExpenseStatisticList(_params: {
+    groupBy: 'date' | 'month';
+    startDate: string | null;
+    endDate: string | null;
+  }): Promise<ExpenseStatistic[]> {
+    if (this.shouldFail)
+      throw new Error('Failed to fetch expense statistics');
+    return Promise.resolve([...this.statistics]);
+  }
+
   reset() {
     this.expenses = [...initialExpenses];
+    this.statistics = [...initialStatistics];
     this.nextId = 3;
     this.shouldFail = false;
   }

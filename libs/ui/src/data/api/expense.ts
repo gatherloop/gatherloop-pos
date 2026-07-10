@@ -8,12 +8,20 @@ import {
   expenseList,
   expenseListQueryKey,
   expenseUpdateById,
+  expenseStatistics,
+  expenseStatisticsQueryKey,
   ExpenseListQueryParams,
   ExpenseList200,
+  ExpenseStatisticsQueryParams,
+  ExpenseStatistics200,
 } from '../../../../api-contract/src';
 import { Expense, ExpenseRepository } from '../../domain';
 import { RequestConfig } from '@kubb/swagger-client/client';
-import { toApiExpense, toExpense } from './expense.transformer';
+import {
+  toApiExpense,
+  toExpense,
+  toExpenseStatistic,
+} from './expense.transformer';
 
 export class ApiExpenseRepository implements ExpenseRepository {
   client: QueryClient;
@@ -112,5 +120,47 @@ export class ApiExpenseRepository implements ExpenseRepository {
       expenses: res?.data.map(toExpense) ?? [],
       totalItem: res?.meta.total ?? 0,
     };
+  };
+
+  getExpenseStatisticList: ExpenseRepository['getExpenseStatisticList'] = ({
+    groupBy,
+    startDate,
+    endDate,
+  }) => {
+    const params: ExpenseStatisticsQueryParams = {
+      groupBy,
+      startDate: startDate ?? undefined,
+      endDate: endDate ?? undefined,
+    };
+    const res = this.client.getQueryState<ExpenseStatistics200>(
+      expenseStatisticsQueryKey(params)
+    )?.data;
+
+    this.client.removeQueries({
+      queryKey: expenseStatisticsQueryKey(params),
+    });
+
+    return res?.data.map(toExpenseStatistic) ?? [];
+  };
+
+  fetchExpenseStatisticList = (
+    {
+      groupBy,
+      startDate,
+      endDate,
+    }: { groupBy: 'date' | 'month'; startDate: string | null; endDate: string | null },
+    options?: Partial<RequestConfig>
+  ) => {
+    const params: ExpenseStatisticsQueryParams = {
+      groupBy,
+      startDate: startDate ?? undefined,
+      endDate: endDate ?? undefined,
+    };
+    return this.client
+      .fetchQuery({
+        queryKey: expenseStatisticsQueryKey(params),
+        queryFn: () => expenseStatistics(params, options),
+      })
+      .then((data) => data.data.map(toExpenseStatistic));
   };
 }

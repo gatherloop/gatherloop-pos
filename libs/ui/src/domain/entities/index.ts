@@ -10,6 +10,7 @@ export * from './Budget';
 export * from './Wallet';
 export * from './WalletTransfer';
 export * from './Expense';
+export * from './ExpenseStatistic';
 export * from './Transaction';
 export * from './TransactionStatistic';
 export * from './TransactionStatisticDateRange';

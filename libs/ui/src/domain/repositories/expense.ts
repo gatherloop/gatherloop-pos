@@ -1,4 +1,4 @@
-import { Expense, ExpenseForm } from '../entities';
+import { Expense, ExpenseForm, ExpenseStatistic } from '../entities';
 
 export interface ExpenseRepository {
   getExpenseList: (params: {
@@ -28,4 +28,16 @@ export interface ExpenseRepository {
   createExpense: (formValues: ExpenseForm) => Promise<void>;
 
   updateExpense: (formValues: ExpenseForm, expenseId: number) => Promise<void>;
+
+  getExpenseStatisticList: (params: {
+    groupBy: 'date' | 'month';
+    startDate: string | null;
+    endDate: string | null;
+  }) => ExpenseStatistic[];
+
+  fetchExpenseStatisticList: (params: {
+    groupBy: 'date' | 'month';
+    startDate: string | null;
+    endDate: string | null;
+  }) => Promise<ExpenseStatistic[]>;
 }
