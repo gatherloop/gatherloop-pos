@@ -1,274 +1,267 @@
-# PRD: Cash Flow Budgeting — Truthful Expense Classification with Explicit Budget Transfers
+# PRD: Cash Flow Management — Expense Categories with Target vs. Actual Variance
+
+> **Revision note:** v1 of this PRD proposed keeping budget envelopes and adding explicit budget transfers. After reviewing complexity (new `budget_transfers` table, transfer UI, a food-cost flag with uniqueness problems) against how the industry actually handles this, v2 supersedes it with a simpler design that removes the envelope mechanics instead of patching them. See "Alternatives Considered" for the comparison.
 
 ## Problem Statement
 
 Today the cash flow pipeline works like this:
 
 1. **Payment**: When a transaction is paid, the transaction total lands in the chosen payment wallet (minus the wallet's payment cost).
-2. **Allocation**: The net income is split across budgets by percentage; the food cost portion is credited to the **Restock** budget (`PayTransaction` in `apps/api/domain/transaction_usecase.go`).
+2. **Allocation**: The net income is split across budgets by percentage; the food cost portion is credited to the **Restock** budget, identified by a hard-coded `restockBudgetId = 4` (`PayTransaction` in `apps/api/domain/transaction_usecase.go`).
 3. **Spending**: When an expense is created, the operator picks a budget, and the expense total is deducted from **both** the budget balance and the wallet balance. If the budget balance is insufficient, the API **hard-rejects** the expense (`"budget's balance insufficient"` in `apps/api/domain/expense_usecase.go`).
 
 The failure mode: the Restock budget frequently doesn't cover a real-world food material purchase (the same happens with Operational). Since the expense *must* be booked, the operator books it against a budget that still has balance — usually **Profit**. The purchase goes through, but now:
 
-- **Expense statistics are wrong.** A food material purchase is recorded as a "Profit" expense. `GET /expenses/statistics` groups by `budget_id`, so the Restock category is understated and Profit is overstated. Over time the statistics stop reflecting reality at all.
-- **The workaround is invisible.** Nobody can see how often Restock ran dry, by how much, or which budget silently absorbed the shortfall. There is no signal to tune the allocation percentages.
-- **Budget balances stop meaning anything.** A budget's balance no longer answers "how much have we really spent on this?" nor "how much can we still spend on this?".
+- **Expense statistics are wrong.** A food material purchase is recorded as a "Profit" expense. `GET /expenses/statistics` groups by `budget_id`, so the Restock category is understated and Profit is overstated.
+- **The workaround is invisible.** Nobody can see how often Restock ran dry or which budget silently absorbed the shortfall — so there is no signal to tune the percentages.
+- **Budget balances stop meaning anything.** A budget's balance answers neither "how much have we really spent on this?" nor "how much can we still spend on this?".
 
-### The dilemma we're resolving
+### Root cause
 
-Two candidate directions were considered, each with a known flaw:
+The single field `expense.budget_id` carries two independent meanings:
 
-- **Keep hard budgets (status quo)** → operators misclassify expenses when an envelope runs dry → statistics are corrupted.
-- **Drop budgets, use only "expense categories"** → statistics become truthful, but nothing prevents overspending one category (e.g. Restock) and under-saving another (e.g. Salary/Savings) — the exact discipline budgets were introduced to provide.
+1. **Classification** — *what kind of spend is this?* (what statistics need; must always be truthful)
+2. **Funding** — *which envelope pays for it?* (what the hard balance check enforces)
 
-This PRD proposes a third direction that keeps the strengths of both.
-
----
-
-## Root Cause Analysis
-
-The single field `expense.budget_id` carries **two independent meanings**:
-
-1. **Classification** — *what kind of spend is this?* This is what statistics, reporting, and cost analysis need. It must always be truthful.
-2. **Funding** — *which envelope pays for it?* This is what the balance check enforces.
-
-When the true envelope is empty, funding wins and classification is falsified. Any correct solution must guarantee that **classification is never sacrificed to satisfy funding**.
-
-Envelope budgeting systems (e.g. YNAB's "roll with the punches") solve this exact problem the same way: when an envelope runs dry, you **explicitly move money between envelopes**, then book the expense in its true category. The expense record stays honest; the reallocation decision becomes a visible, auditable event instead of a hidden misclassification.
+When the true envelope is empty, funding wins and classification is falsified. The v1 fix kept both meanings and added transfer machinery to reconcile them. The v2 fix **removes the funding meaning entirely** — the budget becomes a pure classification (an expense category), and spending control moves to where the industry puts it: measurement and real-money segregation.
 
 ---
 
-## Options Considered
+## How the Industry Handles This
 
-### Option A — Remove budgets; classify expenses with "expense category" only
+Research summary (sources at the bottom):
 
-Expenses get a category; statistics group by category; no balance checks.
+1. **Mainstream POS systems don't do envelope budgeting.** Square, Toast, Lightspeed, etc. record sales; expenses are recorded against a **chart of expense categories** and budgeting means a *target per category per period*, reviewed via a **budget vs. actual variance report**. Nothing blocks a purchase; no balance is mutated per transaction.
+2. **Restaurant platforms manage food cost with target percentages.** Restaurant365, MarginEdge, Toast guidance: set a target (food cost 28–32% of sales is the standard benchmark), compute the actual percentage from real data, review variance frequently. Control comes from *fast feedback*, not blocking — variance under 2% is healthy, above 5% signals a systemic problem.
+3. **The envelope model exists ("Profit First") but uses real bank accounts.** Revenue is allocated by percentage into *separate physical accounts* on a schedule (typically twice a month), not per transaction. When the OpEx account is empty you stop spending or make an explicit bank transfer. Discipline comes from money being physically elsewhere.
 
-- ✅ Statistics always truthful; no friction at expense time.
-- ❌ No forward-looking control: nothing stops Restock from consuming the Salary allocation. Overspending is only discovered *after* the fact in a percentage report.
-- ❌ Loses the "how much can I still spend?" answer entirely.
-
-### Option B — Keep budgets for funding, add a separate category for classification
-
-Each expense records both a `category_id` (truth for stats) and a `budget_id` (envelope that funds it).
-
-- ✅ Statistics truthful even when funding is borrowed.
-- ❌ Two parallel taxonomies to create, name, and maintain — they would be nearly identical lists (Restock, Operational, Salary, …), inviting drift and confusion.
-- ❌ The interesting fact — "Restock was short and Profit covered it" — is buried inside individual expense rows rather than being a first-class event.
-
-### Option C — Keep budgets as the single taxonomy; add explicit budget transfers ✅ **Recommended**
-
-The budget **is** the category (they are already 1:1 in practice). Fix the borrowing problem directly:
-
-1. **Budget transfers**: a first-class, audited operation that moves balance from one budget to another (mirroring the existing wallet transfers). Raiding Profit to fund a Restock purchase becomes a deliberate, recorded event.
-2. **Expense flow keeps the hard balance check**, but the UI shows the selected budget's remaining balance up front and, on shortfall, offers an inline "cover the shortfall from another budget" step — so the easy path is the honest path.
-3. **Reporting**: budgets gain a transfer history, and statistics gain a "target allocation % vs. actual spend %" comparison so the operator can see which envelopes chronically run dry and re-tune the percentages.
-
-- ✅ Statistics truthful: every expense is booked against its real budget, always.
-- ✅ Savings discipline preserved: the Savings/Salary envelope only shrinks via an explicit transfer someone chose to make — and the system can show exactly how often that happened.
-- ✅ Generates the data needed to fix the *underlying* problem (mis-tuned percentages).
-- ✅ Smallest change surface: statistics code, expense entity, and allocation logic are all untouched; the wallet-transfer feature is directly reusable prior art.
+The current system is a per-transaction virtual Profit First — the most complex possible variant. The industry pattern is: **truthful categories + variance reporting + real-money segregation**. All three are achievable here mostly by *deleting* code — the system already has wallets, wallet transfers, a wallet balance check on expenses, and both expense and transaction statistics endpoints.
 
 ---
 
-## Context: Existing System
+## Alternatives Considered
 
-- **Backend**: Go REST API + MySQL, Clean Architecture (`domain → data → presentation`). Migrations under `apps/api/migrations` (numbered, `.up.sql`/`.down.sql` pairs; next number: `000018`).
-- **Frontend**: Next.js web + React Native mobile sharing `libs/ui` (Tamagui). API types generated from `libs/api-contract/src/api.yaml`.
-- **Budget entity** (`apps/api/domain/budget_entity.go`): `Id`, `Name`, `Percentage`, `Balance`, `CreatedAt`, `DeletedAt`. Full CRUD exists but the UI only exposes a read-only list (`BudgetListScreen`).
-- **Income allocation** (`transaction_usecase.go`, `PayTransaction`/`UnpayTransaction`): food cost → the Restock budget, identified by a **hard-coded `restockBudgetId = 4`**; remaining income × `Percentage/100` → every other budget.
-- **Expense flow** (`expense_usecase.go`): create/update/delete run in a DB transaction that adjusts both budget and wallet balances, hard-rejecting on insufficient budget or wallet balance.
-- **Expense statistics** (`expense_repo.go`, `GetExpenseStatistics`): `SUM(total)` grouped by date × `budget_id`.
-- **Wallet transfers — the prior art to mirror**: `WalletTransfer` entity, `wallet_transfers` table, `GET/POST /wallets/{walletId}/transfers`, `CreateWalletTransfer` usecase (balance check + double update + record insert in one transaction), and a complete frontend suite (`WalletTransferListScreen`, `WalletTransferCreateScreen`, `WalletTransferFormView`, etc.).
+### Option A — Envelope budgets + explicit budget transfers (PRD v1) ❌
+
+Keep mutating budget balances, add a `budget_transfers` table/API/UI so shortfalls are resolved by explicit reallocation, and a flag to replace the hard-coded Restock id.
+
+- ✅ Truthful statistics, preserved envelope discipline.
+- ❌ Significant new machinery: transfer endpoints, transfer screens, inline top-up UX in the expense form.
+- ❌ The food-cost flag has no clean uniqueness guarantee (MySQL can't declare "at most one row flagged"; needs usecase-level validation, and "two budgets flagged" remains a reachable misconfiguration).
+- ❌ Keeps per-transaction allocation math and its pay/unpay symmetry burden.
+- ❌ Ongoing operational friction: every shortfall requires a transfer before the expense can be booked.
+
+### Option B — Two taxonomies (category for stats, budget for funding) ❌
+
+- ❌ Two nearly identical lists to maintain; the misclassification incentive just moves.
+
+### Option C — Expense categories + target vs. actual variance + real-money savings ✅ **Recommended**
+
+Budgets become pure **expense categories**. Balance mechanics and per-transaction allocation are removed. Discipline is provided by (a) a target-vs-actual variance report and (b) physically moving savings/salary money to a dedicated wallet using the **existing** wallet-transfer feature.
+
+- ✅ Statistics always truthful — there is no longer any reason to misclassify.
+- ✅ Net code **deletion**: the allocation loop in `PayTransaction`/`UnpayTransaction` (including `restockBudgetId = 4`), the budget balance checks/mutations in the expense flow, and the `balance` column all go away. No new tables, no new endpoints.
+- ✅ Savings protection is *stronger* than a virtual envelope: money in the Savings wallet is excluded from spendable balance by the existing wallet check in the expense flow.
+- ⚠ Trade-off: no per-expense "is there envelope money for this category?" gate. Accepted deliberately — that gate is what corrupts the data today, and the industry consensus is that measurement + segregation beats virtual blocking for small operations.
 
 ---
 
 ## Proposed Solution
 
-Keep the budget concept and its allocation-on-payment behaviour unchanged. Add three capabilities:
+### Concept mapping
 
-### FR-1: Budget Transfers
+| Today | After |
+|---|---|
+| Budget = envelope with `Percentage` (income allocation) + mutating `Balance` | **Expense category** with `Percentage` = *spending target as % of revenue* for a period |
+| Pay/unpay transaction mutates every budget balance | Pay/unpay only touches the wallet and `TotalIncome` (unchanged) |
+| Expense checks & deducts budget balance + wallet balance | Expense checks & deducts **wallet balance only**; `budget_id` is pure classification |
+| Discipline = hard rejection when envelope is empty | Discipline = variance report (target vs. actual % of revenue) + real money moved to a Savings wallet |
+| Restock budget special-cased by hard-coded id 4 (backend **and** `BudgetListItem.tsx` frontend) | No special case — Restock is a category with a target like any other |
 
-A new operation that moves an amount from one budget's balance to another's.
+### FR-1: Decouple expenses from budget balances
 
-**Rules:**
-- `POST /budgets/{budgetId}/transfers` with body `{ amount, toBudgetId }`; `GET /budgets/{budgetId}/transfers` lists transfers where the budget is sender **or** receiver (mirroring wallet transfers).
-- Amount must be `> 0`; `toBudgetId` must differ from the source budget; both budgets must exist and not be soft-deleted.
-- The source budget must have sufficient balance — transfers cannot drive a budget negative (same rule as wallet transfers).
-- The whole operation (debit, credit, record insert) runs in a single DB transaction.
-- Transfers are **budget-only**: wallet balances are untouched. Budgets are virtual envelopes layered over the combined wallet balance, so moving money between envelopes has no effect on any wallet.
-- Transfer records are immutable history: no update endpoint. (Deletion/reversal is out of scope; a mistaken transfer is corrected by making the opposite transfer.)
-
-**New table `budget_transfers`:**
-
-| Column | Type | Notes |
-|---|---|---|
-| `id` | BIGINT PK AUTO_INCREMENT | |
-| `from_budget_id` | BIGINT NOT NULL, FK → budgets | |
-| `to_budget_id` | BIGINT NOT NULL, FK → budgets | |
-| `amount` | DECIMAL/FLOAT (match `wallet_transfers.amount`) | > 0 |
-| `note` | VARCHAR(255) NULL | optional reason, e.g. "Restock shortfall for Friday market run" |
-| `created_at` | DATETIME | |
-| `deleted_at` | DATETIME NULL | soft-delete column for consistency; unused by the API |
-
-### FR-2: Budget management & transfer UI
-
-The Budget list screen becomes actionable instead of read-only.
+Remove the budget balance check and mutation from expense create, update, and delete (`apps/api/domain/expense_usecase.go`). The wallet balance check and mutation stay exactly as they are.
 
 **Rules:**
-- Each budget row gets a **"Transfers"** action → transfer history screen for that budget (mirrors `WalletTransferListScreen`), showing direction (in/out), counterpart budget, amount, note, and date.
-- A **"New Transfer"** action opens a form (mirrors `WalletTransferFormView`): source budget (pre-filled from the row), destination budget select, amount, optional note. Client-side validation mirrors the API rules; the source budget's current balance is displayed next to the amount field.
-- Budget list rows show `Balance` prominently (already present) — no layout redesign required.
+- `budget_id` remains **required** on expenses — every expense must be classified.
+- The referenced budget must exist and not be soft-deleted (validation that today happens implicitly via `GetBudgetById` is kept explicitly).
+- `"budget's balance insufficient"` rejection is removed; `"wallet's balance insufficient"` stays.
+- Expense statistics endpoint and grouping are unchanged.
 
-### FR-3: Expense form — budget visibility and inline shortfall resolution
+### FR-2: Remove income allocation from transaction pay/unpay
 
-Make the honest path the easy path at the moment of expense entry.
-
-**Rules:**
-- The budget select in `ExpenseFormView` displays each budget's **remaining balance** alongside its name (e.g. "Restock — Rp 125.000").
-- While the form total exceeds the selected budget's balance, show an inline warning: *"Restock balance (Rp 125.000) is not enough for this expense (Rp 180.000). Transfer Rp 55.000 from another budget to proceed."* — with a **"Top up from…"** button.
-- "Top up from…" opens the budget-transfer form (from FR-2) pre-filled: destination = the selected budget, amount = the shortfall. On success the expense form refreshes budget balances and the warning clears.
-- The API keeps its hard rejection. The frontend never silently re-routes an expense to a different budget — the user either transfers funds or consciously picks a different budget.
-
-### FR-4: Replace the hard-coded Restock budget id with a flag
-
-`restockBudgetId = 4` in `transaction_usecase.go` is fragile (the seeder doesn't even create four budgets) and blocks any environment where Restock has a different id.
+Delete the budget loop from `PayTransaction` and `UnpayTransaction` (`apps/api/domain/transaction_usecase.go`), including the hard-coded `restockBudgetId = 4`.
 
 **Rules:**
-- Add `is_food_cost_target TINYINT(1) NOT NULL DEFAULT 0` to `budgets` (name open — see Open Questions). Exactly one budget is expected to have it set; `PayTransaction`/`UnpayTransaction` route the food cost to the flagged budget instead of id 4.
-- Migration backfills `is_food_cost_target = 1` on budget id 4 **if it exists**, preserving current production behaviour.
-- If no budget is flagged, the food cost is allocated like ordinary income (percentage split) rather than erroring — paying a transaction must never fail because of budget misconfiguration.
-- Seeder updated to include a Restock budget with the flag set.
-- Expose the flag on the budget API schema (read-only in UI for now; managed via seeding/DB).
+- Wallet credit/debit, payment cost, and `TotalIncome` computation are **unchanged** — only the budget balance writes are removed.
+- Unpay symmetry: a transaction paid before this change and unpaid after it will not reverse the old budget allocation. Accepted: budget balances are being retired (FR-3), so stale balances are harmless in the interim and deleted at cleanup.
 
-### FR-5: Allocation target vs. actual spend report
+### FR-3: Budgets become expense categories with a spending target
 
-Give the operator the feedback loop to re-tune percentages instead of perpetually transferring.
+Retire the `balance` column; redefine `percentage` as a **spending target expressed as % of revenue** for any reporting period.
 
 **Rules:**
-- On the Expense Statistics screen, add a per-budget comparison for the selected period: **target share** (the budget's `Percentage`) vs. **actual share** (that budget's expense total ÷ all budgets' expense total).
-- Computable entirely on the frontend from existing endpoints (`GET /budgets` + `GET /expenses/statistics`) — no backend change.
-- Visual: simple paired bars or a delta badge per budget (e.g. "Restock: target 30% · actual 42% · **+12%**"), highlighting budgets that chronically overshoot.
-- The Restock budget's "target" is nominal (its income comes from food cost, not percentage) — label it accordingly rather than hiding it.
+- Migration drops `budgets.balance`; entity, MySQL layer, API contract (`api.yaml`), transformers, and frontend types drop the field.
+- `percentage` keeps its name in the schema/API (avoids a breaking rename) but its documented meaning becomes *"target spend for this category as a percentage of revenue over the reporting period; 0 = no target"*.
+- Targets are **not required to sum to 100**. The remainder is the implied target profit margin, and the variance report shows it as an "Unspent / Profit" line.
+- Operators must re-tune values after rollout (old values meant *share of allocated income*, e.g. Operational 60/Marketing 20/Savings 20; new values mean *% of revenue*, e.g. Restock 30, Operational 25, Salary 20, Savings 10). This is a one-time manual step, called out in the rollout notes.
+- Seeder (`apps/api/seeds/budget_seeder.go`) updated to seed categories with revenue-share targets, including a **Restock** category (fixing the current oddity that the seeder creates only 3 budgets while the code special-cases id 4).
+
+### FR-4: Target vs. actual variance report
+
+Extend the Expense Statistics screen with a per-category comparison for the selected period.
+
+**Rules:**
+- **Actual %** = category expense total ÷ total revenue for the period. Revenue comes from the existing `GET /transactions/statistics`; category spend from the existing `GET /expenses/statistics`. **Frontend-only** — no backend change (`transactionStatisticList` and `expenseStatisticList` usecases already exist in `libs/ui`).
+- **Target %** = the category's `percentage`; categories with target 0 show "—" instead of a variance.
+- Per-category row: target %, actual %, delta — with the delta highlighted when actual exceeds target (this is the "am I overspending Restock?" signal).
+- An "Unspent / Profit" summary line: 100% − Σ actual %, so under-saving is visible at a glance.
+- Zero-revenue periods show actuals as absolute amounts only (no percentages), never divide-by-zero.
+
+### FR-5: Category management UI + relabeling
+
+Make categories manageable without engineering help, and align the language.
+
+**Rules:**
+- Add create/update forms for categories (name + target %) — the backend CRUD (`POST/PUT /budgets`) already exists; only the frontend screens are new (mirror the `WalletCreateScreen`/`WalletUpdateScreen` pattern).
+- Relabel "Budget" → "Expense Category" across UI labels, sidebar, and screen titles. Backend/API names keep `budget` (see Out of Scope).
+- `BudgetListItem.tsx` stops showing `balance` (field is gone) and drops its own hard-coded `id === 4` special case; rows show name + target %.
+- Expense form label changes from "Budget" to "Category"; behavior already correct after FR-1.
+
+### Operational practice (no code): protect savings with a real wallet
+
+Recreate the discipline the envelopes were meant to provide, the Profit First way — with real money and **existing features**:
+
+- Create a **Savings** wallet (and optionally **Salary**), with the existing `is_payment_target = false` so it never appears in the checkout payment modal.
+- On a schedule (e.g. 1st and 16th), use the existing **wallet transfer** feature to move the savings/salary portion of revenue out of the operational wallets.
+- Because the expense flow already blocks on wallet balance, money moved to the Savings wallet is physically excluded from day-to-day spending — a stronger guarantee than any virtual budget number.
+- Optional: seed a Savings wallet in `wallet_seeder.go` so fresh environments demonstrate the practice.
 
 ---
 
 ## Out of Scope
 
-- **Reclassifying historical expenses.** Past expenses booked against the wrong budget can already be corrected one-by-one via the existing expense update flow (which refunds and re-deducts balances). A bulk reclassification tool is not part of this PRD.
-- **Removing or renaming the budget concept.** Budgets remain; no "expense category" entity is introduced (see Option B rejection).
-- **Automatic transfers / auto-borrow.** The system never moves money between budgets on its own; every transfer is a human decision. This is deliberate — automation would recreate the invisible-borrowing problem with extra steps.
-- **Budget transfer deletion or editing.** Corrections are made with an opposite transfer, keeping history append-only.
-- **Changing the income allocation formula** (percentages, food-cost routing, payment cost). Only the *identification* of the Restock budget changes (FR-4), not the math.
-- **Negative-balance / overdraft mode.** Considered as an alternative to hard rejection (book the expense truthfully, let the budget go negative, show it in red). Rejected for now: it weakens the discipline guarantee and complicates every balance display. Transfers achieve the same honesty with an explicit decision point. Can be revisited if transfer friction proves too high.
-- **Multi-budget funding of a single expense.** An expense is always funded by exactly one budget; shortfalls are resolved by transferring first.
-
----
+- **Budget transfers, food-cost flags, envelope top-up UX** — the v1 design, superseded by this revision.
+- **Renaming `budget` → `expense_category` in the database, API paths, and Go/TS identifiers.** A cosmetic but wide-reaching breaking change (migrations, `api.yaml` paths/schemas, regenerated clients, every layer of both apps). UI labels change now (FR-5); the identifier rename can be a standalone follow-up if the naming debt ever hurts.
+- **Reclassifying historical expenses.** Past misclassified expenses can be corrected one-by-one via the existing expense update flow. A bulk tool is not part of this PRD.
+- **Automated/scheduled wallet transfers for savings.** The twice-monthly savings sweep stays a manual operational practice for now; automating it is a possible future feature.
+- **Variance alerts (push/email when a category crosses its target).** The report is pull-based; alerting can layer on later.
+- **Changing revenue recognition, payment cost, or `TotalIncome` computation.** Untouched.
 
 ## Open Questions
 
-1. **Flag naming (FR-4).** `is_food_cost_target` is descriptive; alternatives: `kind ENUM('percentage','food_cost')` if we anticipate more allocation kinds. Recommendation: the boolean — YAGNI until a third kind appears.
-2. **Transfer note field.** Optional in this PRD. If the team wants transfers to double as an audit trail of "why we raided savings," consider making `note` required for transfers **out of** the Savings budget specifically. Recommendation: keep optional; revisit after observing usage.
-3. **Who can transfer?** No RBAC exists (any authenticated crew member can do anything), consistent with the rest of the system. Flagged for the future: budget transfers are exactly the kind of operation RBAC would eventually gate.
+1. **Target denominator.** This PRD defines targets as % of *revenue* (industry convention: "food cost 28–32% of sales"). The alternative — % of *total expenses* — makes targets sum to 100 but hides the profit margin. Recommendation: % of revenue.
+2. **Should `percentage` be renamed to `target_percentage` in the API contract?** More honest naming, but a breaking contract change. Recommendation: keep the name, update the description in `api.yaml`; fold a rename into the future full-rename follow-up if it happens.
 
 ---
 
 # Implementation Plan — Phased PRs
 
-Each phase is one small, independently reviewable PR. Ordering keeps `main` green: no UI ships before its backend exists, and every phase is independently valuable.
+Each phase is one small, independently reviewable PR. Every phase leaves the system consistent and shippable.
 
 ```
-Phase 1 (BE: transfers API) ──► Phase 2 (FE: transfer UI) ──► Phase 3 (FE: expense form shortfall UX)
-Phase 4 (BE: restock flag)   — independent, can land any time
-Phase 5 (FE: target vs actual report) — independent, can land any time
+Phase 1 (FE: variance report)          — frontend-only, works against current data
+Phase 2 (BE: decouple expense flow)    — stops forced misclassification immediately
+Phase 3 (BE: remove pay/unpay allocation)
+Phase 4 (BE+FE: drop balance, retarget percentage, seeders)
+Phase 5 (FE: category management UI + relabel)
 ```
 
----
-
-### Phase 1 — Backend: budget transfers API
-
-**Goal:** FR-1 end-to-end at the API layer. Directly mirrors the existing wallet-transfer implementation.
-
-- Migration `000018_create_budget_transfers.up.sql` / `.down.sql`: create `budget_transfers` (schema in FR-1), FKs to `budgets`.
-- Domain: `BudgetTransfer` entity in `budget_entity.go`; extend `BudgetRepository` with `GetBudgetTransferList` / `CreateBudgetTransfer`; extend `BudgetUsecase` with `CreateBudgetTransfer` (balance check + double update + insert inside `BeginTransaction`, modelled on `WalletUsecase.CreateWalletTransfer`) and `GetBudgetTransferList`.
-- Data: MySQL entity/repo/transformer (`apps/api/data/mysql/budget_*.go`), mock repository update.
-- Presentation: `GET/POST /budgets/{budgetId}/transfers` in `budget_route.go` + `budget_handler.go` + transformer.
-- Contract: `BudgetTransfer`, `BudgetTransferRequest`, list/create response schemas in `libs/api-contract/src/api.yaml`; regenerate clients.
-- Tests: usecase tests (sufficient/insufficient balance, same-budget rejection, non-positive amount, missing budget) + handler tests, mirroring wallet-transfer coverage.
-
-**Acceptance:** transfer moves balance atomically between two budgets and appears in both budgets' transfer lists; all validation rules return `BadRequest`; wallets untouched. Migration up/down clean.
-
-**Estimated diff:** ~400–500 LoC, almost all patterned on existing wallet-transfer code.
+Phases 2 and 3 are independent of Phase 1. Phase 4 depends on 2 + 3 (balances must no longer be written before the column is dropped). Phase 5 depends on 4.
 
 ---
 
-### Phase 2 — Frontend: budget transfer UI
+### Phase 1 — Frontend: target vs. actual variance report (FR-4)
 
-**Goal:** FR-2 — make transfers usable without engineering help. Mirrors the wallet-transfer frontend suite.
+**Goal:** the feedback loop ships first and works against current data (statistics get *more* truthful as later phases land).
 
-- Domain layer (`libs/ui/src/domain`): `BudgetTransfer` entity, repository interface + query keys, `budgetTransferList` / `budgetTransferCreate` usecases (mirror `walletTransferList`/`walletTransferCreate`).
-- Data layer: API implementations + transformers + mocks (`libs/ui/src/data/api/budget.ts`, `data/mock/budget.ts`).
-- Presentation: `BudgetTransferListScreen`/`Handler`, `BudgetTransferCreateScreen`/`Handler`, `BudgetTransferFormView`, `BudgetTransferList(Item)` components + stories; wire "Transfers" / "New Transfer" actions into `BudgetListScreen` rows; routes in the web + mobile apps (mirror wallet-transfer routes).
-- Tests: handler tests for list + create (success, insufficient balance error surfaced), matching wallet-transfer test coverage.
+- `ExpenseStatisticHandler.tsx`: also consume the existing `transactionStatisticList` usecase for period revenue; compute per-category actual % and delta vs. `budget.percentage` (via `budgetList` usecase).
+- New presentational component (e.g. `ExpenseVarianceList`) rendering per-category rows (target / actual / delta, over-target highlighted) + the "Unspent / Profit" line; embed in `ExpenseStatisticScreen` alongside the existing chart.
+- Edge cases: zero revenue (absolute amounts, no %), target 0 ("—"), categories with expenses but no target and vice versa.
+- Stories + handler tests for the share computation and edge cases.
 
-**Acceptance:** from the Budget list, a user can view a budget's transfer history and move an amount to another budget; balances refresh; API validation errors are shown inline.
-
-**Estimated diff:** ~500–700 LoC, heavily copy-adapted from wallet transfer screens.
-
-**Dependency:** Phase 1 merged.
+**Acceptance:** for any date range, each category shows target %, actual % of revenue, and delta; over-target categories are visually flagged.
+**Estimated diff:** ~250–350 LoC. No backend change.
 
 ---
 
-### Phase 3 — Frontend: expense form budget visibility + inline shortfall top-up
+### Phase 2 — Backend: decouple expenses from budget balances (FR-1)
 
-**Goal:** FR-3 — the expense flow guides users to transfer instead of misclassify.
+**Goal:** remove the mechanism that forces misclassification. Smallest, highest-value change.
 
-- `ExpenseFormView` (`libs/ui/src/presentation/components/expenses/`): budget select options render name + formatted remaining balance.
-- Shortfall detection in `ExpenseCreateHandler` / `ExpenseUpdateHandler`: compare running form total vs. selected budget balance (for update, add back the expense's original total when the budget is unchanged, since the API refunds before re-deducting); render the inline warning with computed shortfall amount.
-- "Top up from…" button opens the Phase 2 transfer form (modal or navigation, following how `TransactionPaymentAlert` embeds a flow) pre-filled with destination + shortfall amount; on success, invalidate/refetch the budget list so the warning re-evaluates.
-- Tests: warning appears/clears with the right amounts; create/update flows for both the sufficient and shortfall paths; stories updated.
+- `expense_usecase.go`: in create/update/delete, remove budget balance reads/writes and the `"budget's balance insufficient"` rejection; keep an existence/soft-delete check on `budget_id`; wallet logic untouched.
+- Update `expense_usecase_test.go` (drop insufficient-budget cases, add invalid-budget-id case) and any handler tests asserting the old error.
 
-**Acceptance:** entering an expense larger than the selected budget's balance shows the shortfall and offers the top-up; after transferring, the same expense submits successfully against its **true** budget.
-
-**Estimated diff:** ~250–400 LoC.
-
-**Dependency:** Phase 2 merged.
+**Acceptance:** an expense larger than its category's old "balance" is accepted (wallet balance permitting) and appears under its true category in statistics; wallet insufficiency still rejects.
+**Estimated diff:** ~100–150 LoC, mostly deletions.
 
 ---
 
-### Phase 4 — Backend: replace hard-coded Restock budget id with a flag
+### Phase 3 — Backend: remove income allocation from pay/unpay (FR-2)
 
-**Goal:** FR-4. Independent of Phases 1–3; can land in parallel at any point.
+**Goal:** delete the per-transaction envelope math and the hard-coded Restock id.
 
-- Migration `000019_add_budget_food_cost_flag.up.sql` / `.down.sql`: add `is_food_cost_target TINYINT(1) NOT NULL DEFAULT 0`; backfill `UPDATE budgets SET is_food_cost_target = 1 WHERE id = 4` (no-op if the row doesn't exist).
-- Domain: add the field to `Budget`; in `PayTransaction`/`UnpayTransaction`, replace the `budgetItem.Id == restockBudgetId` check with `budgetItem.IsFoodCostTarget`; when no budget is flagged, fall through to the percentage allocation for all budgets.
-- Data + presentation + contract: thread the field through MySQL entity/transformer, API transformers, `api.yaml`, regenerated clients (read-only exposure).
-- Seeder: add a Restock budget with the flag set; existing seeded budgets get `false` explicitly.
-- Tests: `transaction_usecase_test.go` — food cost routed to the flagged budget regardless of its id; no-flag fallback; unpay symmetry.
+- `transaction_usecase.go`: remove the budget list loop from `PayTransaction` and `UnpayTransaction` (including `restockBudgetId = 4`); drop the now-unused `budgetRepository` dependency from the usecase constructor and wiring.
+- Update `transaction_usecase_test.go` (remove allocation assertions; keep wallet, payment-cost, and `TotalIncome` assertions).
+- Rollout note in the PR description: transactions paid before deploy and unpaid after will leave stale budget balances — harmless, deleted in Phase 4.
 
-**Acceptance:** pay/unpay allocate food cost by flag, not id; a fresh seeded environment routes food cost correctly; existing production data behaves identically after backfill.
-
-**Estimated diff:** ~200–300 LoC.
+**Acceptance:** pay/unpay affect only the wallet and the transaction record; `TotalIncome` unchanged; no budget rows are written.
+**Estimated diff:** ~150–200 LoC, mostly deletions.
 
 ---
 
-### Phase 5 — Frontend: allocation target vs. actual spend report
+### Phase 4 — Backend + contract: retire `balance`, retarget `percentage` (FR-3)
 
-**Goal:** FR-5. Independent; frontend-only.
+**Goal:** make the schema match the new semantics.
 
-- `ExpenseStatisticScreen` / `ExpenseStatisticHandler`: combine the existing budget list (`Percentage`) with expense statistics for the selected period to compute actual share per budget; render a per-budget row: target %, actual %, delta (highlight over-target).
-- Label the food-cost budget's target as nominal ("funded by food cost") once Phase 4 exposes the flag; before Phase 4 lands, fall back to showing its percentage like the rest.
-- Component + story + handler test covering the share computation (including the zero-expense period edge case).
+- Migration `000018_drop_budget_balance.up.sql` / `.down.sql`: drop `budgets.balance` (down restores it with `DEFAULT 0`).
+- Remove `Balance` from `budget_entity.go` (domain + MySQL), transformers, mock repository, and the `Budget` schema in `libs/api-contract/src/api.yaml` (update the `percentage` description to the new target semantics); regenerate clients.
+- Frontend: remove `balance` from the `Budget` entity/transformer/mocks; `BudgetListItem.tsx` shows name + target % (drop the balance subtitle **and** the hard-coded `id === 4` case).
+- Seeder: categories with revenue-share targets incl. Restock (e.g. Restock 30, Operational 25, Salary 20, Savings 10); optionally seed a `Savings` wallet with `is_payment_target = false`.
+- Rollout note: operators re-tune target values post-deploy (old values were income-allocation shares).
 
-**Acceptance:** for any date range, the user sees each budget's target vs. actual spend share and can immediately spot chronically over/under-spent envelopes.
-
-**Estimated diff:** ~200–350 LoC.
+**Acceptance:** API no longer returns `balance`; budget list renders name + target; migration up/down clean; fresh seed demonstrates the new model.
+**Estimated diff:** ~250–350 LoC across backend, contract, and frontend types/display.
+**Dependency:** Phases 2 and 3 merged (nothing may write `balance` anymore).
 
 ---
+
+### Phase 5 — Frontend: category management UI + relabel (FR-5)
+
+**Goal:** categories manageable in-app; language matches the concept.
+
+- New `BudgetCreateScreen`/`Handler` and `BudgetUpdateScreen`/`Handler` + `BudgetFormView` (name, target %) wired to the existing `POST/PUT /budgets` endpoints — mirror the wallet form suite; add `budgetCreate`/`budgetUpdate` usecases in `libs/ui/src/domain` (mirror `walletCreate`).
+- Routes in web + mobile apps; "New Category" / edit actions on the list screen.
+- Relabel "Budget" → "Expense Category" in sidebar, screen titles, and the expense form's picker label.
+- Stories + handler tests (form validation: name required, target 0–100).
+
+**Acceptance:** a user can create/edit categories with a target; all "Budget" labels read "Expense Category"; expense creation flow unchanged functionally.
+**Estimated diff:** ~400–550 LoC, heavily copy-adapted from wallet screens.
+**Dependency:** Phase 4 (form schema must not include `balance`).
+
+---
+
+## Rollout Notes
+
+1. After Phase 4, **re-tune targets**: old percentages were income-allocation shares; set new values as % of revenue per category (leave 0 for "no target").
+2. Adopt the **savings sweep**: create the Savings wallet (non-payment-target) and schedule the twice-monthly wallet transfer as an operational routine.
+3. Existing budget `balance` values are discarded at Phase 4 — they are already meaningless due to historical misclassification; no data migration is attempted.
+4. Historical expense statistics retain their misclassified categories; optionally correct important months via the expense update flow.
 
 ## Success Criteria (post-rollout)
 
-1. **Statistics are truthful**: food purchases appear under Restock in expense statistics even in months where Restock's allocation was insufficient.
-2. **Borrowing is visible**: the operator can answer "how many times did Restock need a top-up this month, and from where?" from the transfer history.
-3. **Percentages get tuned**: after 1–2 months of transfer + target-vs-actual data, allocation percentages are adjusted and the transfer frequency drops.
-4. **No new misclassification incentive**: the expense flow never requires picking a wrong budget to complete a purchase.
+1. **Statistics are truthful:** food purchases always appear under Restock, even in heavy-spend months — there is no mechanism that rejects a truthfully classified expense.
+2. **Overspending is visible within a week:** the variance report shows actual vs. target % of revenue per category for any period.
+3. **Savings actually accumulate:** the Savings wallet balance grows monotonically except for deliberate, visible wallet transfers out.
+4. **Less code:** envelope allocation, budget balance checks, and both hard-coded `id = 4` special cases are gone; no new tables or endpoints were added.
+
+## Sources
+
+- [Restaurant365 — food cost guide (28–32% benchmark)](https://www.restaurant365.com/blog/food-cost-guide/)
+- [Toast — food cost variance](https://pos.toasttab.com/blog/on-the-line/food-cost-variance)
+- [MarginEdge — actual vs. theoretical food costs](https://www.marginedge.com/blog/a-restaurant-operators-guide-to-actual-vs-theoretical-food-costs-and-usage)
+- [SVA — integrating POS with accounting software](https://accountants.sva.com/biz-tips/integrating-pos-systems-with-restaurant-accounting-software)
+- [RASI — categorizing restaurant expenses](https://rasiusa.com/blog/how-do-you-categorize-restaurant-expenses/)
+- [Cash Flow Frog — budget vs. actual variance analysis](https://cashflowfrog.com/blog/actuals-vs-budget-a-guide-to-budget-variance-analysis/)
+- [Relay — Profit First method guide](https://relayfi.com/blog/profit-first-method/)
+- [Mercury — using the Profit First method](https://mercury.com/blog/how-to-use-profit-first-method)
