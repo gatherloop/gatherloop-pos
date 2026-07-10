@@ -1,4 +1,4 @@
-# PRD: Cash Flow Management — Expense Categories with Target vs. Actual Variance
+# PRD: Cash Flow Management — Budgets as Spending Targets with Actual vs. Target Variance
 
 > **Revision note:** v1 of this PRD proposed keeping budget envelopes and adding explicit budget transfers. After reviewing complexity (new `budget_transfers` table, transfer UI, a food-cost flag with uniqueness problems) against how the industry actually handles this, v2 supersedes it with a simpler design that removes the envelope mechanics instead of patching them. See "Alternatives Considered" for the comparison.
 
@@ -23,7 +23,7 @@ The single field `expense.budget_id` carries two independent meanings:
 1. **Classification** — *what kind of spend is this?* (what statistics need; must always be truthful)
 2. **Funding** — *which envelope pays for it?* (what the hard balance check enforces)
 
-When the true envelope is empty, funding wins and classification is falsified. The v1 fix kept both meanings and added transfer machinery to reconcile them. The v2 fix **removes the funding meaning entirely** — the budget becomes a pure classification (an expense category), and spending control moves to where the industry puts it: measurement and real-money segregation.
+When the true envelope is empty, funding wins and classification is falsified. The v1 fix kept both meanings and added transfer machinery to reconcile them. The v2 fix **removes the funding meaning entirely** — the budget becomes a pure spend classification with a target attached, and spending control moves to where the industry puts it: measurement and real-money segregation. The concept keeps the name **Budget**: with a target percentage it still serves the budgeting purpose, and "budget vs. actual" is the industry's own name for this model.
 
 ---
 
@@ -55,9 +55,9 @@ Keep mutating budget balances, add a `budget_transfers` table/API/UI so shortfal
 
 - ❌ Two nearly identical lists to maintain; the misclassification incentive just moves.
 
-### Option C — Expense categories + target vs. actual variance + real-money savings ✅ **Recommended**
+### Option C — Budgets as spending targets + actual vs. target variance + real-money savings ✅ **Recommended**
 
-Budgets become pure **expense categories**. Balance mechanics and per-transaction allocation are removed. Discipline is provided by (a) a target-vs-actual variance report and (b) physically moving savings/salary money to a dedicated wallet using the **existing** wallet-transfer feature.
+Budgets keep their name but lose the mutating balance: each budget becomes a **spend classification with a target**. Balance mechanics and per-transaction allocation are removed. Discipline is provided by (a) a target-vs-actual variance report and (b) physically moving savings/salary money to a dedicated wallet using the **existing** wallet-transfer feature.
 
 - ✅ Statistics always truthful — there is no longer any reason to misclassify.
 - ✅ Net code **deletion**: the allocation loop in `PayTransaction`/`UnpayTransaction` (including `restockBudgetId = 4`), the budget balance checks/mutations in the expense flow, and the `balance` column all go away. No new tables, no new endpoints.
@@ -72,11 +72,11 @@ Budgets become pure **expense categories**. Balance mechanics and per-transactio
 
 | Today | After |
 |---|---|
-| Budget = envelope with `Percentage` (income allocation) + mutating `Balance` | **Expense category** with `Percentage` = *spending target as % of revenue* for a period |
+| Budget = envelope with `Percentage` (income allocation) + mutating `Balance` | **Budget = spending target**: `Percentage` = *target spend as % of revenue* for a period; no stored balance |
 | Pay/unpay transaction mutates every budget balance | Pay/unpay only touches the wallet and `TotalIncome` (unchanged) |
 | Expense checks & deducts budget balance + wallet balance | Expense checks & deducts **wallet balance only**; `budget_id` is pure classification |
 | Discipline = hard rejection when envelope is empty | Discipline = variance report (target vs. actual % of revenue) + real money moved to a Savings wallet |
-| Restock budget special-cased by hard-coded id 4 (backend **and** `BudgetListItem.tsx` frontend) | No special case — Restock is a category with a target like any other |
+| Restock budget special-cased by hard-coded id 4 (backend **and** `BudgetListItem.tsx` frontend) | No special case — Restock is a budget with a target like any other |
 
 ### FR-1: Decouple expenses from budget balances
 
@@ -96,7 +96,7 @@ Delete the budget loop from `PayTransaction` and `UnpayTransaction` (`apps/api/d
 - Wallet credit/debit, payment cost, and `TotalIncome` computation are **unchanged** — only the budget balance writes are removed.
 - Unpay symmetry: a transaction paid before this change and unpaid after it will not reverse the old budget allocation. Accepted: budget balances are being retired (FR-3), so stale balances are harmless in the interim and deleted at cleanup.
 
-### FR-3: Budgets become expense categories with a spending target
+### FR-3: Budgets become spending targets
 
 Retire the `balance` column; redefine `percentage` as a **spending target expressed as % of revenue** for any reporting period.
 
@@ -105,28 +105,28 @@ Retire the `balance` column; redefine `percentage` as a **spending target expres
 - `percentage` keeps its name in the schema/API (avoids a breaking rename) but its documented meaning becomes *"target spend for this category as a percentage of revenue over the reporting period; 0 = no target"*.
 - Targets are **not required to sum to 100**. The remainder is the implied target profit margin, and the variance report shows it as an "Unspent / Profit" line.
 - Operators must re-tune values after rollout (old values meant *share of allocated income*, e.g. Operational 60/Marketing 20/Savings 20; new values mean *% of revenue*, e.g. Restock 30, Operational 25, Salary 20, Savings 10). This is a one-time manual step, called out in the rollout notes.
-- Seeder (`apps/api/seeds/budget_seeder.go`) updated to seed categories with revenue-share targets, including a **Restock** category (fixing the current oddity that the seeder creates only 3 budgets while the code special-cases id 4).
+- Seeder (`apps/api/seeds/budget_seeder.go`) updated to seed budgets with revenue-share targets, including a **Restock** budget (fixing the current oddity that the seeder creates only 3 budgets while the code special-cases id 4).
 
 ### FR-4: Target vs. actual variance report
 
-Extend the Expense Statistics screen with a per-category comparison for the selected period.
+Extend the Expense Statistics screen with a per-budget comparison for the selected period.
 
 **Rules:**
-- **Actual %** = category expense total ÷ total revenue for the period. Revenue comes from the existing `GET /transactions/statistics`; category spend from the existing `GET /expenses/statistics`. **Frontend-only** — no backend change (`transactionStatisticList` and `expenseStatisticList` usecases already exist in `libs/ui`).
-- **Target %** = the category's `percentage`; categories with target 0 show "—" instead of a variance.
-- Per-category row: target %, actual %, delta — with the delta highlighted when actual exceeds target (this is the "am I overspending Restock?" signal).
+- **Actual %** = budget expense total ÷ total revenue for the period. Revenue comes from the existing `GET /transactions/statistics`; per-budget spend from the existing `GET /expenses/statistics`. **Frontend-only** — no backend change (`transactionStatisticList` and `expenseStatisticList` usecases already exist in `libs/ui`).
+- **Target %** = the budget's `percentage`; budgets with target 0 show "—" instead of a variance.
+- Per-budget row: target %, actual %, delta — with the delta highlighted when actual exceeds target (this is the "am I overspending Restock?" signal).
 - An "Unspent / Profit" summary line: 100% − Σ actual %, so under-saving is visible at a glance.
 - Zero-revenue periods show actuals as absolute amounts only (no percentages), never divide-by-zero.
 
-### FR-5: Category management UI + relabeling
+### FR-5: Budget management UI
 
-Make categories manageable without engineering help, and align the language.
+Make budgets manageable without engineering help.
 
 **Rules:**
-- Add create/update forms for categories (name + target %) — the backend CRUD (`POST/PUT /budgets`) already exists; only the frontend screens are new (mirror the `WalletCreateScreen`/`WalletUpdateScreen` pattern).
-- Relabel "Budget" → "Expense Category" across UI labels, sidebar, and screen titles. Backend/API names keep `budget` (see Out of Scope).
+- Add create/update forms for budgets (name + target %) — the backend CRUD (`POST/PUT /budgets`) already exists; only the frontend screens are new (mirror the `WalletCreateScreen`/`WalletUpdateScreen` pattern).
+- The concept keeps the name **Budget** everywhere (DB, API, UI): with a target percentage it still serves the budgeting purpose, and it matches the industry's "budget vs. actual" terminology. No relabeling.
 - `BudgetListItem.tsx` stops showing `balance` (field is gone) and drops its own hard-coded `id === 4` special case; rows show name + target %.
-- Expense form label changes from "Budget" to "Category"; behavior already correct after FR-1.
+- Expense form is unchanged (the "Budget" picker label stays); behavior already correct after FR-1.
 
 ### Operational practice (no code): protect savings with a real wallet
 
@@ -142,7 +142,7 @@ Recreate the discipline the envelopes were meant to provide, the Profit First wa
 ## Out of Scope
 
 - **Budget transfers, food-cost flags, envelope top-up UX** — the v1 design, superseded by this revision.
-- **Renaming `budget` → `expense_category` in the database, API paths, and Go/TS identifiers.** A cosmetic but wide-reaching breaking change (migrations, `api.yaml` paths/schemas, regenerated clients, every layer of both apps). UI labels change now (FR-5); the identifier rename can be a standalone follow-up if the naming debt ever hurts.
+- **Renaming the budget concept.** An "Expense Category" relabel was considered, but since each budget keeps a spending target it still does the budgeting job — the name **Budget** stays everywhere (DB, API, UI), which also keeps code and UI vocabulary aligned and avoids relabel churn.
 - **Reclassifying historical expenses.** Past misclassified expenses can be corrected one-by-one via the existing expense update flow. A bulk tool is not part of this PRD.
 - **Automated/scheduled wallet transfers for savings.** The twice-monthly savings sweep stays a manual operational practice for now; automating it is a possible future feature.
 - **Variance alerts (push/email when a category crosses its target).** The report is pull-based; alerting can layer on later.
@@ -164,7 +164,7 @@ Phase 1 (FE: variance report)          — frontend-only, works against current 
 Phase 2 (BE: decouple expense flow)    — stops forced misclassification immediately
 Phase 3 (BE: remove pay/unpay allocation)
 Phase 4 (BE+FE: drop balance, retarget percentage, seeders)
-Phase 5 (FE: category management UI + relabel)
+Phase 5 (FE: budget management UI)
 ```
 
 Phases 2 and 3 are independent of Phase 1. Phase 4 depends on 2 + 3 (balances must no longer be written before the column is dropped). Phase 5 depends on 4.
@@ -175,12 +175,12 @@ Phases 2 and 3 are independent of Phase 1. Phase 4 depends on 2 + 3 (balances mu
 
 **Goal:** the feedback loop ships first and works against current data (statistics get *more* truthful as later phases land).
 
-- `ExpenseStatisticHandler.tsx`: also consume the existing `transactionStatisticList` usecase for period revenue; compute per-category actual % and delta vs. `budget.percentage` (via `budgetList` usecase).
-- New presentational component (e.g. `ExpenseVarianceList`) rendering per-category rows (target / actual / delta, over-target highlighted) + the "Unspent / Profit" line; embed in `ExpenseStatisticScreen` alongside the existing chart.
-- Edge cases: zero revenue (absolute amounts, no %), target 0 ("—"), categories with expenses but no target and vice versa.
+- `ExpenseStatisticHandler.tsx`: also consume the existing `transactionStatisticList` usecase for period revenue; compute per-budget actual % and delta vs. `budget.percentage` (via `budgetList` usecase).
+- New presentational component (e.g. `ExpenseVarianceList`) rendering per-budget rows (target / actual / delta, over-target highlighted) + the "Unspent / Profit" line; embed in `ExpenseStatisticScreen` alongside the existing chart.
+- Edge cases: zero revenue (absolute amounts, no %), target 0 ("—"), budgets with expenses but no target and vice versa.
 - Stories + handler tests for the share computation and edge cases.
 
-**Acceptance:** for any date range, each category shows target %, actual % of revenue, and delta; over-target categories are visually flagged.
+**Acceptance:** for any date range, each budget shows target %, actual % of revenue, and delta; over-target budgets are visually flagged.
 **Estimated diff:** ~250–350 LoC. No backend change.
 
 ---
@@ -192,7 +192,7 @@ Phases 2 and 3 are independent of Phase 1. Phase 4 depends on 2 + 3 (balances mu
 - `expense_usecase.go`: in create/update/delete, remove budget balance reads/writes and the `"budget's balance insufficient"` rejection; keep an existence/soft-delete check on `budget_id`; wallet logic untouched.
 - Update `expense_usecase_test.go` (drop insufficient-budget cases, add invalid-budget-id case) and any handler tests asserting the old error.
 
-**Acceptance:** an expense larger than its category's old "balance" is accepted (wallet balance permitting) and appears under its true category in statistics; wallet insufficiency still rejects.
+**Acceptance:** an expense larger than its budget's old "balance" is accepted (wallet balance permitting) and appears under its true budget in statistics; wallet insufficiency still rejects.
 **Estimated diff:** ~100–150 LoC, mostly deletions.
 
 ---
@@ -217,7 +217,7 @@ Phases 2 and 3 are independent of Phase 1. Phase 4 depends on 2 + 3 (balances mu
 - Migration `000018_drop_budget_balance.up.sql` / `.down.sql`: drop `budgets.balance` (down restores it with `DEFAULT 0`).
 - Remove `Balance` from `budget_entity.go` (domain + MySQL), transformers, mock repository, and the `Budget` schema in `libs/api-contract/src/api.yaml` (update the `percentage` description to the new target semantics); regenerate clients.
 - Frontend: remove `balance` from the `Budget` entity/transformer/mocks; `BudgetListItem.tsx` shows name + target % (drop the balance subtitle **and** the hard-coded `id === 4` case).
-- Seeder: categories with revenue-share targets incl. Restock (e.g. Restock 30, Operational 25, Salary 20, Savings 10); optionally seed a `Savings` wallet with `is_payment_target = false`.
+- Seeder: budgets with revenue-share targets incl. Restock (e.g. Restock 30, Operational 25, Salary 20, Savings 10); optionally seed a `Savings` wallet with `is_payment_target = false`.
 - Rollout note: operators re-tune target values post-deploy (old values were income-allocation shares).
 
 **Acceptance:** API no longer returns `balance`; budget list renders name + target; migration up/down clean; fresh seed demonstrates the new model.
@@ -226,32 +226,31 @@ Phases 2 and 3 are independent of Phase 1. Phase 4 depends on 2 + 3 (balances mu
 
 ---
 
-### Phase 5 — Frontend: category management UI + relabel (FR-5)
+### Phase 5 — Frontend: budget management UI (FR-5)
 
-**Goal:** categories manageable in-app; language matches the concept.
+**Goal:** budgets manageable in-app.
 
 - New `BudgetCreateScreen`/`Handler` and `BudgetUpdateScreen`/`Handler` + `BudgetFormView` (name, target %) wired to the existing `POST/PUT /budgets` endpoints — mirror the wallet form suite; add `budgetCreate`/`budgetUpdate` usecases in `libs/ui/src/domain` (mirror `walletCreate`).
-- Routes in web + mobile apps; "New Category" / edit actions on the list screen.
-- Relabel "Budget" → "Expense Category" in sidebar, screen titles, and the expense form's picker label.
+- Routes in web + mobile apps; "New Budget" / edit actions on the list screen.
 - Stories + handler tests (form validation: name required, target 0–100).
 
-**Acceptance:** a user can create/edit categories with a target; all "Budget" labels read "Expense Category"; expense creation flow unchanged functionally.
-**Estimated diff:** ~400–550 LoC, heavily copy-adapted from wallet screens.
+**Acceptance:** a user can create/edit budgets with a target; expense creation flow unchanged functionally.
+**Estimated diff:** ~350–500 LoC, heavily copy-adapted from wallet screens.
 **Dependency:** Phase 4 (form schema must not include `balance`).
 
 ---
 
 ## Rollout Notes
 
-1. After Phase 4, **re-tune targets**: old percentages were income-allocation shares; set new values as % of revenue per category (leave 0 for "no target").
+1. After Phase 4, **re-tune targets**: old percentages were income-allocation shares; set new values as % of revenue per budget (leave 0 for "no target").
 2. Adopt the **savings sweep**: create the Savings wallet (non-payment-target) and schedule the twice-monthly wallet transfer as an operational routine.
 3. Existing budget `balance` values are discarded at Phase 4 — they are already meaningless due to historical misclassification; no data migration is attempted.
-4. Historical expense statistics retain their misclassified categories; optionally correct important months via the expense update flow.
+4. Historical expense statistics retain their misclassified budgets; optionally correct important months via the expense update flow.
 
 ## Success Criteria (post-rollout)
 
 1. **Statistics are truthful:** food purchases always appear under Restock, even in heavy-spend months — there is no mechanism that rejects a truthfully classified expense.
-2. **Overspending is visible within a week:** the variance report shows actual vs. target % of revenue per category for any period.
+2. **Overspending is visible within a week:** the variance report shows actual vs. target % of revenue per budget for any period.
 3. **Savings actually accumulate:** the Savings wallet balance grows monotonically except for deliberate, visible wallet transfers out.
 4. **Less code:** envelope allocation, budget balance checks, and both hard-coded `id = 4` special cases are gone; no new tables or endpoints were added.
 
