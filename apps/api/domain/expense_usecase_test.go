@@ -5,6 +5,7 @@ import (
 	"apps/api/domain"
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -192,6 +193,94 @@ func TestExpenseUsecase_DeleteExpenseById(t *testing.T) {
 				assert.Equal(t, tt.expectedError.Type, err.Type)
 			} else {
 				assert.Nil(t, err)
+			}
+		})
+	}
+}
+
+func TestExpenseUsecase_GetExpenseStatistics(t *testing.T) {
+	tests := []struct {
+		name          string
+		groupBy       string
+		startDate     func(t *testing.T) *time.Time
+		endDate       func(t *testing.T) *time.Time
+		setupMock     func(expRepo *mock.MockExpenseRepository)
+		expectedLen   int
+		expectedError *domain.Error
+	}{
+		{
+			name:    "success",
+			groupBy: "month",
+			setupMock: func(expRepo *mock.MockExpenseRepository) {
+				expRepo.EXPECT().GetExpenseStatistics(gomock.Any(), "month", (*time.Time)(nil), (*time.Time)(nil)).Return([]domain.ExpenseStatistic{{Total: 100000}}, nil)
+			},
+			expectedLen: 1,
+		},
+		{
+			name:    "repo error",
+			groupBy: "month",
+			setupMock: func(expRepo *mock.MockExpenseRepository) {
+				expRepo.EXPECT().GetExpenseStatistics(gomock.Any(), "month", (*time.Time)(nil), (*time.Time)(nil)).Return(nil, &domain.Error{Type: domain.InternalServerError})
+			},
+			expectedError: &domain.Error{Type: domain.InternalServerError},
+		},
+		{
+			name:      "both empty delegates unchanged",
+			groupBy:   "",
+			startDate: func(t *testing.T) *time.Time { return nil },
+			endDate:   func(t *testing.T) *time.Time { return nil },
+			setupMock: func(expRepo *mock.MockExpenseRepository) {
+				expRepo.EXPECT().GetExpenseStatistics(gomock.Any(), "", (*time.Time)(nil), (*time.Time)(nil)).Return([]domain.ExpenseStatistic{{Total: 100000}}, nil)
+			},
+			expectedLen: 1,
+		},
+		{
+			name:      "valid range forwarded to repo",
+			groupBy:   "date",
+			startDate: func(t *testing.T) *time.Time { return mustParseDate(t, "2024-01-01") },
+			endDate:   func(t *testing.T) *time.Time { return mustParseDate(t, "2024-01-31") },
+			setupMock: func(expRepo *mock.MockExpenseRepository) {
+				expRepo.EXPECT().GetExpenseStatistics(gomock.Any(), "date", mustParseDate(t, "2024-01-01"), mustParseDate(t, "2024-01-31")).Return([]domain.ExpenseStatistic{{Total: 100000}}, nil)
+			},
+			expectedLen: 1,
+		},
+		{
+			name:          "startDate after endDate returns bad request",
+			groupBy:       "date",
+			startDate:     func(t *testing.T) *time.Time { return mustParseDate(t, "2024-02-01") },
+			endDate:       func(t *testing.T) *time.Time { return mustParseDate(t, "2024-01-01") },
+			setupMock:     func(expRepo *mock.MockExpenseRepository) {},
+			expectedError: &domain.Error{Type: domain.BadRequest},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			expRepo := mock.NewMockExpenseRepository(ctrl)
+			budgetRepo := mock.NewMockBudgetRepository(ctrl)
+			walletRepo := mock.NewMockWalletRepository(ctrl)
+			tt.setupMock(expRepo)
+
+			var startDate, endDate *time.Time
+			if tt.startDate != nil {
+				startDate = tt.startDate(t)
+			}
+			if tt.endDate != nil {
+				endDate = tt.endDate(t)
+			}
+
+			usecase := domain.NewExpenseUsecase(expRepo, budgetRepo, walletRepo)
+			result, err := usecase.GetExpenseStatistics(context.Background(), tt.groupBy, startDate, endDate)
+
+			if tt.expectedError != nil {
+				assert.NotNil(t, err)
+				assert.Equal(t, tt.expectedError.Type, err.Type)
+			} else {
+				assert.Nil(t, err)
+				assert.Len(t, result, tt.expectedLen)
 			}
 		})
 	}

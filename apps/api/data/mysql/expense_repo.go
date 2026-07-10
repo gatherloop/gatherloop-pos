@@ -125,3 +125,35 @@ func (repo Repository) DeleteExpenseById(ctx context.Context, id int64) *domain.
 	result := db.Clauses(clause.OnConflict{UpdateAll: true}).Table("expenses").Where("id = ?", id).Update("deleted_at", currentTime)
 	return ToErrorCtx(ctx, result.Error, "DeleteExpenseById")
 }
+
+func (repo Repository) GetExpenseStatistics(ctx context.Context, groupBy string, startDate *time.Time, endDate *time.Time) ([]domain.ExpenseStatistic, *domain.Error) {
+	db := GetDbFromCtx(ctx, repo.db)
+
+	dateFormat := ""
+
+	if groupBy == "date" {
+		dateFormat = "%d-%m-%Y"
+	} else {
+		dateFormat = "%m-%Y"
+	}
+
+	groupExpr := fmt.Sprintf("DATE_FORMAT(e.created_at, '%s')", dateFormat)
+
+	query := db.Table("expenses e").
+		Select(fmt.Sprintf("%s as date, e.budget_id as budget_id, b.name as budget_name, SUM(e.total) as total", groupExpr)).
+		Joins("JOIN budgets b ON b.id = e.budget_id").
+		Where("e.deleted_at is NULL")
+
+	if startDate != nil {
+		query = query.Where("e.created_at >= ?", *startDate)
+	}
+
+	if endDate != nil {
+		query = query.Where("e.created_at < ?", endDate.AddDate(0, 0, 1))
+	}
+
+	var expenseStatistics []ExpenseStatistic
+	result := query.Group(fmt.Sprintf("%s, e.budget_id", groupExpr)).Order("MIN(e.created_at) ASC, b.name ASC").Find(&expenseStatistics)
+
+	return ToExpenseStatisticsListDomain(expenseStatistics), ToErrorCtx(ctx, result.Error, "GetExpenseStatistics")
+}

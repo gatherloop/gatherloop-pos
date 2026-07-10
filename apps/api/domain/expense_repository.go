@@ -4,6 +4,7 @@ package domain
 
 import (
 	"context"
+	"time"
 )
 
 type ExpenseRepository interface {
@@ -14,4 +15,5 @@ type ExpenseRepository interface {
 	CreateExpense(ctx context.Context, expense Expense) (Expense, *Error)
 	UpdateExpenseById(ctx context.Context, expense Expense, id int64) (Expense, *Error)
 	DeleteExpenseById(ctx context.Context, id int64) *Error
+	GetExpenseStatistics(ctx context.Context, groupBy string, startDate *time.Time, endDate *time.Time) ([]ExpenseStatistic, *Error)
 }

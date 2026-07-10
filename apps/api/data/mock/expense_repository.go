@@ -13,6 +13,7 @@ import (
 	domain "apps/api/domain"
 	context "context"
 	reflect "reflect"
+	time "time"
 
 	gomock "go.uber.org/mock/gomock"
 )
@@ -127,6 +128,21 @@ func (m *MockExpenseRepository) GetExpenseListTotal(ctx context.Context, query s
 func (mr *MockExpenseRepositoryMockRecorder) GetExpenseListTotal(ctx, query, walletId, budgetId any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetExpenseListTotal", reflect.TypeOf((*MockExpenseRepository)(nil).GetExpenseListTotal), ctx, query, walletId, budgetId)
+}
+
+// GetExpenseStatistics mocks base method.
+func (m *MockExpenseRepository) GetExpenseStatistics(ctx context.Context, groupBy string, startDate, endDate *time.Time) ([]domain.ExpenseStatistic, *domain.Error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetExpenseStatistics", ctx, groupBy, startDate, endDate)
+	ret0, _ := ret[0].([]domain.ExpenseStatistic)
+	ret1, _ := ret[1].(*domain.Error)
+	return ret0, ret1
+}
+
+// GetExpenseStatistics indicates an expected call of GetExpenseStatistics.
+func (mr *MockExpenseRepositoryMockRecorder) GetExpenseStatistics(ctx, groupBy, startDate, endDate any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetExpenseStatistics", reflect.TypeOf((*MockExpenseRepository)(nil).GetExpenseStatistics), ctx, groupBy, startDate, endDate)
 }
 
 // UpdateExpenseById mocks base method.
