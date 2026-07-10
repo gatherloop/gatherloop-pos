@@ -4,11 +4,14 @@ import userEvent from '@testing-library/user-event';
 import { DashboardHandler } from './DashboardHandler';
 import {
   MockAuthRepository,
+  MockExpenseRepository,
+  MockExpenseStatisticListQueryRepository,
   MockTransactionRepository,
   MockTransactionStatisticListQueryRepository,
 } from '../../data/mock';
 import {
   AuthLogoutUsecase,
+  ExpenseStatisticListUsecase,
   TransactionStatisticListUsecase,
 } from '../../domain';
 import { flushPromises } from '../../utils/testUtils';
@@ -33,6 +36,11 @@ const createProps = (
       new MockTransactionStatisticListQueryRepository(),
       { transactionStatistics: [] }
     ),
+    expenseStatisticListUsecase: new ExpenseStatisticListUsecase(
+      new MockExpenseRepository(),
+      new MockExpenseStatisticListQueryRepository(),
+      { expenseStatistics: [] }
+    ),
   };
 };
 
@@ -52,6 +60,10 @@ describe('DashboardHandler', () => {
 
     expect(
       screen.getByRole('heading', { name: 'Transaction Statistic' })
+    ).toBeTruthy();
+
+    expect(
+      screen.getByRole('heading', { name: 'Expense Statistic' })
     ).toBeTruthy();
   });
 

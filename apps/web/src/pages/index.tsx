@@ -1,8 +1,10 @@
 import {
+  ApiExpenseRepository,
   ApiTransactionRepository,
   getUrlFromCtx,
   DashboardApp,
   DashboardAppProps,
+  UrlExpenseStatisticListQueryRepository,
   UrlTransactionStatisticListQueryRepository,
 } from '@gatherloop-pos/ui';
 import { GetServerSideProps } from 'next';
@@ -23,6 +25,9 @@ export const getServerSideProps: GetServerSideProps<
   const transactionRepository = new ApiTransactionRepository(client);
   const transactionStatisticListQueryRepository =
     new UrlTransactionStatisticListQueryRepository();
+  const expenseRepository = new ApiExpenseRepository(client);
+  const expenseStatisticListQueryRepository =
+    new UrlExpenseStatisticListQueryRepository();
 
   const groupBy = transactionStatisticListQueryRepository.getGroupBy(url);
   const preset = transactionStatisticListQueryRepository.getPreset(url);
@@ -34,6 +39,22 @@ export const getServerSideProps: GetServerSideProps<
       { headers: { Cookie: ctx.req.headers.cookie } }
     );
 
+  const expenseView = expenseStatisticListQueryRepository.getView(url);
+  const expenseGroupBy = expenseStatisticListQueryRepository.getGroupBy(url);
+  const expensePreset = expenseStatisticListQueryRepository.getPreset(url);
+  const expenseStartDate =
+    expenseStatisticListQueryRepository.getStartDate(url);
+  const expenseEndDate = expenseStatisticListQueryRepository.getEndDate(url);
+  const expenseStatistics =
+    await expenseRepository.fetchExpenseStatisticList(
+      {
+        groupBy: expenseGroupBy,
+        startDate: expenseStartDate,
+        endDate: expenseEndDate,
+      },
+      { headers: { Cookie: ctx.req.headers.cookie } }
+    );
+
   return {
     props: {
       transactionStatisticListParams: {
@@ -42,6 +63,14 @@ export const getServerSideProps: GetServerSideProps<
         preset,
         startDate,
         endDate,
+      },
+      expenseStatisticListParams: {
+        expenseStatistics,
+        view: expenseView,
+        groupBy: expenseGroupBy,
+        preset: expensePreset,
+        startDate: expenseStartDate,
+        endDate: expenseEndDate,
       },
     },
   };
