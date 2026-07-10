@@ -26,6 +26,8 @@ import {
   ExpenseUpdate,
   DashboardApp,
   DEFAULT_TRANSACTION_STATISTIC_PRESET,
+  DEFAULT_EXPENSE_STATISTIC_PRESET,
+  DEFAULT_EXPENSE_STATISTIC_VIEW,
   getDateRangeForPreset,
   AuthLogin,
   CalculationList,
@@ -264,17 +266,28 @@ export const App = () => {
           <Stack.Screen
             name="dashboard"
             component={() => {
-              const defaultRange = getDateRangeForPreset(
+              const defaultTransactionRange = getDateRangeForPreset(
                 DEFAULT_TRANSACTION_STATISTIC_PRESET
+              );
+              const defaultExpenseRange = getDateRangeForPreset(
+                DEFAULT_EXPENSE_STATISTIC_PRESET
               );
               return (
                 <DashboardApp
                   transactionStatisticListParams={{
                     transactionStatistics: [],
                     preset: DEFAULT_TRANSACTION_STATISTIC_PRESET,
-                    groupBy: defaultRange.groupBy,
-                    startDate: defaultRange.startDate,
-                    endDate: defaultRange.endDate,
+                    groupBy: defaultTransactionRange.groupBy,
+                    startDate: defaultTransactionRange.startDate,
+                    endDate: defaultTransactionRange.endDate,
+                  }}
+                  expenseStatisticListParams={{
+                    expenseStatistics: [],
+                    view: DEFAULT_EXPENSE_STATISTIC_VIEW,
+                    preset: DEFAULT_EXPENSE_STATISTIC_PRESET,
+                    groupBy: defaultExpenseRange.groupBy,
+                    startDate: defaultExpenseRange.startDate,
+                    endDate: defaultExpenseRange.endDate,
                   }}
                 />
               );
