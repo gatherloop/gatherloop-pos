@@ -70,28 +70,17 @@ func TestExpenseUsecase_CreateExpense(t *testing.T) {
 		expectedError *domain.Error
 	}{
 		{
-			name:  "success",
-			input: domain.Expense{Total: 100, BudgetId: 1, WalletId: 1},
-			setupMock: func(expRepo *mock.MockExpenseRepository, budgetRepo *mock.MockBudgetRepository, walletRepo *mock.MockWalletRepository) {
-				expRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
-					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
-				budgetRepo.EXPECT().GetBudgetById(gomock.Any(), int64(1)).Return(domain.Budget{Id: 1, Balance: 500}, nil)
-				budgetRepo.EXPECT().UpdateBudgetById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Budget{}, nil)
-				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, Balance: 500}, nil)
-				walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
-				expRepo.EXPECT().CreateExpense(gomock.Any(), gomock.Any()).Return(domain.Expense{Id: 1, Total: 100}, nil)
-			},
-			expectedId: 1,
-		},
-		{
-			name:  "budget balance insufficient",
+			name:  "success — expense exceeding budget's old balance is still accepted",
 			input: domain.Expense{Total: 1000, BudgetId: 1, WalletId: 1},
 			setupMock: func(expRepo *mock.MockExpenseRepository, budgetRepo *mock.MockBudgetRepository, walletRepo *mock.MockWalletRepository) {
 				expRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
-				budgetRepo.EXPECT().GetBudgetById(gomock.Any(), int64(1)).Return(domain.Budget{Id: 1, Balance: 50}, nil)
+				budgetRepo.EXPECT().GetBudgetById(gomock.Any(), int64(1)).Return(domain.Budget{Id: 1}, nil)
+				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, Balance: 5000}, nil)
+				walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
+				expRepo.EXPECT().CreateExpense(gomock.Any(), gomock.Any()).Return(domain.Expense{Id: 1, Total: 1000}, nil)
 			},
-			expectedError: &domain.Error{Type: domain.BadRequest},
+			expectedId: 1,
 		},
 		{
 			name:  "wallet balance insufficient",
@@ -99,8 +88,7 @@ func TestExpenseUsecase_CreateExpense(t *testing.T) {
 			setupMock: func(expRepo *mock.MockExpenseRepository, budgetRepo *mock.MockBudgetRepository, walletRepo *mock.MockWalletRepository) {
 				expRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
-				budgetRepo.EXPECT().GetBudgetById(gomock.Any(), int64(1)).Return(domain.Budget{Id: 1, Balance: 1000}, nil)
-				budgetRepo.EXPECT().UpdateBudgetById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Budget{}, nil)
+				budgetRepo.EXPECT().GetBudgetById(gomock.Any(), int64(1)).Return(domain.Budget{Id: 1}, nil)
 				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, Balance: 10}, nil)
 			},
 			expectedError: &domain.Error{Type: domain.BadRequest},
@@ -112,6 +100,17 @@ func TestExpenseUsecase_CreateExpense(t *testing.T) {
 				expRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				budgetRepo.EXPECT().GetBudgetById(gomock.Any(), int64(99)).Return(domain.Budget{}, &domain.Error{Type: domain.NotFound})
+			},
+			expectedError: &domain.Error{Type: domain.NotFound},
+		},
+		{
+			name:  "budget soft-deleted",
+			input: domain.Expense{Total: 100, BudgetId: 1, WalletId: 1},
+			setupMock: func(expRepo *mock.MockExpenseRepository, budgetRepo *mock.MockBudgetRepository, walletRepo *mock.MockWalletRepository) {
+				expRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				deletedAt := time.Now()
+				budgetRepo.EXPECT().GetBudgetById(gomock.Any(), int64(1)).Return(domain.Budget{Id: 1, DeletedAt: &deletedAt}, nil)
 			},
 			expectedError: &domain.Error{Type: domain.NotFound},
 		},
@@ -141,6 +140,110 @@ func TestExpenseUsecase_CreateExpense(t *testing.T) {
 	}
 }
 
+func TestExpenseUsecase_UpdateExpenseById(t *testing.T) {
+	tests := []struct {
+		name          string
+		id            int64
+		input         domain.Expense
+		setupMock     func(expRepo *mock.MockExpenseRepository, budgetRepo *mock.MockBudgetRepository, walletRepo *mock.MockWalletRepository)
+		expectedTotal float32
+		expectedError *domain.Error
+	}{
+		{
+			name:  "success — total exceeding budget's old balance is still accepted",
+			id:    1,
+			input: domain.Expense{Total: 1000, BudgetId: 2, WalletId: 1},
+			setupMock: func(expRepo *mock.MockExpenseRepository, budgetRepo *mock.MockBudgetRepository, walletRepo *mock.MockWalletRepository) {
+				existing := domain.Expense{Id: 1, Total: 100, BudgetId: 1, WalletId: 1}
+				expRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				expRepo.EXPECT().GetExpenseById(gomock.Any(), int64(1)).Return(existing, nil)
+				budgetRepo.EXPECT().GetBudgetById(gomock.Any(), int64(2)).Return(domain.Budget{Id: 2}, nil)
+				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, Balance: 2000}, nil).Times(2)
+				walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil).Times(2)
+				expRepo.EXPECT().UpdateExpenseById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Expense{Id: 1, Total: 1000}, nil)
+			},
+			expectedTotal: 1000,
+		},
+		{
+			name:  "expense not found",
+			id:    99,
+			input: domain.Expense{Total: 100, BudgetId: 1, WalletId: 1},
+			setupMock: func(expRepo *mock.MockExpenseRepository, budgetRepo *mock.MockBudgetRepository, walletRepo *mock.MockWalletRepository) {
+				expRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				expRepo.EXPECT().GetExpenseById(gomock.Any(), int64(99)).Return(domain.Expense{}, &domain.Error{Type: domain.NotFound})
+			},
+			expectedError: &domain.Error{Type: domain.NotFound},
+		},
+		{
+			name:  "new budget not found",
+			id:    1,
+			input: domain.Expense{Total: 100, BudgetId: 99, WalletId: 1},
+			setupMock: func(expRepo *mock.MockExpenseRepository, budgetRepo *mock.MockBudgetRepository, walletRepo *mock.MockWalletRepository) {
+				existing := domain.Expense{Id: 1, Total: 100, BudgetId: 1, WalletId: 1}
+				expRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				expRepo.EXPECT().GetExpenseById(gomock.Any(), int64(1)).Return(existing, nil)
+				budgetRepo.EXPECT().GetBudgetById(gomock.Any(), int64(99)).Return(domain.Budget{}, &domain.Error{Type: domain.NotFound})
+			},
+			expectedError: &domain.Error{Type: domain.NotFound},
+		},
+		{
+			name:  "new budget soft-deleted",
+			id:    1,
+			input: domain.Expense{Total: 100, BudgetId: 2, WalletId: 1},
+			setupMock: func(expRepo *mock.MockExpenseRepository, budgetRepo *mock.MockBudgetRepository, walletRepo *mock.MockWalletRepository) {
+				existing := domain.Expense{Id: 1, Total: 100, BudgetId: 1, WalletId: 1}
+				expRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				expRepo.EXPECT().GetExpenseById(gomock.Any(), int64(1)).Return(existing, nil)
+				deletedAt := time.Now()
+				budgetRepo.EXPECT().GetBudgetById(gomock.Any(), int64(2)).Return(domain.Budget{Id: 2, DeletedAt: &deletedAt}, nil)
+			},
+			expectedError: &domain.Error{Type: domain.NotFound},
+		},
+		{
+			name:  "wallet balance insufficient",
+			id:    1,
+			input: domain.Expense{Total: 5000, BudgetId: 1, WalletId: 1},
+			setupMock: func(expRepo *mock.MockExpenseRepository, budgetRepo *mock.MockBudgetRepository, walletRepo *mock.MockWalletRepository) {
+				existing := domain.Expense{Id: 1, Total: 100, BudgetId: 1, WalletId: 1}
+				expRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				expRepo.EXPECT().GetExpenseById(gomock.Any(), int64(1)).Return(existing, nil)
+				budgetRepo.EXPECT().GetBudgetById(gomock.Any(), int64(1)).Return(domain.Budget{Id: 1}, nil)
+				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, Balance: 500}, nil).Times(2)
+				walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
+			},
+			expectedError: &domain.Error{Type: domain.BadRequest},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			expRepo := mock.NewMockExpenseRepository(ctrl)
+			budgetRepo := mock.NewMockBudgetRepository(ctrl)
+			walletRepo := mock.NewMockWalletRepository(ctrl)
+			tt.setupMock(expRepo, budgetRepo, walletRepo)
+
+			usecase := domain.NewExpenseUsecase(expRepo, budgetRepo, walletRepo)
+			expense, err := usecase.UpdateExpenseById(context.Background(), tt.input, tt.id)
+
+			if tt.expectedError != nil {
+				assert.NotNil(t, err)
+				assert.Equal(t, tt.expectedError.Type, err.Type)
+			} else {
+				assert.Nil(t, err)
+				assert.Equal(t, tt.expectedTotal, expense.Total)
+			}
+		})
+	}
+}
+
 func TestExpenseUsecase_DeleteExpenseById(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -149,15 +252,13 @@ func TestExpenseUsecase_DeleteExpenseById(t *testing.T) {
 		expectedError *domain.Error
 	}{
 		{
-			name: "success — refunds budget and wallet",
+			name: "success — refunds wallet only, budget is untouched",
 			id:   1,
 			setupMock: func(expRepo *mock.MockExpenseRepository, budgetRepo *mock.MockBudgetRepository, walletRepo *mock.MockWalletRepository) {
 				existing := domain.Expense{Id: 1, Total: 200, BudgetId: 1, WalletId: 1}
 				expRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				expRepo.EXPECT().GetExpenseById(gomock.Any(), int64(1)).Return(existing, nil)
-				budgetRepo.EXPECT().GetBudgetById(gomock.Any(), int64(1)).Return(domain.Budget{Id: 1, Balance: 300}, nil)
-				budgetRepo.EXPECT().UpdateBudgetById(gomock.Any(), domain.Budget{Balance: 500}, int64(1)).Return(domain.Budget{}, nil)
 				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, Balance: 800, Name: "Cash"}, nil)
 				walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
 				expRepo.EXPECT().DeleteExpenseById(gomock.Any(), int64(1)).Return(nil)
