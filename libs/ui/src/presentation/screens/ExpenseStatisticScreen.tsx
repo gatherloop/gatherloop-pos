@@ -3,8 +3,13 @@ import {
   ExpenseStatistic,
   ExpenseStatisticDateRangeChange,
   ExpenseStatisticSeriesPoints,
+  ExpenseVarianceList,
 } from '../components';
-import { ExpenseStatisticView, TransactionStatisticPreset } from '../../domain';
+import {
+  ExpenseStatisticView,
+  ExpenseVarianceRow,
+  TransactionStatisticPreset,
+} from '../../domain';
 
 export type ExpenseStatisticScreenProps = {
   onViewChange: (view: ExpenseStatisticView) => void;
@@ -19,6 +24,10 @@ export type ExpenseStatisticScreenProps = {
   preset: TransactionStatisticPreset;
   startDate: string | null;
   endDate: string | null;
+  varianceRows: ExpenseVarianceRow[];
+  totalRevenue: number;
+  totalExpense: number;
+  unspentPercentage: number | null;
 };
 
 export const ExpenseStatisticScreen = (props: ExpenseStatisticScreenProps) => {
@@ -39,6 +48,14 @@ export const ExpenseStatisticScreen = (props: ExpenseStatisticScreenProps) => {
         startDate={props.startDate}
         endDate={props.endDate}
       />
+      {props.variant.type === 'loaded' ? (
+        <ExpenseVarianceList
+          rows={props.varianceRows}
+          totalRevenue={props.totalRevenue}
+          totalExpense={props.totalExpense}
+          unspentPercentage={props.unspentPercentage}
+        />
+      ) : null}
     </YStack>
   );
 };

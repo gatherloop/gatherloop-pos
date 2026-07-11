@@ -1,4 +1,5 @@
 import {
+  ApiBudgetRepository,
   ApiExpenseRepository,
   ApiTransactionRepository,
   getUrlFromCtx,
@@ -28,6 +29,7 @@ export const getServerSideProps: GetServerSideProps<
   const expenseRepository = new ApiExpenseRepository(client);
   const expenseStatisticListQueryRepository =
     new UrlExpenseStatisticListQueryRepository();
+  const budgetRepository = new ApiBudgetRepository(client);
 
   const groupBy = transactionStatisticListQueryRepository.getGroupBy(url);
   const preset = transactionStatisticListQueryRepository.getPreset(url);
@@ -55,6 +57,21 @@ export const getServerSideProps: GetServerSideProps<
       { headers: { Cookie: ctx.req.headers.cookie } }
     );
 
+  // Revenue for the same period as the expense widget, powering its target
+  // vs. actual variance report.
+  const expenseRevenueStatistics =
+    await transactionRepository.fetchTransactionStatisticList(
+      {
+        groupBy: expenseGroupBy,
+        startDate: expenseStartDate,
+        endDate: expenseEndDate,
+      },
+      { headers: { Cookie: ctx.req.headers.cookie } }
+    );
+  const budgets = await budgetRepository.fetchBudgetList({
+    headers: { Cookie: ctx.req.headers.cookie },
+  });
+
   return {
     props: {
       transactionStatisticListParams: {
@@ -72,6 +89,14 @@ export const getServerSideProps: GetServerSideProps<
         startDate: expenseStartDate,
         endDate: expenseEndDate,
       },
+      expenseRevenueStatisticListParams: {
+        transactionStatistics: expenseRevenueStatistics,
+        groupBy: expenseGroupBy,
+        preset: expensePreset,
+        startDate: expenseStartDate,
+        endDate: expenseEndDate,
+      },
+      budgetListParams: { budgets },
     },
   };
 };

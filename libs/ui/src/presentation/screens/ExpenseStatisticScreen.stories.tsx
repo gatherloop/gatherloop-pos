@@ -29,6 +29,27 @@ const mockCombinedStatistics = [
   { x: '2024-03', y: 18800000 },
 ];
 
+const mockVarianceRows = [
+  {
+    budgetId: 1,
+    budgetName: 'Operational',
+    targetPercentage: 25,
+    actualAmount: 16000000,
+    actualPercentage: 20,
+    deltaPercentage: -5,
+    isOverTarget: false,
+  },
+  {
+    budgetId: 2,
+    budgetName: 'Restock',
+    targetPercentage: 30,
+    actualAmount: 35500000,
+    actualPercentage: 44.4,
+    deltaPercentage: 14.4,
+    isOverTarget: true,
+  },
+];
+
 const defaultArgs = {
   onViewChange: fn(),
   onGroupByChange: fn(),
@@ -41,6 +62,10 @@ const defaultArgs = {
   preset: 'last12Months' as const,
   startDate: '2024-01-01',
   endDate: '2024-03-31',
+  varianceRows: mockVarianceRows,
+  totalRevenue: 80000000,
+  totalExpense: 51500000,
+  unspentPercentage: 35.6,
 };
 
 const meta: Meta<typeof ExpenseStatisticScreen> = {

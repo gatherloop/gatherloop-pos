@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { DashboardHandler } from './DashboardHandler';
 import {
   MockAuthRepository,
+  MockBudgetRepository,
   MockExpenseRepository,
   MockExpenseStatisticListQueryRepository,
   MockTransactionRepository,
@@ -11,6 +12,7 @@ import {
 } from '../../data/mock';
 import {
   AuthLogoutUsecase,
+  BudgetListUsecase,
   ExpenseStatisticListUsecase,
   TransactionStatisticListUsecase,
 } from '../../domain';
@@ -41,6 +43,14 @@ const createProps = (
       new MockExpenseStatisticListQueryRepository(),
       { expenseStatistics: [] }
     ),
+    expenseRevenueStatisticListUsecase: new TransactionStatisticListUsecase(
+      new MockTransactionRepository(),
+      new MockTransactionStatisticListQueryRepository(),
+      { transactionStatistics: [] }
+    ),
+    budgetListUsecase: new BudgetListUsecase(new MockBudgetRepository(), {
+      budgets: [],
+    }),
   };
 };
 
