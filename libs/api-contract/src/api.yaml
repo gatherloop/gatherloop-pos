@@ -3242,7 +3242,6 @@ components:
         - id
         - name
         - percentage
-        - balance
         - createdAt
       properties:
         id:
@@ -3252,8 +3251,11 @@ components:
           type: string
         percentage:
           type: number
-        balance:
-          type: number
+          description: >-
+            Target spend for this budget as a percentage of revenue over the
+            reporting period. 0 means no target. Not required to sum to 100
+            across budgets — the remainder is the implied target profit
+            margin.
         deletedAt:
           type: string
           format: date-time
@@ -3265,14 +3267,16 @@ components:
       required:
         - name
         - percentage
-        - balance
       properties:
         name:
           type: string
         percentage:
           type: number
-        balance:
-          type: number
+          description: >-
+            Target spend for this budget as a percentage of revenue over the
+            reporting period. 0 means no target. Not required to sum to 100
+            across budgets — the remainder is the implied target profit
+            margin.
     Transaction:
       type: object
       required:

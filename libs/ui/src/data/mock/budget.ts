@@ -7,14 +7,12 @@ export class MockBudgetRepository implements BudgetRepository {
       id: 1,
       name: 'Mock Budget 1',
       percentage: 30,
-      balance: 500,
       createdAt: '2024-03-20T00:00:00.000Z',
     },
     {
       id: 2,
       name: 'Mock Budget 2',
       percentage: 20,
-      balance: 300,
       createdAt: '2024-03-21T00:00:00.000Z',
     },
   ];
@@ -36,14 +34,12 @@ export class MockBudgetRepository implements BudgetRepository {
         id: 1,
         name: 'Mock Budget 1',
         percentage: 30,
-        balance: 500,
         createdAt: '2024-03-20T00:00:00.000Z',
       },
       {
         id: 2,
         name: 'Mock Budget 2',
         percentage: 20,
-        balance: 300,
         createdAt: '2024-03-21T00:00:00.000Z',
       },
     ];

@@ -7,7 +7,6 @@ const meta: Meta<typeof BudgetListItem> = {
   args: {
     id: 1,
     name: 'Raw Materials',
-    balance: 1500000,
     percentage: 30,
   },
 };
@@ -21,16 +20,14 @@ export const Marketing: Story = {
   args: {
     id: 2,
     name: 'Marketing',
-    balance: 1000000,
     percentage: 20,
   },
 };
 
-export const LowBalance: Story = {
+export const NoTarget: Story = {
   args: {
     id: 3,
     name: 'Operations',
-    balance: 50000,
-    percentage: 5,
+    percentage: 0,
   },
 };

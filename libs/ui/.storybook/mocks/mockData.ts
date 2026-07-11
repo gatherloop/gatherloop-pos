@@ -261,7 +261,6 @@ export const mockBudget: Budget = {
   id: 1,
   name: 'Raw Materials',
   percentage: 30,
-  balance: 1500000,
   createdAt: '2024-01-15T08:00:00.000Z',
 };
 
@@ -271,14 +270,12 @@ export const mockBudgets: Budget[] = [
     id: 2,
     name: 'Marketing',
     percentage: 20,
-    balance: 1000000,
     createdAt: '2024-01-16T08:00:00.000Z',
   },
   {
     id: 3,
     name: 'Operations',
     percentage: 15,
-    balance: 750000,
     createdAt: '2024-01-17T08:00:00.000Z',
   },
 ];

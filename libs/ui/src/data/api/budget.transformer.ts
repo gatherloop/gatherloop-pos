@@ -7,7 +7,6 @@ export function toBudget(budget: ApiBudget): Budget {
     id: budget.id,
     createdAt: budget.createdAt,
     name: budget.name,
-    balance: budget.balance,
     percentage: budget.percentage,
   };
 }
