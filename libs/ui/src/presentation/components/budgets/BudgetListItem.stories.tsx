@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { fn } from '@storybook/test';
 import { BudgetListItem } from './BudgetListItem';
 
 const meta: Meta<typeof BudgetListItem> = {
@@ -8,6 +9,7 @@ const meta: Meta<typeof BudgetListItem> = {
     id: 1,
     name: 'Raw Materials',
     percentage: 30,
+    onEditMenuPress: fn(),
   },
 };
 

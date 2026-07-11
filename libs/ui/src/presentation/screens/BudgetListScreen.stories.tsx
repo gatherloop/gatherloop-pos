@@ -12,6 +12,8 @@ const mockBudgetItems = mockBudgets.map((b) => ({
 const defaultArgs = {
   onLogoutPress: fn(),
   onRetryButtonPress: fn(),
+  onEditMenuPress: fn(),
+  onItemPress: fn(),
 };
 
 const meta: Meta<typeof BudgetListScreen> = {

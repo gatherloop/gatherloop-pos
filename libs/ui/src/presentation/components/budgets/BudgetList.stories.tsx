@@ -14,6 +14,8 @@ const meta: Meta<typeof BudgetList> = {
   component: BudgetList,
   args: {
     onRetryButtonPress: fn(),
+    onEditMenuPress: fn(),
+    onItemPress: fn(),
   },
 };
 
