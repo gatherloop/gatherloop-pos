@@ -21,8 +21,8 @@ func TestBudgetUsecase_GetBudgetList(t *testing.T) {
 			name: "success",
 			setupMock: func(r *mock.MockBudgetRepository) {
 				r.EXPECT().GetBudgetList(gomock.Any()).Return([]domain.Budget{
-					{Id: 1, Name: "Operations", Balance: 500},
-					{Id: 2, Name: "Marketing", Balance: 300},
+					{Id: 1, Name: "Operations", Percentage: 25},
+					{Id: 2, Name: "Marketing", Percentage: 10},
 				}, nil)
 			},
 			expectedLen: 2,
@@ -70,7 +70,7 @@ func TestBudgetUsecase_GetBudgetById(t *testing.T) {
 			name: "success",
 			id:   1,
 			setupMock: func(r *mock.MockBudgetRepository) {
-				r.EXPECT().GetBudgetById(gomock.Any(), int64(1)).Return(domain.Budget{Id: 1, Name: "Operations", Balance: 500}, nil)
+				r.EXPECT().GetBudgetById(gomock.Any(), int64(1)).Return(domain.Budget{Id: 1, Name: "Operations", Percentage: 25}, nil)
 			},
 			expectedName: "Operations",
 		},
@@ -156,26 +156,26 @@ func TestBudgetUsecase_CreateBudget(t *testing.T) {
 
 func TestBudgetUsecase_UpdateBudgetById(t *testing.T) {
 	tests := []struct {
-		name            string
-		id              int64
-		input           domain.Budget
-		setupMock       func(r *mock.MockBudgetRepository)
-		expectedBalance float32
-		expectedError   *domain.Error
+		name               string
+		id                 int64
+		input              domain.Budget
+		setupMock          func(r *mock.MockBudgetRepository)
+		expectedPercentage float32
+		expectedError      *domain.Error
 	}{
 		{
 			name:  "success",
 			id:    1,
-			input: domain.Budget{Balance: 1000},
+			input: domain.Budget{Percentage: 25},
 			setupMock: func(r *mock.MockBudgetRepository) {
-				r.EXPECT().UpdateBudgetById(gomock.Any(), domain.Budget{Balance: 1000}, int64(1)).Return(domain.Budget{Id: 1, Balance: 1000}, nil)
+				r.EXPECT().UpdateBudgetById(gomock.Any(), domain.Budget{Percentage: 25}, int64(1)).Return(domain.Budget{Id: 1, Percentage: 25}, nil)
 			},
-			expectedBalance: 1000,
+			expectedPercentage: 25,
 		},
 		{
 			name:  "not found",
 			id:    99,
-			input: domain.Budget{Balance: 1000},
+			input: domain.Budget{Percentage: 25},
 			setupMock: func(r *mock.MockBudgetRepository) {
 				r.EXPECT().UpdateBudgetById(gomock.Any(), gomock.Any(), int64(99)).Return(domain.Budget{}, &domain.Error{Type: domain.NotFound})
 			},
@@ -199,7 +199,7 @@ func TestBudgetUsecase_UpdateBudgetById(t *testing.T) {
 				assert.Equal(t, tt.expectedError.Type, err.Type)
 			} else {
 				assert.Nil(t, err)
-				assert.Equal(t, tt.expectedBalance, budget.Balance)
+				assert.Equal(t, tt.expectedPercentage, budget.Percentage)
 			}
 		})
 	}

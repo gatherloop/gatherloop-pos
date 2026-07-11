@@ -39,7 +39,6 @@ func ToApiBudget(budget domain.Budget) apiContract.Budget {
 		Id:         budget.Id,
 		Name:       budget.Name,
 		Percentage: budget.Percentage,
-		Balance:    budget.Balance,
 		DeletedAt:  budget.DeletedAt,
 		CreatedAt:  budget.CreatedAt,
 	}
@@ -49,6 +48,5 @@ func ToBudget(budgetRequest apiContract.BudgetRequest) domain.Budget {
 	return domain.Budget{
 		Name:       budgetRequest.Name,
 		Percentage: budgetRequest.Percentage,
-		Balance:    budgetRequest.Balance,
 	}
 }

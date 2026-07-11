@@ -7,7 +7,6 @@ func ToBudgetDB(domainBudget domain.Budget) Budget {
 		Id:         domainBudget.Id,
 		Name:       domainBudget.Name,
 		Percentage: domainBudget.Percentage,
-		Balance:    domainBudget.Balance,
 		DeletedAt:  domainBudget.DeletedAt,
 		CreatedAt:  domainBudget.CreatedAt,
 	}
@@ -18,7 +17,6 @@ func ToBudgetDomain(dbBudget Budget) domain.Budget {
 		Id:         dbBudget.Id,
 		Name:       dbBudget.Name,
 		Percentage: dbBudget.Percentage,
-		Balance:    dbBudget.Balance,
 		DeletedAt:  dbBudget.DeletedAt,
 		CreatedAt:  dbBudget.CreatedAt,
 	}

@@ -254,14 +254,14 @@ export const budgetList = {
   /** A budget list item identified by its name heading */
   budgetItem: (page: Page, name: string) =>
     page.locator('h4').filter({ hasText: name }).first(),
-  /** Balance text for a budget (rendered as subtitle paragraph below the H4) */
-  budgetBalance: (page: Page, name: string) =>
+  /** Target percentage text for a budget (rendered as a footer item) */
+  budgetTargetPercentage: (page: Page, name: string) =>
     page
       .locator('h4')
       .filter({ hasText: name })
-      .locator('..')
+      .locator('../..')
       .locator('p')
-      .first(),
+      .last(),
 };
 
 // ---------------------------------------------------------------------------

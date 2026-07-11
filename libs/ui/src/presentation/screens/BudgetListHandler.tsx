@@ -29,7 +29,6 @@ export const BudgetListHandler = ({
           type: budgets.length > 0 ? 'loaded' : 'empty',
           items: budgets.map((budget) => ({
             name: budget.name,
-            balance: budget.balance,
             id: budget.id,
             percentage: budget.percentage,
           })),
