@@ -289,6 +289,13 @@ export const App = () => {
                     startDate: defaultExpenseRange.startDate,
                     endDate: defaultExpenseRange.endDate,
                   }}
+                  expenseRevenueStatisticListParams={{
+                    transactionStatistics: [],
+                    preset: DEFAULT_EXPENSE_STATISTIC_PRESET,
+                    groupBy: defaultExpenseRange.groupBy,
+                    startDate: defaultExpenseRange.startDate,
+                    endDate: defaultExpenseRange.endDate,
+                  }}
                 />
               );
             }}
