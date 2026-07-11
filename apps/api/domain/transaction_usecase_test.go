@@ -18,12 +18,11 @@ func int64Ptr(v int64) *int64 { return &v }
 // tests: BeginTransaction passthrough, GetTransactionById returning the
 // existing transaction, and UpdateTransactionById echoing back whatever the
 // usecase saved (so callers can assert on the resulting items/coupons/total).
-func setupUpdateTransactionMocks(ctrl *gomock.Controller, id int64, existing domain.Transaction) (*mock.MockTransactionRepository, *mock.MockVariantRepository, *mock.MockCouponRepository, *mock.MockWalletRepository, *mock.MockBudgetRepository) {
+func setupUpdateTransactionMocks(ctrl *gomock.Controller, id int64, existing domain.Transaction) (*mock.MockTransactionRepository, *mock.MockVariantRepository, *mock.MockCouponRepository, *mock.MockWalletRepository) {
 	txRepo := mock.NewMockTransactionRepository(ctrl)
 	variantRepo := mock.NewMockVariantRepository(ctrl)
 	couponRepo := mock.NewMockCouponRepository(ctrl)
 	walletRepo := mock.NewMockWalletRepository(ctrl)
-	budgetRepo := mock.NewMockBudgetRepository(ctrl)
 
 	txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
@@ -33,7 +32,7 @@ func setupUpdateTransactionMocks(ctrl *gomock.Controller, id int64, existing dom
 			return tx, nil
 		}).AnyTimes()
 
-	return txRepo, variantRepo, couponRepo, walletRepo, budgetRepo
+	return txRepo, variantRepo, couponRepo, walletRepo
 }
 
 func TestTransactionUsecase_GetTransactionList(t *testing.T) {
@@ -73,10 +72,9 @@ func TestTransactionUsecase_GetTransactionList(t *testing.T) {
 			variantRepo := mock.NewMockVariantRepository(ctrl)
 			couponRepo := mock.NewMockCouponRepository(ctrl)
 			walletRepo := mock.NewMockWalletRepository(ctrl)
-			budgetRepo := mock.NewMockBudgetRepository(ctrl)
 			tt.setupMock(txRepo)
 
-			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, budgetRepo)
+			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo)
 			transactions, total, err := usecase.GetTransactionList(context.Background(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.All, nil)
 
 			if tt.expectedError != nil {
@@ -156,10 +154,9 @@ func TestTransactionUsecase_CreateTransaction(t *testing.T) {
 			variantRepo := mock.NewMockVariantRepository(ctrl)
 			couponRepo := mock.NewMockCouponRepository(ctrl)
 			walletRepo := mock.NewMockWalletRepository(ctrl)
-			budgetRepo := mock.NewMockBudgetRepository(ctrl)
 			tt.setupMock(txRepo, variantRepo, couponRepo)
 
-			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, budgetRepo)
+			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo)
 			transaction, err := usecase.CreateTransaction(context.Background(), tt.input)
 
 			if tt.expectedError != nil {
@@ -222,10 +219,9 @@ func TestTransactionUsecase_DeleteTransactionById(t *testing.T) {
 			variantRepo := mock.NewMockVariantRepository(ctrl)
 			couponRepo := mock.NewMockCouponRepository(ctrl)
 			walletRepo := mock.NewMockWalletRepository(ctrl)
-			budgetRepo := mock.NewMockBudgetRepository(ctrl)
 			tt.setupMock(txRepo)
 
-			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, budgetRepo)
+			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo)
 			err := usecase.DeleteTransactionById(context.Background(), tt.id)
 
 			if tt.expectedError != nil {
@@ -247,13 +243,13 @@ func TestTransactionUsecase_UnpayTransaction(t *testing.T) {
 	tests := []struct {
 		name          string
 		id            int64
-		setupMock     func(txRepo *mock.MockTransactionRepository, walletRepo *mock.MockWalletRepository, budgetRepo *mock.MockBudgetRepository)
+		setupMock     func(txRepo *mock.MockTransactionRepository, walletRepo *mock.MockWalletRepository)
 		expectedError *domain.Error
 	}{
 		{
-			name: "success — within 24h, refunds wallet and budgets",
+			name: "success — within 24h, refunds wallet",
 			id:   1,
-			setupMock: func(txRepo *mock.MockTransactionRepository, walletRepo *mock.MockWalletRepository, budgetRepo *mock.MockBudgetRepository) {
+			setupMock: func(txRepo *mock.MockTransactionRepository, walletRepo *mock.MockWalletRepository) {
 				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(1)).Return(domain.Transaction{
@@ -263,14 +259,13 @@ func TestTransactionUsecase_UnpayTransaction(t *testing.T) {
 				}, nil)
 				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, Name: "Cash", Balance: 100000, PaymentCostPercentage: 0}, nil)
 				walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
-				budgetRepo.EXPECT().GetBudgetList(gomock.Any()).Return([]domain.Budget{}, nil)
 				txRepo.EXPECT().UnpayTransaction(gomock.Any(), int64(1)).Return(nil)
 			},
 		},
 		{
 			name: "already unpaid",
 			id:   2,
-			setupMock: func(txRepo *mock.MockTransactionRepository, walletRepo *mock.MockWalletRepository, budgetRepo *mock.MockBudgetRepository) {
+			setupMock: func(txRepo *mock.MockTransactionRepository, walletRepo *mock.MockWalletRepository) {
 				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(2)).Return(domain.Transaction{Id: 2, PaidAt: nil}, nil)
@@ -280,7 +275,7 @@ func TestTransactionUsecase_UnpayTransaction(t *testing.T) {
 		{
 			name: "more than 24 hours since creation",
 			id:   3,
-			setupMock: func(txRepo *mock.MockTransactionRepository, walletRepo *mock.MockWalletRepository, budgetRepo *mock.MockBudgetRepository) {
+			setupMock: func(txRepo *mock.MockTransactionRepository, walletRepo *mock.MockWalletRepository) {
 				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(3)).Return(domain.Transaction{
@@ -300,10 +295,9 @@ func TestTransactionUsecase_UnpayTransaction(t *testing.T) {
 			variantRepo := mock.NewMockVariantRepository(ctrl)
 			couponRepo := mock.NewMockCouponRepository(ctrl)
 			walletRepo := mock.NewMockWalletRepository(ctrl)
-			budgetRepo := mock.NewMockBudgetRepository(ctrl)
-			tt.setupMock(txRepo, walletRepo, budgetRepo)
+			tt.setupMock(txRepo, walletRepo)
 
-			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, budgetRepo)
+			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo)
 			err := usecase.UnpayTransaction(context.Background(), tt.id)
 
 			if tt.expectedError != nil {
@@ -322,7 +316,7 @@ func TestTransactionUsecase_PayTransaction(t *testing.T) {
 		id            int64
 		walletId      int64
 		paidAmount    float32
-		setupMock     func(txRepo *mock.MockTransactionRepository, walletRepo *mock.MockWalletRepository, budgetRepo *mock.MockBudgetRepository)
+		setupMock     func(txRepo *mock.MockTransactionRepository, walletRepo *mock.MockWalletRepository)
 		expectedError *domain.Error
 	}{
 		{
@@ -330,7 +324,7 @@ func TestTransactionUsecase_PayTransaction(t *testing.T) {
 			id:         1,
 			walletId:   1,
 			paidAmount: 30000,
-			setupMock: func(txRepo *mock.MockTransactionRepository, walletRepo *mock.MockWalletRepository, budgetRepo *mock.MockBudgetRepository) {
+			setupMock: func(txRepo *mock.MockTransactionRepository, walletRepo *mock.MockWalletRepository) {
 				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(1)).Return(domain.Transaction{
@@ -341,8 +335,6 @@ func TestTransactionUsecase_PayTransaction(t *testing.T) {
 				}, nil)
 				walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
 				txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Transaction{}, nil)
-				budgetRepo.EXPECT().GetBudgetList(gomock.Any()).Return([]domain.Budget{{Id: 1, Balance: 0, Percentage: 100}}, nil)
-				budgetRepo.EXPECT().UpdateBudgetById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Budget{}, nil)
 				txRepo.EXPECT().PayTransaction(gomock.Any(), int64(1), gomock.Any(), float32(30000), int64(1)).Return(nil)
 			},
 		},
@@ -351,7 +343,7 @@ func TestTransactionUsecase_PayTransaction(t *testing.T) {
 			id:         2,
 			walletId:   1,
 			paidAmount: 30000,
-			setupMock: func(txRepo *mock.MockTransactionRepository, walletRepo *mock.MockWalletRepository, budgetRepo *mock.MockBudgetRepository) {
+			setupMock: func(txRepo *mock.MockTransactionRepository, walletRepo *mock.MockWalletRepository) {
 				now := time.Now()
 				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
@@ -366,7 +358,7 @@ func TestTransactionUsecase_PayTransaction(t *testing.T) {
 			id:         99,
 			walletId:   1,
 			paidAmount: 30000,
-			setupMock: func(txRepo *mock.MockTransactionRepository, walletRepo *mock.MockWalletRepository, budgetRepo *mock.MockBudgetRepository) {
+			setupMock: func(txRepo *mock.MockTransactionRepository, walletRepo *mock.MockWalletRepository) {
 				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{}, &domain.Error{Type: domain.NotFound})
@@ -384,10 +376,9 @@ func TestTransactionUsecase_PayTransaction(t *testing.T) {
 			variantRepo := mock.NewMockVariantRepository(ctrl)
 			couponRepo := mock.NewMockCouponRepository(ctrl)
 			walletRepo := mock.NewMockWalletRepository(ctrl)
-			budgetRepo := mock.NewMockBudgetRepository(ctrl)
-			tt.setupMock(txRepo, walletRepo, budgetRepo)
+			tt.setupMock(txRepo, walletRepo)
 
-			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, budgetRepo)
+			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo)
 			err := usecase.PayTransaction(context.Background(), tt.walletId, tt.paidAmount, tt.id)
 
 			if tt.expectedError != nil {
@@ -491,10 +482,9 @@ func TestTransactionUsecase_UpdateTransactionById(t *testing.T) {
 			variantRepo := mock.NewMockVariantRepository(ctrl)
 			couponRepo := mock.NewMockCouponRepository(ctrl)
 			walletRepo := mock.NewMockWalletRepository(ctrl)
-			budgetRepo := mock.NewMockBudgetRepository(ctrl)
 			tt.setupMock(txRepo, variantRepo, couponRepo)
 
-			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, budgetRepo)
+			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo)
 			updated, err := usecase.UpdateTransactionById(context.Background(), tt.input, tt.id)
 
 			if tt.expectedError != nil {
@@ -523,7 +513,7 @@ func TestTransactionUsecase_UpdateTransactionById_ItemCoupons(t *testing.T) {
 		defer ctrl.Finish()
 
 		rentalId := int64(100)
-		txRepo, variantRepo, couponRepo, walletRepo, budgetRepo := setupUpdateTransactionMocks(ctrl, 1, domain.Transaction{
+		txRepo, variantRepo, couponRepo, walletRepo := setupUpdateTransactionMocks(ctrl, 1, domain.Transaction{
 			Id: 1, PaidAt: nil,
 			TransactionItems: []domain.TransactionItem{
 				{Id: 10, VariantId: 1, Amount: 1, Price: 30000, Subtotal: 30000, RentalId: &rentalId, Note: "2 hour(s)"},
@@ -531,7 +521,7 @@ func TestTransactionUsecase_UpdateTransactionById_ItemCoupons(t *testing.T) {
 		})
 		couponRepo.EXPECT().GetCouponById(gomock.Any(), int64(50)).Return(domain.Coupon{Id: 50, Type: domain.Fixed, Amount: 15000}, nil)
 
-		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, budgetRepo)
+		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo)
 		updated, err := usecase.UpdateTransactionById(context.Background(), domain.Transaction{
 			TransactionItems: []domain.TransactionItem{
 				{Id: 10, VariantId: 1, Amount: 1, DiscountAmount: 0, Note: "2 hour(s)"},
@@ -565,14 +555,14 @@ func TestTransactionUsecase_UpdateTransactionById_ItemCoupons(t *testing.T) {
 
 		// First save: rental item still carries its checkout-time price/subtotal.
 		ctrl1 := gomock.NewController(t)
-		txRepo1, variantRepo1, couponRepo1, walletRepo1, budgetRepo1 := setupUpdateTransactionMocks(ctrl1, 1, domain.Transaction{
+		txRepo1, variantRepo1, couponRepo1, walletRepo1 := setupUpdateTransactionMocks(ctrl1, 1, domain.Transaction{
 			Id: 1, PaidAt: nil,
 			TransactionItems: []domain.TransactionItem{
 				{Id: 11, VariantId: 1, Amount: 1, Price: 30000, Subtotal: 30000, RentalId: &rentalId, Note: "2 hour(s)"},
 			},
 		})
 		couponRepo1.EXPECT().GetCouponById(gomock.Any(), int64(50)).Return(coupon, nil)
-		usecase1 := domain.NewTransactionUsecase(txRepo1, variantRepo1, couponRepo1, walletRepo1, budgetRepo1)
+		usecase1 := domain.NewTransactionUsecase(txRepo1, variantRepo1, couponRepo1, walletRepo1)
 		firstSave, err := usecase1.UpdateTransactionById(context.Background(), input, 1)
 
 		assert.Nil(t, err)
@@ -583,14 +573,14 @@ func TestTransactionUsecase_UpdateTransactionById_ItemCoupons(t *testing.T) {
 		// Second save: the stored item now reflects the first save's discount;
 		// re-deriving the base from the unchanged Price must not compound it.
 		ctrl2 := gomock.NewController(t)
-		txRepo2, variantRepo2, couponRepo2, walletRepo2, budgetRepo2 := setupUpdateTransactionMocks(ctrl2, 1, domain.Transaction{
+		txRepo2, variantRepo2, couponRepo2, walletRepo2 := setupUpdateTransactionMocks(ctrl2, 1, domain.Transaction{
 			Id: 1, PaidAt: nil,
 			TransactionItems: []domain.TransactionItem{
 				{Id: 11, VariantId: 1, Amount: 1, Price: 30000, Subtotal: 15000, DiscountAmount: 15000, RentalId: &rentalId, Note: "2 hour(s)"},
 			},
 		})
 		couponRepo2.EXPECT().GetCouponById(gomock.Any(), int64(50)).Return(coupon, nil)
-		usecase2 := domain.NewTransactionUsecase(txRepo2, variantRepo2, couponRepo2, walletRepo2, budgetRepo2)
+		usecase2 := domain.NewTransactionUsecase(txRepo2, variantRepo2, couponRepo2, walletRepo2)
 		secondSave, err := usecase2.UpdateTransactionById(context.Background(), input, 1)
 
 		assert.Nil(t, err)
@@ -606,14 +596,14 @@ func TestTransactionUsecase_UpdateTransactionById_ItemCoupons(t *testing.T) {
 		// The stored item already has the coupon's discount baked in from a
 		// previous save (Subtotal 15000, DiscountAmount 15000 on a 30K rental).
 		rentalId := int64(103)
-		txRepo, variantRepo, couponRepo, walletRepo, budgetRepo := setupUpdateTransactionMocks(ctrl, 1, domain.Transaction{
+		txRepo, variantRepo, couponRepo, walletRepo := setupUpdateTransactionMocks(ctrl, 1, domain.Transaction{
 			Id: 1, PaidAt: nil,
 			TransactionItems: []domain.TransactionItem{
 				{Id: 13, VariantId: 1, Amount: 1, Price: 30000, Subtotal: 15000, DiscountAmount: 15000, RentalId: &rentalId, Note: "2 hour(s)"},
 			},
 		})
 
-		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, budgetRepo)
+		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo)
 		// The frontend removes the coupon: no coupon row, DiscountAmount back to 0.
 		updated, err := usecase.UpdateTransactionById(context.Background(), domain.Transaction{
 			TransactionItems: []domain.TransactionItem{
@@ -635,7 +625,7 @@ func TestTransactionUsecase_UpdateTransactionById_ItemCoupons(t *testing.T) {
 		defer ctrl.Finish()
 
 		rentalId := int64(102)
-		txRepo, variantRepo, couponRepo, walletRepo, budgetRepo := setupUpdateTransactionMocks(ctrl, 1, domain.Transaction{
+		txRepo, variantRepo, couponRepo, walletRepo := setupUpdateTransactionMocks(ctrl, 1, domain.Transaction{
 			Id: 1, PaidAt: nil,
 			TransactionItems: []domain.TransactionItem{
 				{Id: 12, VariantId: 1, Amount: 1, Price: 15000, Subtotal: 15000, RentalId: &rentalId, Note: "1 hour(s)"},
@@ -643,7 +633,7 @@ func TestTransactionUsecase_UpdateTransactionById_ItemCoupons(t *testing.T) {
 		})
 		couponRepo.EXPECT().GetCouponById(gomock.Any(), int64(51)).Return(domain.Coupon{Id: 51, Type: domain.Fixed, Amount: 30000}, nil)
 
-		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, budgetRepo)
+		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo)
 		updated, err := usecase.UpdateTransactionById(context.Background(), domain.Transaction{
 			TransactionItems: []domain.TransactionItem{
 				{Id: 12, VariantId: 1, Amount: 1, DiscountAmount: 0, Note: "1 hour(s)"},
@@ -663,11 +653,11 @@ func TestTransactionUsecase_UpdateTransactionById_ItemCoupons(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		txRepo, variantRepo, couponRepo, walletRepo, budgetRepo := setupUpdateTransactionMocks(ctrl, 1, domain.Transaction{Id: 1, PaidAt: nil})
+		txRepo, variantRepo, couponRepo, walletRepo := setupUpdateTransactionMocks(ctrl, 1, domain.Transaction{Id: 1, PaidAt: nil})
 		variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(2)).Return(domain.Variant{Id: 2, Price: 30000}, nil)
 		couponRepo.EXPECT().GetCouponById(gomock.Any(), int64(52)).Return(domain.Coupon{Id: 52, Type: domain.Percentage, Amount: 40}, nil)
 
-		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, budgetRepo)
+		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo)
 		updated, err := usecase.UpdateTransactionById(context.Background(), domain.Transaction{
 			TransactionItems: []domain.TransactionItem{
 				{Id: 30, VariantId: 2, Amount: 1, DiscountAmount: 0},
@@ -688,13 +678,13 @@ func TestTransactionUsecase_UpdateTransactionById_ItemCoupons(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		txRepo, variantRepo, couponRepo, walletRepo, budgetRepo := setupUpdateTransactionMocks(ctrl, 1, domain.Transaction{Id: 1, PaidAt: nil})
+		txRepo, variantRepo, couponRepo, walletRepo := setupUpdateTransactionMocks(ctrl, 1, domain.Transaction{Id: 1, PaidAt: nil})
 		variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(1)).Return(domain.Variant{Id: 1, Price: 20000}, nil)
 		variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(2)).Return(domain.Variant{Id: 2, Price: 30000}, nil)
 		variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(3)).Return(domain.Variant{Id: 3, Price: 25000}, nil)
 		couponRepo.EXPECT().GetCouponById(gomock.Any(), int64(52)).Return(domain.Coupon{Id: 52, Type: domain.Percentage, Amount: 40}, nil)
 
-		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, budgetRepo)
+		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo)
 		updated, err := usecase.UpdateTransactionById(context.Background(), domain.Transaction{
 			TransactionItems: []domain.TransactionItem{
 				{Id: 40, VariantId: 1, Amount: 1, DiscountAmount: 0},
@@ -720,11 +710,11 @@ func TestTransactionUsecase_UpdateTransactionById_ItemCoupons(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		txRepo, variantRepo, couponRepo, walletRepo, budgetRepo := setupUpdateTransactionMocks(ctrl, 1, domain.Transaction{Id: 1, PaidAt: nil})
+		txRepo, variantRepo, couponRepo, walletRepo := setupUpdateTransactionMocks(ctrl, 1, domain.Transaction{Id: 1, PaidAt: nil})
 		variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(1)).Return(domain.Variant{Id: 1, Price: 20000}, nil)
 		couponRepo.EXPECT().GetCouponById(gomock.Any(), int64(60)).Return(domain.Coupon{Id: 60, Type: domain.Fixed, Amount: 5000}, nil)
 
-		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, budgetRepo)
+		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo)
 		updated, err := usecase.UpdateTransactionById(context.Background(), domain.Transaction{
 			TransactionItems: []domain.TransactionItem{
 				{Id: 50, VariantId: 1, Amount: 1, DiscountAmount: 0},
@@ -745,12 +735,12 @@ func TestTransactionUsecase_UpdateTransactionById_ItemCoupons(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		txRepo, variantRepo, couponRepo, walletRepo, budgetRepo := setupUpdateTransactionMocks(ctrl, 1, domain.Transaction{Id: 1, PaidAt: nil})
+		txRepo, variantRepo, couponRepo, walletRepo := setupUpdateTransactionMocks(ctrl, 1, domain.Transaction{Id: 1, PaidAt: nil})
 		variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(1)).Return(domain.Variant{Id: 1, Price: 30000}, nil)
 		couponRepo.EXPECT().GetCouponById(gomock.Any(), int64(50)).Return(domain.Coupon{Id: 50, Type: domain.Fixed, Amount: 15000}, nil)
 		couponRepo.EXPECT().GetCouponById(gomock.Any(), int64(60)).Return(domain.Coupon{Id: 60, Type: domain.Percentage, Amount: 40}, nil)
 
-		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, budgetRepo)
+		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo)
 		_, err := usecase.UpdateTransactionById(context.Background(), domain.Transaction{
 			TransactionItems: []domain.TransactionItem{
 				{Id: 60, VariantId: 1, Amount: 1, DiscountAmount: 0},
@@ -769,11 +759,11 @@ func TestTransactionUsecase_UpdateTransactionById_ItemCoupons(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		txRepo, variantRepo, couponRepo, walletRepo, budgetRepo := setupUpdateTransactionMocks(ctrl, 1, domain.Transaction{Id: 1, PaidAt: nil})
+		txRepo, variantRepo, couponRepo, walletRepo := setupUpdateTransactionMocks(ctrl, 1, domain.Transaction{Id: 1, PaidAt: nil})
 		variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(1)).Return(domain.Variant{Id: 1, Price: 30000}, nil)
 		couponRepo.EXPECT().GetCouponById(gomock.Any(), int64(50)).Return(domain.Coupon{Id: 50, Type: domain.Fixed, Amount: 15000}, nil)
 
-		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, budgetRepo)
+		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo)
 		_, err := usecase.UpdateTransactionById(context.Background(), domain.Transaction{
 			TransactionItems: []domain.TransactionItem{
 				{Id: 70, VariantId: 1, Amount: 1, DiscountAmount: 0},
@@ -799,7 +789,6 @@ func TestTransactionUsecase_CreateTransaction_ItemCoupon(t *testing.T) {
 		variantRepo := mock.NewMockVariantRepository(ctrl)
 		couponRepo := mock.NewMockCouponRepository(ctrl)
 		walletRepo := mock.NewMockWalletRepository(ctrl)
-		budgetRepo := mock.NewMockBudgetRepository(ctrl)
 
 		txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 			func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
@@ -810,7 +799,7 @@ func TestTransactionUsecase_CreateTransaction_ItemCoupon(t *testing.T) {
 				return tx, nil
 			})
 
-		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, budgetRepo)
+		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo)
 		created, err := usecase.CreateTransaction(context.Background(), domain.Transaction{
 			TransactionItems: []domain.TransactionItem{
 				{Id: 1, VariantId: 1, Amount: 1, DiscountAmount: 0},
@@ -902,7 +891,6 @@ func TestTransactionUsecase_GetTransactionStatistics(t *testing.T) {
 			variantRepo := mock.NewMockVariantRepository(ctrl)
 			couponRepo := mock.NewMockCouponRepository(ctrl)
 			walletRepo := mock.NewMockWalletRepository(ctrl)
-			budgetRepo := mock.NewMockBudgetRepository(ctrl)
 			tt.setupMock(txRepo)
 
 			var startDate, endDate *time.Time
@@ -913,7 +901,7 @@ func TestTransactionUsecase_GetTransactionStatistics(t *testing.T) {
 				endDate = tt.endDate(t)
 			}
 
-			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, budgetRepo)
+			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo)
 			result, err := usecase.GetTransactionStatistics(context.Background(), tt.groupBy, startDate, endDate)
 
 			if tt.expectedError != nil {
