@@ -4,3 +4,8 @@ export type Budget = {
   percentage: number;
   createdAt: string;
 };
+
+export type BudgetForm = {
+  name: string;
+  percentage: number;
+};
