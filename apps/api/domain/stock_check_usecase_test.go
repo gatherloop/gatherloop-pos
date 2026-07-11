@@ -95,13 +95,15 @@ func TestStockCheckUsecase_CreateStockCheck_SnapshotsMaterialFields(t *testing.T
 	assert.Equal(t, int64(5), captured.Items[0].NormalStock)
 }
 
-func TestStockCheckUsecase_CreateStockCheck_DefaultsToZeroForMissingItems(t *testing.T) {
+func TestStockCheckUsecase_CreateStockCheck_OnlyIncludesRequestedMaterials(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	scRepo := mock.NewMockStockCheckRepository(ctrl)
 	matRepo := mock.NewMockMaterialRepository(ctrl)
 
+	// Material 2 is not stock-check-required, so the create form never sends it.
+	// The usecase must not re-add it just because it exists in the catalog.
 	matRepo.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Material{
 		{Id: 1, Name: "Tepung"},
 		{Id: 2, Name: "Susu"},
@@ -114,15 +116,15 @@ func TestStockCheckUsecase_CreateStockCheck_DefaultsToZeroForMissingItems(t *tes
 	})
 
 	usecase := domain.NewStockCheckUsecase(scRepo, matRepo)
-	// Only provide currentStock for material 1; material 2 should default to 0
+	// Only material 1 is submitted; material 2 must not appear in the stock check.
 	_, err := usecase.CreateStockCheck(context.Background(), []domain.StockCheckItemRequest{
 		{MaterialId: 1, CurrentStock: 5},
 	})
 
 	assert.Nil(t, err)
-	assert.Len(t, captured.Items, 2)
-	assert.Equal(t, int64(5), captured.Items[0].CurrentStock) // material 1
-	assert.Equal(t, int64(0), captured.Items[1].CurrentStock) // material 2 defaults to 0
+	assert.Len(t, captured.Items, 1)
+	assert.Equal(t, int64(1), captured.Items[0].MaterialId)
+	assert.Equal(t, int64(5), captured.Items[0].CurrentStock)
 }
 
 func TestStockCheckUsecase_GetPurchaseList(t *testing.T) {
