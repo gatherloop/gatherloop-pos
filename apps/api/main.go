@@ -64,7 +64,7 @@ func main() {
 	stockCheckRepository := mysql.NewStockCheckRepository(db)
 
 	walletUsecase := domain.NewWalletUsecase(walletRepository)
-	transactionUsecase := domain.NewTransactionUsecase(transactionRepository, variantRepository, couponRepository, walletRepository, budgetRepository)
+	transactionUsecase := domain.NewTransactionUsecase(transactionRepository, variantRepository, couponRepository, walletRepository)
 	variantUsecase := domain.NewVariantUsecase(variantRepository, productRepository)
 	productUsecase := domain.NewProductUsecase(productRepository)
 	materialUsecase := domain.NewMaterialUsecase(materialRepository, supplierRepository)

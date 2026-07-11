@@ -60,7 +60,6 @@ export interface Budget {
   id: number;
   name: string;
   percentage: number;
-  balance: number;
   createdAt: string;
 }
 
@@ -288,7 +287,6 @@ export async function deleteTransaction(
 export interface CreateBudgetInput {
   name: string;
   percentage: number;
-  balance: number;
 }
 
 export async function createBudget(

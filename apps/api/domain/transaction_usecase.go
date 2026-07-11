@@ -10,16 +10,14 @@ type TransactionUsecase struct {
 	variantRepository     VariantRepository
 	couponRepository      CouponRepository
 	walletRepository      WalletRepository
-	budgetRepository      BudgetRepository
 }
 
-func NewTransactionUsecase(transactionRepository TransactionRepository, variantRepository VariantRepository, couponRepository CouponRepository, walletRepository WalletRepository, budgetRepository BudgetRepository) TransactionUsecase {
+func NewTransactionUsecase(transactionRepository TransactionRepository, variantRepository VariantRepository, couponRepository CouponRepository, walletRepository WalletRepository) TransactionUsecase {
 	return TransactionUsecase{
 		transactionRepository: transactionRepository,
 		variantRepository:     variantRepository,
 		couponRepository:      couponRepository,
 		walletRepository:      walletRepository,
-		budgetRepository:      budgetRepository,
 	}
 }
 
@@ -244,27 +242,6 @@ func (usecase TransactionUsecase) PayTransaction(ctx context.Context, walletId i
 			return err
 		}
 
-		budgetList, err := usecase.budgetRepository.GetBudgetList(ctxWithTx)
-		if err != nil {
-			return err
-		}
-
-		for _, budgetItem := range budgetList {
-			var restockBudgetId int64 = 4
-
-			var newBalance float32
-
-			if budgetItem.Id == restockBudgetId {
-				newBalance = budgetItem.Balance + foodCost
-			} else {
-				addition := totalIncome * budgetItem.Percentage / 100
-				newBalance = budgetItem.Balance + addition
-			}
-
-			if _, err := usecase.budgetRepository.UpdateBudgetById(ctxWithTx, Budget{Balance: newBalance}, budgetItem.Id); err != nil {
-				return err
-			}
-		}
 		return usecase.transactionRepository.PayTransaction(ctxWithTx, walletId, time.Now(), paidAmount, id)
 	})
 }
@@ -304,40 +281,6 @@ func (usecase TransactionUsecase) UnpayTransaction(ctx context.Context, id int64
 			return err
 		}
 
-		variantMaterials := []VariantMaterial{}
-
-		for _, item := range transaction.TransactionItems {
-			variantMaterials = append(variantMaterials, item.Variant.Materials...)
-		}
-
-		var foodCost float32
-		for _, variantMaterial := range variantMaterials {
-			foodCost += variantMaterial.Amount * variantMaterial.Material.Price
-		}
-
-		totalIncome := transaction.Total - paymentCost - foodCost
-
-		budgetList, err := usecase.budgetRepository.GetBudgetList(ctxWithTx)
-		if err != nil {
-			return err
-		}
-
-		for _, budgetItem := range budgetList {
-			var restockBudgetId int64 = 4
-
-			var newBalance float32
-
-			if budgetItem.Id == restockBudgetId {
-				newBalance = budgetItem.Balance - foodCost
-			} else {
-				addition := totalIncome * budgetItem.Percentage / 100
-				newBalance = budgetItem.Balance - addition
-			}
-
-			if _, err := usecase.budgetRepository.UpdateBudgetById(ctxWithTx, Budget{Balance: newBalance}, budgetItem.Id); err != nil {
-				return err
-			}
-		}
 		return usecase.transactionRepository.UnpayTransaction(ctxWithTx, id)
 	})
 }

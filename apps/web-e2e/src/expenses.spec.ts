@@ -5,12 +5,13 @@
  * Tests run serially — each builds on the previous test's state.
  *
  * Flows tested:
- * - Verifying a budget created via API appears in the budget list with correct balance
+ * - Verifying a budget created via API appears in the budget list with its target %
  * - Creating an expense via UI linked to a budget and wallet
  * - Verifying the expense appears in the expense list
  * - Filtering expenses by wallet
  * - Filtering expenses by budget
- * - Verifying the budget balance decreased after the expense was recorded
+ * - Verifying the budget's target % is unchanged after the expense (budgets are
+ *   a pure spend classification — they no longer hold a mutating balance)
  *
  * Why this matters:
  * - Cross-entity relationship: expense ↔ budget ↔ wallet
@@ -36,20 +37,11 @@ const ITEM_NAME = `E2E Item ${TS}`;
 const ITEM_UNIT = 'pcs';
 const ITEM_PRICE = 25_000;
 const ITEM_AMOUNT = 2;
-const EXPENSE_TOTAL = ITEM_PRICE * ITEM_AMOUNT; // 50_000
 
-// Balances must exceed EXPENSE_TOTAL so the API doesn't reject the expense
+// Wallet balance must exceed the expense total so the API doesn't reject the
+// expense on wallet insufficiency — budgets no longer carry a balance to check.
 const WALLET_INITIAL_BALANCE = 1_000_000;
-const BUDGET_INITIAL_BALANCE = 1_000_000;
 const BUDGET_PERCENTAGE = 10;
-
-// Expected budget balance after the expense is created
-const BUDGET_BALANCE_AFTER = BUDGET_INITIAL_BALANCE - EXPENSE_TOTAL; // 950_000
-
-// Indonesian locale number format: 1000000 → "1.000.000"
-function formatRupiah(amount: number): string {
-  return `Rp. ${amount.toLocaleString('id')}`;
-}
 
 test.describe.serial('Expense & Budget Flow', () => {
   let testWallet: api.Wallet;
@@ -66,12 +58,11 @@ test.describe.serial('Expense & Budget Flow', () => {
     testBudget = await api.createBudget(request, {
       name: BUDGET_NAME,
       percentage: BUDGET_PERCENTAGE,
-      balance: BUDGET_INITIAL_BALANCE,
     });
   });
 
   test.afterAll(async ({ request }) => {
-    // Delete the expense first — this refunds both the budget and wallet balance
+    // Delete the expense first — this refunds the wallet balance
     if (testExpenseId !== undefined) {
       await api.deleteExpense(request, testExpenseId).catch(() => {
         // Ignore — expense may already be gone
@@ -86,10 +77,12 @@ test.describe.serial('Expense & Budget Flow', () => {
   });
 
   // ---------------------------------------------------------------------------
-  // Test 1: Budget appears in the list with correct balance
+  // Test 1: Budget appears in the list with its target percentage
   // ---------------------------------------------------------------------------
 
-  test('should create a budget with a name and amount', async ({ page }) => {
+  test('should create a budget with a name and target percentage', async ({
+    page,
+  }) => {
     await page.goto('/budgets');
 
     // The API-created budget should appear in the list
@@ -97,10 +90,10 @@ test.describe.serial('Expense & Budget Flow', () => {
       timeout: 15_000,
     });
 
-    // Its balance subtitle should match what we passed to the API
+    // Its target percentage should match what we passed to the API
     await expect(
-      sel.budgetList.budgetBalance(page, BUDGET_NAME)
-    ).toContainText(formatRupiah(BUDGET_INITIAL_BALANCE), { timeout: 15_000 });
+      sel.budgetList.budgetTargetPercentage(page, BUDGET_NAME)
+    ).toContainText(`${BUDGET_PERCENTAGE}%`, { timeout: 15_000 });
   });
 
   // ---------------------------------------------------------------------------
@@ -214,10 +207,12 @@ test.describe.serial('Expense & Budget Flow', () => {
   });
 
   // ---------------------------------------------------------------------------
-  // Test 6: Budget balance decreases after the expense is recorded
+  // Test 6: Budget's target percentage is unchanged after the expense
   // ---------------------------------------------------------------------------
 
-  test('should verify budget reflects the expense amount', async ({ page }) => {
+  test('should verify the budget target is unaffected by the expense', async ({
+    page,
+  }) => {
     await page.goto('/budgets');
 
     // The budget should still appear in the list
@@ -225,9 +220,10 @@ test.describe.serial('Expense & Budget Flow', () => {
       timeout: 15_000,
     });
 
-    // Its balance should have decreased by EXPENSE_TOTAL
+    // Budgets are a pure spend classification — recording an expense against
+    // one must not mutate its target percentage.
     await expect(
-      sel.budgetList.budgetBalance(page, BUDGET_NAME)
-    ).toContainText(formatRupiah(BUDGET_BALANCE_AFTER), { timeout: 15_000 });
+      sel.budgetList.budgetTargetPercentage(page, BUDGET_NAME)
+    ).toContainText(`${BUDGET_PERCENTAGE}%`, { timeout: 15_000 });
   });
 });

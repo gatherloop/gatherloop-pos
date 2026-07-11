@@ -48,6 +48,14 @@ func (WalletSeeder) Seed(tx *gorm.DB) error {
 			IsPaymentTarget:       false,
 			CreatedAt:             time.Now(),
 		},
+		{
+			Name:                  "Savings",
+			Balance:               0,
+			PaymentCostPercentage: 0,
+			IsCashless:            false,
+			IsPaymentTarget:       false,
+			CreatedAt:             time.Now(),
+		},
 	}
 
 	for i := range wallets {

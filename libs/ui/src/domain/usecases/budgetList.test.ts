@@ -98,7 +98,6 @@ describe('BudgetListUsecase', () => {
         id: 1,
         name: 'Budget Test 1',
         percentage: 30,
-        balance: 500,
         createdAt: new Date().toISOString(),
       },
     ];

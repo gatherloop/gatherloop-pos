@@ -6,13 +6,14 @@ import { mockBudgets } from '../../../.storybook/mocks/mockData';
 const mockBudgetItems = mockBudgets.map((b) => ({
   id: b.id,
   name: b.name,
-  balance: b.balance,
   percentage: b.percentage,
 }));
 
 const defaultArgs = {
   onLogoutPress: fn(),
   onRetryButtonPress: fn(),
+  onEditMenuPress: fn(),
+  onItemPress: fn(),
 };
 
 const meta: Meta<typeof BudgetListScreen> = {

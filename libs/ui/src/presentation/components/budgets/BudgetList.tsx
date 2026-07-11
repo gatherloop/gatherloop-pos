@@ -7,6 +7,8 @@ import { match } from 'ts-pattern';
 export type BudgetListProps = {
   onRetryButtonPress: () => void;
   onEmptyActionPress?: () => void;
+  onEditMenuPress?: (budget: BudgetListItemProps) => void;
+  onItemPress?: (budget: BudgetListItemProps) => void;
   isRevalidating?: boolean;
   variant:
     | { type: 'loading' }
@@ -18,6 +20,8 @@ export type BudgetListProps = {
 export const BudgetList = ({
   onRetryButtonPress,
   onEmptyActionPress,
+  onEditMenuPress,
+  onItemPress,
   isRevalidating,
   variant,
 }: BudgetListProps) => {
@@ -38,7 +42,15 @@ export const BudgetList = ({
           <FlatList
             nestedScrollEnabled
             data={items}
-            renderItem={({ item }) => <BudgetListItem {...item} />}
+            renderItem={({ item }) => (
+              <BudgetListItem
+                {...item}
+                onEditMenuPress={
+                  onEditMenuPress ? () => onEditMenuPress(item) : undefined
+                }
+                onPress={onItemPress ? () => onItemPress(item) : undefined}
+              />
+            )}
             ItemSeparatorComponent={() => <YStack height="$1" />}
           />
         ))

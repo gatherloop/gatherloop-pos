@@ -6,7 +6,6 @@ import { mockBudgets } from '../../../../.storybook/mocks/mockData';
 const mockBudgetItems = mockBudgets.map((b) => ({
   id: b.id,
   name: b.name,
-  balance: b.balance,
   percentage: b.percentage,
 }));
 
@@ -15,6 +14,8 @@ const meta: Meta<typeof BudgetList> = {
   component: BudgetList,
   args: {
     onRetryButtonPress: fn(),
+    onEditMenuPress: fn(),
+    onItemPress: fn(),
   },
 };
 

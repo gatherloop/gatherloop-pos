@@ -107,7 +107,7 @@ func TestBudgetHandler_CreateBudget(t *testing.T) {
 	}{
 		{
 			name: "success",
-			body: `{"name": "Operations", "balance": 0, "percentage": 50}`,
+			body: `{"name": "Operations", "percentage": 50}`,
 			setupMock: func(r *mock.MockBudgetRepository) {
 				r.EXPECT().CreateBudget(gomock.Any(), gomock.Any()).Return(domain.Budget{Id: 1, Name: "Operations"}, nil)
 			},
@@ -121,7 +121,7 @@ func TestBudgetHandler_CreateBudget(t *testing.T) {
 		},
 		{
 			name: "repo error",
-			body: `{"name": "Operations", "balance": 0, "percentage": 50}`,
+			body: `{"name": "Operations", "percentage": 50}`,
 			setupMock: func(r *mock.MockBudgetRepository) {
 				r.EXPECT().CreateBudget(gomock.Any(), gomock.Any()).Return(domain.Budget{}, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
@@ -156,7 +156,7 @@ func TestBudgetHandler_UpdateBudgetById(t *testing.T) {
 		{
 			name:     "success",
 			budgetId: "1",
-			body:     `{"name": "Operations", "balance": 100, "percentage": 50}`,
+			body:     `{"name": "Operations", "percentage": 50}`,
 			setupMock: func(r *mock.MockBudgetRepository) {
 				r.EXPECT().UpdateBudgetById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Budget{Id: 1, Name: "Operations"}, nil)
 			},
@@ -172,7 +172,7 @@ func TestBudgetHandler_UpdateBudgetById(t *testing.T) {
 		{
 			name:     "not found",
 			budgetId: "99",
-			body:     `{"name": "Operations", "balance": 100, "percentage": 50}`,
+			body:     `{"name": "Operations", "percentage": 50}`,
 			setupMock: func(r *mock.MockBudgetRepository) {
 				r.EXPECT().UpdateBudgetById(gomock.Any(), gomock.Any(), int64(99)).Return(domain.Budget{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
 			},

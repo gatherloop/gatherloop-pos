@@ -2,6 +2,10 @@ export type Budget = {
   id: number;
   name: string;
   percentage: number;
-  balance: number;
   createdAt: string;
+};
+
+export type BudgetForm = {
+  name: string;
+  percentage: number;
 };

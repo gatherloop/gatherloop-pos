@@ -1,5 +1,10 @@
-import { AuthLogoutUsecase, BudgetListUsecase } from '../../domain';
+import { useRouter } from 'solito/router';
+import {
+  AuthLogoutUsecase,
+  BudgetListUsecase,
+} from '../../domain';
 import { BudgetListScreen, BudgetListScreenProps } from './BudgetListScreen';
+import { BudgetListItemProps } from '../components';
 import { match, P } from 'ts-pattern';
 import {
   useAuthLogoutController,
@@ -17,9 +22,17 @@ export const BudgetListHandler = ({
 }: BudgetListHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
   const budgetList = useBudgetListController(budgetListUsecase);
+  const router = useRouter();
   return (
     <BudgetListScreen
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
+      onEditMenuPress={(budget: BudgetListItemProps) =>
+        router.push(`/budgets/${budget.id}`)
+      }
+      onItemPress={(budget: BudgetListItemProps) =>
+        router.push(`/budgets/${budget.id}`)
+      }
+      onEmptyActionPress={() => router.push('/budgets/create')}
       onRetryButtonPress={() => budgetList.dispatch({ type: 'FETCH' })}
       isRevalidating={budgetList.state.type === 'revalidating'}
       variant={match(budgetList.state)
@@ -29,7 +42,6 @@ export const BudgetListHandler = ({
           type: budgets.length > 0 ? 'loaded' : 'empty',
           items: budgets.map((budget) => ({
             name: budget.name,
-            balance: budget.balance,
             id: budget.id,
             percentage: budget.percentage,
           })),

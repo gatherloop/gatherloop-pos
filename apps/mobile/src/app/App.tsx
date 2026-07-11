@@ -15,6 +15,8 @@ import {
   VariantCreate,
   VariantUpdate,
   BudgetList,
+  BudgetCreate,
+  BudgetUpdate,
   WalletTransferList,
   WalletTransferCreate,
   TransactionList,
@@ -193,6 +195,13 @@ export const App = () => {
               },
             },
             budgetList: 'budgets',
+            budgetCreate: 'budgets/create',
+            budgetUpdate: {
+              path: 'budgets/:budgetId',
+              parse: {
+                budgetId: (budgetId) => parseInt(budgetId),
+              },
+            },
             transactionList: 'transactions',
             transactionCreate: 'transactions/create',
             transactionUpdate: {
@@ -284,6 +293,13 @@ export const App = () => {
                   expenseStatisticListParams={{
                     expenseStatistics: [],
                     view: DEFAULT_EXPENSE_STATISTIC_VIEW,
+                    preset: DEFAULT_EXPENSE_STATISTIC_PRESET,
+                    groupBy: defaultExpenseRange.groupBy,
+                    startDate: defaultExpenseRange.startDate,
+                    endDate: defaultExpenseRange.endDate,
+                  }}
+                  expenseRevenueStatisticListParams={{
+                    transactionStatistics: [],
                     preset: DEFAULT_EXPENSE_STATISTIC_PRESET,
                     groupBy: defaultExpenseRange.groupBy,
                     startDate: defaultExpenseRange.startDate,
@@ -570,6 +586,20 @@ export const App = () => {
             component={(
               _props: NativeStackScreenProps<RootStackParamList, 'budgetList'>
             ) => <BudgetList budgetListParams={{ budgets: [] }} />}
+          />
+          <Stack.Screen name="budgetCreate" component={BudgetCreate} />
+          <Stack.Screen
+            name="budgetUpdate"
+            component={(
+              props: NativeStackScreenProps<RootStackParamList, 'budgetUpdate'>
+            ) => (
+              <BudgetUpdate
+                budgetUpdateParams={{
+                  budget: null,
+                  budgetId: props.route.params?.budgetId,
+                }}
+              />
+            )}
           />
           <Stack.Screen
             name="transactionList"
