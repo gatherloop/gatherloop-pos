@@ -128,8 +128,7 @@ func TestExpenseHandler_CreateExpense(t *testing.T) {
 			setupMocks: func(expRepo *mock.MockExpenseRepository, budgetRepo *mock.MockBudgetRepository, walletRepo *mock.MockWalletRepository) {
 				expRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
-				budgetRepo.EXPECT().GetBudgetById(gomock.Any(), int64(1)).Return(domain.Budget{Id: 1, Balance: 100000}, nil)
-				budgetRepo.EXPECT().UpdateBudgetById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Budget{}, nil)
+				budgetRepo.EXPECT().GetBudgetById(gomock.Any(), int64(1)).Return(domain.Budget{Id: 1}, nil)
 				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, Balance: 100000}, nil)
 				walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
 				expRepo.EXPECT().CreateExpense(gomock.Any(), gomock.Any()).Return(domain.Expense{Id: 1}, nil)
@@ -182,8 +181,6 @@ func TestExpenseHandler_DeleteExpenseById(t *testing.T) {
 				expRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				expRepo.EXPECT().GetExpenseById(gomock.Any(), int64(1)).Return(domain.Expense{Id: 1, BudgetId: 1, WalletId: 1, Total: 10000}, nil)
-				budgetRepo.EXPECT().GetBudgetById(gomock.Any(), int64(1)).Return(domain.Budget{Id: 1, Balance: 0}, nil)
-				budgetRepo.EXPECT().UpdateBudgetById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Budget{}, nil)
 				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, Balance: 0}, nil)
 				walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
 				expRepo.EXPECT().DeleteExpenseById(gomock.Any(), int64(1)).Return(nil)

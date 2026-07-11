@@ -40,16 +40,13 @@ func (usecase ExpenseUsecase) GetExpenseById(ctx context.Context, id int64) (Exp
 func (usecase ExpenseUsecase) CreateExpense(ctx context.Context, expense Expense) (Expense, *Error) {
 	var created Expense
 	err := usecase.expenseRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		// Check if the budget have sufficient balance before creating the expense, and update it's balance accordingly
+		// budget_id is pure spend classification; only existence is validated, no balance is touched.
 		expenseBudget, err := usecase.budgetRepository.GetBudgetById(ctxWithTx, expense.BudgetId)
 		if err != nil {
 			return err
 		}
-		if expenseBudget.Balance < expense.Total {
-			return &Error{Type: BadRequest, Message: "budget's balance insufficient"}
-		}
-		if _, err := usecase.budgetRepository.UpdateBudgetById(ctxWithTx, Budget{Balance: expenseBudget.Balance - expense.Total}, expense.BudgetId); err != nil {
-			return err
+		if expenseBudget.DeletedAt != nil {
+			return &Error{Type: NotFound, Message: "budget not found"}
 		}
 
 		// Check if the wallet have sufficient balance before creating the expense, and update it's balance accordingly
@@ -89,13 +86,13 @@ func (usecase ExpenseUsecase) UpdateExpenseById(ctx context.Context, expense Exp
 			return err
 		}
 
-		// Refund the old budget balance with the existing expense's total
-		expenseBudget, err := usecase.budgetRepository.GetBudgetById(ctxWithTx, existingExpense.BudgetId)
+		// budget_id is pure spend classification; only existence is validated, no balance is touched.
+		expenseBudget, err := usecase.budgetRepository.GetBudgetById(ctxWithTx, expense.BudgetId)
 		if err != nil {
 			return err
 		}
-		if _, err := usecase.budgetRepository.UpdateBudgetById(ctxWithTx, Budget{Balance: expenseBudget.Balance + existingExpense.Total}, existingExpense.BudgetId); err != nil {
-			return err
+		if expenseBudget.DeletedAt != nil {
+			return &Error{Type: NotFound, Message: "budget not found"}
 		}
 
 		// Refund the old wallet balance with the existing expense's total
@@ -110,18 +107,6 @@ func (usecase ExpenseUsecase) UpdateExpenseById(ctx context.Context, expense Exp
 			IsCashless:            expenseWallet.IsCashless,
 			IsPaymentTarget:       expenseWallet.IsPaymentTarget,
 		}, existingExpense.WalletId); err != nil {
-			return err
-		}
-
-		// Check if the new budget have sufficient balance and update it's balance accordingly
-		expenseBudget, err = usecase.budgetRepository.GetBudgetById(ctxWithTx, expense.BudgetId)
-		if err != nil {
-			return err
-		}
-		if expenseBudget.Balance < expense.Total {
-			return &Error{Type: BadRequest, Message: "budget's balance insufficient"}
-		}
-		if _, err := usecase.budgetRepository.UpdateBudgetById(ctxWithTx, Budget{Balance: expenseBudget.Balance - expense.Total}, expense.BudgetId); err != nil {
 			return err
 		}
 
@@ -160,15 +145,6 @@ func (usecase ExpenseUsecase) DeleteExpenseById(ctx context.Context, id int64) *
 	return usecase.expenseRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 		existingExpense, err := usecase.expenseRepository.GetExpenseById(ctxWithTx, id)
 		if err != nil {
-			return err
-		}
-
-		expenseBudget, err := usecase.budgetRepository.GetBudgetById(ctxWithTx, existingExpense.BudgetId)
-		if err != nil {
-			return err
-		}
-
-		if _, err := usecase.budgetRepository.UpdateBudgetById(ctxWithTx, Budget{Balance: expenseBudget.Balance + existingExpense.Total}, existingExpense.BudgetId); err != nil {
 			return err
 		}
 
