@@ -122,6 +122,11 @@ func (usecase RentalUsecase) CheckoutRentals(ctx context.Context, rentalIds []in
 			}
 			total += float64(result.Price)
 
+			variant, err := usecase.variantRepository.GetVariantById(ctxWithTx, existingRental.VariantId)
+			if err != nil {
+				return err
+			}
+
 			totalMinutes := int(math.Ceil(duration.Minutes()))
 			hours := totalMinutes / 60
 			minutes := totalMinutes % 60
@@ -147,6 +152,7 @@ func (usecase RentalUsecase) CheckoutRentals(ctx context.Context, rentalIds []in
 				Subtotal:       result.Price,
 				RentalId:       &existingRental.Id,
 				Note:           note,
+				ProductName:    variant.Product.Name,
 			})
 
 			transactionData.Name = existingRental.Name
