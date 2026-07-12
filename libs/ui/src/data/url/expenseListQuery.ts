@@ -71,8 +71,8 @@ export class UrlExpenseListQueryRepository
       : parseInt(budgetId);
   };
 
-  setBudgetId = (walletId: number | null) => {
-    setQueryParam('walletId', walletId === null ? 'all' : walletId.toString());
+  setBudgetId = (budgetId: number | null) => {
+    setQueryParam('budgetId', budgetId === null ? 'all' : budgetId.toString());
   };
 }
 
