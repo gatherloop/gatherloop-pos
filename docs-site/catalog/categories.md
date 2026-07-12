@@ -1,0 +1,3 @@
+# Categories
+
+Coming soon.
