@@ -53,7 +53,7 @@ export default defineConfig({
           { text: 'Expenses', link: '/finance/expenses' },
           { text: 'Budgets', link: '/finance/budgets' },
           { text: 'Wallets & Transfers', link: '/finance/wallets-transfers' },
-          { text: 'Cost & Profit Calculations', link: '/finance/calculations' },
+          { text: 'Cash Count & Reconciliation', link: '/finance/calculations' },
         ],
       },
       {

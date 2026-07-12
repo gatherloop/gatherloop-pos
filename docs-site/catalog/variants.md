@@ -28,4 +28,4 @@ This is the recipe-to-price link that makes the catalog's numbers trustworthy in
 - Screens/components: `libs/ui/src/presentation/components/variants/VariantFormView.tsx` (recipe UI, live cost math, pricing tier editor)
 - Entity: `libs/ui/src/domain/entities/Variant.ts`
 - Backend: `apps/api/domain/variant_entity.go`, `variant_usecase.go` (`validateVariantForSaleType`)
-- Related: [Materials](/catalog/materials) for where recipe costs come from, [Cost & Profit Calculations](/finance/calculations) for how this rolls up into the bigger financial picture.
+- Related: [Materials](/catalog/materials) for where recipe costs come from. This per-item Food Cost % *is* the product's cost/profit picture — it's calculated fresh here, live, rather than in a separate report.
