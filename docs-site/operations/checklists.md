@@ -14,7 +14,7 @@ Templates and sessions are deliberately kept separate so that editing a template
 
 ## Screenshot
 
-> 📸 Screenshot placeholder — real UI captures land in a later documentation pass.
+![Operational Checklists screenshot](/screenshots/checklists.png)
 
 ## Key capabilities
 

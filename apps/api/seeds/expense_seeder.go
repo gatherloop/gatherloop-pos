@@ -78,7 +78,7 @@ func (ExpenseSeeder) Seed(tx *gorm.DB) error {
 		},
 		{
 			WalletName: "Cash",
-			BudgetName: "Marketing",
+			BudgetName: "Operational",
 			Items: []expenseItemDef{
 				{Name: "Banner Printing", Unit: "pcs", Price: 75000, Amount: 2},
 				{Name: "Social Media Ads", Unit: "campaign", Price: 200000, Amount: 1},

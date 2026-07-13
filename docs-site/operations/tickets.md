@@ -14,7 +14,7 @@ Just as importantly, resolution never blocks operations: if a card is scanned th
 
 ## Screenshot
 
-> 📸 Screenshot placeholder — real UI captures land in a later documentation pass.
+![Tickets screenshot](/screenshots/tickets.png)
 
 ## Key capabilities
 

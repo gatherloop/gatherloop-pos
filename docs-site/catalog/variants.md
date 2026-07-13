@@ -12,7 +12,7 @@ This is the recipe-to-price link that makes the catalog's numbers trustworthy in
 
 ## Screenshot
 
-> 📸 Screenshot placeholder — real UI captures land in a later documentation pass.
+![Product Variants screenshot](/screenshots/variants.png)
 
 ## Key capabilities
 

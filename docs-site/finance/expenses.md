@@ -14,7 +14,7 @@ Every rupiah leaving the business should be traceable to two things: what it was
 
 ## Screenshot
 
-> 📸 Screenshot placeholder — real UI captures land in a later documentation pass.
+![Expenses screenshot](/screenshots/expenses.png)
 
 ## Key capabilities
 

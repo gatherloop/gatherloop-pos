@@ -12,7 +12,7 @@ A material is the single fact the rest of the catalog's money math is built on. 
 
 ## Screenshot
 
-> 📸 Screenshot placeholder — real UI captures land in a later documentation pass.
+![Materials screenshot](/screenshots/materials.png)
 
 ## Key capabilities
 

@@ -14,7 +14,7 @@ A shop owner doesn't have time to page through raw transaction and expense lists
 
 ## Screenshot
 
-> 📸 Screenshot placeholder — real UI captures land in a later documentation pass.
+![Dashboard & Statistics screenshot](/screenshots/dashboard.png)
 
 ## Key capabilities
 

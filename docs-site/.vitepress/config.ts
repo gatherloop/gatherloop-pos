@@ -1,9 +1,32 @@
 import { defineConfig } from 'vitepress';
 
+const title = 'Gatherloop POS';
+const description =
+  'A complete point of sale for coffee shops — sales, catalog, inventory, finance, and operations, in one product.';
+const siteUrl = 'https://gatherloop.github.io/gatherloop-pos/';
+const ogImage = `${siteUrl}og-image.png`;
+
 export default defineConfig({
-  title: 'Gatherloop POS',
-  description: 'Feature documentation for Gatherloop POS',
+  title,
+  description,
   base: '/gatherloop-pos/',
+
+  head: [
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/gatherloop-pos/favicon.svg' }],
+    ['meta', { name: 'theme-color', content: '#0f172a' }],
+
+    ['meta', { property: 'og:type', content: 'website' }],
+    ['meta', { property: 'og:site_name', content: title }],
+    ['meta', { property: 'og:title', content: title }],
+    ['meta', { property: 'og:description', content: description }],
+    ['meta', { property: 'og:url', content: siteUrl }],
+    ['meta', { property: 'og:image', content: ogImage }],
+
+    ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
+    ['meta', { name: 'twitter:title', content: title }],
+    ['meta', { name: 'twitter:description', content: description }],
+    ['meta', { name: 'twitter:image', content: ogImage }],
+  ],
 
   themeConfig: {
     nav: [
@@ -86,5 +109,10 @@ export default defineConfig({
     socialLinks: [
       { icon: 'github', link: 'https://github.com/gatherloop/gatherloop-pos' },
     ],
+
+    footer: {
+      message: 'Built with VitePress. Content lives in <code>docs-site/</code> — see the README for how to run it locally.',
+      copyright: 'Gatherloop POS — a real coffee shop\'s point of sale, open on GitHub.',
+    },
   },
 });

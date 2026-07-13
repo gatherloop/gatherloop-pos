@@ -12,7 +12,7 @@ Station is what makes the [Transactions](/sales/transactions) order slip work wi
 
 ## Screenshot
 
-> 📸 Screenshot placeholder — real UI captures land in a later documentation pass.
+![Categories screenshot](/screenshots/categories.png)
 
 ## Key capabilities
 

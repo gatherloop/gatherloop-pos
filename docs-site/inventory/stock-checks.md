@@ -16,7 +16,7 @@ Just as important, each stock check **freezes a snapshot** of every material's p
 
 ## Screenshot
 
-> 📸 Screenshot placeholder — real UI captures land in a later documentation pass.
+![Stock Checks screenshot](/screenshots/stock-checks.png)
 
 ## Key capabilities
 
