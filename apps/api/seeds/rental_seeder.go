@@ -18,14 +18,15 @@ func (RentalSeeder) Seed(tx *gorm.DB) error {
 		Name string
 	}
 	type Rental struct {
-		Id         int64
-		Code       string
-		Name       string
-		VariantId  int64
-		CheckinAt  time.Time
-		CheckoutAt *time.Time
-		CreatedAt  time.Time
-		DeletedAt  *time.Time
+		Id           int64
+		Code         string
+		Name         string
+		VariantId    int64
+		CheckinAt    time.Time
+		CheckoutAt   *time.Time
+		CreatedAt    time.Time
+		DeletedAt    *time.Time
+		PricingTiers string `gorm:"column:pricing_tiers"`
 	}
 
 	getVariantId := func(name string) (int64, error) {
@@ -79,12 +80,13 @@ func (RentalSeeder) Seed(tx *gorm.DB) error {
 		}
 
 		rental := Rental{
-			Code:       rd.Code,
-			Name:       rd.Name,
-			VariantId:  variantId,
-			CheckinAt:  rd.CheckinAt,
-			CheckoutAt: rd.CheckoutAt,
-			CreatedAt:  now,
+			Code:         rd.Code,
+			Name:         rd.Name,
+			VariantId:    variantId,
+			CheckinAt:    rd.CheckinAt,
+			CheckoutAt:   rd.CheckoutAt,
+			CreatedAt:    now,
+			PricingTiers: `[{"up_to_minutes":60,"price":15000},{"up_to_minutes":90,"price":20000},{"up_to_minutes":120,"price":30000}]`,
 		}
 		if err := tx.Table("rentals").Create(&rental).Error; err != nil {
 			return err
