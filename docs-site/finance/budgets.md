@@ -14,7 +14,7 @@ The current model, based on how mainstream POS platforms actually solve this, re
 
 ## Screenshot
 
-> 📸 Screenshot placeholder — real UI captures land in a later documentation pass.
+![Budgets screenshot](/screenshots/budgets.png)
 
 ## Key capabilities
 

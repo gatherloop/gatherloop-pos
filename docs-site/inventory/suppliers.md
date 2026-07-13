@@ -14,7 +14,7 @@ Deleting a supplier is safe by design — it soft-deletes along with every mater
 
 ## Screenshot
 
-> 📸 Screenshot placeholder — real UI captures land in a later documentation pass.
+![Suppliers screenshot](/screenshots/suppliers.png)
 
 ## Key capabilities
 

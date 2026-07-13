@@ -14,7 +14,7 @@ The system solves this by locking in the price the moment a customer checks in: 
 
 ## Screenshot
 
-> 📸 Screenshot placeholder — real UI captures land in a later documentation pass.
+![Board-game Rentals screenshot](/screenshots/rentals.png)
 
 ## Key capabilities
 

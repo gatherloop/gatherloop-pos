@@ -12,7 +12,7 @@ Real discounts rarely apply evenly to everyone in a group. A table with three bo
 
 ## Screenshot
 
-> 📸 Screenshot placeholder — real UI captures land in a later documentation pass.
+![Coupons screenshot](/screenshots/coupons.png)
 
 ## Key capabilities
 

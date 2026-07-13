@@ -14,7 +14,7 @@ A wallet's balance is only a number in the system until someone actually counts 
 
 ## Screenshot
 
-> 📸 Screenshot placeholder — real UI captures land in a later documentation pass.
+![Cash Count & Reconciliation screenshot](/screenshots/calculations.png)
 
 ## Key capabilities
 

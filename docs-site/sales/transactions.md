@@ -16,7 +16,7 @@ Splitting the receipt into a **customer invoice** and a **station order slip** a
 
 ## Screenshot
 
-> 📸 Screenshot placeholder — real UI captures land in a later documentation pass.
+![Transactions screenshot](/screenshots/transactions.png)
 
 ## Key capabilities
 

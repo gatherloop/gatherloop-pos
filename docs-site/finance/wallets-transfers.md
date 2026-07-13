@@ -12,7 +12,7 @@ Every payment a customer makes and every purchase staff record has to land somew
 
 ## Screenshot
 
-> 📸 Screenshot placeholder — real UI captures land in a later documentation pass.
+![Wallets & Transfers screenshot](/screenshots/wallets.png)
 
 ## Key capabilities
 

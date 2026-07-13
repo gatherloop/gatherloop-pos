@@ -17,7 +17,7 @@ The draft/published split also protects the sales floor from half-finished setup
 
 ## Screenshot
 
-> 📸 Screenshot placeholder — real UI captures land in a later documentation pass.
+![Products screenshot](/screenshots/products.png)
 
 ## Key capabilities
 

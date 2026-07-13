@@ -14,7 +14,7 @@ Because the whole thing is computed from a stock check's frozen snapshot rather 
 
 ## Screenshot
 
-> 📸 Screenshot placeholder — real UI captures land in a later documentation pass.
+![Purchase Lists screenshot](/screenshots/purchase-list.png)
 
 ## Key capabilities
 
