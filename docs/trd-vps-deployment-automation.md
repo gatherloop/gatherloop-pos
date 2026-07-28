@@ -70,6 +70,7 @@ Cutover is therefore a **DNS + one env var per client**, not a code change.
 
 - Multi-node, load-balanced, or blue/green deployment. One VPS, one process.
 - Migrating MySQL. The API keeps connecting to the existing managed database (see Decisions).
+- **Running database migrations.** Migrations are applied manually on the VPS by an operator, outside the pipeline. The deploy is code-only. See "Database migrations are out of the pipeline" below.
 - Deploying `apps/web` or `apps/mobile`. This TRD covers `apps/api` only.
 - Container orchestration of any kind on the VPS.
 - Fixing the permissive CORS middleware (see Follow-ups).
@@ -88,8 +89,9 @@ Cutover is therefore a **DNS + one env var per client**, not a code change.
 | 6 | **Production only, no staging tier** | Matches the current single-service Render shape. A staging tier doubles the provisioning surface and secret set; it can be added later by parameterising the workflow's environment. |
 | 7 | **Symlink-swap releases with retained history** | `current -> releases/<id>`. Rollback is a symlink repoint plus a restart — seconds, and it needs no network and no CI. |
 | 8 | **The release script is installed by provisioning, not shipped in the tarball** | The script runs with elevated privileges. If CI could overwrite it, a compromised CI token would mean arbitrary privileged code on the VPS. Provisioning is a deliberate, operator-run step. |
-| 9 | **Split the secrets by need-to-know** | The deploy user can read DB credentials (it must run migrations) but *not* `JWT_SECRET`. Two env files with different group ownership. |
-| 10 | **The API binds to `127.0.0.1` in production** | Only Caddy should be able to reach it. Defence in depth alongside the firewall. Requires a small code change (today it binds `:PORT` on all interfaces). |
+| 9 | **The deploy path holds no application secrets at all** | Because the pipeline never runs migrations, the deploy user never needs database credentials. One env file, readable only by the runtime user. CI can place and start a binary; it cannot read a single secret the API uses. |
+| 10 | **Migrations stay manual, run by an operator on the VPS** | Explicitly requested. The `migrate` binary still ships in every release, so the operator always has a version-matched migrator on the box without building anything. |
+| 11 | **The API binds to `127.0.0.1` in production** | Only Caddy should be able to reach it. Defence in depth alongside the firewall. Requires a small code change (today it binds `:PORT` on all interfaces). |
 
 ---
 
@@ -110,9 +112,11 @@ Cutover is therefore a **DNS + one env var per client**, not a code change.
  └───────────────────────────────────────────────┬─────────────────────────────┘
                                                  │
  ┌───────────────────────────── VPS ─────────────▼─────────────────────────────┐
- │  release.sh:  verify sha256 → unpack → migrate → swap symlink → restart     │
+ │  release.sh:  verify sha256 → unpack → swap symlink → restart               │
  │               → poll /health-check → prune old releases                     │
  │                                     └── on failure: repoint symlink, restart│
+ │                                                                             │
+ │  (migrations: operator-run, out of band — see runbook)                      │
  │                                                                             │
  │   Internet ──443──> Caddy (auto-TLS) ──> 127.0.0.1:8000 ──> gatherloop-api  │
  │                                                              (systemd)      │
@@ -137,8 +141,7 @@ Cutover is therefore a **DNS + one env var per client**, not a code change.
 └── previous -> releases/20260727T183000Z-9f8e7d6
 
 /etc/gatherloop-api/
-├── api.env        0640 root:gatherloop   # full env incl. JWT_SECRET
-└── migrate.env    0640 root:deploy       # DB credentials only
+└── api.env        0640 root:gatherloop   # the only env file; deploy cannot read it
 
 /usr/local/bin/gatherloop-release         0755 root:root
 /usr/local/bin/gatherloop-rollback        0755 root:root
@@ -149,10 +152,10 @@ Cutover is therefore a **DNS + one env var per client**, not a code change.
 
 Two Unix users, neither of which can do the other's job:
 
-- **`gatherloop`** — a no-login system user. Runs the API process. Owns nothing writable. Can read `api.env` (and therefore `JWT_SECRET`).
-- **`deploy`** — the SSH target for CI. Owns `/opt/gatherloop-api`. Can read `migrate.env` (DB creds, no JWT secret). Has exactly two sudo grants: the release script and the rollback script.
+- **`gatherloop`** — a no-login system user. Runs the API process. Owns nothing writable. The only user that can read `api.env`, and therefore the only user that ever sees `JWT_SECRET` or the database password.
+- **`deploy`** — the SSH target for CI. Owns `/opt/gatherloop-api`. Reads **no** secrets. Has exactly two sudo grants: the release script and the rollback script.
 
-A compromised CI key gets code execution as `deploy` and DB credentials. It does **not** get the JWT signing secret, and it cannot alter the privileged scripts it is allowed to invoke.
+Keeping migrations out of the pipeline pays for itself here. A deploy that had to migrate would need database credentials on the deploy path; a code-only deploy does not. The result is that **CI can place and start a binary but cannot read any secret the application uses**, and it cannot alter the privileged scripts it is allowed to invoke. A compromised CI key gets code execution as an unprivileged user with no credentials in reach.
 
 ### systemd unit (shape)
 
@@ -213,24 +216,34 @@ Caddy obtains and renews the certificate itself. `ufw` denies inbound everything
 
 1. **Verify** — `sha256sum -c` against the uploaded `.sha256`. Refuse to proceed on mismatch. This is what makes a truncated `scp` a failed deploy rather than a corrupt production binary.
 2. **Unpack** to `releases/<timestamp>-<short-sha>/`, `chmod +x`, `chown` to `deploy`.
-3. **Migrate** — run the *new* release's `migrate` binary with `migrate.env`. Migrations run **before** the swap, so a migration failure aborts the deploy with the old version still serving.
-4. **Swap** — repoint `previous` to the old target, then `current` to the new release, atomically (`ln -sfn` onto a temp name + `mv -T`).
-5. **Restart** — `systemctl restart gatherloop-api`.
-6. **Health gate** — poll `http://127.0.0.1:$PORT/health-check` for up to 60s. Require HTTP 200 **and** a `version` field matching the release's commit SHA. Matching the version is what distinguishes "the new binary is up" from "the old binary never died."
-7. **Rollback on failure** — repoint `current` back to `previous`, restart, dump `journalctl -u gatherloop-api -n 200`, exit non-zero.
-8. **Prune** — keep the 5 most recent releases.
+3. **Swap** — repoint `previous` to the old target, then `current` to the new release, atomically (`ln -sfn` onto a temp name + `mv -T`).
+4. **Restart** — `systemctl restart gatherloop-api`.
+5. **Health gate** — poll `http://127.0.0.1:$PORT/health-check` for up to 60s. Require HTTP 200 **and** a `version` field matching the release's commit SHA. Matching the version is what distinguishes "the new binary is up" from "the old binary never died."
+6. **Rollback on failure** — repoint `current` back to `previous`, restart, dump `journalctl -u gatherloop-api -n 200`, exit non-zero.
+7. **Prune** — keep the 5 most recent releases.
 
-### Migrations and the rollback boundary
+The script touches the database at no point, reads no credentials, and has no failure mode that can leave the schema half-changed. `migrate` and `seed` ship in the tarball but are **never invoked by it**.
 
-Step 7 rolls back **code**. It does not roll back **schema** — automatic `migrate down` on a failed deploy risks destroying data on the basis of a health check timeout, which is a far worse failure than a red deploy.
+### Database migrations are out of the pipeline
 
-The consequence is a rule this repo must follow from now on:
+Migrations are applied manually on the VPS by an operator. The deploy is code-only.
 
-> **Every migration must be backward-compatible with the immediately preceding release of the API.**
+This makes the deploy strictly simpler and strictly safer — the release script cannot corrupt data because it never talks to the database — and it is what lets the deploy user hold no credentials. The cost is one ordering rule the operator owns:
 
-Additive columns, new tables, and new indexes are safe. A destructive change (dropping or renaming a column, tightening a constraint) must be split across two deploys: ship the code that stops depending on the column, then ship the migration that drops it. This is the standard expand/contract pattern, and it is the price of automatic rollback. It is called out in the runbook and belongs in PR review for any PR touching `apps/api/migrations/`.
+> **Apply the migration before deploying the code that depends on it.**
 
-`seed` is shipped in the tarball but **never invoked by the release script**. It stays a deliberate, manual, operator-run action.
+Deploy code that needs a column that doesn't exist yet and the API will fail its health check on boot; the release script rolls back automatically and production keeps serving the previous version. That is a loud, safe failure — but it is an avoidable one, and the order above avoids it. For a destructive change, invert it: deploy the code that stops using the column first, then drop it. That ordering (expand → deploy → contract) also keeps automatic rollback safe, since rolling code back one version never lands it against a schema it cannot read.
+
+Every release ships a version-matched `migrate` binary, so the procedure needs no toolchain and no source checkout on the VPS:
+
+```bash
+# on the VPS, as an operator with sudo
+sudo systemd-run --pipe --wait --property=User=gatherloop \
+  --property=EnvironmentFile=/etc/gatherloop-api/api.env \
+  /opt/gatherloop-api/current/migrate
+```
+
+Running it through `systemd-run` as the `gatherloop` user means the credentials come from the same env file the service uses and are never echoed into a shell history or a terminal. `seed` is run the same way, and just as deliberately. Both procedures — including how to check the current schema version and how to roll a migration back by hand — are written out in the runbook.
 
 ---
 
@@ -313,13 +326,13 @@ cat /opt/gatherloop-api/current/RELEASE      # what is actually running
 | Build fails in CI | No artifact, no deploy job | None — production untouched |
 | `scp` fails / network drop | Deploy job fails before release script runs | None |
 | Corrupt tarball | Checksum verification refuses to unpack | None |
-| Migration fails | Script aborts **before** the symlink swap | None — old version still serving |
+| Code deployed before its migration was applied | Boot or first query fails → health gate times out → auto-rollback | One restart blip; previous version keeps serving |
 | New binary crashes on boot | Health gate times out → auto-rollback → restart | One restart blip (seconds) |
 | New binary healthy but wrong version reported | Version mismatch treated as failure → rollback | One restart blip |
 | Wrong `GOARCH` | `Exec format error` → health gate fails → rollback | One restart blip |
 | VPS reboots | `WantedBy=multi-user.target` restarts the service | Downtime = boot time |
 | Process panics at runtime | `Restart=on-failure` after 2s | Seconds |
-| Bad migration discovered after a successful deploy | Manual: `gatherloop-rollback` for code + a deliberate `migrate down` decision | Requires an operator |
+| Bad migration | Entirely outside the pipeline — an operator action, resolved by an operator (`migrate down` or a restore) | Depends on the migration; unchanged from today |
 
 ---
 
@@ -368,8 +381,8 @@ Still no CI change and no deploy. This PR is infrastructure-as-reviewed-text.
 - `deploy/vps/systemd/gatherloop-api.service`
 - `deploy/vps/sudoers/gatherloop-deploy` — exactly two `NOPASSWD` grants, validated with `visudo -c`.
 - `deploy/vps/caddy/Caddyfile.example`
-- `deploy/vps/env/api.env.example`, `deploy/vps/env/migrate.env.example`
-- `docs/runbook-vps-deployment.md` — first-time provisioning, secret rotation, log access, manual rollback, the expand/contract migration rule, and the recorded VPS architecture.
+- `deploy/vps/env/api.env.example` — the single env file, `0640 root:gatherloop`.
+- `docs/runbook-vps-deployment.md` — first-time provisioning, secret rotation, log access, manual rollback, the recorded VPS architecture, and the **manual migration and seed procedures** (`systemd-run` invocation, checking the current schema version, rolling a migration back by hand, and the apply-migration-before-deploying-code ordering rule).
 - Add a `shellcheck` job to CI covering `deploy/**/*.sh`.
 
 **Acceptance:** running `provision.sh` on a fresh VPS leaves `gatherloop-api.service` installed and `inactive` (no release exists yet); `systemd-analyze verify` passes; `sudo -l -U deploy` lists exactly the two intended commands; shellcheck is green.
@@ -382,10 +395,10 @@ Still no CI change and no deploy. This PR is infrastructure-as-reviewed-text.
 
 The heart of the deploy, reviewed on its own rather than buried in a workflow diff.
 
-- `deploy/vps/release.sh` → installed as `/usr/local/bin/gatherloop-release`. Implements the 8-step contract above, `set -euo pipefail`, every step logged with a timestamp.
+- `deploy/vps/release.sh` → installed as `/usr/local/bin/gatherloop-release`. Implements the 7-step contract above, `set -euo pipefail`, every step logged with a timestamp. No database access anywhere in it.
 - `deploy/vps/rollback.sh` → `/usr/local/bin/gatherloop-rollback`. Repoints `current` to `previous`, restarts, health-gates.
 - `deploy/vps/provision.sh` extended to install both.
-- A smoke test (`bats` or a plain shell harness) exercising the script against a stub binary: happy path, checksum mismatch, migration failure, health-gate failure → rollback, prune-keeps-5.
+- A smoke test (`bats` or a plain shell harness) exercising the script against a stub binary: happy path, checksum mismatch, health-gate failure → rollback, prune-keeps-5.
 
 **Acceptance:** manually `scp` a Phase-1 artifact to the VPS and run the script — the service comes up healthy and `/health-check` reports the expected SHA. Then deliberately deploy a binary that exits immediately and confirm automatic rollback to the previous release with the service healthy again.
 
@@ -440,9 +453,10 @@ Only after Phases 1–6 have run green for an agreed soak period.
 
 ## Security Considerations
 
-- **The CI SSH key is a production credential.** It is scoped to the `deploy` user, which cannot read `JWT_SECRET` and cannot modify the privileged scripts it may invoke. Rotation is documented in the runbook. Binding it to the `production` environment means it is not exposed to workflows running from forks or unrelated branches.
+- **The CI SSH key is a production credential, but a narrow one.** It is scoped to the `deploy` user, which reads no application secrets — not `JWT_SECRET`, not the database password — and cannot modify the privileged scripts it may invoke. Keeping migrations manual is what buys this: a migrating deploy would have to put database credentials on the deploy path. Rotation is documented in the runbook. Binding the key to the `production` environment means it is not exposed to workflows running from forks or unrelated branches.
 - **Host key pinning** prevents a MITM from receiving the tarball or the SSH session.
-- **Secrets never enter the repo or the artifact.** The tarball contains only binaries and metadata. Env files are created by an operator during provisioning and never leave the VPS.
+- **Secrets never enter the repo or the artifact.** The tarball contains only binaries and metadata. The single env file is created by an operator during provisioning, is readable only by the runtime user, and never leaves the VPS.
+- **The deploy pipeline has no database reach.** Nothing in CI or in the release script opens a database connection, so no automated failure mode can alter or destroy data.
 - **The API is not directly reachable.** `BIND_ADDR=127.0.0.1` plus `ufw` default-deny; only Caddy fronts it.
 - **systemd sandboxing** limits what a compromised API process can reach: read-only filesystem, no new privileges, no home directories, IP address families restricted.
 - **`checksum-before-unpack`** means a partial transfer cannot become a running binary.
@@ -458,7 +472,8 @@ Only after Phases 1–6 have run green for an agreed soak period.
 | Risk | Likelihood | Mitigation |
 |---|---|---|
 | `GOARCH` mismatch with the VPS | Medium | Recorded in the runbook; caught by the health gate on the first deploy, which auto-rolls back |
-| A destructive migration lands without expand/contract, making rollback unsafe | Medium | Documented rule; PR-review checklist item on `apps/api/migrations/**` |
+| A migration is forgotten before the code that needs it is deployed | Medium | Health gate fails the deploy and auto-rolls back rather than serving errors; ordering rule documented in the runbook and a PR-review checklist item on `apps/api/migrations/**` |
+| Manual migrations drift from what the deployed code expects | Medium | Accepted consequence of keeping migrations out of the pipeline. `/health-check` reports the running version so code and schema state can always be reconciled; revisit automating this if it bites |
 | Single VPS is a single point of failure | Certain, accepted | Explicit non-goal. `Restart=on-failure` + `WantedBy=multi-user.target` cover process and host restarts |
 | Provisioning drift — someone edits a file on the VPS, the repo no longer reflects reality | Medium | `provision.sh` is idempotent and re-runnable; the runbook says to change the repo and re-run, never to hand-edit |
 | CI build slows down as the npm tree grows | Low | `setup-node` npm cache + `setup-go` module cache; the build is off the critical path of serving traffic either way |
@@ -482,6 +497,7 @@ Only after Phases 1–6 have run green for an agreed soak period.
 ## Follow-ups (not in this TRD)
 
 - CORS allowlist (see Security).
+- Automating migrations as a gated deploy step, if the manual ordering rule proves error-prone in practice. Note the trade-off it would reintroduce: the deploy path would need database credentials again.
 - Staging environment, by parameterising the deploy workflow's environment and host secrets.
 - Log/metric shipping off the VPS.
 - Automated database backups — currently the managed provider's responsibility; revisit if the DB ever moves to the VPS.
