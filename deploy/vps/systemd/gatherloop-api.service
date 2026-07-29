@@ -1,0 +1,31 @@
+[Unit]
+Description=Gatherloop POS API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=gatherloop
+Group=gatherloop
+WorkingDirectory=/opt/gatherloop-api/current
+EnvironmentFile=/etc/gatherloop-api/api.env
+ExecStart=/opt/gatherloop-api/current/api
+Restart=on-failure
+RestartSec=2s
+KillSignal=SIGTERM
+TimeoutStopSec=35s
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6
+LockPersonality=true
+MemoryDenyWriteExecute=true
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

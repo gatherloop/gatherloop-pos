@@ -1,0 +1,11 @@
+# /etc/caddy/Caddyfile
+#
+# Copy this file to /etc/caddy/Caddyfile on the VPS and replace the
+# placeholder hostname with the real API domain before starting Caddy.
+# Caddy obtains and renews the Let's Encrypt certificate automatically —
+# no certbot, no renewal cron.
+
+api.gatherloop.example {
+    encode zstd gzip
+    reverse_proxy 127.0.0.1:8000
+}

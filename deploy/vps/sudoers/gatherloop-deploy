@@ -1,0 +1,14 @@
+# /etc/sudoers.d/gatherloop-deploy
+#
+# Grants the `deploy` user exactly two privileged commands, both NOPASSWD.
+# `deploy` owns /opt/gatherloop-api and reads no application secrets — see
+# docs/runbook-vps-deployment.md and the TRD for the security rationale.
+#
+# Install with mode 0440, owner root:root, and always validate with
+# `visudo -c -f /etc/sudoers.d/gatherloop-deploy` before and after editing —
+# a broken sudoers file can lock out sudo entirely.
+
+Cmnd_Alias GATHERLOOP_RELEASE  = /usr/local/bin/gatherloop-release *
+Cmnd_Alias GATHERLOOP_ROLLBACK = /usr/local/bin/gatherloop-rollback
+
+deploy ALL=(root) NOPASSWD: GATHERLOOP_RELEASE, GATHERLOOP_ROLLBACK
