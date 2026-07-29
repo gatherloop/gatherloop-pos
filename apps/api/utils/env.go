@@ -17,6 +17,7 @@ type Env struct {
 	DbHost      string
 	DbPort      string
 	Port        string
+	BindAddr    string
 	JwtSecret   string
 	LogLevel    string
 	AppEnv      string
@@ -46,6 +47,7 @@ func GetEnv() Env {
 		DbHost:      os.Getenv("DB_HOST"),
 		DbPort:      os.Getenv("DB_PORT"),
 		Port:        os.Getenv("PORT"),
+		BindAddr:    os.Getenv("BIND_ADDR"),
 		JwtSecret:   os.Getenv("JWT_SECRET"),
 		LogLevel:    logLevel,
 		AppEnv:      appEnv,

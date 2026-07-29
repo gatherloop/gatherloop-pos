@@ -6,9 +6,14 @@ import (
 	"apps/api/pkg/logger"
 	"apps/api/presentation/restapi"
 	"apps/api/utils"
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -117,10 +122,45 @@ func main() {
 	restapi.NewChecklistSessionRouter(checklistSessionHandler).AddRouter(router)
 	restapi.NewStockCheckRouter(stockCheckHandler).AddRouter(router)
 
-	router.HandleFunc("/health-check", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("health check success"))
-	})
+	startTime := time.Now()
+	router.HandleFunc("/health-check", restapi.NewHealthHandler(startTime).HealthCheck)
 
-	rootLogger.Info("server listening", slog.String("port", env.Port))
-	http.ListenAndServe(fmt.Sprintf(":%s", env.Port), router)
+	srv := &http.Server{
+		Addr:              fmt.Sprintf("%s:%s", env.BindAddr, env.Port),
+		Handler:           router,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       120 * time.Second,
+	}
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	serveErrCh := make(chan error, 1)
+	go func() {
+		rootLogger.Info("server listening", slog.String("addr", srv.Addr))
+		serveErrCh <- srv.ListenAndServe()
+	}()
+
+	select {
+	case err := <-serveErrCh:
+		if err != nil && err != http.ErrServerClosed {
+			rootLogger.Error("server failed", slog.String("error", err.Error()))
+			os.Exit(1)
+		}
+	case <-ctx.Done():
+		stop()
+		rootLogger.Info("shutdown signal received, draining in-flight requests")
+
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		if err := srv.Shutdown(shutdownCtx); err != nil {
+			rootLogger.Error("graceful shutdown failed", slog.String("error", err.Error()))
+			os.Exit(1)
+		}
+
+		rootLogger.Info("server shut down cleanly")
+	}
 }
