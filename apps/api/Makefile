@@ -1,13 +1,18 @@
 # Makefile for gatherloop-pos API
 # Usage: make <target>
 
-include .env
+-include .env
 export
 
 DB_URL ?= mysql://$(DB_USERNAME):$(DB_PASSWORD)@tcp($(DB_HOST):$(DB_PORT))/$(DB_NAME)
 MIGRATIONS_DIR ?= migrations
 
-.PHONY: migrate-up migrate-down migrate-create migrate-version dev build build-migrate build-seed migrate seed test
+GOOS    ?= linux
+GOARCH  ?= amd64
+VERSION ?= $(shell git rev-parse --short HEAD)
+LDFLAGS := -s -w -X apps/api/pkg/buildinfo.Version=$(VERSION)
+
+.PHONY: migrate-up migrate-down migrate-create migrate-version dev build build-migrate build-seed migrate seed test build-release
 
 ## migrate-up: Run all pending migrations (via migrate CLI)
 migrate-up:
@@ -53,3 +58,9 @@ seed:
 ## test: Run all tests
 test:
 	go test ./...
+
+## build-release: Build statically-linked release binaries (api, migrate, seed) for CI packaging
+build-release:
+	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build -trimpath -ldflags "$(LDFLAGS)" -o dist/release/api     main.go
+	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build -trimpath -ldflags "$(LDFLAGS)" -o dist/release/migrate cmd/migrate/main.go
+	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build -trimpath -ldflags "$(LDFLAGS)" -o dist/release/seed    cmd/seed/main.go
