@@ -1,0 +1,99 @@
+name: API build
+
+on:
+  pull_request:
+    paths:
+      - 'apps/api/**'
+      - 'libs/api-contract/**'
+      - '.github/workflows/api-build.yaml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/api/**'
+      - 'libs/api-contract/**'
+      - '.github/workflows/api-build.yaml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/api/go.mod
+          cache-dependency-path: apps/api/go.sum
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Go API contract
+        run: npx nx run api-contract:generate:go
+
+      - name: Vet
+        working-directory: apps/api
+        run: go vet ./...
+
+      - name: Test
+        working-directory: apps/api
+        run: go test ./...
+
+      - name: Set version
+        run: echo "VERSION=$(echo ${{ github.sha }} | cut -c1-7)" >> "$GITHUB_ENV"
+
+      - name: Build release binaries
+        working-directory: apps/api
+        run: make build-release VERSION=$VERSION
+
+      - name: Package release artifact
+        working-directory: apps/api
+        run: |
+          set -euo pipefail
+
+          GO_VERSION=$(go version | awk '{print $3}')
+          BUILT_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+          cat > dist/release/RELEASE <<EOF
+          sha=${{ github.sha }}
+          ref=${{ github.ref }}
+          built_at=${BUILT_AT}
+          run_id=${{ github.run_id }}
+          go_version=${GO_VERSION}
+          EOF
+
+          ARTIFACT_NAME="api-${VERSION}.tar.gz"
+
+          tar -czf "${ARTIFACT_NAME}" -C dist/release api migrate seed RELEASE
+          sha256sum "${ARTIFACT_NAME}" > "${ARTIFACT_NAME}.sha256"
+
+          echo "ARTIFACT_NAME=${ARTIFACT_NAME}" >> "$GITHUB_ENV"
+
+      - name: Verify checksum
+        working-directory: apps/api
+        run: sha256sum -c "${ARTIFACT_NAME}.sha256"
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: |
+            apps/api/${{ env.ARTIFACT_NAME }}
+            apps/api/${{ env.ARTIFACT_NAME }}.sha256
+          retention-days: 30
