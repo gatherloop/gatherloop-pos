@@ -24,4 +24,4 @@ Gatherloop POS runs on **web and mobile** from a single shared codebase, so staf
 
 A shop's numbers usually live in three disconnected places: a POS for sales, a notebook (or spreadsheet) for stock, and a separate ledger for expenses and profit. Reconciling them is manual, error-prone, and happens too late to act on. Gatherloop POS exists to close that gap — every sale, restock, and expense feeds the same system, so the cost and profit picture is always current, not reconstructed at month-end.
 
-Next: [Who It's For](./who-its-for) to see how staff, investors, and engineers each get value from the same product.
+Next: [Who It's For](./who-its-for) to see how different readers each get value from the same product.
