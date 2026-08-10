@@ -18,6 +18,8 @@ We are moving to our own VPS. Reproducing this build on the VPS is not acceptabl
 
 **The build must happen in GitHub Actions. The VPS must only ever receive a finished, statically-linked binary and run it.**
 
+> **Design note.** This revision simplifies an earlier draft of this TRD by taking direct inspiration from `game-master-bell`'s Node API pipeline (`.github/workflows/deploy-api.yml`): one workflow file, marketplace SSH actions instead of hand-rolled `ssh-agent` setup, and deploy commands written inline rather than shipped as a separately provisioned, sudo-invoked script. The constraint above — build in CI, ship a binary, no toolchain on the VPS — is Go-specific and non-negotiable, and nothing below changes it. Everything *around* that constraint should not be more elaborate than a Node project's deploy needs to be, and this revision cuts it down accordingly. Where this repo still keeps something game-master-bell doesn't (a narrow sudoers allowlist instead of broader `sudo`, a lightweight health check), that's called out explicitly with why.
+
 ---
 
 ## Context: Existing System
@@ -75,6 +77,7 @@ Cutover is therefore a **DNS + one env var per client**, not a code change.
 - Deploying `apps/web` or `apps/mobile`. This TRD covers `apps/api` only.
 - Container orchestration of any kind on the VPS.
 - Fixing the permissive CORS middleware (see Follow-ups).
+- **A git checkout on the VPS.** Unlike `game-master-bell`, which keeps a full `git clone` of its repo on the VPS and `git reset --hard`s it on every deploy, the VPS here never holds a copy of the monorepo — only the contents of the release tarball. This repo is a large React Native + Next.js + Go monorepo; nothing on the VPS needs a checkout of any of it, and not having one removes an entire class of drift (VPS git state vs. `main`) that a Node deploy without prebuilt binaries has to manage.
 
 ---
 
@@ -83,16 +86,17 @@ Cutover is therefore a **DNS + one env var per client**, not a code change.
 | # | Decision | Rationale |
 |---|---|---|
 | 1 | **Build in Actions, ship a tarball of static binaries** | The stated requirement. `CGO_ENABLED=0` + `GOOS=linux` makes the output a single dependency-free file per binary. |
-| 2 | **Push over SSH** (CI `scp`s the tarball and runs a release script over `ssh`) | Fewest moving parts and the deploy result is visible in the Actions log where the engineer already is. The alternative — a VPS-side agent polling GitHub Releases — trades a CI-held SSH key for a VPS-held GitHub token plus an agent to maintain, and hides failures from the person who merged. |
+| 2 | **Push over SSH using `appleboy/scp-action` / `appleboy/ssh-action`, with the host key pinned via their `fingerprint` input** | Same "fewest moving parts, deploy result visible in the Actions log" reasoning as before, but the marketplace actions remove the ~30 lines of `ssh-agent` bootstrapping and `known_hosts` file-writing a hand-rolled OpenSSH setup needs. `fingerprint` pins the host key exactly as the old `known_hosts` file did, so this isn't a security downgrade — just less code to maintain. This mirrors `game-master-bell`'s pipeline directly. |
 | 3 | **systemd unit, not Docker, on the VPS** | The deliverable is already a static binary. Wrapping it in a container adds a daemon, an image registry, and a pull step to gain isolation we get more cheaply from systemd's sandboxing directives. |
 | 4 | **Caddy as the reverse proxy / TLS terminator** | Automatic Let's Encrypt issuance and renewal in ~4 lines of config. Nginx + certbot is more config and a renewal cron to forget about. |
 | 5 | **Keep the existing managed MySQL** | Scopes this project to "where the process runs." Moving the database is a separate project with its own backup, tuning, and restore-drill requirements. `DB_HOST` is already an env var, so a later move costs one config change. |
 | 6 | **Production only, no staging tier** | Matches the current single-service Render shape. A staging tier doubles the provisioning surface and secret set; it can be added later by parameterising the workflow's environment. |
-| 7 | **Overwrite binaries in place on every deploy — no retained release history, no automatic rollback** | Deploying is: unpack the new binaries over the old ones at a fixed path, restart, health-check. There is no `releases/<id>` history and no rollback script. A bad deploy is a loud CI failure recovered by redeploying a known-good SHA. This removes an entire class of moving parts (symlink swap, retained history, pruning, a second privileged script) in exchange for accepting that a bad deploy causes visible downtime until an operator redeploys. Deploys are gated (manual dispatch or reviewed merges) and infrequent, so this is judged the right trade for a single small VPS. |
-| 8 | **The release script is installed by provisioning, not shipped in the tarball** | The script runs with elevated privileges. If CI could overwrite it, a compromised CI token would mean arbitrary privileged code on the VPS. Provisioning is a deliberate, operator-run step. |
-| 9 | **The deploy path holds no application secrets at all** | Because the pipeline never runs migrations, the deploy user never needs database credentials. One env file, readable only by the runtime user. CI can place and start a binary; it cannot read a single secret the API uses. |
+| 7 | **Overwrite binaries in place on every deploy — no checksum file, no atomic staging-directory swap, no retained release history** | The earlier draft `sha256sum -c` verified the tarball and staged the unpack in `current.new/` before an atomic `mv -T`, purely to stop a truncated transfer from becoming a running binary. SSH/SCP already runs over an authenticated, integrity-checked transport — a truncated tarball fails `tar -xzf` outright, before the restart line is ever reached — and the health check below still catches a binary that came up broken either way. That makes both the checksum step and the staging directory a hand-maintained shell dance for a failure mode that's already rare and already caught downstream. Deploying is: unpack the new binaries over the old ones at a fixed path, restart, health-check. There is no `releases/<id>` history and no rollback script; recovery from a bad deploy is redeploying a known-good SHA. |
+| 8 | **Deploy commands live inline in the GitHub Actions workflow, not as a separately provisioned, sudo-invoked script** | The earlier draft shipped a `gatherloop-release` script via a one-time provisioning step specifically so a compromised CI key could only invoke that one audited script, not arbitrary root commands. That property is kept, more cheaply: the `deploy` user's sudo rights are a narrow, explicit `NOPASSWD` allowlist (`systemctl restart`/`daemon-reload`, `journalctl`, installing the systemd unit file — see Filesystem layout) written once into `/etc/sudoers.d/gatherloop-deploy`, rather than "run whatever script CI drops on disk." A compromised CI key still can't do more than that four-line allowlist, but there's no separate script file to write, ship, version, or keep in sync with the workflow. This mirrors how `game-master-bell`'s deploy step runs `sudo cp .../*.service`, `sudo systemctl daemon-reload`, and `sudo systemctl restart` directly in its `ssh-action` script block. |
+| 9 | **The deploy path holds no application secrets at all** | Unaffected by the above — the `deploy` user still never reads `api.env`; only the `gatherloop` runtime user can. Because the pipeline never runs migrations, the deploy user never needs database credentials either. CI can place a binary and restart the service; it cannot read a single secret the API uses. |
 | 10 | **Migrations stay manual, run by an operator on the VPS** | Explicitly requested. The `migrate` binary still ships in every release, so the operator always has a version-matched migrator on the box without building anything. |
 | 11 | **The API binds to `127.0.0.1` in production** | Only Caddy should be able to reach it. Defence in depth alongside the firewall. Requires a small code change (today it binds `:PORT` on all interfaces). |
+| 12 | **One workflow, one combined trigger (`push` to `main` + `workflow_dispatch`) from day one** | The earlier draft shipped manual-dispatch-only deploys in one PR, then added the `push` trigger in a second PR, to keep the first production-facing change small and reviewer-gated. `game-master-bell` ships both triggers from the start. With decisions 7 and 8 already removing the riskiest moving parts (checksum/atomic-swap, a privileged script), splitting the trigger rollout into two PRs buys little — both triggers land in the same `production` GitHub Environment with required reviewers either way, so a human still approves every deploy regardless of which trigger fired it. |
 
 ---
 
@@ -100,28 +104,33 @@ Cutover is therefore a **DNS + one env var per client**, not a code change.
 
 ```
  ┌─────────────────────── GitHub Actions (ubuntu-latest) ───────────────────────┐
+ │  build job:                                                                  │
  │  checkout → setup-node → setup-java → setup-go                              │
  │  npm ci  →  nx run api-contract:generate:go  →  make build-release          │
- │  package: api-<sha>.tar.gz  +  api-<sha>.tar.gz.sha256                      │
+ │  package: api-<sha>.tar.gz  (binaries + systemd unit + RELEASE metadata)    │
  │  upload as workflow artifact  ────────────────┐                             │
  └───────────────────────────────────────────────┼─────────────────────────────┘
                                                  │  (same artifact, never rebuilt)
  ┌───────────────────── deploy job (environment: production) ───────────────────┐
- │  ssh-agent + pinned known_hosts                                             │
- │  scp tarball → /tmp on VPS                                                  │
- │  ssh: sudo /usr/local/bin/gatherloop-release /tmp/api-<sha>.tar.gz          │
+ │  appleboy/scp-action  →  tarball to /tmp on VPS  (host key pinned)          │
+ │  appleboy/ssh-action  →  inline deploy script     (host key pinned)         │
  └───────────────────────────────────────────────┬─────────────────────────────┘
                                                  │
  ┌───────────────────────────── VPS ─────────────▼─────────────────────────────┐
- │  release.sh:  verify sha256 → unpack over current/ → restart                │
- │               → poll /health-check                                          │
- │                                     └── on failure: dump journal, exit ≠0   │
+ │  deploy script (inline in the workflow, runs as `deploy` over SSH):         │
+ │    tar -xzf tarball -C /opt/gatherloop-api/current                          │
+ │    chmod +x .../{api,migrate,seed}                                          │
+ │    sudo cp .../gatherloop-api.service /etc/systemd/system/                  │
+ │    sudo systemctl daemon-reload && sudo systemctl restart gatherloop-api    │
+ │    curl --retry 5 --retry-delay 2 -f http://127.0.0.1:8000/health-check     │
+ │      └── on failure: sudo journalctl -u gatherloop-api -n 100, exit ≠0     │
  │                                         (no rollback — redeploy to recover) │
  │                                                                             │
- │  (migrations: operator-run, out of band — see runbook)                      │
+ │  (migrations: operator-run, out of band — see runbook)                     │
  │                                                                             │
  │   Internet ──443──> Caddy (auto-TLS) ──> 127.0.0.1:8000 ──> gatherloop-api  │
- │                                                              (systemd)      │
+ │                                                              (systemd,      │
+ │                                                          User=gatherloop)   │
  │                                                                  │          │
  └──────────────────────────────────────────────────────────────────┼──────────┘
                                                                     │
@@ -132,29 +141,39 @@ Cutover is therefore a **DNS + one env var per client**, not a code change.
 
 ```
 /opt/gatherloop-api/
-└── current/                          # fixed path, overwritten in place on every deploy
+└── current/                          # owned by `deploy`; overwritten in place on every deploy
     ├── api
     ├── migrate
     ├── seed
-    └── RELEASE                       # sha, ref, built_at, run_id, go version — what is running now
+    ├── gatherloop-api.service         # copied to /etc/systemd/system/ by every deploy
+    └── RELEASE                        # sha, ref, built_at, run_id, go version — what is running now
 
 /etc/gatherloop-api/
-└── api.env        0640 root:gatherloop   # the only env file; deploy cannot read it
+└── api.env        0640 root:gatherloop   # the only env file; deploy user cannot read it
 
-/usr/local/bin/gatherloop-release         0755 root:root
-/etc/systemd/system/gatherloop-api.service
-/etc/sudoers.d/gatherloop-deploy
+/etc/systemd/system/gatherloop-api.service   # kept in sync with the repo's deploy/vps/systemd/ by every deploy
+/etc/sudoers.d/gatherloop-deploy             # narrow NOPASSWD allowlist for `deploy`, see below
 /etc/caddy/Caddyfile
 ```
 
-There is no `releases/` history and no `previous` pointer — each deploy overwrites `current/` in place. What was running before a deploy is gone the moment the new binaries are unpacked; recovering from a bad deploy means redeploying a known-good SHA (the CI artifact is retained for 30 days, or CI rebuilds it in a couple of minutes).
+There is no `releases/` history, no `previous` pointer, and no separately installed `/usr/local/bin/gatherloop-release`. What was running before a deploy is gone the moment the new binaries are unpacked; recovering from a bad deploy means redeploying a known-good SHA (the CI artifact is retained for 30 days, or CI rebuilds it in a couple of minutes).
 
 Two Unix users, neither of which can do the other's job:
 
-- **`gatherloop`** — a no-login system user. Runs the API process. Owns nothing writable. The only user that can read `api.env`, and therefore the only user that ever sees `JWT_SECRET` or the database password.
-- **`deploy`** — the SSH target for CI. Owns `/opt/gatherloop-api`. Reads **no** secrets. Has exactly one sudo grant: the release script.
+- **`gatherloop`** — a no-login system user. Runs the API process (`User=gatherloop` in the unit). Owns nothing writable. The only user that can read `api.env`, and therefore the only user that ever sees `JWT_SECRET` or the database password.
+- **`deploy`** — the SSH target for CI. Owns `/opt/gatherloop-api/current`, so unpacking the tarball needs no sudo. Reads **no** secrets. Has exactly this sudo grant in `/etc/sudoers.d/gatherloop-deploy`:
 
-Keeping migrations out of the pipeline pays for itself here. A deploy that had to migrate would need database credentials on the deploy path; a code-only deploy does not. The result is that **CI can place and start a binary but cannot read any secret the application uses**, and it cannot alter the privileged script it is allowed to invoke. A compromised CI key gets code execution as an unprivileged user with no credentials in reach.
+  ```
+  deploy ALL=(root) NOPASSWD: \
+      /bin/cp /opt/gatherloop-api/current/gatherloop-api.service /etc/systemd/system/gatherloop-api.service, \
+      /bin/systemctl daemon-reload, \
+      /bin/systemctl restart gatherloop-api, \
+      /usr/bin/journalctl -u gatherloop-api -n 100 --no-pager
+  ```
+
+  Four lines, written once during provisioning. No separate script for it to invoke — the allowlist *is* the whole privilege boundary.
+
+Keeping migrations out of the pipeline pays for itself here. A deploy that had to migrate would need database credentials on the deploy path; a code-only deploy does not. The result is that **CI can restart a binary but cannot read any secret the application uses, and cannot run any root command beyond the four listed above.** A compromised CI key gets, at most, the ability to disrupt the service's availability — no credentials, no database reach, no arbitrary code execution as root.
 
 ### systemd unit (shape)
 
@@ -194,9 +213,11 @@ WantedBy=multi-user.target
 
 Notes that matter:
 
-- `ExecStart` points at a fixed path (`/opt/gatherloop-api/current/api`) that is overwritten by each deploy, so **unpacking the new binaries and restarting is sufficient** to change versions. No unit file edit per deploy.
+- `ExecStart` points at a fixed path (`/opt/gatherloop-api/current/api`) that is overwritten by each deploy, so **unpacking the new binaries and restarting is sufficient** to change versions.
+- The unit file itself is now also overwritten by each deploy (`sudo cp` from the unpacked tarball), so a change to `deploy/vps/systemd/gatherloop-api.service` in the repo ships through the next normal deploy — no separate provisioning re-run needed to pick it up.
 - `ProtectSystem=strict` makes the whole filesystem read-only to the process. The API writes nothing to disk (logs go to stdout), so no `ReadWritePaths` is needed. `godotenv` will fail to find a `.env` — which the code already tolerates.
 - `TimeoutStopSec=35s` is deliberately longer than the 30s graceful-shutdown budget added in Phase 2.
+- Binaries stay owned by `deploy` (not `chown`'d to `gatherloop`) and are simply made world-executable (`chmod +x`) — one less sudo call in the deploy step, no ownership handoff needed for `gatherloop` to `exec` them.
 
 ### Caddy
 
@@ -209,17 +230,19 @@ api.gatherloop.example {
 
 Caddy obtains and renews the certificate itself. `ufw` denies inbound everything except 22, 80, 443, so `8000` is unreachable from outside even if the bind address were wrong.
 
-### The release script contract
+### The deploy step
 
-`gatherloop-release <tarball>` is the entire deploy:
+The entire deploy is a short script running inline inside the `appleboy/ssh-action` step — no separately installed, sudo-invoked release script:
 
-1. **Verify** — `sha256sum -c` against the uploaded `.sha256`. Refuse to proceed on mismatch, leaving `current/` untouched. This is what makes a truncated `scp` a failed deploy rather than a corrupt production binary.
-2. **Unpack** to a staging directory, `chmod +x`, `chown` to `deploy`, then atomically replace `current/`'s contents with it (unpack to `current.new/`, `mv -T` onto `current/`). This keeps a half-written unpack from ever being what `ExecStart` points at, without keeping any history around.
-3. **Restart** — `systemctl restart gatherloop-api`.
-4. **Health gate** — poll `http://127.0.0.1:$PORT/health-check` for up to 60s. Require HTTP 200 **and** a `version` field matching the release's commit SHA. Matching the version is what distinguishes "the new binary is up" from "the old binary never died."
-5. **Report** — on success, log and exit 0. On failure, dump `journalctl -u gatherloop-api -n 200` and exit non-zero.
+1. **Unpack** directly onto `current/` — `tar -xzf` over the existing binaries. No checksum file, no staging directory (see Decision 7). A truncated or corrupt tarball makes `tar -xzf` itself fail, so the deploy step exits before ever touching `systemctl restart`.
+2. **Make executable** — `chmod +x api migrate seed`.
+3. **Install/refresh the unit** — `sudo cp gatherloop-api.service /etc/systemd/system/` (source: the copy shipped inside this release's tarball, built from `deploy/vps/systemd/` in the repo), then `sudo systemctl daemon-reload`.
+4. **Restart** — `sudo systemctl restart gatherloop-api`.
+5. **Health check** — `curl --retry 5 --retry-delay 2 --fail http://127.0.0.1:$PORT/health-check`. On failure, `sudo journalctl -u gatherloop-api -n 100 --no-pager` is dumped into the job log and the step exits non-zero, failing the job red.
 
-There is no rollback step and nothing to prune: `current/` holds exactly one release, and a failed health gate leaves whatever the new binary is doing (crash-looping under `Restart=on-failure`, or up but reporting the wrong version) rather than restoring the old one — because the old one no longer exists on disk. Recovery from a failed deploy is re-running the deploy workflow against the previous known-good SHA.
+**Trade-off, stated plainly:** the earlier draft's health gate required an exact match between the release's commit SHA and a `version` field in the JSON health response, specifically to catch the case where `systemctl restart` silently no-ops and the *old* process is still the one answering `/health-check`. This revision drops that exact-match requirement — a plain `curl --fail` retry loop is enough to catch the common failure modes (new binary crash-loops, wrong `GOARCH`, port never opens) with far less code. `systemctl restart` sends the previous process SIGTERM (and SIGKILL after `TimeoutStopSec`) before starting the new one, which makes a truly silent no-op restart rare in practice — but it is not impossible. The `RELEASE` file and the `version` field `/health-check` still returns (added in Phase 2) remain available for an operator to manually confirm what's actually running (`curl .../health-check | jq .version` vs. `cat current/RELEASE`); they're just no longer an automated gate. Revisit if this ever actually bites (see Follow-ups).
+
+There is nothing to prune and no rollback step: `current/` holds exactly one release, and a failed health check leaves whatever the new binary is doing (crash-looping under `Restart=on-failure`, or up but broken) rather than restoring the old one — because the old one no longer exists on disk. Recovery from a failed deploy is re-running the deploy workflow against the previous known-good SHA.
 
 The script touches the database at no point, reads no credentials, and has no failure mode that can leave the schema half-changed. `migrate` and `seed` ship in the tarball but are **never invoked by it**.
 
@@ -227,11 +250,11 @@ The script touches the database at no point, reads no credentials, and has no fa
 
 Migrations are applied manually on the VPS by an operator. The deploy is code-only.
 
-This makes the deploy strictly simpler and strictly safer — the release script cannot corrupt data because it never talks to the database — and it is what lets the deploy user hold no credentials. The cost is one ordering rule the operator owns:
+This makes the deploy strictly simpler and strictly safer — the deploy step cannot corrupt data because it never talks to the database — and it is what lets the `deploy` user hold no credentials. The cost is one ordering rule the operator owns:
 
 > **Apply the migration before deploying the code that depends on it.**
 
-Deploy code that needs a column that doesn't exist yet and the API will fail its health check on boot; the release script exits non-zero and the deploy job goes red, but — since there is no retained history to fall back to — the API stays down until an operator applies the migration or redeploys the previous SHA. That is a loud failure, and an avoidable one: the order above avoids it. For a destructive change, invert it: deploy the code that stops using the column first, then drop it. That ordering (expand → deploy → contract) also keeps recovery simple, since redeploying the previous SHA never lands it against a schema it cannot read.
+Deploy code that needs a column that doesn't exist yet and the API will fail its health check on boot; the deploy step exits non-zero and the deploy job goes red, but — since there is no retained history to fall back to — the API stays down until an operator applies the migration or redeploys the previous SHA. That is a loud failure, and an avoidable one: the order above avoids it. For a destructive change, invert it: deploy the code that stops using the column first, then drop it. That ordering (expand → deploy → contract) also keeps recovery simple, since redeploying the previous SHA never lands it against a schema it cannot read.
 
 Every release ships a version-matched `migrate` binary, so the procedure needs no toolchain and no source checkout on the VPS:
 
@@ -259,11 +282,20 @@ steps:
   - uses: actions/setup-go@v5        # go-version-file: apps/api/go.mod, cache
   - run: npm ci
   - run: npx nx run api-contract:generate:go
+  - run: cd apps/api && go vet ./... && go test ./...
   - run: make -C apps/api build-release
-  - # package + sha256 + upload-artifact
+  - run: |
+      cp deploy/vps/systemd/gatherloop-api.service apps/api/dist/release/
+      # write RELEASE metadata (sha, ref, built_at, run_id, go version) into dist/release/
+      tar -czf api-${{ github.sha }}.tar.gz -C apps/api/dist/release .
+  - uses: actions/upload-artifact@v4
+    with:
+      name: api-release
+      path: api-*.tar.gz
+      retention-days: 30
 ```
 
-Four toolchains for one Go binary is unavoidable given the codegen dependency, but it is *the runner's* problem, which is the whole point. `actions/setup-node`'s npm cache and `actions/setup-go`'s module cache keep the steady-state build in the low minutes.
+Four toolchains for one Go binary is unavoidable given the codegen dependency, but it is *the runner's* problem, which is the whole point. `actions/setup-node`'s npm cache and `actions/setup-go`'s module cache keep the steady-state build in the low minutes. Bundling the systemd unit into the same tarball as the binaries means the deploy job has exactly one artifact to fetch and one thing to `scp`.
 
 `make build-release` is a new Makefile target so that CI and a laptop produce byte-comparable output:
 
@@ -279,7 +311,7 @@ build-release:
 	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build -trimpath -ldflags "$(LDFLAGS)" -o dist/release/seed    cmd/seed/main.go
 ```
 
-> **`GOARCH` must match the VPS.** `amd64` is the default; an ARM VPS (Hetzner CAX, Oracle Ampere, some AWS Lightsail) needs `arm64`. Getting this wrong produces an `Exec format error` at restart, a failed health gate, and a red deploy job — loud, but worth setting correctly up front. The runbook records the VPS's `uname -m`.
+> **`GOARCH` must match the VPS.** `amd64` is the default; an ARM VPS (Hetzner CAX, Oracle Ampere, some AWS Lightsail) needs `arm64`. Getting this wrong produces an `Exec format error` at restart, a failed health check, and a red deploy job — loud, but worth setting correctly up front. The runbook records the VPS's `uname -m`.
 
 **Pre-existing bug this phase must fix:** `apps/api/Makefile` line 5 is `include .env`, which makes *every* Make target fail on a machine without a `.env` file — including CI. It becomes `-include .env`.
 
@@ -291,17 +323,97 @@ build-release:
 | `VPS_PORT` | SSH port |
 | `VPS_USER` | `deploy` |
 | `VPS_SSH_PRIVATE_KEY` | ed25519 key, CI-only, authorised for `deploy` |
-| `VPS_SSH_KNOWN_HOSTS` | Pinned host public key |
+| `VPS_SSH_FINGERPRINT` | SHA256 fingerprint of the VPS host key (`ssh <host> ssh-keygen -l -f /etc/ssh/ssh_host_ed25519_key.pub`), passed as `appleboy/ssh-action`'s / `appleboy/scp-action`'s `fingerprint` input |
 
-`VPS_SSH_KNOWN_HOSTS` is not optional. `StrictHostKeyChecking=no` would let anything that can win a DNS or BGP race receive our release tarball and the SSH session that follows.
+`VPS_SSH_FINGERPRINT` is not optional. Omitting it makes the actions accept any host key — exactly the `StrictHostKeyChecking=no` risk the earlier draft's `known_hosts` file existed to close, and it would let anything that can win a DNS or BGP race receive our release tarball and the SSH session that follows.
 
-The workflow uses stock `openssh` (`ssh-agent`, `scp`, `ssh`) rather than a third-party marketplace action. A deploy step holding the production SSH key is the last place to accept an unaudited dependency, and the plain commands are ~10 reviewable lines.
+The workflow uses `appleboy/scp-action` and `appleboy/ssh-action` rather than hand-rolled `ssh-agent`/`known_hosts` setup. This is a direct, deliberate departure from the earlier draft's "stock OpenSSH only" stance, matching `game-master-bell`. The trade is a well-known, widely used marketplace dependency in exchange for materially less workflow code to maintain; the host-key-pinning property that mattered is preserved via `fingerprint`.
+
+### Deploy workflow
+
+```yaml
+name: Deploy api to VPS
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/api/**"
+      - "libs/api-contract/**"
+      - "deploy/vps/**"
+      - ".github/workflows/deploy-api.yaml"
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to deploy"
+        required: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+      # ... setup-node / setup-java / setup-go / npm ci / generate / build-release / package ...
+      - uses: actions/upload-artifact@v4
+        with:
+          name: api-release
+          path: api-*.tar.gz
+          retention-days: 30
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: deploy-api-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: api-release
+
+      - uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          port: ${{ secrets.VPS_PORT }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          fingerprint: ${{ secrets.VPS_SSH_FINGERPRINT }}
+          source: "api-*.tar.gz"
+          target: "/tmp"
+
+      - uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          port: ${{ secrets.VPS_PORT }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          fingerprint: ${{ secrets.VPS_SSH_FINGERPRINT }}
+          script: |
+            set -euo pipefail
+            cd /opt/gatherloop-api/current
+            tar -xzf /tmp/api-*.tar.gz
+            chmod +x api migrate seed
+            sudo cp gatherloop-api.service /etc/systemd/system/gatherloop-api.service
+            sudo systemctl daemon-reload
+            sudo systemctl restart gatherloop-api
+            rm -f /tmp/api-*.tar.gz
+            if ! curl --retry 5 --retry-delay 2 --fail -s http://127.0.0.1:8000/health-check; then
+              echo "health check failed"
+              sudo journalctl -u gatherloop-api -n 100 --no-pager
+              exit 1
+            fi
+```
+
+This is the shape, not a byte-final file — the actual PR fills in the build steps from the CI build job above. Compare its length and structure to `game-master-bell/.github/workflows/deploy-api.yml`: same two-job build/deploy split, same marketplace actions, same "download the one artifact the build job produced, `scp` it, `ssh` in and finish the job" flow. The differences that remain (host-key pinning via `fingerprint`, the narrow sudoers allowlist instead of broader `sudo`, no `.env`/secret file written per deploy) come from Decisions 2, 8, and 9 above, not from Go vs. Node.
 
 Other workflow properties:
 
 - `permissions: contents: read` — the deploy job needs nothing else.
-- `environment: production` — enables required reviewers and scopes the secrets to that environment.
-- `concurrency: { group: deploy-api-production, cancel-in-progress: false }` — deploys queue. Cancelling a deploy mid-flight could leave `current/` half-unpacked.
+- `environment: production` — enables required reviewers and scopes the secrets to that environment, for both triggers (see Decision 12).
+- `concurrency: { group: deploy-api-production, cancel-in-progress: false }` — deploys queue rather than interleave, so two `current/` unpacks never race each other.
 
 ### Observability
 
@@ -323,21 +435,22 @@ cat /opt/gatherloop-api/current/RELEASE      # what is actually running
 | Failure | Behaviour | Blast radius |
 |---|---|---|
 | Build fails in CI | No artifact, no deploy job | None — production untouched |
-| `scp` fails / network drop | Deploy job fails before release script runs | None — `current/` never touched |
-| Corrupt tarball | Checksum verification refuses to unpack, `current/` untouched | None |
-| Code deployed before its migration was applied | Boot or first query fails → health gate times out → deploy job fails, journal dumped | API down (crash-looping or serving errors) until the operator applies the migration or redeploys the previous SHA |
-| New binary crashes on boot | Health gate times out → deploy job fails, journal dumped | API down until a known-good SHA is redeployed |
-| New binary healthy but wrong version reported | Version mismatch treated as failure → deploy job fails | Needs manual investigation; the running binary may not be what was intended |
-| Wrong `GOARCH` | `Exec format error` → health gate fails → deploy job fails | API down until a correct-arch SHA is redeployed |
+| `scp` fails / network drop | Deploy job fails before the deploy script runs | None — `current/` never touched |
+| Corrupt or truncated tarball | `tar -xzf` fails on the malformed archive, deploy script exits before `systemctl restart` runs | None — the running process is never touched |
+| Code deployed before its migration was applied | Boot or first query fails → health check fails after retries → deploy job fails, journal dumped | API down until the operator applies the migration or redeploys the previous SHA |
+| New binary crashes on boot | Health check fails after retries → deploy job fails, journal dumped | API down until a known-good SHA is redeployed |
+| Wrong `GOARCH` | `Exec format error` → health check fails → deploy job fails | API down until a correct-arch SHA is redeployed |
+| Restart silently no-ops (old process never actually replaced) | Health check still returns 200 from the old binary — not automatically caught (see "Trade-off" above) | Deploy job reports green while the new code isn't actually running; caught by manually comparing `/health-check`'s `version` to `RELEASE` |
 | VPS reboots | `WantedBy=multi-user.target` restarts the service | Downtime = boot time |
 | Process panics at runtime | `Restart=on-failure` after 2s | Seconds |
 | Bad migration | Entirely outside the pipeline — an operator action, resolved by an operator (`migrate down` or a restore) | Depends on the migration; unchanged from today |
+| Compromised CI SSH key | Attacker gets exactly the `deploy` user's sudoers allowlist: restart/reload the unit, install the unit file, read the last 100 journal lines. No secrets, no database reach, no other root command | Can disrupt availability; cannot exfiltrate credentials or touch data |
 
 ---
 
 ## Implementation Phases
 
-Seven PRs. Each is independently reviewable and independently mergeable; each leaves `main` in a working state. Phases 1–4 touch nothing that is live — the first change to production behaviour is Phase 5, and it is manually triggered and reviewer-gated.
+Five PRs, down from the earlier draft's seven — Decisions 7, 8, and 12 each removed a phase's worth of moving parts. Each PR is independently reviewable and independently mergeable; each leaves `main` in a working state. Phases 1–3 touch nothing that is live — the first change to production behaviour is Phase 4, and it is reviewer-gated via the `production` GitHub Environment regardless of which trigger fires it.
 
 ---
 
@@ -347,12 +460,12 @@ Seven PRs. Each is independently reviewable and independently mergeable; each le
 
 - Add `apps/api/pkg/buildinfo/buildinfo.go` (`var Version = "dev"`, set via `-ldflags`).
 - Add `build-release` to `apps/api/Makefile`; fix `include .env` → `-include .env`.
-- Add `.github/workflows/api-build.yaml`: triggers on PRs and pushes to `main` touching `apps/api/**`, `libs/api-contract/**`, or the workflow itself. Sets up Node 20 / Temurin 21 / Go (from `go.mod`), runs `npm ci`, generates the Go contract, runs `make build-release`, `go vet` and `go test ./...`, then packages `api-<sha>.tar.gz` + `.sha256` and uploads it as a workflow artifact (30-day retention).
-- Add a `RELEASE` metadata file to the tarball (sha, ref, built_at, run_id, go version).
+- Add `deploy/vps/systemd/gatherloop-api.service` (see shape above).
+- Add `.github/workflows/api-build.yaml`: triggers on PRs and pushes to `main` touching `apps/api/**`, `libs/api-contract/**`, `deploy/vps/**`, or the workflow itself. Sets up Node 20 / Temurin 21 / Go (from `go.mod`), runs `npm ci`, generates the Go contract, runs `go vet` and `go test ./...`, then `make build-release`, packages `api-<sha>.tar.gz` (binaries + the systemd unit + a `RELEASE` metadata file: sha, ref, built_at, run_id, go version) and uploads it as a workflow artifact (30-day retention).
 
-**Acceptance:** workflow is green; the artifact downloads; `file api` reports a statically linked ELF for the target arch; `sha256sum -c` passes.
+**Acceptance:** workflow is green; the artifact downloads; `file api` reports a statically linked ELF for the target arch; unpacking it produces `api`, `migrate`, `seed`, `gatherloop-api.service`, and `RELEASE`.
 
-**Review surface:** one workflow file, one Makefile diff, one 5-line Go file.
+**Review surface:** one workflow file, one Makefile diff, one systemd unit file, one 5-line Go file.
 
 ---
 
@@ -363,7 +476,7 @@ Render restarted a container. systemd sends SIGTERM to a process that currently 
 - Replace `http.ListenAndServe` with an `http.Server` + `signal.NotifyContext(SIGINT, SIGTERM)` + `srv.Shutdown(ctx)` on a 30s budget.
 - Add `ReadHeaderTimeout`, `ReadTimeout`, `WriteTimeout`, `IdleTimeout`.
 - Add `BIND_ADDR` env var. Default `""` (all interfaces — preserves today's local-dev behaviour); production sets `127.0.0.1`.
-- Extend `GET /health-check` to return JSON: `{"status":"ok","version","commit","uptime_seconds"}`, driven by `buildinfo`. The release script's version gate depends on this.
+- Extend `GET /health-check` to return JSON: `{"status":"ok","version","commit","uptime_seconds"}`, driven by `buildinfo`. Even without an automated version-matching gate (see Decision 8 / "The deploy step"), this is what the runbook and an operator use to confirm what's actually running.
 - Unit test for the health handler; update `apps/api/.env.example` and the README env table.
 
 **Acceptance:** `kill -TERM` on a locally running server drains in-flight requests then exits 0; `curl /health-check | jq .version` returns the ldflags-injected SHA.
@@ -372,69 +485,41 @@ Render restarted a container. systemd sends SIGTERM to a process that currently 
 
 ---
 
-### Phase 3 — VPS provisioning assets
+### Phase 3 — VPS one-time setup
 
 Still no CI change and no deploy. This PR is infrastructure-as-reviewed-text.
 
-- `deploy/vps/provision.sh` — idempotent: creates `gatherloop` (nologin) and `deploy` users, creates `/opt/gatherloop-api/current`, installs the systemd unit, the sudoers drop-in, the env file templates with correct ownership and modes, configures `ufw` (deny inbound; allow 22/80/443), installs and configures Caddy.
-- `deploy/vps/systemd/gatherloop-api.service`
-- `deploy/vps/sudoers/gatherloop-deploy` — exactly one `NOPASSWD` grant (the release script), validated with `visudo -c`.
+- `deploy/vps/provision.sh` — idempotent: creates `gatherloop` (nologin) and `deploy` users, creates `/opt/gatherloop-api/current` owned by `deploy`, writes `/etc/sudoers.d/gatherloop-deploy` with exactly the four-command allowlist above (validated with `visudo -c`), creates the `api.env` template with correct ownership and mode (`0640 root:gatherloop`), configures `ufw` (deny inbound; allow 22/80/443), installs and configures Caddy.
 - `deploy/vps/caddy/Caddyfile.example`
-- `deploy/vps/env/api.env.example` — the single env file, `0640 root:gatherloop`.
+- `deploy/vps/env/api.env.example` — the single env file.
 - `docs/runbook-vps-deployment.md` — first-time provisioning, secret rotation, log access, recovering from a failed deploy by redeploying a known-good SHA, the recorded VPS architecture, and the **manual migration and seed procedures** (`systemd-run` invocation, checking the current schema version, rolling a migration back by hand, and the apply-migration-before-deploying-code ordering rule).
 - Add a `shellcheck` job to CI covering `deploy/**/*.sh`.
 
-**Acceptance:** running `provision.sh` on a fresh VPS leaves `gatherloop-api.service` installed and `inactive` (no release exists yet); `systemd-analyze verify` passes; `sudo -l -U deploy` lists exactly the one intended command; shellcheck is green.
+Note: `provision.sh` does **not** install `gatherloop-api.service` — that now happens on the first deploy (Phase 4), consistent with every later deploy keeping the unit file in sync with the repo.
+
+**Acceptance:** running `provision.sh` on a fresh VPS creates the users, the `/opt/gatherloop-api/current` directory, the sudoers allowlist, and Caddy/firewall config; `sudo -l -U deploy` lists exactly the four intended commands; shellcheck is green.
 
 **Review surface:** all new files, no existing behaviour changed.
 
 ---
 
-### Phase 4 — The release script
+### Phase 4 — Deploy workflow
 
-The heart of the deploy, reviewed on its own rather than buried in a workflow diff.
+First phase that can change production. `push`-to-`main` and `workflow_dispatch` ship together (Decision 12); both are gated by the `production` Environment's required reviewers.
 
-- `deploy/vps/release.sh` → installed as `/usr/local/bin/gatherloop-release`. Implements the 5-step contract above, `set -euo pipefail`, every step logged with a timestamp. No database access anywhere in it.
-- `deploy/vps/provision.sh` extended to install it.
-- A smoke test (`bats` or a plain shell harness) exercising the script against a stub binary: happy path, checksum mismatch (refuses to unpack, `current/` untouched), health-gate failure (exits non-zero, journal dumped, no attempt to restore anything).
-
-**Acceptance:** manually `scp` a Phase-1 artifact to the VPS and run the script — the service comes up healthy and `/health-check` reports the expected SHA. Then deliberately deploy a binary that exits immediately and confirm the script exits non-zero, dumps the journal tail, and leaves the process in its failed state — recovery is re-running the script with a known-good tarball.
-
-**Review surface:** one shell script plus tests. Zero production wiring — it is still only reachable by a human with SSH.
-
----
-
-### Phase 5 — Deploy workflow, manual dispatch only
-
-First phase that can change production, and it requires a human to press the button and a reviewer to approve.
-
-- `.github/workflows/api-deploy.yaml`: `workflow_dispatch` with a `ref` input. Reuses the Phase-1 build via `workflow_call` so the artifact is built once, then a separate `deploy` job bound to the `production` GitHub Environment.
-- Deploy job: `webfactory/ssh-agent`-free plain `ssh-agent` setup, `known_hosts` written from the pinned secret, `scp` the tarball + checksum, `ssh sudo /usr/local/bin/gatherloop-release`, and on failure dump the remote journal tail into the job log.
-- Job summary shows deployed SHA and the health-check response.
+- `.github/workflows/deploy-api.yaml`: build job (Phase 1's steps) + deploy job, per "Deploy workflow" above — `appleboy/scp-action` to copy the tarball, `appleboy/ssh-action` running the inline unpack/restart/health-check script, both with the pinned `fingerprint`.
 - Configure the `production` environment with required reviewers and scoped secrets (documented in the runbook; the setting itself is in GitHub's UI).
-- `concurrency: deploy-api-production`, `cancel-in-progress: false`.
+- Job summary shows the deployed SHA and the health-check response.
 
-**Acceptance:** a manual run deploys a chosen SHA end to end; the run is blocked pending approval until a reviewer approves; a run against a deliberately broken SHA fails the job red with the journal tail in the log, and the API stays down until a known-good SHA is redeployed.
+**Acceptance:** a `workflow_dispatch` run deploys a chosen ref end to end, blocked pending reviewer approval; merging a PR that touches `apps/api` deploys automatically the same way; a run against a deliberately broken build fails the job red with the journal tail in the log, and the API stays down until a known-good SHA is redeployed; two merges in quick succession queue rather than interleave; a PR touching only `apps/web` triggers no deploy.
 
-**Review surface:** one workflow file.
-
----
-
-### Phase 6 — Auto-deploy on merge to `main`
-
-- Add a `push` trigger on `main` filtered to `apps/api/**`, `libs/api-contract/**`, and `.github/workflows/api-*`.
-- Keep `workflow_dispatch` for redeploys and pinned-SHA deploys.
-- Confirm the build artifact is handed to the deploy job rather than rebuilt — the SHA that passed CI is the SHA that ships.
-
-**Acceptance:** merging a PR that touches `apps/api` deploys automatically and `/health-check` reports the merge commit; two merges in quick succession queue rather than interleave; a PR touching only `apps/web` triggers no deploy.
-
-**Review surface:** a few lines of trigger config.
+**Review surface:** one workflow file — this is where the previous draft's Phase 4 (release script), Phase 5 (manual-dispatch deploy), and Phase 6 (auto-deploy trigger) collapse into a single PR.
 
 ---
 
-### Phase 7 — Cutover and Render decommission
+### Phase 5 — Cutover and Render decommission
 
-Only after Phases 1–6 have run green for an agreed soak period.
+Only after Phases 1–4 have run green for an agreed soak period.
 
 - Point the API DNS record at the VPS; confirm Caddy issues the certificate.
 - Update `NEXT_PUBLIC_API_BASE_URL` (web deploy) and `API_BASE_URL` (mobile builds) to the new origin.
@@ -451,13 +536,13 @@ Only after Phases 1–6 have run green for an agreed soak period.
 
 ## Security Considerations
 
-- **The CI SSH key is a production credential, but a narrow one.** It is scoped to the `deploy` user, which reads no application secrets — not `JWT_SECRET`, not the database password — and cannot modify the privileged scripts it may invoke. Keeping migrations manual is what buys this: a migrating deploy would have to put database credentials on the deploy path. Rotation is documented in the runbook. Binding the key to the `production` environment means it is not exposed to workflows running from forks or unrelated branches.
-- **Host key pinning** prevents a MITM from receiving the tarball or the SSH session.
-- **Secrets never enter the repo or the artifact.** The tarball contains only binaries and metadata. The single env file is created by an operator during provisioning, is readable only by the runtime user, and never leaves the VPS.
-- **The deploy pipeline has no database reach.** Nothing in CI or in the release script opens a database connection, so no automated failure mode can alter or destroy data.
+- **The CI SSH key is a production credential, but a narrow one.** It is scoped to the `deploy` user, which reads no application secrets — not `JWT_SECRET`, not the database password — and can run nothing beyond the four commands in `/etc/sudoers.d/gatherloop-deploy`. Keeping migrations manual is what buys this: a migrating deploy would have to put database credentials on the deploy path. Rotation is documented in the runbook. Binding the key to the `production` environment means it is not exposed to workflows running from forks or unrelated branches.
+- **Host key pinning** (via `fingerprint` on both marketplace actions) prevents a MITM from receiving the tarball or the SSH session, the same property the earlier draft's hand-written `known_hosts` file provided.
+- **Secrets never enter the repo or the artifact.** The tarball contains only binaries, the systemd unit, and metadata. The single env file is created by an operator during provisioning, is readable only by the runtime user, and never leaves the VPS.
+- **The deploy pipeline has no database reach.** Nothing in CI or in the deploy script opens a database connection, so no automated failure mode can alter or destroy data.
 - **The API is not directly reachable.** `BIND_ADDR=127.0.0.1` plus `ufw` default-deny; only Caddy fronts it.
 - **systemd sandboxing** limits what a compromised API process can reach: read-only filesystem, no new privileges, no home directories, IP address families restricted.
-- **`checksum-before-unpack`** means a partial transfer cannot become a running binary.
+- **Dropping the checksum step (Decision 7) does not reopen an integrity gap.** SSH/SCP already authenticates and integrity-checks the transfer at the transport layer; a truncated or corrupted tarball fails to unpack rather than silently producing a partial binary.
 
 ### Out-of-scope finding, flagged deliberately
 
@@ -469,21 +554,23 @@ Only after Phases 1–6 have run green for an agreed soak period.
 
 | Risk | Likelihood | Mitigation |
 |---|---|---|
-| `GOARCH` mismatch with the VPS | Medium | Recorded in the runbook; caught by the health gate, which fails the deploy job red — the API is down until a correct-arch SHA is redeployed |
-| A migration is forgotten before the code that needs it is deployed | Medium | Health gate fails the deploy loudly rather than serving errors silently, but the API is down until the operator applies the migration or redeploys the previous SHA; ordering rule documented in the runbook and a PR-review checklist item on `apps/api/migrations/**` |
+| `GOARCH` mismatch with the VPS | Medium | Recorded in the runbook; caught by the health check, which fails the deploy job red — the API is down until a correct-arch SHA is redeployed |
+| A migration is forgotten before the code that needs it is deployed | Medium | Health check fails the deploy loudly rather than serving errors silently, but the API is down until the operator applies the migration or redeploys the previous SHA; ordering rule documented in the runbook and a PR-review checklist item on `apps/api/migrations/**` |
 | Manual migrations drift from what the deployed code expects | Medium | Accepted consequence of keeping migrations out of the pipeline. `/health-check` reports the running version so code and schema state can always be reconciled; revisit automating this if it bites |
-| A bad deploy has no automatic recovery | Medium | Accepted trade-off for a simpler pipeline (see Decisions #7). Deploys are gated (manual dispatch or reviewed merges) and infrequent; recovery is re-running the deploy workflow against a known-good SHA, whose CI artifact is retained for 30 days or rebuilt in a couple of minutes. Revisit if bad deploys prove frequent enough for this to hurt (see Follow-ups) |
+| A bad deploy has no automatic recovery | Medium | Accepted trade-off for a simpler pipeline (see Decision 7). Deploys are gated (required reviewers on `production`) and infrequent; recovery is re-running the deploy workflow against a known-good SHA, whose CI artifact is retained for 30 days or rebuilt in a couple of minutes |
+| No checksum / atomic swap on unpack | Low | SSH/SCP already provides transport integrity; a truncated tarball fails `tar -xzf` before `systemctl restart` ever runs (see Decision 7 and Security Considerations) |
+| Health check no longer requires an exact version match | Low | `systemctl restart` forcibly stops the previous process before starting the new one, making a silent no-op restart rare; `RELEASE` and `/health-check`'s `version` field remain available for manual confirmation (see "The deploy step") |
 | Single VPS is a single point of failure | Certain, accepted | Explicit non-goal. `Restart=on-failure` + `WantedBy=multi-user.target` cover process and host restarts |
-| Provisioning drift — someone edits a file on the VPS, the repo no longer reflects reality | Medium | `provision.sh` is idempotent and re-runnable; the runbook says to change the repo and re-run, never to hand-edit |
+| Provisioning drift — someone edits a file on the VPS, the repo no longer reflects reality | Medium | `provision.sh` is idempotent and re-runnable; the systemd unit is re-synced on every deploy; the runbook says to change the repo and re-run/redeploy, never to hand-edit |
 | CI build slows down as the npm tree grows | Low | `setup-node` npm cache + `setup-go` module cache; the build is off the critical path of serving traffic either way |
-| GitHub Actions outage blocks all deploys | Low | Phase 4's script is runnable by hand over SSH with a locally built tarball |
+| GitHub Actions outage blocks all deploys | Low | The deploy script is short enough to run by hand over SSH with a locally built tarball if needed |
 
 ---
 
 ## Acceptance Criteria (whole project)
 
 1. No Go, Node, Java, or npm toolchain is installed on the VPS, and none is needed to deploy.
-2. Merging a change to `apps/api` on `main` results in that change serving production traffic, unattended.
+2. Merging a change to `apps/api` on `main` results in that change serving production traffic, unattended (subject to required-reviewer approval on the `production` environment).
 3. `curl https://<api-host>/health-check` returns the commit SHA of `main`'s HEAD.
 4. A deliberately broken deploy fails the CI job red, dumps the remote journal tail into the log, and is recoverable by redeploying a known-good SHA through the same workflow.
 5. No secret appears in the repository, in a build artifact, or in an Actions log.
@@ -494,7 +581,8 @@ Only after Phases 1–6 have run green for an agreed soak period.
 ## Follow-ups (not in this TRD)
 
 - CORS allowlist (see Security).
-- Retained release history and automatic rollback on a failed health check, if bad deploys and their downtime prove frequent enough in practice to justify the added complexity (a second privileged script, symlink/history management on the VPS).
+- Retained release history and automatic rollback on a failed health check, if bad deploys and their downtime prove frequent enough in practice to justify the added complexity.
+- Reintroducing an exact version-matched health gate (or a checksum/atomic-swap unpack), if a "restart silently no-op'd" or truncated-transfer incident actually happens in practice — deliberately deferred here as unlikely enough not to build upfront, not impossible (see "The deploy step" and Risks).
 - Automating migrations as a gated deploy step, if the manual ordering rule proves error-prone in practice. Note the trade-off it would reintroduce: the deploy path would need database credentials again.
 - Staging environment, by parameterising the deploy workflow's environment and host secrets.
 - Log/metric shipping off the VPS.
