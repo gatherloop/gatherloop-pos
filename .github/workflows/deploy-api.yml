@@ -1,0 +1,105 @@
+name: Deploy api to VPS
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/api/**"
+      - "libs/api-contract/**"
+      - "go.work"
+      - "package-lock.json"
+      - ".github/workflows/deploy-api.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # openapi-generator-cli is a Java program shipped over npm.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/api/go.mod
+          cache-dependency-path: apps/api/go.sum
+
+      - run: npm ci
+
+      # libs/api-contract/src/__generated__ is gitignored; apps/api cannot
+      # resolve its imports until this runs. See docs/trd-vps-deployment-automation.md §2.
+      - run: npx nx run api-contract:generate:go
+
+      - run: npx nx run api:lint
+      - run: npx nx run api:test
+
+      - run: make -C apps/api build-release
+      - run: tar -czf api-deploy.tar.gz -C apps/api/dist/release .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: api-deploy
+          path: api-deploy.tar.gz
+          retention-days: 1
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: api-deploy
+
+      - name: Copy build artifact to VPS
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          port: ${{ secrets.VPS_PORT }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "api-deploy.tar.gz"
+          target: "/tmp"
+
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          port: ${{ secrets.VPS_PORT }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            cd ${{ secrets.VPS_DEPLOY_PATH }}
+            git fetch origin main
+            git reset --hard origin/main
+            rm -rf apps/api/dist/release
+            mkdir -p apps/api/dist/release
+            tar -xzf /tmp/api-deploy.tar.gz -C apps/api/dist/release
+            rm -f /tmp/api-deploy.tar.gz
+            cat > apps/api/.env <<'ENV_EOF'
+            DB_USERNAME=${{ secrets.DB_USERNAME }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            DB_NAME=${{ secrets.DB_NAME }}
+            DB_HOST=${{ secrets.DB_HOST }}
+            DB_PORT=${{ secrets.DB_PORT }}
+            PORT=${{ secrets.PORT }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            APP_ENV=production
+            ENV_EOF
+            sudo cp apps/api/deploy/gatherloop-pos-api.service /etc/systemd/system/
+            sudo systemctl daemon-reload
+            sudo systemctl enable gatherloop-pos-api
+            sudo systemctl restart gatherloop-pos-api
+            curl --retry 5 --retry-delay 2 --fail \
+              http://127.0.0.1:${{ secrets.PORT }}/health-check \
+              || { sudo journalctl -u gatherloop-pos-api -n 100 --no-pager; exit 1; }
