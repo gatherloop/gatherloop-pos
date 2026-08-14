@@ -243,7 +243,7 @@ certificate check, confirming `PORT` itself is unreachable off-box), are in
 runs under this systemd unit or in the Docker container that document also covers, so it is
 documented once, there.
 
-## What's not covered here yet
+## Day-2 operations
 
-- **Day-2 operations** (manual redeploy, log tailing, uptime monitoring) — see `RUNBOOK.md` once
-  it exists.
+Manual redeploy, log tailing, and uptime monitoring — including recovering from a bad deploy —
+are covered in [`RUNBOOK.md`](./RUNBOOK.md).
