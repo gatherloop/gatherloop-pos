@@ -158,10 +158,18 @@ Because the unit file lives in the tracked checkout, changing
 re-copied to `/etc/systemd/system/` and reloaded on the box — steps 4 above, repeated by hand
 today, and by the deploy pipeline on every future automated run.
 
+## Reverse proxy and TLS
+
+The app binds `PORT` on `127.0.0.1` and is never exposed directly. A reverse proxy in front of
+it terminates TLS, and is the only thing that should be reachable from outside the box. Caddy
+and nginx+certbot configurations, plus the end-to-end verification steps (public HTTPS request,
+certificate check, confirming `PORT` itself is unreachable off-box), are in
+[`DEPLOY.md`](./DEPLOY.md#reverse-proxy-and-tls) — the proxy layer is identical whether the app
+runs under this systemd unit or in the Docker container that document also covers, so it is
+documented once, there.
+
 ## What's not covered here yet
 
-- **The reverse proxy and TLS** — nothing routes public traffic to this instance yet. See
-  `DEPLOY.md` once its reverse-proxy section lands.
 - **The automated deploy pipeline** — merges to `main` do not yet deploy anywhere;
   `.github/workflows/deploy-api.yml` currently only builds on `workflow_dispatch`. The secrets
   table and the two-job (`build` / `deploy`) breakdown will be documented here once that lands.
