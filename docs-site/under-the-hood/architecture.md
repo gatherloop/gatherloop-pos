@@ -55,3 +55,8 @@ Gatherloop POS is one [Nx](https://nx.dev) monorepo: a single Go backend, two fr
 - Shared UI + business logic: [`libs/ui`](https://github.com/gatherloop/gatherloop-pos/tree/main/libs/ui)
 - Web: [`apps/web`](https://github.com/gatherloop/gatherloop-pos/tree/main/apps/web)
 - Mobile: [`apps/mobile`](https://github.com/gatherloop/gatherloop-pos/tree/main/apps/mobile)
+- Deployment: `apps/api` ships to a VPS as a statically compiled binary, built in CI and run
+  under systemd — see
+  [`DEPLOY_NATIVE.md`](https://github.com/gatherloop/gatherloop-pos/blob/main/apps/api/docs/DEPLOY_NATIVE.md),
+  the [Docker alternative](https://github.com/gatherloop/gatherloop-pos/blob/main/apps/api/docs/DEPLOY.md),
+  and the [runbook](https://github.com/gatherloop/gatherloop-pos/blob/main/apps/api/docs/RUNBOOK.md)

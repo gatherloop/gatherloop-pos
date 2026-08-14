@@ -176,6 +176,15 @@ $ nx run api:build
 
 This compiles the Go code into a binary file, preparing it for deployment in production environments.
 
+#### C. Deployment
+
+`apps/api` is deployed to a VPS as a statically compiled binary, built in CI and run under
+systemd — no language toolchain lives on the box. See
+[`apps/api/docs/DEPLOY_NATIVE.md`](apps/api/docs/DEPLOY_NATIVE.md) for the automated pipeline,
+[`apps/api/docs/DEPLOY.md`](apps/api/docs/DEPLOY.md) for the Docker-based alternative, and
+[`apps/api/docs/RUNBOOK.md`](apps/api/docs/RUNBOOK.md) for day-2 operations (manual redeploy, log
+tailing, uptime monitoring).
+
 ### 4.5. API Contract
 
 The API Contract project defines the specifications and types for the API endpoints, ensuring consistent communication between the backend and frontend applications. It serves as a bridge between the API and the client projects, generating type definitions that enhance type safety and reduce errors during development.
