@@ -86,7 +86,7 @@ Cutover is therefore a **DNS + one env var per client**, not a code change.
 | # | Decision | Rationale |
 |---|---|---|
 | 1 | **Build in Actions, ship a tarball of static binaries** | The stated requirement. `CGO_ENABLED=0` + `GOOS=linux` makes the output a single dependency-free file per binary. |
-| 2 | **Push over SSH using `appleboy/scp-action` / `appleboy/ssh-action`, with the host key pinned via their `fingerprint` input** | Same "fewest moving parts, deploy result visible in the Actions log" reasoning as before, but the marketplace actions remove the ~30 lines of `ssh-agent` bootstrapping and `known_hosts` file-writing a hand-rolled OpenSSH setup needs. `fingerprint` pins the host key exactly as the old `known_hosts` file did, so this isn't a security downgrade — just less code to maintain. This mirrors `game-master-bell`'s pipeline directly. |
+| 2 | **Push over SSH using `appleboy/scp-action` / `appleboy/ssh-action`, without host key pinning for now** | Same "fewest moving parts, deploy result visible in the Actions log" reasoning as before, but the marketplace actions remove the ~30 lines of `ssh-agent` bootstrapping and `known_hosts` file-writing a hand-rolled OpenSSH setup needs. Host key pinning via their `fingerprint` input is deliberately deferred so the pipeline can ship without an extra provisioning step; see "Secrets and SSH" for the risk this accepts. This mirrors `game-master-bell`'s pipeline directly. |
 | 3 | **systemd unit, not Docker, on the VPS** | The deliverable is already a static binary. Wrapping it in a container adds a daemon, an image registry, and a pull step to gain isolation we get more cheaply from systemd's sandboxing directives. |
 | 4 | **Caddy as the reverse proxy / TLS terminator** | Automatic Let's Encrypt issuance and renewal in ~4 lines of config. Nginx + certbot is more config and a renewal cron to forget about. |
 | 5 | **Keep the existing managed MySQL** | Scopes this project to "where the process runs." Moving the database is a separate project with its own backup, tuning, and restore-drill requirements. `DB_HOST` is already an env var, so a later move costs one config change. |
@@ -323,11 +323,10 @@ build-release:
 | `VPS_PORT` | SSH port |
 | `VPS_USER` | `deploy` |
 | `VPS_SSH_PRIVATE_KEY` | ed25519 key, CI-only, authorised for `deploy` |
-| `VPS_SSH_FINGERPRINT` | SHA256 fingerprint of the VPS host key (`ssh <host> ssh-keygen -l -f /etc/ssh/ssh_host_ed25519_key.pub`), passed as `appleboy/ssh-action`'s / `appleboy/scp-action`'s `fingerprint` input |
 
-`VPS_SSH_FINGERPRINT` is not optional. Omitting it makes the actions accept any host key — exactly the `StrictHostKeyChecking=no` risk the earlier draft's `known_hosts` file existed to close, and it would let anything that can win a DNS or BGP race receive our release tarball and the SSH session that follows.
+**Host key pinning is deferred, and that is an accepted risk.** Neither action is given a `fingerprint` input, so both accept whatever host key the server presents — the `StrictHostKeyChecking=no` posture. Anything that can win a DNS or BGP race against `VPS_HOST` receives our release tarball and the SSH session that follows, including the `deploy` key. What limits the blast radius is Decision 8: that key is scoped to the `deploy` user and the four commands in `/etc/sudoers.d/gatherloop-deploy`, and reads no application secrets. Closing this is a two-line change — add a `VPS_SSH_FINGERPRINT` secret (`ssh <host> ssh-keygen -l -f /etc/ssh/ssh_host_ed25519_key.pub`) and pass it as `fingerprint` on both steps — and should be done once the pipeline is otherwise stable. Tracked in "Deferred hardening" below.
 
-The workflow uses `appleboy/scp-action` and `appleboy/ssh-action` rather than hand-rolled `ssh-agent`/`known_hosts` setup. This is a direct, deliberate departure from the earlier draft's "stock OpenSSH only" stance, matching `game-master-bell`. The trade is a well-known, widely used marketplace dependency in exchange for materially less workflow code to maintain; the host-key-pinning property that mattered is preserved via `fingerprint`.
+The workflow uses `appleboy/scp-action` and `appleboy/ssh-action` rather than hand-rolled `ssh-agent`/`known_hosts` setup. This is a direct, deliberate departure from the earlier draft's "stock OpenSSH only" stance, matching `game-master-bell`. The trade is a well-known, widely used marketplace dependency in exchange for materially less workflow code to maintain.
 
 ### Deploy workflow
 
@@ -380,7 +379,6 @@ jobs:
           port: ${{ secrets.VPS_PORT }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
-          fingerprint: ${{ secrets.VPS_SSH_FINGERPRINT }}
           source: "api-*.tar.gz"
           target: "/tmp"
 
@@ -390,7 +388,6 @@ jobs:
           port: ${{ secrets.VPS_PORT }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
-          fingerprint: ${{ secrets.VPS_SSH_FINGERPRINT }}
           script: |
             set -euo pipefail
             cd /opt/gatherloop-api/current
@@ -407,7 +404,7 @@ jobs:
             fi
 ```
 
-This is the shape, not a byte-final file — the actual PR fills in the build steps from the CI build job above. Compare its length and structure to `game-master-bell/.github/workflows/deploy-api.yml`: same two-job build/deploy split, same marketplace actions, same "download the one artifact the build job produced, `scp` it, `ssh` in and finish the job" flow. The differences that remain (host-key pinning via `fingerprint`, the narrow sudoers allowlist instead of broader `sudo`, no `.env`/secret file written per deploy) come from Decisions 2, 8, and 9 above, not from Go vs. Node.
+This is the shape, not a byte-final file — the actual PR fills in the build steps from the CI build job above. Compare its length and structure to `game-master-bell/.github/workflows/deploy-api.yml`: same two-job build/deploy split, same marketplace actions, same "download the one artifact the build job produced, `scp` it, `ssh` in and finish the job" flow. The differences that remain (the narrow sudoers allowlist instead of broader `sudo`, no `.env`/secret file written per deploy) come from Decisions 8 and 9 above, not from Go vs. Node.
 
 Other workflow properties:
 
@@ -507,7 +504,7 @@ Note: `provision.sh` does **not** install `gatherloop-api.service` — that now 
 
 First phase that can change production. `push`-to-`main` and `workflow_dispatch` ship together (Decision 12); both are gated by the `production` Environment's required reviewers.
 
-- `.github/workflows/deploy-api.yaml`: build job (Phase 1's steps) + deploy job, per "Deploy workflow" above — `appleboy/scp-action` to copy the tarball, `appleboy/ssh-action` running the inline unpack/restart/health-check script, both with the pinned `fingerprint`.
+- `.github/workflows/deploy-api.yaml`: build job (Phase 1's steps) + deploy job, per "Deploy workflow" above — `appleboy/scp-action` to copy the tarball, `appleboy/ssh-action` running the inline unpack/restart/health-check script.
 - Configure the `production` environment with required reviewers and scoped secrets (documented in the runbook; the setting itself is in GitHub's UI).
 - Job summary shows the deployed SHA and the health-check response.
 
@@ -537,12 +534,22 @@ Only after Phases 1–4 have run green for an agreed soak period.
 ## Security Considerations
 
 - **The CI SSH key is a production credential, but a narrow one.** It is scoped to the `deploy` user, which reads no application secrets — not `JWT_SECRET`, not the database password — and can run nothing beyond the four commands in `/etc/sudoers.d/gatherloop-deploy`. Keeping migrations manual is what buys this: a migrating deploy would have to put database credentials on the deploy path. Rotation is documented in the runbook. Binding the key to the `production` environment means it is not exposed to workflows running from forks or unrelated branches.
-- **Host key pinning** (via `fingerprint` on both marketplace actions) prevents a MITM from receiving the tarball or the SSH session, the same property the earlier draft's hand-written `known_hosts` file provided.
+- **The SSH host key is not verified, by choice.** Neither marketplace action is given a `fingerprint`, so a MITM that can redirect `VPS_HOST` receives the tarball and the SSH session. This is the one property the earlier draft's hand-written `known_hosts` file provided that this design gives up; the preceding bullet is what bounds the consequences. See "Deferred hardening" for how to close it.
 - **Secrets never enter the repo or the artifact.** The tarball contains only binaries, the systemd unit, and metadata. The single env file is created by an operator during provisioning, is readable only by the runtime user, and never leaves the VPS.
 - **The deploy pipeline has no database reach.** Nothing in CI or in the deploy script opens a database connection, so no automated failure mode can alter or destroy data.
 - **The API is not directly reachable.** `BIND_ADDR=127.0.0.1` plus `ufw` default-deny; only Caddy fronts it.
 - **systemd sandboxing** limits what a compromised API process can reach: read-only filesystem, no new privileges, no home directories, IP address families restricted.
 - **Dropping the checksum step (Decision 7) does not reopen an integrity gap.** SSH/SCP already authenticates and integrity-checks the transfer at the transport layer; a truncated or corrupted tarball fails to unpack rather than silently producing a partial binary.
+
+### Deferred hardening
+
+**Pin the SSH host key.** Not part of the initial build-out, recorded here so it does not get lost:
+
+1. On the VPS, read the host key fingerprint: `ssh-keygen -l -f /etc/ssh/ssh_host_ed25519_key.pub`.
+2. Store the `SHA256:…` value as a `VPS_SSH_FINGERPRINT` secret on the `production` environment.
+3. Add `fingerprint: ${{ secrets.VPS_SSH_FINGERPRINT }}` to both the `appleboy/scp-action` and `appleboy/ssh-action` steps in `.github/workflows/deploy-api.yaml`.
+
+The fingerprint has to be re-captured if the VPS is rebuilt or its host key is rotated, which is the provisioning cost this deferral avoids for now. Until it is done, the deploy path trusts DNS.
 
 ### Out-of-scope finding, flagged deliberately
 
@@ -558,6 +565,7 @@ Only after Phases 1–4 have run green for an agreed soak period.
 | A migration is forgotten before the code that needs it is deployed | Medium | Health check fails the deploy loudly rather than serving errors silently, but the API is down until the operator applies the migration or redeploys the previous SHA; ordering rule documented in the runbook and a PR-review checklist item on `apps/api/migrations/**` |
 | Manual migrations drift from what the deployed code expects | Medium | Accepted consequence of keeping migrations out of the pipeline. `/health-check` reports the running version so code and schema state can always be reconciled; revisit automating this if it bites |
 | A bad deploy has no automatic recovery | Medium | Accepted trade-off for a simpler pipeline (see Decision 7). Deploys are gated (required reviewers on `production`) and infrequent; recovery is re-running the deploy workflow against a known-good SHA, whose CI artifact is retained for 30 days or rebuilt in a couple of minutes |
+| SSH host key is unverified, so a DNS/BGP hijack of `VPS_HOST` receives the tarball and the `deploy` key | Low, accepted | Deliberately deferred (Decision 2). Bounded by the `deploy` user's narrow sudoers allowlist and its lack of access to application secrets; closable at any time per "Deferred hardening" |
 | No checksum / atomic swap on unpack | Low | SSH/SCP already provides transport integrity; a truncated tarball fails `tar -xzf` before `systemctl restart` ever runs (see Decision 7 and Security Considerations) |
 | Health check no longer requires an exact version match | Low | `systemctl restart` forcibly stops the previous process before starting the new one, making a silent no-op restart rare; `RELEASE` and `/health-check`'s `version` field remain available for manual confirmation (see "The deploy step") |
 | Single VPS is a single point of failure | Certain, accepted | Explicit non-goal. `Restart=on-failure` + `WantedBy=multi-user.target` cover process and host restarts |
