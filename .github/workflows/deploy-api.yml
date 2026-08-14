@@ -1,0 +1,44 @@
+name: Deploy api to VPS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # openapi-generator-cli is a Java program shipped over npm.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/api/go.mod
+          cache-dependency-path: apps/api/go.sum
+
+      - run: npm ci
+
+      # libs/api-contract/src/__generated__ is gitignored; apps/api cannot
+      # resolve its imports until this runs. See docs/trd-vps-deployment-automation.md §2.
+      - run: npx nx run api-contract:generate:go
+
+      - run: npx nx run api:lint
+      - run: npx nx run api:test
+
+      - run: make -C apps/api build-release
+      - run: tar -czf api-deploy.tar.gz -C apps/api/dist/release .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: api-deploy
+          path: api-deploy.tar.gz
+          retention-days: 1
