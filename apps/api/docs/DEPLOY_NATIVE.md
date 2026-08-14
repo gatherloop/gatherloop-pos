@@ -8,11 +8,13 @@ binary; the box that serves traffic never runs `npm ci`, `go build`, or the Open
 For the Docker-based alternative (kept for compatibility with the existing Render deployment),
 see [`DEPLOY.md`](./DEPLOY.md).
 
-This document currently covers provisioning and the manual install of the service. The
-automated deploy pipeline (the `deploy` job, secrets, and the two-job breakdown) is documented
-here once it exists — see the design in
+Every merge to `main` that touches `apps/api`, `libs/api-contract`, `go.work`, or
+`package-lock.json` now deploys automatically via
+[`.github/workflows/deploy-api.yml`](../../../.github/workflows/deploy-api.yml). The workflow
+can also be run by hand from the Actions tab (`workflow_dispatch`) — this is how a bad deploy is
+recovered: re-run the workflow at a known-good commit. See the design in
 [`docs/trd-vps-deployment-automation.md`](../../../docs/trd-vps-deployment-automation.md) for
-the full picture, including phases not yet implemented.
+the full picture.
 
 ## Why the VPS never builds anything
 
@@ -61,7 +63,7 @@ $VPS_DEPLOY_PATH/                      # e.g. /root/projects/gatherloop-pos
 │       │       ├── api                # the only binary the unit runs
 │       │       ├── migrate            # shipped, never invoked by the pipeline
 │       │       └── seed               # shipped, never invoked by the pipeline
-│       └── .env                       # written by hand today; by the pipeline from phase 4
+│       └── .env                       # written by the deploy pipeline on every deploy
 └── … the rest of the monorepo, untouched
 
 /etc/systemd/system/gatherloop-pos-api.service   # copy of the tracked unit above
@@ -69,8 +71,7 @@ $VPS_DEPLOY_PATH/                      # e.g. /root/projects/gatherloop-pos
 
 Only `apps/api/dist/release/` and `apps/api/.env` are ever written under the checkout. Everything
 else is whatever `origin/main` says it is, which is why the checkout should never be hand-edited:
-any future `git reset --hard` (once the automated deploy lands) would silently discard local
-changes to tracked files.
+every deploy runs `git reset --hard` and would silently discard local changes to tracked files.
 
 ## Prerequisites
 
@@ -92,9 +93,11 @@ changes to tracked files.
    git clone <repo-url> /root/projects/gatherloop-pos
    ```
 
-2. **Get a build artifact onto the box.** Until the automated deploy pipeline exists (phase 4),
-   trigger the `build` job by hand from the Actions tab (`Deploy api to VPS` → `Run workflow`),
-   download the resulting `api-deploy` artifact, and untar it into `dist/release/`:
+2. **Get a build artifact onto the box.** For this first, manual bring-up (before the
+   `production` environment and its secrets are configured — see
+   [Automated deploy pipeline](#automated-deploy-pipeline) below), trigger the `build` job by
+   hand from the Actions tab (`Deploy api to VPS` → `Run workflow`), download the resulting
+   `api-deploy` artifact, and untar it into `dist/release/`:
 
    ```bash
    mkdir -p /root/projects/gatherloop-pos/apps/api/dist/release
@@ -105,8 +108,9 @@ changes to tracked files.
    /root/projects/gatherloop-pos/apps/api/dist/release/api` should report the same architecture
    as `uname -m` above.
 
-3. **Write `apps/api/.env`** with the real runtime configuration. This file is never committed;
-   write it by hand for now:
+3. **Write `apps/api/.env`** with the real runtime configuration. This file is never committed.
+   Write it by hand for this first bring-up; every automated deploy after that overwrites it from
+   the repository secrets listed below:
 
    ```bash
    cat > /root/projects/gatherloop-pos/apps/api/.env <<'EOF'
@@ -138,6 +142,77 @@ changes to tracked files.
    > three lines in the repo's copy of the unit file to match before copying it in. This is the
    > most likely first-deploy failure, so check it first if the service fails to start.
 
+## Automated deploy pipeline
+
+Once the one-time setup below is done, every push to `main` that touches `apps/api/**`,
+`libs/api-contract/**`, `go.work`, `package-lock.json`, or the workflow file itself runs
+[`.github/workflows/deploy-api.yml`](../../../.github/workflows/deploy-api.yml) end to end. It
+can also be triggered by hand from the Actions tab (`Deploy api to VPS` → `Run workflow`) — this
+is also how a bad deploy is recovered: re-run the workflow at a known-good commit. There is no
+rollback script and no retained release history; a deploy is cheap enough that re-running it is
+the recovery mechanism.
+
+The workflow has two jobs:
+
+- **`build`** (`ubuntu-latest`, no secrets) — checks out the repo, installs Node 20 / Java 21 /
+  Go (matching `apps/api/go.mod`), runs `npm ci`, generates the Go API-contract package with
+  `npx nx run api-contract:generate:go`, lints and tests (`api:lint`, `api:test`), then runs
+  `make -C apps/api build-release` and uploads `api-deploy.tar.gz` (the `api`, `migrate`, and
+  `seed` binaries) as a build artifact. A failure here stops the pipeline before anything reaches
+  the VPS — the running service is untouched.
+- **`deploy`** (`needs: build`, `environment: production`) — downloads the artifact, copies it to
+  the VPS with `appleboy/scp-action`, then over SSH with `appleboy/ssh-action`: `git fetch` +
+  `git reset --hard origin/main` on the tracked checkout, untars the new binaries into
+  `apps/api/dist/release/`, rewrites `apps/api/.env` from the repository secrets below, copies
+  the tracked unit file into `/etc/systemd/system/`, `daemon-reload`s, `enable`s, and
+  `restart`s the service. The last step is a health-check gate: it `curl`s
+  `127.0.0.1:$PORT/health-check` with retries and fails the job (printing the last 100 lines of
+  `journalctl`) if the service does not come back up — without this, a binary that panics on
+  boot would leave a broken deploy looking green.
+
+Only `apps/api/dist/release/` and `apps/api/.env` are written by the pipeline; everything else in
+the checkout comes from `git reset --hard origin/main`, which is why the box should never be
+hand-edited (see [Filesystem layout](#filesystem-layout-on-the-vps) above).
+
+### Repository secrets
+
+All of the following are **GitHub repository secrets** on the `production` environment. None is
+committed to the repo, and the `build` job never sees the `DB_*` or `JWT_SECRET` values — they
+are only used by the `deploy` job to write the runtime `.env` on the box.
+
+| Secret | Value |
+|---|---|
+| `VPS_HOST` | VPS IP or hostname |
+| `VPS_PORT` | SSH port |
+| `VPS_USERNAME` | deploy user |
+| `VPS_SSH_KEY` | private half of the CI-only ed25519 key |
+| `VPS_DEPLOY_PATH` | absolute path to the monorepo clone on the VPS (the repo root, not `apps/api`) |
+| `DB_USERNAME`, `DB_PASSWORD`, `DB_NAME`, `DB_HOST`, `DB_PORT` | the existing managed MySQL, unchanged |
+| `PORT` | local port the API binds |
+| `JWT_SECRET` | app config |
+
+`LOG_LEVEL`, `APP_ENV`, and `SERVICE_NAME` are not secrets: `GetEnv()` defaults them to `info`,
+`development`, and `gatherloop-pos-api`. The generated `.env` sets `APP_ENV=production`
+explicitly (the one default that would otherwise be wrong, since it is stamped onto every log
+line) and leaves the other two at their code defaults.
+
+A secret value containing `#`, a newline, or a leading space may not round-trip cleanly through
+`.env` parsing (both `godotenv` and systemd's `EnvironmentFile` parse `KEY=value` line by line).
+Keep `JWT_SECRET` and `DB_PASSWORD` to URL-safe characters where possible.
+
+### One-time setup for automation
+
+1. **Generate a dedicated CI-only ed25519 keypair** — used for nothing else — and add its public
+   half to the deploy user's `~/.ssh/authorized_keys` on the VPS. Revoking CI's access later is
+   deleting that one line.
+2. **Grant the deploy user passwordless `sudo`** for `systemctl` and for `cp` into
+   `/etc/systemd/system/`, since the `deploy` job's SSH script runs those commands with `sudo`.
+3. **Create the `production` environment** in the repository's Settings → Environments.
+4. **Add every secret in the table above** to that environment.
+
+Once all four are done, the next push to `main` touching the filtered paths deploys
+automatically.
+
 ## Verifying the install
 
 ```bash
@@ -155,8 +230,8 @@ retried automatically rather than left down.
 
 Because the unit file lives in the tracked checkout, changing
 `apps/api/deploy/gatherloop-pos-api.service` in the repo does not take effect until it is
-re-copied to `/etc/systemd/system/` and reloaded on the box — steps 4 above, repeated by hand
-today, and by the deploy pipeline on every future automated run.
+re-copied to `/etc/systemd/system/` and reloaded on the box — steps 4 above, done by hand during
+initial bring-up, and by the `deploy` job automatically on every push to `main` after that.
 
 ## Reverse proxy and TLS
 
@@ -170,8 +245,5 @@ documented once, there.
 
 ## What's not covered here yet
 
-- **The automated deploy pipeline** — merges to `main` do not yet deploy anywhere;
-  `.github/workflows/deploy-api.yml` currently only builds on `workflow_dispatch`. The secrets
-  table and the two-job (`build` / `deploy`) breakdown will be documented here once that lands.
 - **Day-2 operations** (manual redeploy, log tailing, uptime monitoring) — see `RUNBOOK.md` once
   it exists.
