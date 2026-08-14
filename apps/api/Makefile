@@ -1,13 +1,19 @@
 # Makefile for gatherloop-pos API
 # Usage: make <target>
 
-include .env
+-include .env
 export
 
 DB_URL ?= mysql://$(DB_USERNAME):$(DB_PASSWORD)@tcp($(DB_HOST):$(DB_PORT))/$(DB_NAME)
 MIGRATIONS_DIR ?= migrations
 
-.PHONY: migrate-up migrate-down migrate-create migrate-version dev build build-migrate build-seed migrate seed test
+RELEASE_DIR    ?= dist/release
+RELEASE_GOOS   ?= linux
+RELEASE_GOARCH ?= amd64
+RELEASE_BUILD  := CGO_ENABLED=0 GOOS=$(RELEASE_GOOS) GOARCH=$(RELEASE_GOARCH) \
+                  go build -trimpath -ldflags "-s -w"
+
+.PHONY: migrate-up migrate-down migrate-create migrate-version dev build build-migrate build-seed build-release migrate seed test
 
 ## migrate-up: Run all pending migrations (via migrate CLI)
 migrate-up:
@@ -41,6 +47,13 @@ build-migrate:
 ## build-seed: Build the seeder binary
 build-seed:
 	go build -o dist/seed cmd/seed/main.go
+
+## build-release: Build the three static release binaries for the VPS
+build-release:
+	mkdir -p $(RELEASE_DIR)
+	$(RELEASE_BUILD) -o $(RELEASE_DIR)/api main.go
+	$(RELEASE_BUILD) -o $(RELEASE_DIR)/migrate cmd/migrate/main.go
+	$(RELEASE_BUILD) -o $(RELEASE_DIR)/seed cmd/seed/main.go
 
 ## migrate: Run database migrations using the Go binary
 migrate:
