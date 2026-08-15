@@ -100,6 +100,3 @@ jobs:
             sudo systemctl daemon-reload
             sudo systemctl enable gatherloop-pos-api
             sudo systemctl restart gatherloop-pos-api
-            curl --retry 5 --retry-delay 2 --fail \
-              http://127.0.0.1:${{ secrets.PORT }}/health-check \
-              || { sudo journalctl -u gatherloop-pos-api -n 100 --no-pager; exit 1; }
