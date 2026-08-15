@@ -8,7 +8,9 @@ import (
 	"apps/api/utils"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/mux"
 )
@@ -121,6 +123,19 @@ func main() {
 		w.Write([]byte("health check success"))
 	})
 
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", env.Port))
+	if err != nil {
+		rootLogger.Error("failed to bind port",
+			slog.String("port", env.Port),
+			slog.String("error", err.Error()),
+		)
+		os.Exit(1)
+	}
+
 	rootLogger.Info("server listening", slog.String("port", env.Port))
-	http.ListenAndServe(fmt.Sprintf(":%s", env.Port), router)
+
+	if err := http.Serve(listener, router); err != nil {
+		rootLogger.Error("server stopped", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
 }
