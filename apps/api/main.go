@@ -118,7 +118,7 @@ func main() {
 	restapi.NewStockCheckRouter(stockCheckHandler).AddRouter(router)
 
 	router.HandleFunc("/health-check", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("health check success"))
+		w.Write([]byte("success"))
 	})
 
 	rootLogger.Info("server listening", slog.String("port", env.Port))
