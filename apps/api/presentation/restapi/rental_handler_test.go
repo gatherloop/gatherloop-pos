@@ -192,6 +192,7 @@ func TestRentalHandler_CheckoutRentals(t *testing.T) {
 					PricingTiers: []domain.PricingTier{{UpToMinutes: 480, Price: 120000}},
 				}, nil)
 				rentalRepo.EXPECT().CheckoutRental(gomock.Any(), int64(1)).Return(nil)
+				variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(1)).Return(domain.Variant{Id: 1, Product: domain.Product{Name: "Bike"}}, nil)
 				txRepo.EXPECT().CreateTransaction(gomock.Any(), gomock.Any()).Return(domain.Transaction{Id: 1}, nil)
 			},
 			expectedStatus: http.StatusOK,
