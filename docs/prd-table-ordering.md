@@ -29,7 +29,7 @@ This PRD covers the **first half of that flow**: a mobile-first customer web app
 | QRIS payment gateway integration (Midtrans/Xendit/direct QRIS) | Payment method is fixed as QRIS but the integration is a separate project with its own vendor, security and reconciliation concerns. |
 | Order status / kitchen display / order history screen | All depend on a transaction existing. |
 | Customer accounts, login, phone/OTP | The requirement is explicitly anonymous. |
-| Table master data + QR code generator in the POS admin | v1 treats the table code as an opaque string from the URL (see D6). A `tables` entity is future work. |
+| Rich table management (zones, capacity, floor plan, occupancy) | A minimal `tables` master — code + label — **is** in scope (D6), because non-guessable QR codes are unreadable to staff without it. Everything beyond code+label is future work. |
 | Rentals (board games) in the customer app | The customer menu is `saleType=purchase` only; rentals need staff to hand over physical inventory. |
 | React Native customer app | Web-only. The QR flow lands in a browser; an install is a conversion killer. |
 
@@ -175,13 +175,13 @@ Two related facts that shape D1:
 
 Mobile-first means designed at 375 px and never rendering the POS sidebar. The flows, in order:
 
-**1. Land (`/t/{tableCode}`)** — QR scan opens the menu directly. Sticky header shows the outlet name and **Table {tableCode}**. Below it a search field, then a horizontal, sticky category chip row. Then the menu itself: one section per category, each item a card with image, name, description snippet, and starting price. Sold-out/unavailable state is out of scope (no stock flag on variants).
+**1. Land (`/order/t/{code}`)** — QR scan opens the menu directly. Sticky header shows the outlet name and the table's **label** ("Meja 1") resolved from the code — never the code itself, which is meaningless to a guest. Below it a search field, then a horizontal, sticky category chip row. Then the menu itself: one section per category, each item a card with image (or D16 placeholder), name, description snippet where one exists, and starting price. Sold-out/unavailable state is out of scope (no stock flag on variants).
 
-**2. Item detail (`/t/{tableCode}/products/{productId}`)** — a bottom sheet on top of the menu, but **route-addressable** so Android back and deep links behave. Large image, name, description, one option group per `Option` rendered as selectable chips, a note field ("less sugar"), a quantity stepper, and a sticky bottom **Add to cart · Rp X** button showing the resolved variant's live price × quantity.
+**2. Item detail (`/order/t/{tableCode}/products/{productId}`)** — a bottom sheet on top of the menu, but **route-addressable** so Android back and deep links behave. Large image, name, description, one option group per `Option` rendered as selectable chips, a note field ("less sugar"), a quantity stepper, and a sticky bottom **Add to cart · Rp X** button showing the resolved variant's live price × quantity.
 
 **3. Floating cart bar** — once the cart is non-empty, a persistent bar sits above the safe-area on every screen: "N items · Rp X · **View cart**".
 
-**4. Cart (`/t/{tableCode}/cart`)** — line items with name, chosen options, note, quantity stepper, per-line subtotal, remove; a "add more items" link back to the menu; an order summary; and a sticky **Checkout** button.
+**4. Cart (`/order/t/{tableCode}/cart`)** — line items with name, chosen options, note, quantity stepper, per-line subtotal, remove; a "add more items" link back to the menu; an order summary; and a sticky **Checkout** button.
 
 **5. Checkout (stub)** — states that payment is **QRIS only**, that the order has not been sent to the kitchen yet, and that this step is coming soon. This screen exists so the flow is complete end-to-end for review and user testing; it creates nothing.
 
@@ -198,7 +198,10 @@ Design constraints: single column; every tap target ≥ 44 px; prices formatted 
 | **D3** | Customer identity | **An anonymous session ID**: a UUIDv4 minted by Next.js middleware on first visit, stored in a first-party cookie `gl_session_id` (`SameSite=Lax`, `Max-Age` 1 year, `Secure` in production, **not** `HttpOnly`), mirrored into `localStorage` as a recovery copy. Sent to the API as the `X-Session-Id` header. | No login, per the requirement. Minting it server-side in middleware means SSR already knows the session on first paint — no empty-cart flash, no hydration mismatch. Not `HttpOnly` so a future client-rendered or RN client can read it. The `localStorage` mirror survives cookie eviction (ITP/Safari) and is re-promoted to the cookie on next load. |
 | **D4** | Menu grouping | Client-side grouping by `product.category.name`, exactly as `TransactionItemSelect.tsx` does today. No new `categoryId` filter on `/products`. | The menu of a single coffee shop is small (tens of items); one paged fetch is cheaper than N per-category requests, and it avoids widening a shared endpoint's contract. Revisit if the catalog outgrows ~200 published products. |
 | **D5** | Where the cart lives | **Server-side**, in new `carts` / `cart_items` tables keyed by `session_id`. The client holds the cart only as `CartUsecase` state (D14). | The requirement states carts and (later) transactions are marked with the session ID. Server-side also means the cart survives device storage clearing, is visible to staff for support, and gives the future transaction a server-authoritative source. **Rejected:** `localStorage`-only — loses the cart on clearing, is invisible to staff, and would have to be rewritten for the transaction phase anyway. |
-| **D6** | Table identity | The QR encodes `/t/{tableCode}`. v1 stores `table_code` as an **opaque validated string** (`^[A-Za-z0-9-]{1,16}$`) on the cart. There is no `tables` table and no admin QR generator yet. Visiting without a table code prompts the customer to type their table number. | Delivers the ordering flow without a whole master-data + QR-printing feature. Adding a real `tables` entity later is additive: the string becomes a foreign key candidate, and existing carts keep working. |
+| **D6** | Table identity | **Non-guessable codes, backed by a minimal `tables` master.** Each table row is `{ id, code, label }`: `code` is a 10-character random string from the Crockford base32 alphabet (`0-9A-Z` minus `I`,`L`,`O`,`U`), ~50 bits of entropy, generated server-side with `crypto/rand`; `label` is the human name staff read ("Meja 1"). The QR encodes `/order/t/{code}`. The cart references `table_id`, not free text. | Requested: a guessable table number lets anyone order from off-premise, and once real orders and QRIS payments exist that becomes a fraud and prep-waste channel. **Consequence, accepted:** a random code is meaningless to staff, so a `tables` master becomes mandatory — a barista must be able to turn a cart into "Meja 1". The Crockford alphabet drops the four glyphs people misread, so a code stays transcribable if a QR is smudged. |
+| **D15** | Language and formatting | The customer app is **Bahasa Indonesia only**. No i18n framework is introduced — copy is plain strings in the screen components. Money renders through one new shared helper, `formatRupiah()` in `libs/ui/src/utils/currency.ts`. | The POS UI is in English (staff-facing); guests get Indonesian. That divergence is deliberate, and a single-locale app does not justify pulling in i18next. The helper exists because money is currently formatted ad-hoc and inconsistently (`` `Rp. ${total.toLocaleString('id')}` `` in `TransactionListItem`); the customer app must not inherit that. Retrofitting the POS to the helper is a trivial follow-up, deliberately excluded here to keep diffs reviewable. |
+| **D16** | Missing images and descriptions | **A real placeholder, not a collapsed layout.** A `MenuItemThumbnail` component renders the image only when `imageUrl` is non-empty **and** loads successfully; otherwise it renders a branded placeholder — neutral tinted panel with a `@tamagui/lucide-icons` glyph chosen from `category.station` (`KITCHEN` → utensils, `BAR` → cup, `NONE` → tag). `onError` falls back to the same placeholder. An empty `description` renders nothing and reserves no space. | Confirmed that catalog content is currently sparse. The existing `ListItem` simply omits the thumbnail when `thumbnailSrc` is missing — fine for a staff list, but it would make a customer menu of image-less cards look broken. Icon glyphs avoid a new asset pipeline. **Product note:** this makes a sparse catalog look intentional, not finished — the menu still reads better once staff fill in the top sellers' photos. |
+| **D17** | URL format | `/order/t/{code}` — the app is served under a `/order` base path, with the table code as a path segment. Landing on `/order` without a code shows a "scan the QR at your table" screen. | Requested. The `/order` prefix keeps the customer app on a predictable path whether it is served from its own host or mounted alongside another site. **Open:** under a static-only host the `[tableCode]` dynamic segment cannot be pre-rendered (codes are created after deploy) and needs either a `404.html` SPA fallback or a query-string form — settled by the hosting decision below. |
 | **D7** | Cart pricing authority | Cart items store **only** `variant_id`, `amount`, `note`. Prices, subtotals and total are computed **server-side at read time** from the current `variants.price`. Nothing money-shaped is ever accepted from the client. | A client-supplied price is a trivially exploitable hole. Live derivation also means a price correction by staff is reflected in every open cart immediately. **Trade-off:** a price can change under a customer between adding and checking out — acceptable while no payment exists; the transaction phase must snapshot prices at conversion (as `transaction_items` already does). |
 | **D8** | Session ID as a capability | The session ID **is** the bearer of the cart. It is unguessable (122 bits of entropy) and grants access to nothing but its own cart. No endpoint may list or search carts across sessions. | Carts hold no PII, no payment data, and no ability to spend money. Treating the ID as a capability keeps the anonymous UX with no auth system. This assumption **must be re-evaluated** in the transaction phase, when a session starts owning money-shaped records. |
 | **D9** | Merging identical lines | Adding an item whose `variant_id` **and** trimmed `note` match an existing line increments that line's `amount` instead of creating a second line. | Matches pesan.app and every food-ordering app. Different notes stay separate lines because the kitchen treats them differently. |
@@ -222,26 +225,46 @@ A new `public_route.go` registers four unauthenticated routes that call the **ex
 | `GET` | `/public/products` | Params `query`, `limit`, `skip`, `sortBy`, `order`. **Forces** `status=published`, `saleType=purchase` — the client cannot override either. |
 | `GET` | `/public/products/{productId}` | `404` if the product is draft, deleted, or `saleType=rental`. |
 | `GET` | `/public/variants` | Params `productId`, `optionValueIds[]`, `limit`, `skip`. Only variants of published purchase products. |
+| `GET` | `/public/tables/{code}` | Resolves a QR code to `{ id, label }`. `404` for unknown or deleted codes, so a fabricated code lands on an "invalid QR" screen instead of silently opening an orderable menu (D6). Returns **only** `id` and `label` — never the full table list, which would defeat non-guessable codes. |
 
 A shared `toPublicVariant` transformer empties `materials` and `pricingTiers` before serialization (D2). Handler tests must assert, for each route, that (a) no `Authorization` header is required, (b) draft and rental products are absent, and (c) `materials` is empty.
 
 `EnableCORS` gains `X-Session-Id` in `Access-Control-Allow-Headers` (needed by FR-3, added here so both route groups are consistent).
 
-### FR-2 — Cart data model (API)
+### FR-2 — Table and cart data model (API)
 
-Migration `000019_create_carts`:
+Migration `000019_create_tables` — the table master required by D6:
+
+```sql
+CREATE TABLE IF NOT EXISTS `tables` (
+  `id`         BIGINT      NOT NULL AUTO_INCREMENT,
+  `code`       VARCHAR(16) NOT NULL,
+  `label`      VARCHAR(64) NOT NULL,
+  `created_at` DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `deleted_at` DATETIME    NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_tables_code` (`code`),
+  UNIQUE KEY `uq_tables_label` (`label`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
+
+`code` is generated in the domain layer with `crypto/rand` over the Crockford base32 alphabet (D6), retried on the (vanishingly unlikely) unique-key collision. It is never derived from the label — deriving it would make it guessable. Regenerating a code invalidates any printed QR for that table, which is the intended "rotate a leaked code" mechanism.
+
+Migration `000020_create_carts`:
 
 ```sql
 CREATE TABLE IF NOT EXISTS `carts` (
   `id`         BIGINT      NOT NULL AUTO_INCREMENT,
   `session_id` CHAR(36)    NOT NULL,
-  `table_code` VARCHAR(16) NOT NULL DEFAULT '',
+  `table_id`   BIGINT      NULL,
   `status`     VARCHAR(16) NOT NULL DEFAULT 'active',  -- active | converted | abandoned
   `created_at` DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `deleted_at` DATETIME    NULL,
   PRIMARY KEY (`id`),
-  KEY `idx_carts_session_id_status` (`session_id`, `status`)
+  KEY `idx_carts_session_id_status` (`session_id`, `status`),
+  KEY `idx_carts_table_id` (`table_id`),
+  CONSTRAINT `fk_carts_table` FOREIGN KEY (`table_id`) REFERENCES `tables` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `cart_items` (
@@ -261,9 +284,11 @@ CREATE TABLE IF NOT EXISTS `cart_items` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ```
 
-Notes: single-active-cart-per-session is enforced in the usecase inside a DB transaction, not by a unique index — the future `converted` status must be able to coexist with a new `active` cart. `status` is a plain string column matching how `saleType`/`station` are already modeled. No price columns, per D7. Column naming, `deleted_at` soft deletes and the `BIGINT`/`FLOAT` choices follow the existing schema exactly.
+Notes: single-active-cart-per-session is enforced in the usecase inside a DB transaction, not by a unique index — the future `converted` status must be able to coexist with a new `active` cart. `table_id` is nullable so a cart can exist for the moment between session creation and the table resolving. `status` is a plain string column matching how `saleType`/`station` are already modeled. No price columns, per D7. Column naming, `deleted_at` soft deletes and the `BIGINT`/`FLOAT` choices follow the existing schema exactly.
 
-`Cart` and `CartItem` domain entities, a `CartRepository` interface with a `//go:generate mockgen` header, the MySQL repo + transformers, and repo tests follow the `ticket`/`stock_check` pattern.
+`Table`, `Cart` and `CartItem` domain entities, `TableRepository` / `CartRepository` interfaces with `//go:generate mockgen` headers, the MySQL repos + transformers, and repo tests follow the `ticket`/`stock_check` pattern.
+
+**`tables` is a POS resource too.** Staff need to create tables and print their QR codes, so the master gets the standard authenticated CRUD (`GET|POST /tables`, `GET|PUT|DELETE /tables/{tableId}`, plus `PUT /tables/{tableId}/regenerate-code`) and a POS admin screen, built exactly like the existing `tickets` slice. Without it the feature is undeliverable — a random code nobody can mint or read is useless.
 
 ### FR-3 — Cart endpoints (API)
 
@@ -272,7 +297,7 @@ All routes require a valid `X-Session-Id` header (UUIDv4). Missing or malformed 
 | Method | Path | Body | Behavior |
 |---|---|---|---|
 | `GET` | `/carts/current` | — | Returns the session's active cart with items. Empty cart (never `404`). |
-| `PUT` | `/carts/current` | `{ tableCode }` | Sets/updates the table code on the active cart. |
+| `PUT` | `/carts/current` | `{ tableCode }` | Resolves the code against `tables` and sets `table_id` on the active cart. Unknown code ⇒ `404`; the client never sends a table **id**, only the code from the QR. |
 | `POST` | `/carts/current/items` | `{ variantId, amount, note }` | Adds a line, merging on `(variantId, trimmed note)` per D9. |
 | `PUT` | `/carts/current/items/{cartItemId}` | `{ amount, note }` | Updates a line. `404` if the item is not in this session's cart. |
 | `DELETE` | `/carts/current/items/{cartItemId}` | — | Removes a line. |
@@ -280,7 +305,9 @@ All routes require a valid `X-Session-Id` header (UUIDv4). Missing or malformed 
 
 Every response returns the **whole cart**, so the client never reconstructs state from a partial reply. The `Cart` response schema carries, per item, the resolved `variant` (public-shaped, `materials: []`), the derived `price` and `subtotal`, and, at the cart level, `itemCount` and `total` — all computed server-side (D7).
 
-Validation: `amount` must be an integer ≥ 1 (fractional quantities are a POS-only concern); `note` ≤ 255 chars; `variantId` must resolve to a variant of a **published, purchase** product, else `403` validation error; `tableCode` must match `^[A-Za-z0-9-]{1,16}$`.
+Validation: `amount` must be an integer ≥ 1 (fractional quantities are a POS-only concern); `note` ≤ 255 chars; `variantId` must resolve to a variant of a **published, purchase** product, else `403` validation error; `tableCode` must match `^[0-9A-HJKMNP-TV-Z]{10}$` (Crockford base32, D6) **and** exist in `tables`.
+
+The cart response embeds `table: { id, label } | null` so the customer app can show "Meja 1" without a second request, and so a future order slip can print the label directly.
 
 Cross-session access is impossible by construction: every query is scoped by `session_id` before the item ID is considered.
 
@@ -294,11 +321,21 @@ Per D13, the browser storage does **not** leak into domain or presentation. It s
 - `data/browser/session.ts` — `BrowserSessionRepository`, the cookie + `localStorage` implementation, which reconciles the two on construction (cookie wins; whichever is missing is rewritten) and is the only code in the repo that knows a cookie exists. `data/browser/` is a new sibling of `api|mock|url|memory`, in the same spirit as `data/url` treating the URL as a storage port.
 - `data/mock/session.ts` — `MockSessionRepository`, an in-memory implementation so every cart usecase test runs without a DOM.
 
-`ApiCartRepository` takes a `SessionRepository` and attaches `X-Session-Id` to every `/carts/*` request. The table code comes from the `/t/{tableCode}` route segment and is pushed to `PUT /carts/current` whenever it changes. Landing without a table code (`/`) renders a table-number prompt that redirects to `/t/{code}`.
+`ApiCartRepository` takes a `SessionRepository` and attaches `X-Session-Id` to every `/carts/*` request.
+
+The table code comes from the `/order/t/{code}` route segment (D17). On entry the app resolves it via `GET /public/tables/{code}` and pushes it to `PUT /carts/current`. Three outcomes:
+
+| Case | Screen |
+|---|---|
+| Code resolves | Menu, header shows the returned `label` ("Meja 1") |
+| Code unknown / deleted (`404`) | "QR tidak valid — silakan pindai ulang kode di meja Anda" |
+| No code at all (`/order`) | "Pindai QR di meja Anda untuk mulai memesan" |
+
+The manual "type your table number" prompt from the earlier draft is **gone**, and deliberately so: with non-guessable codes (D6) there is nothing a guest could usefully type. Losing that fallback is the accepted cost of closing off-premise ordering — a guest whose QR is damaged asks staff, who can re-print or read the code from the POS tables screen.
 
 ### FR-5 — Menu discovery (frontend)
 
-Full slice per the file inventory: `MenuRepository` port, `ApiMenuRepository` + `MockMenuRepository`, `MenuListUsecase` (+ test), `useMenuListController`, `MenuListScreen` (+ stories), `MenuListHandler` (+ test), `app/MenuList.tsx`, page at `/t/[tableCode]`.
+Full slice per the file inventory: `MenuRepository` port, `ApiMenuRepository` + `MockMenuRepository`, `MenuListUsecase` (+ test), `useMenuListController`, `MenuListScreen` (+ stories), `MenuListHandler` (+ test), `app/MenuList.tsx`, page at `/order/t/[tableCode]`.
 
 The state machine mirrors `ProductListUsecase` minus pagination (the menu is one fetch, D4):
 
@@ -321,13 +358,13 @@ type MenuListAction =
   | { type: 'REVALIDATE_FINISH'; products: Product[]; categories: Category[] };
 ```
 
-Search debounces through `createDebounce` inside `onStateChange`, as `ProductListUsecase` does. The screen renders sticky search, sticky category chips that scroll to their section, and per-category cards showing the **lowest variant price** as "mulai Rp X". Loading renders skeletons; empty and error states reuse `EmptyView` / `ErrorView` with retry — all driven by the `variant` prop mapped exhaustively in the handler.
+Search debounces through `createDebounce` inside `onStateChange`, as `ProductListUsecase` does. The screen renders sticky search, sticky category chips that scroll to their section, and per-category cards showing the **lowest variant price** as "mulai Rp X" via `formatRupiah()` (D15). Each card's image goes through `MenuItemThumbnail`, which falls back to a station-keyed icon placeholder when `imageUrl` is empty or fails to load, and omits the description entirely when it is empty (D16). Loading renders skeletons; empty and error states reuse `EmptyView` / `ErrorView` with retry — all driven by the `variant` prop mapped exhaustively in the handler. All copy is Bahasa Indonesia (D15).
 
 Menu search/category state stays in the machine and is **not** mirrored into the URL, so no `data/url` query repository is needed here. (The POS mirrors list state into the URL because staff share and bookmark filtered lists; a customer scanning a QR code does not.)
 
 ### FR-6 — Item detail and add-to-cart (frontend)
 
-Slice: `MenuItemDetailUsecase` (+ test), `useMenuItemDetailController`, `MenuItemDetailScreen` (+ stories), `MenuItemDetailHandler` (+ test), `app/MenuItemDetail.tsx`, page at `/t/[tableCode]/products/[productId]`. Route-addressable, presented as a Tamagui bottom sheet over the menu.
+Slice: `MenuItemDetailUsecase` (+ test), `useMenuItemDetailController`, `MenuItemDetailScreen` (+ stories), `MenuItemDetailHandler` (+ test), `app/MenuItemDetail.tsx`, page at `/order/t/[tableCode]/products/[productId]`. Route-addressable, presented as a Tamagui bottom sheet over the menu.
 
 ```ts
 type Context = {
@@ -353,7 +390,7 @@ Selecting a value for every `Option` moves the machine to `resolvingVariant`, wh
 
 ### FR-7 — Cart review and checkout CTA (frontend)
 
-Slice: `CartRepository` port, `ApiCartRepository` + `MockCartRepository`, `Cart`/`CartItem` entities, `CartUsecase` (+ test), `useCartController`, floating cart bar component (+ stories), `CartScreen` (+ stories), `CartHandler` (+ test), `app/Cart.tsx`, page at `/t/[tableCode]/cart`.
+Slice: `CartRepository` port, `ApiCartRepository` + `MockCartRepository`, `Cart`/`CartItem` entities, `CartUsecase` (+ test), `useCartController`, floating cart bar component (+ stories), `CartScreen` (+ stories), `CartHandler` (+ test), `app/Cart.tsx`, page at `/order/t/[tableCode]/cart`.
 
 One machine owns the whole cart — fetch and every mutation — because the floating bar, the cart screen and add-to-cart all read the same cart:
 
@@ -390,7 +427,7 @@ A screen stating that payment is **QRIS only**, that the order is **not yet subm
 - **Performance** — menu Largest Contentful Paint < 2.5 s on a 4× CPU-throttled mid-range Android over Fast 3G. Menu data is server-rendered (`getServerSideProps`, matching `apps/web`); product images are lazy-loaded below the fold.
 - **Accessibility** — tap targets ≥ 44 px, visible focus states, labelled controls, AA contrast, screen-reader-announced cart count.
 - **Resilience** — every network failure has a retry affordance; a stale/deleted cart (e.g. purged server-side) recovers to an empty cart rather than an error screen.
-- **Observability** — the public and cart routes go through the existing `logger.RequestLogger`; cart mutations log `session_id` and `table_code` for support. Session IDs are anonymous by construction, so no PII enters logs.
+- **Observability** — the public and cart routes go through the existing `logger.RequestLogger`; cart mutations log `session_id` and `table_id` for support. Session IDs are anonymous by construction, so no PII enters logs — and table **codes** are deliberately kept out of logs, since a logged code is a reusable off-premise ordering key (D6).
 - **Security** — public routes never expose `materials`, `pricingTiers`, draft products, or rental products. Cart routes are session-scoped in the query, not post-filtered. The session ID is a capability (D8), and is never placed in a URL, so it cannot leak through `Referer` or access logs.
 - **Compatibility** — every API and contract change is additive; no existing endpoint, schema, or POS screen changes behavior.
 
@@ -417,16 +454,19 @@ Thirteen PRs. Each is independently mergeable, keeps `main` green, and is small 
 | # | PR | Scope | Depends on | Size |
 |---|---|---|---|---|
 | **0** | `docs: add PRD for table ordering` | This document. | — | XS |
-| **1** | `feat(api): public catalog endpoints` | `public_route.go`, `public_handler.go`, `toPublicVariant` transformer, `api.yaml` `/public/*` paths, regenerate TS, handler tests, `X-Session-Id` added to `EnableCORS`. No DB change. | 0 | M |
-| **2** | `feat(api): cart data model` | Migration `000019`, `cart_entity.go`, `cart_repository.go` (+ mockgen), `data/mysql/cart_{entity,repo,transformer}.go`, repo tests. No routes — nothing user-visible yet. | 1 | M |
-| **3** | `feat(api): cart endpoints` | `cart_usecase.go` (+ usecase tests), session-ID middleware, handlers/routes/transformers, `api.yaml` `/carts/current*` paths + `Cart`/`CartItem` schemas, regenerate TS, handler tests, `main.go` wiring. | 2 | L |
+| **1** | `feat(api): public catalog endpoints` | `public_route.go`, `public_handler.go`, `toPublicVariant` transformer, `api.yaml` `/public/*` catalog paths, regenerate TS, handler tests, `X-Session-Id` added to `EnableCORS`. No DB change. | 0 | M |
+| **1b** | `feat(api): table master` | Migration `000019_create_tables`, `table_entity.go` with the `crypto/rand` Crockford code generator (+ unit test for alphabet and collision retry), `table_repository.go` (+ mockgen), MySQL repo/transformers, `table_usecase.go`, authenticated CRUD + `regenerate-code` routes, public `GET /public/tables/{code}`, contract, handler tests. | 1 | L |
+| **1c** | `feat(ui): tables admin screen` | POS-side slice built like the `tickets` one: `Table` entity, `TableRepository` port, `ApiTableRepository` + mock, `TableList`/`TableCreate` usecases + tests, controllers, screens + stories, handlers + tests, `app/TableList.tsx`, pages under `apps/web/src/pages/tables/`, plus per-table QR rendering for printing. | 1b | L |
+| **2** | `feat(api): cart data model` | Migration `000020_create_carts`, `cart_entity.go`, `cart_repository.go` (+ mockgen), `data/mysql/cart_{entity,repo,transformer}.go`, repo tests. No routes — nothing user-visible yet. | 1b | M |
+| **3** | `feat(api): cart endpoints` | `cart_usecase.go` (+ usecase tests), session-ID middleware, table-code resolution, handlers/routes/transformers, `api.yaml` `/carts/current*` paths + `Cart`/`CartItem` schemas, regenerate TS, handler tests, `main.go` wiring. | 2 | L |
 | **4** | `feat(order): scaffold customer web app` | `apps/order` Nx Next.js app: Tamagui config, `RootProvider`, `_app`/`_document`, health route, `project.json`, Dockerfile if the POS pattern requires it. Renders a placeholder page. | 1 | M |
-| **5** | `feat(order): anonymous session and table code` | **domain:** `repositories/session.ts` port. **data:** `data/browser/session.ts` (cookie + `localStorage` reconcile), `data/mock/session.ts`. **app:** Next middleware minting `gl_session_id`, `SessionProvider`, axios `X-Session-Id` interceptor, `/t/[tableCode]` route shell, table-number prompt at `/`. Unit tests for mint/reconcile. | 4 | M |
+| **4b** | `feat(ui): rupiah and thumbnail primitives` | `utils/currency.ts` `formatRupiah()` (+ test) and the `MenuItemThumbnail` component with station-keyed icon fallback and `onError` handling (+ stories covering has-image / empty / broken-URL), per D15 and D16. Tiny, self-contained, unblocks every later screen. | 4 | S |
+| **5** | `feat(order): anonymous session and table resolution` | **domain:** `repositories/session.ts` port. **data:** `data/browser/session.ts` (cookie + `localStorage` reconcile), `data/mock/session.ts`. **app:** Next middleware minting `gl_session_id`, `SessionProvider`, axios `X-Session-Id` interceptor, `/order/t/[tableCode]` route shell, table-code resolution against `GET /public/tables/{code}`, and the invalid-QR / no-QR screens. Unit tests for mint/reconcile. | 4b | M |
 | **6** | `feat(ui): menu domain and data layer` | **domain:** `repositories/menu.ts` port, `usecases/menuList.ts` + `usecases/menuItemDetail.ts` state machines, both with `UsecaseTester` tests. **data:** `data/api/menu.ts` (`ApiMenuRepository`), `data/mock/menu.ts`. Reuses the existing `Product`/`Variant`/`Category` entities and `toProduct`/`toVariant` transformers. **No presentation code.** | 3 | M |
-| **7** | `feat(ui): menu discovery screen` | **presentation:** `MenuListController`, `MenuListScreen` + stories, `MenuListHandler` + handler test, category-chip and product-card components + stories. **app:** `app/MenuList.tsx` composition root, thin page at `/t/[tableCode]` with `getServerSideProps` SSR handoff. | 6 | L |
-| **8** | `feat(ui): item detail and option selection` | **presentation:** `MenuItemDetailController`, `MenuItemDetailScreen` + stories, `MenuItemDetailHandler` + test, option chip groups, stepper, note field. **app:** `app/MenuItemDetail.tsx`, page at `/t/[tableCode]/products/[productId]`. Add-to-cart CTA present, wired to a no-op callback until phase 9. | 7 | L |
+| **7** | `feat(ui): menu discovery screen` | **presentation:** `MenuListController`, `MenuListScreen` + stories, `MenuListHandler` + handler test, category-chip and product-card components + stories. **app:** `app/MenuList.tsx` composition root, thin page at `/order/t/[tableCode]` with `getServerSideProps` SSR handoff. | 6 | L |
+| **8** | `feat(ui): item detail and option selection` | **presentation:** `MenuItemDetailController`, `MenuItemDetailScreen` + stories, `MenuItemDetailHandler` + test, option chip groups, stepper, note field. **app:** `app/MenuItemDetail.tsx`, page at `/order/t/[tableCode]/products/[productId]`. Add-to-cart CTA present, wired to a no-op callback until phase 9. | 7 | L |
 | **9** | `feat(ui): cart domain and data layer` | **domain:** `entities/Cart.ts`, `repositories/cart.ts` port, `usecases/cart.ts` state machine incl. optimistic transitions and rollback (D14), with `UsecaseTester` tests covering success **and** `MUTATE_ERROR` restore. **data:** `data/api/cart.ts` + `cart.transformer.ts`, `data/mock/cart.ts`. Phase 8's CTA is connected here. | 8 | M |
-| **10** | `feat(ui): floating cart bar and cart screen` | **presentation:** `CartController`, floating cart bar component + stories, `CartScreen` + stories, `CartHandler` + test. **app:** `app/Cart.tsx`, page at `/t/[tableCode]/cart`. Steppers, remove, clear, summary, sticky Checkout button. | 9 | L |
+| **10** | `feat(ui): floating cart bar and cart screen` | **presentation:** `CartController`, floating cart bar component + stories, `CartScreen` + stories, `CartHandler` + test. **app:** `app/Cart.tsx`, page at `/order/t/[tableCode]/cart`. Steppers, remove, clear, summary, sticky Checkout button. | 9 | L |
 | **11** | `feat(order): QRIS checkout stub` | Stub checkout screen behind `NEXT_PUBLIC_ORDER_CHECKOUT_ENABLED`, routed from the cart CTA. | 10 | S |
 | **12** | `test(order-e2e): table ordering happy path` | `apps/order-e2e` Playwright project mirroring `apps/web-e2e`: scan → browse → filter → open item → choose options → add → cart persists across reload → edit quantity → remove → checkout CTA. | 11 | M |
 | **13** | `docs: document table ordering` | `docs-site/sales/table-ordering.md`, VitePress nav entry, `README.md` project list, `docs-site/roadmap.md` update. | 12 | S |
@@ -447,16 +487,30 @@ Thirteen PRs. Each is independently mergeable, keeps `main` green, and is small 
 | Session ID lost (private browsing, cookie eviction) | `localStorage` mirror + re-mint. Worst case the customer starts a fresh cart — acceptable for anonymous ordering. |
 | `libs/ui` grows and the POS bundle regresses (D11) | Measured after phase 10; mitigation is a `libs/ui-order` split, which is internal and needs no API or contract change. |
 | Two customers at the same table build separate carts | Expected in v1 — each phone is a session. Merging carts by table is a product decision for the transaction phase, noted as future work. |
+| A table's QR code leaks (photographed, shared online) and is used off-premise | `PUT /tables/{tableId}/regenerate-code` mints a new code and invalidates the printed QR (D6). Staff reprint one sticker. This is why the code is stored rather than derived from the label. |
+| The menu looks unfinished because most products have no photo | D16's placeholders keep the layout intact and deliberate-looking, but they are a floor, not a fix. Flagged as a content task (Future Work 7), not a code task. |
 
 ---
 
 ## Open Questions
 
-1. **Hosting for `apps/order`** — same VPS behind the existing reverse proxy, or a separate host/subdomain? Needed before phase 4.
-2. **Domain / QR URL format** — confirm the customer-facing origin so QR codes can be printed against a stable URL.
-3. **Table codes** — are tables already numbered, and is a plain number (`12`) the code, or is a non-guessable code preferred to stop off-premise ordering?
-4. **Menu language** — Bahasa Indonesia only, or bilingual? Assumed Indonesian-only for v1.
-5. **Product descriptions and images** — are all published purchase products currently populated with `description` and `imageUrl`? The customer card design assumes both; missing values need a fallback (assumed: image placeholder, description omitted).
+**Resolved** (2026-08-16): QR URL format → `/order/t/{code}` (D17). Table codes → non-guessable, which pulls a `tables` master into scope (D6). Menu language → Bahasa Indonesia only (D15). Missing images/descriptions → real placeholders, since catalog content is currently sparse (D16).
+
+**Still open:**
+
+1. **Hosting for `apps/order`** — needed before phase 4, because it decides whether the app keeps SSR and middleware or becomes a static SPA.
+
+   GitHub Pages was proposed. It is **possible but costly**, and this repo's Pages site is already taken by `docs-site` (`base: '/gatherloop-pos/'`, deployed by `.github/workflows/deploy-docs.yaml`) — a repo gets one Pages site, so the two builds would have to be merged into a single artifact and would redeploy together.
+
+   | Constraint under GitHub Pages | Consequence for this design |
+   |---|---|
+   | Static files only — no Node runtime | `getServerSideProps` SSR handoff is out; the menu's first paint becomes a skeleton, working against the < 2.5 s LCP goal |
+   | No middleware | The session ID must be minted client-side after hydration, losing the "SSR already knows the session" property of D3 |
+   | No rewrites/proxy | The browser calls the API cross-origin. Workable — `EnableCORS` reflects the origin, and the session travels as a header, not a cookie — but the API **must** be served over HTTPS or the browser blocks it as mixed content |
+   | Dynamic `[tableCode]` can't be pre-rendered | Codes are created after deploy, so it needs a `404.html` SPA fallback (initial response is an HTTP 404, with a redirect flash) or a query-string form like `/order/?t=CODE`, which contradicts D17 |
+   | No server-side secrets | The **next** PRD is QRIS payment, which needs webhook endpoints and secret handling. A static SPA cannot host either, so hosting would have to move anyway |
+
+   **Recommendation: serve `apps/order` from the same VPS as the API**, behind the Caddy/nginx that already terminates TLS there (`apps/api/docs/DEPLOY_NATIVE.md`). It keeps SSR, middleware, D17's URL shape and a home for the future payment BFF, at the cost of one more systemd service and a CI deploy job. Vercel's free tier is a reasonable second choice if avoiding VPS ops matters more than keeping everything on one box.
 
 ---
 
@@ -467,6 +521,8 @@ In rough dependency order:
 1. **Transaction creation from cart** — `POST /carts/current/checkout` → `Transaction` with a `session_id` column, price snapshotting, and order-number assignment.
 2. **QRIS payment integration** — gateway selection, callback handling, reconciliation against `wallets`.
 3. **Order history and status** — the session's past transactions, plus a live status screen fed by kitchen/bar progress (the `Category.station` field already exists for the kitchen/bar order-slip split).
-4. **Table master data + QR generation** in the POS admin, promoting `table_code` from an opaque string to a real entity.
-5. **Cart merging by table**, so a table of four builds one bill.
+4. **Richer table management** — zones, capacity, occupancy, a floor plan, and bulk QR sheet printing, building on the minimal `tables` master delivered here.
+5. **Cart merging by table**, so a table of four builds one bill (the `table_id` FK on `carts` is what makes this queryable).
 6. **Coupons in the customer app**, reusing the existing coupon engine and the per-item coupon work.
+7. **Catalog content pass** — photos and descriptions for the top sellers, so the menu stops leaning on D16's placeholders.
+8. **Retrofit `formatRupiah()` across the POS**, replacing the ad-hoc money formatting the customer app deliberately avoided inheriting (D15).
