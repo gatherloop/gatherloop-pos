@@ -13,11 +13,20 @@ import (
 )
 
 func EnableCORS(next http.Handler) http.Handler {
+	allowedOrigins := utils.GetEnv().CorsAllowedOrigins
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", r.Header.Get("Origin"))
+		origin := r.Header.Get("Origin")
+
+		w.Header().Add("Vary", "Origin")
+
+		if isOriginAllowed(origin, allowedOrigins) {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
+		}
+
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Content-Length, Authorization, Accept,X-Requested-With, X-Session-Id")
-		w.Header().Set("Access-Control-Allow-Credentials", "true")
 
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
@@ -26,6 +35,23 @@ func EnableCORS(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		}
 	})
+}
+
+// isOriginAllowed reports whether origin is present in allowedOrigins. An
+// empty origin (same-origin or non-browser requests never send the header)
+// is never treated as allowed.
+func isOriginAllowed(origin string, allowedOrigins []string) bool {
+	if origin == "" {
+		return false
+	}
+
+	for _, allowed := range allowedOrigins {
+		if allowed == origin {
+			return true
+		}
+	}
+
+	return false
 }
 
 func CheckAuth(next http.HandlerFunc) http.HandlerFunc {
