@@ -53,6 +53,98 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /public/categories:
+    get:
+      summary: List all categories (unauthenticated, customer-facing)
+      operationId: publicCategoryList
+      tags:
+        - public
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryListResponse'
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /public/products:
+    get:
+      summary: List published, purchasable products (unauthenticated, customer-facing)
+      operationId: publicProductList
+      tags:
+        - public
+      parameters:
+        - $ref: '#/components/parameters/Query'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/Order'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Skip'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductListResponse'
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /public/products/{productId}:
+    get:
+      summary: Get a published, purchasable product by id (unauthenticated, customer-facing)
+      operationId: publicProductFindById
+      tags:
+        - public
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductFindByIdResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /public/variants:
+    get:
+      summary: List variants of published, purchasable products (unauthenticated, customer-facing)
+      operationId: publicVariantList
+      tags:
+        - public
+      parameters:
+        - $ref: '#/components/parameters/Query'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/Order'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Skip'
+        - $ref: '#/components/parameters/ProductIdQuery'
+        - $ref: '#/components/parameters/OptionValueIds'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VariantListResponse'
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /categories:
     get:
       summary: List all categories

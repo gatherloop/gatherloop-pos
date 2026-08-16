@@ -98,6 +98,7 @@ func main() {
 	checklistTemplateHandler := restapi.NewChecklistTemplateHandler(checklistTemplateUsecase)
 	checklistSessionHandler := restapi.NewChecklistSessionHandler(checklistSessionUsecase)
 	stockCheckHandler := restapi.NewStockCheckHandler(stockCheckUsecase)
+	publicHandler := restapi.NewPublicHandler(productUsecase, categoryUsecase, variantUsecase)
 
 	restapi.NewAuthRouter(authHandler).AddRouter(router)
 	restapi.NewBudgetRouter(budgetHandler).AddRouter(router)
@@ -116,6 +117,7 @@ func main() {
 	restapi.NewChecklistTemplateRouter(checklistTemplateHandler).AddRouter(router)
 	restapi.NewChecklistSessionRouter(checklistSessionHandler).AddRouter(router)
 	restapi.NewStockCheckRouter(stockCheckHandler).AddRouter(router)
+	restapi.NewPublicRouter(publicHandler).AddRouter(router)
 
 	router.HandleFunc("/health-check", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("success"))
