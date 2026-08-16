@@ -92,3 +92,53 @@ func TestEnableCORS_PreflightOptionsRequest(t *testing.T) {
 	assert.NotEmpty(t, w.Header().Get("Access-Control-Allow-Methods"))
 	assert.NotEmpty(t, w.Header().Get("Access-Control-Allow-Headers"))
 }
+
+func TestRequireSessionId(t *testing.T) {
+	tests := []struct {
+		name           string
+		sessionId      string
+		expectedStatus int
+	}{
+		{
+			name:           "valid UUIDv4 passes through",
+			sessionId:      "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "missing header is rejected",
+			sessionId:      "",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "malformed header is rejected",
+			sessionId:      "not-a-uuid",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "non-v4 uuid is rejected",
+			sessionId:      "3fa85f64-5717-1562-b3fc-2c963f66afa6",
+			expectedStatus: http.StatusBadRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			nextCalled := false
+			next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				nextCalled = true
+				w.WriteHeader(http.StatusOK)
+			})
+
+			req := httptest.NewRequest(http.MethodGet, "/carts/current", nil)
+			if tt.sessionId != "" {
+				req.Header.Set("X-Session-Id", tt.sessionId)
+			}
+			w := httptest.NewRecorder()
+
+			restapi.RequireSessionId(next).ServeHTTP(w, req)
+
+			assert.Equal(t, tt.expectedStatus, w.Code)
+			assert.Equal(t, tt.expectedStatus == http.StatusOK, nextCalled)
+		})
+	}
+}
