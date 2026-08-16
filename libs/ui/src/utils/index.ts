@@ -5,5 +5,6 @@ export * from './print';
 export * from './queryParam';
 export * from './stringUnionParser';
 export * from './url';
+export * from './tableOrderUrl';
 export * from './usecase';
 export * from './math';

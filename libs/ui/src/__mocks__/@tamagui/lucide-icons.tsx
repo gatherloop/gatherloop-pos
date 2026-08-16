@@ -41,5 +41,6 @@ export const DollarSign = NullIcon;
 export const LayoutDashboard = NullIcon;
 export const LogOut = NullIcon;
 export const Printer = NullIcon;
+export const RefreshCw = NullIcon;
 export const XCircle = NullIcon;
 export const ClipboardList = NullIcon;

@@ -7,6 +7,7 @@ export default {
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'mjs', 'html'],
   moduleNameMapper: {
     '^react-native$': '<rootDir>/src/__mocks__/react-native.ts',
+    '^react-native-qrcode-svg$': '<rootDir>/src/__mocks__/react-native-qrcode-svg.tsx',
     '^@react-navigation/native$': '<rootDir>/src/__mocks__/@react-navigation/native.ts',
     '^next/router$': '<rootDir>/src/__mocks__/next/router.ts',
     '.*api-contract/src.*': '<rootDir>/src/__mocks__/api-contract.ts',
