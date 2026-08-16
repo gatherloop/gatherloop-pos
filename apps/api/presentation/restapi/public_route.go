@@ -22,4 +22,5 @@ func (publicRouter PublicRouter) AddRouter(router *mux.Router) {
 	router.HandleFunc("/public/products", publicRouter.handler.GetProductList).Methods(http.MethodGet)
 	router.HandleFunc("/public/products/{productId}", publicRouter.handler.GetProductById).Methods(http.MethodGet)
 	router.HandleFunc("/public/variants", publicRouter.handler.GetVariantList).Methods(http.MethodGet)
+	router.HandleFunc("/public/tables/{code}", publicRouter.handler.GetTableByCode).Methods(http.MethodGet)
 }

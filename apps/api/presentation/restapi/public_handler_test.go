@@ -15,25 +15,27 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func newPublicHandler(t *testing.T) (restapi.PublicHandler, *mock.MockProductRepository, *mock.MockCategoryRepository, *mock.MockVariantRepository) {
+func newPublicHandler(t *testing.T) (restapi.PublicHandler, *mock.MockProductRepository, *mock.MockCategoryRepository, *mock.MockVariantRepository, *mock.MockTableRepository) {
 	ctrl := gomock.NewController(t)
 	t.Cleanup(ctrl.Finish)
 
 	productRepo := mock.NewMockProductRepository(ctrl)
 	categoryRepo := mock.NewMockCategoryRepository(ctrl)
 	variantRepo := mock.NewMockVariantRepository(ctrl)
+	tableRepo := mock.NewMockTableRepository(ctrl)
 
 	handler := restapi.NewPublicHandler(
 		domain.NewProductUsecase(productRepo),
 		domain.NewCategoryUsecase(categoryRepo),
 		domain.NewVariantUsecase(variantRepo, productRepo),
+		domain.NewTableUsecase(tableRepo),
 	)
 
-	return handler, productRepo, categoryRepo, variantRepo
+	return handler, productRepo, categoryRepo, variantRepo, tableRepo
 }
 
 func TestPublicHandler_GetCategoryList(t *testing.T) {
-	handler, _, categoryRepo, _ := newPublicHandler(t)
+	handler, _, categoryRepo, _, _ := newPublicHandler(t)
 
 	categoryRepo.EXPECT().GetCategoryList(gomock.Any()).Return([]domain.Category{{Id: 1, Name: "Minuman"}}, nil)
 
@@ -46,7 +48,7 @@ func TestPublicHandler_GetCategoryList(t *testing.T) {
 }
 
 func TestPublicHandler_GetProductList_forcesPublishedPurchase(t *testing.T) {
-	handler, productRepo, _, _ := newPublicHandler(t)
+	handler, productRepo, _, _, _ := newPublicHandler(t)
 
 	published := domain.ProductStatusPublished
 	purchase := domain.SaleTypePurchase
@@ -93,7 +95,7 @@ func TestPublicHandler_GetProductById(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler, productRepo, _, _ := newPublicHandler(t)
+			handler, productRepo, _, _, _ := newPublicHandler(t)
 			productRepo.EXPECT().GetProductById(gomock.Any(), int64(1)).Return(tt.product, nil)
 
 			req := httptest.NewRequest(http.MethodGet, "/public/products/1", nil)
@@ -107,7 +109,7 @@ func TestPublicHandler_GetProductById(t *testing.T) {
 }
 
 func TestPublicHandler_GetVariantList_stripsMaterialsAndExcludesNonPublicProducts(t *testing.T) {
-	handler, _, _, variantRepo := newPublicHandler(t)
+	handler, _, _, variantRepo, _ := newPublicHandler(t)
 
 	publicVariant := domain.Variant{
 		Id:        1,
@@ -141,4 +143,50 @@ func TestPublicHandler_GetVariantList_stripsMaterialsAndExcludesNonPublicProduct
 	assert.Equal(t, int64(1), resp.Data[0].Id)
 	assert.Empty(t, resp.Data[0].Materials)
 	assert.Empty(t, resp.Data[0].PricingTiers)
+}
+
+func TestPublicHandler_GetTableByCode(t *testing.T) {
+	tests := []struct {
+		name           string
+		code           string
+		setupMock      func(r *mock.MockTableRepository)
+		expectedStatus int
+	}{
+		{
+			name: "known code resolves to id and label",
+			code: "0123456789",
+			setupMock: func(r *mock.MockTableRepository) {
+				r.EXPECT().GetTableByCode(gomock.Any(), "0123456789").Return(domain.Table{Id: 1, Code: "0123456789", Label: "Meja 1"}, nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name: "unknown code is not found",
+			code: "ZZZZZZZZZZ",
+			setupMock: func(r *mock.MockTableRepository) {
+				r.EXPECT().GetTableByCode(gomock.Any(), "ZZZZZZZZZZ").Return(domain.Table{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
+			},
+			expectedStatus: http.StatusNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			handler, _, _, _, tableRepo := newPublicHandler(t)
+			tt.setupMock(tableRepo)
+
+			req := httptest.NewRequest(http.MethodGet, "/public/tables/"+tt.code, nil)
+			req = mux.SetURLVars(req, map[string]string{"code": tt.code})
+			w := httptest.NewRecorder()
+			handler.GetTableByCode(w, req)
+
+			assert.Equal(t, tt.expectedStatus, w.Code)
+
+			if tt.expectedStatus == http.StatusOK {
+				var resp apiContract.PublicTableFindByCodeResponse
+				assert.NoError(t, json.NewDecoder(w.Body).Decode(&resp))
+				assert.Equal(t, "Meja 1", resp.Data.Label)
+			}
+		})
+	}
 }

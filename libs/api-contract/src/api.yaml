@@ -145,6 +145,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /public/tables/{code}:
+    get:
+      summary: Resolve a table QR code to its id and label (unauthenticated, customer-facing)
+      operationId: publicTableFindByCode
+      tags:
+        - public
+      parameters:
+        - $ref: '#/components/parameters/TableCode'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicTableFindByCodeResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /categories:
     get:
       summary: List all categories
@@ -2349,6 +2370,155 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /tables:
+    get:
+      summary: List all tables
+      operationId: tableList
+      tags:
+        - table
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableListResponse'
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Create table
+      operationId: tableCreate
+      tags:
+        - table
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TableRequest'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableCreateResponse'
+        '403':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /tables/{tableId}:
+    get:
+      summary: Get table by id
+      operationId: tableFindById
+      tags:
+        - table
+      parameters:
+        - $ref: '#/components/parameters/TableId'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableFindByIdResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Update table by id
+      operationId: tableUpdateById
+      tags:
+        - table
+      parameters:
+        - $ref: '#/components/parameters/TableId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TableRequest'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableUpdateByIdResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Delete table by id
+      operationId: tableDeleteById
+      tags:
+        - table
+      parameters:
+        - $ref: '#/components/parameters/TableId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /tables/{tableId}/regenerate-code:
+    put:
+      summary: Regenerate a table's QR code, invalidating the previous one
+      operationId: tableRegenerateCode
+      tags:
+        - table
+      parameters:
+        - $ref: '#/components/parameters/TableId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableUpdateByIdResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /stock-checks:
     get:
       summary: List all stock checks
@@ -3935,6 +4105,45 @@ components:
           type: string
         name:
           type: string
+    Table:
+      type: object
+      required:
+        - id
+        - code
+        - label
+        - createdAt
+      properties:
+        id:
+          type: integer
+          format: int64
+        code:
+          type: string
+        label:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        deletedAt:
+          type: string
+          format: date-time
+    TableRequest:
+      type: object
+      required:
+        - label
+      properties:
+        label:
+          type: string
+    PublicTable:
+      type: object
+      required:
+        - id
+        - label
+      properties:
+        id:
+          type: integer
+          format: int64
+        label:
+          type: string
     Error:
       type: object
       required:
@@ -4166,6 +4375,20 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/Ticket'
+    TableFindByIdResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/Table'
+    PublicTableFindByCodeResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/PublicTable'
     CategoryListResponse:
       type: object
       required:
@@ -4313,6 +4536,15 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Ticket'
+    TableListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Table'
     TransactionStatisticResponse:
       type: object
       required:
@@ -4387,6 +4619,13 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/Ticket'
+    TableCreateResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/Table'
     WalletTransferCreateResponse:
       type: object
       required:
@@ -4494,6 +4733,13 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/Ticket'
+    TableUpdateByIdResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/Table'
     StockCheckItem:
       type: object
       required:
@@ -4774,6 +5020,18 @@ components:
       in: path
       schema:
         type: integer
+      required: true
+    TableId:
+      name: tableId
+      in: path
+      schema:
+        type: integer
+      required: true
+    TableCode:
+      name: code
+      in: path
+      schema:
+        type: string
       required: true
     OptionValueIds:
       name: optionValueIds
