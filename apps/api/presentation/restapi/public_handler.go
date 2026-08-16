@@ -13,13 +13,15 @@ type PublicHandler struct {
 	productUsecase  domain.ProductUsecase
 	categoryUsecase domain.CategoryUsecase
 	variantUsecase  domain.VariantUsecase
+	tableUsecase    domain.TableUsecase
 }
 
-func NewPublicHandler(productUsecase domain.ProductUsecase, categoryUsecase domain.CategoryUsecase, variantUsecase domain.VariantUsecase) PublicHandler {
+func NewPublicHandler(productUsecase domain.ProductUsecase, categoryUsecase domain.CategoryUsecase, variantUsecase domain.VariantUsecase, tableUsecase domain.TableUsecase) PublicHandler {
 	return PublicHandler{
 		productUsecase:  productUsecase,
 		categoryUsecase: categoryUsecase,
 		variantUsecase:  variantUsecase,
+		tableUsecase:    tableUsecase,
 	}
 }
 
@@ -150,4 +152,20 @@ func (handler PublicHandler) GetVariantList(w http.ResponseWriter, r *http.Reque
 	}
 
 	WriteResponse(w, apiContract.VariantListResponse{Data: apiVariants, Meta: apiContract.MetaPage{Total: int64(len(apiVariants))}})
+}
+
+// GetTableByCode resolves a QR code to a table's id and label (FR-1, D6). It
+// never returns the full table list, which would defeat non-guessable codes.
+func (handler PublicHandler) GetTableByCode(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	code := GetTableCode(r)
+
+	table, usecaseErr := handler.tableUsecase.GetTableByCode(ctx, code)
+	if usecaseErr != nil {
+		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
+		return
+	}
+
+	WriteResponse(w, apiContract.PublicTableFindByCodeResponse{Data: ToApiPublicTable(table)})
 }
