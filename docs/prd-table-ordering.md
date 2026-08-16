@@ -42,11 +42,100 @@ Anything the customer app touches, it touches through what is already here.
 ### Architecture
 
 - **Backend** — Go REST API (`apps/api`), MySQL + GORM, Clean Architecture: `domain` (entities, repository interfaces, usecases) → `data/mysql` (repos, entities, transformers) → `presentation/restapi` (handlers, routes, transformers). Mocks generated into `data/mock` via `mockgen`. Migrations in `apps/api/migrations/` — **next free number is `000019`** (latest is `000018_drop_budget_balance`).
-- **Frontend** — Next.js web (`apps/web`) and React Native (`apps/mobile`) are thin shells. Effectively all UI lives in `libs/ui`, mirroring the backend layering: `domain/{entities,repositories,usecases}` → `data/{api,mock,url,memory}` → `presentation/{components,controllers,screens}`. Screens come in a `XxxHandler.tsx` (wiring) + `XxxScreen.tsx` (presentational) + `XxxScreen.stories.tsx` pair, with handler tests alongside.
+- **Frontend** — Next.js web (`apps/web`) and React Native (`apps/mobile`) are thin shells. Effectively all UI lives in `libs/ui`, in the same Clean Architecture the backend uses: `domain/{entities,repositories,usecases}` → `data/{api,mock,url,memory}` → `presentation/{components,controllers,screens}`. **This layering is normative for every screen in this PRD — see [Frontend Architecture](#frontend-architecture--the-libsui-contract) below.**
 - **Contract** — OpenAPI at `libs/api-contract/src/api.yaml`, codegen (Kubb) into TS clients + React Query hooks via `nx run api-contract:generate:ts`, consumed by both frontends. The Go side reads the same YAML for its response types (`libs/api-contract` Go module).
 - **UI kit** — Tamagui, shared cross-platform components in `libs/ui/src/presentation/components/base` (`Layout`, `Sheet`, `Tabs`, `ListItem`, `EmptyView`, `ErrorView`, `LoadingView`, `Pagination`, `Form`).
 - **E2E** — Playwright in `apps/web-e2e`.
 - **Docs** — VitePress site in `docs-site/`, deployed by `.github/workflows/deploy-docs.yaml`.
+
+### Frontend Architecture — the `libs/ui` contract
+
+The customer app is **not** a greenfield frontend. Every screen in this PRD is built with the same Clean Architecture the POS already uses, with the same directories, the same base classes, and the same tests. This section is **normative**: a PR that deviates from it should be sent back.
+
+#### The three layers and the dependency rule
+
+| Layer | Directory | Responsibility | May import |
+|---|---|---|---|
+| **Domain** | `libs/ui/src/domain/{entities,repositories,usecases}` | **Logic and state machines.** Entities are plain types; repositories are **interfaces (ports) only**; usecases are state machines. | Other domain code, `ts-pattern`, `libs/ui/src/utils`. **Never** React, axios, Tamagui, or `libs/api-contract`. |
+| **Data** | `libs/ui/src/data/{api,mock,url,memory,browser}` | **Data fetching and persistence** — the concrete implementations of the domain ports, plus transformers mapping API-contract types to domain entities. | Domain (to implement its interfaces), `libs/api-contract`, `@tanstack/react-query`. **Never** presentation. |
+| **Presentation** | `libs/ui/src/presentation/{components,controllers,screens}` | **UI.** Renders state, dispatches actions. | Domain (entity types + usecase classes), Tamagui, React. **Never** `data/api` directly — repositories arrive already constructed. |
+
+Composition happens in exactly one place per screen: `libs/ui/src/app/Xxx.tsx` constructs the concrete repositories and usecases and passes them to the Handler. The Next.js page under `apps/order/src/pages/**` stays a thin wrapper — `getServerSideProps` plus `export default Xxx` — exactly like `apps/web/src/pages/products/index.tsx`.
+
+#### Domain = logic + state machine
+
+Every usecase extends `Usecase<State, Action, Params>` (`domain/usecases/IUsecase.ts`):
+
+```ts
+abstract class Usecase<State, Action, Params = undefined> {
+  abstract params: Params;
+  abstract getInitialState(): State;
+  abstract getNextState(state: State, action: Action): State;  // pure reducer
+  abstract onStateChange(state: State, dispatch: (a: Action) => void): void;  // side effects
+}
+```
+
+Rules, as followed by `ProductListUsecase` and its siblings:
+
+- `State` is a discriminated union intersected with a shared context — `({ type: 'idle' } | { type: 'loading' } | …) & Context` — so data survives transitions.
+- `getNextState` is **pure**: a `match([state, action])` over `ts-pattern` ending in `.otherwise(() => state)`, so an action invalid for the current state is a silent no-op. No I/O, ever.
+- `onStateChange` is the **only** place a usecase touches a repository. It matches on the state, calls the repository, and dispatches the result back as an action.
+- Debouncing uses the existing `createDebounce` helper inside `onStateChange` (as `ProductListUsecase` does for search).
+
+#### Presentation = UI
+
+`useController` (`presentation/controllers/controller.ts`) is the sole bridge between a state machine and React:
+
+```ts
+const [state, dispatch] = useReducer(usecase.getNextState, usecase.getInitialState());
+useEffect(() => { usecase.onStateChange(state, dispatch); }, [state, usecase]);
+```
+
+Each screen gets a thin `useXxxController(usecase)` wrapper adding screen-specific effects (e.g. `useFocusEffect(() => dispatch({ type: 'FETCH' }))`). Above it:
+
+- **`XxxHandler.tsx`** — calls the controllers, coordinates cross-usecase effects, routes via `solito/router`, and maps machine state into screen props. The mapping uses `match(state).returnType<XxxScreenProps['variant']>()…​.exhaustive()`, so the compiler proves every state renders something.
+- **`XxxScreen.tsx`** — pure props-in / callbacks-out. No hooks, no usecases, no data access. That purity is what makes `XxxScreen.stories.tsx` possible.
+- **`components/xxx/*`** — dumb presentational pieces, each with stories.
+
+#### React Query's role
+
+`@tanstack/react-query` is a **data-layer** detail, not UI state. `ApiXxxRepository` receives a `QueryClient` and uses `fetchQuery` / `getQueryState` for request de-duplication and cache reads. UI state belongs to the usecase state machine. **No screen or handler in this feature may call `useQuery` / `useMutation` directly**, and optimistic updates are modeled as states, not as cache surgery (D14).
+
+#### SSR handoff
+
+`getServerSideProps` calls `repository.fetchXxx(...)` server-side and passes the result as the usecase's `params`; `getInitialState()` then starts in `loaded` instead of `idle` when the params already carry data (see `ProductListUsecase.getInitialState`). The customer menu uses this so the first paint is the menu itself, not a skeleton.
+
+#### Testing follows the layers
+
+| Layer | Test | Tool |
+|---|---|---|
+| Domain | `domain/usecases/xxx.test.ts` — asserts explicit transitions (`loading → loaded → revalidating → loaded`) against a `MockXxxRepository` | `UsecaseTester` + `flushPromises` (`utils/usecase.ts`), headless, no React |
+| Presentation | `presentation/screens/XxxHandler.test.tsx` — renders with mock repositories, asserts rendered states and user interactions | Testing Library + `userEvent` |
+| Presentation | `XxxScreen.stories.tsx`, `components/**/*.stories.tsx` — one story per `variant` | Storybook |
+
+#### File inventory per feature slice
+
+Every slice in this PRD lands as this set — the same shape as the existing `product` slice:
+
+```
+domain/entities/Xxx.ts                          types only
+domain/repositories/xxx.ts                      interface (port)
+domain/usecases/xxxYyy.ts                       Usecase<State, Action, Params>
+domain/usecases/xxxYyy.test.ts                  UsecaseTester transitions
+data/api/xxx.ts                                 ApiXxxRepository implements XxxRepository
+data/api/xxx.transformer.ts                     toXxx / toApiXxx
+data/mock/xxx.ts                                MockXxxRepository (+ setShouldFail, reset)
+presentation/controllers/XxxYyyController.tsx   useController binding
+presentation/components/xxx/*.tsx (+ stories)   dumb components
+presentation/screens/XxxYyyScreen.tsx           pure, props-driven
+presentation/screens/XxxYyyScreen.stories.tsx   one story per variant
+presentation/screens/XxxYyyHandler.tsx          wiring: controllers → screen props
+presentation/screens/XxxYyyHandler.test.tsx     handler test
+app/XxxYyy.tsx                                  composition root
+apps/order/src/pages/**                         thin Next page
+```
+
+Plus the relevant `index.ts` barrel exports at each level (`domain/index.ts`, `data/index.ts`, `presentation/screens/index.ts`, `app/index.ts`), which is how `@gatherloop-pos/ui` exposes them to the app.
 
 ### The catalog we will serve to customers
 
@@ -108,14 +197,16 @@ Design constraints: single column; every tap target ≥ 44 px; prices formatted 
 | **D2** | Response shape of the public catalog | **Reuse the existing `Category` / `Product` / `Variant` schemas**, with `materials: []` and `pricingTiers: []`. No new DTO schemas. | Honors "use the existing API contract": the frontend reuses `Product`/`Variant` entities, `toProduct`/`toVariant` transformers and the existing repositories with zero new mapping code. **Trade-off:** an empty array is technically indistinguishable from "no materials"; a customer client has no reason to read it. A distinct `MenuVariant` schema was rejected as pure duplication for v1 — revisit if a public consumer ever needs the field to be meaningful. |
 | **D3** | Customer identity | **An anonymous session ID**: a UUIDv4 minted by Next.js middleware on first visit, stored in a first-party cookie `gl_session_id` (`SameSite=Lax`, `Max-Age` 1 year, `Secure` in production, **not** `HttpOnly`), mirrored into `localStorage` as a recovery copy. Sent to the API as the `X-Session-Id` header. | No login, per the requirement. Minting it server-side in middleware means SSR already knows the session on first paint — no empty-cart flash, no hydration mismatch. Not `HttpOnly` so a future client-rendered or RN client can read it. The `localStorage` mirror survives cookie eviction (ITP/Safari) and is re-promoted to the cookie on next load. |
 | **D4** | Menu grouping | Client-side grouping by `product.category.name`, exactly as `TransactionItemSelect.tsx` does today. No new `categoryId` filter on `/products`. | The menu of a single coffee shop is small (tens of items); one paged fetch is cheaper than N per-category requests, and it avoids widening a shared endpoint's contract. Revisit if the catalog outgrows ~200 published products. |
-| **D5** | Where the cart lives | **Server-side**, in new `carts` / `cart_items` tables keyed by `session_id`. The client keeps only an optimistic React Query cache. | The requirement states carts and (later) transactions are marked with the session ID. Server-side also means the cart survives device storage clearing, is visible to staff for support, and gives the future transaction a server-authoritative source. **Rejected:** `localStorage`-only — loses the cart on clearing, is invisible to staff, and would have to be rewritten for the transaction phase anyway. |
+| **D5** | Where the cart lives | **Server-side**, in new `carts` / `cart_items` tables keyed by `session_id`. The client holds the cart only as `CartUsecase` state (D14). | The requirement states carts and (later) transactions are marked with the session ID. Server-side also means the cart survives device storage clearing, is visible to staff for support, and gives the future transaction a server-authoritative source. **Rejected:** `localStorage`-only — loses the cart on clearing, is invisible to staff, and would have to be rewritten for the transaction phase anyway. |
 | **D6** | Table identity | The QR encodes `/t/{tableCode}`. v1 stores `table_code` as an **opaque validated string** (`^[A-Za-z0-9-]{1,16}$`) on the cart. There is no `tables` table and no admin QR generator yet. Visiting without a table code prompts the customer to type their table number. | Delivers the ordering flow without a whole master-data + QR-printing feature. Adding a real `tables` entity later is additive: the string becomes a foreign key candidate, and existing carts keep working. |
 | **D7** | Cart pricing authority | Cart items store **only** `variant_id`, `amount`, `note`. Prices, subtotals and total are computed **server-side at read time** from the current `variants.price`. Nothing money-shaped is ever accepted from the client. | A client-supplied price is a trivially exploitable hole. Live derivation also means a price correction by staff is reflected in every open cart immediately. **Trade-off:** a price can change under a customer between adding and checking out — acceptable while no payment exists; the transaction phase must snapshot prices at conversion (as `transaction_items` already does). |
 | **D8** | Session ID as a capability | The session ID **is** the bearer of the cart. It is unguessable (122 bits of entropy) and grants access to nothing but its own cart. No endpoint may list or search carts across sessions. | Carts hold no PII, no payment data, and no ability to spend money. Treating the ID as a capability keeps the anonymous UX with no auth system. This assumption **must be re-evaluated** in the transaction phase, when a session starts owning money-shaped records. |
 | **D9** | Merging identical lines | Adding an item whose `variant_id` **and** trimmed `note` match an existing line increments that line's `amount` instead of creating a second line. | Matches pesan.app and every food-ordering app. Different notes stay separate lines because the kitchen treats them differently. |
 | **D10** | Checkout in this PRD | The **Checkout** button is present and enabled; it navigates to a stub screen stating "Pembayaran QRIS — segera hadir" and that the order has not been submitted. Gated by `NEXT_PUBLIC_ORDER_CHECKOUT_ENABLED` (default `false`) so a real checkout can be swapped in without touching the cart screen. | The requirement asks for a visible checkout action while explicitly excluding transaction creation. A flagged stub makes the flow reviewable and user-testable now, and makes the next PRD a drop-in. |
-| **D11** | Where the customer UI code lives | A new Nx Next.js app **`apps/order`** for routing/deploy; all screens, controllers, usecases and repositories go into **`libs/ui`** under a `Menu*` / `Cart*` namespace, following the existing layering. | The customer app needs the same entities (`Product`, `Variant`, `Category`), transformers and base components the POS already has in `libs/ui`; a separate lib would duplicate them or force a third "core" lib. A separate **app** keeps deploy, domain, bundle and auth posture independent of the POS. **Watch item:** if the POS bundle regresses, split `libs/ui-order` in a follow-up — no API or contract change required. |
+| **D11** | Where the customer UI code lives | A new Nx Next.js app **`apps/order`** for routing/deploy; all entities, repositories, usecases, controllers, screens and components go into **`libs/ui`** under a `Menu*` / `Cart*` namespace, in the existing `domain` → `data` → `presentation` layering. | The customer app needs the same entities (`Product`, `Variant`, `Category`), transformers and base components the POS already has in `libs/ui`; a separate lib would duplicate them or force a third "core" lib. A separate **app** keeps deploy, domain, bundle and auth posture independent of the POS. **Watch item:** if the POS bundle regresses, split `libs/ui-order` in a follow-up — no API or contract change required. |
 | **D12** | Rate limiting / abuse | Out of scope for v1. The public endpoints are read-only or scoped to one cart, and the deployment sits behind the existing VPS reverse proxy. | Adding a rate limiter to the Go API is its own change. Noted as a risk below, not silently ignored. |
+| **D13** | Architecture conformance | The customer screens follow the `libs/ui` Clean Architecture **exactly**: domain holds logic and state machines (`Usecase<State, Action, Params>`), data holds fetching and persistence behind domain-defined ports, presentation holds UI only. No shortcuts for "it's just a storefront" — no `useQuery` in screens, no `fetch` in components, no business rules in handlers. | Consistency is the point of the pattern: any engineer who has touched the POS can review or extend the customer app without learning a second architecture, and the layers are what make usecases testable headlessly with `UsecaseTester` and screens renderable in Storybook. |
+| **D14** | Optimistic cart updates | Modeled **in the state machine**, not in the React Query cache. The reducer purely computes the optimistic cart into `cart` while stashing the server-known one in `previousCart`; `onStateChange` performs the call; `MUTATE_SUCCESS` replaces the cart with the server's authoritative copy, `MUTATE_ERROR` restores `previousCart`. | Keeps the reducer pure and the rollback explicit, testable via `UsecaseTester` with no React and no cache mocking. Since every cart endpoint returns the whole cart (FR-3), success is a straight replace — and the server stays the price authority (D7). |
 
 ---
 
@@ -195,23 +286,98 @@ Cross-session access is impossible by construction: every query is scoped by `se
 
 ### FR-4 — Session establishment (frontend)
 
-Next.js middleware in `apps/order` reads `gl_session_id`; if absent or not a valid UUIDv4, it mints one and sets the cookie (D3). A `SessionProvider` exposes the ID to the React tree and to the axios client, which attaches `X-Session-Id` to every `/carts/*` request. On mount, the client reconciles cookie vs. `localStorage`, preferring the cookie and re-writing whichever is missing.
+Next.js middleware in `apps/order` reads `gl_session_id`; if absent or not a valid UUIDv4, it mints one and sets the cookie (D3), so SSR already knows the session on first paint.
 
-The table code comes from the `/t/{tableCode}` route segment and is pushed to `PUT /carts/current` whenever it changes. Landing without a table code (`/`) renders a table-number prompt that redirects to `/t/{code}`.
+Per D13, the browser storage does **not** leak into domain or presentation. It sits behind a port:
+
+- `domain/repositories/session.ts` — `SessionRepository { getSessionId(): string; getTableCode(): string | null; setTableCode(code: string): void }`
+- `data/browser/session.ts` — `BrowserSessionRepository`, the cookie + `localStorage` implementation, which reconciles the two on construction (cookie wins; whichever is missing is rewritten) and is the only code in the repo that knows a cookie exists. `data/browser/` is a new sibling of `api|mock|url|memory`, in the same spirit as `data/url` treating the URL as a storage port.
+- `data/mock/session.ts` — `MockSessionRepository`, an in-memory implementation so every cart usecase test runs without a DOM.
+
+`ApiCartRepository` takes a `SessionRepository` and attaches `X-Session-Id` to every `/carts/*` request. The table code comes from the `/t/{tableCode}` route segment and is pushed to `PUT /carts/current` whenever it changes. Landing without a table code (`/`) renders a table-number prompt that redirects to `/t/{code}`.
 
 ### FR-5 — Menu discovery (frontend)
 
-`MenuListHandler` / `MenuListScreen` + stories + handler tests, wired through `MenuListUsecase` → `MenuRepository` (`ApiMenuRepository`, `MockMenuRepository`). Renders sticky search, sticky category chips that scroll to their section, and per-category product cards showing the **lowest variant price** as "mulai Rp X". Search filters via the existing `query` param, debounced. Loading uses skeletons; empty and error states reuse `EmptyView` / `ErrorView` with a retry.
+Full slice per the file inventory: `MenuRepository` port, `ApiMenuRepository` + `MockMenuRepository`, `MenuListUsecase` (+ test), `useMenuListController`, `MenuListScreen` (+ stories), `MenuListHandler` (+ test), `app/MenuList.tsx`, page at `/t/[tableCode]`.
+
+The state machine mirrors `ProductListUsecase` minus pagination (the menu is one fetch, D4):
+
+```ts
+type Context = {
+  products: Product[]; categories: Category[];
+  query: string; selectedCategoryId: number | null;
+  errorMessage: string | null; fetchDebounceDelay: number;
+};
+type MenuListState =
+  ({ type: 'idle' } | { type: 'loading' } | { type: 'loaded' }
+   | { type: 'error' } | { type: 'changingParams' } | { type: 'revalidating' }) & Context;
+
+type MenuListAction =
+  | { type: 'FETCH' }
+  | { type: 'FETCH_SUCCESS'; products: Product[]; categories: Category[] }
+  | { type: 'FETCH_ERROR'; message: string }
+  | { type: 'CHANGE_PARAMS'; query?: string; selectedCategoryId?: number | null;
+      fetchDebounceDelay?: number }
+  | { type: 'REVALIDATE_FINISH'; products: Product[]; categories: Category[] };
+```
+
+Search debounces through `createDebounce` inside `onStateChange`, as `ProductListUsecase` does. The screen renders sticky search, sticky category chips that scroll to their section, and per-category cards showing the **lowest variant price** as "mulai Rp X". Loading renders skeletons; empty and error states reuse `EmptyView` / `ErrorView` with retry — all driven by the `variant` prop mapped exhaustively in the handler.
+
+Menu search/category state stays in the machine and is **not** mirrored into the URL, so no `data/url` query repository is needed here. (The POS mirrors list state into the URL because staff share and bookmark filtered lists; a customer scanning a QR code does not.)
 
 ### FR-6 — Item detail and add-to-cart (frontend)
 
-`MenuItemDetailHandler` / `MenuItemDetailScreen`, route-addressable and presented as a Tamagui bottom sheet over the menu. One chip group per `Option`; selecting one value per option resolves the variant via `GET /public/variants?productId=&optionValueIds[]=` (same call the POS makes). The sticky CTA shows live `price × quantity` and is disabled until every option is chosen. Submitting calls `CartItemAddUsecase` and closes the sheet with a confirmation toast (existing `libs/provider` toast).
+Slice: `MenuItemDetailUsecase` (+ test), `useMenuItemDetailController`, `MenuItemDetailScreen` (+ stories), `MenuItemDetailHandler` (+ test), `app/MenuItemDetail.tsx`, page at `/t/[tableCode]/products/[productId]`. Route-addressable, presented as a Tamagui bottom sheet over the menu.
+
+```ts
+type Context = {
+  product: Product | null; selectedOptionValueIds: number[];
+  variant: Variant | null; amount: number; note: string; errorMessage: string | null;
+};
+type MenuItemDetailState =
+  ({ type: 'idle' } | { type: 'loadingProduct' } | { type: 'selectingOptions' }
+   | { type: 'resolvingVariant' } | { type: 'ready' } | { type: 'error' }) & Context;
+
+type MenuItemDetailAction =
+  | { type: 'FETCH' }
+  | { type: 'FETCH_SUCCESS'; product: Product }
+  | { type: 'FETCH_ERROR'; message: string }
+  | { type: 'SELECT_OPTION_VALUE'; optionId: number; optionValueId: number }
+  | { type: 'RESOLVE_VARIANT_SUCCESS'; variant: Variant }
+  | { type: 'RESOLVE_VARIANT_ERROR'; message: string }
+  | { type: 'CHANGE_AMOUNT'; amount: number }
+  | { type: 'CHANGE_NOTE'; note: string };
+```
+
+Selecting a value for every `Option` moves the machine to `resolvingVariant`, whose `onStateChange` calls `GET /public/variants?productId=&optionValueIds[]=` — the same resolution the POS performs in `TransactionItemSelect`. `ready` is reached only once a variant resolves, and the Add-to-cart CTA is enabled **exactly** in `ready`; the enabling rule is a state, not an `if` in the screen. The CTA shows live `variant.price × amount`; submitting dispatches into the cart machine (FR-7) and closes the sheet with the existing `libs/provider` toast.
 
 ### FR-7 — Cart review and checkout CTA (frontend)
 
-A floating cart bar renders on menu and detail screens whenever `itemCount > 0`. `CartHandler` / `CartScreen` lists lines with name, chosen option values, note, stepper, subtotal and remove; supports clearing the cart; and shows a summary with the server-computed total. The sticky **Checkout** button routes to the FR-8 stub.
+Slice: `CartRepository` port, `ApiCartRepository` + `MockCartRepository`, `Cart`/`CartItem` entities, `CartUsecase` (+ test), `useCartController`, floating cart bar component (+ stories), `CartScreen` (+ stories), `CartHandler` (+ test), `app/Cart.tsx`, page at `/t/[tableCode]/cart`.
 
-Quantity changes are optimistic against the React Query cache and reconciled with the full cart returned by the API; a failed mutation rolls back and surfaces an error toast.
+One machine owns the whole cart — fetch and every mutation — because the floating bar, the cart screen and add-to-cart all read the same cart:
+
+```ts
+type Context = { cart: Cart | null; previousCart: Cart | null; errorMessage: string | null };
+type CartState =
+  ({ type: 'idle' } | { type: 'loading' } | { type: 'loaded' } | { type: 'error' }
+   | { type: 'adding' } | { type: 'updating' } | { type: 'removing' } | { type: 'clearing' }) & Context;
+
+type CartAction =
+  | { type: 'FETCH' }
+  | { type: 'FETCH_SUCCESS'; cart: Cart }
+  | { type: 'FETCH_ERROR'; message: string }
+  | { type: 'ADD_ITEM'; variantId: number; amount: number; note: string }
+  | { type: 'UPDATE_ITEM'; cartItemId: number; amount: number; note: string }
+  | { type: 'REMOVE_ITEM'; cartItemId: number }
+  | { type: 'CLEAR' }
+  | { type: 'MUTATE_SUCCESS'; cart: Cart }
+  | { type: 'MUTATE_ERROR'; message: string };
+```
+
+Optimism follows D14: `UPDATE_ITEM` / `REMOVE_ITEM` compute the optimistic cart purely in the reducer and stash the server-known cart in `previousCart`; `onStateChange` issues the call; `MUTATE_SUCCESS` replaces with the server's authoritative cart (totals per D7); `MUTATE_ERROR` restores `previousCart` and surfaces an error toast. The transitions — including rollback — are asserted headlessly with `UsecaseTester`.
+
+The floating bar renders on menu and detail screens whenever `itemCount > 0`. `CartScreen` lists lines with name, chosen option values, note, stepper, subtotal and remove; supports clearing; and shows a summary with the server-computed total. The sticky **Checkout** button routes to the FR-8 stub.
 
 ### FR-8 — QRIS checkout stub (frontend)
 
@@ -255,17 +421,17 @@ Thirteen PRs. Each is independently mergeable, keeps `main` green, and is small 
 | **2** | `feat(api): cart data model` | Migration `000019`, `cart_entity.go`, `cart_repository.go` (+ mockgen), `data/mysql/cart_{entity,repo,transformer}.go`, repo tests. No routes — nothing user-visible yet. | 1 | M |
 | **3** | `feat(api): cart endpoints` | `cart_usecase.go` (+ usecase tests), session-ID middleware, handlers/routes/transformers, `api.yaml` `/carts/current*` paths + `Cart`/`CartItem` schemas, regenerate TS, handler tests, `main.go` wiring. | 2 | L |
 | **4** | `feat(order): scaffold customer web app` | `apps/order` Nx Next.js app: Tamagui config, `RootProvider`, `_app`/`_document`, health route, `project.json`, Dockerfile if the POS pattern requires it. Renders a placeholder page. | 1 | M |
-| **5** | `feat(order): anonymous session and table code` | Session middleware, `SessionProvider`, axios `X-Session-Id` interceptor, `localStorage` reconciliation, `/t/[tableCode]` route shell, table-number prompt at `/`. Unit tests for mint/reconcile. | 4 | M |
-| **6** | `feat(ui): menu domain and data layer` | `MenuRepository` interface, `MenuListUsecase` / `MenuItemDetailUsecase` / `VariantResolveUsecase`, `ApiMenuRepository`, `MockMenuRepository`, usecase tests. Reuses existing `Product`/`Variant`/`Category` entities and transformers. No UI. | 3 | M |
-| **7** | `feat(ui): menu discovery screen` | `MenuListScreen` + stories, `MenuListHandler` + handler tests, `MenuListController`, category chips, search, skeleton/empty/error states. Wired into `apps/order` at `/t/[tableCode]`. | 6 | L |
-| **8** | `feat(ui): item detail and option selection` | `MenuItemDetailScreen` + stories + handler, option chip groups, quantity stepper, note field, variant resolution, live price. Add-to-cart CTA present but stubbed to a no-op callback. | 7 | L |
-| **9** | `feat(ui): cart domain and data layer` | `CartRepository`, `CartGetUsecase` / `CartItemAdd` / `CartItemUpdate` / `CartItemDelete` / `CartClear`, `ApiCartRepository`, `MockCartRepository`, optimistic-update helpers, usecase tests. Phase 8's CTA is connected here. | 8 | M |
-| **10** | `feat(ui): floating cart bar and cart screen` | Floating bar, `CartScreen` + stories, `CartHandler` + tests, steppers, remove, clear, summary, sticky Checkout button. Wired at `/t/[tableCode]/cart`. | 9 | L |
+| **5** | `feat(order): anonymous session and table code` | **domain:** `repositories/session.ts` port. **data:** `data/browser/session.ts` (cookie + `localStorage` reconcile), `data/mock/session.ts`. **app:** Next middleware minting `gl_session_id`, `SessionProvider`, axios `X-Session-Id` interceptor, `/t/[tableCode]` route shell, table-number prompt at `/`. Unit tests for mint/reconcile. | 4 | M |
+| **6** | `feat(ui): menu domain and data layer` | **domain:** `repositories/menu.ts` port, `usecases/menuList.ts` + `usecases/menuItemDetail.ts` state machines, both with `UsecaseTester` tests. **data:** `data/api/menu.ts` (`ApiMenuRepository`), `data/mock/menu.ts`. Reuses the existing `Product`/`Variant`/`Category` entities and `toProduct`/`toVariant` transformers. **No presentation code.** | 3 | M |
+| **7** | `feat(ui): menu discovery screen` | **presentation:** `MenuListController`, `MenuListScreen` + stories, `MenuListHandler` + handler test, category-chip and product-card components + stories. **app:** `app/MenuList.tsx` composition root, thin page at `/t/[tableCode]` with `getServerSideProps` SSR handoff. | 6 | L |
+| **8** | `feat(ui): item detail and option selection` | **presentation:** `MenuItemDetailController`, `MenuItemDetailScreen` + stories, `MenuItemDetailHandler` + test, option chip groups, stepper, note field. **app:** `app/MenuItemDetail.tsx`, page at `/t/[tableCode]/products/[productId]`. Add-to-cart CTA present, wired to a no-op callback until phase 9. | 7 | L |
+| **9** | `feat(ui): cart domain and data layer` | **domain:** `entities/Cart.ts`, `repositories/cart.ts` port, `usecases/cart.ts` state machine incl. optimistic transitions and rollback (D14), with `UsecaseTester` tests covering success **and** `MUTATE_ERROR` restore. **data:** `data/api/cart.ts` + `cart.transformer.ts`, `data/mock/cart.ts`. Phase 8's CTA is connected here. | 8 | M |
+| **10** | `feat(ui): floating cart bar and cart screen` | **presentation:** `CartController`, floating cart bar component + stories, `CartScreen` + stories, `CartHandler` + test. **app:** `app/Cart.tsx`, page at `/t/[tableCode]/cart`. Steppers, remove, clear, summary, sticky Checkout button. | 9 | L |
 | **11** | `feat(order): QRIS checkout stub` | Stub checkout screen behind `NEXT_PUBLIC_ORDER_CHECKOUT_ENABLED`, routed from the cart CTA. | 10 | S |
 | **12** | `test(order-e2e): table ordering happy path` | `apps/order-e2e` Playwright project mirroring `apps/web-e2e`: scan → browse → filter → open item → choose options → add → cart persists across reload → edit quantity → remove → checkout CTA. | 11 | M |
 | **13** | `docs: document table ordering` | `docs-site/sales/table-ordering.md`, VitePress nav entry, `README.md` project list, `docs-site/roadmap.md` update. | 12 | S |
 
-**Sequencing note:** phases 6–10 deliberately alternate *data layer* and *screen* PRs. That is the split the codebase already uses (repository/usecase/mocks land separately from screens/stories/handlers), and it keeps every PR reviewable — the data PRs are pure logic with tests, the screen PRs are pure presentation with stories.
+**Sequencing note:** phases 6–10 deliberately alternate **domain+data** PRs with **presentation** PRs. That split falls straight out of the architecture (D13): a domain+data PR is pure logic plus ports and mocks, reviewable through its `UsecaseTester` transition tests with no UI to read; the following presentation PR is props-driven screens plus stories, reviewable without re-reading the logic. The dependency rule guarantees the first can land and be tested without the second existing.
 
 **Deployment note:** `apps/order` is a second Next.js app and needs its own build/host target. The API deploy pipeline (`.github/workflows/deploy-api.yml`, `apps/api/docs/DEPLOY_NATIVE.md`) is unchanged by phases 1–3 apart from running the new migration. Hosting for `apps/order` is an infrastructure decision to confirm before phase 4 lands (see open questions).
 
