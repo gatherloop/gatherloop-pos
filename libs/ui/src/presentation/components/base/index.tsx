@@ -6,6 +6,7 @@ export * from './LoadingView';
 export * from './EmptyView';
 export * from './ErrorView';
 export * from './Layout';
+export * from './OrderLayout';
 export * from './Form';
 export * from './Pagination';
 export * from './Sheet';
