@@ -9,6 +9,7 @@ import {
   publicProductListQueryKey,
   publicVariantList,
   publicVariantListQueryKey,
+  type PublicVariantListQueryParams,
 } from '../../../../api-contract/src';
 // Deep import, not the `domain` barrel (D20): that barrel also re-exports
 // every POS usecase, which drags unrelated weight into the order bundle.
@@ -26,6 +27,10 @@ export class ApiMenuRepository implements MenuRepository {
 
   fetchMenu: MenuRepository['fetchMenu'] = ({ query }) => {
     const productParams = { query };
+    // No `limit`: the API treats an absent limit as "no limit" (mirrors how
+    // /public/categories returns everything), so this stays a single
+    // request for every variant of every published purchase product.
+    const variantParams: PublicVariantListQueryParams = {};
 
     return Promise.all([
       this.client.fetchQuery({
@@ -36,9 +41,14 @@ export class ApiMenuRepository implements MenuRepository {
         queryKey: publicCategoryListQueryKey(),
         queryFn: () => publicCategoryList(),
       }),
-    ]).then(([productList, categoryList]) => ({
+      this.client.fetchQuery({
+        queryKey: publicVariantListQueryKey(variantParams),
+        queryFn: () => publicVariantList(variantParams),
+      }),
+    ]).then(([productList, categoryList, variantList]) => ({
       products: productList.data.map(toProduct),
       categories: categoryList.data.map(toCategory),
+      variants: variantList.data.map(toVariant),
     }));
   };
 

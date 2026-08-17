@@ -115,7 +115,11 @@ export class MockMenuRepository implements MenuRepository {
           product.name.toLowerCase().includes(query.toLowerCase())
         )
       : this.products;
-    return { products: [...products], categories: [...this.categories] };
+    return {
+      products: [...products],
+      categories: [...this.categories],
+      variants: [...this.variants],
+    };
   };
 
   fetchProductById: MenuRepository['fetchProductById'] = async (
