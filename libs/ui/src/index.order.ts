@@ -16,3 +16,4 @@ export * from './utils/currency';
 export * from './app/SessionProvider';
 export * from './app/TableResolve';
 export * from './app/MenuList';
+export * from './app/MenuItemDetail';
