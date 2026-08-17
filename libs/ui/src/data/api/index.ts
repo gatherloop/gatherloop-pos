@@ -35,3 +35,5 @@ export * from './stockCheck';
 export * from './stockCheck.transformer';
 export * from './purchaseList';
 export * from './purchaseList.transformer';
+export * from './publicTable';
+export * from './publicTable.transformer';

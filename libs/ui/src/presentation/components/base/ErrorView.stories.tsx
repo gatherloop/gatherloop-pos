@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
-import { ErrorView } from './EmptyView';
+import { ErrorView } from './ErrorView';
 
 const meta: Meta<typeof ErrorView> = {
   title: 'Base/ErrorView',
