@@ -30,3 +30,4 @@ export * from './purchaseList';
 export * from './purchaseListQuery';
 export * from './publicTable';
 export * from './session';
+export * from './menu';

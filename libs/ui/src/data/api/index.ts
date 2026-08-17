@@ -37,3 +37,4 @@ export * from './purchaseList';
 export * from './purchaseList.transformer';
 export * from './publicTable';
 export * from './publicTable.transformer';
+export * from './menu';
