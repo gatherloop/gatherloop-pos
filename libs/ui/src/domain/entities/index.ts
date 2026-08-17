@@ -21,3 +21,4 @@ export * from './ChecklistTemplate';
 export * from './ChecklistSession';
 export * from './StockCheck';
 export * from './PurchaseList';
+export * from './PublicTable';
