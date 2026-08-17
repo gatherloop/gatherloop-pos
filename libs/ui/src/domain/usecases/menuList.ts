@@ -1,5 +1,5 @@
 import { match, P } from 'ts-pattern';
-import { Category, Product } from '../entities';
+import { Category, Product, Variant } from '../entities';
 import { MenuRepository } from '../repositories';
 import { createDebounce } from '../../utils';
 import { Usecase } from './IUsecase';
@@ -12,6 +12,10 @@ import { Usecase } from './IUsecase';
 type Context = {
   products: Product[];
   categories: Category[];
+  // Every variant of every published purchase product (one fetch, mirroring
+  // D4) — lets the menu cards show a "mulai Rp X" starting price without a
+  // per-product request.
+  variants: Variant[];
   query: string;
   selectedCategoryId: number | null;
   errorMessage: string | null;
@@ -30,7 +34,12 @@ export type MenuListState = (
 
 export type MenuListAction =
   | { type: 'FETCH' }
-  | { type: 'FETCH_SUCCESS'; products: Product[]; categories: Category[] }
+  | {
+      type: 'FETCH_SUCCESS';
+      products: Product[];
+      categories: Category[];
+      variants: Variant[];
+    }
   | { type: 'FETCH_ERROR'; message: string }
   | {
       type: 'CHANGE_PARAMS';
@@ -38,11 +47,17 @@ export type MenuListAction =
       selectedCategoryId?: number | null;
       fetchDebounceDelay?: number;
     }
-  | { type: 'REVALIDATE_FINISH'; products: Product[]; categories: Category[] };
+  | {
+      type: 'REVALIDATE_FINISH';
+      products: Product[];
+      categories: Category[];
+      variants: Variant[];
+    };
 
 export type MenuListParams = {
   products: Product[];
   categories: Category[];
+  variants?: Variant[];
 };
 
 const changeParamsDebounce = createDebounce();
@@ -66,6 +81,7 @@ export class MenuListUsecase extends Usecase<
       type: this.params.products.length >= 1 ? 'loaded' : 'idle',
       products: this.params.products,
       categories: this.params.categories,
+      variants: this.params.variants ?? [],
       query: '',
       selectedCategoryId: null,
       errorMessage: null,
@@ -82,11 +98,12 @@ export class MenuListUsecase extends Usecase<
       )
       .with(
         [{ type: 'loading' }, { type: 'FETCH_SUCCESS' }],
-        ([state, { products, categories }]) => ({
+        ([state, { products, categories, variants }]) => ({
           ...state,
           type: 'loaded',
           products,
           categories,
+          variants,
         })
       )
       .with(
@@ -145,8 +162,8 @@ export class MenuListUsecase extends Usecase<
       .with({ type: 'loading' }, ({ query }) =>
         this.menuRepository
           .fetchMenu({ query })
-          .then(({ products, categories }) =>
-            dispatch({ type: 'FETCH_SUCCESS', products, categories })
+          .then(({ products, categories, variants }) =>
+            dispatch({ type: 'FETCH_SUCCESS', products, categories, variants })
           )
           .catch(() =>
             dispatch({
@@ -163,14 +180,24 @@ export class MenuListUsecase extends Usecase<
       })
       .with(
         { type: 'revalidating' },
-        ({ query, products, categories }) =>
+        ({ query, products, categories, variants }) =>
           this.menuRepository
             .fetchMenu({ query })
-            .then(({ products, categories }) =>
-              dispatch({ type: 'REVALIDATE_FINISH', products, categories })
+            .then(({ products, categories, variants }) =>
+              dispatch({
+                type: 'REVALIDATE_FINISH',
+                products,
+                categories,
+                variants,
+              })
             )
             .catch(() =>
-              dispatch({ type: 'REVALIDATE_FINISH', products, categories })
+              dispatch({
+                type: 'REVALIDATE_FINISH',
+                products,
+                categories,
+                variants,
+              })
             )
       )
       .otherwise(() => {

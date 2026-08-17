@@ -44,3 +44,5 @@ export const Printer = NullIcon;
 export const RefreshCw = NullIcon;
 export const XCircle = NullIcon;
 export const ClipboardList = NullIcon;
+export const Coffee = NullIcon;
+export const Utensils = NullIcon;
