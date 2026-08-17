@@ -79,4 +79,6 @@ export * from './stockCheckUpdate';
 export * from './stockCheckDelete';
 export * from './purchaseListGet';
 export * from './tableResolve';
+export * from './menuList';
+export * from './menuItemDetail';
 export * from './IUsecase';
