@@ -10,4 +10,6 @@
 export * from './config';
 export * from './presentation/components/base/ConfirmationAlert';
 export * from './presentation/components/base/OrderLayout';
+export * from './presentation/components/menu/MenuItemThumbnail';
 export * from './presentation/navigation';
+export * from './utils/currency';
