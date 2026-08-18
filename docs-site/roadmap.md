@@ -9,6 +9,7 @@ Gatherloop POS ships in small, sequential PRs, each backed by a written PRD in t
 - [One combined order slip, grouped by station](/sales/transactions) — Bar and Kitchen see the whole order on a single slip instead of two out-of-sync ones.
 - [Per-item rental coupons](/sales/coupons) — a coupon can discount a single line as well as the whole transaction.
 - [RFID ticket ↔ printed-name registry](/operations/tickets) — resolves a scanned card to a human-readable ticket number at rental check-in, without ever blocking check-in.
+- [Table ordering — QR-code self-service menu and cart](/sales/table-ordering) — a customer scans a table's QR code, browses the live catalog, and builds a cart that survives a reload, no login required. Discovery and cart only for now; checkout is a labeled stub.
 
 **Catalog**
 - [Product draft status](/catalog/products) — research a new menu item without it showing up at checkout until it's published.
@@ -50,5 +51,9 @@ Pulled from the "Out of Scope" and "Future Work" sections of shipped PRDs — co
 - **Barcode/QR jump-to-row on stock checks** — scan a shelf label to jump straight to that material's count row.
 - **Supplier reverse-view** — see every material a given supplier provides from the supplier's own detail page.
 - **Role-based access control** — today every account can do everything (create templates, publish products, flip wallet flags); scoped permissions are a natural next step once the team using the product grows past one till.
+- **Transaction creation from a table-ordering cart** — turning a customer's [table-ordering](/sales/table-ordering) cart into a real `Transaction`, with order-number assignment and prices snapshotted at conversion.
+- **QRIS payment integration** — gateway selection, callback handling, and reconciliation against wallets, so a table-ordering checkout actually charges the customer.
+- **Order status for customers** — a live status screen fed by kitchen/bar progress, once an order exists as a transaction.
+- **Cart merging by table** — one table of four building a single bill in [table ordering](/sales/table-ordering), instead of one cart per phone.
 
 Have a feature request or found a gap? The project is open on [GitHub](https://github.com/gatherloop/gatherloop-pos) — issues and PRs are welcome.
