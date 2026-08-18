@@ -53,6 +53,270 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /public/categories:
+    get:
+      summary: List all categories (unauthenticated, customer-facing)
+      operationId: publicCategoryList
+      tags:
+        - public
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryListResponse'
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /public/products:
+    get:
+      summary: List published, purchasable products (unauthenticated, customer-facing)
+      operationId: publicProductList
+      tags:
+        - public
+      parameters:
+        - $ref: '#/components/parameters/Query'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/Order'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Skip'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductListResponse'
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /public/products/{productId}:
+    get:
+      summary: Get a published, purchasable product by id (unauthenticated, customer-facing)
+      operationId: publicProductFindById
+      tags:
+        - public
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductFindByIdResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /public/variants:
+    get:
+      summary: List variants of published, purchasable products (unauthenticated, customer-facing)
+      operationId: publicVariantList
+      tags:
+        - public
+      parameters:
+        - $ref: '#/components/parameters/Query'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/Order'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Skip'
+        - $ref: '#/components/parameters/ProductIdQuery'
+        - $ref: '#/components/parameters/OptionValueIds'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VariantListResponse'
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /public/tables/{code}:
+    get:
+      summary: Resolve a table QR code to its id and label (unauthenticated, customer-facing)
+      operationId: publicTableFindByCode
+      tags:
+        - public
+      parameters:
+        - $ref: '#/components/parameters/TableCode'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicTableFindByCodeResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /carts/current:
+    get:
+      summary: Get the current session's active cart, with server-computed prices and totals
+      operationId: cartGetCurrent
+      tags:
+        - cart
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartResponse'
+        '400':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Resolve a table QR code and attach it to the current session's active cart
+      operationId: cartUpdateTable
+      tags:
+        - cart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartUpdateTableRequest'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartResponse'
+        '400':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Empty the current session's active cart
+      operationId: cartClear
+      tags:
+        - cart
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartResponse'
+        '400':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /carts/current/items:
+    post:
+      summary: Add a line to the current session's active cart, merging with an identical existing line
+      operationId: cartItemCreate
+      tags:
+        - cart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartItemCreateRequest'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartResponse'
+        '400':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /carts/current/items/{cartItemId}:
+    put:
+      summary: Update a line in the current session's active cart
+      operationId: cartItemUpdateById
+      tags:
+        - cart
+      parameters:
+        - $ref: '#/components/parameters/CartItemId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartItemUpdateRequest'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartResponse'
+        '400':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Remove a line from the current session's active cart
+      operationId: cartItemDeleteById
+      tags:
+        - cart
+      parameters:
+        - $ref: '#/components/parameters/CartItemId'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartResponse'
+        '400':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /categories:
     get:
       summary: List all categories
@@ -2257,6 +2521,155 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /tables:
+    get:
+      summary: List all tables
+      operationId: tableList
+      tags:
+        - table
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableListResponse'
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Create table
+      operationId: tableCreate
+      tags:
+        - table
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TableRequest'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableCreateResponse'
+        '403':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /tables/{tableId}:
+    get:
+      summary: Get table by id
+      operationId: tableFindById
+      tags:
+        - table
+      parameters:
+        - $ref: '#/components/parameters/TableId'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableFindByIdResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Update table by id
+      operationId: tableUpdateById
+      tags:
+        - table
+      parameters:
+        - $ref: '#/components/parameters/TableId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TableRequest'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableUpdateByIdResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Delete table by id
+      operationId: tableDeleteById
+      tags:
+        - table
+      parameters:
+        - $ref: '#/components/parameters/TableId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /tables/{tableId}/regenerate-code:
+    put:
+      summary: Regenerate a table's QR code, invalidating the previous one
+      operationId: tableRegenerateCode
+      tags:
+        - table
+      parameters:
+        - $ref: '#/components/parameters/TableId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableUpdateByIdResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /stock-checks:
     get:
       summary: List all stock checks
@@ -3843,6 +4256,144 @@ components:
           type: string
         name:
           type: string
+    Table:
+      type: object
+      required:
+        - id
+        - code
+        - label
+        - createdAt
+      properties:
+        id:
+          type: integer
+          format: int64
+        code:
+          type: string
+        label:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        deletedAt:
+          type: string
+          format: date-time
+    TableRequest:
+      type: object
+      required:
+        - label
+      properties:
+        label:
+          type: string
+    PublicTable:
+      type: object
+      required:
+        - id
+        - label
+      properties:
+        id:
+          type: integer
+          format: int64
+        label:
+          type: string
+    CartItem:
+      type: object
+      required:
+        - id
+        - cartId
+        - variantId
+        - variant
+        - amount
+        - note
+        - price
+        - subtotal
+        - createdAt
+      properties:
+        id:
+          type: integer
+          format: int64
+        cartId:
+          type: integer
+          format: int64
+        variantId:
+          type: integer
+          format: int64
+        variant:
+          $ref: '#/components/schemas/Variant'
+        amount:
+          type: integer
+        note:
+          type: string
+        price:
+          type: number
+        subtotal:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+    Cart:
+      type: object
+      required:
+        - id
+        - sessionId
+        - status
+        - items
+        - itemCount
+        - total
+        - createdAt
+      properties:
+        id:
+          type: integer
+          format: int64
+        sessionId:
+          type: string
+        tableId:
+          type: integer
+          format: int64
+        table:
+          $ref: '#/components/schemas/PublicTable'
+        status:
+          type: string
+          enum: [active, converted, abandoned]
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+        itemCount:
+          type: integer
+        total:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+    CartUpdateTableRequest:
+      type: object
+      required:
+        - tableCode
+      properties:
+        tableCode:
+          type: string
+    CartItemCreateRequest:
+      type: object
+      required:
+        - variantId
+        - amount
+      properties:
+        variantId:
+          type: integer
+          format: int64
+        amount:
+          type: integer
+        note:
+          type: string
+    CartItemUpdateRequest:
+      type: object
+      required:
+        - amount
+      properties:
+        amount:
+          type: integer
+        note:
+          type: string
     Error:
       type: object
       required:
@@ -4074,6 +4625,27 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/Ticket'
+    TableFindByIdResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/Table'
+    PublicTableFindByCodeResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/PublicTable'
+    CartResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/Cart'
     CategoryListResponse:
       type: object
       required:
@@ -4221,6 +4793,15 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Ticket'
+    TableListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Table'
     TransactionStatisticResponse:
       type: object
       required:
@@ -4295,6 +4876,13 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/Ticket'
+    TableCreateResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/Table'
     WalletTransferCreateResponse:
       type: object
       required:
@@ -4402,6 +4990,13 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/Ticket'
+    TableUpdateByIdResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/Table'
     StockCheckItem:
       type: object
       required:
@@ -4679,6 +5274,24 @@ components:
       required: true
     TicketId:
       name: ticketId
+      in: path
+      schema:
+        type: integer
+      required: true
+    TableId:
+      name: tableId
+      in: path
+      schema:
+        type: integer
+      required: true
+    TableCode:
+      name: code
+      in: path
+      schema:
+        type: string
+      required: true
+    CartItemId:
+      name: cartItemId
       in: path
       schema:
         type: integer

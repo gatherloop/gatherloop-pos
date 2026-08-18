@@ -15,6 +15,7 @@ import type {
   Rental,
   Supplier,
   OptionValue,
+  Table,
 } from '../../src/domain';
 
 // ─── Category ────────────────────────────────────────────────────────────────
@@ -329,6 +330,31 @@ export const mockTickets: Ticket[] = [
     id: 3,
     code: '0xC9D31E45',
     name: 'Ticket 03',
+    createdAt: '2024-01-17T08:00:00.000Z',
+  },
+];
+
+// ─── Table ───────────────────────────────────────────────────────────────────
+
+export const mockTable: Table = {
+  id: 1,
+  code: '3F7H9K2M5P',
+  label: 'Meja 01',
+  createdAt: '2024-01-15T08:00:00.000Z',
+};
+
+export const mockTables: Table[] = [
+  mockTable,
+  {
+    id: 2,
+    code: '8A2C4E6G8J',
+    label: 'Meja 02',
+    createdAt: '2024-01-16T08:00:00.000Z',
+  },
+  {
+    id: 3,
+    code: 'N4Q6R8S1T3',
+    label: 'Meja 03',
     createdAt: '2024-01-17T08:00:00.000Z',
   },
 ];

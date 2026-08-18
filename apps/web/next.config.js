@@ -13,6 +13,10 @@ const nextConfig = {
     // See: https://github.com/gregberge/svgr
     svgr: false,
   },
+  // react-native-qrcode-svg ships untranspiled JSX (no prebuilt CJS output),
+  // unlike react-native-svg which does — Next must run it through its own
+  // loader instead of treating it as pre-built.
+  transpilePackages: ['react-native-qrcode-svg'],
   webpack(config) {
     // On web, replace the React Native animation driver with the CSS one
     // config.resolve.alias['@tamagui/animations-moti'] =

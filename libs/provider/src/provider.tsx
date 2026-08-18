@@ -1,7 +1,10 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React, { ReactNode } from 'react';
 import { TamaguiProvider, TamaguiProviderProps } from 'tamagui';
-import { tamaguiConfig, ConfirmationAlertProvider } from '@gatherloop-pos/ui';
+import {
+  tamaguiConfig,
+  ConfirmationAlertProvider,
+} from '@gatherloop-pos/ui/order';
 import { ToastProvider, ToastViewport } from '@tamagui/toast';
 import { CurrentToast } from './currentToast';
 

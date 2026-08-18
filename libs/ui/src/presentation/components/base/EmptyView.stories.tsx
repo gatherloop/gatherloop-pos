@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { EmptyView } from './ErrorView';
+import { EmptyView } from './EmptyView';
 
 const meta: Meta<typeof EmptyView> = {
   title: 'Base/EmptyView',
