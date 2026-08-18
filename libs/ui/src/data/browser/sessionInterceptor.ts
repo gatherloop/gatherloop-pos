@@ -13,7 +13,15 @@ export const registerSessionHeaderInterceptor = (
   axiosInstance.defaults.withCredentials = false;
 
   const interceptorId = axiosInstance.interceptors.request.use((config) => {
-    config.headers.set('X-Session-Id', sessionRepository.getSessionId());
+    // FR-4/FR-3 in docs/prd-table-ordering.md: only `/carts/*` requests need
+    // the session (cart routes require it; public catalog routes reject
+    // unknown headers with nothing to gain from it). Scoping this matters in
+    // practice, not just in principle — an unconditional custom header on
+    // every request forces a CORS preflight on every public/* GET too, and
+    // those routes don't need to pay for one.
+    if (config.url?.startsWith('/carts')) {
+      config.headers.set('X-Session-Id', sessionRepository.getSessionId());
+    }
     return config;
   });
 

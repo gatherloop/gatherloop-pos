@@ -38,7 +38,13 @@ export const axiosClient = async <
   const promise = axiosInstance
     .request<TData, ResponseConfig<TData>>({
       ...config,
-      withCredentials: true,
+      // Defaults to `true` (the POS's cookie-based auth, unchanged) unless
+      // something has explicitly set the instance default otherwise — which
+      // is exactly what the order app's `registerSessionHeaderInterceptor`
+      // does (D22 in docs/prd-table-ordering.md: no cookie for that app, so
+      // credentials only widen the CORS surface for no reason). A literal
+      // `withCredentials: true` here would silently override that.
+      withCredentials: axiosInstance.defaults.withCredentials ?? true,
     })
     .catch((e: AxiosError<TError>) => {
       throw e;

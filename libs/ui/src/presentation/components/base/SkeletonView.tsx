@@ -1,7 +1,18 @@
 import { Card, XStack, YStack } from 'tamagui';
 
+// Deliberately no `animation`/`enterStyle` here: Tamagui's web animation
+// driver resolves an animated `View`'s style to an *array* of style objects
+// (base + enter-variant) instead of one merged object, and forwards it
+// straight through react-native-web's DOM view without flattening. React
+// DOM's `setValueForStyles` then does `element.style[0] = ...`, which
+// browsers have never supported (Chromium: "Indexed property setter is not
+// supported") — most engines silently ignore the bad assignment, but it hard
+// -crashes first paint here since this skeleton, unlike an alert or a sheet
+// entrance transition elsewhere in the app, is often the very first
+// component Tamagui's driver ever animates in a session. A static skeleton
+// reads fine without the shimmer.
 export const SkeletonCard = () => (
-  <Card animation="slow" opacity={0.5} enterStyle={{ opacity: 0.3 }}>
+  <Card opacity={0.5}>
     <YStack gap="$2" padding="$3">
       <XStack
         height={16}
