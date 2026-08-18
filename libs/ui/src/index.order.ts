@@ -18,3 +18,4 @@ export * from './app/TableResolve';
 export * from './app/MenuList';
 export * from './app/MenuItemDetail';
 export * from './app/CartProvider';
+export * from './app/Cart';

@@ -14,12 +14,14 @@ export type TableResolveHandlerProps = {
   tableResolveUsecase: TableResolveUsecase;
   sessionRepository: SessionRepository;
   children?: ReactNode;
+  footer?: ReactNode;
 };
 
 export const TableResolveHandler = ({
   tableResolveUsecase,
   sessionRepository,
   children,
+  footer,
 }: TableResolveHandlerProps) => {
   const tableResolve = useTableResolveController(tableResolveUsecase);
 
@@ -55,6 +57,7 @@ export const TableResolveHandler = ({
               }
         )
         .exhaustive()}
+      footer={footer}
     >
       {children}
     </TableResolveScreen>

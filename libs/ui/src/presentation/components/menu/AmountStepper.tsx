@@ -9,12 +9,14 @@ export type AmountStepperProps = {
   amount: number;
   onChange: (amount: number) => void;
   min?: number;
+  disabled?: boolean;
 };
 
 export const AmountStepper = ({
   amount,
   onChange,
   min = 1,
+  disabled = false,
 }: AmountStepperProps) => {
   return (
     <XStack gap="$3" alignItems="center">
@@ -24,7 +26,7 @@ export const AmountStepper = ({
         circular
         width={44}
         height={44}
-        disabled={amount <= min}
+        disabled={disabled || amount <= min}
         onPress={() => onChange(amount - 1)}
         accessibilityLabel="Kurangi jumlah"
       />
@@ -37,6 +39,7 @@ export const AmountStepper = ({
         circular
         width={44}
         height={44}
+        disabled={disabled}
         onPress={() => onChange(amount + 1)}
         accessibilityLabel="Tambah jumlah"
       />

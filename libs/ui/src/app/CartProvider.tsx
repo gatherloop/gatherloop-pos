@@ -3,10 +3,8 @@ import { ReactNode, createContext, useContext, useState } from 'react';
 // composition root, which drags solito/next into a Vite build.
 import { ApiCartRepository } from '../data/api/cart';
 import { CartAction, CartState, CartUsecase } from '../domain/usecases/cart';
-import {
-  Controller,
-  useController,
-} from '../presentation/controllers/controller';
+import { Controller } from '../presentation/controllers/controller';
+import { useCartController } from '../presentation/controllers/CartController';
 
 const CartContext = createContext<Controller<CartState, CartAction> | null>(
   null
@@ -32,7 +30,7 @@ export const CartProvider = ({ children }: CartProviderProps) => {
   const [cartUsecase] = useState(
     () => new CartUsecase(new ApiCartRepository())
   );
-  const controller = useController(cartUsecase);
+  const controller = useCartController(cartUsecase);
 
   return (
     <CartContext.Provider value={controller}>{children}</CartContext.Provider>
