@@ -1,0 +1,100 @@
+name: Deploy docs and order app to GitHub Pages
+
+# Phase 12b in docs/prd-table-ordering.md (FR-9): a repository gets one
+# Pages site, so the docs-site (VitePress) build and the apps/order
+# (customer SPA) build are assembled into a single artifact:
+#
+#   dist/                 <- docs-site, unchanged, at the site root
+#   dist/order/            <- customer SPA
+#   dist/order/404.html    <- byte-copy of dist/order/index.html (D19),
+#                              so GitHub Pages serves the SPA for any
+#                              unmatched /order/t/{code} path
+#
+# Consequence accepted in the PRD: the two sites redeploy together, so a
+# docs typo republishes the order app and vice versa. Both builds are
+# deterministic, so this is churn, not risk.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs-site/**"
+      - "apps/order/**"
+      - "libs/ui/**"
+      - "libs/api-contract/**"
+      - ".github/workflows/deploy-pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install workspace dependencies
+        run: npm ci
+
+      - name: Install docs-site dependencies
+        working-directory: docs-site
+        run: npm ci
+
+      - name: Build docs site
+        working-directory: docs-site
+        run: npm run build
+
+      # libs/api-contract/src/__generated__ is gitignored; the order app
+      # cannot resolve its imports until this runs (mirrors deploy-api.yml).
+      - name: Generate API contract TS client
+        run: npx nx run api-contract:generate:ts
+
+      # VITE_API_BASE_URL is a public URL (D21), not a secret, but it lives
+      # in an Actions variable rather than the workflow file so the VPS
+      # origin can change without editing this workflow (see D21's note on
+      # sslip.io hostnames being IP-derived).
+      - name: Build order app
+        run: npx nx run order:build
+        env:
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+          VITE_ORDER_CHECKOUT_ENABLED: ${{ vars.VITE_ORDER_CHECKOUT_ENABLED }}
+
+      - name: Assemble combined Pages artifact
+        run: |
+          set -e
+          mkdir -p dist
+          cp -r docs-site/.vitepress/dist/. dist/
+          cp dist/order/index.html dist/order/404.html
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
