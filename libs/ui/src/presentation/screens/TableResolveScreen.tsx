@@ -19,17 +19,21 @@ export type TableResolveScreenVariant =
 export type TableResolveScreenProps = {
   variant: TableResolveScreenVariant;
   children?: ReactNode;
+  footer?: ReactNode;
 };
 
 // FR-4 in docs/prd-table-ordering.md: the three outcomes of resolving the
 // table code from `/order/t/{code}`. `resolved` renders `children` so a
 // later phase can drop the menu screen in here without touching this file.
+// `footer` is the floating cart bar (FR-7 phase 10) — only meaningful once
+// a table has actually resolved, so no other variant accepts it.
 // EmptyView/LoadingView carry no copy of their own — unlike ErrorView, which
 // hardcodes an English "Retry" label — so every string here stays Bahasa
 // Indonesia per D15.
 export const TableResolveScreen = ({
   variant,
   children,
+  footer,
 }: TableResolveScreenProps) =>
   match(variant)
     .returnType<ReactNode>()
@@ -71,6 +75,7 @@ export const TableResolveScreen = ({
             <Text fontWeight="bold">{table.label}</Text>
           </XStack>
         }
+        footer={footer}
       >
         {children ?? <Text>Menu akan segera hadir di sini.</Text>}
       </OrderLayout>
