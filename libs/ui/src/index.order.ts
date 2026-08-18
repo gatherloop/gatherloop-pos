@@ -19,3 +19,4 @@ export * from './app/MenuList';
 export * from './app/MenuItemDetail';
 export * from './app/CartProvider';
 export * from './app/Cart';
+export * from './app/Checkout';

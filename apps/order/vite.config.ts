@@ -56,6 +56,13 @@ export default defineConfig(async ({ mode }) => {
 
     define: {
       __VITE_API_BASE_URL__: JSON.stringify(env['VITE_API_BASE_URL'] ?? ''),
+      // FR-8/D10 in docs/prd-table-ordering.md: kill switch for the QRIS
+      // checkout stub, default false. Coerced to a real boolean here so
+      // `app/Checkout.tsx` can declare it as `boolean | undefined` rather
+      // than parsing a string at runtime.
+      __VITE_ORDER_CHECKOUT_ENABLED__: JSON.stringify(
+        env['VITE_ORDER_CHECKOUT_ENABLED'] === 'true'
+      ),
     },
 
     plugins: [tamaguiPlugin({ disableWatchTamaguiConfig: true }), react(), nxViteTsPaths()],
