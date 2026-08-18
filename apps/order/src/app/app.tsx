@@ -1,5 +1,6 @@
 import { RootProvider } from '@gatherloop-pos/provider';
 import {
+  CartProvider,
   MenuItemDetail,
   MenuList,
   SessionProvider,
@@ -8,43 +9,48 @@ import {
 import { Router } from '../router/Router';
 
 // D17/D19 in docs/prd-table-ordering.md: `/t/{code}` and
-// `/t/{code}/products/{productId}` are the QR-facing routes so far — cart
-// and checkout land in later phases. The item detail route renders
-// `MenuItemDetail` alongside `MenuList`, not instead of it, since the item
-// detail sheet (FR-6) sits on top of the menu rather than replacing it. A
-// bare `/` (no code) and any unmatched path both fall back to
-// `TableResolve`'s `code: null` outcome, which is the "scan the QR at your
-// table" screen (D17) rather than a dedicated 404.
+// `/t/{code}/products/{productId}` are the QR-facing routes so far — a cart
+// screen and checkout land in later phases. `CartProvider` wraps the router
+// (FR-7 phase 9) so the one cart machine it owns is reachable from every
+// route, including the item detail sheet's Add-to-cart CTA today and the
+// floating bar / cart screen once phase 10 lands. The item detail route
+// renders `MenuItemDetail` alongside `MenuList`, not instead of it, since
+// the item detail sheet (FR-6) sits on top of the menu rather than
+// replacing it. A bare `/` (no code) and any unmatched path both fall back
+// to `TableResolve`'s `code: null` outcome, which is the "scan the QR at
+// your table" screen (D17) rather than a dedicated 404.
 export function App() {
   return (
     <RootProvider>
       <SessionProvider>
-        <Router
-          routes={[
-            {
-              path: '/t/:code/products/:productId',
-              element: ({ code, productId }) => (
-                <TableResolve code={code}>
-                  <MenuList tableCode={code} />
-                  <MenuItemDetail productId={Number(productId)} />
-                </TableResolve>
-              ),
-            },
-            {
-              path: '/t/:code',
-              element: ({ code }) => (
-                <TableResolve code={code}>
-                  <MenuList tableCode={code} />
-                </TableResolve>
-              ),
-            },
-            {
-              path: '/',
-              element: () => <TableResolve code={null} />,
-            },
-          ]}
-          notFound={<TableResolve code={null} />}
-        />
+        <CartProvider>
+          <Router
+            routes={[
+              {
+                path: '/t/:code/products/:productId',
+                element: ({ code, productId }) => (
+                  <TableResolve code={code}>
+                    <MenuList tableCode={code} />
+                    <MenuItemDetail productId={Number(productId)} />
+                  </TableResolve>
+                ),
+              },
+              {
+                path: '/t/:code',
+                element: ({ code }) => (
+                  <TableResolve code={code}>
+                    <MenuList tableCode={code} />
+                  </TableResolve>
+                ),
+              },
+              {
+                path: '/',
+                element: () => <TableResolve code={null} />,
+              },
+            ]}
+            notFound={<TableResolve code={null} />}
+          />
+        </CartProvider>
       </SessionProvider>
     </RootProvider>
   );
