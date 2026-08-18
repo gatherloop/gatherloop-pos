@@ -50,6 +50,7 @@ export default defineConfig({
           { text: 'Transactions', link: '/sales/transactions' },
           { text: 'Coupons', link: '/sales/coupons' },
           { text: 'Board-game Rentals', link: '/sales/rentals' },
+          { text: 'Table Ordering', link: '/sales/table-ordering' },
         ],
       },
       {

@@ -185,7 +185,37 @@ systemd — no language toolchain lives on the box. See
 [`apps/api/docs/RUNBOOK.md`](apps/api/docs/RUNBOOK.md) for day-2 operations (manual redeploy, log
 tailing, uptime monitoring).
 
-### 4.5. API Contract
+### 4.5. Order
+
+The Order project is a customer-facing, mobile-first web app that lets a guest scan a table's QR code and order straight from their phone — browsing the menu, picking options, and building a cart — without installing anything or logging in. It's a standalone static React + Vite SPA (not part of the Next.js `web` app), sharing entities, screens and business logic with the rest of the product through the UI library, and deployed to GitHub Pages alongside this documentation site. See [Table Ordering](https://gatherloop.github.io/gatherloop-pos/sales/table-ordering) in the docs for what it does and why.
+
+To work on or run the order project in your local development environment, you can use the following commands:
+
+#### A. Development Mode
+
+```
+$ nx run order:serve
+```
+
+This starts the Vite development server, enabling live reload for a smooth development experience.
+
+#### B. Build the Project
+
+```
+$ nx run order:build
+```
+
+This builds the order project as a static bundle, ready to publish to GitHub Pages.
+
+#### C. Preview the Built Project
+
+```
+$ nx run order:preview
+```
+
+This serves the production build locally so it can be checked before deploying.
+
+### 4.6. API Contract
 
 The API Contract project defines the specifications and types for the API endpoints, ensuring consistent communication between the backend and frontend applications. It serves as a bridge between the API and the client projects, generating type definitions that enhance type safety and reduce errors during development.
 
