@@ -17,7 +17,17 @@ const nextConfig = {
   // unlike react-native-svg which does — Next must run it through its own
   // loader instead of treating it as pre-built.
   transpilePackages: ['react-native-qrcode-svg'],
+  // Tamagui's static extraction walks the whole component tree at build
+  // time, and Next's default multi-worker compilation multiplies that cost
+  // by CPU count — that combination is what was pushing the Render build
+  // past its memory ceiling. Keeping the build single-threaded trades build
+  // time for a much lower peak.
+  experimental: {
+    cpus: 1,
+    workerThreads: false,
+  },
   webpack(config) {
+    config.parallelism = 1;
     // On web, replace the React Native animation driver with the CSS one
     // config.resolve.alias['@tamagui/animations-moti'] =
     //   require.resolve('@tamagui/animations-css');

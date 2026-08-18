@@ -10,6 +10,11 @@ COPY . .
 RUN apk add openjdk21-jre go
 RUN npm install
 RUN npx nx run api-contract:generate:ts
+# Cap V8's heap explicitly: left to its own defaults in a container, Node
+# sizes the heap off host memory rather than what's actually available to
+# the build, which let webpack + Tamagui's static extraction balloon past
+# Render's memory ceiling instead of triggering GC early enough.
+ENV NODE_OPTIONS=--max-old-space-size=6144
 RUN npx nx run web:build
 
 FROM node:22-alpine
