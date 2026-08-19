@@ -94,6 +94,7 @@ jobs:
             DB_PORT=${{ secrets.DB_PORT }}
             PORT=${{ secrets.PORT }}
             JWT_SECRET=${{ secrets.JWT_SECRET }}
+            CORS_ALLOWED_ORIGINS=${{ secrets.CORS_ALLOWED_ORIGINS }}
             APP_ENV=production
             ENV_EOF
             sudo cp apps/api/deploy/gatherloop-pos-api.service /etc/systemd/system/
