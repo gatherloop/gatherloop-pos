@@ -59,22 +59,25 @@ what shipped; item 7 is new behavior.
    duplicated label across floors ("Meja 3" on both floor 1 and floor 2) is
    indistinguishable in the app.
 
-7. **A cart line cannot be edited — only re-quantified or deleted.**
-   `CartLineItem.tsx` says as much in its own comment: *"Option values and note
-   are read-only here — re-picking options or editing a note is an item-detail
-   concern."* A guest who picked "Small" but meant "Large", or who forgot to add
-   "tanpa es", has to delete the line and re-add the item from the menu,
-   re-selecting every option. **Requested:** an edit button on each cart line
-   that opens a modal showing the product, with the variant options, the amount
-   and the *catatan* all editable, and a **Simpan** button.
+7. **A cart line's note cannot be edited at all.** `CartLineItem.tsx` says as much
+   in its own comment: *"Option values and note are read-only here — re-picking
+   options or editing a note is an item-detail concern."* A guest who forgot to
+   add "tanpa es" has to delete the line and re-add the whole item from the menu,
+   re-selecting every option, just to attach a note. The amount is editable, but
+   only through the inline stepper — there is no considered "review this line"
+   moment. **Requested:** an edit button on each cart line that opens a modal
+   showing the product, with the **amount** and the ***catatan*** editable, and a
+   **Simpan** button.
 
-   This is not just a UI addition. Two things in the current system block it:
-   - `PUT /carts/items/{cartItemId}` accepts `{ amount, note }` only
-     (`CartItemUpdateRequest`), and `UpdateCartItemById` writes exactly those two
-     columns. **There is no way to change a line's variant.**
-   - The cart query preloads `Items.Variant.Product` but **not**
-     `Items.Variant.Product.Options`, so `cartItem.variant.product.options` comes
-     back empty. The modal cannot render the option chips from cart data alone.
+   **Scope decision — the variant is not editable.** The first draft of this
+   requirement also let the guest re-pick the variant from the modal. That was cut
+   after costing it out: `PUT /carts/items/{cartItemId}` accepts
+   `{ amount, note }` only (`CartItemUpdateRequest`) and `UpdateCartItemById`
+   writes exactly those two columns, so changing a line's variant would need an
+   API change, a usecase change, a repo change, a new merge rule against D9, and a
+   change to the client's optimistic-update path. Amount and note need **none** of
+   that — both are already carried by `UPDATE_ITEM` and already accepted by the
+   API. A guest who picked the wrong size still deletes and re-adds, as today.
 
 ---
 
@@ -151,48 +154,48 @@ The new field is *preparation instructions*, not the BoM. See Open Question 1.
 
 ### Cart mutation path (for FR-9)
 
-**Client machine** — `libs/ui/src/domain/usecases/cart.ts`, one app-wide machine
-(D14) owned by `CartProvider`:
-- `UPDATE_ITEM` is `{ cartItemId, amount, note }` — **no `variantId`**.
-- `PendingMutation`'s `update` kind mirrors that shape.
-- `withUpdatedItem` optimistically recomputes `subtotal = item.price * amount`
-  using the line's **existing** price. Correct for a quantity change; wrong the
-  moment the variant (and therefore the price) changes.
-- `ADD_ITEM` is the one mutation that deliberately skips the optimistic update —
-  its comment: *"the added line's price and resolved variant only exist once the
-  server responds"*. That precedent is the model for a variant change.
+**Everything FR-9 needs already exists end to end.** This is the reason the
+scope was cut to amount + note:
 
-**API** — `libs/api-contract/src/api.yaml`:
-- `CartItemUpdateRequest`: `{ amount (required), note }`.
-
-**Server** — `apps/api/domain/cart_usecase.go`:
-- `UpdateCartItem(ctx, sessionId, cartItemId, amount, note)` — validates
+- `libs/ui/src/domain/usecases/cart.ts` — `UPDATE_ITEM` is already
+  `{ cartItemId, amount, note }`, and `withUpdatedItem` already recomputes
+  `subtotal = item.price * amount` optimistically. Correct for both fields,
+  because neither changes the line's price.
+- `libs/ui/src/domain/repositories/cart.ts` / `data/api/cart.ts` —
+  `updateItem({ cartItemId, amount, note })` already exists.
+- `libs/api-contract/src/api.yaml` — `CartItemUpdateRequest` is
+  `{ amount (required), note }`. Unchanged.
+- `apps/api/domain/cart_usecase.go` — `UpdateCartItem` already validates
   amount/note, resolves the owning cart (D8), writes, refreshes.
-- `AddCartItem` enforces **D9's merge rule**: adding a variant whose id *and*
-  trimmed note match an existing line increments that line rather than creating a
-  second one, via `findMatchingCartItem`.
-- `validatePurchasableVariant(ctx, variantId)` already exists and is what
-  `AddCartItem` uses to reject draft/rental variants.
-- `apps/api/data/mysql/cart_repo.go` — `UpdateCartItemById` writes an explicit
-  column map: `{"amount": …, "note": …}`. `variant_id` is simply absent.
-- `maxNoteLength = 255`, matching `cart_items.note VARCHAR(255)`.
+- `apps/api/data/mysql/cart_repo.go` — `UpdateCartItemById` already writes
+  exactly `{"amount": …, "note": …}`.
 
-**The sheet that already does most of this** —
-`libs/ui/src/domain/usecases/menuItemDetail.ts` + `MenuItemDetailScreen.tsx`:
-- Fetches the product by id (`/public/products/{productId}`, which *does* carry
-  `options`), renders an `OptionValueChipGroup` per option, resolves the variant
-  from the selected option values via
-  `GET /public/variants?productId=&optionValueIds[]=`, and holds `amount` + `note`.
-- Its initial context is hardcoded to `selectedOptionValueIds: []`, `amount: 1`,
-  `note: ''`, and `FETCH_SUCCESS` re-clears `selectedOptionValueIds`. **Seeding
-  it from an existing line is the main change FR-9 needs on this machine.**
-- `MenuItemDetailParams` already takes an optional pre-supplied `product`, so the
-  params object is the natural place for seed values.
+**Only one caller exists today, and it preserves the note.**
+`CartHandler.onAmountChange` dispatches
+`UPDATE_ITEM` with `note: item.note` — it looks the note up on the existing line
+purely to avoid clearing it. So the note field is *writable through the API and
+the machine, but not reachable from any UI*. FR-9 is the UI for a path that is
+already built.
 
-**What the cart line already knows.** `CartItem.variant` is a full `Variant`, so
-`variant.values[].optionValue.id` gives the current selection and
-`variant.product.id` gives the product to fetch — no extra round-trip is needed
-to *seed* the modal, only to load the option definitions.
+**`maxNoteLength = 255`** in `cart_usecase.go`, matching
+`cart_items.note VARCHAR(255)`. The add sheet's note `TextArea` has **no**
+`maxLength` today, so an over-long note is a server rejection rather than a
+prevented keystroke.
+
+**D9's merge rule is note-sensitive.** `AddCartItem` merges a new line into an
+existing one when the variant id *and* the trimmed note both match
+(`findMatchingCartItem`). `UpdateCartItem` performs **no** such merge. Today that
+gap is unreachable, because no UI can change a note. FR-9 makes it reachable —
+see the decision table and Open Question 8.
+
+**What the cart line already knows.** `CartItem` carries the full `Variant`
+(product name, image, category, and `values[].optionValue.name`), plus `amount`,
+`note`, `price` and `subtotal`. Because the variant is **not** editable, the
+modal needs no option definitions and therefore **no product fetch** — every
+field it renders is already in the cart payload. (Had the variant been editable,
+a fetch would have been required: the cart query preloads
+`Items.Variant.Product` but not `Items.Variant.Product.Options`, so
+`cartItem.variant.product.options` comes back empty.)
 
 **Routing** — `apps/order/src/app/app.tsx` mounts the add-sheet as its own route
 (`/t/:code/products/:productId`) rendered *alongside* `MenuList`, so the sheet is
@@ -244,8 +247,7 @@ it is information the guest can read off the wall. See FR-8.
 
 ## Proposed Solution
 
-Eight changes. FR-3 depends on FR-2, and FR-9 is a three-step chain of its own;
-everything else can ship in any order.
+Nine changes. Only FR-3 depends on FR-2; everything else can ship in any order.
 
 ### Confirmed Product Decisions
 
@@ -274,15 +276,15 @@ everything else can ship in any order.
 | Header format | `{label}` bold, then a muted `· Lantai {floorNumber}` on the same row. Wraps to a second muted line below the label on a narrow screen. | The label is what the guest and staff both say out loud; the floor is the disambiguator, not the identity. |
 | Floor 1 in a single-floor venue | **Always show it.** No "hide when 1" rule. | Every pre-existing table defaults to floor `1` (migration `000021`), so a hide-when-1 rule would silently hide the floor for every venue that has not curated its table master — exactly the venues most likely to have duplicate labels. See Open Question 5. |
 | Missing `floorNumber` from a stale API | The frontend transformer defaults to `1`. | An additive contract field against an older deployed API must never render `Lantai undefined`. |
-| Edit-cart-item UI | **Reuse the existing item detail sheet** with a `mode: 'add' \| 'edit'` prop, not a second modal component. | The body is identical — thumbnail, option chips, note, stepper. Only the CTA and the title differ. A fork would duplicate FR-5's validation work immediately. |
-| Where the edit modal gets its data | Seed the selection/amount/note from the `CartItem` (which carries the full `Variant`), and **fetch the product by id** for the option definitions. | `cartItem.variant.product.options` is empty — the cart query does not preload it. Fetching is what the sheet's machine already does, so this is zero new plumbing. Widening the cart preload was rejected: it would enlarge every cart response for one screen's benefit. |
+| What a cart line's edit modal can change | **Amount and note only.** The variant is shown read-only. | Both are already carried by `UPDATE_ITEM` and accepted by the API, so the feature costs zero backend work. Variant editing would need a contract change, a usecase change, a repo change, a new D9 merge rule and a change to the optimistic-update path — for a case a guest can already resolve by deleting and re-adding. |
+| Edit-cart-item UI | A **new, small `CartItemEditScreen`** — *not* a `mode` prop on `MenuItemDetailScreen`. | With no option chips and no variant resolution, the two screens now share only a thumbnail and a stepper. Overloading the detail sheet would drag its `loading`/`resolving`/`error` states and FR-5's validation into a screen that has none of those concerns. |
+| Where the modal gets its data | Entirely from the `CartItem` already in the app-wide cart machine. **No fetch.** | `CartItem` carries the full `Variant` — product name, image, and `values[].optionValue.name` for the read-only variant line. Nothing else is rendered. |
 | Route for the edit modal | `/t/{code}/cart/items/{cartItemId}`, rendered alongside `Cart`. | Matches D19 — the add-sheet is route-addressable so Android back dismisses it. A local `useState` modal would trap the back button on the cart screen. |
-| Changing a line's variant | Allowed. `PUT /carts/items/{id}` gains an **optional** `variantId`. | Without it the feature is just "edit the note and amount", which the stepper already half-covers. |
-| Variant change colliding with an existing line | **Merge**, reusing `findMatchingCartItem` (excluding the line being edited): fold the edited line into the match, sum the amounts, delete the edited line. | Preserves D9's invariant — the guest never ends up with two "Large · tanpa es" lines. Rejecting the edit would be a dead end the guest cannot resolve without deleting a line themselves. |
-| Optimistic update on a variant change | **Skip it.** When `UPDATE_ITEM` carries a `variantId` that differs from the line's current one, leave `cart` untouched until `MUTATE_SUCCESS`. | The new price is unknown client-side (D7 says prices are server-resolved) and a merge can change the line count. `ADD_ITEM` already sets this precedent. A quantity/note-only edit keeps today's optimistic path. |
-| Save CTA | `Simpan`, with the resolved new subtotal shown on its own row directly above it. | The requested label. Putting the price in the button (`Simpan · Rp…`) reads as "pay now"; a separate row still shows the guest what they are committing to. |
+| Save CTA | `Simpan`, with the recomputed subtotal on its own row directly above it. | The requested label. Putting the price in the button (`Simpan · Rp…`) reads as "pay now"; a separate row still shows the guest what they are committing to. |
 | Edit affordance in the cart row | A 32×32 pencil icon button, left of the trash button, `accessibilityLabel="Ubah {product}"`. | An explicit button, as requested, sized to match FR-7's compacted controls. |
-| Blocking Save | Same `ctaState` machinery as FR-5: `Simpan` is disabled while resolving, and pressing it with an incomplete/unresolvable combination surfaces the inline error rather than saving. | One validation model for both modes of the sheet. |
+| Note length | `maxLength={255}` on the note field, in the edit modal **and** the add sheet. | Matches the server's `maxNoteLength`. Today an over-long note is a server rejection rather than a prevented keystroke. |
+| Note edit colliding with another line (D9) | **Accept the duplicate.** No merge on update. | Editing line A's note to match line B's (same variant) can produce two lines the add path would have merged. Merging on update means a line vanishing under the guest mid-edit, and it is the one thing here that would need server work. Two identical lines are cosmetically odd but arithmetically correct. Revisit per Open Question 8. |
+| Optimistic update | Keep today's path unchanged — `withUpdatedItem` recomputes `subtotal = price × amount`. | Neither editable field changes the line's price, so the existing optimistic arithmetic stays correct. This is the payoff of dropping the variant. |
 
 ### Core Rules
 
@@ -493,12 +495,12 @@ exactly as `description` is today.
 **Not in scope here:** showing the floor anywhere else in the order app (cart,
 checkout, order confirmation), or letting a guest pick/change their floor.
 
-### FR-9: Edit a cart line
+### FR-9: Edit a cart line's amount and note
 
-**Behavior:** each cart line gets an edit button. Pressing it opens the item
-sheet, pre-filled with that line's product, option selections, amount and note.
-The guest can change any of them and press **Simpan**; the cart line is updated
-in place.
+**Behavior:** each cart line gets an edit button. Pressing it opens a modal
+showing that line's product, with the **amount** and the **catatan** editable and
+the chosen variant shown read-only. Pressing **Simpan** updates the line in place
+and returns to the cart.
 
 **Entry point**
 - `CartLineItem` gains a 32×32 pencil icon button, left of the trash button,
@@ -509,74 +511,71 @@ in place.
 - `apps/order/src/app/app.tsx` gains
   `/t/:code/cart/items/:cartItemId`, rendering `<Cart>` **and**
   `<CartItemEdit cartItemId={…} />` — the same alongside-mount pattern the add
-  sheet uses, so the cart stays visible behind the sheet and Android back
+  sheet uses, so the cart stays visible behind the modal and Android back
   dismisses it.
 - The route passes `hideCartBar` exactly as `/t/{code}/cart` does.
 - An unknown or already-removed `cartItemId` resolves to the cart screen with no
-  sheet (not an error screen) — the line it referenced is gone, which is the
+  modal (not an error screen) — the line it referenced is gone, which is the
   outcome the guest wanted anyway.
 
-**Sheet**
-- `MenuItemDetailScreen` gains `mode: 'add' | 'edit'`. Everything but these
-  differs by nothing:
+**`CartItemEditScreen` (new)** — presentational, in
+`libs/ui/src/presentation/screens/`, rendered inside the existing base `Sheet`:
 
-  | | `add` | `edit` |
-  |---|---|---|
-  | CTA label (ready) | `Tambah ke Keranjang · Rp…` | `Simpan` |
-  | CTA label (incomplete) | `Tambah ke Keranjang` | `Simpan` |
-  | Subtotal row above CTA | not shown | `Total · Rp{price × amount}` |
+```
+┌──────────────────────────────────────┐
+│                                  [×] │
+│  ┌────────┐                          │
+│  │ image  │  Es Kopi Susu            │
+│  └────────┘  Large, Iced      (muted)│
+│                                      │
+│  Catatan                             │
+│  ┌────────────────────────────────┐  │
+│  │ tanpa es                       │  │
+│  └────────────────────────────────┘  │
+│                                      │
+│  Jumlah              [−]  2  [+]     │
+│                                      │
+├──────────────────────────────────────┤
+│  Total                    Rp 36.000  │
+│  [           Simpan            ]     │
+└──────────────────────────────────────┘
+```
 
-- The FR-5 validation behavior (enabled-but-errors-on-press when options are
-  incomplete, `Menghitung harga...` while resolving) applies identically in both
-  modes.
-- The note field gets `maxLength={255}` in both modes, matching the server's
-  `maxNoteLength` — currently unbounded client-side.
+- Product name, thumbnail and the comma-joined option value names come straight
+  from the `CartItem` — the same `item.variant.values` join `CartLineItem`
+  already does. The variant line is **text, not chips**: it is not editable.
+- `AmountStepper` at the default `md` size (44×44) — this is the primary control
+  on the screen, so it does not take FR-7's compact treatment.
+- Note `TextArea` with `maxLength={255}` and the same
+  `placeholder="Contoh: less sugar, tanpa es"` the add sheet uses.
+- The `Total` row recomputes live as the amount changes, from the line's existing
+  `price` — no server round-trip, and no price ambiguity, because the variant
+  cannot change.
+- `Simpan` is enabled whenever the amount is ≥ 1 (the stepper's own floor already
+  guarantees this), and disabled while a cart mutation is in flight. There is no
+  validation state to model: **no option resolution, no loading, no error view.**
 
-**Seeding**
-- `MenuItemDetailParams` gains optional `initialSelectedOptionValueIds: number[]`,
-  `initialAmount: number`, `initialNote: string`.
-- `getInitialState` uses them instead of `[] / 1 / ''`, and derives the initial
-  state type from `nextOptionSelectionType` so a fully-seeded selection goes
-  straight to `resolvingVariant` (it must re-resolve — the price may have changed
-  since the line was added, per D7).
-- `FETCH_SUCCESS` must **not** clear a seeded `selectedOptionValueIds`. It
-  currently hardcodes `selectedOptionValueIds: []`; it becomes "reset to the
-  seed", so the pattern still holds for the add case (where the seed is `[]`).
-- `CartItemEdit` (new composition root) reads the line from the app-wide cart
-  controller, derives the seed from `item.variant.values[].optionValue.id`,
-  `item.amount`, `item.note`, and builds the usecase with
-  `productId: item.variant.product.id`.
+**Props** — everything is passed in; the screen fetches nothing:
+`item: CartItem`, `amount`, `onAmountChange`, `note`, `onNoteChange`,
+`isSaving`, `onSavePress`, `isOpen`, `onOpenChange`.
 
-**Save**
-- `Simpan` dispatches `UPDATE_ITEM` with `{ cartItemId, variantId, amount, note }`
-  into the app-wide cart machine, then navigates back to `/t/{code}/cart`.
-- The sheet closes immediately on dispatch; the cart screen shows the mutation
-  through its existing `isMutating` / `errorMessage` handling. A failed save
-  surfaces there, and the machine's existing rollback restores `previousCart`.
+**`CartItemEdit` (new composition root)** in `libs/ui/src/app/`:
+- Reads the app-wide cart controller (`useCart`), finds the line by id.
+- Holds the draft `amount` / `note` in local `useState`, seeded from the line —
+  this is a form buffer, not a state machine, because nothing about it is async.
+  **No new usecase.**
+- On save, dispatches `UPDATE_ITEM` with `{ cartItemId, amount, note }` and
+  navigates back to `/t/{code}/cart`.
 
-**Client machine**
-- `CartAction`'s `UPDATE_ITEM` and `PendingMutation`'s `update` kind gain
-  `variantId: number`.
-- `withUpdatedItem` is applied **only** when the dispatched `variantId` equals the
-  line's current `variantId`. Otherwise the optimistic update is skipped and
-  `cart` is left untouched until `MUTATE_SUCCESS` (decision table).
-- `cartRepository.updateItem` sends `variantId` through.
+**Save semantics**
+- The modal closes on dispatch; the cart screen shows the mutation through its
+  existing `isMutating` / `errorMessage` handling, and the machine's existing
+  rollback restores `previousCart` on failure.
+- The optimistic path is unchanged: `withUpdatedItem` already recomputes
+  `subtotal = price × amount` correctly for both editable fields.
 
-**API**
-- `CartItemUpdateRequest` gains an **optional** `variantId` (`integer`, `int64`).
-  Omitting it means "leave the variant alone", so the POS and any existing caller
-  are unaffected.
-- `UpdateCartItem` takes `variantId *int64`. When non-nil **and** different from
-  the line's current variant:
-  1. `validatePurchasableVariant` — reject a draft/rental/nonexistent variant
-     exactly as `AddCartItem` does.
-  2. Look for a *different* line in the same cart matching the **new** variant
-     and the trimmed note (`findMatchingCartItem`, excluding `cartItemId`). If
-     found: add the edited line's amount to it, delete the edited line, refresh.
-  3. Otherwise write `variant_id` alongside `amount` and `note`.
-- `UpdateCartItemById` adds `variant_id` to its column map, set only when the
-  caller supplies one.
-- All of it runs inside the existing `BeginTransaction` block.
+**Unchanged by this FR:** the cart machine, the cart repository, the API
+contract, and every Go file. FR-9 is frontend-only.
 
 ---
 
@@ -595,12 +594,18 @@ in place.
 6. **Changing `AmountStepper` behavior** — the `min: 1` floor and the disabled
    decrement stay exactly as they are.
 7. **Localizing the POS forms.** They stay English.
-8. **Editing a cart line from the POS side**, or any staff-facing edit of a
-   guest's in-flight cart. FR-9 is guest-facing only.
-9. **Editing a line after checkout.** FR-9 applies to an `active` cart; a
-   `converted` cart is immutable, as today.
-10. **Preloading `Product.Options` into the cart response.** The edit sheet
-    fetches the product instead — see the decision table.
+8. **Changing a cart line's variant.** Explicitly cut — see Problem Statement 7
+   and the decision table. A guest who picked the wrong size deletes the line and
+   re-adds it, as today. This is the single biggest scope reduction in this PRD
+   and it is what makes FR-9 a frontend-only change.
+9. **Merging lines on update.** Two lines with the same variant and the same note
+   are now reachable. Accepted — see Open Question 8.
+10. **Editing a cart line from the POS side**, or any staff-facing edit of a
+    guest's in-flight cart. FR-9 is guest-facing only.
+11. **Editing a line after checkout.** FR-9 applies to an `active` cart; a
+    `converted` cart is immutable, as today.
+12. **Preloading `Product.Options` into the cart response.** Not needed once the
+    variant is read-only — the modal fetches nothing.
 
 ---
 
@@ -615,10 +620,9 @@ in place.
 | Shrinking controls hurts tap accuracy. | 32px floor + hit slop, and the item-detail stepper (the one used most) stays 44px. |
 | Widening `PublicTable` sets a precedent for leaking more table fields to guests. | The `ToApiPublicTable` doc comment is rewritten to state the actual rule — the table `code` is never returned — and the public handler test asserts `code` is absent, so the boundary is enforced by a test rather than by the field count. |
 | The order app ships before the API redeploys and renders `Lantai undefined`. | The frontend transformer defaults `floorNumber` to `1`, so a stale API degrades to "floor 1" rather than to broken copy. |
-| A variant edit that merges makes the cart's line count change under the guest, which the optimistic path cannot predict. | Variant changes skip the optimistic update entirely and render the server's cart — the same rule `ADD_ITEM` already follows. |
-| `variantId` on `PUT /carts/items/{id}` lets a client move a line to a variant of a *different* product. | `validatePurchasableVariant` blocks draft/rental variants but not cross-product moves. FR-9 does not need them, so the usecase also rejects a `variantId` whose `productId` differs from the line's current product — asserted in `cart_usecase_test.go`. |
-| Seeding `MenuItemDetailUsecase` breaks the add flow, whose seed is the empty selection. | The seed defaults to `[] / 1 / ''`, so `add` is the seeded case with default values — one code path, exercised by both modes' tests. |
-| A guest edits a line whose product was unpublished since it was added. | The product fetch 404s and the sheet shows its existing error view; the line stays in the cart and can still be removed. Called out in the Phase 11 acceptance criteria. |
+| Guests expect the edit modal to let them fix the size, since it shows the variant. | The variant is rendered as plain muted text, never as chips or a control, so it reads as a label rather than a disabled input. If this still confuses guests in practice, the variant work is scoped and costed in this PRD's history — see Problem Statement 7. |
+| Editing a note into a collision produces two identical cart lines (D9). | Accepted, and arithmetically harmless. Called out in Open Question 8 with the server-side fix if it turns out to matter. |
+| The guest edits a line that another tab/device removed concurrently. | The composition root resolves the line from the live cart state; if it is gone, the route falls back to the cart with no modal. A save dispatched against a removed line fails server-side and the machine's existing rollback restores the cart. |
 
 ---
 
@@ -651,11 +655,13 @@ in place.
    button?** A row-tap is more discoverable on mobile but competes with the
    stepper and delete controls already in the row. This PRD ships the explicit
    button only.
-8. **On a merge, should the guest be told?** After editing "Small" → "Large" into
-   an existing "Large" line, the cart silently shows one line with a summed
-   amount. A brief toast ("Digabung dengan item yang sama") would explain the
-   line count changing. Not specified here — decide once the merge is visible in
-   a build.
+8. **Do duplicate lines from a note edit need fixing?** `AddCartItem` merges on
+   (variant, trimmed note); `UpdateCartItem` does not. Now that notes are
+   editable, a guest can edit line A's note to match line B's and end up with two
+   lines the add path would have merged. This PRD accepts that. The fix, if the
+   kitchen finds duplicate slips annoying, is a merge inside `UpdateCartItem`
+   reusing `findMatchingCartItem` — a contained backend change that can land
+   later without touching FR-9's UI.
 9. **Does staff-side order routing need the floor too?** FR-8 only changes what
    the guest sees. If a barista reading an incoming order also needs "Lantai 2"
    on the slip, that is a separate change to the POS transaction/kitchen views —
@@ -665,14 +671,13 @@ in place.
 
 ## Implementation Phases
 
-Twelve PRs, in two chains and a set of independents:
+Ten PRs — one chain and a set of independents:
 
 - **Chain A (recipe):** Phase 2 → Phase 3 → Phase 4.
-- **Chain B (edit cart line):** Phase 9 → Phase 10 → Phase 11. Phase 10 also
-  wants Phase 5 merged first — it reuses that phase's `ctaState` — but does not
-  strictly depend on it.
-- **Independent:** Phases 1, 5, 6, 7, 8 — any order, in parallel.
-- Phase 12 (docs) comes last.
+- **Independent:** Phases 1, 5, 6, 7, 8, 9 — any order, in parallel. Phase 9 is
+  best merged after Phase 7, whose 32px control sizing its edit button matches,
+  but does not depend on it.
+- Phase 10 (docs) comes last.
 
 ---
 
@@ -952,130 +957,64 @@ correctly even if it reaches a browser before the API is redeployed.
 
 ---
 
-### Phase 9 — Backend: allow changing a cart line's variant
+### Phase 9 — Cart line edit modal (amount + note)
 
-**Goal:** the API half of FR-9. No visible product change; this is the enabling PR.
-
-**Backend**
-- `libs/api-contract/src/api.yaml`: add optional `variantId` (`integer`,
-  `int64`) to `CartItemUpdateRequest`. Regenerate both clients.
-- `apps/api/domain/cart_usecase.go`: `UpdateCartItem` takes `variantId *int64`.
-  When non-nil and different from the line's current variant:
-  - `validatePurchasableVariant` (reuse), plus a check that the new variant
-    belongs to the **same product** — reject otherwise.
-  - `findMatchingCartItem` over the cart's other lines (excluding `cartItemId`)
-    for the new variant + trimmed note; if found, add the amounts, delete the
-    edited line; else write `variant_id`.
-  - All inside the existing `BeginTransaction` block.
-- `apps/api/data/mysql/cart_repo.go`: `UpdateCartItemById` adds `variant_id` to
-  its `Updates` map when the caller supplies one.
-- `apps/api/presentation/restapi/cart_handler.go` + transformer: thread the
-  optional `variantId` through.
-- Tests (`cart_usecase_test.go`, `cart_handler_test.go`):
-  - omitting `variantId` leaves the variant untouched (regression guard for the
-    existing quantity/note path);
-  - changing to a sibling variant updates price and subtotal;
-  - changing into a variant+note that matches another line merges them and drops
-    a line;
-  - a draft/rental variant is rejected;
-  - a variant of a different product is rejected;
-  - cross-session access still fails (D8).
-
-**Frontend:** none.
-
-**Acceptance**
-- `PUT /carts/items/{id}` with `{amount, note}` behaves exactly as before.
-- `PUT /carts/items/{id}` with a sibling `variantId` changes the line and returns
-  a cart whose `total` reflects the new variant's price.
-- The merge case returns one fewer line with the amounts summed.
-- Full Go test suite passes.
-
-**Estimated diff:** ~200–300 LoC (excluding generated clients).
-
----
-
-### Phase 10 — Frontend: a seedable, mode-aware item sheet
-
-**Goal:** the sheet half of FR-9, reachable by URL. No cart-row button yet, so
-this PR is reviewable on its own (the same trick Phase 8 of the table-ordering
-PRD used to land the sheet before the cart existed).
+**Goal:** FR-9, end to end. Frontend-only — no migration, no contract change, no
+Go file touched, because `UPDATE_ITEM` and `PUT /carts/items/{id}` already carry
+both editable fields.
 
 **Frontend**
-- `libs/ui/src/domain/usecases/menuItemDetail.ts`: `MenuItemDetailParams` gains
-  `initialSelectedOptionValueIds` / `initialAmount` / `initialNote` (defaulting
-  to `[] / 1 / ''`); `getInitialState` and the `FETCH_SUCCESS` transition use the
-  seed instead of hardcoded empties.
-- `libs/ui/src/domain/usecases/cart.ts`: `UPDATE_ITEM` and `PendingMutation`'s
-  `update` gain `variantId`; `withUpdatedItem` is applied only when the variant is
-  unchanged; `onStateChange` passes `variantId` to the repository.
-- `libs/ui/src/domain/repositories/cart.ts` + `libs/ui/src/data/api/cart.ts` +
-  `libs/ui/src/data/mock/cart.ts`: `updateItem` accepts `variantId`.
-- `MenuItemDetailScreen.tsx`: `mode: 'add' | 'edit'`; `Simpan` CTA and the
-  subtotal row in `edit`; `maxLength={255}` on the note in both modes.
-- `MenuItemDetailHandler.tsx`: pass `mode` through; `onAddToCart` becomes
-  `onSubmit` carrying `{ variantId, amount, note }`.
-- New `libs/ui/src/app/CartItemEdit.tsx` composition root: finds the line in the
-  app-wide cart controller, derives the seed, builds the usecase with the line's
-  `productId`, dispatches `UPDATE_ITEM` on save, navigates back to the cart.
-- `apps/order/src/app/app.tsx`: add the
-  `/t/:code/cart/items/:cartItemId` route (with `hideCartBar`), rendering `Cart`
-  + `CartItemEdit`. Confirm `matchPath` handles the extra segment depth.
-- Stories: the sheet in `edit` mode — seeded/ready, seeded/resolving, seeded with
-  an option changed to an unresolvable combination.
-- Tests: a seeded usecase starts in `resolvingVariant` and keeps its seed across
-  `FETCH_SUCCESS`; `Simpan` dispatches `UPDATE_ITEM` with the resolved
-  `variantId`; the cart machine skips the optimistic update on a variant change
-  and applies it on a quantity-only change.
-
-**Backend:** none.
-
-**Acceptance**
-- Navigating directly to `/t/{code}/cart/items/{id}` opens the sheet pre-filled
-  with that line's options, amount and note, over the cart screen.
-- Changing the size and pressing `Simpan` updates the line and its price.
-- Changing only the note or the amount still takes the optimistic path.
-- Android back / the close button dismiss the sheet back to the cart.
-- An unknown `cartItemId` shows the cart with no sheet.
-- A line whose product has since been unpublished shows the sheet's error view;
-  the line remains removable from the cart.
-
-**Estimated diff:** ~350–450 LoC.
-
-**Dependency:** Phase 9 merged and deployed. Best merged after Phase 5, whose
-`ctaState` this reuses.
-
----
-
-### Phase 11 — Cart row: the edit button
-
-**Goal:** close FR-9 — make the sheet reachable the way a guest actually would.
-
-**Frontend**
+- New `libs/ui/src/presentation/screens/CartItemEditScreen.tsx` — presentational,
+  props per FR-9, rendered inside the base `Sheet`. Read-only variant line,
+  `AmountStepper` at default size, note `TextArea` with `maxLength={255}`, live
+  `Total` row, `Simpan`.
+- New `libs/ui/src/app/CartItemEdit.tsx` — composition root: reads the app-wide
+  cart controller, finds the line, holds the draft `amount`/`note` in local
+  state, dispatches `UPDATE_ITEM` on save, navigates back to the cart. **No new
+  usecase, no new repository method.**
+- `apps/order/src/app/app.tsx`: add `/t/:code/cart/items/:cartItemId` (with
+  `hideCartBar`), rendering `Cart` + `CartItemEdit`. Confirm `matchPath` handles
+  the extra segment depth — this is the deepest route in the app.
 - `CartLineItem.tsx`: 32×32 pencil icon button left of the trash button,
   `accessibilityLabel="Ubah {product name}"`, disabled while `isMutating`, new
   `onEditPress` prop.
-- `CartScreen.tsx` / `CartHandler.tsx`: thread `onEditPress` through to a
+- `CartScreen.tsx` / `CartHandler.tsx`: thread `onEditPress` through to
   `navigation.push(`/t/${tableCode}/cart/items/${cartItemId}`)`.
-- Stories: `CartLineItem.stories.tsx` with the edit button, including the
-  disabled-while-mutating case.
-- Tests: `CartHandler.test.tsx` — pressing edit navigates to the right route.
-- `apps/order-e2e`: a full round trip — add an item, open the cart, edit it to a
-  different size, save, assert the line and the total changed.
+- `MenuItemDetailScreen.tsx`: add the same `maxLength={255}` to the add sheet's
+  note field (the server cap has never been enforced client-side).
+- Stories: `CartItemEditScreen.stories.tsx` — a line with options and a note, a
+  line with neither, a long product name, and the saving state.
+  `CartLineItem.stories.tsx` refreshed with the edit button.
+- Tests:
+  - `CartHandler.test.tsx` — pressing edit navigates to the right route.
+  - A `CartItemEdit` test — the modal seeds from the line, `Simpan` dispatches
+    `UPDATE_ITEM` with the edited amount and note, and cancelling dispatches
+    nothing.
+  - `apps/order-e2e` — add an item, open the cart, edit its amount and note,
+    save, assert the line's note, quantity and the cart total all changed.
 
 **Backend:** none.
 
 **Acceptance**
-- Every cart line shows an edit button that opens the pre-filled sheet.
-- The e2e round trip passes.
-- The row still fits a long product name without the controls wrapping.
+- Every cart line shows an edit button that opens the modal pre-filled with that
+  line's amount and note.
+- The variant is visible but not editable.
+- The `Total` row updates as the amount changes, before saving.
+- `Simpan` updates the line and returns to the cart; the total reflects the new
+  amount.
+- Editing only the note leaves the amount untouched, and vice versa.
+- Android back and the close button dismiss the modal without saving.
+- An unknown `cartItemId` shows the cart with no modal.
+- A note longer than 255 characters cannot be typed.
+- The cart row still fits a long product name without the controls wrapping.
 
-**Estimated diff:** ~100–150 LoC.
+**Estimated diff:** ~250–320 LoC.
 
-**Dependency:** Phase 10. Best merged after Phase 7, whose 32px sizing it matches.
+**Dependency:** none. Best merged after Phase 7 for consistent control sizing.
 
 ---
 
-### Phase 12 (optional) — Documentation
+### Phase 10 (optional) — Documentation
 
 **Goal:** keep `docs-site` truthful about the new field and the new header.
 
@@ -1085,9 +1024,10 @@ PRD used to land the sheet before the cart existed).
   (Open Question 1).
 - `docs-site/sales/table-ordering.md`: note that the order app shows
   `description` only, that the table header now shows the floor number, and that
-  a guest can edit a cart line (including its variant) before checkout —
-  documenting the merge behavior.
+  a guest can edit a cart line's amount and note before checkout — stating
+  explicitly that the variant cannot be changed, since that is the question staff
+  will ask.
 
 **Estimated diff:** ~50–70 LoC of prose.
 
-**Dependency:** Phases 2–4, 8 and 11 merged.
+**Dependency:** Phases 2–4, 8 and 9 merged.
