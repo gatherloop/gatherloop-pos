@@ -26,6 +26,31 @@ export default defineConfig({
     ['meta', { name: 'twitter:title', content: title }],
     ['meta', { name: 'twitter:description', content: description }],
     ['meta', { name: 'twitter:image', content: ogImage }],
+
+    // GitHub Pages only ever falls back to the 404.html at the Pages site
+    // root (this docs-site's build) — it does not honor apps/order's own
+    // dist/order/404.html for paths under a subdirectory. So a hard nav or
+    // refresh on /gatherloop-pos/order/t/{code} lands here instead of in the
+    // order app. This script (present on every page via global `head`,
+    // including the generated 404 page) detects that case and redirects to
+    // the order app's real index.html, preserving the original path in a
+    // `redirect` param so apps/order/src/main.tsx can restore it before its
+    // router reads window.location. Plain 404s outside /order/ fall through
+    // to VitePress's normal not-found page.
+    [
+      'script',
+      {},
+      `(function () {
+        var prefix = '/gatherloop-pos/order/';
+        var path = window.location.pathname;
+        if (path.indexOf(prefix) === 0) {
+          var suffix = path + window.location.search + window.location.hash;
+          window.location.replace(
+            prefix + 'index.html?redirect=' + encodeURIComponent(suffix)
+          );
+        }
+      })();`,
+    ],
   ],
 
   themeConfig: {
