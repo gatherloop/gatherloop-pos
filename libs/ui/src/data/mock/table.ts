@@ -6,12 +6,14 @@ const initialTables: Table[] = [
     id: 1,
     code: '3F7H9K2M5P',
     label: 'Meja 01',
+    floorNumber: 1,
     createdAt: '2024-03-20T00:00:00.000Z',
   },
   {
     id: 2,
     code: '8A2C4E6G8J',
     label: 'Meja 02',
+    floorNumber: 1,
     createdAt: '2024-03-21T00:00:00.000Z',
   },
 ];
@@ -50,6 +52,7 @@ export class MockTableRepository implements TableRepository {
       id: this.nextId++,
       code: this.generateCode(),
       label: formValues.label,
+      floorNumber: formValues.floorNumber,
       createdAt: new Date().toISOString(),
     });
   }
@@ -61,6 +64,7 @@ export class MockTableRepository implements TableRepository {
     this.tables[idx] = {
       ...this.tables[idx],
       label: formValues.label,
+      floorNumber: formValues.floorNumber,
     };
   }
 

@@ -169,7 +169,7 @@ func TestTableUsecase_CreateTable(t *testing.T) {
 	}{
 		{
 			name:  "success",
-			input: domain.Table{Label: "Meja 1"},
+			input: domain.Table{Label: "Meja 1", FloorNumber: 1},
 			setupMock: func(r *mock.MockTableRepository) {
 				withTableTransaction(r)
 				r.EXPECT().GetTableByLabel(gomock.Any(), "Meja 1").Return(domain.Table{}, &domain.Error{Type: domain.NotFound})
@@ -185,8 +185,14 @@ func TestTableUsecase_CreateTable(t *testing.T) {
 			expectedError: &domain.Error{Type: domain.BadRequest},
 		},
 		{
+			name:          "floor number less than 1",
+			input:         domain.Table{Label: "Meja 1", FloorNumber: 0},
+			setupMock:     func(r *mock.MockTableRepository) {},
+			expectedError: &domain.Error{Type: domain.BadRequest},
+		},
+		{
 			name:  "duplicate label",
-			input: domain.Table{Label: "Meja 1"},
+			input: domain.Table{Label: "Meja 1", FloorNumber: 1},
 			setupMock: func(r *mock.MockTableRepository) {
 				withTableTransaction(r)
 				r.EXPECT().GetTableByLabel(gomock.Any(), "Meja 1").Return(domain.Table{Id: 1, Label: "Meja 1"}, nil)
@@ -195,7 +201,7 @@ func TestTableUsecase_CreateTable(t *testing.T) {
 		},
 		{
 			name:  "retries on code collision",
-			input: domain.Table{Label: "Meja 2"},
+			input: domain.Table{Label: "Meja 2", FloorNumber: 1},
 			setupMock: func(r *mock.MockTableRepository) {
 				withTableTransaction(r)
 				r.EXPECT().GetTableByLabel(gomock.Any(), "Meja 2").Return(domain.Table{}, &domain.Error{Type: domain.NotFound})
@@ -209,7 +215,7 @@ func TestTableUsecase_CreateTable(t *testing.T) {
 		},
 		{
 			name:  "exhausts attempts on repeated collision",
-			input: domain.Table{Label: "Meja 3"},
+			input: domain.Table{Label: "Meja 3", FloorNumber: 1},
 			setupMock: func(r *mock.MockTableRepository) {
 				withTableTransaction(r)
 				r.EXPECT().GetTableByLabel(gomock.Any(), "Meja 3").Return(domain.Table{}, &domain.Error{Type: domain.NotFound})
@@ -219,7 +225,7 @@ func TestTableUsecase_CreateTable(t *testing.T) {
 		},
 		{
 			name:  "repo error on create",
-			input: domain.Table{Label: "Meja 4"},
+			input: domain.Table{Label: "Meja 4", FloorNumber: 1},
 			setupMock: func(r *mock.MockTableRepository) {
 				withTableTransaction(r)
 				r.EXPECT().GetTableByLabel(gomock.Any(), "Meja 4").Return(domain.Table{}, &domain.Error{Type: domain.NotFound})
@@ -264,7 +270,7 @@ func TestTableUsecase_UpdateTableById(t *testing.T) {
 		{
 			name:  "success",
 			id:    1,
-			input: domain.Table{Label: "Meja 1 Renamed"},
+			input: domain.Table{Label: "Meja 1 Renamed", FloorNumber: 1},
 			setupMock: func(r *mock.MockTableRepository) {
 				withTableTransaction(r)
 				r.EXPECT().GetTableByLabel(gomock.Any(), "Meja 1 Renamed").Return(domain.Table{}, &domain.Error{Type: domain.NotFound})
@@ -281,9 +287,16 @@ func TestTableUsecase_UpdateTableById(t *testing.T) {
 			expectedError: &domain.Error{Type: domain.BadRequest},
 		},
 		{
+			name:          "floor number less than 1",
+			id:            1,
+			input:         domain.Table{Label: "Meja 1", FloorNumber: 0},
+			setupMock:     func(r *mock.MockTableRepository) {},
+			expectedError: &domain.Error{Type: domain.BadRequest},
+		},
+		{
 			name:  "duplicate label belongs to another table",
 			id:    1,
-			input: domain.Table{Label: "Meja 2"},
+			input: domain.Table{Label: "Meja 2", FloorNumber: 1},
 			setupMock: func(r *mock.MockTableRepository) {
 				withTableTransaction(r)
 				r.EXPECT().GetTableByLabel(gomock.Any(), "Meja 2").Return(domain.Table{Id: 2, Label: "Meja 2"}, nil)
@@ -293,7 +306,7 @@ func TestTableUsecase_UpdateTableById(t *testing.T) {
 		{
 			name:  "not found",
 			id:    99,
-			input: domain.Table{Label: "Meja 99"},
+			input: domain.Table{Label: "Meja 99", FloorNumber: 1},
 			setupMock: func(r *mock.MockTableRepository) {
 				withTableTransaction(r)
 				r.EXPECT().GetTableByLabel(gomock.Any(), "Meja 99").Return(domain.Table{}, &domain.Error{Type: domain.NotFound})

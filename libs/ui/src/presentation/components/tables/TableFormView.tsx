@@ -2,6 +2,7 @@ import {
   Field,
   FormErrorBanner,
   InputText,
+  InputNumber,
   LoadingView,
   ErrorView,
 } from '../base';
@@ -35,6 +36,9 @@ export const TableFormView = ({
         <FormErrorBanner message={serverError} />
         <Field name="label" label="Label">
           <InputText />
+        </Field>
+        <Field name="floorNumber" label="Floor Number">
+          <InputNumber fractionDigit={0} min={1} />
         </Field>
 
         <Button

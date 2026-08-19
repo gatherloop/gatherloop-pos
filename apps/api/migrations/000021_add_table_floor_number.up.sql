@@ -1,0 +1,1 @@
+ALTER TABLE `tables` ADD COLUMN `floor_number` INT NOT NULL DEFAULT 1;

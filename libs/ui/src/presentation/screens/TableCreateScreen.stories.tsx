@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { TableCreateScreen } from './TableCreateScreen';
 import type { TableForm } from '../../domain';
 
-const defaultValues: TableForm = { label: '' };
+const defaultValues: TableForm = { label: '', floorNumber: 1 };
 
 const CreateStory = () => {
   const form = useForm<TableForm>({ defaultValues });

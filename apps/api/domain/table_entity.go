@@ -6,11 +6,12 @@ import (
 )
 
 type Table struct {
-	Id        int64
-	Code      string
-	Label     string
-	CreatedAt time.Time
-	DeletedAt *time.Time
+	Id          int64
+	Code        string
+	Label       string
+	FloorNumber int
+	CreatedAt   time.Time
+	DeletedAt   *time.Time
 }
 
 // tableCodeAlphabet is Crockford base32 (0-9A-Z) with I, L, O and U dropped

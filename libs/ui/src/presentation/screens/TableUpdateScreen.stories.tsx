@@ -6,7 +6,10 @@ import { TableUpdateScreen } from './TableUpdateScreen';
 import type { TableForm } from '../../domain';
 import { mockTable } from '../../../.storybook/mocks/mockData';
 
-const defaultValues: TableForm = { label: mockTable.label };
+const defaultValues: TableForm = {
+  label: mockTable.label,
+  floorNumber: mockTable.floorNumber,
+};
 
 const defaultProps = {
   onSubmit: fn(),
