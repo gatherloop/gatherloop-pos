@@ -21,6 +21,7 @@ export const useTableUpdateController = (usecase: TableUpdateUsecase) => {
     resolver: zodResolver(
       z.object({
         label: z.string().min(1),
+        floorNumber: z.number().int().min(1),
       })
     ),
   });
