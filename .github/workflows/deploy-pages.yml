@@ -6,9 +6,17 @@ name: Deploy docs and order app to GitHub Pages
 #
 #   dist/                 <- docs-site, unchanged, at the site root
 #   dist/order/            <- customer SPA
-#   dist/order/404.html    <- byte-copy of dist/order/index.html (D19),
-#                              so GitHub Pages serves the SPA for any
-#                              unmatched /order/t/{code} path
+#   dist/order/404.html    <- byte-copy of dist/order/index.html, kept as a
+#                              defensive no-op — GitHub Pages does NOT honor
+#                              a subdirectory's 404.html, only the one at the
+#                              Pages site root (dist/404.html, i.e. the
+#                              docs-site's own generated 404 page). A hard
+#                              nav/refresh on /order/t/{code} therefore hits
+#                              *that* 404 page, which redirects into the
+#                              order app and restores the path — see the
+#                              `head` script in docs-site/.vitepress/
+#                              config.ts and the redirect handling in
+#                              apps/order/src/main.tsx.
 #
 # Consequence accepted in the PRD: the two sites redeploy together, so a
 # docs typo republishes the order app and vice versa. Both builds are
