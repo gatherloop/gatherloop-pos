@@ -15,8 +15,11 @@ import { createAnimations } from '@tamagui/animations-css';
 export const tamaguiConfig = createTamagui({
   ...config,
   animations: createAnimations({
+    quicker: 'ease-in 100ms',
+    quick: 'ease-in 200ms',
     fast: 'ease-in 150ms',
     medium: 'ease-in 300ms',
+    lazy: 'ease-in 350ms',
     slow: 'ease-in 450ms',
   }),
 });
