@@ -22,6 +22,7 @@ func (ProductSeeder) Seed(tx *gorm.DB) error {
 		CategoryId  int64
 		Name        string
 		Description *string
+		Recipe      *string
 		ImageUrl    string
 		SaleType    string
 		Status      string
@@ -48,11 +49,18 @@ func (ProductSeeder) Seed(tx *gorm.DB) error {
 	}
 
 	desc := func(s string) *string { return &s }
+	optionalDesc := func(s string) *string {
+		if s == "" {
+			return nil
+		}
+		return &s
+	}
 
 	type productDef struct {
 		Name        string
 		Category    string
 		Description string
+		Recipe      string
 		SaleType    string
 		Status      string
 		// ordered slice of [option name, value1, value2, ...]
@@ -64,6 +72,7 @@ func (ProductSeeder) Seed(tx *gorm.DB) error {
 			Name:        "Espresso",
 			Category:    "Beverages",
 			Description: "Rich and bold espresso shot",
+			Recipe:      "1. Grind 18g of beans on a fine setting.\n2. Tamp evenly and lock the portafilter.\n3. Extract 36g in 25-30 seconds.\n4. Serve immediately in a warmed cup.",
 			SaleType:    "purchase",
 			Status:      "published",
 			Options:     [][]string{{"Size", "Small", "Medium", "Large"}},
@@ -72,6 +81,7 @@ func (ProductSeeder) Seed(tx *gorm.DB) error {
 			Name:        "Cappuccino",
 			Category:    "Beverages",
 			Description: "Espresso with steamed milk foam",
+			Recipe:      "1. Pull a double espresso shot into the serving cup.\n2. Steam milk to 65C with a thick microfoam.\n3. Pour milk to fill, finishing with 1cm of foam.",
 			SaleType:    "purchase",
 			Status:      "published",
 			Options:     [][]string{{"Size", "Small", "Medium", "Large"}},
@@ -128,6 +138,7 @@ func (ProductSeeder) Seed(tx *gorm.DB) error {
 			CategoryId:  catId,
 			Name:        pd.Name,
 			Description: desc(pd.Description),
+			Recipe:      optionalDesc(pd.Recipe),
 			ImageUrl:    "",
 			SaleType:    pd.SaleType,
 			Status:      pd.Status,

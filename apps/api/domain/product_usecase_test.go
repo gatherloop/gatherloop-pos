@@ -119,6 +119,46 @@ func TestProductUsecase_GetProductById(t *testing.T) {
 	}
 }
 
+func TestProductUsecase_CreateProduct(t *testing.T) {
+	tests := []struct {
+		name          string
+		input         domain.Product
+		setupMock     func(r *mock.MockProductRepository)
+		expectedName  string
+		expectedError *domain.Error
+	}{
+		{
+			name:  "success",
+			input: domain.Product{Name: "Espresso", Description: ptrString("Rich and bold espresso shot")},
+			setupMock: func(r *mock.MockProductRepository) {
+				r.EXPECT().CreateProduct(gomock.Any(), gomock.Any()).Return(domain.Product{Id: 1, Name: "Espresso"}, nil)
+			},
+			expectedName: "Espresso",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockRepo := mock.NewMockProductRepository(ctrl)
+			tt.setupMock(mockRepo)
+
+			usecase := domain.NewProductUsecase(mockRepo)
+			product, err := usecase.CreateProduct(context.Background(), tt.input)
+
+			if tt.expectedError != nil {
+				assert.NotNil(t, err)
+				assert.Equal(t, tt.expectedError.Type, err.Type)
+			} else {
+				assert.Nil(t, err)
+				assert.Equal(t, tt.expectedName, product.Name)
+			}
+		})
+	}
+}
+
 func TestProductUsecase_UpdateProductById(t *testing.T) {
 	tests := []struct {
 		name          string

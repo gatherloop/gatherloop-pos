@@ -23,6 +23,7 @@ type Product struct {
 	CategoryId  int64
 	Name        string
 	Description *string
+	Recipe      *string
 	Category    Category
 	ImageUrl    string
 	DeletedAt   *time.Time
