@@ -41,3 +41,31 @@ export const WithHeaderAndFooter: Story = {
     </OrderLayout>
   ),
 };
+
+// FR-1 in docs/prd-order-app-ux-improvements.md: 30+ items on a 375×667
+// viewport. The footer must stay pinned to the bottom of the viewport while
+// this content scrolls behind it, and the last item must be fully readable
+// rather than trapped under the bar.
+export const LongContentWithFooter: Story = {
+  parameters: {
+    viewport: { defaultViewport: 'mobile' },
+  },
+  render: () => (
+    <OrderLayout
+      header={
+        <XStack padding="$4" backgroundColor="$color2">
+          <Text fontWeight="bold">Meja 1 · Lantai 2</Text>
+        </XStack>
+      }
+      footer={
+        <YStack padding="$4" backgroundColor="$color2">
+          <Text>3 item · Rp 87.000 · Lihat Keranjang</Text>
+        </YStack>
+      }
+    >
+      {Array.from({ length: 30 }, (_, index) => (
+        <Paragraph key={index}>Menu item {index + 1} of 30.</Paragraph>
+      ))}
+    </OrderLayout>
+  ),
+};
