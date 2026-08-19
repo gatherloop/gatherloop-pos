@@ -8,7 +8,6 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/gorilla/mux"
@@ -145,12 +144,6 @@ func TestVariantHandler_CreateVariant(t *testing.T) {
 				pr.EXPECT().GetProductById(gomock.Any(), int64(1)).Return(domain.Product{}, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
 			expectedStatus: http.StatusInternalServerError,
-		},
-		{
-			name:           "description too long is rejected",
-			body:           `{"productId": 1, "name": "Regular", "price": 15000, "description": "` + strings.Repeat("a", 161) + `", "materials": [], "values": []}`,
-			setupMock:      func(vr *mock.MockVariantRepository, pr *mock.MockProductRepository) {},
-			expectedStatus: http.StatusBadRequest,
 		},
 	}
 

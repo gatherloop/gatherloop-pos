@@ -4,7 +4,6 @@ import (
 	"apps/api/data/mock"
 	"apps/api/domain"
 	"context"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -136,18 +135,6 @@ func TestProductUsecase_CreateProduct(t *testing.T) {
 			},
 			expectedName: "Espresso",
 		},
-		{
-			name:          "description too long",
-			input:         domain.Product{Name: "Espresso", Description: ptrString(strings.Repeat("a", 161))},
-			setupMock:     func(r *mock.MockProductRepository) {},
-			expectedError: &domain.Error{Type: domain.BadRequest},
-		},
-		{
-			name:          "description contains newline",
-			input:         domain.Product{Name: "Espresso", Description: ptrString("line one\nline two")},
-			setupMock:     func(r *mock.MockProductRepository) {},
-			expectedError: &domain.Error{Type: domain.BadRequest},
-		},
 	}
 
 	for _, tt := range tests {
@@ -202,13 +189,6 @@ func TestProductUsecase_UpdateProductById(t *testing.T) {
 				r.EXPECT().UpdateProductById(gomock.Any(), gomock.Any(), int64(99)).Return(domain.Product{}, &domain.Error{Type: domain.NotFound})
 			},
 			expectedError: &domain.Error{Type: domain.NotFound},
-		},
-		{
-			name:          "description too long",
-			id:            1,
-			input:         domain.Product{Name: "Espresso", Description: ptrString(strings.Repeat("a", 161))},
-			setupMock:     func(r *mock.MockProductRepository) {},
-			expectedError: &domain.Error{Type: domain.BadRequest},
 		},
 	}
 

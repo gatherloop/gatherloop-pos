@@ -3430,7 +3430,6 @@ components:
           type: string
         description:
           type: string
-          maxLength: 160
         recipe:
           type: string
         options:
@@ -3571,7 +3570,6 @@ components:
           type: number
         description:
           type: string
-          maxLength: 160
         recipe:
           type: string
         materials:

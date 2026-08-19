@@ -4,7 +4,6 @@ import (
 	"apps/api/data/mock"
 	"apps/api/domain"
 	"context"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -208,18 +207,6 @@ func TestVariantUsecase_CreateVariant(t *testing.T) {
 			},
 			expectedError: &domain.Error{Type: domain.BadRequest},
 		},
-		{
-			name:          "reject — description too long",
-			input:         domain.Variant{ProductId: 1, Name: "Bad", Price: 5000, Description: ptrString(strings.Repeat("a", 161))},
-			setupMock:     func(vr *mock.MockVariantRepository, pr *mock.MockProductRepository) {},
-			expectedError: &domain.Error{Type: domain.BadRequest},
-		},
-		{
-			name:          "reject — description contains newline",
-			input:         domain.Variant{ProductId: 1, Name: "Bad", Price: 5000, Description: ptrString("line one\nline two")},
-			setupMock:     func(vr *mock.MockVariantRepository, pr *mock.MockProductRepository) {},
-			expectedError: &domain.Error{Type: domain.BadRequest},
-		},
 	}
 
 	for _, tt := range tests {
@@ -331,13 +318,6 @@ func TestVariantUsecase_UpdateVariantById(t *testing.T) {
 				vr.EXPECT().GetVariantById(gomock.Any(), int64(2)).Return(domain.Variant{Id: 2, ProductId: 20}, nil)
 				pr.EXPECT().GetProductById(gomock.Any(), int64(20)).Return(domain.Product{Id: 20, SaleType: domain.SaleTypeRental}, nil)
 			},
-			expectedError: &domain.Error{Type: domain.BadRequest},
-		},
-		{
-			name:          "reject — description too long",
-			id:            1,
-			input:         domain.Variant{Name: "Bad", Price: 5000, Description: ptrString(strings.Repeat("a", 161))},
-			setupMock:     func(vr *mock.MockVariantRepository, pr *mock.MockProductRepository) {},
 			expectedError: &domain.Error{Type: domain.BadRequest},
 		},
 	}
