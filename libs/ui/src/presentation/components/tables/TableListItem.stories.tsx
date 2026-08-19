@@ -8,6 +8,7 @@ const meta: Meta<typeof TableListItem> = {
   args: {
     code: '3F7H9K2M5P',
     label: 'Meja 01',
+    floorNumber: 1,
     onEditMenuPress: fn(),
     onDeleteMenuPress: fn(),
   },

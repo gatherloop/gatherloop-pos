@@ -40,6 +40,7 @@ export class TableCreateUsecase extends Usecase<
       errorMessage: null,
       values: {
         label: '',
+        floorNumber: 1,
       },
     };
   }

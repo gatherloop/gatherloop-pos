@@ -55,6 +55,7 @@ export class TableUpdateUsecase extends Usecase<
       table: this.params.table,
       values: {
         label: this.params.table?.label ?? '',
+        floorNumber: this.params.table?.floorNumber ?? 1,
       },
     };
   }
@@ -91,7 +92,7 @@ export class TableUpdateUsecase extends Usecase<
           ...state,
           type: 'loaded',
           table,
-          values: { label: table.label },
+          values: { label: table.label, floorNumber: table.floorNumber },
         })
       )
       .with(

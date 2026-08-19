@@ -4262,6 +4262,7 @@ components:
         - id
         - code
         - label
+        - floorNumber
         - createdAt
       properties:
         id:
@@ -4271,6 +4272,9 @@ components:
           type: string
         label:
           type: string
+        floorNumber:
+          type: integer
+          format: int32
         createdAt:
           type: string
           format: date-time
@@ -4281,9 +4285,13 @@ components:
       type: object
       required:
         - label
+        - floorNumber
       properties:
         label:
           type: string
+        floorNumber:
+          type: integer
+          format: int32
     PublicTable:
       type: object
       required:

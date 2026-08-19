@@ -5,6 +5,7 @@ import { XStackProps } from 'tamagui';
 export type TableListItemProps = {
   code: string;
   label: string;
+  floorNumber: number;
   onEditMenuPress?: () => void;
   onDeleteMenuPress?: () => void;
 } & XStackProps;
@@ -12,6 +13,7 @@ export type TableListItemProps = {
 export const TableListItem = ({
   code,
   label,
+  floorNumber,
   onDeleteMenuPress,
   onEditMenuPress,
   ...xStackProps
@@ -19,7 +21,7 @@ export const TableListItem = ({
   return (
     <ListItem
       title={label}
-      subtitle={code}
+      subtitle={`Floor ${floorNumber} · ${code}`}
       menus={[
         { title: 'Edit', icon: Pencil, onPress: onEditMenuPress },
         { title: 'Delete', icon: Trash, onPress: onDeleteMenuPress },

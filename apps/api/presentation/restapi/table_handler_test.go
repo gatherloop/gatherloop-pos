@@ -113,7 +113,7 @@ func TestTableHandler_CreateTable(t *testing.T) {
 	}{
 		{
 			name: "success",
-			body: `{"label": "Meja 1"}`,
+			body: `{"label": "Meja 1", "floorNumber": 1}`,
 			setupMock: func(r *mock.MockTableRepository) {
 				withTableTransactionMock(r)
 				r.EXPECT().GetTableByLabel(gomock.Any(), "Meja 1").Return(domain.Table{}, &domain.Error{Type: domain.NotFound})
@@ -130,11 +130,17 @@ func TestTableHandler_CreateTable(t *testing.T) {
 		},
 		{
 			name: "duplicate label",
-			body: `{"label": "Meja 1"}`,
+			body: `{"label": "Meja 1", "floorNumber": 1}`,
 			setupMock: func(r *mock.MockTableRepository) {
 				withTableTransactionMock(r)
 				r.EXPECT().GetTableByLabel(gomock.Any(), "Meja 1").Return(domain.Table{Id: 1, Code: "0123456789", Label: "Meja 1"}, nil)
 			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "floor number less than 1",
+			body:           `{"label": "Meja 1", "floorNumber": 0}`,
+			setupMock:      func(r *mock.MockTableRepository) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 	}
@@ -166,7 +172,7 @@ func TestTableHandler_UpdateTableById(t *testing.T) {
 		{
 			name:    "success",
 			tableId: "1",
-			body:    `{"label": "Meja 1 Renamed"}`,
+			body:    `{"label": "Meja 1 Renamed", "floorNumber": 1}`,
 			setupMock: func(r *mock.MockTableRepository) {
 				withTableTransactionMock(r)
 				r.EXPECT().GetTableByLabel(gomock.Any(), "Meja 1 Renamed").Return(domain.Table{}, &domain.Error{Type: domain.NotFound})
@@ -192,13 +198,20 @@ func TestTableHandler_UpdateTableById(t *testing.T) {
 		{
 			name:    "not found",
 			tableId: "99",
-			body:    `{"label": "Meja 99"}`,
+			body:    `{"label": "Meja 99", "floorNumber": 1}`,
 			setupMock: func(r *mock.MockTableRepository) {
 				withTableTransactionMock(r)
 				r.EXPECT().GetTableByLabel(gomock.Any(), "Meja 99").Return(domain.Table{}, &domain.Error{Type: domain.NotFound})
 				r.EXPECT().GetTableById(gomock.Any(), int64(99)).Return(domain.Table{}, &domain.Error{Type: domain.NotFound})
 			},
 			expectedStatus: http.StatusNotFound,
+		},
+		{
+			name:           "floor number less than 1",
+			tableId:        "1",
+			body:           `{"label": "Meja 1", "floorNumber": 0}`,
+			setupMock:      func(r *mock.MockTableRepository) {},
+			expectedStatus: http.StatusBadRequest,
 		},
 	}
 

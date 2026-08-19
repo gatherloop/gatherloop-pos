@@ -7,6 +7,7 @@ import type { TableForm } from '../../../domain';
 
 const defaultValues: TableForm = {
   label: '',
+  floorNumber: 1,
 };
 
 const LoadedStory = () => {
@@ -24,7 +25,7 @@ const LoadedStory = () => {
 
 const PopulatedStory = () => {
   const form = useForm<TableForm>({
-    defaultValues: { label: 'Meja 01' },
+    defaultValues: { label: 'Meja 01', floorNumber: 1 },
   });
   return (
     <TableFormView

@@ -30,17 +30,19 @@ func GetTableRequest(r *http.Request) (apiContract.TableRequest, error) {
 
 func ToApiTable(table domain.Table) apiContract.Table {
 	return apiContract.Table{
-		Id:        table.Id,
-		Code:      table.Code,
-		Label:     table.Label,
-		CreatedAt: table.CreatedAt,
-		DeletedAt: table.DeletedAt,
+		Id:          table.Id,
+		Code:        table.Code,
+		Label:       table.Label,
+		FloorNumber: int32(table.FloorNumber),
+		CreatedAt:   table.CreatedAt,
+		DeletedAt:   table.DeletedAt,
 	}
 }
 
 func ToTable(tableRequest apiContract.TableRequest) domain.Table {
 	return domain.Table{
-		Label: tableRequest.Label,
+		Label:       tableRequest.Label,
+		FloorNumber: int(tableRequest.FloorNumber),
 	}
 }
 

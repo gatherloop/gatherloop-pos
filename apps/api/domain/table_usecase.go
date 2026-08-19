@@ -37,6 +37,9 @@ func (usecase TableUsecase) CreateTable(ctx context.Context, table Table) (Table
 	if table.Label == "" {
 		return Table{}, &Error{Type: BadRequest, Message: "label is required"}
 	}
+	if table.FloorNumber < 1 {
+		return Table{}, &Error{Type: BadRequest, Message: "floor number must be at least 1"}
+	}
 
 	var created Table
 	err := usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
@@ -65,6 +68,9 @@ func (usecase TableUsecase) UpdateTableById(ctx context.Context, table Table, id
 	table.Label = strings.TrimSpace(table.Label)
 	if table.Label == "" {
 		return Table{}, &Error{Type: BadRequest, Message: "label is required"}
+	}
+	if table.FloorNumber < 1 {
+		return Table{}, &Error{Type: BadRequest, Message: "floor number must be at least 1"}
 	}
 
 	var updated Table

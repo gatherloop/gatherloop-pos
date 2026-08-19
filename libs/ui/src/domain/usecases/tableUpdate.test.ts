@@ -28,7 +28,7 @@ describe('TableUpdateUsecase', () => {
       await flushPromises();
       expect(tester.state.type).toBe('loaded');
 
-      tester.dispatch({ type: 'SUBMIT', values: { label: 'Meja 99' } });
+      tester.dispatch({ type: 'SUBMIT', values: { label: 'Meja 99', floorNumber: 1 } });
       expect(tester.state.type).toBe('submitting');
 
       await flushPromises();
@@ -82,7 +82,7 @@ describe('TableUpdateUsecase', () => {
 
       expect(tester.state.type).toBe('loaded');
 
-      tester.dispatch({ type: 'SUBMIT', values: { label: 'Meja 99' } });
+      tester.dispatch({ type: 'SUBMIT', values: { label: 'Meja 99', floorNumber: 1 } });
       expect(tester.state.type).toBe('submitting');
 
       await flushPromises();

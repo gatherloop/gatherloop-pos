@@ -49,6 +49,7 @@ export const TableList = ({
               <TableListItem
                 code={item.code}
                 label={item.label}
+                floorNumber={item.floorNumber}
                 onDeleteMenuPress={
                   onDeleteMenuPress ? () => onDeleteMenuPress(item) : undefined
                 }
