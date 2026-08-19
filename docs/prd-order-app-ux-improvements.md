@@ -7,7 +7,7 @@ that flow, plus the one data-model change the feedback exposes.
 
 ## Problem Statement
 
-Five issues have been raised after using the customer-facing order app
+Six issues have been raised after using the customer-facing order app
 (`apps/order`) on a phone:
 
 1. **The cart bar is not actually floating.** `OrderLayout` renders the cart bar
@@ -46,6 +46,17 @@ Five issues have been raised after using the customer-facing order app
    the cart, where several rows stack, those three controls dominate each row and
    crowd out the product name, options and subtotal. The delete button is also
    neutral-themed, so it doesn't read as destructive.
+
+6. **The order app header shows only the table label.** `TableResolveScreen.tsx`
+   renders `<Text fontWeight="bold">{table.label}</Text>` and nothing else. The
+   `tables` master has carried a `floor_number` since migration
+   `000021_add_table_floor_number`, and the POS already shows it
+   (`TableListItem.tsx` renders `Floor {n} · {code}`) — but the customer-facing
+   payload does not carry it: `ToApiPublicTable` strips everything but `id` and
+   `label`. In a multi-floor venue a guest who scans a QR has no way to confirm
+   from the app that they are seated where the app thinks they are, and a
+   duplicated label across floors ("Meja 3" on both floor 1 and floor 2) is
+   indistinguishable in the app.
 
 ---
 
@@ -120,6 +131,39 @@ The new field is *preparation instructions*, not the BoM. See Open Question 1.
   `cancelText`, `isOpen`, `onConfirm`). Pure Tamagui, no solito/next imports, so
   it is safe to use from the order bundle (D20).
 
+### Table identity in the order app
+
+- `apps/api/migrations/000021_add_table_floor_number.up.sql` —
+  `ALTER TABLE tables ADD COLUMN floor_number INT NOT NULL DEFAULT 1;`. Every
+  pre-existing table therefore reads as floor `1`.
+- `apps/api/domain/table_entity.go` — `FloorNumber int`; `table_usecase.go`
+  validates `FloorNumber >= 1` on both create and update.
+- `apps/api/presentation/restapi/table_transformer.go` — `ToApiTable` maps
+  `FloorNumber`; **`ToApiPublicTable` deliberately does not**, with the comment
+  *"strips everything but id and label — the only fields a resolved QR code may
+  hand back to a customer (FR-1)"*.
+- `libs/api-contract/src/api.yaml` — `PublicTable` is `{ id, label }`, both
+  required. `Table` carries `floorNumber`.
+- `libs/ui/src/domain/entities/PublicTable.ts` — `{ id, label }`, with a comment
+  citing D2/D6 of the table-ordering PRD.
+- `libs/ui/src/data/api/publicTable.transformer.ts`,
+  `libs/ui/src/data/mock/publicTable.ts` — both mirror the two-field shape.
+- `libs/ui/src/presentation/screens/TableResolveScreen.tsx` — the `resolved`
+  variant's header is a single bold `{table.label}`.
+- POS rendering for reference: `TableListItem.tsx` → `Floor {floorNumber} · {code}`.
+
+**`PublicTable` is also embedded in the cart response.**
+`apps/api/presentation/restapi/cart_transformer.go:79` builds the cart's `table`
+field via `ToApiPublicTable`, so any field added to that schema also appears on
+`GET /carts/current`. That is consistent rather than harmful, but it means the
+change has two consumers, not one.
+
+**What D6 actually protects.** The minimal public payload exists so that a
+resolved QR can never hand back the table **code** (a reusable off-premise
+ordering key) and so the endpoint can never be used to enumerate the table list.
+A floor number for the one table the guest is physically sitting at is neither:
+it is information the guest can read off the wall. See FR-8.
+
 ### Tests that will need updating
 
 - `apps/order-e2e/src/utils/selectors.ts` — `Lihat Keranjang`, `Kosongkan keranjang`,
@@ -133,7 +177,7 @@ The new field is *preparation instructions*, not the BoM. See Open Question 1.
 
 ## Proposed Solution
 
-Six independent changes. Only FR-3 depends on FR-2; everything else can ship in
+Seven independent changes. Only FR-3 depends on FR-2; everything else can ship in
 any order.
 
 ### Confirmed Product Decisions
@@ -159,6 +203,10 @@ any order.
 | Delete button in the cart | 32×32 circular, `theme="red"`, red icon, `chromeless`/`variant="outlined"` — visually subordinate to the stepper but unmistakably destructive. | Feedback asks for smaller *and* red. |
 | Delete confirmation | **None** for a single line item. | Removing one item is cheap to undo by re-adding; a dialog per row would be noise. Clearing the whole cart is the destructive one. |
 | Accessibility floor | Every shrunk control keeps its `accessibilityLabel`, and no control goes below a **32px** hit target with `hitSlop` padding to ≥44px where Tamagui supports it. | 44px is the ideal; 32px + hit slop is the accepted floor for secondary controls in a dense list. |
+| Exposing `floorNumber` publicly | **Yes** — add it to the `PublicTable` schema (required, `int32`). | D6's minimal payload exists to protect the table **code** and to prevent enumerating the table list. The floor of the table a guest is sitting at is neither secret nor useful to an attacker. The `code` stays stripped. |
+| Header format | `{label}` bold, then a muted `· Lantai {floorNumber}` on the same row. Wraps to a second muted line below the label on a narrow screen. | The label is what the guest and staff both say out loud; the floor is the disambiguator, not the identity. |
+| Floor 1 in a single-floor venue | **Always show it.** No "hide when 1" rule. | Every pre-existing table defaults to floor `1` (migration `000021`), so a hide-when-1 rule would silently hide the floor for every venue that has not curated its table master — exactly the venues most likely to have duplicate labels. See Open Question 5. |
+| Missing `floorNumber` from a stale API | The frontend transformer defaults to `1`. | An additive contract field against an older deployed API must never render `Lantai undefined`. |
 
 ### Core Rules
 
@@ -340,6 +388,35 @@ exactly as `description` is today.
 - The freed horizontal space goes to the product name / option line, which keeps
   `numberOfLines={1}`.
 
+### FR-8: Show the table's floor number in the order app header
+
+**Behavior:** once a QR resolves, the order app header reads
+`Meja 3 · Lantai 2` instead of `Meja 3`.
+
+**Contract**
+- `PublicTable` gains `floorNumber: { type: integer, format: int32 }`, added to
+  its `required` list (it is `NOT NULL DEFAULT 1` in the DB, so it is always
+  present server-side).
+- `ToApiPublicTable` maps `FloorNumber`, and its doc comment is updated: it
+  strips the table **code**, not "everything but id and label".
+- The same field consequently appears on the cart's embedded `table`
+  (`GET /carts/current`) — intended, and asserted rather than left implicit.
+
+**Frontend**
+- `PublicTable` entity gains `floorNumber: number`; the comment is updated to
+  say the `code` is what is never echoed back.
+- `publicTable.transformer.ts` maps it with a `?? 1` fallback (see the decision
+  table); `data/mock/publicTable.ts` fixtures gain floors, including one table on
+  floor 2 so the multi-floor case is exercised in Storybook and tests.
+- `TableResolveScreen.tsx`'s `resolved` header renders the label bold plus a
+  muted `· Lantai {floorNumber}`, wrapping to a second line when the row is too
+  narrow.
+
+**Copy:** `Lantai {n}`, Bahasa Indonesia, per D15. The POS keeps `Floor {n}`.
+
+**Not in scope here:** showing the floor anywhere else in the order app (cart,
+checkout, order confirmation), or letting a guest pick/change their floor.
+
 ---
 
 ## Non-Goals
@@ -369,6 +446,8 @@ exactly as `description` is today.
 | `recipe` leaks publicly via a future endpoint that reuses `ToApiProduct`. | FR-4 asserts absence on the marshalled JSON, so a new endpoint that forgets the public transformer fails the test only if it is added to that test — noted in the `ToApiProduct` doc comment as well. |
 | Enabling the CTA when options are incomplete lets a double-tap race the variant resolution. | The `resolving` state stays disabled, so the only enabled-but-not-ready state is `incomplete`, which never dispatches an add. |
 | Shrinking controls hurts tap accuracy. | 32px floor + hit slop, and the item-detail stepper (the one used most) stays 44px. |
+| Widening `PublicTable` sets a precedent for leaking more table fields to guests. | The `ToApiPublicTable` doc comment is rewritten to state the actual rule — the table `code` is never returned — and the public handler test asserts `code` is absent, so the boundary is enforced by a test rather than by the field count. |
+| The order app ships before the API redeploys and renders `Lantai undefined`. | The frontend transformer defaults `floorNumber` to `1`, so a stale API degrades to "floor 1" rather than to broken copy. |
 
 ---
 
@@ -389,14 +468,23 @@ exactly as `description` is today.
    checkout pass `hideCartBar`. Unchanged here, but worth confirming that a guest
    on the checkout screen never wants to go back to the cart via the bar (there
    is a back affordance).
+5. **Suppress "Lantai 1" in a single-floor venue?** This PRD always shows the
+   floor. The alternative — hide it when the venue has exactly one distinct
+   floor — needs a venue-level setting or an extra query, and would hide the
+   floor for every un-curated table master (all of which default to floor `1`).
+   Revisit if the copy reads as noise in a one-floor cafe.
+6. **Does staff-side order routing need the floor too?** FR-8 only changes what
+   the guest sees. If a barista reading an incoming order also needs "Lantai 2"
+   on the slip, that is a separate change to the POS transaction/kitchen views —
+   the field is now available to them either way.
 
 ---
 
 ## Implementation Phases
 
-Seven PRs. Phase 2 → Phase 3 → Phase 4 is the only hard chain; Phases 1, 5, 6 and
-7 are independent of everything and of each other, and can be merged in any
-order or in parallel.
+Nine PRs. Phase 2 → Phase 3 → Phase 4 is the only hard chain; Phases 1, 5, 6, 7
+and 8 are independent of everything and of each other, and can be merged in any
+order or in parallel. Phase 9 (docs) comes last.
 
 ---
 
@@ -628,17 +716,65 @@ Phase 3.
 
 ---
 
-### Phase 8 (optional) — Documentation
+### Phase 8 — Table floor number in the order app header
 
-**Goal:** keep `docs-site` truthful about the new field.
+**Goal:** FR-8.
+
+Unlike the `recipe` field, this ships as **one** PR rather than a backend/frontend
+split: it is a single additive contract field with no migration and no data
+move, and the `?? 1` fallback in the transformer means the order app renders
+correctly even if it reaches a browser before the API is redeployed.
+
+**Backend**
+- `libs/api-contract/src/api.yaml`: add `floorNumber` (`integer`, `int32`) to
+  `PublicTable` and to its `required` list.
+- Regenerate clients: `nx run api-contract:generate:go` and
+  `nx run api-contract:generate:ts`.
+- `apps/api/presentation/restapi/table_transformer.go`: map `FloorNumber` in
+  `ToApiPublicTable`; rewrite the doc comment to say it strips the table
+  **code** (the thing D6 actually protects), not "everything but id and label".
+- `apps/api/presentation/restapi/public_handler_test.go`: assert
+  `/public/tables/{code}` returns `floorNumber`, and — unchanged but now worth
+  re-asserting explicitly — that it still never returns `code`.
+- `apps/api/presentation/restapi/cart_handler_test.go`: assert the cart's
+  embedded `table` carries `floorNumber` too.
+
+**Frontend**
+- `libs/ui/src/domain/entities/PublicTable.ts`: add `floorNumber: number`; update
+  the comment.
+- `libs/ui/src/data/api/publicTable.transformer.ts`: `floorNumber: table.floorNumber ?? 1`.
+- `libs/ui/src/data/mock/publicTable.ts`: fixtures gain `floorNumber`, with at
+  least one table on floor 2.
+- `libs/ui/src/presentation/screens/TableResolveScreen.tsx`: header renders
+  `{label}` bold + muted `· Lantai {floorNumber}`, wrapping on narrow rows.
+- `TableResolveScreen.stories.tsx`: resolved-floor-1, resolved-floor-2, and a
+  long-label case to prove the wrap.
+- `libs/ui/src/presentation/screens/TableResolveHandler.test.tsx`: assert the
+  floor renders.
+- `apps/order-e2e`: the table header assertion (if any) updated for the new copy.
+
+**Acceptance**
+- Scanning a QR for a table on floor 2 shows `Meja 3 · Lantai 2` in the header.
+- A table on floor 1 shows `Meja 1 · Lantai 1` — the floor is never hidden.
+- The public endpoint still never returns the table `code`.
+- A long table label wraps rather than pushing the floor off-screen.
+- `GET /carts/current` includes `floorNumber` on its embedded table.
+
+**Estimated diff:** ~90–140 LoC (excluding generated clients).
+
+---
+
+### Phase 9 (optional) — Documentation
+
+**Goal:** keep `docs-site` truthful about the new field and the new header.
 
 - `docs-site/catalog/products.md` and `variants.md`: document `recipe` as
   staff-only preparation notes, `description` as the customer-facing one-liner,
   and disambiguate the informal "recipe" prose that currently means `materials`
   (Open Question 1).
 - `docs-site/sales/table-ordering.md`: note that the order app shows
-  `description` only.
+  `description` only, and that the table header now shows the floor number.
 
 **Estimated diff:** ~40–60 LoC of prose.
 
-**Dependency:** Phases 2–4 merged.
+**Dependency:** Phases 2–4 and 8 merged.
