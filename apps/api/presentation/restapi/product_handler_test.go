@@ -8,6 +8,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/gorilla/mux"
@@ -147,6 +148,18 @@ func TestProductHandler_CreateProduct(t *testing.T) {
 				r.EXPECT().CreateProduct(gomock.Any(), gomock.Any()).Return(domain.Product{}, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
 			expectedStatus: http.StatusInternalServerError,
+		},
+		{
+			name:           "description too long is rejected",
+			body:           `{"categoryId": 1, "name": "Nasi Goreng", "imageUrl": "", "description": "` + strings.Repeat("a", 161) + `", "options": [], "saleType": "retail", "status": "published"}`,
+			setupMock:      func(r *mock.MockProductRepository) {},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "description with newline is rejected",
+			body:           `{"categoryId": 1, "name": "Nasi Goreng", "imageUrl": "", "description": "line one\nline two", "options": [], "saleType": "retail", "status": "published"}`,
+			setupMock:      func(r *mock.MockProductRepository) {},
+			expectedStatus: http.StatusBadRequest,
 		},
 	}
 

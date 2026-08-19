@@ -4,6 +4,7 @@ import (
 	"apps/api/data/mock"
 	"apps/api/domain"
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -119,6 +120,58 @@ func TestProductUsecase_GetProductById(t *testing.T) {
 	}
 }
 
+func TestProductUsecase_CreateProduct(t *testing.T) {
+	tests := []struct {
+		name          string
+		input         domain.Product
+		setupMock     func(r *mock.MockProductRepository)
+		expectedName  string
+		expectedError *domain.Error
+	}{
+		{
+			name:  "success",
+			input: domain.Product{Name: "Espresso", Description: ptrString("Rich and bold espresso shot")},
+			setupMock: func(r *mock.MockProductRepository) {
+				r.EXPECT().CreateProduct(gomock.Any(), gomock.Any()).Return(domain.Product{Id: 1, Name: "Espresso"}, nil)
+			},
+			expectedName: "Espresso",
+		},
+		{
+			name:          "description too long",
+			input:         domain.Product{Name: "Espresso", Description: ptrString(strings.Repeat("a", 161))},
+			setupMock:     func(r *mock.MockProductRepository) {},
+			expectedError: &domain.Error{Type: domain.BadRequest},
+		},
+		{
+			name:          "description contains newline",
+			input:         domain.Product{Name: "Espresso", Description: ptrString("line one\nline two")},
+			setupMock:     func(r *mock.MockProductRepository) {},
+			expectedError: &domain.Error{Type: domain.BadRequest},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockRepo := mock.NewMockProductRepository(ctrl)
+			tt.setupMock(mockRepo)
+
+			usecase := domain.NewProductUsecase(mockRepo)
+			product, err := usecase.CreateProduct(context.Background(), tt.input)
+
+			if tt.expectedError != nil {
+				assert.NotNil(t, err)
+				assert.Equal(t, tt.expectedError.Type, err.Type)
+			} else {
+				assert.Nil(t, err)
+				assert.Equal(t, tt.expectedName, product.Name)
+			}
+		})
+	}
+}
+
 func TestProductUsecase_UpdateProductById(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -149,6 +202,13 @@ func TestProductUsecase_UpdateProductById(t *testing.T) {
 				r.EXPECT().UpdateProductById(gomock.Any(), gomock.Any(), int64(99)).Return(domain.Product{}, &domain.Error{Type: domain.NotFound})
 			},
 			expectedError: &domain.Error{Type: domain.NotFound},
+		},
+		{
+			name:          "description too long",
+			id:            1,
+			input:         domain.Product{Name: "Espresso", Description: ptrString(strings.Repeat("a", 161))},
+			setupMock:     func(r *mock.MockProductRepository) {},
+			expectedError: &domain.Error{Type: domain.BadRequest},
 		},
 	}
 

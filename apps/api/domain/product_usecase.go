@@ -31,10 +31,16 @@ func (usecase ProductUsecase) GetProductById(ctx context.Context, id int64) (Pro
 }
 
 func (usecase ProductUsecase) CreateProduct(ctx context.Context, product Product) (Product, *Error) {
+	if err := validateDescription(product.Description); err != nil {
+		return Product{}, err
+	}
 	return usecase.repository.CreateProduct(ctx, product)
 }
 
 func (usecase ProductUsecase) UpdateProductById(ctx context.Context, product Product, id int64) (Product, *Error) {
+	if err := validateDescription(product.Description); err != nil {
+		return Product{}, err
+	}
 	var updateResult Product
 	err := usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 		updated, err := usecase.repository.UpdateProductById(ctxWithTx, product, id)

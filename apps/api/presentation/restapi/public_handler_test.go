@@ -145,6 +145,61 @@ func TestPublicHandler_GetVariantList_stripsMaterialsAndExcludesNonPublicProduct
 	assert.Empty(t, resp.Data[0].PricingTiers)
 }
 
+func TestPublicHandler_recipeNeverExposed(t *testing.T) {
+	recipe := "Secret internal prep steps"
+
+	t.Run("GetProductList", func(t *testing.T) {
+		handler, productRepo, _, _, _ := newPublicHandler(t)
+
+		productRepo.EXPECT().GetProductList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			Return([]domain.Product{{Id: 1, Name: "Es Kopi Susu", Status: domain.ProductStatusPublished, SaleType: domain.SaleTypePurchase, Recipe: &recipe}}, nil)
+		productRepo.EXPECT().GetProductListTotal(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(1), nil)
+
+		req := httptest.NewRequest(http.MethodGet, "/public/products", nil)
+		w := httptest.NewRecorder()
+		handler.GetProductList(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.NotContains(t, w.Body.String(), "recipe")
+	})
+
+	t.Run("GetProductById", func(t *testing.T) {
+		handler, productRepo, _, _, _ := newPublicHandler(t)
+		productRepo.EXPECT().GetProductById(gomock.Any(), int64(1)).Return(
+			domain.Product{Id: 1, Name: "Es Kopi Susu", Status: domain.ProductStatusPublished, SaleType: domain.SaleTypePurchase, Recipe: &recipe}, nil)
+
+		req := httptest.NewRequest(http.MethodGet, "/public/products/1", nil)
+		req = mux.SetURLVars(req, map[string]string{"productId": "1"})
+		w := httptest.NewRecorder()
+		handler.GetProductById(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.NotContains(t, w.Body.String(), "recipe")
+	})
+
+	t.Run("GetVariantList", func(t *testing.T) {
+		handler, _, _, variantRepo, _ := newPublicHandler(t)
+
+		variantRepo.EXPECT().GetVariantList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			Return([]domain.Variant{{
+				Id:        1,
+				ProductId: 1,
+				Name:      "Large",
+				Price:     20000,
+				Recipe:    &recipe,
+				Product:   domain.Product{Id: 1, Status: domain.ProductStatusPublished, SaleType: domain.SaleTypePurchase, Recipe: &recipe},
+			}}, nil)
+		variantRepo.EXPECT().GetVariantListTotal(gomock.Any(), gomock.Any()).Return(int64(1), nil)
+
+		req := httptest.NewRequest(http.MethodGet, "/public/variants", nil)
+		w := httptest.NewRecorder()
+		handler.GetVariantList(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.NotContains(t, w.Body.String(), "recipe")
+	})
+}
+
 func TestPublicHandler_GetTableByCode(t *testing.T) {
 	tests := []struct {
 		name           string

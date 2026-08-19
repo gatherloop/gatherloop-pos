@@ -35,6 +35,10 @@ func (usecase VariantUsecase) GetVariantById(ctx context.Context, id int64) (Var
 }
 
 func (usecase VariantUsecase) CreateVariant(ctx context.Context, variant Variant) (Variant, *Error) {
+	if err := validateDescription(variant.Description); err != nil {
+		return Variant{}, err
+	}
+
 	product, err := usecase.productRepository.GetProductById(ctx, variant.ProductId)
 	if err != nil {
 		return Variant{}, err
@@ -48,6 +52,10 @@ func (usecase VariantUsecase) CreateVariant(ctx context.Context, variant Variant
 }
 
 func (usecase VariantUsecase) UpdateVariantById(ctx context.Context, variant Variant, id int64) (Variant, *Error) {
+	if err := validateDescription(variant.Description); err != nil {
+		return Variant{}, err
+	}
+
 	var updateResult Variant
 	err := usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 		existing, err := usecase.repository.GetVariantById(ctxWithTx, id)

@@ -3389,6 +3389,8 @@ components:
           type: string
         description:
           type: string
+        recipe:
+          type: string
         imageUrl:
           type: string
         category:
@@ -3427,6 +3429,9 @@ components:
         imageUrl:
           type: string
         description:
+          type: string
+          maxLength: 160
+        recipe:
           type: string
         options:
           type: array
@@ -3528,6 +3533,8 @@ components:
           type: number
         description:
           type: string
+        recipe:
+          type: string
         materials:
           type: array
           items:
@@ -3563,6 +3570,9 @@ components:
         price:
           type: number
         description:
+          type: string
+          maxLength: 160
+        recipe:
           type: string
         materials:
           type: array

@@ -73,7 +73,7 @@ func (handler PublicHandler) GetProductList(w http.ResponseWriter, r *http.Reque
 
 	apiProducts := []apiContract.Product{}
 	for _, product := range products {
-		apiProducts = append(apiProducts, ToApiProduct(product))
+		apiProducts = append(apiProducts, ToPublicApiProduct(product))
 	}
 
 	WriteResponse(w, apiContract.ProductListResponse{Data: apiProducts, Meta: apiContract.MetaPage{Total: total}})
@@ -101,7 +101,7 @@ func (handler PublicHandler) GetProductById(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	WriteResponse(w, apiContract.ProductFindByIdResponse{Data: ToApiProduct(product)})
+	WriteResponse(w, apiContract.ProductFindByIdResponse{Data: ToPublicApiProduct(product)})
 }
 
 func (handler PublicHandler) GetVariantList(w http.ResponseWriter, r *http.Request) {

@@ -32,6 +32,7 @@ func (VariantSeeder) Seed(tx *gorm.DB) error {
 		Name        string
 		Price       float32
 		Description *string
+		Recipe      *string
 		CreatedAt   time.Time
 		DeletedAt   *time.Time
 	}
@@ -79,6 +80,12 @@ func (VariantSeeder) Seed(tx *gorm.DB) error {
 	}
 
 	desc := func(s string) *string { return &s }
+	optionalDesc := func(s string) *string {
+		if s == "" {
+			return nil
+		}
+		return &s
+	}
 
 	// variantDef describes a single variant to seed.
 	type materialUsage struct {
@@ -90,6 +97,7 @@ func (VariantSeeder) Seed(tx *gorm.DB) error {
 		Name        string
 		Price       float32
 		Description string
+		Recipe      string
 		// option name -> option value name (can be empty for products with no options)
 		OptionValues map[string]string
 		Materials    []materialUsage
@@ -100,6 +108,7 @@ func (VariantSeeder) Seed(tx *gorm.DB) error {
 		{
 			ProductName: "Espresso", Name: "Espresso Small", Price: 15000,
 			Description:  "Small espresso shot",
+			Recipe:       "Use a single-shot basket: 18g beans, 25-30s extraction, 25ml yield.",
 			OptionValues: map[string]string{"Size": "Small"},
 			Materials:    []materialUsage{{"Coffee Beans", 0.005}, {"Cup (12oz)", 1}, {"Cup Lid", 1}},
 		},
@@ -119,6 +128,7 @@ func (VariantSeeder) Seed(tx *gorm.DB) error {
 		{
 			ProductName: "Cappuccino", Name: "Cappuccino Small", Price: 22000,
 			Description:  "Small cappuccino",
+			Recipe:       "Single espresso shot topped with 100ml steamed milk, 1cm microfoam.",
 			OptionValues: map[string]string{"Size": "Small"},
 			Materials:    []materialUsage{{"Coffee Beans", 0.005}, {"Milk", 0.10}, {"Cup (12oz)", 1}, {"Cup Lid", 1}},
 		},
@@ -203,6 +213,7 @@ func (VariantSeeder) Seed(tx *gorm.DB) error {
 			Name:        vd.Name,
 			Price:       vd.Price,
 			Description: desc(vd.Description),
+			Recipe:      optionalDesc(vd.Recipe),
 			CreatedAt:   time.Now(),
 		}
 		if err := tx.Table("variants").Create(&variant).Error; err != nil {
