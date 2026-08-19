@@ -10,11 +10,15 @@ import path from 'path';
 // dev keeps '/' so `nx serve order` behaves like any other Vite app.
 const PAGES_BASE = '/gatherloop-pos/order/';
 
-// libs/ui pulls in Tamagui's moti-based animation driver
-// (@tamagui/animations-moti -> moti/author -> react-native-reanimated),
-// which is native-only and has no meaningful web behavior — Tamagui falls
-// back to CSS transitions in the browser regardless. These stubs are
-// shared with Storybook, which hit the exact same import chain first.
+// libs/ui/src/config.ts (the web build of the shared Tamagui config,
+// resolved here since Vite has no Metro-style `.native.ts` fallback) uses
+// @tamagui/animations-css, not the moti/Reanimated driver — the moti
+// driver resolves an animated view's style to an array instead of a merged
+// object, which crashes web's CSSStyleDeclaration. Nothing in the web
+// bundle should reach @tamagui/animations-moti -> moti/author ->
+// react-native-reanimated any more, but these stubs (shared with
+// Storybook, which hit the exact same import chain first) stay as a
+// defensive backstop in case something pulls that chain in again.
 const storybookMocksDir = path.resolve(
   __dirname,
   '../../libs/ui/.storybook/mocks'
