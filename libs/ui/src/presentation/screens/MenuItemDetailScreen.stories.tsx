@@ -36,6 +36,23 @@ const esKopiSusu = {
   createdAt: '2024-03-20T00:00:00.000Z',
 };
 
+// FR-5: a two-option product exercises the combined "Lengkapi pilihan A dan
+// B" message when both groups are unselected.
+const esKopiSusuDenganEs = {
+  ...esKopiSusu,
+  options: [
+    ...esKopiSusu.options,
+    {
+      id: 2,
+      name: 'Es',
+      values: [
+        { id: 3, name: 'Normal' },
+        { id: 4, name: 'Less Ice' },
+      ],
+    },
+  ],
+};
+
 const nasiGoreng = {
   id: 2,
   name: 'Nasi Goreng',
@@ -68,6 +85,8 @@ const meta: Meta<typeof MenuItemDetailScreen> = {
     onNoteChange: () => {
       // Storybook action stand-in
     },
+    missingOptionNames: [],
+    validationMessage: null,
     onAddToCartPress: () => {
       // Storybook action stand-in
     },
@@ -81,19 +100,37 @@ export default meta;
 type Story = StoryObj<typeof MenuItemDetailScreen>;
 
 export const Loading: Story = {
-  args: { variant: { type: 'loading' }, isAddToCartEnabled: false },
+  args: { variant: { type: 'loading' }, ctaState: 'incomplete' },
 };
 
-export const SelectingOptions: Story = {
+// FR-5: options unselected, CTA reads "Tambah ke Keranjang" and is enabled,
+// but the guest hasn't pressed it yet — no error shown.
+export const IncompleteUntouched: Story = {
   args: {
     variant: {
       type: 'ready',
       product: esKopiSusu,
-      isResolvingVariant: false,
       price: null,
       variantErrorMessage: null,
     },
-    isAddToCartEnabled: false,
+    ctaState: 'incomplete',
+    missingOptionNames: ['Ukuran'],
+  },
+};
+
+// FR-5: the guest pressed the CTA while options were incomplete — the
+// missing group's label tints red and the inline message names it.
+export const IncompleteWithError: Story = {
+  args: {
+    variant: {
+      type: 'ready',
+      product: esKopiSusuDenganEs,
+      price: null,
+      variantErrorMessage: null,
+    },
+    ctaState: 'incomplete',
+    missingOptionNames: ['Ukuran', 'Es'],
+    validationMessage: 'Lengkapi pilihan Ukuran dan Es',
   },
 };
 
@@ -102,13 +139,12 @@ export const Ready: Story = {
     variant: {
       type: 'ready',
       product: esKopiSusu,
-      isResolvingVariant: false,
       price: 18000,
       variantErrorMessage: null,
     },
     selectedOptionValueIds: [1],
     amount: 2,
-    isAddToCartEnabled: true,
+    ctaState: 'ready',
   },
 };
 
@@ -117,25 +153,23 @@ export const NoOptions: Story = {
     variant: {
       type: 'ready',
       product: nasiGoreng,
-      isResolvingVariant: false,
       price: 25000,
       variantErrorMessage: null,
     },
-    isAddToCartEnabled: true,
+    ctaState: 'ready',
   },
 };
 
-export const ResolvingVariant: Story = {
+export const Resolving: Story = {
   args: {
     variant: {
       type: 'ready',
       product: esKopiSusu,
-      isResolvingVariant: true,
       price: null,
       variantErrorMessage: null,
     },
     selectedOptionValueIds: [1],
-    isAddToCartEnabled: false,
+    ctaState: 'resolving',
   },
 };
 
@@ -144,15 +178,14 @@ export const VariantError: Story = {
     variant: {
       type: 'ready',
       product: esKopiSusu,
-      isResolvingVariant: false,
       price: null,
       variantErrorMessage: 'Gagal memuat varian',
     },
     selectedOptionValueIds: [1],
-    isAddToCartEnabled: false,
+    ctaState: 'incomplete',
   },
 };
 
 export const Error: Story = {
-  args: { variant: { type: 'error' }, isAddToCartEnabled: false },
+  args: { variant: { type: 'error' }, ctaState: 'incomplete' },
 };

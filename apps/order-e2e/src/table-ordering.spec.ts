@@ -182,15 +182,15 @@ test.describe.serial('Table Ordering', () => {
     await expect(page).toHaveURL(new RegExp(`/products/${product.id}$`));
     await expect(page.getByText(PRODUCT_NAME)).toBeVisible();
 
-    // No option selected yet — the CTA reflects that rather than a price.
+    // No option selected yet — the CTA stays enabled with no price (FR-5).
     await expect(
-      page.getByRole('button', { name: 'Pilih semua opsi' })
+      page.getByRole('button', { name: 'Tambah ke Keranjang', exact: true })
     ).toBeVisible();
 
     await sel.itemDetail.optionValueChip(page, 'Reguler').click();
     await expect(
       page.getByRole('button', {
-        name: `Tambah ke keranjang · ${formatRupiah(REGULAR_PRICE)}`,
+        name: `Tambah ke Keranjang · ${formatRupiah(REGULAR_PRICE)}`,
       })
     ).toBeVisible();
 
@@ -198,7 +198,7 @@ test.describe.serial('Table Ordering', () => {
     await sel.itemDetail.increaseAmountButton(page).click();
     await expect(
       page.getByRole('button', {
-        name: `Tambah ke keranjang · ${formatRupiah(REGULAR_PRICE * 2)}`,
+        name: `Tambah ke Keranjang · ${formatRupiah(REGULAR_PRICE * 2)}`,
       })
     ).toBeVisible();
 
@@ -280,7 +280,7 @@ test.describe.serial('Table Ordering', () => {
     await sel.itemDetail.optionValueChip(page, 'Besar').click();
     await expect(
       page.getByRole('button', {
-        name: `Tambah ke keranjang · ${formatRupiah(LARGE_PRICE)}`,
+        name: `Tambah ke Keranjang · ${formatRupiah(LARGE_PRICE)}`,
       })
     ).toBeVisible();
     await sel.itemDetail.addToCartButton(page).click();
