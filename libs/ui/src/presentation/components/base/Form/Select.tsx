@@ -5,7 +5,7 @@ import {
   SelectTriggerProps as TamaguiSelectTriggerProps,
   YStack,
 } from 'tamagui';
-import { ScrollFadeGradient } from './ScrollFadeGradient';
+import { LinearGradient } from 'tamagui/linear-gradient';
 import { useFieldContext } from './Field';
 import { Sheet } from 'tamagui';
 import { Controller } from 'react-hook-form';
@@ -76,7 +76,7 @@ export const Select = <FieldValue,>({
               <YStack zIndex={10}>
                 <ChevronUp size={20} />
               </YStack>
-              <ScrollFadeGradient
+              <LinearGradient
                 start={[0, 0]}
                 end={[0, 1]}
                 fullscreen
@@ -120,7 +120,7 @@ export const Select = <FieldValue,>({
               <YStack zIndex={10}>
                 <ChevronDown size={20} />
               </YStack>
-              <ScrollFadeGradient
+              <LinearGradient
                 start={[0, 0]}
                 end={[0, 1]}
                 fullscreen
