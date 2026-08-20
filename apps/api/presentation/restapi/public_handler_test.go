@@ -208,10 +208,10 @@ func TestPublicHandler_GetTableByCode(t *testing.T) {
 		expectedStatus int
 	}{
 		{
-			name: "known code resolves to id and label",
+			name: "known code resolves to id, label and floor number",
 			code: "0123456789",
 			setupMock: func(r *mock.MockTableRepository) {
-				r.EXPECT().GetTableByCode(gomock.Any(), "0123456789").Return(domain.Table{Id: 1, Code: "0123456789", Label: "Meja 1"}, nil)
+				r.EXPECT().GetTableByCode(gomock.Any(), "0123456789").Return(domain.Table{Id: 1, Code: "0123456789", Label: "Meja 1", FloorNumber: 2}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -241,6 +241,8 @@ func TestPublicHandler_GetTableByCode(t *testing.T) {
 				var resp apiContract.PublicTableFindByCodeResponse
 				assert.NoError(t, json.NewDecoder(w.Body).Decode(&resp))
 				assert.Equal(t, "Meja 1", resp.Data.Label)
+				assert.Equal(t, int32(2), resp.Data.FloorNumber)
+				assert.NotContains(t, w.Body.String(), "code")
 			}
 		})
 	}

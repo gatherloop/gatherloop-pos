@@ -4305,12 +4305,16 @@ components:
       required:
         - id
         - label
+        - floorNumber
       properties:
         id:
           type: integer
           format: int64
         label:
           type: string
+        floorNumber:
+          type: integer
+          format: int32
     CartItem:
       type: object
       required:
