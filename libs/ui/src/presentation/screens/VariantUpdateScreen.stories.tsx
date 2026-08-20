@@ -12,6 +12,7 @@ const UpdateStory = () => {
       name: mockVariant.name,
       price: mockVariant.price,
       description: mockVariant.description,
+      recipe: mockVariant.recipe,
       materials: [],
       productId: mockProduct.id,
       values: [],

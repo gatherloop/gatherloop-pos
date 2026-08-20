@@ -70,6 +70,7 @@ export class VariantUpdateUsecase extends Usecase<
         name: this.params.variant?.name ?? '',
         price: this.params.variant?.price ?? 0,
         description: this.params.variant?.description ?? '',
+        recipe: this.params.variant?.recipe ?? '',
         values:
           this.params.variant?.values.map((value) => ({
             id: value.id,
@@ -176,6 +177,7 @@ export class VariantUpdateUsecase extends Usecase<
                 materials: variant.materials,
                 productId: variant.product.id,
                 description: variant.description,
+                recipe: variant.recipe,
                 values: variant.values.map((value) => ({
                   id: value.id,
                   optionValueId: value.optionValueId,

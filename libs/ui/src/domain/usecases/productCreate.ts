@@ -59,6 +59,7 @@ export class ProductCreateUsecase extends Usecase<
       name: '',
       imageUrl: '',
       description: '',
+      recipe: '',
       options: [],
       saleType: 'purchase',
       status: 'published',

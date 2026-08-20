@@ -95,23 +95,34 @@ export const ProductFormView = ({
                   research a new product before releasing it for sale.
                 </SizableText>
               </Field>
+              <Field name="description" label="Description" flex={1}>
+                <InputText />
+                <SizableText size="$2" color="$gray10">
+                  One short line shown to customers in the order app.
+                </SizableText>
+              </Field>
             </XStack>
           </Card.Header>
         </Card>
 
         <Tabs
-          defaultValue="description"
+          defaultValue="recipe"
           tabs={[
             {
-              label: 'Description',
-              value: 'description',
+              label: 'Recipe',
+              value: 'recipe',
               content: (
-                <MarkdownEditor
-                  name="description"
-                  defaultMode={
-                    form.getValues('description') === '' ? 'edit' : 'preview'
-                  }
-                />
+                <YStack gap="$3">
+                  <SizableText size="$2" color="$gray10">
+                    Internal preparation steps. Never shown to customers.
+                  </SizableText>
+                  <MarkdownEditor
+                    name="recipe"
+                    defaultMode={
+                      form.getValues('recipe') === '' ? 'edit' : 'preview'
+                    }
+                  />
+                </YStack>
               ),
             },
             {

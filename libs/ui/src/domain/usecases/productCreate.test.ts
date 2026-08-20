@@ -115,4 +115,31 @@ describe('ProductCreateUsecase', () => {
     expect(tester.state.type).toBe('submitSuccess');
     expect(productRepository.products.at(-1)?.status).toBe('draft');
   });
+
+  it('persists recipe when submitting a new product', async () => {
+    const productRepository = new MockProductRepository();
+    const categoryRepository = new MockCategoryRepository();
+    const usecase = new ProductCreateUsecase(productRepository, categoryRepository, {
+      categories: categoryRepository.categories,
+    });
+    const tester = new UsecaseTester<ProductCreateUsecase, ProductCreateState, ProductCreateAction, ProductCreateParams>(usecase);
+
+    tester.dispatch({
+      type: 'SUBMIT',
+      values: {
+        categoryId: 1,
+        name: 'New Product',
+        imageUrl: '',
+        description: '',
+        recipe: 'Steep for 3 minutes',
+        options: [],
+        saleType: 'purchase',
+        status: 'published',
+      },
+    });
+
+    await flushPromises();
+    expect(tester.state.type).toBe('submitSuccess');
+    expect(productRepository.products.at(-1)?.recipe).toBe('Steep for 3 minutes');
+  });
 });

@@ -89,4 +89,32 @@ describe('VariantCreateUsecase', () => {
     const tester = new UsecaseTester<VariantCreateUsecase, VariantCreateState, VariantCreateAction, VariantCreateParams>(usecase);
     expect(tester.state.type).toBe('loaded');
   });
+
+  it('persists recipe when submitting a new variant', async () => {
+    const variantRepository = new MockVariantRepository();
+    const productRepository = new MockProductRepository();
+    const usecase = new VariantCreateUsecase(variantRepository, productRepository, {
+      productId: 1,
+      product: productRepository.products[0],
+    });
+    const tester = new UsecaseTester<VariantCreateUsecase, VariantCreateState, VariantCreateAction, VariantCreateParams>(usecase);
+
+    tester.dispatch({
+      type: 'SUBMIT',
+      values: {
+        productId: 1,
+        name: 'New Variant',
+        price: 50000,
+        description: '',
+        recipe: 'Shake well before serving',
+        materials: [],
+        values: [],
+        pricingTiers: [],
+      },
+    });
+
+    await flushPromises();
+    expect(tester.state.type).toBe('submitSuccess');
+    expect(variantRepository.variants.at(-1)?.recipe).toBe('Shake well before serving');
+  });
 });

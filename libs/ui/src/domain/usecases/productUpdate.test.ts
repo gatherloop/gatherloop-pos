@@ -166,4 +166,61 @@ describe('ProductUpdateUsecase', () => {
     expect(tester.state.type).toBe('submitSuccess');
     expect(productRepository.products.find((p) => p.id === existing.id)?.status).toBe('draft');
   });
+
+  it('pre-fills recipe from the fetched product', () => {
+    const productRepository = new MockProductRepository();
+    const categoryRepository = new MockCategoryRepository();
+    const variantRepository = new MockVariantRepository();
+    const existing = { ...productRepository.products[0], recipe: 'Steep for 3 minutes' };
+    const usecase = new ProductUpdateUsecase(
+      productRepository,
+      categoryRepository,
+      variantRepository,
+      {
+        productId: 1,
+        product: existing,
+        categories: categoryRepository.categories,
+        variants: [],
+      }
+    );
+    const tester = new UsecaseTester<ProductUpdateUsecase, ProductUpdateState, ProductUpdateAction, ProductUpdateParams>(usecase);
+    expect(tester.state.values.recipe).toBe('Steep for 3 minutes');
+  });
+
+  it('persists an updated recipe', async () => {
+    const productRepository = new MockProductRepository();
+    const categoryRepository = new MockCategoryRepository();
+    const variantRepository = new MockVariantRepository();
+    const existing = productRepository.products[0];
+    const usecase = new ProductUpdateUsecase(
+      productRepository,
+      categoryRepository,
+      variantRepository,
+      {
+        productId: existing.id,
+        product: existing,
+        categories: categoryRepository.categories,
+        variants: [],
+      }
+    );
+    const tester = new UsecaseTester<ProductUpdateUsecase, ProductUpdateState, ProductUpdateAction, ProductUpdateParams>(usecase);
+
+    tester.dispatch({
+      type: 'SUBMIT',
+      values: {
+        categoryId: 1,
+        name: existing.name,
+        imageUrl: existing.imageUrl,
+        description: '',
+        recipe: 'Steep for 3 minutes',
+        options: [],
+        saleType: 'purchase',
+        status: 'published',
+      },
+    });
+
+    await flushPromises();
+    expect(tester.state.type).toBe('submitSuccess');
+    expect(productRepository.products.find((p) => p.id === existing.id)?.recipe).toBe('Steep for 3 minutes');
+  });
 });

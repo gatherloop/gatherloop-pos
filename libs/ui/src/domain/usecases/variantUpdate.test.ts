@@ -104,4 +104,49 @@ describe('VariantUpdateUsecase', () => {
     const tester = new UsecaseTester<VariantUpdateUsecase, VariantUpdateState, VariantUpdateAction, VariantUpdateParams>(usecase);
     expect(tester.state.type).toBe('loaded');
   });
+
+  it('pre-fills recipe from the fetched variant', () => {
+    const variantRepository = new MockVariantRepository();
+    const productRepository = new MockProductRepository();
+    const existing = { ...variantRepository.variants[0], recipe: 'Shake well before serving' };
+    const usecase = new VariantUpdateUsecase(variantRepository, productRepository, {
+      variantId: 1,
+      variant: existing,
+      productId: 1,
+      product: productRepository.products[0],
+    });
+    const tester = new UsecaseTester<VariantUpdateUsecase, VariantUpdateState, VariantUpdateAction, VariantUpdateParams>(usecase);
+    expect(tester.state.values.recipe).toBe('Shake well before serving');
+  });
+
+  it('persists an updated recipe', async () => {
+    const variantRepository = new MockVariantRepository();
+    const productRepository = new MockProductRepository();
+    const existing = variantRepository.variants[0];
+    const usecase = new VariantUpdateUsecase(variantRepository, productRepository, {
+      variantId: existing.id,
+      variant: existing,
+      productId: 1,
+      product: productRepository.products[0],
+    });
+    const tester = new UsecaseTester<VariantUpdateUsecase, VariantUpdateState, VariantUpdateAction, VariantUpdateParams>(usecase);
+
+    tester.dispatch({
+      type: 'SUBMIT',
+      values: {
+        productId: 1,
+        name: existing.name,
+        price: existing.price,
+        description: '',
+        recipe: 'Shake well before serving',
+        materials: [],
+        values: [],
+        pricingTiers: [],
+      },
+    });
+
+    await flushPromises();
+    expect(tester.state.type).toBe('submitSuccess');
+    expect(variantRepository.variants.find((v) => v.id === existing.id)?.recipe).toBe('Shake well before serving');
+  });
 });
