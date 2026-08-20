@@ -7,6 +7,13 @@ module.exports = {
   moduleNameMapper: {
     '\\.svg$': '@nx/react-native/plugins/jest/svg-mock',
   },
+  // react-native-config ships ESM with no CJS entry point, so the default
+  // "ignore all of node_modules" behavior leaves its `import` statement
+  // untranspiled — anything pulling in libs/api-contract/src/client.ts
+  // (which imports it) fails to parse without this exception.
+  transformIgnorePatterns: [
+    'node_modules/(?!(react-native|@react-native|react-native-config)/)',
+  ],
   transform: {
     '^.+.(js|ts|tsx)$': [
       'babel-jest',

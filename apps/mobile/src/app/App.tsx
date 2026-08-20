@@ -52,6 +52,8 @@ import {
   ChecklistTemplateUpdate,
   ChecklistSessionList,
   ChecklistSessionDetail,
+  getStoredAuthToken,
+  registerAuthTokenInterceptor,
 } from '@gatherloop-pos/ui';
 import { RootProvider } from '@gatherloop-pos/provider';
 import { NavigationContainer } from '@react-navigation/native';
@@ -59,6 +61,7 @@ import {
   createNativeStackNavigator,
   NativeStackScreenProps,
 } from '@react-navigation/native-stack';
+import { useEffect, useState } from 'react';
 
 export type RootStackParamList = {
   authLogin: undefined;
@@ -117,12 +120,34 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export const App = () => {
+  // Native has no server-rendered guard like the web app's
+  // getServerSideProps cookie check, so on cold start there is nothing
+  // stopping the app from landing straight on the dashboard: check for a
+  // stored session token before picking the first screen, and register the
+  // interceptor that attaches it to every request before any screen can
+  // issue one.
+  const [initialRouteName, setInitialRouteName] = useState<
+    'dashboard' | 'authLogin' | null
+  >(null);
+
+  useEffect(() => {
+    const unregisterAuthTokenInterceptor = registerAuthTokenInterceptor();
+    getStoredAuthToken().then((token) => {
+      setInitialRouteName(token ? 'dashboard' : 'authLogin');
+    });
+    return unregisterAuthTokenInterceptor;
+  }, []);
+
+  if (initialRouteName === null) {
+    return null;
+  }
+
   return (
     <NavigationContainer
       linking={{
         prefixes: ['/'],
         config: {
-          initialRouteName: 'dashboard',
+          initialRouteName,
           screens: {
             authLogin: 'auth/login',
             dashboard: '',
@@ -264,7 +289,7 @@ export const App = () => {
     >
       <RootProvider>
         <Stack.Navigator
-          initialRouteName="dashboard"
+          initialRouteName={initialRouteName}
           screenOptions={{ header: () => null }}
         >
           <Stack.Screen
