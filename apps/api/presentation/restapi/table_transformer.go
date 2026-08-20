@@ -46,11 +46,14 @@ func ToTable(tableRequest apiContract.TableRequest) domain.Table {
 	}
 }
 
-// ToApiPublicTable strips everything but id and label — the only fields a
-// resolved QR code may hand back to a customer (FR-1).
+// ToApiPublicTable strips the table code — the non-guessable, reusable
+// off-premise ordering key that a resolved QR code must never hand back to a
+// customer (D6). The floor number is neither secret nor useful to an
+// attacker; it disambiguates duplicate labels across floors (FR-8).
 func ToApiPublicTable(table domain.Table) apiContract.PublicTable {
 	return apiContract.PublicTable{
-		Id:    table.Id,
-		Label: table.Label,
+		Id:          table.Id,
+		Label:       table.Label,
+		FloorNumber: int32(table.FloorNumber),
 	}
 }

@@ -5,8 +5,8 @@ import {
 } from '../../domain/repositories/publicTable';
 
 const initialTables: Record<string, PublicTable> = {
-  '3F7H9K2M5P': { id: 1, label: 'Meja 01' },
-  '8A2C4E6G8J': { id: 2, label: 'Meja 02' },
+  '3F7H9K2M5P': { id: 1, label: 'Meja 01', floorNumber: 1 },
+  '8A2C4E6G8J': { id: 2, label: 'Meja 02', floorNumber: 2 },
 };
 
 export class MockPublicTableRepository implements PublicTableRepository {

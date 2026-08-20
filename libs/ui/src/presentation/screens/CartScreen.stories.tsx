@@ -42,7 +42,7 @@ const cart = {
   id: 1,
   sessionId: 'session-1',
   tableId: 1,
-  table: { id: 1, label: 'Meja 1' },
+  table: { id: 1, label: 'Meja 1', floorNumber: 1 },
   status: 'active' as const,
   items: [
     {

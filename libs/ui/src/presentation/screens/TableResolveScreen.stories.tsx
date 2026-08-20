@@ -19,9 +19,38 @@ export const Resolving: Story = {
   },
 };
 
-export const Resolved: Story = {
+export const ResolvedFloor1: Story = {
   args: {
-    variant: { type: 'resolved', table: { id: 1, label: 'Meja 01' } },
+    variant: {
+      type: 'resolved',
+      table: { id: 1, label: 'Meja 01', floorNumber: 1 },
+    },
+    children: <Paragraph>Menu akan segera hadir di sini.</Paragraph>,
+  },
+};
+
+export const ResolvedFloor2: Story = {
+  args: {
+    variant: {
+      type: 'resolved',
+      table: { id: 2, label: 'Meja 03', floorNumber: 2 },
+    },
+    children: <Paragraph>Menu akan segera hadir di sini.</Paragraph>,
+  },
+};
+
+// A long label proves the muted floor text wraps to a second line rather
+// than pushing off-screen (FR-8).
+export const ResolvedLongLabel: Story = {
+  args: {
+    variant: {
+      type: 'resolved',
+      table: {
+        id: 3,
+        label: 'Meja VIP Lantai Atas Dekat Jendela',
+        floorNumber: 2,
+      },
+    },
     children: <Paragraph>Menu akan segera hadir di sini.</Paragraph>,
   },
 };
