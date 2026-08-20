@@ -71,8 +71,9 @@ export const TableResolveScreen = ({
     .with({ type: 'resolved' }, ({ table }) => (
       <OrderLayout
         header={
-          <XStack padding="$4" backgroundColor="$color2">
+          <XStack padding="$4" backgroundColor="$color2" flexWrap="wrap">
             <Text fontWeight="bold">{table.label}</Text>
+            <Text color="$color10"> · Lantai {table.floorNumber}</Text>
           </XStack>
         }
         footer={footer}

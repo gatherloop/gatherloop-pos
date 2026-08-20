@@ -1,3 +1,4 @@
+import { useState } from 'react';
 // Deep imports, not the `domain` barrel (D20): that barrel also re-exports
 // every POS usecase, which drags unrelated weight into the order bundle.
 import { CartAction, CartState } from '../../domain/usecases/cart';
@@ -29,6 +30,8 @@ function toScreenVariant(state: CartState): CartScreenProps['variant'] {
 // Add-to-cart CTA and this screen all read and mutate the same machine.
 export const CartHandler = ({ cart, tableCode }: CartHandlerProps) => {
   const navigation = useNavigation();
+  const [isClearConfirmationOpen, setIsClearConfirmationOpen] =
+    useState(false);
 
   const isMutating =
     cart.state.type === 'adding' ||
@@ -41,6 +44,7 @@ export const CartHandler = ({ cart, tableCode }: CartHandlerProps) => {
       variant={toScreenVariant(cart.state)}
       isMutating={isMutating}
       errorMessage={cart.state.errorMessage}
+      isClearConfirmationOpen={isClearConfirmationOpen}
       onAmountChange={(cartItemId, amount) => {
         const item = cart.state.cart?.items.find(
           (existing) => existing.id === cartItemId
@@ -56,7 +60,16 @@ export const CartHandler = ({ cart, tableCode }: CartHandlerProps) => {
       onRemovePress={(cartItemId) =>
         cart.dispatch({ type: 'REMOVE_ITEM', cartItemId })
       }
-      onClearPress={() => cart.dispatch({ type: 'CLEAR' })}
+      onEditPress={(cartItemId) =>
+        navigation.push(`/t/${tableCode}/cart/items/${cartItemId}`)
+      }
+      onClearPress={() => setIsClearConfirmationOpen(true)}
+      onClearConfirm={() => {
+        cart.dispatch({ type: 'CLEAR' });
+        setIsClearConfirmationOpen(false);
+      }}
+      onClearCancel={() => setIsClearConfirmationOpen(false)}
+      onClearConfirmationOpenChange={setIsClearConfirmationOpen}
       onAddMoreItemsPress={() => navigation.push(`/t/${tableCode}`)}
       onCheckoutPress={() => navigation.push(`/t/${tableCode}/checkout`)}
       onRetryButtonPress={() => cart.dispatch({ type: 'FETCH' })}

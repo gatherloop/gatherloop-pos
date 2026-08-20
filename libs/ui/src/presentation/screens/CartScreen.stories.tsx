@@ -42,7 +42,7 @@ const cart = {
   id: 1,
   sessionId: 'session-1',
   tableId: 1,
-  table: { id: 1, label: 'Meja 1' },
+  table: { id: 1, label: 'Meja 1', floorNumber: 1 },
   status: 'active' as const,
   items: [
     {
@@ -68,13 +68,26 @@ const meta: Meta<typeof CartScreen> = {
   args: {
     isMutating: false,
     errorMessage: null,
+    isClearConfirmationOpen: false,
     onAmountChange: () => {
       // Storybook action stand-in
     },
     onRemovePress: () => {
       // Storybook action stand-in
     },
+    onEditPress: () => {
+      // Storybook action stand-in
+    },
     onClearPress: () => {
+      // Storybook action stand-in
+    },
+    onClearConfirm: () => {
+      // Storybook action stand-in
+    },
+    onClearCancel: () => {
+      // Storybook action stand-in
+    },
+    onClearConfirmationOpenChange: () => {
       // Storybook action stand-in
     },
     onAddMoreItemsPress: () => {
@@ -106,6 +119,13 @@ export const Loaded: Story = {
 
 export const Mutating: Story = {
   args: { variant: { type: 'loaded', cart }, isMutating: true },
+};
+
+export const ClearConfirmationOpen: Story = {
+  args: {
+    variant: { type: 'loaded', cart },
+    isClearConfirmationOpen: true,
+  },
 };
 
 export const MutationError: Story = {

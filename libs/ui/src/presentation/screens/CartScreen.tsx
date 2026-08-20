@@ -5,6 +5,7 @@ import { match } from 'ts-pattern';
 // in solito/next — dead weight a Vite build has no business resolving.
 import { Cart } from '../../domain/entities/Cart';
 import { formatRupiah } from '../../utils/currency';
+import { ConfirmationAlert } from '../components/base/ConfirmationAlert/ConfirmationAlert';
 import { EmptyView } from '../components/base/EmptyView';
 import { ErrorView } from '../components/base/ErrorView';
 import { LoadingView } from '../components/base/LoadingView';
@@ -20,9 +21,14 @@ export type CartScreenProps = {
   variant: CartScreenVariant;
   isMutating: boolean;
   errorMessage: string | null;
+  isClearConfirmationOpen: boolean;
   onAmountChange: (cartItemId: number, amount: number) => void;
   onRemovePress: (cartItemId: number) => void;
+  onEditPress: (cartItemId: number) => void;
   onClearPress: () => void;
+  onClearConfirm: () => void;
+  onClearCancel: () => void;
+  onClearConfirmationOpenChange: (isOpen: boolean) => void;
   onAddMoreItemsPress: () => void;
   onCheckoutPress: () => void;
   onRetryButtonPress: () => void;
@@ -37,9 +43,14 @@ export const CartScreen = ({
   variant,
   isMutating,
   errorMessage,
+  isClearConfirmationOpen,
   onAmountChange,
   onRemovePress,
+  onEditPress,
   onClearPress,
+  onClearConfirm,
+  onClearCancel,
+  onClearConfirmationOpenChange,
   onAddMoreItemsPress,
   onCheckoutPress,
   onRetryButtonPress,
@@ -67,6 +78,23 @@ export const CartScreen = ({
         ))
         .with({ type: 'loaded' }, ({ cart }) => (
           <YStack gap="$4" paddingBottom="$6">
+            <XStack justifyContent="space-between" alignItems="center">
+              <Text fontWeight="bold" fontSize="$6">
+                Keranjang
+              </Text>
+              <Button
+                size="$2"
+                chromeless
+                theme="red"
+                color="$red10"
+                disabled={isMutating}
+                onPress={onClearPress}
+                accessibilityLabel="Kosongkan keranjang"
+              >
+                Kosongkan
+              </Button>
+            </XStack>
+
             {errorMessage ? (
               <Text color="$red10">{errorMessage}</Text>
             ) : null}
@@ -79,6 +107,7 @@ export const CartScreen = ({
                   disabled={isMutating}
                   onAmountChange={(amount) => onAmountChange(item.id, amount)}
                   onRemovePress={() => onRemovePress(item.id)}
+                  onEditPress={() => onEditPress(item.id)}
                 />
               ))}
             </YStack>
@@ -101,16 +130,6 @@ export const CartScreen = ({
                 <Text fontWeight="bold">{formatRupiah(cart.total)}</Text>
               </XStack>
             </YStack>
-
-            <Button
-              variant="outlined"
-              theme="red"
-              minHeight={44}
-              disabled={isMutating}
-              onPress={onClearPress}
-            >
-              Kosongkan keranjang
-            </Button>
 
             <YStack
               // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -138,6 +157,17 @@ export const CartScreen = ({
           </YStack>
         ))
         .exhaustive()}
+
+      <ConfirmationAlert
+        title="Kosongkan keranjang?"
+        description="Semua item di keranjang akan dihapus."
+        confirmText="Kosongkan"
+        cancelText="Batal"
+        isOpen={isClearConfirmationOpen}
+        onOpenChange={onClearConfirmationOpenChange}
+        onConfirm={onClearConfirm}
+        onCancel={onClearCancel}
+      />
     </YStack>
   );
 };

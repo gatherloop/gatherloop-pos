@@ -10,22 +10,35 @@ export type AmountStepperProps = {
   onChange: (amount: number) => void;
   min?: number;
   disabled?: boolean;
+  // FR-7 in docs/prd-order-app-ux-improvements.md: 'sm' is the cart row's
+  // compact 32x32 button; 'md' (default) stays the item detail sheet's
+  // original 44x44. One component, no `CartAmountStepper` fork (Core Rule 4).
+  size?: 'sm' | 'md';
 };
+
+// 32px is the accepted floor for a secondary control; hitSlop pads the
+// touch target back up to the 44px ideal without growing the visible button.
+const SM_HIT_SLOP = { top: 6, bottom: 6, left: 6, right: 6 };
 
 export const AmountStepper = ({
   amount,
   onChange,
   min = 1,
   disabled = false,
+  size = 'md',
 }: AmountStepperProps) => {
+  const buttonSize = size === 'sm' ? 32 : 44;
+
   return (
-    <XStack gap="$3" alignItems="center">
+    <XStack gap={size === 'sm' ? '$2' : '$3'} alignItems="center">
       <Button
         icon={Minus}
         variant="outlined"
         circular
-        width={44}
-        height={44}
+        size={size === 'sm' ? '$2' : undefined}
+        width={buttonSize}
+        height={buttonSize}
+        hitSlop={size === 'sm' ? SM_HIT_SLOP : undefined}
         disabled={disabled || amount <= min}
         onPress={() => onChange(amount - 1)}
         accessibilityLabel="Kurangi jumlah"
@@ -37,8 +50,10 @@ export const AmountStepper = ({
         icon={Plus}
         variant="outlined"
         circular
-        width={44}
-        height={44}
+        size={size === 'sm' ? '$2' : undefined}
+        width={buttonSize}
+        height={buttonSize}
+        hitSlop={size === 'sm' ? SM_HIT_SLOP : undefined}
         disabled={disabled}
         onPress={() => onChange(amount + 1)}
         accessibilityLabel="Tambah jumlah"

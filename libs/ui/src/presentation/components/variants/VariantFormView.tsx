@@ -21,6 +21,7 @@ import {
   H4,
   Paragraph,
   ScrollView,
+  SizableText,
   Spinner,
   XStack,
   YStack,
@@ -86,6 +87,12 @@ export const VariantFormView = ({
                   <InputNumber min={0} />
                 </Field>
               )}
+              <Field name="description" label="Description" flex={1}>
+                <InputText />
+                <SizableText size="$2" color="$gray10">
+                  One short line shown to customers in the order app.
+                </SizableText>
+              </Field>
             </XStack>
           </Card.Header>
         </Card>
@@ -343,9 +350,16 @@ export const VariantFormView = ({
               ),
             },
             {
-              value: 'description',
-              label: 'Description',
-              content: <MarkdownEditor name="description" defaultMode="edit" />,
+              value: 'recipe',
+              label: 'Recipe',
+              content: (
+                <YStack gap="$3">
+                  <SizableText size="$2" color="$gray10">
+                    Internal preparation steps. Never shown to customers.
+                  </SizableText>
+                  <MarkdownEditor name="recipe" defaultMode="edit" />
+                </YStack>
+              ),
             },
           ]}
           defaultValue={isRental ? 'pricing_tiers' : 'materials'}

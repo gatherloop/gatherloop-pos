@@ -2,7 +2,8 @@
  * Phase 12: Table Ordering Happy Path
  *
  * Scan -> browse -> filter -> open item -> choose options -> add to cart ->
- * cart persists across reload -> edit quantity -> remove -> checkout CTA,
+ * cart persists across reload -> edit quantity -> edit a line's amount/note
+ * via the edit modal (FR-9) -> remove -> checkout CTA,
  * plus a deep-link test proving the `dist/order/404.html` byte-copy (D19)
  * lets a hard-navigated `/order/t/{code}/products/{productId}` link render
  * correctly on a static host with no server-side routing.
@@ -182,15 +183,15 @@ test.describe.serial('Table Ordering', () => {
     await expect(page).toHaveURL(new RegExp(`/products/${product.id}$`));
     await expect(page.getByText(PRODUCT_NAME)).toBeVisible();
 
-    // No option selected yet — the CTA reflects that rather than a price.
+    // No option selected yet — the CTA stays enabled with no price (FR-5).
     await expect(
-      page.getByRole('button', { name: 'Pilih semua opsi' })
+      page.getByRole('button', { name: 'Tambah ke Keranjang', exact: true })
     ).toBeVisible();
 
     await sel.itemDetail.optionValueChip(page, 'Reguler').click();
     await expect(
       page.getByRole('button', {
-        name: `Tambah ke keranjang · ${formatRupiah(REGULAR_PRICE)}`,
+        name: `Tambah ke Keranjang · ${formatRupiah(REGULAR_PRICE)}`,
       })
     ).toBeVisible();
 
@@ -198,7 +199,7 @@ test.describe.serial('Table Ordering', () => {
     await sel.itemDetail.increaseAmountButton(page).click();
     await expect(
       page.getByRole('button', {
-        name: `Tambah ke keranjang · ${formatRupiah(REGULAR_PRICE * 2)}`,
+        name: `Tambah ke Keranjang · ${formatRupiah(REGULAR_PRICE * 2)}`,
       })
     ).toBeVisible();
 
@@ -254,6 +255,34 @@ test.describe.serial('Table Ordering', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // 6b. Cart line edit modal: change amount and note, save (FR-9)
+  // ---------------------------------------------------------------------------
+
+  test('editing a cart line\'s amount and note updates the line and the total', async ({
+    page,
+  }) => {
+    const EDITED_NOTE = 'extra pahit';
+
+    await page.goto(`t/${table.code}/cart`);
+    await expect(sel.cartScreen.lineItemName(page, PRODUCT_NAME)).toBeVisible();
+
+    await sel.cartScreen.editButton(page, PRODUCT_NAME).click();
+    await expect(page).toHaveURL(new RegExp(`/t/${table.code}/cart/items/\\d+$`));
+
+    await sel.itemDetail.increaseAmountButton(page).click();
+    await sel.itemDetail.noteInput(page).fill(EDITED_NOTE);
+    await sel.cartItemEdit.saveButton(page).click();
+
+    // Modal closes back to the cart; the edited note and the recomputed
+    // total (amount 3 -> 4, from test 6) are both visible.
+    await expect(page).toHaveURL(new RegExp(`/t/${table.code}/cart$`));
+    await expect(sel.cartScreen.lineItemNote(page, EDITED_NOTE)).toBeVisible();
+    await expect(
+      sel.cartScreen.total(page, formatRupiah(REGULAR_PRICE * 4))
+    ).toBeVisible({ timeout: 10_000 });
+  });
+
+  // ---------------------------------------------------------------------------
   // 7. Remove the line item, cart goes empty
   // ---------------------------------------------------------------------------
 
@@ -280,7 +309,7 @@ test.describe.serial('Table Ordering', () => {
     await sel.itemDetail.optionValueChip(page, 'Besar').click();
     await expect(
       page.getByRole('button', {
-        name: `Tambah ke keranjang · ${formatRupiah(LARGE_PRICE)}`,
+        name: `Tambah ke Keranjang · ${formatRupiah(LARGE_PRICE)}`,
       })
     ).toBeVisible();
     await sel.itemDetail.addToCartButton(page).click();

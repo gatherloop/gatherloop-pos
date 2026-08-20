@@ -6,6 +6,8 @@ import (
 	"apps/api/presentation/restapi"
 	"bytes"
 	"context"
+	"encoding/json"
+	apiContract "libs/api-contract"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -31,6 +33,7 @@ func TestCartHandler_GetCurrentCart(t *testing.T) {
 		name           string
 		setupMock      func(r *mock.MockCartRepository)
 		expectedStatus int
+		assertBody     func(t *testing.T, body string)
 	}{
 		{
 			name: "success",
@@ -38,6 +41,22 @@ func TestCartHandler_GetCurrentCart(t *testing.T) {
 				r.EXPECT().GetActiveCartBySessionId(gomock.Any(), testSessionId).Return(domain.Cart{Id: 1, SessionId: testSessionId}, nil)
 			},
 			expectedStatus: http.StatusOK,
+		},
+		{
+			name: "embedded table carries its floor number",
+			setupMock: func(r *mock.MockCartRepository) {
+				r.EXPECT().GetActiveCartBySessionId(gomock.Any(), testSessionId).Return(domain.Cart{
+					Id: 1, SessionId: testSessionId,
+					Table: &domain.Table{Id: 5, Label: "Meja 1", FloorNumber: 2},
+				}, nil)
+			},
+			expectedStatus: http.StatusOK,
+			assertBody: func(t *testing.T, body string) {
+				var resp apiContract.CartResponse
+				assert.NoError(t, json.NewDecoder(bytes.NewBufferString(body)).Decode(&resp))
+				assert.NotNil(t, resp.Data.Table)
+				assert.Equal(t, int32(2), resp.Data.Table.FloorNumber)
+			},
 		},
 		{
 			name: "no cart yet still returns 200 with an empty cart",
@@ -72,6 +91,9 @@ func TestCartHandler_GetCurrentCart(t *testing.T) {
 			handler.GetCurrentCart(w, req)
 
 			assert.Equal(t, tt.expectedStatus, w.Code)
+			if tt.assertBody != nil {
+				tt.assertBody(t, w.Body.String())
+			}
 		})
 	}
 }

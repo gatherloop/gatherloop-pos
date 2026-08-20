@@ -54,7 +54,7 @@ export const itemDetail = {
   increaseAmountButton: (page: Page) => page.getByLabel('Tambah jumlah'),
   decreaseAmountButton: (page: Page) => page.getByLabel('Kurangi jumlah'),
   addToCartButton: (page: Page) =>
-    page.getByRole('button', { name: /^Tambah ke keranjang/ }),
+    page.getByRole('button', { name: /^Tambah ke Keranjang/ }),
   closeButton: (page: Page) => page.getByLabel('Tutup'),
 };
 
@@ -77,6 +77,8 @@ export const cartScreen = {
     page.getByText(productName, { exact: true }),
   lineItemNote: (page: Page, note: string) =>
     page.getByText(`Catatan: ${note}`),
+  editButton: (page: Page, productName: string) =>
+    page.getByLabel(`Ubah ${productName}`),
   removeButton: (page: Page, productName: string) =>
     page.getByLabel(`Hapus ${productName} dari keranjang`),
   addMoreItemsButton: (page: Page) =>
@@ -87,6 +89,14 @@ export const cartScreen = {
     page.getByRole('button', { name: /^Checkout/ }),
   total: (page: Page, formattedTotal: string) =>
     page.getByText(formattedTotal, { exact: true }),
+};
+
+// ---------------------------------------------------------------------------
+// Cart line edit modal (CartItemEditScreen.tsx, /t/{code}/cart/items/{id})
+// ---------------------------------------------------------------------------
+
+export const cartItemEdit = {
+  saveButton: (page: Page) => page.getByRole('button', { name: 'Simpan' }),
 };
 
 // ---------------------------------------------------------------------------

@@ -59,6 +59,29 @@ describe('TableResolveHandler', () => {
     expect(screen.getByText('Menu placeholder')).toBeTruthy();
   });
 
+  it("renders the table's floor number next to the label", async () => {
+    const props = createProps({ code: '3F7H9K2M5P' });
+    render(<TableResolveHandler {...props} />);
+
+    await act(async () => {
+      await flushPromises();
+    });
+
+    expect(screen.getByText(/Lantai 1/)).toBeTruthy();
+  });
+
+  it('shows a different floor for a table on floor 2', async () => {
+    const props = createProps({ code: '8A2C4E6G8J' });
+    render(<TableResolveHandler {...props} />);
+
+    await act(async () => {
+      await flushPromises();
+    });
+
+    expect(screen.getByText('Meja 02')).toBeTruthy();
+    expect(screen.getByText(/Lantai 2/)).toBeTruthy();
+  });
+
   it('persists the table code on the session once resolved', async () => {
     const props = createProps({ code: '3F7H9K2M5P' });
     render(<TableResolveHandler {...props} />);

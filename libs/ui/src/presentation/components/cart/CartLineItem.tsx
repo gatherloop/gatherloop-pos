@@ -1,4 +1,4 @@
-import { Trash2 } from '@tamagui/lucide-icons';
+import { Pencil, Trash2 } from '@tamagui/lucide-icons';
 import { Button, Text, XStack, YStack } from 'tamagui';
 // Deep imports, not the `domain`/`components/base` barrels (D20): those
 // barrels also re-export every POS usecase and Navbar/Sidebar, which pull
@@ -9,13 +9,20 @@ import { AmountStepper } from '../menu/AmountStepper';
 import { MenuItemThumbnail } from '../menu/MenuItemThumbnail';
 
 // FR-7 in docs/prd-table-ordering.md: one line in the cart screen. Option
-// values and note are read-only here — re-picking options or editing a note
-// is an item-detail concern (FR-6); this line only ever changes quantity or
-// disappears via `onRemovePress`.
+// values are read-only here — re-picking options is an item-detail concern.
+// FR-9 in docs/prd-order-app-ux-improvements.md gives the note and amount an
+// edit path of their own (`onEditPress`), so this line still only ever
+// changes quantity inline, opens the edit modal, or disappears via
+// `onRemovePress`.
+//
+// FR-7 in docs/prd-order-app-ux-improvements.md: the stepper and delete
+// button are compacted to 32x32 here so several stacked rows don't crowd out
+// the product name/options — hitSlop keeps the touch target at 44px.
 export type CartLineItemProps = {
   item: CartItem;
   onAmountChange: (amount: number) => void;
   onRemovePress: () => void;
+  onEditPress: () => void;
   disabled?: boolean;
 };
 
@@ -23,11 +30,14 @@ export const CartLineItem = ({
   item,
   onAmountChange,
   onRemovePress,
+  onEditPress,
   disabled = false,
 }: CartLineItemProps) => {
   const optionValueNames = item.variant.values
     .map((value) => value.optionValue.name)
     .join(', ');
+
+  const hitSlop = { top: 6, bottom: 6, left: 6, right: 6 };
 
   return (
     <XStack gap="$3" alignItems="flex-start">
@@ -66,21 +76,41 @@ export const CartLineItem = ({
             amount={item.amount}
             onChange={onAmountChange}
             disabled={disabled}
+            size="sm"
           />
           <Text fontWeight="bold">{formatRupiah(item.subtotal)}</Text>
         </XStack>
       </YStack>
 
-      <Button
-        icon={Trash2}
-        variant="outlined"
-        circular
-        width={44}
-        height={44}
-        disabled={disabled}
-        onPress={onRemovePress}
-        accessibilityLabel={`Hapus ${item.variant.product.name} dari keranjang`}
-      />
+      <XStack gap="$2">
+        <Button
+          icon={Pencil}
+          variant="outlined"
+          circular
+          size="$2"
+          width={32}
+          height={32}
+          hitSlop={hitSlop}
+          disabled={disabled}
+          onPress={onEditPress}
+          accessibilityLabel={`Ubah ${item.variant.product.name}`}
+        />
+
+        <Button
+          icon={Trash2}
+          variant="outlined"
+          theme="red"
+          color="$red8"
+          circular
+          size="$2"
+          width={32}
+          height={32}
+          hitSlop={hitSlop}
+          disabled={disabled}
+          onPress={onRemovePress}
+          accessibilityLabel={`Hapus ${item.variant.product.name} dari keranjang`}
+        />
+      </XStack>
     </XStack>
   );
 };

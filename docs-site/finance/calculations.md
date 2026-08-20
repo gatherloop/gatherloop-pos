@@ -6,7 +6,7 @@ A calculation is a physical cash count for one [wallet](/finance/wallets-transfe
 
 A calculation can be saved and revisited while a count is still in progress, but once it's marked **Complete**, it locks — it can no longer be edited or deleted, and becomes a permanent record of that count, timestamped alongside every other calculation ever run against that wallet.
 
-> This page is unrelated to per-item food cost or margin — that's calculated live on each [product variant](/catalog/variants) instead, right where its recipe and price are set.
+> This page is unrelated to per-item food cost or margin — that's calculated live on each [product variant](/catalog/variants) instead, right where its bill of materials and price are set.
 
 ## Why it matters
 

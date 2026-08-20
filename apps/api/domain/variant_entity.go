@@ -34,6 +34,7 @@ type Variant struct {
 	Name          string
 	Price         float32
 	Description   *string
+	Recipe        *string
 	Materials     []VariantMaterial
 	DeletedAt     *time.Time
 	CreatedAt     time.Time

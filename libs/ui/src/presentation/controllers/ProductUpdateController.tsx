@@ -25,6 +25,7 @@ export const useProductUpdateController = (usecase: ProductUpdateUsecase) => {
         status: z.string().min(1),
         imageUrl: z.string().min(1).url(),
         description: z.string(),
+        recipe: z.string(),
       }),
       {},
       { raw: true }
