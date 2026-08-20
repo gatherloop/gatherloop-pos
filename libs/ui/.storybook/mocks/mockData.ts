@@ -120,6 +120,8 @@ export const mockProduct: Product = {
   id: 1,
   name: 'Iced Coffee Latte',
   description: 'Refreshing iced coffee with fresh milk',
+  recipe:
+    '1. Pull a double shot of espresso.\n2. Fill glass with ice.\n3. Pour espresso over ice.\n4. Top with fresh milk, stir gently.',
   category: mockCategory,
   imageUrl: 'https://placehold.jp/120x120.png',
   createdAt: '2024-01-15T08:00:00.000Z',
@@ -187,6 +189,8 @@ export const mockVariant: Variant = {
   name: 'Iced Coffee Latte - Iced Regular',
   price: 35000,
   description: 'Iced version, regular size',
+  recipe:
+    '- Use regular ice, not crushed.\n- Standard 250ml cup.\n- No extra syrup unless requested.',
   materials: [
     {
       id: 1,

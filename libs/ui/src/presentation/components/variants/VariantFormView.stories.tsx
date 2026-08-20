@@ -11,6 +11,7 @@ const defaultValues: VariantForm = {
   name: '',
   price: 0,
   description: '',
+  recipe: '',
   materials: [],
   productId: 1,
   values: [],
@@ -45,6 +46,8 @@ const PopulatedStory = () => {
       name: 'Iced Coffee Latte - Iced Regular',
       price: 35000,
       description: 'Iced version, regular size',
+      recipe:
+        '- Use regular ice, not crushed.\n- Standard 250ml cup.\n- No extra syrup unless requested.',
       materials: [{ materialId: 1, amount: 0.015, material: mockMaterial }],
       productId: 1,
       values: [{ optionValueId: 1 }],

@@ -8,6 +8,7 @@ export type Product = {
   id: number;
   name: string;
   description?: string;
+  recipe?: string;
   category: Category;
   imageUrl: string;
   createdAt: string;
@@ -30,6 +31,7 @@ export type OptionValue = {
 export type ProductForm = {
   name: string;
   description?: string;
+  recipe?: string;
   categoryId: number;
   imageUrl: string;
   options: {

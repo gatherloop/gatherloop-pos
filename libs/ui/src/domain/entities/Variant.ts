@@ -11,6 +11,7 @@ export type Variant = {
   name: string;
   price: number;
   description?: string;
+  recipe?: string;
   materials: {
     id: number;
     materialId: number;
@@ -37,6 +38,7 @@ export type VariantForm = {
   name: string;
   price: number;
   description?: string;
+  recipe?: string;
   materials: {
     id?: number;
     materialId: number;

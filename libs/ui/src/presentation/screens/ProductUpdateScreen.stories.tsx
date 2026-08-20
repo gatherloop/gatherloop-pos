@@ -13,6 +13,8 @@ const UpdateStory = () => {
     defaultValues: {
       name: 'Iced Coffee Latte',
       description: 'Refreshing iced coffee with fresh milk',
+      recipe:
+        '1. Pull a double shot of espresso.\n2. Fill glass with ice.\n3. Pour espresso over ice.\n4. Top with fresh milk, stir gently.',
       categoryId: 1,
       imageUrl: 'https://placehold.jp/120x120.png',
       options: [{ name: 'Temperature', values: [{ name: 'Iced' }, { name: 'Hot' }] }],

@@ -15,6 +15,7 @@ const defaultCategoryOptions = [
 const defaultValues: ProductForm = {
   name: '',
   description: '',
+  recipe: '',
   categoryId: 1,
   imageUrl: '',
   options: [],
@@ -46,6 +47,8 @@ const PopulatedStory = () => {
     defaultValues: {
       name: 'Iced Coffee Latte',
       description: 'Refreshing iced coffee with fresh milk',
+      recipe:
+        '1. Pull a double shot of espresso.\n2. Fill glass with ice.\n3. Pour espresso over ice.\n4. Top with fresh milk, stir gently.',
       categoryId: 1,
       imageUrl: 'https://placehold.jp/120x120.png',
       saleType: 'purchase',
@@ -67,6 +70,49 @@ const PopulatedStory = () => {
       variant={{ type: 'loaded' }}
       form={form}
       variants={mockVariants}
+      onSubmit={fn()}
+      categorySelectOptions={defaultCategoryOptions}
+      isSubmitDisabled={false}
+      onRetryButtonPress={fn()}
+      onVariantCreatePress={fn()}
+      onVariantEditMenuPress={fn()}
+      onVariantDeleteMenuPress={fn()}
+      onVariantPress={fn()}
+    />
+  );
+};
+
+const LongRecipeStory = () => {
+  const form = useForm<ProductForm>({
+    defaultValues: {
+      name: 'Signature Cold Brew',
+      description: 'Smooth 18-hour steeped cold brew',
+      recipe: [
+        '## Preparation',
+        '',
+        '1. Coarse-grind 100g of house blend beans.',
+        '2. Steep in 1L filtered water at room temperature for 18 hours.',
+        '3. Strain through a paper filter, twice.',
+        '4. Store concentrate refrigerated, use within 5 days.',
+        '',
+        '## Service',
+        '',
+        '- Pour 120ml concentrate over ice.',
+        '- Top with 90ml filtered water.',
+        '- **Never** dilute with milk unless the guest asks.',
+      ].join('\n'),
+      categoryId: 1,
+      imageUrl: 'https://placehold.jp/120x120.png',
+      saleType: 'purchase',
+      status: 'published',
+      options: [],
+    },
+  });
+  return (
+    <ProductFormView
+      variant={{ type: 'loaded' }}
+      form={form}
+      variants={[]}
       onSubmit={fn()}
       categorySelectOptions={defaultCategoryOptions}
       isSubmitDisabled={false}
@@ -108,6 +154,10 @@ export const Loaded: Story = {
 
 export const Populated: Story = {
   render: () => <PopulatedStory />,
+};
+
+export const LongRecipe: Story = {
+  render: () => <LongRecipeStory />,
 };
 
 const LoadingStory = () => {

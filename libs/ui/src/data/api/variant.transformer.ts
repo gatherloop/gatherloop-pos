@@ -16,6 +16,7 @@ export function toVariant(variant: ApiVariant): Variant {
       amount,
     })),
     description: variant.description ?? '',
+    recipe: variant.recipe ?? '',
     product: {
       category: {
         createdAt: variant.product.category.createdAt,
@@ -27,6 +28,7 @@ export function toVariant(variant: ApiVariant): Variant {
       id: variant.product.id,
       name: variant.product.name,
       description: variant.product.description ?? '',
+      recipe: variant.product.recipe ?? '',
       options: variant.product.options,
       imageUrl: variant.product.imageUrl,
       saleType: variant.product.saleType,
@@ -59,6 +61,7 @@ export function toApiVariant(form: VariantForm) {
       materialId,
     })),
     description: form.description,
+    recipe: form.recipe,
     values: form.values.map(({ id, optionValueId }) => ({
       id,
       optionValueId,

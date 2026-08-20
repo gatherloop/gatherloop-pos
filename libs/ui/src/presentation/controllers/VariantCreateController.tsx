@@ -31,6 +31,7 @@ export const useVariantCreateController = (usecase: VariantCreateUsecase) => {
         productId: z.number(),
         name: z.string().min(1),
         description: z.string(),
+        recipe: z.string(),
         materials: z.array(
           z.lazy(() => z.object({ materialId: z.number(), amount: z.number() }))
         ),
