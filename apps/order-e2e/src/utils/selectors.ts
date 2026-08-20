@@ -54,7 +54,7 @@ export const itemDetail = {
   increaseAmountButton: (page: Page) => page.getByLabel('Tambah jumlah'),
   decreaseAmountButton: (page: Page) => page.getByLabel('Kurangi jumlah'),
   addToCartButton: (page: Page) =>
-    page.getByRole('button', { name: /^Tambah ke keranjang/ }),
+    page.getByRole('button', { name: /^Tambah ke Keranjang/ }),
   closeButton: (page: Page) => page.getByLabel('Tutup'),
 };
 

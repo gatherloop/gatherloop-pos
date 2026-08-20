@@ -45,7 +45,7 @@ describe('MenuItemDetailHandler', () => {
     });
   });
 
-  it('shows option chips once loaded, with the CTA disabled until every option has a value', async () => {
+  it('shows option chips once loaded, with the CTA enabled but reading Tambah ke Keranjang until every option has a value', async () => {
     renderHandler();
 
     await act(async () => {
@@ -57,9 +57,43 @@ describe('MenuItemDetailHandler', () => {
     expect(screen.getByText('Large')).toBeTruthy();
     expect(
       (screen.getByRole('button', {
-        name: 'Pilih semua opsi',
+        name: 'Tambah ke Keranjang',
       }) as HTMLButtonElement).disabled
-    ).toBe(true);
+    ).toBe(false);
+  });
+
+  it('shows an inline validation error when the CTA is pressed while options are incomplete, does not add to cart, and clears once the option is selected', async () => {
+    const user = userEvent.setup();
+    renderHandler();
+
+    await act(async () => {
+      await flushPromises();
+    });
+
+    await user.click(
+      screen.getByRole('button', { name: 'Tambah ke Keranjang' })
+    );
+
+    expect(screen.getByText('Pilih Ukuran dulu ya')).toBeTruthy();
+    expect(mockOnAddToCart).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'Regular' }));
+    await act(async () => {
+      await flushPromises();
+    });
+
+    expect(screen.queryByText('Pilih Ukuran dulu ya')).toBeNull();
+
+    await user.click(
+      screen.getByRole('button', { name: 'Tambah ke Keranjang · Rp 18.000' })
+    );
+
+    expect(mockOnAddToCart).toHaveBeenCalledWith({
+      variantId: 1,
+      amount: 1,
+      note: '',
+    });
+    expect(mockBack).toHaveBeenCalledTimes(1);
   });
 
   it('resolves the variant and enables the CTA with the live price once every option is selected', async () => {
@@ -78,7 +112,7 @@ describe('MenuItemDetailHandler', () => {
 
     expect(
       (screen.getByRole('button', {
-        name: 'Tambah ke keranjang · Rp 18.000',
+        name: 'Tambah ke Keranjang · Rp 18.000',
       }) as HTMLButtonElement).disabled
     ).toBe(false);
   });
@@ -103,7 +137,7 @@ describe('MenuItemDetailHandler', () => {
     );
 
     await user.click(
-      screen.getByRole('button', { name: 'Tambah ke keranjang · Rp 36.000' })
+      screen.getByRole('button', { name: 'Tambah ke Keranjang · Rp 36.000' })
     );
 
     expect(mockOnAddToCart).toHaveBeenCalledWith({
@@ -124,7 +158,7 @@ describe('MenuItemDetailHandler', () => {
 
     expect(
       (screen.getByRole('button', {
-        name: 'Tambah ke keranjang · Rp 25.000',
+        name: 'Tambah ke Keranjang · Rp 25.000',
       }) as HTMLButtonElement).disabled
     ).toBe(false);
   });

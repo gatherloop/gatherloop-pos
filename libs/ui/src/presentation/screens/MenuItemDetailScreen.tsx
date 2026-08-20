@@ -1,6 +1,6 @@
 import { X } from '@tamagui/lucide-icons';
 import { Button, Paragraph, ScrollView, Text, TextArea, XStack, YStack } from 'tamagui';
-import { match } from 'ts-pattern';
+import { match, P } from 'ts-pattern';
 // Deep imports, not the `domain`/`components/base` barrels (D20): those
 // barrels also re-export every POS usecase and Navbar/Sidebar, which pull
 // in solito/next — dead weight a Vite build has no business resolving.
@@ -19,7 +19,6 @@ export type MenuItemDetailScreenVariant =
   | {
       type: 'ready';
       product: Product;
-      isResolvingVariant: boolean;
       price: number | null;
       variantErrorMessage: string | null;
     };
@@ -34,16 +33,23 @@ export type MenuItemDetailScreenProps = {
   onAmountChange: (amount: number) => void;
   note: string;
   onNoteChange: (note: string) => void;
-  isAddToCartEnabled: boolean;
+  // FR-5 in docs/prd-order-app-ux-improvements.md: replaces the old
+  // `isAddToCartEnabled` boolean so the three CTA cases stay exhaustive. The
+  // CTA is enabled for both `ready` and `incomplete` — only `resolving`
+  // disables it.
+  ctaState: 'ready' | 'incomplete' | 'resolving';
+  missingOptionNames: string[];
+  validationMessage: string | null;
   onAddToCartPress: () => void;
   onRetryButtonPress: () => void;
 };
 
 // FR-6 in docs/prd-table-ordering.md: the item detail sheet, mounted at
 // `/order/t/{code}/products/{productId}` over the menu (route-addressable
-// so Android back and deep links behave). The Add-to-cart CTA is enabled
-// exactly when `variant.type === 'ready'` (via `isAddToCartEnabled`) — a
-// state the handler derives, never an `if` in this component.
+// so Android back and deep links behave). FR-5 in
+// docs/prd-order-app-ux-improvements.md: the Add-to-cart CTA is always
+// enabled except while resolving, and `missingOptionNames`/
+// `validationMessage` are derived by the handler, not this component.
 export const MenuItemDetailScreen = ({
   isOpen,
   onOpenChange,
@@ -54,7 +60,9 @@ export const MenuItemDetailScreen = ({
   onAmountChange,
   note,
   onNoteChange,
-  isAddToCartEnabled,
+  ctaState,
+  missingOptionNames,
+  validationMessage,
   onAddToCartPress,
   onRetryButtonPress,
 }: MenuItemDetailScreenProps) => {
@@ -86,7 +94,7 @@ export const MenuItemDetailScreen = ({
           ))
           .with(
             { type: 'ready' },
-            ({ product, isResolvingVariant, price, variantErrorMessage }) => (
+            ({ product, price, variantErrorMessage }) => (
               <YStack flex={1}>
                 <ScrollView flex={1}>
                   <YStack gap="$4" paddingHorizontal="$4" paddingBottom="$4">
@@ -112,6 +120,7 @@ export const MenuItemDetailScreen = ({
                       <OptionValueChipGroup
                         key={option.id}
                         option={option}
+                        hasError={missingOptionNames.includes(option.name)}
                         selectedOptionValueId={
                           selectedOptionValueIds.find((id) =>
                             option.values.some((value) => value.id === id)
@@ -150,22 +159,29 @@ export const MenuItemDetailScreen = ({
 
                 <YStack
                   padding="$4"
+                  gap="$2"
                   borderTopWidth={1}
                   borderTopColor="$borderColor"
                   backgroundColor="$background"
                 >
+                  {validationMessage ? (
+                    <Text color="$red10">{validationMessage}</Text>
+                  ) : null}
                   <Button
                     theme="blue"
                     size="$5"
                     minHeight={44}
-                    disabled={!isAddToCartEnabled}
+                    disabled={ctaState === 'resolving'}
                     onPress={onAddToCartPress}
                   >
-                    {isAddToCartEnabled && price !== null
-                      ? `Tambah ke keranjang · ${formatRupiah(price * amount)}`
-                      : isResolvingVariant
-                        ? 'Menghitung harga...'
-                        : 'Pilih semua opsi'}
+                    {match({ ctaState, price })
+                      .with(
+                        { ctaState: 'ready', price: P.number },
+                        ({ price }) =>
+                          `Tambah ke Keranjang · ${formatRupiah(price * amount)}`
+                      )
+                      .with({ ctaState: 'resolving' }, () => 'Menghitung harga...')
+                      .otherwise(() => 'Tambah ke Keranjang')}
                   </Button>
                 </YStack>
               </YStack>

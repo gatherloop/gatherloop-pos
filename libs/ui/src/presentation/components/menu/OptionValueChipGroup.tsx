@@ -10,16 +10,24 @@ export type OptionValueChipGroupProps = {
   option: Option;
   selectedOptionValueId: number | null;
   onSelectOptionValue: (optionValueId: number) => void;
+  // FR-5 in docs/prd-order-app-ux-improvements.md: tints the group label red
+  // when this option is one the guest pressed Tambah ke Keranjang without
+  // resolving, so the error points at where to look, not just that
+  // something is missing.
+  hasError?: boolean;
 };
 
 export const OptionValueChipGroup = ({
   option,
   selectedOptionValueId,
   onSelectOptionValue,
+  hasError = false,
 }: OptionValueChipGroupProps) => {
   return (
     <YStack gap="$2">
-      <Text fontWeight="bold">{option.name}</Text>
+      <Text fontWeight="bold" color={hasError ? '$red10' : undefined}>
+        {option.name}
+      </Text>
       <XStack flexWrap="wrap" gap="$2">
         {option.values.map((value) => (
           <Button
