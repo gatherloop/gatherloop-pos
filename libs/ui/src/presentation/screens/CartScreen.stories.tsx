@@ -68,6 +68,7 @@ const meta: Meta<typeof CartScreen> = {
   args: {
     isMutating: false,
     errorMessage: null,
+    isClearConfirmationOpen: false,
     onAmountChange: () => {
       // Storybook action stand-in
     },
@@ -75,6 +76,15 @@ const meta: Meta<typeof CartScreen> = {
       // Storybook action stand-in
     },
     onClearPress: () => {
+      // Storybook action stand-in
+    },
+    onClearConfirm: () => {
+      // Storybook action stand-in
+    },
+    onClearCancel: () => {
+      // Storybook action stand-in
+    },
+    onClearConfirmationOpenChange: () => {
       // Storybook action stand-in
     },
     onAddMoreItemsPress: () => {
@@ -106,6 +116,13 @@ export const Loaded: Story = {
 
 export const Mutating: Story = {
   args: { variant: { type: 'loaded', cart }, isMutating: true },
+};
+
+export const ClearConfirmationOpen: Story = {
+  args: {
+    variant: { type: 'loaded', cart },
+    isClearConfirmationOpen: true,
+  },
 };
 
 export const MutationError: Story = {

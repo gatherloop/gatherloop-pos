@@ -120,7 +120,7 @@ describe('CartHandler', () => {
     expect(screen.getByText('Keranjang kosong')).toBeTruthy();
   });
 
-  it('clears the cart', async () => {
+  it('pressing "Kosongkan" opens the confirmation dialog without clearing the cart', async () => {
     const user = userEvent.setup();
     const repository = new MockCartRepository();
     await repository.addItem({ variantId: 1, amount: 1, note: '' });
@@ -133,6 +133,48 @@ describe('CartHandler', () => {
     await user.click(
       screen.getByRole('button', { name: 'Kosongkan keranjang' })
     );
+
+    expect(screen.getByText('Kosongkan keranjang?')).toBeTruthy();
+    expect(screen.getByText('Es Kopi Susu')).toBeTruthy();
+  });
+
+  it('cancelling the confirmation dialog leaves the cart untouched', async () => {
+    const user = userEvent.setup();
+    const repository = new MockCartRepository();
+    await repository.addItem({ variantId: 1, amount: 1, note: '' });
+    renderHandler(repository);
+
+    await act(async () => {
+      await flushPromises();
+    });
+
+    await user.click(
+      screen.getByRole('button', { name: 'Kosongkan keranjang' })
+    );
+    await user.click(screen.getByRole('button', { name: 'Batal' }));
+
+    await act(async () => {
+      await flushPromises();
+    });
+
+    expect(screen.queryByText('Kosongkan keranjang?')).toBeNull();
+    expect(screen.getByText('Es Kopi Susu')).toBeTruthy();
+  });
+
+  it('confirming the dialog clears the cart', async () => {
+    const user = userEvent.setup();
+    const repository = new MockCartRepository();
+    await repository.addItem({ variantId: 1, amount: 1, note: '' });
+    renderHandler(repository);
+
+    await act(async () => {
+      await flushPromises();
+    });
+
+    await user.click(
+      screen.getByRole('button', { name: 'Kosongkan keranjang' })
+    );
+    await user.click(screen.getByRole('button', { name: 'Kosongkan' }));
 
     await act(async () => {
       await flushPromises();
