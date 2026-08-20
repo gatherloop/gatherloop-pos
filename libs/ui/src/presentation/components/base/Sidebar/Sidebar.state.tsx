@@ -8,6 +8,7 @@ import {
 import { NamedExoticComponent, useEffect, useState } from 'react';
 import { useRouter } from 'solito/router';
 import {} from 'solito';
+import { useMedia } from 'tamagui';
 
 type MenuItem = {
   title: string;
@@ -64,7 +65,10 @@ const items: MenuItem[] = [
 ];
 
 export const useSidebarState = () => {
-  const [isShown, setIsShown] = useState(true);
+  const media = useMedia();
+  const isMobile = media.xs;
+
+  const [isShown, setIsShown] = useState(!isMobile);
 
   const onToggleButtonPress = () => setIsShown((prev) => !prev);
 
@@ -76,6 +80,12 @@ export const useSidebarState = () => {
   useEffect(() => {
     setCurrentPath(window.location.pathname);
   }, []);
+
+  // Sidebar overlays the screen on mobile, so it should start (and return
+  // to) collapsed there, while staying open by default on larger screens.
+  useEffect(() => {
+    setIsShown(!isMobile);
+  }, [isMobile]);
 
   useEffect(() => {
     if (currentPath === undefined) return;
@@ -99,5 +109,6 @@ export const useSidebarState = () => {
     accordionValue,
     setAccordionValue,
     currentPath,
+    isMobile,
   };
 };
