@@ -21,3 +21,7 @@ export const Default: Story = {
 export const HigherAmount: Story = {
   args: { amount: 4 },
 };
+
+export const Small: Story = {
+  args: { amount: 2, size: 'sm' },
+};
