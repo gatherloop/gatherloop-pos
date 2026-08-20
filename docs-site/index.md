@@ -20,7 +20,7 @@ features:
     link: /sales/transactions
   - icon: 📦
     title: Catalog
-    details: Categories, products, and variants, built on materials that carry real recipe costs.
+    details: Categories, products, and variants, built on materials that carry real bill-of-materials costs.
     link: /catalog/categories
   - icon: 📋
     title: Inventory

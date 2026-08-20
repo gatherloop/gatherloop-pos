@@ -4,7 +4,7 @@ Every feature in Gatherloop POS sits on one loop. Catalog defines what's sellabl
 
 ```
  Catalog & Materials
- (products, variants, recipe costs)
+ (products, variants, bill-of-materials costs)
         │
         ▼
  Sales & Checkout
@@ -26,7 +26,7 @@ Every feature in Gatherloop POS sits on one loop. Catalog defines what's sellabl
 
 ## Walking the loop
 
-1. **Catalog & Materials** — a product is only as accurate as the recipe behind it. Materials carry real costs, products and variants are built from materials, and that cost feeds directly into pricing.
+1. **Catalog & Materials** — a product is only as accurate as the bill of materials behind it. Materials carry real costs, products and variants are built from materials, and that cost feeds directly into pricing.
 2. **Sales & Checkout** — a sale consumes the catalog: it builds a cart, applies coupons or rental check-outs, takes payment, and prints a receipt. Nothing about pricing or cost is re-entered here — it flows from the catalog.
 3. **Finance** — every transaction and expense lands on the dashboard automatically. Budgets track cash flow against spending categories, wallets track where money actually sits, and cost/profit calculations happen per item, not just per month.
 4. **Inventory** — stock checks reveal what's running low, which turns into purchase lists, which go to suppliers. Once restocked, the loop feeds back into the catalog.

@@ -9,7 +9,7 @@ Most POS software stops at "ring up a sale." Gatherloop POS covers the whole loo
 | Job to be done | What it covers |
 |---|---|
 | **Sales & Checkout** | Cart, checkout, payment, receipt printing, coupons, and board-game rentals with check-in/check-out. |
-| **Catalog** | Categories, products, product variants, and the materials (recipe ingredients) behind every item. |
+| **Catalog** | Categories, products, product variants, and the materials (bill-of-materials ingredients) behind every item. |
 | **Inventory** | Stock checks, purchase lists, and suppliers — the loop that keeps the catalog stocked. |
 | **Finance** | Sales & expense dashboards, expense tracking, cash-flow budgeting, wallets & transfers, and automatic cost/profit calculation. |
 | **Operations** | Opening/closing checklists and ticket tracking for day-to-day issues. |
