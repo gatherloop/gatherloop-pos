@@ -9,6 +9,7 @@ import { NamedExoticComponent, useEffect, useState } from 'react';
 import { useRouter } from 'solito/router';
 import {} from 'solito';
 import { useMedia } from 'tamagui';
+import { Platform } from 'react-native';
 
 type MenuItem = {
   title: string;
@@ -78,7 +79,11 @@ export const useSidebarState = () => {
   const [currentPath, setCurrentPath] = useState<string>();
 
   useEffect(() => {
-    setCurrentPath(window.location.pathname);
+    // window.location isn't available on React Native — the highlighted
+    // sub-item just falls back to none there.
+    if (Platform.OS === 'web') {
+      setCurrentPath(window.location.pathname);
+    }
   }, []);
 
   // Sidebar overlays the screen on mobile, so it should start (and return
