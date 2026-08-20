@@ -183,6 +183,21 @@ describe('CartHandler', () => {
     expect(screen.getByText('Keranjang kosong')).toBeTruthy();
   });
 
+  it('navigates to the edit route when the edit button is pressed', async () => {
+    const user = userEvent.setup();
+    const repository = new MockCartRepository();
+    await repository.addItem({ variantId: 1, amount: 1, note: '' });
+    renderHandler(repository, 'ABCDE12345');
+
+    await act(async () => {
+      await flushPromises();
+    });
+
+    await user.click(screen.getByLabelText('Ubah Es Kopi Susu'));
+
+    expect(mockPush).toHaveBeenCalledWith('/t/ABCDE12345/cart/items/1');
+  });
+
   it('navigates to the menu when "add more items" is pressed', async () => {
     const user = userEvent.setup();
     renderHandler(new MockCartRepository(), 'ABCDE12345');

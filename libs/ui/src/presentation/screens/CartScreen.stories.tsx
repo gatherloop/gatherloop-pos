@@ -75,6 +75,9 @@ const meta: Meta<typeof CartScreen> = {
     onRemovePress: () => {
       // Storybook action stand-in
     },
+    onEditPress: () => {
+      // Storybook action stand-in
+    },
     onClearPress: () => {
       // Storybook action stand-in
     },

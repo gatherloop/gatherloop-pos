@@ -60,6 +60,9 @@ export const CartHandler = ({ cart, tableCode }: CartHandlerProps) => {
       onRemovePress={(cartItemId) =>
         cart.dispatch({ type: 'REMOVE_ITEM', cartItemId })
       }
+      onEditPress={(cartItemId) =>
+        navigation.push(`/t/${tableCode}/cart/items/${cartItemId}`)
+      }
       onClearPress={() => setIsClearConfirmationOpen(true)}
       onClearConfirm={() => {
         cart.dispatch({ type: 'CLEAR' });
