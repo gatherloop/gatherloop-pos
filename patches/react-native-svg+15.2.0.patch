@@ -1,0 +1,8 @@
+diff --git a/node_modules/react-native-svg/android/src/main/AndroidManifest.xml b/node_modules/react-native-svg/android/src/main/AndroidManifest.xml
+index d85bd62..a2f47b6 100644
+--- a/node_modules/react-native-svg/android/src/main/AndroidManifest.xml
++++ b/node_modules/react-native-svg/android/src/main/AndroidManifest.xml
+@@ -1,2 +1,2 @@
+-<manifest package="com.horcrux.svg">
++<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+ </manifest>
