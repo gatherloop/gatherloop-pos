@@ -77,3 +77,18 @@ export const NoNote: Story = {
 export const Disabled: Story = {
   args: { item, disabled: true },
 };
+
+export const LongProductName: Story = {
+  args: {
+    item: {
+      ...item,
+      variant: {
+        ...variant,
+        product: {
+          ...esKopiSusu,
+          name: 'Es Kopi Susu Gula Aren Signature Large Extra Shot',
+        },
+      },
+    },
+  },
+};

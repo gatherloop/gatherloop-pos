@@ -12,6 +12,10 @@ import { MenuItemThumbnail } from '../menu/MenuItemThumbnail';
 // values and note are read-only here — re-picking options or editing a note
 // is an item-detail concern (FR-6); this line only ever changes quantity or
 // disappears via `onRemovePress`.
+//
+// FR-7 in docs/prd-order-app-ux-improvements.md: the stepper and delete
+// button are compacted to 32x32 here so several stacked rows don't crowd out
+// the product name/options — hitSlop keeps the touch target at 44px.
 export type CartLineItemProps = {
   item: CartItem;
   onAmountChange: (amount: number) => void;
@@ -28,6 +32,8 @@ export const CartLineItem = ({
   const optionValueNames = item.variant.values
     .map((value) => value.optionValue.name)
     .join(', ');
+
+  const hitSlop = { top: 6, bottom: 6, left: 6, right: 6 };
 
   return (
     <XStack gap="$3" alignItems="flex-start">
@@ -66,6 +72,7 @@ export const CartLineItem = ({
             amount={item.amount}
             onChange={onAmountChange}
             disabled={disabled}
+            size="sm"
           />
           <Text fontWeight="bold">{formatRupiah(item.subtotal)}</Text>
         </XStack>
@@ -74,9 +81,13 @@ export const CartLineItem = ({
       <Button
         icon={Trash2}
         variant="outlined"
+        theme="red"
+        color="$red8"
         circular
-        width={44}
-        height={44}
+        size="$2"
+        width={32}
+        height={32}
+        hitSlop={hitSlop}
         disabled={disabled}
         onPress={onRemovePress}
         accessibilityLabel={`Hapus ${item.variant.product.name} dari keranjang`}
