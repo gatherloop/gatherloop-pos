@@ -33,7 +33,13 @@
       ]
     },
     "test": {
-      "executor": "@nx-go/nx-go:test"
+      "executor": "@nx-go/nx-go:test",
+      "dependsOn": [
+        {
+          "projects": "api-contract",
+          "target": "generate:go"
+        }
+      ]
     },
     "lint": {
       "executor": "@nx-go/nx-go:lint"
