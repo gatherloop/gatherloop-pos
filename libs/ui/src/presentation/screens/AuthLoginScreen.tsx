@@ -13,7 +13,14 @@ export type AuthLoginScreenProps = {
 
 export const AuthLoginScreen = (props: AuthLoginScreenProps) => {
   return (
-    <ScrollView padding="$3" justifyContent="center" alignItems="center">
+    <ScrollView
+      padding="$3"
+      contentContainerStyle={{
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100%',
+      }}
+    >
       <Card elevate size="$4" bordered>
         <Card.Header padded gap="$3">
           <H2>Login</H2>
