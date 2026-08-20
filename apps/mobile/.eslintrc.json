@@ -13,6 +13,12 @@
     {
       "files": ["*.js", "*.jsx"],
       "rules": {}
+    },
+    {
+      "files": ["*.spec.ts", "*.spec.tsx"],
+      "rules": {
+        "@nx/enforce-module-boundaries": "off"
+      }
     }
   ]
 }

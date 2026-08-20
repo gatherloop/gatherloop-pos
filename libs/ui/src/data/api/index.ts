@@ -1,4 +1,5 @@
 export * from './auth';
+export * from './authToken';
 export * from './material';
 export * from './material.transformer';
 export * from './product';
