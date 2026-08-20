@@ -35,6 +35,21 @@ export const Sidebar = (props: SidebarProps) => {
 
   return (
     <>
+      {isShown && (
+        <YStack
+          display="none"
+          $xs={{ display: 'flex' }}
+          position="absolute"
+          top={0}
+          bottom={0}
+          left={0}
+          right={0}
+          zIndex="$4"
+          backgroundColor="rgba(0,0,0,0.5)"
+          onPress={onToggleButtonPress}
+        />
+      )}
+
       <YGroup
         width={200}
         $xs={{ position: 'absolute', top: 0, bottom: 0, zIndex: '$5' }}
@@ -42,6 +57,7 @@ export const Sidebar = (props: SidebarProps) => {
         backgroundColor="$gray3"
         borderRadius="$0"
         marginLeft={isShown ? 0 : -200}
+        animation="fast"
       >
         <YStack flex={1} justifyContent="space-between">
           <YStack gap="$3">
@@ -132,22 +148,20 @@ export const Sidebar = (props: SidebarProps) => {
         </YStack>
       </YGroup>
 
-      {!isShown && (
-        <Button
-          icon={isShown ? ChevronsLeft : ChevronsRight}
-          onPress={onToggleButtonPress}
-          position="absolute"
-          left={isShown ? 200 : 0}
-          zIndex={999}
-          animation="fast"
-          size="$3"
-          borderTopLeftRadius="$0"
-          borderBottomLeftRadius="$0"
-          bottom="$20"
-          borderWidth="$0"
-          theme="blue"
-        ></Button>
-      )}
+      <Button
+        icon={isShown ? ChevronsLeft : ChevronsRight}
+        onPress={onToggleButtonPress}
+        position="absolute"
+        left={isShown ? 200 : 0}
+        zIndex={999}
+        animation="fast"
+        size="$3"
+        borderTopLeftRadius="$0"
+        borderBottomLeftRadius="$0"
+        bottom="$20"
+        borderWidth="$0"
+        theme="blue"
+      ></Button>
     </>
   );
 };
