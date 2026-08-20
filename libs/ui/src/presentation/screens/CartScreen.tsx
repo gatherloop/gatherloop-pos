@@ -24,6 +24,7 @@ export type CartScreenProps = {
   isClearConfirmationOpen: boolean;
   onAmountChange: (cartItemId: number, amount: number) => void;
   onRemovePress: (cartItemId: number) => void;
+  onEditPress: (cartItemId: number) => void;
   onClearPress: () => void;
   onClearConfirm: () => void;
   onClearCancel: () => void;
@@ -45,6 +46,7 @@ export const CartScreen = ({
   isClearConfirmationOpen,
   onAmountChange,
   onRemovePress,
+  onEditPress,
   onClearPress,
   onClearConfirm,
   onClearCancel,
@@ -105,6 +107,7 @@ export const CartScreen = ({
                   disabled={isMutating}
                   onAmountChange={(amount) => onAmountChange(item.id, amount)}
                   onRemovePress={() => onRemovePress(item.id)}
+                  onEditPress={() => onEditPress(item.id)}
                 />
               ))}
             </YStack>

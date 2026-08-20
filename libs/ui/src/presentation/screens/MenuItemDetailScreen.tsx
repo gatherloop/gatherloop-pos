@@ -144,6 +144,7 @@ export const MenuItemDetailScreen = ({
                         onChangeText={onNoteChange}
                         accessibilityLabel="Catatan"
                         minHeight={80}
+                        maxLength={255}
                       />
                     </YStack>
 

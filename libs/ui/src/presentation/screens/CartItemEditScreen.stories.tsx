@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { CartLineItem } from './CartLineItem';
+import { CartItemEditScreen } from './CartItemEditScreen';
 
 const minuman = {
   id: 1,
@@ -22,7 +22,7 @@ const esKopiSusu = {
 
 const variant = {
   id: 1,
-  name: 'Es Kopi Susu - Regular',
+  name: 'Es Kopi Susu - Large, Iced',
   price: 18000,
   materials: [],
   product: esKopiSusu,
@@ -32,7 +32,13 @@ const variant = {
       id: 1,
       variantId: 1,
       optionValueId: 1,
-      optionValue: { id: 1, name: 'Regular' },
+      optionValue: { id: 1, name: 'Large' },
+    },
+    {
+      id: 2,
+      variantId: 1,
+      optionValueId: 2,
+      optionValue: { id: 2, name: 'Iced' },
     },
   ],
   pricingTiers: [],
@@ -44,41 +50,50 @@ const item = {
   variantId: 1,
   variant,
   amount: 2,
-  note: 'less sugar',
+  note: 'tanpa es',
   price: 18000,
   subtotal: 36000,
   createdAt: '2024-03-20T00:00:00.000Z',
 };
 
-const meta: Meta<typeof CartLineItem> = {
-  title: 'Cart/CartLineItem',
-  component: CartLineItem,
+const meta: Meta<typeof CartItemEditScreen> = {
+  title: 'Cart/CartItemEditScreen',
+  component: CartItemEditScreen,
   args: {
+    isOpen: true,
+    onOpenChange: () => {
+      // Storybook action stand-in
+    },
     onAmountChange: () => {
       // Storybook action stand-in
     },
-    onRemovePress: () => {
+    onNoteChange: () => {
       // Storybook action stand-in
     },
-    onEditPress: () => {
+    onSavePress: () => {
       // Storybook action stand-in
     },
+    isSaving: false,
   },
 };
 
 export default meta;
-type Story = StoryObj<typeof CartLineItem>;
+type Story = StoryObj<typeof CartItemEditScreen>;
 
-export const Default: Story = {
-  args: { item },
+export const WithOptionsAndNote: Story = {
+  args: { item, amount: item.amount, note: item.note },
 };
 
-export const NoNote: Story = {
-  args: { item: { ...item, note: '' } },
-};
-
-export const Disabled: Story = {
-  args: { item, disabled: true },
+export const NoOptionsNoNote: Story = {
+  args: {
+    item: {
+      ...item,
+      note: '',
+      variant: { ...variant, values: [] },
+    },
+    amount: 1,
+    note: '',
+  },
 };
 
 export const LongProductName: Story = {
@@ -93,5 +108,11 @@ export const LongProductName: Story = {
         },
       },
     },
+    amount: item.amount,
+    note: item.note,
   },
+};
+
+export const Saving: Story = {
+  args: { item, amount: item.amount, note: item.note, isSaving: true },
 };
