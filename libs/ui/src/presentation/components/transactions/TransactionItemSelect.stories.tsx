@@ -1,7 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import type { ReactNode } from 'react';
 import { fn } from '@storybook/test';
+import { YStack } from 'tamagui';
 import { TransactionItemSelect } from './TransactionItemSelect';
-import { mockProducts, mockProduct, mockOptionValues } from '../../../../.storybook/mocks/mockData';
+import {
+  mockProducts,
+  mockProduct,
+  mockOptionValues,
+} from '../../../../.storybook/mocks/mockData';
 
 const defaultArgs = {
   products: mockProducts,
@@ -82,4 +88,52 @@ export const Submitted: Story = {
     selectedOptionValues: mockOptionValues,
     amount: 2,
   },
+};
+
+// Phase 7 of docs/prd-transaction-mobile-ux.md (FR-7): at 360px the picker
+// needs a real bounded-height ancestor for its FlatList to fill (see the
+// `TransactionCreateScreen`/`TransactionUpdateScreen` Phase 6 stories for
+// why — Storybook's preview doesn't load the app's
+// `body{height:100%;overflow:hidden}`, so this wrapper stands in for it).
+const MobileWrapper = ({ children }: { children: ReactNode }) => (
+  <YStack height={640} overflow="hidden">
+    {children}
+  </YStack>
+);
+
+export const MobileList: Story = {
+  parameters: {
+    viewport: { defaultViewport: 'mobile' },
+  },
+  args: {
+    variant: { type: 'loaded' },
+  },
+  decorators: [
+    (Story) => (
+      <MobileWrapper>
+        <Story />
+      </MobileWrapper>
+    ),
+  ],
+};
+
+// FR-7: on `$xs` the option/amount step renders in `base/Sheet` (full height,
+// full-width actions) instead of the desktop `Dialog`.
+export const MobileSelectingOptions: Story = {
+  parameters: {
+    viewport: { defaultViewport: 'mobile' },
+  },
+  args: {
+    variant: { type: 'selectingOptions' },
+    selectedProduct: mockProduct,
+    selectedOptionValues: mockOptionValues,
+    amount: 2,
+  },
+  decorators: [
+    (Story) => (
+      <MobileWrapper>
+        <Story />
+      </MobileWrapper>
+    ),
+  ],
 };
