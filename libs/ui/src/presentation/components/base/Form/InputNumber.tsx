@@ -63,6 +63,8 @@ const InputNumberField = ({
       )}
 
       <Input
+        inputMode={fractionDigit > 0 ? 'decimal' : 'numeric'}
+        keyboardType={fractionDigit > 0 ? 'decimal-pad' : 'number-pad'}
         {...inputProps}
         id={fieldName}
         placeholder={isNull ? '—' : inputProps.placeholder}
