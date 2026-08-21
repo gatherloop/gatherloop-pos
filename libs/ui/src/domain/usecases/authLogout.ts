@@ -5,7 +5,8 @@ import { Usecase } from './IUsecase';
 export type AuthLogoutState =
   | { type: 'idle' }
   | { type: 'loading' }
-  | { type: 'loaded' };
+  | { type: 'loaded' }
+  | { type: 'error' };
 
 export type AuthLogoutAction =
   | { type: 'LOGOUT' }
@@ -34,17 +35,20 @@ export class AuthLogoutUsecase extends Usecase<
   getNextState(state: AuthLogoutState, action: AuthLogoutAction) {
     return match([state, action])
       .returnType<AuthLogoutState>()
-      .with([{ type: P.union('idle') }, { type: 'LOGOUT' }], ([state]) => ({
-        ...state,
-        type: 'loading',
-      }))
+      .with(
+        [{ type: P.union('idle', 'error') }, { type: 'LOGOUT' }],
+        ([state]) => ({
+          ...state,
+          type: 'loading',
+        })
+      )
       .with([{ type: 'loading' }, { type: 'LOGOUT_SUCCESS' }], ([state]) => ({
         ...state,
         type: 'loaded',
       }))
       .with([{ type: 'loading' }, { type: 'LOGOUT_ERROR' }], ([state]) => ({
         ...state,
-        type: 'idle',
+        type: 'error',
       }))
       .otherwise(() => state);
   }

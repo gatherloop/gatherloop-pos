@@ -13,6 +13,8 @@ export const useAuthLogoutController = (usecase: AuthLogoutUsecase) => {
     if (state.type === 'loaded') {
       toast.show('Logout Success');
       router.push('/auth/login');
+    } else if (state.type === 'error') {
+      toast.show('Logout Error');
     }
   }, [toast, state.type, router]);
 
