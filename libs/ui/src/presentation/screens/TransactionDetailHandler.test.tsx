@@ -79,6 +79,24 @@ describe('TransactionDetailHandler', () => {
 
       expect(screen.getByText('Transaction 1')).toBeTruthy();
     });
+
+    it('should show a single Unpaid payment row and no payment date for an unpaid transaction', async () => {
+      render(<TransactionDetailHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      // Transaction 1 has paidAt: null, so the summary must show a single
+      // "Payment — Unpaid" row instead of fabricating today's date/time as
+      // the payment date.
+      expect(screen.getByText('Payment')).toBeTruthy();
+      expect(screen.getByText('Unpaid')).toBeTruthy();
+      expect(screen.queryByText('Paid At')).toBeNull();
+      expect(screen.queryByText('Paid Amount')).toBeNull();
+      expect(screen.queryByText('Change')).toBeNull();
+      expect(screen.queryByText('Wallet')).toBeNull();
+    });
   });
 
   describe('transaction items section', () => {

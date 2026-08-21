@@ -1,4 +1,4 @@
-import { Card, H3, H4, Paragraph, XStack, YStack } from 'tamagui';
+import { H3, H4, Paragraph, XStack, YStack } from 'tamagui';
 import dayjs from 'dayjs';
 import { VariantListItem } from '../variants';
 import {
@@ -8,10 +8,36 @@ import {
   User,
   Wallet,
 } from '@tamagui/lucide-icons';
-import { H5 } from 'tamagui';
 import { Transaction } from '../../../domain';
 import { CouponListItem } from '../coupons';
 import { roundToNearest500 } from '../../../utils';
+
+type SummaryRowData = {
+  key: string;
+  icon: JSX.Element;
+  label: string;
+  value: string | number;
+};
+
+const SummaryRow = ({ icon, label, value }: SummaryRowData) => (
+  <XStack
+    width="100%"
+    $gtXs={{ width: '48%' }}
+    justifyContent="space-between"
+    alignItems="center"
+    gap="$2"
+  >
+    <XStack alignItems="center" gap="$2">
+      {icon}
+      <Paragraph size="$2" color="$color10">
+        {label}
+      </Paragraph>
+    </XStack>
+    <Paragraph size="$4" fontWeight="bold" textAlign="right">
+      {value}
+    </Paragraph>
+  </XStack>
+);
 
 export type TransactionDetailProps = {
   name: string;
@@ -68,103 +94,76 @@ export const TransactionDetail = ({
     return discountAmount;
   }
 
+  const summaryRows: SummaryRowData[] = [
+    { key: 'name', icon: <User size="$1" />, label: 'Customer Name', value: name },
+  ];
+
+  if (orderNumber > 0) {
+    summaryRows.push({
+      key: 'orderNumber',
+      icon: <ConciergeBell size="$1" />,
+      label: 'Order Number',
+      value: orderNumber,
+    });
+  }
+
+  summaryRows.push({
+    key: 'createdAt',
+    icon: <Calendar size="$1" />,
+    label: 'Transaction Date',
+    value: dayjs(createdAt).format('DD/MM/YYYY HH:mm'),
+  });
+
+  if (paidAt) {
+    summaryRows.push(
+      {
+        key: 'paidAt',
+        icon: <CreditCard size="$1" />,
+        label: 'Paid At',
+        value: dayjs(paidAt).format('DD/MM/YYYY HH:mm'),
+      },
+      {
+        key: 'paidAmount',
+        icon: <CreditCard size="$1" />,
+        label: 'Paid Amount',
+        value: `Rp. ${paidAmount.toLocaleString('id')}`,
+      },
+      {
+        key: 'change',
+        icon: <CreditCard size="$1" />,
+        label: 'Change',
+        value: `Rp. ${(paidAmount - total).toLocaleString('id')}`,
+      },
+      {
+        key: 'wallet',
+        icon: <Wallet size="$1" />,
+        label: 'Wallet',
+        value: walletName ?? '',
+      }
+    );
+  } else {
+    summaryRows.push({
+      key: 'payment',
+      icon: <CreditCard size="$1" />,
+      label: 'Payment',
+      value: 'Unpaid',
+    });
+  }
+
   return (
     <YStack gap="$3">
-      <XStack gap="$3" flexWrap="wrap" $md={{ flexDirection: 'column' }}>
-        <Card flex={1}>
-          <Card.Header>
-            <XStack gap="$3" alignItems="center">
-              <User size="$3" />
-              <YStack>
-                <Paragraph>Customer Name</Paragraph>
-                <H5 textTransform="none">{name}</H5>
-              </YStack>
-            </XStack>
-          </Card.Header>
-        </Card>
-
-        {orderNumber > 0 && (
-          <Card flex={1}>
-            <Card.Header>
-              <XStack gap="$3" alignItems="center">
-                <ConciergeBell size="$3" />
-                <YStack>
-                  <Paragraph>Order Number</Paragraph>
-                  <H5 textTransform="none">{orderNumber}</H5>
-                </YStack>
-              </XStack>
-            </Card.Header>
-          </Card>
-        )}
-
-        <Card flex={1}>
-          <Card.Header>
-            <XStack gap="$3" alignItems="center">
-              <Calendar size="$3" />
-              <YStack>
-                <Paragraph>Transaction Date</Paragraph>
-                <H5 textTransform="none">
-                  {dayjs(createdAt).format('DD/MM/YYYY HH:mm')}
-                </H5>
-              </YStack>
-            </XStack>
-          </Card.Header>
-        </Card>
-
-        <Card flex={1}>
-          <Card.Header>
-            <XStack gap="$3" alignItems="center">
-              <CreditCard size="$3" />
-              <YStack>
-                <Paragraph>Paid At</Paragraph>
-                <H5 textTransform="none">
-                  {dayjs(paidAt).format('DD/MM/YYYY HH:mm')}
-                </H5>
-              </YStack>
-            </XStack>
-          </Card.Header>
-        </Card>
-
-        <Card flex={1}>
-          <Card.Header>
-            <XStack gap="$3" alignItems="center">
-              <CreditCard size="$3" />
-              <YStack>
-                <Paragraph>Paid Amount</Paragraph>
-                <H5 textTransform="none">
-                  Rp. {paidAmount.toLocaleString('id')}
-                </H5>
-              </YStack>
-            </XStack>
-          </Card.Header>
-        </Card>
-
-        <Card flex={1}>
-          <Card.Header>
-            <XStack gap="$3" alignItems="center">
-              <CreditCard size="$3" />
-              <YStack>
-                <Paragraph>Change</Paragraph>
-                <H5 textTransform="none">
-                  Rp. {(paidAmount - total).toLocaleString('id')}
-                </H5>
-              </YStack>
-            </XStack>
-          </Card.Header>
-        </Card>
-
-        <Card flex={1}>
-          <Card.Header>
-            <XStack gap="$3" alignItems="center">
-              <Wallet size="$3" />
-              <YStack>
-                <Paragraph>Wallet</Paragraph>
-                <H5 textTransform="none">{walletName}</H5>
-              </YStack>
-            </XStack>
-          </Card.Header>
-        </Card>
-      </XStack>
+      <YStack
+        borderWidth={1}
+        borderColor="$borderColor"
+        borderRadius="$4"
+        padding="$3"
+      >
+        <XStack flexWrap="wrap" rowGap="$2" columnGap="$4">
+          {summaryRows.map((row) => (
+            <SummaryRow key={row.key} {...row} />
+          ))}
+        </XStack>
+      </YStack>
       <H4>Transaction Items</H4>
       <YStack gap="$3">
         {transactionItems.map(
