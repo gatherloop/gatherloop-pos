@@ -53,3 +53,16 @@ export const LargeDataset: Story = {
     itemPerPage: 10,
   },
 };
+
+// FR-2 in docs/prd-transaction-mobile-ux.md: at 360px, buttons wrap instead of
+// overflowing horizontally, and stay at a >=44px effective touch size.
+export const MobileTenPages: Story = {
+  parameters: {
+    viewport: { defaultViewport: 'mobile' },
+  },
+  args: {
+    currentPage: 5,
+    totalItem: 100,
+    itemPerPage: 10,
+  },
+};
