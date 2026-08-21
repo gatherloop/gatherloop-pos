@@ -362,59 +362,99 @@ export const TransactionFormView = ({
                       </YStack>
                     </YStack>
                   </YStack>
-                  <YStack alignItems="flex-end">
-                    <H5 textTransform="none">Total</H5>
-                    <FieldWatch
-                      control={form.control}
-                      name={['transactionItems', 'transactionCoupons']}
-                    >
-                      {([transactionItems, transactionCoupons]) => {
-                        const total = transactionItems.reduce(
-                          (prev, curr) =>
-                            prev +
-                            (curr.amount * curr.price - curr.discountAmount),
-                          0
-                        );
-
-                        let finalTotal = total;
-
-                        for (let i = 0; i < transactionCoupons.length; i++) {
-                          const couponItem = transactionCoupons[i];
-                          const discountAmount =
-                            couponItem.coupon.type === 'fixed'
-                              ? couponItem.coupon.amount
-                              : couponItem.coupon.type === 'percentage'
-                              ? roundToNearest500(
-                                  (finalTotal * couponItem.coupon.amount) / 100
-                                )
-                              : 0;
-                          finalTotal -= discountAmount;
-                        }
-
-                        return (
-                          <YStack>
-                            {finalTotal < total ? (
-                              <H4 textDecorationLine="line-through">
-                                Rp. {total.toLocaleString('id')}
-                              </H4>
-                            ) : null}
-                            <H3>Rp. {finalTotal.toLocaleString('id')}</H3>
-                          </YStack>
-                        );
-                      }}
-                    </FieldWatch>
-                  </YStack>
                 </YStack>
               </Card>
-              <Button
-                disabled={isSubmitDisabled}
-                onPress={form.handleSubmit(onSubmit)}
-                size="$5"
-                theme="blue"
-                icon={isSubmitting ? <Spinner /> : undefined}
+
+              {/* FR-6 (docs/prd-transaction-mobile-ux.md, Phase 6): Total and
+                  Submit share one block, extracted below the Card rather than
+                  nested inside it, so the same block can become a `$xs`
+                  bottom bar without a second, duplicate Total/Submit pair —
+                  TransactionUpdateHandler.test.tsx asserts exact counts of
+                  the rendered total text, so it may only ever exist once.
+
+                  `position: sticky` (not `fixed`) because this bar lives
+                  inside a react-native-web `ScrollView`, which always sets a
+                  CSS `transform` on its scrolling node — that establishes a
+                  new containing block, so a `fixed` descendant is trapped
+                  inside the ScrollView's own box instead of the viewport.
+                  `sticky` isn't affected by that and pins correctly against
+                  the ScrollView's nearest `overflow: auto` box (same pattern
+                  as CartScreen's checkout bar). TransactionCreateScreen/
+                  UpdateScreen add matching bottom padding to the scroll
+                  content so the bar never covers the last item once stuck. */}
+              <YStack
+                gap="$3"
+                $xs={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  borderTopWidth: 1,
+                  borderTopColor: '$borderColor',
+                  paddingTop: '$3',
+                  paddingBottom: '$3',
+                  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                  // @ts-expect-error - Tamagui's type doesn't include CSS
+                  // `sticky` (React Native has no equivalent), but it passes
+                  // through to the underlying web style.
+                  position: 'sticky',
+                  bottom: 0,
+                  zIndex: 11,
+                  backgroundColor: '$background',
+                }}
               >
-                Submit
-              </Button>
+                <YStack alignItems="flex-end" $xs={{ alignItems: 'flex-start' }}>
+                  <H5 textTransform="none">Total</H5>
+                  <FieldWatch
+                    control={form.control}
+                    name={['transactionItems', 'transactionCoupons']}
+                  >
+                    {([transactionItems, transactionCoupons]) => {
+                      const total = transactionItems.reduce(
+                        (prev, curr) =>
+                          prev +
+                          (curr.amount * curr.price - curr.discountAmount),
+                        0
+                      );
+
+                      let finalTotal = total;
+
+                      for (let i = 0; i < transactionCoupons.length; i++) {
+                        const couponItem = transactionCoupons[i];
+                        const discountAmount =
+                          couponItem.coupon.type === 'fixed'
+                            ? couponItem.coupon.amount
+                            : couponItem.coupon.type === 'percentage'
+                            ? roundToNearest500(
+                                (finalTotal * couponItem.coupon.amount) / 100
+                              )
+                            : 0;
+                        finalTotal -= discountAmount;
+                      }
+
+                      return (
+                        <YStack>
+                          {finalTotal < total ? (
+                            <H4 textDecorationLine="line-through">
+                              Rp. {total.toLocaleString('id')}
+                            </H4>
+                          ) : null}
+                          <H3>Rp. {finalTotal.toLocaleString('id')}</H3>
+                        </YStack>
+                      );
+                    }}
+                  </FieldWatch>
+                </YStack>
+                <Button
+                  disabled={isSubmitDisabled}
+                  onPress={form.handleSubmit(onSubmit)}
+                  size="$5"
+                  theme="blue"
+                  icon={isSubmitting ? <Spinner /> : undefined}
+                  $xs={{ flex: 1, marginLeft: '$3', height: '100%' }}
+                >
+                  Submit
+                </Button>
+              </YStack>
             </YStack>
           </XStack>
         </Form>

@@ -1,4 +1,4 @@
-import { ScrollView } from 'tamagui';
+import { ScrollView, YStack } from 'tamagui';
 import {
   TransactionFormView,
   Layout,
@@ -78,55 +78,62 @@ export const TransactionCreateScreen = (
       onLogoutPress={props.onLogoutPress}
     >
       <ScrollView>
-        <TransactionFormView
-          form={props.form}
-          onSubmit={props.onSubmit}
-          isSubmitDisabled={props.isSubmitDisabled}
-          isSubmitting={props.isSubmitting}
-          isCouponSheetOpen={props.isCouponSheetOpen}
-          onCouponSheetOpenChange={props.onCouponSheetOpenChange}
-          onItemCouponSheetOpen={props.onItemCouponSheetOpen}
-          onRemoveItemCoupon={props.onRemoveItemCoupon}
-          itemsFieldArray={props.itemsFieldArray}
-          couponsFieldArray={props.couponsFieldArray}
-          serverError={props.serverError}
-          TransactionItemSelect={() => (
-            <TransactionItemSelect
-              amount={props.transactionItemSelect.amount}
-              currentPage={props.transactionItemSelect.currentPage}
-              itemPerPage={props.transactionItemSelect.itemPerPage}
-              onAmountChange={props.transactionItemSelect.onAmountChange}
-              onOptionValuesChange={
-                props.transactionItemSelect.onOptionValuesChange
-              }
-              onPageChange={props.transactionItemSelect.onPageChange}
-              onRetryButtonPress={
-                props.transactionItemSelect.onRetryButtonPress
-              }
-              onSearchValueChange={
-                props.transactionItemSelect.onSearchValueChange
-              }
-              onSelectProduct={props.transactionItemSelect.onSelectProduct}
-              onSubmit={props.transactionItemSelect.onSubmit}
-              onUnselectProduct={props.transactionItemSelect.onUnselectProduct}
-              products={props.transactionItemSelect.products}
-              searchValue={props.transactionItemSelect.searchValue}
-              selectedOptionValues={
-                props.transactionItemSelect.selectedOptionValues
-              }
-              totalItem={props.transactionItemSelect.totalItem}
-              variant={props.transactionItemSelect.variant}
-              selectedProduct={props.transactionItemSelect.selectedProduct}
-            />
-          )}
-          TransactionCouponList={() => (
-            <CouponList
-              onItemPress={props.couponList.onItemPress}
-              onRetryButtonPress={props.couponList.onRetryButtonPress}
-              variant={props.couponList.variant}
-            />
-          )}
-        />
+        {/* Phase 6 (FR-6): bottom padding matching the `$xs` sticky
+            Total/Submit bar in TransactionFormView, so it never covers the
+            last item while scrolling. */}
+        <YStack $xs={{ paddingBottom: '$8' }}>
+          <TransactionFormView
+            form={props.form}
+            onSubmit={props.onSubmit}
+            isSubmitDisabled={props.isSubmitDisabled}
+            isSubmitting={props.isSubmitting}
+            isCouponSheetOpen={props.isCouponSheetOpen}
+            onCouponSheetOpenChange={props.onCouponSheetOpenChange}
+            onItemCouponSheetOpen={props.onItemCouponSheetOpen}
+            onRemoveItemCoupon={props.onRemoveItemCoupon}
+            itemsFieldArray={props.itemsFieldArray}
+            couponsFieldArray={props.couponsFieldArray}
+            serverError={props.serverError}
+            TransactionItemSelect={() => (
+              <TransactionItemSelect
+                amount={props.transactionItemSelect.amount}
+                currentPage={props.transactionItemSelect.currentPage}
+                itemPerPage={props.transactionItemSelect.itemPerPage}
+                onAmountChange={props.transactionItemSelect.onAmountChange}
+                onOptionValuesChange={
+                  props.transactionItemSelect.onOptionValuesChange
+                }
+                onPageChange={props.transactionItemSelect.onPageChange}
+                onRetryButtonPress={
+                  props.transactionItemSelect.onRetryButtonPress
+                }
+                onSearchValueChange={
+                  props.transactionItemSelect.onSearchValueChange
+                }
+                onSelectProduct={props.transactionItemSelect.onSelectProduct}
+                onSubmit={props.transactionItemSelect.onSubmit}
+                onUnselectProduct={
+                  props.transactionItemSelect.onUnselectProduct
+                }
+                products={props.transactionItemSelect.products}
+                searchValue={props.transactionItemSelect.searchValue}
+                selectedOptionValues={
+                  props.transactionItemSelect.selectedOptionValues
+                }
+                totalItem={props.transactionItemSelect.totalItem}
+                variant={props.transactionItemSelect.variant}
+                selectedProduct={props.transactionItemSelect.selectedProduct}
+              />
+            )}
+            TransactionCouponList={() => (
+              <CouponList
+                onItemPress={props.couponList.onItemPress}
+                onRetryButtonPress={props.couponList.onRetryButtonPress}
+                variant={props.couponList.variant}
+              />
+            )}
+          />
+        </YStack>
       </ScrollView>
       <TransactionPaymentAlert
         form={props.transactionPayment.form}
