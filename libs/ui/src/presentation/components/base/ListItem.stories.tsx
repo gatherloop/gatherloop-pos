@@ -70,3 +70,20 @@ export const Clickable: Story = {
     cursor: 'pointer',
   },
 };
+
+// FR-1 in docs/prd-transaction-mobile-ux.md: on $xs, footer items collapse to
+// a single "label: value" line with no icon chip, so four items still fit in
+// a compact, wrapping row instead of stacking into a ~260px tall block.
+export const MobileFourFooterItems: Story = {
+  parameters: {
+    viewport: { defaultViewport: 'mobile' },
+  },
+  args: {
+    footerItems: [
+      { label: 'ORDER NUMBER', value: '12', icon: Tag },
+      { label: 'TRANSACTION DATE', value: '20/01/2024 - 10:00' },
+      { label: 'PAYMENT DATE', value: '20/01/2024 - 10:30' },
+      { label: 'WALLET', value: 'Cash' },
+    ],
+  },
+};
