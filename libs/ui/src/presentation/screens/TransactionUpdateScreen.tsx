@@ -1,4 +1,4 @@
-import { ScrollView } from 'tamagui';
+import { ScrollView, YStack } from 'tamagui';
 import {
   TransactionFormView,
   Layout,
@@ -67,25 +67,30 @@ export const TransactionUpdateScreen = (
       onLogoutPress={props.onLogoutPress}
     >
       <ScrollView>
-        <TransactionFormView
-          form={props.form}
-          onSubmit={props.onSubmit}
-          isSubmitDisabled={props.isSubmitDisabled}
-          isSubmitting={props.isSubmitting}
-          isCouponSheetOpen={props.isCouponSheetOpen}
-          onCouponSheetOpenChange={props.onCouponSheetOpenChange}
-          onItemCouponSheetOpen={props.onItemCouponSheetOpen}
-          onRemoveItemCoupon={props.onRemoveItemCoupon}
-          itemsFieldArray={props.itemsFieldArray}
-          couponsFieldArray={props.couponsFieldArray}
-          serverError={props.serverError}
-          TransactionItemSelect={() => (
-            <TransactionItemSelect {...props.transactionItemSelect} />
-          )}
-          TransactionCouponList={() => (
-            <CouponList {...props.couponList} />
-          )}
-        />
+        {/* Phase 6 (FR-6): bottom padding matching the `$xs` sticky
+            Total/Submit bar in TransactionFormView, so it never covers the
+            last item while scrolling. */}
+        <YStack $xs={{ paddingBottom: '$8' }}>
+          <TransactionFormView
+            form={props.form}
+            onSubmit={props.onSubmit}
+            isSubmitDisabled={props.isSubmitDisabled}
+            isSubmitting={props.isSubmitting}
+            isCouponSheetOpen={props.isCouponSheetOpen}
+            onCouponSheetOpenChange={props.onCouponSheetOpenChange}
+            onItemCouponSheetOpen={props.onItemCouponSheetOpen}
+            onRemoveItemCoupon={props.onRemoveItemCoupon}
+            itemsFieldArray={props.itemsFieldArray}
+            couponsFieldArray={props.couponsFieldArray}
+            serverError={props.serverError}
+            TransactionItemSelect={() => (
+              <TransactionItemSelect {...props.transactionItemSelect} />
+            )}
+            TransactionCouponList={() => (
+              <CouponList {...props.couponList} />
+            )}
+          />
+        </YStack>
       </ScrollView>
     </Layout>
   );
