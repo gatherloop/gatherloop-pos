@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
-import { Pencil, Tag, Trash } from '@tamagui/lucide-icons';
+import { DollarSign, Pencil, Tag, Trash } from '@tamagui/lucide-icons';
 import { ListItem } from './ListItem';
 
 const meta: Meta<typeof ListItem> = {
@@ -84,6 +84,27 @@ export const MobileFourFooterItems: Story = {
       { label: 'TRANSACTION DATE', value: '20/01/2024 - 10:00' },
       { label: 'PAYMENT DATE', value: '20/01/2024 - 10:30' },
       { label: 'WALLET', value: 'Cash' },
+    ],
+  },
+};
+
+// FR-11 in docs/prd-transaction-mobile-ux.md: a `primaryAction` renders
+// inline next to the row menu on `$xs` only, so the highest-value action
+// isn't hidden behind the popover. The menu still lists every action.
+export const MobilePrimaryAction: Story = {
+  parameters: {
+    viewport: { defaultViewport: 'mobile' },
+  },
+  args: {
+    primaryAction: {
+      label: 'Pay',
+      icon: DollarSign,
+      onPress: fn(),
+    },
+    menus: [
+      { title: 'Pay', icon: DollarSign, onPress: fn() },
+      { title: 'Edit', icon: Pencil, onPress: fn() },
+      { title: 'Delete', icon: Trash, onPress: fn() },
     ],
   },
 };

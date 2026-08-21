@@ -51,6 +51,8 @@ export const MobilePaid: Story = {
   },
 };
 
+// Phase 11 (FR-11): at 360px an unpaid row exposes an inline `Pay` button
+// next to the row menu, which still lists `Pay` alongside every other action.
 export const MobileUnpaid: Story = {
   parameters: {
     viewport: { defaultViewport: 'mobile' },
