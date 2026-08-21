@@ -1,5 +1,5 @@
 import { MoreVertical } from '@tamagui/lucide-icons';
-import React, { NamedExoticComponent, ReactNode } from 'react';
+import { NamedExoticComponent, ReactNode } from 'react';
 import {
   Image,
   Popover,
@@ -97,12 +97,19 @@ export const ListItem = ({
           />
         )}
 
-        <YStack padding="$3" flex={1} gap="$3">
+        <YStack padding="$3" flex={1} gap="$3" $xs={{ gap: '$2' }}>
           <YStack flex={1} justifyContent="center">
-            <H4 ellipse>{title}</H4>
+            <H4 ellipse $xs={{ size: '$5' }}>
+              {title}
+            </H4>
             {subtitle &&
               (typeof subtitle === 'string' ? (
-                <Paragraph textTransform="none" ellipse size="$6">
+                <Paragraph
+                  textTransform="none"
+                  ellipse
+                  size="$6"
+                  $xs={{ size: '$4' }}
+                >
                   {subtitle}
                 </Paragraph>
               ) : (
@@ -114,36 +121,46 @@ export const ListItem = ({
             <>
               <Separator />
 
-              <XStack gap="$3" flexWrap="wrap">
+              <XStack gap="$3" $xs={{ gap: '$2' }} flexWrap="wrap">
                 {shownFooterItems.map((footerItem, index) => (
-                  <React.Fragment key={index}>
-                    <XStack
-                      gap="$2"
-                      alignItems={footerItem.label ? 'flex-start' : 'center'}
-                    >
-                      {footerItem.icon && (
-                        <YStack
-                          theme="active"
-                          backgroundColor="$background"
-                          padding="$2"
-                          justifyContent="center"
-                          alignItems="center"
-                          borderRadius="$12"
-                        >
-                          <footerItem.icon size="$1" color="$gray12" />
-                        </YStack>
-                      )}
-                      <YStack>
-                        <Paragraph fontWeight="bold" color="$gray12">
-                          {footerItem.label}
-                        </Paragraph>
-                        <Paragraph color="$gray12">
-                          {footerItem.value}
-                        </Paragraph>
+                  <XStack
+                    key={index}
+                    gap="$2"
+                    alignItems={footerItem.label ? 'flex-start' : 'center'}
+                    $xs={{ alignItems: 'center' }}
+                  >
+                    {footerItem.icon && (
+                      <YStack
+                        theme="active"
+                        backgroundColor="$background"
+                        padding="$2"
+                        justifyContent="center"
+                        alignItems="center"
+                        borderRadius="$12"
+                        $xs={{ display: 'none' }}
+                      >
+                        <footerItem.icon size="$1" color="$gray12" />
                       </YStack>
-                    </XStack>
-                    <Separator vertical />
-                  </React.Fragment>
+                    )}
+                    <YStack $xs={{ display: 'none' }}>
+                      <Paragraph fontWeight="bold" color="$gray12">
+                        {footerItem.label}
+                      </Paragraph>
+                      <Paragraph color="$gray12">
+                        {footerItem.value}
+                      </Paragraph>
+                    </YStack>
+                    <Paragraph
+                      display="none"
+                      color="$gray12"
+                      size="$2"
+                      $xs={{ display: 'flex' }}
+                    >
+                      {footerItem.label
+                        ? `${footerItem.label}: ${footerItem.value}`
+                        : footerItem.value}
+                    </Paragraph>
+                  </XStack>
                 ))}
               </XStack>
             </>

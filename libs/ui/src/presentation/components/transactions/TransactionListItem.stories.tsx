@@ -41,3 +41,22 @@ export const HighValue: Story = {
     walletName: 'Bank Transfer',
   },
 };
+
+// Phase 1 of docs/prd-transaction-mobile-ux.md (FR-1): at 360px a paid row
+// (all four footer items shown) must be a compact, single-line-per-item
+// block, not a ~260px stack.
+export const MobilePaid: Story = {
+  parameters: {
+    viewport: { defaultViewport: 'mobile' },
+  },
+};
+
+export const MobileUnpaid: Story = {
+  parameters: {
+    viewport: { defaultViewport: 'mobile' },
+  },
+  args: {
+    paidAt: undefined,
+    walletName: undefined,
+  },
+};
