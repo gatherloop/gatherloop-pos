@@ -1,4 +1,4 @@
-import { Button, Input, InputProps, XStack } from 'tamagui';
+import { Button, ButtonProps, Input, InputProps, XStack } from 'tamagui';
 import { useFieldContext } from './Field';
 import { Controller, ControllerRenderProps, FieldValues } from 'react-hook-form';
 import { Minus, Plus } from '@tamagui/lucide-icons';
@@ -11,6 +11,7 @@ export type InputNumberProps = {
   fractionDigit?: number;
   step?: number;
   error?: boolean;
+  buttonSize?: ButtonProps['size'];
 } & InputProps;
 
 type InputNumberFieldProps = {
@@ -22,6 +23,7 @@ type InputNumberFieldProps = {
   step: number;
   inputProps: InputProps;
   error?: boolean;
+  buttonSize: ButtonProps['size'];
 };
 
 const InputNumberField = ({
@@ -33,6 +35,7 @@ const InputNumberField = ({
   step,
   inputProps,
   error,
+  buttonSize,
 }: InputNumberFieldProps) => {
   const isNullableRef = useRef(field.value === null);
   const isNull = field.value === null;
@@ -47,7 +50,7 @@ const InputNumberField = ({
         <Button
           icon={Minus}
           variant="outlined"
-          size="$2"
+          size={buttonSize}
           onPress={() => {
             if (isNull) return;
             if (typeof min === 'undefined' || field.value > min) {
@@ -87,7 +90,7 @@ const InputNumberField = ({
         <Button
           icon={Plus}
           variant="outlined"
-          size="$2"
+          size={buttonSize}
           onPress={() => {
             if (isNull) {
               field.onChange(typeof min !== 'undefined' && min > 0 ? min : 0);
@@ -112,6 +115,7 @@ export const InputNumber = ({
   fractionDigit = 0,
   step = 1,
   error,
+  buttonSize = '$2',
   ...inputProps
 }: InputNumberProps) => {
   const fieldContext = useFieldContext();
@@ -129,6 +133,7 @@ export const InputNumber = ({
           step={step}
           inputProps={inputProps}
           error={error}
+          buttonSize={buttonSize}
         />
       )}
     />
