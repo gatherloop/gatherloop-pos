@@ -31,6 +31,29 @@ export const Unpaid: Story = {
   },
 };
 
+// Phase 3 of docs/prd-transaction-mobile-ux.md (FR-3): at 360px the summary
+// block must read as a compact single column, ≤200px tall, above the first
+// transaction item without scrolling.
+export const MobilePaid: Story = {
+  parameters: {
+    viewport: { defaultViewport: 'mobile' },
+  },
+};
+
+// Proves the unpaid-date bug is gone: no Paid At / Paid Amount / Change /
+// Wallet rows, and no fabricated "today" payment date — just a single
+// `Payment — Unpaid` row.
+export const MobileUnpaid: Story = {
+  parameters: {
+    viewport: { defaultViewport: 'mobile' },
+  },
+  args: {
+    paidAt: undefined,
+    walletName: undefined,
+    paidAmount: 0,
+  },
+};
+
 export const WithCoupon: Story = {
   args: {
     transactionCoupons: [
