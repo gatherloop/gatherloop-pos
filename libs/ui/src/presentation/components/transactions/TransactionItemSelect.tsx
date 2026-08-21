@@ -124,6 +124,8 @@ const TransactionItemOptionsBody = ({
       />
 
       <Input
+        inputMode="numeric"
+        keyboardType="number-pad"
         onChangeText={(text: string) => {
           const numberValue = text.trim() === '' ? 1 : parseFloat(text);
           if (!isNaN(numberValue)) {
