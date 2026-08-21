@@ -1,6 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { TransactionDetail } from './TransactionDetail';
-import { mockTransaction } from '../../../../.storybook/mocks/mockData';
+import {
+  mockTransaction,
+  mockTransactionItem,
+  mockCoupon,
+} from '../../../../.storybook/mocks/mockData';
 
 const meta: Meta<typeof TransactionDetail> = {
   title: 'Features/Transactions/TransactionDetail',
@@ -66,6 +70,35 @@ export const WithCoupon: Story = {
           amount: 10,
           createdAt: '2024-01-15T08:00:00.000Z',
         },
+        type: 'percentage',
+        amount: 10,
+      },
+    ],
+  },
+};
+
+// Phase 4 of docs/prd-transaction-mobile-ux.md (FR-4): at 360px no metric row
+// (Note + Price + Amount + Discount Amount + Subtotal) should overflow
+// horizontally; a long note wraps, and coupon subtotals stay right-aligned.
+export const MobileManyItemsWithNoteAndDiscount: Story = {
+  parameters: {
+    viewport: { defaultViewport: 'mobile' },
+  },
+  args: {
+    transactionItems: Array.from({ length: 5 }, (_, index) => ({
+      ...mockTransactionItem,
+      id: index + 1,
+      note:
+        index === 0
+          ? 'Extra hot, less ice, no sugar please and pack it separately'
+          : '',
+      discountAmount: index === 1 ? 5000 : 0,
+      subtotal: index === 1 ? 65000 : 70000,
+    })),
+    transactionCoupons: [
+      {
+        id: 1,
+        coupon: mockCoupon,
         type: 'percentage',
         amount: 10,
       },

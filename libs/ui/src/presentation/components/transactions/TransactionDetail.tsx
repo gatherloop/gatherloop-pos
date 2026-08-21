@@ -39,6 +39,20 @@ const SummaryRow = ({ icon, label, value }: SummaryRowData) => (
   </XStack>
 );
 
+type ItemMetricData = {
+  key: string;
+  label: string;
+  value: string | number;
+  fullWidth?: boolean;
+};
+
+const ItemMetric = ({ label, value, fullWidth }: ItemMetricData) => (
+  <YStack $xs={{ flexBasis: fullWidth ? '100%' : '48%' }}>
+    <Paragraph textAlign="right">{label}</Paragraph>
+    <H4 textAlign="right">{value}</H4>
+  </YStack>
+);
+
 export type TransactionDetailProps = {
   name: string;
   orderNumber: number;
@@ -191,32 +205,33 @@ export const TransactionDetail = ({
                 flex={1}
               />
 
-              <XStack gap="$5" justifyContent="flex-end">
-                <YStack>
-                  <Paragraph textAlign="right">Note</Paragraph>
-                  <H4 textAlign="right">{note}</H4>
-                </YStack>
-                <YStack>
-                  <Paragraph textAlign="right">Price</Paragraph>
-                  <H4 textAlign="right">Rp. {price.toLocaleString('id')}</H4>
-                </YStack>
-                <YStack>
-                  <Paragraph textAlign="right">Amount</Paragraph>
-                  <H4 textAlign="right">{amount}</H4>
-                </YStack>
-                {discountAmount > 0 && (
-                  <YStack>
-                    <Paragraph textAlign="right">Discount Amount</Paragraph>
-                    <H4 textAlign="right">
-                      Rp. {discountAmount.toLocaleString('id')}
-                    </H4>
-                  </YStack>
+              <XStack
+                flexWrap="wrap"
+                rowGap="$3"
+                columnGap="$5"
+                justifyContent="flex-end"
+              >
+                {note && (
+                  <ItemMetric key="note" label="Note" value={note} fullWidth />
                 )}
-
-                <YStack>
-                  <Paragraph textAlign="right">Subtotal</Paragraph>
-                  <H4 textAlign="right">Rp. {subtotal.toLocaleString('id')}</H4>
-                </YStack>
+                <ItemMetric
+                  key="price"
+                  label="Price"
+                  value={`Rp. ${price.toLocaleString('id')}`}
+                />
+                <ItemMetric key="amount" label="Amount" value={amount} />
+                {discountAmount > 0 && (
+                  <ItemMetric
+                    key="discountAmount"
+                    label="Discount Amount"
+                    value={`Rp. ${discountAmount.toLocaleString('id')}`}
+                  />
+                )}
+                <ItemMetric
+                  key="subtotal"
+                  label="Subtotal"
+                  value={`Rp. ${subtotal.toLocaleString('id')}`}
+                />
               </XStack>
             </YStack>
           )
