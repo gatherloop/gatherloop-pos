@@ -31,7 +31,7 @@ func (handler AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cookie := http.Cookie{
-		Domain:   GetOriginDomain(r),
+		Domain:   GetDomain(r),
 		Name:     "Authorization",
 		Value:    "Bearer " + token,
 		Path:     "/",
@@ -44,8 +44,12 @@ func (handler AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (handler AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	// Must resolve to the same Domain Login used, or this Set-Cookie creates
+	// a second, differently-scoped cookie instead of clearing the one Login
+	// set — GetDomain(r.Host) is always present, unlike GetOriginDomain,
+	// which browsers omit on a plain GET request like this one.
 	cookie := http.Cookie{
-		Domain:   GetOriginDomain(r),
+		Domain:   GetDomain(r),
 		Name:     "Authorization",
 		Value:    "",
 		Path:     "/",
