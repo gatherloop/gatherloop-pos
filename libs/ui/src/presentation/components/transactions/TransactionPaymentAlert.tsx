@@ -1,4 +1,13 @@
-import { AlertDialog, Button, H4, Label, Paragraph, XStack, YStack } from 'tamagui';
+import {
+  AlertDialog,
+  Button,
+  H4,
+  Label,
+  Paragraph,
+  ScrollView,
+  XStack,
+  YStack,
+} from 'tamagui';
 import { Field, FieldWatch, InputNumber, Select } from '../base';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
 import { Wallet } from '../../../domain';
@@ -50,63 +59,90 @@ export const TransactionPaymentAlert = ({
           scale={1}
           opacity={1}
           y={0}
+          width="90%"
+          maxWidth={480}
+          maxHeight="85%"
         >
           <FormProvider {...form}>
-            <YStack gap="$5">
-              <AlertDialog.Title>Pay Transaction</AlertDialog.Title>
-              <AlertDialog.Description>
-                Please fill the wallet name and click the yes button
-              </AlertDialog.Description>
+            <YStack gap="$5" maxHeight="100%">
+              <ScrollView flex={1}>
+                <YStack gap="$5">
+                  <AlertDialog.Title>Pay Transaction</AlertDialog.Title>
+                  <AlertDialog.Description>
+                    Please fill the wallet name and click the yes button
+                  </AlertDialog.Description>
 
-              <XStack gap="$5" alignItems="center">
-                {walletSelectOptions.length === 0 ? (
-                  <Paragraph color="$red10" flex={1}>
-                    No wallets are configured to receive payments. Configure one
-                    in Wallet Settings.
-                  </Paragraph>
-                ) : (
-                  <Field name="wallet" label="Wallet Name" flex={1}>
-                    <Select items={walletSelectOptions} />
-                  </Field>
-                )}
-
-                <YStack gap="$3" flex={1}>
-                  <Label>Total Amount</Label>
-                  <H4>Rp. {transactionTotal.toLocaleString('id')}</H4>
-                </YStack>
-              </XStack>
-
-              <FieldWatch
-                control={form.control}
-                name={['wallet.isCashless', 'paidAmount']}
-              >
-                {([isCashless, paidAmount]) =>
-                  isCashless === true || isCashless === undefined ? null : (
-                    <XStack gap="$5" alignItems="center">
-                      <Field name="paidAmount" label="Paid Amount">
-                        <InputNumber step={0} maxWidth={150} />
+                  <XStack
+                    gap="$5"
+                    alignItems="center"
+                    $xs={{ flexDirection: 'column', alignItems: 'stretch' }}
+                  >
+                    {walletSelectOptions.length === 0 ? (
+                      <Paragraph color="$red10" flex={1}>
+                        No wallets are configured to receive payments.
+                        Configure one in Wallet Settings.
+                      </Paragraph>
+                    ) : (
+                      <Field name="wallet" label="Wallet Name" flex={1}>
+                        <Select items={walletSelectOptions} />
                       </Field>
-                      <YStack gap="$3" flex={1}>
-                        <Label>Change</Label>
-                        <H4>
-                          Rp.{' '}
-                          {(paidAmount - transactionTotal).toLocaleString('id')}
-                        </H4>
-                      </YStack>
-                    </XStack>
-                  )
-                }
-              </FieldWatch>
+                    )}
+
+                    <YStack gap="$3" flex={1}>
+                      <Label>Total Amount</Label>
+                      <H4>Rp. {transactionTotal.toLocaleString('id')}</H4>
+                    </YStack>
+                  </XStack>
+
+                  <FieldWatch
+                    control={form.control}
+                    name={['wallet.isCashless', 'paidAmount']}
+                  >
+                    {([isCashless, paidAmount]) =>
+                      isCashless === true || isCashless === undefined ? null : (
+                        <XStack
+                          gap="$5"
+                          alignItems="center"
+                          $xs={{
+                            flexDirection: 'column',
+                            alignItems: 'stretch',
+                          }}
+                        >
+                          <Field name="paidAmount" label="Paid Amount">
+                            <InputNumber
+                              step={0}
+                              maxWidth={150}
+                              $xs={{ maxWidth: '100%' }}
+                            />
+                          </Field>
+                          <YStack gap="$3" flex={1}>
+                            <Label>Change</Label>
+                            <H4>
+                              Rp.{' '}
+                              {(paidAmount - transactionTotal).toLocaleString(
+                                'id'
+                              )}
+                            </H4>
+                          </YStack>
+                        </XStack>
+                      )
+                    }
+                  </FieldWatch>
+                </YStack>
+              </ScrollView>
 
               <XStack gap="$5" backgroundColor="$backgroundFocus">
                 <AlertDialog.Cancel asChild flex={1}>
-                  <Button disabled={isButtonDisabled}>Cancel</Button>
+                  <Button disabled={isButtonDisabled} size="$4">
+                    Cancel
+                  </Button>
                 </AlertDialog.Cancel>
                 <Button
                   disabled={isButtonDisabled || walletSelectOptions.length === 0}
                   onPress={form.handleSubmit(onSubmit)}
                   theme="active"
                   flex={1}
+                  size="$4"
                 >
                   Submit
                 </Button>
