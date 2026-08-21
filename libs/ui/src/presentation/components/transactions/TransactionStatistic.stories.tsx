@@ -86,3 +86,30 @@ export const EmptyRange: Story = {
     totalIncomeStatistics: [],
   },
 };
+
+// Phase 10 of docs/prd-transaction-mobile-ux.md (FR-10): at 360px the chart
+// is measured to fit its container with no horizontal page scroll, the
+// y-axis padding is reduced so labels stay readable, and preset/group-by
+// buttons wrap without overflow.
+export const Mobile: Story = {
+  args: {
+    variant: { type: 'loaded' },
+  },
+  parameters: {
+    viewport: { defaultViewport: 'mobile' },
+  },
+};
+
+// Phase 10: the custom-range date inputs and Apply button stack vertically
+// and remain usable at 360px.
+export const MobileCustomRange: Story = {
+  args: {
+    variant: { type: 'loaded' },
+    preset: 'custom',
+    startDate: '2024-01-15',
+    endDate: '2024-01-21',
+  },
+  parameters: {
+    viewport: { defaultViewport: 'mobile' },
+  },
+};

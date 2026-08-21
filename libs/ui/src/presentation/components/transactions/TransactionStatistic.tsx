@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { LayoutChangeEvent } from 'react-native';
 import {
   EmptyView,
   ErrorView,
@@ -11,11 +12,22 @@ import {
   VictoryAxis,
   VictoryLegend,
 } from '../base';
-import { Button, H6, Input, Paragraph, XStack, YStack } from 'tamagui';
+import {
+  Button,
+  H6,
+  Input,
+  Paragraph,
+  useMedia,
+  XStack,
+  YStack,
+} from 'tamagui';
 import {
   getDateRangeForPreset,
   TransactionStatisticPreset,
 } from '../../../domain';
+
+const MIN_CHART_WIDTH = 320;
+const DEFAULT_CHART_WIDTH = 600;
 
 type GroupBy = 'date' | 'month';
 
@@ -68,6 +80,15 @@ export const TransactionStatistic = ({
   const [customRangeError, setCustomRangeError] = useState<string | null>(
     null
   );
+  const [chartWidth, setChartWidth] = useState(DEFAULT_CHART_WIDTH);
+  const media = useMedia();
+
+  const handleChartContainerLayout = (event: LayoutChangeEvent) => {
+    const width = event.nativeEvent.layout.width;
+    if (width > 0) {
+      setChartWidth(Math.max(MIN_CHART_WIDTH, width));
+    }
+  };
 
   const handlePresetPress = (selected: TransactionStatisticPreset) => {
     if (selected === 'custom') {
@@ -127,19 +148,26 @@ export const TransactionStatistic = ({
       </XStack>
       {isCustomOpen ? (
         <YStack gap="$2">
-          <XStack gap="$3" alignItems="center" flexWrap="wrap">
+          <XStack
+            gap="$3"
+            alignItems="center"
+            flexWrap="wrap"
+            $xs={{ flexDirection: 'column', alignItems: 'stretch' }}
+          >
             <Input
               size="$2"
               placeholder="YYYY-MM-DD"
               value={customStartDate}
               onChangeText={setCustomStartDate}
+              $xs={{ flexBasis: '100%' }}
             />
-            <Paragraph>to</Paragraph>
+            <Paragraph $xs={{ alignSelf: 'center' }}>to</Paragraph>
             <Input
               size="$2"
               placeholder="YYYY-MM-DD"
               value={customEndDate}
               onChangeText={setCustomEndDate}
+              $xs={{ flexBasis: '100%' }}
             />
             <Button size="$2" onPress={handleApplyCustomRange}>
               Apply
@@ -175,72 +203,79 @@ export const TransactionStatistic = ({
           subtitle="Try selecting a different date range or preset."
         />
       ) : (
-        <VictoryChart
-          theme={VictoryTheme.material}
-          width={600}
-          height={300}
-          padding={{ top: 50, bottom: 50, left: 80, right: 50 }}
-        >
-          <VictoryLine
-            style={{
-              data: { stroke: '#3189c4' },
-              parent: { border: '1px solid #ccc' },
+        <YStack width="100%" onLayout={handleChartContainerLayout}>
+          <VictoryChart
+            theme={VictoryTheme.material}
+            width={chartWidth}
+            height={300}
+            padding={{
+              top: 50,
+              bottom: 50,
+              left: media.xs ? 45 : 80,
+              right: media.xs ? 20 : 50,
             }}
-            data={totalStatistics}
-          />
-          <VictoryLine
-            style={{
-              data: { stroke: '#24c48e' },
-              parent: { border: '1px solid #ccc' },
-            }}
-            data={totalIncomeStatistics}
-          />
-          <VictoryScatter
-            style={{ data: { fill: '#3189c4' } }}
-            size={6}
-            data={totalStatistics}
-            labels={({ datum }) =>
-              `[Total] Date: ${datum.x} Total: ${datum.y}`
-            }
-            labelComponent={<VictoryTooltip constrainToVisibleArea />}
-          />
-          <VictoryScatter
-            style={{ data: { fill: '#24c48e' } }}
-            size={6}
-            data={totalIncomeStatistics}
-            labels={({ datum }) =>
-              `[Income] Date: ${datum.x} Total: ${datum.y}`
-            }
-            labelComponent={<VictoryTooltip constrainToVisibleArea />}
-          />
-          <VictoryAxis
-            style={{
-              axis: { stroke: 'none' },
-              ticks: { stroke: 'none' },
-              tickLabels: { fill: 'none' },
-              grid: {
-                stroke: 'none',
-              },
-            }}
-          />
-          <VictoryAxis
-            dependentAxis
-            style={{
-              tickLabels: { fill: '#9f9f9f' },
-            }}
-          />
-          <VictoryLegend
-            x={125}
-            y={10}
-            orientation="horizontal"
-            gutter={20}
-            colorScale={['#3189c4', '#24c48e']}
-            data={[{ name: 'Total' }, { name: 'Income' }]}
-            style={{
-              labels: { fill: '#9f9f9f' },
-            }}
-          />
-        </VictoryChart>
+          >
+            <VictoryLine
+              style={{
+                data: { stroke: '#3189c4' },
+                parent: { border: '1px solid #ccc' },
+              }}
+              data={totalStatistics}
+            />
+            <VictoryLine
+              style={{
+                data: { stroke: '#24c48e' },
+                parent: { border: '1px solid #ccc' },
+              }}
+              data={totalIncomeStatistics}
+            />
+            <VictoryScatter
+              style={{ data: { fill: '#3189c4' } }}
+              size={6}
+              data={totalStatistics}
+              labels={({ datum }) =>
+                `[Total] Date: ${datum.x} Total: ${datum.y}`
+              }
+              labelComponent={<VictoryTooltip constrainToVisibleArea />}
+            />
+            <VictoryScatter
+              style={{ data: { fill: '#24c48e' } }}
+              size={6}
+              data={totalIncomeStatistics}
+              labels={({ datum }) =>
+                `[Income] Date: ${datum.x} Total: ${datum.y}`
+              }
+              labelComponent={<VictoryTooltip constrainToVisibleArea />}
+            />
+            <VictoryAxis
+              style={{
+                axis: { stroke: 'none' },
+                ticks: { stroke: 'none' },
+                tickLabels: { fill: 'none' },
+                grid: {
+                  stroke: 'none',
+                },
+              }}
+            />
+            <VictoryAxis
+              dependentAxis
+              style={{
+                tickLabels: { fill: '#9f9f9f' },
+              }}
+            />
+            <VictoryLegend
+              x={media.xs ? 20 : 125}
+              y={10}
+              orientation="horizontal"
+              gutter={20}
+              colorScale={['#3189c4', '#24c48e']}
+              data={[{ name: 'Total' }, { name: 'Income' }]}
+              style={{
+                labels: { fill: '#9f9f9f' },
+              }}
+            />
+          </VictoryChart>
+        </YStack>
       )}
     </YStack>
   ) : variant.type === 'error' ? (
