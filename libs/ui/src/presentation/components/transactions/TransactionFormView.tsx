@@ -73,10 +73,16 @@ export const TransactionFormView = ({
       <FormProvider {...form}>
         <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
           <FormErrorBanner message={serverError} />
-          <XStack gap="$3">
+          <XStack gap="$3" $xs={{ flexDirection: 'column' }}>
             <YStack flex={1}>{TransactionItemSelect()}</YStack>
-            <YStack gap="$3">
-              <Card maxWidth={400} padded alignSelf="flex-start">
+            <YStack gap="$3" $xs={{ width: '100%' }}>
+              <Card
+                width="100%"
+                $gtXs={{ maxWidth: 400 }}
+                padded
+                alignSelf="flex-start"
+                $xs={{ alignSelf: 'stretch' }}
+              >
                 <YStack gap="$3">
                   <Field name="name" label="Customer Name" flex={1}>
                     <InputText />
@@ -109,6 +115,7 @@ export const TransactionFormView = ({
                                 <XStack
                                   gap="$3"
                                   flex={1}
+                                  flexWrap="wrap"
                                   alignItems="center"
                                   justifyContent="space-between"
                                 >
@@ -150,6 +157,7 @@ export const TransactionFormView = ({
 
                                 <XStack
                                   gap="$5"
+                                  flexWrap="wrap"
                                   justifyContent="flex-end"
                                   alignItems="center"
                                 >
@@ -158,6 +166,7 @@ export const TransactionFormView = ({
                                       name={`transactionItems.${index}.amount`}
                                       min={1}
                                       maxWidth={50}
+                                      $xs={{ minWidth: 64, maxWidth: 64 }}
                                     />
                                   )}
 
@@ -267,7 +276,7 @@ export const TransactionFormView = ({
                               <XStack
                                 key={key}
                                 gap="$5"
-                                $lg={{ flexDirection: 'column' }}
+                                $xs={{ flexDirection: 'column' }}
                               >
                                 <XStack gap="$3" flex={1} alignItems="center">
                                   <Button

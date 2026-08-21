@@ -48,6 +48,7 @@ const InputNumberField = ({
           icon={Minus}
           variant="outlined"
           size="$2"
+          $xs={{ size: '$3' }}
           onPress={() => {
             if (isNull) return;
             if (typeof min === 'undefined' || field.value > min) {
@@ -88,6 +89,7 @@ const InputNumberField = ({
           icon={Plus}
           variant="outlined"
           size="$2"
+          $xs={{ size: '$3' }}
           onPress={() => {
             if (isNull) {
               field.onChange(typeof min !== 'undefined' && min > 0 ? min : 0);

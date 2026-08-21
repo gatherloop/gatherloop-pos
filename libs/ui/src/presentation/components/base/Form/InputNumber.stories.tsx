@@ -90,3 +90,12 @@ export const Disabled: Story = {
     disabled: true,
   },
 };
+
+// Phase 5 of docs/prd-transaction-mobile-ux.md (FR-5): the ± step buttons
+// grow to size="$3" (≥44px) on $xs; verifies other InputNumber consumers
+// (quantity/price/discount/rating fields) still render sensibly at 360px.
+export const Mobile: Story = {
+  parameters: {
+    viewport: { defaultViewport: 'mobile' },
+  },
+};
