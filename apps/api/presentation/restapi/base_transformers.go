@@ -78,6 +78,14 @@ func GetDomain(r *http.Request) string {
 	return domain
 }
 
+func GetOriginDomain(r *http.Request) string {
+	host := r.Header.Get("Origin")
+	domain := strings.TrimPrefix(host, "https://")
+	domain = strings.TrimPrefix(domain, "http://")
+	domain = strings.Split(domain, ":")[0]
+	return domain
+}
+
 func GetSortBy(r *http.Request) domain.SortBy {
 	sortByQuery := r.URL.Query().Get("sortBy")
 	switch sortByQuery {

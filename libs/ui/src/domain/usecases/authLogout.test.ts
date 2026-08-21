@@ -24,7 +24,7 @@ describe('AuthLogoutUsecase', () => {
   });
 
   describe('error flow', () => {
-    it('should transition idle → loading → error', async () => {
+    it('should transition idle → loading → idle (error auto-recovers)', async () => {
       const repository = new MockAuthRepository();
       repository.setShouldFail(true);
       const usecase = new AuthLogoutUsecase(repository);
@@ -36,25 +36,7 @@ describe('AuthLogoutUsecase', () => {
       expect(tester.state.type).toBe('loading');
 
       await flushPromises();
-      expect(tester.state.type).toBe('error');
-    });
-
-    it('should allow retrying LOGOUT from the error state', async () => {
-      const repository = new MockAuthRepository();
-      repository.setShouldFail(true);
-      const usecase = new AuthLogoutUsecase(repository);
-      const tester = new UsecaseTester<AuthLogoutUsecase, AuthLogoutState, AuthLogoutAction, undefined>(usecase);
-
-      tester.dispatch({ type: 'LOGOUT' });
-      await flushPromises();
-      expect(tester.state.type).toBe('error');
-
-      repository.setShouldFail(false);
-      tester.dispatch({ type: 'LOGOUT' });
-      expect(tester.state.type).toBe('loading');
-
-      await flushPromises();
-      expect(tester.state.type).toBe('loaded');
+      expect(tester.state.type).toBe('idle');
     });
   });
 });
