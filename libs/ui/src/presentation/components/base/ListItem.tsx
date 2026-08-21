@@ -55,13 +55,26 @@ export type ListItemFooterItem = {
   isShown?: boolean;
 };
 
+// FR-11 in docs/prd-transaction-mobile-ux.md: an inline action rendered next
+// to the row menu on `$xs` only, so the most frequent mobile action isn't
+// two taps deep in a popover. Above `$xs` the menu already exposes it.
+export type ListItemPrimaryAction = {
+  label: string;
+  icon?: NamedExoticComponent;
+  onPress: () => void;
+  isShown?: boolean;
+};
+
 export type ListItemProps = {
   title: string;
   subtitle?: ReactNode;
   thumbnailSrc?: string;
   menus?: ListItemMenu[];
   footerItems?: ListItemFooterItem[];
+  primaryAction?: ListItemPrimaryAction;
 } & XStackProps;
+
+const HIT_SLOP = { top: 8, bottom: 8, left: 8, right: 8 };
 
 export const ListItem = ({
   title,
@@ -69,10 +82,12 @@ export const ListItem = ({
   thumbnailSrc,
   menus = [],
   footerItems = [],
+  primaryAction,
   ...xStackProps
 }: ListItemProps) => {
   const shownMenus = menus.filter(({ isShown }) => isShown ?? true);
   const shownFooterItems = footerItems.filter(({ isShown }) => isShown ?? true);
+  const showPrimaryAction = primaryAction ? primaryAction.isShown ?? true : false;
   return (
     <XStack
       gap="$4"
@@ -167,41 +182,60 @@ export const ListItem = ({
           ) : null}
         </YStack>
 
-        {shownMenus.length > 0 && (
-          <Popover keepChildrenMounted placement="left-start">
-            <Popover.Trigger
-              asChild
-              onPress={(event) => event.stopPropagation()}
-            >
+        {(shownMenus.length > 0 || showPrimaryAction) && (
+          <XStack gap="$2" alignItems="center" marginTop="$3" marginRight="$3">
+            {showPrimaryAction && primaryAction && (
               <Button
-                icon={MoreVertical}
-                size="$2"
-                marginTop="$3"
-                marginRight="$3"
-                variant="outlined"
-              />
-            </Popover.Trigger>
+                display="none"
+                $xs={{ display: 'flex' }}
+                size="$3"
+                theme="active"
+                icon={primaryAction.icon}
+                onPress={(event) => {
+                  event.stopPropagation();
+                  primaryAction.onPress();
+                }}
+              >
+                {primaryAction.label}
+              </Button>
+            )}
 
-            <Popover.Content
-              borderWidth={1}
-              borderColor="$borderColor"
-              enterStyle={{ y: -10, opacity: 0 }}
-              exitStyle={{ y: -10, opacity: 0 }}
-              elevate
-              padding="$0"
-              animation={[
-                'fast',
-                {
-                  opacity: {
-                    overshootClamping: true,
-                  },
-                },
-              ]}
-            >
-              <Popover.Arrow borderWidth={1} borderColor="$borderColor" />
-              <PopoverMenu menus={shownMenus} />
-            </Popover.Content>
-          </Popover>
+            {shownMenus.length > 0 && (
+              <Popover keepChildrenMounted placement="left-start">
+                <Popover.Trigger
+                  asChild
+                  onPress={(event) => event.stopPropagation()}
+                >
+                  <Button
+                    icon={MoreVertical}
+                    size="$3"
+                    variant="outlined"
+                    hitSlop={HIT_SLOP}
+                  />
+                </Popover.Trigger>
+
+                <Popover.Content
+                  borderWidth={1}
+                  borderColor="$borderColor"
+                  enterStyle={{ y: -10, opacity: 0 }}
+                  exitStyle={{ y: -10, opacity: 0 }}
+                  elevate
+                  padding="$0"
+                  animation={[
+                    'fast',
+                    {
+                      opacity: {
+                        overshootClamping: true,
+                      },
+                    },
+                  ]}
+                >
+                  <Popover.Arrow borderWidth={1} borderColor="$borderColor" />
+                  <PopoverMenu menus={shownMenus} />
+                </Popover.Content>
+              </Popover>
+            )}
+          </XStack>
         )}
       </XStack>
     </XStack>

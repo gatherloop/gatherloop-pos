@@ -13,6 +13,9 @@ import dayjs from 'dayjs';
 import { XStackProps } from 'tamagui';
 import { Platform } from 'react-native';
 
+// FR-11 in docs/prd-transaction-mobile-ux.md: unpaid rows get an inline
+// `Pay` action (rendered by `ListItem` on `$xs` only) alongside the row
+// menu, which still lists `Pay` for parity on desktop.
 export type TransactionListItemProps = {
   name: string;
   orderNumber: number;
@@ -49,6 +52,12 @@ export const TransactionListItem = ({
       subtitle={`Rp. ${total.toLocaleString('id')}`}
       backgroundColor="$background"
       theme={paidAt ? 'gray' : 'red'}
+      primaryAction={{
+        label: 'Pay',
+        icon: DollarSign,
+        onPress: onPayMenuPress,
+        isShown: paidAt === undefined,
+      }}
       menus={[
         {
           title: 'Pay',
