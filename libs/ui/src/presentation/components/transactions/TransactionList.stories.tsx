@@ -1,7 +1,21 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
 import { TransactionList } from './TransactionList';
-import { mockTransactions, mockWallets } from '../../../../.storybook/mocks/mockData';
+import {
+  mockTransactions,
+  mockWallet,
+  mockWallets,
+} from '../../../../.storybook/mocks/mockData';
+import { Wallet } from '../../../domain';
+
+const manyMockWallets: Wallet[] = [
+  mockWallets[0],
+  mockWallets[1],
+  mockWallets[2],
+  { ...mockWallet, id: 4, name: 'GoPay' },
+  { ...mockWallet, id: 5, name: 'OVO' },
+  { ...mockWallet, id: 6, name: 'ShopeePay' },
+];
 
 const defaultArgs = {
   searchValue: '',
@@ -79,5 +93,29 @@ export const UnpaidFilter: Story = {
     paymentStatus: 'unpaid' as const,
     transactions: mockTransactions.filter((t) => t.paidAt === null),
     totalItem: 1,
+  },
+};
+
+// FR-2 in docs/prd-transaction-mobile-ux.md: at 360px the search input takes
+// its own full-width row, with clear + Filter on a second row.
+export const Mobile: Story = {
+  parameters: {
+    viewport: { defaultViewport: 'mobile' },
+  },
+  args: {
+    variant: { type: 'loaded' },
+    searchValue: 'Budi',
+  },
+};
+
+// FR-2: the filter popover stays on-screen at 360px and scrolls internally
+// once the wallet list grows past a handful of entries.
+export const MobileManyWallets: Story = {
+  parameters: {
+    viewport: { defaultViewport: 'mobile' },
+  },
+  args: {
+    variant: { type: 'loaded' },
+    wallets: manyMockWallets,
   },
 };

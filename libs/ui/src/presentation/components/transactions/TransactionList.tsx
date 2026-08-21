@@ -6,6 +6,7 @@ import {
   Paragraph,
   Popover,
   RadioGroup,
+  ScrollView,
   Separator,
   Spinner,
   XStack,
@@ -73,7 +74,12 @@ export const TransactionList = ({
 }: TransactionListProps) => {
   return (
     <YStack gap="$3" flex={1}>
-      <XStack gap="$3" justifyContent="space-between" alignItems="center">
+      <XStack
+        gap="$3"
+        justifyContent="space-between"
+        alignItems="center"
+        $xs={{ flexDirection: 'column', alignItems: 'stretch' }}
+      >
         <Input
           id="search"
           placeholder="Search Customer Name"
@@ -81,118 +87,135 @@ export const TransactionList = ({
           onChangeText={onSearchValueChange}
           flex={1}
         />
-        {searchValue.length > 0 && (
-          <Button
-            icon={X}
-            onPress={onSearchClear}
-            circular
-            size="$2"
-            accessibilityLabel="Clear search"
-          />
-        )}
 
-        <Popover size="$5" allowFlip stayInFrame offset={15}>
-          <Popover.Trigger asChild>
-            <Button icon={Filter}>Filter</Button>
-          </Popover.Trigger>
+        <XStack gap="$3" alignItems="center" justifyContent="flex-end">
+          {searchValue.length > 0 && (
+            <Button
+              icon={X}
+              onPress={onSearchClear}
+              circular
+              size="$2"
+              accessibilityLabel="Clear search"
+            />
+          )}
 
-          <Popover.Content
-            borderWidth={1}
-            borderColor="$borderColor"
-            width={300}
-            enterStyle={{ y: -10, opacity: 0 }}
-            exitStyle={{ y: -10, opacity: 0 }}
-            elevate
-            animation={[
-              'medium',
-              {
-                opacity: {
-                  overshootClamping: true,
+          <Popover size="$5" allowFlip stayInFrame offset={15}>
+            <Popover.Trigger asChild>
+              <Button icon={Filter} accessibilityLabel="Filter">
+                <Paragraph $xs={{ display: 'none' }}>Filter</Paragraph>
+              </Button>
+            </Popover.Trigger>
+
+            <Popover.Content
+              borderWidth={1}
+              borderColor="$borderColor"
+              width={300}
+              $xs={{ width: 260 }}
+              enterStyle={{ y: -10, opacity: 0 }}
+              exitStyle={{ y: -10, opacity: 0 }}
+              elevate
+              animation={[
+                'medium',
+                {
+                  opacity: {
+                    overshootClamping: true,
+                  },
                 },
-              },
-            ]}
-          >
-            <Popover.Arrow borderWidth={1} borderColor="$borderColor" />
+              ]}
+            >
+              <Popover.Arrow borderWidth={1} borderColor="$borderColor" />
 
-            <YStack gap="$3">
-              <YStack>
-                <Paragraph>Wallet</Paragraph>
+              <ScrollView maxHeight={400} $xs={{ maxHeight: 300 }}>
+                <YStack gap="$3">
+                  <YStack>
+                    <Paragraph>Wallet</Paragraph>
 
-                <RadioGroup
-                  value={walletId === null ? 'all' : walletId.toString()}
-                  onValueChange={(value) =>
-                    onWalletIdChange(value === 'all' ? null : parseInt(value))
-                  }
-                >
-                  <XStack gap="$3" flexWrap="wrap">
-                    <XStack gap="$2" alignItems="center">
-                      <RadioGroup.Item value="all" id="all-wallet">
-                        <RadioGroup.Indicator />
-                      </RadioGroup.Item>
+                    <RadioGroup
+                      value={walletId === null ? 'all' : walletId.toString()}
+                      onValueChange={(value) =>
+                        onWalletIdChange(
+                          value === 'all' ? null : parseInt(value)
+                        )
+                      }
+                    >
+                      <XStack gap="$3" flexWrap="wrap">
+                        <XStack gap="$2" alignItems="center">
+                          <RadioGroup.Item value="all" id="all-wallet">
+                            <RadioGroup.Indicator />
+                          </RadioGroup.Item>
 
-                      <Label htmlFor="all-wallet">All</Label>
-                    </XStack>
+                          <Label htmlFor="all-wallet">All</Label>
+                        </XStack>
 
-                    {wallets.map((wallet) => (
-                      <XStack gap="$2" alignItems="center">
-                        <RadioGroup.Item
-                          value={wallet.id.toString()}
-                          id={wallet.id.toString()}
-                        >
-                          <RadioGroup.Indicator />
-                        </RadioGroup.Item>
+                        {wallets.map((wallet) => (
+                          <XStack
+                            key={wallet.id}
+                            gap="$2"
+                            alignItems="center"
+                          >
+                            <RadioGroup.Item
+                              value={wallet.id.toString()}
+                              id={wallet.id.toString()}
+                            >
+                              <RadioGroup.Indicator />
+                            </RadioGroup.Item>
 
-                        <Label htmlFor={wallet.id.toString()}>
-                          {wallet.name}
-                        </Label>
+                            <Label htmlFor={wallet.id.toString()}>
+                              {wallet.name}
+                            </Label>
+                          </XStack>
+                        ))}
                       </XStack>
-                    ))}
-                  </XStack>
-                </RadioGroup>
-              </YStack>
+                    </RadioGroup>
+                  </YStack>
 
-              <Separator />
+                  <Separator />
 
-              <YStack>
-                <Paragraph>Payment Status</Paragraph>
-                <RadioGroup
-                  value={paymentStatus}
-                  onValueChange={(value) =>
-                    onPaymentStatusChange(value as PaymentStatus)
-                  }
-                  gap="$2"
-                >
-                  <XStack gap="$3">
-                    <XStack gap="$2" alignItems="center">
-                      <RadioGroup.Item value="all" id="all-payment-status">
-                        <RadioGroup.Indicator />
-                      </RadioGroup.Item>
-                      <Label htmlFor="all-payment-status">All</Label>
-                    </XStack>
+                  <YStack>
+                    <Paragraph>Payment Status</Paragraph>
+                    <RadioGroup
+                      value={paymentStatus}
+                      onValueChange={(value) =>
+                        onPaymentStatusChange(value as PaymentStatus)
+                      }
+                      gap="$2"
+                    >
+                      <XStack gap="$3">
+                        <XStack gap="$2" alignItems="center">
+                          <RadioGroup.Item
+                            value="all"
+                            id="all-payment-status"
+                          >
+                            <RadioGroup.Indicator />
+                          </RadioGroup.Item>
+                          <Label htmlFor="all-payment-status">All</Label>
+                        </XStack>
 
-                    <XStack gap="$2" alignItems="center">
-                      <RadioGroup.Item value="paid" id="paid">
-                        <RadioGroup.Indicator />
-                      </RadioGroup.Item>
-                      <Label htmlFor="paid">Paid</Label>
-                    </XStack>
+                        <XStack gap="$2" alignItems="center">
+                          <RadioGroup.Item value="paid" id="paid">
+                            <RadioGroup.Indicator />
+                          </RadioGroup.Item>
+                          <Label htmlFor="paid">Paid</Label>
+                        </XStack>
 
-                    <XStack gap="$2" alignItems="center">
-                      <RadioGroup.Item value="unpaid" id="unpaid">
-                        <RadioGroup.Indicator />
-                      </RadioGroup.Item>
-                      <Label htmlFor="unpaid">Unpaid</Label>
-                    </XStack>
-                  </XStack>
-                </RadioGroup>
-              </YStack>
-            </YStack>
-          </Popover.Content>
-        </Popover>
+                        <XStack gap="$2" alignItems="center">
+                          <RadioGroup.Item value="unpaid" id="unpaid">
+                            <RadioGroup.Indicator />
+                          </RadioGroup.Item>
+                          <Label htmlFor="unpaid">Unpaid</Label>
+                        </XStack>
+                      </XStack>
+                    </RadioGroup>
+                  </YStack>
+                </YStack>
+              </ScrollView>
+            </Popover.Content>
+          </Popover>
 
-        {(isRevalidating || isChangingParams) && (
-          <Spinner size="small" color="$gray10" testID="search-spinner" />
-        )}
+          {(isRevalidating || isChangingParams) && (
+            <Spinner size="small" color="$gray10" testID="search-spinner" />
+          )}
+        </XStack>
       </XStack>
       {variant.type === 'loading' ? (
         <SkeletonList />

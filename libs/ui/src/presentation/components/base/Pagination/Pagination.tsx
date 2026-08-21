@@ -37,20 +37,20 @@ export const Pagination = ({
   );
 
   return totalPage <= 1 ? null : (
-    <XStack gap="$3">
+    <XStack gap="$3" flexWrap="wrap">
       {currentPage !== 1 && (
-        <Button size="$2" icon={ChevronsLeft} onPress={() => onChangePage(1)} />
+        <Button size="$3" icon={ChevronsLeft} onPress={() => onChangePage(1)} />
       )}
 
       <Button
-        size="$2"
+        size="$3"
         icon={ChevronLeft}
         disabled={isPrevDisabled}
         onPress={() => onChangePage(currentPage - 1)}
       />
       {currentIndex > numItemBeforeAfter && (
         <Button
-          size="$2"
+          size="$3"
           onPress={() => onChangePage(currentPage - (numItemBeforeAfter + 1))}
         >
           ...
@@ -60,7 +60,7 @@ export const Pagination = ({
       {shownPaginations.map((page) => (
         <Button
           key={page}
-          size="$2"
+          size="$3"
           onPress={() => onChangePage(page)}
           disabled={currentPage === page}
           theme={page === currentPage ? 'blue' : undefined}
@@ -71,7 +71,7 @@ export const Pagination = ({
 
       {currentPage <= totalPage - 3 && (
         <Button
-          size="$2"
+          size="$3"
           onPress={() => onChangePage(currentPage + (numItemBeforeAfter + 1))}
         >
           ...
@@ -79,7 +79,7 @@ export const Pagination = ({
       )}
 
       <Button
-        size="$2"
+        size="$3"
         icon={ChevronRight}
         disabled={isNextDisabled}
         onPress={() => onChangePage(currentPage + 1)}
@@ -87,7 +87,7 @@ export const Pagination = ({
 
       {currentPage !== totalPage && (
         <Button
-          size="$2"
+          size="$3"
           icon={ChevronsRight}
           onPress={() => onChangePage(totalPage)}
         />
