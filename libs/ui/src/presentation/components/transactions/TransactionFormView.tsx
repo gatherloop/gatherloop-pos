@@ -73,10 +73,14 @@ export const TransactionFormView = ({
       <FormProvider {...form}>
         <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
           <FormErrorBanner message={serverError} />
-          <XStack gap="$3">
+          <XStack gap="$3" $xs={{ flexDirection: 'column' }}>
             <YStack flex={1}>{TransactionItemSelect()}</YStack>
             <YStack gap="$3">
-              <Card maxWidth={400} padded alignSelf="flex-start">
+              <Card
+                width="100%"
+                padded
+                $gtXs={{ maxWidth: 400, alignSelf: 'flex-start' }}
+              >
                 <YStack gap="$3">
                   <Field name="name" label="Customer Name" flex={1}>
                     <InputText />
@@ -109,10 +113,11 @@ export const TransactionFormView = ({
                                 <XStack
                                   gap="$3"
                                   flex={1}
+                                  flexWrap="wrap"
                                   alignItems="center"
                                   justifyContent="space-between"
                                 >
-                                  <XStack gap="$3">
+                                  <XStack gap="$3" flexShrink={1}>
                                     <Button
                                       icon={Trash}
                                       size="$3"
@@ -123,7 +128,7 @@ export const TransactionFormView = ({
                                       color="$red8"
                                       circular
                                     />
-                                    <YStack>
+                                    <YStack flexShrink={1}>
                                       <Paragraph size="$5">
                                         {variant.product.name}
                                       </Paragraph>
@@ -158,6 +163,8 @@ export const TransactionFormView = ({
                                       name={`transactionItems.${index}.amount`}
                                       min={1}
                                       maxWidth={50}
+                                      $xs={{ minWidth: 64 }}
+                                      buttonSize="$3"
                                     />
                                   )}
 
@@ -267,7 +274,7 @@ export const TransactionFormView = ({
                               <XStack
                                 key={key}
                                 gap="$5"
-                                $lg={{ flexDirection: 'column' }}
+                                $xs={{ flexDirection: 'column' }}
                               >
                                 <XStack gap="$3" flex={1} alignItems="center">
                                   <Button
