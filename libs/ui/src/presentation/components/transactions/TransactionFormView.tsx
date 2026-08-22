@@ -114,87 +114,100 @@ export const TransactionFormView = ({
             </YStack>
 
             <Sheet isOpen={isCartSheetOpen} onOpenChange={setIsCartSheetOpen}>
-              <YStack flex={1}>
-                <XStack
-                  padding="$3"
-                  alignItems="center"
-                  justifyContent="space-between"
-                  borderBottomWidth={1}
-                  borderBottomColor="$borderColor"
-                >
-                  {isCouponSheetOpen ? (
-                    <XStack gap="$3" alignItems="center">
-                      <Button
-                        icon={ArrowLeft}
-                        size="$3"
-                        circular
-                        accessibilityLabel="Back to Cart"
-                        onPress={() => onCouponSheetOpenChange(false)}
-                      />
-                      <H4>Apply Coupon</H4>
-                    </XStack>
-                  ) : (
-                    <>
-                      <H4>Cart</H4>
-                      <Button
-                        icon={X}
-                        size="$3"
-                        circular
-                        accessibilityLabel="Close Cart"
-                        onPress={() => setIsCartSheetOpen(false)}
-                      />
-                    </>
-                  )}
-                </XStack>
-
-                <ScrollView flex={1}>
-                  <YStack padding="$3" flex={1}>
-                    {isCouponSheetOpen ? (
-                      TransactionCouponList()
-                    ) : (
-                      <TransactionCartView
-                        form={form}
-                        isCouponSheetOpen={isCouponSheetOpen}
-                        onCouponSheetOpenChange={onCouponSheetOpenChange}
-                        onItemCouponSheetOpen={onItemCouponSheetOpen}
-                        onRemoveItemCoupon={onRemoveItemCoupon}
-                        TransactionCouponList={TransactionCouponList}
-                        itemsFieldArray={itemsFieldArray}
-                        couponsFieldArray={couponsFieldArray}
-                        serverError={serverError}
-                      />
-                    )}
-                  </YStack>
-                </ScrollView>
-
-                {!isCouponSheetOpen && (
-                  <YStack
+              {/* Tamagui's modal `Sheet` renders its content through its own
+                  portal host rather than as a plain DOM/native child, which on
+                  some platforms (e.g. Android) does not carry the ambient
+                  React context down from the outer `FormProvider` above. Since
+                  everything in here reads the transaction form via
+                  `useFormContext()`, re-establish the provider inside the
+                  sheet so it survives regardless of how the sheet portals its
+                  content. */}
+              <FormProvider {...form}>
+                <YStack flex={1}>
+                  <XStack
                     padding="$3"
-                    gap="$3"
-                    borderTopWidth={1}
-                    borderTopColor="$borderColor"
+                    alignItems="center"
+                    justifyContent="space-between"
+                    borderBottomWidth={1}
+                    borderBottomColor="$borderColor"
                   >
-                    <XStack alignItems="center" justifyContent="space-between">
-                      <H4 textTransform="none">Total</H4>
-                      <FieldWatch
-                        control={form.control}
-                        name={['transactionItems', 'transactionCoupons']}
+                    {isCouponSheetOpen ? (
+                      <XStack gap="$3" alignItems="center">
+                        <Button
+                          icon={ArrowLeft}
+                          size="$3"
+                          circular
+                          accessibilityLabel="Back to Cart"
+                          onPress={() => onCouponSheetOpenChange(false)}
+                        />
+                        <H4>Apply Coupon</H4>
+                      </XStack>
+                    ) : (
+                      <>
+                        <H4>Cart</H4>
+                        <Button
+                          icon={X}
+                          size="$3"
+                          circular
+                          accessibilityLabel="Close Cart"
+                          onPress={() => setIsCartSheetOpen(false)}
+                        />
+                      </>
+                    )}
+                  </XStack>
+
+                  <ScrollView flex={1}>
+                    <YStack padding="$3" flex={1}>
+                      {isCouponSheetOpen ? (
+                        TransactionCouponList()
+                      ) : (
+                        <TransactionCartView
+                          form={form}
+                          isCouponSheetOpen={isCouponSheetOpen}
+                          onCouponSheetOpenChange={onCouponSheetOpenChange}
+                          onItemCouponSheetOpen={onItemCouponSheetOpen}
+                          onRemoveItemCoupon={onRemoveItemCoupon}
+                          TransactionCouponList={TransactionCouponList}
+                          itemsFieldArray={itemsFieldArray}
+                          couponsFieldArray={couponsFieldArray}
+                          serverError={serverError}
+                        />
+                      )}
+                    </YStack>
+                  </ScrollView>
+
+                  {!isCouponSheetOpen && (
+                    <YStack
+                      padding="$3"
+                      gap="$3"
+                      borderTopWidth={1}
+                      borderTopColor="$borderColor"
+                    >
+                      <XStack
+                        alignItems="center"
+                        justifyContent="space-between"
                       >
-                        {([transactionItems, transactionCoupons]) => (
-                          <H4 textTransform="none">
-                            Rp.{' '}
-                            {calculateTransactionFinalTotal(
-                              transactionItems,
-                              transactionCoupons
-                            ).toLocaleString('id')}
-                          </H4>
-                        )}
-                      </FieldWatch>
-                    </XStack>
-                    {submitButton}
-                  </YStack>
-                )}
-              </YStack>
+                        <H4 textTransform="none">Total</H4>
+                        <FieldWatch
+                          control={form.control}
+                          name={['transactionItems', 'transactionCoupons']}
+                        >
+                          {([transactionItems, transactionCoupons]) => (
+                            <H4 textTransform="none">
+                              Rp.{' '}
+                              {calculateTransactionFinalTotal(
+                                transactionItems,
+                                transactionCoupons
+                              ).toLocaleString('id')}
+                            </H4>
+                          )}
+                        </FieldWatch>
+                      </XStack>
+                      {submitButton}
+                    </YStack>
+                  )}
+                </YStack>
+              </FormProvider>
             </Sheet>
           </Form>
         </FormProvider>

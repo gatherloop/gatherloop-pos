@@ -22,6 +22,6 @@ export function FieldWatch<
   TFieldValues extends FieldValues,
   TFieldNames extends FieldPath<TFieldValues>[]
 >(props: FieldWatchProps<TFieldValues, TFieldNames>) {
-  const value = useWatch({ name: props.name });
+  const value = useWatch({ control: props.control, name: props.name });
   return <>{props.children(value)}</>;
 }
