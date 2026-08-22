@@ -299,7 +299,7 @@ export const App = () => {
           />
           <Stack.Screen
             name="dashboard"
-            component={() => {
+            children={() => {
               const defaultTransactionRange = getDateRangeForPreset(
                 DEFAULT_TRANSACTION_STATISTIC_PRESET
               );
@@ -337,14 +337,14 @@ export const App = () => {
           />
           <Stack.Screen
             name="categoryList"
-            component={(
+            children={(
               _props: NativeStackScreenProps<RootStackParamList, 'categoryList'>
             ) => <CategoryList categoryListParams={{ categories: [] }} />}
           />
           <Stack.Screen name="categoryCreate" component={CategoryCreate} />
           <Stack.Screen
             name="categoryUpdate"
-            component={(
+            children={(
               props: NativeStackScreenProps<
                 RootStackParamList,
                 'categoryUpdate'
@@ -360,14 +360,14 @@ export const App = () => {
           />
           <Stack.Screen
             name="couponList"
-            component={(
+            children={(
               _props: NativeStackScreenProps<RootStackParamList, 'couponList'>
             ) => <CouponList couponListParams={{ coupons: [] }} />}
           />
           <Stack.Screen name="couponCreate" component={CouponCreate} />
           <Stack.Screen
             name="couponUpdate"
-            component={(
+            children={(
               props: NativeStackScreenProps<RootStackParamList, 'couponUpdate'>
             ) => (
               <CouponUpdate
@@ -380,14 +380,14 @@ export const App = () => {
           />
           <Stack.Screen
             name="ticketList"
-            component={(
+            children={(
               _props: NativeStackScreenProps<RootStackParamList, 'ticketList'>
             ) => <TicketList ticketListParams={{ tickets: [] }} />}
           />
           <Stack.Screen name="ticketCreate" component={TicketCreate} />
           <Stack.Screen
             name="ticketUpdate"
-            component={(
+            children={(
               props: NativeStackScreenProps<RootStackParamList, 'ticketUpdate'>
             ) => (
               <TicketUpdate
@@ -400,7 +400,7 @@ export const App = () => {
           />
           <Stack.Screen
             name="materialList"
-            component={(
+            children={(
               props: NativeStackScreenProps<RootStackParamList, 'materialList'>
             ) => (
               <MaterialList
@@ -414,7 +414,7 @@ export const App = () => {
           <Stack.Screen name="materialCreate" component={MaterialCreate} />
           <Stack.Screen
             name="materialUpdate"
-            component={(
+            children={(
               props: NativeStackScreenProps<
                 RootStackParamList,
                 'materialUpdate'
@@ -430,7 +430,7 @@ export const App = () => {
           />
           <Stack.Screen
             name="supplierList"
-            component={(
+            children={(
               _props: NativeStackScreenProps<RootStackParamList, 'supplierList'>
             ) => (
               <SupplierList
@@ -444,7 +444,7 @@ export const App = () => {
           <Stack.Screen name="supplierCreate" component={SupplierCreate} />
           <Stack.Screen
             name="supplierUpdate"
-            component={(
+            children={(
               props: NativeStackScreenProps<
                 RootStackParamList,
                 'supplierUpdate'
@@ -460,7 +460,7 @@ export const App = () => {
           />
           <Stack.Screen
             name="walletList"
-            component={(
+            children={(
               _props: NativeStackScreenProps<RootStackParamList, 'walletList'>
             ) => (
               <WalletList
@@ -473,7 +473,7 @@ export const App = () => {
           <Stack.Screen name="walletCreate" component={WalletCreate} />
           <Stack.Screen
             name="walletUpdate"
-            component={(
+            children={(
               props: NativeStackScreenProps<RootStackParamList, 'walletUpdate'>
             ) => (
               <WalletUpdate
@@ -486,7 +486,7 @@ export const App = () => {
           />
           <Stack.Screen
             name="walletTransferList"
-            component={(
+            children={(
               props: NativeStackScreenProps<
                 RootStackParamList,
                 'walletTransferList'
@@ -506,7 +506,7 @@ export const App = () => {
           />
           <Stack.Screen
             name="walletTransferCreate"
-            component={(
+            children={(
               props: NativeStackScreenProps<
                 RootStackParamList,
                 'walletTransferCreate'
@@ -522,7 +522,7 @@ export const App = () => {
           />
           <Stack.Screen
             name="productList"
-            component={(
+            children={(
               _props: NativeStackScreenProps<RootStackParamList, 'productList'>
             ) => (
               <ProductList
@@ -535,7 +535,7 @@ export const App = () => {
           />
           <Stack.Screen
             name="productCreate"
-            component={(
+            children={(
               _props: NativeStackScreenProps<
                 RootStackParamList,
                 'productCreate'
@@ -544,7 +544,7 @@ export const App = () => {
           />
           <Stack.Screen
             name="productUpdate"
-            component={(
+            children={(
               props: NativeStackScreenProps<RootStackParamList, 'productUpdate'>
             ) => (
               <ProductUpdate
@@ -559,7 +559,7 @@ export const App = () => {
           />
           <Stack.Screen
             name="variantList"
-            component={(
+            children={(
               _props: NativeStackScreenProps<RootStackParamList, 'variantList'>
             ) => (
               <VariantList
@@ -572,7 +572,7 @@ export const App = () => {
           />
           <Stack.Screen
             name="variantCreate"
-            component={(
+            children={(
               props: NativeStackScreenProps<RootStackParamList, 'variantCreate'>
             ) => (
               <VariantCreate
@@ -589,7 +589,7 @@ export const App = () => {
           />
           <Stack.Screen
             name="variantUpdate"
-            component={(
+            children={(
               props: NativeStackScreenProps<RootStackParamList, 'variantUpdate'>
             ) => (
               <VariantUpdate
@@ -608,14 +608,14 @@ export const App = () => {
           />
           <Stack.Screen
             name="budgetList"
-            component={(
+            children={(
               _props: NativeStackScreenProps<RootStackParamList, 'budgetList'>
             ) => <BudgetList budgetListParams={{ budgets: [] }} />}
           />
           <Stack.Screen name="budgetCreate" component={BudgetCreate} />
           <Stack.Screen
             name="budgetUpdate"
-            component={(
+            children={(
               props: NativeStackScreenProps<RootStackParamList, 'budgetUpdate'>
             ) => (
               <BudgetUpdate
@@ -628,7 +628,7 @@ export const App = () => {
           />
           <Stack.Screen
             name="transactionList"
-            component={(
+            children={(
               _props: NativeStackScreenProps<
                 RootStackParamList,
                 'transactionList'
@@ -646,7 +646,7 @@ export const App = () => {
           />
           <Stack.Screen
             name="transactionCreate"
-            component={(
+            children={(
               _props: NativeStackScreenProps<
                 RootStackParamList,
                 'transactionCreate'
@@ -668,7 +668,7 @@ export const App = () => {
           />
           <Stack.Screen
             name="transactionUpdate"
-            component={(
+            children={(
               props: NativeStackScreenProps<
                 RootStackParamList,
                 'transactionUpdate'
@@ -691,7 +691,7 @@ export const App = () => {
           />
           <Stack.Screen
             name="transactionDetail"
-            component={(
+            children={(
               props: NativeStackScreenProps<
                 RootStackParamList,
                 'transactionDetail'
@@ -707,7 +707,7 @@ export const App = () => {
           />
           <Stack.Screen
             name="expenseList"
-            component={(
+            children={(
               _props: NativeStackScreenProps<RootStackParamList, 'expenseList'>
             ) => (
               <ExpenseList
@@ -722,7 +722,7 @@ export const App = () => {
           />
           <Stack.Screen
             name="expenseCreate"
-            component={(
+            children={(
               _props: NativeStackScreenProps<
                 RootStackParamList,
                 'expenseCreate'
@@ -738,7 +738,7 @@ export const App = () => {
           />
           <Stack.Screen
             name="expenseUpdate"
-            component={(
+            children={(
               props: NativeStackScreenProps<RootStackParamList, 'expenseUpdate'>
             ) => (
               <ExpenseUpdate
@@ -753,7 +753,7 @@ export const App = () => {
           />
           <Stack.Screen
             name="calculationList"
-            component={(
+            children={(
               _props: NativeStackScreenProps<
                 RootStackParamList,
                 'calculationList'
@@ -768,7 +768,7 @@ export const App = () => {
           />
           <Stack.Screen
             name="calculationCreate"
-            component={(
+            children={(
               _props: NativeStackScreenProps<
                 RootStackParamList,
                 'calculationCreate'
@@ -779,7 +779,7 @@ export const App = () => {
           />
           <Stack.Screen
             name="calculationUpdate"
-            component={(
+            children={(
               props: NativeStackScreenProps<
                 RootStackParamList,
                 'calculationUpdate'
@@ -796,7 +796,7 @@ export const App = () => {
           />
           <Stack.Screen
             name="rentalList"
-            component={(
+            children={(
               _props: NativeStackScreenProps<RootStackParamList, 'rentalList'>
             ) => (
               <RentalList rentalListParams={{ rentals: [], totalItem: 0 }} />
@@ -804,7 +804,7 @@ export const App = () => {
           />
           <Stack.Screen
             name="rentalCheckin"
-            component={(
+            children={(
               _props: NativeStackScreenProps<
                 RootStackParamList,
                 'rentalCheckin'
@@ -817,7 +817,7 @@ export const App = () => {
           />
           <Stack.Screen
             name="rentalCheckout"
-            component={(
+            children={(
               _props: NativeStackScreenProps<
                 RootStackParamList,
                 'rentalCheckout'
@@ -830,7 +830,7 @@ export const App = () => {
           />
           <Stack.Screen
             name="checklistTemplateList"
-            component={(
+            children={(
               _props: NativeStackScreenProps<
                 RootStackParamList,
                 'checklistTemplateList'
@@ -850,7 +850,7 @@ export const App = () => {
           />
           <Stack.Screen
             name="checklistTemplateUpdate"
-            component={(
+            children={(
               props: NativeStackScreenProps<
                 RootStackParamList,
                 'checklistTemplateUpdate'
@@ -866,7 +866,7 @@ export const App = () => {
           />
           <Stack.Screen
             name="checklistSessionList"
-            component={(
+            children={(
               _props: NativeStackScreenProps<
                 RootStackParamList,
                 'checklistSessionList'
@@ -884,7 +884,7 @@ export const App = () => {
           />
           <Stack.Screen
             name="checklistSessionDetail"
-            component={(
+            children={(
               props: NativeStackScreenProps<
                 RootStackParamList,
                 'checklistSessionDetail'
