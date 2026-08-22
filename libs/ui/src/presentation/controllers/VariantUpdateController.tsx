@@ -20,7 +20,7 @@ export const useVariantUpdateController = (usecase: VariantUpdateUsecase) => {
   }, [toast, state.type]);
 
   const form = useForm({
-    defaultValues: state.values,
+    values: state.values,
     resolver: zodResolver(
       z.object({
         productId: z.number(),

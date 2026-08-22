@@ -20,7 +20,7 @@ export const useCalculationUpdateController = (
   }, [toast, state.type]);
 
   const form = useForm({
-    defaultValues: state.values,
+    values: state.values,
     resolver: zodResolver(
       z.object({
         walletId: z.number(),

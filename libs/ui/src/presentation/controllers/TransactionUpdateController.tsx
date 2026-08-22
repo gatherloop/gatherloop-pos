@@ -41,7 +41,7 @@ export const useTransactionUpdateController = (
   }, [toast, state.type]);
 
   const form = useForm({
-    defaultValues: state.values,
+    values: state.values,
     resolver: zodResolver(
       z.object({
         name: z.string().min(1),
@@ -106,9 +106,7 @@ export const useTransactionUpdateController = (
 
   const onAddCoupon = (newCoupon: Coupon) => {
     if (couponSheetItemIndex !== null) {
-      const item = form.getValues(
-        `transactionItems.${couponSheetItemIndex}`
-      );
+      const item = form.getValues(`transactionItems.${couponSheetItemIndex}`);
       const base = item.price * item.amount;
       itemsFieldArray.update(couponSheetItemIndex, {
         ...item,

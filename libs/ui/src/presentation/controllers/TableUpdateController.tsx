@@ -17,7 +17,7 @@ export const useTableUpdateController = (usecase: TableUpdateUsecase) => {
   }, [toast, state.type]);
 
   const form = useForm({
-    defaultValues: state.values,
+    values: state.values,
     resolver: zodResolver(
       z.object({
         label: z.string().min(1),

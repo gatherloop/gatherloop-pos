@@ -20,7 +20,7 @@ export const useRentalCheckoutController = (usecase: RentalCheckoutUsecase) => {
   }, [toast, state.type]);
 
   const form = useForm({
-    defaultValues: state.values,
+    values: state.values,
     resolver: zodResolver(
       z.object({
         rentals: z.array(z.lazy(() => z.any())).min(1),
