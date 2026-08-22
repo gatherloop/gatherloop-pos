@@ -22,7 +22,7 @@ import {
   Tabs,
   useIsCompactLayout,
 } from '../base';
-import { FlatList } from 'react-native';
+import { FlatList, useWindowDimensions } from 'react-native';
 import { ProductListItem } from '../products';
 import { Minus, Plus, X } from '@tamagui/lucide-icons';
 
@@ -73,6 +73,7 @@ export const TransactionItemSelect = ({
   onAmountChange,
 }: TransactionItemSelectProps) => {
   const isCompactLayout = useIsCompactLayout();
+  const { height: windowHeight } = useWindowDimensions();
   const productByCategories = products.reduce<Record<string, Product[]>>(
     (prev, curr) => ({
       ...prev,
@@ -125,16 +126,20 @@ export const TransactionItemSelect = ({
             exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
             gap="$4"
             // On compact, the dialog follows the viewport instead of a fixed
-            // 500px, and is capped to a percentage of the screen height so
-            // a many-option product scrolls instead of pushing Cancel/Submit
-            // off screen (PRD FR-6). Desktop is untouched: 500px, unbounded.
+            // 500px (PRD FR-6). This is a safety-net cap only — Dialog.Content
+            // is centered (not stretched) by its native portal frame, so it
+            // never gets a *definite* height, just this max. The ScrollView
+            // below can't rely on `flex: 1` to grow into that (Yoga doesn't
+            // redistribute space to a flex child inside an auto/max-height
+            // parent the way browser CSS does), so it gets its own numeric
+            // maxHeight instead.
             width={isCompactLayout ? '90%' : 500}
             maxWidth={500}
-            maxHeight={isCompactLayout ? '85%' : undefined}
+            maxHeight="85%"
           >
             <Dialog.Title>{selectedProduct?.name}</Dialog.Title>
 
-            <ScrollView flex={1}>
+            <ScrollView maxHeight={windowHeight * 0.6}>
               <YStack gap="$3">
                 {selectedProduct?.options.map((option, index) => (
                   <YStack key={option.id}>
@@ -158,11 +163,6 @@ export const TransactionItemSelect = ({
                               value={JSON.stringify(value)}
                               id={value.id.toString()}
                               size={2}
-                              // Radio circles are visually $2 but the tap
-                              // target is expanded to 44px on compact so
-                              // they meet the minimum touch target (FR-6).
-                              minWidth={isCompactLayout ? 44 : undefined}
-                              minHeight={isCompactLayout ? 44 : undefined}
                             >
                               <RadioGroup.Indicator />
                             </RadioGroup.Item>
@@ -184,8 +184,6 @@ export const TransactionItemSelect = ({
                     onPress={() => onAmountChange(amount - 1)}
                     circular
                     disabled={amount === 1}
-                    minWidth={isCompactLayout ? 44 : undefined}
-                    minHeight={isCompactLayout ? 44 : undefined}
                   />
 
                   <Input
@@ -205,8 +203,6 @@ export const TransactionItemSelect = ({
                     size="$2"
                     onPress={() => onAmountChange(amount + 1)}
                     circular
-                    minWidth={isCompactLayout ? 44 : undefined}
-                    minHeight={isCompactLayout ? 44 : undefined}
                   />
                 </XStack>
               </YStack>
