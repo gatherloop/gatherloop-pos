@@ -1,4 +1,4 @@
-import { ScrollView } from 'tamagui';
+import { ScrollView, YStack } from 'tamagui';
 import {
   TransactionFormView,
   Layout,
@@ -7,6 +7,7 @@ import {
   TransactionItemSelectProps,
   CouponList,
   CouponListProps,
+  useIsCompactLayout,
 } from '../components';
 import { OptionValue, Product, TransactionForm, Wallet } from '../../domain';
 import { UseFormReturn, UseFieldArrayReturn } from 'react-hook-form';
@@ -71,63 +72,70 @@ export type TransactionCreateScreenProps = {
 export const TransactionCreateScreen = (
   props: TransactionCreateScreenProps
 ) => {
+  const isCompactLayout = useIsCompactLayout();
+
+  const formView = (
+    <TransactionFormView
+      form={props.form}
+      onSubmit={props.onSubmit}
+      isSubmitDisabled={props.isSubmitDisabled}
+      isSubmitting={props.isSubmitting}
+      isCouponSheetOpen={props.isCouponSheetOpen}
+      onCouponSheetOpenChange={props.onCouponSheetOpenChange}
+      onItemCouponSheetOpen={props.onItemCouponSheetOpen}
+      onRemoveItemCoupon={props.onRemoveItemCoupon}
+      itemsFieldArray={props.itemsFieldArray}
+      couponsFieldArray={props.couponsFieldArray}
+      serverError={props.serverError}
+      TransactionItemSelect={() => (
+        <TransactionItemSelect
+          amount={props.transactionItemSelect.amount}
+          currentPage={props.transactionItemSelect.currentPage}
+          itemPerPage={props.transactionItemSelect.itemPerPage}
+          onAmountChange={props.transactionItemSelect.onAmountChange}
+          onOptionValuesChange={
+            props.transactionItemSelect.onOptionValuesChange
+          }
+          onPageChange={props.transactionItemSelect.onPageChange}
+          onRetryButtonPress={props.transactionItemSelect.onRetryButtonPress}
+          onSearchValueChange={props.transactionItemSelect.onSearchValueChange}
+          onSelectProduct={props.transactionItemSelect.onSelectProduct}
+          onSubmit={props.transactionItemSelect.onSubmit}
+          onUnselectProduct={props.transactionItemSelect.onUnselectProduct}
+          products={props.transactionItemSelect.products}
+          searchValue={props.transactionItemSelect.searchValue}
+          selectedOptionValues={
+            props.transactionItemSelect.selectedOptionValues
+          }
+          totalItem={props.transactionItemSelect.totalItem}
+          variant={props.transactionItemSelect.variant}
+          selectedProduct={props.transactionItemSelect.selectedProduct}
+        />
+      )}
+      TransactionCouponList={() => (
+        <CouponList
+          onItemPress={props.couponList.onItemPress}
+          onRetryButtonPress={props.couponList.onRetryButtonPress}
+          variant={props.couponList.variant}
+        />
+      )}
+    />
+  );
+
   return (
     <Layout
       title="Create Transaction"
       showBackButton
       onLogoutPress={props.onLogoutPress}
     >
-      <ScrollView>
-        <TransactionFormView
-          form={props.form}
-          onSubmit={props.onSubmit}
-          isSubmitDisabled={props.isSubmitDisabled}
-          isSubmitting={props.isSubmitting}
-          isCouponSheetOpen={props.isCouponSheetOpen}
-          onCouponSheetOpenChange={props.onCouponSheetOpenChange}
-          onItemCouponSheetOpen={props.onItemCouponSheetOpen}
-          onRemoveItemCoupon={props.onRemoveItemCoupon}
-          itemsFieldArray={props.itemsFieldArray}
-          couponsFieldArray={props.couponsFieldArray}
-          serverError={props.serverError}
-          TransactionItemSelect={() => (
-            <TransactionItemSelect
-              amount={props.transactionItemSelect.amount}
-              currentPage={props.transactionItemSelect.currentPage}
-              itemPerPage={props.transactionItemSelect.itemPerPage}
-              onAmountChange={props.transactionItemSelect.onAmountChange}
-              onOptionValuesChange={
-                props.transactionItemSelect.onOptionValuesChange
-              }
-              onPageChange={props.transactionItemSelect.onPageChange}
-              onRetryButtonPress={
-                props.transactionItemSelect.onRetryButtonPress
-              }
-              onSearchValueChange={
-                props.transactionItemSelect.onSearchValueChange
-              }
-              onSelectProduct={props.transactionItemSelect.onSelectProduct}
-              onSubmit={props.transactionItemSelect.onSubmit}
-              onUnselectProduct={props.transactionItemSelect.onUnselectProduct}
-              products={props.transactionItemSelect.products}
-              searchValue={props.transactionItemSelect.searchValue}
-              selectedOptionValues={
-                props.transactionItemSelect.selectedOptionValues
-              }
-              totalItem={props.transactionItemSelect.totalItem}
-              variant={props.transactionItemSelect.variant}
-              selectedProduct={props.transactionItemSelect.selectedProduct}
-            />
-          )}
-          TransactionCouponList={() => (
-            <CouponList
-              onItemPress={props.couponList.onItemPress}
-              onRetryButtonPress={props.couponList.onRetryButtonPress}
-              variant={props.couponList.variant}
-            />
-          )}
-        />
-      </ScrollView>
+      {isCompactLayout ? (
+        // On compact, the product picker owns a bounded `flex: 1` region
+        // and scrolls internally — an outer `ScrollView` here would give it
+        // no height to bound against (PRD FR-3).
+        <YStack flex={1}>{formView}</YStack>
+      ) : (
+        <ScrollView>{formView}</ScrollView>
+      )}
       <TransactionPaymentAlert
         form={props.transactionPayment.form}
         isButtonDisabled={props.transactionPayment.isButtonDisabled}

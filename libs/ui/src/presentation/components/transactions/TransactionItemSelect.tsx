@@ -20,6 +20,7 @@ import {
   LoadingView,
   Pagination,
   Tabs,
+  useIsCompactLayout,
 } from '../base';
 import { FlatList } from 'react-native';
 import { ProductListItem } from '../products';
@@ -71,6 +72,7 @@ export const TransactionItemSelect = ({
   amount,
   onAmountChange,
 }: TransactionItemSelectProps) => {
+  const isCompactLayout = useIsCompactLayout();
   const productByCategories = products.reduce<Record<string, Product[]>>(
     (prev, curr) => ({
       ...prev,
@@ -206,7 +208,14 @@ export const TransactionItemSelect = ({
         </Dialog.Portal>
       </Dialog>
 
-      <YStack gap="$3" flex={1}>
+      <YStack
+        gap="$3"
+        flex={1}
+        // Reserves room below the picker so the floating cart button
+        // (rendered by `TransactionFormView` on compact) never covers the
+        // last product row or the pagination controls (PRD FR-3).
+        paddingBottom={isCompactLayout ? 90 : undefined}
+      >
         <H4>Select Product</H4>
         <Paragraph>
           You can select product and its options to the transaction
@@ -216,7 +225,9 @@ export const TransactionItemSelect = ({
             placeholder="Search Products by Name"
             value={searchValue}
             onChangeText={onSearchValueChange}
-            autoFocus
+            // Autofocus would raise the keyboard over the product list
+            // before the user has seen it on a phone (PRD FR-3).
+            autoFocus={!isCompactLayout}
             flex={1}
           />
           <Button icon={X} onPress={() => onSearchValueChange('')} circular />
