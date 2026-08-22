@@ -124,86 +124,103 @@ export const TransactionItemSelect = ({
             enterStyle={{ x: 0, y: 20, opacity: 0 }}
             exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
             gap="$4"
-            width={500}
+            // On compact, the dialog follows the viewport instead of a fixed
+            // 500px, and is capped to a percentage of the screen height so
+            // a many-option product scrolls instead of pushing Cancel/Submit
+            // off screen (PRD FR-6). Desktop is untouched: 500px, unbounded.
+            width={isCompactLayout ? '90%' : 500}
+            maxWidth={500}
+            maxHeight={isCompactLayout ? '85%' : undefined}
           >
             <Dialog.Title>{selectedProduct?.name}</Dialog.Title>
 
-            <YStack gap="$3" flex={1}>
-              {selectedProduct?.options.map((option, index) => (
-                <YStack key={option.id}>
-                  <H5>{option.name}</H5>
-                  <RadioGroup
-                    value={
-                      selectedOptionValues[index]
-                        ? JSON.stringify(selectedOptionValues[index])
-                        : undefined
-                    }
-                    onValueChange={(value) => {
-                      const newOptionsValues = [...selectedOptionValues];
-                      newOptionsValues[index] = JSON.parse(value);
-                      onOptionValuesChange(newOptionsValues);
+            <ScrollView flex={1}>
+              <YStack gap="$3">
+                {selectedProduct?.options.map((option, index) => (
+                  <YStack key={option.id}>
+                    <H5>{option.name}</H5>
+                    <RadioGroup
+                      value={
+                        selectedOptionValues[index]
+                          ? JSON.stringify(selectedOptionValues[index])
+                          : undefined
+                      }
+                      onValueChange={(value) => {
+                        const newOptionsValues = [...selectedOptionValues];
+                        newOptionsValues[index] = JSON.parse(value);
+                        onOptionValuesChange(newOptionsValues);
+                      }}
+                    >
+                      <XStack flexWrap="wrap" gap="$3">
+                        {option.values.map((value) => (
+                          <XStack alignItems="center" gap="$2" key={value.id}>
+                            <RadioGroup.Item
+                              value={JSON.stringify(value)}
+                              id={value.id.toString()}
+                              size={2}
+                              // Radio circles are visually $2 but the tap
+                              // target is expanded to 44px on compact so
+                              // they meet the minimum touch target (FR-6).
+                              minWidth={isCompactLayout ? 44 : undefined}
+                              minHeight={isCompactLayout ? 44 : undefined}
+                            >
+                              <RadioGroup.Indicator />
+                            </RadioGroup.Item>
+
+                            <Label size={2} htmlFor={value.id.toString()}>
+                              {value.name}
+                            </Label>
+                          </XStack>
+                        ))}
+                      </XStack>
+                    </RadioGroup>
+                  </YStack>
+                ))}
+                <XStack gap="$2" alignItems="center">
+                  <Button
+                    icon={Minus}
+                    variant="outlined"
+                    size="$2"
+                    onPress={() => onAmountChange(amount - 1)}
+                    circular
+                    disabled={amount === 1}
+                    minWidth={isCompactLayout ? 44 : undefined}
+                    minHeight={isCompactLayout ? 44 : undefined}
+                  />
+
+                  <Input
+                    onChangeText={(text: string) => {
+                      const numberValue =
+                        text.trim() === '' ? 1 : parseFloat(text);
+                      if (!isNaN(numberValue)) {
+                        onAmountChange(numberValue);
+                      }
                     }}
-                  >
-                    <XStack flexWrap="wrap" gap="$3">
-                      {option.values.map((value) => (
-                        <XStack alignItems="center" gap="$2" key={value.id}>
-                          <RadioGroup.Item
-                            value={JSON.stringify(value)}
-                            id={value.id.toString()}
-                            size={2}
-                          >
-                            <RadioGroup.Indicator />
-                          </RadioGroup.Item>
-
-                          <Label size={2} htmlFor={value.id.toString()}>
-                            {value.name}
-                          </Label>
-                        </XStack>
-                      ))}
-                    </XStack>
-                  </RadioGroup>
-                </YStack>
-              ))}
-              <XStack gap="$2" alignItems="center">
-                <Button
-                  icon={Minus}
-                  variant="outlined"
-                  size="$2"
-                  onPress={() => onAmountChange(amount - 1)}
-                  circular
-                  disabled={amount === 1}
-                />
-
-                <Input
-                  onChangeText={(text: string) => {
-                    const numberValue =
-                      text.trim() === '' ? 1 : parseFloat(text);
-                    if (!isNaN(numberValue)) {
-                      onAmountChange(numberValue);
-                    }
-                  }}
-                  value={amount.toString()}
-                  flex={1}
-                />
-                <Button
-                  icon={Plus}
-                  variant="outlined"
-                  size="$2"
-                  onPress={() => onAmountChange(amount + 1)}
-                  circular
-                />
-              </XStack>
-              <XStack gap="$3">
-                <Button onPress={onUnselectProduct}>Cancel</Button>
-                <Button
-                  theme="blue"
-                  onPress={onSubmit}
-                  disabled={variant.type === 'submitting'}
-                >
-                  {variant.type === 'submitting' ? 'Submitting...' : 'Submit'}
-                </Button>
-              </XStack>
-            </YStack>
+                    value={amount.toString()}
+                    flex={1}
+                  />
+                  <Button
+                    icon={Plus}
+                    variant="outlined"
+                    size="$2"
+                    onPress={() => onAmountChange(amount + 1)}
+                    circular
+                    minWidth={isCompactLayout ? 44 : undefined}
+                    minHeight={isCompactLayout ? 44 : undefined}
+                  />
+                </XStack>
+              </YStack>
+            </ScrollView>
+            <XStack gap="$3">
+              <Button onPress={onUnselectProduct}>Cancel</Button>
+              <Button
+                theme="blue"
+                onPress={onSubmit}
+                disabled={variant.type === 'submitting'}
+              >
+                {variant.type === 'submitting' ? 'Submitting...' : 'Submit'}
+              </Button>
+            </XStack>
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog>
