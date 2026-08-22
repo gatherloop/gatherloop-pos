@@ -54,17 +54,21 @@ import {
   ChecklistSessionDetail,
   getStoredAuthToken,
   registerAuthTokenInterceptor,
+  TableUpdate,
+  TableCreate,
+  TableList,
+  StockCheckUpdate,
+  StockCheckCreate,
+  StockCheckList,
+  StockCheckPurchaseList,
 } from '@gatherloop-pos/ui';
 import { RootProvider } from '@gatherloop-pos/provider';
-import {
-  NavigationContainer,
-  NavigationContainerRef,
-} from '@react-navigation/native';
+import { NavigationContainer } from '@react-navigation/native';
 import {
   createNativeStackNavigator,
   NativeStackScreenProps,
 } from '@react-navigation/native-stack';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export type RootStackParamList = {
   authLogin: undefined;
@@ -118,6 +122,13 @@ export type RootStackParamList = {
   checklistSessionList: undefined;
   checklistSessionCreate: undefined;
   checklistSessionDetail: { checklistSessionId: number };
+  stockCheckList: undefined;
+  stockCheckCreate: undefined;
+  stockCheckUpdate: { stockCheckId: number };
+  stockCheckPurchaseList: { stockCheckId: number };
+  tableList: undefined;
+  tableCreate: undefined;
+  tableUpdate: { tableId: number };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -146,12 +157,50 @@ export const App = () => {
   }
 
   return (
-    <NavigationContainer
+    <NavigationContainer<RootStackParamList>
       linking={{
         prefixes: ['/'],
         config: {
           initialRouteName,
           screens: {
+            checklistTemplateCreate: 'checklist-templates/create',
+            checklistTemplateUpdate: {
+              path: 'checklist-templates/:checklistTemplateId',
+              parse: {
+                checklistTemplateId: (checklistTemplateId) =>
+                  parseInt(checklistTemplateId),
+              },
+            },
+            stockCheckList: 'stock-checks',
+            stockCheckCreate: 'stock-checks/create',
+            stockCheckUpdate: {
+              path: 'stock-checks/:stockCheckId/edit',
+              parse: {
+                stockCheckId: (stockCheckId) => parseInt(stockCheckId),
+              },
+            },
+            stockCheckPurchaseList: {
+              path: 'stock-checks/:stockCheckId/purchase-list',
+              parse: {
+                stockCheckId: (stockCheckId) => parseInt(stockCheckId),
+              },
+            },
+            tableList: 'tables',
+            tableCreate: 'tables/create',
+            tableUpdate: {
+              path: 'tables/:tableId',
+              parse: {
+                tableId: (tableId) => parseInt(tableId),
+              },
+            },
+            productList: 'products',
+            productCreate: 'products/create',
+            productUpdate: {
+              path: 'products/:productId',
+              parse: {
+                productId: (productId) => parseInt(productId),
+              },
+            },
             authLogin: 'auth/login',
             dashboard: '',
             categoryList: 'categories',
@@ -270,13 +319,6 @@ export const App = () => {
             rentalCheckin: 'rentals/checkin',
             rentalCheckout: 'rentals/checkout',
             checklistTemplateList: 'checklist-templates',
-            checklistTemplateUpdate: {
-              path: 'checklist-templates/:checklistTemplateId',
-              parse: {
-                checklistTemplateId: (checklistTemplateId: string) =>
-                  parseInt(checklistTemplateId),
-              },
-            },
             checklistSessionList: 'checklist-sessions',
             checklistSessionCreate: 'checklist-sessions/create',
             checklistSessionDetail: {
@@ -897,6 +939,93 @@ export const App = () => {
                 checklistSessionDetailParams={{
                   checklistSession: null,
                   checklistSessionId: props.route.params.checklistSessionId,
+                }}
+              />
+            )}
+          />
+          <Stack.Screen
+            name="stockCheckList"
+            children={(
+              _props: NativeStackScreenProps<
+                RootStackParamList,
+                'stockCheckList'
+              >
+            ) => (
+              <StockCheckList
+                stockCheckListParams={{
+                  stockChecks: [],
+                  totalItem: 0,
+                  itemPerPage: 10,
+                  orderBy: 'desc',
+                  page: 1,
+                  sortBy: 'created_at',
+                }}
+              />
+            )}
+          />
+          <Stack.Screen
+            name="stockCheckCreate"
+            children={(
+              _props: NativeStackScreenProps<
+                RootStackParamList,
+                'stockCheckCreate'
+              >
+            ) => <StockCheckCreate stockCheckCreateParams={{ items: [] }} />}
+          />
+          <Stack.Screen
+            name="stockCheckUpdate"
+            children={(
+              props: NativeStackScreenProps<
+                RootStackParamList,
+                'stockCheckUpdate'
+              >
+            ) => (
+              <StockCheckUpdate
+                stockCheckUpdateParams={{
+                  stockCheckId: props.route.params.stockCheckId,
+                  stockCheck: null,
+                }}
+              />
+            )}
+          />
+          <Stack.Screen
+            name="stockCheckPurchaseList"
+            children={(
+              props: NativeStackScreenProps<
+                RootStackParamList,
+                'stockCheckPurchaseList'
+              >
+            ) => (
+              <StockCheckPurchaseList
+                purchaseListGetParams={{
+                  stockCheckId: props.route.params.stockCheckId,
+                  purchaseList: null,
+                }}
+              />
+            )}
+          />
+          <Stack.Screen
+            name="tableList"
+            children={(
+              _props: NativeStackScreenProps<RootStackParamList, 'tableList'>
+            ) => (
+              <TableList
+                tableListParams={{
+                  tables: [],
+                }}
+              />
+            )}
+          />
+          <Stack.Screen name="tableCreate" component={TableCreate} />
+          <Stack.Screen
+            name="tableUpdate"
+            children={(
+              props: NativeStackScreenProps<RootStackParamList, 'tableUpdate'>
+            ) => (
+              <TableUpdate
+                tableUpdateParams={{
+                  table: null,
+                  tableId: props.route.params.tableId,
                 }}
               />
             )}

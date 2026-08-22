@@ -24,7 +24,7 @@ export type StockCheckUpdateAction =
   | { type: 'SUBMIT_CANCEL' };
 
 export type StockCheckUpdateParams = {
-  stockCheck: StockCheck;
+  stockCheck: StockCheck | null;
   stockCheckId: number;
 };
 
@@ -36,7 +36,10 @@ export class StockCheckUpdateUsecase extends Usecase<
   params: StockCheckUpdateParams;
   repository: StockCheckRepository;
 
-  constructor(repository: StockCheckRepository, params: StockCheckUpdateParams) {
+  constructor(
+    repository: StockCheckRepository,
+    params: StockCheckUpdateParams
+  ) {
     super();
     this.repository = repository;
     this.params = params;
@@ -48,12 +51,13 @@ export class StockCheckUpdateUsecase extends Usecase<
       errorMessage: null,
       stockCheckId: this.params.stockCheckId,
       values: {
-        items: this.params.stockCheck.items.map((item) => ({
-          materialId: item.materialId,
-          materialName: item.materialName,
-          purchaseUnit: item.purchaseUnit,
-          currentStock: item.currentStock,
-        })),
+        items:
+          this.params.stockCheck?.items.map((item) => ({
+            materialId: item.materialId,
+            materialName: item.materialName,
+            purchaseUnit: item.purchaseUnit,
+            currentStock: item.currentStock,
+          })) || [],
       },
     };
   }
@@ -78,7 +82,11 @@ export class StockCheckUpdateUsecase extends Usecase<
       )
       .with(
         [{ type: 'submitting' }, { type: 'SUBMIT_ERROR' }],
-        ([state, { errorMessage }]) => ({ ...state, type: 'submitError', errorMessage })
+        ([state, { errorMessage }]) => ({
+          ...state,
+          type: 'submitError',
+          errorMessage,
+        })
       )
       .with(
         [{ type: 'submitError' }, { type: 'SUBMIT_CANCEL' }],
