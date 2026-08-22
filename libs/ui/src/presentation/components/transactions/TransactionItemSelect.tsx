@@ -125,12 +125,13 @@ export const TransactionItemSelect = ({
             exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
             gap="$4"
             // On compact, the dialog follows the viewport instead of a fixed
-            // 500px, and is capped to a percentage of the screen height so
-            // a many-option product scrolls instead of pushing Cancel/Submit
-            // off screen (PRD FR-6). Desktop is untouched: 500px, unbounded.
+            // 500px (PRD FR-6). maxHeight is capped on every layout so the
+            // inner `ScrollView flex={1}` always has a bounded ancestor to
+            // grow into — without it, the options list collapses instead of
+            // scrolling once it overflows.
             width={isCompactLayout ? '90%' : 500}
             maxWidth={500}
-            maxHeight={isCompactLayout ? '85%' : undefined}
+            maxHeight="85%"
           >
             <Dialog.Title>{selectedProduct?.name}</Dialog.Title>
 
