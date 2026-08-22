@@ -370,7 +370,12 @@ export const Switch = Object.assign(SwitchBase, { Thumb: SwitchThumb });
 // Hooks
 export const usePopoverContext = () => ({ onOpenChange: jest.fn() });
 export const useTheme = () => ({});
-export const useMedia = () => ({});
+// `jest.fn()` so tests can override the return value per-test (e.g.
+// `(useMedia as jest.Mock).mockReturnValue({ sm: true })`) to exercise the
+// compact layout branch, while the default `{}` keeps every media flag
+// `undefined` — matching production's SSR-first-paint state — so existing
+// tests keep asserting the desktop branch with no changes.
+export const useMedia = jest.fn(() => ({}));
 
 // Utilities
 export const createTamagui = (config: unknown) => config;
