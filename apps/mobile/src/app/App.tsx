@@ -55,7 +55,19 @@ import {
   getStoredAuthToken,
   registerAuthTokenInterceptor,
   setNavigationRef,
+  TableList,
+  TableCreate,
+  TableUpdate,
+  StockCheckList,
+  StockCheckCreate,
+  StockCheckUpdate,
+  StockCheckPurchaseList,
+  ApiMaterialRepository,
+  ApiStockCheckRepository,
+  StockCheck,
+  StockCheckItemForm,
 } from '@gatherloop-pos/ui';
+import { QueryClient } from '@tanstack/react-query';
 import { RootProvider } from '@gatherloop-pos/provider';
 import {
   NavigationContainer,
@@ -93,6 +105,13 @@ export type RootStackParamList = {
   productList: undefined;
   productCreate: undefined;
   productUpdate: { productId: number };
+  tableList: undefined;
+  tableCreate: undefined;
+  tableUpdate: { tableId: number };
+  stockCheckList: undefined;
+  stockCheckCreate: undefined;
+  stockCheckUpdate: { stockCheckId: number };
+  stockCheckPurchaseList: { stockCheckId: number };
   variantList: undefined;
   variantCreate: { productId: number };
   variantUpdate: { productId: number; variantId: number };
@@ -122,6 +141,64 @@ export type RootStackParamList = {
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+
+// Unlike the other create/update usecases, StockCheckCreateUsecase and
+// StockCheckUpdateUsecase have no client-side FETCH path — they mirror the
+// web app's getServerSideProps and expect their data pre-loaded at
+// construction time. Native has no SSR, so these two screens fetch the data
+// themselves before mounting the real screen, the same way `App`'s cold
+// start above fetches the stored auth token before picking a route.
+const StockCheckCreateEntry = () => {
+  const [items, setItems] = useState<StockCheckItemForm[] | null>(null);
+
+  useEffect(() => {
+    const materialRepository = new ApiMaterialRepository(new QueryClient());
+    materialRepository
+      .fetchMaterialList({
+        page: 1,
+        itemPerPage: 1000,
+        orderBy: 'asc',
+        query: '',
+        sortBy: 'created_at',
+        stockCheckStatus: 'required',
+      })
+      .then(({ materials }) =>
+        setItems(
+          materials.map((material) => ({
+            materialId: material.id,
+            materialName: material.name,
+            purchaseUnit: material.purchaseUnit,
+            currentStock: null,
+          }))
+        )
+      );
+  }, []);
+
+  if (items === null) return null;
+
+  return <StockCheckCreate stockCheckCreateParams={{ items }} />;
+};
+
+const StockCheckUpdateEntry = ({ stockCheckId }: { stockCheckId: number }) => {
+  const [stockCheck, setStockCheck] = useState<StockCheck | null>(null);
+
+  useEffect(() => {
+    const stockCheckRepository = new ApiStockCheckRepository(
+      new QueryClient()
+    );
+    stockCheckRepository
+      .fetchStockCheckById(stockCheckId)
+      .then(setStockCheck);
+  }, [stockCheckId]);
+
+  if (stockCheck === null) return null;
+
+  return (
+    <StockCheckUpdate
+      stockCheckUpdateParams={{ stockCheck, stockCheckId }}
+    />
+  );
+};
 
 export const App = () => {
   // Native has no server-rendered guard like the web app's
@@ -224,12 +301,35 @@ export const App = () => {
                 walletId: (walletId) => parseInt(walletId),
               },
             },
+            productList: 'products',
             variantList: 'variants',
             variantCreate: 'variants/create',
             variantUpdate: {
               path: 'variants/:variantId',
               parse: {
                 variantId: (variantId) => parseInt(variantId),
+              },
+            },
+            tableList: 'tables',
+            tableCreate: 'tables/create',
+            tableUpdate: {
+              path: 'tables/:tableId',
+              parse: {
+                tableId: (tableId) => parseInt(tableId),
+              },
+            },
+            stockCheckList: 'stock-checks',
+            stockCheckCreate: 'stock-checks/create',
+            stockCheckUpdate: {
+              path: 'stock-checks/:stockCheckId/edit',
+              parse: {
+                stockCheckId: (stockCheckId) => parseInt(stockCheckId),
+              },
+            },
+            stockCheckPurchaseList: {
+              path: 'stock-checks/:stockCheckId/purchase-list',
+              parse: {
+                stockCheckId: (stockCheckId) => parseInt(stockCheckId),
               },
             },
             budgetList: 'budgets',
@@ -566,6 +666,72 @@ export const App = () => {
                   product: null,
                   productId: props.route.params.productId,
                   variants: [],
+                }}
+              />
+            )}
+          />
+          <Stack.Screen
+            name="tableList"
+            children={(
+              _props: NativeStackScreenProps<RootStackParamList, 'tableList'>
+            ) => <TableList tableListParams={{ tables: [] }} />}
+          />
+          <Stack.Screen name="tableCreate" component={TableCreate} />
+          <Stack.Screen
+            name="tableUpdate"
+            children={(
+              props: NativeStackScreenProps<RootStackParamList, 'tableUpdate'>
+            ) => (
+              <TableUpdate
+                tableUpdateParams={{
+                  table: null,
+                  tableId: props.route.params?.tableId,
+                }}
+              />
+            )}
+          />
+          <Stack.Screen
+            name="stockCheckList"
+            children={(
+              _props: NativeStackScreenProps<
+                RootStackParamList,
+                'stockCheckList'
+              >
+            ) => (
+              <StockCheckList
+                stockCheckListParams={{ stockChecks: [], totalItem: 0 }}
+              />
+            )}
+          />
+          <Stack.Screen
+            name="stockCheckCreate"
+            children={() => <StockCheckCreateEntry />}
+          />
+          <Stack.Screen
+            name="stockCheckUpdate"
+            children={(
+              props: NativeStackScreenProps<
+                RootStackParamList,
+                'stockCheckUpdate'
+              >
+            ) => (
+              <StockCheckUpdateEntry
+                stockCheckId={props.route.params.stockCheckId}
+              />
+            )}
+          />
+          <Stack.Screen
+            name="stockCheckPurchaseList"
+            children={(
+              props: NativeStackScreenProps<
+                RootStackParamList,
+                'stockCheckPurchaseList'
+              >
+            ) => (
+              <StockCheckPurchaseList
+                purchaseListGetParams={{
+                  purchaseList: null,
+                  stockCheckId: props.route.params.stockCheckId,
                 }}
               />
             )}
