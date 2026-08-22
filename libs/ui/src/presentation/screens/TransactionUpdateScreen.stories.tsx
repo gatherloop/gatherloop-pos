@@ -23,6 +23,8 @@ const UpdateStory = () => {
       form={form}
       onSubmit={fn()}
       isSubmitDisabled={false}
+      isSubmitting={false}
+      isSubmitSuccess={false}
       onLogoutPress={fn()}
       isCouponSheetOpen={false}
       onCouponSheetOpenChange={fn()}

@@ -14,7 +14,7 @@ import {
   UseFieldArrayReturn,
   UseFormReturn,
 } from 'react-hook-form';
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { TransactionCartView } from './TransactionCartView';
 import { TransactionCartButton } from './TransactionCartButton';
 import { FieldWatch, Sheet, useIsCompactLayout } from '../base';
@@ -30,6 +30,7 @@ export type TransactionFormViewProps = {
   onRemoveItemCoupon: (index: number) => void;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
+  isSubmitSuccess: boolean;
   TransactionItemSelect: () => ReactNode;
   TransactionCouponList: () => ReactNode;
   itemsFieldArray: UseFieldArrayReturn<
@@ -54,6 +55,7 @@ export const TransactionFormView = ({
   onRemoveItemCoupon,
   isSubmitDisabled,
   isSubmitting,
+  isSubmitSuccess,
   TransactionItemSelect,
   TransactionCouponList,
   itemsFieldArray,
@@ -62,6 +64,15 @@ export const TransactionFormView = ({
 }: TransactionFormViewProps) => {
   const isCompactLayout = useIsCompactLayout();
   const [isCartSheetOpen, setIsCartSheetOpen] = useState(false);
+
+  // A successful submit must close the cart sheet before any dialog that
+  // follows it (e.g. the payment alert on Create) opens on top — see PRD
+  // FR-7 and the "AlertDialog over Sheet" risk. This effect runs on every
+  // render where a child of this component sits below the caller in the
+  // tree, so it commits before the caller's own "submit succeeded" effect.
+  useEffect(() => {
+    if (isSubmitSuccess) setIsCartSheetOpen(false);
+  }, [isSubmitSuccess]);
 
   const submitButton = (
     <Button

@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { useForm } from 'react-hook-form';
+import { useMedia } from 'tamagui';
 import { TransactionPaymentAlert } from './TransactionPaymentAlert';
 import { Wallet } from '../../../domain';
 
@@ -120,5 +121,38 @@ describe('TransactionPaymentAlert', () => {
       />
     );
     expect(container.firstChild).toBeNull();
+  });
+
+  // PRD FR-7: the payment alert must be usable at compact width — it can
+  // open on top of (or right after) the compact cart sheet on Create.
+  describe('compact layout (media.sm true)', () => {
+    beforeEach(() => {
+      (useMedia as jest.Mock).mockReturnValue({ sm: true });
+    });
+
+    afterEach(() => {
+      (useMedia as jest.Mock).mockReturnValue({});
+    });
+
+    it('still renders the wallet select, total and Submit', () => {
+      const options = [{ label: mockWallet.name, value: mockWallet }];
+      render(<Wrapper walletSelectOptions={options} />);
+
+      expect(screen.getByRole('option', { name: 'Cash' })).toBeTruthy();
+      expect(screen.getByText(/50\.000/)).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
+    });
+
+    it('still renders the paid-amount and change fields for a non-cashless wallet', () => {
+      // mockWallet has isCashless: false — cash payments need a paid amount
+      // and a computed change, unlike a cashless (bank transfer) wallet.
+      const options = [{ label: mockWallet.name, value: mockWallet }];
+      render(<Wrapper walletSelectOptions={options} />);
+
+      expect(
+        screen.getByRole('textbox', { name: 'Paid Amount' })
+      ).toBeTruthy();
+      expect(screen.getByText('Change')).toBeTruthy();
+    });
   });
 });

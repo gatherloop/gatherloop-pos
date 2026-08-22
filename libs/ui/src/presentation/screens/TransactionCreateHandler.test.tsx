@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useMedia } from 'tamagui';
 import { TransactionCreateHandler } from './TransactionCreateHandler';
 import {
   MockAuthRepository,
@@ -219,6 +220,76 @@ describe('TransactionCreateHandler', () => {
       });
 
       expect(screen.getByRole('heading', { name: 'Product 1' })).toBeTruthy();
+    });
+  });
+
+  describe('compact layout — submit and payment hand-off (PRD FR-7)', () => {
+    beforeEach(() => {
+      (useMedia as jest.Mock).mockReturnValue({ sm: true });
+    });
+
+    afterEach(() => {
+      (useMedia as jest.Mock).mockReturnValue({});
+    });
+
+    const addItemToCart = async (user: ReturnType<typeof userEvent.setup>) => {
+      await user.click(screen.getByRole('heading', { name: 'Product 1' }));
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+      await act(async () => {
+        await flushPromises();
+      });
+    };
+
+    it('keeps the cart sheet open and shows the error inside it when customer name is empty', async () => {
+      const user = userEvent.setup();
+      render(<TransactionCreateHandler {...createProps()} />);
+      await act(async () => {
+        await flushPromises();
+      });
+
+      await addItemToCart(user);
+
+      await user.click(screen.getByText(/View Cart/));
+      expect(screen.getByRole('button', { name: 'Close Cart' })).toBeTruthy();
+
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(
+        screen.getByText('String must contain at least 1 character(s)')
+      ).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Close Cart' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
+    });
+
+    it('closes the cart sheet and opens the payment alert after a successful submit', async () => {
+      const user = userEvent.setup();
+      render(<TransactionCreateHandler {...createProps()} />);
+      await act(async () => {
+        await flushPromises();
+      });
+
+      await addItemToCart(user);
+
+      await user.click(screen.getByText(/View Cart/));
+      await user.type(
+        screen.getByRole('textbox', { name: 'Customer Name' }),
+        'Table 1'
+      );
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+        await flushPromises();
+      });
+
+      // The cart sheet is gone — no "Close Cart" control, no cart Submit
+      // behind the alert — and the payment alert is what's now showing.
+      expect(screen.queryByRole('button', { name: 'Close Cart' })).toBeNull();
+      expect(screen.getByText('Pay Transaction')).toBeTruthy();
+      expect(screen.getByRole('option', { name: 'Cash' })).toBeTruthy();
     });
   });
 });
