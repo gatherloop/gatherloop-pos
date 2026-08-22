@@ -5,6 +5,7 @@ import {
   InputNumber,
   InputText,
   Sheet,
+  useIsCompactLayout,
 } from '../base';
 import {
   Button,
@@ -57,6 +58,8 @@ export const TransactionCartView = ({
   couponsFieldArray,
   serverError,
 }: TransactionCartViewProps) => {
+  const isCompactLayout = useIsCompactLayout();
+
   return (
     <YStack gap="$3">
       <FormErrorBanner message={serverError} />
@@ -69,14 +72,19 @@ export const TransactionCartView = ({
 
       <YStack>
         <YStack gap="$3">
-          <Sheet
-            isOpen={isCouponSheetOpen}
-            onOpenChange={onCouponSheetOpenChange}
-          >
-            <YStack gap="$3" flex={1} padding="$5">
-              {TransactionCouponList()}
-            </YStack>
-          </Sheet>
+          {/* On compact, the parent swaps the cart sheet's own content to the
+              coupon list instead (PRD FR-5) — a nested `Sheet` here would be a
+              second `modal` overlay competing with the cart sheet. */}
+          {!isCompactLayout && (
+            <Sheet
+              isOpen={isCouponSheetOpen}
+              onOpenChange={onCouponSheetOpenChange}
+            >
+              <YStack gap="$3" flex={1} padding="$5">
+                {TransactionCouponList()}
+              </YStack>
+            </Sheet>
+          )}
 
           <Separator />
 
@@ -213,6 +221,7 @@ export const TransactionCartView = ({
               variant="outlined"
               onPress={() => onCouponSheetOpenChange(true)}
               circular
+              accessibilityLabel="Add Coupon"
             />
           </XStack>
           <YStack gap="$3">

@@ -18,7 +18,7 @@ import { ReactNode, useState } from 'react';
 import { TransactionCartView } from './TransactionCartView';
 import { TransactionCartButton } from './TransactionCartButton';
 import { FieldWatch, Sheet, useIsCompactLayout } from '../base';
-import { X } from '@tamagui/lucide-icons';
+import { ArrowLeft, X } from '@tamagui/lucide-icons';
 import { calculateTransactionFinalTotal } from '../../../utils';
 
 export type TransactionFormViewProps = {
@@ -111,57 +111,78 @@ export const TransactionFormView = ({
                   borderBottomWidth={1}
                   borderBottomColor="$borderColor"
                 >
-                  <H4>Cart</H4>
-                  <Button
-                    icon={X}
-                    size="$3"
-                    circular
-                    accessibilityLabel="Close Cart"
-                    onPress={() => setIsCartSheetOpen(false)}
-                  />
+                  {isCouponSheetOpen ? (
+                    <XStack gap="$3" alignItems="center">
+                      <Button
+                        icon={ArrowLeft}
+                        size="$3"
+                        circular
+                        accessibilityLabel="Back to Cart"
+                        onPress={() => onCouponSheetOpenChange(false)}
+                      />
+                      <H4>Apply Coupon</H4>
+                    </XStack>
+                  ) : (
+                    <>
+                      <H4>Cart</H4>
+                      <Button
+                        icon={X}
+                        size="$3"
+                        circular
+                        accessibilityLabel="Close Cart"
+                        onPress={() => setIsCartSheetOpen(false)}
+                      />
+                    </>
+                  )}
                 </XStack>
 
                 <ScrollView flex={1}>
-                  <YStack padding="$3">
-                    <TransactionCartView
-                      form={form}
-                      isCouponSheetOpen={isCouponSheetOpen}
-                      onCouponSheetOpenChange={onCouponSheetOpenChange}
-                      onItemCouponSheetOpen={onItemCouponSheetOpen}
-                      onRemoveItemCoupon={onRemoveItemCoupon}
-                      TransactionCouponList={TransactionCouponList}
-                      itemsFieldArray={itemsFieldArray}
-                      couponsFieldArray={couponsFieldArray}
-                      serverError={serverError}
-                    />
+                  <YStack padding="$3" flex={1}>
+                    {isCouponSheetOpen ? (
+                      TransactionCouponList()
+                    ) : (
+                      <TransactionCartView
+                        form={form}
+                        isCouponSheetOpen={isCouponSheetOpen}
+                        onCouponSheetOpenChange={onCouponSheetOpenChange}
+                        onItemCouponSheetOpen={onItemCouponSheetOpen}
+                        onRemoveItemCoupon={onRemoveItemCoupon}
+                        TransactionCouponList={TransactionCouponList}
+                        itemsFieldArray={itemsFieldArray}
+                        couponsFieldArray={couponsFieldArray}
+                        serverError={serverError}
+                      />
+                    )}
                   </YStack>
                 </ScrollView>
 
-                <YStack
-                  padding="$3"
-                  gap="$3"
-                  borderTopWidth={1}
-                  borderTopColor="$borderColor"
-                >
-                  <XStack alignItems="center" justifyContent="space-between">
-                    <H4 textTransform="none">Total</H4>
-                    <FieldWatch
-                      control={form.control}
-                      name={['transactionItems', 'transactionCoupons']}
-                    >
-                      {([transactionItems, transactionCoupons]) => (
-                        <H4 textTransform="none">
-                          Rp.{' '}
-                          {calculateTransactionFinalTotal(
-                            transactionItems,
-                            transactionCoupons
-                          ).toLocaleString('id')}
-                        </H4>
-                      )}
-                    </FieldWatch>
-                  </XStack>
-                  {submitButton}
-                </YStack>
+                {!isCouponSheetOpen && (
+                  <YStack
+                    padding="$3"
+                    gap="$3"
+                    borderTopWidth={1}
+                    borderTopColor="$borderColor"
+                  >
+                    <XStack alignItems="center" justifyContent="space-between">
+                      <H4 textTransform="none">Total</H4>
+                      <FieldWatch
+                        control={form.control}
+                        name={['transactionItems', 'transactionCoupons']}
+                      >
+                        {([transactionItems, transactionCoupons]) => (
+                          <H4 textTransform="none">
+                            Rp.{' '}
+                            {calculateTransactionFinalTotal(
+                              transactionItems,
+                              transactionCoupons
+                            ).toLocaleString('id')}
+                          </H4>
+                        )}
+                      </FieldWatch>
+                    </XStack>
+                    {submitButton}
+                  </YStack>
+                )}
               </YStack>
             </Sheet>
           </Form>
