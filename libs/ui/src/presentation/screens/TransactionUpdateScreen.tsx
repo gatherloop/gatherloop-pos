@@ -1,4 +1,4 @@
-import { ScrollView } from 'tamagui';
+import { ScrollView, YStack } from 'tamagui';
 import {
   TransactionFormView,
   Layout,
@@ -6,6 +6,7 @@ import {
   TransactionItemSelectProps,
   CouponList,
   CouponListProps,
+  useIsCompactLayout,
 } from '../components';
 import { OptionValue, Product, TransactionForm, Coupon } from '../../domain';
 import { UseFormReturn, UseFieldArrayReturn } from 'react-hook-form';
@@ -60,33 +61,42 @@ export type TransactionUpdateScreenProps = {
 export const TransactionUpdateScreen = (
   props: TransactionUpdateScreenProps
 ) => {
+  const isCompactLayout = useIsCompactLayout();
+
+  const formView = (
+    <TransactionFormView
+      form={props.form}
+      onSubmit={props.onSubmit}
+      isSubmitDisabled={props.isSubmitDisabled}
+      isSubmitting={props.isSubmitting}
+      isCouponSheetOpen={props.isCouponSheetOpen}
+      onCouponSheetOpenChange={props.onCouponSheetOpenChange}
+      onItemCouponSheetOpen={props.onItemCouponSheetOpen}
+      onRemoveItemCoupon={props.onRemoveItemCoupon}
+      itemsFieldArray={props.itemsFieldArray}
+      couponsFieldArray={props.couponsFieldArray}
+      serverError={props.serverError}
+      TransactionItemSelect={() => (
+        <TransactionItemSelect {...props.transactionItemSelect} />
+      )}
+      TransactionCouponList={() => <CouponList {...props.couponList} />}
+    />
+  );
+
   return (
     <Layout
       title="Update Transaction"
       showBackButton
       onLogoutPress={props.onLogoutPress}
     >
-      <ScrollView>
-        <TransactionFormView
-          form={props.form}
-          onSubmit={props.onSubmit}
-          isSubmitDisabled={props.isSubmitDisabled}
-          isSubmitting={props.isSubmitting}
-          isCouponSheetOpen={props.isCouponSheetOpen}
-          onCouponSheetOpenChange={props.onCouponSheetOpenChange}
-          onItemCouponSheetOpen={props.onItemCouponSheetOpen}
-          onRemoveItemCoupon={props.onRemoveItemCoupon}
-          itemsFieldArray={props.itemsFieldArray}
-          couponsFieldArray={props.couponsFieldArray}
-          serverError={props.serverError}
-          TransactionItemSelect={() => (
-            <TransactionItemSelect {...props.transactionItemSelect} />
-          )}
-          TransactionCouponList={() => (
-            <CouponList {...props.couponList} />
-          )}
-        />
-      </ScrollView>
+      {isCompactLayout ? (
+        // On compact, the product picker owns a bounded `flex: 1` region
+        // and scrolls internally — an outer `ScrollView` here would give it
+        // no height to bound against (PRD FR-3).
+        <YStack flex={1}>{formView}</YStack>
+      ) : (
+        <ScrollView>{formView}</ScrollView>
+      )}
     </Layout>
   );
 };

@@ -1,7 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
 import { TransactionItemSelect } from './TransactionItemSelect';
-import { mockProducts, mockProduct, mockOptionValues } from '../../../../.storybook/mocks/mockData';
+import {
+  mockProducts,
+  mockProduct,
+  mockOptionValues,
+} from '../../../../.storybook/mocks/mockData';
 
 const defaultArgs = {
   products: mockProducts,
@@ -81,5 +85,17 @@ export const Submitted: Story = {
     selectedProduct: mockProduct,
     selectedOptionValues: mockOptionValues,
     amount: 2,
+  },
+};
+
+// Compact layout (PRD FR-3): autoFocus is disabled and the list reserves
+// bottom padding for the floating cart button rendered by
+// `TransactionFormView`.
+export const CompactLoaded: Story = {
+  parameters: {
+    viewport: { defaultViewport: 'mobile' },
+  },
+  args: {
+    variant: { type: 'loaded' },
   },
 };
