@@ -185,6 +185,29 @@ export const transactionForm = {
 };
 
 // ---------------------------------------------------------------------------
+// Transaction cart button / cart sheet (compact / mobile layout only —
+// see docs/prd-transaction-form-mobile.md)
+// ---------------------------------------------------------------------------
+
+export const transactionCartButton = {
+  /**
+   * Floating "{n} item(s) · Rp {total} · View Cart" button shown once the
+   * cart is non-empty. Only rendered on the compact (phone-width) layout.
+   */
+  button: (page: Page) => page.getByRole('button', { name: /View Cart$/ }),
+};
+
+export const transactionCartSheet = {
+  /** "Cart" header title, visible while the sheet shows cart content */
+  title: (page: Page) => page.locator('h4').filter({ hasText: 'Cart' }).first(),
+  closeButton: (page: Page) =>
+    page.getByRole('button', { name: 'Close Cart' }),
+  /** Back arrow shown while the sheet content is swapped to the coupon list */
+  backButton: (page: Page) =>
+    page.getByRole('button', { name: 'Back to Cart' }),
+};
+
+// ---------------------------------------------------------------------------
 // Transaction payment alert dialog
 // ---------------------------------------------------------------------------
 
