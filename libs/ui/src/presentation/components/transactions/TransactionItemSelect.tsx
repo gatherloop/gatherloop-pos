@@ -163,11 +163,6 @@ export const TransactionItemSelect = ({
                               value={JSON.stringify(value)}
                               id={value.id.toString()}
                               size={2}
-                              // Radio circles are visually $2 but the tap
-                              // target is expanded to 44px on compact so
-                              // they meet the minimum touch target (FR-6).
-                              minWidth={isCompactLayout ? 44 : undefined}
-                              minHeight={isCompactLayout ? 44 : undefined}
                             >
                               <RadioGroup.Indicator />
                             </RadioGroup.Item>
@@ -189,8 +184,6 @@ export const TransactionItemSelect = ({
                     onPress={() => onAmountChange(amount - 1)}
                     circular
                     disabled={amount === 1}
-                    minWidth={isCompactLayout ? 44 : undefined}
-                    minHeight={isCompactLayout ? 44 : undefined}
                   />
 
                   <Input
@@ -210,8 +203,6 @@ export const TransactionItemSelect = ({
                     size="$2"
                     onPress={() => onAmountChange(amount + 1)}
                     circular
-                    minWidth={isCompactLayout ? 44 : undefined}
-                    minHeight={isCompactLayout ? 44 : undefined}
                   />
                 </XStack>
               </YStack>
