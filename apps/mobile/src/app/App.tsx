@@ -54,7 +54,6 @@ import {
   ChecklistSessionDetail,
   getStoredAuthToken,
   registerAuthTokenInterceptor,
-  setNavigationRef,
 } from '@gatherloop-pos/ui';
 import { RootProvider } from '@gatherloop-pos/provider';
 import {
@@ -133,9 +132,6 @@ export const App = () => {
   const [initialRouteName, setInitialRouteName] = useState<
     'dashboard' | 'authLogin' | null
   >(null);
-  const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(
-    null
-  );
 
   useEffect(() => {
     const unregisterAuthTokenInterceptor = registerAuthTokenInterceptor();
@@ -151,12 +147,6 @@ export const App = () => {
 
   return (
     <NavigationContainer
-      ref={navigationRef}
-      onReady={() => {
-        if (navigationRef.current) {
-          setNavigationRef(navigationRef.current);
-        }
-      }}
       linking={{
         prefixes: ['/'],
         config: {

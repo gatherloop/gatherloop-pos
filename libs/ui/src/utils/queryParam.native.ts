@@ -1,31 +1,23 @@
 import {
-  NavigationContainerRef,
+  createNavigationContainerRef,
   ParamListBase,
 } from '@react-navigation/native';
 
-export let navigationRef: NavigationContainerRef<ParamListBase> | null = null;
-
-export function setNavigationRef(ref: NavigationContainerRef<ParamListBase>) {
-  navigationRef = ref;
-}
+export const navigationRef = createNavigationContainerRef<ParamListBase>();
 
 export function setQueryParam(key: string, value: string) {
-  if (!navigationRef) {
-    console.warn('navigationRef not set');
-    return;
+  if (navigationRef.isReady()) {
+    const currentRoute = navigationRef.getCurrentRoute();
+    if (!currentRoute) return;
+    navigationRef.navigate(currentRoute.name, {
+      ...(currentRoute.params ?? {}),
+      [key]: value,
+    });
   }
-
-  const currentRoute = navigationRef.getCurrentRoute();
-  if (!currentRoute) return;
-
-  navigationRef.navigate(currentRoute.name as string, {
-    ...(currentRoute.params ?? {}),
-    [key]: value,
-  });
 }
 
 export function getQueryParam(key: string, url?: string): string | undefined {
-  if (navigationRef) {
+  if (navigationRef.isReady()) {
     const currentRoute = navigationRef.getCurrentRoute();
     const params = currentRoute?.params as Record<string, unknown> | undefined;
     const value = params?.[key];

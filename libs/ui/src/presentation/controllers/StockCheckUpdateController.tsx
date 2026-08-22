@@ -34,7 +34,7 @@ export const useStockCheckUpdateController = (
   }, [toast, state.type]);
 
   const form = useForm({
-    defaultValues: state.values,
+    values: state.values,
     resolver: zodResolver(stockCheckSchema),
   });
 

@@ -48,7 +48,7 @@ export const useMaterialUpdateController = (usecase: MaterialUpdateUsecase) => {
   }, [toast, state.type]);
 
   const form = useForm({
-    defaultValues: state.values,
+    values: state.values,
     resolver: zodResolver(
       z.object({
         name: z.string().min(1),
@@ -64,13 +64,6 @@ export const useMaterialUpdateController = (usecase: MaterialUpdateUsecase) => {
       })
     ),
   });
-
-  useEffect(() => {
-    if (state.type === 'loaded') {
-      form.reset(state.values);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.type]);
 
   return {
     state,

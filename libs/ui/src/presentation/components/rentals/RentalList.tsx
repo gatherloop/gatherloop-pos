@@ -59,7 +59,7 @@ export const RentalList = ({
   const [inputHasText, setInputHasText] = useState(false);
   return (
     <YStack gap="$3" flex={1}>
-      <XStack gap="$3" alignItems="center" $xs={{ flexDirection: 'column' }}>
+      <XStack gap="$3" alignItems="center">
         <XStack gap="$3" flex={1} alignItems="center">
           <Input
             id="search"

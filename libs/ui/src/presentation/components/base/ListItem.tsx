@@ -173,9 +173,11 @@ export const ListItem = ({
                     </YStack>
                   )}
                   <YStack>
-                    <Paragraph color="$gray12" fontSize="$1">
-                      {footerItem.label}
-                    </Paragraph>
+                    {footerItem.label && (
+                      <Paragraph color="$gray12" fontSize="$1">
+                        {footerItem.label}
+                      </Paragraph>
+                    )}
                     <Paragraph color="$gray12" size="$1">
                       {footerItem.value}
                     </Paragraph>

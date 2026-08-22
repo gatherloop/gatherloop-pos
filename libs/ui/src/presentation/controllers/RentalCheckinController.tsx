@@ -16,7 +16,7 @@ export const useRentalCheckinController = (usecase: RentalCheckinUsecase) => {
   }, [toast, state.type]);
 
   const form = useForm({
-    defaultValues: state.values,
+    values: state.values,
     resolver: zodResolver(
       z.object({
         name: z.string().min(1),
