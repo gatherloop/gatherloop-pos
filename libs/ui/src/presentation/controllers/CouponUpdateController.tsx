@@ -27,6 +27,13 @@ export const useCouponUpdateController = (usecase: CouponUpdateUsecase) => {
     ),
   });
 
+  useEffect(() => {
+    if (state.type === 'loaded') {
+      form.reset(state.values);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.type]);
+
   return {
     state,
     dispatch,

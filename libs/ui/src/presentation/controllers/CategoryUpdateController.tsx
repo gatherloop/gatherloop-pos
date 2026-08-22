@@ -26,9 +26,16 @@ export const useCategoryUpdateController = (usecase: CategoryUpdateUsecase) => {
     ),
   });
 
+  useEffect(() => {
+    if (state.type === 'loaded') {
+      form.reset(state.values);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.type]);
+
   return {
     state,
     dispatch,
     form,
   };
-};;
+};
