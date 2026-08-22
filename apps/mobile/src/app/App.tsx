@@ -54,14 +54,18 @@ import {
   ChecklistSessionDetail,
   getStoredAuthToken,
   registerAuthTokenInterceptor,
+  setNavigationRef,
 } from '@gatherloop-pos/ui';
 import { RootProvider } from '@gatherloop-pos/provider';
-import { NavigationContainer } from '@react-navigation/native';
+import {
+  NavigationContainer,
+  NavigationContainerRef,
+} from '@react-navigation/native';
 import {
   createNativeStackNavigator,
   NativeStackScreenProps,
 } from '@react-navigation/native-stack';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export type RootStackParamList = {
   authLogin: undefined;
@@ -129,6 +133,9 @@ export const App = () => {
   const [initialRouteName, setInitialRouteName] = useState<
     'dashboard' | 'authLogin' | null
   >(null);
+  const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(
+    null
+  );
 
   useEffect(() => {
     const unregisterAuthTokenInterceptor = registerAuthTokenInterceptor();
@@ -144,6 +151,12 @@ export const App = () => {
 
   return (
     <NavigationContainer
+      ref={navigationRef}
+      onReady={() => {
+        if (navigationRef.current) {
+          setNavigationRef(navigationRef.current);
+        }
+      }}
       linking={{
         prefixes: ['/'],
         config: {
