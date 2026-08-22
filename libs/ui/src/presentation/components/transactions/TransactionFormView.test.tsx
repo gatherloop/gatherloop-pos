@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useForm, useFieldArray } from 'react-hook-form';
-import { useMedia, Text } from 'tamagui';
+import { useMedia, Text, Button } from 'tamagui';
 import { TransactionFormView } from './TransactionFormView';
 import type { TransactionForm } from '../../../domain';
 import { mockVariants } from '../../../../.storybook/mocks/mockData';
@@ -55,6 +55,46 @@ const Wrapper = ({ defaultValues }: { defaultValues: TransactionForm }) => {
       isSubmitting={false}
       TransactionItemSelect={() => <Text color="$color">Product Picker</Text>}
       TransactionCouponList={() => null}
+      itemsFieldArray={itemsFieldArray}
+      couponsFieldArray={couponsFieldArray}
+    />
+  );
+};
+
+const StatefulWrapper = ({
+  defaultValues,
+}: {
+  defaultValues: TransactionForm;
+}) => {
+  const form = useForm<TransactionForm>({ defaultValues });
+  const itemsFieldArray = useFieldArray({
+    control: form.control,
+    name: 'transactionItems',
+    keyName: 'key',
+  });
+  const couponsFieldArray = useFieldArray({
+    control: form.control,
+    name: 'transactionCoupons',
+    keyName: 'key',
+  });
+  const [isCouponSheetOpen, setIsCouponSheetOpen] = useState(false);
+
+  return (
+    <TransactionFormView
+      form={form}
+      onSubmit={jest.fn()}
+      isCouponSheetOpen={isCouponSheetOpen}
+      onCouponSheetOpenChange={setIsCouponSheetOpen}
+      onItemCouponSheetOpen={() => setIsCouponSheetOpen(true)}
+      onRemoveItemCoupon={jest.fn()}
+      isSubmitDisabled={false}
+      isSubmitting={false}
+      TransactionItemSelect={() => <Text color="$color">Product Picker</Text>}
+      TransactionCouponList={() => (
+        <Button onPress={() => setIsCouponSheetOpen(false)}>
+          WELCOME10
+        </Button>
+      )}
       itemsFieldArray={itemsFieldArray}
       couponsFieldArray={couponsFieldArray}
     />
@@ -128,6 +168,69 @@ describe('TransactionFormView', () => {
 
       await user.click(screen.getByRole('button', { name: 'Close Cart' }));
       expect(screen.queryByRole('button', { name: 'Submit' })).toBeNull();
+    });
+
+    it('swaps the sheet content to the coupon list when the Coupons Add button is pressed, with no second sheet', async () => {
+      const user = userEvent.setup();
+      render(<StatefulWrapper defaultValues={filledValues} />);
+
+      await user.click(screen.getByText(/View Cart/));
+      await user.click(screen.getByRole('button', { name: 'Add Coupon' }));
+
+      expect(screen.getByText('WELCOME10')).toBeTruthy();
+      expect(
+        screen.getByRole('button', { name: 'Back to Cart' })
+      ).toBeTruthy();
+      expect(
+        screen.queryByRole('textbox', { name: 'Customer Name' })
+      ).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Submit' })).toBeNull();
+      // Exactly one sheet header renders at a time — "Cart" is gone while
+      // the coupon list is showing, proving the content swapped in place
+      // rather than a second sheet mounting on top.
+      expect(screen.queryByText('Cart')).toBeNull();
+    });
+
+    it('swaps the sheet content to the coupon list when an item-level Apply Coupon is pressed', async () => {
+      const user = userEvent.setup();
+      render(<StatefulWrapper defaultValues={filledValues} />);
+
+      await user.click(screen.getByText(/View Cart/));
+      await user.click(screen.getByRole('button', { name: 'Apply Coupon' }));
+
+      expect(screen.getByText('WELCOME10')).toBeTruthy();
+      expect(
+        screen.getByRole('button', { name: 'Back to Cart' })
+      ).toBeTruthy();
+    });
+
+    it('returns to the cart content when Back to Cart is pressed', async () => {
+      const user = userEvent.setup();
+      render(<StatefulWrapper defaultValues={filledValues} />);
+
+      await user.click(screen.getByText(/View Cart/));
+      await user.click(screen.getByRole('button', { name: 'Add Coupon' }));
+      await user.click(screen.getByRole('button', { name: 'Back to Cart' }));
+
+      expect(
+        screen.getByRole('textbox', { name: 'Customer Name' })
+      ).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
+      expect(screen.queryByText('WELCOME10')).toBeNull();
+    });
+
+    it('returns to the cart content after selecting a coupon', async () => {
+      const user = userEvent.setup();
+      render(<StatefulWrapper defaultValues={filledValues} />);
+
+      await user.click(screen.getByText(/View Cart/));
+      await user.click(screen.getByRole('button', { name: 'Add Coupon' }));
+      await user.click(screen.getByText('WELCOME10'));
+
+      expect(
+        screen.getByRole('textbox', { name: 'Customer Name' })
+      ).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
     });
   });
 });

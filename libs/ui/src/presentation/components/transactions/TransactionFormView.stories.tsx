@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { fn } from '@storybook/test';
-import React from 'react';
+import { fn, userEvent, within } from '@storybook/test';
+import React, { useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { Text } from 'tamagui';
 import { TransactionFormView } from './TransactionFormView';
@@ -94,6 +94,43 @@ const CouponSheetOpenStory = () => {
   );
 };
 
+// PRD FR-5: on compact, applying a coupon swaps the cart sheet's own content
+// to the coupon list with a back header, instead of opening a second sheet.
+// Stateful (unlike the other stories) so the `play` interaction below can
+// drive the real open-cart -> add-coupon flow.
+const CompactCouponSwapStory = () => {
+  const form = useForm<TransactionForm>({ defaultValues: filledValues });
+  const itemsFieldArray = useFieldArray({
+    control: form.control,
+    name: 'transactionItems',
+    keyName: 'key',
+  });
+  const couponsFieldArray = useFieldArray({
+    control: form.control,
+    name: 'transactionCoupons',
+    keyName: 'key',
+  });
+  const [isCouponSheetOpen, setIsCouponSheetOpen] = useState(false);
+  return (
+    <TransactionFormView
+      form={form}
+      onSubmit={fn()}
+      isCouponSheetOpen={isCouponSheetOpen}
+      onCouponSheetOpenChange={setIsCouponSheetOpen}
+      onItemCouponSheetOpen={() => setIsCouponSheetOpen(true)}
+      onRemoveItemCoupon={fn()}
+      isSubmitDisabled={false}
+      isSubmitting={false}
+      TransactionItemSelect={() => <Text color="$color">+ Add Item</Text>}
+      TransactionCouponList={() => (
+        <Text color="$color">Coupon List Here</Text>
+      )}
+      itemsFieldArray={itemsFieldArray}
+      couponsFieldArray={couponsFieldArray}
+    />
+  );
+};
+
 const meta: Meta<typeof TransactionFormView> = {
   title: 'Features/Transactions/TransactionFormView',
   component: TransactionFormView,
@@ -124,4 +161,16 @@ export const CompactWithItems: Story = {
     viewport: { defaultViewport: 'mobile' },
   },
   render: () => <TransactionFormStory values={filledValues} />,
+};
+
+export const CompactCouponSheetOpen: Story = {
+  parameters: {
+    viewport: { defaultViewport: 'mobile' },
+  },
+  render: () => <CompactCouponSwapStory />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByText(/View Cart/));
+    await userEvent.click(canvas.getByRole('button', { name: 'Add Coupon' }));
+  },
 };
