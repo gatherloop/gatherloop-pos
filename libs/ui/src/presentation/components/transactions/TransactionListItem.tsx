@@ -90,12 +90,6 @@ export const TransactionListItem = ({
       ]}
       footerItems={[
         {
-          icon: ConciergeBell,
-          label: 'ORDER NUMBER',
-          value: orderNumber.toString(),
-          isShown: orderNumber > 0,
-        },
-        {
           icon: Calendar,
           label: 'TRANSACTION DATE',
           value: dayjs(createdAt).format('DD/MM/YYYY - HH:mm'),
@@ -111,6 +105,12 @@ export const TransactionListItem = ({
           label: 'WALLET',
           value: walletName ?? '',
           isShown: typeof walletName === 'string',
+        },
+        {
+          icon: ConciergeBell,
+          label: 'ORDER NUMBER',
+          value: orderNumber.toString(),
+          isShown: orderNumber > 0,
         },
       ]}
       {...xStackProps}

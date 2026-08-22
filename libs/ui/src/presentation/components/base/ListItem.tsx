@@ -82,111 +82,110 @@ export const ListItem = ({
       justifyContent="space-between"
       {...xStackProps}
     >
-      <XStack alignItems="flex-start" gap="$4" flex={1}>
-        {thumbnailSrc && (
-          <Image
-            src={thumbnailSrc}
-            defaultSource={{
-              uri: thumbnailSrc,
-            }}
-            width={120}
-            height={120}
-            borderTopLeftRadius="$5"
-            borderBottomLeftRadius="$5"
-            $xs={{ display: 'none' }}
-          />
-        )}
-
-        <YStack padding="$3" flex={1} gap="$3">
-          <YStack flex={1} justifyContent="center">
-            <H4 ellipse>{title}</H4>
-            {subtitle &&
-              (typeof subtitle === 'string' ? (
-                <Paragraph textTransform="none" ellipse size="$6">
-                  {subtitle}
-                </Paragraph>
-              ) : (
-                subtitle
-              ))}
-          </YStack>
-
-          {shownFooterItems.length > 0 ? (
-            <>
-              <Separator />
-
-              <XStack gap="$3" flexWrap="wrap">
-                {shownFooterItems.map((footerItem, index) => (
-                  <React.Fragment key={index}>
-                    <XStack
-                      gap="$2"
-                      alignItems={footerItem.label ? 'flex-start' : 'center'}
-                    >
-                      {footerItem.icon && (
-                        <YStack
-                          theme="active"
-                          backgroundColor="$background"
-                          padding="$2"
-                          justifyContent="center"
-                          alignItems="center"
-                          borderRadius="$12"
-                        >
-                          <footerItem.icon size="$1" color="$gray12" />
-                        </YStack>
-                      )}
-                      <YStack>
-                        <Paragraph fontWeight="bold" color="$gray12">
-                          {footerItem.label}
-                        </Paragraph>
-                        <Paragraph color="$gray12">
-                          {footerItem.value}
-                        </Paragraph>
-                      </YStack>
-                    </XStack>
-                    <Separator vertical />
-                  </React.Fragment>
-                ))}
-              </XStack>
-            </>
-          ) : null}
-        </YStack>
-
-        {shownMenus.length > 0 && (
-          <Popover keepChildrenMounted placement="left-start">
-            <Popover.Trigger
-              asChild
-              onPress={(event) => event.stopPropagation()}
-            >
-              <Button
-                icon={MoreVertical}
-                size="$2"
-                marginTop="$3"
-                marginRight="$3"
-                variant="outlined"
+      <YStack padding="$3" flex={1} gap="$3">
+        <XStack alignItems="flex-start" justifyContent="space-between" flex={1}>
+          <XStack alignItems="flex-start" gap="$3">
+            {thumbnailSrc && (
+              <Image
+                src={thumbnailSrc}
+                defaultSource={{
+                  uri: thumbnailSrc,
+                  width: 60,
+                  height: 60,
+                }}
+                width={60}
+                height={60}
+                borderRadius="$5"
               />
-            </Popover.Trigger>
+            )}
+            <YStack justifyContent="center">
+              <H4 ellipse>{title}</H4>
+              {subtitle &&
+                (typeof subtitle === 'string' ? (
+                  <Paragraph textTransform="none" ellipse size="$6">
+                    {subtitle}
+                  </Paragraph>
+                ) : (
+                  subtitle
+                ))}
+            </YStack>
+          </XStack>
 
-            <Popover.Content
-              borderWidth={1}
-              borderColor="$borderColor"
-              enterStyle={{ y: -10, opacity: 0 }}
-              exitStyle={{ y: -10, opacity: 0 }}
-              elevate
-              padding="$0"
-              animation={[
-                'fast',
-                {
-                  opacity: {
-                    overshootClamping: true,
+          {shownMenus.length > 0 && (
+            <Popover keepChildrenMounted placement="left-start">
+              <Popover.Trigger
+                asChild
+                onPress={(event) => event.stopPropagation()}
+              >
+                <Button
+                  icon={MoreVertical}
+                  size="$2"
+                  marginTop="$3"
+                  marginRight="$3"
+                  variant="outlined"
+                />
+              </Popover.Trigger>
+
+              <Popover.Content
+                borderWidth={1}
+                borderColor="$borderColor"
+                enterStyle={{ y: -10, opacity: 0 }}
+                exitStyle={{ y: -10, opacity: 0 }}
+                elevate
+                padding="$0"
+                animation={[
+                  'fast',
+                  {
+                    opacity: {
+                      overshootClamping: true,
+                    },
                   },
-                },
-              ]}
-            >
-              <Popover.Arrow borderWidth={1} borderColor="$borderColor" />
-              <PopoverMenu menus={shownMenus} />
-            </Popover.Content>
-          </Popover>
-        )}
-      </XStack>
+                ]}
+              >
+                <Popover.Arrow borderWidth={1} borderColor="$borderColor" />
+                <PopoverMenu menus={shownMenus} />
+              </Popover.Content>
+            </Popover>
+          )}
+        </XStack>
+
+        {shownFooterItems.length > 0 ? (
+          <>
+            <Separator />
+
+            <XStack gap="$3" flexWrap="wrap">
+              {shownFooterItems.map((footerItem, index) => (
+                <XStack
+                  gap="$2"
+                  alignItems={footerItem.label ? 'flex-start' : 'center'}
+                  key={index}
+                >
+                  {footerItem.icon && (
+                    <YStack
+                      theme="active"
+                      backgroundColor="$background"
+                      padding="$2"
+                      justifyContent="center"
+                      alignItems="center"
+                      borderRadius="$12"
+                    >
+                      <footerItem.icon size="$1" color="$gray12" />
+                    </YStack>
+                  )}
+                  <YStack>
+                    <Paragraph color="$gray12" fontSize="$1">
+                      {footerItem.label}
+                    </Paragraph>
+                    <Paragraph color="$gray12" size="$1">
+                      {footerItem.value}
+                    </Paragraph>
+                  </YStack>
+                </XStack>
+              ))}
+            </XStack>
+          </>
+        ) : null}
+      </YStack>
     </XStack>
   );
 };
