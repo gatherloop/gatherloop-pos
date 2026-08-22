@@ -30,7 +30,13 @@ const filledValues: TransactionForm = {
   transactionCoupons: [],
 };
 
-const Wrapper = ({ defaultValues }: { defaultValues: TransactionForm }) => {
+const Wrapper = ({
+  defaultValues,
+  isSubmitSuccess = false,
+}: {
+  defaultValues: TransactionForm;
+  isSubmitSuccess?: boolean;
+}) => {
   const form = useForm<TransactionForm>({ defaultValues });
   const itemsFieldArray = useFieldArray({
     control: form.control,
@@ -53,6 +59,7 @@ const Wrapper = ({ defaultValues }: { defaultValues: TransactionForm }) => {
       onRemoveItemCoupon={jest.fn()}
       isSubmitDisabled={false}
       isSubmitting={false}
+      isSubmitSuccess={isSubmitSuccess}
       TransactionItemSelect={() => <Text color="$color">Product Picker</Text>}
       TransactionCouponList={() => null}
       itemsFieldArray={itemsFieldArray}
@@ -89,6 +96,7 @@ const StatefulWrapper = ({
       onRemoveItemCoupon={jest.fn()}
       isSubmitDisabled={false}
       isSubmitting={false}
+      isSubmitSuccess={false}
       TransactionItemSelect={() => <Text color="$color">Product Picker</Text>}
       TransactionCouponList={() => (
         <Button onPress={() => setIsCouponSheetOpen(false)}>
@@ -231,6 +239,36 @@ describe('TransactionFormView', () => {
         screen.getByRole('textbox', { name: 'Customer Name' })
       ).toBeTruthy();
       expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
+    });
+  });
+
+  describe('close-on-success (PRD FR-7)', () => {
+    beforeEach(() => {
+      (useMedia as jest.Mock).mockReturnValue({ sm: true });
+    });
+
+    it('closes the cart sheet once isSubmitSuccess flips to true', async () => {
+      const user = userEvent.setup();
+      const { rerender } = render(
+        <Wrapper defaultValues={filledValues} isSubmitSuccess={false} />
+      );
+
+      await user.click(screen.getByText(/View Cart/));
+      expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
+
+      rerender(
+        <Wrapper defaultValues={filledValues} isSubmitSuccess={true} />
+      );
+
+      expect(screen.queryByRole('button', { name: 'Submit' })).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Close Cart' })).toBeNull();
+    });
+
+    it('does not open the sheet on its own when isSubmitSuccess is already true on mount', () => {
+      render(<Wrapper defaultValues={filledValues} isSubmitSuccess={true} />);
+
+      expect(screen.queryByRole('button', { name: 'Submit' })).toBeNull();
+      expect(screen.getByText(/View Cart/)).toBeTruthy();
     });
   });
 });

@@ -56,6 +56,7 @@ const TransactionFormStory = ({
       onRemoveItemCoupon={fn()}
       isSubmitDisabled={false}
       isSubmitting={false}
+      isSubmitSuccess={false}
       TransactionItemSelect={() => <Text color="$color">+ Add Item</Text>}
       TransactionCouponList={() => null}
       itemsFieldArray={itemsFieldArray}
@@ -86,6 +87,7 @@ const CouponSheetOpenStory = () => {
       onRemoveItemCoupon={fn()}
       isSubmitDisabled={false}
       isSubmitting={false}
+      isSubmitSuccess={false}
       TransactionItemSelect={() => <Text color="$color">+ Add Item</Text>}
       TransactionCouponList={() => <Text color="$color">Coupon List Here</Text>}
       itemsFieldArray={itemsFieldArray}
@@ -121,6 +123,7 @@ const CompactCouponSwapStory = () => {
       onRemoveItemCoupon={fn()}
       isSubmitDisabled={false}
       isSubmitting={false}
+      isSubmitSuccess={false}
       TransactionItemSelect={() => <Text color="$color">+ Add Item</Text>}
       TransactionCouponList={() => (
         <Text color="$color">Coupon List Here</Text>

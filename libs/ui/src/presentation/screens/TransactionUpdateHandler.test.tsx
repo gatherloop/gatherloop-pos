@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useMedia } from 'tamagui';
 import { TransactionUpdateHandler } from './TransactionUpdateHandler';
 import {
   MockAuthRepository,
@@ -367,6 +368,37 @@ describe('TransactionUpdateHandler', () => {
       });
 
       expect(screen.getByRole('heading', { name: 'Product 1' })).toBeTruthy();
+    });
+  });
+
+  describe('compact layout — submit hand-off (PRD FR-7)', () => {
+    beforeEach(() => {
+      (useMedia as jest.Mock).mockReturnValue({ sm: true });
+    });
+
+    afterEach(() => {
+      (useMedia as jest.Mock).mockReturnValue({});
+    });
+
+    it('closes the cart sheet and navigates to /transactions after a successful submit', async () => {
+      const user = userEvent.setup();
+      render(<TransactionUpdateHandler {...createProps({ preloaded: true })} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      await user.click(screen.getByText(/View Cart/));
+      expect(screen.getByRole('button', { name: 'Close Cart' })).toBeTruthy();
+
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(mockRouterPush).toHaveBeenCalledWith('/transactions');
+      expect(screen.queryByRole('button', { name: 'Close Cart' })).toBeNull();
     });
   });
 });

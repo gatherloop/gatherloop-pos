@@ -18,6 +18,7 @@ export type TransactionCreateScreenProps = {
   onSubmit: (values: TransactionForm) => void;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
+  isSubmitSuccess: boolean;
   onLogoutPress: () => void;
   isCouponSheetOpen: boolean;
   onCouponSheetOpenChange: (open: boolean) => void;
@@ -80,6 +81,7 @@ export const TransactionCreateScreen = (
       onSubmit={props.onSubmit}
       isSubmitDisabled={props.isSubmitDisabled}
       isSubmitting={props.isSubmitting}
+      isSubmitSuccess={props.isSubmitSuccess}
       isCouponSheetOpen={props.isCouponSheetOpen}
       onCouponSheetOpenChange={props.onCouponSheetOpenChange}
       onItemCouponSheetOpen={props.onItemCouponSheetOpen}
