@@ -11,6 +11,7 @@ export type VariantListItemProps = {
   optionValues: OptionValue[];
   onEditMenuPress?: () => void;
   onDeleteMenuPress?: () => void;
+  hidePrice?: boolean;
 } & XStackProps;
 
 export const VariantListItem = ({
@@ -21,6 +22,7 @@ export const VariantListItem = ({
   optionValues,
   onEditMenuPress,
   onDeleteMenuPress,
+  hidePrice,
   ...xStackProps
 }: VariantListItemProps) => {
   return (
@@ -43,7 +45,7 @@ export const VariantListItem = ({
         },
       ]}
       footerItems={
-        productSaleType === 'purchase'
+        productSaleType === 'purchase' && !hidePrice
           ? [{ value: `Rp. ${price.toLocaleString('id')}` }]
           : []
       }

@@ -75,7 +75,9 @@ describe('TransactionDetailHandler', () => {
     });
 
     it('should show pre-filled data when transaction is preloaded', () => {
-      render(<TransactionDetailHandler {...createProps({ preloaded: true })} />);
+      render(
+        <TransactionDetailHandler {...createProps({ preloaded: true })} />
+      );
 
       expect(screen.getByText('Transaction 1')).toBeTruthy();
     });
@@ -89,17 +91,9 @@ describe('TransactionDetailHandler', () => {
         await flushPromises();
       });
 
-      expect(screen.getByRole('heading', { name: 'Transaction Items' })).toBeTruthy();
-    });
-
-    it('should show transaction coupons heading after fetch', async () => {
-      render(<TransactionDetailHandler {...createProps()} />);
-
-      await act(async () => {
-        await flushPromises();
-      });
-
-      expect(screen.getByRole('heading', { name: 'Transaction Coupons' })).toBeTruthy();
+      expect(
+        screen.getByRole('heading', { name: 'Transaction Items' })
+      ).toBeTruthy();
     });
   });
 });

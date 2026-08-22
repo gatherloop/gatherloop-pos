@@ -70,96 +70,98 @@ export const TransactionDetail = ({
 
   return (
     <YStack gap="$3">
-      <XStack gap="$3" flexWrap="wrap" $md={{ flexDirection: 'column' }}>
-        <Card flex={1}>
-          <Card.Header>
-            <XStack gap="$3" alignItems="center">
-              <User size="$3" />
+      <XStack gap="$2" flexWrap="wrap">
+        <Card>
+          <Card.Header padding="$2.5">
+            <XStack gap="$2" alignItems="center">
+              <User size="$2" />
               <YStack>
-                <Paragraph>Customer Name</Paragraph>
-                <H5 textTransform="none">{name}</H5>
+                <Paragraph size="$1">Customer Name</Paragraph>
+                <Paragraph size="$2">{name}</Paragraph>
               </YStack>
             </XStack>
           </Card.Header>
         </Card>
 
         {orderNumber > 0 && (
-          <Card flex={1}>
-            <Card.Header>
-              <XStack gap="$3" alignItems="center">
-                <ConciergeBell size="$3" />
+          <Card>
+            <Card.Header padding="$2.5">
+              <XStack gap="$2" alignItems="center">
+                <ConciergeBell size="$2" />
                 <YStack>
-                  <Paragraph>Order Number</Paragraph>
-                  <H5 textTransform="none">{orderNumber}</H5>
+                  <Paragraph size="$1">Order Number</Paragraph>
+                  <Paragraph size="$2">{orderNumber}</Paragraph>
                 </YStack>
               </XStack>
             </Card.Header>
           </Card>
         )}
 
-        <Card flex={1}>
-          <Card.Header>
-            <XStack gap="$3" alignItems="center">
-              <Calendar size="$3" />
+        <Card>
+          <Card.Header padding="$2.5">
+            <XStack gap="$2" alignItems="center">
+              <Calendar size="$2" />
               <YStack>
-                <Paragraph>Transaction Date</Paragraph>
-                <H5 textTransform="none">
+                <Paragraph size="$1">Transaction Date</Paragraph>
+                <Paragraph size="$2">
                   {dayjs(createdAt).format('DD/MM/YYYY HH:mm')}
-                </H5>
+                </Paragraph>
               </YStack>
             </XStack>
           </Card.Header>
         </Card>
 
-        <Card flex={1}>
-          <Card.Header>
-            <XStack gap="$3" alignItems="center">
-              <CreditCard size="$3" />
+        <Card>
+          <Card.Header padding="$2.5">
+            <XStack gap="$2" alignItems="center">
+              <CreditCard size="$2" />
               <YStack>
-                <Paragraph>Paid At</Paragraph>
-                <H5 textTransform="none">
+                <Paragraph size="$1">Paid At</Paragraph>
+                <Paragraph size="$2">
                   {dayjs(paidAt).format('DD/MM/YYYY HH:mm')}
-                </H5>
+                </Paragraph>
               </YStack>
             </XStack>
           </Card.Header>
         </Card>
 
-        <Card flex={1}>
-          <Card.Header>
-            <XStack gap="$3" alignItems="center">
-              <CreditCard size="$3" />
+        <Card>
+          <Card.Header padding="$2.5">
+            <XStack gap="$2" alignItems="center">
+              <CreditCard size="$2" />
               <YStack>
-                <Paragraph>Paid Amount</Paragraph>
-                <H5 textTransform="none">
+                <Paragraph size="$1">Paid Amount</Paragraph>
+                <Paragraph size="$2" textTransform="none">
                   Rp. {paidAmount.toLocaleString('id')}
-                </H5>
+                </Paragraph>
               </YStack>
             </XStack>
           </Card.Header>
         </Card>
 
-        <Card flex={1}>
-          <Card.Header>
-            <XStack gap="$3" alignItems="center">
-              <CreditCard size="$3" />
+        <Card>
+          <Card.Header padding="$2.5">
+            <XStack gap="$2" alignItems="center">
+              <CreditCard size="$2" />
               <YStack>
-                <Paragraph>Change</Paragraph>
-                <H5 textTransform="none">
+                <Paragraph size="$1">Change</Paragraph>
+                <Paragraph size="$2" textTransform="none">
                   Rp. {(paidAmount - total).toLocaleString('id')}
-                </H5>
+                </Paragraph>
               </YStack>
             </XStack>
           </Card.Header>
         </Card>
 
-        <Card flex={1}>
-          <Card.Header>
-            <XStack gap="$3" alignItems="center">
-              <Wallet size="$3" />
+        <Card>
+          <Card.Header padding="$2.5">
+            <XStack gap="$2" alignItems="center">
+              <Wallet size="$2" />
               <YStack>
-                <Paragraph>Wallet</Paragraph>
-                <H5 textTransform="none">{walletName}</H5>
+                <Paragraph size="$1">Wallet</Paragraph>
+                <Paragraph size="$2" textTransform="none">
+                  {walletName}
+                </Paragraph>
               </YStack>
             </XStack>
           </Card.Header>
@@ -190,33 +192,48 @@ export const TransactionDetail = ({
                   name: value.optionValueName,
                 }))}
                 flex={1}
+                hidePrice
               />
 
               <XStack gap="$5" justifyContent="flex-end">
                 <YStack>
-                  <Paragraph textAlign="right">Note</Paragraph>
-                  <H4 textAlign="right">{note}</H4>
+                  <Paragraph textAlign="right" size="$2">
+                    Note
+                  </Paragraph>
+                  <Paragraph textAlign="right">{note}</Paragraph>
                 </YStack>
                 <YStack>
-                  <Paragraph textAlign="right">Price</Paragraph>
-                  <H4 textAlign="right">Rp. {price.toLocaleString('id')}</H4>
+                  <Paragraph textAlign="right" size="$2">
+                    Price
+                  </Paragraph>
+                  <Paragraph textAlign="right">
+                    Rp. {price.toLocaleString('id')}
+                  </Paragraph>
                 </YStack>
                 <YStack>
-                  <Paragraph textAlign="right">Amount</Paragraph>
-                  <H4 textAlign="right">{amount}</H4>
+                  <Paragraph textAlign="right" size="$2">
+                    Amount
+                  </Paragraph>
+                  <Paragraph textAlign="right">{amount}</Paragraph>
                 </YStack>
                 {discountAmount > 0 && (
                   <YStack>
-                    <Paragraph textAlign="right">Discount Amount</Paragraph>
-                    <H4 textAlign="right">
+                    <Paragraph textAlign="right" size="$2">
+                      Discount Amount
+                    </Paragraph>
+                    <Paragraph textAlign="right">
                       Rp. {discountAmount.toLocaleString('id')}
-                    </H4>
+                    </Paragraph>
                   </YStack>
                 )}
 
                 <YStack>
-                  <Paragraph textAlign="right">Subtotal</Paragraph>
-                  <H4 textAlign="right">Rp. {subtotal.toLocaleString('id')}</H4>
+                  <Paragraph textAlign="right" size="$2">
+                    Subtotal
+                  </Paragraph>
+                  <Paragraph textAlign="right">
+                    Rp. {subtotal.toLocaleString('id')}
+                  </Paragraph>
                 </YStack>
               </XStack>
             </YStack>
@@ -224,28 +241,34 @@ export const TransactionDetail = ({
         )}
       </YStack>
 
-      <H4>Transaction Coupons</H4>
-      <YStack gap="$3">
-        {transactionCoupons.map(({ amount, type, coupon }, index) => (
-          <YStack key={coupon.id} gap="$3">
-            <CouponListItem
-              amount={amount}
-              code={coupon.code}
-              type={type}
-              flex={1}
-            />
+      {transactionCoupons.length > 0 && (
+        <>
+          <H4>Transaction Coupons</H4>
+          <YStack gap="$3">
+            {transactionCoupons.map(({ amount, type, coupon }, index) => (
+              <YStack key={coupon.id} gap="$3">
+                <CouponListItem
+                  amount={amount}
+                  code={coupon.code}
+                  type={type}
+                  flex={1}
+                />
 
-            <XStack gap="$5" justifyContent="flex-end">
-              <YStack>
-                <Paragraph textAlign="right">Subtotal</Paragraph>
-                <H4 textAlign="right">
-                  - Rp. {getDiscountAmount(index).toLocaleString('id')}
-                </H4>
+                <XStack gap="$5" justifyContent="flex-end">
+                  <YStack>
+                    <Paragraph textAlign="right" size="$2">
+                      Subtotal
+                    </Paragraph>
+                    <Paragraph textAlign="right">
+                      - Rp. {getDiscountAmount(index).toLocaleString('id')}
+                    </Paragraph>
+                  </YStack>
+                </XStack>
               </YStack>
-            </XStack>
+            ))}
           </YStack>
-        ))}
-      </YStack>
+        </>
+      )}
 
       <YStack alignItems="flex-end">
         <Paragraph>Total</Paragraph>
