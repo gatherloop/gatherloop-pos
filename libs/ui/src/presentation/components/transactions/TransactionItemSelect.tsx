@@ -277,35 +277,32 @@ export const TransactionItemSelect = ({
                     label: categoryName,
                     value: categoryName,
                     content: (
-                      <ScrollView flex={1}>
-                        <FlatList
-                          nestedScrollEnabled
-                          scrollEnabled
-                          data={products.sort((a, b) =>
-                            a.name.localeCompare(b.name)
-                          )}
-                          contentContainerStyle={{ gap: 16 }}
-                          renderItem={({ item }) => (
-                            <Focusable
-                              onEnterPress={() => onSelectProduct(item)}
+                      <FlatList
+                        style={{ flex: 1 }}
+                        data={products.sort((a, b) =>
+                          a.name.localeCompare(b.name)
+                        )}
+                        contentContainerStyle={{ gap: 16 }}
+                        renderItem={({ item }) => (
+                          <Focusable
+                            onEnterPress={() => onSelectProduct(item)}
+                            style={{ flex: 1 }}
+                          >
+                            <ProductListItem
+                              categoryName={item.category.name}
                               style={{ flex: 1 }}
-                            >
-                              <ProductListItem
-                                categoryName={item.category.name}
-                                style={{ flex: 1 }}
-                                name={item.name}
-                                imageUrl={item.imageUrl}
-                                onPress={() => onSelectProduct(item)}
-                                saleType={item.saleType}
-                                status={item.status}
-                              />
-                            </Focusable>
-                          )}
-                          ItemSeparatorComponent={() => (
-                            <YStack height="$1" style={{ flex: 1 }} />
-                          )}
-                        />
-                      </ScrollView>
+                              name={item.name}
+                              imageUrl={item.imageUrl}
+                              onPress={() => onSelectProduct(item)}
+                              saleType={item.saleType}
+                              status={item.status}
+                            />
+                          </Focusable>
+                        )}
+                        ItemSeparatorComponent={() => (
+                          <YStack height="$1" style={{ flex: 1 }} />
+                        )}
+                      />
                     ),
                   })
                 )}
