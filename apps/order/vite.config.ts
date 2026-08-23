@@ -69,7 +69,13 @@ export default defineConfig(async ({ mode }) => {
       ),
     },
 
-    plugins: [tamaguiPlugin({ disableWatchTamaguiConfig: true }), react(), nxViteTsPaths()],
+    plugins: [
+      tamaguiPlugin({ disableWatchTamaguiConfig: true }),
+      react({
+        babel: { plugins: [['babel-plugin-react-compiler', { target: '18' }]] },
+      }),
+      nxViteTsPaths(),
+    ],
 
     build: {
       outDir: '../../dist/order',
