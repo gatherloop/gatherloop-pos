@@ -17,7 +17,7 @@ const StockCheckItemRowStory = ({
   const form = useForm<FormValues>({ defaultValues: { currentStock } });
   return (
     <FormProvider {...form}>
-      <YStack width={640} padding="$4">
+      <YStack maxWidth={640} width="100%" padding="$4">
         <StockCheckItemRow {...rowProps} fieldName="currentStock" />
       </YStack>
     </FormProvider>
@@ -84,6 +84,77 @@ export const Hidden: Story = {
       isErrorRow={false}
       hidden={true}
       currentStock={5}
+    />
+  ),
+};
+
+// PRD docs/prd-stock-check-form-mobile.md FR-2/FR-3: at ≤800px the row
+// switches to two lines — name (+ badge) on top, unit + stepper below —
+// with ≥44dp stepper targets and a ≥72dp input.
+export const CompactFilled: Story = {
+  parameters: {
+    viewport: { defaultViewport: 'mobile' },
+  },
+  render: () => (
+    <StockCheckItemRowStory
+      materialName="Botol Kaca Bening 250 ml"
+      purchaseUnit="Dus (24 Pcs)"
+      inputId="stock-check-item-compact-1"
+      isPending={false}
+      isErrorRow={false}
+      hidden={false}
+      currentStock={12}
+    />
+  ),
+};
+
+export const CompactPending: Story = {
+  parameters: {
+    viewport: { defaultViewport: 'mobile' },
+  },
+  render: () => (
+    <StockCheckItemRowStory
+      materialName="Baking Soda"
+      purchaseUnit="PCS (15 Gram)"
+      inputId="stock-check-item-compact-2"
+      isPending={true}
+      isErrorRow={false}
+      hidden={false}
+      currentStock={null}
+    />
+  ),
+};
+
+export const CompactSubmittedError: Story = {
+  parameters: {
+    viewport: { defaultViewport: 'mobile' },
+  },
+  render: () => (
+    <StockCheckItemRowStory
+      materialName="Baking Soda"
+      purchaseUnit="PCS (15 Gram)"
+      inputId="stock-check-item-compact-3"
+      isPending={true}
+      isErrorRow={true}
+      hidden={false}
+      currentStock={null}
+    />
+  ),
+};
+
+export const CompactLongMaterialName: Story = {
+  parameters: {
+    viewport: { defaultViewport: 'mobile' },
+  },
+  render: () => (
+    <StockCheckItemRowStory
+      materialName="Ekstrak Vanili Alami Premium Grade A Botol Kaca 500 ml Import"
+      purchaseUnit="Dus (24 Pcs)"
+      inputId="stock-check-item-compact-4"
+      isPending={false}
+      isErrorRow={false}
+      hidden={false}
+      currentStock={3}
     />
   ),
 };

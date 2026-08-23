@@ -53,7 +53,15 @@ export const Button = ({ children, onPress, disabled, icon, accessibilityLabel }
 
 export const Input = React.forwardRef(
   (
-    { value, placeholder, onChangeText, onSubmitEditing, onFocus, id }: AnyProps,
+    {
+      value,
+      placeholder,
+      onChangeText,
+      onSubmitEditing,
+      onFocus,
+      id,
+      inputMode,
+    }: AnyProps,
     ref
   ) =>
     React.createElement('input', {
@@ -61,6 +69,7 @@ export const Input = React.forwardRef(
       id,
       value,
       placeholder,
+      inputMode,
       onChange: (e: { target: { value: string } }) => onChangeText?.(e.target.value),
       onFocus,
       onKeyDown: (e: { key: string; preventDefault: () => void }) => {
