@@ -1,4 +1,3 @@
-import { ScrollView } from 'tamagui';
 import { StockCheckFormView, Layout } from '../components';
 import { StockCheckForm } from '../../domain';
 import { UseFormReturn } from 'react-hook-form';
@@ -26,22 +25,25 @@ export const StockCheckCreateScreen = (props: StockCheckCreateScreenProps) => {
       showBackButton
       onLogoutPress={props.onLogoutPress}
     >
-      <ScrollView>
-        <StockCheckFormView
-          form={props.form}
-          onSubmit={props.onSubmit}
-          isSubmitDisabled={props.isSubmitDisabled}
-          isSubmitting={props.isSubmitting}
-          serverError={props.serverError}
-          query={props.query}
-          onQueryChange={props.onQueryChange}
-          showOnlyPending={props.showOnlyPending}
-          onShowOnlyPendingToggle={props.onShowOnlyPendingToggle}
-          filled={props.filled}
-          total={props.total}
-          pendingRows={props.pendingRows}
-        />
-      </ScrollView>
+      {/* PRD docs/prd-stock-check-form-mobile.md FR-4: `StockCheckFormView`
+          owns its own bounded scroll region (pinned header + `ScrollView
+          flex={1}`) so the search/filter header stays visible on both web
+          and React Native — an outer `ScrollView` here would give it no
+          height to bound against. */}
+      <StockCheckFormView
+        form={props.form}
+        onSubmit={props.onSubmit}
+        isSubmitDisabled={props.isSubmitDisabled}
+        isSubmitting={props.isSubmitting}
+        serverError={props.serverError}
+        query={props.query}
+        onQueryChange={props.onQueryChange}
+        showOnlyPending={props.showOnlyPending}
+        onShowOnlyPendingToggle={props.onShowOnlyPendingToggle}
+        filled={props.filled}
+        total={props.total}
+        pendingRows={props.pendingRows}
+      />
     </Layout>
   );
 };
