@@ -105,3 +105,32 @@ export const InteractiveLogout: Story = {
     />
   ),
 };
+
+// PRD "rental checkin mobile" FR-5: at a phone viewport the dialog is
+// bounded to ~90% width / 420 max width, and a long title/description
+// scrolls internally so the Yes/No row is always visible without scrolling
+// the page — this is the checkin flow's print-confirmation prompt.
+export const CompactPrintConfirmation: Story = {
+  parameters: {
+    viewport: { defaultViewport: 'mobile' },
+  },
+  args: {
+    isOpen: true,
+    title: 'Print Checkin Slip',
+    description: 'Do you want to print checkin slip ?',
+  },
+};
+
+export const CompactLongContent: Story = {
+  parameters: {
+    viewport: { defaultViewport: 'mobile' },
+  },
+  args: {
+    isOpen: true,
+    title:
+      'A much longer confirmation title that has to wrap across multiple lines on a narrow screen',
+    description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. '.repeat(
+      8
+    ),
+  },
+};

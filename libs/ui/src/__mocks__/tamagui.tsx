@@ -51,14 +51,24 @@ export const Button = ({ children, onPress, disabled, icon, accessibilityLabel }
     children
   );
 
-export const Input = React.forwardRef(({ value, placeholder, onChangeText, id }: AnyProps, ref) =>
-  React.createElement('input', {
-    ref,
-    id,
-    value,
-    placeholder,
-    onChange: (e: { target: { value: string } }) => onChangeText?.(e.target.value),
-  })
+export const Input = React.forwardRef(
+  (
+    { value, placeholder, onChangeText, onSubmitEditing, onFocus, id }: AnyProps,
+    ref
+  ) =>
+    React.createElement('input', {
+      ref,
+      id,
+      value,
+      placeholder,
+      onChange: (e: { target: { value: string } }) => onChangeText?.(e.target.value),
+      onFocus,
+      onKeyDown: (e: { key: string; preventDefault: () => void }) => {
+        if (e.key === 'Enter' && typeof onSubmitEditing === 'function') {
+          onSubmitEditing(e);
+        }
+      },
+    })
 );
 
 export const Label = ({ children, htmlFor }: AnyProps) =>

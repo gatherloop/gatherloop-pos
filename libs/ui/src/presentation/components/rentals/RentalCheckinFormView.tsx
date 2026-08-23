@@ -1,26 +1,23 @@
-import { Field, FieldWatch, FormErrorBanner, InputText, Select } from '../base';
 import {
   Button,
   Card,
-  Checkbox,
   Form,
-  Input,
-  Label,
-  Paragraph,
+  H4,
+  ScrollView,
   Spinner,
   XStack,
   YStack,
 } from 'tamagui';
-import { H4 } from 'tamagui';
-import { AlertCircle, Check, CheckCircle, Trash } from '@tamagui/lucide-icons';
 import { RentalCheckinForm, Ticket } from '../../../domain';
 import {
   FormProvider,
   UseFieldArrayReturn,
   UseFormReturn,
 } from 'react-hook-form';
-import { ReactNode, useRef } from 'react';
-import { Separator } from 'tamagui';
+import { ReactNode, useEffect, useState } from 'react';
+import { RentalCheckinCartView } from './RentalCheckinCartView';
+import { FieldWatch, FloatingCartButton, Sheet, useIsCompactLayout } from '../base';
+import { X } from '@tamagui/lucide-icons';
 
 export type RentalCheckinFormViewProps = {
   form: UseFormReturn<RentalCheckinForm>;
@@ -28,10 +25,30 @@ export type RentalCheckinFormViewProps = {
   onSubmit: (form: RentalCheckinForm) => void;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
+  isSubmitSuccess: boolean;
   RentalItemSelect: () => ReactNode;
   rentalsFieldArray: UseFieldArrayReturn<RentalCheckinForm, 'rentals', 'key'>;
   tickets: Ticket[];
   serverError?: string;
+};
+
+// `{n} ticket(s) · {m} code(s) left · View Cart`, collapsing to
+// `{n} ticket(s) · View Cart` once every code is filled — the only number
+// that tells staff whether they can submit, since checkin has no total
+// (PRD "Confirmed Product & Technical Decisions").
+const formatCartSummary = (
+  ticketCount: number,
+  codesLeft: number,
+  withViewCart: boolean
+) => {
+  const ticketLabel = `${ticketCount} ${ticketCount === 1 ? 'ticket' : 'tickets'}`;
+  const summary =
+    codesLeft > 0
+      ? `${ticketLabel} · ${codesLeft} ${
+          codesLeft === 1 ? 'code' : 'codes'
+        } left`
+      : ticketLabel;
+  return withViewCart ? `${summary} · View Cart` : summary;
 };
 
 export const RentalCheckinFormView = ({
@@ -40,243 +57,162 @@ export const RentalCheckinFormView = ({
   onSubmit,
   isSubmitDisabled,
   isSubmitting,
+  isSubmitSuccess,
   RentalItemSelect,
   rentalsFieldArray,
   tickets,
   serverError,
 }: RentalCheckinFormViewProps) => {
-  const inputCodeRefs = useRef<(Input | null)[]>([]);
+  const isCompactLayout = useIsCompactLayout();
+  const [isCartSheetOpen, setIsCartSheetOpen] = useState(false);
+
+  // A successful submit must close the cart sheet before the print
+  // confirmation opens on top of it — an `AlertDialog` stacked over a
+  // `modal` `Sheet` is the exact failure this guards against (PRD FR-4,
+  // mirroring `TransactionFormView`'s close-on-success effect).
+  useEffect(() => {
+    if (isSubmitSuccess) setIsCartSheetOpen(false);
+  }, [isSubmitSuccess]);
+
+  const submitButton = (
+    <Button
+      disabled={isSubmitDisabled}
+      onPress={form.handleSubmit(onSubmit)}
+      size="$5"
+      theme="blue"
+      icon={isSubmitting ? <Spinner /> : undefined}
+    >
+      Submit
+    </Button>
+  );
+
+  if (isCompactLayout) {
+    return (
+      <YStack flex={1}>
+        <FormProvider {...form}>
+          <Form onSubmit={form.handleSubmit(onSubmit)} flex={1}>
+            <YStack flex={1} position="relative">
+              <YStack flex={1}>{RentalItemSelect()}</YStack>
+
+              {rentalsFieldArray.fields.length > 0 && (
+                <FieldWatch control={form.control} name={['rentals']}>
+                  {([rentals]) => {
+                    const codesLeft = rentals.filter(
+                      (rental) => !rental.code
+                    ).length;
+                    return (
+                      <FloatingCartButton
+                        label={formatCartSummary(
+                          rentals.length,
+                          codesLeft,
+                          true
+                        )}
+                        onPress={() => setIsCartSheetOpen(true)}
+                      />
+                    );
+                  }}
+                </FieldWatch>
+              )}
+            </YStack>
+
+            <Sheet isOpen={isCartSheetOpen} onOpenChange={setIsCartSheetOpen}>
+              {/* Tamagui's modal `Sheet` portals its content, which on some
+                  platforms (e.g. Android) does not carry the ambient React
+                  context down from the outer `FormProvider` above. Everything
+                  in here reads the form via `useFormContext()`, so
+                  re-establish the provider inside the sheet (PRD "Constraint:
+                  `FormProvider` inside the sheet"). */}
+              <FormProvider {...form}>
+                <YStack flex={1}>
+                  <XStack
+                    padding="$3"
+                    alignItems="center"
+                    justifyContent="space-between"
+                    borderBottomWidth={1}
+                    borderBottomColor="$borderColor"
+                  >
+                    <H4>Cart</H4>
+                    <Button
+                      icon={X}
+                      size="$3"
+                      circular
+                      accessibilityLabel="Close Cart"
+                      onPress={() => setIsCartSheetOpen(false)}
+                    />
+                  </XStack>
+
+                  <ScrollView flex={1}>
+                    <YStack padding="$3" flex={1}>
+                      <RentalCheckinCartView
+                        form={form}
+                        rentalsFieldArray={rentalsFieldArray}
+                        tickets={tickets}
+                        onToggleCustomizeCheckinDateTime={
+                          onToggleCustomizeCheckinDateTime
+                        }
+                        serverError={serverError}
+                      />
+                    </YStack>
+                  </ScrollView>
+
+                  <YStack
+                    padding="$3"
+                    gap="$3"
+                    borderTopWidth={1}
+                    borderTopColor="$borderColor"
+                  >
+                    <FieldWatch control={form.control} name={['rentals']}>
+                      {([rentals]) => {
+                        const codesLeft = rentals.filter(
+                          (rental) => !rental.code
+                        ).length;
+                        return (
+                          <H4 textTransform="none">
+                            {formatCartSummary(
+                              rentals.length,
+                              codesLeft,
+                              false
+                            )}
+                          </H4>
+                        );
+                      }}
+                    </FieldWatch>
+                    {submitButton}
+                  </YStack>
+                </YStack>
+              </FormProvider>
+            </Sheet>
+          </Form>
+        </FormProvider>
+      </YStack>
+    );
+  }
+
   return (
     <YStack>
       <FormProvider {...form}>
         <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
-          <FormErrorBanner message={serverError} />
           <YStack>
             <YStack gap="$3">
               <XStack gap="$3">
                 <YStack flex={1}>{RentalItemSelect()}</YStack>
 
                 <Card padded width={350} flex={1}>
-                  <YStack gap="$3">
-                    <Field
-                      name="name"
-                      label="Customer Name"
-                      maxWidth={300}
-                      flex={1}
-                    >
-                      <InputText />
-                    </Field>
-                    <FieldWatch control={form.control} name={['checkinAt']}>
-                      {([checkinAt]) => (
-                        <YStack>
-                          <XStack>
-                            <XStack width={300} alignItems="center" gap="$4">
-                              <Checkbox
-                                id="customizeCheckinAt"
-                                checked={checkinAt !== null}
-                                onCheckedChange={
-                                  onToggleCustomizeCheckinDateTime
-                                }
-                              >
-                                <Checkbox.Indicator>
-                                  <Check />
-                                </Checkbox.Indicator>
-                              </Checkbox>
-
-                              <Label htmlFor="customizeCheckinAt">
-                                Customize Checkin Date Time
-                              </Label>
-                            </XStack>
-                          </XStack>
-                          {checkinAt !== null && (
-                            <YStack>
-                              <XStack gap="$3">
-                                <Field
-                                  name="checkinAt.date"
-                                  label="Date"
-                                  flex={1}
-                                >
-                                  <Select
-                                    items={Array.from(
-                                      { length: 31 },
-                                      (_, i) => ({
-                                        label: (i + 1)
-                                          .toString()
-                                          .padStart(2, '0'),
-                                        value: i + 1,
-                                      })
-                                    )}
-                                  />
-                                </Field>
-                                <Field
-                                  name="checkinAt.month"
-                                  label="Month"
-                                  minWidth={150}
-                                  flex={1}
-                                >
-                                  <Select
-                                    items={[
-                                      { label: 'Januari', value: 0 },
-                                      { label: 'Februari', value: 1 },
-                                      { label: 'Maret', value: 2 },
-                                      { label: 'April', value: 3 },
-                                      { label: 'Mei', value: 4 },
-                                      { label: 'Juni', value: 5 },
-                                      { label: 'July', value: 6 },
-                                      { label: 'Agustus', value: 7 },
-                                      { label: 'September', value: 8 },
-                                      { label: 'Oktober', value: 9 },
-                                      { label: 'November', value: 10 },
-                                      { label: 'Desember', value: 11 },
-                                    ]}
-                                  />
-                                </Field>
-                                <Field
-                                  name="checkinAt.year"
-                                  label="Year"
-                                  flex={1}
-                                >
-                                  <Select
-                                    items={Array.from(
-                                      {
-                                        length:
-                                          new Date().getFullYear() + 1 - 2000,
-                                      },
-                                      (_, i) => ({
-                                        label: (i + 2000).toString(),
-                                        value: i + 2000,
-                                      })
-                                    )}
-                                  />
-                                </Field>
-                              </XStack>
-                              <XStack gap="$3">
-                                <Field
-                                  name="checkinAt.hour"
-                                  label="Hour"
-                                  flex={1}
-                                >
-                                  <Select
-                                    items={Array.from(
-                                      { length: 24 },
-                                      (_, i) => ({
-                                        label: i.toString().padStart(2, '0'),
-                                        value: i,
-                                      })
-                                    )}
-                                  />
-                                </Field>
-                                <Field
-                                  name="checkinAt.minute"
-                                  label="Minute"
-                                  flex={1}
-                                >
-                                  <Select
-                                    items={Array.from(
-                                      { length: 60 },
-                                      (_, i) => ({
-                                        label: i.toString().padStart(2, '0'),
-                                        value: i,
-                                      })
-                                    )}
-                                  />
-                                </Field>
-                              </XStack>
-                            </YStack>
-                          )}
-                        </YStack>
-                      )}
-                    </FieldWatch>
-
-                    <H4>Items</H4>
-                    {rentalsFieldArray.fields.map(({ variant, key }, index) => {
-                      return (
-                        <YStack key={key} gap="$3">
-                          <XStack
-                            gap="$3"
-                            flex={1}
-                            alignItems="center"
-                            justifyContent="space-between"
-                          >
-                            <XStack gap="$3">
-                              <Button
-                                icon={Trash}
-                                size="$3"
-                                onPress={() => rentalsFieldArray.remove(index)}
-                                theme="red"
-                                color="$red8"
-                                circular
-                              />
-                              <YStack>
-                                <Paragraph size="$5">
-                                  {variant.product.name}
-                                </Paragraph>
-                                <Paragraph>
-                                  {variant.values
-                                    .map(({ optionValue }) => optionValue.name)
-                                    .join(' - ')}
-                                </Paragraph>
-                              </YStack>
-                            </XStack>
-                          </XStack>
-                          <InputText
-                            name={`rentals.${index}.code`}
-                            placeholder="Code"
-                            flex={1}
-                            ref={(element) => {
-                              inputCodeRefs.current[index] = element;
-                            }}
-                            onSubmitEditing={() => {
-                              if (index < rentalsFieldArray.fields.length - 1) {
-                                inputCodeRefs.current[index + 1]?.focus();
-                              }
-                            }}
-                          />
-                          <FieldWatch
-                            control={form.control}
-                            name={[`rentals.${index}.code`]}
-                          >
-                            {([code]) => {
-                              if (!code) return null;
-                              const ticket = tickets.find(
-                                (ticket) => ticket.code === code
-                              );
-                              return ticket ? (
-                                <XStack alignItems="center" gap="$2">
-                                  <CheckCircle size="$1" color="$green10" />
-                                  <Paragraph color="$green10">
-                                    → {ticket.name}
-                                  </Paragraph>
-                                </XStack>
-                              ) : (
-                                <XStack alignItems="center" gap="$2">
-                                  <AlertCircle size="$1" color="$yellow10" />
-                                  <Paragraph color="$yellow10">
-                                    Unregistered card
-                                  </Paragraph>
-                                </XStack>
-                              );
-                            }}
-                          </FieldWatch>
-                          <Separator />
-                        </YStack>
-                      );
-                    })}
-                  </YStack>
+                  <RentalCheckinCartView
+                    form={form}
+                    rentalsFieldArray={rentalsFieldArray}
+                    tickets={tickets}
+                    onToggleCustomizeCheckinDateTime={
+                      onToggleCustomizeCheckinDateTime
+                    }
+                    serverError={serverError}
+                  />
                 </Card>
               </XStack>
             </YStack>
           </YStack>
           <XStack justifyContent="flex-end" gap="$3">
-            <Button
-              disabled={isSubmitDisabled}
-              onPress={form.handleSubmit(onSubmit)}
-              size="$5"
-              theme="blue"
-              icon={isSubmitting ? <Spinner /> : undefined}
-            >
-              Submit
-            </Button>
+            {submitButton}
           </XStack>
         </Form>
       </FormProvider>

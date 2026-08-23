@@ -21,6 +21,8 @@ const CheckinStory = () => {
       form={form}
       onSubmit={fn()}
       isSubmitDisabled={false}
+      isSubmitting={false}
+      isSubmitSuccess={false}
       onLogoutPress={fn()}
       rentalsFieldArray={rentalsFieldArray}
       onToggleCustomizeCheckinDateTime={fn()}

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { fn } from '@storybook/test';
+import { fn, userEvent, within } from '@storybook/test';
 import React from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { Text } from 'tamagui';
@@ -26,6 +26,8 @@ const DefaultStory = () => {
       onToggleCustomizeCheckinDateTime={fn()}
       onSubmit={fn()}
       isSubmitDisabled={false}
+      isSubmitting={false}
+      isSubmitSuccess={false}
       RentalItemSelect={() => <Text color="$color">+ Add Rental Item</Text>}
       rentalsFieldArray={rentalsFieldArray}
       tickets={mockTickets}
@@ -52,6 +54,8 @@ const PopulatedStory = () => {
       onToggleCustomizeCheckinDateTime={fn()}
       onSubmit={fn()}
       isSubmitDisabled={false}
+      isSubmitting={false}
+      isSubmitSuccess={false}
       RentalItemSelect={() => <Text color="$color">+ Add Rental Item</Text>}
       rentalsFieldArray={rentalsFieldArray}
       tickets={mockTickets}
@@ -82,6 +86,76 @@ const ScanResolutionStory = () => {
       onToggleCustomizeCheckinDateTime={fn()}
       onSubmit={fn()}
       isSubmitDisabled={false}
+      isSubmitting={false}
+      isSubmitSuccess={false}
+      RentalItemSelect={() => <Text color="$color">+ Add Rental Item</Text>}
+      rentalsFieldArray={rentalsFieldArray}
+      tickets={mockTickets}
+    />
+  );
+};
+
+// Compact layout (PRD FR-3): at ≤800px the picker fills the screen and the
+// cart moves behind a floating button into a sheet.
+const CompactWithTicketsStory = () => {
+  const form = useForm<RentalCheckinForm>({
+    defaultValues: {
+      name: '',
+      rentals: [
+        { code: '', variant: mockVariant },
+        { code: '', variant: mockVariant },
+      ],
+      checkinAt: null,
+    },
+  });
+  const rentalsFieldArray = useFieldArray({
+    control: form.control,
+    name: 'rentals',
+    keyName: 'key',
+  });
+  return (
+    <RentalCheckinFormView
+      form={form}
+      onToggleCustomizeCheckinDateTime={fn()}
+      onSubmit={fn()}
+      isSubmitDisabled={false}
+      isSubmitting={false}
+      isSubmitSuccess={false}
+      RentalItemSelect={() => <Text color="$color">+ Add Rental Item</Text>}
+      rentalsFieldArray={rentalsFieldArray}
+      tickets={mockTickets}
+    />
+  );
+};
+
+// Phase 4 keyboard-ergonomics check: 12 rows is enough for the sheet body
+// to scroll well past one screen, so the focus chain and its scroll-into-
+// view behaviour have somewhere to prove themselves (PRD Phase 4, "verified
+// ... with a list long enough to scroll").
+const CompactWithManyTicketsStory = () => {
+  const form = useForm<RentalCheckinForm>({
+    defaultValues: {
+      name: '',
+      rentals: Array.from({ length: 12 }, () => ({
+        code: '',
+        variant: mockVariant,
+      })),
+      checkinAt: null,
+    },
+  });
+  const rentalsFieldArray = useFieldArray({
+    control: form.control,
+    name: 'rentals',
+    keyName: 'key',
+  });
+  return (
+    <RentalCheckinFormView
+      form={form}
+      onToggleCustomizeCheckinDateTime={fn()}
+      onSubmit={fn()}
+      isSubmitDisabled={false}
+      isSubmitting={false}
+      isSubmitSuccess={false}
       RentalItemSelect={() => <Text color="$color">+ Add Rental Item</Text>}
       rentalsFieldArray={rentalsFieldArray}
       tickets={mockTickets}
@@ -107,4 +181,40 @@ export const Populated: Story = {
 
 export const ScanResolution: Story = {
   render: () => <ScanResolutionStory />,
+};
+
+export const CompactEmptyCart: Story = {
+  parameters: {
+    viewport: { defaultViewport: 'mobile' },
+  },
+  render: () => <DefaultStory />,
+};
+
+export const CompactWithTickets: Story = {
+  parameters: {
+    viewport: { defaultViewport: 'mobile' },
+  },
+  render: () => <CompactWithTicketsStory />,
+};
+
+export const CompactCartSheetOpen: Story = {
+  parameters: {
+    viewport: { defaultViewport: 'mobile' },
+  },
+  render: () => <CompactWithTicketsStory />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByText(/View Cart/));
+  },
+};
+
+export const CompactCartSheetLongList: Story = {
+  parameters: {
+    viewport: { defaultViewport: 'mobile' },
+  },
+  render: () => <CompactWithManyTicketsStory />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByText(/View Cart/));
+  },
 };
