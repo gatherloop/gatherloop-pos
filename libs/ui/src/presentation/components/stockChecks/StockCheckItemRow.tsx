@@ -99,9 +99,9 @@ export const StockCheckItemRow = ({
             aria-invalid={isErrorRow || undefined}
             width={72}
             minWidth={72}
+            maxWidth={72}
             textAlign="center"
             buttonSize="$3"
-            buttonMinSize={44}
           />
         </XStack>
 
