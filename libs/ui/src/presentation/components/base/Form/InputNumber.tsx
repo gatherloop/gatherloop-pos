@@ -1,9 +1,17 @@
 import { Button, Input, InputProps, XStack } from 'tamagui';
 import { useFieldContext } from './Field';
-import { Controller, ControllerRenderProps, FieldValues } from 'react-hook-form';
+import {
+  Controller,
+  ControllerRenderProps,
+  FieldValues,
+} from 'react-hook-form';
 import { Minus, Plus } from '@tamagui/lucide-icons';
-import { useRef } from 'react';
-import type { InputModeOptions, KeyboardTypeOptions } from 'react-native';
+import { forwardRef, Ref, useRef } from 'react';
+import type {
+  InputModeOptions,
+  KeyboardTypeOptions,
+  TextInput,
+} from 'react-native';
 
 export type InputNumberProps = {
   name?: string;
@@ -38,6 +46,7 @@ type InputNumberFieldProps = {
   buttonMinSize?: number;
   inputMode: InputModeOptions;
   keyboardType: KeyboardTypeOptions;
+  inputRef?: Ref<TextInput>;
 };
 
 const InputNumberField = ({
@@ -53,6 +62,7 @@ const InputNumberField = ({
   buttonMinSize,
   inputMode,
   keyboardType,
+  inputRef,
 }: InputNumberFieldProps) => {
   const isNullableRef = useRef(field.value === null);
   const isNull = field.value === null;
@@ -82,6 +92,7 @@ const InputNumberField = ({
       )}
 
       <Input
+        ref={inputRef}
         {...inputProps}
         id={fieldName}
         placeholder={isNull ? '—' : inputProps.placeholder}
@@ -90,7 +101,7 @@ const InputNumberField = ({
         keyboardType={keyboardType}
         onChangeText={(text: string) => {
           if (text.trim() === '') {
-            field.onChange(isNullableRef.current ? null : (min ?? 0));
+            field.onChange(isNullableRef.current ? null : min ?? 0);
             return;
           }
           const numberValue = parseFloat(text);
@@ -136,44 +147,52 @@ const InputNumberField = ({
   );
 };
 
-export const InputNumber = ({
-  name,
-  min,
-  max,
-  fractionDigit = 0,
-  step = 1,
-  error,
-  buttonSize = '$2',
-  buttonMinSize,
-  inputMode,
-  keyboardType,
-  ...inputProps
-}: InputNumberProps) => {
-  const fieldContext = useFieldContext();
-  const fieldName = fieldContext.name ?? name ?? '';
-  const resolvedInputMode =
-    inputMode ?? (fractionDigit === 0 ? 'numeric' : 'decimal');
-  const resolvedKeyboardType =
-    keyboardType ?? (fractionDigit === 0 ? 'number-pad' : 'decimal-pad');
-  return (
-    <Controller
-      name={fieldName}
-      render={({ field }) => (
-        <InputNumberField
-          field={field}
-          fieldName={fieldName}
-          min={min}
-          max={max}
-          fractionDigit={fractionDigit}
-          step={step}
-          inputProps={inputProps}
-          error={error}
-          buttonSize={buttonSize}
-          buttonMinSize={buttonMinSize}
-          inputMode={resolvedInputMode}
-          keyboardType={resolvedKeyboardType}
-        />
-      )}
-    />
-  );
-};
+export const InputNumber = forwardRef<TextInput, InputNumberProps>(
+  (
+    {
+      name,
+      min,
+      max,
+      fractionDigit = 0,
+      step = 1,
+      error,
+      buttonSize = '$2',
+      buttonMinSize,
+      inputMode,
+      keyboardType,
+      ...inputProps
+    },
+    ref
+  ) => {
+    const fieldContext = useFieldContext();
+    const fieldName = fieldContext.name ?? name ?? '';
+    const resolvedInputMode =
+      inputMode ?? (fractionDigit === 0 ? 'numeric' : 'decimal');
+    const resolvedKeyboardType =
+      keyboardType ?? (fractionDigit === 0 ? 'number-pad' : 'decimal-pad');
+    return (
+      <Controller
+        name={fieldName}
+        render={({ field }) => (
+          <InputNumberField
+            field={field}
+            fieldName={fieldName}
+            min={min}
+            max={max}
+            fractionDigit={fractionDigit}
+            step={step}
+            inputProps={inputProps}
+            error={error}
+            buttonSize={buttonSize}
+            buttonMinSize={buttonMinSize}
+            inputMode={resolvedInputMode}
+            keyboardType={resolvedKeyboardType}
+            inputRef={ref}
+          />
+        )}
+      />
+    );
+  }
+);
+
+InputNumber.displayName = 'InputNumber';
