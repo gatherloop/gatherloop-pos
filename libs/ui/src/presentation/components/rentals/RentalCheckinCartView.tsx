@@ -197,6 +197,20 @@ export const RentalCheckinCartView = ({
               ref={(element) => {
                 inputCodeRefs.current[index] = element;
               }}
+              // The chain moves focus with `.focus()`, which fires this same
+              // `onFocus` — so scrolling here covers both a manual tap and
+              // the `onSubmitEditing` chain below, keeping whichever code
+              // input is focused clear of the software keyboard (PRD Phase
+              // 4, "Code-entry ergonomics in the sheet"). `scrollIntoView`
+              // is a web-only DOM method; it is absent on native refs and in
+              // the Jest DOM, so it's called optionally.
+              onFocus={() => {
+                (
+                  inputCodeRefs.current[index] as unknown as {
+                    scrollIntoView?: (options: ScrollIntoViewOptions) => void;
+                  } | null
+                )?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+              }}
               onSubmitEditing={() => {
                 if (index < rentalsFieldArray.fields.length - 1) {
                   inputCodeRefs.current[index + 1]?.focus();
