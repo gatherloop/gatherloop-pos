@@ -117,6 +117,7 @@ export const RentalCheckinHandler = ({
       }
       isSubmitDisabled={rentalCheckin.state.type === 'submitting'}
       isSubmitting={rentalCheckin.state.type === 'submitting'}
+      isSubmitSuccess={rentalCheckin.state.type === 'submitSuccess'}
       serverError={
         rentalCheckin.state.type === 'submitError'
           ? 'Failed to submit. Please try again.'

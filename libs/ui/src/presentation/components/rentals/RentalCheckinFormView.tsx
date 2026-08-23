@@ -14,7 +14,7 @@ import {
   UseFieldArrayReturn,
   UseFormReturn,
 } from 'react-hook-form';
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { RentalCheckinCartView } from './RentalCheckinCartView';
 import { FieldWatch, FloatingCartButton, Sheet, useIsCompactLayout } from '../base';
 import { X } from '@tamagui/lucide-icons';
@@ -25,6 +25,7 @@ export type RentalCheckinFormViewProps = {
   onSubmit: (form: RentalCheckinForm) => void;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
+  isSubmitSuccess: boolean;
   RentalItemSelect: () => ReactNode;
   rentalsFieldArray: UseFieldArrayReturn<RentalCheckinForm, 'rentals', 'key'>;
   tickets: Ticket[];
@@ -56,6 +57,7 @@ export const RentalCheckinFormView = ({
   onSubmit,
   isSubmitDisabled,
   isSubmitting,
+  isSubmitSuccess,
   RentalItemSelect,
   rentalsFieldArray,
   tickets,
@@ -63,6 +65,14 @@ export const RentalCheckinFormView = ({
 }: RentalCheckinFormViewProps) => {
   const isCompactLayout = useIsCompactLayout();
   const [isCartSheetOpen, setIsCartSheetOpen] = useState(false);
+
+  // A successful submit must close the cart sheet before the print
+  // confirmation opens on top of it — an `AlertDialog` stacked over a
+  // `modal` `Sheet` is the exact failure this guards against (PRD FR-4,
+  // mirroring `TransactionFormView`'s close-on-success effect).
+  useEffect(() => {
+    if (isSubmitSuccess) setIsCartSheetOpen(false);
+  }, [isSubmitSuccess]);
 
   const submitButton = (
     <Button

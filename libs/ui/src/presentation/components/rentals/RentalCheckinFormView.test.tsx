@@ -29,7 +29,13 @@ const threeRentalsValues: RentalCheckinForm = {
   checkinAt: null,
 };
 
-const Wrapper = ({ defaultValues }: { defaultValues: RentalCheckinForm }) => {
+const Wrapper = ({
+  defaultValues,
+  isSubmitSuccess = false,
+}: {
+  defaultValues: RentalCheckinForm;
+  isSubmitSuccess?: boolean;
+}) => {
   const form = useForm<RentalCheckinForm>({ defaultValues });
   const rentalsFieldArray = useFieldArray({
     control: form.control,
@@ -44,6 +50,7 @@ const Wrapper = ({ defaultValues }: { defaultValues: RentalCheckinForm }) => {
       onSubmit={jest.fn()}
       isSubmitDisabled={false}
       isSubmitting={false}
+      isSubmitSuccess={isSubmitSuccess}
       RentalItemSelect={() => <Text color="$color">Product Picker</Text>}
       rentalsFieldArray={rentalsFieldArray}
       tickets={mockTickets}
@@ -140,6 +147,36 @@ describe('RentalCheckinFormView', () => {
       await user.type(codeInput, mockTickets[0].code);
 
       expect(screen.getByText('1 ticket · View Cart')).toBeTruthy();
+    });
+
+    describe('close-on-success (PRD FR-4)', () => {
+      it('closes the cart sheet once isSubmitSuccess flips to true', async () => {
+        const user = userEvent.setup();
+        const { rerender } = render(
+          <Wrapper defaultValues={oneRentalValues} isSubmitSuccess={false} />
+        );
+
+        await user.click(screen.getByText(/View Cart/));
+        expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
+
+        rerender(
+          <Wrapper defaultValues={oneRentalValues} isSubmitSuccess={true} />
+        );
+
+        expect(screen.queryByRole('button', { name: 'Submit' })).toBeNull();
+        expect(
+          screen.queryByRole('button', { name: 'Close Cart' })
+        ).toBeNull();
+      });
+
+      it('does not open the sheet on its own when isSubmitSuccess is already true on mount', () => {
+        render(
+          <Wrapper defaultValues={oneRentalValues} isSubmitSuccess={true} />
+        );
+
+        expect(screen.queryByRole('button', { name: 'Submit' })).toBeNull();
+        expect(screen.getByText(/View Cart/)).toBeTruthy();
+      });
     });
   });
 });
