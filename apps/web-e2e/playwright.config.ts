@@ -64,10 +64,14 @@ export default defineConfig({
         /* Use saved auth state for all tests except auth.spec.ts */
         storageState: STORAGE_STATE,
       },
-      /* transactions.mobile.spec.ts is desktop-viewport-incompatible (it
-       * asserts on the compact/phone layout) — it only runs under
+      /* *.mobile.spec.ts files are desktop-viewport-incompatible (they
+       * assert on the compact/phone layout) — they only run under
        * `mobile-chromium` below. */
-      testIgnore: [/auth\.spec\.ts/, /transactions\.mobile\.spec\.ts/],
+      testIgnore: [
+        /auth\.spec\.ts/,
+        /transactions\.mobile\.spec\.ts/,
+        /rentals\.checkin\.mobile\.spec\.ts/,
+      ],
     },
     /* Auth tests run without saved state (they test login/logout themselves) */
     {
@@ -80,16 +84,20 @@ export default defineConfig({
       testMatch: /auth\.spec\.ts/,
     },
     /* Phone viewport — covers the compact transaction-form flow (PRD
-     * docs/prd-transaction-form-mobile.md, Phase 7 / FR-8). Only the mobile
-     * transaction spec runs here; every other spec keeps running once, under
-     * `chromium`, unaffected by this project. */
+     * docs/prd-transaction-form-mobile.md, Phase 7 / FR-8) and the compact
+     * rental-checkin flow (PRD docs/prd-rental-checkin-mobile.md, Phase 6 /
+     * FR-6). Only the *.mobile.spec.ts files run here; every other spec
+     * keeps running once, under `chromium`, unaffected by this project. */
     {
       name: 'mobile-chromium',
       use: {
         ...devices['Pixel 5'],
         storageState: STORAGE_STATE,
       },
-      testMatch: /transactions\.mobile\.spec\.ts/,
+      testMatch: [
+        /transactions\.mobile\.spec\.ts/,
+        /rentals\.checkin\.mobile\.spec\.ts/,
+      ],
     },
 
     /* Cross-browser projects — enabled for CI nightly runs via FULL_BROWSER_MATRIX=true */

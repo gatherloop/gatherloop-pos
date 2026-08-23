@@ -245,6 +245,76 @@ export const transactionPrintDialog = {
 };
 
 // ---------------------------------------------------------------------------
+// Rental checkin page (/rentals/checkin)
+// ---------------------------------------------------------------------------
+
+export const rentalCheckinForm = {
+  /** Product picker search input — shared `TransactionItemSelect`, filtered to `saleType: 'rental'` */
+  productSearchInput: (page: Page) =>
+    page.getByPlaceholder('Search Products by Name'),
+  /** A product card in the item selector panel */
+  productCard: (page: Page, name: string) =>
+    page.locator('h4').filter({ hasText: name }).first(),
+  customerNameInput: (page: Page) => page.getByLabel('Customer Name'),
+  /** Ticket code input — one per rental row, not individually labeled */
+  codeInput: (page: Page) => page.getByPlaceholder('Code'),
+  /** Main form Submit button — lives in the cart sheet footer on compact */
+  submitButton: (page: Page) =>
+    page.getByRole('button', { name: 'Submit' }).first(),
+};
+
+// ---------------------------------------------------------------------------
+// Rental checkin cart button / cart sheet (compact / mobile layout only —
+// see docs/prd-rental-checkin-mobile.md)
+// ---------------------------------------------------------------------------
+
+export const rentalCartButton = {
+  /**
+   * Floating "{n} ticket(s) · {m} code(s) left · View Cart" button shown
+   * once the cart is non-empty. Only rendered on the compact layout.
+   */
+  button: (page: Page) => page.getByRole('button', { name: /View Cart$/ }),
+};
+
+export const rentalCartSheet = {
+  /** "Cart" header title, visible while the sheet shows cart content */
+  title: (page: Page) => page.locator('h4').filter({ hasText: 'Cart' }).first(),
+  closeButton: (page: Page) =>
+    page.getByRole('button', { name: 'Close Cart' }),
+};
+
+// ---------------------------------------------------------------------------
+// Rental checkin print confirmation dialog
+// ---------------------------------------------------------------------------
+
+export const rentalPrintDialog = {
+  /** The "Print Checkin Slip" confirmation dialog */
+  printCheckinSlipDialog: (page: Page) =>
+    page
+      .locator('[role="alertdialog"]')
+      .filter({ hasText: 'Print Checkin Slip' }),
+  /**
+   * Clicks the "No" button within the print dialog.
+   * force: true mirrors `transactionPrintDialog.clickNo` — AlertDialog.Cancel
+   * may override the accessible name, and an overlapping overlay can sit in
+   * front of it at the pointer-events level.
+   */
+  clickNo: async (dialog: Locator) =>
+    dialog.locator('button').first().click({ force: true }),
+};
+
+// ---------------------------------------------------------------------------
+// Rental list page (/rentals)
+// ---------------------------------------------------------------------------
+
+export const rentalList = {
+  /** Search input — filters rentals by ticket code, not customer name */
+  searchInput: (page: Page) => page.getByPlaceholder('Search Rental by Code'),
+  rentalItem: (page: Page, name: string) =>
+    page.locator('h4').filter({ hasText: name }).first(),
+};
+
+// ---------------------------------------------------------------------------
 // Wallet transfer form page (/wallets/[id]/transfers/create)
 // ---------------------------------------------------------------------------
 
