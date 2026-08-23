@@ -1,4 +1,5 @@
 import type { StorybookConfig } from '@storybook/react-vite';
+import react from '@vitejs/plugin-react';
 import fs from 'fs';
 import path from 'path';
 
@@ -33,6 +34,21 @@ const config: StorybookConfig = {
     const { mergeConfig } = await import('vite');
 
     return mergeConfig(viteConfig, {
+      // Storybook's own preset (@storybook/react-vite) does not add
+      // @vitejs/plugin-react itself — JSX is handled by esbuild's default
+      // transform, with no Babel pass in the mix. Adding this plugin here
+      // is therefore a genuinely new Babel pass, not a second instance
+      // fighting an existing one (see docs/trd-react-compiler-adoption.md
+      // §7 P3). react-compiler-runtime (installed for P2) backs `target:
+      // '18'`; no react/compiler-runtime alias is needed here because,
+      // unlike Next 15 (§D3), we control the `target` option directly.
+      plugins: [
+        react({
+          babel: {
+            plugins: [['babel-plugin-react-compiler', { target: '18' }]],
+          },
+        }),
+      ],
       resolve: {
         alias: [
           // @react-native/normalize-colors ships a plain CJS file (module.exports = fn).
