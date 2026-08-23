@@ -1,9 +1,12 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useForm } from 'react-hook-form';
 import { useMedia } from 'tamagui';
 import { StockCheckForm } from '../../../domain';
-import { StockCheckFormView, StockCheckFormViewProps } from './StockCheckFormView';
+import {
+  StockCheckFormView,
+  StockCheckFormViewProps,
+} from './StockCheckFormView';
 
 const items: StockCheckForm['items'] = [
   {
@@ -147,6 +150,43 @@ describe('StockCheckFormView', () => {
       await user.click(screen.getByRole('button', { name: 'Submit' }));
 
       expect(onSubmit).toHaveBeenCalled();
+    });
+
+    // PRD FR-5: on compact, Submit moves into a pinned bottom bar instead of
+    // trailing the list; desktop keeps the single inline button. Either way
+    // there is exactly one — never both at once.
+    it('renders exactly one Submit button', () => {
+      render(<StockCheckFormViewWrapper {...baseProps} />);
+
+      expect(screen.getAllByRole('button', { name: 'Submit' })).toHaveLength(1);
+    });
+
+    // PRD FR-6: submitting with pending rows clears the search, enables the
+    // pending filter, and focuses the first pending row's input — via a ref
+    // `InputNumber` forwards, replacing the old DOM-only
+    // `querySelector('input')` so this also works on React Native.
+    it('clears the search, enables the pending filter and focuses the first pending row on submit', async () => {
+      const user = userEvent.setup();
+      const onQueryChange = jest.fn();
+      const onShowOnlyPendingToggle = jest.fn();
+      render(
+        <StockCheckFormViewWrapper
+          {...baseProps}
+          query="Botol"
+          onQueryChange={onQueryChange}
+          onShowOnlyPendingToggle={onShowOnlyPendingToggle}
+        />
+      );
+
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      expect(onQueryChange).toHaveBeenCalledWith('');
+      expect(onShowOnlyPendingToggle).toHaveBeenCalled();
+
+      // Index 0 is the search box; items[1] ('Baking Soda') is the only
+      // pending row in the fixture, so its input is index 2.
+      const pendingInput = screen.getAllByRole('textbox')[2];
+      await waitFor(() => expect(document.activeElement).toBe(pendingInput));
     });
   });
 });

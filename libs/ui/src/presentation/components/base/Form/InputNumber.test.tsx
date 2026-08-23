@@ -1,23 +1,26 @@
+import { createRef, forwardRef } from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { FormProvider, useForm } from 'react-hook-form';
+import type { TextInput } from 'react-native';
 import { InputNumber, InputNumberProps } from './InputNumber';
 
 type FormValues = { quantity: number | null };
 
-const InputNumberWrapper = (
-  props: InputNumberProps & { initialValue?: number | null }
-) => {
+const InputNumberWrapper = forwardRef<
+  TextInput,
+  InputNumberProps & { initialValue?: number | null }
+>((props, ref) => {
   const { initialValue = 0, ...inputNumberProps } = props;
   const form = useForm<FormValues>({
     defaultValues: { quantity: initialValue },
   });
   return (
     <FormProvider {...form}>
-      <InputNumber name="quantity" {...inputNumberProps} />
+      <InputNumber ref={ref} name="quantity" {...inputNumberProps} />
     </FormProvider>
   );
-};
+});
 
 const getInput = () => screen.getByRole('textbox') as HTMLInputElement;
 
@@ -65,6 +68,19 @@ describe('InputNumber', () => {
         />
       );
       expect(getInput().getAttribute('inputmode')).toBe('numeric');
+    });
+  });
+
+  describe('ref forwarding (PRD FR-6: focusing the row after the pending jump)', () => {
+    it('forwards a ref to the underlying input, and calling .focus() on it focuses the field', () => {
+      const ref = createRef<TextInput>();
+      render(<InputNumberWrapper ref={ref} initialValue={0} />);
+
+      expect(ref.current).toBe(getInput());
+
+      (ref.current as unknown as HTMLInputElement).focus();
+
+      expect(document.activeElement).toBe(getInput());
     });
   });
 });

@@ -79,9 +79,7 @@ describe('StockCheckItemRow', () => {
 
     it('shows the inline validation error only when isErrorRow is true', () => {
       render(<StockCheckItemRowWrapper {...baseProps} isErrorRow={false} />);
-      expect(
-        screen.queryByText('Please enter the current stock')
-      ).toBeNull();
+      expect(screen.queryByText('Please enter the current stock')).toBeNull();
     });
 
     it('shows the inline validation error when isErrorRow is true', () => {
@@ -93,9 +91,7 @@ describe('StockCheckItemRow', () => {
           currentStock={null}
         />
       );
-      expect(
-        screen.getByText('Please enter the current stock')
-      ).toBeTruthy();
+      expect(screen.getByText('Please enter the current stock')).toBeTruthy();
     });
 
     it('increments the value when the + stepper is pressed', async () => {
@@ -116,6 +112,13 @@ describe('StockCheckItemRow', () => {
       await user.click(buttons[0]);
 
       expect(getInput().value).toBe('11');
+    });
+
+    it('forwards inputRef to the stock input, so the parent can focus() it after the pending jump (PRD FR-6)', () => {
+      const inputRef = jest.fn();
+      render(<StockCheckItemRowWrapper {...baseProps} inputRef={inputRef} />);
+
+      expect(inputRef).toHaveBeenCalledWith(getInput());
     });
   });
 });
