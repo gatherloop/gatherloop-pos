@@ -16,3 +16,4 @@ export * from './Tabs';
 export * from './ConfirmationAlert';
 export * from './SkeletonView';
 export * from './useIsCompactLayout';
+export * from './FloatingCartButton';
