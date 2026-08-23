@@ -6,7 +6,8 @@
     "prepare": "husky",
     "postinstall": "patch-package",
     "test": "nx run-many --target=test --all --passWithNoTests",
-    "lint": "nx run-many --target=lint --all"
+    "lint": "nx run-many --target=lint --all",
+    "react-compiler:healthcheck": "react-compiler-healthcheck --src \"{apps,libs}/**/*.{ts,tsx}\""
   },
   "private": true,
   "dependencies": {
@@ -122,6 +123,7 @@
     "nx": "19.3.0",
     "patch-package": "^8.0.1",
     "prettier": "^2.6.2",
+    "react-compiler-healthcheck": "^1.0.0",
     "react-native-svg": "^15.2.0",
     "react-native-svg-transformer": "1.3.0",
     "react-native-web": "^0.19.11",
