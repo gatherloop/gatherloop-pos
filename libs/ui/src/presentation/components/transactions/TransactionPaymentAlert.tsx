@@ -1,5 +1,19 @@
-import { AlertDialog, Button, H4, Label, Paragraph, XStack, YStack } from 'tamagui';
-import { Field, FieldWatch, InputNumber, Select, useIsCompactLayout } from '../base';
+import {
+  AlertDialog,
+  Button,
+  H4,
+  Label,
+  Paragraph,
+  XStack,
+  YStack,
+} from 'tamagui';
+import {
+  Field,
+  FieldWatch,
+  InputNumber,
+  Select,
+  useIsCompactLayout,
+} from '../base';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
 import { Wallet } from '../../../domain';
 
@@ -79,17 +93,24 @@ export const TransactionPaymentAlert = ({
                 flexDirection={isCompactLayout ? 'column' : 'row'}
               >
                 {walletSelectOptions.length === 0 ? (
-                  <Paragraph color="$red10" flex={1}>
+                  <Paragraph
+                    color="$red10"
+                    flex={isCompactLayout ? undefined : 1}
+                  >
                     No wallets are configured to receive payments. Configure one
                     in Wallet Settings.
                   </Paragraph>
                 ) : (
-                  <Field name="wallet" label="Wallet Name" flex={1}>
+                  <Field
+                    name="wallet"
+                    label="Wallet Name"
+                    flex={isCompactLayout ? undefined : 1}
+                  >
                     <Select items={walletSelectOptions} />
                   </Field>
                 )}
 
-                <YStack gap="$3" flex={1}>
+                <YStack gap="$3" flex={isCompactLayout ? undefined : 1}>
                   <Label>Total Amount</Label>
                   <H4>Rp. {transactionTotal.toLocaleString('id')}</H4>
                 </YStack>
@@ -112,7 +133,7 @@ export const TransactionPaymentAlert = ({
                           maxWidth={isCompactLayout ? undefined : 150}
                         />
                       </Field>
-                      <YStack gap="$3" flex={1}>
+                      <YStack gap="$3" flex={isCompactLayout ? undefined : 1}>
                         <Label>Change</Label>
                         <H4>
                           Rp.{' '}
@@ -129,7 +150,9 @@ export const TransactionPaymentAlert = ({
                   <Button disabled={isButtonDisabled}>Cancel</Button>
                 </AlertDialog.Cancel>
                 <Button
-                  disabled={isButtonDisabled || walletSelectOptions.length === 0}
+                  disabled={
+                    isButtonDisabled || walletSelectOptions.length === 0
+                  }
                   onPress={form.handleSubmit(onSubmit)}
                   theme="active"
                   flex={1}
