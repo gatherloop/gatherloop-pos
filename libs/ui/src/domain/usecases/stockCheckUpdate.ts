@@ -10,7 +10,10 @@ type Context = {
 };
 
 export type StockCheckUpdateState = (
+  | { type: 'idle' }
+  | { type: 'loading' }
   | { type: 'loaded' }
+  | { type: 'error' }
   | { type: 'submitting' }
   | { type: 'submitSuccess' }
   | { type: 'submitError' }
@@ -18,6 +21,9 @@ export type StockCheckUpdateState = (
   Context;
 
 export type StockCheckUpdateAction =
+  | { type: 'FETCH' }
+  | { type: 'FETCH_SUCCESS'; values: StockCheckForm }
+  | { type: 'FETCH_ERROR'; errorMessage: string }
   | { type: 'SUBMIT'; values: StockCheckForm }
   | { type: 'SUBMIT_SUCCESS' }
   | { type: 'SUBMIT_ERROR'; errorMessage: string }
@@ -47,7 +53,7 @@ export class StockCheckUpdateUsecase extends Usecase<
 
   getInitialState(): StockCheckUpdateState {
     return {
-      type: 'loaded',
+      type: this.params.stockCheck !== null ? 'loaded' : 'idle',
       errorMessage: null,
       stockCheckId: this.params.stockCheckId,
       values: {
@@ -68,6 +74,30 @@ export class StockCheckUpdateUsecase extends Usecase<
   ): StockCheckUpdateState {
     return match([state, action])
       .returnType<StockCheckUpdateState>()
+      .with([{ type: 'idle' }, { type: 'FETCH' }], ([state]) => ({
+        ...state,
+        type: 'loading',
+      }))
+      .with(
+        [{ type: 'loading' }, { type: 'FETCH_ERROR' }],
+        ([state, { errorMessage }]) => ({
+          ...state,
+          type: 'error',
+          errorMessage,
+        })
+      )
+      .with([{ type: 'error' }, { type: 'FETCH' }], ([state]) => ({
+        ...state,
+        type: 'loading',
+      }))
+      .with(
+        [{ type: 'loading' }, { type: 'FETCH_SUCCESS' }],
+        ([state, { values }]) => ({
+          ...state,
+          type: 'loaded',
+          values,
+        })
+      )
       .with(
         [{ type: 'loaded' }, { type: 'SUBMIT' }],
         ([state, { values }]) => ({ ...state, values, type: 'submitting' })
@@ -100,6 +130,32 @@ export class StockCheckUpdateUsecase extends Usecase<
     dispatch: (action: StockCheckUpdateAction) => void
   ): void {
     match(state)
+      .with({ type: 'idle' }, () => {
+        dispatch({ type: 'FETCH' });
+      })
+      .with({ type: 'loading' }, ({ stockCheckId }) => {
+        this.repository
+          .fetchStockCheckById(stockCheckId)
+          .then((stockCheck) =>
+            dispatch({
+              type: 'FETCH_SUCCESS',
+              values: {
+                items: stockCheck.items.map((item) => ({
+                  materialId: item.materialId,
+                  materialName: item.materialName,
+                  purchaseUnit: item.purchaseUnit,
+                  currentStock: item.currentStock,
+                })),
+              },
+            })
+          )
+          .catch(() =>
+            dispatch({
+              type: 'FETCH_ERROR',
+              errorMessage: 'Failed to fetch stock check',
+            })
+          );
+      })
       .with({ type: 'submitting' }, ({ values, stockCheckId }) => {
         this.repository
           .updateStockCheck(values, stockCheckId)
