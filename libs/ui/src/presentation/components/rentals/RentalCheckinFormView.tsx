@@ -14,7 +14,7 @@ import {
   UseFieldArrayReturn,
   UseFormReturn,
 } from 'react-hook-form';
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useState } from 'react';
 import { RentalCheckinCartView } from './RentalCheckinCartView';
 import { FieldWatch, FloatingCartButton, Sheet, useIsCompactLayout } from '../base';
 import { X } from '@tamagui/lucide-icons';
@@ -69,10 +69,15 @@ export const RentalCheckinFormView = ({
   // A successful submit must close the cart sheet before the print
   // confirmation opens on top of it — an `AlertDialog` stacked over a
   // `modal` `Sheet` is the exact failure this guards against (PRD FR-4,
-  // mirroring `TransactionFormView`'s close-on-success effect).
-  useEffect(() => {
+  // mirroring `TransactionFormView`'s close-on-success adjustment).
+  // Adjusted during render (not in an effect) so it is guaranteed to land
+  // before any effect — including the caller's own "submit succeeded"
+  // effect that opens the print dialog.
+  const [wasSubmitSuccess, setWasSubmitSuccess] = useState(isSubmitSuccess);
+  if (isSubmitSuccess !== wasSubmitSuccess) {
+    setWasSubmitSuccess(isSubmitSuccess);
     if (isSubmitSuccess) setIsCartSheetOpen(false);
-  }, [isSubmitSuccess]);
+  }
 
   const submitButton = (
     <Button
