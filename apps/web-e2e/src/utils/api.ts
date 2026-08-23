@@ -101,6 +101,17 @@ async function apiDelete(
   }
 }
 
+async function apiGet<T>(request: APIRequestContext, path: string): Promise<T> {
+  const response = await request.get(path);
+  if (!response.ok()) {
+    throw new Error(
+      `GET ${path} failed: ${response.status()} ${await response.text()}`
+    );
+  }
+  const json = await response.json();
+  return json.data as T;
+}
+
 // ---------------------------------------------------------------------------
 // Category
 // ---------------------------------------------------------------------------
@@ -278,6 +289,66 @@ export async function deleteTransaction(
   id: number
 ): Promise<void> {
   return apiDelete(request, `/api/transactions/${id}`);
+}
+
+// ---------------------------------------------------------------------------
+// Ticket
+// ---------------------------------------------------------------------------
+
+export interface Ticket {
+  id: number;
+  code: string;
+  name: string;
+  createdAt: string;
+}
+
+export interface CreateTicketInput {
+  code: string;
+  name: string;
+}
+
+export async function createTicket(
+  request: APIRequestContext,
+  data: CreateTicketInput
+): Promise<Ticket> {
+  return apiPost<Ticket>(request, '/api/tickets', data);
+}
+
+export async function deleteTicket(
+  request: APIRequestContext,
+  id: number
+): Promise<void> {
+  return apiDelete(request, `/api/tickets/${id}`);
+}
+
+// ---------------------------------------------------------------------------
+// Rental
+// ---------------------------------------------------------------------------
+
+export interface Rental {
+  id: number;
+  code: string;
+  name: string;
+  variantId: number;
+  createdAt: string;
+}
+
+/** Rental list is searched by ticket code (`code LIKE %query%`), not name. */
+export async function findRentalsByCode(
+  request: APIRequestContext,
+  query: string
+): Promise<Rental[]> {
+  return apiGet<Rental[]>(
+    request,
+    `/api/rentals?query=${encodeURIComponent(query)}`
+  );
+}
+
+export async function deleteRental(
+  request: APIRequestContext,
+  id: number
+): Promise<void> {
+  return apiDelete(request, `/api/rentals/${id}`);
 }
 
 // ---------------------------------------------------------------------------
