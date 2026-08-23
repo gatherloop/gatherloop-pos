@@ -27,3 +27,10 @@ export const FlatList = ({
 
 export const TextInput = ({ ...props }: Record<string, unknown>) =>
   React.createElement('input', props);
+
+export const useWindowDimensions = jest.fn(() => ({
+  width: 1024,
+  height: 768,
+  scale: 1,
+  fontScale: 1,
+}));
