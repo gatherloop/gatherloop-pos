@@ -375,6 +375,86 @@ export async function deleteBudget(
 }
 
 // ---------------------------------------------------------------------------
+// Material
+// ---------------------------------------------------------------------------
+
+export interface Material {
+  id: number;
+  name: string;
+  purchaseUnit: string;
+  isStockCheckRequired: boolean;
+  createdAt: string;
+}
+
+export interface CreateMaterialInput {
+  name: string;
+  price: number;
+  unit: string;
+  purchaseUnit: string;
+  purchaseUnitSize: number;
+  minimumStock: number;
+  normalStock: number;
+  isStockCheckRequired: boolean;
+}
+
+export async function createMaterial(
+  request: APIRequestContext,
+  data: CreateMaterialInput
+): Promise<Material> {
+  return apiPost<Material>(request, '/api/materials', { ...data, suppliers: [] });
+}
+
+export async function deleteMaterial(
+  request: APIRequestContext,
+  id: number
+): Promise<void> {
+  return apiDelete(request, `/api/materials/${id}`);
+}
+
+// ---------------------------------------------------------------------------
+// Stock Check
+// ---------------------------------------------------------------------------
+
+export interface StockCheckItem {
+  id: number;
+  materialId: number;
+  materialName: string;
+  purchaseUnit: string;
+  currentStock: number;
+}
+
+export interface StockCheck {
+  id: number;
+  createdAt: string;
+  items: StockCheckItem[];
+}
+
+export interface CreateStockCheckInput {
+  items: Array<{ materialId: number; currentStock: number }>;
+}
+
+export async function createStockCheck(
+  request: APIRequestContext,
+  data: CreateStockCheckInput
+): Promise<StockCheck> {
+  return apiPost<StockCheck>(request, '/api/stock-checks', data);
+}
+
+export async function getStockCheckById(
+  request: APIRequestContext,
+  id: number
+): Promise<StockCheck> {
+  return apiGet<StockCheck>(request, `/api/stock-checks/${id}`);
+}
+
+export async function deleteStockCheck(
+  request: APIRequestContext,
+  id: number
+): Promise<void> {
+  return apiDelete(request, `/api/stock-checks/${id}`);
+}
+
+// ---------------------------------------------------------------------------
 // Expense
 // ---------------------------------------------------------------------------
 

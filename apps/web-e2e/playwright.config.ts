@@ -71,6 +71,7 @@ export default defineConfig({
         /auth\.spec\.ts/,
         /transactions\.mobile\.spec\.ts/,
         /rentals\.checkin\.mobile\.spec\.ts/,
+        /stock-checks\.mobile\.spec\.ts/,
       ],
     },
     /* Auth tests run without saved state (they test login/logout themselves) */
@@ -84,10 +85,12 @@ export default defineConfig({
       testMatch: /auth\.spec\.ts/,
     },
     /* Phone viewport — covers the compact transaction-form flow (PRD
-     * docs/prd-transaction-form-mobile.md, Phase 7 / FR-8) and the compact
+     * docs/prd-transaction-form-mobile.md, Phase 7 / FR-8), the compact
      * rental-checkin flow (PRD docs/prd-rental-checkin-mobile.md, Phase 6 /
-     * FR-6). Only the *.mobile.spec.ts files run here; every other spec
-     * keeps running once, under `chromium`, unaffected by this project. */
+     * FR-6) and the compact stock-check form (PRD
+     * docs/prd-stock-check-form-mobile.md, Phase 6 / FR-8). Only the
+     * *.mobile.spec.ts files run here; every other spec keeps running once,
+     * under `chromium`, unaffected by this project. */
     {
       name: 'mobile-chromium',
       use: {
@@ -97,6 +100,7 @@ export default defineConfig({
       testMatch: [
         /transactions\.mobile\.spec\.ts/,
         /rentals\.checkin\.mobile\.spec\.ts/,
+        /stock-checks\.mobile\.spec\.ts/,
       ],
     },
 
