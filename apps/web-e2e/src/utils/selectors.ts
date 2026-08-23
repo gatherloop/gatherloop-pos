@@ -358,6 +358,48 @@ export const budgetList = {
 };
 
 // ---------------------------------------------------------------------------
+// Stock check form (compact / mobile layout — /stock-checks/create,
+// /stock-checks/[id]/edit — see docs/prd-stock-check-form-mobile.md)
+// ---------------------------------------------------------------------------
+
+export const stockCheckForm = {
+  searchInput: (page: Page) =>
+    page.getByPlaceholder('Search material by name'),
+  /** "Show only pending" / "Show all materials" filter toggle, by exact label */
+  pendingFilterButton: (page: Page, label: 'Show only pending' | 'Show all materials') =>
+    page.getByRole('button', { name: label }),
+  /**
+   * The row container for a material, found by walking up from its Label
+   * (Label -> line-1 XStack -> row YStack) — mirrors the ancestor-traversal
+   * pattern used elsewhere in this file (e.g. `productList.menuButton`).
+   */
+  materialRow: (page: Page, materialName: string) =>
+    page.locator('label').filter({ hasText: materialName }).locator('xpath=../..'),
+  /** The number input inside a material's row (`InputNumber`'s `<Input>`) */
+  materialInput: (page: Page, materialName: string) =>
+    stockCheckForm.materialRow(page, materialName).locator('input'),
+  /** The stepper "+" button inside a material's row */
+  materialIncrementButton: (page: Page, materialName: string) =>
+    stockCheckForm.materialRow(page, materialName).getByRole('button').last(),
+  /** The "Pending" badge inside a material's row (only rendered while pending) */
+  pendingBadge: (page: Page, materialName: string) =>
+    stockCheckForm.materialRow(page, materialName).getByText('Pending'),
+  /** "{n} material(s) still need a stock count" banner shown after a blocked submit */
+  errorBanner: (page: Page) =>
+    page.getByText(/materials? still need a stock count/),
+  /** Main form Submit button — the pinned bottom bar on compact */
+  submitButton: (page: Page) => page.getByRole('button', { name: 'Submit' }).first(),
+};
+
+// ---------------------------------------------------------------------------
+// Stock check list page (/stock-checks)
+// ---------------------------------------------------------------------------
+
+export const stockCheckList = {
+  createLink: (page: Page) => page.locator('a[href="/stock-checks/create"]'),
+};
+
+// ---------------------------------------------------------------------------
 // Expense list page (/expenses)
 // ---------------------------------------------------------------------------
 

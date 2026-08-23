@@ -79,3 +79,15 @@ export const ProductsPage: Story = {
     </Layout>
   ),
 };
+
+// PRD docs/prd-stock-check-form-mobile.md FR-7 (Phase 5): the content well
+// drops from `$5` to `$3` padding at `$sm` (≤800px) — 40dp to 24dp on a
+// 360dp phone. Compared side-by-side with `Default` (which renders at the
+// `desktop` viewport unaffected), this story is the visual record that the
+// well shrinks on compact and stays put above the breakpoint.
+export const CompactPadding: Story = {
+  parameters: {
+    viewport: { defaultViewport: 'mobile' },
+  },
+  render: (args) => <Layout {...args}>{defaultChildren}</Layout>,
+};
