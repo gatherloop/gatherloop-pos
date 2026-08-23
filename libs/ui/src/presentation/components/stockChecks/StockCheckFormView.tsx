@@ -5,18 +5,11 @@ import {
   useFormState,
   UseFormReturn,
 } from 'react-hook-form';
-import {
-  Button,
-  Form,
-  Label,
-  SizableText,
-  Spinner,
-  XStack,
-  YStack,
-} from 'tamagui';
+import { Button, Form, SizableText, Spinner, XStack, YStack } from 'tamagui';
 import { Filter, X } from '@tamagui/lucide-icons';
-import { DebouncedInput, FormErrorBanner, InputNumber } from '../base';
+import { DebouncedInput, FormErrorBanner } from '../base';
 import { StockCheckForm } from '../../../domain';
+import { StockCheckItemRow } from './StockCheckItemRow';
 
 export type StockCheckFormViewProps = {
   form: UseFormReturn<StockCheckForm>;
@@ -159,61 +152,19 @@ export const StockCheckFormView = ({
             const hidden = hiddenBySearch || hiddenByPendingFilter;
 
             return (
-              <XStack
+              <StockCheckItemRow
                 key={field.id}
-                gap="$2"
-                alignItems="center"
-                paddingVertical="$3"
-                paddingHorizontal="$4"
-                borderWidth={1}
-                borderColor="$borderColor"
-                display={hidden ? 'none' : 'flex'}
-                backgroundColor={
-                  isErrorRow ? '$red3' : isPending ? '$yellow3' : undefined
-                }
-                borderRadius="$4"
+                materialName={field.materialName}
+                purchaseUnit={field.purchaseUnit}
+                fieldName={`items.${index}.currentStock`}
+                inputId={inputId}
+                isPending={isPending}
+                isErrorRow={isErrorRow}
+                hidden={hidden}
                 ref={(el: any) => {
                   rowRefs.current[index] = el;
                 }}
-              >
-                <Label flex={1} numberOfLines={1} htmlFor={inputId}>
-                  {field.materialName}
-                </Label>
-                <YStack>
-                  <InputNumber
-                    name={`items.${index}.currentStock`}
-                    width={100}
-                    id={inputId}
-                    error={isErrorRow}
-                    aria-invalid={isErrorRow || undefined}
-                  />
-                  {isErrorRow && (
-                    <SizableText size="$1" color="$red10" role="alert">
-                      Please enter the current stock
-                    </SizableText>
-                  )}
-                </YStack>
-                <SizableText width={60} color="$gray10">
-                  {field.purchaseUnit}
-                </SizableText>
-                <XStack width={60} justifyContent="center">
-                  {isPending && (
-                    <XStack
-                      backgroundColor={isErrorRow ? '$red5' : '$yellow5'}
-                      paddingHorizontal="$2"
-                      paddingVertical="$1"
-                      borderRadius="$10"
-                    >
-                      <SizableText
-                        size="$1"
-                        color={isErrorRow ? '$red11' : '$yellow11'}
-                      >
-                        Pending
-                      </SizableText>
-                    </XStack>
-                  )}
-                </XStack>
-              </XStack>
+              />
             );
           })}
         </YStack>
