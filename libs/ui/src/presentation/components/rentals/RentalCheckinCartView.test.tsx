@@ -43,6 +43,13 @@ const threeRentals: RentalCheckinForm = {
 };
 
 describe('RentalCheckinCartView', () => {
+  beforeEach(() => {
+    // jsdom does not implement `scrollIntoView`; the component calls it
+    // optionally, so stub it to assert it was invoked (PRD Phase 4,
+    // "Code-entry ergonomics in the sheet").
+    Element.prototype.scrollIntoView = jest.fn();
+  });
+
   it('renders Customer Name, the datetime checkbox and one Code input per rental', () => {
     render(<Wrapper defaultValues={threeRentals} />);
 
@@ -76,6 +83,27 @@ describe('RentalCheckinCartView', () => {
 
     await user.type(codeInputs[2], 'CODE3{enter}');
     expect(document.activeElement).toBe(codeInputs[2]);
+  });
+
+  it('scrolls a Code input into view when it receives focus, whether tapped directly or reached via the chain', async () => {
+    const user = userEvent.setup();
+    render(<Wrapper defaultValues={threeRentals} />);
+
+    const codeInputs = screen.getAllByPlaceholderText('Code');
+
+    codeInputs[0].focus();
+    expect(codeInputs[0].scrollIntoView).toHaveBeenCalledWith({
+      behavior: 'smooth',
+      block: 'center',
+    });
+
+    (codeInputs[1].scrollIntoView as jest.Mock).mockClear();
+    await user.type(codeInputs[0], 'CODE1{enter}');
+    expect(document.activeElement).toBe(codeInputs[1]);
+    expect(codeInputs[1].scrollIntoView).toHaveBeenCalledWith({
+      behavior: 'smooth',
+      block: 'center',
+    });
   });
 
   it('shows the resolved ticket name for a registered code', async () => {

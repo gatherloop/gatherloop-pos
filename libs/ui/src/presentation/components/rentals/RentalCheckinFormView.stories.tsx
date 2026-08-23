@@ -124,6 +124,40 @@ const CompactWithTicketsStory = () => {
   );
 };
 
+// Phase 4 keyboard-ergonomics check: 12 rows is enough for the sheet body
+// to scroll well past one screen, so the focus chain and its scroll-into-
+// view behaviour have somewhere to prove themselves (PRD Phase 4, "verified
+// ... with a list long enough to scroll").
+const CompactWithManyTicketsStory = () => {
+  const form = useForm<RentalCheckinForm>({
+    defaultValues: {
+      name: '',
+      rentals: Array.from({ length: 12 }, () => ({
+        code: '',
+        variant: mockVariant,
+      })),
+      checkinAt: null,
+    },
+  });
+  const rentalsFieldArray = useFieldArray({
+    control: form.control,
+    name: 'rentals',
+    keyName: 'key',
+  });
+  return (
+    <RentalCheckinFormView
+      form={form}
+      onToggleCustomizeCheckinDateTime={fn()}
+      onSubmit={fn()}
+      isSubmitDisabled={false}
+      isSubmitting={false}
+      RentalItemSelect={() => <Text color="$color">+ Add Rental Item</Text>}
+      rentalsFieldArray={rentalsFieldArray}
+      tickets={mockTickets}
+    />
+  );
+};
+
 const meta: Meta<typeof RentalCheckinFormView> = {
   title: 'Features/Rentals/RentalCheckinFormView',
   component: RentalCheckinFormView,
@@ -163,6 +197,17 @@ export const CompactCartSheetOpen: Story = {
     viewport: { defaultViewport: 'mobile' },
   },
   render: () => <CompactWithTicketsStory />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByText(/View Cart/));
+  },
+};
+
+export const CompactCartSheetLongList: Story = {
+  parameters: {
+    viewport: { defaultViewport: 'mobile' },
+  },
+  render: () => <CompactWithManyTicketsStory />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByText(/View Cart/));
