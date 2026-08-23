@@ -1,9 +1,10 @@
-import { ScrollView } from 'tamagui';
+import { ScrollView, YStack } from 'tamagui';
 import {
   RentalCheckinFormView,
   Layout,
   TransactionItemSelect,
   TransactionItemSelectProps,
+  useIsCompactLayout,
 } from '../components';
 import { OptionValue, Product, RentalCheckinForm, Ticket } from '../../domain';
 import { UseFormReturn, UseFieldArrayReturn } from 'react-hook-form';
@@ -40,47 +41,58 @@ export type RentalCheckinScreenProps = {
 };
 
 export const RentalCheckinScreen = (props: RentalCheckinScreenProps) => {
+  const isCompactLayout = useIsCompactLayout();
+
+  const formView = (
+    <RentalCheckinFormView
+      form={props.form}
+      onSubmit={props.onSubmit}
+      isSubmitDisabled={props.isSubmitDisabled}
+      isSubmitting={props.isSubmitting}
+      rentalsFieldArray={props.rentalsFieldArray}
+      onToggleCustomizeCheckinDateTime={
+        props.onToggleCustomizeCheckinDateTime
+      }
+      tickets={props.tickets}
+      serverError={props.serverError}
+      RentalItemSelect={() => (
+        <TransactionItemSelect
+          amount={props.rentalItemSelect.amount}
+          currentPage={props.rentalItemSelect.currentPage}
+          itemPerPage={props.rentalItemSelect.itemPerPage}
+          onAmountChange={props.rentalItemSelect.onAmountChange}
+          onOptionValuesChange={props.rentalItemSelect.onOptionValuesChange}
+          onPageChange={props.rentalItemSelect.onPageChange}
+          onRetryButtonPress={props.rentalItemSelect.onRetryButtonPress}
+          onSearchValueChange={props.rentalItemSelect.onSearchValueChange}
+          onSelectProduct={props.rentalItemSelect.onSelectProduct}
+          onSubmit={props.rentalItemSelect.onSubmit}
+          onUnselectProduct={props.rentalItemSelect.onUnselectProduct}
+          products={props.rentalItemSelect.products}
+          searchValue={props.rentalItemSelect.searchValue}
+          selectedOptionValues={props.rentalItemSelect.selectedOptionValues}
+          totalItem={props.rentalItemSelect.totalItem}
+          variant={props.rentalItemSelect.variant}
+          selectedProduct={props.rentalItemSelect.selectedProduct}
+        />
+      )}
+    />
+  );
+
   return (
     <Layout
       title="Checkin Rental"
       showBackButton
       onLogoutPress={props.onLogoutPress}
     >
-      <ScrollView>
-        <RentalCheckinFormView
-          form={props.form}
-          onSubmit={props.onSubmit}
-          isSubmitDisabled={props.isSubmitDisabled}
-          isSubmitting={props.isSubmitting}
-          rentalsFieldArray={props.rentalsFieldArray}
-          onToggleCustomizeCheckinDateTime={
-            props.onToggleCustomizeCheckinDateTime
-          }
-          tickets={props.tickets}
-          serverError={props.serverError}
-          RentalItemSelect={() => (
-            <TransactionItemSelect
-              amount={props.rentalItemSelect.amount}
-              currentPage={props.rentalItemSelect.currentPage}
-              itemPerPage={props.rentalItemSelect.itemPerPage}
-              onAmountChange={props.rentalItemSelect.onAmountChange}
-              onOptionValuesChange={props.rentalItemSelect.onOptionValuesChange}
-              onPageChange={props.rentalItemSelect.onPageChange}
-              onRetryButtonPress={props.rentalItemSelect.onRetryButtonPress}
-              onSearchValueChange={props.rentalItemSelect.onSearchValueChange}
-              onSelectProduct={props.rentalItemSelect.onSelectProduct}
-              onSubmit={props.rentalItemSelect.onSubmit}
-              onUnselectProduct={props.rentalItemSelect.onUnselectProduct}
-              products={props.rentalItemSelect.products}
-              searchValue={props.rentalItemSelect.searchValue}
-              selectedOptionValues={props.rentalItemSelect.selectedOptionValues}
-              totalItem={props.rentalItemSelect.totalItem}
-              variant={props.rentalItemSelect.variant}
-              selectedProduct={props.rentalItemSelect.selectedProduct}
-            />
-          )}
-        />
-      </ScrollView>
+      {isCompactLayout ? (
+        // On compact, the product picker owns a bounded `flex: 1` region and
+        // scrolls internally — an outer `ScrollView` here would give it no
+        // height to bound against (PRD FR-3).
+        <YStack flex={1}>{formView}</YStack>
+      ) : (
+        <ScrollView>{formView}</ScrollView>
+      )}
     </Layout>
   );
 };

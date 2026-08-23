@@ -1,4 +1,11 @@
-import { Field, FieldWatch, FormErrorBanner, InputText, Select } from '../base';
+import {
+  Field,
+  FieldWatch,
+  FormErrorBanner,
+  InputText,
+  Select,
+  useIsCompactLayout,
+} from '../base';
 import {
   Button,
   Checkbox,
@@ -31,6 +38,7 @@ export const RentalCheckinCartView = ({
   serverError,
 }: RentalCheckinCartViewProps) => {
   const inputCodeRefs = useRef<(Input | null)[]>([]);
+  const isCompactLayout = useIsCompactLayout();
   return (
     <YStack gap="$3">
       <FormErrorBanner message={serverError} />
@@ -59,8 +67,16 @@ export const RentalCheckinCartView = ({
             </XStack>
             {checkinAt !== null && (
               <YStack>
-                <XStack gap="$3">
-                  <Field name="checkinAt.date" label="Date" flex={1}>
+                <XStack
+                  gap="$3"
+                  flexWrap={isCompactLayout ? 'wrap' : undefined}
+                >
+                  <Field
+                    name="checkinAt.date"
+                    label="Date"
+                    flex={1}
+                    minWidth={isCompactLayout ? 100 : undefined}
+                  >
                     <Select
                       items={Array.from({ length: 31 }, (_, i) => ({
                         label: (i + 1).toString().padStart(2, '0'),
@@ -91,7 +107,12 @@ export const RentalCheckinCartView = ({
                       ]}
                     />
                   </Field>
-                  <Field name="checkinAt.year" label="Year" flex={1}>
+                  <Field
+                    name="checkinAt.year"
+                    label="Year"
+                    flex={1}
+                    minWidth={isCompactLayout ? 100 : undefined}
+                  >
                     <Select
                       items={Array.from(
                         { length: new Date().getFullYear() + 1 - 2000 },
@@ -103,8 +124,16 @@ export const RentalCheckinCartView = ({
                     />
                   </Field>
                 </XStack>
-                <XStack gap="$3">
-                  <Field name="checkinAt.hour" label="Hour" flex={1}>
+                <XStack
+                  gap="$3"
+                  flexWrap={isCompactLayout ? 'wrap' : undefined}
+                >
+                  <Field
+                    name="checkinAt.hour"
+                    label="Hour"
+                    flex={1}
+                    minWidth={isCompactLayout ? 120 : undefined}
+                  >
                     <Select
                       items={Array.from({ length: 24 }, (_, i) => ({
                         label: i.toString().padStart(2, '0'),
@@ -112,7 +141,12 @@ export const RentalCheckinCartView = ({
                       }))}
                     />
                   </Field>
-                  <Field name="checkinAt.minute" label="Minute" flex={1}>
+                  <Field
+                    name="checkinAt.minute"
+                    label="Minute"
+                    flex={1}
+                    minWidth={isCompactLayout ? 120 : undefined}
+                  >
                     <Select
                       items={Array.from({ length: 60 }, (_, i) => ({
                         label: i.toString().padStart(2, '0'),
