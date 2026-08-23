@@ -64,7 +64,10 @@ export default defineConfig({
         /* Use saved auth state for all tests except auth.spec.ts */
         storageState: STORAGE_STATE,
       },
-      testIgnore: /auth\.spec\.ts/,
+      /* transactions.mobile.spec.ts is desktop-viewport-incompatible (it
+       * asserts on the compact/phone layout) — it only runs under
+       * `mobile-chromium` below. */
+      testIgnore: [/auth\.spec\.ts/, /transactions\.mobile\.spec\.ts/],
     },
     /* Auth tests run without saved state (they test login/logout themselves) */
     {
@@ -75,6 +78,18 @@ export default defineConfig({
         storageState: { cookies: [], origins: [] },
       },
       testMatch: /auth\.spec\.ts/,
+    },
+    /* Phone viewport — covers the compact transaction-form flow (PRD
+     * docs/prd-transaction-form-mobile.md, Phase 7 / FR-8). Only the mobile
+     * transaction spec runs here; every other spec keeps running once, under
+     * `chromium`, unaffected by this project. */
+    {
+      name: 'mobile-chromium',
+      use: {
+        ...devices['Pixel 5'],
+        storageState: STORAGE_STATE,
+      },
+      testMatch: /transactions\.mobile\.spec\.ts/,
     },
 
     /* Cross-browser projects — enabled for CI nightly runs via FULL_BROWSER_MATRIX=true */

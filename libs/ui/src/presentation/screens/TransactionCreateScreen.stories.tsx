@@ -5,7 +5,12 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { Text } from 'tamagui';
 import { TransactionCreateScreen } from './TransactionCreateScreen';
 import type { TransactionForm } from '../../domain';
-import { mockWallet, mockWallets, mockProducts } from '../../../.storybook/mocks/mockData';
+import {
+  mockWallet,
+  mockWallets,
+  mockProducts,
+  mockVariants,
+} from '../../../.storybook/mocks/mockData';
 
 const defaultValues: TransactionForm = {
   name: 'Order #001',
@@ -14,8 +19,32 @@ const defaultValues: TransactionForm = {
   transactionCoupons: [],
 };
 
-const CreateStory = () => {
-  const form = useForm<TransactionForm>({ defaultValues });
+const filledValues: TransactionForm = {
+  name: 'Order #001',
+  orderNumber: 1,
+  transactionItems: [
+    {
+      id: 1,
+      variant: mockVariants[0],
+      amount: 2,
+      price: 35000,
+      discountAmount: 0,
+      note: '',
+    },
+  ],
+  transactionCoupons: [],
+};
+
+const CreateStory = ({
+  values = defaultValues,
+  isSubmitSuccess = false,
+  isPaymentAlertOpen = false,
+}: {
+  values?: TransactionForm;
+  isSubmitSuccess?: boolean;
+  isPaymentAlertOpen?: boolean;
+} = {}) => {
+  const form = useForm<TransactionForm>({ defaultValues: values });
   const itemsFieldArray = useFieldArray({ control: form.control, name: 'transactionItems', keyName: 'key' });
   const couponsFieldArray = useFieldArray({ control: form.control, name: 'transactionCoupons', keyName: 'key' });
   const payForm = useForm({ defaultValues: { wallet: mockWallet, paidAmount: 0 } });
@@ -25,6 +54,8 @@ const CreateStory = () => {
       form={form}
       onSubmit={fn()}
       isSubmitDisabled={false}
+      isSubmitting={false}
+      isSubmitSuccess={isSubmitSuccess}
       onLogoutPress={fn()}
       isCouponSheetOpen={false}
       onCouponSheetOpenChange={fn()}
@@ -59,9 +90,9 @@ const CreateStory = () => {
         form: payForm,
         isButtonDisabled: false,
         onCancel: fn(),
-        isOpen: false,
+        isOpen: isPaymentAlertOpen,
         onSubmit: fn(),
-        transactionTotal: 0,
+        transactionTotal: 70000,
         walletSelectOptions: mockWallets.map((w) => ({ label: w.name, value: w })),
       }}
     />
@@ -78,3 +109,19 @@ export default meta;
 type Story = StoryObj<typeof TransactionCreateScreen>;
 
 export const Default: Story = { render: () => <CreateStory /> };
+
+// PRD FR-7: a successful submit closes the compact cart sheet before the
+// payment alert opens on top of it — no `AlertDialog` stacked over a
+// `Sheet` at a conflicting z-index.
+export const CompactSubmitSuccessWithPayment: Story = {
+  parameters: {
+    viewport: { defaultViewport: 'mobile' },
+  },
+  render: () => (
+    <CreateStory
+      values={filledValues}
+      isSubmitSuccess={true}
+      isPaymentAlertOpen={true}
+    />
+  ),
+};

@@ -71,6 +71,7 @@ export const TransactionUpdateHandler = ({
       }
       isSubmitDisabled={transactionUpdate.state.type === 'submitting'}
       isSubmitting={transactionUpdate.state.type === 'submitting'}
+      isSubmitSuccess={transactionUpdate.state.type === 'submitSuccess'}
       serverError={
         transactionUpdate.state.type === 'submitError'
           ? 'Failed to submit. Please try again.'

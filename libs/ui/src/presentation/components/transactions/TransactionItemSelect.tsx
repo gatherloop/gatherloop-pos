@@ -20,8 +20,9 @@ import {
   LoadingView,
   Pagination,
   Tabs,
+  useIsCompactLayout,
 } from '../base';
-import { FlatList } from 'react-native';
+import { FlatList, useWindowDimensions } from 'react-native';
 import { ProductListItem } from '../products';
 import { Minus, Plus, X } from '@tamagui/lucide-icons';
 
@@ -71,6 +72,8 @@ export const TransactionItemSelect = ({
   amount,
   onAmountChange,
 }: TransactionItemSelectProps) => {
+  const isCompactLayout = useIsCompactLayout();
+  const { height: windowHeight } = useWindowDimensions();
   const productByCategories = products.reduce<Record<string, Product[]>>(
     (prev, curr) => ({
       ...prev,
@@ -122,91 +125,110 @@ export const TransactionItemSelect = ({
             enterStyle={{ x: 0, y: 20, opacity: 0 }}
             exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
             gap="$4"
-            width={500}
+            // On compact, the dialog follows the viewport instead of a fixed
+            // 500px (PRD FR-6). This is a safety-net cap only — Dialog.Content
+            // is centered (not stretched) by its native portal frame, so it
+            // never gets a *definite* height, just this max. The ScrollView
+            // below can't rely on `flex: 1` to grow into that (Yoga doesn't
+            // redistribute space to a flex child inside an auto/max-height
+            // parent the way browser CSS does), so it gets its own numeric
+            // maxHeight instead.
+            width={isCompactLayout ? '90%' : 500}
+            maxWidth={500}
+            maxHeight="85%"
           >
             <Dialog.Title>{selectedProduct?.name}</Dialog.Title>
 
-            <YStack gap="$3" flex={1}>
-              {selectedProduct?.options.map((option, index) => (
-                <YStack key={option.id}>
-                  <H5>{option.name}</H5>
-                  <RadioGroup
-                    value={
-                      selectedOptionValues[index]
-                        ? JSON.stringify(selectedOptionValues[index])
-                        : undefined
-                    }
-                    onValueChange={(value) => {
-                      const newOptionsValues = [...selectedOptionValues];
-                      newOptionsValues[index] = JSON.parse(value);
-                      onOptionValuesChange(newOptionsValues);
+            <ScrollView maxHeight={windowHeight * 0.6}>
+              <YStack gap="$3">
+                {selectedProduct?.options.map((option, index) => (
+                  <YStack key={option.id}>
+                    <H5>{option.name}</H5>
+                    <RadioGroup
+                      value={
+                        selectedOptionValues[index]
+                          ? JSON.stringify(selectedOptionValues[index])
+                          : undefined
+                      }
+                      onValueChange={(value) => {
+                        const newOptionsValues = [...selectedOptionValues];
+                        newOptionsValues[index] = JSON.parse(value);
+                        onOptionValuesChange(newOptionsValues);
+                      }}
+                    >
+                      <XStack flexWrap="wrap" gap="$3">
+                        {option.values.map((value) => (
+                          <XStack alignItems="center" gap="$2" key={value.id}>
+                            <RadioGroup.Item
+                              value={JSON.stringify(value)}
+                              id={value.id.toString()}
+                              size={2}
+                            >
+                              <RadioGroup.Indicator />
+                            </RadioGroup.Item>
+
+                            <Label size={2} htmlFor={value.id.toString()}>
+                              {value.name}
+                            </Label>
+                          </XStack>
+                        ))}
+                      </XStack>
+                    </RadioGroup>
+                  </YStack>
+                ))}
+                <XStack gap="$2" alignItems="center">
+                  <Button
+                    icon={Minus}
+                    variant="outlined"
+                    size="$2"
+                    onPress={() => onAmountChange(amount - 1)}
+                    circular
+                    disabled={amount === 1}
+                  />
+
+                  <Input
+                    onChangeText={(text: string) => {
+                      const numberValue =
+                        text.trim() === '' ? 1 : parseFloat(text);
+                      if (!isNaN(numberValue)) {
+                        onAmountChange(numberValue);
+                      }
                     }}
-                  >
-                    <XStack flexWrap="wrap" gap="$3">
-                      {option.values.map((value) => (
-                        <XStack alignItems="center" gap="$2" key={value.id}>
-                          <RadioGroup.Item
-                            value={JSON.stringify(value)}
-                            id={value.id.toString()}
-                            size={2}
-                          >
-                            <RadioGroup.Indicator />
-                          </RadioGroup.Item>
-
-                          <Label size={2} htmlFor={value.id.toString()}>
-                            {value.name}
-                          </Label>
-                        </XStack>
-                      ))}
-                    </XStack>
-                  </RadioGroup>
-                </YStack>
-              ))}
-              <XStack gap="$2" alignItems="center">
-                <Button
-                  icon={Minus}
-                  variant="outlined"
-                  size="$2"
-                  onPress={() => onAmountChange(amount - 1)}
-                  circular
-                  disabled={amount === 1}
-                />
-
-                <Input
-                  onChangeText={(text: string) => {
-                    const numberValue =
-                      text.trim() === '' ? 1 : parseFloat(text);
-                    if (!isNaN(numberValue)) {
-                      onAmountChange(numberValue);
-                    }
-                  }}
-                  value={amount.toString()}
-                  flex={1}
-                />
-                <Button
-                  icon={Plus}
-                  variant="outlined"
-                  size="$2"
-                  onPress={() => onAmountChange(amount + 1)}
-                  circular
-                />
-              </XStack>
-              <XStack gap="$3">
-                <Button onPress={onUnselectProduct}>Cancel</Button>
-                <Button
-                  theme="blue"
-                  onPress={onSubmit}
-                  disabled={variant.type === 'submitting'}
-                >
-                  {variant.type === 'submitting' ? 'Submitting...' : 'Submit'}
-                </Button>
-              </XStack>
-            </YStack>
+                    value={amount.toString()}
+                    flex={1}
+                  />
+                  <Button
+                    icon={Plus}
+                    variant="outlined"
+                    size="$2"
+                    onPress={() => onAmountChange(amount + 1)}
+                    circular
+                  />
+                </XStack>
+              </YStack>
+            </ScrollView>
+            <XStack gap="$3">
+              <Button onPress={onUnselectProduct}>Cancel</Button>
+              <Button
+                theme="blue"
+                onPress={onSubmit}
+                disabled={variant.type === 'submitting'}
+              >
+                {variant.type === 'submitting' ? 'Submitting...' : 'Submit'}
+              </Button>
+            </XStack>
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog>
 
-      <YStack gap="$3" flex={1}>
+      <YStack
+        gap="$3"
+        flex={1}
+        // Reserves room below the picker so the floating cart button
+        // (rendered by `TransactionFormView` on compact) never covers the
+        // last product row or the pagination controls (PRD FR-3).
+        paddingBottom={isCompactLayout ? 90 : undefined}
+      >
         <H4>Select Product</H4>
         <Paragraph>
           You can select product and its options to the transaction
@@ -216,7 +238,9 @@ export const TransactionItemSelect = ({
             placeholder="Search Products by Name"
             value={searchValue}
             onChangeText={onSearchValueChange}
-            autoFocus
+            // Autofocus would raise the keyboard over the product list
+            // before the user has seen it on a phone (PRD FR-3).
+            autoFocus={!isCompactLayout}
             flex={1}
           />
           <Button icon={X} onPress={() => onSearchValueChange('')} circular />
@@ -249,35 +273,32 @@ export const TransactionItemSelect = ({
                     label: categoryName,
                     value: categoryName,
                     content: (
-                      <ScrollView flex={1}>
-                        <FlatList
-                          nestedScrollEnabled
-                          scrollEnabled
-                          data={products.sort((a, b) =>
-                            a.name.localeCompare(b.name)
-                          )}
-                          contentContainerStyle={{ gap: 16 }}
-                          renderItem={({ item }) => (
-                            <Focusable
-                              onEnterPress={() => onSelectProduct(item)}
+                      <FlatList
+                        style={{ flex: 1 }}
+                        data={products.sort((a, b) =>
+                          a.name.localeCompare(b.name)
+                        )}
+                        contentContainerStyle={{ gap: 16 }}
+                        renderItem={({ item }) => (
+                          <Focusable
+                            onEnterPress={() => onSelectProduct(item)}
+                            style={{ flex: 1 }}
+                          >
+                            <ProductListItem
+                              categoryName={item.category.name}
                               style={{ flex: 1 }}
-                            >
-                              <ProductListItem
-                                categoryName={item.category.name}
-                                style={{ flex: 1 }}
-                                name={item.name}
-                                imageUrl={item.imageUrl}
-                                onPress={() => onSelectProduct(item)}
-                                saleType={item.saleType}
-                                status={item.status}
-                              />
-                            </Focusable>
-                          )}
-                          ItemSeparatorComponent={() => (
-                            <YStack height="$1" style={{ flex: 1 }} />
-                          )}
-                        />
-                      </ScrollView>
+                              name={item.name}
+                              imageUrl={item.imageUrl}
+                              onPress={() => onSelectProduct(item)}
+                              saleType={item.saleType}
+                              status={item.status}
+                            />
+                          </Focusable>
+                        )}
+                        ItemSeparatorComponent={() => (
+                          <YStack height="$1" style={{ flex: 1 }} />
+                        )}
+                      />
                     ),
                   })
                 )}

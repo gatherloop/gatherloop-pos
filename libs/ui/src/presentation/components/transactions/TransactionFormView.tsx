@@ -1,33 +1,25 @@
 import {
-  Field,
-  FieldWatch,
-  FormErrorBanner,
-  InputNumber,
-  InputText,
-  Sheet,
-} from '../base';
-import {
   Button,
   Card,
   Form,
-  H3,
-  H5,
-  Paragraph,
-  Separator,
+  H4,
+  ScrollView,
   Spinner,
   XStack,
   YStack,
 } from 'tamagui';
-import { H4 } from 'tamagui';
-import { Plus, Trash } from '@tamagui/lucide-icons';
 import { TransactionForm } from '../../../domain';
 import {
   FormProvider,
   UseFieldArrayReturn,
   UseFormReturn,
 } from 'react-hook-form';
-import { ReactNode } from 'react';
-import { roundToNearest500 } from '../../../utils';
+import { ReactNode, useEffect, useState } from 'react';
+import { TransactionCartView } from './TransactionCartView';
+import { TransactionCartButton } from './TransactionCartButton';
+import { FieldWatch, Sheet, useIsCompactLayout } from '../base';
+import { ArrowLeft, X } from '@tamagui/lucide-icons';
+import { calculateTransactionFinalTotal } from '../../../utils';
 
 export type TransactionFormViewProps = {
   form: UseFormReturn<TransactionForm>;
@@ -38,6 +30,7 @@ export type TransactionFormViewProps = {
   onRemoveItemCoupon: (index: number) => void;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
+  isSubmitSuccess: boolean;
   TransactionItemSelect: () => ReactNode;
   TransactionCouponList: () => ReactNode;
   itemsFieldArray: UseFieldArrayReturn<
@@ -62,352 +55,187 @@ export const TransactionFormView = ({
   onRemoveItemCoupon,
   isSubmitDisabled,
   isSubmitting,
+  isSubmitSuccess,
   TransactionItemSelect,
   TransactionCouponList,
   itemsFieldArray,
   couponsFieldArray,
   serverError,
 }: TransactionFormViewProps) => {
+  const isCompactLayout = useIsCompactLayout();
+  const [isCartSheetOpen, setIsCartSheetOpen] = useState(false);
+
+  // A successful submit must close the cart sheet before any dialog that
+  // follows it (e.g. the payment alert on Create) opens on top — see PRD
+  // FR-7 and the "AlertDialog over Sheet" risk. This effect runs on every
+  // render where a child of this component sits below the caller in the
+  // tree, so it commits before the caller's own "submit succeeded" effect.
+  useEffect(() => {
+    if (isSubmitSuccess) setIsCartSheetOpen(false);
+  }, [isSubmitSuccess]);
+
+  const submitButton = (
+    <Button
+      disabled={isSubmitDisabled}
+      onPress={form.handleSubmit(onSubmit)}
+      size="$5"
+      theme="blue"
+      icon={isSubmitting ? <Spinner /> : undefined}
+    >
+      Submit
+    </Button>
+  );
+
+  if (isCompactLayout) {
+    return (
+      <YStack flex={1}>
+        <FormProvider {...form}>
+          <Form onSubmit={form.handleSubmit(onSubmit)} flex={1}>
+            <YStack flex={1} position="relative">
+              <YStack flex={1}>{TransactionItemSelect()}</YStack>
+
+              {itemsFieldArray.fields.length > 0 && (
+                <FieldWatch
+                  control={form.control}
+                  name={['transactionItems', 'transactionCoupons']}
+                >
+                  {([transactionItems, transactionCoupons]) => (
+                    <TransactionCartButton
+                      itemCount={itemsFieldArray.fields.length}
+                      total={calculateTransactionFinalTotal(
+                        transactionItems,
+                        transactionCoupons
+                      )}
+                      onPress={() => setIsCartSheetOpen(true)}
+                    />
+                  )}
+                </FieldWatch>
+              )}
+            </YStack>
+
+            <Sheet isOpen={isCartSheetOpen} onOpenChange={setIsCartSheetOpen}>
+              {/* Tamagui's modal `Sheet` renders its content through its own
+                  portal host rather than as a plain DOM/native child, which on
+                  some platforms (e.g. Android) does not carry the ambient
+                  React context down from the outer `FormProvider` above. Since
+                  everything in here reads the transaction form via
+                  `useFormContext()`, re-establish the provider inside the
+                  sheet so it survives regardless of how the sheet portals its
+                  content. */}
+              <FormProvider {...form}>
+                <YStack flex={1}>
+                  <XStack
+                    padding="$3"
+                    alignItems="center"
+                    justifyContent="space-between"
+                    borderBottomWidth={1}
+                    borderBottomColor="$borderColor"
+                  >
+                    {isCouponSheetOpen ? (
+                      <XStack gap="$3" alignItems="center">
+                        <Button
+                          icon={ArrowLeft}
+                          size="$3"
+                          circular
+                          accessibilityLabel="Back to Cart"
+                          onPress={() => onCouponSheetOpenChange(false)}
+                        />
+                        <H4>Apply Coupon</H4>
+                      </XStack>
+                    ) : (
+                      <>
+                        <H4>Cart</H4>
+                        <Button
+                          icon={X}
+                          size="$3"
+                          circular
+                          accessibilityLabel="Close Cart"
+                          onPress={() => setIsCartSheetOpen(false)}
+                        />
+                      </>
+                    )}
+                  </XStack>
+
+                  <ScrollView flex={1}>
+                    <YStack padding="$3" flex={1}>
+                      {isCouponSheetOpen ? (
+                        TransactionCouponList()
+                      ) : (
+                        <TransactionCartView
+                          form={form}
+                          isCouponSheetOpen={isCouponSheetOpen}
+                          onCouponSheetOpenChange={onCouponSheetOpenChange}
+                          onItemCouponSheetOpen={onItemCouponSheetOpen}
+                          onRemoveItemCoupon={onRemoveItemCoupon}
+                          TransactionCouponList={TransactionCouponList}
+                          itemsFieldArray={itemsFieldArray}
+                          couponsFieldArray={couponsFieldArray}
+                          serverError={serverError}
+                        />
+                      )}
+                    </YStack>
+                  </ScrollView>
+
+                  {!isCouponSheetOpen && (
+                    <YStack
+                      padding="$3"
+                      gap="$3"
+                      borderTopWidth={1}
+                      borderTopColor="$borderColor"
+                    >
+                      <XStack
+                        alignItems="center"
+                        justifyContent="space-between"
+                      >
+                        <H4 textTransform="none">Total</H4>
+                        <FieldWatch
+                          control={form.control}
+                          name={['transactionItems', 'transactionCoupons']}
+                        >
+                          {([transactionItems, transactionCoupons]) => (
+                            <H4 textTransform="none">
+                              Rp.{' '}
+                              {calculateTransactionFinalTotal(
+                                transactionItems,
+                                transactionCoupons
+                              ).toLocaleString('id')}
+                            </H4>
+                          )}
+                        </FieldWatch>
+                      </XStack>
+                      {submitButton}
+                    </YStack>
+                  )}
+                </YStack>
+              </FormProvider>
+            </Sheet>
+          </Form>
+        </FormProvider>
+      </YStack>
+    );
+  }
+
   return (
     <YStack>
       <FormProvider {...form}>
         <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
-          <FormErrorBanner message={serverError} />
           <XStack gap="$3">
             <YStack flex={1}>{TransactionItemSelect()}</YStack>
             <YStack gap="$3">
               <Card maxWidth={400} padded alignSelf="flex-start">
-                <YStack gap="$3">
-                  <Field name="name" label="Customer Name" flex={1}>
-                    <InputText />
-                  </Field>
-                  <Field name="orderNumber" label="Order Number" flex={1}>
-                    <InputNumber />
-                  </Field>
-
-                  <YStack>
-                    <YStack gap="$3">
-                      <Sheet
-                        isOpen={isCouponSheetOpen}
-                        onOpenChange={onCouponSheetOpenChange}
-                      >
-                        <YStack gap="$3" flex={1} padding="$5">
-                          {TransactionCouponList()}
-                        </YStack>
-                      </Sheet>
-
-                      <Separator />
-
-                      <H4>Items</H4>
-                      <YStack gap="$3">
-                        {itemsFieldArray.fields.map(
-                          ({ variant, price: fieldPrice, coupon, key }, index) => {
-                            const isPurchase =
-                              variant.product.saleType === 'purchase';
-                            return (
-                              <YStack key={key} gap="$5">
-                                <XStack
-                                  gap="$3"
-                                  flex={1}
-                                  alignItems="center"
-                                  justifyContent="space-between"
-                                >
-                                  <XStack gap="$3">
-                                    <Button
-                                      icon={Trash}
-                                      size="$3"
-                                      onPress={() =>
-                                        itemsFieldArray.remove(index)
-                                      }
-                                      theme="red"
-                                      color="$red8"
-                                      circular
-                                    />
-                                    <YStack>
-                                      <Paragraph size="$5">
-                                        {variant.product.name}
-                                      </Paragraph>
-                                      <Paragraph>
-                                        {variant.values
-                                          .map(
-                                            ({ optionValue }) =>
-                                              optionValue.name
-                                          )
-                                          .join(' - ')}
-                                      </Paragraph>
-                                    </YStack>
-                                  </XStack>
-
-                                  {isPurchase && (
-                                    <Paragraph
-                                      textTransform="none"
-                                      textAlign="left"
-                                    >
-                                      Rp. {variant.price.toLocaleString('id')}
-                                    </Paragraph>
-                                  )}
-                                </XStack>
-
-                                <XStack
-                                  gap="$5"
-                                  justifyContent="flex-end"
-                                  alignItems="center"
-                                >
-                                  {isPurchase && (
-                                    <InputNumber
-                                      name={`transactionItems.${index}.amount`}
-                                      min={1}
-                                      maxWidth={50}
-                                    />
-                                  )}
-
-                                  <FieldWatch
-                                    control={form.control}
-                                    name={[`transactionItems.${index}`]}
-                                  >
-                                    {([{ price, amount, discountAmount }]) => (
-                                      <H4
-                                        textTransform="none"
-                                        textAlign="right"
-                                      >
-                                        Rp.{' '}
-                                        {(
-                                          price * amount -
-                                          discountAmount
-                                        ).toLocaleString('id')}
-                                      </H4>
-                                    )}
-                                  </FieldWatch>
-                                </XStack>
-
-                                <InputText
-                                  name={`transactionItems.${index}.note`}
-                                  placeholder="Add Notes"
-                                  flex={1}
-                                />
-
-                                <XStack
-                                  gap="$3"
-                                  alignItems="center"
-                                  justifyContent="space-between"
-                                  flexWrap="wrap"
-                                >
-                                  {coupon ? (
-                                    <XStack gap="$3" alignItems="center">
-                                      <Button
-                                        icon={Trash}
-                                        size="$2"
-                                        onPress={() =>
-                                          onRemoveItemCoupon(index)
-                                        }
-                                        theme="red"
-                                        color="$red8"
-                                        circular
-                                        accessibilityLabel="Remove Coupon"
-                                      />
-                                      <Paragraph>
-                                        {coupon.coupon.code}
-                                      </Paragraph>
-                                      <FieldWatch
-                                        control={form.control}
-                                        name={[
-                                          `transactionItems.${index}.discountAmount`,
-                                        ]}
-                                      >
-                                        {([discountAmount]) => (
-                                          <Paragraph>
-                                            - Rp.{' '}
-                                            {discountAmount.toLocaleString(
-                                              'id'
-                                            )}
-                                          </Paragraph>
-                                        )}
-                                      </FieldWatch>
-                                    </XStack>
-                                  ) : (
-                                    <Button
-                                      size="$2"
-                                      icon={Plus}
-                                      variant="outlined"
-                                      onPress={() =>
-                                        onItemCouponSheetOpen(index)
-                                      }
-                                    >
-                                      Apply Coupon
-                                    </Button>
-                                  )}
-                                </XStack>
-
-                                <Separator />
-                              </YStack>
-                            );
-                          }
-                        )}
-                      </YStack>
-
-                      <Separator />
-
-                      <XStack
-                        justifyContent="space-between"
-                        alignItems="center"
-                      >
-                        <H4>Coupons</H4>
-                        <Button
-                          size="$3"
-                          icon={Plus}
-                          variant="outlined"
-                          onPress={() => onCouponSheetOpenChange(true)}
-                          circular
-                        />
-                      </XStack>
-                      <YStack gap="$3">
-                        {couponsFieldArray.fields.map(
-                          ({ coupon, key }, index) => {
-                            return (
-                              <XStack
-                                key={key}
-                                gap="$5"
-                                $lg={{ flexDirection: 'column' }}
-                              >
-                                <XStack gap="$3" flex={1} alignItems="center">
-                                  <Button
-                                    icon={Trash}
-                                    size="$3"
-                                    onPress={() =>
-                                      couponsFieldArray.remove(index)
-                                    }
-                                    theme="red"
-                                    color="$red8"
-                                    circular
-                                  />
-                                  <Paragraph>{coupon.code}</Paragraph>
-                                </XStack>
-
-                                <XStack
-                                  gap="$5"
-                                  justifyContent="flex-end"
-                                  alignItems="flex-end"
-                                >
-                                  <FieldWatch
-                                    control={form.control}
-                                    name={[
-                                      'transactionItems',
-                                      `transactionCoupons`,
-                                    ]}
-                                  >
-                                    {([
-                                      transactionItems,
-                                      transactionCoupons,
-                                    ]) => {
-                                      let calculatedTotal =
-                                        transactionItems.reduce(
-                                          (prev, curr) =>
-                                            prev +
-                                            (curr.amount * curr.price -
-                                              curr.discountAmount),
-                                          0
-                                        );
-
-                                      for (let i = 0; i < index; i++) {
-                                        const prevCoupon =
-                                          transactionCoupons[i];
-                                        const prevDiscountAmount =
-                                          prevCoupon.coupon.type === 'fixed'
-                                            ? prevCoupon.coupon.amount
-                                            : prevCoupon.coupon.type ===
-                                              'percentage'
-                                            ? roundToNearest500(
-                                                (calculatedTotal *
-                                                  prevCoupon.coupon.amount) /
-                                                  100
-                                              )
-                                            : 0;
-                                        calculatedTotal -= prevDiscountAmount;
-                                      }
-
-                                      const discountAmount =
-                                        coupon.type === 'fixed'
-                                          ? coupon.amount
-                                          : coupon.type === 'percentage'
-                                          ? roundToNearest500(
-                                              (calculatedTotal *
-                                                coupon.amount) /
-                                                100
-                                            )
-                                          : 0;
-
-                                      return (
-                                        <H4
-                                          textTransform="none"
-                                          textAlign="right"
-                                        >
-                                          - Rp.{' '}
-                                          {discountAmount.toLocaleString('id')}
-                                        </H4>
-                                      );
-                                    }}
-                                  </FieldWatch>
-                                </XStack>
-                              </XStack>
-                            );
-                          }
-                        )}
-                      </YStack>
-                    </YStack>
-                  </YStack>
-                  <YStack alignItems="flex-end">
-                    <H5 textTransform="none">Total</H5>
-                    <FieldWatch
-                      control={form.control}
-                      name={['transactionItems', 'transactionCoupons']}
-                    >
-                      {([transactionItems, transactionCoupons]) => {
-                        const total = transactionItems.reduce(
-                          (prev, curr) =>
-                            prev +
-                            (curr.amount * curr.price - curr.discountAmount),
-                          0
-                        );
-
-                        let finalTotal = total;
-
-                        for (let i = 0; i < transactionCoupons.length; i++) {
-                          const couponItem = transactionCoupons[i];
-                          const discountAmount =
-                            couponItem.coupon.type === 'fixed'
-                              ? couponItem.coupon.amount
-                              : couponItem.coupon.type === 'percentage'
-                              ? roundToNearest500(
-                                  (finalTotal * couponItem.coupon.amount) / 100
-                                )
-                              : 0;
-                          finalTotal -= discountAmount;
-                        }
-
-                        return (
-                          <YStack>
-                            {finalTotal < total ? (
-                              <H4 textDecorationLine="line-through">
-                                Rp. {total.toLocaleString('id')}
-                              </H4>
-                            ) : null}
-                            <H3>Rp. {finalTotal.toLocaleString('id')}</H3>
-                          </YStack>
-                        );
-                      }}
-                    </FieldWatch>
-                  </YStack>
-                </YStack>
+                <TransactionCartView
+                  form={form}
+                  isCouponSheetOpen={isCouponSheetOpen}
+                  onCouponSheetOpenChange={onCouponSheetOpenChange}
+                  onItemCouponSheetOpen={onItemCouponSheetOpen}
+                  onRemoveItemCoupon={onRemoveItemCoupon}
+                  TransactionCouponList={TransactionCouponList}
+                  itemsFieldArray={itemsFieldArray}
+                  couponsFieldArray={couponsFieldArray}
+                  serverError={serverError}
+                />
               </Card>
-              <Button
-                disabled={isSubmitDisabled}
-                onPress={form.handleSubmit(onSubmit)}
-                size="$5"
-                theme="blue"
-                icon={isSubmitting ? <Spinner /> : undefined}
-              >
-                Submit
-              </Button>
+              {submitButton}
             </YStack>
           </XStack>
         </Form>

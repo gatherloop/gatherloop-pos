@@ -212,6 +212,8 @@ export const TransactionCreateHandler = ({
       transactionCreateController.dispatch({ type: 'SUBMIT', values }),
     isSubmitDisabled: transactionCreateController.state.type === 'submitting',
     isSubmitting: transactionCreateController.state.type === 'submitting',
+    isSubmitSuccess:
+      transactionCreateController.state.type === 'submitSuccess',
     serverError:
       transactionCreateController.state.type === 'submitError'
         ? 'Failed to submit. Please try again.'
