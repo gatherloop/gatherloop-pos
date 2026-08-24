@@ -304,6 +304,29 @@ export const rentalPrintDialog = {
 };
 
 // ---------------------------------------------------------------------------
+// Rental checkout cart button / cart sheet (compact / mobile layout only —
+// see docs/prd-rental-checkout-mobile.md)
+// ---------------------------------------------------------------------------
+
+export const rentalCheckoutCartButton = {
+  /**
+   * Floating "{n} item(s) · Rp {total} · View Cart" button shown once the
+   * cart is non-empty. Only rendered on the compact layout.
+   */
+  button: (page: Page) => page.getByRole('button', { name: /View Cart$/ }),
+};
+
+export const rentalCheckoutCartSheet = {
+  /** "Cart" header title, visible while the sheet shows cart content */
+  title: (page: Page) => page.locator('h4').filter({ hasText: 'Cart' }).first(),
+  closeButton: (page: Page) =>
+    page.getByRole('button', { name: 'Close Cart' }),
+  /** Submit button in the sheet's pinned footer */
+  submitButton: (page: Page) =>
+    page.getByRole('button', { name: 'Submit' }).first(),
+};
+
+// ---------------------------------------------------------------------------
 // Rental list page (/rentals)
 // ---------------------------------------------------------------------------
 
