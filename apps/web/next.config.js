@@ -30,9 +30,16 @@ const nextConfig = {
   experimental: {
     cpus: 1,
     workerThreads: false,
+    reactCompiler: true,
   },
   webpack(config) {
     config.parallelism = 1;
+    // React 18 has no `react/compiler-runtime` subpath; the standalone runtime
+    // package provides the identical `c()` implementation. Drops out when we
+    // reach React 19 (see docs/trd-react-compiler-adoption.md §D3).
+    config.resolve.alias['react/compiler-runtime'] = require.resolve(
+      'react-compiler-runtime'
+    );
     return config;
   },
   async rewrites() {
