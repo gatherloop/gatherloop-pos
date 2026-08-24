@@ -16,10 +16,12 @@ const mockBack = jest.fn();
 // taking it as a prop, so the test doubles that context binding rather than
 // `CartProvider` itself — `CartProvider` hardcodes `ApiCartRepository`,
 // which a unit test has no business calling.
-let controllerRef: Controller<CartState, CartAction> | null = null;
+const controllerRef: { current: Controller<CartState, CartAction> | null } = {
+  current: null,
+};
 
 jest.mock('./CartProvider', () => ({
-  useCart: () => controllerRef,
+  useCart: () => controllerRef.current,
 }));
 
 const TestHarness = ({
@@ -30,7 +32,12 @@ const TestHarness = ({
   cartItemId: number;
 }) => {
   const cart = useController(usecase);
-  controllerRef = cart;
+  // Bridges the mocked `useCart()` (module scope, outside any component) to
+  // the controller instance rendered here, so `CartItemEdit`'s own
+  // `useCart()` call sees it in the same render pass — not a real ref, and
+  // this test file is never run through the compiler (R5 in the TRD).
+  // eslint-disable-next-line react-hooks/immutability
+  controllerRef.current = cart;
   return <CartItemEdit cartItemId={cartItemId} />;
 };
 
@@ -57,7 +64,7 @@ const renderComponent = async (
 describe('CartItemEdit', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    controllerRef = null;
+    controllerRef.current = null;
   });
 
   it('seeds the modal from the cart line', async () => {

@@ -5,7 +5,19 @@
   "projectType": "application",
   "tags": [],
   "targets": {
+    "start": {
+      "command": "react-native start",
+      "options": { "cwd": "apps/mobile" },
+      "dependsOn": [
+        {
+          "projects": "api-contract",
+          "target": "generate:ts"
+        }
+      ]
+    },
     "run-android": {
+      "command": "react-native run-android",
+      "options": { "cwd": "apps/mobile" },
       "dependsOn": [
         {
           "projects": "api-contract",
@@ -14,6 +26,8 @@
       ]
     },
     "run-ios": {
+      "command": "react-native run-ios",
+      "options": { "cwd": "apps/mobile" },
       "dependsOn": [
         {
           "projects": "api-contract",
@@ -21,13 +35,19 @@
         }
       ]
     },
-    "start": {
-      "dependsOn": [
-        {
-          "projects": "api-contract",
-          "target": "generate:ts"
-        }
-      ]
+    "build-android": {
+      "command": "react-native build-android",
+      "options": { "cwd": "apps/mobile" },
+      "cache": true,
+      "dependsOn": ["^build-android"],
+      "outputs": ["{workspaceRoot}/apps/mobile/android/app/build/outputs"]
+    },
+    "build-ios": {
+      "command": "react-native build-ios",
+      "options": { "cwd": "apps/mobile" },
+      "cache": true,
+      "dependsOn": ["^build-ios"],
+      "outputs": ["{workspaceRoot}/apps/mobile/ios/build/Build/Products"]
     }
   }
 }

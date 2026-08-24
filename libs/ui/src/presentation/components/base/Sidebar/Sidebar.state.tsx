@@ -80,20 +80,30 @@ export const useSidebarState = () => {
 
   useEffect(() => {
     // window.location isn't available on React Native — the highlighted
-    // sub-item just falls back to none there.
+    // sub-item just falls back to none there. This has to stay an effect:
+    // reading window during render would mismatch the server-rendered
+    // markup (currentPath starts undefined on both server and first client
+    // render, and only picks up the real path once mounted).
     if (Platform.OS === 'web') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCurrentPath(window.location.pathname);
     }
   }, []);
 
   // Sidebar overlays the screen on mobile, so it should start (and return
   // to) collapsed there, while staying open by default on larger screens.
-  useEffect(() => {
+  // Adjusted during render rather than in an effect, per
+  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes.
+  const [prevIsMobile, setPrevIsMobile] = useState(isMobile);
+  if (isMobile !== prevIsMobile) {
+    setPrevIsMobile(isMobile);
     setIsShown(!isMobile);
-  }, [isMobile]);
+  }
 
-  useEffect(() => {
-    if (currentPath === undefined) return;
+  // Same render-time adjustment, driven off `currentPath` once it is known.
+  const [prevPath, setPrevPath] = useState(currentPath);
+  if (currentPath !== prevPath) {
+    setPrevPath(currentPath);
 
     const defaultItem = items.find(
       (item) =>
@@ -104,7 +114,7 @@ export const useSidebarState = () => {
     );
 
     if (defaultItem) setAccordionValue(defaultItem.title);
-  }, [currentPath]);
+  }
 
   return {
     isShown,

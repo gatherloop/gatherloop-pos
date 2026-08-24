@@ -1,4 +1,3 @@
-import { useCallback } from 'react';
 import { useToastController } from '@tamagui/toast';
 import { Variant } from '../domain/entities/Variant';
 
@@ -141,27 +140,24 @@ export const buildOrderSlipPayload = (
 export const usePrinter = () => {
   const toast = useToastController();
 
-  const print = useCallback(
-    (payload: PrintPayload): Promise<void> => {
-      return new Promise((resolve, reject) => {
-        const socket = new WebSocket('ws://localhost:8080');
-        socket.onopen = () => {
-          socket.send(JSON.stringify(payload));
-        };
+  const print = (payload: PrintPayload): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const socket = new WebSocket('ws://localhost:8080');
+      socket.onopen = () => {
+        socket.send(JSON.stringify(payload));
+      };
 
-        socket.onmessage = (event) => {
-          toast.show('Printing info', { message: event.data });
-          resolve();
-        };
+      socket.onmessage = (event) => {
+        toast.show('Printing info', { message: event.data });
+        resolve();
+      };
 
-        socket.onerror = () => {
-          toast.show('Printing info', { message: 'Cannot connect to printer' });
-          reject();
-        };
-      });
-    },
-    [toast]
-  );
+      socket.onerror = () => {
+        toast.show('Printing info', { message: 'Cannot connect to printer' });
+        reject();
+      };
+    });
+  };
 
   return { print };
 };

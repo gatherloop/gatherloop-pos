@@ -157,6 +157,12 @@ describe('CategoryCreateHandler', () => {
 
       await user.type(screen.getByRole('textbox', { name: 'Name' }), 'New Category');
       await user.click(screen.getByRole('button', { name: 'Submit' }));
+      // zodResolver validates asynchronously, so the SUBMIT dispatch (and the
+      // effect that calls createCategory) lands one tick after user.click()
+      // resolves; flush that tick before asserting on it.
+      await act(async () => {
+        await flushPromises();
+      });
 
       expect((screen.getByRole('button', { name: 'Submit' }) as HTMLButtonElement).disabled).toBe(true);
       expect(screen.getByTestId('spinner')).toBeTruthy();

@@ -1,3 +1,7 @@
+// React Compiler must run before anything else lowers the source; the Reanimated
+// plugin must stay last (its own requirement). Both hold simultaneously.
+const reactCompiler = ['babel-plugin-react-compiler', { target: '18' }];
+
 module.exports = function (api) {
   api.cache(true);
 
@@ -14,7 +18,7 @@ module.exports = function (api) {
           },
         ],
       ],
-      plugins: ['react-native-reanimated/plugin'],
+      plugins: [reactCompiler, 'react-native-reanimated/plugin'],
     };
   }
 
@@ -22,6 +26,6 @@ module.exports = function (api) {
     presets: [
       ['module:@react-native/babel-preset', { useTransformReactJSX: true }],
     ],
-    plugins: ['react-native-reanimated/plugin'],
+    plugins: [reactCompiler, 'react-native-reanimated/plugin'],
   };
 };

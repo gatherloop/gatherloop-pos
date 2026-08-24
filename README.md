@@ -52,6 +52,8 @@ https://react.dev
 
 React is used for building the web interface of the POS system, providing a dynamic and responsive user experience. Its component-based architecture allows for efficient rendering and seamless updates, making tasks like product management, transaction handling, and expense tracking intuitive and easy to navigate.
 
+Every surface (`apps/web`, `apps/mobile`, `apps/order`, `libs/ui` Storybook) builds with [React Compiler](https://react.dev/learn/react-compiler), so memoization of components, values and callbacks used purely to avoid re-renders is automatic — there is no need to reach for `useMemo`, `useCallback`, or `React.memo` yourself for that. If a specific component misbehaves under compilation, opt it out with the `"use no memo"` directive at the top of the function instead of hand-rolling memoization. One exception: `useCallback` wrapping a `useFocusEffect` (or `useQuery`'s internal refetch-on-focus) callback is still required, because `libs/ui`'s Jest suite runs on `@swc/jest`, which has no compiler pass — without it the effect re-fires every render. See `docs/trd-react-compiler-adoption.md` for the adoption plan and rollout phases.
+
 ### 3.3. React Native
 
 https://reactnative.dev
