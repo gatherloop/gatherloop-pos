@@ -236,6 +236,8 @@ export interface CreateVariantInput {
   description?: string;
   materials: Array<{ materialId: number; amount: number }>;
   values: Array<{ optionValueId: number }>;
+  /** Required by `POST /api/rentals/checkin` — a variant with no tiers is rejected. */
+  pricingTiers?: Array<{ upToMinutes: number; price: number }>;
 }
 
 export async function createVariant(
@@ -349,6 +351,29 @@ export async function deleteRental(
   id: number
 ): Promise<void> {
   return apiDelete(request, `/api/rentals/${id}`);
+}
+
+export interface CreateRentalCheckinInput {
+  code: string;
+  name: string;
+  variantId: number;
+  checkinAt: string;
+}
+
+/**
+ * Creates an ongoing rental directly via `POST /api/rentals/checkin`,
+ * bypassing the checkin UI. Used to seed rentals for the checkout spec,
+ * which only tests the checkout screen — same reasoning as `createProduct`
+ * skipping the product form.
+ */
+export async function checkinRental(
+  request: APIRequestContext,
+  data: CreateRentalCheckinInput
+): Promise<Rental> {
+  const rentals = await apiPost<Rental[]>(request, '/api/rentals/checkin', [
+    data,
+  ]);
+  return rentals[0];
 }
 
 // ---------------------------------------------------------------------------
