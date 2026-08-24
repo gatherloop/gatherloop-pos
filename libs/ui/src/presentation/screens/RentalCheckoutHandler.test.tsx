@@ -281,6 +281,52 @@ describe('RentalCheckoutHandler', () => {
     });
   });
 
+  describe('in cart affordance', () => {
+    it('should show "In Cart" on a rental after it is added', async () => {
+      const user = userEvent.setup();
+      render(<RentalCheckoutHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.queryByText('In Cart')).toBeNull();
+
+      await user.click(screen.getByText('Rental 1'));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getAllByText('In Cart').length).toBeGreaterThan(0);
+    });
+
+    it('should not duplicate the cart row when an already-added rental is tapped again', async () => {
+      const user = userEvent.setup();
+      render(<RentalCheckoutHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      await user.click(screen.getByText('Rental 1'));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      // 'Rental 1' now appears both in the list row and in the cart body, so
+      // disambiguate: the list row is the first occurrence in the tree.
+      await user.click(screen.getAllByText('Rental 1')[0]);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getAllByText('In Cart').length).toBe(1);
+    });
+  });
+
   describe('error recovery', () => {
     it('should refetch rentals when retry button is pressed', async () => {
       const user = userEvent.setup();

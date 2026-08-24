@@ -2,55 +2,33 @@ import {
   Button,
   Card,
   Form,
+  H4,
   Paragraph,
-  Separator,
+  ScrollView,
   Spinner,
   XStack,
   YStack,
 } from 'tamagui';
 import { FormErrorBanner } from '../base';
-import { H4 } from 'tamagui';
-import { Calendar, QrCode, Trash } from '@tamagui/lucide-icons';
-import { PricingTier, RentalCheckoutForm } from '../../../domain';
+import { RentalCheckoutForm } from '../../../domain';
 import {
   FormProvider,
   UseFieldArrayReturn,
   UseFormReturn,
 } from 'react-hook-form';
-import { ReactNode } from 'react';
-import dayjs from 'dayjs';
-
-function calculateSubtotal(
-  tiers: PricingTier[],
-  checkinAt: string,
-  now: Date
-): number {
-  if (tiers.length === 0) return 0;
-  const durationMinutes = Math.ceil(
-    (now.getTime() - new Date(checkinAt).getTime()) / 60000
-  );
-  for (const tier of tiers) {
-    if (tier.upToMinutes >= durationMinutes) return tier.price;
-  }
-  return tiers[tiers.length - 1].price;
-}
-
-function formatDuration(checkinAt: string, now: Date): string {
-  const totalMinutes = Math.ceil(
-    (now.getTime() - new Date(checkinAt).getTime()) / 60000
-  );
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
-  if (hours > 0) return `${hours}h`;
-  return `${minutes}m`;
-}
+import { ReactNode, useEffect, useState } from 'react';
+import { RentalCheckoutCartView } from './RentalCheckoutCartView';
+import { calculateSubtotal } from './rentalPricing';
+import { FloatingCartButton, Sheet, useIsCompactLayout } from '../base';
+import { formatRupiah } from '../../../utils/currency';
+import { X } from '@tamagui/lucide-icons';
 
 export type RentalCheckoutFormViewProps = {
   form: UseFormReturn<RentalCheckoutForm>;
   onSubmit: (form: RentalCheckoutForm) => void;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
+  isSubmitSuccess: boolean;
   RentalItemSelect: () => ReactNode;
   rentalsFieldArray: UseFieldArrayReturn<RentalCheckoutForm, 'rentals', 'key'>;
   serverError?: string;
@@ -61,17 +39,139 @@ export const RentalCheckoutFormView = ({
   onSubmit,
   isSubmitDisabled,
   isSubmitting,
+  isSubmitSuccess,
   RentalItemSelect,
   rentalsFieldArray,
   serverError,
 }: RentalCheckoutFormViewProps) => {
   const now = new Date();
-  const grandTotal = rentalsFieldArray.fields.reduce((sum, rental) => {
+  const isCompactLayout = useIsCompactLayout();
+  const [isCartSheetOpen, setIsCartSheetOpen] = useState(false);
+
+  // Mirrors the button's own visibility rule (PRD Open Question 2): once the
+  // last rental is removed there is nothing left to submit, so the sheet
+  // closes itself rather than stranding staff on an empty cart with a dead
+  // Submit button.
+  useEffect(() => {
+    if (rentalsFieldArray.fields.length === 0) setIsCartSheetOpen(false);
+  }, [rentalsFieldArray.fields.length]);
+
+  // A successful submit must close the cart sheet before the redirect to the
+  // transaction detail screen, or a modal `Sheet` left mounted can paint its
+  // overlay over the destination on native (PRD FR-3, mirroring
+  // `RentalCheckinFormView`'s close-on-success effect).
+  useEffect(() => {
+    if (isSubmitSuccess) setIsCartSheetOpen(false);
+  }, [isSubmitSuccess]);
+
+  const submitButton = (
+    <Button
+      disabled={isSubmitDisabled}
+      onPress={form.handleSubmit(onSubmit)}
+      size="$5"
+      theme="blue"
+      icon={isSubmitting ? <Spinner /> : undefined}
+    >
+      Submit
+    </Button>
+  );
+
+  if (isCompactLayout) {
+    // One `now`/one reduce shared by the button label and the sheet footer
+    // (PRD Core Rule 5, "Constraint: one `now` per render pass") so the two
+    // surfaces can never disagree on the total.
+    const grandTotal = rentalsFieldArray.fields.reduce((sum, rental) => {
+      return sum + calculateSubtotal(rental.pricingTiers, rental.checkinAt, now);
+    }, 0);
+
     return (
-      sum +
-      calculateSubtotal(rental.pricingTiers, rental.checkinAt, now)
+      <YStack flex={1}>
+        <FormProvider {...form}>
+          <Form onSubmit={form.handleSubmit(onSubmit)} flex={1}>
+            <YStack flex={1} position="relative">
+              <YStack
+                flex={1}
+                // Reserves room below the picker so the floating cart button
+                // never covers the last `RentalListItem` or the `Pagination`
+                // control (PRD FR-2). Applied here, not inside `RentalList`,
+                // which is shared with `RentalListScreen` and has no button.
+                paddingBottom={
+                  rentalsFieldArray.fields.length > 0 ? 90 : undefined
+                }
+              >
+                {RentalItemSelect()}
+              </YStack>
+
+              {rentalsFieldArray.fields.length > 0 && (
+                <FloatingCartButton
+                  label={`${rentalsFieldArray.fields.length} ${
+                    rentalsFieldArray.fields.length === 1 ? 'item' : 'items'
+                  } · ${formatRupiah(grandTotal)} · View Cart`}
+                  onPress={() => setIsCartSheetOpen(true)}
+                />
+              )}
+            </YStack>
+
+            <Sheet isOpen={isCartSheetOpen} onOpenChange={setIsCartSheetOpen}>
+              {/* Tamagui's modal `Sheet` portals its content, which on some
+                  platforms (e.g. Android) does not carry the ambient React
+                  context down from the outer `FormProvider` above. The cart
+                  view reads the form via field array props directly, but
+                  `FormErrorBanner` and any future field read context, so
+                  re-establish the provider inside the sheet (PRD
+                  "Constraint: `FormProvider` inside the sheet"). */}
+              <FormProvider {...form}>
+                <YStack flex={1}>
+                  <XStack
+                    padding="$3"
+                    alignItems="center"
+                    justifyContent="space-between"
+                    borderBottomWidth={1}
+                    borderBottomColor="$borderColor"
+                  >
+                    <H4>Cart</H4>
+                    <Button
+                      icon={X}
+                      size="$3"
+                      circular
+                      accessibilityLabel="Close Cart"
+                      onPress={() => setIsCartSheetOpen(false)}
+                    />
+                  </XStack>
+
+                  <ScrollView flex={1}>
+                    <YStack padding="$3" flex={1}>
+                      <RentalCheckoutCartView
+                        rentalsFieldArray={rentalsFieldArray}
+                        now={now}
+                        showGrandTotal={false}
+                        serverError={serverError}
+                      />
+                    </YStack>
+                  </ScrollView>
+
+                  <YStack
+                    padding="$3"
+                    gap="$3"
+                    borderTopWidth={1}
+                    borderTopColor="$borderColor"
+                  >
+                    <XStack justifyContent="space-between">
+                      <Paragraph fontWeight="bold">Grand Total</Paragraph>
+                      <Paragraph fontWeight="bold">
+                        {formatRupiah(grandTotal)}
+                      </Paragraph>
+                    </XStack>
+                    {submitButton}
+                  </YStack>
+                </YStack>
+              </FormProvider>
+            </Sheet>
+          </Form>
+        </FormProvider>
+      </YStack>
     );
-  }, 0);
+  }
 
   return (
     <YStack>
@@ -84,104 +184,14 @@ export const RentalCheckoutFormView = ({
               <Card padded>
                 <YStack gap="$3">
                   <H4>Items</H4>
-                  <YStack gap="$3">
-                    {rentalsFieldArray.fields.map(
-                      ({ variant, checkinAt, code, name, pricingTiers, key }, index) => {
-                        const subtotal = calculateSubtotal(
-                          pricingTiers,
-                          checkinAt,
-                          now
-                        );
-                        const duration = formatDuration(checkinAt, now);
-
-                        return (
-                          <YStack
-                            key={key}
-                            gap="$3"
-                            justifyContent="space-between"
-                          >
-                            <XStack gap="$3" flex={1} alignItems="center">
-                              <Button
-                                icon={Trash}
-                                size="$3"
-                                onPress={() => rentalsFieldArray.remove(index)}
-                                theme="red"
-                                color="$red8"
-                                circular
-                              />
-                              <YStack flex={1}>
-                                <Paragraph>{name}</Paragraph>
-                                <Paragraph>
-                                  {`${variant.product.name} - ${variant.values
-                                    .map(({ optionValue }) => optionValue.name)
-                                    .join(' - ')}`}
-                                </Paragraph>
-                                <XStack gap="$3">
-                                  <XStack gap="$3" alignItems="center">
-                                    <YStack
-                                      backgroundColor="$background"
-                                      theme="active"
-                                      padding="$2"
-                                      borderRadius="$12"
-                                    >
-                                      <QrCode size="$1" />
-                                    </YStack>
-                                    <Paragraph>{code}</Paragraph>
-                                  </XStack>
-                                  <XStack gap="$3" alignItems="center">
-                                    <YStack
-                                      backgroundColor="$background"
-                                      theme="active"
-                                      padding="$2"
-                                      borderRadius="$12"
-                                    >
-                                      <Calendar size="$1" />
-                                    </YStack>
-                                    <Paragraph>
-                                      {dayjs(checkinAt).format(
-                                        'DD/MM/YYYY - HH:mm'
-                                      )}
-                                    </Paragraph>
-                                  </XStack>
-                                </XStack>
-                                {pricingTiers.length > 0 && (
-                                  <XStack justifyContent="space-between" marginTop="$1">
-                                    <Paragraph size="$2" color="$gray10">
-                                      {duration}
-                                    </Paragraph>
-                                    <Paragraph size="$3" fontWeight="bold">
-                                      Rp. {subtotal.toLocaleString('id')}
-                                    </Paragraph>
-                                  </XStack>
-                                )}
-                              </YStack>
-                            </XStack>
-                            <Separator />
-                          </YStack>
-                        );
-                      }
-                    )}
-                  </YStack>
-                  {rentalsFieldArray.fields.length > 0 && (
-                    <XStack justifyContent="space-between" paddingTop="$2">
-                      <Paragraph fontWeight="bold">Grand Total</Paragraph>
-                      <Paragraph fontWeight="bold">
-                        Rp. {grandTotal.toLocaleString('id')}
-                      </Paragraph>
-                    </XStack>
-                  )}
+                  <RentalCheckoutCartView
+                    rentalsFieldArray={rentalsFieldArray}
+                    now={now}
+                  />
                 </YStack>
               </Card>
               <XStack justifyContent="flex-end" gap="$3">
-                <Button
-                  disabled={isSubmitDisabled}
-                  onPress={form.handleSubmit(onSubmit)}
-                  size="$5"
-                  theme="blue"
-                  icon={isSubmitting ? <Spinner /> : undefined}
-                >
-                  Submit
-                </Button>
+                {submitButton}
               </XStack>
             </YStack>
           </XStack>
