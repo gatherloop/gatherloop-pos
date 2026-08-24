@@ -46,14 +46,14 @@
       "plugin": "@nx/react-native/plugin",
       "options": {
         "startTargetName": "start",
-        "upgradeTargetname": "update",
         "bundleTargetName": "bundle",
         "podInstallTargetName": "pod-install",
         "runIosTargetName": "run-ios",
         "runAndroidTargetName": "run-android",
         "buildIosTargetName": "build-ios",
         "buildAndroidTargetName": "build-android",
-        "syncDepsTargetName": "sync-deps"
+        "syncDepsTargetName": "sync-deps",
+        "upgradeTargetName": "update"
       }
     },
     {
@@ -90,5 +90,11 @@
         "style": "css"
       }
     }
-  }
+  },
+  "targetDefaults": {
+    "e2e-ci--**/**": {
+      "dependsOn": ["^build", "^"]
+    }
+  },
+  "useLegacyCache": true
 }
