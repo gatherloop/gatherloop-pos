@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { CartItemEditScreen } from '../presentation/screens/CartItemEditScreen';
 import { useNavigation } from '../presentation/navigation';
 import { useCart } from './CartProvider';
@@ -30,14 +30,14 @@ export function CartItemEdit({ cartItemId }: CartItemEditProps) {
   const [amount, setAmount] = useState(1);
   const [note, setNote] = useState('');
 
-  useEffect(() => {
-    if (item && item.id !== seededItemId) {
-      setAmount(item.amount);
-      setNote(item.note);
-      setSeededItemId(item.id);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [item?.id]);
+  // Adjusted during render (rather than in an effect) so the seeded values
+  // are ready for the same commit that shows the item, instead of an extra
+  // post-mount render — see https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes.
+  if (item && item.id !== seededItemId) {
+    setAmount(item.amount);
+    setNote(item.note);
+    setSeededItemId(item.id);
+  }
 
   // Unknown or already-removed cartItemId: fall back to the cart with no
   // modal (FR-9) — the line it referenced is gone, which is the outcome the

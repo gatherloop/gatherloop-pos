@@ -4,7 +4,7 @@ import './global.css';
 import { NextThemeProvider, useRootTheme } from '@tamagui/next-theme';
 import { AppProps } from 'next/app';
 import Head from 'next/head';
-import React, { useMemo } from 'react';
+import React from 'react';
 import { RootProvider } from '@gatherloop-pos/provider';
 import NextNProgress from 'nextjs-progressbar';
 
@@ -15,9 +15,7 @@ if (process.env.NODE_ENV === 'production') {
 export default function App({ Component, pageProps }: AppProps) {
   const [theme, setTheme] = useRootTheme();
 
-  const contents = useMemo(() => {
-    return <Component {...pageProps} />;
-  }, [pageProps]);
+  const contents = <Component {...pageProps} />;
 
   return (
     <>

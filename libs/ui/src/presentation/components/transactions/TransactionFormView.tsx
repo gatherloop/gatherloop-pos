@@ -14,7 +14,7 @@ import {
   UseFieldArrayReturn,
   UseFormReturn,
 } from 'react-hook-form';
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useState } from 'react';
 import { TransactionCartView } from './TransactionCartView';
 import { TransactionCartButton } from './TransactionCartButton';
 import { FieldWatch, Sheet, useIsCompactLayout } from '../base';
@@ -67,12 +67,14 @@ export const TransactionFormView = ({
 
   // A successful submit must close the cart sheet before any dialog that
   // follows it (e.g. the payment alert on Create) opens on top — see PRD
-  // FR-7 and the "AlertDialog over Sheet" risk. This effect runs on every
-  // render where a child of this component sits below the caller in the
-  // tree, so it commits before the caller's own "submit succeeded" effect.
-  useEffect(() => {
+  // FR-7 and the "AlertDialog over Sheet" risk. Adjusted during render (not
+  // in an effect) so it is guaranteed to land before any effect — including
+  // the caller's own "submit succeeded" effect that opens that dialog.
+  const [wasSubmitSuccess, setWasSubmitSuccess] = useState(isSubmitSuccess);
+  if (isSubmitSuccess !== wasSubmitSuccess) {
+    setWasSubmitSuccess(isSubmitSuccess);
     if (isSubmitSuccess) setIsCartSheetOpen(false);
-  }, [isSubmitSuccess]);
+  }
 
   const submitButton = (
     <Button

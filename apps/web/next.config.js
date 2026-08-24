@@ -1,6 +1,7 @@
 //@ts-check
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
+const path = require('path');
 const { composePlugins, withNx } = require('@nx/next');
 const { withTamagui } = require('@tamagui/next-plugin');
 
@@ -13,6 +14,10 @@ const nextConfig = {
     // See: https://github.com/gregberge/svgr
     svgr: false,
   },
+  // A stray apps/web/package-lock.json alongside the root lockfile makes
+  // Next 15's output file tracing guess the wrong workspace root. Pin it
+  // explicitly, as Next's own warning suggests.
+  outputFileTracingRoot: path.join(__dirname, '../../'),
   // react-native-qrcode-svg ships untranspiled JSX (no prebuilt CJS output),
   // unlike react-native-svg which does — Next must run it through its own
   // loader instead of treating it as pre-built.
@@ -25,9 +30,16 @@ const nextConfig = {
   experimental: {
     cpus: 1,
     workerThreads: false,
+    reactCompiler: true,
   },
   webpack(config) {
     config.parallelism = 1;
+    // React 18 has no `react/compiler-runtime` subpath; the standalone runtime
+    // package provides the identical `c()` implementation. Drops out when we
+    // reach React 19 (see docs/trd-react-compiler-adoption.md §D3).
+    config.resolve.alias['react/compiler-runtime'] = require.resolve(
+      'react-compiler-runtime'
+    );
     return config;
   },
   async rewrites() {
