@@ -1,10 +1,4 @@
-import {
-  createContext,
-  ReactNode,
-  useCallback,
-  useContext,
-  useState,
-} from 'react';
+import { createContext, ReactNode, useContext, useState } from 'react';
 import { ConfirmationAlert, ConfirmationAlertProps } from './ConfirmationAlert';
 
 export type ConfirmationAlertParams = {
@@ -42,7 +36,7 @@ export const ConfirmationAlertProvider = ({
     isOpen: false,
   });
 
-  const show = useCallback((params: ConfirmationAlertParams) => {
+  const show = (params: ConfirmationAlertParams) => {
     setProps({
       title: params.title,
       description: params.description,
@@ -52,7 +46,7 @@ export const ConfirmationAlertProvider = ({
       onCancel: params.onCancel,
       onConfirm: params.onConfirm,
     });
-  }, []);
+  };
 
   const onOpenChange = (isOpen: boolean) => {
     setProps((props) => ({

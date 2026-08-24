@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useMemo, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { NavigationProvider } from '@gatherloop-pos/ui/order';
 import { matchPath } from './matchPath';
 
@@ -55,7 +55,7 @@ export const Router = ({ routes, notFound }: RouterProps) => {
   // handles — no need to touch `pathname` here.
   const back = () => window.history.back();
 
-  const matched = useMemo(() => {
+  const matched = (() => {
     for (const route of routes) {
       const params = matchPath(route.path, pathname);
       if (params) {
@@ -63,7 +63,7 @@ export const Router = ({ routes, notFound }: RouterProps) => {
       }
     }
     return null;
-  }, [routes, pathname]);
+  })();
 
   return (
     <NavigationProvider value={{ push, replace, back }}>

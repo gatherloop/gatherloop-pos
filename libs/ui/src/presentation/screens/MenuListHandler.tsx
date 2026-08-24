@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { match, P } from 'ts-pattern';
 // Deep imports, not the `domain` barrel (D20): that barrel also re-exports
 // every POS usecase, which drags unrelated weight into the order bundle.
@@ -53,9 +52,9 @@ export const MenuListHandler = ({
   const menuList = useMenuListController(menuListUsecase);
   const navigation = useNavigation();
 
-  const groups = useMemo(
-    () => groupByCategory(menuList.state.products, menuList.state.categories),
-    [menuList.state.products, menuList.state.categories]
+  const groups = groupByCategory(
+    menuList.state.products,
+    menuList.state.categories
   );
 
   const visibleGroups =
@@ -65,9 +64,8 @@ export const MenuListHandler = ({
           (group) => group.category.id === menuList.state.selectedCategoryId
         );
 
-  const startingPriceByProductId = useMemo(
-    () => computeStartingPriceByProductId(menuList.state.variants),
-    [menuList.state.variants]
+  const startingPriceByProductId = computeStartingPriceByProductId(
+    menuList.state.variants
   );
 
   return (

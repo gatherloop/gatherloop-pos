@@ -6,7 +6,7 @@ import {
 } from '../../domain';
 import { RentalListScreen, RentalListScreenProps } from './RentalListScreen';
 import { match, P } from 'ts-pattern';
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import {
   useAuthLogoutController,
   useRentalDeleteController,
@@ -40,22 +40,19 @@ export const RentalListHandler = ({
       });
   }, [rentalDelete.state, rentalList]);
 
-  const onSearchValueChange = useCallback(
-    (query: string) => {
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
-      debounceTimeoutRef.current = setTimeout(() => {
-        rentalList.dispatch({
-          type: 'CHANGE_PARAMS',
-          query,
-          page: 1,
-          fetchDebounceDelay: 0,
-        });
-      }, 300);
-    },
-    [rentalList]
-  );
+  const onSearchValueChange = (query: string) => {
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+    debounceTimeoutRef.current = setTimeout(() => {
+      rentalList.dispatch({
+        type: 'CHANGE_PARAMS',
+        query,
+        page: 1,
+        fetchDebounceDelay: 0,
+      });
+    }, 300);
+  };
 
   return (
     <RentalListScreen
