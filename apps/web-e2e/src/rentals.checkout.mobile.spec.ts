@@ -103,6 +103,12 @@ test.describe.serial('Rental Checkout Flow (compact / mobile layout)', () => {
         // Ignore — may already be gone
       });
     }
+    // Safety net if the tap test failed before reaching Submit — a
+    // successfully checked-out rental rejects deletion, so this is a no-op
+    // on the happy path.
+    await api.deleteRental(request, tapRental.id).catch(() => {
+      // Ignore — may already be gone, or already checked out
+    });
     await api.deleteRental(request, scanRental.id).catch(() => {
       // Ignore — may already be gone
     });
