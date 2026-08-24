@@ -54,6 +54,11 @@ export const RentalCheckoutScreen = (props: RentalCheckoutScreenProps) => {
           isSearchAutoFocus={
             props.rentalList.isSearchAutoFocus && !isCompactLayout
           }
+          // Surfaces an "In Cart" affordance on rows already added, since
+          // `onAddItem` silently no-ops a duplicate tap (PRD FR-4).
+          selectedRentalIds={props.rentalsFieldArray.fields.map(
+            (rental) => rental.id
+          )}
         />
       )}
       serverError={props.serverError}

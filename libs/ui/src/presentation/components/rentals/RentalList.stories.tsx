@@ -64,3 +64,10 @@ export const CompletedFilter: Story = {
     totalItem: 1,
   },
 };
+
+export const WithSelectedRental: Story = {
+  args: {
+    variant: { type: 'loaded' },
+    selectedRentalIds: [mockRentals[0].id],
+  },
+};

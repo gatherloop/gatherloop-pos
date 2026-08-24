@@ -34,6 +34,7 @@ export type RentalListProps = {
   isSearchAutoFocus?: boolean;
   isRevalidating?: boolean;
   isChangingParams?: boolean;
+  selectedRentalIds?: number[];
 };
 
 export const RentalList = ({
@@ -54,6 +55,7 @@ export const RentalList = ({
   isSearchAutoFocus,
   isRevalidating,
   isChangingParams,
+  selectedRentalIds,
 }: RentalListProps) => {
   const textInputRef = useRef<TextInput>(null);
   const [inputHasText, setInputHasText] = useState(false);
@@ -175,6 +177,7 @@ export const RentalList = ({
                   ticketName={item.ticketName}
                   name={item.name}
                   total={item.total}
+                  isInCart={selectedRentalIds?.includes(item.id)}
                   onDeleteMenuPress={
                     onDeleteMenuPress
                       ? () => onDeleteMenuPress(item)
