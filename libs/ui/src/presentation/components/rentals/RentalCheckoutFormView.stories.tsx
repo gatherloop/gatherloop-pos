@@ -24,6 +24,7 @@ const DefaultStory = () => {
       onSubmit={fn()}
       isSubmitDisabled={false}
       isSubmitting={false}
+      isSubmitSuccess={false}
       RentalItemSelect={() => <Text color="$color">+ Add Rental Item</Text>}
       rentalsFieldArray={rentalsFieldArray}
     />
@@ -47,6 +48,7 @@ const CompactWithRentalsStory = () => {
       onSubmit={fn()}
       isSubmitDisabled={false}
       isSubmitting={false}
+      isSubmitSuccess={false}
       RentalItemSelect={() => <Text color="$color">+ Add Rental Item</Text>}
       rentalsFieldArray={rentalsFieldArray}
     />
@@ -78,6 +80,7 @@ const SubmitDisabledStory = () => {
       onSubmit={fn()}
       isSubmitDisabled={true}
       isSubmitting={false}
+      isSubmitSuccess={false}
       RentalItemSelect={() => <Text color="$color">+ Add Rental Item</Text>}
       rentalsFieldArray={rentalsFieldArray}
     />

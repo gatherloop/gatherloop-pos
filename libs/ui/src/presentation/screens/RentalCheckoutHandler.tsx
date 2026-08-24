@@ -84,6 +84,7 @@ export const RentalCheckoutHandler = ({
       }
       isSubmitDisabled={rentalCheckout.state.type === 'submitting'}
       isSubmitting={rentalCheckout.state.type === 'submitting'}
+      isSubmitSuccess={rentalCheckout.state.type === 'submitSuccess'}
       serverError={
         rentalCheckout.state.type === 'submitError'
           ? 'Failed to submit. Please try again.'
