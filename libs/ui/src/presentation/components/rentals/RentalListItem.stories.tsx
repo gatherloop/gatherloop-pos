@@ -45,3 +45,9 @@ export const WithoutMenus: Story = {
     onItemPress: undefined,
   },
 };
+
+export const InCart: Story = {
+  args: {
+    isInCart: true,
+  },
+};

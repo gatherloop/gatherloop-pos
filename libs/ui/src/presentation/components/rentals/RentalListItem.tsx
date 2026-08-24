@@ -7,7 +7,7 @@ import {
 } from '@tamagui/lucide-icons';
 import { ListItem } from '../base';
 import dayjs from 'dayjs';
-import { XStackProps } from 'tamagui';
+import { Paragraph, XStack, XStackProps, YStack } from 'tamagui';
 
 export type RentalListItemProps = {
   code: string;
@@ -17,9 +17,24 @@ export type RentalListItemProps = {
   checkinAt: string;
   checkoutAt?: string;
   total?: number;
+  isInCart?: boolean;
   onDeleteMenuPress?: () => void;
   onItemPress?: () => void;
 } & XStackProps;
+
+const InCartBadge = () => (
+  <XStack
+    backgroundColor="$green5"
+    paddingHorizontal="$2"
+    paddingVertical="$1"
+    borderRadius="$10"
+    alignSelf="flex-start"
+  >
+    <Paragraph size="$1" color="$green11">
+      In Cart
+    </Paragraph>
+  </XStack>
+);
 
 export const RentalListItem = ({
   code,
@@ -29,6 +44,7 @@ export const RentalListItem = ({
   checkinAt,
   checkoutAt,
   total,
+  isInCart,
   onDeleteMenuPress,
   onItemPress,
   ...xStackProps
@@ -43,8 +59,20 @@ export const RentalListItem = ({
   return (
     <ListItem
       title={name}
-      subtitle={variantName}
+      subtitle={
+        isInCart ? (
+          <YStack gap="$1">
+            <Paragraph textTransform="none" ellipse size="$6">
+              {variantName}
+            </Paragraph>
+            <InCartBadge />
+          </YStack>
+        ) : (
+          variantName
+        )
+      }
       backgroundColor="$background"
+      opacity={isInCart ? 0.6 : 1}
       theme={checkoutAt ? 'gray' : 'red'}
       onPress={onItemPress}
       menus={
