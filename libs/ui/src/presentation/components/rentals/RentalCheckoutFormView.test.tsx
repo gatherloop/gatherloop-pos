@@ -22,9 +22,11 @@ const twoRentalValues: RentalCheckoutForm = {
 const Wrapper = ({
   defaultValues,
   serverError,
+  isSubmitSuccess = false,
 }: {
   defaultValues: RentalCheckoutForm;
   serverError?: string;
+  isSubmitSuccess?: boolean;
 }) => {
   const form = useForm<RentalCheckoutForm>({ defaultValues });
   const rentalsFieldArray = useFieldArray({
@@ -39,6 +41,7 @@ const Wrapper = ({
       onSubmit={jest.fn()}
       isSubmitDisabled={false}
       isSubmitting={false}
+      isSubmitSuccess={isSubmitSuccess}
       RentalItemSelect={() => <Text color="$color">Rental Picker</Text>}
       rentalsFieldArray={rentalsFieldArray}
       serverError={serverError}
@@ -157,6 +160,36 @@ describe('RentalCheckoutFormView', () => {
       expect(
         screen.getByText('Failed to submit. Please try again.')
       ).toBeTruthy();
+    });
+
+    describe('close-on-success (PRD FR-3)', () => {
+      it('closes the cart sheet once isSubmitSuccess flips to true', async () => {
+        const user = userEvent.setup();
+        const { rerender } = render(
+          <Wrapper defaultValues={oneRentalValues} isSubmitSuccess={false} />
+        );
+
+        await user.click(screen.getByText(/View Cart/));
+        expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
+
+        rerender(
+          <Wrapper defaultValues={oneRentalValues} isSubmitSuccess={true} />
+        );
+
+        expect(screen.queryByRole('button', { name: 'Submit' })).toBeNull();
+        expect(
+          screen.queryByRole('button', { name: 'Close Cart' })
+        ).toBeNull();
+      });
+
+      it('does not open the sheet on its own when isSubmitSuccess is already true on mount', () => {
+        render(
+          <Wrapper defaultValues={oneRentalValues} isSubmitSuccess={true} />
+        );
+
+        expect(screen.queryByRole('button', { name: 'Submit' })).toBeNull();
+        expect(screen.getByText(/View Cart/)).toBeTruthy();
+      });
     });
   });
 });

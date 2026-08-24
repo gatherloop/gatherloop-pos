@@ -28,6 +28,7 @@ export type RentalCheckoutFormViewProps = {
   onSubmit: (form: RentalCheckoutForm) => void;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
+  isSubmitSuccess: boolean;
   RentalItemSelect: () => ReactNode;
   rentalsFieldArray: UseFieldArrayReturn<RentalCheckoutForm, 'rentals', 'key'>;
   serverError?: string;
@@ -38,6 +39,7 @@ export const RentalCheckoutFormView = ({
   onSubmit,
   isSubmitDisabled,
   isSubmitting,
+  isSubmitSuccess,
   RentalItemSelect,
   rentalsFieldArray,
   serverError,
@@ -53,6 +55,14 @@ export const RentalCheckoutFormView = ({
   useEffect(() => {
     if (rentalsFieldArray.fields.length === 0) setIsCartSheetOpen(false);
   }, [rentalsFieldArray.fields.length]);
+
+  // A successful submit must close the cart sheet before the redirect to the
+  // transaction detail screen, or a modal `Sheet` left mounted can paint its
+  // overlay over the destination on native (PRD FR-3, mirroring
+  // `RentalCheckinFormView`'s close-on-success effect).
+  useEffect(() => {
+    if (isSubmitSuccess) setIsCartSheetOpen(false);
+  }, [isSubmitSuccess]);
 
   const submitButton = (
     <Button
