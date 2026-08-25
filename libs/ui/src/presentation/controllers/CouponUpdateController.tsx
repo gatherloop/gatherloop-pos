@@ -17,7 +17,7 @@ export const useCouponUpdateController = (usecase: CouponUpdateUsecase) => {
   }, [toast, state.type]);
 
   const form = useForm({
-    values: state.values,
+    defaultValues: state.values,
     resolver: zodResolver(
       z.object({
         code: z.string().min(1),
@@ -26,6 +26,12 @@ export const useCouponUpdateController = (usecase: CouponUpdateUsecase) => {
       })
     ),
   });
+
+  useEffect(() => {
+    if (state.type === 'loaded') {
+      form.reset(state.values);
+    }
+  }, [state.type, state.values, form]);
 
   return {
     state,

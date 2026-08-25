@@ -18,7 +18,7 @@ export const useBudgetUpdateController = (usecase: BudgetUpdateUsecase) => {
   }, [toast, state.type]);
 
   const form = useForm({
-    values: state.values,
+    defaultValues: state.values,
     resolver: zodResolver(
       z.object({
         name: z.string().min(1),
@@ -26,6 +26,12 @@ export const useBudgetUpdateController = (usecase: BudgetUpdateUsecase) => {
       })
     ),
   });
+
+  useEffect(() => {
+    if (state.type === 'loaded') {
+      form.reset(state.values);
+    }
+  }, [state.type, state.values, form]);
 
   const variant = match(state)
     .returnType<BudgetFormViewProps['variant']>()

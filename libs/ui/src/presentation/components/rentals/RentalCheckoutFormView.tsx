@@ -16,7 +16,7 @@ import {
   UseFieldArrayReturn,
   UseFormReturn,
 } from 'react-hook-form';
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useState } from 'react';
 import { RentalCheckoutCartView } from './RentalCheckoutCartView';
 import { calculateSubtotal } from './rentalPricing';
 import { FloatingCartButton, Sheet, useIsCompactLayout } from '../base';
@@ -49,20 +49,15 @@ export const RentalCheckoutFormView = ({
   const [isCartSheetOpen, setIsCartSheetOpen] = useState(false);
 
   // Mirrors the button's own visibility rule (PRD Open Question 2): once the
-  // last rental is removed there is nothing left to submit, so the sheet
-  // closes itself rather than stranding staff on an empty cart with a dead
-  // Submit button.
-  useEffect(() => {
-    if (rentalsFieldArray.fields.length === 0) setIsCartSheetOpen(false);
-  }, [rentalsFieldArray.fields.length]);
-
-  // A successful submit must close the cart sheet before the redirect to the
-  // transaction detail screen, or a modal `Sheet` left mounted can paint its
-  // overlay over the destination on native (PRD FR-3, mirroring
-  // `RentalCheckinFormView`'s close-on-success effect).
-  useEffect(() => {
-    if (isSubmitSuccess) setIsCartSheetOpen(false);
-  }, [isSubmitSuccess]);
+  // last rental is removed there is nothing left to submit, so the sheet is
+  // forced closed rather than stranding staff on an empty cart with a dead
+  // Submit button. A successful submit forces it closed too, so it can't be
+  // left mounted painting its overlay over the destination screen on native
+  // during the redirect (PRD FR-3, mirroring `RentalCheckinFormView`'s
+  // close-on-success behavior). Derived during render instead of an effect
+  // so the sheet never flashes open on the frame before it closes.
+  const isCartSheetVisible =
+    isCartSheetOpen && rentalsFieldArray.fields.length > 0 && !isSubmitSuccess;
 
   const submitButton = (
     <Button
@@ -112,7 +107,7 @@ export const RentalCheckoutFormView = ({
               )}
             </YStack>
 
-            <Sheet isOpen={isCartSheetOpen} onOpenChange={setIsCartSheetOpen}>
+            <Sheet isOpen={isCartSheetVisible} onOpenChange={setIsCartSheetOpen}>
               {/* Tamagui's modal `Sheet` portals its content, which on some
                   platforms (e.g. Android) does not carry the ambient React
                   context down from the outer `FormProvider` above. The cart

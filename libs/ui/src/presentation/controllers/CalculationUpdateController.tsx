@@ -20,7 +20,7 @@ export const useCalculationUpdateController = (
   }, [toast, state.type]);
 
   const form = useForm({
-    values: state.values,
+    defaultValues: state.values,
     resolver: zodResolver(
       z.object({
         walletId: z.number(),
@@ -39,6 +39,12 @@ export const useCalculationUpdateController = (
       { raw: true }
     ),
   });
+
+  useEffect(() => {
+    if (state.type === 'loaded') {
+      form.reset(state.values);
+    }
+  }, [state.type, state.values, form]);
 
   return {
     state,

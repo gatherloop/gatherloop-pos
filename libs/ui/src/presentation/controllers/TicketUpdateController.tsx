@@ -17,7 +17,7 @@ export const useTicketUpdateController = (usecase: TicketUpdateUsecase) => {
   }, [toast, state.type]);
 
   const form = useForm({
-    values: state.values,
+    defaultValues: state.values,
     resolver: zodResolver(
       z.object({
         code: z.string().min(1),
@@ -25,6 +25,12 @@ export const useTicketUpdateController = (usecase: TicketUpdateUsecase) => {
       })
     ),
   });
+
+  useEffect(() => {
+    if (state.type === 'loaded') {
+      form.reset(state.values);
+    }
+  }, [state.type, state.values, form]);
 
   return {
     state,
