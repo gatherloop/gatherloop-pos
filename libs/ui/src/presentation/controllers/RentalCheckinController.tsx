@@ -16,7 +16,7 @@ export const useRentalCheckinController = (usecase: RentalCheckinUsecase) => {
   }, [toast, state.type]);
 
   const form = useForm({
-    values: state.values,
+    defaultValues: state.values,
     resolver: zodResolver(
       z.object({
         name: z.string().min(1),
@@ -35,6 +35,12 @@ export const useRentalCheckinController = (usecase: RentalCheckinUsecase) => {
       { raw: true }
     ),
   });
+
+  useEffect(() => {
+    if (state.type === 'loaded' && !form.formState.isDirty) {
+      form.reset(state.values);
+    }
+  }, [state.type, state.values, form]);
 
   const rentalsFieldArray = useFieldArray<RentalCheckinForm, 'rentals', 'key'>({
     name: 'rentals',

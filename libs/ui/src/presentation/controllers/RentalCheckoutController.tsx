@@ -20,7 +20,7 @@ export const useRentalCheckoutController = (usecase: RentalCheckoutUsecase) => {
   }, [toast, state.type]);
 
   const form = useForm({
-    values: state.values,
+    defaultValues: state.values,
     resolver: zodResolver(
       z.object({
         rentals: z.array(z.lazy(() => z.any())).min(1),
@@ -29,6 +29,12 @@ export const useRentalCheckoutController = (usecase: RentalCheckoutUsecase) => {
       { raw: true }
     ),
   });
+
+  useEffect(() => {
+    if (state.type === 'loaded' && !form.formState.isDirty) {
+      form.reset(state.values);
+    }
+  }, [state.type, state.values, form]);
 
   const rentalsFieldArray = useFieldArray<RentalCheckoutForm, 'rentals', 'key'>(
     {

@@ -34,9 +34,15 @@ export const useStockCheckUpdateController = (
   }, [toast, state.type]);
 
   const form = useForm({
-    values: state.values,
+    defaultValues: state.values,
     resolver: zodResolver(stockCheckSchema),
   });
+
+  useEffect(() => {
+    if (state.type === 'loaded' && !form.formState.isDirty) {
+      form.reset(state.values);
+    }
+  }, [state.type, state.values, form]);
 
   const [query, setQuery] = useState('');
   const [showOnlyPending, setShowOnlyPending] = useState(false);

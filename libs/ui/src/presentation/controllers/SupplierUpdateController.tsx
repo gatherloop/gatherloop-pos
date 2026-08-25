@@ -16,7 +16,7 @@ export const useSupplierUpdateController = (usecase: SupplierUpdateUsecase) => {
   }, [toast, state.type]);
 
   const form = useForm({
-    values: state.values,
+    defaultValues: state.values,
     resolver: zodResolver(
       z.object({
         name: z.string().min(1),
@@ -26,6 +26,12 @@ export const useSupplierUpdateController = (usecase: SupplierUpdateUsecase) => {
       })
     ),
   });
+
+  useEffect(() => {
+    if (state.type === 'loaded' && !form.formState.isDirty) {
+      form.reset(state.values);
+    }
+  }, [state.type, state.values, form]);
 
   return {
     state,

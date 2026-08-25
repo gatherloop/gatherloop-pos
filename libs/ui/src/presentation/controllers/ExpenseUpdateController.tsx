@@ -16,7 +16,7 @@ export const useExpenseUpdateController = (usecase: ExpenseUpdateUsecase) => {
   }, [toast, state.type]);
 
   const form = useForm({
-    values: state.values,
+    defaultValues: state.values,
     resolver: zodResolver(
       z.object({
         walletId: z.number(),
@@ -38,6 +38,12 @@ export const useExpenseUpdateController = (usecase: ExpenseUpdateUsecase) => {
       { raw: true }
     ),
   });
+
+  useEffect(() => {
+    if (state.type === 'loaded' && !form.formState.isDirty) {
+      form.reset(state.values);
+    }
+  }, [state.type, state.values, form]);
 
   return {
     state,

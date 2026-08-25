@@ -16,7 +16,7 @@ export const useProductUpdateController = (usecase: ProductUpdateUsecase) => {
   }, [toast, state.type]);
 
   const form = useForm({
-    values: state.values,
+    defaultValues: state.values,
     resolver: zodResolver(
       z.object({
         categoryId: z.number(),
@@ -31,6 +31,12 @@ export const useProductUpdateController = (usecase: ProductUpdateUsecase) => {
       { raw: true }
     ),
   });
+
+  useEffect(() => {
+    if (state.type === 'loaded' && !form.formState.isDirty) {
+      form.reset(state.values);
+    }
+  }, [state.type, state.values, form]);
 
   return {
     state,
