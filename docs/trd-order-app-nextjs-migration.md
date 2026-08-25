@@ -303,27 +303,33 @@ story renders**, verified page by page, with the a11y and interactions addons wo
 out to be more than one PR's worth of work, it splits off into its own TRD without blocking anything
 else here — P11 depends on nothing after P8.
 
-### D12 — Add JS CI before the migration starts, not after
+### D12 — The order e2e suite runs in CI; a general JS CI job does not
 
-The repo currently runs **no** JavaScript tests in CI: `deploy-api.yml` runs Go lint and tests,
-`deploy-pages.yml` only builds. Every phase in this plan is verified by hand today, which is exactly
-the wrong footing for a twelve-PR migration that touches a shared library.
+The repo runs **no** JavaScript tests in CI: `deploy-api.yml` runs Go lint and tests,
+`deploy-pages.yml` only builds. Two things could be done about that, and only one is in scope.
 
-CI lands **first**, as P0, so every phase after it is checked automatically:
+**In scope — `ci.yml`, job `e2e-order` (P5).** A MySQL service container, the `migrate` CLI against
+`apps/api/migrations`, `make -C apps/api seed` for the staff user `apps/order-e2e/src/utils/api.ts`
+logs in as, `go run` the API on `:8080`, then `nx run order-next-e2e:e2e`. This one earns its keep
+here specifically: the parity contract in §3 — the menu not remounting behind the item sheet, one
+table resolve per visit, the cart surviving a reload — is exactly what the happy-path spec walks, and
+it is the **only** thing that can catch a D4 regression without a person remembering to check. It
+also needs `actions/setup-go` for reasons beyond the API build: the `@nx-go/nx-go` plugin shells out
+to `go` while building the Nx project graph, the same reason `vercel.json` installs a Go toolchain
+before `nx run web:build` (commit `fcb97e8`).
 
-- **`ci.yml`, job `test`** — on every pull request and push to `main`: `npm ci`, `nx run
-  api-contract:generate:ts` (`src/__generated__` is gitignored, so nothing compiles without it),
-  then `nx run-many --target=lint --all` and `nx run-many --target=test --all --passWithNoTests`.
-  Needs `actions/setup-go` even though no Go is compiled: the `@nx-go/nx-go` plugin shells out to
-  `go` while building the project graph, which is the same reason `vercel.json` installs a Go
-  toolchain before `nx run web:build` (commit `fcb97e8`).
-- **`ci.yml`, job `e2e-order`** — lands as P5, once there is a Next app to run it against. Heavier:
-  a MySQL service container, the `migrate` CLI against `apps/api/migrations`, `make -C apps/api seed`
-  for the staff user `apps/order-e2e/src/utils/api.ts` logs in as, `go run` the API on `:8080`, then
-  `nx run order-e2e:e2e`. It is the only thing that can catch a D4 regression automatically, so it
-  is worth the setup — but it is a separate job and a separate PR, and a red `e2e-order` must not be
-  the thing that teaches us the MySQL wiring is flaky. Start it as non-blocking; promote it to
-  required once it has been green for a week.
+**Out of scope — a `lint` + `nx run-many --target=test` job on every PR.** It is worth having, but it
+is pre-existing debt rather than part of this migration: it would have to start by fixing or
+quarantining whatever is already red, which is unrelated work landing in the critical path of a
+customer-facing cutover. It is a one-file PR whenever someone wants it.
+
+**What that costs, stated plainly:** phases P1–P4 are verified only by the manual checks written into
+each phase below, and the `libs/ui` test suite is only run locally until P9 touches it. The mitigation
+is that each phase names its own checks explicitly and P5 lands as early as it can — right after
+there is an app to point it at.
+
+`e2e-order` starts **non-blocking**: a red job must not be the thing that teaches us the MySQL wiring
+is flaky. Promote it to a required check once it has been green for a week.
 
 ### D13 — API calls go through a same-origin `rewrites()` proxy
 
@@ -522,6 +528,7 @@ its webpack equivalent.
 | Hydration mismatch from `react-native-web` | Low | D5's mount gate means the server emits an empty shell — there is nothing to mismatch |
 | **Storybook loses stories in the webpack migration** (D11) — the Vite config encodes a dozen hard-won fixes for RN-web/Tamagui/esbuild, and webpack will fail differently | Medium, contained | P11 depends on nothing else and blocks nothing; its acceptance test is every story rendering, checked page by page. If it grows past one PR it becomes its own TRD. Storybook is a development surface — a delay there costs no customer anything |
 | `e2e-order` CI job is flaky (MySQL service, migrations, seeds, a real Go API) | Medium | Land it non-blocking (D12) and promote it to required only after a week green |
+| **P1–P4 have no automated check** — there is no JS CI before P5 (D12), so a regression in `libs/ui` or the new app rides to the next phase unnoticed | Medium | Every phase below states its own manual checks, and they are the acceptance criteria, not suggestions. P5 lands as early as it can. Run `nx run ui:test` locally on any PR that touches `libs/ui` (P3 and P9 do) |
 | The proxy (D13) puts Vercel on the request path for **every** API call — an outage or plan limit there now breaks ordering, where before only the static shell depended on Vercel | Low, high impact | The VPS API stays directly reachable, so the fallback is one env var (`NEXT_PUBLIC_API_PROXY_BASE_URL` back to the API origin) plus adding the origin to `CORS_ALLOWED_ORIGINS` — keep that pair written down in the runbook, since the allowlist entry is deliberately absent (D13) |
 | A misconfigured rewrite destination fails at **runtime**, not build time — `next build` succeeds with a wrong or empty `NEXT_PUBLIC_API_BASE_URL` and every API call 404s | Medium | P1's verification includes hitting a proxied endpoint, and the e2e suite (P4/P5) exercises the real path end to end |
 
@@ -533,8 +540,7 @@ Each phase is one PR. Every phase before P7 leaves the live GitHub Pages app unt
 
 | # | PR title | Depends on | Size |
 |---|---|---|---|
-| P0 | `ci: lint and unit tests on pull requests` | — | S |
-| P1 | `chore(order-next): scaffold the Next.js customer app` | P0 | M |
+| P1 | `chore(order-next): scaffold the Next.js customer app` | — | M |
 | P2 | `feat(order-next): table shell and menu routes` | P1 | M |
 | P3 | `feat(order-next): cart, cart item edit and checkout routes` | P2 | M |
 | P4 | `test(order-e2e): run the happy path against the Next app` | P3 | S |
@@ -548,16 +554,6 @@ Each phase is one PR. Every phase before P7 leaves the live GitHub Pages app unt
 
 P5 and P11 are the two that can move: P5 can land any time after P4 (or earlier, as a Vite-target
 job), and P11 only needs the Vite app gone (P8). Everything else is a straight line.
-
-### P0 — Lint and unit tests on pull requests
-
-**Adds** `.github/workflows/ci.yml` with a single `test` job per D12: `pull_request` + `push` to
-`main`, Node 20 + Go (for the Nx graph), `npm ci`, `nx run api-contract:generate:ts`,
-`nx run-many --target=lint --all`, `nx run-many --target=test --all --passWithNoTests`.
-
-**Verify:** the job is green on its own PR, and deliberately red when a test is broken in a scratch
-commit. Fix or explicitly quarantine anything already failing — this is the baseline every later
-phase is measured against, so it has to start green.
 
 ### P1 — Scaffold the Next.js customer app
 
@@ -625,10 +621,12 @@ against a locally running API.
 
 ### P5 — Order e2e job in CI
 
-**Touches** `.github/workflows/ci.yml`: adds the `e2e-order` job described in D12 — MySQL service
-container, `migrate` against `apps/api/migrations`, `make -C apps/api seed`, the API on `:8080`,
-Playwright against `order-next-e2e`. Uploads the Playwright report on failure. **Non-blocking**
-(`continue-on-error`) until it has a week of green runs.
+**Adds** `.github/workflows/ci.yml` with the single `e2e-order` job described in D12 — Node 20 + Go,
+`npm ci`, `nx run api-contract:generate:ts` and `generate:go` (`src/__generated__` is gitignored, so
+neither the app nor the API compiles without them), a MySQL service container, `migrate` against
+`apps/api/migrations`, `make -C apps/api seed`, the API on `:8080`, then Playwright against
+`order-next-e2e`. Uploads the Playwright report on failure. **Non-blocking** (`continue-on-error`)
+until it has a week of green runs.
 
 **Verify:** the job passes on its own PR and on a re-run (the same seeded catalog is created per run
 with a `Date.now()` suffix, so reruns must not collide). This is the phase that makes a D4 regression
@@ -731,7 +729,7 @@ and can ship as their own PR the moment step 2 is done. Nothing else in this pla
 | `__VITE_*` globals in shared libs | 0 (from 2) |
 | `OPTIONS` preflights on cart mutations | 0 (from 1 per request) — every API call is same-origin (D13) |
 | `CORS_ALLOWED_ORIGINS` on the VPS | Unchanged; a preview deployment works against the real API without touching it |
-| JS tests in CI | `nx run-many --target=test --all` green on every PR (from: no JS CI at all) |
+| Order happy path in CI | `e2e-order` green on every PR (from: no JS CI at all) |
 | `npm ls vite` at the repo root | Empty (`docs-site` keeps VitePress in its own project — D11) |
 | Every Storybook story | Renders under the webpack builder, light and dark |
 
@@ -746,7 +744,7 @@ and can ship as their own PR the moment step 2 is done. Nothing else in this pla
 | Hostname | The Vercel-assigned `*.vercel.app` host; no custom domain for now, and the host stays in an env var so adopting one later is a config change | D2, §5.5 |
 | Keep an `/order` path segment? | No. The app owns the root of its host: `https://<app>.vercel.app/t/{code}` | D3 |
 | Same-origin API proxy | **Included in this migration.** `rewrites()` maps `/api/*` to the VPS, so the browser never leaves its own origin: no CORS, no per-cart preflight, and preview deployments work against the real API. Cost: Vercel is on the path for every API call, and the destination is baked at build time | D13, §5.2, §5.5 |
-| JS CI | Added, and added **first** so the migration itself is the first thing it protects: lint + unit tests in P0, order e2e in P5 | D12, P0, P5 |
+| JS CI | The order e2e suite goes into CI (P5) because it is what guards the parity contract; a general lint + unit-test job does **not** — it is pre-existing debt, not migration work, and a one-file PR whenever it is wanted | D12, P5 |
 | Vite | Leaves the root workspace entirely, Storybook included; `docs-site`'s VitePress is the one carve-out and lives in a separate npm project | D11, P11 |
 
 **Still open:**
