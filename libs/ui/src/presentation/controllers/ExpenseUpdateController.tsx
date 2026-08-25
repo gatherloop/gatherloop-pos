@@ -1,7 +1,7 @@
 import { useToastController } from '@tamagui/toast';
 import { ExpenseUpdateUsecase } from '../../domain';
 import { useController } from './controller';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -39,9 +39,11 @@ export const useExpenseUpdateController = (usecase: ExpenseUpdateUsecase) => {
     ),
   });
 
+  const hasFilledFormRef = useRef(false);
   useEffect(() => {
-    if (state.type === 'loaded' && !form.formState.isDirty) {
+    if (state.type === 'loaded' && !hasFilledFormRef.current) {
       form.reset(state.values);
+      hasFilledFormRef.current = true;
     }
   }, [state.type, state.values, form]);
 
