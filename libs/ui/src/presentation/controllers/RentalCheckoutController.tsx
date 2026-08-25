@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import {
   Rental,
   RentalCheckoutUsecase,
@@ -20,7 +20,7 @@ export const useRentalCheckoutController = (usecase: RentalCheckoutUsecase) => {
   }, [toast, state.type]);
 
   const form = useForm({
-    values: state.values,
+    defaultValues: state.values,
     resolver: zodResolver(
       z.object({
         rentals: z.array(z.lazy(() => z.any())).min(1),
@@ -29,6 +29,14 @@ export const useRentalCheckoutController = (usecase: RentalCheckoutUsecase) => {
       { raw: true }
     ),
   });
+
+  const hasFilledFormRef = useRef(false);
+  useEffect(() => {
+    if (state.type === 'loaded' && !hasFilledFormRef.current) {
+      form.reset(state.values);
+      hasFilledFormRef.current = true;
+    }
+  }, [state.type, state.values, form]);
 
   const rentalsFieldArray = useFieldArray<RentalCheckoutForm, 'rentals', 'key'>(
     {

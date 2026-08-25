@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Variant,
   TransactionForm,
@@ -41,7 +41,7 @@ export const useTransactionUpdateController = (
   }, [toast, state.type]);
 
   const form = useForm({
-    values: state.values,
+    defaultValues: state.values,
     resolver: zodResolver(
       z.object({
         name: z.string().min(1),
@@ -62,6 +62,14 @@ export const useTransactionUpdateController = (
       { raw: true }
     ),
   });
+
+  const hasFilledFormRef = useRef(false);
+  useEffect(() => {
+    if (state.type === 'loaded' && !hasFilledFormRef.current) {
+      form.reset(state.values);
+      hasFilledFormRef.current = true;
+    }
+  }, [state.type, state.values, form]);
 
   const itemsFieldArray = useFieldArray<
     TransactionForm,

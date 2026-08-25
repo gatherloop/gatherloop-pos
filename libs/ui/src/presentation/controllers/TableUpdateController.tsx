@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { TableUpdateUsecase } from '../../domain';
 import { useController } from './controller';
 import { useToastController } from '@tamagui/toast';
@@ -17,7 +17,7 @@ export const useTableUpdateController = (usecase: TableUpdateUsecase) => {
   }, [toast, state.type]);
 
   const form = useForm({
-    values: state.values,
+    defaultValues: state.values,
     resolver: zodResolver(
       z.object({
         label: z.string().min(1),
@@ -25,6 +25,14 @@ export const useTableUpdateController = (usecase: TableUpdateUsecase) => {
       })
     ),
   });
+
+  const hasFilledFormRef = useRef(false);
+  useEffect(() => {
+    if (state.type === 'loaded' && !hasFilledFormRef.current) {
+      form.reset(state.values);
+      hasFilledFormRef.current = true;
+    }
+  }, [state.type, state.values, form]);
 
   return {
     state,
