@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Variant,
   TransactionForm,
@@ -63,9 +63,11 @@ export const useTransactionUpdateController = (
     ),
   });
 
+  const hasFilledFormRef = useRef(false);
   useEffect(() => {
-    if (state.type === 'loaded' && !form.formState.isDirty) {
+    if (state.type === 'loaded' && !hasFilledFormRef.current) {
       form.reset(state.values);
+      hasFilledFormRef.current = true;
     }
   }, [state.type, state.values, form]);
 

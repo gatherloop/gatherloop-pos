@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import {
   Rental,
   RentalCheckoutUsecase,
@@ -30,9 +30,11 @@ export const useRentalCheckoutController = (usecase: RentalCheckoutUsecase) => {
     ),
   });
 
+  const hasFilledFormRef = useRef(false);
   useEffect(() => {
-    if (state.type === 'loaded' && !form.formState.isDirty) {
+    if (state.type === 'loaded' && !hasFilledFormRef.current) {
       form.reset(state.values);
+      hasFilledFormRef.current = true;
     }
   }, [state.type, state.values, form]);
 

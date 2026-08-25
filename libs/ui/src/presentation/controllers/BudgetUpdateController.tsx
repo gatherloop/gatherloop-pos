@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { BudgetUpdateUsecase } from '../../domain';
 import { useController } from './controller';
 import { useToastController } from '@tamagui/toast';
@@ -27,9 +27,11 @@ export const useBudgetUpdateController = (usecase: BudgetUpdateUsecase) => {
     ),
   });
 
+  const hasFilledFormRef = useRef(false);
   useEffect(() => {
-    if (state.type === 'loaded' && !form.formState.isDirty) {
+    if (state.type === 'loaded' && !hasFilledFormRef.current) {
       form.reset(state.values);
+      hasFilledFormRef.current = true;
     }
   }, [state.type, state.values, form]);
 
