@@ -6,10 +6,20 @@
   "tags": [],
   "targets": {
     "dev": {
-      "dependsOn": []
+      "dependsOn": [
+        {
+          "projects": "api-contract",
+          "target": "generate:ts"
+        }
+      ]
     },
     "build": {
-      "dependsOn": []
+      "dependsOn": [
+        {
+          "projects": "api-contract",
+          "target": "generate:ts"
+        }
+      ]
     }
   }
 }
