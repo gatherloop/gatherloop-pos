@@ -1,7 +1,7 @@
 # TRD — Migrating `apps/order` from Vite SPA to Next.js
 
 **Status:** proposed
-**Scope:** `apps/order`, `apps/order-e2e`, `libs/ui` (order slices + navigation port), `libs/api-contract` (base-URL resolution), `docs-site` (`/order` path), `.github/workflows/deploy-pages.yml`, hosting
+**Scope:** `apps/order`, `apps/order-e2e`, `libs/ui` (order slices + navigation port), `libs/api-contract` (base-URL resolution), `docs-site` (`/order` path), `.github/workflows/` (deploy + new CI), hosting, Storybook's builder
 **Non-scope:** `apps/api`, `apps/web` (POS) behaviour, `apps/mobile`, the customer UI itself — no screen, copy, layout or interaction changes
 **Date of research:** 2026-08-25 (all claims below were checked against the code at `fcb97e8`)
 
@@ -79,7 +79,7 @@ Two structural facts fall out of that table, and they are the crux of this migra
 - `MenuList` (resp. `Cart`) stays mounted while the detail sheet (resp. edit modal) is open. The
   menu's scroll position, search text and category filter survive opening and closing an item.
 
-### 2.3 Runtime posture (all of it stays)
+### 2.3 Runtime posture (all of it stays, except where D13 says otherwise)
 
 - **No SSR.** Every usecase starts `idle` and fetches after mount (D18). First paint is the shell +
   skeletons.
@@ -87,7 +87,9 @@ Two structural facts fall out of that table, and they are the crux of this migra
   `document.cookie`, `window.localStorage` and `crypto.randomUUID()` — i.e. it is constructed inside
   `useState(() => …)` in `SessionProvider` and **cannot run during a server render**.
 - **Direct, cross-origin API calls** to `https://<vps-ip>.sslip.io` with `withCredentials: false` and
-  an `X-Session-Id` header scoped to `/carts/*` (D21/D22).
+  an `X-Session-Id` header scoped to `/carts/*` (D21/D22). **This is the one runtime behaviour the
+  migration deliberately changes** — the calls become same-origin through a Next rewrite (D13). The
+  header, the session and every response are unchanged; only the hop is.
 - **Cart lives above the router** (`CartProvider`), so it survives every navigation.
 
 ### 2.4 Hosting and the printed QR codes
@@ -160,17 +162,8 @@ variable plus a QR reprint, not a code change.
 implementable from the same phase plan — phases 1–4 are host-agnostic — at the cost of D4 collapsing
 into a catch-all page.
 
-**Not in scope: a same-origin API proxy.** Today the browser calls the API at a *different* origin
-(`https://<vps-ip>.sslip.io`), so the Go API has to grant CORS permission, and the `X-Session-Id`
-header on `/carts/*` makes the browser send an extra `OPTIONS` "preflight" request before each cart
-call — two round trips instead of one. Now that the order app has a server, `next.config.js` could
-declare `rewrites()` mapping `/api/*` to the VPS, exactly as the POS does: the page would call
-`https://<app>.vercel.app/api/carts/...`, the same origin it was served from, so no CORS and no
-preflight — Vercel forwards the request server-side. The cost is an extra network hop through Vercel
-on every API call, plus Vercel function/bandwidth usage. **Deliberately deferred:** it changes the
-runtime posture (D21/D22) rather than the framework, and it can be adopted later as a self-contained
-change to one config file and one environment variable. Revisit if preflight latency shows up in the
-field.
+**In scope, decided separately: a same-origin API proxy.** Having a server is precisely what makes
+`rewrites()` possible, and it is adopted here — see **D13**.
 
 ### D3 — URL **paths** are preserved byte-for-byte; the old **origin** becomes a permanent redirect
 
@@ -253,13 +246,10 @@ smeared across the risky phases.
 ### D8 — Configuration moves to `NEXT_PUBLIC_*`, and `libs/api-contract` needs **no** change
 
 `client.ts` already resolves `process.env['NEXT_PUBLIC_API_PROXY_BASE_URL'] ?? __VITE_API_BASE_URL__
-?? Config['API_BASE_URL']`. The order app sets `NEXT_PUBLIC_API_PROXY_BASE_URL` to the API origin and
-falls straight into the first branch — no edit to a file shared with the POS and mobile.
-
-The name is a small lie for this app (nothing is proxied), and it is deliberately tolerated: the POS
-sets `NEXT_PUBLIC_API_BASE_URL` to its *rewrite destination*, so teaching `client.ts` to read that
-variable would silently make the POS bypass its own proxy. Renaming the variable across both apps is
-a separate, optional cleanup.
+?? Config['API_BASE_URL']`. With D13's proxy in place the order app uses that pair exactly as the POS
+does — `NEXT_PUBLIC_API_PROXY_BASE_URL=/api` for the browser, `NEXT_PUBLIC_API_BASE_URL` for the
+rewrite destination — so the variable means what it says and no file shared with the POS and mobile
+is edited.
 
 `Checkout.tsx` gains `process.env.NEXT_PUBLIC_ORDER_CHECKOUT_ENABLED === 'true'`, `||`-ed with the
 existing Vite global during coexistence, and the global is deleted in the cleanup phase.
@@ -335,6 +325,42 @@ CI lands **first**, as P0, so every phase after it is checked automatically:
   the thing that teaches us the MySQL wiring is flaky. Start it as non-blocking; promote it to
   required once it has been green for a week.
 
+### D13 — API calls go through a same-origin `rewrites()` proxy
+
+Today the browser calls `https://<vps-ip>.sslip.io` directly. Two costs follow from that, and both
+exist only because the SPA had no server to hide behind (D18):
+
+- **CORS.** The Go API has to reflect and allow the customer origin, and `EnableCORS` has to allow
+  the `X-Session-Id` header (FR-1 in the PRD).
+- **A preflight on every cart request.** `X-Session-Id` is a custom header, so the browser sends an
+  `OPTIONS` round trip before every `/carts/*` call — the exact requests a guest makes while tapping
+  quantities up and down. `sessionInterceptor.ts` already scopes the header to `/carts/*` precisely to
+  keep the public catalog GETs out of that penalty; the proxy removes the penalty itself.
+
+The order app now has a server, so it does what the POS does: `next.config.js` declares
+`rewrites()` mapping `/api/:path*` to the API, and the browser calls
+`https://<app>.vercel.app/api/carts/...` — its own origin. No CORS, no preflight; Vercel forwards
+the request server-side. `libs/api-contract`'s axios instance needs no code change, only
+`NEXT_PUBLIC_API_PROXY_BASE_URL=/api` (D8).
+
+**What this buys beyond latency:** every Vercel **preview deployment** gets a unique
+`*-git-<branch>.vercel.app` hostname. Under direct calls each of those would need adding to
+`CORS_ALLOWED_ORIGINS` or preview deploys simply would not work against a real API. Behind the proxy
+they all work, unchanged, because the browser never leaves its own origin.
+
+**Consequences, accepted:**
+
+| | |
+|---|---|
+| Every API call takes an extra hop through Vercel | Adds Vercel-to-VPS latency to each request and consumes Vercel function invocations and bandwidth on whatever plan the project is on. The order app's traffic is a handful of requests per guest per visit, so this is small — but it is now Vercel's meter, not just the VPS's |
+| The rewrite destination is baked into the routes manifest at **build** time | Changing the API origin still requires a rebuild, not a restart. D21's "an sslip.io hostname is IP-derived, so a VPS IP change means a redeploy" coupling does not go away — it moves from the client bundle to the build output |
+| `gl_session_id` now rides along on API requests | `withCredentials: false` (D22) only governs *cross-origin* requests; same-origin requests always send cookies. So the session cookie is forwarded to the Go API, which ignores it — the session still travels as the `X-Session-Id` header. Harmless, but it is a real change in what the API receives, and it means D22's setting is now inert rather than load-bearing |
+| The API sees Vercel's IPs, not guests' | Anything on the VPS that reasons about client IPs (rate limiting, logs) sees the proxy instead. Nothing does today |
+
+**The CORS allowlist is deliberately *not* updated for the order origin** (this drops a step from P6
+as originally planned). If someone later reverts to direct calls, it fails loudly in a browser
+console rather than silently working in one environment and not another.
+
 ---
 
 ## 5. Target configuration
@@ -368,7 +394,18 @@ apps/order/                          (apps/order-next until the cutover)
 
 Same `composePlugins(withNx, withTamagui)` skeleton, same `outputFileTracingRoot`,
 `transpilePackages`, `experimental.{cpus, workerThreads, reactCompiler}` and `react/compiler-runtime`
-alias. **Removed:** the `rewrites()` block (D2 — the order app calls the API directly).
+alias — **including the `rewrites()` block**, pointed at the VPS API (D13):
+
+```js
+async rewrites() {
+  return [
+    {
+      source: '/api/:path*',
+      destination: process.env.NEXT_PUBLIC_API_BASE_URL + '/:path*',
+    },
+  ];
+},
+```
 
 ### 5.3 `_app.tsx` (shape, not final code)
 
@@ -450,7 +487,8 @@ router is ready.
 
 | Variable | Where | Value | Replaces |
 |---|---|---|---|
-| `NEXT_PUBLIC_API_PROXY_BASE_URL` | order app | `https://<vps-ip>.sslip.io` | `VITE_API_BASE_URL` |
+| `NEXT_PUBLIC_API_PROXY_BASE_URL` | order app (browser) | `/api` | `VITE_API_BASE_URL` |
+| `NEXT_PUBLIC_API_BASE_URL` | order app (rewrite destination, D13) | `https://<vps-ip>.sslip.io` | — |
 | `NEXT_PUBLIC_ORDER_CHECKOUT_ENABLED` | order app | `true` / unset | `VITE_ORDER_CHECKOUT_ENABLED` |
 | `NEXT_PUBLIC_ORDER_APP_BASE_URL` | **POS** (`apps/web`) | `https://<order-host>` | hardcoded string in `tableOrderUrl.ts` |
 
@@ -484,6 +522,8 @@ its webpack equivalent.
 | Hydration mismatch from `react-native-web` | Low | D5's mount gate means the server emits an empty shell — there is nothing to mismatch |
 | **Storybook loses stories in the webpack migration** (D11) — the Vite config encodes a dozen hard-won fixes for RN-web/Tamagui/esbuild, and webpack will fail differently | Medium, contained | P11 depends on nothing else and blocks nothing; its acceptance test is every story rendering, checked page by page. If it grows past one PR it becomes its own TRD. Storybook is a development surface — a delay there costs no customer anything |
 | `e2e-order` CI job is flaky (MySQL service, migrations, seeds, a real Go API) | Medium | Land it non-blocking (D12) and promote it to required only after a week green |
+| The proxy (D13) puts Vercel on the request path for **every** API call — an outage or plan limit there now breaks ordering, where before only the static shell depended on Vercel | Low, high impact | The VPS API stays directly reachable, so the fallback is one env var (`NEXT_PUBLIC_API_PROXY_BASE_URL` back to the API origin) plus adding the origin to `CORS_ALLOWED_ORIGINS` — keep that pair written down in the runbook, since the allowlist entry is deliberately absent (D13) |
+| A misconfigured rewrite destination fails at **runtime**, not build time — `next build` succeeds with a wrong or empty `NEXT_PUBLIC_API_BASE_URL` and every API call 404s | Medium | P1's verification includes hitting a proxied endpoint, and the e2e suite (P4/P5) exercises the real path end to end |
 
 ---
 
@@ -533,8 +573,9 @@ table" screen. `_app.tsx` is §5.3 including the navigation adapter (D7) and the
 
 **Verify:** `nx run order-next:dev` serves the scan-QR screen at `/` and at an unknown path, styled,
 phone-width, in Bahasa Indonesia; `nx run order-next:build` succeeds and the production build renders
-identically (this is what proves the `_document` Tamagui CSS wiring); `nx run order:build` (Vite)
-still succeeds.
+identically (this is what proves the `_document` Tamagui CSS wiring); **`curl localhost:3000/api/public/categories`
+returns the API's response**, proving D13's rewrite resolves (a wrong destination fails here, not at
+build time); `nx run order:build` (Vite) still succeeds.
 
 ### P2 — Table shell and menu routes
 
@@ -570,7 +611,11 @@ restores the same cart (session cookie).
 **Adds** `apps/order-next-e2e/` — a Playwright project whose config points `testDir` at
 `../order-e2e/src` (the specs are shared verbatim, so the suite cannot drift) with
 `webServer: npx nx run order-next:build && npx nx run order-next:start`, `baseURL`
-`http://localhost:3000/`, and `NEXT_PUBLIC_*` env in place of `VITE_*`.
+`http://localhost:3000/`, and `NEXT_PUBLIC_*` env in place of `VITE_*` —
+`NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8080` for the rewrite, `NEXT_PUBLIC_API_PROXY_BASE_URL=/api`
+for the browser (D13). The seeding helpers in `utils/api.ts` keep talking to the API directly on
+`API_BASE_URL`: they are staff-authenticated Node calls, not browser traffic, so the proxy is
+irrelevant to them.
 **Touches** `apps/order-e2e/src/table-ordering.spec.ts`: the one assertion that reads
 `dist/order/404.html` off disk moves into its own Vite-only spec file (deleted in P8); the deep-link
 *behaviour* test stays shared and additionally asserts an HTTP 200 on the Next target.
@@ -593,13 +638,17 @@ catchable by a machine rather than by memory.
 
 **Ops, plus a small config file.** Create the Vercel project for `apps/order-next` on its
 Vercel-assigned `*.vercel.app` host (mirroring the POS project's monorepo build command, including
-the Go toolchain step the Nx graph needs), set
-`NEXT_PUBLIC_API_PROXY_BASE_URL` and `NEXT_PUBLIC_ORDER_CHECKOUT_ENABLED`, and **add the new origin
-to `CORS_ALLOWED_ORIGINS`** on the VPS (GitHub environment secret + redeploy of `apps/api`).
+the Go toolchain step the Nx graph needs) and set `NEXT_PUBLIC_API_BASE_URL`,
+`NEXT_PUBLIC_API_PROXY_BASE_URL` and `NEXT_PUBLIC_ORDER_CHECKOUT_ENABLED`.
 
-**Verify:** the production deployment of the new host serves `/t/{code}` for a real table code, adds
-an item to a cart, and shows no CORS error in the console. The GitHub Pages app is still live and
-untouched; nothing points customers at the new host yet.
+**No CORS change is needed, and none is made** (D13): the browser only ever calls the deployment's own
+origin. That is also what makes the preview deployment below work without touching the VPS at all.
+
+**Verify:** the production deployment serves `/t/{code}` for a real table code and adds an item to a
+cart; in the network panel every API request goes to `<host>/api/...` and returns 200, and **there is
+no `OPTIONS` preflight** before the cart mutation — that absence is the proof D13 landed. Confirm the
+same on a preview deployment from a branch. The GitHub Pages app is still live and untouched; nothing
+points customers at the new host yet.
 
 ### P7 — Cut QR codes over to the Next order app
 
@@ -680,6 +729,8 @@ and can ship as their own PR the moment step 2 is done. Nothing else in this pla
 | `libs/ui` routing dependencies | One (`solito/router`); `presentation/navigation/` gone |
 | Lines of routing code in `apps/order` | 0 (from 103) |
 | `__VITE_*` globals in shared libs | 0 (from 2) |
+| `OPTIONS` preflights on cart mutations | 0 (from 1 per request) — every API call is same-origin (D13) |
+| `CORS_ALLOWED_ORIGINS` on the VPS | Unchanged; a preview deployment works against the real API without touching it |
 | JS tests in CI | `nx run-many --target=test --all` green on every PR (from: no JS CI at all) |
 | `npm ls vite` at the repo root | Empty (`docs-site` keeps VitePress in its own project — D11) |
 | Every Storybook story | Renders under the webpack builder, light and dark |
@@ -694,7 +745,7 @@ and can ship as their own PR the moment step 2 is done. Nothing else in this pla
 |---|---|---|
 | Hostname | The Vercel-assigned `*.vercel.app` host; no custom domain for now, and the host stays in an env var so adopting one later is a config change | D2, §5.5 |
 | Keep an `/order` path segment? | No. The app owns the root of its host: `https://<app>.vercel.app/t/{code}` | D3 |
-| Same-origin API proxy | Deferred, not rejected — it removes CORS and the per-cart-request preflight, at the cost of an extra hop through Vercel. Adoptable later as one config file plus one env var | D2 |
+| Same-origin API proxy | **Included in this migration.** `rewrites()` maps `/api/*` to the VPS, so the browser never leaves its own origin: no CORS, no per-cart preflight, and preview deployments work against the real API. Cost: Vercel is on the path for every API call, and the destination is baked at build time | D13, §5.2, §5.5 |
 | JS CI | Added, and added **first** so the migration itself is the first thing it protects: lint + unit tests in P0, order e2e in P5 | D12, P0, P5 |
 | Vite | Leaves the root workspace entirely, Storybook included; `docs-site`'s VitePress is the one carve-out and lives in a separate npm project | D11, P11 |
 
@@ -704,9 +755,10 @@ and can ship as their own PR the moment step 2 is done. Nothing else in this pla
    a measurement. Revisit once there is a failure history to read.
 2. **Whether P11 stays one PR.** The Storybook builder swap is the only unbounded piece of work in
    this plan. If step 2 of P11 runs long, it becomes its own TRD — nothing depends on it.
-3. **Renaming `NEXT_PUBLIC_API_PROXY_BASE_URL`.** It is a misnomer for an app that proxies nothing
-   (D8). Renaming it means touching the POS's env too, so it is worth doing only alongside the proxy
-   decision above.
+3. **Whether D22 (`withCredentials: false`) still earns its place.** Behind the proxy it governs
+   nothing — same-origin requests send cookies regardless (D13) — so the order app's session cookie
+   now reaches the API even though the session travels as a header. Harmless today; worth a decision
+   if the API ever starts reading cookies on public routes.
 
 ---
 
