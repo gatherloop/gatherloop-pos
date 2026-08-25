@@ -27,7 +27,7 @@ export const useTicketUpdateController = (usecase: TicketUpdateUsecase) => {
   });
 
   useEffect(() => {
-    if (state.type === 'loaded') {
+    if (state.type === 'loaded' && !form.formState.isDirty) {
       form.reset(state.values);
     }
   }, [state.type, state.values, form]);
