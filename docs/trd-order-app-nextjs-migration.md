@@ -1,7 +1,7 @@
 # TRD — Migrating `apps/order` from Vite SPA to Next.js
 
 **Status:** proposed
-**Scope:** `apps/order`, `apps/order-e2e`, `libs/ui` (order slices + navigation port), `libs/api-contract` (base-URL resolution), `docs-site` (`/order` path), `.github/workflows/` (deploy + new CI), hosting, Storybook's builder
+**Scope:** `apps/order`, `apps/order-e2e`, `libs/ui` (order slices + navigation port), `libs/api-contract` (base-URL resolution), `docs-site` (`/order` path), `.github/workflows/deploy-pages.yml`, hosting, Storybook's builder
 **Non-scope:** `apps/api`, `apps/web` (POS) behaviour, `apps/mobile`, the customer UI itself — no screen, copy, layout or interaction changes
 **Date of research:** 2026-08-25 (all claims below were checked against the code at `fcb97e8`)
 
@@ -279,16 +279,16 @@ the repo finds four remaining consumers, and they are not equal:
 
 | Consumer | What it is | Disposition |
 |---|---|---|
-| `apps/order/vite.config.ts` | The app this TRD replaces | Deleted in P8 |
-| `apps/mobile/vite.config.ts` | A leftover from the Nx React Native generator — no `project.json` target references it, and every real mobile target is `react-native ...` | Deleted in P11 after confirming `nx show project mobile` lists no Vite-inferred target that anyone uses |
-| `libs/ui/.storybook/main.ts` | **The real work.** 150 lines of Vite-specific configuration: `optimizeDeps` include/exclude lists for every `@tamagui/*` package, an esbuild `onResolve` plugin for `@react-native/normalize-colors`, six `resolve.alias` rules mapping `react-native` → `react-native-web`, `react-native-svg` → its web build, and stubs for `solito/*`, `reanimated` and `moti` | Migrated to `@storybook/react-webpack5` in P11 |
+| `apps/order/vite.config.ts` | The app this TRD replaces | Deleted in P7 |
+| `apps/mobile/vite.config.ts` | A leftover from the Nx React Native generator — no `project.json` target references it, and every real mobile target is `react-native ...` | Deleted in P10 after confirming `nx show project mobile` lists no Vite-inferred target that anyone uses |
+| `libs/ui/.storybook/main.ts` | **The real work.** 150 lines of Vite-specific configuration: `optimizeDeps` include/exclude lists for every `@tamagui/*` package, an esbuild `onResolve` plugin for `@react-native/normalize-colors`, six `resolve.alias` rules mapping `react-native` → `react-native-web`, `react-native-svg` → its web build, and stubs for `solito/*`, `reanimated` and `moti` | Migrated to `@storybook/react-webpack5` in P10 |
 | `docs-site/` | VitePress **is** Vite | **Stays.** See below |
 
 **`docs-site` is the one carve-out, and it is not a compromise.** VitePress is a Vite application by
 construction; removing Vite there means replacing the documentation site, which has nothing to do
 with this migration. It also lives in its **own npm project** (`docs-site/package.json`, its own
 lockfile, its own `npm ci` step in CI), so Vite is not a dependency of the root workspace at all —
-it is a transitive dependency of a sibling project. After P11, `npm ls vite` at the repo root
+it is a transitive dependency of a sibling project. After P10, `npm ls vite` at the repo root
 returns nothing, and the root `package.json` no longer lists `vite`, `vitest`, `@vitest/ui`,
 `@vitejs/plugin-react`, `@tamagui/vite-plugin` or `@nx/vite` (whose plugin entry also comes out of
 `nx.json`). No test in the repo uses Vitest — every suite is Jest — so those three drop out unused.
@@ -298,38 +298,39 @@ plus `@storybook/addon-react-native-web` is the supported path for `react-native
 and Tamagui ships `tamagui-loader` for webpack (the same compilation `@tamagui/next-plugin` performs
 for `apps/web`), so every Vite-specific rule above has a webpack counterpart. What does not carry
 over is the *evidence* — those `optimizeDeps` entries were each written in response to a specific
-crash, and webpack will have its own set. P11 therefore has one acceptance test: **every existing
+crash, and webpack will have its own set. P10 therefore has one acceptance test: **every existing
 story renders**, verified page by page, with the a11y and interactions addons working. If it turns
 out to be more than one PR's worth of work, it splits off into its own TRD without blocking anything
-else here — P11 depends on nothing after P8.
+else here — P10 depends on nothing after P7.
 
-### D12 — The order e2e suite runs in CI; a general JS CI job does not
+### D12 — Verification stays local; this migration adds no CI
 
 The repo runs **no** JavaScript tests in CI: `deploy-api.yml` runs Go lint and tests,
-`deploy-pages.yml` only builds. Two things could be done about that, and only one is in scope.
+`deploy-pages.yml` only builds. Adding some was considered — both a `lint` + `nx run-many
+--target=test` job and a full `e2e-order` job — and neither lands here.
 
-**In scope — `ci.yml`, job `e2e-order` (P5).** A MySQL service container, the `migrate` CLI against
-`apps/api/migrations`, `make -C apps/api seed` for the staff user `apps/order-e2e/src/utils/api.ts`
-logs in as, `go run` the API on `:8080`, then `nx run order-next-e2e:e2e`. This one earns its keep
-here specifically: the parity contract in §3 — the menu not remounting behind the item sheet, one
-table resolve per visit, the cart surviving a reload — is exactly what the happy-path spec walks, and
-it is the **only** thing that can catch a D4 regression without a person remembering to check. It
-also needs `actions/setup-go` for reasons beyond the API build: the `@nx-go/nx-go` plugin shells out
-to `go` while building the Nx project graph, the same reason `vercel.json` installs a Go toolchain
-before `nx run web:build` (commit `fcb97e8`).
+**Why not the e2e job, specifically.** Its value would have been real: the parity contract in §3 —
+the menu not remounting behind the item sheet, one table resolve per visit, the cart surviving a
+reload — is exactly what the happy-path spec walks, so it is the one thing that could catch a D4
+regression without a person remembering to check. But the runtime is dominated by setup, not by the
+test: `npm ci`, both `api-contract` generators, a Go build, a MySQL service container, `migrate`,
+`make seed`, a Tamagui `next build` (single-threaded by config, D10) and a Playwright browser
+install all have to happen before the ~2-minute spec runs at all. That is on the order of ten minutes
+of CI on every pull request, and it buys a check that is only ever exercised by the ten PRs in
+this plan.
 
-**Out of scope — a `lint` + `nx run-many --target=test` job on every PR.** It is worth having, but it
-is pre-existing debt rather than part of this migration: it would have to start by fixing or
-quarantining whatever is already red, which is unrelated work landing in the critical path of a
-customer-facing cutover. It is a one-file PR whenever someone wants it.
+**Why not the lint/unit job either.** Worth having, but it is pre-existing debt rather than migration
+work: it would have to start by fixing or quarantining whatever is already red, landing unrelated
+work in the critical path of a customer-facing cutover.
 
-**What that costs, stated plainly:** phases P1–P4 are verified only by the manual checks written into
-each phase below, and the `libs/ui` test suite is only run locally until P9 touches it. The mitigation
-is that each phase names its own checks explicitly and P5 lands as early as it can — right after
-there is an app to point it at.
+**What that costs, stated plainly:** nothing in this plan is verified by a machine. Every phase below
+carries its own explicit manual checks, and they are acceptance criteria, not suggestions — most of
+all P2's D4 check, which gates the whole routing design. `nx run ui:test` is run locally on the two
+phases that touch `libs/ui` (P3 and P8), and the full `order-e2e` suite is run locally before the
+cutover phase (P6).
 
-`e2e-order` starts **non-blocking**: a red job must not be the thing that teaches us the MySQL wiring
-is flaky. Promote it to a required check once it has been green for a week.
+If CI is wanted later, the cheap shape is a **nightly or manually-dispatched** `e2e-order` run rather
+than a per-PR one: the same coverage, none of the per-PR wait.
 
 ### D13 — API calls go through a same-origin `rewrites()` proxy
 
@@ -363,7 +364,7 @@ they all work, unchanged, because the browser never leaves its own origin.
 | `gl_session_id` now rides along on API requests | `withCredentials: false` (D22) only governs *cross-origin* requests; same-origin requests always send cookies. So the session cookie is forwarded to the Go API, which ignores it — the session still travels as the `X-Session-Id` header. Harmless, but it is a real change in what the API receives, and it means D22's setting is now inert rather than load-bearing |
 | The API sees Vercel's IPs, not guests' | Anything on the VPS that reasons about client IPs (rate limiting, logs) sees the proxy instead. Nothing does today |
 
-**The CORS allowlist is deliberately *not* updated for the order origin** (this drops a step from P6
+**The CORS allowlist is deliberately *not* updated for the order origin** (this drops a step from P5
 as originally planned). If someone later reverts to direct calls, it fails loudly in a browser
 console rather than silently working in one environment and not another.
 
@@ -500,15 +501,15 @@ router is ready.
 
 ### 5.6 What gets deleted at the end
 
-**The app (P8):** `apps/order/index.html`, `src/main.tsx`, `src/app/app.tsx`, `src/router/**`,
+**The app (P7):** `apps/order/index.html`, `src/main.tsx`, `src/app/app.tsx`, `src/router/**`,
 `src/styles.css`, `vite.config.ts`; the `?redirect=` restoration; the `dist/order/404.html` copy step
 and the order build steps in `.github/workflows/deploy-pages.yml`.
 
-**The shared-library workarounds (P8, P9):** `libs/ui/src/presentation/navigation/**` + its
+**The shared-library workarounds (P7, P8):** `libs/ui/src/presentation/navigation/**` + its
 `index.order.ts` export; `__VITE_API_BASE_URL__` in `libs/api-contract/src/client.ts`;
 `__VITE_ORDER_CHECKOUT_ENABLED__` in `libs/ui/src/app/Checkout.tsx`.
 
-**Vite itself (P11, D11):** `apps/mobile/vite.config.ts`; `vite`, `vitest`, `@vitest/ui`,
+**Vite itself (P10, D11):** `apps/mobile/vite.config.ts`; `vite`, `vitest`, `@vitest/ui`,
 `@vitejs/plugin-react`, `@tamagui/vite-plugin` and `@nx/vite` from the root `package.json`; the
 `@nx/vite` plugin entry in `nx.json`; `libs/ui/.storybook/main.ts`'s `viteFinal` block, replaced by
 its webpack equivalent.
@@ -521,22 +522,21 @@ its webpack equivalent.
 |---|---|---|
 | **D4's layout preservation doesn't hold** — the menu remounts behind the item sheet, losing scroll/search | Low, high impact | P2 verifies it by hand (scroll the menu, open an item, close it) *before* P3 builds on it. Fallback: a single catch-all `pages/t/[[...slug]].tsx` that dispatches internally — parity is preserved, framework-idiomatic routing is not |
 | First-load JS exceeds the PRD's 250 KB gz budget | Medium | Measure `next build`'s First Load JS in P2 and P3 and record it in the PR. The order entry point (D6) already excludes the POS; if it is still over, the gap is Tamagui/RN-web, identical to what the POS ships |
-| Vercel monorepo build wiring (Nx + the `@nx-go/nx-go` graph plugin needing a `go` binary — see `vercel.json` and commit `fcb97e8`) | Medium | P6 is a standalone phase whose only deliverable is a green deploy; reuse the POS's `buildCommand` shape verbatim |
+| Vercel monorepo build wiring (Nx + the `@nx-go/nx-go` graph plugin needing a `go` binary — see `vercel.json` and commit `fcb97e8`) | Medium | P5 is a standalone phase whose only deliverable is a green deploy; reuse the POS's `buildCommand` shape verbatim |
 | Origin change resets in-flight guests' carts (`gl_session_id` is per-origin) | High, low impact | Cut over outside service hours. Carts are ephemeral by design (D3 in the PRD) |
-| A printed QR code stops working | Low, **very** high impact | The Pages shim (D3) is deployed and smoke-tested in P7 **before** `deploy-pages.yml` stops publishing the SPA; the shim is permanent, not transitional |
-| API CORS rejects the new origin | Medium, high impact | `CORS_ALLOWED_ORIGINS` on the VPS is updated in P6, one phase before any customer traffic reaches the new host |
+| A printed QR code stops working | Low, **very** high impact | The Pages shim (D3) is deployed and smoke-tested in P6 **before** `deploy-pages.yml` stops publishing the SPA; the shim is permanent, not transitional |
+| API CORS rejects the new origin | **Eliminated** | Not a risk any more: behind D13's proxy the browser never calls the API cross-origin, so `CORS_ALLOWED_ORIGINS` is not consulted and is deliberately left untouched |
 | Hydration mismatch from `react-native-web` | Low | D5's mount gate means the server emits an empty shell — there is nothing to mismatch |
-| **Storybook loses stories in the webpack migration** (D11) — the Vite config encodes a dozen hard-won fixes for RN-web/Tamagui/esbuild, and webpack will fail differently | Medium, contained | P11 depends on nothing else and blocks nothing; its acceptance test is every story rendering, checked page by page. If it grows past one PR it becomes its own TRD. Storybook is a development surface — a delay there costs no customer anything |
-| `e2e-order` CI job is flaky (MySQL service, migrations, seeds, a real Go API) | Medium | Land it non-blocking (D12) and promote it to required only after a week green |
-| **P1–P4 have no automated check** — there is no JS CI before P5 (D12), so a regression in `libs/ui` or the new app rides to the next phase unnoticed | Medium | Every phase below states its own manual checks, and they are the acceptance criteria, not suggestions. P5 lands as early as it can. Run `nx run ui:test` locally on any PR that touches `libs/ui` (P3 and P9 do) |
+| **Storybook loses stories in the webpack migration** (D11) — the Vite config encodes a dozen hard-won fixes for RN-web/Tamagui/esbuild, and webpack will fail differently | Medium, contained | P10 depends on nothing else and blocks nothing; its acceptance test is every story rendering, checked page by page. If it grows past one PR it becomes its own TRD. Storybook is a development surface — a delay there costs no customer anything |
+| **No phase has an automated check** — the repo has no JS CI and this migration adds none (D12), so a regression in `libs/ui` or the new app can ride to the next phase unnoticed | Medium | Every phase below states its own manual checks, and they are acceptance criteria, not suggestions. `nx run ui:test` locally on the phases that touch `libs/ui` (P3, P8); the full `order-e2e` suite locally before the cutover (P6) |
 | The proxy (D13) puts Vercel on the request path for **every** API call — an outage or plan limit there now breaks ordering, where before only the static shell depended on Vercel | Low, high impact | The VPS API stays directly reachable, so the fallback is one env var (`NEXT_PUBLIC_API_PROXY_BASE_URL` back to the API origin) plus adding the origin to `CORS_ALLOWED_ORIGINS` — keep that pair written down in the runbook, since the allowlist entry is deliberately absent (D13) |
-| A misconfigured rewrite destination fails at **runtime**, not build time — `next build` succeeds with a wrong or empty `NEXT_PUBLIC_API_BASE_URL` and every API call 404s | Medium | P1's verification includes hitting a proxied endpoint, and the e2e suite (P4/P5) exercises the real path end to end |
+| A misconfigured rewrite destination fails at **runtime**, not build time — `next build` succeeds with a wrong or empty `NEXT_PUBLIC_API_BASE_URL` and every API call 404s | Medium | P1's verification includes hitting a proxied endpoint, and the e2e suite (P4) exercises the real path end to end |
 
 ---
 
 ## 7. Phases
 
-Each phase is one PR. Every phase before P7 leaves the live GitHub Pages app untouched and working.
+Each phase is one PR. Every phase before P6 leaves the live GitHub Pages app untouched and working.
 
 | # | PR title | Depends on | Size |
 |---|---|---|---|
@@ -544,16 +544,15 @@ Each phase is one PR. Every phase before P7 leaves the live GitHub Pages app unt
 | P2 | `feat(order-next): table shell and menu routes` | P1 | M |
 | P3 | `feat(order-next): cart, cart item edit and checkout routes` | P2 | M |
 | P4 | `test(order-e2e): run the happy path against the Next app` | P3 | S |
-| P5 | `ci: order e2e job` | P4 | M |
-| P6 | `chore(order-next): Vercel project, env and CORS` | P4 | S |
-| P7 | `feat: cut QR codes over to the Next order app` | P6 | M |
-| P8 | `chore(order): delete the Vite app and its escape hatches` | P7 | M |
-| P9 | `refactor(ui): drop the navigation port for solito/router` | P8 | M |
-| P10 | `docs: refresh the order app's architecture notes` | P9 | S |
-| P11 | `chore: remove Vite from the workspace` | P8 | L |
+| P5 | `chore(order-next): Vercel project, env and CORS` | P4 | S |
+| P6 | `feat: cut QR codes over to the Next order app` | P5 | M |
+| P7 | `chore(order): delete the Vite app and its escape hatches` | P6 | M |
+| P8 | `refactor(ui): drop the navigation port for solito/router` | P7 | M |
+| P9 | `docs: refresh the order app's architecture notes` | P8 | S |
+| P10 | `chore: remove Vite from the workspace` | P7 | L |
 
-P5 and P11 are the two that can move: P5 can land any time after P4 (or earlier, as a Vite-target
-job), and P11 only needs the Vite app gone (P8). Everything else is a straight line.
+P10 is the only one that can move: it needs the Vite app gone (P7) and nothing needs it.
+Everything else is a straight line.
 
 ### P1 — Scaffold the Next.js customer app
 
@@ -613,26 +612,13 @@ for the browser (D13). The seeding helpers in `utils/api.ts` keep talking to the
 `API_BASE_URL`: they are staff-authenticated Node calls, not browser traffic, so the proxy is
 irrelevant to them.
 **Touches** `apps/order-e2e/src/table-ordering.spec.ts`: the one assertion that reads
-`dist/order/404.html` off disk moves into its own Vite-only spec file (deleted in P8); the deep-link
+`dist/order/404.html` off disk moves into its own Vite-only spec file (deleted in P7); the deep-link
 *behaviour* test stays shared and additionally asserts an HTTP 200 on the Next target.
 
 **Verify:** both suites green — `nx run order-e2e:e2e` (Vite) and `nx run order-next-e2e:e2e` (Next) —
 against a locally running API.
 
-### P5 — Order e2e job in CI
-
-**Adds** `.github/workflows/ci.yml` with the single `e2e-order` job described in D12 — Node 20 + Go,
-`npm ci`, `nx run api-contract:generate:ts` and `generate:go` (`src/__generated__` is gitignored, so
-neither the app nor the API compiles without them), a MySQL service container, `migrate` against
-`apps/api/migrations`, `make -C apps/api seed`, the API on `:8080`, then Playwright against
-`order-next-e2e`. Uploads the Playwright report on failure. **Non-blocking** (`continue-on-error`)
-until it has a week of green runs.
-
-**Verify:** the job passes on its own PR and on a re-run (the same seeded catalog is created per run
-with a `Date.now()` suffix, so reruns must not collide). This is the phase that makes a D4 regression
-catchable by a machine rather than by memory.
-
-### P6 — Vercel project, env and CORS
+### P5 — Vercel project, env and CORS
 
 **Ops, plus a small config file.** Create the Vercel project for `apps/order-next` on its
 Vercel-assigned `*.vercel.app` host (mirroring the POS project's monorepo build command, including
@@ -648,7 +634,7 @@ no `OPTIONS` preflight** before the cart mutation — that absence is the proof 
 same on a preview deployment from a branch. The GitHub Pages app is still live and untouched; nothing
 points customers at the new host yet.
 
-### P7 — Cut QR codes over to the Next order app
+### P6 — Cut QR codes over to the Next order app
 
 **Touches**
 - `libs/ui/src/utils/tableOrderUrl.ts` → `NEXT_PUBLIC_ORDER_APP_BASE_URL` (D3), plus the POS's env
@@ -663,7 +649,7 @@ points customers at the new host yet.
 and land on the new host with the right table → print a new QR from the POS and confirm it encodes the
 new origin → only then merge the workflow change that stops publishing the SPA.
 
-### P8 — Delete the Vite app and its escape hatches
+### P7 — Delete the Vite app and its escape hatches
 
 **Deletes** `apps/order/`, `apps/order-e2e/`'s Vite-only spec and config; **renames**
 `apps/order-next` → `apps/order` and `order-next-e2e` → `order-e2e` (`git mv` + project names +
@@ -674,7 +660,7 @@ new origin → only then merge the workflow change that stops publishing the SPA
 Mechanical; review as a rename. **Verify:** `nx run order:build`, `nx run order:e2e`, `nx run-many
 --target=test --all`, and a Vercel preview deploy from the renamed path.
 
-### P9 — Drop the navigation port for `solito/router`
+### P8 — Drop the navigation port for `solito/router`
 
 **Touches** `MenuListHandler`, `MenuItemDetailHandler`, `CartHandler`, `CheckoutHandler`,
 `app/TableResolve.tsx`, `app/CartItemEdit.tsx`: `useNavigation()` → `useRouter()` from
@@ -686,14 +672,14 @@ Mechanical; review as a rename. **Verify:** `nx run order:build`, `nx run order:
 **Verify:** `nx run ui:test` green; `nx run order:e2e` green. **This phase is the goal of the TRD** —
 after it, `libs/ui` has exactly one routing dependency.
 
-### P10 — Refresh the architecture notes
+### P9 — Refresh the architecture notes
 
 `README.md` ("standalone static React + Vite SPA…"), `docs-site/sales/table-ordering.md`, and the
 D18/D19/D20 rows of `docs/prd-table-ordering.md` annotated as superseded by this TRD. The seventeen
 "deep imports, not the root barrels — a Vite build has no business resolving Next" comments in
 `libs/ui` get rewritten to the bundle-size rationale (D6).
 
-### P11 — Remove Vite from the workspace
+### P10 — Remove Vite from the workspace
 
 Everything in D11 that is not the order app itself:
 
@@ -711,7 +697,7 @@ walked page by page, in both light and dark, with the a11y and interactions addo
 at the repo root returns empty. `docs-site` keeps VitePress and its own lockfile, untouched (D11).
 
 **Split it if it fights back.** Step 2 is the only unbounded piece; steps 1 and 3 are minutes of work
-and can ship as their own PR the moment step 2 is done. Nothing else in this plan depends on P11.
+and can ship as their own PR the moment step 2 is done. Nothing else in this plan depends on P10.
 
 ---
 
@@ -729,7 +715,6 @@ and can ship as their own PR the moment step 2 is done. Nothing else in this pla
 | `__VITE_*` globals in shared libs | 0 (from 2) |
 | `OPTIONS` preflights on cart mutations | 0 (from 1 per request) — every API call is same-origin (D13) |
 | `CORS_ALLOWED_ORIGINS` on the VPS | Unchanged; a preview deployment works against the real API without touching it |
-| Order happy path in CI | `e2e-order` green on every PR (from: no JS CI at all) |
 | `npm ls vite` at the repo root | Empty (`docs-site` keeps VitePress in its own project — D11) |
 | Every Storybook story | Renders under the webpack builder, light and dark |
 
@@ -744,15 +729,16 @@ and can ship as their own PR the moment step 2 is done. Nothing else in this pla
 | Hostname | The Vercel-assigned `*.vercel.app` host; no custom domain for now, and the host stays in an env var so adopting one later is a config change | D2, §5.5 |
 | Keep an `/order` path segment? | No. The app owns the root of its host: `https://<app>.vercel.app/t/{code}` | D3 |
 | Same-origin API proxy | **Included in this migration.** `rewrites()` maps `/api/*` to the VPS, so the browser never leaves its own origin: no CORS, no per-cart preflight, and preview deployments work against the real API. Cost: Vercel is on the path for every API call, and the destination is baked at build time | D13, §5.2, §5.5 |
-| JS CI | The order e2e suite goes into CI (P5) because it is what guards the parity contract; a general lint + unit-test job does **not** — it is pre-existing debt, not migration work, and a one-file PR whenever it is wanted | D12, P5 |
-| Vite | Leaves the root workspace entirely, Storybook included; `docs-site`'s VitePress is the one carve-out and lives in a separate npm project | D11, P11 |
+| JS CI | None is added. A per-PR e2e job costs ~10 minutes of setup for a check only these ten PRs exercise, and a lint/unit job is pre-existing debt rather than migration work. Verification is the per-phase manual checks, local test runs and Vercel previews | D12 |
+| Vite | Leaves the root workspace entirely, Storybook included; `docs-site`'s VitePress is the one carve-out and lives in a separate npm project | D11, P10 |
 
 **Still open:**
 
-1. **When to promote `e2e-order` to a required check.** D12 says "a week green"; that is a guess, not
-   a measurement. Revisit once there is a failure history to read.
-2. **Whether P11 stays one PR.** The Storybook builder swap is the only unbounded piece of work in
-   this plan. If step 2 of P11 runs long, it becomes its own TRD — nothing depends on it.
+1. **JS CI, eventually.** Not part of this migration (D12), but the order happy path is worth
+   running automatically once it is not costing a wait on every PR — a nightly or
+   `workflow_dispatch` job is the shape to reach for.
+2. **Whether P10 stays one PR.** The Storybook builder swap is the only unbounded piece of work in
+   this plan. If step 2 of P10 runs long, it becomes its own TRD — nothing depends on it.
 3. **Whether D22 (`withCredentials: false`) still earns its place.** Behind the proxy it governs
    nothing — same-origin requests send cookies regardless (D13) — so the order app's session cookie
    now reaches the API even though the session travels as a header. Harmless today; worth a decision
