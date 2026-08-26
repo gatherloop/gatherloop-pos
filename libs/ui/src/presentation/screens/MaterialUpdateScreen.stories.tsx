@@ -15,6 +15,7 @@ const UpdateStory = () => {
       onSubmit={fn()}
       isSubmitDisabled={false}
       onLogoutPress={fn()}
+      suppliers={[]}
     />
   );
 };

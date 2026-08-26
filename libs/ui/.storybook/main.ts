@@ -1,18 +1,9 @@
-import type { StorybookConfig } from '@storybook/react-vite';
-import react from '@vitejs/plugin-react';
-import fs from 'fs';
+import type { StorybookConfig } from '@storybook/react-webpack5';
 import path from 'path';
-
-// Exclude every @tamagui/* package from esbuild pre-bundling.
-// These packages ship JSX / native-only code that esbuild cannot process;
-// Rollup (Vite's regular pipeline) handles them correctly via resolve.alias.
-const tamaguiExcludes = fs
-  .readdirSync(path.resolve(__dirname, '../../../node_modules/@tamagui'))
-  .map((name) => `@tamagui/${name}`);
 
 const config: StorybookConfig = {
   framework: {
-    name: '@storybook/react-vite',
+    name: '@storybook/react-webpack5',
     options: {
       // Disable React Strict Mode to prevent the double-invocation of
       // useLayoutEffect during development. Strict Mode simulates an
@@ -29,144 +20,96 @@ const config: StorybookConfig = {
     '@storybook/addon-essentials',
     '@storybook/addon-interactions',
     '@storybook/addon-a11y',
-  ],
-  async viteFinal(viteConfig) {
-    const { mergeConfig } = await import('vite');
-
-    return mergeConfig(viteConfig, {
-      // Storybook's own preset (@storybook/react-vite) does not add
-      // @vitejs/plugin-react itself — JSX is handled by esbuild's default
-      // transform, with no Babel pass in the mix. Adding this plugin here
-      // is therefore a genuinely new Babel pass, not a second instance
-      // fighting an existing one (see docs/trd-react-compiler-adoption.md
-      // §7 P3). react-compiler-runtime (installed for P2) backs `target:
-      // '18'`; no react/compiler-runtime alias is needed here because,
-      // unlike Next 15 (§D3), we control the `target` option directly.
-      plugins: [
-        react({
-          babel: {
-            plugins: [['babel-plugin-react-compiler', { target: '18' }]],
-          },
-        }),
-      ],
-      resolve: {
-        alias: [
+    // Compiles our own .ts/.tsx sources with babel-loader (the webpack5
+    // builder ships no JS/TS compiler of its own). `babelDefault` below
+    // supplies the actual preset/plugin list, mirroring what
+    // @vitejs/plugin-react's `babel` option did.
+    '@storybook/addon-webpack5-compiler-babel',
+    {
+      name: '@storybook/addon-react-native-web',
+      options: {
+        // Point this addon's own babel-loader rule (which by default also
+        // transpiles everything under `projectRoot`) at a directory that
+        // holds no source, so it only ever touches the RN-ecosystem
+        // node_modules packages it's meant for. Our own sources are already
+        // compiled by @storybook/addon-webpack5-compiler-babel above —
+        // running both over the same files would double-transpile them.
+        projectRoot: path.resolve(__dirname, '.rnw-addon-scope-none'),
+        modulesToAlias: {
           // @react-native/normalize-colors ships a plain CJS file (module.exports = fn).
-          // Vite's esbuild JSX loader strips the `module` global, causing
-          // "Cannot set properties of undefined (setting 'exports')".
           // We redirect to a hand-written ESM copy that uses `export default`.
-          {
-            find: /^@react-native\/normalize-colors$/,
-            replacement: path.resolve(__dirname, './mocks/normalize-colors.js'),
-          },
+          '@react-native/normalize-colors$': path.resolve(
+            __dirname,
+            './mocks/normalize-colors.js'
+          ),
           // @tamagui/normalize-css-color imports the SINGULAR form of the same package.
           // Both packages have identical content; the same ESM mock handles both.
-          {
-            find: /^@react-native\/normalize-color$/,
-            replacement: path.resolve(__dirname, './mocks/normalize-colors.js'),
-          },
+          '@react-native/normalize-color$': path.resolve(
+            __dirname,
+            './mocks/normalize-colors.js'
+          ),
           // Redirect react-native-svg to its built-in web implementation
           // (ReactNativeSVG.web.js) which uses DOM SVG and has zero
-          // fabric/TurboModule imports. Must come before the react-native
-          // alias so sub-path imports inside react-native-svg don't get
-          // incorrectly rewritten.
-          {
-            find: /^react-native-svg$/,
-            replacement: path.resolve(
-              __dirname,
-              '../../../node_modules/react-native-svg/lib/commonjs/ReactNativeSVG.web.js'
-            ),
-          },
+          // fabric/TurboModule imports.
+          'react-native-svg$': path.resolve(
+            __dirname,
+            '../../../node_modules/react-native-svg/lib/commonjs/ReactNativeSVG.web.js'
+          ),
           // Mock codegenNativeComponent — a Fabric/TurboModules native API
           // that react-native-svg's <Use> element pulls in. react-native-web
           // has no equivalent; a no-op stub is sufficient for web rendering.
-          {
-            find: /^react-native\/Libraries\/Utilities\/codegenNativeComponent$/,
-            replacement: path.resolve(
-              __dirname,
-              './mocks/codegenNativeComponent.js'
-            ),
-          },
-          // Alias the exact react-native package → react-native-web.
-          {
-            find: /^react-native$/,
-            replacement: 'react-native-web',
-          },
+          'react-native/Libraries/Utilities/codegenNativeComponent$': path.resolve(
+            __dirname,
+            './mocks/codegenNativeComponent.js'
+          ),
           // Stub out solito router and link — these wrap expo-router/next/react-navigation
           // which are not available in the Storybook web environment.
-          {
-            find: /^solito\/router$/,
-            replacement: path.resolve(__dirname, './mocks/solito-router.js'),
-          },
-          {
-            find: /^solito\/link$/,
-            replacement: path.resolve(__dirname, './mocks/solito-link.js'),
-          },
+          'solito/router$': path.resolve(__dirname, './mocks/solito-router.js'),
+          'solito/link$': path.resolve(__dirname, './mocks/solito-link.js'),
+          // Stub next/router too: libs/ui/src/utils/queryParam.ts calls it directly
+          // (outside the solito/router port). The real module drags Next's
+          // server/build-only internals (Node core modules like zlib) into the
+          // browser bundle; Storybook has no real Next app/router context anyway.
+          'next/router$': path.resolve(__dirname, './mocks/next-router.js'),
           // Stub out react-native-reanimated and moti — these are native
           // animation libraries that cannot run on web. @tamagui/animations-moti
           // imports them, but tamagui falls back to CSS transitions in browsers
           // so the actual native modules are never exercised.
-          {
-            find: /^react-native-reanimated$/,
-            replacement: path.resolve(__dirname, './mocks/react-native-reanimated.js'),
-          },
-          {
-            find: /^moti\/author$/,
-            replacement: path.resolve(__dirname, './mocks/moti-author.js'),
-          },
-        ],
-      },
-      optimizeDeps: {
-        // Force Vite to pre-bundle react-native-web and its CJS dependencies.
-        // react-native-web's ESM dist imports inline-style-prefixer sub-paths
-        // (e.g. lib/plugins/backgroundClip) as default imports, but those files
-        // use exports.default (CJS/babel). Pre-bundling wraps them in proper ESM
-        // so the browser doesn't get a "does not provide an export named default" error.
-        // @react-native/normalize-colors has the same CJS issue.
-        include: ['react-native-web', 'react-native-svg'],
-        // These packages ship native-only code, Flow types, or JSX in .mjs
-        // files that esbuild cannot process during pre-bundling.
-        // Rollup (Vite's regular pipeline) handles them via resolve.alias.
-        // Note: react-native-svg is NOT excluded here — its alias points to
-        // ReactNativeSVG.web.js (plain CJS), which esbuild pre-bundles cleanly
-        // and wraps into proper ESM so named exports like `Path` are available.
-        exclude: [
-          'react-native',
-          'react-native-reanimated',
-          'moti',
-          'tamagui',
-          ...tamaguiExcludes,
-        ],
-        esbuildOptions: {
-          // React Native ecosystem packages ship JSX in plain .js AND .mjs
-          // files. Tell esbuild to treat both as JSX so it doesn't choke on
-          // `<Component ...>` syntax during pre-transform.
-          loader: { '.js': 'jsx', '.mjs': 'jsx' },
-          jsx: 'automatic',
-          // Vite's resolve.alias only applies to bare specifiers BEFORE
-          // pre-bundling. Once esbuild resolves an import to an absolute
-          // filesystem path, the alias is never consulted again.
-          // An esbuild plugin operates INSIDE the pre-bundler and redirects
-          // the import while esbuild is still building the dep chunk, so the
-          // ESM mock is inlined rather than the raw CJS file being referenced.
-          plugins: [
-            {
-              name: 'normalize-colors-esm',
-              setup(build: any) {
-                const mockPath = path.resolve(__dirname, './mocks/normalize-colors.js');
-                build.onResolve(
-                  { filter: /^@react-native\/normalize-color[s]?$/ },
-                  () => ({ path: mockPath }),
-                );
-              },
-            },
-          ],
+          'react-native-reanimated$': path.resolve(
+            __dirname,
+            './mocks/react-native-reanimated.js'
+          ),
+          'moti/author$': path.resolve(__dirname, './mocks/moti-author.js'),
         },
       },
-      define: {
-        'process.env': {},
-      },
-    });
+    },
+  ],
+  babelDefault: async (babelConfig) => ({
+    ...babelConfig,
+    presets: [
+      ...(babelConfig.presets ?? []),
+      [
+        require.resolve('@nx/react/babel'),
+        {
+          runtime: 'automatic',
+          // Same react-compiler-runtime / target combination as apps/mobile's
+          // Metro build (apps/mobile/.babelrc.js) and apps/web's Next build
+          // (next.config.js) — see docs/trd-react-compiler-adoption.md §D3.
+          reactCompiler: { target: '18' },
+        },
+      ],
+    ],
+  }),
+  webpackFinal: async (webpackConfig) => {
+    webpackConfig.resolve ??= {};
+    webpackConfig.resolve.alias = {
+      ...webpackConfig.resolve.alias,
+      // React 18 has no `react/compiler-runtime` subpath; the standalone runtime
+      // package provides the identical `c()` implementation. Drops out when we
+      // reach React 19 (see docs/trd-react-compiler-adoption.md §D3).
+      'react/compiler-runtime': require.resolve('react-compiler-runtime'),
+    };
+    return webpackConfig;
   },
 };
 

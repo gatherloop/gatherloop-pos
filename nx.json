@@ -56,16 +56,6 @@
         "upgradeTargetName": "update"
       }
     },
-    {
-      "plugin": "@nx/vite/plugin",
-      "options": {
-        "buildTargetName": "build",
-        "testTargetName": "test",
-        "serveTargetName": "serve",
-        "previewTargetName": "preview",
-        "serveStaticTargetName": "serve-static"
-      }
-    },
     "@nx-go/nx-go"
   ],
   "generators": {
