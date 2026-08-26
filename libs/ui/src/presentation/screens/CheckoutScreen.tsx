@@ -14,7 +14,7 @@ export type CheckoutScreenProps = {
 // sent to the kitchen yet. Mounted inside `TableResolve` like `CartScreen`
 // (see `app/Checkout.tsx`), so the header/footer chrome comes from there
 // and this component only owns its body content. `enabled` mirrors
-// `VITE_ORDER_CHECKOUT_ENABLED` (D10, default false): when the flag is
+// `NEXT_PUBLIC_ORDER_CHECKOUT_ENABLED` (D10, default false): when the flag is
 // off, the route stays reachable from the cart's Checkout button but shows
 // a "not available" message instead of the QRIS copy, so the kill switch
 // needs no change to `CartScreen`.

@@ -8,11 +8,9 @@
  * `/t/{code}/products/{productId}` link renders correctly with no
  * client-side navigation history.
  *
- * Shared verbatim between apps/order-e2e (the Vite SPA) and
- * apps/order-next-e2e (the Next.js app, docs/trd-order-app-nextjs-migration.md
- * P4) — nothing in this file may depend on which app is under test. The one
- * assertion that did (`dist/order/404.html` is a byte-copy of `index.html`,
- * a Vite/GitHub-Pages-only artifact) lives in its own `dist-404.spec.ts`.
+ * Runs against the real `next start` production server
+ * (docs/trd-order-app-nextjs-migration.md P4) — no dev server, no static
+ * export, matching how the app actually runs in production.
  *
  * Test data (a category, a decoy category, a two-variant product, a decoy
  * product and a table) is seeded once against the real API via
@@ -334,9 +332,8 @@ test.describe.serial('Table Ordering', () => {
   });
 
   // ---------------------------------------------------------------------------
-  // 9. Deep link: a hard-navigated nested URL renders correctly, and
-  //    responds 200 with no server-side routing on the Vite SPA (D19's
-  //    404.html fallback) and Next's real file-system route alike.
+  // 9. Deep link: a hard-navigated nested URL renders correctly via Next's
+  //    real file-system route, with no client-side navigation history.
   // ---------------------------------------------------------------------------
 
   test('a hard-navigated deep link to the item detail route renders correctly', async ({

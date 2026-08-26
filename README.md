@@ -189,17 +189,17 @@ tailing, uptime monitoring).
 
 ### 4.5. Order
 
-The Order project is a customer-facing, mobile-first web app that lets a guest scan a table's QR code and order straight from their phone — browsing the menu, picking options, and building a cart — without installing anything or logging in. It's a standalone static React + Vite SPA (not part of the Next.js `web` app), sharing entities, screens and business logic with the rest of the product through the UI library, and deployed to GitHub Pages alongside this documentation site. See [Table Ordering](https://gatherloop.github.io/gatherloop-pos/sales/table-ordering) in the docs for what it does and why.
+The Order project is a customer-facing, mobile-first web app that lets a guest scan a table's QR code and order straight from their phone — browsing the menu, picking options, and building a cart — without installing anything or logging in. It's a Next.js app (Pages Router, same framework as `web`), sharing entities, screens and business logic with the rest of the product through the UI library, deployed on its own Vercel project. See [Table Ordering](https://gatherloop.github.io/gatherloop-pos/sales/table-ordering) in the docs for what it does and why.
 
 To work on or run the order project in your local development environment, you can use the following commands:
 
 #### A. Development Mode
 
 ```
-$ nx run order:serve
+$ nx run order:dev
 ```
 
-This starts the Vite development server, enabling live reload for a smooth development experience.
+This starts the Next.js development server, enabling live reload for a smooth development experience.
 
 #### B. Build the Project
 
@@ -207,15 +207,15 @@ This starts the Vite development server, enabling live reload for a smooth devel
 $ nx run order:build
 ```
 
-This builds the order project as a static bundle, ready to publish to GitHub Pages.
+This builds the order project for production.
 
-#### C. Preview the Built Project
+#### C. Run the Built Project
 
 ```
-$ nx run order:preview
+$ nx run order:start
 ```
 
-This serves the production build locally so it can be checked before deploying.
+This command runs the production-ready version of the order project after it has been built.
 
 ### 4.6. API Contract
 
