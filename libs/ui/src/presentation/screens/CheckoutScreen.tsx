@@ -1,6 +1,6 @@
 import { match } from 'ts-pattern';
 // Deep import, not the `components/base` barrel (D20): that barrel also
-// re-exports POS-only components pulling in solito/next.
+// re-exports POS-only components the customer bundle does not ship (D6).
 import { EmptyView } from '../components/base/EmptyView';
 
 export type CheckoutScreenProps = {
