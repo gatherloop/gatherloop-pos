@@ -4,10 +4,16 @@ import userEvent from '@testing-library/user-event';
 import { MenuListHandler } from './MenuListHandler';
 import { MockMenuRepository } from '../../data/mock';
 import { MenuListUsecase } from '../../domain';
-import { NavigationProvider } from '../navigation';
 import { flushPromises } from '../../utils/testUtils';
 
 const mockPush = jest.fn();
+jest.mock('solito/router', () => ({
+  useRouter: () => ({
+    push: mockPush,
+    replace: jest.fn(),
+    back: jest.fn(),
+  }),
+}));
 
 const renderHandler = (repository = new MockMenuRepository()) => {
   const menuListUsecase = new MenuListUsecase(repository, {
@@ -17,14 +23,10 @@ const renderHandler = (repository = new MockMenuRepository()) => {
   return {
     repository,
     ...render(
-      <NavigationProvider
-        value={{ push: mockPush, replace: jest.fn(), back: jest.fn() }}
-      >
-        <MenuListHandler
-          menuListUsecase={menuListUsecase}
-          tableCode="3F7H9K2M5P"
-        />
-      </NavigationProvider>
+      <MenuListHandler
+        menuListUsecase={menuListUsecase}
+        tableCode="3F7H9K2M5P"
+      />
     ),
   };
 };

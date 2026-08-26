@@ -1,4 +1,5 @@
 import { match, P } from 'ts-pattern';
+import { useRouter } from 'solito/router';
 // Deep imports, not the `domain` barrel (D20): that barrel also re-exports
 // every POS usecase, which drags unrelated weight into the order bundle.
 import { Category } from '../../domain/entities/Category';
@@ -6,7 +7,6 @@ import { Product } from '../../domain/entities/Product';
 import { Variant } from '../../domain/entities/Variant';
 import { MenuListUsecase } from '../../domain/usecases/menuList';
 import { useMenuListController } from '../controllers/MenuListController';
-import { useNavigation } from '../navigation';
 import { MenuListScreen, MenuListScreenProps } from './MenuListScreen';
 
 export type MenuListHandlerProps = {
@@ -50,7 +50,7 @@ export const MenuListHandler = ({
   tableCode,
 }: MenuListHandlerProps) => {
   const menuList = useMenuListController(menuListUsecase);
-  const navigation = useNavigation();
+  const router = useRouter();
 
   const groups = groupByCategory(
     menuList.state.products,
@@ -93,7 +93,7 @@ export const MenuListHandler = ({
       }
       onRetryButtonPress={() => menuList.dispatch({ type: 'FETCH' })}
       onItemPress={(product: Product) =>
-        navigation.push(`/t/${tableCode}/products/${product.id}`)
+        router.push(`/t/${tableCode}/products/${product.id}`)
       }
       startingPriceByProductId={startingPriceByProductId}
       variant={match(menuList.state)

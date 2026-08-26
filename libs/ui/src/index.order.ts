@@ -12,7 +12,6 @@ export * from './presentation/components/base/ConfirmationAlert';
 export * from './presentation/components/base/LoadingView';
 export * from './presentation/components/base/OrderLayout';
 export * from './presentation/components/menu/MenuItemThumbnail';
-export * from './presentation/navigation';
 export * from './utils/currency';
 export * from './app/SessionProvider';
 export * from './app/TableResolve';

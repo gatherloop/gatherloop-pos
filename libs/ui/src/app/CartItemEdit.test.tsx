@@ -7,10 +7,16 @@ import { CartUsecase } from '../domain';
 import { Controller } from '../presentation/controllers/controller';
 import { useController } from '../presentation/controllers/controller';
 import { CartAction, CartState } from '../domain/usecases/cart';
-import { NavigationProvider } from '../presentation/navigation';
 import { flushPromises } from '../utils/testUtils';
 
 const mockBack = jest.fn();
+jest.mock('solito/router', () => ({
+  useRouter: () => ({
+    push: jest.fn(),
+    replace: jest.fn(),
+    back: mockBack,
+  }),
+}));
 
 // `CartItemEdit` reads the app-wide cart via `useCart()` (D14) rather than
 // taking it as a prop, so the test doubles that context binding rather than
@@ -47,11 +53,7 @@ const renderComponent = async (
 ) => {
   const usecase = new CartUsecase(repository);
   const result = render(
-    <NavigationProvider
-      value={{ push: jest.fn(), replace: jest.fn(), back: mockBack }}
-    >
-      <TestHarness usecase={usecase} cartItemId={cartItemId} />
-    </NavigationProvider>
+    <TestHarness usecase={usecase} cartItemId={cartItemId} />
   );
 
   await act(async () => {
