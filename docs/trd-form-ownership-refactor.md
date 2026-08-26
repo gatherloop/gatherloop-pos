@@ -424,18 +424,38 @@ export const useCategoryUpdateController = (usecase: CategoryUpdateUsecase) => {
 **Handler after** — `form={…}` becomes `defaultValues={categoryUpdate.state.values}`. The `variant`
 mapping is unchanged. Screen props change identically.
 
-### 4.4 Schemas move to `libs/ui/src/domain/forms/`
+### 4.4 Schemas move into the existing entity files
 
 The zod schemas live in the controllers today, and the create/update pairs are byte-identical
 (verified for Category and Wallet; the same holds across Tier A). With `useForm` in the view, the
-schema has to move anyway — so move it once, to a place both sides import:
+schema has to move anyway — so move it once, to a place both sides import.
 
-```
-libs/ui/src/domain/forms/
-  categoryForm.ts     → export const categoryFormSchema = z.object({ … })
-  materialForm.ts
-  …
-  index.ts
+**It goes in the entity file, not a parallel `domain/forms/` tree.** `libs/ui/src/domain/entities/`
+already holds the domain type and the form type side by side; the schema is the third face of the
+same concept and belongs with them:
+
+```ts
+// libs/ui/src/domain/entities/Category.ts
+import { z } from 'zod';
+
+export type CategoryStation = 'KITCHEN' | 'BAR' | 'NONE';
+
+export type Category = {
+  id: number;
+  name: string;
+  station: CategoryStation;
+  createdAt: string;
+};
+
+export type CategoryForm = {
+  name: string;
+  station: CategoryStation;
+};
+
+export const categoryFormSchema = z.object({
+  name: z.string().min(1),
+  station: z.enum(['KITCHEN', 'BAR', 'NONE']),
+}) satisfies z.ZodType<CategoryForm>;
 ```
 
 and next to each form view:
@@ -444,9 +464,55 @@ and next to each form view:
 const categoryFormResolver = zodResolver(categoryFormSchema);
 ```
 
+No new directory, no new barrel — `entities/index.ts` already re-exports every entity file, so
+`import { categoryFormSchema } from '../../domain'` works the moment the schema lands.
+
 Schemas move **verbatim**. A schema that differs between create and update stays as two named exports
 in the same file rather than being unified — unifying validation rules is a product decision and is
 out of scope here.
+
+#### 4.4.1 Consequence: `domain/entities/` becomes runtime code
+
+Today `libs/ui/src/domain/entities/*.ts` are pure type modules — zero runtime imports; they only
+cross-import each other, and `grep -rn zod libs/ui/src/domain libs/ui/src/data` returns nothing. zod
+is currently a presentation-layer dependency only.
+
+Putting schemas here makes those files emit runtime code and pulls zod into the domain layer. This is
+accepted deliberately: form validation rules *are* domain rules (`price` must be positive, a delivery
+supplier must have a phone number), and the alternative — a `domain/forms/` tree — splits one concept
+across two files for no gain. There is no bundling regression: `domain/index.ts` already re-exports
+the usecase classes, so the domain barrel is a runtime module regardless.
+
+#### 4.4.2 Do **not** derive `*Form` types from the schemas
+
+The obvious next step — `export type CategoryForm = z.infer<typeof categoryFormSchema>` — is unsafe
+here and must not be applied as a blanket rule.
+
+**12 of the 36 controllers pass `{ raw: true }` to `zodResolver`** (Calculation, Expense, Product,
+RentalCheckin, RentalCheckout, Transaction and Variant — create and update each). That flag exists
+precisely because those schemas are **partial validators, not parsers**: they describe a subset of the
+form and `{ raw: true }` makes the resolver hand back the raw input so the undescribed fields survive
+submission. Concretely:
+
+| Form type | Fields the schema does not describe |
+|---|---|
+| `TransactionForm` | `transactionCoupons` entirely; `variant`, `price`, `id`, `coupon` on each item |
+| `RentalCheckinForm` | `checkinAt` entirely; `variant` is `z.any()` |
+
+`z.infer` on those would silently narrow the form type and break the views that read the dropped
+fields. So:
+
+- **Hand-written `*Form` type stays the contract.** The schema is checked against it, not the reverse.
+- **Full-parser schemas** (the 24 controllers without `{ raw: true }`) get
+  `satisfies z.ZodType<XForm>` as shown above — a compile-time guarantee that schema and type cannot
+  drift, with no change to either.
+- **Partial-validator schemas** (the 12 with `{ raw: true }`) get no `satisfies` clause, and instead a
+  one-line comment naming which fields are intentionally unvalidated and why `{ raw: true }` is
+  required at the call site. Tightening them into full parsers is worthwhile but is its own PR, after
+  this refactor lands.
+
+The `satisfies` clause is added in the same phase as each domain's move, and is the cheapest part of
+the diff to review.
 
 ### 4.5 Tier B: derived state moves into the view
 
@@ -556,9 +622,11 @@ no call sites to update.
 
 ## 6. Cross-cutting mechanics each phase must follow
 
-1. **Move the schema** to `libs/ui/src/domain/forms/<entity>Form.ts`, verbatim, exported from the
-   barrel. Delete both controller copies. Declare `const <entity>FormResolver = zodResolver(schema)`
-   at module scope next to the form view.
+1. **Move the schema** into `libs/ui/src/domain/entities/<Entity>.ts`, verbatim, next to the existing
+   `<Entity>` and `<Entity>Form` types (§4.4). Delete both controller copies. Add
+   `satisfies z.ZodType<<Entity>Form>` unless the domain is one of the 12 `{ raw: true }` call sites
+   (§4.4.2). Declare `const <entity>FormResolver = zodResolver(<entity>FormSchema)` at module scope
+   next to the form view, preserving any resolver options (`{}, { raw: true }`) exactly.
 2. **Rewrite the form view** onto `FormView` (§4.2/4.3). `variant` prop type becomes the shared
    `FormVariant`.
 3. **Add the gate** if the domain has none (Material, StockCheck, RentalCheckin, RentalCheckout): the
@@ -583,7 +651,7 @@ be worked in parallel or reordered freely.
 
 | # | Phase | Tier | Files | Depends on |
 |---|---|:---:|---:|---|
-| 1 | `FormView` primitive + `domain/forms` module skeleton | — | ~6 | — |
+| 1 | `FormView` primitive | — | ~4 | — |
 | 2 | Category (reference migration) | A | ~10 | 1 |
 | 3 | Table + Ticket | A | ~20 | 2 |
 | 4 | Coupon + Budget | A | ~20 | 2 |
@@ -604,14 +672,16 @@ be worked in parallel or reordered freely.
 | 19 | Transaction Create | C | ~12 | 18 |
 | 20 | Cleanup + guardrail | — | ~8 | 19 |
 
-### Phase 1 — `FormView` primitive + `domain/forms` module skeleton
+### Phase 1 — `FormView` primitive
 
 **Adds**
 - `libs/ui/src/presentation/components/base/Form/FormView.tsx` (`FormView`, `FormVariant`, `LoadedForm`).
 - `libs/ui/src/presentation/components/base/Form/FormView.stories.tsx` — loading, error, loaded.
 - `libs/ui/src/presentation/components/base/Form/FormView.test.tsx` — see acceptance below.
-- `libs/ui/src/domain/forms/index.ts` (empty barrel) + export from `libs/ui/src/domain/index.ts`.
 - Export `FormView` / `FormVariant` from `base/Form/index.ts`.
+
+No domain-layer change: schemas land in the entity files they already belong to (§4.4), one domain at
+a time, so there is no barrel or directory to create up front.
 
 **Does not change any existing component.** No `formRef` yet — that lands in Phase 16 with its first
 real consumer, so an unused API never sits in `main`.
@@ -628,7 +698,8 @@ real consumer, so an unused API never sits in `main`.
 
 The template every later phase copies. Small, fully gated, two flat fields.
 
-**Changes**: `domain/forms/categoryForm.ts` (new, schema moved from both controllers);
+**Changes**: `domain/entities/Category.ts` (gains `categoryFormSchema`, moved from both controllers,
+with `satisfies z.ZodType<CategoryForm>`);
 `CategoryFormView.tsx` + `.stories.tsx`; `CategoryCreateController.tsx`, `CategoryUpdateController.tsx`;
 `CategoryCreateScreen.tsx`, `CategoryUpdateScreen.tsx`; `CategoryCreateHandler.tsx`,
 `CategoryUpdateHandler.tsx`; `CategoryCreateHandler.test.tsx`, `CategoryUpdateHandler.test.tsx`.
@@ -685,6 +756,10 @@ Phase-specific notes:
 - `transactionTotal` is passed to the view as a plain number and used to build the resolver there.
   Note `useForm`'s `resolver` is re-read from props on rerender (unlike `defaultValues`), so a
   `transactionTotal` that changes after mount is honoured.
+- **Exception to §4.4**: this schema closes over runtime state (`paidAmount: z.number().min(state.transactionTotal)`),
+  so it cannot be a module-level constant in an entity file. Export a
+  `transactionPayFormSchema(transactionTotal: number)` *factory* from `domain/entities/Transaction.ts`
+  and call it in the view. It is the only schema in the codebase with this shape.
 - `TransactionPaymentAlert.test.tsx` / `.stories.tsx` updated.
 
 **Acceptance**: selecting a cashless wallet still forces `paidAmount` to the transaction total;
@@ -833,6 +908,8 @@ typing during the fetch window is impossible (the form is not mounted yet).
 - `grep -rl "useForm" libs/ui/src/presentation/controllers/` returns nothing.
 - `grep -rn "hasFilledFormRef" libs/ui/src/` returns nothing.
 - `grep -rn "UseFormReturn\|UseFieldArrayReturn" libs/ui/src/presentation/screens/` returns nothing.
+- `grep -rn "z.object" libs/ui/src/presentation/` returns nothing — every form schema lives in its
+  entity file, and each non-`{ raw: true }` one carries `satisfies z.ZodType<XForm>`.
 - Every `*FormView` renders a loading and an error state.
 - Every update domain has the §9.1 async-default test.
 - `npm run lint` and `npm test` green; `nx build-storybook ui` green; `apps/web-e2e` green.
