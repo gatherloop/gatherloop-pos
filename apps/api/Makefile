@@ -40,28 +40,10 @@ dev:
 build:
 	go build -o dist/api main.go
 
-## build-migrate: Build the migration binary
-build-migrate:
-	go build -o dist/migrate cmd/migrate/main.go
-
-## build-seed: Build the seeder binary
-build-seed:
-	go build -o dist/seed cmd/seed/main.go
-
 ## build-release: Build the three static release binaries for the VPS
 build-release:
 	mkdir -p $(RELEASE_DIR)
 	$(RELEASE_BUILD) -o $(RELEASE_DIR)/api main.go
-	$(RELEASE_BUILD) -o $(RELEASE_DIR)/migrate cmd/migrate/main.go
-	$(RELEASE_BUILD) -o $(RELEASE_DIR)/seed cmd/seed/main.go
-
-## migrate: Run database migrations using the Go binary
-migrate:
-	go run cmd/migrate/main.go
-
-## seed: Run database seeders using the Go binary
-seed:
-	go run cmd/seed/main.go
 
 ## test: Run all tests
 test:
