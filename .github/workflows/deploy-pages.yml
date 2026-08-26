@@ -1,35 +1,9 @@
-name: Deploy docs and order app to GitHub Pages
-
-# Phase 12b in docs/prd-table-ordering.md (FR-9): a repository gets one
-# Pages site, so the docs-site (VitePress) build and the apps/order
-# (customer SPA) build are assembled into a single artifact:
-#
-#   dist/                 <- docs-site, unchanged, at the site root
-#   dist/order/            <- customer SPA
-#   dist/order/404.html    <- byte-copy of dist/order/index.html, kept as a
-#                              defensive no-op — GitHub Pages does NOT honor
-#                              a subdirectory's 404.html, only the one at the
-#                              Pages site root (dist/404.html, i.e. the
-#                              docs-site's own generated 404 page). A hard
-#                              nav/refresh on /order/t/{code} therefore hits
-#                              *that* 404 page, which redirects into the
-#                              order app and restores the path — see the
-#                              `head` script in docs-site/.vitepress/
-#                              config.ts and the redirect handling in
-#                              apps/order/src/main.tsx.
-#
-# Consequence accepted in the PRD: the two sites redeploy together, so a
-# docs typo republishes the order app and vice versa. Both builds are
-# deterministic, so this is churn, not risk.
-
+name: Deploy docs site to GitHub Pages
 on:
   push:
     branches: [main]
     paths:
       - "docs-site/**"
-      - "apps/order/**"
-      - "libs/ui/**"
-      - "libs/api-contract/**"
       - ".github/workflows/deploy-pages.yml"
   workflow_dispatch:
 
@@ -55,38 +29,19 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Install workspace dependencies
-        run: npm ci
-
       - name: Install docs-site dependencies
         working-directory: docs-site
         run: npm ci
 
+      # ORDER_APP_BASE_URL is a public URL, not a secret, but it lives in an
+      # Actions variable rather than the workflow file so the order app's
+      # host can change without editing this workflow — see D3 in
+      # docs/trd-order-app-nextjs-migration.md.
       - name: Build docs site
         working-directory: docs-site
         run: npm run build
-
-      # libs/api-contract/src/__generated__ is gitignored; the order app
-      # cannot resolve its imports until this runs (mirrors deploy-api.yml).
-      - name: Generate API contract TS client
-        run: npx nx run api-contract:generate:ts
-
-      # VITE_API_BASE_URL is a public URL (D21), not a secret, but it lives
-      # in an Actions variable rather than the workflow file so the VPS
-      # origin can change without editing this workflow (see D21's note on
-      # sslip.io hostnames being IP-derived).
-      - name: Build order app
-        run: npx nx run order:build
         env:
-          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
-          VITE_ORDER_CHECKOUT_ENABLED: ${{ vars.VITE_ORDER_CHECKOUT_ENABLED }}
-
-      - name: Assemble combined Pages artifact
-        run: |
-          set -e
-          mkdir -p dist
-          cp -r docs-site/.vitepress/dist/. dist/
-          cp dist/order/index.html dist/order/404.html
+          ORDER_APP_BASE_URL: ${{ vars.ORDER_APP_BASE_URL }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -94,7 +49,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: docs-site/.vitepress/dist
 
   deploy:
     needs: build
