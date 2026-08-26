@@ -1,0 +1,4 @@
+{
+  "buildCommand": "cd ../.. && curl -fsSL https://go.dev/dl/go1.24.7.linux-amd64.tar.gz -o /tmp/go.tar.gz && tar -C /tmp -xzf /tmp/go.tar.gz && export PATH=\"$PATH:/tmp/go/bin\" && npx nx run order:build",
+  "installCommand": "cd ../.. && npm ci"
+}

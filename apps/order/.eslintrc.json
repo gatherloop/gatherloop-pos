@@ -1,14 +1,17 @@
 {
-  "extends": ["plugin:@nx/react", "../../.eslintrc.json"],
-  "ignorePatterns": [
-    "!**/*",
-    "**/vite.config.*.timestamp*",
-    "**/vitest.config.*.timestamp*"
+  "extends": [
+    "plugin:@nx/react-typescript",
+    "next",
+    "next/core-web-vitals",
+    "../../.eslintrc.json"
   ],
+  "ignorePatterns": ["!**/*", ".next/**/*", "next-env.d.ts"],
   "overrides": [
     {
       "files": ["*.ts", "*.tsx", "*.js", "*.jsx"],
-      "rules": {}
+      "rules": {
+        "@next/next/no-html-link-for-pages": ["error", "apps/order/src/pages"]
+      }
     },
     {
       "files": ["*.ts", "*.tsx"],
@@ -17,6 +20,12 @@
     {
       "files": ["*.js", "*.jsx"],
       "rules": {}
+    },
+    {
+      "files": ["*.spec.ts", "*.spec.tsx", "*.spec.js", "*.spec.jsx"],
+      "env": {
+        "jest": true
+      }
     }
   ]
 }

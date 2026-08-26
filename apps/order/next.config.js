@@ -14,7 +14,7 @@ const nextConfig = {
     // See: https://github.com/gregberge/svgr
     svgr: false,
   },
-  // A stray apps/order-next/package-lock.json alongside the root lockfile
+  // A stray apps/order/package-lock.json alongside the root lockfile
   // would make Next 15's output file tracing guess the wrong workspace
   // root. Pin it explicitly, as apps/web does.
   outputFileTracingRoot: path.join(__dirname, '../../'),
