@@ -1,8 +1,8 @@
 import { ReactNode } from 'react';
+import { useRouter } from 'solito/router';
 import { ApiPublicTableRepository } from '../data/api/publicTable';
 import { TableResolveUsecase } from '../domain/usecases/tableResolve';
 import { CartBar } from '../presentation/components/cart/CartBar';
-import { useNavigation } from '../presentation/navigation';
 import { TableResolveHandler } from '../presentation/screens/TableResolveHandler';
 import { useCart } from './CartProvider';
 import { useSessionRepository } from './SessionProvider';
@@ -31,7 +31,7 @@ export function TableResolve({
     code,
   });
   const cart = useCart();
-  const navigation = useNavigation();
+  const router = useRouter();
 
   const currentCart = cart.state.cart;
   const footer =
@@ -39,7 +39,7 @@ export function TableResolve({
       <CartBar
         itemCount={currentCart.itemCount}
         total={currentCart.total}
-        onPress={() => navigation.push(`/t/${code}/cart`)}
+        onPress={() => router.push(`/t/${code}/cart`)}
       />
     ) : null;
 

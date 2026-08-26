@@ -2,14 +2,9 @@ import '@tamagui/core/reset.css';
 import './global.css';
 
 import { RootProvider } from '@gatherloop-pos/provider';
-import {
-  CartProvider,
-  NavigationProvider,
-  SessionProvider,
-} from '@gatherloop-pos/ui/order';
+import { CartProvider, SessionProvider } from '@gatherloop-pos/ui/order';
 import { AppProps } from 'next/app';
 import Head from 'next/head';
-import { useRouter } from 'next/router';
 import { NextPage } from 'next';
 import { ReactElement, ReactNode, useEffect, useState } from 'react';
 
@@ -31,8 +26,6 @@ type OrderAppProps = AppProps & {
 };
 
 export default function App({ Component, pageProps }: OrderAppProps) {
-  const router = useRouter();
-
   // D5.1: SessionProvider constructs BrowserSessionRepository during
   // render, which touches document.cookie/crypto — fatal during a
   // server/prerender pass. Gate the whole provider tree on mount so the
@@ -45,15 +38,6 @@ export default function App({ Component, pageProps }: OrderAppProps) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
-
-  // D7: the useNavigation() port stays as-is while apps/order (Vite) is
-  // still deployed; this is just another adapter behind it, backed by
-  // next/router instead of the SPA's History-API router.
-  const navigation = {
-    push: (path: string) => void router.push(path),
-    replace: (path: string) => void router.replace(path),
-    back: () => router.back(),
-  };
 
   const getLayout = Component.getLayout ?? ((page: ReactElement) => page);
 
@@ -71,11 +55,9 @@ export default function App({ Component, pageProps }: OrderAppProps) {
         tamaguiProviderProps={{ disableInjectCSS: true, defaultTheme: 'light' }}
       >
         {mounted ? (
-          <NavigationProvider value={navigation}>
-            <SessionProvider>
-              <CartProvider>{getLayout(<Component {...pageProps} />)}</CartProvider>
-            </SessionProvider>
-          </NavigationProvider>
+          <SessionProvider>
+            <CartProvider>{getLayout(<Component {...pageProps} />)}</CartProvider>
+          </SessionProvider>
         ) : null}
       </RootProvider>
     </>

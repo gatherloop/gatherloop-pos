@@ -1,6 +1,6 @@
 import { useState } from 'react';
+import { useRouter } from 'solito/router';
 import { CartItemEditScreen } from '../presentation/screens/CartItemEditScreen';
-import { useNavigation } from '../presentation/navigation';
 import { useCart } from './CartProvider';
 
 export type CartItemEditProps = {
@@ -18,7 +18,7 @@ export type CartItemEditProps = {
 // backs the floating bar and the cart screen.
 export function CartItemEdit({ cartItemId }: CartItemEditProps) {
   const cart = useCart();
-  const navigation = useNavigation();
+  const router = useRouter();
   const item =
     cart.state.cart?.items.find((existing) => existing.id === cartItemId) ??
     null;
@@ -50,7 +50,7 @@ export function CartItemEdit({ cartItemId }: CartItemEditProps) {
     cart.state.type === 'removing' ||
     cart.state.type === 'clearing';
 
-  const closeSheet = () => navigation.back();
+  const closeSheet = () => router.back();
 
   return (
     <CartItemEditScreen

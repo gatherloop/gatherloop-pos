@@ -1,9 +1,9 @@
 import { useState } from 'react';
+import { useRouter } from 'solito/router';
 // Deep imports, not the `domain` barrel (D20): that barrel also re-exports
 // every POS usecase, which drags unrelated weight into the order bundle.
 import { CartAction, CartState } from '../../domain/usecases/cart';
 import { Controller } from '../controllers/controller';
-import { useNavigation } from '../navigation';
 import { CartScreen, CartScreenProps } from './CartScreen';
 
 export type CartHandlerProps = {
@@ -29,7 +29,7 @@ function toScreenVariant(state: CartState): CartScreenProps['variant'] {
 // (`app/Cart.tsx`), because the floating bar, the item detail sheet's
 // Add-to-cart CTA and this screen all read and mutate the same machine.
 export const CartHandler = ({ cart, tableCode }: CartHandlerProps) => {
-  const navigation = useNavigation();
+  const router = useRouter();
   const [isClearConfirmationOpen, setIsClearConfirmationOpen] =
     useState(false);
 
@@ -61,7 +61,7 @@ export const CartHandler = ({ cart, tableCode }: CartHandlerProps) => {
         cart.dispatch({ type: 'REMOVE_ITEM', cartItemId })
       }
       onEditPress={(cartItemId) =>
-        navigation.push(`/t/${tableCode}/cart/items/${cartItemId}`)
+        router.push(`/t/${tableCode}/cart/items/${cartItemId}`)
       }
       onClearPress={() => setIsClearConfirmationOpen(true)}
       onClearConfirm={() => {
@@ -70,8 +70,8 @@ export const CartHandler = ({ cart, tableCode }: CartHandlerProps) => {
       }}
       onClearCancel={() => setIsClearConfirmationOpen(false)}
       onClearConfirmationOpenChange={setIsClearConfirmationOpen}
-      onAddMoreItemsPress={() => navigation.push(`/t/${tableCode}`)}
-      onCheckoutPress={() => navigation.push(`/t/${tableCode}/checkout`)}
+      onAddMoreItemsPress={() => router.push(`/t/${tableCode}`)}
+      onCheckoutPress={() => router.push(`/t/${tableCode}/checkout`)}
       onRetryButtonPress={() => cart.dispatch({ type: 'FETCH' })}
     />
   );
