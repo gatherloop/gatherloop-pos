@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
 import React from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { FormProvider, useForm, useFieldArray } from 'react-hook-form';
 import { Text } from 'tamagui';
 import { TransactionCartView } from './TransactionCartView';
 import type { TransactionForm } from '../../../domain';
@@ -63,17 +63,19 @@ const TransactionCartStory = ({
     keyName: 'key',
   });
   return (
-    <TransactionCartView
-      form={form}
-      isCouponSheetOpen={isCouponSheetOpen}
-      onCouponSheetOpenChange={fn()}
-      onItemCouponSheetOpen={fn()}
-      onRemoveItemCoupon={fn()}
-      TransactionCouponList={() => <Text color="$color">Coupon List Here</Text>}
-      itemsFieldArray={itemsFieldArray}
-      couponsFieldArray={couponsFieldArray}
-      serverError={serverError}
-    />
+    <FormProvider {...form}>
+      <TransactionCartView
+        form={form}
+        isCouponSheetOpen={isCouponSheetOpen}
+        onCouponSheetOpenChange={fn()}
+        onItemCouponSheetOpen={fn()}
+        onRemoveItemCoupon={fn()}
+        TransactionCouponList={() => <Text color="$color">Coupon List Here</Text>}
+        itemsFieldArray={itemsFieldArray}
+        couponsFieldArray={couponsFieldArray}
+        serverError={serverError}
+      />
+    </FormProvider>
   );
 };
 

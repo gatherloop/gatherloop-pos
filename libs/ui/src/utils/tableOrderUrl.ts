@@ -1,9 +1,10 @@
-// The customer ordering app is a static SPA published to GitHub Pages
-// alongside docs-site, under an /order base path (D17/D18 in
-// docs/prd-table-ordering.md). A table's QR code must encode this full URL
-// so scanning it opens the menu directly, not just the bare table code.
-const TABLE_ORDER_BASE_URL = 'https://gatherloop.github.io/gatherloop-pos/order/t';
-
+// The customer ordering app is a Next.js app hosted on its own origin,
+// separate from the POS (D3/D6 in docs/trd-order-app-nextjs-migration.md).
+// A table's QR code must encode that origin so scanning it opens the menu
+// directly, not just the bare table code. The origin is read from an env
+// var rather than hardcoded so moving hosts later — as happened once
+// already, off GitHub Pages — is a config change, not a code change.
 export function getTableOrderUrl(code: string): string {
-  return `${TABLE_ORDER_BASE_URL}/${code}`;
+  const baseUrl = process.env['NEXT_PUBLIC_ORDER_APP_BASE_URL'] ?? '';
+  return `${baseUrl}/t/${code}`;
 }

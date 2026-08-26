@@ -1,4 +1,4 @@
-import { useNavigation } from '../navigation';
+import { useRouter } from 'solito/router';
 import { CheckoutScreen } from './CheckoutScreen';
 
 export type CheckoutHandlerProps = {
@@ -11,12 +11,12 @@ export type CheckoutHandlerProps = {
 // there is no state to manage beyond the build-time flag passed down from
 // `app/Checkout.tsx`.
 export const CheckoutHandler = ({ enabled, tableCode }: CheckoutHandlerProps) => {
-  const navigation = useNavigation();
+  const router = useRouter();
 
   return (
     <CheckoutScreen
       enabled={enabled}
-      onBackToCartPress={() => navigation.push(`/t/${tableCode}/cart`)}
+      onBackToCartPress={() => router.push(`/t/${tableCode}/cart`)}
     />
   );
 };

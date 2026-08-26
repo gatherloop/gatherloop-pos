@@ -2,8 +2,8 @@ import { X } from '@tamagui/lucide-icons';
 import { Button, Paragraph, ScrollView, Text, TextArea, XStack, YStack } from 'tamagui';
 import { match, P } from 'ts-pattern';
 // Deep imports, not the `domain`/`components/base` barrels (D20): those
-// barrels also re-export every POS usecase and Navbar/Sidebar, which pull
-// in solito/next — dead weight a Vite build has no business resolving.
+// barrels also re-export every POS usecase and Navbar/Sidebar — dead weight
+// the customer bundle does not ship (D6).
 import { Product } from '../../domain/entities/Product';
 import { formatRupiah } from '../../utils/currency';
 import { ErrorView } from '../components/base/ErrorView';

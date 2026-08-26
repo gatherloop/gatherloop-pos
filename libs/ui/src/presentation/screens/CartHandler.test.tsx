@@ -5,10 +5,16 @@ import { CartHandler } from './CartHandler';
 import { MockCartRepository } from '../../data/mock';
 import { CartUsecase } from '../../domain';
 import { useController } from '../controllers/controller';
-import { NavigationProvider } from '../navigation';
 import { flushPromises } from '../../utils/testUtils';
 
 const mockPush = jest.fn();
+jest.mock('solito/router', () => ({
+  useRouter: () => ({
+    push: mockPush,
+    replace: jest.fn(),
+    back: jest.fn(),
+  }),
+}));
 
 const TestCartHandler = ({
   usecase,
@@ -28,13 +34,7 @@ const renderHandler = (
   const usecase = new CartUsecase(repository);
   return {
     repository,
-    ...render(
-      <NavigationProvider
-        value={{ push: mockPush, replace: jest.fn(), back: jest.fn() }}
-      >
-        <TestCartHandler usecase={usecase} tableCode={tableCode} />
-      </NavigationProvider>
-    ),
+    ...render(<TestCartHandler usecase={usecase} tableCode={tableCode} />),
   };
 };
 

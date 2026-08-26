@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useRouter } from 'solito/router';
 // Deep imports, not the `domain` barrel (D20): that barrel also re-exports
 // every POS usecase, which drags unrelated weight into the order bundle.
 import { Product } from '../../domain/entities/Product';
@@ -7,7 +8,6 @@ import {
   MenuItemDetailUsecase,
 } from '../../domain/usecases/menuItemDetail';
 import { useMenuItemDetailController } from '../controllers/MenuItemDetailController';
-import { useNavigation } from '../navigation';
 import {
   MenuItemDetailScreen,
   MenuItemDetailScreenProps,
@@ -87,14 +87,14 @@ export const MenuItemDetailHandler = ({
   onAddToCart,
 }: MenuItemDetailHandlerProps) => {
   const menuItemDetail = useMenuItemDetailController(menuItemDetailUsecase);
-  const navigation = useNavigation();
+  const router = useRouter();
   // FR-5: set once the guest presses the CTA while options are incomplete.
   // Recomputing `missingOptionNames` from live state on every render means
   // the message shrinks or clears the moment a missing option is selected,
   // with no separate reset needed.
   const [showValidationError, setShowValidationError] = useState(false);
 
-  const closeSheet = () => navigation.back();
+  const closeSheet = () => router.back();
 
   const missingOptionNames = getMissingOptionNames(
     menuItemDetail.state.product,

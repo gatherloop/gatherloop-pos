@@ -2,18 +2,18 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CheckoutHandler } from './CheckoutHandler';
-import { NavigationProvider } from '../navigation';
 
 const mockPush = jest.fn();
+jest.mock('solito/router', () => ({
+  useRouter: () => ({
+    push: mockPush,
+    replace: jest.fn(),
+    back: jest.fn(),
+  }),
+}));
 
 const renderHandler = (enabled: boolean, tableCode = 'ABCDE12345') =>
-  render(
-    <NavigationProvider
-      value={{ push: mockPush, replace: jest.fn(), back: jest.fn() }}
-    >
-      <CheckoutHandler enabled={enabled} tableCode={tableCode} />
-    </NavigationProvider>
-  );
+  render(<CheckoutHandler enabled={enabled} tableCode={tableCode} />);
 
 describe('CheckoutHandler', () => {
   beforeEach(() => {

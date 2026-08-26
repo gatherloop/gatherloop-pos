@@ -30,8 +30,8 @@ It also had to be built without inventing a second product. The customer-facing 
 
 ## For engineers
 
-- Customer app: `apps/order` — a standalone static Vite SPA (not the Next.js `apps/web` POS), deployed to GitHub Pages alongside this docs site
-- Route entry: `/order/t/{code}` (menu), `/order/t/{code}/products/{productId}` (item detail sheet), `/order/t/{code}/cart` (cart), `/order/t/{code}/cart/items/{cartItemId}` (edit a cart line's amount/note, rendered alongside the cart), gated by `VITE_ORDER_CHECKOUT_ENABLED` for the checkout stub
+- Customer app: `apps/order` — a Next.js app (Pages Router, same framework as the `apps/web` POS), deployed on its own Vercel project; a permanent redirect shim on this docs site sends already-printed QR codes from the old GitHub Pages origin to it (docs/trd-order-app-nextjs-migration.md, D3)
+- Route entry: `/t/{code}` (menu), `/t/{code}/products/{productId}` (item detail sheet), `/t/{code}/cart` (cart), `/t/{code}/cart/items/{cartItemId}` (edit a cart line's amount/note, rendered alongside the cart), gated by `NEXT_PUBLIC_ORDER_CHECKOUT_ENABLED` for the checkout stub
 - Frontend logic, reached through the `@gatherloop-pos/ui/order` entry point so the customer bundle never pulls in POS/Next code: `libs/ui/src/domain/usecases/{menuList,menuItemDetail,cart}.ts`, repositories in `libs/ui/src/data/{api,mock,browser}`
 - Anonymous session: `libs/ui/src/data/browser/session.ts` (`gl_session_id` cookie + `localStorage`, sent as the `X-Session-Id` header)
 - Backend public catalog: `apps/api/presentation/restapi/public_route.go` — unauthenticated `GET /public/{categories,products,variants,tables/{code}}`, stripping cost data (`materials`, `pricingTiers`, `recipe`) and restricting to published, purchasable items

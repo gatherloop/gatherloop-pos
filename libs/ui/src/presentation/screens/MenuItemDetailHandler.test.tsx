@@ -4,10 +4,16 @@ import userEvent from '@testing-library/user-event';
 import { MenuItemDetailHandler } from './MenuItemDetailHandler';
 import { MockMenuRepository } from '../../data/mock';
 import { MenuItemDetailUsecase } from '../../domain';
-import { NavigationProvider } from '../navigation';
 import { flushPromises } from '../../utils/testUtils';
 
 const mockBack = jest.fn();
+jest.mock('solito/router', () => ({
+  useRouter: () => ({
+    push: jest.fn(),
+    replace: jest.fn(),
+    back: mockBack,
+  }),
+}));
 const mockOnAddToCart = jest.fn();
 
 const renderHandler = (
@@ -20,14 +26,10 @@ const renderHandler = (
   return {
     repository,
     ...render(
-      <NavigationProvider
-        value={{ push: jest.fn(), replace: jest.fn(), back: mockBack }}
-      >
-        <MenuItemDetailHandler
-          menuItemDetailUsecase={menuItemDetailUsecase}
-          onAddToCart={mockOnAddToCart}
-        />
-      </NavigationProvider>
+      <MenuItemDetailHandler
+        menuItemDetailUsecase={menuItemDetailUsecase}
+        onAddToCart={mockOnAddToCart}
+      />
     ),
   };
 };

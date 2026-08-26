@@ -2,8 +2,8 @@ import { ReactNode } from 'react';
 import { match } from 'ts-pattern';
 import { Text, XStack } from 'tamagui';
 // Deep imports, not the `domain`/`components/base` barrels (D20): those
-// barrels also re-export every POS usecase and Navbar/Sidebar, which pull
-// in solito/next — dead weight a Vite build has no business resolving.
+// barrels also re-export every POS usecase and Navbar/Sidebar — dead weight
+// the customer bundle does not ship (D6).
 import { PublicTable } from '../../domain/entities/PublicTable';
 import { EmptyView } from '../components/base/EmptyView';
 import { LoadingView } from '../components/base/LoadingView';
