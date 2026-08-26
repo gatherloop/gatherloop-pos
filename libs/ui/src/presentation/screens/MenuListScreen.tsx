@@ -1,8 +1,8 @@
 import { Input, Spinner, Text, XStack, YStack } from 'tamagui';
 import { match } from 'ts-pattern';
 // Deep imports, not the `domain`/`components/base` barrels (D20): those
-// barrels also re-export every POS usecase and Navbar/Sidebar, which pull
-// in solito/next — dead weight a Vite build has no business resolving.
+// barrels also re-export every POS usecase and Navbar/Sidebar — dead weight
+// the customer bundle does not ship (D6).
 import { Category } from '../../domain/entities/Category';
 import { Product } from '../../domain/entities/Product';
 import { EmptyView } from '../components/base/EmptyView';

@@ -1,6 +1,6 @@
 import { ReactNode, createContext, useContext, useState } from 'react';
 // Deep imports, not the root barrels (D20): those also re-export every POS
-// composition root, which drags solito/next into a Vite build.
+// composition root, which would bloat the customer bundle with the POS (D6).
 import { ApiCartRepository } from '../data/api/cart';
 import { CartAction, CartState, CartUsecase } from '../domain/usecases/cart';
 import { Controller } from '../presentation/controllers/controller';

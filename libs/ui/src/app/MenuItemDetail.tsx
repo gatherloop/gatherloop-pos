@@ -1,6 +1,6 @@
 import { QueryClient } from '@tanstack/react-query';
 // Deep imports, not the root barrels (D20): those also re-export every POS
-// composition root, which drags solito/next into a Vite build.
+// composition root, which would bloat the customer bundle with the POS (D6).
 import { ApiMenuRepository } from '../data/api/menu';
 import { MenuItemDetailUsecase } from '../domain/usecases/menuItemDetail';
 import { MenuItemDetailHandler } from '../presentation/screens/MenuItemDetailHandler';
