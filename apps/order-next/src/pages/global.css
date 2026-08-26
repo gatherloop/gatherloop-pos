@@ -1,0 +1,11 @@
+/* Removes the body's default 8px margin (which would otherwise push
+   `OrderLayout`'s `100dvh`/`100vh` shell past the bottom of the viewport)
+   and gives `html`/`body`/`#__next` a real height so nothing in the tree
+   collapses to zero height by default — the Next equivalent of
+   apps/order/src/styles.css's `html, body, #root`. */
+html,
+body,
+#__next {
+  height: 100%;
+  margin: 0;
+}
