@@ -1,8 +1,8 @@
 package restapi
 
 import (
-	"apps/api/pkg/logger"
 	"apps/api/utils"
+	"apps/api/utils/logger"
 	"fmt"
 	apiContract "libs/api-contract"
 	"log/slog"

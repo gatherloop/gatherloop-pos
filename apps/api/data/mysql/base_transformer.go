@@ -2,7 +2,7 @@ package mysql
 
 import (
 	"apps/api/domain"
-	"apps/api/pkg/logger"
+	"apps/api/utils/logger"
 	"context"
 	"errors"
 	"log/slog"

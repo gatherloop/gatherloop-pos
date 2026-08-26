@@ -2,7 +2,7 @@ package restapi
 
 import (
 	"apps/api/domain"
-	"apps/api/pkg/logger"
+	"apps/api/utils/logger"
 	"context"
 	"encoding/json"
 	"fmt"

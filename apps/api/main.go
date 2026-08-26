@@ -3,9 +3,9 @@ package main
 import (
 	"apps/api/data/mysql"
 	"apps/api/domain"
-	"apps/api/pkg/logger"
 	"apps/api/presentation/restapi"
 	"apps/api/utils"
+	"apps/api/utils/logger"
 	"fmt"
 	"log/slog"
 	"net/http"
