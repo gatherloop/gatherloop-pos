@@ -15,6 +15,7 @@ const CreateStory = () => {
       onSubmit={fn()}
       isSubmitDisabled={false}
       onLogoutPress={fn()}
+      suppliers={[]}
     />
   );
 };
@@ -29,6 +30,7 @@ const PopulatedStory = () => {
       onSubmit={fn()}
       isSubmitDisabled={false}
       onLogoutPress={fn()}
+      suppliers={[]}
     />
   );
 };

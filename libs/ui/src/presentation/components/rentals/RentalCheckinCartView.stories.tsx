@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
 import React from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { FormProvider, useForm, useFieldArray } from 'react-hook-form';
 import { RentalCheckinCartView } from './RentalCheckinCartView';
 import type { RentalCheckinForm } from '../../../domain';
 import { mockTickets, mockVariant } from '../../../../.storybook/mocks/mockData';
@@ -36,13 +36,15 @@ const RentalCheckinCartStory = ({
     keyName: 'key',
   });
   return (
-    <RentalCheckinCartView
-      form={form}
-      rentalsFieldArray={rentalsFieldArray}
-      tickets={mockTickets}
-      onToggleCustomizeCheckinDateTime={fn()}
-      serverError={serverError}
-    />
+    <FormProvider {...form}>
+      <RentalCheckinCartView
+        form={form}
+        rentalsFieldArray={rentalsFieldArray}
+        tickets={mockTickets}
+        onToggleCustomizeCheckinDateTime={fn()}
+        serverError={serverError}
+      />
+    </FormProvider>
   );
 };
 
