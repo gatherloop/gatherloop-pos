@@ -1,0 +1,9 @@
+{
+  "name": "order-next-e2e",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/order-next-e2e/src",
+  "tags": [],
+  "implicitDependencies": ["order-next"],
+  "// targets": "to see all targets run: nx show project order-next-e2e --web",
+  "targets": {}
+}

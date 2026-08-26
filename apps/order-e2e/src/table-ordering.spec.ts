@@ -4,9 +4,15 @@
  * Scan -> browse -> filter -> open item -> choose options -> add to cart ->
  * cart persists across reload -> edit quantity -> edit a line's amount/note
  * via the edit modal (FR-9) -> remove -> checkout CTA,
- * plus a deep-link test proving the `dist/order/404.html` byte-copy (D19)
- * lets a hard-navigated `/order/t/{code}/products/{productId}` link render
- * correctly on a static host with no server-side routing.
+ * plus a deep-link test proving a hard-navigated
+ * `/t/{code}/products/{productId}` link renders correctly with no
+ * client-side navigation history.
+ *
+ * Shared verbatim between apps/order-e2e (the Vite SPA) and
+ * apps/order-next-e2e (the Next.js app, docs/trd-order-app-nextjs-migration.md
+ * P4) — nothing in this file may depend on which app is under test. The one
+ * assertion that did (`dist/order/404.html` is a byte-copy of `index.html`,
+ * a Vite/GitHub-Pages-only artifact) lives in its own `dist-404.spec.ts`.
  *
  * Test data (a category, a decoy category, a two-variant product, a decoy
  * product and a table) is seeded once against the real API via
@@ -20,8 +26,6 @@
  */
 
 import { test, expect } from '@playwright/test';
-import * as fs from 'fs';
-import * as path from 'path';
 import * as api from './utils/api';
 import * as sel from './utils/selectors';
 import { formatRupiah } from './utils/format';
@@ -330,28 +334,22 @@ test.describe.serial('Table Ordering', () => {
   });
 
   // ---------------------------------------------------------------------------
-  // 9. Deep link: a hard-navigated nested URL renders correctly (D19)
+  // 9. Deep link: a hard-navigated nested URL renders correctly, and
+  //    responds 200 with no server-side routing on the Vite SPA (D19's
+  //    404.html fallback) and Next's real file-system route alike.
   // ---------------------------------------------------------------------------
-
-  test('dist/order/404.html is a byte-copy of index.html, as GitHub Pages needs for client routing (D19)', async () => {
-    const distDir = path.resolve(__dirname, '../../../dist/order');
-    const indexHtml = fs.readFileSync(path.join(distDir, 'index.html'));
-    const notFoundHtml = fs.readFileSync(path.join(distDir, '404.html'));
-
-    expect(notFoundHtml.equals(indexHtml)).toBe(true);
-  });
 
   test('a hard-navigated deep link to the item detail route renders correctly', async ({
     browser,
   }) => {
     // A fresh context — no cookies, no client-side navigation history —
     // simulating a guest opening the printed QR's URL (or a shared link)
-    // directly, the exact case `404.html` (previous test) exists to serve
-    // on a static host with no server-side routing (D19).
+    // directly.
     const context = await browser.newContext();
     const page = await context.newPage();
 
-    await page.goto(`t/${table.code}/products/${product.id}`);
+    const response = await page.goto(`t/${table.code}/products/${product.id}`);
+    expect(response?.status()).toBe(200);
 
     await expect(sel.tableResolve.tableLabel(page, TABLE_LABEL)).toBeVisible({
       timeout: 15_000,
