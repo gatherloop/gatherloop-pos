@@ -1,39 +1,38 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Button, Spinner } from 'tamagui';
 import {
   Field,
   FormErrorBanner,
   InputText,
   InputNumber,
-  LoadingView,
-  ErrorView,
+  FormView,
+  FormVariant,
 } from '../base';
-import { BudgetForm } from '../../../domain';
-import { Button, Form, Spinner } from 'tamagui';
-import { FormProvider, UseFormReturn } from 'react-hook-form';
+import { BudgetForm, budgetFormSchema } from '../../../domain';
+
+const budgetFormResolver = zodResolver(budgetFormSchema);
 
 export type BudgetFormViewProps = {
-  variant:
-    | { type: 'loaded' }
-    | { type: 'loading' }
-    | { type: 'error'; onRetryButtonPress: () => void };
-  form: UseFormReturn<BudgetForm>;
+  variant: FormVariant;
+  defaultValues: BudgetForm;
   onSubmit: (values: BudgetForm) => void;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   serverError?: string;
 };
 
-export const BudgetFormView = ({
-  variant,
-  form,
-  onSubmit,
-  isSubmitDisabled,
-  isSubmitting,
-  serverError,
-}: BudgetFormViewProps) => {
-  return variant.type === 'loaded' ? (
-    <FormProvider {...form}>
-      <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
-        <FormErrorBanner message={serverError} />
+export const BudgetFormView = (props: BudgetFormViewProps) => (
+  <FormView
+    variant={props.variant}
+    defaultValues={props.defaultValues}
+    resolver={budgetFormResolver}
+    onSubmit={props.onSubmit}
+    loadingTitle="Fetching Budget..."
+    errorTitle="Failed to Fetch Budget"
+  >
+    {(form) => (
+      <>
+        <FormErrorBanner message={props.serverError} />
         <Field name="name" label="Name">
           <InputText />
         </Field>
@@ -41,22 +40,14 @@ export const BudgetFormView = ({
           <InputNumber min={0} max={100} fractionDigit={2} />
         </Field>
         <Button
-          disabled={isSubmitDisabled}
-          onPress={form.handleSubmit(onSubmit)}
+          disabled={props.isSubmitDisabled}
+          onPress={form.handleSubmit(props.onSubmit)}
           theme="blue"
-          icon={isSubmitting ? <Spinner /> : undefined}
+          icon={props.isSubmitting ? <Spinner /> : undefined}
         >
           Submit
         </Button>
-      </Form>
-    </FormProvider>
-  ) : variant.type === 'loading' ? (
-    <LoadingView title="Fetching Budget..." />
-  ) : variant.type === 'error' ? (
-    <ErrorView
-      title="Failed to Fetch Budget"
-      subtitle="Please click the retry button to refetch data"
-      onRetryButtonPress={variant.onRetryButtonPress}
-    />
-  ) : null;
-};
+      </>
+    )}
+  </FormView>
+);

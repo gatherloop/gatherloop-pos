@@ -1,12 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { WalletUpdateUsecase } from '../../domain';
 import { useController } from './controller';
 import { useToastController } from '@tamagui/toast';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { match, P } from 'ts-pattern';
-import { WalletFormViewProps } from '../components';
 
 export const useWalletUpdateController = (usecase: WalletUpdateUsecase) => {
   const { state, dispatch } = useController(usecase);
@@ -17,50 +12,8 @@ export const useWalletUpdateController = (usecase: WalletUpdateUsecase) => {
     else if (state.type === 'submitError') toast.show('Update Wallet Error');
   }, [toast, state.type]);
 
-  const form = useForm({
-    defaultValues: state.values,
-    resolver: zodResolver(
-      z.object({
-        name: z.string().min(1),
-        balance: z.number(),
-        paymentCostPercentage: z.number(),
-        isCashless: z.boolean(),
-        isPaymentTarget: z.boolean(),
-      })
-    ),
-  });
-
-  const hasFilledFormRef = useRef(false);
-  useEffect(() => {
-    if (state.type === 'loaded' && !hasFilledFormRef.current) {
-      form.reset(state.values);
-      hasFilledFormRef.current = true;
-    }
-  }, [state.type, state.values, form]);
-
-  const variant = match(state)
-    .returnType<WalletFormViewProps['variant']>()
-    .with({ type: P.union('idle', 'loading') }, () => ({
-      type: 'loading',
-    }))
-    .with(
-      {
-        type: P.union('loaded', 'submitSuccess', 'submitting', 'submitError'),
-      },
-      () => ({
-        type: 'loaded',
-      })
-    )
-    .with({ type: 'error' }, () => ({
-      type: 'error',
-      onRetryButtonPress: () => dispatch({ type: 'FETCH' }),
-    }))
-    .exhaustive();
-
   return {
     state,
     dispatch,
-    form,
-    variant,
   };
 };

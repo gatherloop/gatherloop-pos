@@ -1,47 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
-import React from 'react';
-import { useForm } from 'react-hook-form';
 import { WalletTransferFormView } from './WalletTransferFormView';
-import type { WalletTransferForm } from '../../../domain';
 
 const walletOptions = [
   { label: 'Cash', value: 1 },
   { label: 'Bank Transfer', value: 2 },
   { label: 'QRIS', value: 3 },
 ];
-
-const defaultValues: WalletTransferForm = {
-  amount: 0,
-  fromWalletId: 1,
-  toWalletId: 2,
-};
-
-const LoadedStory = () => {
-  const form = useForm<WalletTransferForm>({ defaultValues });
-  return (
-    <WalletTransferFormView
-      form={form}
-      onSubmit={fn()}
-      walletSelectOptions={walletOptions}
-      isSubmitDisabled={false}
-    />
-  );
-};
-
-const PopulatedStory = () => {
-  const form = useForm<WalletTransferForm>({
-    defaultValues: { amount: 1000000, fromWalletId: 1, toWalletId: 2 },
-  });
-  return (
-    <WalletTransferFormView
-      form={form}
-      onSubmit={fn()}
-      walletSelectOptions={walletOptions}
-      isSubmitDisabled={false}
-    />
-  );
-};
 
 const meta: Meta<typeof WalletTransferFormView> = {
   title: 'Features/Wallets/WalletTransferFormView',
@@ -52,25 +17,26 @@ export default meta;
 type Story = StoryObj<typeof WalletTransferFormView>;
 
 export const Default: Story = {
-  render: () => <LoadedStory />,
+  args: {
+    variant: { type: 'loaded' },
+    defaultValues: { amount: 0, fromWalletId: 1, toWalletId: 2 },
+    onSubmit: fn(),
+    walletSelectOptions: walletOptions,
+    isSubmitDisabled: false,
+    isSubmitting: false,
+  },
 };
 
 export const Populated: Story = {
-  render: () => <PopulatedStory />,
-};
-
-const SubmitDisabledStory = () => {
-  const form = useForm<WalletTransferForm>({ defaultValues });
-  return (
-    <WalletTransferFormView
-      form={form}
-      onSubmit={fn()}
-      walletSelectOptions={walletOptions}
-      isSubmitDisabled={true}
-    />
-  );
+  args: {
+    ...Default.args,
+    defaultValues: { amount: 1000000, fromWalletId: 1, toWalletId: 2 },
+  },
 };
 
 export const SubmitDisabled: Story = {
-  render: () => <SubmitDisabledStory />,
+  args: {
+    ...Default.args,
+    isSubmitDisabled: true,
+  },
 };

@@ -1,11 +1,15 @@
 import { useRouter } from 'solito/router';
 import { AuthLogoutUsecase, SupplierCreateUsecase } from '../../domain';
+import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
 import {
   useAuthLogoutController,
   useSupplierCreateController,
 } from '../controllers';
-import { SupplierCreateScreen } from './SupplierCreateScreen';
+import {
+  SupplierCreateScreen,
+  SupplierCreateScreenProps,
+} from './SupplierCreateScreen';
 
 export type SupplierCreateHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;
@@ -28,7 +32,7 @@ export const SupplierCreateHandler = ({
 
   return (
     <SupplierCreateScreen
-      form={supplierCreate.form}
+      defaultValues={supplierCreate.state.values}
       onSubmit={(values) => supplierCreate.dispatch({ type: 'SUBMIT', values })}
       isSubmitDisabled={
         supplierCreate.state.type === 'submitting' ||
@@ -42,6 +46,18 @@ export const SupplierCreateHandler = ({
           : undefined
       }
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
+      variant={match(supplierCreate.state)
+        .returnType<SupplierCreateScreenProps['variant']>()
+        .with({ type: 'loaded' }, () => ({ type: 'loaded' }))
+        .with(
+          {
+            type: P.union('submitting', 'submitSuccess', 'submitError'),
+          },
+          () => ({
+            type: 'loaded',
+          })
+        )
+        .exhaustive()}
     />
   );
 };

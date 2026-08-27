@@ -99,6 +99,16 @@ describe('ProductUpdateHandler', () => {
       });
     });
 
+    it('should fill the form with fetched values when data loads after mount', async () => {
+      render(<ProductUpdateHandler {...createProps({ preloaded: false })} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByDisplayValue('Product 1')).toBeTruthy();
+    });
+
     it('should show error state when product fetch fails', async () => {
       render(<ProductUpdateHandler {...createProps({ productShouldFail: true })} />);
 

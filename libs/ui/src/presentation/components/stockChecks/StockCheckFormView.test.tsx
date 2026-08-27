@@ -1,6 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useForm } from 'react-hook-form';
 import { useMedia } from 'tamagui';
 import { StockCheckForm } from '../../../domain';
 import {
@@ -23,41 +22,48 @@ const items: StockCheckForm['items'] = [
   },
 ];
 
-type WrapperProps = Omit<
-  StockCheckFormViewProps,
-  'form' | 'onSubmit' | 'filled' | 'total' | 'pendingRows'
-> & { onSubmit?: StockCheckFormViewProps['onSubmit'] };
+const filledItems: StockCheckForm['items'] = items.map((item) => ({
+  ...item,
+  currentStock: item.currentStock ?? 1,
+}));
 
-const StockCheckFormViewWrapper = (props: WrapperProps) => {
-  const form = useForm<StockCheckForm>({ defaultValues: { items } });
-  const pendingRows = items.map((item) => item.currentStock === null);
-  const filled = pendingRows.filter((isPending) => !isPending).length;
-
-  return (
-    <StockCheckFormView
-      {...props}
-      form={form}
-      onSubmit={props.onSubmit ?? jest.fn()}
-      filled={filled}
-      total={items.length}
-      pendingRows={pendingRows}
-    />
-  );
-};
-
-const baseProps: WrapperProps = {
+const baseProps: StockCheckFormViewProps = {
+  variant: { type: 'loaded' },
+  defaultValues: { items },
+  onSubmit: jest.fn(),
   isSubmitDisabled: false,
   isSubmitting: false,
-  query: '',
-  onQueryChange: jest.fn(),
-  showOnlyPending: false,
-  onShowOnlyPendingToggle: jest.fn(),
 };
+
+const getSearchInput = () =>
+  screen.getByPlaceholderText(
+    'Search material by name'
+  ) as HTMLInputElement;
 
 describe('StockCheckFormView', () => {
   afterEach(() => {
     jest.clearAllMocks();
     (useMedia as jest.Mock).mockReturnValue({});
+  });
+
+  it('shows the loading view while fetching', () => {
+    render(<StockCheckFormView {...baseProps} variant={{ type: 'loading' }} />);
+    expect(screen.getByText('Fetching Stock Check...')).toBeTruthy();
+  });
+
+  it('shows the error view with a retry button', async () => {
+    const user = userEvent.setup();
+    const onRetryButtonPress = jest.fn();
+    render(
+      <StockCheckFormView
+        {...baseProps}
+        variant={{ type: 'error', onRetryButtonPress }}
+      />
+    );
+
+    expect(screen.getByText('Failed to Fetch Stock Check')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(onRetryButtonPress).toHaveBeenCalled();
   });
 
   describe.each([
@@ -69,7 +75,7 @@ describe('StockCheckFormView', () => {
     });
 
     it('renders the pinned header: search input, filter button and the filled/total counter', () => {
-      render(<StockCheckFormViewWrapper {...baseProps} />);
+      render(<StockCheckFormView {...baseProps} />);
 
       expect(
         screen.getByPlaceholderText('Search material by name')
@@ -80,52 +86,48 @@ describe('StockCheckFormView', () => {
       expect(screen.getByText('1 / 2 materials checked')).toBeTruthy();
     });
 
-    it('does not render the clear-search button when the query is empty', () => {
-      render(<StockCheckFormViewWrapper {...baseProps} query="" />);
+    it('does not render the clear-search button before any search is entered', () => {
+      render(<StockCheckFormView {...baseProps} />);
 
       expect(
         screen.queryByRole('button', { name: /clear search/i })
       ).toBeNull();
     });
 
-    it('renders the clear-search button once a query is entered, and clearing it calls onQueryChange', async () => {
+    it('renders the clear-search button once a query is entered, and clearing it empties the search box', async () => {
       const user = userEvent.setup();
-      const onQueryChange = jest.fn();
-      render(
-        <StockCheckFormViewWrapper
-          {...baseProps}
-          query="Botol"
-          onQueryChange={onQueryChange}
-        />
-      );
+      render(<StockCheckFormView {...baseProps} />);
 
-      const clearButton = screen.getByRole('button', {
-        name: /clear search/i,
-      });
+      await user.type(getSearchInput(), 'Botol');
+
+      // `DebouncedInput` only commits to the real `query` state (and thus
+      // shows the Clear button) after its debounce delay elapses.
+      const clearButton = await screen.findByRole(
+        'button',
+        { name: /clear search/i },
+        { timeout: 1000 }
+      );
       await user.click(clearButton);
 
-      expect(onQueryChange).toHaveBeenCalledWith('');
+      await waitFor(() => expect(getSearchInput().value).toBe(''));
     });
 
     it('toggles the pending filter when the filter button is pressed', async () => {
       const user = userEvent.setup();
-      const onShowOnlyPendingToggle = jest.fn();
-      render(
-        <StockCheckFormViewWrapper
-          {...baseProps}
-          onShowOnlyPendingToggle={onShowOnlyPendingToggle}
-        />
-      );
+      render(<StockCheckFormView {...baseProps} />);
 
-      await user.click(
-        screen.getByRole('button', { name: /show only pending/i })
-      );
+      const filterButton = screen.getByRole('button', {
+        name: 'Show only pending',
+      });
+      await user.click(filterButton);
 
-      expect(onShowOnlyPendingToggle).toHaveBeenCalled();
+      expect(
+        screen.getByRole('button', { name: 'Show all materials' })
+      ).toBeTruthy();
     });
 
     it('renders every material row', () => {
-      render(<StockCheckFormViewWrapper {...baseProps} />);
+      render(<StockCheckFormView {...baseProps} />);
 
       expect(screen.getByText('Botol Kaca Bening 250 ml')).toBeTruthy();
       expect(screen.getByText('Baking Soda')).toBeTruthy();
@@ -133,7 +135,7 @@ describe('StockCheckFormView', () => {
 
     it('shows the server error banner', () => {
       render(
-        <StockCheckFormViewWrapper
+        <StockCheckFormView
           {...baseProps}
           serverError="Something went wrong"
         />
@@ -145,7 +147,13 @@ describe('StockCheckFormView', () => {
     it('submits the form via the Submit button', async () => {
       const user = userEvent.setup();
       const onSubmit = jest.fn();
-      render(<StockCheckFormViewWrapper {...baseProps} onSubmit={onSubmit} />);
+      render(
+        <StockCheckFormView
+          {...baseProps}
+          defaultValues={{ items: filledItems }}
+          onSubmit={onSubmit}
+        />
+      );
 
       await user.click(screen.getByRole('button', { name: 'Submit' }));
 
@@ -156,7 +164,7 @@ describe('StockCheckFormView', () => {
     // trailing the list; desktop keeps the single inline button. Either way
     // there is exactly one — never both at once.
     it('renders exactly one Submit button', () => {
-      render(<StockCheckFormViewWrapper {...baseProps} />);
+      render(<StockCheckFormView {...baseProps} />);
 
       expect(screen.getAllByRole('button', { name: 'Submit' })).toHaveLength(1);
     });
@@ -167,26 +175,46 @@ describe('StockCheckFormView', () => {
     // `querySelector('input')` so this also works on React Native.
     it('clears the search, enables the pending filter and focuses the first pending row on submit', async () => {
       const user = userEvent.setup();
-      const onQueryChange = jest.fn();
-      const onShowOnlyPendingToggle = jest.fn();
-      render(
-        <StockCheckFormViewWrapper
-          {...baseProps}
-          query="Botol"
-          onQueryChange={onQueryChange}
-          onShowOnlyPendingToggle={onShowOnlyPendingToggle}
-        />
+      render(<StockCheckFormView {...baseProps} />);
+
+      await user.type(getSearchInput(), 'Botol');
+      // Wait for the search query to commit past `DebouncedInput`'s delay
+      // before submitting, so the search-cleared assertion below reflects a
+      // real state transition rather than a no-op ('' -> '').
+      await screen.findByRole(
+        'button',
+        { name: /clear search/i },
+        { timeout: 1000 }
       );
 
       await user.click(screen.getByRole('button', { name: 'Submit' }));
 
-      expect(onQueryChange).toHaveBeenCalledWith('');
-      expect(onShowOnlyPendingToggle).toHaveBeenCalled();
+      await waitFor(() => expect(getSearchInput().value).toBe(''));
+      expect(
+        screen.getByRole('button', { name: 'Show all materials' })
+      ).toBeTruthy();
 
       // Index 0 is the search box; items[1] ('Baking Soda') is the only
       // pending row in the fixture, so its input is index 2.
       const pendingInput = screen.getAllByRole('textbox')[2];
       await waitFor(() => expect(document.activeElement).toBe(pendingInput));
     });
+  });
+
+  it('reads the fetched item count in the progress counter once loading transitions to loaded', () => {
+    // Regression for TRD §9.1 (Tier B variant): with the empty pre-fetch
+    // defaultValues that used to mount before the entity loaded, this read
+    // "0 / 0" until the removed `reset`-in-an-effect workaround caught up.
+    const { rerender } = render(
+      <StockCheckFormView
+        {...baseProps}
+        defaultValues={{ items: [] }}
+        variant={{ type: 'loading' }}
+      />
+    );
+
+    rerender(<StockCheckFormView {...baseProps} variant={{ type: 'loaded' }} />);
+
+    expect(screen.getByText('1 / 2 materials checked')).toBeTruthy();
   });
 });

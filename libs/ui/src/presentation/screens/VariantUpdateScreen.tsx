@@ -7,26 +7,13 @@ import {
   MaterialList,
 } from '../components';
 import { Product, VariantForm } from '../../domain';
-import { UseFormReturn, UseFieldArrayReturn } from 'react-hook-form';
-import { Material } from '../../domain';
 
 export type VariantUpdateScreenProps = {
-  form: UseFormReturn<VariantForm>;
+  defaultValues: VariantForm;
   onSubmit: (values: VariantForm) => void;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   onLogoutPress: () => void;
-  isMaterialSheetOpen: boolean;
-  onMaterialSheetOpenChange: (open: boolean) => void;
-  onAddMaterial: (
-    newMaterial: Material,
-    fieldArray: UseFieldArrayReturn<VariantForm, 'materials', 'key'>
-  ) => void;
-  onRemoveMaterial: (
-    newMaterial: Material,
-    fieldArray: UseFieldArrayReturn<VariantForm, 'materials', 'key'>
-  ) => void;
-  onRetryButtonPress: () => void;
   variant: VariantFormViewProps['variant'];
   product: Product | null;
   materialList: {
@@ -51,18 +38,14 @@ export const VariantUpdateScreen = (props: VariantUpdateScreenProps) => {
     >
       <ScrollView>
         <VariantFormView
-          form={props.form}
+          defaultValues={props.defaultValues}
           onSubmit={props.onSubmit}
           isSubmitDisabled={props.isSubmitDisabled}
           isSubmitting={props.isSubmitting}
-          isMaterialSheetOpen={props.isMaterialSheetOpen}
-          onMaterialSheetOpenChange={props.onMaterialSheetOpenChange}
-          onRemoveMaterial={props.onRemoveMaterial}
           variant={props.variant}
-          onRetryButtonPress={props.onRetryButtonPress}
           product={props.product}
           serverError={props.serverError}
-          MaterialList={(fieldArray) => (
+          MaterialList={(fieldArray, onAddMaterial) => (
             <MaterialList
               isSearchAutoFocus
               currentPage={props.materialList.currentPage}
@@ -73,9 +56,7 @@ export const VariantUpdateScreen = (props: VariantUpdateScreenProps) => {
               searchValue={props.materialList.searchValue}
               totalItem={props.materialList.totalItem}
               variant={props.materialList.variant}
-              onItemPress={(material) =>
-                props.onAddMaterial(material, fieldArray)
-              }
+              onItemPress={onAddMaterial}
             />
           )}
         />

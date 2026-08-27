@@ -1,11 +1,15 @@
 import { useRouter } from 'solito/router';
 import { AuthLogoutUsecase, SupplierUpdateUsecase } from '../../domain';
+import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
 import {
   useSupplierUpdateController,
   useAuthLogoutController,
 } from '../controllers';
-import { SupplierUpdateScreen } from './SupplierUpdateScreen';
+import {
+  SupplierUpdateScreen,
+  SupplierUpdateScreenProps,
+} from './SupplierUpdateScreen';
 
 export type SupplierUpdateHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;
@@ -27,7 +31,7 @@ export const SupplierUpdateHandler = ({
 
   return (
     <SupplierUpdateScreen
-      form={supplierUpdate.form}
+      defaultValues={supplierUpdate.state.values}
       onSubmit={(values) => supplierUpdate.dispatch({ type: 'SUBMIT', values })}
       isSubmitDisabled={
         supplierUpdate.state.type === 'submitting' ||
@@ -41,6 +45,29 @@ export const SupplierUpdateHandler = ({
           : undefined
       }
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
+      variant={match(supplierUpdate.state)
+        .returnType<SupplierUpdateScreenProps['variant']>()
+        .with({ type: P.union('idle', 'loading') }, () => ({
+          type: 'loading',
+        }))
+        .with(
+          {
+            type: P.union(
+              'loaded',
+              'submitError',
+              'submitSuccess',
+              'submitting'
+            ),
+          },
+          () => ({
+            type: 'loaded',
+          })
+        )
+        .with({ type: 'error' }, () => ({
+          type: 'error',
+          onRetryButtonPress: () => supplierUpdate.dispatch({ type: 'FETCH' }),
+        }))
+        .exhaustive()}
     />
   );
 };

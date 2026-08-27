@@ -6,7 +6,6 @@ import { Text } from 'tamagui';
 import { TransactionCreateScreen } from './TransactionCreateScreen';
 import type { TransactionForm } from '../../domain';
 import {
-  mockWallet,
   mockWallets,
   mockProducts,
   mockVariants,
@@ -47,7 +46,6 @@ const CreateStory = ({
   const form = useForm<TransactionForm>({ defaultValues: values });
   const itemsFieldArray = useFieldArray({ control: form.control, name: 'transactionItems', keyName: 'key' });
   const couponsFieldArray = useFieldArray({ control: form.control, name: 'transactionCoupons', keyName: 'key' });
-  const payForm = useForm({ defaultValues: { wallet: mockWallet, paidAmount: 0 } });
 
   return (
     <TransactionCreateScreen
@@ -87,7 +85,6 @@ const CreateStory = ({
         variant: { type: 'empty' },
       }}
       transactionPayment={{
-        form: payForm,
         isButtonDisabled: false,
         onCancel: fn(),
         isOpen: isPaymentAlertOpen,

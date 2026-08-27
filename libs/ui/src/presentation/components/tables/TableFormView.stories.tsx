@@ -1,42 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
-import React from 'react';
-import { useForm } from 'react-hook-form';
 import { TableFormView } from './TableFormView';
-import type { TableForm } from '../../../domain';
-
-const defaultValues: TableForm = {
-  label: '',
-  floorNumber: 1,
-};
-
-const LoadedStory = () => {
-  const form = useForm<TableForm>({ defaultValues });
-  return (
-    <TableFormView
-      variant={{ type: 'loaded' }}
-      form={form}
-      onSubmit={fn()}
-      isSubmitDisabled={false}
-      isSubmitting={false}
-    />
-  );
-};
-
-const PopulatedStory = () => {
-  const form = useForm<TableForm>({
-    defaultValues: { label: 'Meja 01', floorNumber: 1 },
-  });
-  return (
-    <TableFormView
-      variant={{ type: 'loaded' }}
-      form={form}
-      onSubmit={fn()}
-      isSubmitDisabled={false}
-      isSubmitting={false}
-    />
-  );
-};
 
 const meta: Meta<typeof TableFormView> = {
   title: 'Features/Tables/TableFormView',
@@ -47,43 +11,49 @@ export default meta;
 type Story = StoryObj<typeof TableFormView>;
 
 export const Loaded: Story = {
-  render: () => <LoadedStory />,
+  args: {
+    variant: { type: 'loaded' },
+    defaultValues: { label: '', floorNumber: 1 },
+    onSubmit: fn(),
+    isSubmitDisabled: false,
+    isSubmitting: false,
+  },
 };
 
 export const Populated: Story = {
-  render: () => <PopulatedStory />,
-};
-
-const LoadingStory = () => {
-  const form = useForm<TableForm>({ defaultValues });
-  return (
-    <TableFormView
-      variant={{ type: 'loading' }}
-      form={form}
-      onSubmit={fn()}
-      isSubmitDisabled={true}
-      isSubmitting={false}
-    />
-  );
-};
-
-const ErrorStory = () => {
-  const form = useForm<TableForm>({ defaultValues });
-  return (
-    <TableFormView
-      variant={{ type: 'error', onRetryButtonPress: fn() }}
-      form={form}
-      onSubmit={fn()}
-      isSubmitDisabled={true}
-      isSubmitting={false}
-    />
-  );
+  args: {
+    ...Loaded.args,
+    defaultValues: { label: 'Meja 01', floorNumber: 1 },
+  },
 };
 
 export const Loading: Story = {
-  render: () => <LoadingStory />,
+  args: {
+    ...Loaded.args,
+    variant: { type: 'loading' },
+    isSubmitDisabled: true,
+  },
 };
 
 export const Error: Story = {
-  render: () => <ErrorStory />,
+  args: {
+    ...Loaded.args,
+    variant: { type: 'error', onRetryButtonPress: fn() },
+    isSubmitDisabled: true,
+  },
+};
+
+export const SubmitDisabled: Story = {
+  args: {
+    ...Loaded.args,
+    isSubmitDisabled: true,
+  },
+};
+
+export const Submitting: Story = {
+  args: {
+    ...Loaded.args,
+    isSubmitDisabled: true,
+    isSubmitting: true,
+  },
 };

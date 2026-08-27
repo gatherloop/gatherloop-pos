@@ -300,7 +300,6 @@ export const TransactionCreateHandler = ({
         .exhaustive(),
     },
     transactionPayment: {
-      form: transactionPayController.form,
       isButtonDisabled:
         transactionPayController.state.type === 'paying' ||
         transactionPayController.state.type === 'payingSuccess',

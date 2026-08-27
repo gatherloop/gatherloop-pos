@@ -31,7 +31,7 @@ export const WalletTransferCreateHandler = ({
 
   return (
     <WalletTransferCreateScreen
-      form={walletTransferCreate.form}
+      defaultValues={walletTransferCreate.state.values}
       onSubmit={(values) =>
         walletTransferCreate.dispatch({ type: 'SUBMIT', values })
       }
@@ -43,6 +43,9 @@ export const WalletTransferCreateHandler = ({
           : undefined
       }
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
+      // WalletTransferFormView has no fetch of its own to gate on; keep the
+      // variant prop for uniformity with the other form views (see TRD §7 Phase 5).
+      variant={{ type: 'loaded' }}
       walletSelectOptions={walletTransferCreate.state.wallets
         .filter(
           (wallet) =>

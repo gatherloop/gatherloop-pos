@@ -7,15 +7,15 @@ import {
   XStack,
   YStack,
 } from 'tamagui';
+import { Field, InputNumber, Select, useIsCompactLayout } from '../base';
+import { useEffect } from 'react';
+import { FormProvider, useForm, useWatch } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  Field,
-  FieldWatch,
-  InputNumber,
-  Select,
-  useIsCompactLayout,
-} from '../base';
-import { FormProvider, UseFormReturn } from 'react-hook-form';
-import { Wallet } from '../../../domain';
+  TransactionPayForm,
+  transactionPayFormSchema,
+  Wallet,
+} from '../../../domain';
 
 // The compact cart `Sheet` (PRD FR-4) sits at an explicit `zIndex={100_000}`
 // and, while it animates closed, can still be in the DOM at the same time
@@ -28,15 +28,13 @@ const ALERT_Z_INDEX = 100_001;
 export type TransactionPaymentAlertProps = {
   isOpen: boolean;
   onCancel: () => void;
-  form: UseFormReturn<{ wallet: Wallet; paidAmount: number }>;
-  onSubmit: (values: { wallet: Wallet; paidAmount: number }) => void;
+  onSubmit: (values: TransactionPayForm) => void;
   walletSelectOptions: { label: string; value: Wallet }[];
   transactionTotal: number;
   isButtonDisabled: boolean;
 };
 
 export const TransactionPaymentAlert = ({
-  form,
   onSubmit,
   isOpen,
   onCancel,
@@ -45,6 +43,30 @@ export const TransactionPaymentAlert = ({
   transactionTotal,
 }: TransactionPaymentAlertProps) => {
   const isCompactLayout = useIsCompactLayout();
+
+  // `transactionTotal` can change after mount (a different transaction is
+  // opened while this alert stays mounted for animation); `resolver` — unlike
+  // `defaultValues` — is re-read from props by react-hook-form on every
+  // render, so a fresh resolver here is honoured without a form remount.
+  const form = useForm<TransactionPayForm>({
+    defaultValues: { paidAmount: 0 },
+    resolver: zodResolver(transactionPayFormSchema(transactionTotal)),
+  });
+
+  const isCashless = useWatch({
+    control: form.control,
+    name: 'wallet.isCashless',
+  });
+  const paidAmount = useWatch({
+    control: form.control,
+    name: 'paidAmount',
+  });
+
+  useEffect(() => {
+    if (isCashless && paidAmount !== transactionTotal) {
+      form.setValue('paidAmount', transactionTotal);
+    }
+  }, [form, isCashless, paidAmount, transactionTotal]);
 
   return (
     <AlertDialog open={isOpen} onOpenChange={onCancel} modal>
@@ -116,34 +138,26 @@ export const TransactionPaymentAlert = ({
                 </YStack>
               </XStack>
 
-              <FieldWatch
-                control={form.control}
-                name={['wallet.isCashless', 'paidAmount']}
-              >
-                {([isCashless, paidAmount]) =>
-                  isCashless === true || isCashless === undefined ? null : (
-                    <XStack
-                      gap="$5"
-                      alignItems={isCompactLayout ? 'stretch' : 'center'}
-                      flexDirection={isCompactLayout ? 'column' : 'row'}
-                    >
-                      <Field name="paidAmount" label="Paid Amount">
-                        <InputNumber
-                          step={0}
-                          maxWidth={isCompactLayout ? undefined : 150}
-                        />
-                      </Field>
-                      <YStack gap="$3" flex={isCompactLayout ? undefined : 1}>
-                        <Label>Change</Label>
-                        <H4>
-                          Rp.{' '}
-                          {(paidAmount - transactionTotal).toLocaleString('id')}
-                        </H4>
-                      </YStack>
-                    </XStack>
-                  )
-                }
-              </FieldWatch>
+              {isCashless === true || isCashless === undefined ? null : (
+                <XStack
+                  gap="$5"
+                  alignItems={isCompactLayout ? 'stretch' : 'center'}
+                  flexDirection={isCompactLayout ? 'column' : 'row'}
+                >
+                  <Field name="paidAmount" label="Paid Amount">
+                    <InputNumber
+                      step={0}
+                      maxWidth={isCompactLayout ? undefined : 150}
+                    />
+                  </Field>
+                  <YStack gap="$3" flex={isCompactLayout ? undefined : 1}>
+                    <Label>Change</Label>
+                    <H4>
+                      Rp. {(paidAmount - transactionTotal).toLocaleString('id')}
+                    </H4>
+                  </YStack>
+                </XStack>
+              )}
 
               <XStack gap="$5" backgroundColor="$backgroundFocus">
                 <AlertDialog.Cancel asChild flex={1}>

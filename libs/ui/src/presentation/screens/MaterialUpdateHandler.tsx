@@ -1,5 +1,6 @@
 import { useRouter } from 'solito/router';
 import { AuthLogoutUsecase, MaterialUpdateUsecase, SupplierListUsecase } from '../../domain';
+import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
 import {
   useAuthLogoutController,
@@ -8,6 +9,7 @@ import {
 } from '../controllers';
 import {
   MaterialUpdateScreen,
+  MaterialUpdateScreenProps,
 } from './MaterialUpdateScreen';
 
 export type MaterialUpdateHandlerProps = {
@@ -34,7 +36,7 @@ export const MaterialUpdateHandler = ({
 
   return (
     <MaterialUpdateScreen
-      form={materialUpdate.form}
+      defaultValues={materialUpdate.state.values}
       onSubmit={(values) =>
         materialUpdate.dispatch({ type: 'SUBMIT', values })
       }
@@ -55,6 +57,29 @@ export const MaterialUpdateHandler = ({
         supplierList.state.type === 'idle' ||
         supplierList.state.type === 'loading'
       }
+      variant={match(materialUpdate.state)
+        .returnType<MaterialUpdateScreenProps['variant']>()
+        .with({ type: P.union('idle', 'loading') }, () => ({
+          type: 'loading',
+        }))
+        .with(
+          {
+            type: P.union(
+              'loaded',
+              'submitError',
+              'submitSuccess',
+              'submitting'
+            ),
+          },
+          () => ({
+            type: 'loaded',
+          })
+        )
+        .with({ type: 'error' }, () => ({
+          type: 'error',
+          onRetryButtonPress: () => materialUpdate.dispatch({ type: 'FETCH' }),
+        }))
+        .exhaustive()}
     />
   );
 };

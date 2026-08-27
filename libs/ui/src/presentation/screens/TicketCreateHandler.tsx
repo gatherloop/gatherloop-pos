@@ -32,7 +32,7 @@ export const TicketCreateHandler = ({
   return (
     <TicketCreateScreen
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
-      form={ticketCreate.form}
+      defaultValues={ticketCreate.state.values}
       isSubmitDisabled={
         ticketCreate.state.type === 'submitting' ||
         ticketCreate.state.type === 'submitSuccess'

@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { ChecklistTemplate } from './ChecklistTemplate';
 
 export type ChecklistSessionSubItem = {
@@ -39,3 +40,8 @@ export type ChecklistSessionForm = {
   checklistTemplateId: number;
   date: string;
 };
+
+export const checklistSessionFormSchema = z.object({
+  checklistTemplateId: z.number().min(1, 'Template is required'),
+  date: z.string().min(1, 'Date is required'),
+}) satisfies z.ZodType<ChecklistSessionForm>;

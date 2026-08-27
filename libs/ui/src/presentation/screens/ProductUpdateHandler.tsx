@@ -47,7 +47,7 @@ export const ProductUpdateHandler = ({
 
   return (
     <ProductUpdateScreen
-      form={productUpdate.form}
+      defaultValues={productUpdate.state.values}
       onSubmit={(values) =>
         productUpdate.dispatch({ type: 'SUBMIT', values })
       }
@@ -61,10 +61,11 @@ export const ProductUpdateHandler = ({
           ? 'Failed to submit. Please try again.'
           : undefined
       }
-      onRetryButtonPress={() => productUpdate.dispatch({ type: 'FETCH' })}
       variant={match(productUpdate.state)
         .returnType<ProductUpdateScreenProps['variant']>()
-        .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))
+        .with({ type: P.union('idle', 'loading') }, () => ({
+          type: 'loading',
+        }))
         .with(
           {
             type: P.union(
@@ -76,7 +77,10 @@ export const ProductUpdateHandler = ({
           },
           () => ({ type: 'loaded' })
         )
-        .with({ type: 'error' }, () => ({ type: 'error' }))
+        .with({ type: 'error' }, () => ({
+          type: 'error',
+          onRetryButtonPress: () => productUpdate.dispatch({ type: 'FETCH' }),
+        }))
         .exhaustive()}
       categorySelectOptions={productUpdate.state.categories.map((category) => ({
         label: category.name,

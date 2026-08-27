@@ -1,34 +1,37 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
-import { SupplierFormView } from './SupplierFormView';
+import { StockCheckFormView } from './StockCheckFormView';
 
-const meta: Meta<typeof SupplierFormView> = {
-  title: 'Features/Suppliers/SupplierFormView',
-  component: SupplierFormView,
+const meta: Meta<typeof StockCheckFormView> = {
+  title: 'Features/StockChecks/StockCheckFormView',
+  component: StockCheckFormView,
 };
 
 export default meta;
-type Story = StoryObj<typeof SupplierFormView>;
+type Story = StoryObj<typeof StockCheckFormView>;
 
 export const Loaded: Story = {
   args: {
     variant: { type: 'loaded' },
-    defaultValues: { name: '', phone: '', address: '', mapsLink: '' },
+    defaultValues: {
+      items: [
+        {
+          materialId: 1,
+          materialName: 'Botol Kaca Bening 250 ml',
+          purchaseUnit: 'Dus (24 Pcs)',
+          currentStock: 12,
+        },
+        {
+          materialId: 2,
+          materialName: 'Baking Soda',
+          purchaseUnit: 'PCS (15 Gram)',
+          currentStock: null,
+        },
+      ],
+    },
     onSubmit: fn(),
     isSubmitDisabled: false,
     isSubmitting: false,
-  },
-};
-
-export const Populated: Story = {
-  args: {
-    ...Loaded.args,
-    defaultValues: {
-      name: 'PT. Kopi Nusantara',
-      phone: '+6281234567890',
-      address: 'Jl. Raya No. 1, Jakarta Selatan',
-      mapsLink: 'https://maps.google.com/?q=-6.2,106.8',
-    },
   },
 };
 

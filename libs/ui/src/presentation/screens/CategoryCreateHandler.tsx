@@ -32,7 +32,7 @@ export const CategoryCreateHandler = ({
   return (
     <CategoryCreateScreen
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
-      form={categoryCreate.form}
+      defaultValues={categoryCreate.state.values}
       isSubmitDisabled={
         categoryCreate.state.type === 'submitting' ||
         categoryCreate.state.type === 'submitSuccess'

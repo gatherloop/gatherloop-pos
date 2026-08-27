@@ -8,8 +8,7 @@ import {
 } from '../components';
 import { Link } from 'solito/link';
 import { Plus } from '@tamagui/lucide-icons';
-import { Transaction, Wallet } from '../../domain';
-import { UseFormReturn } from 'react-hook-form';
+import { Transaction, TransactionPayForm, Wallet } from '../../domain';
 
 export type TransactionListScreenProps = {
   onLogoutPress: () => void;
@@ -41,9 +40,8 @@ export type TransactionListScreenProps = {
   onDeleteConfirm: () => void;
   // Pay alert
   isPayModalOpen: boolean;
-  payForm: UseFormReturn<{ wallet: Wallet; paidAmount: number }>;
   onPayCancel: () => void;
-  onPaySubmit: (values: { wallet: Wallet; paidAmount: number }) => void;
+  onPaySubmit: (values: TransactionPayForm) => void;
   payWalletSelectOptions: { label: string; value: Wallet }[];
   payTransactionTotal: number;
   isPayButtonDisabled: boolean;
@@ -86,7 +84,6 @@ export const TransactionListScreen = ({
   onDeleteCancel,
   onDeleteConfirm,
   isPayModalOpen,
-  payForm,
   onPayCancel,
   onPaySubmit,
   payWalletSelectOptions,
@@ -146,7 +143,6 @@ export const TransactionListScreen = ({
       />
       <TransactionPaymentAlert
         isOpen={isPayModalOpen}
-        form={payForm}
         onSubmit={onPaySubmit}
         onCancel={onPayCancel}
         walletSelectOptions={payWalletSelectOptions}

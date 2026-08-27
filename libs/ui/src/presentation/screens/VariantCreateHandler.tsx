@@ -11,7 +11,6 @@ import {
   MaterialListUsecase,
   VariantCreateUsecase,
 } from '../../domain';
-import { VariantFormViewProps } from '../components';
 import {
   VariantCreateScreen,
   VariantCreateScreenProps,
@@ -35,22 +34,13 @@ export const VariantCreateHandler = ({
 
   useEffect(() => {
     if (variantCreate.state.type === 'submitSuccess')
-      router.push(
-        `/products/${variantCreate.state.values.productId}`
-      );
-  }, [
-    variantCreate.state.type,
-    router,
-    variantCreate.state.values.productId,
-  ]);
+      router.push(`/products/${variantCreate.state.values.productId}`);
+  }, [variantCreate.state.type, router, variantCreate.state.values.productId]);
 
   return (
     <VariantCreateScreen
-      form={variantCreate.form}
-      onRetryButtonPress={() => variantCreate.dispatch({ type: 'FETCH' })}
-      onSubmit={(values) =>
-        variantCreate.dispatch({ type: 'SUBMIT', values })
-      }
+      defaultValues={variantCreate.state.values}
+      onSubmit={(values) => variantCreate.dispatch({ type: 'SUBMIT', values })}
       isSubmitDisabled={
         variantCreate.state.type === 'submitting' ||
         variantCreate.state.type === 'submitSuccess'
@@ -62,12 +52,8 @@ export const VariantCreateHandler = ({
           : undefined
       }
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
-      isMaterialSheetOpen={variantCreate.isMaterialSheetOpen}
-      onMaterialSheetOpenChange={variantCreate.onMaterialSheetOpenChange}
-      onAddMaterial={variantCreate.onAddMaterial}
-      onRemoveMaterial={variantCreate.onRemoveMaterial}
       variant={match(variantCreate.state)
-        .returnType<VariantFormViewProps['variant']>()
+        .returnType<VariantCreateScreenProps['variant']>()
         .with({ type: P.union('idle', 'loading') }, () => ({
           type: 'loading',
         }))
@@ -84,7 +70,10 @@ export const VariantCreateHandler = ({
             type: 'loaded',
           })
         )
-        .with({ type: 'error' }, () => ({ type: 'error' }))
+        .with({ type: 'error' }, () => ({
+          type: 'error',
+          onRetryButtonPress: () => variantCreate.dispatch({ type: 'FETCH' }),
+        }))
         .exhaustive()}
       product={variantCreate.state.product}
       materialList={{
@@ -98,9 +87,7 @@ export const VariantCreateHandler = ({
         searchValue: materialList.state.query,
         totalItem: materialList.state.totalItem,
         variant: match(materialList.state)
-          .returnType<
-            VariantCreateScreenProps['materialList']['variant']
-          >()
+          .returnType<VariantCreateScreenProps['materialList']['variant']>()
           .with({ type: P.union('idle', 'loading') }, () => ({
             type: 'loading',
           }))

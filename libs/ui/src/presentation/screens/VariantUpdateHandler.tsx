@@ -34,22 +34,13 @@ export const VariantUpdateHandler = ({
 
   useEffect(() => {
     if (variantUpdate.state.type === 'submitSuccess')
-      router.push(
-        `/products/${variantUpdate.state.values.productId}`
-      );
-  }, [
-    variantUpdate.state.type,
-    router,
-    variantUpdate.state.values.productId,
-  ]);
+      router.push(`/products/${variantUpdate.state.values.productId}`);
+  }, [variantUpdate.state.type, router, variantUpdate.state.values.productId]);
 
   return (
     <VariantUpdateScreen
-      form={variantUpdate.form}
-      onRetryButtonPress={() => variantUpdate.dispatch({ type: 'FETCH' })}
-      onSubmit={(values) =>
-        variantUpdate.dispatch({ type: 'SUBMIT', values })
-      }
+      defaultValues={variantUpdate.state.values}
+      onSubmit={(values) => variantUpdate.dispatch({ type: 'SUBMIT', values })}
       isSubmitDisabled={
         variantUpdate.state.type === 'submitting' ||
         variantUpdate.state.type === 'submitSuccess'
@@ -61,10 +52,6 @@ export const VariantUpdateHandler = ({
           : undefined
       }
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
-      isMaterialSheetOpen={variantUpdate.isMaterialSheetOpen}
-      onMaterialSheetOpenChange={variantUpdate.onMaterialSheetOpenChange}
-      onAddMaterial={variantUpdate.onAddMaterial}
-      onRemoveMaterial={variantUpdate.onRemoveMaterial}
       variant={match(variantUpdate.state)
         .returnType<VariantUpdateScreenProps['variant']>()
         .with({ type: P.union('idle', 'loading') }, () => ({
@@ -83,7 +70,10 @@ export const VariantUpdateHandler = ({
             type: 'loaded',
           })
         )
-        .with({ type: 'error' }, () => ({ type: 'error' }))
+        .with({ type: 'error' }, () => ({
+          type: 'error',
+          onRetryButtonPress: () => variantUpdate.dispatch({ type: 'FETCH' }),
+        }))
         .exhaustive()}
       product={variantUpdate.state.product}
       materialList={{
@@ -97,9 +87,7 @@ export const VariantUpdateHandler = ({
         searchValue: materialList.state.query,
         totalItem: materialList.state.totalItem,
         variant: match(materialList.state)
-          .returnType<
-            VariantUpdateScreenProps['materialList']['variant']
-          >()
+          .returnType<VariantUpdateScreenProps['materialList']['variant']>()
           .with({ type: P.union('idle', 'loading') }, () => ({
             type: 'loading',
           }))

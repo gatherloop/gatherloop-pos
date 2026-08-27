@@ -1,14 +1,14 @@
-import { MutableRefObject, ReactNode, useEffect } from 'react';
+import { ComponentProps, MutableRefObject, ReactNode, useEffect } from 'react';
 import {
   DefaultValues,
   FieldValues,
   FormProvider,
   Resolver,
-  useForm,
   UseFormReturn,
+  useForm,
 } from 'react-hook-form';
-import { Form, FormProps as TamaguiFormProps } from 'tamagui';
 import { match } from 'ts-pattern';
+import { Form } from 'tamagui';
 import { LoadingView } from '../LoadingView';
 import { ErrorView } from '../ErrorView';
 
@@ -25,31 +25,29 @@ export type FormViewProps<T extends FieldValues> = {
   loadingTitle: string;
   errorTitle: string;
   errorSubtitle?: string;
-  children: (form: UseFormReturn<T>) => ReactNode;
+  // Escape hatch for form views whose layout can't use the default
+  // `gap="$3"` container (e.g. a bounded scroll region needs `flex={1}`
+  // instead). Spread onto the inner `<Form>` after the default, so any key
+  // here overrides it.
+  formProps?: Omit<ComponentProps<typeof Form>, 'onSubmit' | 'children'>;
   /**
    * Escape hatch for surfaces where a sibling controller must drive the form
-   * imperatively. `current` is null until the loaded branch mounts — always
-   * null-check. Do not use this to read values for rendering; use FieldWatch.
+   * imperatively (see TRD §4.6). `current` is null until the loaded branch
+   * mounts — always null-check. Do not use this to read values for
+   * rendering; use `FieldWatch`. Do not use it to read submitted values
+   * either; read them off the usecase's `state.values` instead.
    */
   formRef?: MutableRefObject<UseFormReturn<T> | null>;
-  /**
-   * Passthrough for the underlying Tamagui `<Form>` (e.g. `flex`, `gap`) for
-   * surfaces whose layout depends on more than the default `gap="$3"`.
-   */
-  formProps?: Omit<TamaguiFormProps, 'onSubmit' | 'children'>;
+  children: (form: UseFormReturn<T>) => ReactNode;
 };
 
 export function FormView<T extends FieldValues>(props: FormViewProps<T>) {
   return match(props.variant)
-    .with({ type: 'loading' }, () => (
-      <LoadingView title={props.loadingTitle} />
-    ))
+    .with({ type: 'loading' }, () => <LoadingView title={props.loadingTitle} />)
     .with({ type: 'error' }, ({ onRetryButtonPress }) => (
       <ErrorView
         title={props.errorTitle}
-        subtitle={
-          props.errorSubtitle ?? 'Please click the retry button to refetch data'
-        }
+        subtitle={props.errorSubtitle ?? 'Please click the retry button to refetch data'}
         onRetryButtonPress={onRetryButtonPress}
       />
     ))
@@ -58,8 +56,8 @@ export function FormView<T extends FieldValues>(props: FormViewProps<T>) {
         defaultValues={props.defaultValues}
         resolver={props.resolver}
         onSubmit={props.onSubmit}
-        formRef={props.formRef}
         formProps={props.formProps}
+        formRef={props.formRef}
       >
         {props.children}
       </LoadedForm>
@@ -67,22 +65,20 @@ export function FormView<T extends FieldValues>(props: FormViewProps<T>) {
     .exhaustive();
 }
 
-type LoadedFormProps<T extends FieldValues> = Pick<
-  FormViewProps<T>,
-  'defaultValues' | 'resolver' | 'onSubmit' | 'children' | 'formRef' | 'formProps'
->;
-
-// A separate component, mounted only inside the `loaded` branch, so `useForm`
-// sees final `defaultValues` on its first render instead of the empty shape
-// the surrounding usecase starts with.
+// A separate component so `useForm` only mounts once `defaultValues` are final:
+// the `loading` branch above never calls this hook, so the eventual mount into
+// the `loaded` branch reads the fetched values, not the pre-fetch blanks.
 function LoadedForm<T extends FieldValues>({
   defaultValues,
   resolver,
   onSubmit,
-  formRef,
-  formProps,
   children,
-}: LoadedFormProps<T>) {
+  formProps,
+  formRef,
+}: Pick<
+  FormViewProps<T>,
+  'defaultValues' | 'resolver' | 'onSubmit' | 'children' | 'formProps' | 'formRef'
+>) {
   const form = useForm<T>({
     defaultValues: defaultValues as DefaultValues<T>,
     resolver,

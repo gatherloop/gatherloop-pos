@@ -1,175 +1,197 @@
-import { MutableRefObject, useRef } from 'react';
-import { render, screen } from '@testing-library/react';
+import { useRef } from 'react';
+import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { UseFormReturn } from 'react-hook-form';
-import { z } from 'zod';
 import { Button } from 'tamagui';
 import { FormView, FormVariant } from './FormView';
 import { Field } from './Field';
 import { InputText } from './InputText';
-import { FormErrorBanner } from './FormErrorBanner';
+import { flushPromises } from '../../../../utils/testUtils';
 
-type Values = { name: string };
+type DemoForm = {
+  name: string;
+};
 
-const schema = z.object({ name: z.string().min(1, 'Name is required') });
-const resolver = zodResolver(schema);
+const demoFormResolver = zodResolver(
+  z.object({ name: z.string().min(1) }) satisfies z.ZodType<DemoForm>
+);
 
-const Harness = ({
-  variant,
-  defaultValues,
-  onSubmit,
-  formRef,
-}: {
-  variant: FormVariant;
-  defaultValues: Values;
-  onSubmit: (values: Values) => void;
-  formRef?: MutableRefObject<UseFormReturn<Values> | null>;
-}) => (
-  <FormView
-    variant={variant}
-    defaultValues={defaultValues}
-    resolver={resolver}
-    onSubmit={onSubmit}
-    loadingTitle="Loading..."
-    errorTitle="Failed to load"
-    formRef={formRef}
-  >
-    {(form) => (
-      <>
-        <FormErrorBanner message={undefined} />
-        <Field name="name" label="Name">
-          <InputText />
-        </Field>
-        <Button onPress={form.handleSubmit(onSubmit)}>Submit</Button>
-      </>
-    )}
-  </FormView>
+const NameField = () => (
+  <Field name="name" label="Name">
+    <InputText />
+  </Field>
 );
 
 describe('FormView', () => {
-  it('renders the loading title while loading', () => {
-    render(
-      <Harness
-        variant={{ type: 'loading' }}
-        defaultValues={{ name: '' }}
-        onSubmit={jest.fn()}
-      />
-    );
-
-    expect(screen.getByText('Loading...')).toBeTruthy();
-    expect(screen.queryByRole('textbox')).toBeNull();
-  });
-
-  it('renders the error view with a retry button', async () => {
-    const onRetryButtonPress = jest.fn();
-    const user = userEvent.setup();
-    render(
-      <Harness
-        variant={{ type: 'error', onRetryButtonPress }}
-        defaultValues={{ name: '' }}
-        onSubmit={jest.fn()}
-      />
-    );
-
-    expect(screen.getByText('Failed to load')).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: 'Retry' }));
-    expect(onRetryButtonPress).toHaveBeenCalled();
-  });
-
-  // The executable statement of the bug this primitive fixes: a form mounted
-  // before its data exists must not be stuck with the blank it was born with.
-  it('mounts the form with the fetched defaultValues once the loading branch is replaced by loaded', () => {
+  it('mounts the form only once defaultValues are final, so a loading -> loaded transition shows the fetched value', () => {
     const { rerender } = render(
-      <Harness
+      <FormView<DemoForm>
         variant={{ type: 'loading' }}
         defaultValues={{ name: '' }}
+        resolver={demoFormResolver}
         onSubmit={jest.fn()}
-      />
+        loadingTitle="Fetching Demo..."
+        errorTitle="Failed to Fetch Demo"
+      >
+        {() => <NameField />}
+      </FormView>
     );
+
+    expect(screen.queryByRole('textbox')).toBeNull();
+    expect(screen.getByText('Fetching Demo...')).toBeTruthy();
 
     rerender(
-      <Harness
+      <FormView<DemoForm>
         variant={{ type: 'loaded' }}
         defaultValues={{ name: 'Fetched' }}
+        resolver={demoFormResolver}
         onSubmit={jest.fn()}
-      />
+        loadingTitle="Fetching Demo..."
+        errorTitle="Failed to Fetch Demo"
+      >
+        {() => <NameField />}
+      </FormView>
     );
 
     expect(screen.getByDisplayValue('Fetched')).toBeTruthy();
   });
 
-  it('does not reset user edits when defaultValues gets a fresh reference on a loaded → loaded rerender', async () => {
+  it('renders the error view and retries via onRetryButtonPress', async () => {
     const user = userEvent.setup();
+    const onRetryButtonPress = jest.fn();
+
+    render(
+      <FormView<DemoForm>
+        variant={{ type: 'error', onRetryButtonPress }}
+        defaultValues={{ name: '' }}
+        resolver={demoFormResolver}
+        onSubmit={jest.fn()}
+        loadingTitle="Fetching Demo..."
+        errorTitle="Failed to Fetch Demo"
+      >
+        {() => <NameField />}
+      </FormView>
+    );
+
+    expect(screen.getByText('Failed to Fetch Demo')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(onRetryButtonPress).toHaveBeenCalled();
+  });
+
+  it("surfaces the resolver's error message on invalid submit, and calls onSubmit with parsed values once valid", async () => {
+    const user = userEvent.setup();
+    const onSubmit = jest.fn();
+
+    render(
+      <FormView<DemoForm>
+        variant={{ type: 'loaded' }}
+        defaultValues={{ name: '' }}
+        resolver={demoFormResolver}
+        onSubmit={onSubmit}
+        loadingTitle="Fetching Demo..."
+        errorTitle="Failed to Fetch Demo"
+      >
+        {(form) => (
+          <>
+            <NameField />
+            <Button onPress={form.handleSubmit(onSubmit)}>Submit</Button>
+          </>
+        )}
+      </FormView>
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Submit' }));
+    await act(async () => {
+      await flushPromises();
+    });
+
+    expect(
+      screen.getByText('String must contain at least 1 character(s)')
+    ).toBeTruthy();
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    await user.type(screen.getByRole('textbox'), 'Alice');
+    await user.click(screen.getByRole('button', { name: 'Submit' }));
+    await act(async () => {
+      await flushPromises();
+    });
+
+    expect(onSubmit).toHaveBeenCalledWith({ name: 'Alice' }, expect.anything());
+  });
+
+  it('does not reset user edits when a loaded -> loaded rerender passes a new defaultValues reference', async () => {
+    const user = userEvent.setup();
+
     const { rerender } = render(
-      <Harness
+      <FormView<DemoForm>
         variant={{ type: 'loaded' }}
         defaultValues={{ name: 'Original' }}
+        resolver={demoFormResolver}
         onSubmit={jest.fn()}
-      />
+        loadingTitle="Fetching Demo..."
+        errorTitle="Failed to Fetch Demo"
+      >
+        {() => <NameField />}
+      </FormView>
     );
 
     await user.clear(screen.getByRole('textbox'));
     await user.type(screen.getByRole('textbox'), 'Edited by user');
 
+    // A brand-new object reference with the same shape, as happens on every
+    // parent re-render - must not remount `LoadedForm` or reset the field.
     rerender(
-      <Harness
+      <FormView<DemoForm>
         variant={{ type: 'loaded' }}
         defaultValues={{ name: 'Original' }}
+        resolver={demoFormResolver}
         onSubmit={jest.fn()}
-      />
+        loadingTitle="Fetching Demo..."
+        errorTitle="Failed to Fetch Demo"
+      >
+        {() => <NameField />}
+      </FormView>
     );
 
     expect(screen.getByDisplayValue('Edited by user')).toBeTruthy();
   });
 
-  it('surfaces the resolver error and does not call onSubmit for invalid values', async () => {
-    const user = userEvent.setup();
-    const onSubmit = jest.fn();
+  it('overrides the default container props when formProps is passed', () => {
     render(
-      <Harness
+      <FormView<DemoForm>
         variant={{ type: 'loaded' }}
         defaultValues={{ name: '' }}
-        onSubmit={onSubmit}
-      />
+        resolver={demoFormResolver}
+        onSubmit={jest.fn()}
+        loadingTitle="Fetching Demo..."
+        errorTitle="Failed to Fetch Demo"
+        formProps={{ testID: 'demo-form' }}
+      >
+        {() => <NameField />}
+      </FormView>
     );
 
-    await user.click(screen.getByRole('button', { name: 'Submit' }));
-
-    expect(await screen.findByText('Name is required')).toBeTruthy();
-    expect(onSubmit).not.toHaveBeenCalled();
-  });
-
-  it('calls onSubmit with the parsed values', async () => {
-    const user = userEvent.setup();
-    const onSubmit = jest.fn();
-    render(
-      <Harness
-        variant={{ type: 'loaded' }}
-        defaultValues={{ name: 'Alice' }}
-        onSubmit={onSubmit}
-      />
-    );
-
-    await user.click(screen.getByRole('button', { name: 'Submit' }));
-
-    expect(onSubmit).toHaveBeenCalledWith(
-      { name: 'Alice' },
-      expect.anything()
-    );
+    expect(screen.getByTestId('demo-form')).toBeTruthy();
   });
 
   describe('formRef', () => {
     const FormRefHarness = ({ variant }: { variant: FormVariant }) => {
-      const formRef = useRef<UseFormReturn<Values> | null>(null);
+      const formRef = useRef<UseFormReturn<DemoForm> | null>(null);
       return (
         <>
-          <Harness
+          <FormView<DemoForm>
             variant={variant}
             defaultValues={{ name: 'Alice' }}
+            resolver={demoFormResolver}
             onSubmit={jest.fn()}
+            loadingTitle="Fetching Demo..."
+            errorTitle="Failed to Fetch Demo"
             formRef={formRef}
-          />
+          >
+            {() => <NameField />}
+          </FormView>
           <Button
             onPress={() => formRef.current?.setValue('name', 'Set via ref')}
           >
@@ -179,15 +201,15 @@ describe('FormView', () => {
       );
     };
 
-    it('is null while loading', () => {
+    it('is null while loading, so a sibling write through it is a safe no-op', () => {
       render(<FormRefHarness variant={{ type: 'loading' }} />);
 
-      // No throw / no-op when the sibling writer fires before the form mounts.
-      const button = screen.getByRole('button', { name: 'Set via ref' });
-      expect(() => button.click()).not.toThrow();
+      expect(() =>
+        screen.getByRole('button', { name: 'Set via ref' }).click()
+      ).not.toThrow();
     });
 
-    it('is populated once the form is loaded, letting a sibling write through it', async () => {
+    it('is populated once the loaded branch mounts, letting a sibling controller write into the form', async () => {
       const user = userEvent.setup();
       render(<FormRefHarness variant={{ type: 'loaded' }} />);
 

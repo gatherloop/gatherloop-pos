@@ -63,13 +63,23 @@ describe('MaterialUpdateHandler', () => {
     jest.clearAllMocks();
   });
 
-  describe('form rendering', () => {
-    it('should render the update form', async () => {
+  describe('loading and data states', () => {
+    it('should show loading state while fetching material', async () => {
       render(<MaterialUpdateHandler {...createProps()} />);
-      expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
+      expect(screen.getByText('Fetching Material...')).toBeTruthy();
       await act(async () => {
         await flushPromises();
       });
+    });
+
+    it('should show the form after material data loads', async () => {
+      render(<MaterialUpdateHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
     });
 
     it('should render pre-filled form when material is preloaded', async () => {
@@ -80,28 +90,50 @@ describe('MaterialUpdateHandler', () => {
       });
     });
 
-    it('should render the name input field', async () => {
-      render(<MaterialUpdateHandler {...createProps()} />);
-      expect(screen.getByRole('textbox', { name: 'Name' })).toBeTruthy();
+    it('should fill the form with fetched values when data loads after mount', async () => {
+      render(<MaterialUpdateHandler {...createProps({ preloaded: false })} />);
+
       await act(async () => {
         await flushPromises();
       });
+
+      expect(screen.getByDisplayValue('Material 1')).toBeTruthy();
+    });
+
+    it('should show error state when material fetch fails', async () => {
+      render(<MaterialUpdateHandler {...createProps({ shouldFail: true })} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByRole('heading', { name: 'Failed to Fetch Material' })).toBeTruthy();
+    });
+  });
+
+  describe('form rendering', () => {
+    it('should render the name input field', async () => {
+      render(<MaterialUpdateHandler {...createProps()} />);
+      await act(async () => {
+        await flushPromises();
+      });
+      expect(screen.getByRole('textbox', { name: 'Name' })).toBeTruthy();
     });
 
     it('should render the unit input field', async () => {
       render(<MaterialUpdateHandler {...createProps()} />);
-      expect(screen.getByRole('textbox', { name: 'Unit' })).toBeTruthy();
       await act(async () => {
         await flushPromises();
       });
+      expect(screen.getByRole('textbox', { name: 'Unit' })).toBeTruthy();
     });
 
     it('should render the isStockCheckRequired switch field', async () => {
       render(<MaterialUpdateHandler {...createProps()} />);
-      expect(screen.getByRole('switch', { name: 'Include in stock checks' })).toBeTruthy();
       await act(async () => {
         await flushPromises();
       });
+      expect(screen.getByRole('switch', { name: 'Include in stock checks' })).toBeTruthy();
     });
 
     it('should pre-fill isStockCheckRequired switch as checked when the saved material requires stock checks', async () => {
@@ -136,6 +168,41 @@ describe('MaterialUpdateHandler', () => {
       await act(async () => {
         await flushPromises();
       });
+    });
+  });
+
+  describe('error recovery', () => {
+    it('should refetch material when retry button is pressed after error', async () => {
+      const user = userEvent.setup();
+      const materialRepo = new MockMaterialRepository();
+      materialRepo.shouldFail = true;
+
+      render(
+        <MaterialUpdateHandler
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          materialUpdateUsecase={new MaterialUpdateUsecase(materialRepo, {
+            materialId: 1,
+            material: null,
+          })}
+          supplierListUsecase={createSupplierListUsecase()}
+        />
+      );
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByRole('heading', { name: 'Failed to Fetch Material' })).toBeTruthy();
+
+      materialRepo.shouldFail = false;
+
+      await user.click(screen.getByRole('button', { name: 'Retry' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
     });
   });
 

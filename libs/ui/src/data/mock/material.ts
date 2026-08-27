@@ -127,20 +127,14 @@ export class MockMaterialRepository implements MaterialRepository {
   }
 
   fetchMaterialById(materialId: number) {
-    return Promise.resolve({
-      id: materialId,
-      name: 'Material 1',
-      price: 100,
-      unit: 'gram',
-      createdAt: '2024-03-20T00:00:00.000Z',
-      weeklyUsage: 0,
-      purchaseUnit: 'Kg',
-      purchaseUnitSize: 1000,
-      minimumStock: 2,
-      normalStock: 5,
-      isStockCheckRequired: true,
-      suppliers: [],
-    });
+    if (this.shouldFail) {
+      return Promise.reject(new Error('Failed to fetch material'));
+    }
+    const material = this.materials.find((m) => m.id === materialId);
+    if (!material) {
+      return Promise.reject(new Error('Material not found'));
+    }
+    return Promise.resolve({ ...material });
   }
 
   deleteMaterialById(materialId: number) {

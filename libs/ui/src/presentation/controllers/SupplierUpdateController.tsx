@@ -1,10 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { SupplierUpdateUsecase } from '../../domain';
 import { useController } from './controller';
 import { useToastController } from '@tamagui/toast';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 
 export const useSupplierUpdateController = (usecase: SupplierUpdateUsecase) => {
   const { state, dispatch } = useController(usecase);
@@ -15,29 +12,8 @@ export const useSupplierUpdateController = (usecase: SupplierUpdateUsecase) => {
     else if (state.type === 'submitError') toast.show('Update Supplier Error');
   }, [toast, state.type]);
 
-  const form = useForm({
-    defaultValues: state.values,
-    resolver: zodResolver(
-      z.object({
-        name: z.string().min(1),
-        phone: z.string(),
-        address: z.string().min(1),
-        mapsLink: z.string().min(1),
-      })
-    ),
-  });
-
-  const hasFilledFormRef = useRef(false);
-  useEffect(() => {
-    if (state.type === 'loaded' && !hasFilledFormRef.current) {
-      form.reset(state.values);
-      hasFilledFormRef.current = true;
-    }
-  }, [state.type, state.values, form]);
-
   return {
     state,
     dispatch,
-    form,
   };
 };

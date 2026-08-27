@@ -1,43 +1,42 @@
+import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowDown, ArrowUp, Plus, Trash, X } from '@tamagui/lucide-icons';
-import {
-  Button,
-  Card,
-  Form,
-  H4,
-  SizableText,
-  Spinner,
-  XStack,
-  YStack,
-} from 'tamagui';
-import { FormProvider, UseFormReturn } from 'react-hook-form';
+import { Button, Card, H4, SizableText, Spinner, XStack, YStack } from 'tamagui';
 import {
   Field,
   FieldArray,
   FormErrorBanner,
+  FormVariant,
+  FormView,
   InputText,
   MarkdownEditor,
 } from '../base';
-import { ChecklistTemplateForm } from '../../../domain';
+import { ChecklistTemplateForm, checklistTemplateFormSchema } from '../../../domain';
+
+const checklistTemplateFormResolver = zodResolver(checklistTemplateFormSchema);
 
 export type ChecklistTemplateFormViewProps = {
-  form: UseFormReturn<ChecklistTemplateForm>;
+  variant: FormVariant;
+  defaultValues: ChecklistTemplateForm;
   onSubmit: (values: ChecklistTemplateForm) => void;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   serverError?: string;
 };
 
-export const ChecklistTemplateFormView = ({
-  form,
-  onSubmit,
-  isSubmitDisabled,
-  isSubmitting,
-  serverError,
-}: ChecklistTemplateFormViewProps) => {
-  return (
-    <FormProvider {...form}>
-      <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
-        <FormErrorBanner message={serverError} />
+export const ChecklistTemplateFormView = (
+  props: ChecklistTemplateFormViewProps
+) => (
+  <FormView
+    variant={props.variant}
+    defaultValues={props.defaultValues}
+    resolver={checklistTemplateFormResolver}
+    onSubmit={props.onSubmit}
+    loadingTitle="Fetching Checklist Template..."
+    errorTitle="Failed to Fetch Checklist Template"
+  >
+    {(form) => (
+      <>
+        <FormErrorBanner message={props.serverError} />
         <Card padding="$3" gap="$3">
           <Field name="name" label="Template Name">
             <InputText placeholder="e.g. Opening Checklist" />
@@ -222,14 +221,14 @@ export const ChecklistTemplateFormView = ({
         </FieldArray>
 
         <Button
-          disabled={isSubmitDisabled}
-          onPress={form.handleSubmit(onSubmit)}
+          disabled={props.isSubmitDisabled}
+          onPress={form.handleSubmit(props.onSubmit)}
           theme="blue"
-          icon={isSubmitting ? <Spinner /> : undefined}
+          icon={props.isSubmitting ? <Spinner /> : undefined}
         >
           Submit
         </Button>
-      </Form>
-    </FormProvider>
-  );
-};
+      </>
+    )}
+  </FormView>
+);

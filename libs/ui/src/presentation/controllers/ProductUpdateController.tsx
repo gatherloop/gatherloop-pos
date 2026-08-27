@@ -1,10 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { ProductUpdateUsecase } from '../../domain';
 import { useController } from './controller';
 import { useToastController } from '@tamagui/toast';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 
 export const useProductUpdateController = (usecase: ProductUpdateUsecase) => {
   const { state, dispatch } = useController(usecase);
@@ -15,34 +12,8 @@ export const useProductUpdateController = (usecase: ProductUpdateUsecase) => {
     else if (state.type === 'submitError') toast.show('Update Product Error');
   }, [toast, state.type]);
 
-  const form = useForm({
-    defaultValues: state.values,
-    resolver: zodResolver(
-      z.object({
-        categoryId: z.number(),
-        name: z.string().min(1),
-        saleType: z.string().min(1),
-        status: z.string().min(1),
-        imageUrl: z.string().min(1).url(),
-        description: z.string(),
-        recipe: z.string(),
-      }),
-      {},
-      { raw: true }
-    ),
-  });
-
-  const hasFilledFormRef = useRef(false);
-  useEffect(() => {
-    if (state.type === 'loaded' && !hasFilledFormRef.current) {
-      form.reset(state.values);
-      hasFilledFormRef.current = true;
-    }
-  }, [state.type, state.values, form]);
-
   return {
     state,
     dispatch,
-    form,
   };
 };

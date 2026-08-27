@@ -14,9 +14,9 @@ import {
   Transaction,
   TransactionDeleteUsecase,
   TransactionListUsecase,
+  TransactionPayForm,
   TransactionPayUsecase,
   TransactionUnpayUsecase,
-  Wallet,
 } from '../../domain';
 import {
   buildOrderSlipPayload,
@@ -235,9 +235,8 @@ export const TransactionListHandler = ({
         transactionPay.state.type === 'shown' ||
         transactionPay.state.type === 'paying'
       }
-      payForm={transactionPay.form}
       onPayCancel={() => transactionPay.dispatch({ type: 'HIDE_CONFIRMATION' })}
-      onPaySubmit={(values: { wallet: Wallet; paidAmount: number }) =>
+      onPaySubmit={(values: TransactionPayForm) =>
         transactionPay.dispatch({
           type: 'PAY',
           walletId: values.wallet.id,

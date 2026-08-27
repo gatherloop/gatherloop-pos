@@ -99,6 +99,16 @@ describe('VariantUpdateHandler', () => {
       });
     });
 
+    it('should fill the form with fetched values when data loads after mount', async () => {
+      render(<VariantUpdateHandler {...createProps({ preloaded: false })} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByDisplayValue('Variant 1')).toBeTruthy();
+    });
+
     it('should show error state when variant fetch fails', async () => {
       render(<VariantUpdateHandler {...createProps({ variantShouldFail: true })} />);
 

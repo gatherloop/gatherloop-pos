@@ -9,7 +9,7 @@ import {
   ChecklistSessionListFilter,
   ChecklistTemplate,
 } from '../../domain';
-import { UseFormReturn } from 'react-hook-form';
+import { FormVariant } from '../components/base';
 import { ChecklistSessionForm } from '../../domain';
 
 export type ChecklistSessionListScreenProps = {
@@ -27,7 +27,8 @@ export type ChecklistSessionListScreenProps = {
     | { type: 'error' }
     | { type: 'empty' }
     | { type: 'loaded'; items: ChecklistSession[] };
-  form: UseFormReturn<ChecklistSessionForm>;
+  createFormVariant: FormVariant;
+  createFormDefaultValues: ChecklistSessionForm;
   onSubmit: (values: ChecklistSessionForm) => void;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
@@ -47,7 +48,8 @@ export const ChecklistSessionListScreen = ({
   totalItem,
   itemPerPage,
   variant,
-  form,
+  createFormVariant,
+  createFormDefaultValues,
   onSubmit,
   isSubmitDisabled,
   isSubmitting,
@@ -62,7 +64,8 @@ export const ChecklistSessionListScreen = ({
           <YStack gap="$2">
             <H4>Execute New Session</H4>
             <ChecklistSessionFormView
-              form={form}
+              variant={createFormVariant}
+              defaultValues={createFormDefaultValues}
               onSubmit={onSubmit}
               isSubmitting={isSubmitting}
               isSubmitDisabled={isSubmitDisabled}
