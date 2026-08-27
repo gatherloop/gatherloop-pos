@@ -1,27 +1,31 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
 import React from 'react';
-import { useForm } from 'react-hook-form';
 import { CalculationUpdateScreen } from './CalculationUpdateScreen';
 import type { CalculationForm } from '../../domain';
 import { mockWallets } from '../../../.storybook/mocks/mockData';
 
 const walletSelectOptions = mockWallets.map((w) => ({ label: w.name, value: w.id }));
 
+const updateDefaultValues: CalculationForm = {
+  walletId: 1,
+  totalWallet: 5000000,
+  calculationItems: [
+    { price: 100000, amount: 10 },
+    { price: 50000, amount: 20 },
+  ],
+};
+
+const loadingDefaultValues: CalculationForm = {
+  walletId: 1,
+  totalWallet: 0,
+  calculationItems: [],
+};
+
 const UpdateStory = () => {
-  const form = useForm<CalculationForm>({
-    defaultValues: {
-      walletId: 1,
-      totalWallet: 5000000,
-      calculationItems: [
-        { price: 100000, amount: 10 },
-        { price: 50000, amount: 20 },
-      ],
-    },
-  });
   return (
     <CalculationUpdateScreen
-      form={form}
+      defaultValues={updateDefaultValues}
       onSubmit={fn()}
       isSubmitDisabled={false}
       onLogoutPress={fn()}
@@ -34,12 +38,9 @@ const UpdateStory = () => {
 };
 
 const LoadingStory = () => {
-  const form = useForm<CalculationForm>({
-    defaultValues: { walletId: 1, totalWallet: 0, calculationItems: [] },
-  });
   return (
     <CalculationUpdateScreen
-      form={form}
+      defaultValues={loadingDefaultValues}
       onSubmit={fn()}
       isSubmitDisabled={true}
       onLogoutPress={fn()}
