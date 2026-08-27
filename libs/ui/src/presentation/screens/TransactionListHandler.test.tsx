@@ -33,8 +33,7 @@ jest.mock('../../utils', () => ({
   usePrinter: () => ({ print: mockPrint }),
 }));
 
-// Mock the Screen — avoids form rendering issues (payForm.handleSubmit) when
-// modal is not open; tests focus on handler orchestration logic. We capture
+// Mock the Screen — tests focus on handler orchestration logic. We capture
 // the props passed in so individual menu-press handlers can be invoked.
 let latestScreenProps: TransactionListScreenProps;
 jest.mock('./TransactionListScreen', () => ({
@@ -119,7 +118,6 @@ const transactionPayCtrl = {
     transactionId: null as number | null,
   },
   dispatch: jest.fn(),
-  form: {} as never,
 };
 const transactionUnpayCtrl = {
   state: { type: 'hidden' as string },
@@ -142,7 +140,6 @@ jest.mock('../controllers', () => ({
   useTransactionPayController: () => ({
     state: transactionPayCtrl.state,
     dispatch: transactionPayCtrl.dispatch,
-    form: transactionPayCtrl.form,
   }),
   useTransactionUnpayController: () => ({
     state: transactionUnpayCtrl.state,

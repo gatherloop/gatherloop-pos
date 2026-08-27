@@ -100,7 +100,6 @@ const transactionPayCtrl = {
     walletId: null as number | null,
   },
   dispatch: jest.fn(),
-  form: {} as never,
 };
 
 const transactionItemSelectCtrl = {
