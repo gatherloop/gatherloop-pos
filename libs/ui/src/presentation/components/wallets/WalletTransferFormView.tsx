@@ -1,10 +1,13 @@
-import { Field, FormErrorBanner, InputNumber, Select } from '../base';
-import { WalletTransferForm } from '../../../domain';
-import { FormProvider, UseFormReturn } from 'react-hook-form';
-import { Button, Form, Spinner } from 'tamagui';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Field, FormErrorBanner, InputNumber, Select, FormView, FormVariant } from '../base';
+import { WalletTransferForm, walletTransferFormSchema } from '../../../domain';
+import { Button, Spinner } from 'tamagui';
+
+const walletTransferFormResolver = zodResolver(walletTransferFormSchema);
 
 export type WalletTransferFormViewProps = {
-  form: UseFormReturn<WalletTransferForm>;
+  variant: FormVariant;
+  defaultValues: WalletTransferForm;
   onSubmit: (values: WalletTransferForm) => void;
   walletSelectOptions: { label: string; value: number }[];
   isSubmitDisabled: boolean;
@@ -12,33 +15,33 @@ export type WalletTransferFormViewProps = {
   serverError?: string;
 };
 
-export const WalletTransferFormView = ({
-  form,
-  onSubmit,
-  walletSelectOptions,
-  isSubmitDisabled,
-  isSubmitting,
-  serverError,
-}: WalletTransferFormViewProps) => {
-  return (
-    <FormProvider {...form}>
-      <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
-        <FormErrorBanner message={serverError} />
+export const WalletTransferFormView = (props: WalletTransferFormViewProps) => (
+  <FormView
+    variant={props.variant}
+    defaultValues={props.defaultValues}
+    resolver={walletTransferFormResolver}
+    onSubmit={props.onSubmit}
+    loadingTitle="Fetching Wallets..."
+    errorTitle="Failed to Fetch Wallets"
+  >
+    {(form) => (
+      <>
+        <FormErrorBanner message={props.serverError} />
         <Field name="toWalletId" label="Transfer To">
-          <Select items={walletSelectOptions} />
+          <Select items={props.walletSelectOptions} />
         </Field>
         <Field name="amount" label="Amount">
           <InputNumber />
         </Field>
         <Button
-          disabled={isSubmitDisabled}
-          onPress={form.handleSubmit(onSubmit)}
+          disabled={props.isSubmitDisabled}
+          onPress={form.handleSubmit(props.onSubmit)}
           theme="blue"
-          icon={isSubmitting ? <Spinner /> : undefined}
+          icon={props.isSubmitting ? <Spinner /> : undefined}
         >
           Submit
         </Button>
-      </Form>
-    </FormProvider>
-  );
-};
+      </>
+    )}
+  </FormView>
+);

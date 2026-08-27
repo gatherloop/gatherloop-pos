@@ -1,11 +1,12 @@
 import { useRouter } from 'solito/router';
+import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
 import {
   useWalletUpdateController,
   useAuthLogoutController,
 } from '../controllers';
 import { AuthLogoutUsecase, WalletUpdateUsecase } from '../../domain';
-import { WalletUpdateScreen } from './WalletUpdateScreen';
+import { WalletUpdateScreen, WalletUpdateScreenProps } from './WalletUpdateScreen';
 
 export type WalletUpdateHandlerProps = {
   walletUpdateUsecase: WalletUpdateUsecase;
@@ -26,7 +27,7 @@ export const WalletUpdateHandler = ({
 
   return (
     <WalletUpdateScreen
-      form={walletUpdate.form}
+      defaultValues={walletUpdate.state.values}
       onSubmit={(values) =>
         walletUpdate.dispatch({ type: 'SUBMIT', values })
       }
@@ -41,7 +42,29 @@ export const WalletUpdateHandler = ({
           : undefined
       }
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
-      variant={walletUpdate.variant}
+      variant={match(walletUpdate.state)
+        .returnType<WalletUpdateScreenProps['variant']>()
+        .with({ type: P.union('idle', 'loading') }, () => ({
+          type: 'loading',
+        }))
+        .with(
+          {
+            type: P.union(
+              'loaded',
+              'submitError',
+              'submitSuccess',
+              'submitting'
+            ),
+          },
+          () => ({
+            type: 'loaded',
+          })
+        )
+        .with({ type: 'error' }, () => ({
+          type: 'error',
+          onRetryButtonPress: () => walletUpdate.dispatch({ type: 'FETCH' }),
+        }))
+        .exhaustive()}
     />
   );
 };
