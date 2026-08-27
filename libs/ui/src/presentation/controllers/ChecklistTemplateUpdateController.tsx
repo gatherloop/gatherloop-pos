@@ -1,10 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { ChecklistTemplateUpdateUsecase } from '../../domain';
 import { useController } from './controller';
 import { useToastController } from '@tamagui/toast';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { checklistTemplateFormSchema } from './ChecklistTemplateCreateController';
 
 export const useChecklistTemplateUpdateController = (
   usecase: ChecklistTemplateUpdateUsecase
@@ -19,22 +16,8 @@ export const useChecklistTemplateUpdateController = (
       toast.show('Update Checklist Template Error');
   }, [toast, state.type]);
 
-  const form = useForm({
-    defaultValues: state.values,
-    resolver: zodResolver(checklistTemplateFormSchema),
-  });
-
-  const hasFilledFormRef = useRef(false);
-  useEffect(() => {
-    if (state.type === 'loaded' && !hasFilledFormRef.current) {
-      form.reset(state.values);
-      hasFilledFormRef.current = true;
-    }
-  }, [state.type, state.values, form]);
-
   return {
     state,
     dispatch,
-    form,
   };
 };
