@@ -1,7 +1,6 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useForm, useFieldArray } from 'react-hook-form';
 import { useMedia, Text } from 'tamagui';
 import { RentalCheckoutFormView } from './RentalCheckoutFormView';
 import type { RentalCheckoutForm } from '../../../domain';
@@ -27,27 +26,18 @@ const Wrapper = ({
   defaultValues: RentalCheckoutForm;
   serverError?: string;
   isSubmitSuccess?: boolean;
-}) => {
-  const form = useForm<RentalCheckoutForm>({ defaultValues });
-  const rentalsFieldArray = useFieldArray({
-    control: form.control,
-    name: 'rentals',
-    keyName: 'key',
-  });
-
-  return (
-    <RentalCheckoutFormView
-      form={form}
-      onSubmit={jest.fn()}
-      isSubmitDisabled={false}
-      isSubmitting={false}
-      isSubmitSuccess={isSubmitSuccess}
-      RentalItemSelect={() => <Text color="$color">Rental Picker</Text>}
-      rentalsFieldArray={rentalsFieldArray}
-      serverError={serverError}
-    />
-  );
-};
+}) => (
+  <RentalCheckoutFormView
+    variant={{ type: 'loaded' }}
+    defaultValues={defaultValues}
+    onSubmit={jest.fn()}
+    isSubmitDisabled={false}
+    isSubmitting={false}
+    isSubmitSuccess={isSubmitSuccess}
+    RentalItemSelect={() => <Text color="$color">Rental Picker</Text>}
+    serverError={serverError}
+  />
+);
 
 describe('RentalCheckoutFormView', () => {
   // mockRental/mockRentalCheckedOut both check in on 2024-01-20 — always far

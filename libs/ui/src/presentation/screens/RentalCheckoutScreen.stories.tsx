@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
 import React from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
 import { RentalCheckoutScreen } from './RentalCheckoutScreen';
 import type { RentalCheckoutForm } from '../../domain';
 import { mockRentals } from '../../../.storybook/mocks/mockData';
@@ -9,18 +8,15 @@ import { mockRentals } from '../../../.storybook/mocks/mockData';
 const defaultValues: RentalCheckoutForm = { rentals: [] };
 
 const CheckoutStory = () => {
-  const form = useForm<RentalCheckoutForm>({ defaultValues });
-  const rentalsFieldArray = useFieldArray({ control: form.control, name: 'rentals', keyName: 'key' });
-
   return (
     <RentalCheckoutScreen
-      form={form}
+      variant={{ type: 'loaded' }}
+      defaultValues={defaultValues}
       onSubmit={fn()}
       isSubmitDisabled={false}
       isSubmitting={false}
       isSubmitSuccess={false}
       onLogoutPress={fn()}
-      rentalsFieldArray={rentalsFieldArray}
       rentalList={{
         searchValue: '',
         onSearchValueChange: fn(),

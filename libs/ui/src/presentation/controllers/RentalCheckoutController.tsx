@@ -1,14 +1,7 @@
-import { useEffect, useRef } from 'react';
-import {
-  Rental,
-  RentalCheckoutUsecase,
-  RentalCheckoutForm,
-} from '../../domain';
+import { useEffect } from 'react';
+import { RentalCheckoutUsecase } from '../../domain';
 import { useController } from './controller';
 import { useToastController } from '@tamagui/toast';
-import { useFieldArray, useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 
 export const useRentalCheckoutController = (usecase: RentalCheckoutUsecase) => {
   const { state, dispatch } = useController(usecase);
@@ -19,46 +12,5 @@ export const useRentalCheckoutController = (usecase: RentalCheckoutUsecase) => {
     else if (state.type === 'submitError') toast.show('Checkout Rental Error');
   }, [toast, state.type]);
 
-  const form = useForm({
-    defaultValues: state.values,
-    resolver: zodResolver(
-      z.object({
-        rentals: z.array(z.lazy(() => z.any())).min(1),
-      }),
-      {},
-      { raw: true }
-    ),
-  });
-
-  const hasFilledFormRef = useRef(false);
-  useEffect(() => {
-    if (state.type === 'loaded' && !hasFilledFormRef.current) {
-      form.reset(state.values);
-      hasFilledFormRef.current = true;
-    }
-  }, [state.type, state.values, form]);
-
-  const rentalsFieldArray = useFieldArray<RentalCheckoutForm, 'rentals', 'key'>(
-    {
-      name: 'rentals',
-      control: form.control,
-      keyName: 'key',
-    }
-  );
-
-  const onAddItem = (newRental: Rental) => {
-    if (rentalsFieldArray.fields.some((rental) => rental.id === newRental.id)) {
-      return;
-    }
-
-    rentalsFieldArray.append(newRental);
-  };
-
-  return {
-    state,
-    dispatch,
-    form,
-    onAddItem,
-    rentalsFieldArray,
-  };
+  return { state, dispatch };
 };
