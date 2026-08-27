@@ -226,8 +226,12 @@ export const Checkbox = Object.assign(CheckboxBase, {
 });
 
 // Form
-const FormBase = ({ children, onSubmit }: AnyProps) =>
-  React.createElement('form', { onSubmit }, children);
+const FormBase = ({ children, onSubmit, testID }: AnyProps) =>
+  React.createElement(
+    'form',
+    { onSubmit, ...(testID ? { 'data-testid': testID } : {}) },
+    children
+  );
 const FormTrigger = ({ children }: AnyProps) =>
   React.createElement(React.Fragment, null, children);
 export const Form = Object.assign(FormBase, { Trigger: FormTrigger });

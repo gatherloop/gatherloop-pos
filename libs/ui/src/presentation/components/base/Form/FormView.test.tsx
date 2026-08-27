@@ -155,4 +155,22 @@ describe('FormView', () => {
 
     expect(screen.getByDisplayValue('Edited by user')).toBeTruthy();
   });
+
+  it('overrides the default container props when formProps is passed', () => {
+    render(
+      <FormView<DemoForm>
+        variant={{ type: 'loaded' }}
+        defaultValues={{ name: '' }}
+        resolver={demoFormResolver}
+        onSubmit={jest.fn()}
+        loadingTitle="Fetching Demo..."
+        errorTitle="Failed to Fetch Demo"
+        formProps={{ testID: 'demo-form' }}
+      >
+        {() => <NameField />}
+      </FormView>
+    );
+
+    expect(screen.getByTestId('demo-form')).toBeTruthy();
+  });
 });

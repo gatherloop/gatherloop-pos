@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ComponentProps, ReactNode } from 'react';
 import {
   DefaultValues,
   FieldValues,
@@ -25,6 +25,11 @@ export type FormViewProps<T extends FieldValues> = {
   loadingTitle: string;
   errorTitle: string;
   errorSubtitle?: string;
+  // Escape hatch for form views whose layout can't use the default
+  // `gap="$3"` container (e.g. a bounded scroll region needs `flex={1}`
+  // instead). Spread onto the inner `<Form>` after the default, so any key
+  // here overrides it.
+  formProps?: Omit<ComponentProps<typeof Form>, 'onSubmit' | 'children'>;
   children: (form: UseFormReturn<T>) => ReactNode;
 };
 
@@ -43,6 +48,7 @@ export function FormView<T extends FieldValues>(props: FormViewProps<T>) {
         defaultValues={props.defaultValues}
         resolver={props.resolver}
         onSubmit={props.onSubmit}
+        formProps={props.formProps}
       >
         {props.children}
       </LoadedForm>
@@ -58,9 +64,10 @@ function LoadedForm<T extends FieldValues>({
   resolver,
   onSubmit,
   children,
+  formProps,
 }: Pick<
   FormViewProps<T>,
-  'defaultValues' | 'resolver' | 'onSubmit' | 'children'
+  'defaultValues' | 'resolver' | 'onSubmit' | 'children' | 'formProps'
 >) {
   const form = useForm<T>({
     defaultValues: defaultValues as DefaultValues<T>,
@@ -68,7 +75,7 @@ function LoadedForm<T extends FieldValues>({
   });
   return (
     <FormProvider {...form}>
-      <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
+      <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3" {...formProps}>
         {children(form)}
       </Form>
     </FormProvider>

@@ -1,21 +1,18 @@
-import { StockCheckFormView, Layout } from '../components';
+import {
+  StockCheckFormView,
+  StockCheckFormViewProps,
+  Layout,
+} from '../components';
 import { StockCheckForm } from '../../domain';
-import { UseFormReturn } from 'react-hook-form';
 
 export type StockCheckUpdateScreenProps = {
-  form: UseFormReturn<StockCheckForm>;
+  variant: StockCheckFormViewProps['variant'];
+  defaultValues: StockCheckForm;
   onSubmit: (values: StockCheckForm) => void;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   onLogoutPress: () => void;
   serverError?: string;
-  query: string;
-  onQueryChange: (value: string) => void;
-  showOnlyPending: boolean;
-  onShowOnlyPendingToggle: () => void;
-  filled: number;
-  total: number;
-  pendingRows: boolean[];
 };
 
 export const StockCheckUpdateScreen = (props: StockCheckUpdateScreenProps) => {
@@ -31,18 +28,12 @@ export const StockCheckUpdateScreen = (props: StockCheckUpdateScreenProps) => {
           and React Native — an outer `ScrollView` here would give it no
           height to bound against. */}
       <StockCheckFormView
-        form={props.form}
+        variant={props.variant}
+        defaultValues={props.defaultValues}
         onSubmit={props.onSubmit}
         isSubmitDisabled={props.isSubmitDisabled}
         isSubmitting={props.isSubmitting}
         serverError={props.serverError}
-        query={props.query}
-        onQueryChange={props.onQueryChange}
-        showOnlyPending={props.showOnlyPending}
-        onShowOnlyPendingToggle={props.onShowOnlyPendingToggle}
-        filled={props.filled}
-        total={props.total}
-        pendingRows={props.pendingRows}
       />
     </Layout>
   );

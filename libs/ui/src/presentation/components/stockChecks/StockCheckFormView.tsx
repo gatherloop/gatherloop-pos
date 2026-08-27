@@ -1,13 +1,13 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  FormProvider,
   useFieldArray,
+  useFormContext,
   useFormState,
-  UseFormReturn,
+  useWatch,
 } from 'react-hook-form';
 import {
   Button,
-  Form,
   ScrollView,
   SizableText,
   Spinner,
@@ -23,44 +23,74 @@ import { Filter, X } from '@tamagui/lucide-icons';
 import {
   DebouncedInput,
   FormErrorBanner,
+  FormVariant,
+  FormView,
   PinnedActionBar,
   useIsCompactLayout,
 } from '../base';
-import { StockCheckForm } from '../../../domain';
+import { StockCheckForm, stockCheckFormSchema } from '../../../domain';
 import { StockCheckItemRow } from './StockCheckItemRow';
 
+const stockCheckFormResolver = zodResolver(stockCheckFormSchema);
+
 export type StockCheckFormViewProps = {
-  form: UseFormReturn<StockCheckForm>;
+  variant: FormVariant;
+  defaultValues: StockCheckForm;
   onSubmit: (values: StockCheckForm) => void;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   serverError?: string;
-  query: string;
-  onQueryChange: (value: string) => void;
-  showOnlyPending: boolean;
-  onShowOnlyPendingToggle: () => void;
-  filled: number;
-  total: number;
-  pendingRows: boolean[];
 };
 
-export const StockCheckFormView = ({
-  form,
+export const StockCheckFormView = (props: StockCheckFormViewProps) => (
+  <FormView
+    variant={props.variant}
+    defaultValues={props.defaultValues}
+    resolver={stockCheckFormResolver}
+    onSubmit={props.onSubmit}
+    loadingTitle="Fetching Stock Check..."
+    errorTitle="Failed to Fetch Stock Check"
+    formProps={{ flex: 1, gap: undefined }}
+  >
+    {() => (
+      <StockCheckFields
+        onSubmit={props.onSubmit}
+        isSubmitDisabled={props.isSubmitDisabled}
+        isSubmitting={props.isSubmitting}
+        serverError={props.serverError}
+      />
+    )}
+  </FormView>
+);
+
+type StockCheckFieldsProps = {
+  onSubmit: (values: StockCheckForm) => void;
+  isSubmitDisabled: boolean;
+  isSubmitting: boolean;
+  serverError?: string;
+};
+
+const StockCheckFields = ({
   onSubmit,
   isSubmitDisabled,
   isSubmitting,
   serverError,
-  query,
-  onQueryChange,
-  showOnlyPending,
-  onShowOnlyPendingToggle,
-  filled,
-  total,
-  pendingRows,
-}: StockCheckFormViewProps) => {
+}: StockCheckFieldsProps) => {
+  const form = useFormContext<StockCheckForm>();
   const { fields } = useFieldArray({ control: form.control, name: 'items' });
   const { isSubmitted } = useFormState({ control: form.control });
   const isCompactLayout = useIsCompactLayout();
+
+  const [query, setQuery] = useState('');
+  const [showOnlyPending, setShowOnlyPending] = useState(false);
+  const toggleShowOnlyPending = () => setShowOnlyPending((prev) => !prev);
+
+  const watchedItems = useWatch({ control: form.control, name: 'items' });
+  const total = watchedItems.length;
+  const filled = watchedItems.filter(
+    (item) => item.currentStock !== null
+  ).length;
+  const pendingRows = watchedItems.map((item) => item.currentStock === null);
 
   // PRD FR-6: cross-platform replacement for the old
   // `scrollIntoView` + `querySelector('input')` jump, which is DOM-only and
@@ -99,8 +129,8 @@ export const StockCheckFormView = ({
 
   const handleSubmit = () => {
     if (pendingCount > 0) {
-      onQueryChange('');
-      if (!showOnlyPending) onShowOnlyPendingToggle();
+      setQuery('');
+      if (!showOnlyPending) toggleShowOnlyPending();
       const firstPendingIndex = pendingRows.findIndex(Boolean);
       if (firstPendingIndex >= 0) {
         pendingJumpIndexRef.current = firstPendingIndex;
@@ -129,147 +159,145 @@ export const StockCheckFormView = ({
   const headerButtonMinSize = isCompactLayout ? 44 : undefined;
 
   return (
-    <FormProvider {...form}>
-      <Form onSubmit={handleSubmit} flex={1}>
-        <YStack backgroundColor="$background" gap="$3" paddingVertical="$2">
-          <FormErrorBanner message={serverError} />
-          {isSubmitted && pendingCount > 0 && (
-            <FormErrorBanner
-              message={`${pendingCount} material${
-                pendingCount !== 1 ? 's' : ''
-              } still need a stock count`}
-            />
-          )}
+    <>
+      <YStack backgroundColor="$background" gap="$3" paddingVertical="$2">
+        <FormErrorBanner message={serverError} />
+        {isSubmitted && pendingCount > 0 && (
+          <FormErrorBanner
+            message={`${pendingCount} material${
+              pendingCount !== 1 ? 's' : ''
+            } still need a stock count`}
+          />
+        )}
 
-          <XStack alignItems="center" gap="$2">
-            <DebouncedInput
-              flex={1}
-              placeholder="Search material by name"
-              value={query}
-              onChangeText={onQueryChange}
-              delay={400}
-            />
-            {hasQuery && (
-              <Button
-                icon={X}
-                circular
-                size={headerButtonSize}
-                minWidth={headerButtonMinSize}
-                minHeight={headerButtonMinSize}
-                onPress={() => onQueryChange('')}
-                accessibilityLabel="Clear search"
-              />
-            )}
+        <XStack alignItems="center" gap="$2">
+          <DebouncedInput
+            flex={1}
+            placeholder="Search material by name"
+            value={query}
+            onChangeText={setQuery}
+            delay={400}
+          />
+          {hasQuery && (
             <Button
-              icon={Filter}
+              icon={X}
               circular
               size={headerButtonSize}
               minWidth={headerButtonMinSize}
               minHeight={headerButtonMinSize}
-              onPress={onShowOnlyPendingToggle}
-              theme={showOnlyPending ? 'yellow' : undefined}
-              accessibilityLabel={
-                showOnlyPending ? 'Show all materials' : 'Show only pending'
-              }
+              onPress={() => setQuery('')}
+              accessibilityLabel="Clear search"
             />
-          </XStack>
+          )}
+          <Button
+            icon={Filter}
+            circular
+            size={headerButtonSize}
+            minWidth={headerButtonMinSize}
+            minHeight={headerButtonMinSize}
+            onPress={toggleShowOnlyPending}
+            theme={showOnlyPending ? 'yellow' : undefined}
+            accessibilityLabel={
+              showOnlyPending ? 'Show all materials' : 'Show only pending'
+            }
+          />
+        </XStack>
 
-          <SizableText color="$gray10">
-            {filled} / {total} materials checked
-          </SizableText>
-        </YStack>
+        <SizableText color="$gray10">
+          {filled} / {total} materials checked
+        </SizableText>
+      </YStack>
 
-        {/* PRD FR-5: on compact, Submit moves into a `PinnedActionBar` that
-            overlays the scroll region instead of trailing the list, so it's
-            reachable without scrolling through 82 rows. This wrapper is the
-            `position: relative` anchor the bar needs; on desktop it renders
-            no bar and is otherwise a no-op container. */}
-        <YStack flex={1} position="relative">
-          <ScrollView
-            flex={1}
-            ref={scrollViewRef}
-            onLayout={handleScrollViewLayout}
+      {/* PRD FR-5: on compact, Submit moves into a `PinnedActionBar` that
+          overlays the scroll region instead of trailing the list, so it's
+          reachable without scrolling through 82 rows. This wrapper is the
+          `position: relative` anchor the bar needs; on desktop it renders
+          no bar and is otherwise a no-op container. */}
+      <YStack flex={1} position="relative">
+        <ScrollView
+          flex={1}
+          ref={scrollViewRef}
+          onLayout={handleScrollViewLayout}
+        >
+          <YStack
+            maxWidth={640}
+            alignSelf="center"
+            width="100%"
+            gap="$3"
+            paddingBottom={isCompactLayout ? 96 : '$3'}
           >
-            <YStack
-              maxWidth={640}
-              alignSelf="center"
-              width="100%"
-              gap="$3"
-              paddingBottom={isCompactLayout ? 96 : '$3'}
-            >
-              <YStack gap="$2">
-                {noMatches && (
-                  <SizableText
-                    color="$gray10"
-                    textAlign="center"
-                    paddingVertical="$4"
-                  >
-                    No materials match &quot;{query}&quot;
-                  </SizableText>
-                )}
-
-                {fields.map((field, index) => {
-                  const inputId = `stock-check-item-${field.id}`;
-                  const isPending = pendingRows[index] ?? false;
-                  const isErrorRow = isSubmitted && isPending;
-
-                  const hiddenBySearch =
-                    hasQuery &&
-                    !field.materialName.toLowerCase().includes(lowerQuery);
-                  const hiddenByPendingFilter = showOnlyPending && !isPending;
-                  const hidden = hiddenBySearch || hiddenByPendingFilter;
-
-                  return (
-                    <StockCheckItemRow
-                      key={field.id}
-                      materialName={field.materialName}
-                      purchaseUnit={field.purchaseUnit}
-                      fieldName={`items.${index}.currentStock`}
-                      inputId={inputId}
-                      isPending={isPending}
-                      isErrorRow={isErrorRow}
-                      hidden={hidden}
-                      onLayout={(y) => {
-                        rowOffsetsRef.current[index] = y;
-                      }}
-                      inputRef={(el) => {
-                        inputRefs.current[index] = el;
-                      }}
-                    />
-                  );
-                })}
-              </YStack>
-
-              {!isCompactLayout && (
-                <Button
-                  disabled={isSubmitDisabled}
-                  onPress={handleSubmit}
-                  theme="blue"
-                  icon={isSubmitting ? <Spinner /> : undefined}
+            <YStack gap="$2">
+              {noMatches && (
+                <SizableText
+                  color="$gray10"
+                  textAlign="center"
+                  paddingVertical="$4"
                 >
-                  Submit
-                </Button>
+                  No materials match &quot;{query}&quot;
+                </SizableText>
               )}
-            </YStack>
-          </ScrollView>
 
-          {isCompactLayout && (
-            <PinnedActionBar>
+              {fields.map((field, index) => {
+                const inputId = `stock-check-item-${field.id}`;
+                const isPending = pendingRows[index] ?? false;
+                const isErrorRow = isSubmitted && isPending;
+
+                const hiddenBySearch =
+                  hasQuery &&
+                  !field.materialName.toLowerCase().includes(lowerQuery);
+                const hiddenByPendingFilter = showOnlyPending && !isPending;
+                const hidden = hiddenBySearch || hiddenByPendingFilter;
+
+                return (
+                  <StockCheckItemRow
+                    key={field.id}
+                    materialName={field.materialName}
+                    purchaseUnit={field.purchaseUnit}
+                    fieldName={`items.${index}.currentStock`}
+                    inputId={inputId}
+                    isPending={isPending}
+                    isErrorRow={isErrorRow}
+                    hidden={hidden}
+                    onLayout={(y) => {
+                      rowOffsetsRef.current[index] = y;
+                    }}
+                    inputRef={(el) => {
+                      inputRefs.current[index] = el;
+                    }}
+                  />
+                );
+              })}
+            </YStack>
+
+            {!isCompactLayout && (
               <Button
                 disabled={isSubmitDisabled}
                 onPress={handleSubmit}
                 theme="blue"
-                size="$5"
-                minHeight={44}
                 icon={isSubmitting ? <Spinner /> : undefined}
-                accessibilityLabel="Submit"
               >
                 Submit
               </Button>
-            </PinnedActionBar>
-          )}
-        </YStack>
-      </Form>
-    </FormProvider>
+            )}
+          </YStack>
+        </ScrollView>
+
+        {isCompactLayout && (
+          <PinnedActionBar>
+            <Button
+              disabled={isSubmitDisabled}
+              onPress={handleSubmit}
+              theme="blue"
+              size="$5"
+              minHeight={44}
+              icon={isSubmitting ? <Spinner /> : undefined}
+              accessibilityLabel="Submit"
+            >
+              Submit
+            </Button>
+          </PinnedActionBar>
+        )}
+      </YStack>
+    </>
   );
 };
