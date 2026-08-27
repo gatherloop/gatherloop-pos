@@ -1,7 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
-import React from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
 import { YStack, Text } from 'tamagui';
 import { VariantFormView } from './VariantFormView';
 import type { VariantForm } from '../../../domain';
@@ -18,30 +16,33 @@ const defaultValues: VariantForm = {
   pricingTiers: [],
 };
 
-const LoadedStory = () => {
-  const form = useForm<VariantForm>({ defaultValues });
-  return (
-    <VariantFormView
-      variant={{ type: 'loaded' }}
-      onRetryButtonPress={fn()}
-      form={form}
-      onSubmit={fn()}
-      product={mockProduct}
-      isMaterialSheetOpen={false}
-      onMaterialSheetOpenChange={fn()}
-      onRemoveMaterial={fn()}
-      isSubmitDisabled={false}
-      MaterialList={() => (
-        <YStack>
-          <Text color="$color">+ Add Material</Text>
-        </YStack>
-      )}
-    />
-  );
+const meta: Meta<typeof VariantFormView> = {
+  title: 'Features/Variants/VariantFormView',
+  component: VariantFormView,
 };
 
-const PopulatedStory = () => {
-  const form = useForm<VariantForm>({
+export default meta;
+type Story = StoryObj<typeof VariantFormView>;
+
+export const Loaded: Story = {
+  args: {
+    variant: { type: 'loaded' },
+    defaultValues,
+    onSubmit: fn(),
+    product: mockProduct,
+    isSubmitDisabled: false,
+    isSubmitting: false,
+    MaterialList: () => (
+      <YStack>
+        <Text color="$color">+ Add Material</Text>
+      </YStack>
+    ),
+  },
+};
+
+export const Populated: Story = {
+  args: {
+    ...Loaded.args,
     defaultValues: {
       name: 'Iced Coffee Latte - Iced Regular',
       price: 35000,
@@ -53,83 +54,25 @@ const PopulatedStory = () => {
       values: [{ optionValueId: 1 }],
       pricingTiers: [],
     },
-  });
-  return (
-    <VariantFormView
-      variant={{ type: 'loaded' }}
-      onRetryButtonPress={fn()}
-      form={form}
-      onSubmit={fn()}
-      product={mockProduct}
-      isMaterialSheetOpen={false}
-      onMaterialSheetOpenChange={fn()}
-      onRemoveMaterial={fn()}
-      isSubmitDisabled={false}
-      MaterialList={() => (
-        <YStack>
-          <Text color="$color">+ Add Material</Text>
-        </YStack>
-      )}
-    />
-  );
-};
-
-const meta: Meta<typeof VariantFormView> = {
-  title: 'Features/Variants/VariantFormView',
-  component: VariantFormView,
-};
-
-export default meta;
-type Story = StoryObj<typeof VariantFormView>;
-
-export const Loaded: Story = {
-  render: () => <LoadedStory />,
-};
-
-export const Populated: Story = {
-  render: () => <PopulatedStory />,
-};
-
-const LoadingStory = () => {
-  const form = useForm<VariantForm>({ defaultValues });
-  return (
-    <VariantFormView
-      variant={{ type: 'loading' }}
-      onRetryButtonPress={fn()}
-      form={form}
-      onSubmit={fn()}
-      product={null}
-      isMaterialSheetOpen={false}
-      onMaterialSheetOpenChange={fn()}
-      onRemoveMaterial={fn()}
-      isSubmitDisabled={true}
-      MaterialList={() => null}
-    />
-  );
-};
-
-const ErrorStory = () => {
-  const form = useForm<VariantForm>({ defaultValues });
-  return (
-    <VariantFormView
-      variant={{ type: 'error' }}
-      onRetryButtonPress={fn()}
-      form={form}
-      onSubmit={fn()}
-      product={null}
-      isMaterialSheetOpen={false}
-      onMaterialSheetOpenChange={fn()}
-      onRemoveMaterial={fn()}
-      isSubmitDisabled={true}
-      MaterialList={() => null}
-    />
-  );
+  },
 };
 
 export const Loading: Story = {
-  render: () => <LoadingStory />,
+  args: {
+    ...Loaded.args,
+    variant: { type: 'loading' },
+    product: null,
+    isSubmitDisabled: true,
+    MaterialList: () => null,
+  },
 };
 
 export const Error: Story = {
-  render: () => <ErrorStory />,
+  args: {
+    ...Loaded.args,
+    variant: { type: 'error', onRetryButtonPress: fn() },
+    product: null,
+    isSubmitDisabled: true,
+    MaterialList: () => null,
+  },
 };
