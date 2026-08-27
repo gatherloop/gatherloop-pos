@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn, userEvent, within } from '@storybook/test';
-import React, { useState } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import React from 'react';
 import { Text } from 'tamagui';
 import { TransactionFormView } from './TransactionFormView';
 import type { TransactionForm } from '../../../domain';
@@ -34,105 +33,48 @@ const TransactionFormStory = ({
   values = defaultValues,
 }: {
   values?: TransactionForm;
-} = {}) => {
-  const form = useForm<TransactionForm>({ defaultValues: values });
-  const itemsFieldArray = useFieldArray({
-    control: form.control,
-    name: 'transactionItems',
-    keyName: 'key',
-  });
-  const couponsFieldArray = useFieldArray({
-    control: form.control,
-    name: 'transactionCoupons',
-    keyName: 'key',
-  });
-  return (
-    <TransactionFormView
-      form={form}
-      onSubmit={fn()}
-      isCouponSheetOpen={false}
-      onCouponSheetOpenChange={fn()}
-      onItemCouponSheetOpen={fn()}
-      onRemoveItemCoupon={fn()}
-      isSubmitDisabled={false}
-      isSubmitting={false}
-      isSubmitSuccess={false}
-      TransactionItemSelect={() => <Text color="$color">+ Add Item</Text>}
-      TransactionCouponList={() => null}
-      itemsFieldArray={itemsFieldArray}
-      couponsFieldArray={couponsFieldArray}
-    />
-  );
-};
+} = {}) => (
+  <TransactionFormView
+    variant={{ type: 'loaded' }}
+    defaultValues={values}
+    onSubmit={fn()}
+    isSubmitDisabled={false}
+    isSubmitting={false}
+    isSubmitSuccess={false}
+    TransactionItemSelect={() => <Text color="$color">+ Add Item</Text>}
+    TransactionCouponList={() => null}
+  />
+);
 
-const CouponSheetOpenStory = () => {
-  const form = useForm<TransactionForm>({ defaultValues });
-  const itemsFieldArray = useFieldArray({
-    control: form.control,
-    name: 'transactionItems',
-    keyName: 'key',
-  });
-  const couponsFieldArray = useFieldArray({
-    control: form.control,
-    name: 'transactionCoupons',
-    keyName: 'key',
-  });
-  return (
-    <TransactionFormView
-      form={form}
-      onSubmit={fn()}
-      isCouponSheetOpen={true}
-      onCouponSheetOpenChange={fn()}
-      onItemCouponSheetOpen={fn()}
-      onRemoveItemCoupon={fn()}
-      isSubmitDisabled={false}
-      isSubmitting={false}
-      isSubmitSuccess={false}
-      TransactionItemSelect={() => <Text color="$color">+ Add Item</Text>}
-      TransactionCouponList={() => <Text color="$color">Coupon List Here</Text>}
-      itemsFieldArray={itemsFieldArray}
-      couponsFieldArray={couponsFieldArray}
-    />
-  );
-};
+const CouponSheetOpenStory = () => (
+  <TransactionFormView
+    variant={{ type: 'loaded' }}
+    defaultValues={filledValues}
+    onSubmit={fn()}
+    isSubmitDisabled={false}
+    isSubmitting={false}
+    isSubmitSuccess={false}
+    TransactionItemSelect={() => <Text color="$color">+ Add Item</Text>}
+    TransactionCouponList={() => <Text color="$color">Coupon List Here</Text>}
+  />
+);
 
 // PRD FR-5: on compact, applying a coupon swaps the cart sheet's own content
 // to the coupon list with a back header, instead of opening a second sheet.
-// Stateful (unlike the other stories) so the `play` interaction below can
-// drive the real open-cart -> add-coupon flow.
-const CompactCouponSwapStory = () => {
-  const form = useForm<TransactionForm>({ defaultValues: filledValues });
-  const itemsFieldArray = useFieldArray({
-    control: form.control,
-    name: 'transactionItems',
-    keyName: 'key',
-  });
-  const couponsFieldArray = useFieldArray({
-    control: form.control,
-    name: 'transactionCoupons',
-    keyName: 'key',
-  });
-  const [isCouponSheetOpen, setIsCouponSheetOpen] = useState(false);
-  return (
-    <TransactionFormView
-      form={form}
-      onSubmit={fn()}
-      isCouponSheetOpen={isCouponSheetOpen}
-      onCouponSheetOpenChange={setIsCouponSheetOpen}
-      onItemCouponSheetOpen={() => setIsCouponSheetOpen(true)}
-      onRemoveItemCoupon={fn()}
-      isSubmitDisabled={false}
-      isSubmitting={false}
-      isSubmitSuccess={false}
-      TransactionItemSelect={() => <Text color="$color">+ Add Item</Text>}
-      TransactionCouponList={() => (
-        <Text color="$color">Coupon List Here</Text>
-      )}
-      itemsFieldArray={itemsFieldArray}
-      couponsFieldArray={couponsFieldArray}
-    />
-  );
-};
+const CompactCouponSwapStory = () => (
+  <TransactionFormView
+    variant={{ type: 'loaded' }}
+    defaultValues={filledValues}
+    onSubmit={fn()}
+    isSubmitDisabled={false}
+    isSubmitting={false}
+    isSubmitSuccess={false}
+    TransactionItemSelect={() => <Text color="$color">+ Add Item</Text>}
+    TransactionCouponList={() => (
+      <Text color="$color">Coupon List Here</Text>
+    )}
+  />
+);
 
 const meta: Meta<typeof TransactionFormView> = {
   title: 'Features/Transactions/TransactionFormView',
@@ -144,6 +86,36 @@ type Story = StoryObj<typeof TransactionFormView>;
 
 export const Default: Story = {
   render: () => <TransactionFormStory />,
+};
+
+export const Loading: Story = {
+  render: () => (
+    <TransactionFormView
+      variant={{ type: 'loading' }}
+      defaultValues={defaultValues}
+      onSubmit={fn()}
+      isSubmitDisabled={false}
+      isSubmitting={false}
+      isSubmitSuccess={false}
+      TransactionItemSelect={() => <Text color="$color">+ Add Item</Text>}
+      TransactionCouponList={() => null}
+    />
+  ),
+};
+
+export const Error: Story = {
+  render: () => (
+    <TransactionFormView
+      variant={{ type: 'error', onRetryButtonPress: fn() }}
+      defaultValues={defaultValues}
+      onSubmit={fn()}
+      isSubmitDisabled={false}
+      isSubmitting={false}
+      isSubmitSuccess={false}
+      TransactionItemSelect={() => <Text color="$color">+ Add Item</Text>}
+      TransactionCouponList={() => null}
+    />
+  ),
 };
 
 export const CouponSheetOpen: Story = {

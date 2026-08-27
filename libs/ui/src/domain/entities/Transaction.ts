@@ -65,6 +65,26 @@ export type TransactionForm = {
   transactionCoupons: TransactionCouponForm[];
 };
 
+// Partial validator, not a full parser (§4.4.2): `transactionCoupons` is
+// entirely unvalidated, and `variant`, `price`, `id` and `coupon` on each
+// item pass straight through — `{ raw: true }` is required at the call site
+// to keep them intact instead of the resolver stripping them to `z.any()`.
+export const transactionFormSchema = z.object({
+  name: z.string().min(1),
+  orderNumber: z.number(),
+  transactionItems: z
+    .array(
+      z.lazy(() =>
+        z.object({
+          amount: z.number().min(1),
+          discountAmount: z.number(),
+          note: z.string(),
+        })
+      )
+    )
+    .min(1),
+});
+
 export type PaymentStatus = 'paid' | 'unpaid' | 'all';
 
 export type TransactionPayForm = {

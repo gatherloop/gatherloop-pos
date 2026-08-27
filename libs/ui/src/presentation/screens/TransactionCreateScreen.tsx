@@ -9,6 +9,7 @@ import {
   CouponListProps,
   useIsCompactLayout,
 } from '../components';
+import { FormVariant } from '../components/base';
 import {
   OptionValue,
   Product,
@@ -16,30 +17,18 @@ import {
   TransactionPayForm,
   Wallet,
 } from '../../domain';
-import { UseFormReturn, UseFieldArrayReturn } from 'react-hook-form';
-import { Coupon } from '../../domain';
+import { MutableRefObject } from 'react';
+import { UseFormReturn } from 'react-hook-form';
 
 export type TransactionCreateScreenProps = {
-  form: UseFormReturn<TransactionForm>;
+  variant: FormVariant;
+  defaultValues: TransactionForm;
   onSubmit: (values: TransactionForm) => void;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   isSubmitSuccess: boolean;
   onLogoutPress: () => void;
-  isCouponSheetOpen: boolean;
-  onCouponSheetOpenChange: (open: boolean) => void;
-  onItemCouponSheetOpen: (index: number) => void;
-  onRemoveItemCoupon: (index: number) => void;
-  itemsFieldArray: UseFieldArrayReturn<
-    TransactionForm,
-    'transactionItems',
-    'key'
-  >;
-  couponsFieldArray: UseFieldArrayReturn<
-    TransactionForm,
-    'transactionCoupons',
-    'key'
-  >;
+  formRef?: MutableRefObject<UseFormReturn<TransactionForm> | null>;
   transactionItemSelect: {
     amount: number;
     currentPage: number;
@@ -60,7 +49,6 @@ export type TransactionCreateScreenProps = {
     selectedProduct?: Product;
   };
   couponList: {
-    onItemPress: (coupon: Coupon) => void;
     onRetryButtonPress: () => void;
     variant: CouponListProps['variant'];
   };
@@ -82,17 +70,13 @@ export const TransactionCreateScreen = (
 
   const formView = (
     <TransactionFormView
-      form={props.form}
+      variant={props.variant}
+      defaultValues={props.defaultValues}
       onSubmit={props.onSubmit}
       isSubmitDisabled={props.isSubmitDisabled}
       isSubmitting={props.isSubmitting}
       isSubmitSuccess={props.isSubmitSuccess}
-      isCouponSheetOpen={props.isCouponSheetOpen}
-      onCouponSheetOpenChange={props.onCouponSheetOpenChange}
-      onItemCouponSheetOpen={props.onItemCouponSheetOpen}
-      onRemoveItemCoupon={props.onRemoveItemCoupon}
-      itemsFieldArray={props.itemsFieldArray}
-      couponsFieldArray={props.couponsFieldArray}
+      formRef={props.formRef}
       serverError={props.serverError}
       TransactionItemSelect={() => (
         <TransactionItemSelect
@@ -119,9 +103,9 @@ export const TransactionCreateScreen = (
           selectedProduct={props.transactionItemSelect.selectedProduct}
         />
       )}
-      TransactionCouponList={() => (
+      TransactionCouponList={(onItemPress) => (
         <CouponList
-          onItemPress={props.couponList.onItemPress}
+          onItemPress={onItemPress}
           onRetryButtonPress={props.couponList.onRetryButtonPress}
           variant={props.couponList.variant}
         />

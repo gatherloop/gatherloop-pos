@@ -1,37 +1,27 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
 import React from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
 import { TransactionUpdateScreen } from './TransactionUpdateScreen';
 import type { TransactionForm } from '../../domain';
-import { mockWallets, mockProducts, mockTransaction } from '../../../.storybook/mocks/mockData';
+import { mockProducts, mockTransaction } from '../../../.storybook/mocks/mockData';
+
+const defaultValues: TransactionForm = {
+  name: mockTransaction.name,
+  orderNumber: mockTransaction.orderNumber,
+  transactionItems: [],
+  transactionCoupons: [],
+};
 
 const UpdateStory = () => {
-  const form = useForm<TransactionForm>({
-    defaultValues: {
-      name: mockTransaction.name,
-      orderNumber: mockTransaction.orderNumber,
-      transactionItems: [],
-      transactionCoupons: [],
-    },
-  });
-  const itemsFieldArray = useFieldArray({ control: form.control, name: 'transactionItems', keyName: 'key' });
-  const couponsFieldArray = useFieldArray({ control: form.control, name: 'transactionCoupons', keyName: 'key' });
-
   return (
     <TransactionUpdateScreen
-      form={form}
+      variant={{ type: 'loaded' }}
+      defaultValues={defaultValues}
       onSubmit={fn()}
       isSubmitDisabled={false}
       isSubmitting={false}
       isSubmitSuccess={false}
       onLogoutPress={fn()}
-      isCouponSheetOpen={false}
-      onCouponSheetOpenChange={fn()}
-      onItemCouponSheetOpen={fn()}
-      onRemoveItemCoupon={fn()}
-      itemsFieldArray={itemsFieldArray}
-      couponsFieldArray={couponsFieldArray}
       transactionItemSelect={{
         amount: 1,
         currentPage: 1,
@@ -51,7 +41,6 @@ const UpdateStory = () => {
         variant: { type: 'loaded' },
       }}
       couponList={{
-        onItemPress: fn(),
         onRetryButtonPress: fn(),
         variant: { type: 'empty' },
       }}
