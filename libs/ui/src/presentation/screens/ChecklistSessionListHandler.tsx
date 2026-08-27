@@ -96,6 +96,8 @@ export const ChecklistSessionListHandler = ({
       }
       isSubmitting={checklistSessionCreate.state.type === 'submitting'}
       checklistTemplates={checklistTemplates}
+      createFormVariant={{ type: 'loaded' }}
+      createFormDefaultValues={checklistSessionCreate.state.values}
     />
   );
 };
