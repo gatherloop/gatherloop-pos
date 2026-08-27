@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useForm, useFieldArray } from 'react-hook-form';
 import { useMedia, Text, Button } from 'tamagui';
 import { TransactionFormView } from './TransactionFormView';
-import type { TransactionForm } from '../../../domain';
+import type { Coupon, TransactionForm } from '../../../domain';
 import { mockVariants } from '../../../../.storybook/mocks/mockData';
 
 const emptyValues: TransactionForm = {
@@ -36,78 +35,45 @@ const Wrapper = ({
 }: {
   defaultValues: TransactionForm;
   isSubmitSuccess?: boolean;
-}) => {
-  const form = useForm<TransactionForm>({ defaultValues });
-  const itemsFieldArray = useFieldArray({
-    control: form.control,
-    name: 'transactionItems',
-    keyName: 'key',
-  });
-  const couponsFieldArray = useFieldArray({
-    control: form.control,
-    name: 'transactionCoupons',
-    keyName: 'key',
-  });
+}) => (
+  <TransactionFormView
+    variant={{ type: 'loaded' }}
+    defaultValues={defaultValues}
+    onSubmit={jest.fn()}
+    isSubmitDisabled={false}
+    isSubmitting={false}
+    isSubmitSuccess={isSubmitSuccess}
+    TransactionItemSelect={() => <Text color="$color">Product Picker</Text>}
+    TransactionCouponList={() => null}
+  />
+);
 
-  return (
-    <TransactionFormView
-      form={form}
-      onSubmit={jest.fn()}
-      isCouponSheetOpen={false}
-      onCouponSheetOpenChange={jest.fn()}
-      onItemCouponSheetOpen={jest.fn()}
-      onRemoveItemCoupon={jest.fn()}
-      isSubmitDisabled={false}
-      isSubmitting={false}
-      isSubmitSuccess={isSubmitSuccess}
-      TransactionItemSelect={() => <Text color="$color">Product Picker</Text>}
-      TransactionCouponList={() => null}
-      itemsFieldArray={itemsFieldArray}
-      couponsFieldArray={couponsFieldArray}
-    />
-  );
+const mockCoupon: Coupon = {
+  id: 1,
+  code: 'WELCOME10',
+  type: 'fixed',
+  amount: 5000,
+  createdAt: '2024-01-01T00:00:00.000Z',
 };
 
 const StatefulWrapper = ({
   defaultValues,
 }: {
   defaultValues: TransactionForm;
-}) => {
-  const form = useForm<TransactionForm>({ defaultValues });
-  const itemsFieldArray = useFieldArray({
-    control: form.control,
-    name: 'transactionItems',
-    keyName: 'key',
-  });
-  const couponsFieldArray = useFieldArray({
-    control: form.control,
-    name: 'transactionCoupons',
-    keyName: 'key',
-  });
-  const [isCouponSheetOpen, setIsCouponSheetOpen] = useState(false);
-
-  return (
-    <TransactionFormView
-      form={form}
-      onSubmit={jest.fn()}
-      isCouponSheetOpen={isCouponSheetOpen}
-      onCouponSheetOpenChange={setIsCouponSheetOpen}
-      onItemCouponSheetOpen={() => setIsCouponSheetOpen(true)}
-      onRemoveItemCoupon={jest.fn()}
-      isSubmitDisabled={false}
-      isSubmitting={false}
-      isSubmitSuccess={false}
-      TransactionItemSelect={() => <Text color="$color">Product Picker</Text>}
-      TransactionCouponList={() => (
-        <Button onPress={() => setIsCouponSheetOpen(false)}>
-          WELCOME10
-        </Button>
-      )}
-      itemsFieldArray={itemsFieldArray}
-      couponsFieldArray={couponsFieldArray}
-    />
-  );
-};
+}) => (
+  <TransactionFormView
+    variant={{ type: 'loaded' }}
+    defaultValues={defaultValues}
+    onSubmit={jest.fn()}
+    isSubmitDisabled={false}
+    isSubmitting={false}
+    isSubmitSuccess={false}
+    TransactionItemSelect={() => <Text color="$color">Product Picker</Text>}
+    TransactionCouponList={(onItemPress) => (
+      <Button onPress={() => onItemPress(mockCoupon)}>WELCOME10</Button>
+    )}
+  />
+);
 
 describe('TransactionFormView', () => {
   afterEach(() => {

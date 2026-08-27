@@ -1,8 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
 import React from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
-import { Text } from 'tamagui';
 import { TransactionCreateScreen } from './TransactionCreateScreen';
 import type { TransactionForm } from '../../domain';
 import {
@@ -43,24 +41,15 @@ const CreateStory = ({
   isSubmitSuccess?: boolean;
   isPaymentAlertOpen?: boolean;
 } = {}) => {
-  const form = useForm<TransactionForm>({ defaultValues: values });
-  const itemsFieldArray = useFieldArray({ control: form.control, name: 'transactionItems', keyName: 'key' });
-  const couponsFieldArray = useFieldArray({ control: form.control, name: 'transactionCoupons', keyName: 'key' });
-
   return (
     <TransactionCreateScreen
-      form={form}
+      variant={{ type: 'loaded' }}
+      defaultValues={values}
       onSubmit={fn()}
       isSubmitDisabled={false}
       isSubmitting={false}
       isSubmitSuccess={isSubmitSuccess}
       onLogoutPress={fn()}
-      isCouponSheetOpen={false}
-      onCouponSheetOpenChange={fn()}
-      onItemCouponSheetOpen={fn()}
-      onRemoveItemCoupon={fn()}
-      itemsFieldArray={itemsFieldArray}
-      couponsFieldArray={couponsFieldArray}
       transactionItemSelect={{
         amount: 1,
         currentPage: 1,
@@ -80,7 +69,6 @@ const CreateStory = ({
         variant: { type: 'loaded' },
       }}
       couponList={{
-        onItemPress: fn(),
         onRetryButtonPress: fn(),
         variant: { type: 'empty' },
       }}

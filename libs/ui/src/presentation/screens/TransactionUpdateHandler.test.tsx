@@ -76,16 +76,42 @@ describe('TransactionUpdateHandler', () => {
   });
 
   describe('loading and data states', () => {
-    it('should show submit button immediately', async () => {
+    it('should show loading state while fetching the transaction', async () => {
       render(<TransactionUpdateHandler {...createProps()} />);
-      expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
+      expect(screen.getByText('Fetching Transaction...')).toBeTruthy();
       await act(async () => {
         await flushPromises();
       });
     });
 
-    it('should show product loading state initially', async () => {
+    it('should show submit button once the transaction has loaded', async () => {
       render(<TransactionUpdateHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
+    });
+
+    it('should show error state when transaction fetch fails', async () => {
+      render(
+        <TransactionUpdateHandler
+          {...createProps({ transactionShouldFail: true })}
+        />
+      );
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(
+        screen.getByRole('heading', { name: 'Failed to Fetch Transaction' })
+      ).toBeTruthy();
+    });
+
+    it('should show product loading state once the transaction has loaded', async () => {
+      render(<TransactionUpdateHandler {...createProps({ preloaded: true })} />);
       expect(screen.getByText('Fetching Products...')).toBeTruthy();
       await act(async () => {
         await flushPromises();
@@ -109,23 +135,33 @@ describe('TransactionUpdateHandler', () => {
         await flushPromises();
       });
     });
+
+    it('should fill the form with fetched values when data loads after mount', async () => {
+      render(<TransactionUpdateHandler {...createProps({ preloaded: false })} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByDisplayValue('Transaction 1')).toBeTruthy();
+    });
   });
 
   describe('form fields', () => {
     it('should show customer name input field', async () => {
       render(<TransactionUpdateHandler {...createProps()} />);
-      expect(screen.getByRole('textbox', { name: 'Customer Name' })).toBeTruthy();
       await act(async () => {
         await flushPromises();
       });
+      expect(screen.getByRole('textbox', { name: 'Customer Name' })).toBeTruthy();
     });
 
     it('should show order number input field', async () => {
       render(<TransactionUpdateHandler {...createProps()} />);
-      expect(screen.getByRole('textbox', { name: 'Order Number' })).toBeTruthy();
       await act(async () => {
         await flushPromises();
       });
+      expect(screen.getByRole('textbox', { name: 'Order Number' })).toBeTruthy();
     });
   });
 
@@ -325,6 +361,51 @@ describe('TransactionUpdateHandler', () => {
       expect(screen.getByRole('button', { name: 'Apply Coupon' })).toBeTruthy();
       expect(screen.queryByText('FIXED5000')).toBeNull();
       expect(screen.getAllByText('Rp. 50.000')).toHaveLength(3);
+    });
+  });
+
+  describe('transaction error recovery', () => {
+    it('should refetch the transaction when retry button is pressed', async () => {
+      const user = userEvent.setup();
+      const transactionRepo = new MockTransactionRepository();
+      transactionRepo.setShouldFail(true);
+
+      render(
+        <TransactionUpdateHandler
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          transactionUpdateUsecase={new TransactionUpdateUsecase(transactionRepo, {
+            transactionId: 1,
+            transaction: null,
+          })}
+          transactionItemSelectUsecase={new TransactionItemSelectUsecase(
+            new MockProductRepository(),
+            new MockVariantRepository(),
+            { products: [], totalItem: 0 }
+          )}
+          couponListUsecase={new CouponListUsecase(
+            new MockCouponRepository(),
+            { coupons: [] }
+          )}
+        />
+      );
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(
+        screen.getByRole('heading', { name: 'Failed to Fetch Transaction' })
+      ).toBeTruthy();
+
+      transactionRepo.setShouldFail(false);
+
+      await user.click(screen.getByRole('button', { name: 'Retry' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByDisplayValue('Transaction 1')).toBeTruthy();
     });
   });
 

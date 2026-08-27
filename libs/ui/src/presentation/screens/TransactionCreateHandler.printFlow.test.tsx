@@ -68,26 +68,16 @@ const transactionCreateCtrl = {
   state: {
     type: 'idle' as string,
     transactionId: null as number | null,
-    values: { transactionItems: [] as never[], transactionCoupons: [] as never[] },
+    values: {
+      name: 'Table 1',
+      orderNumber: 1,
+      get transactionItems() {
+        return transactionItemsValue;
+      },
+      transactionCoupons: [] as never[],
+    },
   },
   dispatch: jest.fn(),
-  form: {
-    getValues: (key: string) => {
-      if (key === 'name') return 'Table 1';
-      if (key === 'orderNumber') return 1;
-      if (key === 'transactionItems') return transactionItemsValue;
-      if (key === 'transactionCoupons') return [];
-      return undefined;
-    },
-  } as never,
-  isCouponSheetOpen: false,
-  onCouponSheetOpenChange: jest.fn(),
-  onItemCouponSheetOpen: jest.fn(),
-  onAddItem: jest.fn(),
-  onAddCoupon: jest.fn(),
-  onRemoveItemCoupon: jest.fn(),
-  itemsFieldArray: {} as never,
-  couponsFieldArray: {} as never,
 };
 
 const transactionPayCtrl = {

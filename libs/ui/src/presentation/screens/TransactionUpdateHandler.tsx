@@ -1,5 +1,6 @@
 import { useRouter } from 'solito/router';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { UseFormReturn } from 'react-hook-form';
 import { match, P } from 'ts-pattern';
 import {
   useTransactionUpdateController,
@@ -12,6 +13,8 @@ import {
   TransactionUpdateUsecase,
   TransactionItemSelectUsecase,
   CouponListUsecase,
+  Variant,
+  TransactionForm,
 } from '../../domain';
 import {
   TransactionUpdateScreen,
@@ -41,6 +44,44 @@ export const TransactionUpdateHandler = ({
   const couponList = useCouponListController(couponListUsecase);
   const authLogout = useAuthLogoutController(authLogoutUsecase);
 
+  const formRef = useRef<UseFormReturn<TransactionForm> | null>(null);
+
+  // Writes through the form the same way an item selection would if it
+  // happened from inside the form subtree — see `FormView`'s `formRef`
+  // escape hatch (TRD §4.6). `formRef.current` is only ever null before the
+  // form's `loaded` branch mounts, which is not reachable here since a
+  // variant selection requires the product picker (and therefore the form)
+  // to already be on screen.
+  const addItemToForm = (newVariant: Variant, amount: number) => {
+    const form = formRef.current;
+    if (!form) return;
+
+    const items = form.getValues('transactionItems');
+    const itemIndex = items.findIndex(
+      ({ variant }) => newVariant.id === variant.id
+    );
+
+    if (itemIndex !== -1) {
+      form.setValue(
+        'transactionItems',
+        items.map((item, index) =>
+          index === itemIndex ? { ...item, amount: item.amount + amount } : item
+        )
+      );
+    } else {
+      form.setValue('transactionItems', [
+        ...items,
+        {
+          amount,
+          variant: newVariant,
+          price: newVariant.price,
+          discountAmount: 0,
+          note: '',
+        },
+      ]);
+    }
+  };
+
   useEffect(() => {
     if (transactionUpdate.state.type === 'submitSuccess')
       router.push('/transactions');
@@ -51,13 +92,12 @@ export const TransactionUpdateHandler = ({
       transactionItemSelect.state.type === 'loadingVariantSuccess' &&
       transactionItemSelect.state.selectedVariant
     ) {
-      transactionUpdate.onAddItem(
+      addItemToForm(
         transactionItemSelect.state.selectedVariant,
         transactionItemSelect.state.amount
       );
     }
   }, [
-    transactionUpdate,
     transactionItemSelect.state.amount,
     transactionItemSelect.state.selectedVariant,
     transactionItemSelect.state.type,
@@ -65,7 +105,29 @@ export const TransactionUpdateHandler = ({
 
   return (
     <TransactionUpdateScreen
-      form={transactionUpdate.form}
+      variant={match(transactionUpdate.state)
+        .returnType<TransactionUpdateScreenProps['variant']>()
+        .with({ type: P.union('idle', 'loading') }, () => ({
+          type: 'loading',
+        }))
+        .with(
+          {
+            type: P.union(
+              'loaded',
+              'submitting',
+              'submitSuccess',
+              'submitError'
+            ),
+          },
+          () => ({ type: 'loaded' })
+        )
+        .with({ type: 'error' }, () => ({
+          type: 'error',
+          onRetryButtonPress: () =>
+            transactionUpdate.dispatch({ type: 'FETCH' }),
+        }))
+        .exhaustive()}
+      defaultValues={transactionUpdate.state.values}
       onSubmit={(values) =>
         transactionUpdate.dispatch({ type: 'SUBMIT', values })
       }
@@ -78,15 +140,9 @@ export const TransactionUpdateHandler = ({
           : undefined
       }
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
-      isCouponSheetOpen={transactionUpdate.isCouponSheetOpen}
-      onCouponSheetOpenChange={transactionUpdate.onCouponSheetOpenChange}
-      onItemCouponSheetOpen={transactionUpdate.onItemCouponSheetOpen}
-      onRemoveItemCoupon={transactionUpdate.onRemoveItemCoupon}
-      itemsFieldArray={transactionUpdate.itemsFieldArray}
-      couponsFieldArray={transactionUpdate.couponsFieldArray}
+      formRef={formRef}
       couponList={{
         onRetryButtonPress: () => couponList.dispatch({ type: 'FETCH' }),
-        onItemPress: transactionUpdate.onAddCoupon,
         variant: match(couponList.state)
           .returnType<
             TransactionUpdateScreenProps['couponList']['variant']
