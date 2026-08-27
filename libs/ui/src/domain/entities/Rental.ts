@@ -42,4 +42,22 @@ export const rentalCheckoutFormSchema = z.object({
   rentals: z.array(z.lazy(() => z.any())).min(1),
 });
 
+// `checkinAt` is entirely unvalidated and each rental's `variant` is
+// `z.any()`, so `{ raw: true }` is required at the call site to keep those
+// fields intact instead of being stripped down to whatever this schema
+// happens to describe.
+export const rentalCheckinFormSchema = z.object({
+  name: z.string().min(1),
+  rentals: z
+    .array(
+      z.lazy(() =>
+        z.object({
+          code: z.string().min(1),
+          variant: z.any(),
+        })
+      )
+    )
+    .min(1),
+});
+
 export type CheckoutStatus = 'completed' | 'ongoing' | 'all';
