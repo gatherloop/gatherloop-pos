@@ -32,7 +32,7 @@ export const ExpenseUpdateHandler = ({
   return (
     <ExpenseUpdateScreen
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
-      form={expenseUpdate.form}
+      defaultValues={expenseUpdate.state.values}
       isSubmitDisabled={
         expenseUpdate.state.type === 'submitting' ||
         expenseUpdate.state.type === 'submitSuccess'
@@ -43,7 +43,6 @@ export const ExpenseUpdateHandler = ({
           ? 'Failed to submit. Please try again.'
           : undefined
       }
-      onRetryButtonPress={() => expenseUpdate.dispatch({ type: 'FETCH' })}
       onSubmit={(values) =>
         expenseUpdate.dispatch({ type: 'SUBMIT', values })
       }
@@ -71,7 +70,10 @@ export const ExpenseUpdateHandler = ({
             type: 'loaded',
           })
         )
-        .with({ type: 'error' }, () => ({ type: 'error' }))
+        .with({ type: 'error' }, () => ({
+          type: 'error',
+          onRetryButtonPress: () => expenseUpdate.dispatch({ type: 'FETCH' }),
+        }))
         .exhaustive()}
     />
   );
