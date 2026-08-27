@@ -1,38 +1,31 @@
-import {
-  Field,
-  FormErrorBanner,
-  InputText,
-  LoadingView,
-  ErrorView,
-} from '../base';
-import { TicketForm } from '../../../domain';
-import { FormProvider, UseFormReturn } from 'react-hook-form';
-import { Button, Form, Spinner } from 'tamagui';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Button, Spinner } from 'tamagui';
+import { Field, FormErrorBanner, InputText, FormView, FormVariant } from '../base';
+import { TicketForm, ticketFormSchema } from '../../../domain';
+
+const ticketFormResolver = zodResolver(ticketFormSchema);
 
 export type TicketFormViewProps = {
-  variant:
-    | { type: 'loaded' }
-    | { type: 'loading' }
-    | { type: 'error'; onRetryButtonPress: () => void };
-  form: UseFormReturn<TicketForm>;
+  variant: FormVariant;
+  defaultValues: TicketForm;
   onSubmit: (values: TicketForm) => void;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   serverError?: string;
 };
 
-export const TicketFormView = ({
-  variant,
-  form,
-  onSubmit,
-  isSubmitDisabled,
-  isSubmitting,
-  serverError,
-}: TicketFormViewProps) => {
-  return variant.type === 'loaded' ? (
-    <FormProvider {...form}>
-      <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
-        <FormErrorBanner message={serverError} />
+export const TicketFormView = (props: TicketFormViewProps) => (
+  <FormView
+    variant={props.variant}
+    defaultValues={props.defaultValues}
+    resolver={ticketFormResolver}
+    onSubmit={props.onSubmit}
+    loadingTitle="Fetching Ticket..."
+    errorTitle="Failed to Fetch Ticket"
+  >
+    {(form) => (
+      <>
+        <FormErrorBanner message={props.serverError} />
         <Field name="code" label="Code">
           <InputText />
         </Field>
@@ -41,22 +34,14 @@ export const TicketFormView = ({
         </Field>
 
         <Button
-          disabled={isSubmitDisabled}
-          onPress={form.handleSubmit(onSubmit)}
+          disabled={props.isSubmitDisabled}
+          onPress={form.handleSubmit(props.onSubmit)}
           theme="blue"
-          icon={isSubmitting ? <Spinner /> : undefined}
+          icon={props.isSubmitting ? <Spinner /> : undefined}
         >
           Submit
         </Button>
-      </Form>
-    </FormProvider>
-  ) : variant.type === 'loading' ? (
-    <LoadingView title="Fetching Ticket..." />
-  ) : variant.type === 'error' ? (
-    <ErrorView
-      title="Failed to Fetch Ticket"
-      subtitle="Please click the retry button to refetch data"
-      onRetryButtonPress={variant.onRetryButtonPress}
-    />
-  ) : null;
-};
+      </>
+    )}
+  </FormView>
+);

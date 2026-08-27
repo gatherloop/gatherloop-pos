@@ -53,7 +53,7 @@ export const TableUpdateHandler = ({
   return (
     <TableUpdateScreen
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
-      form={tableUpdate.form}
+      defaultValues={tableUpdate.state.values}
       isSubmitDisabled={
         tableUpdate.state.type === 'submitting' ||
         tableUpdate.state.type === 'submitSuccess'

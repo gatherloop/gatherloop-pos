@@ -5,11 +5,10 @@ import {
   Layout,
 } from '../components';
 import { TicketForm } from '../../domain';
-import { UseFormReturn } from 'react-hook-form';
 
 export type TicketUpdateScreenProps = {
   onLogoutPress: () => void;
-  form: UseFormReturn<TicketForm>;
+  defaultValues: TicketForm;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   onSubmit: (values: TicketForm) => void;
@@ -18,7 +17,7 @@ export type TicketUpdateScreenProps = {
 };
 
 export const TicketUpdateScreen = ({
-  form,
+  defaultValues,
   isSubmitDisabled,
   isSubmitting,
   onLogoutPress,
@@ -34,7 +33,7 @@ export const TicketUpdateScreen = ({
     >
       <ScrollView>
         <TicketFormView
-          form={form}
+          defaultValues={defaultValues}
           isSubmitDisabled={isSubmitDisabled}
           isSubmitting={isSubmitting}
           onSubmit={onSubmit}

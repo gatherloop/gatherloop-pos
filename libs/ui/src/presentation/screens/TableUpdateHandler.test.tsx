@@ -78,6 +78,16 @@ describe('TableUpdateHandler', () => {
       });
     });
 
+    it('should fill the form with fetched values when data loads after mount', async () => {
+      render(<TableUpdateHandler {...createProps({ preloaded: false })} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByDisplayValue('Meja 01')).toBeTruthy();
+    });
+
     it('should show error state when table fetch fails', async () => {
       render(<TableUpdateHandler {...createProps({ shouldFail: true })} />);
 

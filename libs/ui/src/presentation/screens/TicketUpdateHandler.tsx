@@ -32,7 +32,7 @@ export const TicketUpdateHandler = ({
   return (
     <TicketUpdateScreen
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
-      form={ticketUpdate.form}
+      defaultValues={ticketUpdate.state.values}
       isSubmitDisabled={
         ticketUpdate.state.type === 'submitting' ||
         ticketUpdate.state.type === 'submitSuccess'

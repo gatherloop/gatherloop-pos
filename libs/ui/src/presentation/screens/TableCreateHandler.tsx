@@ -31,7 +31,7 @@ export const TableCreateHandler = ({
   return (
     <TableCreateScreen
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
-      form={tableCreate.form}
+      defaultValues={tableCreate.state.values}
       isSubmitDisabled={
         tableCreate.state.type === 'submitting' ||
         tableCreate.state.type === 'submitSuccess'
