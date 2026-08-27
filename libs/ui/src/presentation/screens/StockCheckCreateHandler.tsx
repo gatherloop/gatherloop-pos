@@ -30,7 +30,8 @@ export const StockCheckCreateHandler = ({
 
   return (
     <StockCheckCreateScreen
-      form={stockCheckCreate.form}
+      variant={{ type: 'loaded' }}
+      defaultValues={stockCheckCreate.state.values}
       onSubmit={(values) =>
         stockCheckCreate.dispatch({ type: 'SUBMIT', values })
       }
@@ -45,13 +46,6 @@ export const StockCheckCreateHandler = ({
           : undefined
       }
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
-      query={stockCheckCreate.query}
-      onQueryChange={stockCheckCreate.setQuery}
-      showOnlyPending={stockCheckCreate.showOnlyPending}
-      onShowOnlyPendingToggle={stockCheckCreate.toggleShowOnlyPending}
-      filled={stockCheckCreate.filled}
-      total={stockCheckCreate.total}
-      pendingRows={stockCheckCreate.pendingRows}
     />
   );
 };
