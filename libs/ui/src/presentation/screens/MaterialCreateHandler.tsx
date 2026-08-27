@@ -1,5 +1,6 @@
 import { useRouter } from 'solito/router';
 import { AuthLogoutUsecase, MaterialCreateUsecase, SupplierListUsecase } from '../../domain';
+import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
 import {
   useAuthLogoutController,
@@ -8,6 +9,7 @@ import {
 } from '../controllers';
 import {
   MaterialCreateScreen,
+  MaterialCreateScreenProps,
 } from './MaterialCreateScreen';
 
 export type MaterialCreateHandlerProps = {
@@ -34,7 +36,7 @@ export const MaterialCreateHandler = ({
 
   return (
     <MaterialCreateScreen
-      form={materialCreate.form}
+      defaultValues={materialCreate.state.values}
       onSubmit={(values) =>
         materialCreate.dispatch({ type: 'SUBMIT', values })
       }
@@ -55,6 +57,13 @@ export const MaterialCreateHandler = ({
         supplierList.state.type === 'idle' ||
         supplierList.state.type === 'loading'
       }
+      variant={match(materialCreate.state)
+        .returnType<MaterialCreateScreenProps['variant']>()
+        .with(
+          { type: P.union('loaded', 'submitting', 'submitSuccess', 'submitError') },
+          () => ({ type: 'loaded' })
+        )
+        .exhaustive()}
     />
   );
 };

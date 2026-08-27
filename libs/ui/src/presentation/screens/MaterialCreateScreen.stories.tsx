@@ -1,38 +1,19 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
-import React from 'react';
-import { useForm } from 'react-hook-form';
 import { MaterialCreateScreen } from './MaterialCreateScreen';
 import type { MaterialForm } from '../../domain';
 
-const defaultValues: MaterialForm = { name: '', price: 0, unit: '' };
-
-const CreateStory = () => {
-  const form = useForm<MaterialForm>({ defaultValues });
-  return (
-    <MaterialCreateScreen
-      form={form}
-      onSubmit={fn()}
-      isSubmitDisabled={false}
-      onLogoutPress={fn()}
-      suppliers={[]}
-    />
-  );
-};
-
-const PopulatedStory = () => {
-  const form = useForm<MaterialForm>({
-    defaultValues: { name: 'Coffee Bean', price: 80000, unit: 'kg', description: 'Premium Arabica coffee beans' },
-  });
-  return (
-    <MaterialCreateScreen
-      form={form}
-      onSubmit={fn()}
-      isSubmitDisabled={false}
-      onLogoutPress={fn()}
-      suppliers={[]}
-    />
-  );
+const defaultValues: MaterialForm = {
+  name: '',
+  price: 0,
+  unit: '',
+  description: '',
+  purchaseUnit: '',
+  purchaseUnitSize: 1,
+  minimumStock: 0,
+  normalStock: 0,
+  isStockCheckRequired: true,
+  suppliers: [],
 };
 
 const meta: Meta<typeof MaterialCreateScreen> = {
@@ -44,5 +25,27 @@ const meta: Meta<typeof MaterialCreateScreen> = {
 export default meta;
 type Story = StoryObj<typeof MaterialCreateScreen>;
 
-export const Default: Story = { render: () => <CreateStory /> };
-export const Populated: Story = { render: () => <PopulatedStory /> };
+export const Default: Story = {
+  args: {
+    defaultValues,
+    onSubmit: fn(),
+    isSubmitDisabled: false,
+    isSubmitting: false,
+    onLogoutPress: fn(),
+    suppliers: [],
+    variant: { type: 'loaded' },
+  },
+};
+
+export const Populated: Story = {
+  args: {
+    ...Default.args,
+    defaultValues: {
+      ...defaultValues,
+      name: 'Coffee Bean',
+      price: 80000,
+      unit: 'kg',
+      description: 'Premium Arabica coffee beans',
+    },
+  },
+};

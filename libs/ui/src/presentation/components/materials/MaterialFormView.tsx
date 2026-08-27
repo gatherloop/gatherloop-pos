@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
-import { Controller, FormProvider, UseFormReturn, useFormContext } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Controller, useFormContext } from 'react-hook-form';
 import {
   Button,
   Card,
-  Form,
   H4,
   Label,
   Paragraph,
@@ -14,11 +14,14 @@ import {
   YStack,
 } from 'tamagui';
 import { Plus, Trash } from '@tamagui/lucide-icons';
-import { Field, FormErrorBanner, InputText, InputNumber, MarkdownEditor, FieldArray, ErrorMessage, Select, Switch } from '../base';
-import { MaterialForm, PurchaseType, Supplier } from '../../../domain';
+import { Field, FormErrorBanner, InputText, InputNumber, MarkdownEditor, FieldArray, ErrorMessage, Select, Switch, FormView, FormVariant } from '../base';
+import { MaterialForm, PurchaseType, Supplier, materialFormSchema } from '../../../domain';
+
+const materialFormResolver = zodResolver(materialFormSchema);
 
 export type MaterialFormViewProps = {
-  form: UseFormReturn<MaterialForm>;
+  variant: FormVariant;
+  defaultValues: MaterialForm;
   onSubmit: (values: MaterialForm) => void;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
@@ -114,166 +117,167 @@ const PurchaseTypeFields = ({ index, suppliers }: PurchaseTypeFieldsProps) => {
   return null;
 };
 
-export const MaterialFormView = ({
-  form,
-  onSubmit,
-  isSubmitDisabled,
-  isSubmitting,
-  serverError,
-  suppliers,
-  isLoadingSuppliers,
-}: MaterialFormViewProps) => {
+export const MaterialFormView = (props: MaterialFormViewProps) => {
   const supplierSelectItems = [
     { label: 'Select a supplier...', value: 0 },
-    ...suppliers.map((s) => ({ label: s.name, value: s.id })),
+    ...props.suppliers.map((s) => ({ label: s.name, value: s.id })),
   ];
 
   return (
-    <FormProvider {...form}>
-      <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
-        <FormErrorBanner message={serverError} />
-        <Field name="name" label="Name">
-          <InputText />
-        </Field>
-        <Field name="price" label="Price">
-          <InputNumber fractionDigit={2} />
-        </Field>
-        <Field name="unit" label="Unit">
-          <InputText />
-        </Field>
-        <Field name="purchaseUnit" label="Purchase Unit">
-          <InputText placeholder="e.g. Kg, Box, Bottle" />
-        </Field>
-        <Field name="purchaseUnitSize" label="Purchase Unit Size">
-          <SizableText size="$2" color="$gray10">
-            How many recipe units are in 1 purchase unit (e.g. 1000 if unit=Gram and purchase unit=Kg)
-          </SizableText>
-          <InputNumber fractionDigit={2} />
-        </Field>
-        <Field name="minimumStock" label="Minimum Stock (purchase units)">
-          <InputNumber fractionDigit={0} />
-        </Field>
-        <Field name="normalStock" label="Normal Stock (purchase units)">
-          <InputNumber fractionDigit={0} />
-        </Field>
-        <Field name="isStockCheckRequired" label="Include in stock checks">
-          <Switch />
-          <Paragraph size="$2" color="$gray10">
-            When off, this material will not appear on restock check forms.
-          </Paragraph>
-        </Field>
-        <Field name="description" label="Description">
-          <MarkdownEditor
-            defaultMode={form.getValues('description') ? 'preview' : 'edit'}
-          />
-        </Field>
-
-        <YStack gap="$3">
-          <XStack justifyContent="space-between" alignItems="center">
-            <H4>Suppliers</H4>
-            <Button
-              icon={Plus}
-              variant="outlined"
-              circular
-              size="$3"
-              disabled={isLoadingSuppliers}
-              onPress={() =>
-                form.setValue('suppliers', [
-                  ...form.getValues('suppliers'),
-                  { supplierId: 0, purchaseType: 'offline', purchaseUrl: '' },
-                ])
-              }
+    <FormView
+      variant={props.variant}
+      defaultValues={props.defaultValues}
+      resolver={materialFormResolver}
+      onSubmit={props.onSubmit}
+      loadingTitle="Fetching Material..."
+      errorTitle="Failed to Fetch Material"
+    >
+      {(form) => (
+        <>
+          <FormErrorBanner message={props.serverError} />
+          <Field name="name" label="Name">
+            <InputText />
+          </Field>
+          <Field name="price" label="Price">
+            <InputNumber fractionDigit={2} />
+          </Field>
+          <Field name="unit" label="Unit">
+            <InputText />
+          </Field>
+          <Field name="purchaseUnit" label="Purchase Unit">
+            <InputText placeholder="e.g. Kg, Box, Bottle" />
+          </Field>
+          <Field name="purchaseUnitSize" label="Purchase Unit Size">
+            <SizableText size="$2" color="$gray10">
+              How many recipe units are in 1 purchase unit (e.g. 1000 if unit=Gram and purchase unit=Kg)
+            </SizableText>
+            <InputNumber fractionDigit={2} />
+          </Field>
+          <Field name="minimumStock" label="Minimum Stock (purchase units)">
+            <InputNumber fractionDigit={0} />
+          </Field>
+          <Field name="normalStock" label="Normal Stock (purchase units)">
+            <InputNumber fractionDigit={0} />
+          </Field>
+          <Field name="isStockCheckRequired" label="Include in stock checks">
+            <Switch />
+            <Paragraph size="$2" color="$gray10">
+              When off, this material will not appear on restock check forms.
+            </Paragraph>
+          </Field>
+          <Field name="description" label="Description">
+            <MarkdownEditor
+              defaultMode={form.getValues('description') ? 'preview' : 'edit'}
             />
-          </XStack>
+          </Field>
 
-          {isLoadingSuppliers && <Spinner />}
+          <YStack gap="$3">
+            <XStack justifyContent="space-between" alignItems="center">
+              <H4>Suppliers</H4>
+              <Button
+                icon={Plus}
+                variant="outlined"
+                circular
+                size="$3"
+                disabled={props.isLoadingSuppliers}
+                onPress={() =>
+                  form.setValue('suppliers', [
+                    ...form.getValues('suppliers'),
+                    { supplierId: 0, purchaseType: 'offline', purchaseUrl: '' },
+                  ])
+                }
+              />
+            </XStack>
 
-          <ErrorMessage name="suppliers" />
+            {props.isLoadingSuppliers && <Spinner />}
 
-          <FieldArray control={form.control} name="suppliers" keyName="key">
-            {(fieldArray) => (
-              <>
-                {fieldArray.fields.map(({ key }, index) => (
-                  <Card key={key} bordered>
-                    <Card.Header>
-                      <YStack gap="$3">
-                        <XStack justifyContent="space-between" alignItems="center">
-                          <SizableText size="$4" fontWeight="600">
-                            Supplier {index + 1}
-                          </SizableText>
-                          <Button
-                            icon={Trash}
-                            circular
-                            size="$3"
-                            theme="red"
-                            onPress={() => fieldArray.remove(index)}
-                          />
-                        </XStack>
+            <ErrorMessage name="suppliers" />
 
-                        <Field name={`suppliers.${index}.supplierId`} label="Supplier">
-                          <Select items={supplierSelectItems} />
-                        </Field>
+            <FieldArray control={form.control} name="suppliers" keyName="key">
+              {(fieldArray) => (
+                <>
+                  {fieldArray.fields.map(({ key }, index) => (
+                    <Card key={key} bordered>
+                      <Card.Header>
+                        <YStack gap="$3">
+                          <XStack justifyContent="space-between" alignItems="center">
+                            <SizableText size="$4" fontWeight="600">
+                              Supplier {index + 1}
+                            </SizableText>
+                            <Button
+                              icon={Trash}
+                              circular
+                              size="$3"
+                              theme="red"
+                              onPress={() => fieldArray.remove(index)}
+                            />
+                          </XStack>
 
-                        <YStack gap="$2">
-                          <Label>Purchase Type</Label>
-                          <Controller
-                            control={form.control}
-                            name={`suppliers.${index}.purchaseType`}
-                            render={({ field }) => (
-                              <RadioGroup
-                                value={field.value}
-                                onValueChange={(value) => {
-                                  field.onChange(value as PurchaseType);
-                                  form.setValue(`suppliers.${index}.purchaseUrl`, '');
-                                  form.clearErrors(`suppliers.${index}.supplierId`);
-                                }}
-                              >
-                                <XStack gap="$4" flexWrap="wrap">
-                                  {PURCHASE_TYPES.map((pt) => (
-                                    <XStack key={pt.value} alignItems="center" gap="$2">
-                                      <RadioGroup.Item
-                                        value={pt.value}
-                                        id={`${key}-${pt.value}`}
-                                      >
-                                        <RadioGroup.Indicator />
-                                      </RadioGroup.Item>
-                                      <Label htmlFor={`${key}-${pt.value}`}>
-                                        {pt.label}
-                                      </Label>
-                                    </XStack>
-                                  ))}
-                                </XStack>
-                              </RadioGroup>
-                            )}
-                          />
-                          <ErrorMessage name={`suppliers.${index}.purchaseType`} />
+                          <Field name={`suppliers.${index}.supplierId`} label="Supplier">
+                            <Select items={supplierSelectItems} />
+                          </Field>
+
+                          <YStack gap="$2">
+                            <Label>Purchase Type</Label>
+                            <Controller
+                              control={form.control}
+                              name={`suppliers.${index}.purchaseType`}
+                              render={({ field }) => (
+                                <RadioGroup
+                                  value={field.value}
+                                  onValueChange={(value) => {
+                                    field.onChange(value as PurchaseType);
+                                    form.setValue(`suppliers.${index}.purchaseUrl`, '');
+                                    form.clearErrors(`suppliers.${index}.supplierId`);
+                                  }}
+                                >
+                                  <XStack gap="$4" flexWrap="wrap">
+                                    {PURCHASE_TYPES.map((pt) => (
+                                      <XStack key={pt.value} alignItems="center" gap="$2">
+                                        <RadioGroup.Item
+                                          value={pt.value}
+                                          id={`${key}-${pt.value}`}
+                                        >
+                                          <RadioGroup.Indicator />
+                                        </RadioGroup.Item>
+                                        <Label htmlFor={`${key}-${pt.value}`}>
+                                          {pt.label}
+                                        </Label>
+                                      </XStack>
+                                    ))}
+                                  </XStack>
+                                </RadioGroup>
+                              )}
+                            />
+                            <ErrorMessage name={`suppliers.${index}.purchaseType`} />
+                          </YStack>
+
+                          <PurchaseTypeFields index={index} suppliers={props.suppliers} />
                         </YStack>
+                      </Card.Header>
+                    </Card>
+                  ))}
 
-                        <PurchaseTypeFields index={index} suppliers={suppliers} />
-                      </YStack>
-                    </Card.Header>
-                  </Card>
-                ))}
+                  {fieldArray.fields.length === 0 && (
+                    <Paragraph color="$gray10" textAlign="center">
+                      No suppliers linked. Click + to add one.
+                    </Paragraph>
+                  )}
+                </>
+              )}
+            </FieldArray>
+          </YStack>
 
-                {fieldArray.fields.length === 0 && (
-                  <Paragraph color="$gray10" textAlign="center">
-                    No suppliers linked. Click + to add one.
-                  </Paragraph>
-                )}
-              </>
-            )}
-          </FieldArray>
-        </YStack>
-
-        <Button
-          disabled={isSubmitDisabled}
-          onPress={form.handleSubmit(onSubmit)}
-          theme="blue"
-          icon={isSubmitting ? <Spinner /> : undefined}
-        >
-          Submit
-        </Button>
-      </Form>
-    </FormProvider>
+          <Button
+            disabled={props.isSubmitDisabled}
+            onPress={form.handleSubmit(props.onSubmit)}
+            theme="blue"
+            icon={props.isSubmitting ? <Spinner /> : undefined}
+          >
+            Submit
+          </Button>
+        </>
+      )}
+    </FormView>
   );
 };
