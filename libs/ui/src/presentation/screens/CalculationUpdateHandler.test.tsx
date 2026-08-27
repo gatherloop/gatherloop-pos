@@ -112,6 +112,17 @@ describe('CalculationUpdateHandler', () => {
 
       expect(screen.getByText('Cash')).toBeTruthy();
     });
+
+    it('should fill the form with fetched values when data loads after mount', async () => {
+      render(<CalculationUpdateHandler {...createProps({ preloaded: false })} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByText('Rp. 250')).toBeTruthy();
+      expect(screen.getByDisplayValue('2')).toBeTruthy();
+    });
   });
 
   describe('navigation', () => {
