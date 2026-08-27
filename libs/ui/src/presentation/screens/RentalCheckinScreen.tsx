@@ -1,3 +1,5 @@
+import { MutableRefObject } from 'react';
+import { UseFormReturn } from 'react-hook-form';
 import { ScrollView, YStack } from 'tamagui';
 import {
   RentalCheckinFormView,
@@ -6,18 +8,23 @@ import {
   TransactionItemSelectProps,
   useIsCompactLayout,
 } from '../components';
+import { FormVariant } from '../components/base';
 import { OptionValue, Product, RentalCheckinForm, Ticket } from '../../domain';
-import { UseFormReturn, UseFieldArrayReturn } from 'react-hook-form';
 
 export type RentalCheckinScreenProps = {
-  form: UseFormReturn<RentalCheckinForm>;
+  variant: FormVariant;
+  defaultValues: RentalCheckinForm;
   onSubmit: (values: RentalCheckinForm) => void;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   isSubmitSuccess: boolean;
   onLogoutPress: () => void;
-  rentalsFieldArray: UseFieldArrayReturn<RentalCheckinForm, 'rentals', 'key'>;
-  onToggleCustomizeCheckinDateTime: (checked: boolean) => void;
+  /**
+   * Escape hatch so `RentalCheckinHandler` can push an item picked in the
+   * sibling `transactionItemSelect` controller into the form. Null until
+   * the form's `loaded` branch mounts.
+   */
+  formRef?: MutableRefObject<UseFormReturn<RentalCheckinForm> | null>;
   tickets: Ticket[];
   rentalItemSelect: {
     amount: number;
@@ -46,15 +53,13 @@ export const RentalCheckinScreen = (props: RentalCheckinScreenProps) => {
 
   const formView = (
     <RentalCheckinFormView
-      form={props.form}
+      variant={props.variant}
+      defaultValues={props.defaultValues}
       onSubmit={props.onSubmit}
       isSubmitDisabled={props.isSubmitDisabled}
       isSubmitting={props.isSubmitting}
       isSubmitSuccess={props.isSubmitSuccess}
-      rentalsFieldArray={props.rentalsFieldArray}
-      onToggleCustomizeCheckinDateTime={
-        props.onToggleCustomizeCheckinDateTime
-      }
+      formRef={props.formRef}
       tickets={props.tickets}
       serverError={props.serverError}
       RentalItemSelect={() => (

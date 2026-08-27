@@ -1,5 +1,6 @@
 import { useRouter } from 'solito/router';
 import { useEffect, useRef } from 'react';
+import { UseFormReturn } from 'react-hook-form';
 import { match, P } from 'ts-pattern';
 import {
   useRentalCheckinController,
@@ -9,9 +10,11 @@ import {
 } from '../controllers';
 import {
   AuthLogoutUsecase,
+  RentalCheckinForm,
   RentalCheckinUsecase,
   TransactionItemSelectUsecase,
   TicketListUsecase,
+  Variant,
 } from '../../domain';
 import {
   RentalCheckinScreen,
@@ -45,18 +48,37 @@ export const RentalCheckinHandler = ({
   const ticketList = useTicketListController(ticketListUsecase);
   const hasShownPrintDialogRef = useRef(false);
 
+  const formRef = useRef<UseFormReturn<RentalCheckinForm> | null>(null);
+
+  // Writes through the form the same way an item selection would if it
+  // happened from inside the form subtree — see `FormView`'s `formRef`
+  // escape hatch. `formRef.current` is only ever null before the form's
+  // `loaded` branch mounts, which is not reachable here since picking an
+  // item requires the product picker (and therefore the form) to already
+  // be on screen.
+  const addItemToForm = (newVariant: Variant, amount: number) => {
+    const form = formRef.current;
+    if (!form) return;
+
+    const rentals = form.getValues('rentals');
+    const newRentals = Array.from({ length: amount }, () => ({
+      code: '',
+      variant: newVariant,
+    }));
+    form.setValue('rentals', [...rentals, ...newRentals]);
+  };
+
   useEffect(() => {
     if (
       transactionItemSelect.state.type === 'loadingVariantSuccess' &&
       transactionItemSelect.state.selectedVariant
     ) {
-      rentalCheckin.onAddItem(
+      addItemToForm(
         transactionItemSelect.state.selectedVariant,
         transactionItemSelect.state.amount
       );
     }
   }, [
-    rentalCheckin,
     transactionItemSelect.state.amount,
     transactionItemSelect.state.selectedVariant,
     transactionItemSelect.state.type,
@@ -77,17 +99,15 @@ export const RentalCheckinHandler = ({
 
     const checkin: CheckinPrintPayload = {
       createdAt: dayjs(new Date().toISOString()).format('DD/MM/YYYY HH:mm'),
-      name: rentalCheckin.form.getValues('name'),
-      tickets: rentalCheckin.form
-        .getValues('rentals')
-        .map(({ code, variant }) => ({
-          name:
-            ticketList.state.tickets.find((ticket) => ticket.code === code)
-              ?.name ?? '',
-          variant: variant.values
-            .map(({ optionValue }) => optionValue.name)
-            .join(' - '),
-        })),
+      name: rentalCheckin.state.values.name,
+      tickets: rentalCheckin.state.values.rentals.map(({ code, variant }) => ({
+        name:
+          ticketList.state.tickets.find((ticket) => ticket.code === code)
+            ?.name ?? '',
+        variant: variant.values
+          .map(({ optionValue }) => optionValue.name)
+          .join(' - '),
+      })),
     };
 
     show({
@@ -101,8 +121,8 @@ export const RentalCheckinHandler = ({
       onCancel: () => router.push('/rentals'),
     });
   }, [
-    rentalCheckin.form,
     rentalCheckin.state.type,
+    rentalCheckin.state.values,
     ticketList.state.tickets,
     router,
     show,
@@ -111,7 +131,8 @@ export const RentalCheckinHandler = ({
 
   return (
     <RentalCheckinScreen
-      form={rentalCheckin.form}
+      variant={{ type: 'loaded' }}
+      defaultValues={rentalCheckin.state.values}
       onSubmit={(values) =>
         rentalCheckin.dispatch({ type: 'SUBMIT', values })
       }
@@ -124,10 +145,7 @@ export const RentalCheckinHandler = ({
           : undefined
       }
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
-      rentalsFieldArray={rentalCheckin.rentalsFieldArray}
-      onToggleCustomizeCheckinDateTime={
-        rentalCheckin.onToggleCustomizeCheckinDateTime
-      }
+      formRef={formRef}
       tickets={ticketList.state.tickets}
       rentalItemSelect={{
         amount: transactionItemSelect.state.amount,

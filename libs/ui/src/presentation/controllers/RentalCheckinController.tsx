@@ -1,10 +1,7 @@
-import { useEffect, useRef } from 'react';
-import { Variant, RentalCheckinUsecase, RentalCheckinForm } from '../../domain';
+import { useEffect } from 'react';
+import { RentalCheckinUsecase } from '../../domain';
 import { useController } from './controller';
 import { useToastController } from '@tamagui/toast';
-import { useFieldArray, useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 
 export const useRentalCheckinController = (usecase: RentalCheckinUsecase) => {
   const { state, dispatch } = useController(usecase);
@@ -15,71 +12,5 @@ export const useRentalCheckinController = (usecase: RentalCheckinUsecase) => {
     else if (state.type === 'submitError') toast.show('Checkin Rental Error');
   }, [toast, state.type]);
 
-  const form = useForm({
-    defaultValues: state.values,
-    resolver: zodResolver(
-      z.object({
-        name: z.string().min(1),
-        rentals: z
-          .array(
-            z.lazy(() =>
-              z.object({
-                code: z.string().min(1),
-                variant: z.any(),
-              })
-            )
-          )
-          .min(1),
-      }),
-      {},
-      { raw: true }
-    ),
-  });
-
-  const hasFilledFormRef = useRef(false);
-  useEffect(() => {
-    if (state.type === 'loaded' && !hasFilledFormRef.current) {
-      form.reset(state.values);
-      hasFilledFormRef.current = true;
-    }
-  }, [state.type, state.values, form]);
-
-  const rentalsFieldArray = useFieldArray<RentalCheckinForm, 'rentals', 'key'>({
-    name: 'rentals',
-    control: form.control,
-    keyName: 'key',
-  });
-
-  const onAddItem = (newVariant: Variant, amount: number) => {
-    for (let i = 1; i <= amount; i++) {
-      rentalsFieldArray.append({
-        code: '',
-        variant: newVariant,
-      });
-    }
-  };
-
-  const onToggleCustomizeCheckinDateTime = (checked: boolean) => {
-    if (checked) {
-      const date = new Date();
-      form.setValue('checkinAt', {
-        date: date.getDate(),
-        month: date.getMonth(),
-        year: date.getFullYear(),
-        hour: date.getHours(),
-        minute: date.getMinutes(),
-      });
-    } else {
-      form.setValue('checkinAt', null);
-    }
-  };
-
-  return {
-    state,
-    dispatch,
-    form,
-    onAddItem,
-    rentalsFieldArray,
-    onToggleCustomizeCheckinDateTime,
-  };
+  return { state, dispatch };
 };
