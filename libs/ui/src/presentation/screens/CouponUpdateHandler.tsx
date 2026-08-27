@@ -32,7 +32,7 @@ export const CouponUpdateHandler = ({
   return (
     <CouponUpdateScreen
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
-      form={couponUpdate.form}
+      defaultValues={couponUpdate.state.values}
       isSubmitDisabled={
         couponUpdate.state.type === 'submitting' ||
         couponUpdate.state.type === 'submitSuccess'

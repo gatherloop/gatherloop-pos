@@ -32,7 +32,7 @@ export const CouponCreateHandler = ({
   return (
     <CouponCreateScreen
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
-      form={couponCreate.form}
+      defaultValues={couponCreate.state.values}
       isSubmitDisabled={
         couponCreate.state.type === 'submitting' ||
         couponCreate.state.type === 'submitSuccess'

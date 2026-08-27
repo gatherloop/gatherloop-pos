@@ -1,41 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
-import React from 'react';
-import { useForm } from 'react-hook-form';
 import { BudgetUpdateScreen } from './BudgetUpdateScreen';
-import type { BudgetForm } from '../../domain';
-
-const UpdateStory = () => {
-  const form = useForm<BudgetForm>({
-    defaultValues: { name: 'Restock', percentage: 30 },
-  });
-  return (
-    <BudgetUpdateScreen
-      form={form}
-      onSubmit={fn()}
-      isSubmitDisabled={false}
-      isSubmitting={false}
-      onLogoutPress={fn()}
-      variant={{ type: 'loaded' }}
-    />
-  );
-};
-
-const LoadingStory = () => {
-  const form = useForm<BudgetForm>({
-    defaultValues: { name: '', percentage: 0 },
-  });
-  return (
-    <BudgetUpdateScreen
-      form={form}
-      onSubmit={fn()}
-      isSubmitDisabled={true}
-      isSubmitting={false}
-      onLogoutPress={fn()}
-      variant={{ type: 'loading' }}
-    />
-  );
-};
 
 const meta: Meta<typeof BudgetUpdateScreen> = {
   title: 'Screens/Budgets/BudgetUpdateScreen',
@@ -46,5 +11,22 @@ const meta: Meta<typeof BudgetUpdateScreen> = {
 export default meta;
 type Story = StoryObj<typeof BudgetUpdateScreen>;
 
-export const Default: Story = { render: () => <UpdateStory /> };
-export const Loading: Story = { render: () => <LoadingStory /> };
+export const Default: Story = {
+  args: {
+    defaultValues: { name: 'Restock', percentage: 30 },
+    onSubmit: fn(),
+    isSubmitDisabled: false,
+    isSubmitting: false,
+    onLogoutPress: fn(),
+    variant: { type: 'loaded' },
+  },
+};
+
+export const Loading: Story = {
+  args: {
+    ...Default.args,
+    defaultValues: { name: '', percentage: 0 },
+    isSubmitDisabled: true,
+    variant: { type: 'loading' },
+  },
+};

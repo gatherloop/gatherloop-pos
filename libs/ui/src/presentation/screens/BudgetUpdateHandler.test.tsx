@@ -79,6 +79,16 @@ describe('BudgetUpdateHandler', () => {
 
       expect(screen.getByRole('heading', { name: 'Failed to Fetch Budget' })).toBeTruthy();
     });
+
+    it('should fill the form with fetched values when data loads after mount', async () => {
+      render(<BudgetUpdateHandler {...createProps({ preloaded: false })} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByDisplayValue('Mock Budget 1')).toBeTruthy();
+    });
   });
 
   describe('navigation', () => {
