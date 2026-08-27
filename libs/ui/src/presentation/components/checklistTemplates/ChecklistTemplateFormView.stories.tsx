@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
-import { useForm } from 'react-hook-form';
 import { ChecklistTemplateFormView } from './ChecklistTemplateFormView';
 import type { ChecklistTemplateForm } from '../../../domain';
 
@@ -41,32 +40,6 @@ const populatedValues: ChecklistTemplateForm = {
   ],
 };
 
-const EmptyStory = () => {
-  const form = useForm<ChecklistTemplateForm>({ defaultValues: emptyValues });
-  return (
-    <ChecklistTemplateFormView
-      form={form}
-      onSubmit={fn()}
-      isSubmitDisabled={false}
-      isSubmitting={false}
-    />
-  );
-};
-
-const PopulatedStory = () => {
-  const form = useForm<ChecklistTemplateForm>({
-    defaultValues: populatedValues,
-  });
-  return (
-    <ChecklistTemplateFormView
-      form={form}
-      onSubmit={fn()}
-      isSubmitDisabled={false}
-      isSubmitting={false}
-    />
-  );
-};
-
 const meta: Meta<typeof ChecklistTemplateFormView> = {
   title: 'Features/ChecklistTemplates/ChecklistTemplateFormView',
   component: ChecklistTemplateFormView,
@@ -76,9 +49,34 @@ export default meta;
 type Story = StoryObj<typeof ChecklistTemplateFormView>;
 
 export const Empty: Story = {
-  render: () => <EmptyStory />,
+  args: {
+    variant: { type: 'loaded' },
+    defaultValues: emptyValues,
+    onSubmit: fn(),
+    isSubmitDisabled: false,
+    isSubmitting: false,
+  },
 };
 
 export const Populated: Story = {
-  render: () => <PopulatedStory />,
+  args: {
+    ...Empty.args,
+    defaultValues: populatedValues,
+  },
+};
+
+export const Loading: Story = {
+  args: {
+    ...Empty.args,
+    variant: { type: 'loading' },
+    isSubmitDisabled: true,
+  },
+};
+
+export const Error: Story = {
+  args: {
+    ...Empty.args,
+    variant: { type: 'error', onRetryButtonPress: fn() },
+    isSubmitDisabled: true,
+  },
 };

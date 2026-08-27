@@ -34,7 +34,7 @@ export const ChecklistTemplateUpdateHandler = ({
 
   return (
     <ChecklistTemplateUpdateScreen
-      form={checklistTemplateUpdate.form}
+      defaultValues={checklistTemplateUpdate.state.values}
       onSubmit={(values) =>
         checklistTemplateUpdate.dispatch({
           type: 'SUBMIT',
@@ -63,9 +63,6 @@ export const ChecklistTemplateUpdateHandler = ({
           : undefined
       }
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
-      onRetryButtonPress={() =>
-        checklistTemplateUpdate.dispatch({ type: 'FETCH' })
-      }
       variant={match(checklistTemplateUpdate.state)
         .returnType<ChecklistTemplateUpdateScreenProps['variant']>()
         .with({ type: P.union('idle', 'loading') }, () => ({
@@ -73,11 +70,20 @@ export const ChecklistTemplateUpdateHandler = ({
         }))
         .with(
           {
-            type: P.union('loaded', 'submitting', 'submitSuccess', 'submitError'),
+            type: P.union(
+              'loaded',
+              'submitting',
+              'submitSuccess',
+              'submitError'
+            ),
           },
           () => ({ type: 'loaded' })
         )
-        .with({ type: 'error' }, () => ({ type: 'error' }))
+        .with({ type: 'error' }, () => ({
+          type: 'error',
+          onRetryButtonPress: () =>
+            checklistTemplateUpdate.dispatch({ type: 'FETCH' }),
+        }))
         .exhaustive()}
     />
   );

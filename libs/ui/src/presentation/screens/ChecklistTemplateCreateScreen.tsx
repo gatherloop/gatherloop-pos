@@ -1,23 +1,28 @@
 import { ScrollView } from 'tamagui';
-import { ChecklistTemplateFormView, Layout } from '../components';
+import {
+  ChecklistTemplateFormView,
+  ChecklistTemplateFormViewProps,
+  Layout,
+} from '../components';
 import { ChecklistTemplateForm } from '../../domain';
-import { UseFormReturn } from 'react-hook-form';
 
 export type ChecklistTemplateCreateScreenProps = {
   onLogoutPress: () => void;
-  form: UseFormReturn<ChecklistTemplateForm>;
+  defaultValues: ChecklistTemplateForm;
   onSubmit: (values: ChecklistTemplateForm) => void;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
+  variant: ChecklistTemplateFormViewProps['variant'];
   serverError?: string;
 };
 
 export const ChecklistTemplateCreateScreen = ({
   onLogoutPress,
-  form,
+  defaultValues,
   onSubmit,
   isSubmitDisabled,
   isSubmitting,
+  variant,
   serverError,
 }: ChecklistTemplateCreateScreenProps) => {
   return (
@@ -28,10 +33,11 @@ export const ChecklistTemplateCreateScreen = ({
     >
       <ScrollView>
         <ChecklistTemplateFormView
-          form={form}
+          defaultValues={defaultValues}
           onSubmit={onSubmit}
           isSubmitDisabled={isSubmitDisabled}
           isSubmitting={isSubmitting}
+          variant={variant}
           serverError={serverError}
         />
       </ScrollView>
