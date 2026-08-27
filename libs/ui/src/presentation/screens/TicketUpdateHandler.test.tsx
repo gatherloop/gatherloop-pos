@@ -72,6 +72,16 @@ describe('TicketUpdateHandler', () => {
       });
     });
 
+    it('should fill the form with fetched values when data loads after mount', async () => {
+      render(<TicketUpdateHandler {...createProps({ preloaded: false })} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByDisplayValue('0xA3F19C82')).toBeTruthy();
+    });
+
     it('should show error state when ticket fetch fails', async () => {
       render(<TicketUpdateHandler {...createProps({ shouldFail: true })} />);
 

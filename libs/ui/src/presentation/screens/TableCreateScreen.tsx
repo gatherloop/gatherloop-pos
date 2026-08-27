@@ -1,11 +1,10 @@
 import { ScrollView } from 'tamagui';
 import { TableFormView, TableFormViewProps, Layout } from '../components';
 import { TableForm } from '../../domain';
-import { UseFormReturn } from 'react-hook-form';
 
 export type TableCreateScreenProps = {
   onLogoutPress: () => void;
-  form: UseFormReturn<TableForm>;
+  defaultValues: TableForm;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   onSubmit: (values: TableForm) => void;
@@ -14,7 +13,7 @@ export type TableCreateScreenProps = {
 };
 
 export const TableCreateScreen = ({
-  form,
+  defaultValues,
   isSubmitDisabled,
   isSubmitting,
   onLogoutPress,
@@ -26,7 +25,7 @@ export const TableCreateScreen = ({
     <Layout onLogoutPress={onLogoutPress} title="Create Table" showBackButton>
       <ScrollView>
         <TableFormView
-          form={form}
+          defaultValues={defaultValues}
           isSubmitDisabled={isSubmitDisabled}
           isSubmitting={isSubmitting}
           onSubmit={onSubmit}

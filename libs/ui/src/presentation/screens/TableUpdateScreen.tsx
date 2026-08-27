@@ -7,11 +7,10 @@ import {
   Layout,
 } from '../components';
 import { Table, TableForm } from '../../domain';
-import { UseFormReturn } from 'react-hook-form';
 
 export type TableUpdateScreenProps = {
   onLogoutPress: () => void;
-  form: UseFormReturn<TableForm>;
+  defaultValues: TableForm;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   onSubmit: (values: TableForm) => void;
@@ -27,7 +26,7 @@ export type TableUpdateScreenProps = {
 };
 
 export const TableUpdateScreen = ({
-  form,
+  defaultValues,
   isSubmitDisabled,
   isSubmitting,
   onLogoutPress,
@@ -47,7 +46,7 @@ export const TableUpdateScreen = ({
       <ScrollView>
         <YStack gap="$4">
           <TableFormView
-            form={form}
+            defaultValues={defaultValues}
             isSubmitDisabled={isSubmitDisabled}
             isSubmitting={isSubmitting}
             onSubmit={onSubmit}
