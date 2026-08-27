@@ -1,8 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
-import React from 'react';
-import { useForm } from 'react-hook-form';
-import { ProductFormView } from './ProductFormView';
+import {
+  ProductFormView,
+  productCreateFormResolver,
+} from './ProductFormView';
 import type { ProductForm } from '../../../domain';
 import { mockVariants } from '../../../../.storybook/mocks/mockData';
 
@@ -23,27 +24,34 @@ const defaultValues: ProductForm = {
   status: 'published',
 };
 
-const LoadedStory = () => {
-  const form = useForm<ProductForm>({ defaultValues });
-  return (
-    <ProductFormView
-      variant={{ type: 'loaded' }}
-      form={form}
-      variants={[]}
-      onSubmit={fn()}
-      categorySelectOptions={defaultCategoryOptions}
-      isSubmitDisabled={false}
-      onRetryButtonPress={fn()}
-      onVariantCreatePress={fn()}
-      onVariantEditMenuPress={fn()}
-      onVariantDeleteMenuPress={fn()}
-      onVariantPress={fn()}
-    />
-  );
+const meta: Meta<typeof ProductFormView> = {
+  title: 'Features/Products/ProductFormView',
+  component: ProductFormView,
 };
 
-const PopulatedStory = () => {
-  const form = useForm<ProductForm>({
+export default meta;
+type Story = StoryObj<typeof ProductFormView>;
+
+export const Loaded: Story = {
+  args: {
+    variant: { type: 'loaded' },
+    defaultValues,
+    resolver: productCreateFormResolver,
+    variants: [],
+    onSubmit: fn(),
+    categorySelectOptions: defaultCategoryOptions,
+    isSubmitDisabled: false,
+    isSubmitting: false,
+    onVariantCreatePress: fn(),
+    onVariantEditMenuPress: fn(),
+    onVariantDeleteMenuPress: fn(),
+    onVariantPress: fn(),
+  },
+};
+
+export const Populated: Story = {
+  args: {
+    ...Loaded.args,
     defaultValues: {
       name: 'Iced Coffee Latte',
       description: 'Refreshing iced coffee with fresh milk',
@@ -64,26 +72,13 @@ const PopulatedStory = () => {
         },
       ],
     },
-  });
-  return (
-    <ProductFormView
-      variant={{ type: 'loaded' }}
-      form={form}
-      variants={mockVariants}
-      onSubmit={fn()}
-      categorySelectOptions={defaultCategoryOptions}
-      isSubmitDisabled={false}
-      onRetryButtonPress={fn()}
-      onVariantCreatePress={fn()}
-      onVariantEditMenuPress={fn()}
-      onVariantDeleteMenuPress={fn()}
-      onVariantPress={fn()}
-    />
-  );
+    variants: mockVariants,
+  },
 };
 
-const LongRecipeStory = () => {
-  const form = useForm<ProductForm>({
+export const LongRecipe: Story = {
+  args: {
+    ...Loaded.args,
     defaultValues: {
       name: 'Signature Cold Brew',
       description: 'Smooth 18-hour steeped cold brew',
@@ -107,97 +102,28 @@ const LongRecipeStory = () => {
       status: 'published',
       options: [],
     },
-  });
-  return (
-    <ProductFormView
-      variant={{ type: 'loaded' }}
-      form={form}
-      variants={[]}
-      onSubmit={fn()}
-      categorySelectOptions={defaultCategoryOptions}
-      isSubmitDisabled={false}
-      onRetryButtonPress={fn()}
-      onVariantCreatePress={fn()}
-      onVariantEditMenuPress={fn()}
-      onVariantDeleteMenuPress={fn()}
-      onVariantPress={fn()}
-    />
-  );
-};
-
-const SubmitDisabledStory = () => {
-  const form = useForm<ProductForm>({ defaultValues });
-  return (
-    <ProductFormView
-      variant={{ type: 'loaded' }}
-      form={form}
-      variants={[]}
-      onSubmit={fn()}
-      categorySelectOptions={defaultCategoryOptions}
-      isSubmitDisabled={true}
-      onRetryButtonPress={fn()}
-    />
-  );
-};
-
-const meta: Meta<typeof ProductFormView> = {
-  title: 'Features/Products/ProductFormView',
-  component: ProductFormView,
-};
-
-export default meta;
-type Story = StoryObj<typeof ProductFormView>;
-
-export const Loaded: Story = {
-  render: () => <LoadedStory />,
-};
-
-export const Populated: Story = {
-  render: () => <PopulatedStory />,
-};
-
-export const LongRecipe: Story = {
-  render: () => <LongRecipeStory />,
-};
-
-const LoadingStory = () => {
-  const form = useForm<ProductForm>({ defaultValues });
-  return (
-    <ProductFormView
-      variant={{ type: 'loading' }}
-      form={form}
-      variants={[]}
-      onSubmit={fn()}
-      categorySelectOptions={defaultCategoryOptions}
-      isSubmitDisabled={true}
-      onRetryButtonPress={fn()}
-    />
-  );
-};
-
-const ErrorStory = () => {
-  const form = useForm<ProductForm>({ defaultValues });
-  return (
-    <ProductFormView
-      variant={{ type: 'error' }}
-      form={form}
-      variants={[]}
-      onSubmit={fn()}
-      categorySelectOptions={defaultCategoryOptions}
-      isSubmitDisabled={true}
-      onRetryButtonPress={fn()}
-    />
-  );
+  },
 };
 
 export const Loading: Story = {
-  render: () => <LoadingStory />,
+  args: {
+    ...Loaded.args,
+    variant: { type: 'loading' },
+    isSubmitDisabled: true,
+  },
 };
 
 export const Error: Story = {
-  render: () => <ErrorStory />,
+  args: {
+    ...Loaded.args,
+    variant: { type: 'error', onRetryButtonPress: fn() },
+    isSubmitDisabled: true,
+  },
 };
 
 export const SubmitDisabled: Story = {
-  render: () => <SubmitDisabledStory />,
+  args: {
+    ...Loaded.args,
+    isSubmitDisabled: true,
+  },
 };

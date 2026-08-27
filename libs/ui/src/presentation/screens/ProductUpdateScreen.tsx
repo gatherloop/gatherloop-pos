@@ -1,15 +1,19 @@
 import { ScrollView } from 'tamagui';
-import { ProductFormView, Layout, VariantDeleteAlert } from '../components';
+import {
+  ProductFormView,
+  ProductFormViewProps,
+  productUpdateFormResolver,
+  Layout,
+  VariantDeleteAlert,
+} from '../components';
 import { ProductForm, Variant } from '../../domain';
-import { UseFormReturn } from 'react-hook-form';
 
 export type ProductUpdateScreenProps = {
-  form: UseFormReturn<ProductForm>;
+  defaultValues: ProductForm;
   onSubmit: (values: ProductForm) => void;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
-  onRetryButtonPress: () => void;
-  variant: { type: 'loaded' } | { type: 'loading' } | { type: 'error' };
+  variant: ProductFormViewProps['variant'];
   categorySelectOptions: { label: string; value: number }[];
   variants: Variant[];
   onVariantDeleteMenuPress: (variant: Variant) => void;
@@ -31,11 +35,11 @@ export const ProductUpdateScreen = (props: ProductUpdateScreenProps) => {
     <Layout title="Update Product" showBackButton onLogoutPress={props.onLogoutPress}>
       <ScrollView>
         <ProductFormView
-          form={props.form}
+          defaultValues={props.defaultValues}
+          resolver={productUpdateFormResolver}
           onSubmit={props.onSubmit}
           isSubmitDisabled={props.isSubmitDisabled}
           isSubmitting={props.isSubmitting}
-          onRetryButtonPress={props.onRetryButtonPress}
           variant={props.variant}
           categorySelectOptions={props.categorySelectOptions}
           variants={props.variants}

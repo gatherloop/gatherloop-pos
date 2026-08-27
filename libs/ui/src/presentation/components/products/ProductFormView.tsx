@@ -1,34 +1,51 @@
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Field,
   FormErrorBanner,
   InputText,
   Select,
-  LoadingView,
-  ErrorView,
   MarkdownEditor,
   FieldArray,
   Tabs,
+  FormView,
+  FormVariant,
 } from '../base';
 import {
   Button,
   Card,
-  Form,
   Spinner,
   XStack,
   Paragraph,
   YStack,
   SizableText,
 } from 'tamagui';
-import { ProductForm, Variant } from '../../../domain';
-import { FormProvider, UseFormReturn } from 'react-hook-form';
+import {
+  ProductForm,
+  Variant,
+  productCreateFormSchema,
+  productUpdateFormSchema,
+} from '../../../domain';
+import { Resolver } from 'react-hook-form';
 import { Plus, X } from '@tamagui/lucide-icons';
 import { FlatList } from 'react-native';
 import { VariantListItem } from '../variants';
 
+export const productCreateFormResolver: Resolver<ProductForm> = zodResolver(
+  productCreateFormSchema,
+  {},
+  { raw: true }
+);
+
+export const productUpdateFormResolver: Resolver<ProductForm> = zodResolver(
+  productUpdateFormSchema,
+  {},
+  { raw: true }
+);
+
 export type ProductFormViewProps = {
-  variant: { type: 'loaded' } | { type: 'loading' } | { type: 'error' };
-  onRetryButtonPress: () => void;
-  form: UseFormReturn<ProductForm>;
+  variant: FormVariant;
+  defaultValues: ProductForm;
+  resolver: Resolver<ProductForm>;
   variants: Variant[];
   onSubmit: (values: ProductForm) => void;
   categorySelectOptions: { label: string; value: number }[];
@@ -41,25 +58,18 @@ export type ProductFormViewProps = {
   serverError?: string;
 };
 
-export const ProductFormView = ({
-  variant,
-  variants,
-  onRetryButtonPress,
-  categorySelectOptions,
-  isSubmitDisabled,
-  isSubmitting,
-  form,
-  onSubmit,
-  onVariantDeleteMenuPress,
-  onVariantEditMenuPress,
-  onVariantPress,
-  onVariantCreatePress,
-  serverError,
-}: ProductFormViewProps) => {
-  return variant.type === 'loaded' ? (
-    <FormProvider {...form}>
-      <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
-        <FormErrorBanner message={serverError} />
+export const ProductFormView = (props: ProductFormViewProps) => (
+  <FormView
+    variant={props.variant}
+    defaultValues={props.defaultValues}
+    resolver={props.resolver}
+    onSubmit={props.onSubmit}
+    loadingTitle="Fetching Product..."
+    errorTitle="Failed to Fetch Product"
+  >
+    {(form) => (
+      <>
+        <FormErrorBanner message={props.serverError} />
         <Card>
           <Card.Header>
             <XStack gap="$3" $sm={{ flexDirection: 'column' }}>
@@ -67,7 +77,7 @@ export const ProductFormView = ({
                 <InputText />
               </Field>
               <Field name="categoryId" label="Category" flex={1}>
-                <Select items={categorySelectOptions} />
+                <Select items={props.categorySelectOptions} />
               </Field>
               <Field name="saleType" label="Sale Type" flex={1}>
                 <Select
@@ -234,18 +244,19 @@ export const ProductFormView = ({
               label: 'Variants',
               value: 'variants',
               isShown:
-                variants.length > 0 || onVariantCreatePress !== undefined,
+                props.variants.length > 0 ||
+                props.onVariantCreatePress !== undefined,
               content: (
                 <YStack gap="$3">
                   <XStack>
-                    <Button icon={Plus} onPress={onVariantCreatePress}>
+                    <Button icon={Plus} onPress={props.onVariantCreatePress}>
                       Create Variant
                     </Button>
                   </XStack>
 
                   <FlatList
                     nestedScrollEnabled
-                    data={variants}
+                    data={props.variants}
                     contentContainerStyle={{ gap: 16 }}
                     renderItem={({ item }) => (
                       <VariantListItem
@@ -257,18 +268,18 @@ export const ProductFormView = ({
                         )}
                         price={item.price}
                         onDeleteMenuPress={
-                          onVariantDeleteMenuPress
-                            ? () => onVariantDeleteMenuPress(item)
+                          props.onVariantDeleteMenuPress
+                            ? () => props.onVariantDeleteMenuPress?.(item)
                             : undefined
                         }
                         onEditMenuPress={
-                          onVariantEditMenuPress
-                            ? () => onVariantEditMenuPress(item)
+                          props.onVariantEditMenuPress
+                            ? () => props.onVariantEditMenuPress?.(item)
                             : undefined
                         }
                         onPress={
-                          onVariantPress
-                            ? () => onVariantPress(item)
+                          props.onVariantPress
+                            ? () => props.onVariantPress?.(item)
                             : undefined
                         }
                       />
@@ -284,22 +295,14 @@ export const ProductFormView = ({
         />
 
         <Button
-          disabled={isSubmitDisabled}
-          onPress={form.handleSubmit(onSubmit)}
+          disabled={props.isSubmitDisabled}
+          onPress={form.handleSubmit(props.onSubmit)}
           theme="blue"
-          icon={isSubmitting ? <Spinner /> : undefined}
+          icon={props.isSubmitting ? <Spinner /> : undefined}
         >
           Submit
         </Button>
-      </Form>
-    </FormProvider>
-  ) : variant.type === 'loading' ? (
-    <LoadingView title="Fetching Product..." />
-  ) : variant.type === 'error' ? (
-    <ErrorView
-      title="Failed to Fetch Product"
-      subtitle="Please click the retry button to refetch data"
-      onRetryButtonPress={onRetryButtonPress}
-    />
-  ) : null;
-};
+      </>
+    )}
+  </FormView>
+);
