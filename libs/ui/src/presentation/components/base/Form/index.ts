@@ -4,6 +4,7 @@ export * from './Field';
 export * from './FieldWatch';
 export * from './FieldArray';
 export * from './FormErrorBanner';
+export * from './FormView';
 export * from './InputNumber';
 export * from './InputText';
 export * from './Select';

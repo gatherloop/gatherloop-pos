@@ -1,188 +1,205 @@
 import {
   ErrorMessage,
-  ErrorView,
   Field,
   FieldArray,
   FieldWatch,
   FormErrorBanner,
+  FormVariant,
+  FormView,
   InputNumber,
   InputText,
-  LoadingView,
   Select,
 } from '../base';
-import { Button, Card, Form, H3, H4, Paragraph, Spinner, XStack, YStack } from 'tamagui';
+import {
+  Button,
+  Card,
+  H3,
+  H4,
+  Paragraph,
+  Spinner,
+  XStack,
+  YStack,
+} from 'tamagui';
 import { Plus, Trash } from '@tamagui/lucide-icons';
-import { ExpenseForm } from '../../../domain';
-import { FormProvider, UseFormReturn } from 'react-hook-form';
+import { ExpenseForm, expenseFormSchema } from '../../../domain';
+import { zodResolver } from '@hookform/resolvers/zod';
+
+const expenseFormResolver = zodResolver(expenseFormSchema, {}, { raw: true });
 
 export type ExpenseFormViewProps = {
-  variant: { type: 'loading' } | { type: 'loaded' } | { type: 'error' };
-  form: UseFormReturn<ExpenseForm>;
+  variant: FormVariant;
+  defaultValues: ExpenseForm;
   onSubmit: (values: ExpenseForm) => void;
   budgetSelectOptions: { label: string; value: number }[];
   walletSelectOptions: { label: string; value: number }[];
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
-  onRetryButtonPress: () => void;
   serverError?: string;
 };
 
 export const ExpenseFormView = ({
   variant,
-  form,
+  defaultValues,
   onSubmit,
   budgetSelectOptions,
   walletSelectOptions,
   isSubmitDisabled,
   isSubmitting,
-  onRetryButtonPress,
   serverError,
 }: ExpenseFormViewProps) => {
-  return variant.type === 'loaded' ? (
-    <FormProvider {...form}>
-      <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
-        <FormErrorBanner message={serverError} />
-        <YStack gap="$3">
-          <XStack gap="$3" $xs={{ flexDirection: 'column' }}>
-            <Field name="budgetId" label="Budget Name" flex={1}>
-              <Select items={budgetSelectOptions} />
-            </Field>
-            <Field name="walletId" label="Wallet Name" flex={1}>
-              <Select items={walletSelectOptions} />
-            </Field>
-          </XStack>
+  return (
+    <FormView
+      variant={variant}
+      defaultValues={defaultValues}
+      resolver={expenseFormResolver}
+      onSubmit={onSubmit}
+      loadingTitle="Fetching Expense..."
+      errorTitle="Failed to Fetch Expense"
+    >
+      {(form) => (
+        <>
+          <FormErrorBanner message={serverError} />
+          <YStack gap="$3">
+            <XStack gap="$3" $xs={{ flexDirection: 'column' }}>
+              <Field name="budgetId" label="Budget Name" flex={1}>
+                <Select items={budgetSelectOptions} />
+              </Field>
+              <Field name="walletId" label="Wallet Name" flex={1}>
+                <Select items={walletSelectOptions} />
+              </Field>
+            </XStack>
 
-          <FieldArray control={form.control} name="expenseItems" keyName="key">
-            {({ append, fields, remove }) => (
-              <>
-                <XStack justifyContent="space-between">
-                  <H4>Expense Items</H4>
-                  <Button
-                    icon={Plus}
-                    variant="outlined"
-                    circular
-                    onPress={() =>
-                      append({
-                        name: '',
-                        unit: '',
-                        price: 0,
-                        amount: 1,
-                      })
-                    }
-                  />
-                </XStack>
-                {fields.map((_, index) => (
-                  <Card key={index}>
-                    <Card.Header>
-                      <YStack>
-                        <XStack gap="$3" flexWrap="wrap">
-                          <Field
-                            name={`expenseItems.${index}.name`}
-                            label="Item Name"
-                            flexBasis="22%"
-                            $md={{ flexBasis: '45%' }}
-                            $xs={{ flexBasis: '100%' }}
-                          >
-                            <InputText />
-                          </Field>
-                          <Field
-                            name={`expenseItems.${index}.amount`}
-                            label="Amount"
-                            flexBasis="22%"
-                            $md={{ flexBasis: '45%' }}
-                            $xs={{ flexBasis: '100%' }}
-                          >
-                            <InputNumber min={1} />
-                          </Field>
-                          <Field
-                            name={`expenseItems.${index}.unit`}
-                            label="Unit"
-                            flexBasis="22%"
-                            $md={{ flexBasis: '45%' }}
-                            $xs={{ flexBasis: '100%' }}
-                          >
-                            <InputText />
-                          </Field>
-                          <Field
-                            name={`expenseItems.${index}.price`}
-                            label="Price"
-                            flexBasis="22%"
-                            $md={{ flexBasis: '45%' }}
-                            $xs={{ flexBasis: '100%' }}
-                          >
-                            <InputNumber min={0} />
-                          </Field>
+            <FieldArray
+              control={form.control}
+              name="expenseItems"
+              keyName="key"
+            >
+              {({ append, fields, remove }) => (
+                <>
+                  <XStack justifyContent="space-between">
+                    <H4>Expense Items</H4>
+                    <Button
+                      icon={Plus}
+                      variant="outlined"
+                      circular
+                      onPress={() =>
+                        append({
+                          name: '',
+                          unit: '',
+                          price: 0,
+                          amount: 1,
+                        })
+                      }
+                    />
+                  </XStack>
+                  {fields.map((_, index) => (
+                    <Card key={index}>
+                      <Card.Header>
+                        <YStack>
+                          <XStack gap="$3" flexWrap="wrap">
+                            <Field
+                              name={`expenseItems.${index}.name`}
+                              label="Item Name"
+                              flexBasis="22%"
+                              $md={{ flexBasis: '45%' }}
+                              $xs={{ flexBasis: '100%' }}
+                            >
+                              <InputText />
+                            </Field>
+                            <Field
+                              name={`expenseItems.${index}.amount`}
+                              label="Amount"
+                              flexBasis="22%"
+                              $md={{ flexBasis: '45%' }}
+                              $xs={{ flexBasis: '100%' }}
+                            >
+                              <InputNumber min={1} />
+                            </Field>
+                            <Field
+                              name={`expenseItems.${index}.unit`}
+                              label="Unit"
+                              flexBasis="22%"
+                              $md={{ flexBasis: '45%' }}
+                              $xs={{ flexBasis: '100%' }}
+                            >
+                              <InputText />
+                            </Field>
+                            <Field
+                              name={`expenseItems.${index}.price`}
+                              label="Price"
+                              flexBasis="22%"
+                              $md={{ flexBasis: '45%' }}
+                              $xs={{ flexBasis: '100%' }}
+                            >
+                              <InputNumber min={0} />
+                            </Field>
 
-                          <Button
-                            size="$2"
-                            icon={Trash}
-                            circular
-                            theme="red"
-                            color="$red8"
-                            onPress={() => remove(index)}
-                            position="absolute"
-                            top="$1"
-                            right="$1"
-                          />
-                        </XStack>
-                        <YStack justifyContent="flex-end" flex={1}>
-                          <Paragraph textAlign="right">Subtotal</Paragraph>
+                            <Button
+                              size="$2"
+                              icon={Trash}
+                              circular
+                              theme="red"
+                              color="$red8"
+                              onPress={() => remove(index)}
+                              position="absolute"
+                              top="$1"
+                              right="$1"
+                            />
+                          </XStack>
+                          <YStack justifyContent="flex-end" flex={1}>
+                            <Paragraph textAlign="right">Subtotal</Paragraph>
 
-                          <FieldWatch
-                            control={form.control}
-                            name={[
-                              `expenseItems.${index}.price`,
-                              `expenseItems.${index}.amount`,
-                            ]}
-                          >
-                            {([price, amount]) => (
-                              <H4 textAlign="right">
-                                Rp. {(price * amount).toLocaleString('id')}
-                              </H4>
-                            )}
-                          </FieldWatch>
+                            <FieldWatch
+                              control={form.control}
+                              name={[
+                                `expenseItems.${index}.price`,
+                                `expenseItems.${index}.amount`,
+                              ]}
+                            >
+                              {([price, amount]) => (
+                                <H4 textAlign="right">
+                                  Rp. {(price * amount).toLocaleString('id')}
+                                </H4>
+                              )}
+                            </FieldWatch>
+                          </YStack>
                         </YStack>
-                      </YStack>
-                    </Card.Header>
-                  </Card>
-                ))}
-              </>
-            )}
-          </FieldArray>
-          <ErrorMessage name="expenseItems" />
-
-          <YStack alignItems="flex-end">
-            <Paragraph textAlign="right">Total</Paragraph>
-            <FieldWatch control={form.control} name={[`expenseItems`]}>
-              {([expenseItems]) => (
-                <H3 textAlign="right">
-                  Rp.{' '}
-                  {expenseItems
-                    .reduce((prev, curr) => prev + curr.amount * curr.price, 0)
-                    .toLocaleString('id')}
-                </H3>
+                      </Card.Header>
+                    </Card>
+                  ))}
+                </>
               )}
-            </FieldWatch>
-          </YStack>
-        </YStack>
+            </FieldArray>
+            <ErrorMessage name="expenseItems" />
 
-        <Button
-          disabled={isSubmitDisabled}
-          onPress={form.handleSubmit(onSubmit)}
-          theme="blue"
-          icon={isSubmitting ? <Spinner /> : undefined}
-        >
-          Submit
-        </Button>
-      </Form>
-    </FormProvider>
-  ) : variant.type === 'loading' ? (
-    <LoadingView title="Fetching Expense..." />
-  ) : variant.type === 'error' ? (
-    <ErrorView
-      title="Failed to Fetch Expense"
-      subtitle="Please click the retry button to refetch data"
-      onRetryButtonPress={onRetryButtonPress}
-    />
-  ) : null;
+            <YStack alignItems="flex-end">
+              <Paragraph textAlign="right">Total</Paragraph>
+              <FieldWatch control={form.control} name={[`expenseItems`]}>
+                {([expenseItems]) => (
+                  <H3 textAlign="right">
+                    Rp.{' '}
+                    {expenseItems
+                      .reduce(
+                        (prev, curr) => prev + curr.amount * curr.price,
+                        0,
+                      )
+                      .toLocaleString('id')}
+                  </H3>
+                )}
+              </FieldWatch>
+            </YStack>
+          </YStack>
+
+          <Button
+            disabled={isSubmitDisabled}
+            onPress={form.handleSubmit(onSubmit)}
+            theme="blue"
+            icon={isSubmitting ? <Spinner /> : undefined}
+          >
+            Submit
+          </Button>
+        </>
+      )}
+    </FormView>
+  );
 };

@@ -26,7 +26,7 @@ export const BudgetCreateHandler = ({
 
   return (
     <BudgetCreateScreen
-      form={budgetCreate.form}
+      defaultValues={budgetCreate.state.values}
       onSubmit={(values) =>
         budgetCreate.dispatch({ type: 'SUBMIT', values })
       }

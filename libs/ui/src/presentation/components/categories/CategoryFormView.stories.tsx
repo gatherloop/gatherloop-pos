@@ -1,35 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
-import React from 'react';
-import { useForm } from 'react-hook-form';
 import { CategoryFormView } from './CategoryFormView';
-import type { CategoryForm } from '../../../domain';
-
-const LoadedStory = () => {
-  const form = useForm<CategoryForm>({ defaultValues: { name: '', station: 'NONE' } });
-  return (
-    <CategoryFormView
-      variant={{ type: 'loaded' }}
-      form={form}
-      onSubmit={fn()}
-      isSubmitDisabled={false}
-    />
-  );
-};
-
-const PopulatedStory = () => {
-  const form = useForm<CategoryForm>({
-    defaultValues: { name: 'Beverages', station: 'BAR' },
-  });
-  return (
-    <CategoryFormView
-      variant={{ type: 'loaded' }}
-      form={form}
-      onSubmit={fn()}
-      isSubmitDisabled={false}
-    />
-  );
-};
 
 const meta: Meta<typeof CategoryFormView> = {
   title: 'Features/Categories/CategoryFormView',
@@ -40,57 +11,49 @@ export default meta;
 type Story = StoryObj<typeof CategoryFormView>;
 
 export const Loaded: Story = {
-  render: () => <LoadedStory />,
+  args: {
+    variant: { type: 'loaded' },
+    defaultValues: { name: '', station: 'NONE' },
+    onSubmit: fn(),
+    isSubmitDisabled: false,
+    isSubmitting: false,
+  },
 };
 
 export const Populated: Story = {
-  render: () => <PopulatedStory />,
-};
-
-const LoadingStory = () => {
-  const form = useForm<CategoryForm>({ defaultValues: { name: '', station: 'NONE' } });
-  return (
-    <CategoryFormView
-      variant={{ type: 'loading' }}
-      form={form}
-      onSubmit={fn()}
-      isSubmitDisabled={true}
-    />
-  );
-};
-
-const ErrorStory = () => {
-  const form = useForm<CategoryForm>({ defaultValues: { name: '', station: 'NONE' } });
-  return (
-    <CategoryFormView
-      variant={{ type: 'error', onRetryButtonPress: fn() }}
-      form={form}
-      onSubmit={fn()}
-      isSubmitDisabled={true}
-    />
-  );
-};
-
-const SubmitDisabledStory = () => {
-  const form = useForm<CategoryForm>({ defaultValues: { name: '', station: 'NONE' } });
-  return (
-    <CategoryFormView
-      variant={{ type: 'loaded' }}
-      form={form}
-      onSubmit={fn()}
-      isSubmitDisabled={true}
-    />
-  );
+  args: {
+    ...Loaded.args,
+    defaultValues: { name: 'Beverages', station: 'BAR' },
+  },
 };
 
 export const Loading: Story = {
-  render: () => <LoadingStory />,
+  args: {
+    ...Loaded.args,
+    variant: { type: 'loading' },
+    isSubmitDisabled: true,
+  },
 };
 
 export const Error: Story = {
-  render: () => <ErrorStory />,
+  args: {
+    ...Loaded.args,
+    variant: { type: 'error', onRetryButtonPress: fn() },
+    isSubmitDisabled: true,
+  },
 };
 
 export const SubmitDisabled: Story = {
-  render: () => <SubmitDisabledStory />,
+  args: {
+    ...Loaded.args,
+    isSubmitDisabled: true,
+  },
+};
+
+export const Submitting: Story = {
+  args: {
+    ...Loaded.args,
+    isSubmitDisabled: true,
+    isSubmitting: true,
+  },
 };

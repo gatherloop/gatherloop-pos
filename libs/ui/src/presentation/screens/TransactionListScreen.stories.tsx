@@ -1,13 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
-import React from 'react';
-import { useForm } from 'react-hook-form';
 import { TransactionListScreen } from './TransactionListScreen';
-import {
-  mockTransactions,
-  mockWallet,
-  mockWallets,
-} from '../../../.storybook/mocks/mockData';
+import { mockTransactions, mockWallets } from '../../../.storybook/mocks/mockData';
 
 const defaultArgs = {
   onLogoutPress: fn(),
@@ -47,51 +41,6 @@ const defaultArgs = {
   onUnpayConfirm: fn(),
 };
 
-const LoadedStory = () => {
-  const payForm = useForm({ defaultValues: { wallet: mockWallet, paidAmount: 30000000 } });
-  return (
-    <TransactionListScreen
-      {...defaultArgs}
-      variant={{ type: 'loaded' }}
-      payForm={payForm}
-    />
-  );
-};
-
-const LoadingStory = () => {
-  const payForm = useForm({ defaultValues: { wallet: mockWallet, paidAmount: 0 } });
-  return (
-    <TransactionListScreen
-      {...defaultArgs}
-      variant={{ type: 'loading' }}
-      payForm={payForm}
-    />
-  );
-};
-
-const ErrorStory = () => {
-  const payForm = useForm({ defaultValues: { wallet: mockWallet, paidAmount: 0 } });
-  return (
-    <TransactionListScreen
-      {...defaultArgs}
-      variant={{ type: 'error' }}
-      payForm={payForm}
-    />
-  );
-};
-
-const PayModalStory = () => {
-  const payForm = useForm({ defaultValues: { wallet: mockWallet, paidAmount: 30000000 } });
-  return (
-    <TransactionListScreen
-      {...defaultArgs}
-      variant={{ type: 'loaded' }}
-      payForm={payForm}
-      isPayModalOpen={true}
-    />
-  );
-};
-
 const meta: Meta<typeof TransactionListScreen> = {
   title: 'Screens/Transactions/TransactionListScreen',
   component: TransactionListScreen,
@@ -101,7 +50,18 @@ const meta: Meta<typeof TransactionListScreen> = {
 export default meta;
 type Story = StoryObj<typeof TransactionListScreen>;
 
-export const Loaded: Story = { render: () => <LoadedStory /> };
-export const Loading: Story = { render: () => <LoadingStory /> };
-export const Error: Story = { render: () => <ErrorStory /> };
-export const PayModalOpen: Story = { render: () => <PayModalStory /> };
+export const Loaded: Story = {
+  args: { ...defaultArgs, variant: { type: 'loaded' } },
+};
+
+export const Loading: Story = {
+  args: { ...defaultArgs, variant: { type: 'loading' } },
+};
+
+export const Error: Story = {
+  args: { ...defaultArgs, variant: { type: 'error' } },
+};
+
+export const PayModalOpen: Story = {
+  args: { ...defaultArgs, variant: { type: 'loaded' }, isPayModalOpen: true },
+};

@@ -1,39 +1,31 @@
-import {
-  Field,
-  FormErrorBanner,
-  InputText,
-  Select,
-  LoadingView,
-  ErrorView,
-} from '../base';
-import { CategoryForm } from '../../../domain';
-import { FormProvider, UseFormReturn } from 'react-hook-form';
-import { Button, Form, Spinner } from 'tamagui';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Button, Spinner } from 'tamagui';
+import { Field, FormErrorBanner, InputText, Select, FormView, FormVariant } from '../base';
+import { CategoryForm, categoryFormSchema } from '../../../domain';
+
+const categoryFormResolver = zodResolver(categoryFormSchema);
 
 export type CategoryFormViewProps = {
-  variant:
-    | { type: 'loaded' }
-    | { type: 'loading' }
-    | { type: 'error'; onRetryButtonPress: () => void };
-  form: UseFormReturn<CategoryForm>;
+  variant: FormVariant;
+  defaultValues: CategoryForm;
   onSubmit: (values: CategoryForm) => void;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   serverError?: string;
 };
 
-export const CategoryFormView = ({
-  variant,
-  form,
-  onSubmit,
-  isSubmitDisabled,
-  isSubmitting,
-  serverError,
-}: CategoryFormViewProps) => {
-  return variant.type === 'loaded' ? (
-    <FormProvider {...form}>
-      <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
-        <FormErrorBanner message={serverError} />
+export const CategoryFormView = (props: CategoryFormViewProps) => (
+  <FormView
+    variant={props.variant}
+    defaultValues={props.defaultValues}
+    resolver={categoryFormResolver}
+    onSubmit={props.onSubmit}
+    loadingTitle="Fetching Category..."
+    errorTitle="Failed to Fetch Category"
+  >
+    {(form) => (
+      <>
+        <FormErrorBanner message={props.serverError} />
         <Field name="name" label="Name">
           <InputText />
         </Field>
@@ -47,22 +39,14 @@ export const CategoryFormView = ({
           />
         </Field>
         <Button
-          disabled={isSubmitDisabled}
-          onPress={form.handleSubmit(onSubmit)}
+          disabled={props.isSubmitDisabled}
+          onPress={form.handleSubmit(props.onSubmit)}
           theme="blue"
-          icon={isSubmitting ? <Spinner /> : undefined}
+          icon={props.isSubmitting ? <Spinner /> : undefined}
         >
           Submit
         </Button>
-      </Form>
-    </FormProvider>
-  ) : variant.type === 'loading' ? (
-    <LoadingView title="Fetching Category..." />
-  ) : variant.type === 'error' ? (
-    <ErrorView
-      title="Failed to Fetch Category"
-      subtitle="Please click the retry button to refetch data"
-      onRetryButtonPress={variant.onRetryButtonPress}
-    />
-  ) : null;
-};
+      </>
+    )}
+  </FormView>
+);

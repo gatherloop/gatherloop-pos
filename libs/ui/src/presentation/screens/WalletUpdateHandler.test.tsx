@@ -70,6 +70,16 @@ describe('WalletUpdateHandler', () => {
       });
     });
 
+    it('should fill the form with fetched values when data loads after mount', async () => {
+      render(<WalletUpdateHandler {...createProps({ preloaded: false })} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByDisplayValue('Cash')).toBeTruthy();
+    });
+
     it('should render the isPaymentTarget switch field', async () => {
       render(<WalletUpdateHandler {...createProps({ preloaded: true })} />);
       await act(async () => {

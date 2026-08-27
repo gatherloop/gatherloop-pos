@@ -1,27 +1,31 @@
-import { Field, FormErrorBanner, InputText } from '../base';
-import { AuthLoginForm } from '../../../domain';
-import { FormProvider, UseFormReturn } from 'react-hook-form';
-import { Button, Form, Spinner } from 'tamagui';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Button, Spinner } from 'tamagui';
+import { Field, FormErrorBanner, InputText, FormView, FormVariant } from '../base';
+import { AuthLoginForm, authLoginFormSchema } from '../../../domain';
+
+const authLoginFormResolver = zodResolver(authLoginFormSchema);
 
 export type LoginFormProps = {
-  form: UseFormReturn<AuthLoginForm>;
+  variant: FormVariant;
+  defaultValues: AuthLoginForm;
   onSubmit: (values: AuthLoginForm) => void;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   serverError?: string;
 };
 
-export const LoginForm = ({
-  form,
-  onSubmit,
-  isSubmitDisabled,
-  isSubmitting,
-  serverError,
-}: LoginFormProps) => {
-  return (
-    <FormProvider {...form}>
-      <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
-        <FormErrorBanner message={serverError} />
+export const LoginForm = (props: LoginFormProps) => (
+  <FormView
+    variant={props.variant}
+    defaultValues={props.defaultValues}
+    resolver={authLoginFormResolver}
+    onSubmit={props.onSubmit}
+    loadingTitle="Loading Login Form..."
+    errorTitle="Failed to Load Login Form"
+  >
+    {(form) => (
+      <>
+        <FormErrorBanner message={props.serverError} />
         <Field name="username" label="Username">
           <InputText />
         </Field>
@@ -29,14 +33,14 @@ export const LoginForm = ({
           <InputText secureTextEntry />
         </Field>
         <Button
-          disabled={isSubmitDisabled}
-          onPress={form.handleSubmit(onSubmit)}
+          disabled={props.isSubmitDisabled}
+          onPress={form.handleSubmit(props.onSubmit)}
           theme="blue"
-          icon={isSubmitting ? <Spinner /> : undefined}
+          icon={props.isSubmitting ? <Spinner /> : undefined}
         >
           Submit
         </Button>
-      </Form>
-    </FormProvider>
-  );
-};
+      </>
+    )}
+  </FormView>
+);

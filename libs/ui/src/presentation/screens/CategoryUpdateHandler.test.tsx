@@ -78,6 +78,16 @@ describe('CategoryUpdateHandler', () => {
       });
     });
 
+    it('should fill the form with fetched values when data loads after mount', async () => {
+      render(<CategoryUpdateHandler {...createProps({ preloaded: false })} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByDisplayValue('Mock Category 1')).toBeTruthy();
+    });
+
     it('should render the station select field with the current value', async () => {
       render(<CategoryUpdateHandler {...createProps({ preloaded: true })} />);
       expect(screen.getByRole('option', { name: 'Kitchen' })).toBeTruthy();

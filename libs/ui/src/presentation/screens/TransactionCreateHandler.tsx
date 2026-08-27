@@ -1,5 +1,6 @@
 import { useRouter } from 'solito/router';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { UseFormReturn } from 'react-hook-form';
 import {
   useTransactionCreateController,
   useAuthLogoutController,
@@ -13,6 +14,8 @@ import {
   TransactionPayUsecase,
   TransactionItemSelectUsecase,
   CouponListUsecase,
+  Variant,
+  TransactionForm,
 } from '../../domain';
 import {
   TransactionCreateScreen,
@@ -59,6 +62,44 @@ export const TransactionCreateHandler = ({
   );
   const couponListController = useCouponListController(couponListUsecase);
   const authLogoutController = useAuthLogoutController(authLogoutUsecase);
+
+  const formRef = useRef<UseFormReturn<TransactionForm> | null>(null);
+
+  // Writes through the form the same way an item selection would if it
+  // happened from inside the form subtree — see `FormView`'s `formRef`
+  // escape hatch (TRD §4.6). `formRef.current` is only ever null before the
+  // form's `loaded` branch mounts, which is not reachable here since a
+  // variant selection requires the product picker (and therefore the form)
+  // to already be on screen.
+  const addItemToForm = (newVariant: Variant, amount: number) => {
+    const form = formRef.current;
+    if (!form) return;
+
+    const items = form.getValues('transactionItems');
+    const itemIndex = items.findIndex(
+      ({ variant }) => newVariant.id === variant.id
+    );
+
+    if (itemIndex !== -1) {
+      form.setValue(
+        'transactionItems',
+        items.map((item, index) =>
+          index === itemIndex ? { ...item, amount: item.amount + amount } : item
+        )
+      );
+    } else {
+      form.setValue('transactionItems', [
+        ...items,
+        {
+          amount,
+          variant: newVariant,
+          price: newVariant.price,
+          discountAmount: 0,
+          note: '',
+        },
+      ]);
+    }
+  };
 
   useEffect(() => {
     if (
@@ -109,17 +150,22 @@ export const TransactionCreateHandler = ({
       transactionPayController.state.type === 'payingSuccess' &&
       selectedWallet
     ) {
-      const transactionItems = transactionCreateController.form
-        .getValues('transactionItems')
-        .sort((a, b) =>
-          a.variant.product.name.localeCompare(b.variant.product.name)
-        );
+      // Reads the submitted values off the usecase rather than the form
+      // (TRD §4.6): the reducer already stores them on `SUBMIT` and they
+      // persist through `submitSuccess`, which is the only state this
+      // effect fires in.
+      const transactionItems =
+        transactionCreateController.state.values.transactionItems
+          .slice()
+          .sort((a, b) =>
+            a.variant.product.name.localeCompare(b.variant.product.name)
+          );
 
       const transaction: TransactionPrintPayload = {
         createdAt: dayjs(new Date().toISOString()).format('DD/MM/YYYY HH:mm'),
         paidAt: dayjs(new Date().toISOString()).format('DD/MM/YYYY HH:mm'),
-        name: transactionCreateController.form.getValues('name'),
-        orderNumber: transactionCreateController.form.getValues('orderNumber'),
+        name: transactionCreateController.state.values.name,
+        orderNumber: transactionCreateController.state.values.orderNumber,
         items: transactionItems.map(
           ({ variant, price, amount, discountAmount, note }) => ({
             name: `${variant.product.name} - ${variant.values
@@ -131,13 +177,13 @@ export const TransactionCreateHandler = ({
             note,
           })
         ),
-        coupons: transactionCreateController.form
-          .getValues('transactionCoupons')
-          .map(({ coupon }) => ({
+        coupons: transactionCreateController.state.values.transactionCoupons.map(
+          ({ coupon }) => ({
             amount: coupon.amount,
             type: coupon.type === 'fixed' ? 'FIXED' : 'PERCENTAGE',
             code: coupon.code,
-          })),
+          })
+        ),
         isCashless: selectedWallet.isCashless,
         paidAmount: transactionPayController.state.paidAmount,
       };
@@ -182,7 +228,7 @@ export const TransactionCreateHandler = ({
     print,
     router,
     show,
-    transactionCreateController.form,
+    transactionCreateController.state.values,
     transactionPayController.state.paidAmount,
     transactionPayController.state.type,
     transactionPayController.state.walletId,
@@ -194,20 +240,20 @@ export const TransactionCreateHandler = ({
       transactionItemSelectController.state.type === 'loadingVariantSuccess' &&
       transactionItemSelectController.state.selectedVariant
     ) {
-      transactionCreateController.onAddItem(
+      addItemToForm(
         transactionItemSelectController.state.selectedVariant,
         transactionItemSelectController.state.amount
       );
     }
   }, [
-    transactionCreateController,
     transactionItemSelectController.state.amount,
     transactionItemSelectController.state.selectedVariant,
     transactionItemSelectController.state.type,
   ]);
 
   const props: TransactionCreateScreenProps = {
-    form: transactionCreateController.form,
+    variant: { type: 'loaded' },
+    defaultValues: transactionCreateController.state.values,
     onSubmit: (values) =>
       transactionCreateController.dispatch({ type: 'SUBMIT', values }),
     isSubmitDisabled: transactionCreateController.state.type === 'submitting',
@@ -219,17 +265,10 @@ export const TransactionCreateHandler = ({
         ? 'Failed to submit. Please try again.'
         : undefined,
     onLogoutPress: () => authLogoutController.dispatch({ type: 'LOGOUT' }),
-    isCouponSheetOpen: transactionCreateController.isCouponSheetOpen,
-    onCouponSheetOpenChange:
-      transactionCreateController.onCouponSheetOpenChange,
-    onItemCouponSheetOpen: transactionCreateController.onItemCouponSheetOpen,
-    onRemoveItemCoupon: transactionCreateController.onRemoveItemCoupon,
-    itemsFieldArray: transactionCreateController.itemsFieldArray,
-    couponsFieldArray: transactionCreateController.couponsFieldArray,
+    formRef,
     couponList: {
       onRetryButtonPress: () =>
         couponListController.dispatch({ type: 'FETCH' }),
-      onItemPress: transactionCreateController.onAddCoupon,
       variant: match(couponListController.state)
         .returnType<TransactionCreateScreenProps['couponList']['variant']>()
         .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))
@@ -300,7 +339,6 @@ export const TransactionCreateHandler = ({
         .exhaustive(),
     },
     transactionPayment: {
-      form: transactionPayController.form,
       isButtonDisabled:
         transactionPayController.state.type === 'paying' ||
         transactionPayController.state.type === 'payingSuccess',

@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 export type Supplier = {
   id: number;
   name: string;
@@ -13,3 +15,10 @@ export type SupplierForm = {
   address: string;
   mapsLink: string;
 };
+
+export const supplierFormSchema = z.object({
+  name: z.string().min(1),
+  phone: z.string(),
+  address: z.string().min(1),
+  mapsLink: z.string().min(1),
+}) satisfies z.ZodType<SupplierForm>;

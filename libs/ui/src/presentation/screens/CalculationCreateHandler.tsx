@@ -35,7 +35,7 @@ export const CalculationCreateHandler = ({
   return (
     <CalculationCreateScreen
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
-      form={calculationCreate.form}
+      defaultValues={calculationCreate.state.values}
       getTotalWallet={(totalWallet, walletId) => {
         return isNaN(totalWallet)
           ? calculationCreate.state.wallets.find(
@@ -53,7 +53,6 @@ export const CalculationCreateHandler = ({
           ? 'Failed to submit. Please try again.'
           : undefined
       }
-      onRetryButtonPress={() => calculationCreate.dispatch({ type: 'FETCH' })}
       onSubmit={(values) =>
         calculationCreate.dispatch({ type: 'SUBMIT', values })
       }
@@ -73,7 +72,11 @@ export const CalculationCreateHandler = ({
             type: 'loaded',
           })
         )
-        .with({ type: 'error' }, () => ({ type: 'error' }))
+        .with({ type: 'error' }, () => ({
+          type: 'error',
+          onRetryButtonPress: () =>
+            calculationCreate.dispatch({ type: 'FETCH' }),
+        }))
         .exhaustive()}
       walletSelectOptions={calculationCreate.state.wallets.map((wallet) => ({
         label: wallet.name,

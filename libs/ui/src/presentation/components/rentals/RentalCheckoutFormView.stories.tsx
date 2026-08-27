@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn, userEvent, within } from '@storybook/test';
 import React from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
 import { Text } from 'tamagui';
 import { RentalCheckoutFormView } from './RentalCheckoutFormView';
 import type { RentalCheckoutForm } from '../../../domain';
@@ -11,49 +10,31 @@ const defaultValues: RentalCheckoutForm = {
   rentals: [],
 };
 
-const DefaultStory = () => {
-  const form = useForm<RentalCheckoutForm>({ defaultValues });
-  const rentalsFieldArray = useFieldArray({
-    control: form.control,
-    name: 'rentals',
-    keyName: 'key',
-  });
-  return (
-    <RentalCheckoutFormView
-      form={form}
-      onSubmit={fn()}
-      isSubmitDisabled={false}
-      isSubmitting={false}
-      isSubmitSuccess={false}
-      RentalItemSelect={() => <Text color="$color">+ Add Rental Item</Text>}
-      rentalsFieldArray={rentalsFieldArray}
-    />
-  );
-};
+const DefaultStory = () => (
+  <RentalCheckoutFormView
+    variant={{ type: 'loaded' }}
+    defaultValues={defaultValues}
+    onSubmit={fn()}
+    isSubmitDisabled={false}
+    isSubmitting={false}
+    isSubmitSuccess={false}
+    RentalItemSelect={() => <Text color="$color">+ Add Rental Item</Text>}
+  />
+);
 
 // Compact layout (PRD FR-2): at ≤800px the picker fills the screen and the
 // cart moves behind a floating button into a sheet.
-const CompactWithRentalsStory = () => {
-  const form = useForm<RentalCheckoutForm>({
-    defaultValues: { rentals: [mockRental, mockRentalCheckedOut] },
-  });
-  const rentalsFieldArray = useFieldArray({
-    control: form.control,
-    name: 'rentals',
-    keyName: 'key',
-  });
-  return (
-    <RentalCheckoutFormView
-      form={form}
-      onSubmit={fn()}
-      isSubmitDisabled={false}
-      isSubmitting={false}
-      isSubmitSuccess={false}
-      RentalItemSelect={() => <Text color="$color">+ Add Rental Item</Text>}
-      rentalsFieldArray={rentalsFieldArray}
-    />
-  );
-};
+const CompactWithRentalsStory = () => (
+  <RentalCheckoutFormView
+    variant={{ type: 'loaded' }}
+    defaultValues={{ rentals: [mockRental, mockRentalCheckedOut] }}
+    onSubmit={fn()}
+    isSubmitDisabled={false}
+    isSubmitting={false}
+    isSubmitSuccess={false}
+    RentalItemSelect={() => <Text color="$color">+ Add Rental Item</Text>}
+  />
+);
 
 const meta: Meta<typeof RentalCheckoutFormView> = {
   title: 'Features/Rentals/RentalCheckoutFormView',
@@ -67,25 +48,17 @@ export const Default: Story = {
   render: () => <DefaultStory />,
 };
 
-const SubmitDisabledStory = () => {
-  const form = useForm<RentalCheckoutForm>({ defaultValues });
-  const rentalsFieldArray = useFieldArray({
-    control: form.control,
-    name: 'rentals',
-    keyName: 'key',
-  });
-  return (
-    <RentalCheckoutFormView
-      form={form}
-      onSubmit={fn()}
-      isSubmitDisabled={true}
-      isSubmitting={false}
-      isSubmitSuccess={false}
-      RentalItemSelect={() => <Text color="$color">+ Add Rental Item</Text>}
-      rentalsFieldArray={rentalsFieldArray}
-    />
-  );
-};
+const SubmitDisabledStory = () => (
+  <RentalCheckoutFormView
+    variant={{ type: 'loaded' }}
+    defaultValues={defaultValues}
+    onSubmit={fn()}
+    isSubmitDisabled={true}
+    isSubmitting={false}
+    isSubmitSuccess={false}
+    RentalItemSelect={() => <Text color="$color">+ Add Rental Item</Text>}
+  />
+);
 
 export const SubmitDisabled: Story = {
   render: () => <SubmitDisabledStory />,

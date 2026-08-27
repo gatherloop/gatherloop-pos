@@ -13,6 +13,26 @@
     {
       "files": ["*.js", "*.jsx"],
       "rules": {}
+    },
+    {
+      "files": ["src/presentation/controllers/**/*.ts", "src/presentation/controllers/**/*.tsx"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "react-hook-form",
+                "message": "useForm belongs to the component that renders the fields, not the controller. See docs/trd-form-ownership-refactor.md and docs/forms.md."
+              },
+              {
+                "name": "@hookform/resolvers/zod",
+                "message": "Form resolvers belong next to the form view, not the controller. See docs/trd-form-ownership-refactor.md and docs/forms.md."
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }

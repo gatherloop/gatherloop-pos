@@ -5,15 +5,13 @@ import {
   Layout,
 } from '../components';
 import { CalculationForm } from '../../domain';
-import { UseFormReturn } from 'react-hook-form';
 
 export type CalculationUpdateScreenProps = {
   onLogoutPress: () => void;
-  form: UseFormReturn<CalculationForm>;
+  defaultValues: CalculationForm;
   getTotalWallet: (totalWallet: number, walletId: number) => number;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
-  onRetryButtonPress: () => void;
   onSubmit: (values: CalculationForm) => void;
   variant: CalculationFormViewProps['variant'];
   walletSelectOptions: {
@@ -25,11 +23,10 @@ export type CalculationUpdateScreenProps = {
 
 export const CalculationUpdateScreen = ({
   onLogoutPress,
-  form,
+  defaultValues,
   getTotalWallet,
   isSubmitDisabled,
   isSubmitting,
-  onRetryButtonPress,
   onSubmit,
   variant,
   walletSelectOptions,
@@ -43,11 +40,10 @@ export const CalculationUpdateScreen = ({
     >
       <ScrollView>
         <CalculationFormView
-          form={form}
+          defaultValues={defaultValues}
           getTotalWallet={getTotalWallet}
           isSubmitDisabled={isSubmitDisabled}
           isSubmitting={isSubmitting}
-          onRetryButtonPress={onRetryButtonPress}
           onSubmit={onSubmit}
           variant={variant}
           walletSelectOptions={walletSelectOptions}

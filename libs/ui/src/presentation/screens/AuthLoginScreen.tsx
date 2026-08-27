@@ -1,13 +1,13 @@
 import { Card, H2, Paragraph, ScrollView } from 'tamagui';
-import { LoginForm } from '../components';
+import { LoginForm, LoginFormProps } from '../components';
 import { AuthLoginForm } from '../../domain';
-import { UseFormReturn } from 'react-hook-form';
 
 export type AuthLoginScreenProps = {
-  form: UseFormReturn<AuthLoginForm>;
+  defaultValues: AuthLoginForm;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   onSubmit: (values: AuthLoginForm) => void;
+  variant: LoginFormProps['variant'];
   serverError?: string;
 };
 
@@ -28,10 +28,11 @@ export const AuthLoginScreen = (props: AuthLoginScreenProps) => {
             Input username and password to login into POS system
           </Paragraph>
           <LoginForm
-            form={props.form}
+            defaultValues={props.defaultValues}
             isSubmitDisabled={props.isSubmitDisabled}
             isSubmitting={props.isSubmitting}
             onSubmit={props.onSubmit}
+            variant={props.variant}
             serverError={props.serverError}
           />
         </Card.Header>

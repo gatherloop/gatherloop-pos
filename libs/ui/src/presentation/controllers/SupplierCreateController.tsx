@@ -2,9 +2,6 @@ import { useEffect } from 'react';
 import { SupplierCreateUsecase } from '../../domain';
 import { useController } from './controller';
 import { useToastController } from '@tamagui/toast';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 
 export const useSupplierCreateController = (usecase: SupplierCreateUsecase) => {
   const { state, dispatch } = useController(usecase);
@@ -15,21 +12,8 @@ export const useSupplierCreateController = (usecase: SupplierCreateUsecase) => {
     else if (state.type === 'submitError') toast.show('Create Supplier Error');
   }, [toast, state.type]);
 
-  const form = useForm({
-    defaultValues: state.values,
-    resolver: zodResolver(
-      z.object({
-        name: z.string().min(1),
-        phone: z.string(),
-        address: z.string().min(1),
-        mapsLink: z.string().min(1),
-      })
-    ),
-  });
-
   return {
     state,
     dispatch,
-    form,
   };
 };

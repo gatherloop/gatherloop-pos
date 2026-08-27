@@ -1,3 +1,5 @@
+import { MutableRefObject } from 'react';
+import { UseFormReturn } from 'react-hook-form';
 import { ScrollView, YStack } from 'tamagui';
 import {
   RentalCheckoutFormView,
@@ -5,18 +7,19 @@ import {
   RentalList,
   useIsCompactLayout,
 } from '../components';
+import { FormVariant } from '../components/base';
 import { RentalCheckoutForm, Rental, CheckoutStatus } from '../../domain';
-import { UseFormReturn, UseFieldArrayReturn } from 'react-hook-form';
 import { RentalListProps } from '../components';
 
 export type RentalCheckoutScreenProps = {
-  form: UseFormReturn<RentalCheckoutForm>;
+  variant: FormVariant;
+  defaultValues: RentalCheckoutForm;
   onSubmit: (values: RentalCheckoutForm) => void;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   isSubmitSuccess: boolean;
   onLogoutPress: () => void;
-  rentalsFieldArray: UseFieldArrayReturn<RentalCheckoutForm, 'rentals', 'key'>;
+  formRef?: MutableRefObject<UseFormReturn<RentalCheckoutForm> | null>;
   rentalList: {
     searchValue: string;
     onSearchValueChange: (value: string) => void;
@@ -40,13 +43,14 @@ export const RentalCheckoutScreen = (props: RentalCheckoutScreenProps) => {
 
   const formView = (
     <RentalCheckoutFormView
-      form={props.form}
+      variant={props.variant}
+      defaultValues={props.defaultValues}
       onSubmit={props.onSubmit}
       isSubmitDisabled={props.isSubmitDisabled}
       isSubmitting={props.isSubmitting}
       isSubmitSuccess={props.isSubmitSuccess}
-      rentalsFieldArray={props.rentalsFieldArray}
-      RentalItemSelect={() => (
+      formRef={props.formRef}
+      RentalItemSelect={(selectedRentalIds) => (
         <RentalList
           {...props.rentalList}
           // On desktop the field is a scanner target; on a phone it would
@@ -56,9 +60,7 @@ export const RentalCheckoutScreen = (props: RentalCheckoutScreenProps) => {
           }
           // Surfaces an "In Cart" affordance on rows already added, since
           // `onAddItem` silently no-ops a duplicate tap (PRD FR-4).
-          selectedRentalIds={props.rentalsFieldArray.fields.map(
-            (rental) => rental.id
-          )}
+          selectedRentalIds={selectedRentalIds}
         />
       )}
       serverError={props.serverError}

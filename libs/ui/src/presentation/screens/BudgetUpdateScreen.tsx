@@ -1,11 +1,9 @@
 import { ScrollView } from 'tamagui';
-import { BudgetFormView, Layout } from '../components';
+import { BudgetFormView, BudgetFormViewProps, Layout } from '../components';
 import { BudgetForm } from '../../domain';
-import { UseFormReturn } from 'react-hook-form';
-import { BudgetFormViewProps } from '../components';
 
 export type BudgetUpdateScreenProps = {
-  form: UseFormReturn<BudgetForm>;
+  defaultValues: BudgetForm;
   onSubmit: (values: BudgetForm) => void;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
@@ -19,7 +17,7 @@ export const BudgetUpdateScreen = (props: BudgetUpdateScreenProps) => {
     <Layout title="Update Budget" showBackButton onLogoutPress={props.onLogoutPress}>
       <ScrollView>
         <BudgetFormView
-          form={props.form}
+          defaultValues={props.defaultValues}
           onSubmit={props.onSubmit}
           isSubmitDisabled={props.isSubmitDisabled}
           isSubmitting={props.isSubmitting}

@@ -32,7 +32,7 @@ export const ExpenseCreateHandler = ({
   return (
     <ExpenseCreateScreen
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
-      form={expenseCreate.form}
+      defaultValues={expenseCreate.state.values}
       isSubmitDisabled={
         expenseCreate.state.type === 'submitting' ||
         expenseCreate.state.type === 'submitSuccess'
@@ -43,7 +43,6 @@ export const ExpenseCreateHandler = ({
           ? 'Failed to submit. Please try again.'
           : undefined
       }
-      onRetryButtonPress={() => expenseCreate.dispatch({ type: 'FETCH' })}
       onSubmit={(values) =>
         expenseCreate.dispatch({ type: 'SUBMIT', values })
       }
@@ -66,7 +65,10 @@ export const ExpenseCreateHandler = ({
             type: 'loaded',
           })
         )
-        .with({ type: 'error' }, () => ({ type: 'error' }))
+        .with({ type: 'error' }, () => ({
+          type: 'error',
+          onRetryButtonPress: () => expenseCreate.dispatch({ type: 'FETCH' }),
+        }))
         .exhaustive()}
     />
   );

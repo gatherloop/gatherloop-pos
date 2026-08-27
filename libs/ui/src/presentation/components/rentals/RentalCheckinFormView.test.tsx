@@ -1,7 +1,6 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useForm, useFieldArray } from 'react-hook-form';
 import { useMedia, Text } from 'tamagui';
 import { RentalCheckinFormView } from './RentalCheckinFormView';
 import type { RentalCheckinForm } from '../../../domain';
@@ -35,28 +34,18 @@ const Wrapper = ({
 }: {
   defaultValues: RentalCheckinForm;
   isSubmitSuccess?: boolean;
-}) => {
-  const form = useForm<RentalCheckinForm>({ defaultValues });
-  const rentalsFieldArray = useFieldArray({
-    control: form.control,
-    name: 'rentals',
-    keyName: 'key',
-  });
-
-  return (
-    <RentalCheckinFormView
-      form={form}
-      onToggleCustomizeCheckinDateTime={jest.fn()}
-      onSubmit={jest.fn()}
-      isSubmitDisabled={false}
-      isSubmitting={false}
-      isSubmitSuccess={isSubmitSuccess}
-      RentalItemSelect={() => <Text color="$color">Product Picker</Text>}
-      rentalsFieldArray={rentalsFieldArray}
-      tickets={mockTickets}
-    />
-  );
-};
+}) => (
+  <RentalCheckinFormView
+    variant={{ type: 'loaded' }}
+    defaultValues={defaultValues}
+    onSubmit={jest.fn()}
+    isSubmitDisabled={false}
+    isSubmitting={false}
+    isSubmitSuccess={isSubmitSuccess}
+    RentalItemSelect={() => <Text color="$color">Product Picker</Text>}
+    tickets={mockTickets}
+  />
+);
 
 describe('RentalCheckinFormView', () => {
   afterEach(() => {

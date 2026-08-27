@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { PricingTier, Variant } from './Variant';
 
 export type Rental = {
@@ -32,5 +33,31 @@ export type RentalCheckinForm = {
 export type RentalCheckoutForm = {
   rentals: Rental[];
 };
+
+// Only enforces "at least one rental"; each item's own shape is `z.any()`,
+// so `{ raw: true }` is required at the call site to keep the full `Rental`
+// objects (variant, pricingTiers, etc.) intact instead of stripping them
+// down to whatever this schema happens to describe.
+export const rentalCheckoutFormSchema = z.object({
+  rentals: z.array(z.lazy(() => z.any())).min(1),
+});
+
+// `checkinAt` is entirely unvalidated and each rental's `variant` is
+// `z.any()`, so `{ raw: true }` is required at the call site to keep those
+// fields intact instead of being stripped down to whatever this schema
+// happens to describe.
+export const rentalCheckinFormSchema = z.object({
+  name: z.string().min(1),
+  rentals: z
+    .array(
+      z.lazy(() =>
+        z.object({
+          code: z.string().min(1),
+          variant: z.any(),
+        })
+      )
+    )
+    .min(1),
+});
 
 export type CheckoutStatus = 'completed' | 'ongoing' | 'all';

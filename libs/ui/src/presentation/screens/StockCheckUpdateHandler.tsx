@@ -1,11 +1,15 @@
 import { useRouter } from 'solito/router';
 import { AuthLogoutUsecase, StockCheckUpdateUsecase } from '../../domain';
+import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
 import {
   useAuthLogoutController,
   useStockCheckUpdateController,
 } from '../controllers';
-import { StockCheckUpdateScreen } from './StockCheckUpdateScreen';
+import {
+  StockCheckUpdateScreen,
+  StockCheckUpdateScreenProps,
+} from './StockCheckUpdateScreen';
 
 export type StockCheckUpdateHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;
@@ -30,7 +34,7 @@ export const StockCheckUpdateHandler = ({
 
   return (
     <StockCheckUpdateScreen
-      form={stockCheckUpdate.form}
+      defaultValues={stockCheckUpdate.state.values}
       onSubmit={(values) =>
         stockCheckUpdate.dispatch({ type: 'SUBMIT', values })
       }
@@ -46,13 +50,30 @@ export const StockCheckUpdateHandler = ({
           : undefined
       }
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
-      query={stockCheckUpdate.query}
-      onQueryChange={stockCheckUpdate.setQuery}
-      showOnlyPending={stockCheckUpdate.showOnlyPending}
-      onShowOnlyPendingToggle={stockCheckUpdate.toggleShowOnlyPending}
-      filled={stockCheckUpdate.filled}
-      total={stockCheckUpdate.total}
-      pendingRows={stockCheckUpdate.pendingRows}
+      variant={match(stockCheckUpdate.state)
+        .returnType<StockCheckUpdateScreenProps['variant']>()
+        .with({ type: P.union('idle', 'loading') }, () => ({
+          type: 'loading',
+        }))
+        .with(
+          {
+            type: P.union(
+              'loaded',
+              'submitError',
+              'submitSuccess',
+              'submitting'
+            ),
+          },
+          () => ({
+            type: 'loaded',
+          })
+        )
+        .with({ type: 'error' }, () => ({
+          type: 'error',
+          onRetryButtonPress: () =>
+            stockCheckUpdate.dispatch({ type: 'FETCH' }),
+        }))
+        .exhaustive()}
     />
   );
 };

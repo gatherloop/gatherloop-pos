@@ -1,51 +1,55 @@
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  ErrorView,
   Field,
   FieldArray,
   FieldWatch,
   FormErrorBanner,
+  FormVariant,
+  FormView,
   InputNumber,
-  LoadingView,
   Select,
 } from '../base';
-import { Button, Card, Form, H4, Paragraph, Spinner, XStack, YStack } from 'tamagui';
-import { CalculationForm } from '../../../domain';
-import { FormProvider, UseFormReturn } from 'react-hook-form';
+import { Button, Card, H4, Paragraph, Spinner, XStack, YStack } from 'tamagui';
+import { CalculationForm, calculationFormSchema } from '../../../domain';
 import { getCalculationStatus } from './utils';
 
+const calculationFormResolver = zodResolver(
+  calculationFormSchema,
+  {},
+  { raw: true }
+);
+
 export type CalculationFormViewProps = {
-  variant: { type: 'loading' } | { type: 'loaded' } | { type: 'error' };
-  form: UseFormReturn<CalculationForm>;
+  variant: FormVariant;
+  defaultValues: CalculationForm;
   onSubmit: (values: CalculationForm) => void;
   walletSelectOptions: { label: string; value: number }[];
   getTotalWallet: (totalWallet: number, walletId: number) => number;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   isFormDisabled?: boolean;
-  onRetryButtonPress: () => void;
   serverError?: string;
 };
 
-export const CalculationFormView = ({
-  variant,
-  form,
-  onSubmit,
-  walletSelectOptions,
-  getTotalWallet,
-  isFormDisabled,
-  isSubmitDisabled,
-  isSubmitting,
-  onRetryButtonPress,
-  serverError,
-}: CalculationFormViewProps) => {
-  return variant.type === 'loaded' ? (
-    <FormProvider {...form}>
-      <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
-        <FormErrorBanner message={serverError} />
+export const CalculationFormView = (props: CalculationFormViewProps) => (
+  <FormView
+    variant={props.variant}
+    defaultValues={props.defaultValues}
+    resolver={calculationFormResolver}
+    onSubmit={props.onSubmit}
+    loadingTitle="Fetching Calculation..."
+    errorTitle="Failed to Fetch Calculation"
+  >
+    {(form) => (
+      <>
+        <FormErrorBanner message={props.serverError} />
         <YStack gap="$3">
           <XStack flexWrap="wrap" gap="$3">
             <Field name="walletId" label="Wallet Name" flex={1}>
-              <Select items={walletSelectOptions} disabled={isFormDisabled} />
+              <Select
+                items={props.walletSelectOptions}
+                disabled={props.isFormDisabled}
+              />
             </Field>
             <YStack justifyContent="flex-end" flex={1}>
               <Paragraph textAlign="right">Status</Paragraph>
@@ -60,7 +64,7 @@ export const CalculationFormView = ({
                         (prev, curr) => prev + curr.amount * curr.price,
                         0
                       ),
-                      totalWallet: getTotalWallet(totalWallet, walletId),
+                      totalWallet: props.getTotalWallet(totalWallet, walletId),
                     })}
                   </H4>
                 )}
@@ -75,7 +79,9 @@ export const CalculationFormView = ({
                 {([totalWallet, walletId]) => (
                   <H4 textAlign="right">
                     Rp.
-                    {getTotalWallet(totalWallet, walletId).toLocaleString('id')}
+                    {props
+                      .getTotalWallet(totalWallet, walletId)
+                      .toLocaleString('id')}
                   </H4>
                 )}
               </FieldWatch>
@@ -120,7 +126,7 @@ export const CalculationFormView = ({
                           <InputNumber
                             name={`calculationItems.${index}.amount`}
                             min={0}
-                            disabled={isFormDisabled}
+                            disabled={props.isFormDisabled}
                           />
                           <YStack justifyContent="flex-end" flex={1}>
                             <Paragraph textAlign="right">Subtotal</Paragraph>
@@ -149,22 +155,14 @@ export const CalculationFormView = ({
         </YStack>
 
         <Button
-          disabled={isSubmitDisabled || isFormDisabled}
-          onPress={form.handleSubmit(onSubmit)}
+          disabled={props.isSubmitDisabled || props.isFormDisabled}
+          onPress={form.handleSubmit(props.onSubmit)}
           theme="blue"
-          icon={isSubmitting ? <Spinner /> : undefined}
+          icon={props.isSubmitting ? <Spinner /> : undefined}
         >
           Submit
         </Button>
-      </Form>
-    </FormProvider>
-  ) : variant.type === 'loading' ? (
-    <LoadingView title="Fetching Calculation..." />
-  ) : variant.type === 'error' ? (
-    <ErrorView
-      title="Failed to Fetch Calculation"
-      subtitle="Please click the retry button to refetch data"
-      onRetryButtonPress={onRetryButtonPress}
-    />
-  ) : null;
-};
+      </>
+    )}
+  </FormView>
+);

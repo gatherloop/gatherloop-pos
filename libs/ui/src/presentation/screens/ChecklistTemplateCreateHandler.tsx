@@ -1,11 +1,15 @@
 import { useRouter } from 'solito/router';
 import { AuthLogoutUsecase, ChecklistTemplateCreateUsecase } from '../../domain';
+import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
 import {
   useAuthLogoutController,
   useChecklistTemplateCreateController,
 } from '../controllers';
-import { ChecklistTemplateCreateScreen } from './ChecklistTemplateCreateScreen';
+import {
+  ChecklistTemplateCreateScreen,
+  ChecklistTemplateCreateScreenProps,
+} from './ChecklistTemplateCreateScreen';
 
 export type ChecklistTemplateCreateHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;
@@ -30,7 +34,7 @@ export const ChecklistTemplateCreateHandler = ({
 
   return (
     <ChecklistTemplateCreateScreen
-      form={checklistTemplateCreate.form}
+      defaultValues={checklistTemplateCreate.state.values}
       onSubmit={(values) =>
         checklistTemplateCreate.dispatch({
           type: 'SUBMIT',
@@ -58,6 +62,16 @@ export const ChecklistTemplateCreateHandler = ({
           ? 'Failed to submit. Please try again.'
           : undefined
       }
+      variant={match(checklistTemplateCreate.state)
+        .returnType<ChecklistTemplateCreateScreenProps['variant']>()
+        .with({ type: 'loaded' }, () => ({ type: 'loaded' }))
+        .with(
+          {
+            type: P.union('submitting', 'submitSuccess', 'submitError'),
+          },
+          () => ({ type: 'loaded' })
+        )
+        .exhaustive()}
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
     />
   );

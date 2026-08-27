@@ -32,7 +32,7 @@ export const ProductCreateHandler = ({
 
   return (
     <ProductCreateScreen
-      form={productCreate.form}
+      defaultValues={productCreate.state.values}
       onSubmit={(values) =>
         productCreate.dispatch({ type: 'SUBMIT', values })
       }
@@ -46,10 +46,11 @@ export const ProductCreateHandler = ({
           ? 'Failed to submit. Please try again.'
           : undefined
       }
-      onRetryButtonPress={() => productCreate.dispatch({ type: 'FETCH' })}
       variant={match(productCreate.state)
         .returnType<ProductCreateScreenProps['variant']>()
-        .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))
+        .with({ type: P.union('idle', 'loading') }, () => ({
+          type: 'loading',
+        }))
         .with(
           {
             type: P.union(
@@ -61,7 +62,10 @@ export const ProductCreateHandler = ({
           },
           () => ({ type: 'loaded' })
         )
-        .with({ type: 'error' }, () => ({ type: 'error' }))
+        .with({ type: 'error' }, () => ({
+          type: 'error',
+          onRetryButtonPress: () => productCreate.dispatch({ type: 'FETCH' }),
+        }))
         .exhaustive()}
       categorySelectOptions={productCreate.state.categories.map((category) => ({
         label: category.name,

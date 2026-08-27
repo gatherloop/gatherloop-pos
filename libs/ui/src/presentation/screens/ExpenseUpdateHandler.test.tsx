@@ -89,6 +89,16 @@ describe('ExpenseUpdateHandler', () => {
       });
     });
 
+    it('should fill the form with fetched values when data loads after mount', async () => {
+      render(<ExpenseUpdateHandler {...createProps({ preloaded: false })} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByDisplayValue('Item 1')).toBeTruthy();
+    });
+
     it('should show error state when expense fetch fails', async () => {
       render(<ExpenseUpdateHandler {...createProps({ expenseShouldFail: true })} />);
 

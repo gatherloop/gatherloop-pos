@@ -81,6 +81,16 @@ describe('CouponUpdateHandler', () => {
 
       expect(screen.getByRole('heading', { name: 'Failed to Fetch Coupon' })).toBeTruthy();
     });
+
+    it('should fill the form with fetched values when data loads after mount', async () => {
+      render(<CouponUpdateHandler {...createProps({ preloaded: false })} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByDisplayValue('DISCOUNT10')).toBeTruthy();
+    });
   });
 
   describe('navigation', () => {

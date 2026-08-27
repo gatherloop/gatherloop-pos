@@ -1,11 +1,12 @@
 import { useRouter } from 'solito/router';
+import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
 import {
   useWalletCreateController,
   useAuthLogoutController,
 } from '../controllers';
 import { AuthLogoutUsecase, WalletCreateUsecase } from '../../domain';
-import { WalletCreateScreen } from './WalletCreateScreen';
+import { WalletCreateScreen, WalletCreateScreenProps } from './WalletCreateScreen';
 
 export type WalletCreateHandlerProps = {
   walletCreateUsecase: WalletCreateUsecase;
@@ -26,7 +27,7 @@ export const WalletCreateHandler = ({
 
   return (
     <WalletCreateScreen
-      form={walletCreate.form}
+      defaultValues={walletCreate.state.values}
       onSubmit={(values) =>
         walletCreate.dispatch({ type: 'SUBMIT', values })
       }
@@ -41,6 +42,15 @@ export const WalletCreateHandler = ({
           : undefined
       }
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
+      variant={match(walletCreate.state)
+        .returnType<WalletCreateScreenProps['variant']>()
+        .with(
+          {
+            type: P.union('loaded', 'submitting', 'submitSuccess', 'submitError'),
+          },
+          () => ({ type: 'loaded' })
+        )
+        .exhaustive()}
     />
   );
 };
