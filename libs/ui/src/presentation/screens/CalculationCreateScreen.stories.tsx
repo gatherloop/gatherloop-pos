@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
 import React from 'react';
-import { useForm } from 'react-hook-form';
 import { CalculationCreateScreen } from './CalculationCreateScreen';
 import type { CalculationForm } from '../../domain';
 import { mockWallets } from '../../../.storybook/mocks/mockData';
@@ -15,10 +14,9 @@ const defaultValues: CalculationForm = {
 };
 
 const CreateStory = () => {
-  const form = useForm<CalculationForm>({ defaultValues });
   return (
     <CalculationCreateScreen
-      form={form}
+      defaultValues={defaultValues}
       onSubmit={fn()}
       isSubmitDisabled={false}
       onLogoutPress={fn()}
@@ -31,10 +29,9 @@ const CreateStory = () => {
 };
 
 const LoadingStory = () => {
-  const form = useForm<CalculationForm>({ defaultValues });
   return (
     <CalculationCreateScreen
-      form={form}
+      defaultValues={defaultValues}
       onSubmit={fn()}
       isSubmitDisabled={true}
       onLogoutPress={fn()}
