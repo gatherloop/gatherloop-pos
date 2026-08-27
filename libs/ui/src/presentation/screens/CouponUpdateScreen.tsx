@@ -5,11 +5,10 @@ import {
   Layout,
 } from '../components';
 import { CouponForm } from '../../domain';
-import { UseFormReturn } from 'react-hook-form';
 
 export type CouponUpdateScreenProps = {
   onLogoutPress: () => void;
-  form: UseFormReturn<CouponForm>;
+  defaultValues: CouponForm;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   onSubmit: (values: CouponForm) => void;
@@ -18,7 +17,7 @@ export type CouponUpdateScreenProps = {
 };
 
 export const CouponUpdateScreen = ({
-  form,
+  defaultValues,
   isSubmitDisabled,
   isSubmitting,
   onLogoutPress,
@@ -34,7 +33,7 @@ export const CouponUpdateScreen = ({
     >
       <ScrollView>
         <CouponFormView
-          form={form}
+          defaultValues={defaultValues}
           isSubmitDisabled={isSubmitDisabled}
           isSubmitting={isSubmitting}
           onSubmit={onSubmit}

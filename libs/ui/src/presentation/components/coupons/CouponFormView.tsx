@@ -1,40 +1,39 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Button, Spinner } from 'tamagui';
 import {
   Field,
   FormErrorBanner,
   InputText,
-  LoadingView,
-  ErrorView,
   InputNumber,
   Select,
+  FormView,
+  FormVariant,
 } from '../base';
-import { CouponForm } from '../../../domain';
-import { FormProvider, UseFormReturn } from 'react-hook-form';
-import { Button, Form, Spinner } from 'tamagui';
+import { CouponForm, couponFormSchema } from '../../../domain';
+
+const couponFormResolver = zodResolver(couponFormSchema);
 
 export type CouponFormViewProps = {
-  variant:
-    | { type: 'loaded' }
-    | { type: 'loading' }
-    | { type: 'error'; onRetryButtonPress: () => void };
-  form: UseFormReturn<CouponForm>;
+  variant: FormVariant;
+  defaultValues: CouponForm;
   onSubmit: (values: CouponForm) => void;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   serverError?: string;
 };
 
-export const CouponFormView = ({
-  variant,
-  form,
-  onSubmit,
-  isSubmitDisabled,
-  isSubmitting,
-  serverError,
-}: CouponFormViewProps) => {
-  return variant.type === 'loaded' ? (
-    <FormProvider {...form}>
-      <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
-        <FormErrorBanner message={serverError} />
+export const CouponFormView = (props: CouponFormViewProps) => (
+  <FormView
+    variant={props.variant}
+    defaultValues={props.defaultValues}
+    resolver={couponFormResolver}
+    onSubmit={props.onSubmit}
+    loadingTitle="Fetching Coupon..."
+    errorTitle="Failed to Fetch Coupon"
+  >
+    {(form) => (
+      <>
+        <FormErrorBanner message={props.serverError} />
         <Field name="code" label="Code">
           <InputText />
         </Field>
@@ -51,22 +50,14 @@ export const CouponFormView = ({
         </Field>
 
         <Button
-          disabled={isSubmitDisabled}
-          onPress={form.handleSubmit(onSubmit)}
+          disabled={props.isSubmitDisabled}
+          onPress={form.handleSubmit(props.onSubmit)}
           theme="blue"
-          icon={isSubmitting ? <Spinner /> : undefined}
+          icon={props.isSubmitting ? <Spinner /> : undefined}
         >
           Submit
         </Button>
-      </Form>
-    </FormProvider>
-  ) : variant.type === 'loading' ? (
-    <LoadingView title="Fetching Coupon..." />
-  ) : variant.type === 'error' ? (
-    <ErrorView
-      title="Failed to Fetch Coupon"
-      subtitle="Please click the retry button to refetch data"
-      onRetryButtonPress={variant.onRetryButtonPress}
-    />
-  ) : null;
-};
+      </>
+    )}
+  </FormView>
+);

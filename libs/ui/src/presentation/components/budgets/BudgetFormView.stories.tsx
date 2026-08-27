@@ -1,39 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
-import React from 'react';
-import { useForm } from 'react-hook-form';
 import { BudgetFormView } from './BudgetFormView';
-import type { BudgetForm } from '../../../domain';
-
-const defaultValues: BudgetForm = { name: '', percentage: 0 };
-
-const LoadedStory = () => {
-  const form = useForm<BudgetForm>({ defaultValues });
-  return (
-    <BudgetFormView
-      variant={{ type: 'loaded' }}
-      form={form}
-      onSubmit={fn()}
-      isSubmitDisabled={false}
-      isSubmitting={false}
-    />
-  );
-};
-
-const PopulatedStory = () => {
-  const form = useForm<BudgetForm>({
-    defaultValues: { name: 'Restock', percentage: 30 },
-  });
-  return (
-    <BudgetFormView
-      variant={{ type: 'loaded' }}
-      form={form}
-      onSubmit={fn()}
-      isSubmitDisabled={false}
-      isSubmitting={false}
-    />
-  );
-};
 
 const meta: Meta<typeof BudgetFormView> = {
   title: 'Features/Budgets/BudgetFormView',
@@ -44,43 +11,49 @@ export default meta;
 type Story = StoryObj<typeof BudgetFormView>;
 
 export const Loaded: Story = {
-  render: () => <LoadedStory />,
+  args: {
+    variant: { type: 'loaded' },
+    defaultValues: { name: '', percentage: 0 },
+    onSubmit: fn(),
+    isSubmitDisabled: false,
+    isSubmitting: false,
+  },
 };
 
 export const Populated: Story = {
-  render: () => <PopulatedStory />,
-};
-
-const LoadingStory = () => {
-  const form = useForm<BudgetForm>({ defaultValues });
-  return (
-    <BudgetFormView
-      variant={{ type: 'loading' }}
-      form={form}
-      onSubmit={fn()}
-      isSubmitDisabled={true}
-      isSubmitting={false}
-    />
-  );
-};
-
-const ErrorStory = () => {
-  const form = useForm<BudgetForm>({ defaultValues });
-  return (
-    <BudgetFormView
-      variant={{ type: 'error', onRetryButtonPress: fn() }}
-      form={form}
-      onSubmit={fn()}
-      isSubmitDisabled={true}
-      isSubmitting={false}
-    />
-  );
+  args: {
+    ...Loaded.args,
+    defaultValues: { name: 'Restock', percentage: 30 },
+  },
 };
 
 export const Loading: Story = {
-  render: () => <LoadingStory />,
+  args: {
+    ...Loaded.args,
+    variant: { type: 'loading' },
+    isSubmitDisabled: true,
+  },
 };
 
 export const Error: Story = {
-  render: () => <ErrorStory />,
+  args: {
+    ...Loaded.args,
+    variant: { type: 'error', onRetryButtonPress: fn() },
+    isSubmitDisabled: true,
+  },
+};
+
+export const SubmitDisabled: Story = {
+  args: {
+    ...Loaded.args,
+    isSubmitDisabled: true,
+  },
+};
+
+export const Submitting: Story = {
+  args: {
+    ...Loaded.args,
+    isSubmitDisabled: true,
+    isSubmitting: true,
+  },
 };

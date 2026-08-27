@@ -1,11 +1,15 @@
 import { useRouter } from 'solito/router';
+import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
 import {
   useBudgetUpdateController,
   useAuthLogoutController,
 } from '../controllers';
 import { AuthLogoutUsecase, BudgetUpdateUsecase } from '../../domain';
-import { BudgetUpdateScreen } from './BudgetUpdateScreen';
+import {
+  BudgetUpdateScreen,
+  BudgetUpdateScreenProps,
+} from './BudgetUpdateScreen';
 
 export type BudgetUpdateHandlerProps = {
   budgetUpdateUsecase: BudgetUpdateUsecase;
@@ -26,7 +30,7 @@ export const BudgetUpdateHandler = ({
 
   return (
     <BudgetUpdateScreen
-      form={budgetUpdate.form}
+      defaultValues={budgetUpdate.state.values}
       onSubmit={(values) =>
         budgetUpdate.dispatch({ type: 'SUBMIT', values })
       }
@@ -41,7 +45,29 @@ export const BudgetUpdateHandler = ({
           : undefined
       }
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
-      variant={budgetUpdate.variant}
+      variant={match(budgetUpdate.state)
+        .returnType<BudgetUpdateScreenProps['variant']>()
+        .with({ type: P.union('idle', 'loading') }, () => ({
+          type: 'loading',
+        }))
+        .with(
+          {
+            type: P.union(
+              'loaded',
+              'submitError',
+              'submitSuccess',
+              'submitting'
+            ),
+          },
+          () => ({
+            type: 'loaded',
+          })
+        )
+        .with({ type: 'error' }, () => ({
+          type: 'error',
+          onRetryButtonPress: () => budgetUpdate.dispatch({ type: 'FETCH' }),
+        }))
+        .exhaustive()}
     />
   );
 };
