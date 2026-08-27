@@ -1,40 +1,39 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Button, Paragraph, Spinner } from 'tamagui';
 import {
   Field,
   FormErrorBanner,
-  InputText,
   InputNumber,
-  LoadingView,
-  ErrorView,
+  InputText,
   Switch,
+  FormView,
+  FormVariant,
 } from '../base';
-import { WalletForm } from '../../../domain';
-import { Button, Form, Paragraph, Spinner } from 'tamagui';
-import { FormProvider, UseFormReturn } from 'react-hook-form';
+import { WalletForm, walletFormSchema } from '../../../domain';
+
+const walletFormResolver = zodResolver(walletFormSchema);
 
 export type WalletFormViewProps = {
-  variant:
-    | { type: 'loaded' }
-    | { type: 'loading' }
-    | { type: 'error'; onRetryButtonPress: () => void };
-  form: UseFormReturn<WalletForm>;
+  variant: FormVariant;
+  defaultValues: WalletForm;
   onSubmit: (values: WalletForm) => void;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   serverError?: string;
 };
 
-export const WalletFormView = ({
-  variant,
-  form,
-  onSubmit,
-  isSubmitDisabled,
-  isSubmitting,
-  serverError,
-}: WalletFormViewProps) => {
-  return variant.type === 'loaded' ? (
-    <FormProvider {...form}>
-      <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
-        <FormErrorBanner message={serverError} />
+export const WalletFormView = (props: WalletFormViewProps) => (
+  <FormView
+    variant={props.variant}
+    defaultValues={props.defaultValues}
+    resolver={walletFormResolver}
+    onSubmit={props.onSubmit}
+    loadingTitle="Fetching Wallet..."
+    errorTitle="Failed to Fetch Wallet"
+  >
+    {(form) => (
+      <>
+        <FormErrorBanner message={props.serverError} />
         <Field name="name" label="Name">
           <InputText />
         </Field>
@@ -54,22 +53,14 @@ export const WalletFormView = ({
           </Paragraph>
         </Field>
         <Button
-          disabled={isSubmitDisabled}
-          onPress={form.handleSubmit(onSubmit)}
+          disabled={props.isSubmitDisabled}
+          onPress={form.handleSubmit(props.onSubmit)}
           theme="blue"
-          icon={isSubmitting ? <Spinner /> : undefined}
+          icon={props.isSubmitting ? <Spinner /> : undefined}
         >
           Submit
         </Button>
-      </Form>
-    </FormProvider>
-  ) : variant.type === 'loading' ? (
-    <LoadingView title="Fetching Wallet..." />
-  ) : variant.type === 'error' ? (
-    <ErrorView
-      title="Failed to Fetch Wallet"
-      subtitle="Please click the retry button to refetch data"
-      onRetryButtonPress={variant.onRetryButtonPress}
-    />
-  ) : null;
-};
+      </>
+    )}
+  </FormView>
+);

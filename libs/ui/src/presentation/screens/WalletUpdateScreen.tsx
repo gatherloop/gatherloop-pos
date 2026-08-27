@@ -1,11 +1,9 @@
 import { ScrollView } from 'tamagui';
-import { WalletFormView, Layout } from '../components';
+import { WalletFormView, WalletFormViewProps, Layout } from '../components';
 import { WalletForm } from '../../domain';
-import { UseFormReturn } from 'react-hook-form';
-import { WalletFormViewProps } from '../components';
 
 export type WalletUpdateScreenProps = {
-  form: UseFormReturn<WalletForm>;
+  defaultValues: WalletForm;
   onSubmit: (values: WalletForm) => void;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
@@ -19,7 +17,7 @@ export const WalletUpdateScreen = (props: WalletUpdateScreenProps) => {
     <Layout title="Update Wallet" showBackButton onLogoutPress={props.onLogoutPress}>
       <ScrollView>
         <WalletFormView
-          form={props.form}
+          defaultValues={props.defaultValues}
           onSubmit={props.onSubmit}
           isSubmitDisabled={props.isSubmitDisabled}
           isSubmitting={props.isSubmitting}
