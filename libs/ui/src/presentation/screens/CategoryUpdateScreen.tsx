@@ -5,11 +5,10 @@ import {
   Layout,
 } from '../components';
 import { CategoryForm } from '../../domain';
-import { UseFormReturn } from 'react-hook-form';
 
 export type CategoryUpdateScreenProps = {
   onLogoutPress: () => void;
-  form: UseFormReturn<CategoryForm>;
+  defaultValues: CategoryForm;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   onSubmit: (values: CategoryForm) => void;
@@ -18,7 +17,7 @@ export type CategoryUpdateScreenProps = {
 };
 
 export const CategoryUpdateScreen = ({
-  form,
+  defaultValues,
   isSubmitDisabled,
   isSubmitting,
   onLogoutPress,
@@ -34,7 +33,7 @@ export const CategoryUpdateScreen = ({
     >
       <ScrollView>
         <CategoryFormView
-          form={form}
+          defaultValues={defaultValues}
           isSubmitDisabled={isSubmitDisabled}
           isSubmitting={isSubmitting}
           onSubmit={onSubmit}

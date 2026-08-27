@@ -32,7 +32,7 @@ export const CategoryUpdateHandler = ({
   return (
     <CategoryUpdateScreen
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
-      form={categoryUpdate.form}
+      defaultValues={categoryUpdate.state.values}
       isSubmitDisabled={
         categoryUpdate.state.type === 'submitting' ||
         categoryUpdate.state.type === 'submitSuccess'
