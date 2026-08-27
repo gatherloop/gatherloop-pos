@@ -1,14 +1,15 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
-import React from 'react';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from 'tamagui';
+import { FormView } from './FormView';
 import { Field } from './Field';
 import { InputText } from './InputText';
-import { FormView } from './FormView';
 
-type DemoForm = { name: string };
+type DemoForm = {
+  name: string;
+};
 
 const demoFormResolver = zodResolver(
   z.object({ name: z.string().min(1) }) satisfies z.ZodType<DemoForm>
@@ -35,7 +36,9 @@ export const Loading: Story = {
         <Field name="name" label="Name">
           <InputText />
         </Field>
-        <Button onPress={form.handleSubmit(fn())}>Submit</Button>
+        <Button onPress={form.handleSubmit(fn())} theme="blue">
+          Submit
+        </Button>
       </>
     ),
   },
@@ -52,6 +55,6 @@ export const Loaded: Story = {
   args: {
     ...Loading.args,
     variant: { type: 'loaded' },
-    defaultValues: { name: 'Fetched' },
+    defaultValues: { name: 'Fetched Demo' },
   },
 };

@@ -7,10 +7,10 @@ import {
   UseFormReturn,
   useForm,
 } from 'react-hook-form';
-import { Form } from 'tamagui';
 import { match } from 'ts-pattern';
-import { ErrorView } from '../ErrorView';
+import { Form } from 'tamagui';
 import { LoadingView } from '../LoadingView';
+import { ErrorView } from '../ErrorView';
 
 export type FormVariant =
   | { type: 'loading' }
@@ -50,20 +50,22 @@ export function FormView<T extends FieldValues>(props: FormViewProps<T>) {
     .exhaustive();
 }
 
-// A separate component (rather than an early return in FormView) so that
-// useForm only mounts once `defaultValues` are final: React can unmount this
-// subtree while loading, and the eventual mount reads the fetched values.
+// A separate component so `useForm` only mounts once `defaultValues` are final:
+// the `loading` branch above never calls this hook, so the eventual mount into
+// the `loaded` branch reads the fetched values, not the pre-fetch blanks.
 function LoadedForm<T extends FieldValues>({
   defaultValues,
   resolver,
   onSubmit,
   children,
-}: Pick<FormViewProps<T>, 'defaultValues' | 'resolver' | 'onSubmit' | 'children'>) {
+}: Pick<
+  FormViewProps<T>,
+  'defaultValues' | 'resolver' | 'onSubmit' | 'children'
+>) {
   const form = useForm<T>({
     defaultValues: defaultValues as DefaultValues<T>,
     resolver,
   });
-
   return (
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3">
