@@ -9,7 +9,13 @@ import {
   CouponListProps,
   useIsCompactLayout,
 } from '../components';
-import { OptionValue, Product, TransactionForm, Wallet } from '../../domain';
+import {
+  OptionValue,
+  Product,
+  TransactionForm,
+  TransactionPayForm,
+  Wallet,
+} from '../../domain';
 import { UseFormReturn, UseFieldArrayReturn } from 'react-hook-form';
 import { Coupon } from '../../domain';
 
@@ -59,11 +65,10 @@ export type TransactionCreateScreenProps = {
     variant: CouponListProps['variant'];
   };
   transactionPayment: {
-    form: UseFormReturn<{ wallet: Wallet; paidAmount: number }>;
     isButtonDisabled: boolean;
     onCancel: () => void;
     isOpen: boolean;
-    onSubmit: (values: { wallet: Wallet; paidAmount: number }) => void;
+    onSubmit: (values: TransactionPayForm) => void;
     transactionTotal: number;
     walletSelectOptions: { label: string; value: Wallet }[];
   };
@@ -139,7 +144,6 @@ export const TransactionCreateScreen = (
         <ScrollView>{formView}</ScrollView>
       )}
       <TransactionPaymentAlert
-        form={props.transactionPayment.form}
         isButtonDisabled={props.transactionPayment.isButtonDisabled}
         onCancel={props.transactionPayment.onCancel}
         isOpen={props.transactionPayment.isOpen}

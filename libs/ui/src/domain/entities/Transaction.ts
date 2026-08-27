@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { Coupon, CouponType } from './Coupon';
 import { Variant } from './Variant';
 import { Wallet } from './Wallet';
@@ -65,3 +66,20 @@ export type TransactionForm = {
 };
 
 export type PaymentStatus = 'paid' | 'unpaid' | 'all';
+
+export type TransactionPayForm = {
+  wallet: Wallet;
+  paidAmount: number;
+};
+
+// Partial validator, not a full parser (§4.4.2): only `wallet.id` is
+// checked — `TransactionPaymentAlert` reads the rest of the selected
+// `Wallet` (e.g. `isCashless`) straight from live form state, not from this
+// schema's parsed output. It also closes over `transactionTotal`, which is
+// only known at render time, so it is a factory rather than a module-level
+// constant.
+export const transactionPayFormSchema = (transactionTotal: number) =>
+  z.object({
+    wallet: z.object({ id: z.number() }),
+    paidAmount: z.number().min(transactionTotal),
+  });
