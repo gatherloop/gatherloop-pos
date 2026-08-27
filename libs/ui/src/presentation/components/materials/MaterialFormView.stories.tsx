@@ -1,7 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
-import React from 'react';
-import { useForm } from 'react-hook-form';
 import { MaterialFormView } from './MaterialFormView';
 import type { MaterialForm } from '../../../domain';
 
@@ -18,21 +16,28 @@ const defaultValues: MaterialForm = {
   suppliers: [],
 };
 
-const LoadedStory = () => {
-  const form = useForm<MaterialForm>({ defaultValues });
-  return (
-    <MaterialFormView
-      form={form}
-      onSubmit={fn()}
-      isSubmitDisabled={false}
-      isSubmitting={false}
-      suppliers={[]}
-    />
-  );
+const meta: Meta<typeof MaterialFormView> = {
+  title: 'Features/Materials/MaterialFormView',
+  component: MaterialFormView,
 };
 
-const PopulatedStory = () => {
-  const form = useForm<MaterialForm>({
+export default meta;
+type Story = StoryObj<typeof MaterialFormView>;
+
+export const Loaded: Story = {
+  args: {
+    variant: { type: 'loaded' },
+    defaultValues,
+    onSubmit: fn(),
+    isSubmitDisabled: false,
+    isSubmitting: false,
+    suppliers: [],
+  },
+};
+
+export const Populated: Story = {
+  args: {
+    ...Loaded.args,
     defaultValues: {
       ...defaultValues,
       name: 'Coffee Bean',
@@ -44,20 +49,12 @@ const PopulatedStory = () => {
       minimumStock: 5,
       normalStock: 10,
     },
-  });
-  return (
-    <MaterialFormView
-      form={form}
-      onSubmit={fn()}
-      isSubmitDisabled={false}
-      isSubmitting={false}
-      suppliers={[]}
-    />
-  );
+  },
 };
 
-const ExcludedFromStockCheckStory = () => {
-  const form = useForm<MaterialForm>({
+export const ExcludedFromStockCheck: Story = {
+  args: {
+    ...Loaded.args,
     defaultValues: {
       ...defaultValues,
       name: 'Cleaning Cloth',
@@ -65,51 +62,28 @@ const ExcludedFromStockCheckStory = () => {
       unit: 'pcs',
       isStockCheckRequired: false,
     },
-  });
-  return (
-    <MaterialFormView
-      form={form}
-      onSubmit={fn()}
-      isSubmitDisabled={false}
-      isSubmitting={false}
-      suppliers={[]}
-    />
-  );
+  },
 };
 
-const meta: Meta<typeof MaterialFormView> = {
-  title: 'Features/Materials/MaterialFormView',
-  component: MaterialFormView,
+export const Loading: Story = {
+  args: {
+    ...Loaded.args,
+    variant: { type: 'loading' },
+    isSubmitDisabled: true,
+  },
 };
 
-export default meta;
-type Story = StoryObj<typeof MaterialFormView>;
-
-export const Loaded: Story = {
-  render: () => <LoadedStory />,
-};
-
-export const Populated: Story = {
-  render: () => <PopulatedStory />,
-};
-
-export const ExcludedFromStockCheck: Story = {
-  render: () => <ExcludedFromStockCheckStory />,
-};
-
-const SubmitDisabledStory = () => {
-  const form = useForm<MaterialForm>({ defaultValues });
-  return (
-    <MaterialFormView
-      form={form}
-      onSubmit={fn()}
-      isSubmitDisabled={true}
-      isSubmitting={false}
-      suppliers={[]}
-    />
-  );
+export const Error: Story = {
+  args: {
+    ...Loaded.args,
+    variant: { type: 'error', onRetryButtonPress: fn() },
+    isSubmitDisabled: true,
+  },
 };
 
 export const SubmitDisabled: Story = {
-  render: () => <SubmitDisabledStory />,
+  args: {
+    ...Loaded.args,
+    isSubmitDisabled: true,
+  },
 };
