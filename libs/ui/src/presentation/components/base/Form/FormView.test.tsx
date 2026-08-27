@@ -1,9 +1,11 @@
+import { useRef } from 'react';
 import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { UseFormReturn } from 'react-hook-form';
 import { Button } from 'tamagui';
-import { FormView } from './FormView';
+import { FormView, FormVariant } from './FormView';
 import { Field } from './Field';
 import { InputText } from './InputText';
 import { flushPromises } from '../../../../utils/testUtils';
@@ -172,5 +174,48 @@ describe('FormView', () => {
     );
 
     expect(screen.getByTestId('demo-form')).toBeTruthy();
+  });
+
+  describe('formRef', () => {
+    const FormRefHarness = ({ variant }: { variant: FormVariant }) => {
+      const formRef = useRef<UseFormReturn<DemoForm> | null>(null);
+      return (
+        <>
+          <FormView<DemoForm>
+            variant={variant}
+            defaultValues={{ name: 'Alice' }}
+            resolver={demoFormResolver}
+            onSubmit={jest.fn()}
+            loadingTitle="Fetching Demo..."
+            errorTitle="Failed to Fetch Demo"
+            formRef={formRef}
+          >
+            {() => <NameField />}
+          </FormView>
+          <Button
+            onPress={() => formRef.current?.setValue('name', 'Set via ref')}
+          >
+            Set via ref
+          </Button>
+        </>
+      );
+    };
+
+    it('is null while loading, so a sibling write through it is a safe no-op', () => {
+      render(<FormRefHarness variant={{ type: 'loading' }} />);
+
+      expect(() =>
+        screen.getByRole('button', { name: 'Set via ref' }).click()
+      ).not.toThrow();
+    });
+
+    it('is populated once the loaded branch mounts, letting a sibling controller write into the form', async () => {
+      const user = userEvent.setup();
+      render(<FormRefHarness variant={{ type: 'loaded' }} />);
+
+      await user.click(screen.getByRole('button', { name: 'Set via ref' }));
+
+      expect(screen.getByDisplayValue('Set via ref')).toBeTruthy();
+    });
   });
 });

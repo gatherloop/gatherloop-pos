@@ -1,5 +1,6 @@
 import { useRouter } from 'solito/router';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { UseFormReturn } from 'react-hook-form';
 import { match, P } from 'ts-pattern';
 import {
   useAuthLogoutController,
@@ -8,6 +9,7 @@ import {
 } from '../controllers';
 import {
   AuthLogoutUsecase,
+  Rental,
   RentalCheckoutUsecase,
   RentalListUsecase,
 } from '../../domain';
@@ -34,6 +36,23 @@ export const RentalCheckoutHandler = ({
   const rentalCheckout = useRentalCheckoutController(rentalCheckoutUsecase);
   const rentalList = useRentalListController(rentalListUsecase);
 
+  const formRef = useRef<UseFormReturn<RentalCheckoutForm> | null>(null);
+
+  // Writes through the form the same way an item selection would if it
+  // happened from inside the form subtree — see `FormView`'s `formRef`
+  // escape hatch. `formRef.current` is only ever null before the form's
+  // `loaded` branch mounts, which is not reachable here since a rental
+  // pick requires the list (and therefore the form) to already be on screen.
+  const addRentalToForm = (rental: Rental) => {
+    const form = formRef.current;
+    if (!form) return;
+
+    const rentals = form.getValues('rentals');
+    if (rentals.some(({ id }) => id === rental.id)) return;
+
+    form.setValue('rentals', [...rentals, rental]);
+  };
+
   useEffect(() => {
     if (rentalList.state.checkoutStatus !== 'ongoing') {
       rentalList.dispatch({
@@ -59,26 +78,23 @@ export const RentalCheckoutHandler = ({
     if (rentalList.state.type !== 'loaded') return;
 
     const searchCode = rentalList.state.query;
-    if (
-      rentalCheckout.state.values.rentals.some(
-        ({ code }) => code === searchCode
-      )
-    )
-      return;
+    const currentRentals = formRef.current?.getValues('rentals') ?? [];
+    if (currentRentals.some(({ code }) => code === searchCode)) return;
 
     const rental = rentalList.state.rentals.find(
       ({ code }) => code === searchCode
     );
 
     if (rental) {
-      rentalCheckout.onAddItem(rental);
+      addRentalToForm(rental);
       rentalList.dispatch({ type: 'CHANGE_PARAMS', query: '' });
     }
-  }, [rentalCheckout, rentalList]);
+  }, [rentalList]);
 
   return (
     <RentalCheckoutScreen
-      form={rentalCheckout.form}
+      variant={{ type: 'loaded' }}
+      defaultValues={rentalCheckout.state.values}
       onSubmit={(values: RentalCheckoutForm) =>
         rentalCheckout.dispatch({ type: 'SUBMIT', values })
       }
@@ -91,7 +107,7 @@ export const RentalCheckoutHandler = ({
           : undefined
       }
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
-      rentalsFieldArray={rentalCheckout.rentalsFieldArray}
+      formRef={formRef}
       rentalList={{
         searchValue: rentalList.state.query,
         onSearchValueChange: (value) =>
@@ -127,7 +143,7 @@ export const RentalCheckoutHandler = ({
         onRetryButtonPress: () =>
           rentalList.dispatch({ type: 'FETCH' }),
         onItemPress: (rental) => {
-          rentalCheckout.onAddItem(rental);
+          addRentalToForm(rental);
           rentalList.dispatch({ type: 'CHANGE_PARAMS', query: '' });
         },
         isSearchAutoFocus: true,

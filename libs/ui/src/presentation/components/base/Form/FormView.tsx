@@ -1,4 +1,4 @@
-import { ComponentProps, ReactNode } from 'react';
+import { ComponentProps, MutableRefObject, ReactNode, useEffect } from 'react';
 import {
   DefaultValues,
   FieldValues,
@@ -30,6 +30,14 @@ export type FormViewProps<T extends FieldValues> = {
   // instead). Spread onto the inner `<Form>` after the default, so any key
   // here overrides it.
   formProps?: Omit<ComponentProps<typeof Form>, 'onSubmit' | 'children'>;
+  /**
+   * Escape hatch for surfaces where a sibling controller must drive the form
+   * imperatively (see TRD §4.6). `current` is null until the loaded branch
+   * mounts — always null-check. Do not use this to read values for
+   * rendering; use `FieldWatch`. Do not use it to read submitted values
+   * either; read them off the usecase's `state.values` instead.
+   */
+  formRef?: MutableRefObject<UseFormReturn<T> | null>;
   children: (form: UseFormReturn<T>) => ReactNode;
 };
 
@@ -49,6 +57,7 @@ export function FormView<T extends FieldValues>(props: FormViewProps<T>) {
         resolver={props.resolver}
         onSubmit={props.onSubmit}
         formProps={props.formProps}
+        formRef={props.formRef}
       >
         {props.children}
       </LoadedForm>
@@ -65,14 +74,24 @@ function LoadedForm<T extends FieldValues>({
   onSubmit,
   children,
   formProps,
+  formRef,
 }: Pick<
   FormViewProps<T>,
-  'defaultValues' | 'resolver' | 'onSubmit' | 'children' | 'formProps'
+  'defaultValues' | 'resolver' | 'onSubmit' | 'children' | 'formProps' | 'formRef'
 >) {
   const form = useForm<T>({
     defaultValues: defaultValues as DefaultValues<T>,
     resolver,
   });
+
+  useEffect(() => {
+    if (!formRef) return;
+    formRef.current = form;
+    return () => {
+      formRef.current = null;
+    };
+  }, [formRef, form]);
+
   return (
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(onSubmit)} gap="$3" {...formProps}>
