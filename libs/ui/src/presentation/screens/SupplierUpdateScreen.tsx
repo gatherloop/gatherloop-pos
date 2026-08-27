@@ -1,14 +1,14 @@
 import { ScrollView } from 'tamagui';
-import { SupplierFormView, Layout } from '../components';
+import { SupplierFormView, SupplierFormViewProps, Layout } from '../components';
 import { SupplierForm } from '../../domain';
-import { UseFormReturn } from 'react-hook-form';
 
 export type SupplierUpdateScreenProps = {
-  form: UseFormReturn<SupplierForm>;
+  defaultValues: SupplierForm;
   onSubmit: (values: SupplierForm) => void;
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   onLogoutPress: () => void;
+  variant: SupplierFormViewProps['variant'];
   serverError?: string;
 };
 
@@ -17,10 +17,11 @@ export const SupplierUpdateScreen = (props: SupplierUpdateScreenProps) => {
     <Layout title="Update Supplier" showBackButton onLogoutPress={props.onLogoutPress}>
       <ScrollView>
         <SupplierFormView
-          form={props.form}
+          defaultValues={props.defaultValues}
           onSubmit={props.onSubmit}
           isSubmitDisabled={props.isSubmitDisabled}
           isSubmitting={props.isSubmitting}
+          variant={props.variant}
           serverError={props.serverError}
         />
       </ScrollView>

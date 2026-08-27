@@ -18,7 +18,7 @@ export const AuthLoginHandler = (props: AuthLoginHandlerProps) => {
 
   return (
     <AuthLoginScreen
-      form={authLoginController.form}
+      defaultValues={authLoginController.state.values}
       isSubmitDisabled={
         authLoginController.state.type === 'submitting' ||
         authLoginController.state.type === 'submitSuccess'
@@ -32,6 +32,7 @@ export const AuthLoginHandler = (props: AuthLoginHandlerProps) => {
       onSubmit={(values) => {
         authLoginController.dispatch({ type: 'SUBMIT', values });
       }}
+      variant={{ type: 'loaded' }}
     />
   );
 };

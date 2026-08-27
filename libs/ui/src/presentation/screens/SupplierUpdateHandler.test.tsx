@@ -46,13 +46,23 @@ describe('SupplierUpdateHandler', () => {
     jest.clearAllMocks();
   });
 
-  describe('form rendering', () => {
-    it('should render the update form', async () => {
+  describe('loading and data states', () => {
+    it('should show loading state while fetching supplier', async () => {
       render(<SupplierUpdateHandler {...createProps()} />);
-      expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
+      expect(screen.getByText('Fetching Supplier...')).toBeTruthy();
       await act(async () => {
         await flushPromises();
       });
+    });
+
+    it('should render the update form after supplier data loads', async () => {
+      render(<SupplierUpdateHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
     });
 
     it('should render pre-filled form when supplier is preloaded', async () => {
@@ -63,8 +73,18 @@ describe('SupplierUpdateHandler', () => {
       });
     });
 
+    it('should fill the form with fetched values when data loads after mount', async () => {
+      render(<SupplierUpdateHandler {...createProps({ preloaded: false })} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByDisplayValue('Supplier 1')).toBeTruthy();
+    });
+
     it('should render the name input field', async () => {
-      render(<SupplierUpdateHandler {...createProps()} />);
+      render(<SupplierUpdateHandler {...createProps({ preloaded: true })} />);
       expect(screen.getByRole('textbox', { name: 'Name' })).toBeTruthy();
       await act(async () => {
         await flushPromises();
@@ -72,11 +92,59 @@ describe('SupplierUpdateHandler', () => {
     });
 
     it('should render the address input field', async () => {
-      render(<SupplierUpdateHandler {...createProps()} />);
+      render(<SupplierUpdateHandler {...createProps({ preloaded: true })} />);
       expect(screen.getByRole('textbox', { name: 'Address' })).toBeTruthy();
       await act(async () => {
         await flushPromises();
       });
+    });
+
+    it('should show error state when supplier fetch fails', async () => {
+      render(<SupplierUpdateHandler {...createProps({ shouldFail: true })} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(
+        screen.getByRole('heading', { name: 'Failed to Fetch Supplier' })
+      ).toBeTruthy();
+    });
+  });
+
+  describe('error recovery', () => {
+    it('should refetch supplier when retry button is pressed after error', async () => {
+      const user = userEvent.setup();
+      const supplierRepo = new MockSupplierRepository();
+      supplierRepo.setShouldFail(true);
+
+      render(
+        <SupplierUpdateHandler
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          supplierUpdateUsecase={new SupplierUpdateUsecase(supplierRepo, {
+            supplierId: 1,
+            supplier: null,
+          })}
+        />
+      );
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(
+        screen.getByRole('heading', { name: 'Failed to Fetch Supplier' })
+      ).toBeTruthy();
+
+      supplierRepo.setShouldFail(false);
+
+      await user.click(screen.getByRole('button', { name: 'Retry' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
     });
   });
 
