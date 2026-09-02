@@ -85,7 +85,6 @@ export const ChecklistSessionListHandler = ({
       currentPage={checklistSessionList.state.page}
       totalItem={checklistSessionList.state.totalItem}
       itemPerPage={checklistSessionList.state.itemPerPage}
-      form={checklistSessionCreate.form}
       onSubmit={(values) =>
         checklistSessionCreate.dispatch({ type: 'SUBMIT', values })
       }
