@@ -1,290 +1,136 @@
-# Gatherloop POS (Point Of Sale)
+# Gatherloop POS
 
-## 1. Overviews
+A Point of Sale system built for a coffee shop, running on web, mobile and a customer-facing
+ordering app. It covers the catalog (categories, products, variants, materials), sales
+(transactions, carts, tables, tickets, coupons), inventory (suppliers, stock checks), finance
+(expenses, budgets, wallets, profit calculation) and daily operations (checklists, rentals).
 
-This project is a custom-built Point of Sale (POS) system designed specifically for use in my coffee shop, with support for both web and mobile platforms. The system provides essential features such as:
-
-Menu Management: Register and update new menu items seamlessly.
-Transaction Processing: Record customer transactions efficiently.
-Automated Calculations: Automatically calculate costs and profits for each transaction.
-Financial Management: Streamline operations by automating budget allocations for operational expenses, food costs, and profits.
-This POS system aims to provide a comprehensive solution for managing business operations more efficiently, reducing manual work and improving financial transparency.
+The full feature documentation lives at
+[gatherloop.github.io/gatherloop-pos](https://gatherloop.github.io/gatherloop-pos) (source in
+`docs-site/`).
 
 ![screenshot of gatherloop POS](https://i.ibb.co.com/5KQJmMz/Screenshot-2024-11-28-at-14-39-36.png)
 
-## 2. Features
+## 1. Project structure
 
-### 2.1. Category Management
-
-The Category Management feature organizes products into groups (e.g., beverage, food) for easier browsing and management. It simplifies sales tracking and inventory control, enhancing both customer experience and operational efficiency.
-
-### 2.2. Product Management
-
-The Product Management feature allows you to list, create, and update products while managing their materials. This ensures accurate cost tracking and helps in determining optimal pricing for each item.
-
-### 2.3. Material Management
-
-The Material Management feature tracks and manages the raw materials used in products. It helps monitor inventory levels, calculates material costs, and ensures accurate pricing based on the cost.
-
-### 2.4. Transaction
-
-The Transaction management feature records and tracks all customer purchases, ensuring accurate sales data. It simplifies the checkout process and automatically updates financial records, providing insights into daily sales and revenue.
-
-### 2.5. Expense Tracking
-
-The Expense Management feature tracks expenses across multiple categories, such as operational costs, material stock, and salaries. It helps allocate budgets for each category, ensuring accurate tracking and management of business expenditures.
-
-### 2.6. Budget Tracking
-
-The Budget Tracking feature helps monitor spending limits for various categories like restocking materials, salaries, and operational costs. It ensures better control over finances by providing real-time insights into available budgets for each expense.
-
-## 3. Tech Stack
-
-### 3.1. Golang
-
-https://go.dev
-
-Go (Golang) is used for building the backend services of the POS system. Its efficiency in handling concurrent processes ensures high performance, making it ideal for managing tasks like transaction processing, budget tracking, and real-time financial calculations. Go’s simplicity and speed contribute to the system's scalability and reliability.
-
-### 3.2. React
-
-https://react.dev
-
-React is used for building the web interface of the POS system, providing a dynamic and responsive user experience. Its component-based architecture allows for efficient rendering and seamless updates, making tasks like product management, transaction handling, and expense tracking intuitive and easy to navigate.
-
-Every surface (`apps/web`, `apps/mobile`, `apps/order`, `libs/ui` Storybook) builds with [React Compiler](https://react.dev/learn/react-compiler), so memoization of components, values and callbacks used purely to avoid re-renders is automatic — there is no need to reach for `useMemo`, `useCallback`, or `React.memo` yourself for that. If a specific component misbehaves under compilation, opt it out with the `"use no memo"` directive at the top of the function instead of hand-rolling memoization. One exception: `useCallback` wrapping a `useFocusEffect` (or `useQuery`'s internal refetch-on-focus) callback is still required, because `libs/ui`'s Jest suite runs on `@swc/jest`, which has no compiler pass — without it the effect re-fires every render. See `docs/trd-react-compiler-adoption.md` for the adoption plan and rollout phases.
-
-### 3.3. React Native
-
-https://reactnative.dev
-
-React Native powers the mobile version of the POS system, enabling a consistent user experience across both iOS and Android platforms. With its reusable components and native performance, React Native ensures smooth navigation and real-time updates, allowing users to manage transactions, products, and expenses on the go.
-
-### 3.4. Tamagui
-
-https://tamagui.dev
-
-Tamagui is used for building a cross-platform UI in the POS system, allowing for consistent design and performance across web and mobile. It simplifies the development process by sharing components between platforms, ensuring a cohesive look and feel while maintaining speed and responsiveness.
-
-### 3.5. Open API
-
-https://www.openapis.org
-
-OpenAPI is used to define and document the POS system’s API, ensuring clear communication between the backend and frontend. It standardizes API endpoints, making integration more efficient and scalable while providing an easy-to-understand interface for developers to interact with the system’s features, such as transactions, product management, and budgeting.
-
-## 4. Projects
-
-This POS system is organized within an Nx monorepo, containing the following projects:
-
-### 4.1. Web
-
-The web project is the frontend application built with React, providing an intuitive and dynamic interface for managing various aspects of the POS system, such as transactions, product listings, and financial tracking. This project uses reusable UI components shared through the UI library, ensuring consistency and responsiveness across the platform.
-
-To work on or run the web project in your local development environment, you can use the following commands:
-
-#### A. Development Mode
+An [Nx](https://nx.dev) monorepo. Apps are thin shells; nearly all frontend code lives in
+`libs/ui`, shared by web, mobile and order.
 
 ```
-$ nx run web:dev
+apps/
+  api/          Go backend (REST API, MySQL)
+  web/          Next.js admin/cashier app (Pages Router)
+  order/        Next.js customer app — scan a table QR, order from your phone
+  mobile/       React Native (Expo) app for iOS/Android
+  *-e2e/        Playwright end-to-end tests per app
+libs/
+  ui/           All shared frontend code: entities, use cases, screens, components
+  api-contract/ OpenAPI spec (src/api.yaml) + generated TS and Go clients
+  provider/     App-level providers (Tamagui, theme, toast)
+docs/           PRDs and TRDs (product and technical design docs)
+docs-site/      VitePress feature documentation site
 ```
 
-This starts the development server, enabling live reload and hot reloading for a smooth development experience.
+The three frontends share the same UI layer through [Tamagui](https://tamagui.dev), which renders
+to both React DOM and React Native.
 
-#### B. Build the Project
+## 2. Running the project
 
-```
-$ nx run web:build
-```
+### Prerequisites
 
-This builds the web project for production, optimizing performance and bundling all assets.
+- Node.js 20+ and npm
+- Go 1.24+
+- A MySQL database
 
-#### C. Run the Built Project
+### Setup
 
-```
-$ nx run web:start
-```
-
-This command runs the production-ready version of the web project after it has been built.
-
-### 4.2. Mobile
-
-The mobile project is developed with React Native, providing a seamless user experience for managing the POS system on mobile devices. It shares UI components with the web project through the UI library, ensuring design consistency across platforms. This mobile app is compatible with both Android and iOS, allowing users to handle transactions, manage products, and monitor expenses from anywhere.
-
-To run and build the mobile project for development or production, use the following commands:
-
-#### A. Start React Native Development Server
-
-```
-$ nx run mobile:start
+```bash
+npm install
+cp apps/api/.env.example apps/api/.env    # DB credentials, JWT secret, CORS origins
+cp apps/web/.env.example apps/web/.env.local
+cp apps/order/.env.example apps/order/.env.local
+cp apps/mobile/.env.example apps/mobile/.env
 ```
 
-This launches the React Native development server, enabling live reload and debugging.
+### Run
 
-#### B. Run on Android Device
-
-```
-$ nx run mobile:run-android
-```
-
-This command runs the mobile project on a connected Android device or emulator.
-
-#### C. Run on iOS Device
-
-```
-$ nx run mobile:run-ios
+```bash
+npx nx run api:serve      # Go API, on the PORT set in apps/api/.env
+npx nx run web:dev        # POS web app     → http://localhost:3000
+npx nx run order:dev      # customer app    → http://localhost:3000
+npx nx run mobile:start   # React Native dev server (then run-android / run-ios)
+npx nx run ui:storybook   # component explorer → http://localhost:6006
 ```
 
-This runs the project on a connected iOS device or simulator.
+Web and order proxy `/api/*` to `NEXT_PUBLIC_API_BASE_URL`, so start the API first. Both default to
+port 3000 — to run them side by side, give one another port (`npx nx run order:dev --port=3001`) and
+add that origin to `CORS_ALLOWED_ORIGINS` in `apps/api/.env`.
 
-#### D. Build for Android
+### Test, lint, and codegen
 
-```
-$ nx run mobile:build-android
-```
-
-This builds the Android version of the mobile project for production.
-
-#### E. Build for iOS
-
-```
-$ nx run mobile:build-ios
+```bash
+npm test                            # all unit tests (Jest for TS, go test for the API)
+npm run lint
+npx nx run web-e2e:e2e              # Playwright end-to-end tests
+npx nx run api-contract:generate:ts # regenerate TS client after editing src/api.yaml
+npx nx run api-contract:generate:go # regenerate Go models
 ```
 
-This builds the iOS version of the mobile project for production.
+Codegen runs automatically as a dependency of the `dev`, `build` and `serve` targets — run it
+manually only when you want to inspect the output.
 
-### 4.3. UI
+## 3. Architecture
 
-The UI project is a shared component library designed for both web and mobile platforms. Built with Tamagui, it ensures a consistent and responsive user interface across the POS system. This project contains reusable components that are optimized for performance and flexibility, allowing you to easily maintain and scale the design system for both React and React Native applications.
+Both sides follow the same Clean Architecture split: **domain → data → presentation**, where the
+domain depends on nothing and the outer layers depend inwards through interfaces.
 
-### 4.4. API
-
-The API project is the backend service of the POS system, built using Go (Golang). It handles core functionalities such as managing transactions, products, budgeting, and more, ensuring fast and reliable data processing. The API communicates with both the web and mobile applications through well-defined endpoints, documented via OpenAPI, making integration seamless and efficient.
-
-Running the API Project
-
-#### A. Run the Server
+### 3.1. Backend (`apps/api`)
 
 ```
-$ nx run api:serve
+domain/               <entity|repository|usecase>.go per feature
+data/mysql/, data/mock/   repository implementations
+presentation/restapi/     handler + route + transformer per feature
+main.go                   wires repositories → use cases → handlers
 ```
 
-This command starts the Go server, allowing the API to handle requests from the web and mobile applications.
+- **Domain** — entities, business logic in use cases, and repository *interfaces*. No SQL, no HTTP.
+- **Data** — implements those interfaces against MySQL (or in-memory mocks used by tests).
+- **Presentation** — HTTP handlers built on `gorilla/mux`; transformers map between JSON request
+  and response shapes and domain entities.
 
-#### B. Build the API Binary
+Dependencies are constructed once in `main.go` and injected, so use cases are testable in isolation
+(see the `*_usecase_test.go` files next to them).
 
-```
-$ nx run api:build
-```
-
-This compiles the Go code into a binary file, preparing it for deployment in production environments.
-
-#### C. Deployment
-
-`apps/api` is deployed to a VPS as a statically compiled binary, built in CI and run under
-systemd — no language toolchain lives on the box. See
-[`apps/api/docs/DEPLOY_NATIVE.md`](apps/api/docs/DEPLOY_NATIVE.md) for the automated pipeline,
-[`apps/api/docs/DEPLOY.md`](apps/api/docs/DEPLOY.md) for the Docker-based alternative, and
-[`apps/api/docs/RUNBOOK.md`](apps/api/docs/RUNBOOK.md) for day-2 operations (manual redeploy, log
-tailing, uptime monitoring).
-
-### 4.5. Order
-
-The Order project is a customer-facing, mobile-first web app that lets a guest scan a table's QR code and order straight from their phone — browsing the menu, picking options, and building a cart — without installing anything or logging in. It's a Next.js app (Pages Router, same framework as `web`), sharing entities, screens and business logic with the rest of the product through the UI library, deployed on its own Vercel project. See [Table Ordering](https://gatherloop.github.io/gatherloop-pos/sales/table-ordering) in the docs for what it does and why.
-
-To work on or run the order project in your local development environment, you can use the following commands:
-
-#### A. Development Mode
+### 3.2. Frontend (`libs/ui/src`)
 
 ```
-$ nx run order:dev
+domain/       entities, repository interfaces, use cases (framework-agnostic)
+data/         api/ (OpenAPI client), mock/, memory/, browser/ repository implementations
+presentation/ controllers/, screens/, components/
+app/          per-route composition: builds repositories + use cases, renders a Handler
 ```
 
-This starts the Next.js development server, enabling live reload for a smooth development experience.
+- **Domain** — each use case is a **finite state machine**: a state union (`idle`, `loading`,
+  `loaded`, `error`, …), an action union, and a pure reducer. Contains no React.
+- **Data** — implements the repository interfaces, mostly against the generated OpenAPI client with
+  TanStack Query, and maps API types to entities. Swapping in a mock repository is how use cases
+  and screens are tested.
+- **Presentation** — a **controller** hook binds a use case's state machine to React
+  (`useReducer` + effects); a `*Handler` maps that state to props with `ts-pattern`; a `*Screen`
+  is pure Tamagui JSX with Storybook stories.
+- **app/** — the composition root: instantiates repositories and use cases, then renders the
+  handler. Pages in `apps/web`, `apps/order` and `apps/mobile` mostly just re-export these.
 
-#### B. Build the Project
+Every surface builds with the [React Compiler](https://react.dev/learn/react-compiler), so don't
+hand-write `useMemo`/`useCallback`/`React.memo` for re-render performance — opt a misbehaving
+component out with `"use no memo"` instead. (One exception: `useCallback` around a `useFocusEffect`
+callback is still needed, because the Jest setup has no compiler pass.) See
+`docs/trd-react-compiler-adoption.md`.
 
-```
-$ nx run order:build
-```
+## 4. Where to look next
 
-This builds the order project for production.
-
-#### C. Run the Built Project
-
-```
-$ nx run order:start
-```
-
-This command runs the production-ready version of the order project after it has been built.
-
-### 4.6. API Contract
-
-The API Contract project defines the specifications and types for the API endpoints, ensuring consistent communication between the backend and frontend applications. It serves as a bridge between the API and the client projects, generating type definitions that enhance type safety and reduce errors during development.
-
-Running the API Contract Project
-
-#### A. Generate TypeScript Typings
-
-```
-$ nx run api-contract:generate:ts
-```
-
-This command generates TypeScript typings that will be used in both the web and mobile projects, ensuring type safety and improving developer experience.
-
-#### B. Generate Go Typings
-
-```
-$ nx run api-contract:generate:go
-```
-
-This command generates Go typings for the API project, aligning the backend data structures with the defined API specifications.
-
-## 5. Clean Architecture
-
-This POS system is built using Clean Architecture principles for both the backend and frontend, promoting separation of concerns and enhancing testability. By structuring the application into distinct layers, Clean Architecture allows for easier maintenance, scalability, and independent testing of each component.
-
-### 5.1. Backend
-
-![clean architecture backend](/docs/clean%20architecture%20be.png)
-
-#### A. Domain Layer
-
-The Domain layer is the core of the backend's clean architecture that define the data structure and business logic. There are some components in this layer :
-
-1. `Entity`, defining the [data structure](https://github.com/gatherloop/gatherloop-pos/blob/3a42e3c6956871b779d1b0b085df746f402d1684/apps/api/domain/transactions/entity.go#L19-L30) that used in the use cases
-2. `Usecase`, implementing the specific [business logic](https://github.com/gatherloop/gatherloop-pos/blob/3a42e3c6956871b779d1b0b085df746f402d1684/apps/api/domain/transactions/usecase.go#L28-L40)
-3. `Repository Interface`, containing [interface](https://github.com/gatherloop/gatherloop-pos/blob/3a42e3c6956871b779d1b0b085df746f402d1684/apps/api/domain/transactions/repository.go) that ensure the business logic remains independent of the data layer (e.g., databases, external API, or mock data)
-
-This separation facilitates testing, allowing use cases and entities to be validated in isolation without relying on external systems, enhancing overall maintainability and scalability.
-
-#### B. Data Layer
-
-The Data Layer [implements the repository interfaces](https://github.com/gatherloop/gatherloop-pos/blob/3a42e3c6956871b779d1b0b085df746f402d1684/apps/api/data/mysql/transactions/repository.go) required by the use cases, allowing for flexibility in how data is sourced and managed. By following these interfaces, the Data Layer can easily connect to various data sources, such as databases, mock data, or external APIs. This design promotes separation of concerns, enabling the backend's business logic to remain independent of the underlying data implementation.
-
-#### C. Presentation Layer
-
-The Presentation Layer contain [handler](https://github.com/gatherloop/gatherloop-pos/blob/3a42e3c6956871b779d1b0b085df746f402d1684/apps/api/presentation/http/transactions/handler.go) that [consumes the use cases](https://github.com/gatherloop/gatherloop-pos/blob/3a42e3c6956871b779d1b0b085df746f402d1684/apps/api/presentation/http/transactions/handler.go#L38) and [maps the internal data structures](https://github.com/gatherloop/gatherloop-pos/blob/3a42e3c6956871b779d1b0b085df746f402d1684/apps/api/presentation/http/transactions/handler.go#L44-L47) from the entities to output formats, such as JSON for REST APIs. It also [map the request](https://github.com/gatherloop/gatherloop-pos/blob/3a42e3c6956871b779d1b0b085df746f402d1684/apps/api/presentation/http/transactions/handler.go#L22-L36) from HTTP API to internal data structure
-
-### 5.2. Frontend
-
-![clean architecture frontend](/docs/clean%20architecture%20fe.png)
-
-#### A. Domain Layer
-
-The domain layer in frontend is similar like backend, it contains the following components :
-
-1. `Entity`, defining the [internal data structures](https://github.com/gatherloop/gatherloop-pos/blob/3a42e3c6956871b779d1b0b085df746f402d1684/libs/ui/src/domain/entities/Transaction.ts) used in the business logic
-2. `Usecase`, implementing the business logic, utilizing a [finite state machine](https://github.com/gatherloop/gatherloop-pos/blob/3a42e3c6956871b779d1b0b085df746f402d1684/libs/ui/src/domain/usecases/transactionList.ts#L80-L150) to map the current state to the next state based on received actions. Importantly, the use cases do not concern themselves with the data source, whether it comes from an API or mock data; they only [recognize the interfaces](https://github.com/gatherloop/gatherloop-pos/blob/3a42e3c6956871b779d1b0b085df746f402d1684/libs/ui/src/domain/usecases/transactionList.ts#L161-L162). Additionally, this layer is agnostic to the frontend framework, ensuring that no framework-specific code (e.g., React) is present.
-3. `Repository Interface`, containing [interface](https://github.com/gatherloop/gatherloop-pos/blob/3a42e3c6956871b779d1b0b085df746f402d1684/libs/ui/src/domain/repositories/transaction.ts) that define the data source that used in the use case, for example fetch, create, update, and delete data.
-
-#### B. Data Layer
-
-The Data Layer [implements the interfaces](https://github.com/gatherloop/gatherloop-pos/blob/3a42e3c6956871b779d1b0b085df746f402d1684/libs/ui/src/data/openApi/transaction.ts) used in the use case layer, allowing it to determine the data source, whether from an API or mock data. This design enables easy testing of the use cases using mock data without altering the underlying logic. Additionally, the Data Layer is responsible for transforming the API data structures into the entity data structures utilized in the use cases.
-
-#### C. Presentation Layer
-
-Presentation layer will consumes the logic from usecase layer and output it to UI. It consist of the following components :
-
-1. `Controller`, consumes the finite state machine defined in the use case layer and [integrates it into the framework's state management](https://github.com/gatherloop/gatherloop-pos/blob/3a42e3c6956871b779d1b0b085df746f402d1684/libs/ui/src/presentation/controllers/controller.ts). For instance, in React, this is achieved using `useReducer` to manage state transitions and useEffect to handle side effects of the finite state machine.
-2. `Presenter`, this layer is responsible for [mapping the data structures](https://github.com/gatherloop/gatherloop-pos/blob/3a42e3c6956871b779d1b0b085df746f402d1684/libs/ui/src/presentation/views/transactions/widgets/TransactionList/TransactionList.presenter.tsx#L24) from the entities to the UI props used in the components, ensuring that the frontend displays the appropriate information in a user-friendly manner.
-3. `View`, this layer is responsible for [defining the user interface](https://github.com/gatherloop/gatherloop-pos/blob/3a42e3c6956871b779d1b0b085df746f402d1684/libs/ui/src/presentation/views/transactions/widgets/TransactionList/TransactionList.view.tsx), in React, it will contains JSX of the components
+- `docs/` — PRDs and TRDs for each feature; read the relevant one before changing behaviour.
+- `docs/forms.md` — form conventions (react-hook-form + zod).
+- `docs/trd-vps-deployment-automation.md` — how the API ships: a static binary built in CI and run
+  on a VPS under systemd (`.github/workflows/deploy-api.yml`). The order app deploys to its own
+  Vercel project (`apps/order/vercel.json`).
