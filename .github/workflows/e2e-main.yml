@@ -1,0 +1,178 @@
+name: E2E tests
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Only the tip of main is worth testing; a run for an older commit that is
+# still going when the next merge lands is already stale.
+concurrency:
+  group: e2e-main
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # Throwaway values: the database is created empty for every run and dies
+  # with the runner, and the user below only ever exists inside that database.
+  # Nothing here is a secret, and nothing here touches production.
+  DB_USERNAME: root
+  DB_PASSWORD: root
+  DB_NAME: gatherloop_pos_e2e
+  DB_HOST: 127.0.0.1
+  DB_PORT: '3306'
+  # Deliberately NOT called PORT: `next dev` / `next start` read PORT too, and
+  # both Playwright configs expect the app on 3000.
+  API_PORT: '8080'
+  E2E_USERNAME: e2e
+  E2E_PASSWORD: e2e-password
+
+jobs:
+  e2e:
+    # apps/mobile-e2e is not run here: its Playwright config is still the
+    # unmodified Nx scaffold (all three browsers, no CI handling) and it
+    # drives the Expo web preview. Add it once it is CI-ready.
+    name: ${{ matrix.project }}
+    runs-on: ubuntu-latest
+    strategy:
+      # One app's failure shouldn't hide the other app's result.
+      fail-fast: false
+      matrix:
+        project: [web-e2e, order-e2e]
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: gatherloop_pos_e2e
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # openapi-generator-cli is a Java program shipped over npm.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/api/go.mod
+          cache-dependency-path: apps/api/go.sum
+
+      - run: npm ci
+
+      # libs/api-contract/src/__generated__ is gitignored. The Go client is
+      # what apps/api imports; the TS client is what the Next apps import.
+      # Both are `dependsOn` targets, but generating them up front keeps the
+      # cost out of Playwright's webServer startup timeout.
+      - run: npx nx run api-contract:generate:go
+      - run: npx nx run api-contract:generate:ts
+
+      - name: Install golang-migrate
+        # Run outside the repo with the workspace off: `go install pkg@version`
+        # refuses to run inside a go.work workspace.
+        working-directory: ${{ runner.temp }}
+        env:
+          GOWORK: 'off'
+        run: |
+          go install -tags mysql github.com/golang-migrate/migrate/v4/cmd/migrate@v4.18.3
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Run database migrations
+        run: |
+          migrate -path apps/api/data/mysql/migrations \
+            -database "mysql://${DB_USERNAME}:${DB_PASSWORD}@tcp(${DB_HOST}:${DB_PORT})/${DB_NAME}" \
+            up
+
+      - name: Seed the E2E user
+        # There is no registration endpoint (apps/api/presentation/restapi/auth_route.go),
+        # so the one account both suites log in with is inserted directly.
+        # htpasswd prints ":$2y$..."; Go's bcrypt only checks the major
+        # version, so a $2y$ hash verifies fine in AuthUsecase.Login.
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends apache2-utils mysql-client
+          hash="$(htpasswd -bnBC 10 '' "$E2E_PASSWORD" | tr -d ':\n')"
+          mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" -p"$DB_PASSWORD" "$DB_NAME" \
+            -e "INSERT INTO users (username, password) VALUES ('${E2E_USERNAME}', '${hash}');"
+
+      - name: Build the API
+        run: npx nx run api:build
+
+      - name: Start the API
+        env:
+          PORT: ${{ env.API_PORT }}
+          JWT_SECRET: e2e-jwt-secret
+          APP_ENV: test
+          # Both apps proxy /api server-side, but the order app's browser
+          # bundle also talks to the API cross-origin.
+          CORS_ALLOWED_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+        run: |
+          nohup ./dist/apps/api > "$RUNNER_TEMP/api.log" 2>&1 &
+          # Any HTTP response means the server is listening (GET on the
+          # POST-only login route answers 405, which is enough).
+          for _ in $(seq 1 60); do
+            if curl -s -o /dev/null "http://127.0.0.1:${API_PORT}/auth/login"; then
+              echo "API is listening on ${API_PORT}"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "API failed to start within 60s:"
+          cat "$RUNNER_TEMP/api.log"
+          exit 1
+
+      - name: Install Playwright browsers
+        # Both configs run Chromium only unless FULL_BROWSER_MATRIX is set.
+        run: npx playwright install --with-deps chromium
+
+      # Each config starts its own app under test (`nx dev web` /
+      # `nx run order:build && nx run order:start`), both on port 3000 —
+      # which is why the two projects are separate jobs, not one.
+      - name: Run ${{ matrix.project }}
+        env:
+          # localhost, not 127.0.0.1. The API stamps the login cookie with
+          # Domain=<the request's Origin host> (GetOriginDomain in
+          # apps/api/presentation/restapi/base_transformers.go), and browsers
+          # reject a Domain attribute that is a bare IP — so against
+          # 127.0.0.1 the session cookie is silently dropped and every
+          # authenticated test fails. apps/web-e2e's own default is the IP,
+          # which is why this is set explicitly.
+          BASE_URL: http://localhost:3000
+          API_BASE_URL: http://127.0.0.1:${{ env.API_PORT }}
+          NEXT_PUBLIC_API_BASE_URL: http://127.0.0.1:${{ env.API_PORT }}
+          NEXT_PUBLIC_ORDER_APP_BASE_URL: http://localhost:3001
+        run: npx nx run ${{ matrix.project }}:e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.project }}
+          path: dist/.playwright/apps/${{ matrix.project }}
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Upload API log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-log-${{ matrix.project }}
+          path: ${{ runner.temp }}/api.log
+          retention-days: 7
+          if-no-files-found: ignore
