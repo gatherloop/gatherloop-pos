@@ -6,6 +6,11 @@ tmp
 /out-tsc
 *.tsbuildinfo
 
+# Storybook build for Vercel — must land inside libs/ui (the Vercel project's
+# Root Directory) because Vercel resolves outputDirectory relative to it and
+# cannot reach up into the workspace-level dist/. See libs/ui/vercel.json.
+libs/ui/storybook-static
+
 # dependencies
 node_modules
 

@@ -134,3 +134,5 @@ callback is still needed, because the Jest setup has no compiler pass.) See
 - `docs/trd-vps-deployment-automation.md` — how the API ships: a static binary built in CI and run
   on a VPS under systemd (`.github/workflows/deploy-api.yml`). The order app deploys to its own
   Vercel project (`apps/order/vercel.json`).
+- `docs/trd-storybook-vercel-deployment.md` — how the component explorer ships: its own Vercel
+  project rooted at `libs/ui` (`libs/ui/vercel.json`).
