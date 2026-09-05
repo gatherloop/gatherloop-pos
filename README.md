@@ -79,6 +79,11 @@ npx nx run api-contract:generate:go # regenerate Go models
 Codegen runs automatically as a dependency of the `dev`, `build` and `serve` targets — run it
 manually only when you want to inspect the output.
 
+In CI, a pull request runs the `libs/ui` and `apps/api` unit tests, and only the ones whose area it
+touches (`.github/workflows/pr-tests.yml`). The end-to-end suites are too slow for that loop, so
+they run after the merge, against a MySQL service, the real API binary and a real Next.js server
+(`.github/workflows/e2e-main.yml`).
+
 ## 3. Architecture
 
 Both sides follow the same Clean Architecture split: **domain → data → presentation**, where the
