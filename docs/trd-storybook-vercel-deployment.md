@@ -17,13 +17,13 @@ resulting static site in headless Chromium: all 620 stories, then the manager UI
 
 ## 2. What the audit found
 
-| | Result |
-| --- | --- |
-| `npx nx run ui:build-storybook` from a clean `npm ci` | passes, ~50 s, 27 MB output |
-| Needs `api-contract:generate:ts` (and therefore Java/Go)? | **no** — see §3.1 |
-| Stories that fail to render | 0 of 620 |
-| Manager UI, sidebar, deep links, theme toggle, viewport addon | all work |
-| Genuine runtime defects | 4, all fixed here — see §5 |
+|                                                               | Result                      |
+| ------------------------------------------------------------- | --------------------------- |
+| `npx nx run ui:build-storybook` from a clean `npm ci`         | passes, ~50 s, 27 MB output |
+| Needs `api-contract:generate:ts` (and therefore Java/Go)?     | **no** — see §3.1           |
+| Stories that fail to render                                   | 0 of 620                    |
+| Manager UI, sidebar, deep links, theme toggle, viewport addon | all work                    |
+| Genuine runtime defects                                       | 4, all fixed here — see §5  |
 
 ## 3. Deployment design
 
@@ -67,7 +67,36 @@ That path is ignored in three places, all of which matter:
   so without this it walks the minified bundles (~13 000 spurious errors).
 - `.prettierignore` — same reason.
 
-### 3.3 `libs/ui/vercel.json`
+### 3.3 `.storybook/main.ts` must stay CommonJS
+
+Storybook loads `main.ts` through this, in `@storybook/core`:
+
+```js
+if (!require('module')._extensions['.ts']) {
+  /* register esbuild-register, format: "cjs" */
+}
+const config = require(mainFile);
+```
+
+So on a Node without native TypeScript support it compiles the file to CommonJS, and on a Node
+_with_ it, it does not — Node loads the file itself, decides the format by looking for ESM syntax
+after stripping types, and an `import`/`export` statement makes it an ES module. `main.ts` cannot
+survive that: it uses `__dirname` and `require.resolve`, neither of which exists in module scope.
+Newer Node gave one report of
+
+```
+ReferenceError: __dirname is not defined in ES module scope
+```
+
+and, on another version, something worse than a crash — a silently wrong `__dirname` pointing at
+the process cwd, so every alias resolved to a path that does not exist.
+
+The file is therefore written so no ESM syntax survives type-stripping: `import type` (erased
+entirely), `require.resolve` for the mock and package paths, and `module.exports` at the end. That
+is the property to preserve — adding a plain `import` or `export` to this file re-breaks it on
+exactly the Node versions that have native TypeScript support, and quite possibly not on yours.
+
+### 3.4 `libs/ui/vercel.json`
 
 ```json
 {
@@ -82,13 +111,13 @@ That path is ignored in three places, all of which matter:
 mirrors `apps/order/vercel.json`. `framework: null` stops Vercel from guessing Next.js from the
 monorepo's dependencies. `github.silent` keeps the bot from commenting on every PR.
 
-### 3.4 Vercel project settings (done in the dashboard, not in this repo)
+### 3.5 Vercel project settings (done in the dashboard, not in this repo)
 
 1. New project from this repository, separate from the order app's project.
 2. **Root Directory** → `libs/ui`. Everything else comes from `vercel.json`.
 3. **Node.js Version** → 22.x. There is no `engines.node` in the root `package.json`, so Vercel
    picks its own default; pin it so a Vercel-side default change cannot move the build out from
-   under us. (Verified on Node 22; CI uses Node 20 and both work.)
+   under us. (Verified on Node 22 and Node 24; CI uses Node 20.)
 4. Storybook is a component gallery of unreleased UI — decide deliberately whether it is public
    or behind Vercel Authentication.
 
@@ -124,13 +153,13 @@ result was a console error on every story of the affected component plus half-re
 spelling the props as the named array types they already are — `TransactionItem[]`,
 `TransactionCoupon[]`, `Wallet[]`, `Budget[]`.
 
-An indexed access to a *union of object literals* (`ExpenseListProps['variant']`, and the same
+An indexed access to a _union of object literals_ (`ExpenseListProps['variant']`, and the same
 pattern across ~20 screens) resolves fine and was left alone. Only arrays of object types trip
 this.
 
 **`play` functions racing the viewport addon.** Four compact-layout stories set
 `parameters.viewport.defaultViewport: 'mobile'` and then click a control that only exists below
-800px. Storybook applies that viewport by resizing the preview iframe *after* `play` starts, so
+800px. Storybook applies that viewport by resizing the preview iframe _after_ `play` starts, so
 `canvas.getByText(/View Cart/)` ran at full width and threw. Switching to `findByText` lets the
 query retry across the resize. One of the four also had a stale selector (`Add Coupon` for a
 button labelled `Apply Coupon`) and queried `canvasElement` for content that Tamagui renders in
@@ -146,7 +175,17 @@ npx nx run ui:lint    # 0 errors
 npx nx run ui:test    # 165 suites, 1230 tests
 ```
 
+The build was run on both Node 22 and Node 24 — the two sides of the `main.ts` loader split in
+§3.3 — and produces 620 stories on each.
+
 The built site was then served statically and driven in headless Chromium: every one of the 620
 stories rendered with no page error, no Storybook error overlay and no empty root, and the four
 `play`-driven stories were re-checked through the manager UI (where the viewport addon actually
 applies) and reach their intended state.
+
+Those four are the one case where a bare `iframe.html` check disagrees with the manager: loaded
+directly at desktop width, nothing applies their `mobile` viewport, so the control their `play`
+clicks genuinely is not on the page and the interaction fails. They pass at 375px and through the
+manager. A sweep that opens `iframe.html` directly should either size the viewport to match or
+expect those four to fail — and it has to wait past the 1 s `findBy*` timeout before reading the
+console, or it will record a pass that has not happened yet.
