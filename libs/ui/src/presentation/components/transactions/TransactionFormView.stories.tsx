@@ -145,13 +145,7 @@ export const CompactCouponSheetOpen: Story = {
   render: () => <CompactCouponSwapStory />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    // `findByText`, not `getByText`: Storybook applies this story's `mobile`
-    // viewport by resizing the preview iframe, and that resize lands after
-    // `play` starts. A synchronous query runs while the iframe is still full
-    // width, where the compact cart bar does not exist.
     await userEvent.click(await canvas.findByText(/View Cart/));
-    // The cart sheet is a Tamagui portal, so its contents land outside
-    // `canvasElement` — query the whole document for anything inside it.
     await userEvent.click(
       await screen.findByRole('button', { name: 'Apply Coupon' })
     );

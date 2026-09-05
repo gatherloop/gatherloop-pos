@@ -13,11 +13,6 @@ import { TransactionCoupon, TransactionItem } from '../../../domain';
 import { CouponListItem } from '../coupons';
 import { roundToNearest500 } from '../../../utils';
 
-// `TransactionItem[]` / `TransactionCoupon[]` rather than the indexed access
-// `Transaction['transactionItems']`: Storybook's react-docgen cannot resolve an
-// indexed access type and emits a prop node with no `elements`, which throws
-// inside its argTypes conversion — a console error on every story of this
-// component plus half-broken Controls.
 export type TransactionDetailProps = {
   name: string;
   orderNumber: number;

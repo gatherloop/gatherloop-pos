@@ -150,10 +150,6 @@ export const CompactCartSheetOpen: Story = {
   render: () => <CompactWithTicketsStory />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    // `findByText`, not `getByText`: Storybook applies this story's `mobile`
-    // viewport by resizing the preview iframe, and that resize lands after
-    // `play` starts. A synchronous query runs while the iframe is still full
-    // width, where the compact cart bar does not exist.
     await userEvent.click(await canvas.findByText(/View Cart/));
   },
 };
@@ -165,10 +161,6 @@ export const CompactCartSheetLongList: Story = {
   render: () => <CompactWithManyTicketsStory />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    // `findByText`, not `getByText`: Storybook applies this story's `mobile`
-    // viewport by resizing the preview iframe, and that resize lands after
-    // `play` starts. A synchronous query runs while the iframe is still full
-    // width, where the compact cart bar does not exist.
     await userEvent.click(await canvas.findByText(/View Cart/));
   },
 };
