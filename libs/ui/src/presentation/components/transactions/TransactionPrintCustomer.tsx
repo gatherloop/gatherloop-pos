@@ -1,13 +1,17 @@
 import { H5, Text, Theme, XStack, YStack } from 'tamagui';
-import { Transaction } from '../../../domain';
+import { TransactionItem } from '../../../domain';
 import dayjs from 'dayjs';
 
+// `TransactionItem[]` rather than `Transaction['transactionItems']`: Storybook's
+// react-docgen cannot resolve an indexed access type and emits a prop node with
+// no `elements`, which throws inside its argTypes conversion — a console error
+// on every story of this component plus half-broken Controls.
 export type TransactionPrintCustomerProps = {
   name: string;
   createdAt: string;
   paidAt?: string;
   total: number;
-  transactionItems: Transaction['transactionItems'];
+  transactionItems: TransactionItem[];
 };
 
 export const TransactionPrintCustomer = ({

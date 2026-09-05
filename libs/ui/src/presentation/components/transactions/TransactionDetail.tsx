@@ -9,10 +9,15 @@ import {
   Wallet,
 } from '@tamagui/lucide-icons';
 import { H5 } from 'tamagui';
-import { Transaction } from '../../../domain';
+import { TransactionCoupon, TransactionItem } from '../../../domain';
 import { CouponListItem } from '../coupons';
 import { roundToNearest500 } from '../../../utils';
 
+// `TransactionItem[]` / `TransactionCoupon[]` rather than the indexed access
+// `Transaction['transactionItems']`: Storybook's react-docgen cannot resolve an
+// indexed access type and emits a prop node with no `elements`, which throws
+// inside its argTypes conversion — a console error on every story of this
+// component plus half-broken Controls.
 export type TransactionDetailProps = {
   name: string;
   orderNumber: number;
@@ -21,8 +26,8 @@ export type TransactionDetailProps = {
   walletName?: string;
   total: number;
   paidAmount: number;
-  transactionItems: Transaction['transactionItems'];
-  transactionCoupons: Transaction['transactionCoupons'];
+  transactionItems: TransactionItem[];
+  transactionCoupons: TransactionCoupon[];
 };
 
 export const TransactionDetail = ({

@@ -7,8 +7,14 @@ import {
 } from '../components';
 import { Link } from 'solito/link';
 import { Plus } from '@tamagui/lucide-icons';
-import { Expense } from '../../domain';
+import { Budget, Expense, Wallet } from '../../domain';
 
+// `wallets`/`budgets` are spelled as plain array types rather than the indexed
+// access `ExpenseListProps['wallets']`: Storybook's react-docgen cannot resolve
+// an indexed access to an array-of-object type and emits a prop node with no
+// `elements`, which throws inside its argTypes conversion — a console error on
+// every story of this screen plus half-broken Controls. `variant` below stays
+// an indexed access; a union of object literals resolves fine.
 export type ExpenseListScreenProps = {
   onLogoutPress: () => void;
   onEditMenuPress: (expense: Expense) => void;
@@ -23,10 +29,10 @@ export type ExpenseListScreenProps = {
   onPageChange: (page: number) => void;
   totalItem: number;
   itemPerPage: number;
-  wallets: ExpenseListProps['wallets'];
+  wallets: Wallet[];
   walletId: number | null;
   onWalletIdChange: (walletId: number | null) => void;
-  budgets: ExpenseListProps['budgets'];
+  budgets: Budget[];
   budgetId: number | null;
   onBudgetIdChange: (budgetId: number | null) => void;
   isDeleteModalOpen: boolean;
