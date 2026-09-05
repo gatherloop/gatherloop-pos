@@ -1,5 +1,4 @@
 import type { StorybookConfig } from '@storybook/react-webpack5';
-import path from 'path';
 
 const config: StorybookConfig = {
   framework: {
@@ -34,52 +33,46 @@ const config: StorybookConfig = {
         // node_modules packages it's meant for. Our own sources are already
         // compiled by @storybook/addon-webpack5-compiler-babel above —
         // running both over the same files would double-transpile them.
-        projectRoot: path.resolve(__dirname, '.rnw-addon-scope-none'),
+        projectRoot: `${__dirname}/.rnw-addon-scope-none`,
         modulesToAlias: {
           // @react-native/normalize-colors ships a plain CJS file (module.exports = fn).
           // We redirect to a hand-written ESM copy that uses `export default`.
-          '@react-native/normalize-colors$': path.resolve(
-            __dirname,
+          '@react-native/normalize-colors$': require.resolve(
             './mocks/normalize-colors.js'
           ),
           // @tamagui/normalize-css-color imports the SINGULAR form of the same package.
           // Both packages have identical content; the same ESM mock handles both.
-          '@react-native/normalize-color$': path.resolve(
-            __dirname,
+          '@react-native/normalize-color$': require.resolve(
             './mocks/normalize-colors.js'
           ),
           // Redirect react-native-svg to its built-in web implementation
           // (ReactNativeSVG.web.js) which uses DOM SVG and has zero
           // fabric/TurboModule imports.
-          'react-native-svg$': path.resolve(
-            __dirname,
-            '../../../node_modules/react-native-svg/lib/commonjs/ReactNativeSVG.web.js'
+          'react-native-svg$': require.resolve(
+            'react-native-svg/lib/commonjs/ReactNativeSVG.web.js'
           ),
           // Mock codegenNativeComponent — a Fabric/TurboModules native API
           // that react-native-svg's <Use> element pulls in. react-native-web
           // has no equivalent; a no-op stub is sufficient for web rendering.
-          'react-native/Libraries/Utilities/codegenNativeComponent$': path.resolve(
-            __dirname,
-            './mocks/codegenNativeComponent.js'
-          ),
+          'react-native/Libraries/Utilities/codegenNativeComponent$':
+            require.resolve('./mocks/codegenNativeComponent.js'),
           // Stub out solito router and link — these wrap expo-router/next/react-navigation
           // which are not available in the Storybook web environment.
-          'solito/router$': path.resolve(__dirname, './mocks/solito-router.js'),
-          'solito/link$': path.resolve(__dirname, './mocks/solito-link.js'),
+          'solito/router$': require.resolve('./mocks/solito-router.js'),
+          'solito/link$': require.resolve('./mocks/solito-link.js'),
           // Stub next/router too: libs/ui/src/utils/queryParam.ts calls it directly
           // (outside the solito/router port). The real module drags Next's
           // server/build-only internals (Node core modules like zlib) into the
           // browser bundle; Storybook has no real Next app/router context anyway.
-          'next/router$': path.resolve(__dirname, './mocks/next-router.js'),
+          'next/router$': require.resolve('./mocks/next-router.js'),
           // Stub out react-native-reanimated and moti — these are native
           // animation libraries that cannot run on web. @tamagui/animations-moti
           // imports them, but tamagui falls back to CSS transitions in browsers
           // so the actual native modules are never exercised.
-          'react-native-reanimated$': path.resolve(
-            __dirname,
+          'react-native-reanimated$': require.resolve(
             './mocks/react-native-reanimated.js'
           ),
-          'moti/author$': path.resolve(__dirname, './mocks/moti-author.js'),
+          'moti/author$': require.resolve('./mocks/moti-author.js'),
         },
       },
     },
@@ -113,4 +106,4 @@ const config: StorybookConfig = {
   },
 };
 
-export default config;
+module.exports = config;
