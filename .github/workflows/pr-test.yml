@@ -1,0 +1,103 @@
+name: PR tests
+on:
+  pull_request:
+    branches: [main]
+
+# A new push to the PR makes the in-flight run obsolete.
+concurrency:
+  group: pr-tests-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  # dorny/paths-filter lists the PR's changed files through the API.
+  pull-requests: read
+
+jobs:
+  # Decides which suites are worth running. Jobs skipped by their `if` still
+  # report a conclusion to the PR, so this stays usable with branch
+  # protection — unlike a workflow-level `paths:` filter, which would leave
+  # required checks pending forever on unrelated PRs.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      ui: ${{ steps.filter.outputs.ui }}
+      api: ${{ steps.filter.outputs.api }}
+    steps:
+      # No checkout needed: on pull_request the filter reads the changed
+      # files from the GitHub API.
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            ui:
+              - 'libs/ui/**'
+              - 'libs/provider/**'
+              - 'libs/api-contract/**'
+              - 'jest.config.ts'
+              - 'jest.preset.js'
+              - 'tsconfig.base.json'
+              - 'package.json'
+              - 'package-lock.json'
+              - 'patches/**'
+              - '.github/workflows/pr-tests.yml'
+            api:
+              - 'apps/api/**'
+              - 'libs/api-contract/**'
+              - 'go.work'
+              - 'go.work.sum'
+              - 'package.json'
+              - 'package-lock.json'
+              - '.github/workflows/pr-tests.yml'
+
+  ui:
+    name: libs/ui tests
+    needs: changes
+    if: needs.changes.outputs.ui == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # Jest maps every api-contract import to a stub (libs/ui/jest.config.ts),
+      # so the ui suite needs no OpenAPI codegen — unlike the api suite below.
+      - run: npx nx run ui:test
+
+  api:
+    name: apps/api tests
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # openapi-generator-cli is a Java program shipped over npm.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/api/go.mod
+          cache-dependency-path: apps/api/go.sum
+
+      - run: npm ci
+
+      # libs/api-contract/src/__generated__ is gitignored; apps/api cannot
+      # resolve its imports until this runs. See
+      # docs/trd-vps-deployment-automation.md §2.
+      - run: npx nx run api-contract:generate:go
+
+      - run: npx nx run api:test
