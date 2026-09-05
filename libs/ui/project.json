@@ -9,7 +9,10 @@
       "command": "storybook dev -p 6006 -c libs/ui/.storybook"
     },
     "build-storybook": {
-      "command": "storybook build -c libs/ui/.storybook -o dist/storybook/ui"
+      "command": "storybook build -c libs/ui/.storybook -o {args.outputDir}",
+      "options": {
+        "outputDir": "dist/storybook/ui"
+      }
     }
   }
 }

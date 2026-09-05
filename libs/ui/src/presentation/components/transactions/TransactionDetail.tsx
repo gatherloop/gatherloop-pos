@@ -9,7 +9,7 @@ import {
   Wallet,
 } from '@tamagui/lucide-icons';
 import { H5 } from 'tamagui';
-import { Transaction } from '../../../domain';
+import { TransactionCoupon, TransactionItem } from '../../../domain';
 import { CouponListItem } from '../coupons';
 import { roundToNearest500 } from '../../../utils';
 
@@ -21,8 +21,8 @@ export type TransactionDetailProps = {
   walletName?: string;
   total: number;
   paidAmount: number;
-  transactionItems: Transaction['transactionItems'];
-  transactionCoupons: Transaction['transactionCoupons'];
+  transactionItems: TransactionItem[];
+  transactionCoupons: TransactionCoupon[];
 };
 
 export const TransactionDetail = ({

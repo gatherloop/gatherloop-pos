@@ -85,6 +85,6 @@ export const CompactCartSheetOpen: Story = {
   render: () => <CompactWithRentalsStory />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByText(/View Cart/));
+    await userEvent.click(await canvas.findByText(/View Cart/));
   },
 };

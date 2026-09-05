@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { fn, userEvent, within } from '@storybook/test';
+import { fn, screen, userEvent, within } from '@storybook/test';
 import React from 'react';
 import { Text } from 'tamagui';
 import { TransactionFormView } from './TransactionFormView';
@@ -145,7 +145,9 @@ export const CompactCouponSheetOpen: Story = {
   render: () => <CompactCouponSwapStory />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByText(/View Cart/));
-    await userEvent.click(canvas.getByRole('button', { name: 'Add Coupon' }));
+    await userEvent.click(await canvas.findByText(/View Cart/));
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Apply Coupon' })
+    );
   },
 };

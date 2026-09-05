@@ -7,7 +7,7 @@ import {
 } from '../components';
 import { Link } from 'solito/link';
 import { Plus } from '@tamagui/lucide-icons';
-import { Expense } from '../../domain';
+import { Budget, Expense, Wallet } from '../../domain';
 
 export type ExpenseListScreenProps = {
   onLogoutPress: () => void;
@@ -23,10 +23,10 @@ export type ExpenseListScreenProps = {
   onPageChange: (page: number) => void;
   totalItem: number;
   itemPerPage: number;
-  wallets: ExpenseListProps['wallets'];
+  wallets: Wallet[];
   walletId: number | null;
   onWalletIdChange: (walletId: number | null) => void;
-  budgets: ExpenseListProps['budgets'];
+  budgets: Budget[];
   budgetId: number | null;
   onBudgetIdChange: (budgetId: number | null) => void;
   isDeleteModalOpen: boolean;

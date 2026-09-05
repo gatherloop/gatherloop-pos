@@ -1,12 +1,12 @@
 import { Text, Theme, YStack } from 'tamagui';
-import { Transaction } from '../../../domain';
+import { TransactionItem } from '../../../domain';
 import dayjs from 'dayjs';
 
 export type TransactionPrintEmployeeProps = {
   id: number;
   name: string;
   createdAt: string;
-  transactionItems: Transaction['transactionItems'];
+  transactionItems: TransactionItem[];
 };
 
 export const TransactionPrintEmployee = ({

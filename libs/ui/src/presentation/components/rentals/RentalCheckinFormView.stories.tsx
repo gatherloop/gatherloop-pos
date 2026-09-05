@@ -150,7 +150,7 @@ export const CompactCartSheetOpen: Story = {
   render: () => <CompactWithTicketsStory />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByText(/View Cart/));
+    await userEvent.click(await canvas.findByText(/View Cart/));
   },
 };
 
@@ -161,6 +161,6 @@ export const CompactCartSheetLongList: Story = {
   render: () => <CompactWithManyTicketsStory />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByText(/View Cart/));
+    await userEvent.click(await canvas.findByText(/View Cart/));
   },
 };

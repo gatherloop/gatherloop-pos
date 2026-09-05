@@ -1,5 +1,5 @@
 import { H5, Text, Theme, XStack, YStack } from 'tamagui';
-import { Transaction } from '../../../domain';
+import { TransactionItem } from '../../../domain';
 import dayjs from 'dayjs';
 
 export type TransactionPrintCustomerProps = {
@@ -7,7 +7,7 @@ export type TransactionPrintCustomerProps = {
   createdAt: string;
   paidAt?: string;
   total: number;
-  transactionItems: Transaction['transactionItems'];
+  transactionItems: TransactionItem[];
 };
 
 export const TransactionPrintCustomer = ({
