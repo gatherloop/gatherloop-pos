@@ -370,12 +370,20 @@ export const budgetList = {
   /** A budget list item identified by its name heading */
   budgetItem: (page: Page, name: string) =>
     page.locator('h4').filter({ hasText: name }).first(),
-  /** Target percentage text for a budget (rendered as a footer item) */
+  /**
+   * Target percentage text for a budget (rendered as a footer item).
+   *
+   * The footer is a sibling of the whole title row, so it only comes into
+   * scope four levels above the H4 — ListItem nests the heading as
+   * YStack(padding) > XStack(title row) > XStack > YStack > H4, and hangs the
+   * footer items off that outermost YStack (see ListItem.tsx). Two levels up
+   * lands inside the title row, where there is no <p> at all.
+   */
   budgetTargetPercentage: (page: Page, name: string) =>
     page
       .locator('h4')
       .filter({ hasText: name })
-      .locator('../..')
+      .locator('../../../..')
       .locator('p')
       .last(),
 };

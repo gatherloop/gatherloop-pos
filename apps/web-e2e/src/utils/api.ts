@@ -20,9 +20,12 @@ import { type APIRequestContext } from '@playwright/test';
 // Types (minimal — mirrors the OpenAPI schema shapes we care about)
 // ---------------------------------------------------------------------------
 
+export type CategoryStation = 'KITCHEN' | 'BAR' | 'NONE';
+
 export interface Category {
   id: number;
   name: string;
+  station: CategoryStation;
   createdAt: string;
 }
 
@@ -32,8 +35,11 @@ export interface Wallet {
   balance: number;
   paymentCostPercentage: number;
   isCashless: boolean;
+  isPaymentTarget: boolean;
   createdAt: string;
 }
+
+export type ProductStatus = 'draft' | 'published';
 
 export interface Product {
   id: number;
@@ -41,6 +47,7 @@ export interface Product {
   name: string;
   imageUrl: string;
   saleType: 'purchase' | 'rental';
+  status: ProductStatus;
   options: Option[];
   createdAt: string;
 }
@@ -116,11 +123,17 @@ async function apiGet<T>(request: APIRequestContext, path: string): Promise<T> {
 // Category
 // ---------------------------------------------------------------------------
 
+// `station` is required by CategoryRequest (libs/api-contract/src/api.yaml).
+// It defaults to NONE here so specs that don't care about kitchen/bar routing
+// keep reading as one line.
 export async function createCategory(
   request: APIRequestContext,
-  data: { name: string }
+  data: { name: string; station?: CategoryStation }
 ): Promise<Category> {
-  return apiPost<Category>(request, '/api/categories', data);
+  return apiPost<Category>(request, '/api/categories', {
+    station: 'NONE',
+    ...data,
+  });
 }
 
 export async function deleteCategory(
@@ -139,13 +152,20 @@ export interface CreateWalletInput {
   balance: number;
   paymentCostPercentage: number;
   isCashless: boolean;
+  isPaymentTarget?: boolean;
 }
 
+// `isPaymentTarget` is required by WalletRequest (libs/api-contract/src/api.yaml).
+// It defaults to true because the specs that create a wallet then pay a
+// transaction with it (docs/prd-wallet-payment-eligibility.md).
 export async function createWallet(
   request: APIRequestContext,
   data: CreateWalletInput
 ): Promise<Wallet> {
-  return apiPost<Wallet>(request, '/api/wallets', data);
+  return apiPost<Wallet>(request, '/api/wallets', {
+    isPaymentTarget: true,
+    ...data,
+  });
 }
 
 export async function deleteWallet(
@@ -165,17 +185,25 @@ export interface CreateProductInput {
   imageUrl: string;
   description?: string;
   saleType: 'purchase' | 'rental';
+  status?: ProductStatus;
   options: Array<{
     name: string;
     values: Array<{ name: string }>;
   }>;
 }
 
+// `status` is required by ProductRequest (libs/api-contract/src/api.yaml).
+// It defaults to published because a draft product is hidden from the
+// transaction and order flows the specs drive
+// (docs/prd-product-draft-status.md).
 export async function createProduct(
   request: APIRequestContext,
   data: CreateProductInput
 ): Promise<Product> {
-  return apiPost<Product>(request, '/api/products', data);
+  return apiPost<Product>(request, '/api/products', {
+    status: 'published',
+    ...data,
+  });
 }
 
 export async function deleteProduct(
