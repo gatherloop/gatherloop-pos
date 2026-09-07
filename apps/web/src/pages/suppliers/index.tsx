@@ -1,10 +1,12 @@
 import {
   ApiSupplierRepository,
   getUrlFromCtx,
-  SupplierList,
-  SupplierListProps,
   UrlSupplierListQueryRepository,
 } from '@gatherloop-pos/ui';
+import {
+  SupplierList,
+  SupplierListProps,
+} from '@gatherloop-pos/ui/pos';
 import { QueryClient } from '@tanstack/react-query';
 import { GetServerSideProps } from 'next';
 

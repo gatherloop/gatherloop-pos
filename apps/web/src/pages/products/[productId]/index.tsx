@@ -1,10 +1,12 @@
 import {
-  ProductUpdate,
-  ProductUpdateProps,
   ApiProductRepository,
   ApiCategoryRepository,
   ApiVariantRepository,
 } from '@gatherloop-pos/ui';
+import {
+  ProductUpdate,
+  ProductUpdateProps,
+} from '@gatherloop-pos/ui/pos';
 import { GetServerSideProps } from 'next';
 import { QueryClient } from '@tanstack/react-query';
 

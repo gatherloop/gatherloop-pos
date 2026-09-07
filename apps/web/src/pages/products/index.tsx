@@ -1,10 +1,12 @@
 import {
   ApiProductRepository,
   getUrlFromCtx,
-  ProductList,
-  ProductListProps,
   UrlProductListQueryRepository,
 } from '@gatherloop-pos/ui';
+import {
+  ProductList,
+  ProductListProps,
+} from '@gatherloop-pos/ui/pos';
 import { GetServerSideProps } from 'next';
 import { QueryClient } from '@tanstack/react-query';
 

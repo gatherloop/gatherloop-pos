@@ -1,9 +1,11 @@
 import {
   ApiSupplierRepository,
-  MaterialCreate,
-  MaterialCreateProps,
   UrlSupplierListQueryRepository,
 } from '@gatherloop-pos/ui';
+import {
+  MaterialCreate,
+  MaterialCreateProps,
+} from '@gatherloop-pos/ui/pos';
 import { GetServerSideProps } from 'next';
 import { QueryClient } from '@tanstack/react-query';
 

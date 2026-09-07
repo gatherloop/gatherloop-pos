@@ -1,10 +1,12 @@
 import {
   ApiMaterialRepository,
   getUrlFromCtx,
-  MaterialList,
-  MaterialListProps,
   UrlMaterialListQueryRepository,
 } from '@gatherloop-pos/ui';
+import {
+  MaterialList,
+  MaterialListProps,
+} from '@gatherloop-pos/ui/pos';
 import { QueryClient } from '@tanstack/react-query';
 import { GetServerSideProps } from 'next';
 

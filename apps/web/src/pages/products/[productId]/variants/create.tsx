@@ -2,10 +2,12 @@ import {
   ApiProductRepository,
   ApiMaterialRepository,
   getUrlFromCtx,
-  VariantCreate,
-  VariantCreateProps,
   UrlMaterialListQueryRepository,
 } from '@gatherloop-pos/ui';
+import {
+  VariantCreate,
+  VariantCreateProps,
+} from '@gatherloop-pos/ui/pos';
 import { GetServerSideProps } from 'next';
 import { QueryClient } from '@tanstack/react-query';
 

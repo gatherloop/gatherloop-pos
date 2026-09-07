@@ -3,11 +3,13 @@ import {
   ApiExpenseRepository,
   ApiTransactionRepository,
   getUrlFromCtx,
-  DashboardApp,
-  DashboardAppProps,
   UrlExpenseStatisticListQueryRepository,
   UrlTransactionStatisticListQueryRepository,
 } from '@gatherloop-pos/ui';
+import {
+  DashboardApp,
+  DashboardAppProps,
+} from '@gatherloop-pos/ui/pos';
 import { GetServerSideProps } from 'next';
 import { QueryClient } from '@tanstack/react-query';
 

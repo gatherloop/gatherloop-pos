@@ -2,11 +2,13 @@ import {
   ApiBudgetRepository,
   ApiExpenseRepository,
   ApiWalletRepository,
-  ExpenseList,
-  ExpenseListProps,
   getUrlFromCtx,
   UrlExpenseListQueryRepository,
 } from '@gatherloop-pos/ui';
+import {
+  ExpenseList,
+  ExpenseListProps,
+} from '@gatherloop-pos/ui/pos';
 import { GetServerSideProps } from 'next';
 import { QueryClient } from '@tanstack/react-query';
 
