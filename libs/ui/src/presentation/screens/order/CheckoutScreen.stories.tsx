@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { CheckoutScreen } from './CheckoutScreen';
 
 const meta: Meta<typeof CheckoutScreen> = {
-  title: 'Checkout/CheckoutScreen',
+  title: 'Screens/Order/CheckoutScreen',
   component: CheckoutScreen,
   args: {
     onBackToCartPress: () => {

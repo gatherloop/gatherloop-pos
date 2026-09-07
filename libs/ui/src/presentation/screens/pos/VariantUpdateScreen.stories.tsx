@@ -23,7 +23,7 @@ const defaultValues: VariantForm = {
 };
 
 const meta: Meta<typeof VariantUpdateScreen> = {
-  title: 'Screens/Variants/VariantUpdateScreen',
+  title: 'Screens/POS/VariantUpdateScreen',
   component: VariantUpdateScreen,
   parameters: { layout: 'fullscreen' },
 };

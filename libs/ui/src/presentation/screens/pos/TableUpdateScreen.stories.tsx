@@ -4,7 +4,7 @@ import { TableUpdateScreen } from './TableUpdateScreen';
 import { mockTable } from '../../../../.storybook/mocks/mockData';
 
 const meta: Meta<typeof TableUpdateScreen> = {
-  title: 'Screens/Tables/TableUpdateScreen',
+  title: 'Screens/POS/TableUpdateScreen',
   component: TableUpdateScreen,
   parameters: { layout: 'fullscreen' },
 };

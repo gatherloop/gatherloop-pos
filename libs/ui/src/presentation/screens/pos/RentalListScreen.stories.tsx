@@ -23,7 +23,7 @@ const defaultArgs = {
 };
 
 const meta: Meta<typeof RentalListScreen> = {
-  title: 'Screens/Rentals/RentalListScreen',
+  title: 'Screens/POS/RentalListScreen',
   component: RentalListScreen,
   parameters: { layout: 'fullscreen' },
   args: defaultArgs,

@@ -15,7 +15,7 @@ const defaultChildren = (
 );
 
 const meta: Meta<typeof Layout> = {
-  title: 'Base/Layout',
+  title: 'Components/Base/Layout',
   component: Layout,
   parameters: {
     layout: 'fullscreen',

@@ -41,7 +41,7 @@ const populatedValues: ChecklistTemplateForm = {
 };
 
 const meta: Meta<typeof ChecklistTemplateFormView> = {
-  title: 'Features/ChecklistTemplates/ChecklistTemplateFormView',
+  title: 'Components/ChecklistTemplates/ChecklistTemplateFormView',
   component: ChecklistTemplateFormView,
 };
 

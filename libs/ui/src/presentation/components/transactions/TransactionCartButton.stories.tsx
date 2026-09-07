@@ -4,7 +4,7 @@ import { YStack } from 'tamagui';
 import { TransactionCartButton } from './TransactionCartButton';
 
 const meta: Meta<typeof TransactionCartButton> = {
-  title: 'Features/Transactions/TransactionCartButton',
+  title: 'Components/Transactions/TransactionCartButton',
   component: TransactionCartButton,
   args: {
     itemCount: 3,

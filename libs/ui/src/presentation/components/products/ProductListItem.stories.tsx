@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { ProductListItem } from './ProductListItem';
 
 const meta: Meta<typeof ProductListItem> = {
-  title: 'Features/Products/ProductListItem',
+  title: 'Components/Products/ProductListItem',
   component: ProductListItem,
   args: {
     name: 'Iced Coffee Latte',

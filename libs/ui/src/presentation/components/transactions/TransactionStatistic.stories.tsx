@@ -15,7 +15,7 @@ const mockDailyData = [
 const mockIncomeData = mockDailyData.map((d) => ({ ...d, y: d.y * 0.85 }));
 
 const meta: Meta<typeof TransactionStatistic> = {
-  title: 'Features/Transactions/TransactionStatistic',
+  title: 'Components/Transactions/TransactionStatistic',
   component: TransactionStatistic,
   args: {
     groupBy: 'date',

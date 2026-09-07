@@ -37,7 +37,7 @@ const defaultArgs = {
 };
 
 const meta: Meta<typeof ExpenseVarianceList> = {
-  title: 'Features/Expenses/ExpenseVarianceList',
+  title: 'Components/Expenses/ExpenseVarianceList',
   component: ExpenseVarianceList,
   args: defaultArgs,
 };

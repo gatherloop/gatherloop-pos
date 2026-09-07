@@ -4,7 +4,7 @@ import { Paragraph, Text, XStack, YStack } from 'tamagui';
 import { OrderLayout } from './OrderLayout';
 
 const meta: Meta<typeof OrderLayout> = {
-  title: 'Base/OrderLayout',
+  title: 'Components/Base/OrderLayout',
   component: OrderLayout,
   parameters: {
     layout: 'fullscreen',

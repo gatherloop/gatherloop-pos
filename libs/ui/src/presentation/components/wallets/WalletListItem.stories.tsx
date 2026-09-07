@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { WalletListItem } from './WalletListItem';
 
 const meta: Meta<typeof WalletListItem> = {
-  title: 'Features/Wallets/WalletListItem',
+  title: 'Components/Wallets/WalletListItem',
   component: WalletListItem,
   args: {
     name: 'Cash',

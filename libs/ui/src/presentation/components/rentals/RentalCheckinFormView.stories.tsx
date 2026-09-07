@@ -110,7 +110,7 @@ const CompactWithManyTicketsStory = () => (
 );
 
 const meta: Meta<typeof RentalCheckinFormView> = {
-  title: 'Features/Rentals/RentalCheckinFormView',
+  title: 'Components/Rentals/RentalCheckinFormView',
   component: RentalCheckinFormView,
 };
 

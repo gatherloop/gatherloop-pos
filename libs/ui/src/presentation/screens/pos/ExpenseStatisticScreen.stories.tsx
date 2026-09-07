@@ -69,7 +69,7 @@ const defaultArgs = {
 };
 
 const meta: Meta<typeof ExpenseStatisticScreen> = {
-  title: 'Screens/Expenses/ExpenseStatisticScreen',
+  title: 'Screens/POS/ExpenseStatisticScreen',
   component: ExpenseStatisticScreen,
   args: defaultArgs,
 };

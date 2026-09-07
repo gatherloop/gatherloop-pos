@@ -16,7 +16,7 @@ const defaultValues: VariantForm = {
 };
 
 const meta: Meta<typeof VariantCreateScreen> = {
-  title: 'Screens/Variants/VariantCreateScreen',
+  title: 'Screens/POS/VariantCreateScreen',
   component: VariantCreateScreen,
   parameters: { layout: 'fullscreen' },
 };

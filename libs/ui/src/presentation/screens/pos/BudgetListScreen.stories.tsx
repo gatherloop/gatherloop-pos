@@ -17,7 +17,7 @@ const defaultArgs = {
 };
 
 const meta: Meta<typeof BudgetListScreen> = {
-  title: 'Screens/Budgets/BudgetListScreen',
+  title: 'Screens/POS/BudgetListScreen',
   component: BudgetListScreen,
   parameters: { layout: 'fullscreen' },
   args: defaultArgs,

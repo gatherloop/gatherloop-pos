@@ -16,7 +16,7 @@ const defaultArgs = {
 };
 
 const meta: Meta<typeof CategoryListScreen> = {
-  title: 'Screens/Categories/CategoryListScreen',
+  title: 'Screens/POS/CategoryListScreen',
   component: CategoryListScreen,
   parameters: { layout: 'fullscreen' },
   args: defaultArgs,

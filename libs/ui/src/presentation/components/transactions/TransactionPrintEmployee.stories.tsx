@@ -3,7 +3,7 @@ import { TransactionPrintEmployee } from './TransactionPrintEmployee';
 import { mockTransaction } from '../../../../.storybook/mocks/mockData';
 
 const meta: Meta<typeof TransactionPrintEmployee> = {
-  title: 'Features/Transactions/TransactionPrintEmployee',
+  title: 'Components/Transactions/TransactionPrintEmployee',
   component: TransactionPrintEmployee,
   args: {
     id: mockTransaction.id,

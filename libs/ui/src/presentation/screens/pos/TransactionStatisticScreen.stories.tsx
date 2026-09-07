@@ -31,7 +31,7 @@ const defaultArgs = {
 };
 
 const meta: Meta<typeof TransactionStatisticScreen> = {
-  title: 'Screens/Transactions/TransactionStatisticScreen',
+  title: 'Screens/POS/TransactionStatisticScreen',
   component: TransactionStatisticScreen,
   args: defaultArgs,
 };

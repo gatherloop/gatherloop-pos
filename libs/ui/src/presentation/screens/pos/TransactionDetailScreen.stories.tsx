@@ -15,7 +15,7 @@ const defaultArgs = {
 };
 
 const meta: Meta<typeof TransactionDetailScreen> = {
-  title: 'Screens/Transactions/TransactionDetailScreen',
+  title: 'Screens/POS/TransactionDetailScreen',
   component: TransactionDetailScreen,
   parameters: { layout: 'fullscreen' },
   args: defaultArgs,

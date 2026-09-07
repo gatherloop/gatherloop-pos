@@ -3,7 +3,7 @@ import { TransactionDetail } from './TransactionDetail';
 import { mockTransaction } from '../../../../.storybook/mocks/mockData';
 
 const meta: Meta<typeof TransactionDetail> = {
-  title: 'Features/Transactions/TransactionDetail',
+  title: 'Components/Transactions/TransactionDetail',
   component: TransactionDetail,
   args: {
     name: mockTransaction.name,

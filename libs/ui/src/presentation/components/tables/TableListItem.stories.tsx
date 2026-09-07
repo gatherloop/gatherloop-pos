@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { TableListItem } from './TableListItem';
 
 const meta: Meta<typeof TableListItem> = {
-  title: 'Features/Tables/TableListItem',
+  title: 'Components/Tables/TableListItem',
   component: TableListItem,
   args: {
     code: '3F7H9K2M5P',

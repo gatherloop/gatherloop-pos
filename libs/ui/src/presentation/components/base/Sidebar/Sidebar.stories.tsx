@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { Sidebar } from './Sidebar';
 
 const meta: Meta<typeof Sidebar> = {
-  title: 'Base/Sidebar',
+  title: 'Components/Base/Sidebar',
   component: Sidebar,
   parameters: {
     layout: 'fullscreen',

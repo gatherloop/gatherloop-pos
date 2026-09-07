@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { CouponDeleteAlert } from './CouponDeleteAlert';
 
 const meta: Meta<typeof CouponDeleteAlert> = {
-  title: 'Features/Coupons/CouponDeleteAlert',
+  title: 'Components/Coupons/CouponDeleteAlert',
   component: CouponDeleteAlert,
   args: {
     isOpen: true,

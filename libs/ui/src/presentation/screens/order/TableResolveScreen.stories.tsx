@@ -3,7 +3,7 @@ import { Paragraph } from 'tamagui';
 import { TableResolveScreen } from './TableResolveScreen';
 
 const meta: Meta<typeof TableResolveScreen> = {
-  title: 'Order/TableResolveScreen',
+  title: 'Screens/Order/TableResolveScreen',
   component: TableResolveScreen,
   parameters: {
     layout: 'fullscreen',

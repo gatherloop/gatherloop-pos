@@ -6,7 +6,7 @@ import { Plus } from '@tamagui/lucide-icons';
 import { Navbar } from './Navbar';
 
 const meta: Meta<typeof Navbar> = {
-  title: 'Base/Navbar',
+  title: 'Components/Base/Navbar',
   component: Navbar,
   args: {
     title: 'Page Title',

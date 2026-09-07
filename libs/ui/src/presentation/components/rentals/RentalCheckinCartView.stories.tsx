@@ -49,7 +49,7 @@ const RentalCheckinCartStory = ({
 };
 
 const meta: Meta<typeof RentalCheckinCartView> = {
-  title: 'Features/Rentals/RentalCheckinCartView',
+  title: 'Components/Rentals/RentalCheckinCartView',
   component: RentalCheckinCartView,
 };
 

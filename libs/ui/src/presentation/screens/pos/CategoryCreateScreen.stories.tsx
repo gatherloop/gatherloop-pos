@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { CategoryCreateScreen } from './CategoryCreateScreen';
 
 const meta: Meta<typeof CategoryCreateScreen> = {
-  title: 'Screens/Categories/CategoryCreateScreen',
+  title: 'Screens/POS/CategoryCreateScreen',
   component: CategoryCreateScreen,
   parameters: { layout: 'fullscreen' },
 };

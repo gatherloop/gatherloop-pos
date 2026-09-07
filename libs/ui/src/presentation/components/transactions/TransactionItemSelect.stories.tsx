@@ -94,7 +94,7 @@ const defaultArgs = {
 };
 
 const meta: Meta<typeof TransactionItemSelect> = {
-  title: 'Features/Transactions/TransactionItemSelect',
+  title: 'Components/Transactions/TransactionItemSelect',
   component: TransactionItemSelect,
   args: defaultArgs,
 };

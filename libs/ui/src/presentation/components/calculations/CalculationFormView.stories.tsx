@@ -16,7 +16,7 @@ const defaultValues: CalculationForm = {
 };
 
 const meta: Meta<typeof CalculationFormView> = {
-  title: 'Features/Calculations/CalculationFormView',
+  title: 'Components/Calculations/CalculationFormView',
   component: CalculationFormView,
 };
 

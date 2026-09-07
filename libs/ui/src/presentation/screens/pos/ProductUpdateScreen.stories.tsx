@@ -37,7 +37,7 @@ const variantDeleteAlert = {
 };
 
 const meta: Meta<typeof ProductUpdateScreen> = {
-  title: 'Screens/Products/ProductUpdateScreen',
+  title: 'Screens/POS/ProductUpdateScreen',
   component: ProductUpdateScreen,
   parameters: { layout: 'fullscreen' },
 };

@@ -14,7 +14,7 @@ const withFormProvider: Decorator = (Story) => {
 };
 
 const meta: Meta<typeof Textarea> = {
-  title: 'Base/Form/Textarea',
+  title: 'Components/Base/Form/Textarea',
   component: Textarea,
   decorators: [withFormProvider],
   args: {

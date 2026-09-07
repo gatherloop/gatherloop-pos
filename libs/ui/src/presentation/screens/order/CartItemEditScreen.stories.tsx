@@ -57,7 +57,7 @@ const item = {
 };
 
 const meta: Meta<typeof CartItemEditScreen> = {
-  title: 'Cart/CartItemEditScreen',
+  title: 'Screens/Order/CartItemEditScreen',
   component: CartItemEditScreen,
   args: {
     isOpen: true,

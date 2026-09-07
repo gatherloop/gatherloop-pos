@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { WalletFormView } from './WalletFormView';
 
 const meta: Meta<typeof WalletFormView> = {
-  title: 'Features/Wallets/WalletFormView',
+  title: 'Components/Wallets/WalletFormView',
   component: WalletFormView,
 };
 

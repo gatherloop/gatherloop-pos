@@ -17,7 +17,7 @@ const defaultValues: MaterialForm = {
 };
 
 const meta: Meta<typeof MaterialFormView> = {
-  title: 'Features/Materials/MaterialFormView',
+  title: 'Components/Materials/MaterialFormView',
   component: MaterialFormView,
 };
 

@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { Pagination } from './Pagination';
 
 const meta: Meta<typeof Pagination> = {
-  title: 'Base/Pagination',
+  title: 'Components/Base/Pagination',
   component: Pagination,
   args: {
     currentPage: 1,

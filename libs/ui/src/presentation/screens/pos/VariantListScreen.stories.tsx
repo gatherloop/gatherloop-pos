@@ -23,7 +23,7 @@ const defaultArgs = {
 };
 
 const meta: Meta<typeof VariantListScreen> = {
-  title: 'Screens/Variants/VariantListScreen',
+  title: 'Screens/POS/VariantListScreen',
   component: VariantListScreen,
   parameters: { layout: 'fullscreen' },
   args: defaultArgs,

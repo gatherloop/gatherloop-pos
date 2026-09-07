@@ -53,7 +53,7 @@ const LoadingStory = () => {
 };
 
 const meta: Meta<typeof CalculationUpdateScreen> = {
-  title: 'Screens/Calculations/CalculationUpdateScreen',
+  title: 'Screens/POS/CalculationUpdateScreen',
   component: CalculationUpdateScreen,
   parameters: { layout: 'fullscreen' },
 };

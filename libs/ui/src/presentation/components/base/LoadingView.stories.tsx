@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { LoadingView } from './LoadingView';
 
 const meta: Meta<typeof LoadingView> = {
-  title: 'Base/LoadingView',
+  title: 'Components/Base/LoadingView',
   component: LoadingView,
   args: {
     title: 'Loading...',

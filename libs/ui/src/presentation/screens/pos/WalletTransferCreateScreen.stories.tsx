@@ -6,7 +6,7 @@ import { mockWallets } from '../../../../.storybook/mocks/mockData';
 const walletSelectOptions = mockWallets.map((w) => ({ label: w.name, value: w.id }));
 
 const meta: Meta<typeof WalletTransferCreateScreen> = {
-  title: 'Screens/Wallets/WalletTransferCreateScreen',
+  title: 'Screens/POS/WalletTransferCreateScreen',
   component: WalletTransferCreateScreen,
   parameters: { layout: 'fullscreen' },
 };

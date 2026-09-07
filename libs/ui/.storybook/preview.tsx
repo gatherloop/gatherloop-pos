@@ -66,6 +66,11 @@ const preview: Preview = {
         },
       },
     },
+    options: {
+      storySort: {
+        order: ['Components', 'Screens'],
+      },
+    },
   },
 };
 

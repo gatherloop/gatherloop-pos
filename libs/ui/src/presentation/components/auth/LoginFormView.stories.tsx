@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { LoginForm as LoginFormView } from './LoginFormView';
 
 const meta: Meta<typeof LoginFormView> = {
-  title: 'Features/Auth/LoginForm',
+  title: 'Components/Auth/LoginForm',
   component: LoginFormView,
 };
 

@@ -17,7 +17,7 @@ const defaultValues: VariantForm = {
 };
 
 const meta: Meta<typeof VariantFormView> = {
-  title: 'Features/Variants/VariantFormView',
+  title: 'Components/Variants/VariantFormView',
   component: VariantFormView,
 };
 

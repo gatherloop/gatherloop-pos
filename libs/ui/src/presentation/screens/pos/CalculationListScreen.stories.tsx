@@ -21,7 +21,7 @@ const defaultArgs = {
 };
 
 const meta: Meta<typeof CalculationListScreen> = {
-  title: 'Screens/Calculations/CalculationListScreen',
+  title: 'Screens/POS/CalculationListScreen',
   component: CalculationListScreen,
   parameters: { layout: 'fullscreen' },
   args: defaultArgs,

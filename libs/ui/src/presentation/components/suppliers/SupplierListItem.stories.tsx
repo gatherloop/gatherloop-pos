@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { SupplierListItem } from './SupplierListItem';
 
 const meta: Meta<typeof SupplierListItem> = {
-  title: 'Features/Suppliers/SupplierListItem',
+  title: 'Components/Suppliers/SupplierListItem',
   component: SupplierListItem,
   args: {
     name: 'PT. Kopi Nusantara',

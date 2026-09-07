@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { CalculationListItem } from './CalculationListItem';
 
 const meta: Meta<typeof CalculationListItem> = {
-  title: 'Features/Calculations/CalculationListItem',
+  title: 'Components/Calculations/CalculationListItem',
   component: CalculationListItem,
   args: {
     walletName: 'Cash',

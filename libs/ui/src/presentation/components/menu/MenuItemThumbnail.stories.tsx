@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { MenuItemThumbnail } from './MenuItemThumbnail';
 
 const meta: Meta<typeof MenuItemThumbnail> = {
-  title: 'Menu/MenuItemThumbnail',
+  title: 'Components/Menu/MenuItemThumbnail',
   component: MenuItemThumbnail,
   args: {
     width: 120,
