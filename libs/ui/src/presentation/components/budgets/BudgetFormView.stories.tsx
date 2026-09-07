@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { BudgetFormView } from './BudgetFormView';
 
 const meta: Meta<typeof BudgetFormView> = {
-  title: 'Features/Budgets/BudgetFormView',
+  title: 'Components/Budgets/BudgetFormView',
   component: BudgetFormView,
 };
 

@@ -7,7 +7,7 @@ const walletSelectOptions = mockWallets.map((w) => ({ label: w.name, value: w.id
 const budgetSelectOptions = mockBudgets.map((b) => ({ label: b.name, value: b.id }));
 
 const meta: Meta<typeof ExpenseCreateScreen> = {
-  title: 'Screens/Expenses/ExpenseCreateScreen',
+  title: 'Screens/POS/ExpenseCreateScreen',
   component: ExpenseCreateScreen,
   parameters: { layout: 'fullscreen' },
 };

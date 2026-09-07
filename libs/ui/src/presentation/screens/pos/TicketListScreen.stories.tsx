@@ -16,7 +16,7 @@ const defaultArgs = {
 };
 
 const meta: Meta<typeof TicketListScreen> = {
-  title: 'Screens/Tickets/TicketListScreen',
+  title: 'Screens/POS/TicketListScreen',
   component: TicketListScreen,
   parameters: { layout: 'fullscreen' },
   args: defaultArgs,

@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { TicketDeleteAlert } from './TicketDeleteAlert';
 
 const meta: Meta<typeof TicketDeleteAlert> = {
-  title: 'Features/Tickets/TicketDeleteAlert',
+  title: 'Components/Tickets/TicketDeleteAlert',
   component: TicketDeleteAlert,
   args: {
     isOpen: true,

@@ -4,7 +4,7 @@ import { Button, Spinner, YStack } from 'tamagui';
 import { PinnedActionBar } from './PinnedActionBar';
 
 const meta: Meta<typeof PinnedActionBar> = {
-  title: 'Base/PinnedActionBar',
+  title: 'Components/Base/PinnedActionBar',
   component: PinnedActionBar,
   decorators: [
     (Story) => (

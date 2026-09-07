@@ -24,7 +24,7 @@ const defaultArgs = {
 };
 
 const meta: Meta<typeof SupplierListScreen> = {
-  title: 'Screens/Suppliers/SupplierListScreen',
+  title: 'Screens/POS/SupplierListScreen',
   component: SupplierListScreen,
   parameters: { layout: 'fullscreen' },
   args: defaultArgs,

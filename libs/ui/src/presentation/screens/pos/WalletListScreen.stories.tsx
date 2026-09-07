@@ -12,7 +12,7 @@ const defaultArgs = {
 };
 
 const meta: Meta<typeof WalletListScreen> = {
-  title: 'Screens/Wallets/WalletListScreen',
+  title: 'Screens/POS/WalletListScreen',
   component: WalletListScreen,
   parameters: { layout: 'fullscreen' },
   args: defaultArgs,

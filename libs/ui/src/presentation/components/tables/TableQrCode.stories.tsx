@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { TableQrCode } from './TableQrCode';
 
 const meta: Meta<typeof TableQrCode> = {
-  title: 'Features/Tables/TableQrCode',
+  title: 'Components/Tables/TableQrCode',
   component: TableQrCode,
   args: {
     code: '3F7H9K2M5P',

@@ -17,7 +17,7 @@ const defaultValues: MaterialForm = {
 };
 
 const meta: Meta<typeof MaterialUpdateScreen> = {
-  title: 'Screens/Materials/MaterialUpdateScreen',
+  title: 'Screens/POS/MaterialUpdateScreen',
   component: MaterialUpdateScreen,
   parameters: { layout: 'fullscreen' },
 };

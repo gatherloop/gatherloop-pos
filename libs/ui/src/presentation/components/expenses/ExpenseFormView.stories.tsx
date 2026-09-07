@@ -15,7 +15,7 @@ const budgetSelectOptions = [
 ];
 
 const meta: Meta<typeof ExpenseFormView> = {
-  title: 'Features/Expenses/ExpenseFormView',
+  title: 'Components/Expenses/ExpenseFormView',
   component: ExpenseFormView,
 };
 

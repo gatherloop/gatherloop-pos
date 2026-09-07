@@ -30,7 +30,7 @@ const withFormProvider: Decorator = (Story) => {
 };
 
 const meta: Meta<typeof Select> = {
-  title: 'Base/Form/Select',
+  title: 'Components/Base/Form/Select',
   component: Select,
   decorators: [withFormProvider],
   args: {

@@ -85,7 +85,7 @@ const CreateStory = ({
 };
 
 const meta: Meta<typeof TransactionCreateScreen> = {
-  title: 'Screens/Transactions/TransactionCreateScreen',
+  title: 'Screens/POS/TransactionCreateScreen',
   component: TransactionCreateScreen,
   parameters: { layout: 'fullscreen' },
 };

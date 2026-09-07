@@ -11,7 +11,7 @@ const defaultArgs = {
 };
 
 const meta: Meta<typeof CategoryList> = {
-  title: 'Features/Categories/CategoryList',
+  title: 'Components/Categories/CategoryList',
   component: CategoryList,
   args: defaultArgs,
 };

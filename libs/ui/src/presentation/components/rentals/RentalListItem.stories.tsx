@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { RentalListItem } from './RentalListItem';
 
 const meta: Meta<typeof RentalListItem> = {
-  title: 'Features/Rentals/RentalListItem',
+  title: 'Components/Rentals/RentalListItem',
   component: RentalListItem,
   args: {
     code: 'RNT-001',

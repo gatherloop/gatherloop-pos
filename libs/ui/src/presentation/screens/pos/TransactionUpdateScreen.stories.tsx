@@ -49,7 +49,7 @@ const UpdateStory = () => {
 };
 
 const meta: Meta<typeof TransactionUpdateScreen> = {
-  title: 'Screens/Transactions/TransactionUpdateScreen',
+  title: 'Screens/POS/TransactionUpdateScreen',
   component: TransactionUpdateScreen,
   parameters: { layout: 'fullscreen' },
 };

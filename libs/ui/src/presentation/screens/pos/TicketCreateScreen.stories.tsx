@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { TicketCreateScreen } from './TicketCreateScreen';
 
 const meta: Meta<typeof TicketCreateScreen> = {
-  title: 'Screens/Tickets/TicketCreateScreen',
+  title: 'Screens/POS/TicketCreateScreen',
   component: TicketCreateScreen,
   parameters: { layout: 'fullscreen' },
 };

@@ -4,7 +4,7 @@ import { H4 } from 'tamagui';
 import { DashboardScreen } from './DashboardScreen';
 
 const meta: Meta<typeof DashboardScreen> = {
-  title: 'Screens/Dashboard/DashboardScreen',
+  title: 'Screens/POS/DashboardScreen',
   component: DashboardScreen,
   parameters: { layout: 'fullscreen' },
   args: {

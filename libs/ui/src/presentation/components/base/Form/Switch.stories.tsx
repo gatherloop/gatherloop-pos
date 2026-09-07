@@ -16,7 +16,7 @@ const withFormProvider: Decorator = (Story) => {
 };
 
 const meta: Meta<typeof Switch> = {
-  title: 'Base/Form/Switch',
+  title: 'Components/Base/Form/Switch',
   component: Switch,
   decorators: [withFormProvider],
   args: {

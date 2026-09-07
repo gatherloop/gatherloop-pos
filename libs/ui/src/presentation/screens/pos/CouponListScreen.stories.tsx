@@ -16,7 +16,7 @@ const defaultArgs = {
 };
 
 const meta: Meta<typeof CouponListScreen> = {
-  title: 'Screens/Coupons/CouponListScreen',
+  title: 'Screens/POS/CouponListScreen',
   component: CouponListScreen,
   parameters: { layout: 'fullscreen' },
   args: defaultArgs,

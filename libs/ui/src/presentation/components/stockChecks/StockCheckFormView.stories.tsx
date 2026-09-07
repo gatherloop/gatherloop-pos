@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { StockCheckFormView } from './StockCheckFormView';
 
 const meta: Meta<typeof StockCheckFormView> = {
-  title: 'Features/StockChecks/StockCheckFormView',
+  title: 'Components/StockChecks/StockCheckFormView',
   component: StockCheckFormView,
 };
 

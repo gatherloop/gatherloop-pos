@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { CouponListItem } from './CouponListItem';
 
 const meta: Meta<typeof CouponListItem> = {
-  title: 'Features/Coupons/CouponListItem',
+  title: 'Components/Coupons/CouponListItem',
   component: CouponListItem,
   args: {
     code: 'COFFEE10',

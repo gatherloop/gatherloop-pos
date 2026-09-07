@@ -42,7 +42,7 @@ const defaultArgs = {
 };
 
 const meta: Meta<typeof TransactionListScreen> = {
-  title: 'Screens/Transactions/TransactionListScreen',
+  title: 'Screens/POS/TransactionListScreen',
   component: TransactionListScreen,
   parameters: { layout: 'fullscreen' },
 };

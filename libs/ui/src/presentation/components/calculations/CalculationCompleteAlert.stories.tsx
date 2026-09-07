@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { CalculationCompleteAlert } from './CalculationCompleteAlert';
 
 const meta: Meta<typeof CalculationCompleteAlert> = {
-  title: 'Features/Calculations/CalculationCompleteAlert',
+  title: 'Components/Calculations/CalculationCompleteAlert',
   component: CalculationCompleteAlert,
   args: {
     isOpen: true,

@@ -44,7 +44,7 @@ const LoadingStory = () => {
 };
 
 const meta: Meta<typeof CalculationCreateScreen> = {
-  title: 'Screens/Calculations/CalculationCreateScreen',
+  title: 'Screens/POS/CalculationCreateScreen',
   component: CalculationCreateScreen,
   parameters: { layout: 'fullscreen' },
 };

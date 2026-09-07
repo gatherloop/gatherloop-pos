@@ -4,7 +4,7 @@ import { Pencil, Tag, Trash } from '@tamagui/lucide-icons';
 import { ListItem } from './ListItem';
 
 const meta: Meta<typeof ListItem> = {
-  title: 'Base/ListItem',
+  title: 'Components/Base/ListItem',
   component: ListItem,
   args: {
     title: 'Product Name',

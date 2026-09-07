@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { ExpenseDeleteAlert } from './ExpenseDeleteAlert';
 
 const meta: Meta<typeof ExpenseDeleteAlert> = {
-  title: 'Features/Expenses/ExpenseDeleteAlert',
+  title: 'Components/Expenses/ExpenseDeleteAlert',
   component: ExpenseDeleteAlert,
   args: {
     isOpen: true,

@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { TransactionDeleteAlert } from './TransactionDeleteAlert';
 
 const meta: Meta<typeof TransactionDeleteAlert> = {
-  title: 'Features/Transactions/TransactionDeleteAlert',
+  title: 'Components/Transactions/TransactionDeleteAlert',
   component: TransactionDeleteAlert,
   args: {
     isOpen: true,

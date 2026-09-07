@@ -63,7 +63,7 @@ const cart = {
 };
 
 const meta: Meta<typeof CartScreen> = {
-  title: 'Cart/CartScreen',
+  title: 'Screens/Order/CartScreen',
   component: CartScreen,
   args: {
     isMutating: false,

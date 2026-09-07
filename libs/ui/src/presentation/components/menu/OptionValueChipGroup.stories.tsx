@@ -11,7 +11,7 @@ const ukuran = {
 };
 
 const meta: Meta<typeof OptionValueChipGroup> = {
-  title: 'Menu/OptionValueChipGroup',
+  title: 'Components/Menu/OptionValueChipGroup',
   component: OptionValueChipGroup,
   args: {
     option: ukuran,

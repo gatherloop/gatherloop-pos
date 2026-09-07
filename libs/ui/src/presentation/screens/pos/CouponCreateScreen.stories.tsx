@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { CouponCreateScreen } from './CouponCreateScreen';
 
 const meta: Meta<typeof CouponCreateScreen> = {
-  title: 'Screens/Coupons/CouponCreateScreen',
+  title: 'Screens/POS/CouponCreateScreen',
   component: CouponCreateScreen,
   parameters: { layout: 'fullscreen' },
 };

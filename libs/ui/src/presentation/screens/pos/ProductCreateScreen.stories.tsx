@@ -18,7 +18,7 @@ const defaultValues: ProductForm = {
 const categorySelectOptions = mockCategories.map((c) => ({ label: c.name, value: c.id }));
 
 const meta: Meta<typeof ProductCreateScreen> = {
-  title: 'Screens/Products/ProductCreateScreen',
+  title: 'Screens/POS/ProductCreateScreen',
   component: ProductCreateScreen,
   parameters: { layout: 'fullscreen' },
 };

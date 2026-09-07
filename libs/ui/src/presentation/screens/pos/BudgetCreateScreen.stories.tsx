@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { BudgetCreateScreen } from './BudgetCreateScreen';
 
 const meta: Meta<typeof BudgetCreateScreen> = {
-  title: 'Screens/Budgets/BudgetCreateScreen',
+  title: 'Screens/POS/BudgetCreateScreen',
   component: BudgetCreateScreen,
   parameters: { layout: 'fullscreen' },
 };

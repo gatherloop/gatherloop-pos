@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { BudgetListItem } from './BudgetListItem';
 
 const meta: Meta<typeof BudgetListItem> = {
-  title: 'Features/Budgets/BudgetListItem',
+  title: 'Components/Budgets/BudgetListItem',
   component: BudgetListItem,
   args: {
     id: 1,

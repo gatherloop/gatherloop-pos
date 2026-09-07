@@ -40,7 +40,7 @@ const nasiGoreng = {
 };
 
 const meta: Meta<typeof MenuListScreen> = {
-  title: 'Menu/MenuListScreen',
+  title: 'Screens/Order/MenuListScreen',
   component: MenuListScreen,
   args: {
     searchValue: '',

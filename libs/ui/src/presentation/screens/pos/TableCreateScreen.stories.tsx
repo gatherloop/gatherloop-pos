@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { TableCreateScreen } from './TableCreateScreen';
 
 const meta: Meta<typeof TableCreateScreen> = {
-  title: 'Screens/Tables/TableCreateScreen',
+  title: 'Screens/POS/TableCreateScreen',
   component: TableCreateScreen,
   parameters: { layout: 'fullscreen' },
 };

@@ -37,7 +37,7 @@ const CheckoutStory = () => {
 };
 
 const meta: Meta<typeof RentalCheckoutScreen> = {
-  title: 'Screens/Rentals/RentalCheckoutScreen',
+  title: 'Screens/POS/RentalCheckoutScreen',
   component: RentalCheckoutScreen,
   parameters: { layout: 'fullscreen' },
 };

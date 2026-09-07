@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { ErrorView } from './ErrorView';
 
 const meta: Meta<typeof ErrorView> = {
-  title: 'Base/ErrorView',
+  title: 'Components/Base/ErrorView',
   component: ErrorView,
   args: {
     title: 'Something Went Wrong',

@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { AuthLoginScreen } from './AuthLoginScreen';
 
 const meta: Meta<typeof AuthLoginScreen> = {
-  title: 'Screens/Auth/AuthLoginScreen',
+  title: 'Screens/POS/AuthLoginScreen',
   component: AuthLoginScreen,
   parameters: { layout: 'fullscreen' },
 };

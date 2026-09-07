@@ -66,7 +66,7 @@ const nasiGoreng = {
 };
 
 const meta: Meta<typeof MenuItemDetailScreen> = {
-  title: 'Menu/MenuItemDetailScreen',
+  title: 'Screens/Order/MenuItemDetailScreen',
   component: MenuItemDetailScreen,
   args: {
     isOpen: true,

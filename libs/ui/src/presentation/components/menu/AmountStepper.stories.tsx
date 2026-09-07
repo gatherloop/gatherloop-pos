@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { AmountStepper } from './AmountStepper';
 
 const meta: Meta<typeof AmountStepper> = {
-  title: 'Menu/AmountStepper',
+  title: 'Components/Menu/AmountStepper',
   component: AmountStepper,
   args: {
     onChange: () => {

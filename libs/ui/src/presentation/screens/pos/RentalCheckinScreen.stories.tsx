@@ -43,7 +43,7 @@ const CheckinStory = () => (
 );
 
 const meta: Meta<typeof RentalCheckinScreen> = {
-  title: 'Screens/Rentals/RentalCheckinScreen',
+  title: 'Screens/POS/RentalCheckinScreen',
   component: RentalCheckinScreen,
   parameters: { layout: 'fullscreen' },
 };

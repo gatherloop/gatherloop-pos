@@ -88,7 +88,7 @@ const TotalCalculationDemo = () => {
 };
 
 const meta: Meta<typeof FieldWatch> = {
-  title: 'Base/Form/FieldWatch',
+  title: 'Components/Base/Form/FieldWatch',
   component: FieldWatch,
 };
 

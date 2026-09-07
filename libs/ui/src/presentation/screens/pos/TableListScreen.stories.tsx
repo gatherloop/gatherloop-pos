@@ -16,7 +16,7 @@ const defaultArgs = {
 };
 
 const meta: Meta<typeof TableListScreen> = {
-  title: 'Screens/Tables/TableListScreen',
+  title: 'Screens/POS/TableListScreen',
   component: TableListScreen,
   parameters: { layout: 'fullscreen' },
   args: defaultArgs,

@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { TableRegenerateCodeAlert } from './TableRegenerateCodeAlert';
 
 const meta: Meta<typeof TableRegenerateCodeAlert> = {
-  title: 'Features/Tables/TableRegenerateCodeAlert',
+  title: 'Components/Tables/TableRegenerateCodeAlert',
   component: TableRegenerateCodeAlert,
   args: {
     isOpen: true,
