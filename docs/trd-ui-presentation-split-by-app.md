@@ -1,29 +1,29 @@
-# TRD — Split `libs/ui` presentation by app, and rename the app projects
+# TRD — Split `libs/ui` composition and screens by app, and rename the app projects
 
 **Status:** proposed
-**Scope:** `libs/ui/src/presentation`, `libs/ui/src/app`, `libs/ui/src/index*.ts`, `libs/ui/.storybook`, `apps/{web,web-e2e,order,order-e2e,mobile,mobile-e2e}` (directory + Nx project names only), `tsconfig.base.json`, CI/deploy configs that name those projects
-**Non-scope:** `libs/ui/src/{data,domain,utils}`, `libs/api-contract`, `libs/provider`, `apps/api`, any runtime behaviour, any component API, native bundle identifiers
-**Date of research:** 2026-09-07 (all counts below measured against `main` @ `91d5451`)
+**Scope:** `libs/ui/src/app`, `libs/ui/src/presentation/screens`, `libs/ui/src/index*.ts`, `libs/ui/.storybook`, `tsconfig.base.json`, `apps/{web,web-e2e,order,order-e2e,mobile,mobile-e2e}` (directory + Nx project names only), and the CI/deploy configs that name those projects
+**Non-scope:** `libs/ui/src/{domain,data,utils}`, `libs/ui/src/presentation/{components,controllers}`, `libs/api-contract`, `libs/provider`, `apps/api`, any runtime behaviour, any component API, native bundle identifiers
+**Date of research:** 2026-09-07 (all counts measured against `main` @ `91d5451`)
 
 ---
 
 ## 1. Problem statement
 
 `libs/ui` serves three deployable frontends — the POS web app (`apps/web`), the POS mobile app
-(`apps/mobile`) and the customer ordering app (`apps/order`) — out of one flat presentation layer:
+(`apps/mobile`) and the customer ordering app (`apps/order`) — from one flat tree:
 
 ```
 libs/ui/src/
   app/                       66 files   ← every composition root, POS and order together
   presentation/
-    components/             298 files   ← 21 domain folders + base/, POS and order together
-    controllers/             87 files   ← POS and order together
-    screens/                242 files   ← POS and order together
+    components/             298 files
+    controllers/             87 files
+    screens/                242 files   ← every screen, POS and order together
   data/  domain/  utils/  config.ts
 ```
 
-Nothing in the folder layout says which app a file belongs to. The separation exists, but it is
-carried entirely by two hand-maintained barrels and a comment:
+Nothing in the layout says which app a file serves. The separation exists, but it is carried
+entirely by two hand-maintained barrels and a comment:
 
 ```ts
 // libs/ui/src/index.order.ts
@@ -33,53 +33,38 @@ carried entirely by two hand-maintained barrels and a comment:
 // this barrel stays POS-free so it doesn't.
 ```
 
-That produces four concrete costs.
+Three concrete costs:
 
-### 1.1 The boundary is a convention, not a constraint
+**1.1 The boundary is a convention, not a constraint.** `app/index.ts` deliberately omits the eight
+order composition roots and `presentation/screens/index.ts` deliberately omits the order screens.
+Nothing enforces either omission. One `export * from './MenuListScreen'` added to the screens barrel
+silently pulls the customer app's menu into `@gatherloop-pos/ui`, and only a bundle-size review
+nobody runs would notice.
 
-`libs/ui/src/app/index.ts` deliberately omits the eight order composition roots, and
-`presentation/{screens,controllers}/index.ts` deliberately omit the order screens and controllers.
-Nothing enforces either omission. A single `export * from './MenuListScreen'` added to
-`presentation/screens/index.ts` silently pulls the customer app's menu into `@gatherloop-pos/ui`,
-and the only thing that would notice is a bundle-size review that nobody runs.
-
-The reverse leak is just as easy: `presentation/components/index.ts` already does
-`export * from './menu'`, and `presentation/components/base/index.tsx` already does
-`export * from './OrderLayout'`, so today's POS graph *does* reach order-only components through
-the shared barrels. Nothing breaks (tree shaking handles it in the Next builds) but the graph no
-longer tells the truth about who depends on what.
-
-### 1.2 Storybook is organised by nothing in particular
-
-All 165 stories set an explicit `title`, and those titles have accreted seven top-level namespaces:
+**1.2 Storybook is organised by nothing in particular.** All 165 stories set an explicit `title`, and
+those titles have accreted seven top-level namespaces:
 
 | Top level | Stories | What it actually is |
 | --- | ---: | --- |
 | `Features/…` | 78 | POS components, grouped by domain |
 | `Screens/…` | 49 | POS screens, grouped by domain |
-| `Base/…` | 25 | Shared primitives — plus `Base/OrderLayout`, which is order-only |
-| `Menu/…` | 7 | Order components **and** two order screens |
-| `Cart/…` | 4 | Order components **and** two order screens |
+| `Base/…` | 25 | Shared primitives |
+| `Menu/…` | 7 | 5 order components **and** 2 order screens |
+| `Cart/…` | 4 | 2 order components **and** 2 order screens |
 | `Order/…` | 1 | `TableResolveScreen` |
 | `Checkout/…` | 1 | `CheckoutScreen` |
 
-A reviewer opening Storybook cannot answer "show me the customer ordering app" — its 14 stories are
-spread over five sidebar roots, two of which mix components with screens, while the POS's 127 use a
-completely different two-level scheme.
+A reviewer cannot ask Storybook "show me the customer ordering app" — its 13 stories are spread over
+five roots, two of which mix components with screens.
 
-### 1.3 The barrels are large and can only grow
+**1.3 The root barrel cannot be split.** `libs/ui/src/index.ts` re-exports `./app` — 56 composition
+roots — alongside all of `./data`, `./domain`, `./utils` and `./config`. Every one of the 56
+`apps/web`/`apps/mobile` import sites resolves that whole surface, and `index.order.ts` exists purely
+to *not* be it. Every new customer-app screen must be hand-added to that second barrel, a step whose
+omission fails only at the app, never in `libs/ui`.
 
-`libs/ui/src/index.ts` re-exports `./app` (56 composition roots) plus all of `./data`, `./domain`,
-`./utils` and `./config`. Every one of the 56 `apps/web`/`apps/mobile` import sites resolves that
-whole surface. `index.order.ts` exists solely to *not* be that barrel, and every new customer-app
-screen has to be hand-added to it — a step that is easy to forget and whose omission fails only at
-the app, not in `libs/ui`.
-
-### 1.4 The `apps/` names no longer describe the apps
-
-`web` and `mobile` are both POS clients; `order` is the customer app and is also a web app. The
-names predate the customer app and now read as if `order` were a peer of `web` in kind rather than
-in platform.
+**1.4 The `apps/` names no longer describe the apps.** `web` and `mobile` are both POS clients;
+`order` is the customer app and is also a web app. The names predate the customer app.
 
 ---
 
@@ -87,32 +72,26 @@ in platform.
 
 ### Goals
 
-1. Every presentation file lives under a folder that names the app it serves: `pos/`, `order/`, or
-   `shared/`.
-2. Composition roots (`libs/ui/src/app`) move under the app they compose.
-3. Storybook groups by app first: `POS/…`, `Order/…`, `Shared/…`.
-4. Each app gets its own barrel, and the barrels shrink accordingly.
-5. A cross-app import (POS → order or order → POS) fails lint, rather than passing review.
-6. `apps/` directories and Nx project names become `pos-web`, `pos-web-e2e`, `pos-mobile`,
+1. Composition roots and screens live under a folder that names the app they serve.
+2. Each app gets its own entry point, and the root barrel carries no app-specific code.
+3. Storybook groups screens by app, and every story title is reconstructible from its file path.
+4. A cross-app import between screens, or between composition roots, fails lint.
+5. `apps/` directories and Nx project names become `pos-web`, `pos-web-e2e`, `pos-mobile`,
    `pos-mobile-e2e`, `order-web`, `order-web-e2e`.
-7. Every phase is a single reviewable PR that leaves `nx run-many --target=lint,test --all` and both
+6. Every phase is one reviewable PR that leaves `nx run-many --target=lint,test --all` and both
    Playwright suites green.
 
 ### Non-goals
 
-- **No behaviour change.** Not one component API, prop, state machine or rendered output changes.
-  Every diff in phases 1–6 is a path, a barrel line, or a Storybook `title` string.
-- **`data/`, `domain/` and `utils/` stay where they are** and stay shared. Some of them are
-  arguably order-only (`domain/usecases/{cart,menuList,menuItemDetail,tableResolve}.ts`,
-  `domain/repositories/{menu,publicTable,session,cart}.ts`, `data/api/{menu,cart,publicTable}.ts`,
-  `data/browser/session*.ts`) but Clean Architecture puts the app boundary at presentation, not at
-  the domain, and splitting them would double the size of this refactor for no barrel or Storybook
-  benefit. §9 records it as a possible follow-up.
-- **No new Nx libraries.** See D3.
+- **No behaviour change.** Every diff in phases 1–5 is a path, a barrel line, a Storybook `title`, or
+  a config that names a path. No component API, prop, state machine or rendered output changes.
+- **`domain/`, `data/` and `utils/` are not touched** — see D2.
+- **`presentation/components/` and `presentation/controllers/` are not touched** — see D3 and D4.
+- **No new Nx libraries** — see D8.
 - **No native identifier changes.** `apps/mobile` → `apps/pos-mobile` renames the *directory*.
-  `rootProject.name = 'Mobile'`, the `com.mobile` Android package, the iOS bundle id and the
-  Xcode workspace name stay exactly as they are — changing them would ship as a different app.
-- **No test rewrites.** Tests move with their subject; their content only changes where an import
+  `rootProject.name = 'Mobile'`, the `com.mobile` Android package, the iOS bundle id and
+  `ios/Mobile.xcworkspace` stay exactly as they are.
+- **No test rewrites.** Tests move with their subject; their content changes only where an import
   path does.
 
 ---
@@ -121,92 +100,72 @@ in platform.
 
 ### 3.1 Which files belong to which app
 
-Measured by walking the import graph from `index.ts` and `index.order.ts` and then checking every
-candidate's direct importers (the barrels inflate a naive reachability check — see §3.3).
+Measured by resolving imports at the symbol level (the `domain/index.ts` and `data/index.ts` barrels
+make a naive reachability walk report almost everything as shared) and confirming each candidate's
+direct importers.
 
-**Order-owned — 54 files:**
+**Order-owned — 31 files:**
 
 | Layer | Files |
 | --- | --- |
-| `app/` (9) | `SessionProvider.tsx`, `CartProvider.tsx`, `TableResolve.tsx`, `MenuList.tsx`, `MenuItemDetail.tsx`, `Cart.tsx`, `CartItemEdit.tsx` (+ `CartItemEdit.test.tsx`), `Checkout.tsx` |
+| `app/` (9) | `SessionProvider`, `CartProvider`, `TableResolve`, `MenuList`, `MenuItemDetail`, `Cart`, `CartItemEdit` (+ `CartItemEdit.test.tsx`), `Checkout` |
 | `presentation/screens/` (22) | `TableResolve{Screen,Handler}`, `MenuList{Screen,Handler}`, `MenuItemDetail{Screen,Handler}`, `CartScreen`, `CartHandler`, `CartItemEditScreen`, `Checkout{Screen,Handler}` + their `.stories.tsx` / `.test.tsx` |
-| `presentation/controllers/` (4) | `TableResolveController`, `MenuListController`, `MenuItemDetailController`, `CartController` |
-| `presentation/components/menu/` (11) | `AmountStepper`, `CategoryChipList`, `MenuItemThumbnail`, `MenuProductCard`, `OptionValueChipGroup` + stories + `index.ts` |
-| `presentation/components/cart/` (5) | `CartBar`, `CartLineItem` + stories + `index.ts` |
-| `presentation/components/base/` (3) | `OrderLayout.tsx` + `OrderLayout.stories.tsx`, `SkeletonView.tsx` |
 
-**Shared — `presentation/components/base/` minus the three above, plus
-`presentation/controllers/controller.ts`.** The order surfaces import exactly six shared base
-primitives (`EmptyView`, `ErrorView`, `Focusable`, `LoadingView`, `Sheet`, `ConfirmationAlert`);
-the rest of `base/` (`Navbar`, `Sidebar`, `Layout`, `ListItem`, `Form`, `Pagination`, `Chart`,
-`Markdown`, `Tabs`, `useIsCompactLayout`, `FloatingCartButton`, `PinnedActionBar`) is POS-only
-today but is generic enough that it stays in `shared/` — see D2.
+**POS-owned:** the remaining 57 `app/` files (56 roots + `index.ts`) and 220 `screens/` files.
 
-**POS-owned — everything else:** 57 `app/` files, 220 `screens/` files, 82 `controllers/` files,
-203 `components/` files (19 domain folders; `components/base/` is 79 files and is shared).
+`presentation/components/` and `presentation/controllers/` also divide cleanly by current usage —
+19 POS domain folders vs. `menu/` + `cart/`; 83 POS controllers vs. 4 — but they are deliberately
+left flat (D3, D4).
 
-### 3.2 What the user-supplied target tree is missing
+### 3.2 Composition roots are shared across *platforms*, not apps
 
-The tree in the request has two children under `presentation/`:
+Of the 56 roots in `app/index.ts`, **53 are imported by both `apps/web` and `apps/mobile`**; none is
+web-only; one is mobile-only. `apps/web/src/pages/products/index.tsx` is literally
+`export default ProductList`, and `apps/mobile/src/app/App.tsx` mounts the same `ProductList`.
 
-```
-presentation/
-  pos/    { app, components, controllers, screens }
-  order/  { app, components, controllers, screens }
-```
+This is why the roots cannot move into `apps/` (D6): `apps/pos-web` and `apps/pos-mobile` are not two
+applications, they are two platform shells around one, and the composition root is the thing they
+share.
 
-There is no home in it for `components/base/` (79 files across 8 subfolders, imported by both apps) or for
-`controllers/controller.ts` (the `Controller<State, Action>` type and `useController` hook that
-every controller in both apps builds on). Duplicating them is not an option and putting them under
-`pos/` and importing them from `order/` re-creates exactly the leak §1.1 describes. Hence D1.
-
-### 3.3 The barrels already blur the boundary
-
-`presentation/components/base/index.tsx` exports `OrderLayout` and `SkeletonView`;
-`presentation/components/index.ts` exports `./menu` and `./cart`. Six POS screens import
-`from '../components/base'` (the barrel) rather than a deep path, so a naive reachability walk from
-`index.ts` reports 193 files as reachable from *both* entry points — including every order-only base
-and menu component. The real, direct-import boundary is the table in §3.1. This is worth knowing
-because it means the current graph cannot be used to verify the split; the lint rule in Phase 7 can.
-
-### 3.4 How much import churn the move costs
+### 3.3 Import churn the moves cost
 
 | Measure | Count |
 | --- | ---: |
-| Import lines under `presentation/` that escape to `src/` (`../../…` or deeper) | 590 |
-| Files under `presentation/` containing at least one | 406 |
-| Files under `presentation/` importing `../../../.storybook/mocks/mockData` | 63 |
-| Relative import lines under `app/` | 196 (across 65 files) |
+| Relative import lines under `app/` | 196 across 65 files |
 | `app/` files importing `from '../presentation'` | 56 — **all** import only `*Handler` symbols |
+| Import lines under `screens/` reaching `../../domain` | 185 |
+| … `../../utils/testUtils` | 57 |
+| … `../../data/mock` | 57 |
+| … `../../../.storybook/mocks/mockData` | 30 |
+| … `../components` (barrel or deep) | 97 |
+| … `../controllers` | 63 |
 | `apps/` files importing `@gatherloop-pos/ui` | 56 (55 `apps/web` pages + `apps/mobile/src/app/App.tsx`) |
 | `apps/` files importing `@gatherloop-pos/ui/order` | 9 |
 | Stories with an explicit `title` | 165 of 165 |
 
-Every one of these is mechanical. §6 defines the exact rewrite rule and the verification that proves
-a PR contains nothing but that rewrite.
+All mechanical. §6 defines the rewrite rule and the verification that proves a PR contains nothing
+but it.
 
-### 3.5 What names the app projects today
+### 3.4 What names the app projects today
 
 | Where | Reference |
 | --- | --- |
 | `apps/*/project.json` | `name`, `sourceRoot`, `implicitDependencies` |
 | `apps/web/jest.config.ts`, `apps/mobile/jest.config.ts` | `displayName`, `coverageDirectory` |
 | `apps/web-e2e/playwright.config.ts` | `webServer.command: 'npx nx dev web'` |
-| `apps/order-e2e/playwright.config.ts` | `webServer.command: 'npx nx run order:build && npx nx run order:start'` |
+| `apps/order-e2e/playwright.config.ts` | `'npx nx run order:build && npx nx run order:start'` |
 | `apps/web/Dockerfile` | `npx nx run web:build`, `COPY --from=build /app/apps/web/.next` |
 | `apps/order/vercel.json` | `npx nx run order:build` |
 | `.github/workflows/e2e-main.yml` | matrix `project: [web-e2e, order-e2e]`, artifact path `dist/.playwright/apps/${{ matrix.project }}` |
-| `.github/workflows/deploy-api.yml` | `apps/api/**` path filter only — unaffected |
-| `README.md`, `docs-site/**`, `E2E_TEST_PLAN.md`, `TESTING_REVIEW.md`, `HANDLER_INTEGRATION_TESTS_PLAN.md` | prose and links |
-| `apps/web/package.json` | `"name": "web2"` (already wrong; fix while we are here) |
+| `apps/web/package.json` | `"name": "web2"` — already wrong; fix while we are here |
+| `README.md`, `docs-site/**`, `E2E_TEST_PLAN.md`, `TESTING_REVIEW.md` | prose and links |
 
-Native build files under `apps/mobile/android` and `apps/mobile/ios` reference `node_modules` only
-by *relative* depth (`../../../../node_modules/react-native`). `apps/mobile` → `apps/pos-mobile`
-keeps the depth identical, so none of them change.
+Native build files under `apps/mobile/{android,ios}` reference `node_modules` only by *relative*
+depth (`../../../../node_modules/react-native`). `apps/mobile` → `apps/pos-mobile` keeps that depth
+identical, so none of them change.
 
-**Out of repo, and therefore manual:** the Vercel project's Root Directory setting for the order app,
-and whatever build command the POS web host is configured with. Both are named in the phases that
-need them.
+**Out of repo, therefore manual:** the Vercel project's Root Directory for the order app, and the
+POS web host's Dockerfile path. Both are named in the phases that need them.
 
 ---
 
@@ -214,56 +173,45 @@ need them.
 
 ```
 libs/ui/src/
-  config.ts  config.native.ts
-  data/                              (unchanged)
-  domain/                            (unchanged)
-  utils/                             (unchanged)
-  __mocks__/                         (unchanged)
+  config.ts  config.native.ts        unchanged
+  data/                              unchanged
+  domain/                            unchanged
+  utils/                             unchanged
+  __mocks__/                         unchanged
+  app/
+    pos/          57 files — 56 composition roots + index.ts
+    order/         9 files — SessionProvider, CartProvider, TableResolve, MenuList,
+                             MenuItemDetail, Cart, CartItemEdit, Checkout + index.ts
   presentation/
-    shared/
-      components/
-        base/                        ConfirmationAlert, EmptyView, ErrorView, Focusable, Form,
-                                     Layout, ListItem, LoadingView, Markdown, Navbar, Pagination,
-                                     Sheet, Sidebar, Tabs, Chart, FloatingCartButton,
-                                     PinnedActionBar, useIsCompactLayout
-      controllers/
-        controller.ts                Controller<State, Action>, useController
-      index.ts
-    pos/
-      app/                           57 composition roots
-      components/                    19 domain folders, 203 files
-      controllers/                   82 controller hooks
-      screens/                       220 screen + handler files
-      index.ts
-    order/
-      app/                           SessionProvider, CartProvider, TableResolve, MenuList,
-                                     MenuItemDetail, Cart, CartItemEdit, Checkout
-      components/
-        base/                        OrderLayout, SkeletonView
-        menu/                        AmountStepper, CategoryChipList, MenuItemThumbnail,
-                                     MenuProductCard, OptionValueChipGroup
-        cart/                        CartBar, CartLineItem
-      controllers/                   TableResolveController, MenuListController,
-                                     MenuItemDetailController, CartController
-      screens/                       TableResolve, MenuList, MenuItemDetail, Cart, CartItemEdit,
-                                     Checkout (screens + handlers)
-      index.ts
-  index.ts                           @gatherloop-pos/ui        → shared only
-  index.pos.ts                       @gatherloop-pos/ui/pos    → presentation/pos
-  index.order.ts                     @gatherloop-pos/ui/order  → presentation/order
+    components/                      unchanged, including base/
+    controllers/                     unchanged, including controller.ts
+    screens/
+      pos/        220 files, flat
+      order/       22 files, flat
+  index.ts        @gatherloop-pos/ui        → config, data, domain, utils (no app code)
+  index.pos.ts    @gatherloop-pos/ui/pos    → app/pos
+  index.order.ts  @gatherloop-pos/ui/order  → app/order + the shared pieces apps/order mounts directly
 ```
 
-### 4.1 Entry points
+### 4.1 The rule that decides what splits
+
+> **Split the layers that name one app's surface. Keep flat the layers that are building blocks.**
+
+| Layer | | Why |
+| --- | --- | --- |
+| `app/` | **split** | A composition root wires exactly one app's dependency graph. `MenuList` cannot be a POS root. |
+| `presentation/screens/` | **split** | A screen *is* a route in one app. `MenuListScreen` is `/t/{code}`. |
+| `presentation/controllers/` | flat | Adapter for a usecase; usecases are flat (D4) |
+| `presentation/components/` | flat | Building blocks, shared by default (D3) |
+| `domain/`, `data/`, `utils/` | flat | One API, one contract, one business vocabulary (D2) |
+
+### 4.2 Entry points
 
 | Specifier | Exports | Consumed by |
 | --- | --- | --- |
-| `@gatherloop-pos/ui` | `./config`, `./data`, `./domain`, `./utils`, `./presentation/shared` | everything |
-| `@gatherloop-pos/ui/pos` | `./presentation/pos` | `apps/pos-web`, `apps/pos-mobile` |
-| `@gatherloop-pos/ui/order` | `./presentation/order` | `apps/order-web` |
-
-`presentation/pos/index.ts` re-exports `./app`, `./screens`, `./controllers`, `./components` — the
-same three-barrel shape `presentation/index.ts` has today, plus `./app`. `presentation/order/index.ts`
-is the same shape and finally replaces the hand-curated list in `index.order.ts`.
+| `@gatherloop-pos/ui` | `./config`, `./data`, `./domain`, `./utils` | everything |
+| `@gatherloop-pos/ui/pos` | `./app/pos` | `apps/pos-web`, `apps/pos-mobile` |
+| `@gatherloop-pos/ui/order` | `./app/order` + `ConfirmationAlert`, `LoadingView`, `OrderLayout`, `MenuItemThumbnail`, `utils/currency`, `./config` | `apps/order-web` |
 
 An `apps/pos-web` page ends up importing from two specifiers instead of one:
 
@@ -278,158 +226,219 @@ import { ApiProductRepository, UrlProductListQueryRepository,
 import { ProductList, ProductListProps } from '@gatherloop-pos/ui/pos';
 ```
 
-That is the point: the second line is the part that is POS-specific, and it now says so.
+That is the point: the second line is the POS-specific part, and it now says so.
 
-### 4.2 Storybook
+### 4.3 Storybook
 
-`title` stays explicit (D5). Every title gains an app segment as its first level:
+Titles stay explicit (D9), and every one is derived from its file path:
 
-| Today | After |
+> **Title = the path under `presentation/`, layer segment capitalised, collapsing a folder whose
+> name equals the file name.**
+
+| File | Title |
 | --- | --- |
-| `Features/Transactions/TransactionList` | `POS/Features/Transactions/TransactionList` |
-| `Screens/Transactions/TransactionListScreen` | `POS/Screens/Transactions/TransactionListScreen` |
-| `Base/Sheet` | `Shared/Base/Sheet` |
-| `Base/OrderLayout` | `Order/Base/OrderLayout` |
-| `Menu/MenuProductCard` | `Order/Features/Menu/MenuProductCard` |
-| `Menu/MenuListScreen` | `Order/Screens/MenuListScreen` |
-| `Cart/CartBar` | `Order/Features/Cart/CartBar` |
-| `Cart/CartScreen`, `Cart/CartItemEditScreen` | `Order/Screens/CartScreen`, `Order/Screens/CartItemEditScreen` |
-| `Order/TableResolveScreen` | `Order/Screens/TableResolveScreen` |
-| `Checkout/CheckoutScreen` | `Order/Screens/CheckoutScreen` |
+| `components/base/EmptyView.stories.tsx` | `Components/Base/EmptyView` |
+| `components/base/Sheet/Sheet.stories.tsx` | `Components/Base/Sheet` ← collapsed |
+| `components/base/ConfirmationAlert/ConfirmationAlert.stories.tsx` | `Components/Base/ConfirmationAlert` ← collapsed |
+| `components/base/Form/FormView.stories.tsx` | `Components/Base/Form/FormView` ← kept, names differ |
+| `components/transactions/TransactionList.stories.tsx` | `Components/Transactions/TransactionList` |
+| `components/menu/MenuProductCard.stories.tsx` | `Components/Menu/MenuProductCard` |
+| `screens/pos/ProductListScreen.stories.tsx` | `Screens/POS/ProductListScreen` |
+| `screens/order/MenuListScreen.stories.tsx` | `Screens/Order/MenuListScreen` |
 
-Sidebar root order is pinned in `.storybook/preview.tsx` so it does not fall back to alphabetical
-(`Order` before `POS` before `Shared` would bury the biggest surface):
+The collapse rule is not an invention — today's titles already do it (`Base/Sheet`, not
+`Base/Sheet/Sheet`) and already keep `Base/Form/FormView` because those two names differ.
 
-```ts
-parameters: {
-  options: {
-    storySort: { order: ['POS', 'Order', 'Shared'] },
-  },
-},
+Resulting sidebar:
+
+```
+Components
+  Base                                        25   (Form/ nested, 11)
+  Auth Budgets Calculations Cart Categories ChecklistTemplates Coupons
+  Expenses Materials Menu Products Rentals StockChecks Suppliers Tables
+  Tickets Transactions Variants Wallets       85
+Screens
+  POS                                         49   (flat)
+  Order                                        6   (flat)
 ```
 
-The `stories` glob in `.storybook/main.ts` (`'../src/**/*.stories.@(ts|tsx)'`) needs no change —
-it already covers every new location.
+Sidebar order is pinned in `.storybook/preview.tsx` so it does not fall back to alphabetical:
+
+```ts
+parameters: { options: { storySort: { order: ['Components', 'Screens'] } } },
+```
+
+The `stories` glob in `.storybook/main.ts` (`'../src/**/*.stories.@(ts|tsx)'`) already covers every
+new location and needs no change.
 
 ---
 
 ## 5. Decisions
 
-### D1 — Three buckets under `presentation/`, not two
+### D1 — The app boundary is real at composition and screens, and false below them
 
-`presentation/{shared,pos,order}/`. `shared/` mirrors the app folders (`components/`,
-`controllers/`) so there is one shape to learn, and so `shared/controllers/controller.ts` has an
-obvious home.
+There is one Go API, one generated `libs/api-contract`, and one business vocabulary. Entities,
+repositories, transformers, usecases, controllers and components are all *building blocks* over that
+single domain. What is genuinely per-app is the **route surface** (screens) and the **dependency
+wiring** (composition roots). Everything in §4.1 follows from this one line.
 
-*Rejected — `presentation/base/` hoisted to the top instead of `shared/components/base/`.* Shorter
-paths (`../../base/Sheet/Sheet` vs `../../shared/components/base/Sheet/Sheet`), but it leaves
-`controller.ts` homeless and implies "shared" means "components" forever.
+### D2 — `domain/` and `data/` stay whole
 
-*Rejected — put shared components under `pos/` and let `order/` import them.* That is the leak in
-§1.1 with a folder around it, and it makes the lint rule in Phase 7 unwritable.
+The order app's `ApiMenuRepository` imports `toProduct`, `toCategory` and `toVariant` directly, which
+transitively pulls `toMaterial` → `toSupplier` and the `Product` → `Category`, `Variant` → `Material`
+→ `Supplier` entity chain. Five entities and five transformers are therefore used by both apps, not
+by coincidence but because **the customer's menu is the POS's product catalog**.
 
-### D2 — POS-only primitives stay in `shared/base/` for now
+More decisively, "no POS consumer today" is a usage fact, not a nature fact. `Cart.ts` has no POS
+consumer right now; the first "waiter views the open cart on table 7" feature makes it shared. A
+classification that one plausible feature invalidates is the wrong axis.
 
-`FloatingCartButton`, `PinnedActionBar`, `Navbar`, `Sidebar`, `Pagination`, `ListItem`, `Layout`,
-`Form`, `Markdown`, `Tabs` and `Chart` currently have only POS consumers, but they are generic
-primitives with no POS-domain knowledge, and the order app is still growing screens that will want
-several of them. Moving them into `pos/` on today's usage would be churn we pay for twice.
+*Rejected — duplicate the shared files per app.* PR #275 ("Feat/order improvement") is the
+counter-example: an **order** feature added a `recipe` field to `Product`, `Variant` and both
+transformers, and every consumer of `recipe` today is **POS** (`ProductFormView`, `VariantFormView`,
+`data/mock/product.ts`). Under duplication that is one feature requiring coordinated edits to four
+files per app — and a missed copy **does not fail the build**, because `toProduct` constructs its
+result field by field. Renames on the Go side would break both copies; *additions*, the common case,
+fail silently in whichever copy you forgot. `api-contract` is regenerated from the Go OpenAPI spec
+and HEAD is literally *"Add required API contract fields with sensible defaults (#388)"* — these
+files sit on the seam every backend change crosses. Three of the repo's 55 commits touched them in
+three weeks.
 
-`OrderLayout` and `SkeletonView` are different: `OrderLayout` renders the customer app's chrome and
-`SkeletonView` exists for the menu list. Both move into `order/components/base/` (Phase 6).
+*Rejected — split `domain`/`data` by app without duplicating.* Same flip-flop problem as `Cart.ts`,
+and the shared bucket would hold the files most likely to be edited.
 
-### D3 — One Nx library, folders and barrels — not `libs/ui-pos` / `libs/ui-order` / `libs/ui-shared`
+*Recorded, not rejected — give order its own read-model.* If app independence ever becomes a hard
+requirement, the honest form is order defining a narrower `MenuItem` type off `api-contract` directly
+(~6 files), so the two transformers differ *on purpose*. That is a second API-shaped design task, out
+of scope here.
 
-Separate Nx projects would give the boundary a first-class enforcer
-(`@nx/enforce-module-boundaries` via `tags`, which is currently configured as a no-op:
-`sourceTag: "*"` → `onlyDependOnLibsWithTags: ["*"]`). The cost is three `jest.config.ts`, three
-`tsconfig{,.lib,.spec}.json`, three `.eslintrc.json`, three sets of Jest `moduleNameMapper` entries
-(the 11 `__mocks__` aliases in `libs/ui/jest.config.ts` would have to be duplicated or hoisted), a
-Storybook config that composes three projects, and a fourth `libs/ui-core` for `data`/`domain`/
-`utils` — which is where nearly all the shared code actually is.
+### D3 — `presentation/components/` stays flat
 
-We get the same enforcement for one `.eslintrc.json` override (Phase 7):
+Components divide cleanly by today's usage — and today's usage is also the evidence *against*
+splitting them: when the order app was built it reused **5 of 5** relevant entities and transformers
+wholesale, and **0 of 19** POS domain component folders, writing `menu/` and `cart/` from scratch and
+reusing only 6 `base/` primitives. Verified in both directions today: no order surface imports a POS
+domain component, and no POS surface imports `components/menu` or `components/cart`.
+
+But a component carries no intrinsic app constraint — a future POS screen may legitimately want
+`MenuProductCard`. Since the layer is declared shared, there is nothing to enforce, and `base/`
+remains the place a component goes when both apps want it.
+
+**Consequence, accepted deliberately:** with components flat there is no build-time tripwire on
+accidental cross-app component reuse. That is the direct cost of "shared by default"; you cannot have
+both. The enforceable rule shrinks to screens and composition roots (D10).
+
+### D4 — `presentation/controllers/` stays flat
+
+All 84 usecases map 1:1 to a controller. Since `domain/usecases/` stays flat (D2), splitting
+`controllers/` would put the two halves of one pair under two different organising schemes —
+`MenuListUsecase` flat in `domain/usecases/`, `useMenuListController` in `controllers/order/`.
+
+Also worth recording: controllers are not strictly per-screen. 72 of 84 are used by exactly one
+screen, but `AuthLogoutController` is used by **55**. "Per-app, and mostly per-screen" is the
+accurate description, and it does not survive the D2 consistency test.
+
+### D5 — `app/` is its own layer, not part of `presentation/`
+
+A composition root instantiates the real repositories and usecases and renders a Handler — the
+`main.go` of the app. `docs-site/under-the-hood/clean-architecture.md` already lists "App composition"
+as the outermost layer, distinct from presentation. `app/` therefore stays a sibling of
+`presentation/`, `domain/` and `data/`, split by app inside.
+
+### D6 — Composition roots stay in `libs/ui`, not in `apps/`
+
+53 of 56 are imported by both `apps/web` and `apps/mobile` (§3.2). Moving them into `apps/pos-web`
+would force duplicating 53 files into `apps/pos-mobile`. Order could move its 8 (one platform), but
+asymmetry there costs more clarity than it buys.
+
+### D7 — Layer-major, not app-major
+
+`presentation/screens/pos/`, not `presentation/pos/screens/`. Layer-major keeps shared code at each
+layer's root — `components/base/` and `controllers/controller.ts` do not move at all — so no
+`presentation/shared/` bucket has to be invented, named, or argued about. The cost is that an app's
+code lives in two top-level folders (`app/<app>` and `presentation/screens/<app>`) rather than one.
+
+### D8 — One Nx library, folders and barrels — not `libs/pos` / `libs/order` / `libs/ui`
+
+Separate Nx projects would give the boundary a first-class enforcer (`@nx/enforce-module-boundaries`
+via tags — currently configured as a no-op: `sourceTag: "*"` → `onlyDependOnLibsWithTags: ["*"]`) and
+`nx affected` cache granularity. The costs: three `jest.config.ts` each carrying the 11
+`moduleNameMapper` aliases plus the swc transform (and `src/__mocks__/` needs a home all three can
+reach), three `tsconfig{,.lib,.spec}.json`, three `.eslintrc.json`, three `project.json`, three
+`tsconfig.base` paths verified across four resolvers (Next web, Next order, Metro, Jest) — and a
+fourth lib for `domain`/`data`/`utils`, which is where most of the shared code is.
+
+The affected-cache benefit is also not realised today: `pr-test.yml` runs `npx nx run ui:test`
+explicitly, not `nx affected`. A `no-restricted-imports` override (D10) gets the same enforcement for
+direct imports at a fraction of the cost. If the boundary later needs enforcing across a package
+boundary, this refactor is a prerequisite either way.
+
+### D9 — Keep explicit story titles; do not switch to path-derived auto-titles
+
+Storybook can derive titles via `stories: [{ directory, titlePrefix }]`, which would delete 165
+`title:` lines. Rejected: auto-titles use the on-disk path verbatim, so we would get
+`Components/base/transactions/…` — lowercase segments, no collapse of `Sheet/Sheet`, and no way to
+capitalise `POS`. Explicit titles cost one `sed` and stay readable. §4.3's rule keeps them derivable
+by hand.
+
+### D10 — The lint guardrail covers screens and composition roots only
 
 ```json
 {
-  "files": ["src/presentation/pos/**"],
+  "files": ["src/app/pos/**", "src/presentation/screens/pos/**"],
   "rules": {
     "no-restricted-imports": ["error", { "patterns": [
-      { "group": ["**/presentation/order/**", "../order/*", "../../order/*"],
-        "message": "POS must not import from the order app. Shared code belongs in presentation/shared." }
+      { "group": ["**/app/order/**", "**/screens/order/**"],
+        "message": "POS must not import the order app's screens or composition roots." }
     ]}]
   }
 }
 ```
 
-If the boundary later needs to be enforced across a package boundary too, splitting into Nx libs
-stays available — this refactor is a prerequisite for it either way.
+…and its mirror for order. Components and controllers are shared by declaration (D3, D4), so there is
+nothing to restrict there. The existing `src/presentation/controllers/**` override (banning
+`react-hook-form` in controllers, per `docs/trd-form-ownership-refactor.md`) needs no change, because
+`controllers/` does not move.
 
-### D4 — Moves use `git mv`; import rewrites are scripted, never hand-edited
+### D11 — `screens/pos/` is flat; story titles change, so permalinks change
 
-Phases 1–6 must produce diffs a reviewer can validate without reading 800 files. §6 defines the
-procedure and the two commands that prove a PR contains nothing but renames and import-path edits.
+220 files in one directory is the status quo, and the `<Domain><Action>Screen` naming already
+self-groups alphabetically (`BudgetCreate/List/Update`, `ProductCreate/List/Update`, …). Adding a
+domain level would turn a one-command `git mv` into a per-file classification with genuinely
+ambiguous cases (`DashboardScreen`, `ExpenseStatisticScreen`, `TransactionStatisticScreen`,
+`PurchaseListScreen`). If it ever grates, adding domain folders later is a pure `git mv` inside
+`screens/pos/`.
 
-### D5 — Keep explicit story titles; do not switch to path-derived auto-titles
+Story IDs derive from `title`, so every deep link into Storybook breaks in Phase 3. There is no
+deprecation path and no consumer that pins one (the Storybook build is a static deploy — see
+`docs/trd-storybook-vercel-deployment.md`). Accepted; announce once when Phase 3 merges.
 
-Storybook can derive titles from paths via `stories: [{ directory, titlePrefix }]`, which would make
-the folder split *be* the Storybook split and delete 165 `title:` lines. Rejected: auto-titles use
-the on-disk path verbatim, so we would get `POS/components/transactions/TransactionList` — lowercase
-segments, `components` where the sidebar says `Features` today, and no way to group `Menu` and `Cart`
-under `Order/Features` without renaming folders to match. Explicit titles cost one `sed` per phase
-and keep the sidebar readable.
+### D12 — Directories are renamed, native identifiers are not
 
-### D6 — Story titles change, so permalinks change
-
-Story IDs are derived from `title`, so every deep link into Storybook breaks. There is no
-deprecation path for this and no consumer that pins one (the Storybook build is a static deploy —
-see `docs/trd-storybook-vercel-deployment.md`). Accepted, called out here so it is not a surprise.
-
-### D7 — Directories are renamed, native identifiers are not
-
-`apps/mobile` → `apps/pos-mobile` changes the directory and the Nx project name. It does **not**
-change `rootProject.name = 'Mobile'`, the `com.mobile` Android application id, the iOS bundle
-identifier, or `apps/pos-mobile/ios/Mobile.xcworkspace`. Those identify the shipped app to the app
-stores and to already-installed devices.
-
-### D8 — `apps/order` becomes `apps/order-web`, and Vercel must be updated in the same window
-
-Vercel builds the order app from a Root Directory setting that points at `apps/order`, using
-`apps/order/vercel.json`'s `buildCommand` (`npx nx run order:build`). Both the directory and the
-project name change in Phase 9. The Vercel dashboard change is not in the repo and cannot be part of
-the PR — Phase 9's checklist makes it an explicit pre-merge step.
-
-### D9 — Rename phases come last
-
-The `apps/` rename touches CI, Docker, Vercel and every doc that links to a source path. Doing it
-after the `libs/ui` split means a failure there is isolated from the split, and the split's phases
-never have to reason about two sets of app names.
+Covered under Non-goals; restated here because it is the one rename mistake that would ship a
+different app to the stores.
 
 ---
 
 ## 6. Cross-cutting mechanics every move phase follows
 
-**1. Move with `git mv`, one directory or file list at a time.** Never `cp` + delete; rename
-detection is what makes the diff reviewable.
+**1. Move with `git mv`, one file list at a time.** Never copy-and-delete; rename detection is what
+makes the diff reviewable.
 
-**2. Rewrite imports with one rule.** For a subtree moved one level deeper:
+**2. Rewrite imports with one rule per phase.** For a subtree moved one level deeper:
 
 > Every relative specifier that *leaves* the moved subtree gains one `../`. Specifiers that stay
 > inside it are unchanged.
 
-Concretely, for Phase 3 (`presentation/{components,controllers,screens}` → `presentation/pos/…`),
-specifiers beginning `./`, `../components/`, `../controllers/` or `../screens/` are untouched, and
-every other `../…` gains one level:
+For Phase 2 (`presentation/screens` → `presentation/screens/{pos,order}`), specifiers beginning `./`
+are untouched and every other `../…` gains one level:
 
 ```bash
-# inside the moved subtree only
-files=$(git diff --cached --name-only --diff-filter=R | grep '^libs/ui/src/presentation/pos/')
-perl -pi -e "
-  s{(from\s+')\.\./(?!components/|controllers/|screens/)}{\$1../../}g;
-" $files
+files=$(git diff --cached --name-only --diff-filter=R | grep '^libs/ui/src/presentation/screens/')
+perl -pi -e "s{(from\s+')\.\./}{\$1../../}g" $files
 ```
 
-Run `npx tsc -p libs/ui/tsconfig.lib.json --noEmit` after; it finds anything the rule missed.
+Then `npx tsc -p libs/ui/tsconfig.lib.json --noEmit` finds anything the rule missed.
 
 **3. Prove the diff is only paths.** These two commands are the review contract:
 
@@ -437,220 +446,151 @@ Run `npx tsc -p libs/ui/tsconfig.lib.json --noEmit` after; it finds anything the
 # every moved file must show as a rename
 git diff -M --stat HEAD~1 | grep -c '=>'
 
-# the only content changes are import lines
+# the only content changes are import lines (and, in Phase 3, title lines)
 git diff -M HEAD~1 -- 'libs/ui/**' \
   | grep -E '^[+-]' | grep -vE '^(\+\+\+|---)' \
   | grep -vE "^[+-].*(from '|require\(|title: ')" \
   | sort -u          # must print nothing
 ```
 
-Put the output of both in the PR description.
+Put both outputs in the PR description.
 
-**4. Keep the public surface byte-identical within the phase.** A move phase that also changes what
-`@gatherloop-pos/ui` exports is two phases. Leave a re-export behind where needed and delete it in
-the barrel phase.
+**4. Keep the public surface byte-identical within a move phase.** A phase that also changes what
+`@gatherloop-pos/ui` exports is two phases. Leave a re-export behind and delete it later.
 
 **5. Green gate for every PR.**
 
 ```bash
 npx nx run ui:lint && npx nx run ui:test
 npx nx run ui:build-storybook
-npx nx run web:build            # or pos-web:build, after Phase 8
-npx nx run order:build          # or order-web:build, after Phase 9
+npx nx run web:build      # pos-web:build after Phase 6
+npx nx run order:build    # order-web:build after Phase 7
 ```
 
-E2E (`nx run web-e2e:e2e`, `nx run order-e2e:e2e`) runs on `main` and is the backstop; run it
-locally for Phases 4, 8, 9 and 10, which touch composition roots or app wiring.
+E2E (`nx run web-e2e:e2e`, `nx run order-e2e:e2e`) runs on `main` and is the backstop; run it locally
+for Phases 1, 4, 6, 7 and 8, which touch composition roots or app wiring.
 
-**6. One phase per PR, merged in order.** Two move phases in flight at once guarantees conflicts on
-the same 400 files.
+**6. One phase per PR, merged in order.** Two move phases in flight guarantees conflicts on the same
+files.
 
 ---
 
 ## 7. Phase plan
 
-Thirteen PRs. Phases 1–7 are the `libs/ui` split; 8–10 the renames; 11–12 the cleanup.
+Nine PRs.
 
-| # | PR | Files moved | Import lines touched | Risk |
+| # | PR | Files moved | Import lines | Risk |
 | ---: | --- | ---: | ---: | --- |
-| 1 | `presentation/shared/` | 80 | ~130 | low |
-| 2 | `presentation/order/` (components, controllers, screens) | 42 | ~90 | low |
-| 3 | `presentation/pos/` (components, controllers, screens) | 505 | ~560 | medium (size) |
-| 4 | `app/` → `presentation/{pos,order}/app/` | 66 | ~200 | medium |
-| 5 | Barrels + `@gatherloop-pos/ui/pos` | 0 | ~65 | medium |
-| 6 | `OrderLayout` + `SkeletonView` → `order/components/base/` | 3 | ~6 | low |
-| 7 | Lint guardrail + Storybook sort | 0 | 0 | low |
-| 8 | `web`/`web-e2e` → `pos-web`/`pos-web-e2e` | 96 | 0 | medium (Docker/CI) |
-| 9 | `order`/`order-e2e` → `order-web`/`order-web-e2e` | 36 | 0 | medium (Vercel) |
-| 10 | `mobile`/`mobile-e2e` → `pos-mobile`/`pos-mobile-e2e` | 80 | 0 | medium (native) |
-| 11 | Docs and architecture refresh | 0 | 0 | low |
-| 12 | Delete transitional re-exports | 0 | ~0 | low |
+| 1 | `app/{pos,order}` | 66 | ~200 | medium |
+| 2 | `presentation/screens/{pos,order}` | 242 | ~400 | medium (size) |
+| 3 | Storybook retitle + `storySort` | 0 | 0 (165 titles) | low |
+| 4 | Barrels + `@gatherloop-pos/ui/pos` | 0 | ~65 | medium |
+| 5 | Lint guardrail | 0 | 0 | low |
+| 6 | `web`/`web-e2e` → `pos-web`/`pos-web-e2e` | 96 | 0 | medium (Docker/CI) |
+| 7 | `order`/`order-e2e` → `order-web`/`order-web-e2e` | 36 | 0 | medium (Vercel) |
+| 8 | `mobile`/`mobile-e2e` → `pos-mobile`/`pos-mobile-e2e` | 80 | 0 | medium (native) |
+| 9 | Docs refresh | 0 | 0 | low |
 
 ---
 
-### Phase 1 — Extract `presentation/shared/`
+### Phase 1 — `app/{pos,order}`
 
-**Why first:** both app buckets depend on it, so moving it first means every later phase's import
-fix-up is final rather than a step toward one.
+**Why first:** it is the phase that makes the barrel split possible, it is self-contained, and it is
+invisible to `apps/` (the root barrel keeps exporting the POS roots).
 
 **Moves**
 
 ```
-presentation/components/base/          → presentation/shared/components/base/
-presentation/controllers/controller.ts → presentation/shared/controllers/controller.ts
+app/{SessionProvider,CartProvider,TableResolve,MenuList,MenuItemDetail,Cart,Checkout}.tsx
+app/CartItemEdit.tsx  app/CartItemEdit.test.tsx          → app/order/
+app/  (remaining 56 roots + index.ts)                    → app/pos/
 ```
 
-**Also**
-
-- New `presentation/shared/index.ts` → `export * from './components/base'; export * from './controllers/controller';`
-- `presentation/components/index.ts`: `export * from './base'` → `export * from '../shared/components/base'`
-  (keeps `@gatherloop-pos/ui`'s surface identical — deleted in Phase 12).
-- `presentation/controllers/index.ts`: same treatment for `./controller`.
-- Retitle 25 stories `Base/X` → `Shared/Base/X`:
-  ```bash
-  grep -rl "title: 'Base/" libs/ui/src | xargs sed -i "s|title: 'Base/|title: 'Shared/Base/|"
-  ```
-- `libs/ui/src/index.ts`: `./presentation/components/base/ConfirmationAlert` →
-  `./presentation/shared/components/base/ConfirmationAlert`.
-- `libs/ui/src/index.order.ts`: same for `ConfirmationAlert`, `LoadingView`, `OrderLayout`.
-
-**Done when:** `ui:lint`, `ui:test`, `ui:build-storybook`, `web:build`, `order:build` pass;
-`git diff -M --stat` shows 80 renames; the content-diff check in §6.3 is empty apart from the 25
-`title:` lines.
-
----
-
-### Phase 2 — Create `presentation/order/`
-
-**Moves** (the 42 non-`app/` files from §3.1)
-
-```
-presentation/screens/{TableResolve,MenuList,MenuItemDetail}{Screen,Handler}.tsx  ┐
-presentation/screens/{CartScreen,CartHandler,CartItemEditScreen}.tsx             ├→ presentation/order/screens/
-presentation/screens/Checkout{Screen,Handler}.tsx                                │
-  + their .stories.tsx and .test.tsx                                             ┘
-presentation/controllers/{TableResolve,MenuList,MenuItemDetail,Cart}Controller.tsx
-                                                                                 → presentation/order/controllers/
-presentation/components/menu/                                                    → presentation/order/components/menu/
-presentation/components/cart/                                                    → presentation/order/components/cart/
-```
-
-**Import rewrites** (moved files only)
+**Import rewrites in moved files**
 
 | Was | Becomes |
 | --- | --- |
-| `../components/base/…` | `../../shared/components/base/…` |
-| `../components/{menu,cart}/…` | `../components/{menu,cart}/…` (unchanged) |
-| `../controllers/…` | `../controllers/…` (unchanged) |
-| `../../{domain,utils,data}/…` | `../../../{domain,utils,data}/…` |
-| `../../../.storybook/mocks/mockData` | `../../../../.storybook/mocks/mockData` |
-
-**Also**
-
-- `presentation/components/index.ts`: drop `export * from './menu'` and `'./cart'` — this is the leak
-  from §1.1 closing, and it is the one place in this phase where `@gatherloop-pos/ui`'s surface
-  actually shrinks. Verify nothing in `apps/` imported `MenuItemThumbnail` et al. from the root
-  barrel (it does not — `index.order.ts` is the only consumer, and it gets a deep path).
-- New `presentation/order/index.ts` exporting `./components/menu`, `./components/cart`,
-  `./controllers`, `./screens`.
-- `index.order.ts` points its component/screen lines at `./presentation/order/…`.
-- Retitle 13 stories:
-  ```bash
-  sed -i "s|title: 'Menu/\(MenuListScreen\|MenuItemDetailScreen\)|title: 'Order/Screens/\1|;
-          s|title: 'Menu/|title: 'Order/Features/Menu/|;
-          s|title: 'Cart/\(CartScreen\|CartItemEditScreen\)|title: 'Order/Screens/\1|;
-          s|title: 'Cart/|title: 'Order/Features/Cart/|;
-          s|title: 'Order/TableResolveScreen|title: 'Order/Screens/TableResolveScreen|;
-          s|title: 'Checkout/|title: 'Order/Screens/|" \
-      $(grep -rl "title: '\(Menu\|Cart\|Order\|Checkout\)/" libs/ui/src)
-  ```
-  (`Base/OrderLayout` is still `Shared/Base/OrderLayout` at this point; Phase 6 fixes it.)
-
-**Verify by hand:** `npx nx dev order`, walk `/t/{code}` → menu → item detail → add to cart → cart →
-edit line → checkout.
-
----
-
-### Phase 3 — Create `presentation/pos/`
-
-The bulk move, and the one that needs the §6 discipline most.
-
-**Moves**
-
-```
-presentation/components/   → presentation/pos/components/
-presentation/controllers/  → presentation/pos/controllers/
-presentation/screens/      → presentation/pos/screens/
-```
-
-**Import rewrite:** exactly the single rule in §6.2 — specifiers starting `./`, `../components/`,
-`../controllers/` or `../screens/` unchanged; every other `../` gains one level. That covers
-`../../domain` (185 sites), `../../utils/testUtils` (57), `../../data/mock` (57),
-`../../../.storybook/mocks/mockData` (30) and `../shared/…` (introduced in Phase 1).
-
-**Also**
-
-- `presentation/index.ts` becomes `export * from './pos';` (transitional; deleted in Phase 12).
-- New `presentation/pos/index.ts` → `export * from './controllers'; export * from './components'; export * from './screens';`
-  — i.e. today's `presentation/index.ts`, relocated. `./app` joins it in Phase 4.
-- `libs/ui/src/app/*` still import `from '../presentation'`, which still resolves. Unchanged here
-  on purpose: 56 files stay untouched so this phase is a pure move.
-- Retitle 127 stories (78 `Features/`, 49 `Screens/`):
-  ```bash
-  grep -rl "title: '\(Features\|Screens\)/" libs/ui/src \
-    | xargs sed -i "s|title: 'Features/|title: 'POS/Features/|; s|title: 'Screens/|title: 'POS/Screens/|"
-  ```
-
-**Why this is not four smaller PRs (one per layer):** POS screens import `../components` (97 sites)
-and `../controllers` (63 sites). Moving one layer at a time would rewrite those to `../../components`
-and then back to `../components` when the sibling follows — churn that *adds* review surface while
-pretending to reduce it. Moving the three siblings together keeps every intra-bucket path invariant
-and reduces the whole PR to one uniform rule. Size is handled by the §6.3 proof, not by splitting.
-
----
-
-### Phase 4 — Move the composition roots
-
-**Moves**
-
-```
-src/app/{SessionProvider,CartProvider,TableResolve,MenuList,MenuItemDetail,Cart,CartItemEdit,Checkout}.tsx
-  (+ CartItemEdit.test.tsx)              → presentation/order/app/
-src/app/  (remaining 57, incl. index.ts) → presentation/pos/app/
-```
-
-**Import rewrites** — two rules, because `app/` had a different depth *and* referenced
-`presentation/` by name:
-
-| Was | Becomes |
-| --- | --- |
-| `../presentation` | `../screens` (all 56 sites import only `*Handler` — verified §3.4) |
-| `../presentation/screens/X` | `../screens/X` |
-| `../presentation/controllers/X` | `../controllers/X` |
-| `../presentation/components/cart/CartBar` | `../components/cart/CartBar` |
-| `../{data,domain,utils,config}/…` | `../../../{data,domain,utils,config}/…` |
+| `../{data,domain,utils,config}/…` | `../../{data,domain,utils,config}/…` |
+| `../presentation` (56 sites, all `*Handler`) | `../../presentation` |
+| `../presentation/screens/X` | `../../presentation/screens/X` |
+| `../presentation/components/cart/CartBar` | `../../presentation/components/cart/CartBar` |
 | `./CartProvider`, `./SessionProvider` | unchanged |
 
 **Also**
 
-- `presentation/pos/index.ts` and `presentation/order/index.ts` each add `export * from './app';`.
-- `libs/ui/src/index.ts`: `export * from './app'` → `export * from './presentation/pos'`.
-- `index.order.ts`: the eight `./app/*` lines → `./presentation/order/app/*` (or simply
-  `export * from './presentation/order'`, which is where Phase 5 takes it anyway).
-- `src/app/` is now empty and is deleted.
+- `app/pos/index.ts` is the old `app/index.ts`, content unchanged. It must still omit the order
+  roots — Phase 4's barrel work depends on it.
+- New `app/order/index.ts` exporting the eight roots.
+- `libs/ui/src/index.ts`: `export * from './app'` → `export * from './app/pos'`.
+- `index.order.ts`: `./app/X` → `./app/order/X`.
 
-**Watch for:** `app/index.ts` is the file that decides `@gatherloop-pos/ui`'s composition-root
-surface. It moves verbatim — it must still omit the order roots after the move, or Phase 5's barrel
-work will silently re-add them.
-
-**Verify by hand:** `nx dev web` (login, product list, transaction create → pay), `nx dev order`
-(full flow), `nx run-android` or `nx run-ios` smoke.
+**Verify by hand:** `nx dev web` (login → product list → transaction create → pay), `nx dev order`
+(table → menu → item detail → add to cart → cart → edit line → checkout), and a mobile smoke run.
 
 ---
 
-### Phase 5 — Split the barrels and add `@gatherloop-pos/ui/pos`
+### Phase 2 — `presentation/screens/{pos,order}`
 
-The phase that delivers "the barrel export will be smaller".
+**Moves**
+
+```
+screens/{TableResolve,MenuList,MenuItemDetail}{Screen,Handler}.tsx
+screens/{CartScreen,CartHandler,CartItemEditScreen}.tsx
+screens/Checkout{Screen,Handler}.tsx
+  + their .stories.tsx and .test.tsx                     → screens/order/   (22 files)
+screens/  (remaining 220)                                → screens/pos/
+```
+
+**Import rewrite:** the single rule from §6.2 — `./` untouched, every other `../` gains one level.
+That covers `../components` (97), `../controllers` (63), `../../domain` (185),
+`../../utils/testUtils` (57), `../../data/mock` (57) and `../../../.storybook/mocks/mockData` (30).
+
+**Also**
+
+- `screens/index.ts` becomes `screens/pos/index.ts` (content unchanged — it already lists only POS
+  screens); new `screens/order/index.ts` for the order screens.
+- `presentation/index.ts`: `export * from './screens'` → `export * from './screens/pos'`. This is
+  what keeps the 56 `app/pos/*` files importing `'../../presentation'` working with zero churn.
+- Order's `app/order/*` files already deep-import their handlers; retarget those paths to
+  `../../presentation/screens/order/X`.
+
+**Not split by domain (D11):** `screens/pos/` is a flat directory of 220 files.
+
+**Why this is not four smaller PRs:** POS screens import `../components` (97 sites) and
+`../controllers` (63 sites). Splitting the move would rewrite those and then rewrite them back.
+Moving the layer in one go reduces the whole PR to one uniform rule; size is handled by the §6.3
+proof, not by splitting.
+
+---
+
+### Phase 3 — Storybook retitle
+
+Pure title edits, no moves. Apply §4.3's rule to all 165 stories:
+
+```bash
+cd libs/ui/src/presentation
+# POS screens: Screens/<Domain>/<Name> -> Screens/POS/<Name>
+grep -rl "title: 'Screens/" screens/pos \
+  | xargs sed -i -E "s|title: 'Screens/[A-Za-z]+/|title: 'Screens/POS/|"
+# order screens
+sed -i -E "s|title: '(Menu|Cart|Checkout|Order)/|title: 'Screens/Order/|" \
+  screens/order/*.stories.tsx
+# components
+grep -rl "title: 'Features/" components | xargs sed -i "s|title: 'Features/|title: 'Components/|"
+grep -rl "title: 'Base/"     components | xargs sed -i "s|title: 'Base/|title: 'Components/Base/|"
+sed -i "s|title: 'Menu/|title: 'Components/Menu/|" components/menu/*.stories.tsx
+sed -i "s|title: 'Cart/|title: 'Components/Cart/|" components/cart/*.stories.tsx
+```
+
+Add the `storySort` from §4.3 to `.storybook/preview.tsx`.
+
+**Done when:** `nx run ui:build-storybook` succeeds and the sidebar has exactly two roots,
+`Components` (110 stories) and `Screens` (55), matching §4.3's tree. Announce the permalink break
+(D11).
+
+---
+
+### Phase 4 — Split the barrels and add `@gatherloop-pos/ui/pos`
 
 **`tsconfig.base.json`**
 
@@ -660,78 +600,48 @@ The phase that delivers "the barrel export will be smaller".
 "@gatherloop-pos/ui/order": ["libs/ui/src/index.order.ts"]
 ```
 
-**New `libs/ui/src/index.pos.ts`** → `export * from './presentation/pos';`
-**`libs/ui/src/index.order.ts`** collapses to `export * from './presentation/order';` plus the
-handful of shared re-exports the order app still pulls from it (`config`, `utils/currency`,
-`ConfirmationAlert`, `LoadingView`) — or, better, those move to `@gatherloop-pos/ui` imports in
-`apps/order` and `index.order.ts` becomes a one-liner.
+**New `libs/ui/src/index.pos.ts`** → `export * from './app/pos';`
 
-**`libs/ui/src/index.ts`** shrinks to shared only:
+**`libs/ui/src/index.ts`** shrinks to:
 
 ```ts
 export * from './config';
 export * from './data';
 export * from './domain';
 export * from './utils';
-export * from './presentation/shared';
+export * from './presentation/components/base/ConfirmationAlert';
 ```
+
+**`index.order.ts`** → `export * from './app/order';` plus its existing non-app re-exports
+(`config`, `ConfirmationAlert`, `LoadingView`, `OrderLayout`, `MenuItemThumbnail`, `utils/currency`).
 
 **Consumer updates** — 56 files, mechanically splittable because the symbol sets are disjoint
-(composition roots and `*Props` live in `pos`; repositories, `getUrlFromCtx`, entities and
-`DEFAULT_*` constants live in the root):
+(composition roots and `*Props` → `/pos`; repositories, `getUrlFromCtx`, entities and `DEFAULT_*`
+constants → root): 55 `apps/web` pages, one `apps/mobile/src/app/App.tsx`.
 
-- `apps/web/src/pages/**` — 55 files, one or two import statements each.
-- `apps/mobile/src/app/App.tsx` — one large import split in two.
-- `apps/order/src/**` — 9 files; only the ones importing shared helpers change.
+**Split this PR if review gets heavy:** 4a adds `index.pos.ts` and the tsconfig path while the root
+barrel still re-exports `./app/pos` (purely additive, nothing breaks); 4b migrates `apps/web`; 4c
+migrates `apps/mobile`; 4d removes `./app/pos` from the root barrel. Only 4d can break a build, and
+by then it is a one-line diff.
 
-**Split this PR if review gets heavy:** 5a adds the entry points and leaves the root barrel
-re-exporting `./presentation/pos` (purely additive, nothing breaks); 5b migrates `apps/web`; 5c
-migrates `apps/mobile` and `apps/order`; 5d shrinks the root barrel. 5d is the one that can break a
-build, and by then it is a two-line diff.
-
-**Jest note:** `libs/ui/jest.config.ts` maps by relative path and needs no change.
-`apps/web/jest.config.ts` and `apps/mobile/jest.config.ts` resolve workspace paths through
-`@nx/jest`'s resolver, which reads `tsconfig.base.json` — the new `/pos` key is picked up
-automatically, same as `/order` is today. Confirm with `nx run web:test` and `nx run mobile:test`.
+**Jest note:** `libs/ui/jest.config.ts` maps by relative path — no change. `apps/web` and
+`apps/mobile` resolve workspace paths through `@nx/jest`'s resolver, which reads
+`tsconfig.base.json`, so the new `/pos` key is picked up the same way `/order` already is. Confirm
+with `nx run web:test` and `nx run mobile:test`.
 
 ---
 
-### Phase 6 — Move the two order-only base components
+### Phase 5 — Lint guardrail
 
-```
-presentation/shared/components/base/OrderLayout.tsx        → presentation/order/components/base/
-presentation/shared/components/base/OrderLayout.stories.tsx → presentation/order/components/base/
-presentation/shared/components/base/SkeletonView.tsx       → presentation/order/components/base/
-```
+Add D10's two `no-restricted-imports` overrides to `libs/ui/.eslintrc.json`, alongside the existing
+`controllers/**` override (unchanged).
 
-Drop both from `shared/components/base/index.tsx`, add an `order/components/base/index.ts`, retitle
-`Shared/Base/OrderLayout` → `Order/Base/OrderLayout`, and repoint the three importers
-(`TableResolveScreen`, `CartScreen`, `MenuListScreen`) plus `index.order.ts`.
-
-Small on purpose: it is the first PR where the folder structure lets us *notice* a misplaced file,
-and it is worth landing separately so that fact is visible in the history.
+**Done when:** a deliberately added `import { MenuListScreen } from '../order/MenuListScreen'` inside
+a POS screen fails `nx run ui:lint`. Paste that output into the PR description, then remove the line.
 
 ---
 
-### Phase 7 — Enforce the boundary
-
-**`libs/ui/.eslintrc.json`** — two `no-restricted-imports` overrides (the POS one is shown in D3;
-the order one is its mirror), alongside the existing `controllers/**` override, whose `files` glob
-becomes `src/presentation/*/controllers/**`.
-
-**`libs/ui/.storybook/preview.tsx`** — add the `storySort` from §4.2.
-
-**Optional, recommended:** a fourth override forbidding
-`presentation/shared/**` from importing `../pos/**` or `../order/**`, so "shared" cannot quietly
-acquire an app dependency.
-
-**Done when:** a deliberately added `import { MenuProductCard } from '../../order/components/menu'`
-inside a POS screen fails `nx run ui:lint`. Include that check's output in the PR description, then
-remove the line.
-
----
-
-### Phase 8 — `web` → `pos-web`, `web-e2e` → `pos-web-e2e`
+### Phase 6 — `web` → `pos-web`, `web-e2e` → `pos-web-e2e`
 
 ```bash
 git mv apps/web apps/pos-web
@@ -742,42 +652,39 @@ git mv apps/web-e2e apps/pos-web-e2e
 | --- | --- |
 | `apps/pos-web/project.json` | `name: "pos-web"`, `sourceRoot: "apps/pos-web"` |
 | `apps/pos-web/package.json` | `"name": "pos-web"` (was the stale `"web2"`) |
-| `apps/pos-web/jest.config.ts` | `displayName: 'pos-web'`, `coverageDirectory: '../../coverage/apps/pos-web'` |
+| `apps/pos-web/jest.config.ts` | `displayName`, `coverageDirectory: '../../coverage/apps/pos-web'` |
 | `apps/pos-web/Dockerfile` | `nx run pos-web:build`; `COPY --from=build /app/apps/pos-web/.next ./.next` |
 | `apps/pos-web-e2e/project.json` | `name`, `sourceRoot`, `implicitDependencies: ["pos-web"]` |
 | `apps/pos-web-e2e/playwright.config.ts` | `command: 'npx nx dev pos-web'` |
-| `.github/workflows/e2e-main.yml` | matrix entry `web-e2e` → `pos-web-e2e`; the comment naming `nx dev web` |
-| `README.md` | `.env.local` copy instructions and the project table |
-| `E2E_TEST_PLAN.md`, `TESTING_REVIEW.md`, `docs-site/**` | path references |
+| `.github/workflows/e2e-main.yml` | matrix `web-e2e` → `pos-web-e2e`, and the comment naming `nx dev web` |
+| `README.md`, `E2E_TEST_PLAN.md`, `TESTING_REVIEW.md`, `docs-site/**` | paths and links |
 
-**Out of repo:** whatever host builds the POS web image runs `docker build` against
-`apps/web/Dockerfile`. Update that path in the host's settings **before** merging, or the next
-deploy 404s on the Dockerfile.
+**Out of repo, before merge:** update the POS web host's `docker build` Dockerfile path from
+`apps/web/Dockerfile` to `apps/pos-web/Dockerfile`.
 
 `apps/pos-web/.env.local` is gitignored and lives on developer machines — call the rename out in the
-PR description so nobody spends an afternoon on a missing env file.
+PR description.
 
 ---
 
-### Phase 9 — `order` → `order-web`, `order-e2e` → `order-web-e2e`
+### Phase 7 — `order` → `order-web`, `order-e2e` → `order-web-e2e`
 
-Same shape as Phase 8, plus:
+Same shape, plus:
 
 | File | Change |
 | --- | --- |
 | `apps/order-web/vercel.json` | `npx nx run order-web:build` |
 | `apps/order-web-e2e/playwright.config.ts` | `npx nx run order-web:build && npx nx run order-web:start` |
 | `docs-site/sales/table-ordering.md` | `apps/order` → `apps/order-web` |
-| `docs/trd-order-app-nextjs-migration.md` | add a note that the app moved; do not rewrite history |
+| `docs/trd-order-app-nextjs-migration.md` | append a note that the app moved; do not rewrite history |
 
-**Out of repo, before merge:** change the Vercel project's **Root Directory** from `apps/order` to
-`apps/order-web`. A Vercel build against a missing root directory fails the deployment, and printed
-QR codes point at that deployment — so sequence it as: update Vercel Root Directory → merge → verify
-the next deploy → scan a printed QR code.
+**Sequence, because Vercel is out of repo:** change the Vercel project's **Root Directory** from
+`apps/order` to `apps/order-web` → merge → verify the next deployment → scan a printed QR code. A
+Vercel build against a missing root directory fails the deployment, and printed QR codes point at it.
 
 ---
 
-### Phase 10 — `mobile` → `pos-mobile`, `mobile-e2e` → `pos-mobile-e2e`
+### Phase 8 — `mobile` → `pos-mobile`, `mobile-e2e` → `pos-mobile-e2e`
 
 ```bash
 git mv apps/mobile apps/pos-mobile
@@ -787,22 +694,20 @@ git mv apps/mobile-e2e apps/pos-mobile-e2e
 `project.json` (both), `jest.config.ts` (`displayName`, `coverageDirectory`),
 `apps/pos-mobile/package.json` `"name"`, and the `docs-site` references.
 
-**Explicitly unchanged** (D7): `android/settings.gradle`'s `rootProject.name = 'Mobile'`, the
+**Explicitly unchanged (D12):** `android/settings.gradle`'s `rootProject.name = 'Mobile'`, the
 `com.mobile` package and its `java/com/mobile/**` directory, `ios/Mobile.xcworkspace`,
-`ios/Mobile/Info.plist`, and every `../../../../node_modules/**` path in `android/app/build.gradle`
-— the rename keeps the directory depth identical, so those resolve unchanged.
+`ios/Mobile/Info.plist`, and every `../../../../node_modules/**` path in `android/app/build.gradle` —
+the rename keeps directory depth identical, so those resolve unchanged.
 
-**Verify:** `nx run pos-mobile:test`, then a real `nx run-android` (or `run-ios`) build. Metro
-resolves through `withNxMetro` and the workspace root, so a successful bundle is the proof. Delete
-`apps/pos-mobile/android/app/build` and any local Metro cache first — stale absolute paths from the
+**Verify:** `nx run pos-mobile:test`, then a real `nx run-android` (or `run-ios`). Delete
+`apps/pos-mobile/android/app/build` and the local Metro cache first — stale absolute paths from the
 old directory are the one plausible failure mode.
 
 ---
 
-### Phase 11 — Documentation refresh
+### Phase 9 — Documentation refresh
 
-- `README.md`: the project list and the `libs/ui` structure section (currently describes
-  `libs/ui/src/app` as the composition layer).
+- `README.md`: project list, `.env` copy instructions, and the `libs/ui` structure section.
 - `docs-site/under-the-hood/clean-architecture.md`: the `libs/ui/src/app` link and the "App
   composition" paragraph.
 - `docs-site/under-the-hood/cross-platform.md` and `architecture.md`: the `apps/web` / `apps/mobile`
@@ -812,26 +717,17 @@ old directory are the one plausible failure mode.
 
 ---
 
-### Phase 12 — Delete the transitional re-exports
-
-Remove `presentation/index.ts`, the `export * from '../shared/components/base'` line left in
-`presentation/pos/components/index.ts` by Phase 1, and any other compatibility shim the earlier
-phases left behind. Confirm `grep -rn "presentation'" libs apps` returns nothing.
-
----
-
 ## 8. What each PR should look like
 
 - **Title:** `refactor(ui): <phase title>` — commitlint enforces conventional commits.
-- **Body:** the phase number and its §7 row; the two §6.3 verification outputs; the green-gate
-  command list with results; for Phases 2, 4, 8, 9 and 10, the manual verification actually
-  performed.
-- **Reviewer's job** on a move phase is to check three things, not 800 files: (a) `--stat` shows
-  renames, not add+delete; (b) the content-diff filter is empty; (c) the barrel and `title:` changes
-  are the ones the phase says they are.
-- **No opportunistic edits.** A component that should be renamed, a story that should be split, a
-  dead export — write it down, land it separately. A move PR with one real change in it loses the
-  §6.3 proof and becomes unreviewable.
+- **Body:** the phase number and its §7 row; both §6.3 verification outputs; the green-gate results;
+  and for Phases 1, 6, 7 and 8, the manual verification actually performed.
+- **Reviewer's job** on a move phase is three checks, not 300 files: (a) `--stat` shows renames, not
+  add+delete; (b) the content-diff filter is empty; (c) the barrel and `title:` changes are the ones
+  the phase says they are.
+- **No opportunistic edits.** A component that should be renamed, a dead export, a story that should
+  be split — write it down, land it separately. One real change inside a move PR forfeits the §6.3
+  proof and makes it unreviewable.
 
 ---
 
@@ -839,50 +735,84 @@ phases left behind. Confirm `grep -rn "presentation'" libs apps` returns nothing
 
 | Risk | Mitigation |
 | --- | --- |
-| **Phase 3 is ~500 files.** Reviewers rubber-stamp it. | The §6.3 proof is the review. Both commands' output goes in the PR body; if the content-diff filter is non-empty, the PR is wrong by construction. |
-| **A `.native.ts` / `.native.tsx` platform variant gets orphaned.** Metro resolves them by filename, and `tsc` never type-checks them against the web build. | 11 such files exist (§3.1 audit lists them as reachable from neither entry point). Move them explicitly with their siblings and grep for `\.native\.` in every move phase's file list. Phase 10's real device build is the backstop. |
-| **Jest `moduleNameMapper` breaks.** 11 `__mocks__` aliases are keyed by module name, not path. | None are path-based, so the moves cannot break them. `ui:test` in every green gate confirms it. |
-| **Storybook permalinks break** (D6). | Accepted. Announce once when Phase 3 merges. |
-| **Vercel Root Directory** (D8) is out of repo and easy to forget. | Phase 9's checklist sequences the dashboard change before the merge, and the merge before the QR-code check. |
-| **`apps/web/.env.local` and `apps/mobile/.env` are gitignored** and do not move with `git mv`. | Called out in the Phase 8 and 10 PR descriptions. |
-| **Someone lands a new screen mid-refactor**, into the old location. | Phases are short; merge them back to back. Phase 7's lint rule prevents the class of mistake permanently, but only from Phase 7 onward. |
-| **Native build picks up a stale absolute path.** | Phase 10 deletes `android/app/build` and the Metro cache before verifying. |
+| **Phase 2 is 242 files** and reviewers rubber-stamp it | The §6.3 proof *is* the review; both outputs go in the PR body. A non-empty content-diff filter means the PR is wrong by construction. |
+| **A `.native.ts` / `.native.tsx` variant gets orphaned** — Metro resolves them by filename and `tsc` never checks them against the web build | `app/` contains none (verified); `screens/` contains none. Still grep for `\.native\.` in every move phase's file list, and Phase 8's device build is the backstop. |
+| **Jest `moduleNameMapper` breaks** — 11 aliases in `libs/ui/jest.config.ts` | All are keyed by module name, not path, so the moves cannot affect them. `ui:test` in every green gate confirms it. |
+| **Storybook permalinks break** (D11) | Accepted. Announce once when Phase 3 merges. |
+| **Vercel Root Directory** is out of repo and easy to forget | Phase 7 sequences the dashboard change before the merge, and the merge before the QR check. |
+| **`apps/web/.env.local` and `apps/mobile/.env` are gitignored** and do not move with `git mv` | Called out in the Phase 6 and 8 PR descriptions. |
+| **A new screen lands mid-refactor** in the old location | Phases are short; merge back to back. Phase 5's lint rule prevents the class permanently, but only from Phase 5 onward. |
+| **No tripwire on cross-app component reuse** (D3) | Accepted consequence of "components are shared by default". `base/` is the promotion target if a component becomes genuinely shared. |
+| **Native build picks up a stale absolute path** | Phase 8 clears `android/app/build` and the Metro cache before verifying. |
 
 ---
 
 ## 10. Definition of done
 
-1. `libs/ui/src/presentation` contains exactly `shared/`, `pos/` and `order/`, and no `.tsx` file
-   sits directly under `presentation/`.
-2. `libs/ui/src/app` no longer exists.
-3. `nx run ui:lint` fails on a POS→order or order→POS import.
-4. Storybook's sidebar has three roots — `POS`, `Order`, `Shared` — in that order, and all 165
-   stories are under one of them.
-5. `@gatherloop-pos/ui` exports no composition root; `@gatherloop-pos/ui/pos` and
-   `@gatherloop-pos/ui/order` each export exactly one app's presentation layer.
-6. `nx show projects` lists `pos-web`, `pos-web-e2e`, `pos-mobile`, `pos-mobile-e2e`, `order-web`,
+1. `libs/ui/src/app` contains only `pos/` and `order/`; no `.tsx` file sits directly under it.
+2. `libs/ui/src/presentation/screens` contains only `pos/` and `order/`; no `.tsx` file sits directly
+   under it.
+3. `libs/ui/src/presentation/{components,controllers}`, `domain/`, `data/` and `utils/` are unchanged
+   from `91d5451` apart from import paths that had to follow a move.
+4. `nx run ui:lint` fails on a POS→order or order→POS screen or composition-root import.
+5. Storybook has exactly two roots — `Components` then `Screens` — and every one of the 165 titles is
+   reconstructible from its file path by §4.3's rule.
+6. `@gatherloop-pos/ui` exports no composition root; `@gatherloop-pos/ui/pos` and
+   `@gatherloop-pos/ui/order` each export exactly one app's roots.
+7. `nx show projects` lists `pos-web`, `pos-web-e2e`, `pos-mobile`, `pos-mobile-e2e`, `order-web`,
    `order-web-e2e`, `api`, `ui`, `provider`, `api-contract`.
-7. `nx run-many --target=lint,test --all` and both Playwright suites are green on `main`.
-8. The POS web deploy, the order Vercel deploy and the Storybook deploy have each succeeded once
+8. `nx run-many --target=lint,test --all` and both Playwright suites are green on `main`.
+9. The POS web deploy, the order Vercel deploy and the Storybook deploy have each succeeded once
    after their rename phase.
-9. No behavioural diff: no PR in phases 1–7 changed a file outside an import statement, a barrel, a
-   Storybook `title`, or a config that names a path.
+10. No behavioural diff: no PR in phases 1–5 changed a file outside an import statement, a barrel, a
+    Storybook `title`, or a config that names a path.
 
 ---
 
-## 11. Open questions
+## 11. Follow-ups, deliberately out of scope
 
-1. **Should `domain/` and `data/` split too?** The order app owns four usecases, four repository
-   interfaces and five data implementations outright (§2, Non-goals). Splitting them would make the
-   app boundary total rather than presentation-only, at roughly Phase 3's cost again. Recommend
-   revisiting once the presentation split has been lived in for a release.
-2. **Should `shared/` be promoted to `libs/ui-shared`?** D3 says not now. If a third product surface
-   appears, the calculus changes.
-3. **`FloatingCartButton` and `PinnedActionBar` have only POS consumers today** (D2). If the order
-   app has not adopted either by the time Phase 12 lands, move them into `pos/components/base/` as a
-   thirteenth phase.
-4. **Does anything outside this repo deep-link into Storybook?** If the docs site or a design handoff
-   pins story URLs, D6 needs a redirect map rather than an announcement.
+### 11.1 Unify the CRUD usecase families (its own TRD)
+
+`domain/usecases/` is 85 files, 13,712 LOC of source and 8,445 LOC of tests. Normalised clone
+analysis — rename the entity throughout, then diff each file against a family reference — shows how
+much of it is one machine typed out repeatedly:
+
+| Family | n | Differing lines vs. reference |
+| --- | ---: | --- |
+| Delete | 15 | **8 files at 0**, 4 at 1, then 35 / 44 / 57 |
+| Create | 17 | 0, 2, 2, 4, 6, 6, 12, 16, 17, 18 … then 49 → 106 |
+| Update | 15 | 0, 4, 4, 11, 11, 23, 27 … then 43 → 87 |
+| List | 21 | 0, 2, 11, 11, 11, 16, 30, 39 … then 136 → 248 |
+
+Eight Delete usecases are byte-identical after renaming; `couponList`, `ticketList` and `tableList`
+are 11 lines from `budgetList`, itself 2 lines from `walletList`. Roughly **37 of the 68 CRUD-family
+files — about 4,700 LOC — are one state machine written 37 times.**
+
+`ProductListUsecase` and `MenuListUsecase` share the same six states and 7 of 8 `getNextState`
+branches; what differs is pagination, the URL-query repository, the sync cache short-circuit, and the
+payload. So a generic machine would let the two apps share the *machine*, not the *usecase* — each
+app keeps a thin config naming its repository and payload.
+
+Kept separate because it is a different risk class: this refactor's safety property is "no PR changes
+behaviour", verified mechanically; unification is the inverse — same paths, changed semantics, with
+8,445 lines of tests as the spec. Its first phase should prototype the generic machine against three
+usecases spanning the range — `couponList` (11), `categoryList` (39), `productList` (232) — to
+settle whether it covers the tail or only the clone cluster.
+
+One drift found while measuring: `categoryDelete` spreads `...state` on `HIDE_CONFIRMATION`,
+`supplierDelete` does not. Behaviour is identical (both fields are set explicitly), but it is exactly
+the drift duplication breeds.
+
+### 11.2 Promote the folders to Nx libraries
+
+If `nx affected` granularity or package-level boundary enforcement becomes worth the config cost
+(D8), the promotion is `git mv` plus scaffolding — and by then the shared surface will be known from
+experience rather than guessed.
+
+### 11.3 Domain-subfolder `screens/pos/`
+
+If the flat 220-file directory grates (D11), adding domain folders is a pure `git mv` inside
+`screens/pos/` plus the matching title level.
 
 ---
 
@@ -890,6 +820,7 @@ phases left behind. Confirm `grep -rn "presentation'" libs apps` returns nothing
 
 - `docs/trd-order-app-nextjs-migration.md` — D6 (`@gatherloop-pos/ui/order` exists and why), D20
 - `docs/prd-table-ordering.md` — D14, D17, D20, D22 (the order app's composition roots)
-- `docs/trd-form-ownership-refactor.md` — the phase-per-PR format this TRD follows
+- `docs/trd-form-ownership-refactor.md` — the phase-per-PR format this TRD follows, and the
+  `controllers/**` lint override that must survive
 - `docs/trd-storybook-vercel-deployment.md` — how Storybook ships
 - `docs-site/under-the-hood/clean-architecture.md` — the layer contract this refactor preserves
