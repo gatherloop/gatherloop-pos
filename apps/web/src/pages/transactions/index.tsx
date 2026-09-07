@@ -2,10 +2,12 @@ import {
   ApiTransactionRepository,
   ApiWalletRepository,
   getUrlFromCtx,
-  TransactionList,
-  TransactionListProps,
   UrlTransactionListQueryRepository,
 } from '@gatherloop-pos/ui';
+import {
+  TransactionList,
+  TransactionListProps,
+} from '@gatherloop-pos/ui/pos';
 import { QueryClient } from '@tanstack/react-query';
 import { GetServerSideProps } from 'next';
 

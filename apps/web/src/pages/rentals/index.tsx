@@ -1,10 +1,12 @@
 import {
   ApiRentalRepository,
   getUrlFromCtx,
-  RentalList,
-  RentalListProps,
   UrlRentalListQueryRepository,
 } from '@gatherloop-pos/ui';
+import {
+  RentalList,
+  RentalListProps,
+} from '@gatherloop-pos/ui/pos';
 import { QueryClient } from '@tanstack/react-query';
 import { GetServerSideProps } from 'next';
 

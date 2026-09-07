@@ -1,10 +1,12 @@
 import {
   ApiStockCheckRepository,
   getUrlFromCtx,
-  StockCheckList,
-  StockCheckListProps,
   UrlStockCheckListQueryRepository,
 } from '@gatherloop-pos/ui';
+import {
+  StockCheckList,
+  StockCheckListProps,
+} from '@gatherloop-pos/ui/pos';
 import { QueryClient } from '@tanstack/react-query';
 import { GetServerSideProps } from 'next';
 

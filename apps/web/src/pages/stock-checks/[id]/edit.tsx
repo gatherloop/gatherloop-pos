@@ -1,8 +1,8 @@
+import { ApiStockCheckRepository } from '@gatherloop-pos/ui';
 import {
-  ApiStockCheckRepository,
   StockCheckUpdate,
   StockCheckUpdateProps,
-} from '@gatherloop-pos/ui';
+} from '@gatherloop-pos/ui/pos';
 import { QueryClient } from '@tanstack/react-query';
 import { GetServerSideProps } from 'next';
 

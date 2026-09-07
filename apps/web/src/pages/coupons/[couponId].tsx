@@ -1,8 +1,8 @@
+import { ApiCouponRepository } from '@gatherloop-pos/ui';
 import {
-  ApiCouponRepository,
   CouponUpdate,
   CouponUpdateProps,
-} from '@gatherloop-pos/ui';
+} from '@gatherloop-pos/ui/pos';
 import { GetServerSideProps } from 'next';
 import { QueryClient } from '@tanstack/react-query';
 

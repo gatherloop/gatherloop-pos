@@ -1,8 +1,8 @@
+import { ApiChecklistTemplateRepository } from '@gatherloop-pos/ui';
 import {
-  ApiChecklistTemplateRepository,
   ChecklistTemplateList,
   ChecklistTemplateListProps,
-} from '@gatherloop-pos/ui';
+} from '@gatherloop-pos/ui/pos';
 import { QueryClient } from '@tanstack/react-query';
 import { GetServerSideProps } from 'next';
 

@@ -1,10 +1,12 @@
 import {
   ApiTransactionRepository,
-  TransactionUpdate,
-  TransactionUpdateProps,
   ApiProductRepository,
   ApiCouponRepository,
 } from '@gatherloop-pos/ui';
+import {
+  TransactionUpdate,
+  TransactionUpdateProps,
+} from '@gatherloop-pos/ui/pos';
 import { QueryClient } from '@tanstack/react-query';
 import { GetServerSideProps } from 'next';
 

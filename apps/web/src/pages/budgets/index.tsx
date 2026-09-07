@@ -1,8 +1,8 @@
+import { ApiBudgetRepository } from '@gatherloop-pos/ui';
 import {
-  ApiBudgetRepository,
   BudgetList,
   BudgetListProps,
-} from '@gatherloop-pos/ui';
+} from '@gatherloop-pos/ui/pos';
 import { QueryClient } from '@tanstack/react-query';
 import { GetServerSideProps } from 'next';
 

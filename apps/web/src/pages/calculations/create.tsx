@@ -1,8 +1,8 @@
+import { ApiWalletRepository } from '@gatherloop-pos/ui';
 import {
-  ApiWalletRepository,
   CalculationCreate,
   CalculationCreateProps,
-} from '@gatherloop-pos/ui';
+} from '@gatherloop-pos/ui/pos';
 import { GetServerSideProps } from 'next';
 import { QueryClient } from '@tanstack/react-query';
 

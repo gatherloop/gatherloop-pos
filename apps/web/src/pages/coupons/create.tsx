@@ -1,4 +1,4 @@
-import { CouponCreate } from '@gatherloop-pos/ui';
+import { CouponCreate } from '@gatherloop-pos/ui/pos';
 import { GetServerSideProps } from 'next';
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {

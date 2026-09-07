@@ -1,4 +1,4 @@
-import { ChecklistTemplateCreate } from '@gatherloop-pos/ui';
+import { ChecklistTemplateCreate } from '@gatherloop-pos/ui/pos';
 import { GetServerSideProps } from 'next';
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
