@@ -3,7 +3,7 @@ import { useRouter } from 'solito/router';
 import { ApiPublicTableRepository } from '../../data/api/publicTable';
 import { TableResolveUsecase } from '../../domain/usecases/tableResolve';
 import { CartBar } from '../../presentation/components/cart/CartBar';
-import { TableResolveHandler } from '../../presentation/screens/TableResolveHandler';
+import { TableResolveHandler } from '../../presentation/screens/order/TableResolveHandler';
 import { useCart } from './CartProvider';
 import { useSessionRepository } from './SessionProvider';
 

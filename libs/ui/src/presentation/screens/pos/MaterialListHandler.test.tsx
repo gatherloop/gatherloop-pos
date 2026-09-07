@@ -1,0 +1,374 @@
+import React from 'react';
+import { render, screen, act } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MaterialListHandler } from './MaterialListHandler';
+import {
+  MockAuthRepository,
+  MockMaterialRepository,
+  MockMaterialListQueryRepository,
+} from '../../../data/mock';
+import {
+  AuthLogoutUsecase,
+  MaterialDeleteUsecase,
+  MaterialListUsecase,
+} from '../../../domain';
+import { flushPromises } from '../../../utils/testUtils';
+
+const mockRouterPush = jest.fn();
+jest.mock('solito/router', () => ({
+  useRouter: () => ({ push: mockRouterPush, replace: jest.fn(), back: jest.fn() }),
+}));
+
+jest.mock('@tamagui/toast', () => ({
+  useToastController: () => ({ show: jest.fn() }),
+}));
+
+const createProps = (
+  options: {
+    materialRepo?: MockMaterialRepository;
+    authRepo?: MockAuthRepository;
+  } = {}
+) => {
+  const materialRepo = options.materialRepo ?? new MockMaterialRepository();
+  const authRepo = options.authRepo ?? new MockAuthRepository();
+  return {
+    authLogoutUsecase: new AuthLogoutUsecase(authRepo),
+    materialListUsecase: new MaterialListUsecase(
+      materialRepo,
+      new MockMaterialListQueryRepository(),
+      { materials: [], totalItem: 0 }
+    ),
+    materialDeleteUsecase: new MaterialDeleteUsecase(materialRepo),
+  };
+};
+
+describe('MaterialListHandler', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('loading and data states', () => {
+    it('should show skeleton list during initial loading', async () => {
+      render(<MaterialListHandler {...createProps()} />);
+      expect(screen.getByTestId('skeleton-list')).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
+    });
+
+    it('should show material list after successful fetch', async () => {
+      render(<MaterialListHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByRole('heading', { name: 'Material 1' })).toBeTruthy();
+      expect(screen.getByRole('heading', { name: 'Material 2' })).toBeTruthy();
+    });
+
+    it('should show error state when fetch fails', async () => {
+      const materialRepo = new MockMaterialRepository();
+      materialRepo.shouldFail = true;
+
+      render(<MaterialListHandler {...createProps({ materialRepo })} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByRole('heading', { name: 'Failed to Fetch Materials' })).toBeTruthy();
+    });
+
+    it('should not show skeleton after data is loaded', async () => {
+      render(<MaterialListHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.queryByTestId('skeleton-list')).toBeNull();
+    });
+
+    it('should preserve list content during revalidation after delete', async () => {
+      const user = userEvent.setup();
+      render(<MaterialListHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      const deleteMenuItems = screen.getAllByRole('button', { name: 'Delete' });
+      await user.click(deleteMenuItems[0]);
+      await user.click(screen.getByRole('button', { name: 'Yes' }));
+
+      expect(screen.queryByTestId('skeleton-list')).toBeNull();
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.queryByTestId('skeleton-list')).toBeNull();
+    });
+
+    it('should show empty state when no materials exist', async () => {
+      const materialRepo = new MockMaterialRepository();
+      materialRepo.materials = [];
+
+      render(<MaterialListHandler {...createProps({ materialRepo })} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByRole('heading', { name: 'Oops, Material is Empty' })).toBeTruthy();
+    });
+
+    it('should show create CTA button in empty state', async () => {
+      const materialRepo = new MockMaterialRepository();
+      materialRepo.materials = [];
+      render(<MaterialListHandler {...createProps({ materialRepo })} />);
+      await act(async () => { await flushPromises(); });
+      expect(screen.getByRole('button', { name: 'Create Material' })).toBeTruthy();
+    });
+
+    it('should navigate to create page when CTA button is pressed', async () => {
+      const user = userEvent.setup();
+      const materialRepo = new MockMaterialRepository();
+      materialRepo.materials = [];
+      render(<MaterialListHandler {...createProps({ materialRepo })} />);
+      await act(async () => { await flushPromises(); });
+      await user.click(screen.getByRole('button', { name: 'Create Material' }));
+      expect(mockRouterPush).toHaveBeenCalledWith('/materials/create');
+    });
+  });
+
+  describe('delete modal', () => {
+    it('should not show delete modal initially', async () => {
+      render(<MaterialListHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.queryByRole('heading', { name: 'Delete Material ?' })).toBeNull();
+    });
+
+    it('should show delete modal when delete menu is pressed', async () => {
+      const user = userEvent.setup();
+      render(<MaterialListHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      const deleteMenuItems = screen.getAllByRole('button', { name: 'Delete' });
+      await user.click(deleteMenuItems[0]);
+
+      expect(screen.getByRole('heading', { name: 'Delete Material ?' })).toBeTruthy();
+    });
+
+    it('should hide delete modal when cancel is pressed', async () => {
+      const user = userEvent.setup();
+      render(<MaterialListHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      const deleteMenuItems = screen.getAllByRole('button', { name: 'Delete' });
+      await user.click(deleteMenuItems[0]);
+      expect(screen.getByRole('heading', { name: 'Delete Material ?' })).toBeTruthy();
+
+      await user.click(screen.getByRole('button', { name: 'No' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.queryByRole('heading', { name: 'Delete Material ?' })).toBeNull();
+    });
+
+    it('should refetch material list after successful delete', async () => {
+      const user = userEvent.setup();
+      const materialRepo = new MockMaterialRepository();
+      render(<MaterialListHandler {...createProps({ materialRepo })} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByRole('heading', { name: 'Material 1' })).toBeTruthy();
+
+      const deleteMenuItems = screen.getAllByRole('button', { name: 'Delete' });
+      await user.click(deleteMenuItems[0]);
+      expect(screen.getByRole('heading', { name: 'Delete Material ?' })).toBeTruthy();
+
+      await user.click(screen.getByRole('button', { name: 'Yes' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.queryByRole('heading', { name: 'Delete Material ?' })).toBeNull();
+      expect(screen.getByRole('heading', { name: 'Material 2' })).toBeTruthy();
+    });
+  });
+
+  describe('navigation', () => {
+    it('should navigate to material edit page when edit menu is pressed', async () => {
+      const user = userEvent.setup();
+      render(<MaterialListHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      const editMenuItems = screen.getAllByRole('button', { name: 'Edit' });
+      await user.click(editMenuItems[0]);
+
+      expect(mockRouterPush).toHaveBeenCalledWith('/materials/1');
+    });
+
+    it('should navigate to material page when item is pressed', async () => {
+      const user = userEvent.setup();
+      render(<MaterialListHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      await user.click(screen.getByRole('heading', { name: 'Material 1' }));
+
+      expect(mockRouterPush).toHaveBeenCalledWith('/materials/1');
+    });
+  });
+
+  describe('error recovery', () => {
+    it('should refetch materials when retry button is pressed', async () => {
+      const user = userEvent.setup();
+      const materialRepo = new MockMaterialRepository();
+      materialRepo.shouldFail = true;
+
+      render(<MaterialListHandler {...createProps({ materialRepo })} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByRole('heading', { name: 'Failed to Fetch Materials' })).toBeTruthy();
+
+      materialRepo.shouldFail = false;
+
+      await user.click(screen.getByRole('button', { name: 'Retry' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByRole('heading', { name: 'Material 1' })).toBeTruthy();
+    });
+  });
+
+  describe('search UX', () => {
+    it('should not show clear button when search is empty', async () => {
+      render(<MaterialListHandler {...createProps()} />);
+      await act(async () => { await flushPromises(); });
+      expect(screen.queryByRole('button', { name: 'Clear search' })).toBeNull();
+    });
+
+    it('should show clear button when search input has text', async () => {
+      const user = userEvent.setup();
+      render(<MaterialListHandler {...createProps()} />);
+      await act(async () => { await flushPromises(); });
+
+      await user.type(screen.getByPlaceholderText('Search Materials by Name'), 'test');
+
+      expect(screen.getByRole('button', { name: 'Clear search' })).toBeTruthy();
+    });
+
+    it('should hide clear button after clearing search', async () => {
+      const user = userEvent.setup();
+      render(<MaterialListHandler {...createProps()} />);
+      await act(async () => { await flushPromises(); });
+
+      await user.type(screen.getByPlaceholderText('Search Materials by Name'), 'test');
+      expect(screen.getByRole('button', { name: 'Clear search' })).toBeTruthy();
+
+      await user.click(screen.getByRole('button', { name: 'Clear search' }));
+      await act(async () => { await flushPromises(); });
+
+      expect(screen.queryByRole('button', { name: 'Clear search' })).toBeNull();
+    });
+
+    it('should not show search spinner when data is loaded and no changes pending', async () => {
+      render(<MaterialListHandler {...createProps()} />);
+      await act(async () => { await flushPromises(); });
+      expect(screen.queryByTestId('search-spinner')).toBeNull();
+    });
+  });
+
+  describe('stock check filter and badge', () => {
+    it('should show the No stock check badge only for excluded materials', async () => {
+      const materialRepo = new MockMaterialRepository();
+      materialRepo.materials = [
+        ...materialRepo.materials,
+        {
+          id: 5,
+          name: 'Cleaning Equipment',
+          price: 500,
+          unit: 'pcs',
+          createdAt: '2024-03-24T00:00:00.000Z',
+          weeklyUsage: 0,
+          purchaseUnit: 'Pack',
+          purchaseUnitSize: 1,
+          minimumStock: 0,
+          normalStock: 0,
+          isStockCheckRequired: false,
+          suppliers: [],
+        },
+      ];
+
+      render(<MaterialListHandler {...createProps({ materialRepo })} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(
+        screen.getByRole('heading', { name: 'Cleaning Equipment' })
+      ).toBeTruthy();
+      expect(screen.getAllByText('No stock check')).toHaveLength(1);
+    });
+
+    it('should show the stock check filter defaulted to All', async () => {
+      render(<MaterialListHandler {...createProps()} />);
+      await act(async () => {
+        await flushPromises();
+      });
+
+      await userEvent.setup().click(screen.getByRole('button', { name: 'Filter' }));
+
+      const allOption = screen.getByRole('radio', { name: 'All' });
+      expect((allOption as HTMLInputElement).checked).toBe(true);
+    });
+
+    it('should reset to page 1 when the stock check filter changes', async () => {
+      const user = userEvent.setup();
+      render(<MaterialListHandler {...createProps()} />);
+      await act(async () => {
+        await flushPromises();
+      });
+
+      await user.click(screen.getByRole('button', { name: 'Filter' }));
+      await user.click(screen.getByRole('radio', { name: 'Excluded' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      const excludedOption = screen.getByRole('radio', { name: 'Excluded' });
+      expect((excludedOption as HTMLInputElement).checked).toBe(true);
+    });
+  });
+});

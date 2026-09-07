@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useRouter } from 'solito/router';
-import { CartItemEditScreen } from '../../presentation/screens/CartItemEditScreen';
+import { CartItemEditScreen } from '../../presentation/screens/order/CartItemEditScreen';
 import { useCart } from './CartProvider';
 
 export type CartItemEditProps = {
