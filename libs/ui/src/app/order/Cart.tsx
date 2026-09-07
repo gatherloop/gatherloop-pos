@@ -1,4 +1,4 @@
-import { CartHandler } from '../../presentation/screens/CartHandler';
+import { CartHandler } from '../../presentation/screens/order/CartHandler';
 import { useCart } from './CartProvider';
 
 export type CartProps = {

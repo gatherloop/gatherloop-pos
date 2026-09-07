@@ -3,7 +3,7 @@ import { QueryClient } from '@tanstack/react-query';
 // composition root, which would bloat the customer bundle with the POS (D6).
 import { ApiMenuRepository } from '../../data/api/menu';
 import { MenuListUsecase } from '../../domain/usecases/menuList';
-import { MenuListHandler } from '../../presentation/screens/MenuListHandler';
+import { MenuListHandler } from '../../presentation/screens/order/MenuListHandler';
 
 export type MenuListProps = {
   tableCode: string;

@@ -1,0 +1,104 @@
+import { Button } from 'tamagui';
+import { Link } from 'solito/link';
+import { Plus } from '@tamagui/lucide-icons';
+import {
+  ProductDeleteAlert,
+  ProductList,
+  Layout,
+  ProductListProps,
+} from '../../components';
+import { Product, SaleType, StatusFilter } from '../../../domain';
+
+export type ProductListScreenProps = {
+  onLogoutPress: () => void;
+  onEditMenuPress: (product: Product) => void;
+  onDeleteMenuPress: (product: Product) => void;
+  onItemPress: (product: Product) => void;
+  currentPage: number;
+  itemPerPage: number;
+  totalItem: number;
+  onPageChange: (page: number) => void;
+  onRetryButtonPress: () => void;
+  onSaleTypeChange: (saleType: SaleType) => void;
+  onStatusChange: (status: StatusFilter) => void;
+  onSearchValueChange: (value: string) => void;
+  saleType: SaleType;
+  status: StatusFilter;
+  searchValue: string;
+  variant: ProductListProps['variant'];
+  isDeleteButtonDisabled: boolean;
+  isDeleteModalOpen: boolean;
+  onDeleteCancel: () => void;
+  onDeleteConfirm: () => void;
+  isRevalidating?: boolean;
+  isChangingParams?: boolean;
+  onSearchClear?: () => void;
+  onEmptyActionPress?: () => void;
+};
+
+export const ProductListScreen = ({
+  onLogoutPress,
+  onDeleteMenuPress,
+  onEditMenuPress,
+  onItemPress,
+  currentPage,
+  isDeleteButtonDisabled,
+  isDeleteModalOpen,
+  itemPerPage,
+  onDeleteCancel,
+  onDeleteConfirm,
+  onPageChange,
+  onRetryButtonPress,
+  onSaleTypeChange,
+  onStatusChange,
+  onSearchValueChange,
+  saleType,
+  status,
+  searchValue,
+  totalItem,
+  variant,
+  isRevalidating,
+  isChangingParams,
+  onSearchClear,
+  onEmptyActionPress,
+}: ProductListScreenProps) => {
+  return (
+    <Layout
+      onLogoutPress={onLogoutPress}
+      title="Products"
+      rightActionItem={
+        <Link href="/products/create">
+          <Button size="$3" icon={Plus} variant="outlined" disabled />
+        </Link>
+      }
+    >
+      <ProductList
+        currentPage={currentPage}
+        itemPerPage={itemPerPage}
+        onPageChange={onPageChange}
+        onRetryButtonPress={onRetryButtonPress}
+        onSaleTypeChange={onSaleTypeChange}
+        onStatusChange={onStatusChange}
+        onSearchValueChange={onSearchValueChange}
+        saleType={saleType}
+        status={status}
+        searchValue={searchValue}
+        totalItem={totalItem}
+        variant={variant}
+        isRevalidating={isRevalidating}
+        isChangingParams={isChangingParams}
+        onSearchClear={onSearchClear}
+        onEditMenuPress={onEditMenuPress}
+        onDeleteMenuPress={onDeleteMenuPress}
+        onItemPress={onItemPress}
+        onEmptyActionPress={onEmptyActionPress}
+      />
+      <ProductDeleteAlert
+        isButtonDisabled={isDeleteButtonDisabled}
+        isOpen={isDeleteModalOpen}
+        onCancel={onDeleteCancel}
+        onConfirm={onDeleteConfirm}
+      />
+    </Layout>
+  );
+};

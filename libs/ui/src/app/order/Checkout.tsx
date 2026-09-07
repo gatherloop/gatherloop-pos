@@ -1,4 +1,4 @@
-import { CheckoutHandler } from '../../presentation/screens/CheckoutHandler';
+import { CheckoutHandler } from '../../presentation/screens/order/CheckoutHandler';
 
 export type CheckoutProps = {
   tableCode: string;
