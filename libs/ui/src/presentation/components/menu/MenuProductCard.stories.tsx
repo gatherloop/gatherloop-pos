@@ -9,7 +9,7 @@ const category = {
 };
 
 const meta: Meta<typeof MenuProductCard> = {
-  title: 'Menu/MenuProductCard',
+  title: 'Components/Menu/MenuProductCard',
   component: MenuProductCard,
   args: {
     onPress: () => {

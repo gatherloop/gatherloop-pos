@@ -11,7 +11,7 @@ const defaultArgs = {
 };
 
 const meta: Meta<typeof CouponList> = {
-  title: 'Features/Coupons/CouponList',
+  title: 'Components/Coupons/CouponList',
   component: CouponList,
   args: defaultArgs,
 };

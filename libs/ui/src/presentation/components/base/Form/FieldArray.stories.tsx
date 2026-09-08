@@ -101,7 +101,7 @@ const EmptyFieldArrayDemo = () => {
 };
 
 const meta: Meta<typeof FieldArray> = {
-  title: 'Base/Form/FieldArray',
+  title: 'Components/Base/Form/FieldArray',
   component: FieldArray,
 };
 

@@ -30,7 +30,7 @@ Just as importantly, resolution never blocks operations: if a card is scanned th
 - Components: `libs/ui/src/presentation/components/tickets/{TicketList,TicketListItem,TicketFormView}.tsx`
 - Entity: `libs/ui/src/domain/entities/Ticket.ts`
 - Backend: `apps/api/domain/ticket_{entity,usecase}.go`; routes in `apps/api/presentation/restapi/ticket_route.go`; sample data in `apps/api/seeds/ticket_seeder.go`
-- Web routes: `apps/web/src/pages/tickets/{index,create,[ticketId]}.tsx`
+- Web routes: `apps/pos-web/src/pages/tickets/{index,create,[ticketId]}.tsx`
 - Rental integration: `apps/api/domain/rental_usecase.go` (code → ticket resolution at checkin, name snapshot onto checkout notes), `libs/ui/src/presentation/components/rentals/RentalCheckinFormView.tsx` (live scan feedback)
 - Design doc: `docs/prd-ticket-management.md` (the RFID-code-vs-printed-number rationale in full)
 - Related: [Board-game Rentals](/sales/rentals) — the only place a ticket has any real effect

@@ -45,7 +45,7 @@ const withNestedFormProvider: Decorator = (Story) => {
 };
 
 const meta: Meta<typeof MarkdownEditor> = {
-  title: 'Base/Form/MarkdownEditor',
+  title: 'Components/Base/Form/MarkdownEditor',
   component: MarkdownEditor,
   decorators: [withFormProvider],
   args: {

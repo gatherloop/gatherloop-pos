@@ -19,7 +19,7 @@ const defaultArgs = {
 };
 
 const meta: Meta<typeof MaterialList> = {
-  title: 'Features/Materials/MaterialList',
+  title: 'Components/Materials/MaterialList',
   component: MaterialList,
   args: defaultArgs,
 };

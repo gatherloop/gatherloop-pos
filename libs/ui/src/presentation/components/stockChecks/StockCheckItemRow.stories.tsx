@@ -25,7 +25,7 @@ const StockCheckItemRowStory = ({
 };
 
 const meta: Meta<typeof StockCheckItemRow> = {
-  title: 'Features/StockChecks/StockCheckItemRow',
+  title: 'Components/StockChecks/StockCheckItemRow',
   component: StockCheckItemRow,
 };
 

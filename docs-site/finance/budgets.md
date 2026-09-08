@@ -26,7 +26,7 @@ The current model, based on how mainstream POS platforms actually solve this, re
 
 ## For engineers
 
-- Web routes: `apps/web/src/pages/budgets/{index,create,[budgetId]}.tsx`
+- Web routes: `apps/pos-web/src/pages/budgets/{index,create,[budgetId]}.tsx`
 - Screens: `libs/ui/src/presentation/screens/Budget{List,Create,Update}Screen.tsx`
 - Components: `libs/ui/src/presentation/components/budgets/{BudgetList,BudgetListItem,BudgetFormView}.tsx`
 - Entity: `libs/ui/src/domain/entities/Budget.ts`

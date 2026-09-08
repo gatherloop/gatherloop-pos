@@ -21,7 +21,7 @@ const defaultArgs = {
 };
 
 const meta: Meta<typeof ProductList> = {
-  title: 'Features/Products/ProductList',
+  title: 'Components/Products/ProductList',
   component: ProductList,
   args: defaultArgs,
 };

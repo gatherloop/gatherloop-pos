@@ -33,6 +33,6 @@ Because the whole thing is computed from a stock check's frozen snapshot rather 
 - Components: `libs/ui/src/presentation/components/purchaseLists/PurchaseListView.tsx`, `PurchaseListGroupedView.tsx`
 - Entities: `libs/ui/src/domain/entities/PurchaseList.ts`
 - Backend: `apps/api/domain/stock_check_entity.go`, `stock_check_usecase.go` (purchase-list computation lives alongside the stock check domain — there is no separate persisted table)
-- Web route: `apps/web/src/pages/stock-checks/[id]/purchase-list.tsx`
+- Web route: `apps/pos-web/src/pages/stock-checks/[id]/purchase-list.tsx`
 - Design docs: `docs/prd-inventory-management.md` (the min/normal threshold calculation), `docs/prd-inventory-purchase-suppliers.md` (supplier grouping, filters, action buttons)
 - Related: [Stock Checks](/inventory/stock-checks) for the snapshot this is computed from, [Suppliers](/inventory/suppliers) for what powers each section

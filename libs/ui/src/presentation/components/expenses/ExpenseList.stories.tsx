@@ -24,7 +24,7 @@ const defaultArgs = {
 };
 
 const meta: Meta<typeof ExpenseList> = {
-  title: 'Features/Expenses/ExpenseList',
+  title: 'Components/Expenses/ExpenseList',
   component: ExpenseList,
   args: defaultArgs,
 };

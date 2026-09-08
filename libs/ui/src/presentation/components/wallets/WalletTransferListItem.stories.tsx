@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { WalletTransferListItem } from './WalletTransferListItem';
 
 const meta: Meta<typeof WalletTransferListItem> = {
-  title: 'Features/Wallets/WalletTransferListItem',
+  title: 'Components/Wallets/WalletTransferListItem',
   component: WalletTransferListItem,
   args: {
     toWalletName: 'Bank Transfer',

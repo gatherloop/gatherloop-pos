@@ -37,7 +37,7 @@ const ConfirmationAlertDemo = ({
 };
 
 const meta: Meta<typeof ConfirmationAlert> = {
-  title: 'Base/ConfirmationAlert',
+  title: 'Components/Base/ConfirmationAlert',
   component: ConfirmationAlert,
   args: {
     title: 'Confirm Action',

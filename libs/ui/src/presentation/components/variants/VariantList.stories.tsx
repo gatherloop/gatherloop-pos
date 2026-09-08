@@ -17,7 +17,7 @@ const defaultArgs = {
 };
 
 const meta: Meta<typeof VariantList> = {
-  title: 'Features/Variants/VariantList',
+  title: 'Components/Variants/VariantList',
   component: VariantList,
   args: defaultArgs,
 };

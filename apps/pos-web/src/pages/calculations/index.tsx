@@ -1,0 +1,32 @@
+import { ApiCalculationRepository } from '@gatherloop-pos/ui';
+import {
+  CalculationList,
+  CalculationListProps,
+} from '@gatherloop-pos/ui/pos';
+import { GetServerSideProps } from 'next';
+import { QueryClient } from '@tanstack/react-query';
+
+export const getServerSideProps: GetServerSideProps<CalculationListProps> = async (
+  ctx
+) => {
+  const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
+  if (!isLoggedIn) {
+    return {
+      redirect: {
+        destination: '/auth/login',
+        permanent: false,
+      },
+    };
+  }
+
+  const client = new QueryClient();
+  const calculationRepository = new ApiCalculationRepository(client);
+  const calculations = await calculationRepository.fetchCalculationList({
+    headers: { Cookie: ctx.req.headers.cookie },
+  });
+  return {
+    props: { calculationListParams: { calculations } },
+  };
+};
+
+export default CalculationList;

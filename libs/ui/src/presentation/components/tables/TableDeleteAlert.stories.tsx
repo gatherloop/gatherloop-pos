@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { TableDeleteAlert } from './TableDeleteAlert';
 
 const meta: Meta<typeof TableDeleteAlert> = {
-  title: 'Features/Tables/TableDeleteAlert',
+  title: 'Components/Tables/TableDeleteAlert',
   component: TableDeleteAlert,
   args: {
     isOpen: true,

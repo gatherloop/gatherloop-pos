@@ -14,7 +14,7 @@ const withFormProvider: Decorator = (Story) => {
 };
 
 const meta: Meta<typeof InputText> = {
-  title: 'Base/Form/InputText',
+  title: 'Components/Base/Form/InputText',
   component: InputText,
   decorators: [withFormProvider],
   args: {

@@ -32,6 +32,6 @@ Deleting a supplier is safe by design — it soft-deletes along with every mater
 - Components: `libs/ui/src/presentation/components/suppliers/SupplierFormView.tsx`, `SupplierList.tsx`, `SupplierListItem.tsx`
 - Entities: `libs/ui/src/domain/entities/Supplier.ts`; the material-link types (`MaterialSupplier`, `PurchaseType`) live on `libs/ui/src/domain/entities/Material.ts` since the junction is material-owned
 - Backend: `apps/api/domain/supplier_entity.go`, `supplier_usecase.go` (delete cascades into `material_suppliers`); junction handling lives in `apps/api/domain/material_usecase.go` / `material_repo.go`
-- Web routes: `apps/web/src/pages/suppliers/{index,create}.tsx`, `[supplierId].tsx`
+- Web routes: `apps/pos-web/src/pages/suppliers/{index,create}.tsx`, `[supplierId].tsx`
 - Design doc: `docs/prd-inventory-purchase-suppliers.md`
 - Related: [Materials](/catalog/materials) for where suppliers are linked, [Purchase Lists](/inventory/purchase-lists) for where the links pay off

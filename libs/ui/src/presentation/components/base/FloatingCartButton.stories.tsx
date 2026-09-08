@@ -4,7 +4,7 @@ import { YStack } from 'tamagui';
 import { FloatingCartButton } from './FloatingCartButton';
 
 const meta: Meta<typeof FloatingCartButton> = {
-  title: 'Base/FloatingCartButton',
+  title: 'Components/Base/FloatingCartButton',
   component: FloatingCartButton,
   args: {
     label: '3 items · Rp 45.000 · View Cart',

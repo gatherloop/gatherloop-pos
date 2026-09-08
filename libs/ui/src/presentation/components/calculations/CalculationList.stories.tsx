@@ -12,7 +12,7 @@ const defaultArgs = {
 };
 
 const meta: Meta<typeof CalculationList> = {
-  title: 'Features/Calculations/CalculationList',
+  title: 'Components/Calculations/CalculationList',
   component: CalculationList,
   args: defaultArgs,
 };

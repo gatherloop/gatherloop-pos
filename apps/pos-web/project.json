@@ -1,0 +1,25 @@
+{
+  "name": "pos-web",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/pos-web",
+  "projectType": "application",
+  "tags": [],
+  "targets": {
+    "dev": {
+      "dependsOn": [
+        {
+          "projects": "api-contract",
+          "target": "generate:ts"
+        }
+      ]
+    },
+    "build": {
+      "dependsOn": [
+        {
+          "projects": "api-contract",
+          "target": "generate:ts"
+        }
+      ]
+    }
+  }
+}

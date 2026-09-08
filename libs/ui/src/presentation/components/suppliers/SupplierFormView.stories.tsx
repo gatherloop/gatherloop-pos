@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { SupplierFormView } from './SupplierFormView';
 
 const meta: Meta<typeof SupplierFormView> = {
-  title: 'Features/Suppliers/SupplierFormView',
+  title: 'Components/Suppliers/SupplierFormView',
   component: SupplierFormView,
 };
 

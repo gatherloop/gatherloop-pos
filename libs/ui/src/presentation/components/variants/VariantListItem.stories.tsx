@@ -4,7 +4,7 @@ import { VariantListItem } from './VariantListItem';
 import { mockOptionValues } from '../../../../.storybook/mocks/mockData';
 
 const meta: Meta<typeof VariantListItem> = {
-  title: 'Features/Variants/VariantListItem',
+  title: 'Components/Variants/VariantListItem',
   component: VariantListItem,
   args: {
     price: 35000,

@@ -27,7 +27,7 @@ const defaultArgs = {
 };
 
 const meta: Meta<typeof TransactionList> = {
-  title: 'Features/Transactions/TransactionList',
+  title: 'Components/Transactions/TransactionList',
   component: TransactionList,
   args: defaultArgs,
 };

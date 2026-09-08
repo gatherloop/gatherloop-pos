@@ -33,7 +33,7 @@ const SheetDemo = ({
 };
 
 const meta: Meta<typeof Sheet> = {
-  title: 'Base/Sheet',
+  title: 'Components/Base/Sheet',
   component: Sheet,
   args: {
     isOpen: false,

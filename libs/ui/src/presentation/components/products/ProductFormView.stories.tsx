@@ -25,7 +25,7 @@ const defaultValues: ProductForm = {
 };
 
 const meta: Meta<typeof ProductFormView> = {
-  title: 'Features/Products/ProductFormView',
+  title: 'Components/Products/ProductFormView',
   component: ProductFormView,
 };
 

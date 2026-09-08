@@ -86,7 +86,7 @@ const config: StorybookConfig = {
         {
           runtime: 'automatic',
           // Same react-compiler-runtime / target combination as apps/pos-mobile's
-          // Metro build (apps/pos-mobile/.babelrc.js) and apps/web's Next build
+          // Metro build (apps/pos-mobile/.babelrc.js) and apps/pos-web's Next build
           // (next.config.js) — see docs/trd-react-compiler-adoption.md §D3.
           reactCompiler: { target: '18' },
         },

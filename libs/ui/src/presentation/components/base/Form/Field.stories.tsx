@@ -16,7 +16,7 @@ const withFormProvider: Decorator = (Story) => {
 };
 
 const meta: Meta<typeof Field> = {
-  title: 'Base/Form/Field',
+  title: 'Components/Base/Form/Field',
   component: Field,
   decorators: [withFormProvider],
   args: {

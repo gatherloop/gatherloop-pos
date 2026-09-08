@@ -1,0 +1,34 @@
+import { ApiSupplierRepository } from '@gatherloop-pos/ui';
+import {
+  SupplierUpdate,
+  SupplierUpdateProps,
+} from '@gatherloop-pos/ui/pos';
+import { GetServerSideProps } from 'next';
+import { QueryClient } from '@tanstack/react-query';
+
+export const getServerSideProps: GetServerSideProps<
+  SupplierUpdateProps,
+  { supplierId: string }
+> = async (ctx) => {
+  const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
+  if (!isLoggedIn) {
+    return {
+      redirect: {
+        destination: '/auth/login',
+        permanent: false,
+      },
+    };
+  }
+
+  const client = new QueryClient();
+  const supplierRepository = new ApiSupplierRepository(client);
+
+  const supplierId = parseInt(ctx.params?.supplierId ?? '');
+  const supplier = await supplierRepository.fetchSupplierById(supplierId, {
+    headers: { Cookie: ctx.req.headers.cookie },
+  });
+
+  return { props: { supplierUpdateParams: { supplier, supplierId } } };
+};
+
+export default SupplierUpdate;

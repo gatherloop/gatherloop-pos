@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { TransactionListItem } from './TransactionListItem';
 
 const meta: Meta<typeof TransactionListItem> = {
-  title: 'Features/Transactions/TransactionListItem',
+  title: 'Components/Transactions/TransactionListItem',
   component: TransactionListItem,
   args: {
     name: 'Order #001',

@@ -11,7 +11,7 @@ const defaultArgs = {
 };
 
 const meta: Meta<typeof WalletList> = {
-  title: 'Features/Wallets/WalletList',
+  title: 'Components/Wallets/WalletList',
   component: WalletList,
   args: defaultArgs,
 };

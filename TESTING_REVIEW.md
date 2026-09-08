@@ -60,7 +60,7 @@ expect(tester.state.type).toBe('loaded');
 
 ### 2.3 E2E Tests (2 files) ❌ PLACEHOLDER ONLY
 
-- `apps/web-e2e/src/example.spec.ts` and `apps/mobile-e2e/src/example.spec.ts` are Playwright scaffolds with a single "has title" test.
+- `apps/pos-web-e2e/src/example.spec.ts` and `apps/mobile-e2e/src/example.spec.ts` are Playwright scaffolds with a single "has title" test.
 - Not testing any real user flows.
 
 ### 2.4 What's Completely MISSING

@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { MaterialListItem } from './MaterialListItem';
 
 const meta: Meta<typeof MaterialListItem> = {
-  title: 'Features/Materials/MaterialListItem',
+  title: 'Components/Materials/MaterialListItem',
   component: MaterialListItem,
   args: {
     name: 'Coffee Bean',

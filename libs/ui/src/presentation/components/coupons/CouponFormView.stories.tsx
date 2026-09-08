@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { CouponFormView } from './CouponFormView';
 
 const meta: Meta<typeof CouponFormView> = {
-  title: 'Features/Coupons/CouponFormView',
+  title: 'Components/Coupons/CouponFormView',
   component: CouponFormView,
 };
 

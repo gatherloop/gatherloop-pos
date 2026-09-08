@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { TransactionUnpayAlert } from './TransactionUnpayAlert';
 
 const meta: Meta<typeof TransactionUnpayAlert> = {
-  title: 'Features/Transactions/TransactionUnpayAlert',
+  title: 'Components/Transactions/TransactionUnpayAlert',
   component: TransactionUnpayAlert,
   args: {
     isOpen: true,

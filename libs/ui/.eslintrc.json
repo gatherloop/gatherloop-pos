@@ -33,6 +33,38 @@
           }
         ]
       }
+    },
+    {
+      "files": ["src/app/pos/**", "src/presentation/screens/pos/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["**/app/order/**", "**/screens/order/**", "../order/**"],
+                "message": "POS must not import the order app's screens or composition roots."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/app/order/**", "src/presentation/screens/order/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["**/app/pos/**", "**/screens/pos/**", "../pos/**"],
+                "message": "Order must not import the POS app's screens or composition roots."
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }

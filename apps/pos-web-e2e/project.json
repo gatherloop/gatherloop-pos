@@ -1,0 +1,9 @@
+{
+  "name": "pos-web-e2e",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/pos-web-e2e/src",
+  "tags": [],
+  "implicitDependencies": ["pos-web"],
+  "// targets": "to see all targets run: nx show project pos-web-e2e --web",
+  "targets": {}
+}

@@ -80,7 +80,7 @@ const TransactionCartStory = ({
 };
 
 const meta: Meta<typeof TransactionCartView> = {
-  title: 'Features/Transactions/TransactionCartView',
+  title: 'Components/Transactions/TransactionCartView',
   component: TransactionCartView,
 };
 

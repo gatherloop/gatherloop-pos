@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { TableFormView } from './TableFormView';
 
 const meta: Meta<typeof TableFormView> = {
-  title: 'Features/Tables/TableFormView',
+  title: 'Components/Tables/TableFormView',
   component: TableFormView,
 };
 
