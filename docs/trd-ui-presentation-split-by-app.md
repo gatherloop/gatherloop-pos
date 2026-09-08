@@ -1,6 +1,6 @@
 # TRD — Split `libs/ui` composition and screens by app, and rename the app projects
 
-**Status:** proposed
+**Status:** done — all nine phases merged (see §7 for PR numbers)
 **Scope:** `libs/ui/src/app`, `libs/ui/src/presentation/screens`, `libs/ui/src/index*.ts`, `libs/ui/.storybook`, `tsconfig.base.json`, `apps/{web,web-e2e,order,order-e2e,mobile,mobile-e2e}` (directory + Nx project names only), and the CI/deploy configs that name those projects
 **Non-scope:** `libs/ui/src/{domain,data,utils}`, `libs/ui/src/presentation/{components,controllers}`, `libs/api-contract`, `libs/provider`, `apps/api`, any runtime behaviour, any component API, native bundle identifiers
 **Date of research:** 2026-09-07 (all counts measured against `main` @ `91d5451`)
@@ -479,17 +479,17 @@ files.
 
 Nine PRs.
 
-| # | PR | Files moved | Import lines | Risk |
-| ---: | --- | ---: | ---: | --- |
-| 1 | `app/{pos,order}` | 66 | ~200 | medium |
-| 2 | `presentation/screens/{pos,order}` | 242 | ~400 | medium (size) |
-| 3 | Storybook retitle + `storySort` | 0 | 0 (165 titles) | low |
-| 4 | Barrels + `@gatherloop-pos/ui/pos` | 0 | ~65 | medium |
-| 5 | Lint guardrail | 0 | 0 | low |
-| 6 | `web`/`web-e2e` → `pos-web`/`pos-web-e2e` | 96 | 0 | medium (Docker/CI) |
-| 7 | `order`/`order-e2e` → `order-web`/`order-web-e2e` | 36 | 0 | medium (Vercel) |
-| 8 | `mobile`/`mobile-e2e` → `pos-mobile`/`pos-mobile-e2e` | 80 | 0 | medium (native) |
-| 9 | Docs refresh | 0 | 0 | low |
+| # | PR | Files moved | Import lines | Risk | Merged as |
+| ---: | --- | ---: | ---: | --- | --- |
+| 1 | `app/{pos,order}` | 66 | ~200 | medium | [#390](https://github.com/gatherloop/gatherloop-pos/pull/390) |
+| 2 | `presentation/screens/{pos,order}` | 242 | ~400 | medium (size) | [#391](https://github.com/gatherloop/gatherloop-pos/pull/391) |
+| 3 | Storybook retitle + `storySort` | 0 | 0 (165 titles) | low | [#392](https://github.com/gatherloop/gatherloop-pos/pull/392) |
+| 4 | Barrels + `@gatherloop-pos/ui/pos` | 0 | ~65 | medium | [#393](https://github.com/gatherloop/gatherloop-pos/pull/393) |
+| 5 | Lint guardrail | 0 | 0 | low | [#394](https://github.com/gatherloop/gatherloop-pos/pull/394) |
+| 6 | `web`/`web-e2e` → `pos-web`/`pos-web-e2e` | 96 | 0 | medium (Docker/CI) | [#395](https://github.com/gatherloop/gatherloop-pos/pull/395) |
+| 7 | `order`/`order-e2e` → `order-web`/`order-web-e2e` | 36 | 0 | medium (Vercel) | [#396](https://github.com/gatherloop/gatherloop-pos/pull/396) |
+| 8 | `mobile`/`mobile-e2e` → `pos-mobile`/`pos-mobile-e2e` | 80 | 0 | medium (native) | [#397](https://github.com/gatherloop/gatherloop-pos/pull/397) |
+| 9 | Docs refresh | 0 | 0 | low | [#398](https://github.com/gatherloop/gatherloop-pos/pull/398) |
 
 ---
 

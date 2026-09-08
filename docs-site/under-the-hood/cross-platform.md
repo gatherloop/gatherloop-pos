@@ -4,7 +4,7 @@ Gatherloop POS ships as a Next.js web app and a React Native mobile app from **o
 
 ## What's shared (nearly everything)
 
-Every layer described in [Clean Architecture](/under-the-hood/clean-architecture) — entities, usecases, controllers, handlers, and screens — lives in `libs/ui` and is imported as-is by both apps. Concretely, `apps/pos-mobile/src/app/App.tsx` and `apps/pos-web/src/pages/**` both import components straight from `libs/ui/src/app` (e.g. `TransactionList`, `ProductCreate`, `ChecklistSessionDetail`) — the same composition root that instantiates the real API repositories, wires up the usecases, and renders the same Handler and Screen.
+Every layer described in [Clean Architecture](/under-the-hood/clean-architecture) — entities, usecases, controllers, handlers, and screens — lives in `libs/ui` and is imported as-is by both apps. Concretely, `apps/pos-mobile/src/app/App.tsx` and `apps/pos-web/src/pages/**` both import components straight from `libs/ui/src/app/pos` via the `@gatherloop-pos/ui/pos` entry point (e.g. `TransactionList`, `ProductCreate`, `ChecklistSessionDetail`) — the same composition root that instantiates the real API repositories, wires up the usecases, and renders the same Handler and Screen. `libs/ui/src/app` and `libs/ui/src/presentation/screens` each split into a `pos/` and an `order/` folder, so the customer ordering app (`apps/order-web`) draws from its own `order/` slice instead.
 
 That sharing is possible because of [Tamagui](https://tamagui.dev): the Screen layer is written once using Tamagui's component set (`View`, `Button`, `Text`, …), which compiles to real DOM on web and real native views on iOS/Android — not a webview, and not two separate implementations kept in sync by hand.
 
@@ -26,7 +26,7 @@ A conventional "web + mobile" POS is really two products that happen to talk to 
 
 ## Explore the source
 
-- Shared app composition: [`libs/ui/src/app`](https://github.com/gatherloop/gatherloop-pos/tree/main/libs/ui/src/app)
+- Shared app composition: [`libs/ui/src/app/pos`](https://github.com/gatherloop/gatherloop-pos/tree/main/libs/ui/src/app/pos)
 - Mobile navigation shell: [`apps/pos-mobile/src/app/App.tsx`](https://github.com/gatherloop/gatherloop-pos/blob/main/apps/pos-mobile/src/app/App.tsx)
 - Web routing: [`apps/pos-web/src/pages`](https://github.com/gatherloop/gatherloop-pos/tree/main/apps/pos-web/src/pages)
 - Tamagui config: [`apps/pos-web/next.config.js`](https://github.com/gatherloop/gatherloop-pos/blob/main/apps/pos-web/next.config.js), [`libs/ui`](https://github.com/gatherloop/gatherloop-pos/tree/main/libs/ui)
