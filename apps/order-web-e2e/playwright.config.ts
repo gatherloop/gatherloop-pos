@@ -45,6 +45,12 @@ export default defineConfig({
     env: {
       NEXT_PUBLIC_API_BASE_URL: apiBaseURL,
       NEXT_PUBLIC_API_PROXY_BASE_URL: '/api',
+      // D2 in docs/trd-order-app-composition-and-ssr.md: `getServerSideProps`
+      // calls the API directly rather than through the same-origin `/api`
+      // proxy, which does not resolve in Node. Set explicitly rather than
+      // relying on the `NEXT_PUBLIC_API_BASE_URL` fallback, matching the
+      // two vars' distinct roles in production (D2/D9).
+      API_INTERNAL_BASE_URL: apiBaseURL,
       // FR-8/D10: the happy path exercises the real QRIS stub copy, not the
       // kill-switch's "not available" message.
       NEXT_PUBLIC_ORDER_CHECKOUT_ENABLED: 'true',
