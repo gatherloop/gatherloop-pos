@@ -30,6 +30,13 @@ export type TableResolveAction =
 
 export type TableResolveParams = {
   code: string | null;
+  // P6 in docs/trd-order-app-composition-and-ssr.md: seeded by the owning
+  // page's getServerSideProps once the table already resolved on the
+  // server. `undefined` (every call site before P6) keeps the client-only
+  // idle → resolving → resolved/notFound path; `null` seeds `notFound`
+  // directly; a `PublicTable` seeds `resolved` directly — either way the
+  // mount fetch this usecase would otherwise make never fires.
+  table?: PublicTable | null;
 };
 
 export class TableResolveUsecase extends Usecase<
@@ -49,12 +56,19 @@ export class TableResolveUsecase extends Usecase<
   getInitialState(): TableResolveState {
     const context: Context = {
       code: this.params.code,
-      table: null,
+      table: this.params.table ?? null,
       errorMessage: null,
     };
 
     if (this.params.code === null) {
       return { ...context, type: 'noCode' };
+    }
+
+    if (this.params.table !== undefined) {
+      return {
+        ...context,
+        type: this.params.table === null ? 'notFound' : 'resolved',
+      };
     }
 
     return { ...context, type: 'idle' };

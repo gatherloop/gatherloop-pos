@@ -2,12 +2,16 @@
 // composition root, which would bloat the customer bundle with the POS (D6).
 import { ApiPublicTableRepository } from '../../data/api/publicTable';
 import { CookieSessionRepository } from '../../data/session/CookieSessionRepository';
+import { PublicTable } from '../../domain/entities/PublicTable';
 import { TableResolveUsecase } from '../../domain/usecases/tableResolve';
 import { CheckoutHandler } from '../../presentation/screens/order/CheckoutHandler';
 
 export type CheckoutProps = {
   sessionId: string;
   code: string;
+  // P6 in docs/trd-order-app-composition-and-ssr.md: seeded by the page's
+  // getServerSideProps.
+  table?: PublicTable | null;
 };
 
 // Composition root for the QRIS checkout stub (FR-8 phase 11). Per D9 in
@@ -19,12 +23,13 @@ export type CheckoutProps = {
 // (D8 in docs/trd-order-app-nextjs-migration.md) only decides which message
 // this screen shows, so a real checkout can be swapped in later without
 // touching `CartScreen`.
-export function Checkout({ sessionId, code }: CheckoutProps) {
+export function Checkout({ sessionId, code, table }: CheckoutProps) {
   const sessionRepository = new CookieSessionRepository(sessionId);
   const publicTableRepository = new ApiPublicTableRepository();
 
   const tableResolveUsecase = new TableResolveUsecase(publicTableRepository, {
     code,
+    table,
   });
   const enabled = process.env['NEXT_PUBLIC_ORDER_CHECKOUT_ENABLED'] === 'true';
 

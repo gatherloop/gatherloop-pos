@@ -4,6 +4,7 @@ import { ApiCartRepository } from '../../data/api/cart';
 import { ApiPublicTableRepository } from '../../data/api/publicTable';
 import { CookieSessionRepository } from '../../data/session/CookieSessionRepository';
 import { UrlCartQueryRepository } from '../../data/url/cartQuery';
+import { PublicTable } from '../../domain/entities/PublicTable';
 import { CartUsecase } from '../../domain/usecases/cart';
 import { TableResolveUsecase } from '../../domain/usecases/tableResolve';
 import { CartHandler } from '../../presentation/screens/order/CartHandler';
@@ -11,6 +12,10 @@ import { CartHandler } from '../../presentation/screens/order/CartHandler';
 export type CartProps = {
   sessionId: string;
   code: string;
+  // P6 in docs/trd-order-app-composition-and-ssr.md: seeded by the page's
+  // getServerSideProps (D5 keeps the cart itself unseeded — only the table
+  // is SSR'd here).
+  table?: PublicTable | null;
 };
 
 // Composition root for the cart screen (FR-7 in
@@ -19,7 +24,7 @@ export type CartProps = {
 // shell and the item-edit modal too, in addition to the cart itself — the
 // whole vertical slice `/t/{code}/cart` renders, structurally identical to
 // `app/order/MenuList.tsx` (§3.5).
-export function Cart({ sessionId, code }: CartProps) {
+export function Cart({ sessionId, code, table }: CartProps) {
   const sessionRepository = new CookieSessionRepository(sessionId);
   const publicTableRepository = new ApiPublicTableRepository();
   const cartRepository = new ApiCartRepository(sessionRepository);
@@ -27,6 +32,7 @@ export function Cart({ sessionId, code }: CartProps) {
 
   const tableResolveUsecase = new TableResolveUsecase(publicTableRepository, {
     code,
+    table,
   });
   const cartUsecase = new CartUsecase(cartRepository, cartQueryRepository);
 
