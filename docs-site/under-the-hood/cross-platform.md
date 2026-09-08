@@ -4,15 +4,15 @@ Gatherloop POS ships as a Next.js web app and a React Native mobile app from **o
 
 ## What's shared (nearly everything)
 
-Every layer described in [Clean Architecture](/under-the-hood/clean-architecture) — entities, usecases, controllers, handlers, and screens — lives in `libs/ui` and is imported as-is by both apps. Concretely, `apps/mobile/src/app/App.tsx` and `apps/web/src/pages/**` both import components straight from `libs/ui/src/app` (e.g. `TransactionList`, `ProductCreate`, `ChecklistSessionDetail`) — the same composition root that instantiates the real API repositories, wires up the usecases, and renders the same Handler and Screen.
+Every layer described in [Clean Architecture](/under-the-hood/clean-architecture) — entities, usecases, controllers, handlers, and screens — lives in `libs/ui` and is imported as-is by both apps. Concretely, `apps/pos-mobile/src/app/App.tsx` and `apps/web/src/pages/**` both import components straight from `libs/ui/src/app` (e.g. `TransactionList`, `ProductCreate`, `ChecklistSessionDetail`) — the same composition root that instantiates the real API repositories, wires up the usecases, and renders the same Handler and Screen.
 
 That sharing is possible because of [Tamagui](https://tamagui.dev): the Screen layer is written once using Tamagui's component set (`View`, `Button`, `Text`, …), which compiles to real DOM on web and real native views on iOS/Android — not a webview, and not two separate implementations kept in sync by hand.
 
 ## What's platform-specific (the shell)
 
-| Concern | Web (`apps/web`) | Mobile (`apps/mobile`) |
+| Concern | Web (`apps/web`) | Mobile (`apps/pos-mobile`) |
 |---|---|---|
-| Routing | Next.js file-based pages under `apps/web/src/pages` | React Navigation's `NativeStackNavigator`, configured in [`App.tsx`](https://github.com/gatherloop/gatherloop-pos/blob/main/apps/mobile/src/app/App.tsx) |
+| Routing | Next.js file-based pages under `apps/web/src/pages` | React Navigation's `NativeStackNavigator`, configured in [`App.tsx`](https://github.com/gatherloop/gatherloop-pos/blob/main/apps/pos-mobile/src/app/App.tsx) |
 | URL structure | Native to Next.js | A `linking.config` in the same `App.tsx` mirrors the exact same paths (`transactions/:transactionId`, `wallets/:walletId/transfers`, …), kept in sync by hand so a deep link means the same thing on either platform |
 | Cross-platform link/route glue | [Solito](https://solito.dev) | Solito |
 | Initial data | `getServerSideProps` fetches data server-side with the real API repositories and passes it as props — faster first paint, and where the login redirect is enforced | Screens mount with empty initial params and the shared usecase fetches client-side on mount instead |
@@ -27,6 +27,6 @@ A conventional "web + mobile" POS is really two products that happen to talk to 
 ## Explore the source
 
 - Shared app composition: [`libs/ui/src/app`](https://github.com/gatherloop/gatherloop-pos/tree/main/libs/ui/src/app)
-- Mobile navigation shell: [`apps/mobile/src/app/App.tsx`](https://github.com/gatherloop/gatherloop-pos/blob/main/apps/mobile/src/app/App.tsx)
+- Mobile navigation shell: [`apps/pos-mobile/src/app/App.tsx`](https://github.com/gatherloop/gatherloop-pos/blob/main/apps/pos-mobile/src/app/App.tsx)
 - Web routing: [`apps/web/src/pages`](https://github.com/gatherloop/gatherloop-pos/tree/main/apps/web/src/pages)
 - Tamagui config: [`apps/web/next.config.js`](https://github.com/gatherloop/gatherloop-pos/blob/main/apps/web/next.config.js), [`libs/ui`](https://github.com/gatherloop/gatherloop-pos/tree/main/libs/ui)
