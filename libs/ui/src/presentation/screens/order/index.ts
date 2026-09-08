@@ -1,5 +1,5 @@
 export * from './TableResolveScreen';
-export * from './TableResolveHandler';
+export * from './TableScanScreen';
 export * from './MenuListScreen';
 export * from './MenuListHandler';
 export * from './MenuItemDetailScreen';
