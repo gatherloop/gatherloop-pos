@@ -1,4 +1,5 @@
 import { Category, Product, Variant } from '../entities';
+import { RequestConfig } from '@kubb/swagger-client/client';
 
 // FR-5/FR-6 in docs/prd-table-ordering.md. Backed by the unauthenticated
 // /public/* catalog (D1): published, purchase-only products, materials and
@@ -9,16 +10,25 @@ export interface MenuRepository {
   // one call (FR-1's /public/variants with no productId filter), so the menu
   // list can show each product's lowest price ("mulai Rp X") without an
   // N+1 fetch per card — the same "one paged fetch" spirit as D4.
-  fetchMenu: (params: { query: string }) => Promise<{
+  fetchMenu: (
+    params: { query: string },
+    options?: Partial<RequestConfig>
+  ) => Promise<{
     products: Product[];
     categories: Category[];
     variants: Variant[];
   }>;
 
-  fetchProductById: (productId: number) => Promise<Product>;
+  fetchProductById: (
+    productId: number,
+    options?: Partial<RequestConfig>
+  ) => Promise<Product>;
 
-  resolveVariant: (params: {
-    productId: number;
-    optionValueIds: number[];
-  }) => Promise<Variant>;
+  resolveVariant: (
+    params: {
+      productId: number;
+      optionValueIds: number[];
+    },
+    options?: Partial<RequestConfig>
+  ) => Promise<Variant>;
 }
