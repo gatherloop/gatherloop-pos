@@ -44,7 +44,7 @@ export default defineConfig({
   timeout: 30_000,
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: 'npx nx dev web',
+    command: 'npx nx dev pos-web',
     url: 'http://127.0.0.1:3000',
     reuseExistingServer: !process.env.CI,
     cwd: workspaceRoot,

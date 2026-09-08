@@ -51,4 +51,4 @@ Every choice below was made for a specific reason tied to what this product actu
 - Root workspace: [`package.json`](https://github.com/gatherloop/gatherloop-pos/blob/main/package.json), [`nx.json`](https://github.com/gatherloop/gatherloop-pos/blob/main/nx.json)
 - OpenAPI spec: [`libs/api-contract/src/api.yaml`](https://github.com/gatherloop/gatherloop-pos/blob/main/libs/api-contract/src/api.yaml)
 - Codegen config: [`libs/api-contract/kubb.config.ts`](https://github.com/gatherloop/gatherloop-pos/blob/main/libs/api-contract/kubb.config.ts)
-- Tamagui setup: [`apps/web/next.config.js`](https://github.com/gatherloop/gatherloop-pos/blob/main/apps/web/next.config.js)
+- Tamagui setup: [`apps/pos-web/next.config.js`](https://github.com/gatherloop/gatherloop-pos/blob/main/apps/pos-web/next.config.js)

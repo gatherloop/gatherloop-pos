@@ -1,7 +1,7 @@
 /**
  * Direct API helpers for seeding and cleaning up test data.
  *
- * Unlike apps/web-e2e/src/utils/api.ts, these do NOT ride the Playwright
+ * Unlike apps/pos-web-e2e/src/utils/api.ts, these do NOT ride the Playwright
  * `request` fixture's `baseURL` / storageState — that fixture is bound to
  * the *customer SPA* under test (`playwright.config.ts`'s `use.baseURL`),
  * and the SPA is anonymous and talks to the API cross-origin with no proxy
