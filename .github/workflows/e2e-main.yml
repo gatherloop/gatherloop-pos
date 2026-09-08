@@ -39,7 +39,7 @@ jobs:
       # One app's failure shouldn't hide the other app's result.
       fail-fast: false
       matrix:
-        project: [web-e2e, order-e2e]
+        project: [pos-web-e2e, order-web-e2e]
 
     services:
       mysql:
