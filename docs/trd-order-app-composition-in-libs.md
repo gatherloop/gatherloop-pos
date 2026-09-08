@@ -3,6 +3,8 @@
 **Status:** proposed
 **Scope:** `apps/order-web/src/**`, `libs/ui/src/app/order/**`, `libs/ui/src/index.order.ts`, `libs/ui/src/__mocks__/next/router.ts`, `libs/ui/.eslintrc.json`, `apps/order-web/.eslintrc.json`, `docs-site/under-the-hood/clean-architecture.md`
 **Non-scope:** `apps/pos-web`, `apps/pos-mobile`, `apps/api`, `libs/ui/src/{domain,data,presentation}`, `libs/provider`, the customer-facing UI itself — no screen, copy, layout, route or interaction changes
+**Followed by:** `docs/trd-order-app-ssr.md`, which server-renders the order app once the composition
+lives here. It deletes some of what P1 adds (§9); that overlap is accounted for in its §8.
 **Date of research:** 2026-09-08 (every claim below was checked against the code at `b5696b3`)
 
 ---
@@ -593,10 +595,11 @@ refetch counts).
 
 ## 9. Deliberately out of scope
 
-- **`getServerSideProps` for the order app.** The customer app is client-only by design (D18 in
-  `docs/prd-table-ordering.md`, D5 in the migration TRD). Making it SSR would let the pages read
-  params the POS way, and it is a different TRD with a different risk profile (the session
-  repository cannot run on the server).
+- **`getServerSideProps` for the order app.** Deferred to `docs/trd-order-app-ssr.md`, which takes it
+  up now that the app runs on Vercel rather than GitHub Pages. It supersedes D1 and D10 here
+  (route params come from `ctx.params`, so `useOrderParams` is deleted) and D8 (the mount gate goes
+  once the session is minted server-side). Everything else in this document survives it — the
+  layouts, the page entries and the lint guardrail are what make those changes small.
 - **Improving `NaN`/`''` param handling** (D10).
 - **Splitting `libs/ui` into `libs/pos` and `libs/order`** — rejected with reasons in
   `docs/trd-ui-presentation-split-by-app.md` D8; nothing here changes that calculus.
