@@ -99,4 +99,56 @@ describe('TableResolveUsecase', () => {
       errorMessage: null,
     });
   });
+
+  // P6 in docs/trd-order-app-composition-and-ssr.md: a page's
+  // getServerSideProps already resolved the table, so the usecase starts
+  // seeded and never fetches.
+  it('starts resolved and never fetches when seeded with a table', async () => {
+    const repository = new MockPublicTableRepository();
+    const resolveSpy = jest.spyOn(repository, 'resolveTableByCode');
+    const code = repository.codes[0];
+    const table = repository.tables[code];
+
+    const tableResolve = new UsecaseTester<
+      TableResolveUsecase,
+      TableResolveState,
+      TableResolveAction,
+      TableResolveParams
+    >(new TableResolveUsecase(repository, { code, table }));
+
+    expect(tableResolve.state).toEqual({
+      type: 'resolved',
+      code,
+      table,
+      errorMessage: null,
+    });
+
+    await flushPromises();
+    expect(resolveSpy).not.toHaveBeenCalled();
+  });
+
+  // Seeded with `table: null` (the code resolved server-side to "not
+  // found") — distinct from `undefined`, which keeps the client-only path.
+  it('starts notFound and never fetches when seeded with a null table', async () => {
+    const repository = new MockPublicTableRepository();
+    const resolveSpy = jest.spyOn(repository, 'resolveTableByCode');
+    const code = 'UNKNOWNCODE';
+
+    const tableResolve = new UsecaseTester<
+      TableResolveUsecase,
+      TableResolveState,
+      TableResolveAction,
+      TableResolveParams
+    >(new TableResolveUsecase(repository, { code, table: null }));
+
+    expect(tableResolve.state).toEqual({
+      type: 'notFound',
+      code,
+      table: null,
+      errorMessage: null,
+    });
+
+    await flushPromises();
+    expect(resolveSpy).not.toHaveBeenCalled();
+  });
 });
