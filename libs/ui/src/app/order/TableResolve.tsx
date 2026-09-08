@@ -1,14 +1,19 @@
 import { ReactNode } from 'react';
 import { useRouter } from 'solito/router';
 import { ApiPublicTableRepository } from '../../data/api/publicTable';
+import { CookieSessionRepository } from '../../data/session/CookieSessionRepository';
 import { TableResolveUsecase } from '../../domain/usecases/tableResolve';
 import { CartBar } from '../../presentation/components/cart/CartBar';
 import { TableResolveHandler } from '../../presentation/screens/order/TableResolveHandler';
 import { useCart } from './CartProvider';
-import { useSessionRepository } from './SessionProvider';
 
 export type TableResolveProps = {
   code: string | null;
+  // D3 in docs/trd-order-app-composition-and-ssr.md: resolved server-side by
+  // the owning page's getServerSideProps and threaded down through
+  // _app.tsx/getLayout's pageProps — temporary scaffolding, gone once P5
+  // folds this into each screen's own composition root.
+  sessionId?: string;
   children?: ReactNode;
   // The cart screen (FR-7 phase 10) renders its own sticky Checkout bar in
   // the same footer position — showing the floating cart bar there too
@@ -22,10 +27,11 @@ export type TableResolveProps = {
 // non-empty, since every menu/detail/cart route mounts through here.
 export function TableResolve({
   code,
+  sessionId,
   children,
   hideCartBar,
 }: TableResolveProps) {
-  const sessionRepository = useSessionRepository();
+  const sessionRepository = new CookieSessionRepository(sessionId);
   const publicTableRepository = new ApiPublicTableRepository();
   const tableResolveUsecase = new TableResolveUsecase(publicTableRepository, {
     code,

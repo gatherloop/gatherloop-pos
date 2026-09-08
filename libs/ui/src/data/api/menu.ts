@@ -11,12 +11,23 @@ import {
   publicVariantListQueryKey,
   type PublicVariantListQueryParams,
 } from '../../../../api-contract/src';
+import { RequestConfig } from '@kubb/swagger-client/client';
 // Deep import, not the `domain` barrel (D20): that barrel also re-exports
 // every POS usecase, which drags unrelated weight into the order bundle.
 import { MenuRepository } from '../../domain/repositories/menu';
 import { toCategory } from './category.transformer';
 import { toProduct } from './product.transformer';
 import { toVariant } from './variant.transformer';
+
+// `withCredentials: false` (D22 in docs/prd-table-ordering.md, D3 in
+// docs/trd-order-app-composition-and-ssr.md): the order app sends no auth
+// cookie, and this used to be a global axios default flipped by an
+// interceptor. Set per request instead, on every call this repository
+// makes.
+const withoutCredentials = (options?: Partial<RequestConfig>) => ({
+  ...options,
+  withCredentials: false,
+});
 
 export class ApiMenuRepository implements MenuRepository {
   client: QueryClient;
@@ -35,15 +46,17 @@ export class ApiMenuRepository implements MenuRepository {
     return Promise.all([
       this.client.fetchQuery({
         queryKey: publicProductListQueryKey(productParams),
-        queryFn: () => publicProductList(productParams, options),
+        queryFn: () =>
+          publicProductList(productParams, withoutCredentials(options)),
       }),
       this.client.fetchQuery({
         queryKey: publicCategoryListQueryKey(),
-        queryFn: () => publicCategoryList(options),
+        queryFn: () => publicCategoryList(withoutCredentials(options)),
       }),
       this.client.fetchQuery({
         queryKey: publicVariantListQueryKey(variantParams),
-        queryFn: () => publicVariantList(variantParams, options),
+        queryFn: () =>
+          publicVariantList(variantParams, withoutCredentials(options)),
       }),
     ]).then(([productList, categoryList, variantList]) => ({
       products: productList.data.map(toProduct),
@@ -59,7 +72,8 @@ export class ApiMenuRepository implements MenuRepository {
     return this.client
       .fetchQuery({
         queryKey: publicProductFindByIdQueryKey(productId),
-        queryFn: () => publicProductFindById(productId, options),
+        queryFn: () =>
+          publicProductFindById(productId, withoutCredentials(options)),
       })
       .then(({ data }) => toProduct(data));
   };
@@ -73,7 +87,7 @@ export class ApiMenuRepository implements MenuRepository {
     return this.client
       .fetchQuery({
         queryKey: publicVariantListQueryKey(params),
-        queryFn: () => publicVariantList(params, options),
+        queryFn: () => publicVariantList(params, withoutCredentials(options)),
       })
       .then(({ data }) => {
         const [variant] = data;

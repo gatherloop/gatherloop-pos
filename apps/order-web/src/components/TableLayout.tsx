@@ -7,6 +7,11 @@ import { useRouter } from 'next/router';
 import { ReactNode } from 'react';
 
 export type TableLayoutProps = {
+  // D3 in docs/trd-order-app-composition-and-ssr.md: resolved server-side by
+  // the page's getServerSideProps, forwarded here via _app.tsx's
+  // getLayout(page, pageProps) — temporary scaffolding, gone with this
+  // component once P5 folds TableResolve into each screen's own root.
+  sessionId?: string;
   children?: ReactNode;
   hideCartBar?: boolean;
 };
@@ -22,7 +27,11 @@ export type TableLayoutProps = {
 // TableResolve a null code here would flash the "scan the QR" screen before
 // the code arrives — render TableResolveScreen's own `resolving` variant
 // instead until the router is ready.
-export const TableLayout = ({ children, hideCartBar }: TableLayoutProps) => {
+export const TableLayout = ({
+  sessionId,
+  children,
+  hideCartBar,
+}: TableLayoutProps) => {
   const router = useRouter();
 
   if (!router.isReady) {
@@ -35,7 +44,7 @@ export const TableLayout = ({ children, hideCartBar }: TableLayoutProps) => {
 
   const code = typeof router.query.code === 'string' ? router.query.code : null;
   return (
-    <TableResolve code={code} hideCartBar={hideCartBar}>
+    <TableResolve code={code} sessionId={sessionId} hideCartBar={hideCartBar}>
       {children}
     </TableResolve>
   );

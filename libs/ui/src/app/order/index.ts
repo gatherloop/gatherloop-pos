@@ -1,4 +1,3 @@
-export * from './SessionProvider';
 export * from './CartProvider';
 export * from './TableResolve';
 export * from './MenuList';

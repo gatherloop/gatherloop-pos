@@ -4,6 +4,7 @@ import { ReactNode } from 'react';
 import { TableLayout } from './TableLayout';
 
 export type MenuLayoutProps = {
+  sessionId?: string;
   children?: ReactNode;
 };
 
@@ -17,12 +18,12 @@ export type MenuLayoutProps = {
 // `MenuList` at this fixed position instead means it reconciles by type
 // across both routes and survives — its scroll position, search text and
 // selected category included.
-export const MenuLayout = ({ children }: MenuLayoutProps) => {
+export const MenuLayout = ({ sessionId, children }: MenuLayoutProps) => {
   const router = useRouter();
   const code = typeof router.query.code === 'string' ? router.query.code : '';
 
   return (
-    <TableLayout>
+    <TableLayout sessionId={sessionId}>
       <MenuList tableCode={code} />
       {children}
     </TableLayout>

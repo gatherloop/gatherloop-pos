@@ -1,6 +1,6 @@
 import { SessionRepository } from '../../domain/repositories/session';
 
-// In-memory stand-in for BrowserSessionRepository (FR-4), so cart and
+// In-memory stand-in for CookieSessionRepository (FR-4), so cart and
 // table-resolution usecase tests run without a DOM.
 export class MockSessionRepository implements SessionRepository {
   private tableCode: string | null = null;

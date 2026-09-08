@@ -2,43 +2,38 @@ import '@tamagui/core/reset.css';
 import './global.css';
 
 import { RootProvider } from '@gatherloop-pos/provider';
-import { CartProvider, SessionProvider } from '@gatherloop-pos/ui/order';
+import { CartProvider } from '@gatherloop-pos/ui/order';
 import { AppProps } from 'next/app';
 import Head from 'next/head';
 import { NextPage } from 'next';
-import { ReactElement, ReactNode, useEffect, useState } from 'react';
+import { ReactElement, ReactNode } from 'react';
 
 if (process.env.NODE_ENV === 'production') {
   require('../../public/tamagui.css');
 }
 
+// Every order page resolves its session id server-side (D3 in
+// docs/trd-order-app-composition-and-ssr.md) except the static 404, which
+// Next never runs getServerSideProps for — CookieSessionRepository falls
+// back to minting one client-side for that one route (D4).
+type OrderPageProps = { sessionId?: string };
+
 // D4 in docs/trd-order-app-nextjs-migration.md: pages opt into a shared
 // `getLayout` so React reconciles the layout by type across a navigation
 // instead of remounting it — that's what keeps TableResolve/MenuList/Cart
 // mounted (scroll position, search text, the table resolved once per
-// visit) the same way the old SPA's router did for free.
-type OrderPage = NextPage & {
-  getLayout?: (page: ReactElement) => ReactNode;
+// visit) the same way the old SPA's router did for free. `pageProps` is
+// threaded through so a layout can forward `sessionId` to `TableResolve`
+// without a context of its own (D3).
+type OrderPage = NextPage<OrderPageProps> & {
+  getLayout?: (page: ReactElement, pageProps: OrderPageProps) => ReactNode;
 };
 
-type OrderAppProps = AppProps & {
+type OrderAppProps = AppProps<OrderPageProps> & {
   Component: OrderPage;
 };
 
 export default function App({ Component, pageProps }: OrderAppProps) {
-  // D5.1: SessionProvider constructs BrowserSessionRepository during
-  // render, which touches document.cookie/crypto — fatal during a
-  // server/prerender pass. Gate the whole provider tree on mount so the
-  // server emits an empty shell, same first-paint story as today's SPA.
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    // Intentional: this only ever flips false -> true once, to detect that
-    // client hydration has happened — not to synchronize with an external
-    // system's ongoing changes.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMounted(true);
-  }, []);
-
   const getLayout = Component.getLayout ?? ((page: ReactElement) => page);
 
   return (
@@ -54,11 +49,9 @@ export default function App({ Component, pageProps }: OrderAppProps) {
       <RootProvider
         tamaguiProviderProps={{ disableInjectCSS: true, defaultTheme: 'light' }}
       >
-        {mounted ? (
-          <SessionProvider>
-            <CartProvider>{getLayout(<Component {...pageProps} />)}</CartProvider>
-          </SessionProvider>
-        ) : null}
+        <CartProvider sessionId={pageProps.sessionId}>
+          {getLayout(<Component {...pageProps} />, pageProps)}
+        </CartProvider>
       </RootProvider>
     </>
   );
