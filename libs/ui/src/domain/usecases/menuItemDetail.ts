@@ -10,6 +10,11 @@ import { Usecase } from './IUsecase';
 // once a variant resolves, so the Add-to-cart CTA's enabled rule is a
 // state, not an `if` in the screen.
 type Context = {
+  // D6 in docs/trd-order-app-composition-and-ssr.md: `null` means no item is
+  // selected — one instance of this usecase now serves every selection on
+  // the menu screen (SELECT_PRODUCT), not just the one it was constructed
+  // with.
+  productId: number | null;
   product: Product | null;
   selectedOptionValueIds: number[];
   variant: Variant | null;
@@ -36,10 +41,18 @@ export type MenuItemDetailAction =
   | { type: 'RESOLVE_VARIANT_SUCCESS'; variant: Variant }
   | { type: 'RESOLVE_VARIANT_ERROR'; message: string }
   | { type: 'CHANGE_AMOUNT'; amount: number }
-  | { type: 'CHANGE_NOTE'; note: string };
+  | { type: 'CHANGE_NOTE'; note: string }
+  // D6 in docs/trd-order-app-composition-and-ssr.md — the same shape
+  // ProductDeleteUsecase's SHOW_CONFIRMATION uses to receive the product it
+  // is asked to act on. `product` is optional: the menu screen already has
+  // the full `Product` (options included) from its own fetch, and passes it
+  // along so opening the sheet costs no network call — the fallback fetch
+  // below only runs when it isn't given (e.g. a deep link racing the menu
+  // fetch).
+  | { type: 'SELECT_PRODUCT'; productId: number; product?: Product };
 
 export type MenuItemDetailParams = {
-  productId: number;
+  productId: number | null;
   product?: Product | null;
 };
 
@@ -68,6 +81,7 @@ export class MenuItemDetailUsecase extends Usecase<
 
   getInitialState(): MenuItemDetailState {
     const context: Context = {
+      productId: this.params.productId,
       product: this.params.product ?? null,
       selectedOptionValueIds: [],
       variant: null,
@@ -76,8 +90,12 @@ export class MenuItemDetailUsecase extends Usecase<
       errorMessage: null,
     };
 
-    if (!context.product) {
+    if (context.productId === null) {
       return { ...context, type: 'idle' };
+    }
+
+    if (!context.product) {
+      return { ...context, type: 'loadingProduct' };
     }
 
     return {
@@ -92,11 +110,29 @@ export class MenuItemDetailUsecase extends Usecase<
   ): MenuItemDetailState {
     return match([state, action])
       .returnType<MenuItemDetailState>()
+      .with([{ type: 'error' }, { type: 'FETCH' }], ([state]) => ({
+        ...state,
+        type: 'loadingProduct',
+        errorMessage: null,
+      }))
+      // D6: selecting an item (from any state, including a previous
+      // selection's `ready`/`error`) resets the draft — a fresh product,
+      // not a continuation of whatever was open before. Given a `product`
+      // already, skip the fetch entirely (§2.4/D6: the menu payload already
+      // has everything the sheet needs).
       .with(
-        [{ type: P.union('idle', 'error') }, { type: 'FETCH' }],
-        ([state]) => ({
+        [P._, { type: 'SELECT_PRODUCT' }],
+        ([state, { productId, product = null }]) => ({
           ...state,
-          type: 'loadingProduct',
+          type: product
+            ? nextOptionSelectionType(product, [])
+            : 'loadingProduct',
+          productId,
+          product,
+          selectedOptionValueIds: [],
+          variant: null,
+          amount: 1,
+          note: '',
           errorMessage: null,
         })
       )
@@ -212,10 +248,11 @@ export class MenuItemDetailUsecase extends Usecase<
     dispatch: (action: MenuItemDetailAction) => void
   ): void {
     match(state)
-      .with({ type: 'idle' }, () => dispatch({ type: 'FETCH' }))
-      .with({ type: 'loadingProduct' }, () =>
+      // `idle` means nothing is selected (D6) — there is nothing to fetch,
+      // unlike the old "always has a productId" shape this replaced.
+      .with({ type: 'loadingProduct' }, ({ productId }) =>
         this.menuRepository
-          .fetchProductById(this.params.productId)
+          .fetchProductById(productId ?? NaN)
           .then((product) => dispatch({ type: 'FETCH_SUCCESS', product }))
           .catch(() =>
             dispatch({

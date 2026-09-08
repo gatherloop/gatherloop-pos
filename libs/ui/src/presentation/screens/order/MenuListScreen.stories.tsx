@@ -42,7 +42,14 @@ const nasiGoreng = {
 const meta: Meta<typeof MenuListScreen> = {
   title: 'Screens/Order/MenuListScreen',
   component: MenuListScreen,
+  parameters: {
+    layout: 'fullscreen',
+  },
   args: {
+    tableVariant: {
+      type: 'resolved',
+      table: { id: 1, label: 'Meja 01', floorNumber: 1 },
+    },
     searchValue: '',
     onSearchValueChange: () => {
       // Storybook action stand-in
@@ -59,6 +66,7 @@ const meta: Meta<typeof MenuListScreen> = {
       // Storybook action stand-in
     },
     startingPriceByProductId: { 1: 18000, 2: 25000 },
+    itemDetail: null,
   },
 };
 
@@ -95,4 +103,50 @@ export const Empty: Story = {
 
 export const Error: Story = {
   args: { variant: { type: 'error' } },
+};
+
+// D9 in docs/trd-order-app-composition-and-ssr.md: the table shell is this
+// screen's own now, not a wrapper it's rendered inside.
+export const ResolvingTable: Story = {
+  args: { tableVariant: { type: 'resolving' }, variant: { type: 'loading' } },
+};
+
+// D6: the item sheet is a child of this screen, not a route of its own.
+export const ItemSheetOpen: Story = {
+  args: {
+    ...Loaded.args,
+    itemDetail: {
+      isOpen: true,
+      onOpenChange: () => {
+        // Storybook action stand-in
+      },
+      variant: {
+        type: 'ready',
+        product: esKopiSusu,
+        price: 18000,
+        variantErrorMessage: null,
+      },
+      selectedOptionValueIds: [],
+      onSelectOptionValue: () => {
+        // Storybook action stand-in
+      },
+      amount: 1,
+      onAmountChange: () => {
+        // Storybook action stand-in
+      },
+      note: '',
+      onNoteChange: () => {
+        // Storybook action stand-in
+      },
+      ctaState: 'incomplete',
+      missingOptionNames: [],
+      validationMessage: null,
+      onAddToCartPress: () => {
+        // Storybook action stand-in
+      },
+      onRetryButtonPress: () => {
+        // Storybook action stand-in
+      },
+    },
+  },
 };

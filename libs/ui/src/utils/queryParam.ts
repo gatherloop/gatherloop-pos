@@ -11,12 +11,36 @@ export function setNavigationRef(ref: NavigationContainerRef<ParamListBase>) {
   navigationRef = ref;
 }
 
-export function setQueryParam(key: string, value: string) {
+export type SetQueryParamOptions = {
+  // D6 in docs/trd-order-app-composition-and-ssr.md: 'replace' (the
+  // default) is today's POS behaviour — no history entry, so Back skips
+  // over it. The order app's overlay params pass 'push' so Back dismisses
+  // them instead.
+  history?: 'push' | 'replace';
+};
+
+export function setQueryParam(
+  key: string,
+  // `null` removes the param instead of writing an empty string — used to
+  // clear an overlay selection (D6) rather than leaving a stale `?product=`
+  // in the URL.
+  value: string | null,
+  options?: SetQueryParamOptions
+) {
   if (Platform.OS === 'web') {
     const url = new URL(window.location.href);
-    url.searchParams.set(key, value);
-    window.history.replaceState({}, '', url.toString());
-    Router.replace(url.toString(), undefined, { shallow: true });
+    if (value === null) {
+      url.searchParams.delete(key);
+    } else {
+      url.searchParams.set(key, value);
+    }
+
+    if (options?.history === 'push') {
+      Router.push(url.toString(), undefined, { shallow: true });
+    } else {
+      window.history.replaceState({}, '', url.toString());
+      Router.replace(url.toString(), undefined, { shallow: true });
+    }
   } else {
     if (!navigationRef) {
       console.warn('navigationRef not set');
@@ -28,7 +52,7 @@ export function setQueryParam(key: string, value: string) {
 
     navigationRef.navigate(currentRoute.name as string, {
       ...(currentRoute.params ?? {}),
-      [key]: value,
+      [key]: value === null ? undefined : value,
     });
   }
 }

@@ -3,7 +3,6 @@ export * from './TableResolveHandler';
 export * from './MenuListScreen';
 export * from './MenuListHandler';
 export * from './MenuItemDetailScreen';
-export * from './MenuItemDetailHandler';
 export * from './CartScreen';
 export * from './CartHandler';
 export * from './CartItemEditScreen';

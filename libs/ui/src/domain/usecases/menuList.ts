@@ -1,6 +1,6 @@
 import { match, P } from 'ts-pattern';
 import { Category, Product, Variant } from '../entities';
-import { MenuRepository } from '../repositories';
+import { MenuListQueryRepository, MenuRepository } from '../repositories';
 import { createDebounce } from '../../utils';
 import { Usecase } from './IUsecase';
 
@@ -18,6 +18,10 @@ type Context = {
   variants: Variant[];
   query: string;
   selectedCategoryId: number | null;
+  // D6 in docs/trd-order-app-composition-and-ssr.md: the item sheet's open
+  // product, read from and written to the URL through
+  // `menuListQueryRepository` rather than a route of its own.
+  selectedProductId: number | null;
   errorMessage: string | null;
   fetchDebounceDelay: number;
 };
@@ -52,12 +56,15 @@ export type MenuListAction =
       products: Product[];
       categories: Category[];
       variants: Variant[];
-    };
+    }
+  | { type: 'SELECT_ITEM'; productId: number }
+  | { type: 'CLEAR_ITEM' };
 
 export type MenuListParams = {
   products: Product[];
   categories: Category[];
   variants?: Variant[];
+  selectedProductId?: number | null;
 };
 
 const changeParamsDebounce = createDebounce();
@@ -68,11 +75,17 @@ export class MenuListUsecase extends Usecase<
   MenuListParams
 > {
   menuRepository: MenuRepository;
+  menuListQueryRepository: MenuListQueryRepository;
   params: MenuListParams;
 
-  constructor(menuRepository: MenuRepository, params: MenuListParams) {
+  constructor(
+    menuRepository: MenuRepository,
+    menuListQueryRepository: MenuListQueryRepository,
+    params: MenuListParams
+  ) {
     super();
     this.menuRepository = menuRepository;
+    this.menuListQueryRepository = menuListQueryRepository;
     this.params = params;
   }
 
@@ -84,6 +97,9 @@ export class MenuListUsecase extends Usecase<
       variants: this.params.variants ?? [],
       query: '',
       selectedCategoryId: null,
+      selectedProductId:
+        this.params.selectedProductId ??
+        this.menuListQueryRepository.getSelectedProductId(),
       errorMessage: null,
       fetchDebounceDelay: 0,
     };
@@ -150,6 +166,20 @@ export class MenuListUsecase extends Usecase<
           type: 'loaded',
         })
       )
+      // Selecting/clearing the sheet is orthogonal to the fetch machine's
+      // own `type` (D6) — it can happen from any of them, and never changes
+      // it.
+      .with(
+        [P._, { type: 'SELECT_ITEM' }],
+        ([state, { productId }]) => ({
+          ...state,
+          selectedProductId: productId,
+        })
+      )
+      .with([P._, { type: 'CLEAR_ITEM' }], ([state]) => ({
+        ...state,
+        selectedProductId: null,
+      }))
       .otherwise(() => state);
   }
 
@@ -157,6 +187,20 @@ export class MenuListUsecase extends Usecase<
     state: MenuListState,
     dispatch: (action: MenuListAction) => void
   ): void {
+    // Mirrors the selection into the URL (D6) whenever it actually changed
+    // — guarded against the current URL rather than folded into a `type`
+    // branch below, since SELECT_ITEM/CLEAR_ITEM don't have one of their
+    // own and this would otherwise re-push on every unrelated state change
+    // (e.g. every keystroke while searching).
+    if (
+      state.selectedProductId !==
+      this.menuListQueryRepository.getSelectedProductId()
+    ) {
+      this.menuListQueryRepository.setSelectedProductId(
+        state.selectedProductId
+      );
+    }
+
     match(state)
       .with({ type: 'idle' }, () => dispatch({ type: 'FETCH' }))
       .with({ type: 'loading' }, ({ query }) =>
