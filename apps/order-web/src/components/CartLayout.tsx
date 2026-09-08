@@ -4,6 +4,7 @@ import { ReactNode } from 'react';
 import { TableLayout } from './TableLayout';
 
 export type CartLayoutProps = {
+  sessionId?: string;
   children?: ReactNode;
 };
 
@@ -14,12 +15,12 @@ export type CartLayoutProps = {
 // route) — the same reasoning as `MenuLayout` for the menu/item-sheet pair:
 // rendering `Cart` at this fixed position means it reconciles by type across
 // both routes instead of remounting behind the edit modal.
-export const CartLayout = ({ children }: CartLayoutProps) => {
+export const CartLayout = ({ sessionId, children }: CartLayoutProps) => {
   const router = useRouter();
   const code = typeof router.query.code === 'string' ? router.query.code : '';
 
   return (
-    <TableLayout hideCartBar>
+    <TableLayout sessionId={sessionId} hideCartBar>
       <Cart tableCode={code} />
       {children}
     </TableLayout>

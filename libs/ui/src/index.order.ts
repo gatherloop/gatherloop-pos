@@ -13,7 +13,6 @@ export * from './presentation/components/base/LoadingView';
 export * from './presentation/components/base/OrderLayout';
 export * from './presentation/components/menu/MenuItemThumbnail';
 export * from './utils/currency';
-export * from './app/order/SessionProvider';
 export * from './app/order/TableResolve';
 export * from './app/order/MenuList';
 export * from './app/order/MenuItemDetail';
