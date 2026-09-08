@@ -19,12 +19,36 @@ const createTester = (
   >(new MenuItemDetailUsecase(repository, params));
 
 describe('MenuItemDetailUsecase', () => {
+  // D6 in docs/trd-order-app-composition-and-ssr.md: no item selected at
+  // all — the menu screen's default, since one instance now serves every
+  // selection instead of one route per item.
+  it('stays idle, with no fetch, when constructed with no productId', async () => {
+    const repository = new MockMenuRepository();
+    const fetchSpy = jest.spyOn(repository, 'fetchProductById');
+    const menuItemDetail = createTester(repository, { productId: null });
+
+    expect(menuItemDetail.state).toEqual({
+      type: 'idle',
+      productId: null,
+      product: null,
+      selectedOptionValueIds: [],
+      variant: null,
+      amount: 1,
+      note: '',
+      errorMessage: null,
+    });
+
+    await flushPromises();
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
   it('should transition idle → loadingProduct → selectingOptions on a product with options', async () => {
     const repository = new MockMenuRepository();
     const menuItemDetail = createTester(repository, { productId: 1 });
 
     expect(menuItemDetail.state).toEqual({
       type: 'loadingProduct',
+      productId: 1,
       product: null,
       selectedOptionValueIds: [],
       variant: null,
@@ -36,6 +60,7 @@ describe('MenuItemDetailUsecase', () => {
     await flushPromises();
     expect(menuItemDetail.state).toEqual({
       type: 'selectingOptions',
+      productId: 1,
       product: repository.products[0],
       selectedOptionValueIds: [],
       variant: null,
@@ -63,6 +88,7 @@ describe('MenuItemDetailUsecase', () => {
     await flushPromises();
     expect(menuItemDetail.state).toEqual({
       type: 'ready',
+      productId: 1,
       product: repository.products[0],
       selectedOptionValueIds: [1],
       variant: repository.variants[0],
@@ -124,6 +150,7 @@ describe('MenuItemDetailUsecase', () => {
     await flushPromises();
     expect(menuItemDetail.state).toEqual({
       type: 'error',
+      productId: 1,
       product: repository.products[0],
       selectedOptionValueIds: [1],
       variant: null,
@@ -141,6 +168,7 @@ describe('MenuItemDetailUsecase', () => {
     await flushPromises();
     expect(menuItemDetail.state).toEqual({
       type: 'error',
+      productId: 1,
       product: null,
       selectedOptionValueIds: [],
       variant: null,
@@ -174,5 +202,57 @@ describe('MenuItemDetailUsecase', () => {
 
     expect(menuItemDetail.state.type).toBe('selectingOptions');
     expect(menuItemDetail.state.product).toEqual(repository.products[0]);
+  });
+
+  // D6 in docs/trd-order-app-composition-and-ssr.md: one instance serves
+  // successive selections.
+  describe('SELECT_PRODUCT', () => {
+    it('fetches the newly selected product from idle', async () => {
+      const repository = new MockMenuRepository();
+      const menuItemDetail = createTester(repository, { productId: null });
+
+      menuItemDetail.dispatch({ type: 'SELECT_PRODUCT', productId: 2 });
+      expect(menuItemDetail.state.type).toBe('loadingProduct');
+      expect(menuItemDetail.state.productId).toBe(2);
+
+      await flushPromises();
+      await flushPromises();
+      expect(menuItemDetail.state.type).toBe('ready');
+      expect(menuItemDetail.state.product).toEqual(repository.products[1]);
+    });
+
+    it('resets the draft amount, note and options when a different item is selected from ready', async () => {
+      const repository = new MockMenuRepository();
+      const menuItemDetail = createTester(repository, { productId: 1 });
+
+      await flushPromises();
+      menuItemDetail.dispatch({
+        type: 'SELECT_OPTION_VALUE',
+        optionId: 1,
+        optionValueId: 1,
+      });
+      await flushPromises();
+      menuItemDetail.dispatch({ type: 'CHANGE_AMOUNT', amount: 3 });
+      menuItemDetail.dispatch({ type: 'CHANGE_NOTE', note: 'less sugar' });
+      expect(menuItemDetail.state.type).toBe('ready');
+
+      menuItemDetail.dispatch({ type: 'SELECT_PRODUCT', productId: 2 });
+
+      expect(menuItemDetail.state).toEqual({
+        type: 'loadingProduct',
+        productId: 2,
+        product: null,
+        selectedOptionValueIds: [],
+        variant: null,
+        amount: 1,
+        note: '',
+        errorMessage: null,
+      });
+
+      await flushPromises();
+      await flushPromises();
+      expect(menuItemDetail.state.type).toBe('ready');
+      expect(menuItemDetail.state.product).toEqual(repository.products[1]);
+    });
   });
 });

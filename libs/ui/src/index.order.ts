@@ -15,7 +15,6 @@ export * from './presentation/components/menu/MenuItemThumbnail';
 export * from './utils/currency';
 export * from './app/order/TableResolve';
 export * from './app/order/MenuList';
-export * from './app/order/MenuItemDetail';
 export * from './app/order/CartProvider';
 export * from './app/order/Cart';
 export * from './app/order/CartItemEdit';
