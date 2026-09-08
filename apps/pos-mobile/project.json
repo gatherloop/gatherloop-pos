@@ -1,13 +1,13 @@
 {
-  "name": "mobile",
+  "name": "pos-mobile",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "apps/mobile/src",
+  "sourceRoot": "apps/pos-mobile/src",
   "projectType": "application",
   "tags": [],
   "targets": {
     "start": {
       "command": "react-native start",
-      "options": { "cwd": "apps/mobile" },
+      "options": { "cwd": "apps/pos-mobile" },
       "dependsOn": [
         {
           "projects": "api-contract",
@@ -17,7 +17,7 @@
     },
     "run-android": {
       "command": "react-native run-android",
-      "options": { "cwd": "apps/mobile" },
+      "options": { "cwd": "apps/pos-mobile" },
       "dependsOn": [
         {
           "projects": "api-contract",
@@ -27,7 +27,7 @@
     },
     "run-ios": {
       "command": "react-native run-ios",
-      "options": { "cwd": "apps/mobile" },
+      "options": { "cwd": "apps/pos-mobile" },
       "dependsOn": [
         {
           "projects": "api-contract",
@@ -37,17 +37,17 @@
     },
     "build-android": {
       "command": "react-native build-android",
-      "options": { "cwd": "apps/mobile" },
+      "options": { "cwd": "apps/pos-mobile" },
       "cache": true,
       "dependsOn": ["^build-android"],
-      "outputs": ["{workspaceRoot}/apps/mobile/android/app/build/outputs"]
+      "outputs": ["{workspaceRoot}/apps/pos-mobile/android/app/build/outputs"]
     },
     "build-ios": {
       "command": "react-native build-ios",
-      "options": { "cwd": "apps/mobile" },
+      "options": { "cwd": "apps/pos-mobile" },
       "cache": true,
       "dependsOn": ["^build-ios"],
-      "outputs": ["{workspaceRoot}/apps/mobile/ios/build/Build/Products"]
+      "outputs": ["{workspaceRoot}/apps/pos-mobile/ios/build/Build/Products"]
     }
   }
 }
