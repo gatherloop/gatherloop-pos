@@ -1,7 +1,7 @@
 {
-  "name": "order",
+  "name": "order-web",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "apps/order",
+  "sourceRoot": "apps/order-web",
   "projectType": "application",
   "tags": [],
   "targets": {
