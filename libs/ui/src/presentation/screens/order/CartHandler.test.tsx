@@ -2,9 +2,13 @@ import React from 'react';
 import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CartHandler } from './CartHandler';
-import { MockCartRepository } from '../../../data/mock';
-import { CartUsecase } from '../../../domain';
-import { useController } from '../../controllers/controller';
+import {
+  MockCartQueryRepository,
+  MockCartRepository,
+  MockPublicTableRepository,
+  MockSessionRepository,
+} from '../../../data/mock';
+import { CartUsecase, TableResolveUsecase } from '../../../domain';
 import { flushPromises } from '../../../utils/testUtils';
 
 const mockPush = jest.fn();
@@ -16,26 +20,41 @@ jest.mock('solito/router', () => ({
   }),
 }));
 
-const TestCartHandler = ({
-  usecase,
-  tableCode = 'ABCDE12345',
+const TABLE_CODE = '3F7H9K2M5P';
+
+const renderHandler = ({
+  cartRepository = new MockCartRepository(),
+  tableRepository = new MockPublicTableRepository(),
+  cartQueryRepository = new MockCartQueryRepository(),
 }: {
-  usecase: CartUsecase;
-  tableCode?: string;
-}) => {
-  const cart = useController(usecase);
-  return <CartHandler cart={cart} tableCode={tableCode} />;
+  cartRepository?: MockCartRepository;
+  tableRepository?: MockPublicTableRepository;
+  cartQueryRepository?: MockCartQueryRepository;
+} = {}) => {
+  const tableResolveUsecase = new TableResolveUsecase(tableRepository, {
+    code: TABLE_CODE,
+  });
+  const cartUsecase = new CartUsecase(cartRepository, cartQueryRepository);
+
+  return {
+    cartRepository,
+    tableRepository,
+    ...render(
+      <CartHandler
+        tableResolveUsecase={tableResolveUsecase}
+        cartUsecase={cartUsecase}
+        sessionRepository={new MockSessionRepository()}
+        tableCode={TABLE_CODE}
+      />
+    ),
+  };
 };
 
-const renderHandler = (
-  repository = new MockCartRepository(),
-  tableCode?: string
-) => {
-  const usecase = new CartUsecase(repository);
-  return {
-    repository,
-    ...render(<TestCartHandler usecase={usecase} tableCode={tableCode} />),
-  };
+const settle = async () => {
+  await act(async () => {
+    await flushPromises();
+    await flushPromises();
+  });
 };
 
 describe('CartHandler', () => {
@@ -43,33 +62,38 @@ describe('CartHandler', () => {
     jest.clearAllMocks();
   });
 
-  it('shows a loading indicator while the cart is loading', async () => {
+  it('shows the table shell while the table is resolving', async () => {
     renderHandler();
-    expect(screen.getByText('Memuat keranjang...')).toBeTruthy();
-    await act(async () => {
-      await flushPromises();
-    });
+    expect(screen.getByText('Memuat meja...')).toBeTruthy();
+    await settle();
+  });
+
+  it('shows an invalid-QR message for an unknown table code', async () => {
+    const tableRepository = new MockPublicTableRepository();
+    tableRepository.tables = {};
+    renderHandler({ tableRepository });
+
+    await settle();
+
+    expect(screen.getByText('QR tidak valid')).toBeTruthy();
   });
 
   it('shows the empty state with no items', async () => {
     renderHandler();
 
-    await act(async () => {
-      await flushPromises();
-    });
+    await settle();
 
     expect(screen.getByText('Keranjang kosong')).toBeTruthy();
   });
 
   it('lists cart lines once items exist, with option, note and subtotal', async () => {
-    const repository = new MockCartRepository();
-    await repository.addItem({ variantId: 1, amount: 2, note: 'less sugar' });
-    renderHandler(repository);
+    const cartRepository = new MockCartRepository();
+    await cartRepository.addItem({ variantId: 1, amount: 2, note: 'less sugar' });
+    renderHandler({ cartRepository });
 
-    await act(async () => {
-      await flushPromises();
-    });
+    await settle();
 
+    expect(screen.getByText('Meja 01')).toBeTruthy();
     expect(screen.getByText('Es Kopi Susu')).toBeTruthy();
     expect(screen.getByText('Regular')).toBeTruthy();
     expect(screen.getByText('Catatan: less sugar')).toBeTruthy();
@@ -80,13 +104,11 @@ describe('CartHandler', () => {
 
   it('increments quantity via the stepper, showing the optimistic subtotal immediately', async () => {
     const user = userEvent.setup();
-    const repository = new MockCartRepository();
-    await repository.addItem({ variantId: 1, amount: 1, note: '' });
-    renderHandler(repository);
+    const cartRepository = new MockCartRepository();
+    await cartRepository.addItem({ variantId: 1, amount: 1, note: '' });
+    renderHandler({ cartRepository });
 
-    await act(async () => {
-      await flushPromises();
-    });
+    await settle();
 
     await user.click(screen.getByLabelText('Tambah jumlah'));
 
@@ -94,41 +116,33 @@ describe('CartHandler', () => {
     // immediately, before the mock repository's promise resolves.
     expect(screen.getAllByText('Rp 36.000')).toHaveLength(2);
 
-    await act(async () => {
-      await flushPromises();
-    });
+    await settle();
   });
 
   it('removes a line item', async () => {
     const user = userEvent.setup();
-    const repository = new MockCartRepository();
-    await repository.addItem({ variantId: 1, amount: 1, note: '' });
-    renderHandler(repository);
+    const cartRepository = new MockCartRepository();
+    await cartRepository.addItem({ variantId: 1, amount: 1, note: '' });
+    renderHandler({ cartRepository });
 
-    await act(async () => {
-      await flushPromises();
-    });
+    await settle();
 
     await user.click(
       screen.getByLabelText('Hapus Es Kopi Susu dari keranjang')
     );
 
-    await act(async () => {
-      await flushPromises();
-    });
+    await settle();
 
     expect(screen.getByText('Keranjang kosong')).toBeTruthy();
   });
 
   it('pressing "Kosongkan" opens the confirmation dialog without clearing the cart', async () => {
     const user = userEvent.setup();
-    const repository = new MockCartRepository();
-    await repository.addItem({ variantId: 1, amount: 1, note: '' });
-    renderHandler(repository);
+    const cartRepository = new MockCartRepository();
+    await cartRepository.addItem({ variantId: 1, amount: 1, note: '' });
+    renderHandler({ cartRepository });
 
-    await act(async () => {
-      await flushPromises();
-    });
+    await settle();
 
     await user.click(
       screen.getByRole('button', { name: 'Kosongkan keranjang' })
@@ -140,22 +154,18 @@ describe('CartHandler', () => {
 
   it('cancelling the confirmation dialog leaves the cart untouched', async () => {
     const user = userEvent.setup();
-    const repository = new MockCartRepository();
-    await repository.addItem({ variantId: 1, amount: 1, note: '' });
-    renderHandler(repository);
+    const cartRepository = new MockCartRepository();
+    await cartRepository.addItem({ variantId: 1, amount: 1, note: '' });
+    renderHandler({ cartRepository });
 
-    await act(async () => {
-      await flushPromises();
-    });
+    await settle();
 
     await user.click(
       screen.getByRole('button', { name: 'Kosongkan keranjang' })
     );
     await user.click(screen.getByRole('button', { name: 'Batal' }));
 
-    await act(async () => {
-      await flushPromises();
-    });
+    await settle();
 
     expect(screen.queryByText('Kosongkan keranjang?')).toBeNull();
     expect(screen.getByText('Es Kopi Susu')).toBeTruthy();
@@ -163,90 +173,194 @@ describe('CartHandler', () => {
 
   it('confirming the dialog clears the cart', async () => {
     const user = userEvent.setup();
-    const repository = new MockCartRepository();
-    await repository.addItem({ variantId: 1, amount: 1, note: '' });
-    renderHandler(repository);
+    const cartRepository = new MockCartRepository();
+    await cartRepository.addItem({ variantId: 1, amount: 1, note: '' });
+    renderHandler({ cartRepository });
 
-    await act(async () => {
-      await flushPromises();
-    });
+    await settle();
 
     await user.click(
       screen.getByRole('button', { name: 'Kosongkan keranjang' })
     );
     await user.click(screen.getByRole('button', { name: 'Kosongkan' }));
 
-    await act(async () => {
-      await flushPromises();
-    });
+    await settle();
 
     expect(screen.getByText('Keranjang kosong')).toBeTruthy();
   });
 
-  it('navigates to the edit route when the edit button is pressed', async () => {
-    const user = userEvent.setup();
-    const repository = new MockCartRepository();
-    await repository.addItem({ variantId: 1, amount: 1, note: '' });
-    renderHandler(repository, 'ABCDE12345');
-
-    await act(async () => {
-      await flushPromises();
-    });
-
-    await user.click(screen.getByLabelText('Ubah Es Kopi Susu'));
-
-    expect(mockPush).toHaveBeenCalledWith('/t/ABCDE12345/cart/items/1');
-  });
-
   it('navigates to the menu when "add more items" is pressed', async () => {
     const user = userEvent.setup();
-    renderHandler(new MockCartRepository(), 'ABCDE12345');
+    renderHandler();
 
-    await act(async () => {
-      await flushPromises();
-    });
+    await settle();
 
     await user.click(
       screen.getByRole('button', { name: 'Tambah menu lainnya' })
     );
 
-    expect(mockPush).toHaveBeenCalledWith('/t/ABCDE12345');
+    expect(mockPush).toHaveBeenCalledWith(`/t/${TABLE_CODE}`);
   });
 
   it('navigates to checkout when the checkout button is pressed', async () => {
     const user = userEvent.setup();
-    const repository = new MockCartRepository();
-    await repository.addItem({ variantId: 1, amount: 1, note: '' });
-    renderHandler(repository, 'ABCDE12345');
+    const cartRepository = new MockCartRepository();
+    await cartRepository.addItem({ variantId: 1, amount: 1, note: '' });
+    renderHandler({ cartRepository });
 
-    await act(async () => {
-      await flushPromises();
-    });
+    await settle();
 
     await user.click(screen.getByRole('button', { name: /^Checkout/ }));
 
-    expect(mockPush).toHaveBeenCalledWith('/t/ABCDE12345/checkout');
+    expect(mockPush).toHaveBeenCalledWith(`/t/${TABLE_CODE}/checkout`);
   });
 
   it('shows a retryable error state, and recovers on retry', async () => {
     const user = userEvent.setup();
-    const repository = new MockCartRepository();
-    repository.setShouldFail(true);
-    renderHandler(repository);
+    const cartRepository = new MockCartRepository();
+    cartRepository.setShouldFail(true);
+    renderHandler({ cartRepository });
 
-    await act(async () => {
-      await flushPromises();
-    });
+    await settle();
 
     expect(screen.getByText('Gagal memuat keranjang')).toBeTruthy();
 
-    repository.setShouldFail(false);
+    cartRepository.setShouldFail(false);
     await user.click(screen.getByRole('button', { name: 'Retry' }));
 
-    await act(async () => {
-      await flushPromises();
-    });
+    await settle();
 
     expect(screen.getByText('Keranjang kosong')).toBeTruthy();
+  });
+
+  // D6/D9 in docs/trd-order-app-composition-and-ssr.md: the edit modal is a
+  // state transition, not a route — no navigation, and the cart list stays
+  // mounted behind it (formerly `CartItemEdit`, its own composition root at
+  // `/t/{code}/cart/items/{cartItemId}`).
+  describe('the edit modal', () => {
+    it('opens with no navigation when the edit button is pressed, seeded from the line', async () => {
+      const user = userEvent.setup();
+      const cartRepository = new MockCartRepository();
+      await cartRepository.addItem({
+        variantId: 1,
+        amount: 2,
+        note: 'less sugar',
+      });
+      renderHandler({ cartRepository });
+
+      await settle();
+
+      await user.click(screen.getByLabelText('Ubah Es Kopi Susu'));
+
+      expect(mockPush).not.toHaveBeenCalled();
+      // Renders behind the modal too — one on the cart line, one in the
+      // modal header.
+      expect(screen.getAllByText('Es Kopi Susu')).toHaveLength(2);
+      expect(
+        (screen.getByPlaceholderText(
+          'Contoh: less sugar, tanpa es'
+        ) as HTMLTextAreaElement).value
+      ).toBe('less sugar');
+      // Two steppers exist while the modal is open — one on the cart line
+      // behind it, seeded from the same line's amount, one in the modal.
+      expect(screen.getAllByLabelText('Tambah jumlah')).toHaveLength(2);
+    });
+
+    it('Simpan dispatches UPDATE_ITEM with the edited amount and note, and closes the modal back to the cart', async () => {
+      const user = userEvent.setup();
+      const cartRepository = new MockCartRepository();
+      await cartRepository.addItem({
+        variantId: 1,
+        amount: 2,
+        note: 'less sugar',
+      });
+      renderHandler({ cartRepository });
+
+      await settle();
+
+      await user.click(screen.getByLabelText('Ubah Es Kopi Susu'));
+      await settle();
+
+      const noteInput = screen.getByPlaceholderText(
+        'Contoh: less sugar, tanpa es'
+      );
+      // Two steppers exist while the modal is open — one on the cart line
+      // behind it, one in the modal itself; the modal's is the one mounted
+      // last.
+      const steppers = screen.getAllByLabelText('Tambah jumlah');
+      await user.click(steppers[steppers.length - 1]);
+      await user.clear(noteInput);
+      await user.type(noteInput, 'tanpa es');
+
+      await user.click(screen.getByRole('button', { name: 'Simpan' }));
+      await settle();
+
+      expect(cartRepository.cart.items[0]).toMatchObject({
+        amount: 3,
+        note: 'tanpa es',
+      });
+      expect(screen.queryByLabelText('Tutup')).toBeNull();
+      // The cart, still mounted, reflects the save.
+      expect(screen.getByText('Catatan: tanpa es')).toBeTruthy();
+    });
+
+    it('closing without saving dispatches nothing', async () => {
+      const user = userEvent.setup();
+      const cartRepository = new MockCartRepository();
+      await cartRepository.addItem({
+        variantId: 1,
+        amount: 2,
+        note: 'less sugar',
+      });
+      renderHandler({ cartRepository });
+
+      await settle();
+
+      await user.click(screen.getByLabelText('Ubah Es Kopi Susu'));
+      await settle();
+      await user.click(screen.getByLabelText('Tutup'));
+
+      expect(cartRepository.cart.items[0]).toMatchObject({
+        amount: 2,
+        note: 'less sugar',
+      });
+      expect(screen.queryByLabelText('Tutup')).toBeNull();
+    });
+
+    it('deep-links open via a seeded ?item=, over the restored cart', async () => {
+      const cartRepository = new MockCartRepository();
+      await cartRepository.addItem({
+        variantId: 1,
+        amount: 1,
+        note: '',
+      });
+      const [seededItem] = cartRepository.cart.items;
+      const cartQueryRepository = new MockCartQueryRepository();
+      jest
+        .spyOn(cartQueryRepository, 'getSelectedItemId')
+        .mockReturnValue(seededItem.id);
+
+      renderHandler({ cartRepository, cartQueryRepository });
+
+      await settle();
+
+      expect(screen.getAllByText('Es Kopi Susu')).toHaveLength(2);
+    });
+
+    it('falls back to the cart with no modal for an unknown item id', async () => {
+      const cartRepository = new MockCartRepository();
+      await cartRepository.addItem({ variantId: 1, amount: 1, note: '' });
+      const cartQueryRepository = new MockCartQueryRepository();
+      jest
+        .spyOn(cartQueryRepository, 'getSelectedItemId')
+        .mockReturnValue(999);
+
+      renderHandler({ cartRepository, cartQueryRepository });
+
+      await settle();
+
+      expect(screen.queryByLabelText('Tutup')).toBeNull();
+      expect(screen.getByText('Es Kopi Susu')).toBeTruthy();
+    });
   });
 });

@@ -1,14 +1,36 @@
-import { NextPage } from 'next';
-import { ReactElement, ReactNode } from 'react';
-import { CartLayout } from '../../../../components/CartLayout';
+import {
+  ApiPublicTableRepository,
+  resolveSession,
+  SESSION_ID_COOKIE_NAME,
+  TableNotFoundError,
+} from '@gatherloop-pos/ui';
+import { Cart, CartProps } from '@gatherloop-pos/ui/order';
+import { GetServerSideProps } from 'next';
 
-// The cart route (FR-7 in docs/prd-table-ordering.md). The page itself
-// renders nothing — `Cart` is rendered by `CartLayout.getLayout` (D4) so it
-// stays mounted across navigation to/from the cart-item-edit modal.
-const CartPage: NextPage & {
-  getLayout?: (page: ReactElement) => ReactNode;
-} = () => null;
+// P6 in docs/trd-order-app-composition-and-ssr.md: resolves the session
+// and the table (D5 keeps the cart itself unseeded), so menu → cart shows
+// no "Memuat meja…" on the first response.
+export const getServerSideProps: GetServerSideProps<CartProps> = async (
+  ctx
+) => {
+  const { sessionId, setCookie } = resolveSession(
+    ctx.req.cookies[SESSION_ID_COOKIE_NAME]
+  );
+  if (setCookie) ctx.res.setHeader('Set-Cookie', setCookie);
 
-CartPage.getLayout = (page) => <CartLayout>{page}</CartLayout>;
+  const code = String(ctx.params?.code ?? '');
+  // `undefined` (an unexpected transport error) keeps today's client-only
+  // retry path instead of failing the whole page; `null` (a known-bad
+  // code) seeds `notFound` directly.
+  const table = await new ApiPublicTableRepository()
+    .resolveTableByCode(code)
+    .catch((error) =>
+      error instanceof TableNotFoundError ? null : undefined
+    );
 
-export default CartPage;
+  return {
+    props: { sessionId, code, table },
+  };
+};
+
+export default Cart;

@@ -1,4 +1,5 @@
 import { PublicTable } from '../entities';
+import { RequestConfig } from '@kubb/swagger-client/client';
 
 // Thrown by a PublicTableRepository implementation when a code does not
 // resolve to any table — unknown or deleted (D6). Distinct from a
@@ -12,5 +13,8 @@ export class TableNotFoundError extends Error {
 }
 
 export interface PublicTableRepository {
-  resolveTableByCode: (code: string) => Promise<PublicTable>;
+  resolveTableByCode: (
+    code: string,
+    options?: Partial<RequestConfig>
+  ) => Promise<PublicTable>;
 }

@@ -1,24 +1,36 @@
-import { Checkout } from '@gatherloop-pos/ui/order';
-import { NextPage } from 'next';
-import { useRouter } from 'next/router';
-import { ReactElement, ReactNode } from 'react';
-import { TableLayout } from '../../../components/TableLayout';
+import {
+  ApiPublicTableRepository,
+  resolveSession,
+  SESSION_ID_COOKIE_NAME,
+  TableNotFoundError,
+} from '@gatherloop-pos/ui';
+import { Checkout, CheckoutProps } from '@gatherloop-pos/ui/order';
+import { GetServerSideProps } from 'next';
 
-// The checkout route (FR-8 in docs/prd-table-ordering.md). Unlike the
-// menu/cart pairs, checkout has no sibling route to share a mount with, so
-// `Checkout` is rendered by the page itself rather than lifted into the
-// layout — `TableLayout` is still shared by reference with every other
-// `/t/[code]/**` page (D4), which is what keeps the table resolved once per
-// visit across menu -> cart -> checkout.
-const CheckoutPage: NextPage & {
-  getLayout?: (page: ReactElement) => ReactNode;
-} = () => {
-  const router = useRouter();
-  const code = typeof router.query.code === 'string' ? router.query.code : '';
+// P6 in docs/trd-order-app-composition-and-ssr.md: resolves the session
+// and the table, so menu → cart → checkout shows no "Memuat meja…" on the
+// first response.
+export const getServerSideProps: GetServerSideProps<CheckoutProps> = async (
+  ctx
+) => {
+  const { sessionId, setCookie } = resolveSession(
+    ctx.req.cookies[SESSION_ID_COOKIE_NAME]
+  );
+  if (setCookie) ctx.res.setHeader('Set-Cookie', setCookie);
 
-  return <Checkout tableCode={code} />;
+  const code = String(ctx.params?.code ?? '');
+  // `undefined` (an unexpected transport error) keeps today's client-only
+  // retry path instead of failing the whole page; `null` (a known-bad
+  // code) seeds `notFound` directly.
+  const table = await new ApiPublicTableRepository()
+    .resolveTableByCode(code)
+    .catch((error) =>
+      error instanceof TableNotFoundError ? null : undefined
+    );
+
+  return {
+    props: { sessionId, code, table },
+  };
 };
 
-CheckoutPage.getLayout = (page) => <TableLayout hideCartBar>{page}</TableLayout>;
-
-export default CheckoutPage;
+export default Checkout;

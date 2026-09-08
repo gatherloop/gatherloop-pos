@@ -79,6 +79,14 @@ Two structural facts fall out of that table, and they are the crux of this migra
 - `MenuList` (resp. `Cart`) stays mounted while the detail sheet (resp. edit modal) is open. The
   menu's scroll position, search text and category filter survive opening and closing an item.
 
+**Superseded (2026-09-08):** the two overlay routes (`/t/:code/products/:productId`,
+`/t/:code/cart/items/:cartItemId`) no longer exist as separate paths — the item sheet and the cart-item
+modal are `?product=`/`?item=` query params on `/t/{code}` and `/t/{code}/cart` (D6 in
+`docs/trd-order-app-composition-and-ssr.md`), so they are not a navigation at all and cannot remount
+anything. `TableResolve` is no longer a `children`-taking wrapper either: `tableResolveUsecase` is one
+more usecase on each route's own Handler (D9, same document). The two facts above — nothing remounts,
+the table resolves once per page load — still hold; only the mechanism producing them changed.
+
 ### 2.3 Runtime posture (all of it stays, except where D13 says otherwise)
 
 - **No SSR.** Every usecase starts `idle` and fetches after mount (D18). First paint is the shell +
@@ -91,6 +99,12 @@ Two structural facts fall out of that table, and they are the crux of this migra
   migration deliberately changes** — the calls become same-origin through a Next rewrite (D13). The
   header, the session and every response are unchanged; only the hop is.
 - **Cart lives above the router** (`CartProvider`), so it survives every navigation.
+
+**Superseded (2026-09-08):** none of the above is current. The order app is now server-rendered — every
+usecase can start seeded and loaded, not idle (D6/P6 in `docs/trd-order-app-composition-and-ssr.md`).
+The session is a repository (`CookieSessionRepository`) resolved server- and client-side from the same
+cookie, not minted in the browser during render (D3/D4, same document). `CartProvider` is deleted; each
+composition root news up its own `CartUsecase`, the same way every POS root does (D8, same document).
 
 ### 2.4 Hosting and the printed QR codes
 
@@ -182,6 +196,12 @@ into a catch-all page.
 
 ### D4 — Route composition uses **shared per-page layouts** (`Component.getLayout`)
 
+**Superseded (2026-09-08):** `getLayout` is deleted. Folding the item sheet and the cart-item modal
+into query params on their parent route (D6 in `docs/trd-order-app-composition-and-ssr.md`) means there
+is no route change across which a layout would need preserving — `MenuListScreen` and `CartScreen` just
+render the overlay as a child. `TableLayout` (§5.4) is deleted with it: `tableResolveUsecase` is one
+more usecase on each screen's own Handler (D9, same document), not a shared wrapper component.
+
 This is what keeps parity items 2 and 3 in §3.
 
 Next's Pages Router unmounts the page component on every navigation, but `_app.tsx` renders
@@ -208,6 +228,15 @@ item sheet.
 anything else is built on it (§7, §8/P2).
 
 ### D5 — Stay client-rendered; gate on mount and on `router.isReady`
+
+**Superseded (2026-09-08):** both gates below are gone. The mount gate is removed once the session
+becomes a repository that resolves identically on the server and the client, so there is nothing render
+that can only run in a browser (D3/D4 in `docs/trd-order-app-composition-and-ssr.md`). The
+`router.isReady` gate is removed once the overlay selection is read through `getQueryParam`, which
+already serves both `getServerSideProps` and the browser with no readiness problem (§2.3c, same
+document) — there is no `router.query` to wait on. `docs/trd-order-app-composition-and-ssr.md` §7's P2
+was the phase that proved the underlying Tamagui/`react-native-web` tree renders on the server with no
+hydration mismatch, which is what made removing both gates safe.
 
 Two Next-specific traps, both from D18's "no SSR" posture:
 
@@ -374,6 +403,13 @@ console rather than silently working in one environment and not another.
 
 ### 5.1 App layout
 
+**Superseded (2026-09-08):** `src/components/TableLayout.tsx` and the `products/[productId].tsx` /
+`cart/items/[cartItemId].tsx` route files below are all deleted — folded into `?product=`/`?item=`
+query params on their parent route (D6 in `docs/trd-order-app-composition-and-ssr.md`). `apps/order-web`
+(renamed from `apps/order` per `docs/trd-ui-presentation-split-by-app.md`) ends with five route files —
+`index.tsx`, `404.tsx`, `t/[code]/index.tsx`, `t/[code]/cart/index.tsx`, `t/[code]/checkout.tsx` — each
+just a `getServerSideProps` and a default export, and `src/components/` does not exist.
+
 ```
 apps/order/                          (apps/order-next until the cutover)
 ├── next.config.js
@@ -459,6 +495,12 @@ because the Vite app mounts `RootProvider` bare and gets the config's first them
 `NextThemeProvider` here, unlike the POS, since the customer app has no theme switch.
 
 ### 5.4 `TableLayout` (the whole of D4)
+
+**Superseded (2026-09-08):** this component is deleted. Each screen renders its own shell directly, and
+`tableResolveUsecase` is one more usecase wired into that screen's Handler alongside the screen's own
+usecases (D9 in `docs/trd-order-app-composition-and-ssr.md`) — the same pattern `ProductListScreen`
+already uses for `Layout` in the POS. The `router.isReady` guard below is gone with it (D5, superseded
+above).
 
 ```tsx
 export const TableLayout = ({ children, hideCartBar }: TableLayoutProps) => {

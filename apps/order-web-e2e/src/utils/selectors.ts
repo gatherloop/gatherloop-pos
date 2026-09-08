@@ -43,7 +43,7 @@ export const menuList = {
 };
 
 // ---------------------------------------------------------------------------
-// Item detail sheet (MenuItemDetailScreen.tsx, /t/{code}/products/{id})
+// Item detail sheet (MenuItemDetailScreen.tsx, /t/{code}?product={id})
 // ---------------------------------------------------------------------------
 
 export const itemDetail = {
@@ -92,7 +92,7 @@ export const cartScreen = {
 };
 
 // ---------------------------------------------------------------------------
-// Cart line edit modal (CartItemEditScreen.tsx, /t/{code}/cart/items/{id})
+// Cart line edit modal (CartItemEditScreen.tsx, /t/{code}/cart?item={id})
 // ---------------------------------------------------------------------------
 
 export const cartItemEdit = {

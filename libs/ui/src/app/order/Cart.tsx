@@ -1,16 +1,47 @@
+// Deep imports, not the root barrels (D20): those also re-export every POS
+// composition root, which would bloat the customer bundle with the POS (D6).
+import { ApiCartRepository } from '../../data/api/cart';
+import { ApiPublicTableRepository } from '../../data/api/publicTable';
+import { CookieSessionRepository } from '../../data/session/CookieSessionRepository';
+import { UrlCartQueryRepository } from '../../data/url/cartQuery';
+import { PublicTable } from '../../domain/entities/PublicTable';
+import { CartUsecase } from '../../domain/usecases/cart';
+import { TableResolveUsecase } from '../../domain/usecases/tableResolve';
 import { CartHandler } from '../../presentation/screens/order/CartHandler';
-import { useCart } from './CartProvider';
 
 export type CartProps = {
-  tableCode: string;
+  sessionId: string;
+  code: string;
+  // P6 in docs/trd-order-app-composition-and-ssr.md: seeded by the page's
+  // getServerSideProps (D5 keeps the cart itself unseeded — only the table
+  // is SSR'd here).
+  table?: PublicTable | null;
 };
 
-// Composition root for the cart screen (FR-7 phase 10 in
-// docs/prd-table-ordering.md), mounted at `/order/t/{code}/cart`. Reads the
-// app-wide `CartProvider` controller (D14) rather than owning a
-// `CartUsecase` itself — the same machine backs the floating bar and the
-// item detail sheet's Add-to-cart CTA (phase 9).
-export function Cart({ tableCode }: CartProps) {
-  const cart = useCart();
-  return <CartHandler cart={cart} tableCode={tableCode} />;
+// Composition root for the cart screen (FR-7 in
+// docs/prd-table-ordering.md). Per D9 in
+// docs/trd-order-app-composition-and-ssr.md this now wires up the table
+// shell and the item-edit modal too, in addition to the cart itself — the
+// whole vertical slice `/t/{code}/cart` renders, structurally identical to
+// `app/order/MenuList.tsx` (§3.5).
+export function Cart({ sessionId, code, table }: CartProps) {
+  const sessionRepository = new CookieSessionRepository(sessionId);
+  const publicTableRepository = new ApiPublicTableRepository();
+  const cartRepository = new ApiCartRepository(sessionRepository);
+  const cartQueryRepository = new UrlCartQueryRepository();
+
+  const tableResolveUsecase = new TableResolveUsecase(publicTableRepository, {
+    code,
+    table,
+  });
+  const cartUsecase = new CartUsecase(cartRepository, cartQueryRepository);
+
+  return (
+    <CartHandler
+      tableResolveUsecase={tableResolveUsecase}
+      cartUsecase={cartUsecase}
+      sessionRepository={sessionRepository}
+      tableCode={code}
+    />
+  );
 }

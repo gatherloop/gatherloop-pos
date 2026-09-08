@@ -5,8 +5,14 @@
  * cart persists across reload -> edit quantity -> edit a line's amount/note
  * via the edit modal (FR-9) -> remove -> checkout CTA,
  * plus a deep-link test proving a hard-navigated
- * `/t/{code}/products/{productId}` link renders correctly with no
+ * `/t/{code}?product={productId}` link renders correctly with no
  * client-side navigation history.
+ *
+ * The item sheet and the cart-item modal are `?product=`/`?item=` query
+ * params on their parent route, not separate pages (D6 in
+ * docs/trd-order-app-composition-and-ssr.md) — opening either issues no
+ * request, since the sheet/modal render from the payload the parent route
+ * already fetched.
  *
  * Runs against the real `next start` production server
  * (docs/trd-order-app-nextjs-migration.md P4) — no dev server, no static
@@ -180,10 +186,20 @@ test.describe.serial('Table Ordering', () => {
     page,
   }) => {
     await page.goto(`t/${table.code}`);
+
+    // D6: `Product.options` is already in the menu payload the server sent,
+    // so opening the sheet is a URL change with no fetch — unlike the old
+    // `/products/{id}` route, which mounted and fetched.
+    const apiRequests: string[] = [];
+    page.on('request', (request) => {
+      if (request.url().includes('/api/')) apiRequests.push(request.url());
+    });
+
     await sel.menuList.productCard(page, PRODUCT_NAME).click();
 
-    await expect(page).toHaveURL(new RegExp(`/products/${product.id}$`));
+    await expect(page).toHaveURL(new RegExp(`\\?product=${product.id}$`));
     await expect(page.getByText(PRODUCT_NAME)).toBeVisible();
+    expect(apiRequests).toEqual([]);
 
     // No option selected yet — the CTA stays enabled with no price (FR-5).
     await expect(
@@ -268,8 +284,16 @@ test.describe.serial('Table Ordering', () => {
     await page.goto(`t/${table.code}/cart`);
     await expect(sel.cartScreen.lineItemName(page, PRODUCT_NAME)).toBeVisible();
 
+    // D6: the edit modal is `?item=` on the cart route, not a separate page
+    // — opening it over the already-rendered cart issues no fetch.
+    const apiRequests: string[] = [];
+    page.on('request', (request) => {
+      if (request.url().includes('/api/')) apiRequests.push(request.url());
+    });
+
     await sel.cartScreen.editButton(page, PRODUCT_NAME).click();
-    await expect(page).toHaveURL(new RegExp(`/t/${table.code}/cart/items/\\d+$`));
+    await expect(page).toHaveURL(new RegExp(`/t/${table.code}/cart\\?item=\\d+$`));
+    expect(apiRequests).toEqual([]);
 
     await sel.itemDetail.increaseAmountButton(page).click();
     await sel.itemDetail.noteInput(page).fill(EDITED_NOTE);
@@ -332,11 +356,12 @@ test.describe.serial('Table Ordering', () => {
   });
 
   // ---------------------------------------------------------------------------
-  // 9. Deep link: a hard-navigated nested URL renders correctly via Next's
-  //    real file-system route, with no client-side navigation history.
+  // 9. Deep link: a hard-navigated `?product=` URL renders the sheet over the
+  //    menu via Next's real file-system route, with no client-side
+  //    navigation history.
   // ---------------------------------------------------------------------------
 
-  test('a hard-navigated deep link to the item detail route renders correctly', async ({
+  test('a hard-navigated deep link with a selected product renders the item sheet over the menu', async ({
     browser,
   }) => {
     // A fresh context — no cookies, no client-side navigation history —
@@ -345,7 +370,7 @@ test.describe.serial('Table Ordering', () => {
     const context = await browser.newContext();
     const page = await context.newPage();
 
-    const response = await page.goto(`t/${table.code}/products/${product.id}`);
+    const response = await page.goto(`t/${table.code}?product=${product.id}`);
     expect(response?.status()).toBe(200);
 
     await expect(sel.tableResolve.tableLabel(page, TABLE_LABEL)).toBeVisible({

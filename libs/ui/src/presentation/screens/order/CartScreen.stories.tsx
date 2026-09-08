@@ -62,13 +62,20 @@ const cart = {
   createdAt: '2024-03-20T00:00:00.000Z',
 };
 
+const table = { id: 1, label: 'Meja 1', floorNumber: 1 };
+
 const meta: Meta<typeof CartScreen> = {
   title: 'Screens/Order/CartScreen',
   component: CartScreen,
+  parameters: {
+    layout: 'fullscreen',
+  },
   args: {
+    tableVariant: { type: 'resolved', table },
     isMutating: false,
     errorMessage: null,
     isClearConfirmationOpen: false,
+    itemEdit: null,
     onAmountChange: () => {
       // Storybook action stand-in
     },

@@ -1,11 +1,15 @@
 import { CartUsecase, CartAction, CartState, CartParams } from './cart';
-import { MockCartRepository } from '../../data/mock';
+import { MockCartQueryRepository, MockCartRepository } from '../../data/mock';
 import { UsecaseTester, flushPromises } from '../../utils/usecase';
 import { Cart } from '../entities';
 
-const createTester = (repository: MockCartRepository, params: CartParams = {}) =>
+const createTester = (
+  repository: MockCartRepository,
+  params: CartParams = {},
+  queryRepository: MockCartQueryRepository = new MockCartQueryRepository()
+) =>
   new UsecaseTester<CartUsecase, CartState, CartAction, CartParams>(
-    new CartUsecase(repository, params)
+    new CartUsecase(repository, queryRepository, params)
   );
 
 describe('CartUsecase', () => {
@@ -198,6 +202,73 @@ describe('CartUsecase', () => {
       await flushPromises();
       expect(cart.state.type).toBe('loaded');
       expect(cart.state.cart?.items).toHaveLength(0);
+    });
+  });
+
+  // D6 in docs/trd-order-app-composition-and-ssr.md.
+  describe('item selection', () => {
+    it('holds the selected item id, from any fetch/mutation state, without changing it', async () => {
+      const repository = new MockCartRepository();
+      const cart = createTester(repository);
+      await flushPromises();
+
+      cart.dispatch({ type: 'SELECT_ITEM', itemId: 1 });
+
+      expect(cart.state.type).toBe('loaded');
+      expect(cart.state.selectedItemId).toBe(1);
+    });
+
+    it('clears the selected item id', async () => {
+      const repository = new MockCartRepository();
+      const cart = createTester(repository);
+      await flushPromises();
+
+      cart.dispatch({ type: 'SELECT_ITEM', itemId: 1 });
+      cart.dispatch({ type: 'CLEAR_ITEM' });
+
+      expect(cart.state.selectedItemId).toBeNull();
+    });
+
+    it('reads the initial selection from the query repository', () => {
+      const repository = new MockCartRepository();
+      const queryRepository = new MockCartQueryRepository();
+      jest.spyOn(queryRepository, 'getSelectedItemId').mockReturnValue(5);
+
+      const cart = createTester(repository, {}, queryRepository);
+
+      expect(cart.state.selectedItemId).toBe(5);
+    });
+
+    it('mirrors a selection into the query repository', async () => {
+      const repository = new MockCartRepository();
+      const queryRepository = new MockCartQueryRepository();
+      const setSpy = jest.spyOn(queryRepository, 'setSelectedItemId');
+      const cart = createTester(repository, undefined, queryRepository);
+      await flushPromises();
+      setSpy.mockClear();
+
+      cart.dispatch({ type: 'SELECT_ITEM', itemId: 3 });
+
+      expect(setSpy).toHaveBeenCalledWith(3);
+    });
+
+    it('does not re-write the query repository on unrelated state changes', async () => {
+      const repository = new MockCartRepository();
+      const queryRepository = new MockCartQueryRepository();
+      jest.spyOn(queryRepository, 'getSelectedItemId').mockReturnValue(3);
+      const setSpy = jest.spyOn(queryRepository, 'setSelectedItemId');
+      const cart = createTester(
+        repository,
+        { cart: { ...repository.cart } },
+        queryRepository
+      );
+      await flushPromises();
+      setSpy.mockClear();
+
+      cart.dispatch({ type: 'ADD_ITEM', variantId: 1, amount: 1, note: '' });
+      await flushPromises();
+
+      expect(setSpy).not.toHaveBeenCalled();
     });
   });
 });
