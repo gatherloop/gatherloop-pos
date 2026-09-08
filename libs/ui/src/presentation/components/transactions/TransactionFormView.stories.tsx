@@ -77,7 +77,7 @@ const CompactCouponSwapStory = () => (
 );
 
 const meta: Meta<typeof TransactionFormView> = {
-  title: 'Features/Transactions/TransactionFormView',
+  title: 'Components/Transactions/TransactionFormView',
   component: TransactionFormView,
 };
 

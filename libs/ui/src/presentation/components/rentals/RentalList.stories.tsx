@@ -19,7 +19,7 @@ const defaultArgs = {
 };
 
 const meta: Meta<typeof RentalList> = {
-  title: 'Features/Rentals/RentalList',
+  title: 'Components/Rentals/RentalList',
   component: RentalList,
   args: defaultArgs,
 };

@@ -35,6 +35,6 @@ Just as important, each stock check **freezes a snapshot** of every material's p
 - Shared form: `libs/ui/src/presentation/components/stockChecks/StockCheckFormView.tsx`
 - Entities: `libs/ui/src/domain/entities/StockCheck.ts`
 - Backend: `apps/api/domain/stock_check_entity.go`, `stock_check_usecase.go`
-- Web routes: `apps/web/src/pages/stock-checks/{index,create}.tsx`, `[id]/edit.tsx`
+- Web routes: `apps/pos-web/src/pages/stock-checks/{index,create}.tsx`, `[id]/edit.tsx`
 - Design docs: `docs/prd-inventory-management.md` (core snapshot model), `docs/prd-stock-check-required-fields.md` (blank-vs-zero + pending UX), `docs/prd-stock-check-form-ux.md` (search + row layout), `docs/prd-material-stock-check-flag.md` (per-material opt-out)
 - Related: [Materials](/catalog/materials) for the stock-check-required flag, [Purchase Lists](/inventory/purchase-lists) for what's computed from a stock check

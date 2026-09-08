@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { RentalDeleteAlert } from './RentalDeleteAlert';
 
 const meta: Meta<typeof RentalDeleteAlert> = {
-  title: 'Features/Rentals/RentalDeleteAlert',
+  title: 'Components/Rentals/RentalDeleteAlert',
   component: RentalDeleteAlert,
   args: {
     isOpen: true,

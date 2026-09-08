@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { VariantDeleteAlert } from './VariantDeleteAlert';
 
 const meta: Meta<typeof VariantDeleteAlert> = {
-  title: 'Features/Variants/VariantDeleteAlert',
+  title: 'Components/Variants/VariantDeleteAlert',
   component: VariantDeleteAlert,
   args: {
     isOpen: true,

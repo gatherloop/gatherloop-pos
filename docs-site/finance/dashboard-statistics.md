@@ -28,7 +28,7 @@ A shop owner doesn't have time to page through raw transaction and expense lists
 
 ## For engineers
 
-- Web route: `apps/web/src/pages/index.tsx`
+- Web route: `apps/pos-web/src/pages/index.tsx`
 - Screens: `libs/ui/src/presentation/screens/DashboardScreen.tsx`, `TransactionStatisticScreen.tsx`, `ExpenseStatisticScreen.tsx` (+ Handlers)
 - Components: `libs/ui/src/presentation/components/transactions/TransactionStatistic.tsx`, `libs/ui/src/presentation/components/expenses/{ExpenseStatistic,ExpenseVarianceList}.tsx`
 - Entities: `libs/ui/src/domain/entities/{TransactionStatistic,ExpenseStatistic,TransactionStatisticDateRange}.ts`

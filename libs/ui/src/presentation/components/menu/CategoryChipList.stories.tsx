@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { CategoryChipList } from './CategoryChipList';
 
 const meta: Meta<typeof CategoryChipList> = {
-  title: 'Menu/CategoryChipList',
+  title: 'Components/Menu/CategoryChipList',
   component: CategoryChipList,
   args: {
     categories: [

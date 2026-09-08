@@ -130,12 +130,12 @@ __generated__
 ios/tmp.xcconfig
 
 # Playwright E2E auth state (contains sensitive cookies)
-apps/web-e2e/src/.auth/storageState.json
+apps/pos-web-e2e/src/.auth/storageState.json
 playwright-report/
 test-results/
 
 # E2E local environment (contains credentials — never commit)
-apps/web-e2e/.env.local
+apps/pos-web-e2e/.env.local
 
 vite.config.*.timestamp*
 vitest.config.*.timestamp*

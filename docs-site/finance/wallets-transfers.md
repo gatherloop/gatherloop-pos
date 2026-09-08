@@ -25,7 +25,7 @@ Every payment a customer makes and every purchase staff record has to land somew
 
 ## For engineers
 
-- Web routes: `apps/web/src/pages/wallets/{index,create,[walletId]/index,[walletId]/transfers/index,[walletId]/transfers/create}.tsx`
+- Web routes: `apps/pos-web/src/pages/wallets/{index,create,[walletId]/index,[walletId]/transfers/index,[walletId]/transfers/create}.tsx`
 - Screens: `libs/ui/src/presentation/screens/Wallet{List,Create,Update,TransferList,TransferCreate}Screen.tsx`
 - Components: `libs/ui/src/presentation/components/wallets/{WalletFormView,WalletList,WalletListItem,WalletTransferFormView,WalletTransferList,WalletTransferListItem}.tsx`
 - Entities: `libs/ui/src/domain/entities/{Wallet,WalletTransfer}.ts`

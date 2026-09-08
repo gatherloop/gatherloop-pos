@@ -18,7 +18,7 @@ const defaultArgs = {
 };
 
 const meta: Meta<typeof SupplierList> = {
-  title: 'Features/Suppliers/SupplierList',
+  title: 'Components/Suppliers/SupplierList',
   component: SupplierList,
   args: defaultArgs,
 };

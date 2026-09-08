@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { EmptyView } from './EmptyView';
 
 const meta: Meta<typeof EmptyView> = {
-  title: 'Base/EmptyView',
+  title: 'Components/Base/EmptyView',
   component: EmptyView,
   args: {
     title: 'No Items Found',

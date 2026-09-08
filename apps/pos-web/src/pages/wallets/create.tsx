@@ -1,0 +1,12 @@
+import { WalletCreate } from '@gatherloop-pos/ui/pos';
+import { GetServerSideProps } from 'next';
+
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
+  return {
+    props: {},
+    redirect: isLoggedIn ? undefined : { destination: '/auth/login' },
+  };
+};
+
+export default WalletCreate;

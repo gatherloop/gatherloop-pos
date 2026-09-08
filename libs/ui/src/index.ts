@@ -3,6 +3,5 @@
 export * from './config';
 export * from './data';
 export * from './domain';
-export * from './app';
 export * from './utils';
 export * from './presentation/components/base/ConfirmationAlert';

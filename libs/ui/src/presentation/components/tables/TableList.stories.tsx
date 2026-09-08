@@ -11,7 +11,7 @@ const defaultArgs = {
 };
 
 const meta: Meta<typeof TableList> = {
-  title: 'Features/Tables/TableList',
+  title: 'Components/Tables/TableList',
   component: TableList,
   args: defaultArgs,
 };

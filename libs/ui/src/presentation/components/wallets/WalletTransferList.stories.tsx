@@ -16,7 +16,7 @@ const mockItems = [
 ];
 
 const meta: Meta<typeof WalletTransferList> = {
-  title: 'Features/Wallets/WalletTransferList',
+  title: 'Components/Wallets/WalletTransferList',
   component: WalletTransferList,
   args: {
     onRetryButtonPress: fn(),

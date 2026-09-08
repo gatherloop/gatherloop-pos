@@ -10,7 +10,7 @@ const mockBudgetItems = mockBudgets.map((b) => ({
 }));
 
 const meta: Meta<typeof BudgetList> = {
-  title: 'Features/Budgets/BudgetList',
+  title: 'Components/Budgets/BudgetList',
   component: BudgetList,
   args: {
     onRetryButtonPress: fn(),

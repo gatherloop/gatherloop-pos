@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { CartBar } from './CartBar';
 
 const meta: Meta<typeof CartBar> = {
-  title: 'Cart/CartBar',
+  title: 'Components/Cart/CartBar',
   component: CartBar,
   args: {
     onPress: () => {

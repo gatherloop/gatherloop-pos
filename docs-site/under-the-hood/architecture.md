@@ -24,10 +24,10 @@ Gatherloop POS is one [Nx](https://nx.dev) monorepo: a single Go backend, two fr
                           │  handlers → screens     │
                           └────┬─────────────┬────┘
                                │             │
-                    ┌──────────▼───┐   ┌─────▼───────────┐
-                    │  apps/web      │   │  apps/mobile      │
-                    │  Next.js, SSR  │   │  React Native      │
-                    └────────────────┘   └────────────────────┘
+                    ┌──────────▼───┐   ┌─────▼───────────────┐
+                    │  apps/pos-web  │   │  apps/pos-mobile      │
+                    │  Next.js, SSR  │   │  React Native         │
+                    └────────────────┘   └───────────────────────┘
 ```
 
 ## The pieces
@@ -37,8 +37,8 @@ Gatherloop POS is one [Nx](https://nx.dev) monorepo: a single Go backend, two fr
 | `apps/api` | Go service | Owns every business rule and the MySQL database. The only thing allowed to touch the database. |
 | `libs/api-contract` | OpenAPI spec + codegen | The single source of truth for what the API looks like — generates the Go request/response types the backend uses and the typed TypeScript client the frontend uses, so the two sides can't silently drift apart. |
 | `libs/ui` | Shared TypeScript library | Every entity, business rule, controller, and screen in the product, written once and rendered on both web and mobile via [Tamagui](https://tamagui.dev). |
-| `apps/web` | Next.js app | Thin: server-side data fetching (auth, initial page data) plus routing, then hands off to `libs/ui` for everything else. |
-| `apps/mobile` | React Native app | Thin: navigation and linking config, then hands off to the exact same `libs/ui` screens. |
+| `apps/pos-web` | Next.js app | Thin: server-side data fetching (auth, initial page data) plus routing, then hands off to `libs/ui` for everything else. |
+| `apps/pos-mobile` | React Native app | Thin: navigation and linking config, then hands off to the exact same `libs/ui` screens. |
 | `libs/provider` | Small shared runtime | Cross-platform providers (theming, toasts, query client) that both apps mount once at the root. |
 
 ## Three decisions that shape everything else
@@ -53,8 +53,8 @@ Gatherloop POS is one [Nx](https://nx.dev) monorepo: a single Go backend, two fr
 - Backend: [`apps/api`](https://github.com/gatherloop/gatherloop-pos/tree/main/apps/api)
 - API contract: [`libs/api-contract`](https://github.com/gatherloop/gatherloop-pos/tree/main/libs/api-contract)
 - Shared UI + business logic: [`libs/ui`](https://github.com/gatherloop/gatherloop-pos/tree/main/libs/ui)
-- Web: [`apps/web`](https://github.com/gatherloop/gatherloop-pos/tree/main/apps/web)
-- Mobile: [`apps/mobile`](https://github.com/gatherloop/gatherloop-pos/tree/main/apps/mobile)
+- Web: [`apps/pos-web`](https://github.com/gatherloop/gatherloop-pos/tree/main/apps/pos-web)
+- Mobile: [`apps/pos-mobile`](https://github.com/gatherloop/gatherloop-pos/tree/main/apps/pos-mobile)
 - Deployment: `apps/api` ships to a VPS as a statically compiled binary, built in CI and run
   under systemd — see
   [`DEPLOY_NATIVE.md`](https://github.com/gatherloop/gatherloop-pos/blob/main/apps/api/docs/DEPLOY_NATIVE.md),

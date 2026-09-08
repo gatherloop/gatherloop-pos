@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { SupplierDeleteAlert } from './SupplierDeleteAlert';
 
 const meta: Meta<typeof SupplierDeleteAlert> = {
-  title: 'Features/Suppliers/SupplierDeleteAlert',
+  title: 'Components/Suppliers/SupplierDeleteAlert',
   component: SupplierDeleteAlert,
   args: {
     isOpen: true,

@@ -29,7 +29,7 @@ const withNoError: Decorator = (Story) => {
 };
 
 const meta: Meta<typeof ErrorMessage> = {
-  title: 'Base/Form/ErrorMessage',
+  title: 'Components/Base/Form/ErrorMessage',
   component: ErrorMessage,
   args: {
     name: 'username',

@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { CalculationDeleteAlert } from './CalculationDeleteAlert';
 
 const meta: Meta<typeof CalculationDeleteAlert> = {
-  title: 'Features/Calculations/CalculationDeleteAlert',
+  title: 'Components/Calculations/CalculationDeleteAlert',
   component: CalculationDeleteAlert,
   args: {
     isOpen: true,

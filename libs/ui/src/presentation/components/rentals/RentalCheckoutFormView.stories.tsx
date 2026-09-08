@@ -37,7 +37,7 @@ const CompactWithRentalsStory = () => (
 );
 
 const meta: Meta<typeof RentalCheckoutFormView> = {
-  title: 'Features/Rentals/RentalCheckoutFormView',
+  title: 'Components/Rentals/RentalCheckoutFormView',
   component: RentalCheckoutFormView,
 };
 

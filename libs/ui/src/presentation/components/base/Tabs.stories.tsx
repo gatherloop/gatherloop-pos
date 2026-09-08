@@ -4,7 +4,7 @@ import { Paragraph } from 'tamagui';
 import { Tabs } from './Tabs';
 
 const meta: Meta<typeof Tabs> = {
-  title: 'Base/Tabs',
+  title: 'Components/Base/Tabs',
   component: Tabs,
   args: {
     defaultValue: 'tab1',

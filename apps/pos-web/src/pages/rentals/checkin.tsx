@@ -1,0 +1,59 @@
+import { ApiProductRepository } from '@gatherloop-pos/ui';
+import {
+  RentalCheckin,
+  RentalCheckinProps,
+} from '@gatherloop-pos/ui/pos';
+import { GetServerSideProps } from 'next';
+import { QueryClient } from '@tanstack/react-query';
+
+export const getServerSideProps: GetServerSideProps<
+  RentalCheckinProps
+> = async (ctx) => {
+  const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
+  if (!isLoggedIn) {
+    return {
+      redirect: {
+        destination: '/auth/login',
+        permanent: false,
+      },
+    };
+  }
+
+  const client = new QueryClient();
+  const productRepository = new ApiProductRepository(client);
+
+  const page = 1;
+  const itemPerPage = 100;
+  const query = '';
+  const orderBy = 'desc';
+  const sortBy = 'created_at';
+
+  const { products, totalItem } = await productRepository.fetchProductList(
+    {
+      page,
+      itemPerPage,
+      orderBy,
+      query,
+      sortBy,
+      saleType: 'rental',
+      status: 'published',
+    },
+    { headers: { Cookie: ctx.req.headers.cookie } }
+  );
+
+  return {
+    props: {
+      transactionItemSelectParams: {
+        products,
+        totalItem,
+        itemPerPage,
+        orderBy,
+        page,
+        query,
+        sortBy,
+      },
+    },
+  };
+};
+
+export default RentalCheckin;

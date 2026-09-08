@@ -39,7 +39,7 @@ const mockCombinedStatistics = [
 ];
 
 const meta: Meta<typeof ExpenseStatistic> = {
-  title: 'Features/Expenses/ExpenseStatistic',
+  title: 'Components/Expenses/ExpenseStatistic',
   component: ExpenseStatistic,
   args: {
     view: 'budget',

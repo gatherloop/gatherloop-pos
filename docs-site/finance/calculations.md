@@ -27,7 +27,7 @@ A wallet's balance is only a number in the system until someone actually counts 
 
 ## For engineers
 
-- Web routes: `apps/web/src/pages/calculations/{index,create,[calculationId]}.tsx`
+- Web routes: `apps/pos-web/src/pages/calculations/{index,create,[calculationId]}.tsx`
 - Screens: `libs/ui/src/presentation/screens/Calculation{List,Create,Update}Screen.tsx`
 - Components: `libs/ui/src/presentation/components/calculations/{CalculationFormView,CalculationList,CalculationListItem,CalculationCompleteAlert,CalculationDeleteAlert}.tsx`
 - Entity: `libs/ui/src/domain/entities/Calculation.ts`

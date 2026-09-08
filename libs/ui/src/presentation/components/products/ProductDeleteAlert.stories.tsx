@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { ProductDeleteAlert } from './ProductDeleteAlert';
 
 const meta: Meta<typeof ProductDeleteAlert> = {
-  title: 'Features/Products/ProductDeleteAlert',
+  title: 'Components/Products/ProductDeleteAlert',
   component: ProductDeleteAlert,
   args: {
     isOpen: true,

@@ -51,7 +51,7 @@ const item = {
 };
 
 const meta: Meta<typeof CartLineItem> = {
-  title: 'Cart/CartLineItem',
+  title: 'Components/Cart/CartLineItem',
   component: CartLineItem,
   args: {
     onAmountChange: () => {

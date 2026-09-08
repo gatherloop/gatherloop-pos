@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { MaterialDeleteAlert } from './MaterialDeleteAlert';
 
 const meta: Meta<typeof MaterialDeleteAlert> = {
-  title: 'Features/Materials/MaterialDeleteAlert',
+  title: 'Components/Materials/MaterialDeleteAlert',
   component: MaterialDeleteAlert,
   args: {
     isOpen: true,

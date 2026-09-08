@@ -9,7 +9,7 @@ const walletOptions = [
 ];
 
 const meta: Meta<typeof WalletTransferFormView> = {
-  title: 'Features/Wallets/WalletTransferFormView',
+  title: 'Components/Wallets/WalletTransferFormView',
   component: WalletTransferFormView,
 };
 

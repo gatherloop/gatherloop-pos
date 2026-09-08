@@ -16,7 +16,7 @@ const demoFormResolver = zodResolver(
 );
 
 const meta: Meta<typeof FormView<DemoForm>> = {
-  title: 'Base/Form/FormView',
+  title: 'Components/Base/Form/FormView',
   component: FormView,
 };
 

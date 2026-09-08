@@ -1,4 +1,4 @@
-# E2E Test Plan — Web App (`apps/web`)
+# E2E Test Plan — Web App (`apps/pos-web`)
 
 ## 1. Context & Goals
 
@@ -70,14 +70,14 @@ These are already well-covered by handler integration tests and provide low incr
 
 **Tasks:**
 
-1. **Update Playwright config** (`apps/web-e2e/playwright.config.ts`)
+1. **Update Playwright config** (`apps/pos-web-e2e/playwright.config.ts`)
    - Fix the web server command (currently `npx nx start web2` — likely should be `npx nx dev web` or similar)
    - Add `globalSetup` for test environment preparation
    - Configure `storageState` for authenticated test reuse
    - Set reasonable timeouts (navigation: 15s, action: 10s)
    - Default to Chromium only for local dev; all browsers for CI
 
-2. **Create test utilities** (`apps/web-e2e/src/utils/`)
+2. **Create test utilities** (`apps/pos-web-e2e/src/utils/`)
    - `auth.ts` — Helper to log in via UI and save storage state, plus a helper to log in via direct API call (faster for setup)
    - `api.ts` — Direct API helpers to create/delete test data (products, categories, wallets, etc.) for test setup/teardown. This avoids UI-dependent setup and makes tests faster + more reliable.
    - `selectors.ts` — Shared page selectors/locators organized by feature (e.g., `transactionPage.productCard`, `navbar.logoutButton`)
@@ -93,11 +93,11 @@ These are already well-covered by handler integration tests and provide low incr
 
 **Deliverables:**
 - [ ] Updated `playwright.config.ts` with auth state, timeouts, and correct server command
-- [ ] `apps/web-e2e/src/utils/auth.ts`
-- [ ] `apps/web-e2e/src/utils/api.ts`
-- [ ] `apps/web-e2e/src/utils/selectors.ts`
-- [ ] `apps/web-e2e/src/global-setup.ts`
-- [ ] Verify: `npx nx e2e web-e2e` runs the example test successfully against a running dev environment
+- [ ] `apps/pos-web-e2e/src/utils/auth.ts`
+- [ ] `apps/pos-web-e2e/src/utils/api.ts`
+- [ ] `apps/pos-web-e2e/src/utils/selectors.ts`
+- [ ] `apps/pos-web-e2e/src/global-setup.ts`
+- [ ] Verify: `npx nx e2e pos-web-e2e` runs the example test successfully against a running dev environment
 
 ---
 
@@ -105,7 +105,7 @@ These are already well-covered by handler integration tests and provide low incr
 
 **Goal**: Verify the login/logout cycle and route protection work end-to-end.
 
-**Test file:** `apps/web-e2e/src/auth.spec.ts`
+**Test file:** `apps/pos-web-e2e/src/auth.spec.ts`
 
 **Test cases:**
 
@@ -125,7 +125,7 @@ describe('Authentication')
 - The redirect chain (unauthenticated → login → dashboard) involves real HTTP redirects
 
 **Deliverables:**
-- [ ] `apps/web-e2e/src/auth.spec.ts` — All 6 test cases passing
+- [ ] `apps/pos-web-e2e/src/auth.spec.ts` — All 6 test cases passing
 
 ---
 
@@ -133,7 +133,7 @@ describe('Authentication')
 
 **Goal**: Verify the full create → list → update → delete cycle works with the real API.
 
-**Test file:** `apps/web-e2e/src/products.spec.ts`
+**Test file:** `apps/pos-web-e2e/src/products.spec.ts`
 
 **Prerequisite data (via API helper):** Create a test category in `beforeAll`, clean up in `afterAll`.
 
@@ -155,7 +155,7 @@ describe('Product Management')
 - Validates the full SSR data-fetching pipeline: `getServerSideProps` → API call → render
 
 **Deliverables:**
-- [ ] `apps/web-e2e/src/products.spec.ts` — All 6 test cases passing
+- [ ] `apps/pos-web-e2e/src/products.spec.ts` — All 6 test cases passing
 
 ---
 
@@ -163,7 +163,7 @@ describe('Product Management')
 
 **Goal**: Verify wallet creation and money transfers work correctly with real balance tracking.
 
-**Test file:** `apps/web-e2e/src/wallets.spec.ts`
+**Test file:** `apps/pos-web-e2e/src/wallets.spec.ts`
 
 **Test cases:**
 
@@ -182,7 +182,7 @@ describe('Wallet Management')
 - Balance consistency can only be verified with a real database
 
 **Deliverables:**
-- [ ] `apps/web-e2e/src/wallets.spec.ts` — All 5 test cases passing
+- [ ] `apps/pos-web-e2e/src/wallets.spec.ts` — All 5 test cases passing
 
 ---
 
@@ -190,7 +190,7 @@ describe('Wallet Management')
 
 **Goal**: Verify the primary business flow — creating a sale transaction and processing payment.
 
-**Test file:** `apps/web-e2e/src/transactions.spec.ts`
+**Test file:** `apps/pos-web-e2e/src/transactions.spec.ts`
 
 **Prerequisite data (via API helper):** Create test products, a category, and a wallet in `beforeAll`.
 
@@ -214,7 +214,7 @@ describe('Transaction Flow')
 - The transaction creation page is the most complex page in the app (product selection, quantity management, coupon application, payment)
 
 **Deliverables:**
-- [ ] `apps/web-e2e/src/transactions.spec.ts` — All 7 test cases passing
+- [ ] `apps/pos-web-e2e/src/transactions.spec.ts` — All 7 test cases passing
 
 ---
 
@@ -222,7 +222,7 @@ describe('Transaction Flow')
 
 **Goal**: Verify expense tracking against budgets works end-to-end.
 
-**Test file:** `apps/web-e2e/src/expenses.spec.ts`
+**Test file:** `apps/pos-web-e2e/src/expenses.spec.ts`
 
 **Prerequisite data (via API helper):** Create a test wallet and budget in `beforeAll`.
 
@@ -244,7 +244,7 @@ describe('Expense & Budget Flow')
 - Filtering is a key user workflow for expense management
 
 **Deliverables:**
-- [ ] `apps/web-e2e/src/expenses.spec.ts` — All 6 test cases passing
+- [ ] `apps/pos-web-e2e/src/expenses.spec.ts` — All 6 test cases passing
 
 ---
 

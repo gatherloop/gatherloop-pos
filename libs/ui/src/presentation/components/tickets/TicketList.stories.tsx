@@ -11,7 +11,7 @@ const defaultArgs = {
 };
 
 const meta: Meta<typeof TicketList> = {
-  title: 'Features/Tickets/TicketList',
+  title: 'Components/Tickets/TicketList',
   component: TicketList,
   args: defaultArgs,
 };

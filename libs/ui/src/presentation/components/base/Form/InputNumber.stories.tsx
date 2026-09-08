@@ -16,7 +16,7 @@ const withFormProvider: Decorator = (Story) => {
 };
 
 const meta: Meta<typeof InputNumber> = {
-  title: 'Base/Form/InputNumber',
+  title: 'Components/Base/Form/InputNumber',
   component: InputNumber,
   decorators: [withFormProvider],
   args: {

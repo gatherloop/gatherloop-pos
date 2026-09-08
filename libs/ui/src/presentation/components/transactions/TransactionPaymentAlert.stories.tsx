@@ -6,7 +6,7 @@ import { mockWallets } from '../../../../.storybook/mocks/mockData';
 const walletSelectOptions = mockWallets.map((w) => ({ label: w.name, value: w }));
 
 const meta: Meta<typeof TransactionPaymentAlert> = {
-  title: 'Features/Transactions/TransactionPaymentAlert',
+  title: 'Components/Transactions/TransactionPaymentAlert',
   component: TransactionPaymentAlert,
 };
 

@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { ExpenseListItem } from './ExpenseListItem';
 
 const meta: Meta<typeof ExpenseListItem> = {
-  title: 'Features/Expenses/ExpenseListItem',
+  title: 'Components/Expenses/ExpenseListItem',
   component: ExpenseListItem,
   args: {
     budgetName: 'Raw Materials',

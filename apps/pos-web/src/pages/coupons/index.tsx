@@ -1,0 +1,33 @@
+import { ApiCouponRepository } from '@gatherloop-pos/ui';
+import {
+  CouponList,
+  CouponListProps,
+} from '@gatherloop-pos/ui/pos';
+import { GetServerSideProps } from 'next';
+import { QueryClient } from '@tanstack/react-query';
+
+export const getServerSideProps: GetServerSideProps<CouponListProps> = async (
+  ctx
+) => {
+  const isLoggedIn = ctx.req.headers.cookie?.includes('Authorization');
+  if (!isLoggedIn) {
+    return {
+      redirect: {
+        destination: '/auth/login',
+        permanent: false,
+      },
+    };
+  }
+
+  const client = new QueryClient();
+  const couponRepository = new ApiCouponRepository(client);
+  const coupons = await couponRepository.fetchCouponList({
+    headers: { Cookie: ctx.req.headers.cookie },
+  });
+
+  return {
+    props: { couponListParams: { coupons } },
+  };
+};
+
+export default CouponList;
