@@ -33,3 +33,4 @@ export * from './session';
 export * from './menu';
 export * from './menuListQuery';
 export * from './cart';
+export * from './cartQuery';

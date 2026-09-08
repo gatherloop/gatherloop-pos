@@ -3,6 +3,7 @@ import { ReactNode, createContext, useContext, useState } from 'react';
 // composition root, which would bloat the customer bundle with the POS (D6).
 import { ApiCartRepository } from '../../data/api/cart';
 import { CookieSessionRepository } from '../../data/session/CookieSessionRepository';
+import { UrlCartQueryRepository } from '../../data/url/cartQuery';
 import { CartAction, CartState, CartUsecase } from '../../domain/usecases/cart';
 import { Controller } from '../../presentation/controllers/controller';
 import { useCartController } from '../../presentation/controllers/CartController';
@@ -36,7 +37,8 @@ export const CartProvider = ({ sessionId, children }: CartProviderProps) => {
   const [cartUsecase] = useState(
     () =>
       new CartUsecase(
-        new ApiCartRepository(new CookieSessionRepository(sessionId))
+        new ApiCartRepository(new CookieSessionRepository(sessionId)),
+        new UrlCartQueryRepository()
       )
   );
   const controller = useCartController(cartUsecase);

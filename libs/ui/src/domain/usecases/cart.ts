@@ -1,6 +1,6 @@
 import { match, P } from 'ts-pattern';
 import { Cart, CartItem } from '../entities';
-import { CartRepository } from '../repositories';
+import { CartQueryRepository, CartRepository } from '../repositories';
 import { Usecase } from './IUsecase';
 
 // FR-7/D14 in docs/prd-table-ordering.md. One machine owns the whole cart —
@@ -20,6 +20,11 @@ type Context = {
   previousCart: Cart | null;
   pendingMutation: PendingMutation | null;
   errorMessage: string | null;
+  // D6/D9 in docs/trd-order-app-composition-and-ssr.md: the cart-item-edit
+  // modal's open line, read from and written to the URL through
+  // `cartQueryRepository` rather than a route of its own — the same shape
+  // `MenuListUsecase` holds `selectedProductId` in.
+  selectedItemId: number | null;
 };
 
 export type CartState = (
@@ -43,7 +48,9 @@ export type CartAction =
   | { type: 'REMOVE_ITEM'; cartItemId: number }
   | { type: 'CLEAR' }
   | { type: 'MUTATE_SUCCESS'; cart: Cart }
-  | { type: 'MUTATE_ERROR'; message: string };
+  | { type: 'MUTATE_ERROR'; message: string }
+  | { type: 'SELECT_ITEM'; itemId: number }
+  | { type: 'CLEAR_ITEM' };
 
 export type CartParams = {
   cart?: Cart | null;
@@ -90,11 +97,17 @@ function withRemovedItem(cart: Cart, cartItemId: number): Cart {
 
 export class CartUsecase extends Usecase<CartState, CartAction, CartParams> {
   cartRepository: CartRepository;
+  cartQueryRepository: CartQueryRepository;
   params: CartParams;
 
-  constructor(cartRepository: CartRepository, params: CartParams = {}) {
+  constructor(
+    cartRepository: CartRepository,
+    cartQueryRepository: CartQueryRepository,
+    params: CartParams = {}
+  ) {
     super();
     this.cartRepository = cartRepository;
+    this.cartQueryRepository = cartQueryRepository;
     this.params = params;
   }
 
@@ -104,6 +117,7 @@ export class CartUsecase extends Usecase<CartState, CartAction, CartParams> {
       previousCart: null,
       pendingMutation: null,
       errorMessage: null,
+      selectedItemId: this.cartQueryRepository.getSelectedItemId(),
     };
 
     return { ...context, type: context.cart ? 'loaded' : 'idle' };
@@ -202,10 +216,31 @@ export class CartUsecase extends Usecase<CartState, CartAction, CartParams> {
           errorMessage: message,
         })
       )
+      // Selecting/clearing the edit modal is orthogonal to the fetch/mutation
+      // machine's own `type` (D6) — it can happen from any of them, and
+      // never changes it.
+      .with([P._, { type: 'SELECT_ITEM' }], ([state, { itemId }]) => ({
+        ...state,
+        selectedItemId: itemId,
+      }))
+      .with([P._, { type: 'CLEAR_ITEM' }], ([state]) => ({
+        ...state,
+        selectedItemId: null,
+      }))
       .otherwise(() => state);
   }
 
   onStateChange(state: CartState, dispatch: (action: CartAction) => void): void {
+    // Mirrors the selection into the URL (D6) whenever it actually changed —
+    // guarded against the current URL rather than folded into a `type`
+    // branch above, the same way `MenuListUsecase` mirrors
+    // `selectedProductId`.
+    if (
+      state.selectedItemId !== this.cartQueryRepository.getSelectedItemId()
+    ) {
+      this.cartQueryRepository.setSelectedItemId(state.selectedItemId);
+    }
+
     match(state)
       .with({ type: 'idle' }, () => dispatch({ type: 'FETCH' }))
       .with({ type: 'loading' }, () =>

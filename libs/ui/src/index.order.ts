@@ -17,5 +17,4 @@ export * from './app/order/TableResolve';
 export * from './app/order/MenuList';
 export * from './app/order/CartProvider';
 export * from './app/order/Cart';
-export * from './app/order/CartItemEdit';
 export * from './app/order/Checkout';

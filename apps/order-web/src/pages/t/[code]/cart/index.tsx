@@ -1,16 +1,13 @@
-import {
-  resolveSession,
-  SESSION_ID_COOKIE_NAME,
-} from '@gatherloop-pos/ui';
-import { GetServerSideProps, NextPage } from 'next';
-import { ReactElement, ReactNode } from 'react';
-import { CartLayout } from '../../../../components/CartLayout';
+import { resolveSession, SESSION_ID_COOKIE_NAME } from '@gatherloop-pos/ui';
+import { Cart, CartProps } from '@gatherloop-pos/ui/order';
+import { GetServerSideProps } from 'next';
 
-export type CartPageProps = { sessionId: string };
-
-// D3 in docs/trd-order-app-composition-and-ssr.md: resolves the session and
-// nothing else — no seeding yet (P6).
-export const getServerSideProps: GetServerSideProps<CartPageProps> = async (
+// D3/D9 in docs/trd-order-app-composition-and-ssr.md: resolves the session
+// and nothing else — no seeding yet (P6). `Cart` now owns the whole
+// vertical slice (table shell, cart, item-edit modal), so this page is
+// already the target shape (§3.1): a getServerSideProps and a default
+// export.
+export const getServerSideProps: GetServerSideProps<CartProps> = async (
   ctx
 ) => {
   const { sessionId, setCookie } = resolveSession(
@@ -18,18 +15,9 @@ export const getServerSideProps: GetServerSideProps<CartPageProps> = async (
   );
   if (setCookie) ctx.res.setHeader('Set-Cookie', setCookie);
 
-  return { props: { sessionId } };
+  return {
+    props: { sessionId, code: String(ctx.params?.code ?? '') },
+  };
 };
 
-// The cart route (FR-7 in docs/prd-table-ordering.md). The page itself
-// renders nothing — `Cart` is rendered by `CartLayout.getLayout` (D4) so it
-// stays mounted across navigation to/from the cart-item-edit modal.
-const CartPage: NextPage<CartPageProps> & {
-  getLayout?: (page: ReactElement, pageProps: CartPageProps) => ReactNode;
-} = () => null;
-
-CartPage.getLayout = (page, pageProps) => (
-  <CartLayout sessionId={pageProps.sessionId}>{page}</CartLayout>
-);
-
-export default CartPage;
+export default Cart;

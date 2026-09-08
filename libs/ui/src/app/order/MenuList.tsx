@@ -5,6 +5,7 @@ import { ApiCartRepository } from '../../data/api/cart';
 import { ApiMenuRepository } from '../../data/api/menu';
 import { ApiPublicTableRepository } from '../../data/api/publicTable';
 import { CookieSessionRepository } from '../../data/session/CookieSessionRepository';
+import { UrlCartQueryRepository } from '../../data/url/cartQuery';
 import { UrlMenuListQueryRepository } from '../../data/url/menuListQuery';
 import { CartUsecase } from '../../domain/usecases/cart';
 import { MenuItemDetailUsecase } from '../../domain/usecases/menuItemDetail';
@@ -46,7 +47,12 @@ export function MenuList({ sessionId, code }: MenuListProps) {
   const menuItemDetailUsecase = new MenuItemDetailUsecase(menuRepository, {
     productId: null,
   });
-  const cartUsecase = new CartUsecase(cartRepository);
+  // Only the floating cart bar's count/total reads this instance — the
+  // route has no `?item=` param (that's the cart route's, P4) — but the
+  // constructor still takes a real `CartQueryRepository`, the same way
+  // `menuItemDetailUsecase` above still takes a full `MenuRepository` it
+  // only exercises part of.
+  const cartUsecase = new CartUsecase(cartRepository, new UrlCartQueryRepository());
 
   return (
     <MenuListHandler

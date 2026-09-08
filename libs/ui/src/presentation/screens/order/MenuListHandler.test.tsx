@@ -3,6 +3,7 @@ import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MenuListHandler } from './MenuListHandler';
 import {
+  MockCartQueryRepository,
   MockCartRepository,
   MockMenuListQueryRepository,
   MockMenuRepository,
@@ -56,7 +57,10 @@ const renderHandler = ({
   const menuItemDetailUsecase = new MenuItemDetailUsecase(menuRepository, {
     productId: null,
   });
-  const cartUsecase = new CartUsecase(cartRepository);
+  const cartUsecase = new CartUsecase(
+    cartRepository,
+    new MockCartQueryRepository()
+  );
 
   return {
     menuRepository,

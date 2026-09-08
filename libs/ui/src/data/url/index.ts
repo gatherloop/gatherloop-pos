@@ -10,3 +10,4 @@ export * from './supplierListQuery';
 export * from './stockCheckListQuery';
 export * from './purchaseListQuery';
 export * from './menuListQuery';
+export * from './cartQuery';
