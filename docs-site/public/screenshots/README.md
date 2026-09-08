@@ -16,11 +16,11 @@ go run main.go   # serves on :8080
 nx run api-contract:generate:go
 nx run api-contract:generate:ts
 
-# from apps/web
+# from apps/pos-web
 # .env.local:
 #   NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
 #   NEXT_PUBLIC_API_PROXY_BASE_URL=http://localhost:8080
-nx run web:dev   # serves on :3000
+nx run pos-web:dev   # serves on :3000
 ```
 
 **Gotcha:** `NEXT_PUBLIC_API_PROXY_BASE_URL` (used by `libs/api-contract/src/client.ts` for every client-side and server-side request) must be an **absolute** URL. Setting it to a relative path like `/api` breaks every page that fetches data server-side in `getServerSideProps` — Next's Node process can't resolve a relative URL the way a browser does, and every list page 500s. Pointing it straight at the API (`http://localhost:8080`) works for both the browser and the Node server; the API's CORS middleware already reflects any origin with credentials, and its auth cookie is scoped to the bare `localhost` domain, so it's shared across ports.
@@ -38,7 +38,7 @@ The base seeders (`apps/api/seeds/`) cover most pages out of the box, but a few 
 
 ## 3. Capture
 
-Use Playwright against the running app (`playwright` is already a workspace dependency; `apps/web-e2e/src/utils/selectors.ts` has working locators for the login form and most screens if you want to drive it programmatically instead of by hand). For every screenshot on the site:
+Use Playwright against the running app (`playwright` is already a workspace dependency; `apps/pos-web-e2e/src/utils/selectors.ts` has working locators for the login form and most screens if you want to drive it programmatically instead of by hand). For every screenshot on the site:
 
 - Viewport **1440×900**, `deviceScaleFactor: 2` (crisp on retina displays without being huge).
 - Log in once, then navigate directly to each page's URL rather than clicking through — it's faster and more repeatable.

@@ -16,13 +16,13 @@ const nextConfig = {
   },
   // A stray apps/order/package-lock.json alongside the root lockfile
   // would make Next 15's output file tracing guess the wrong workspace
-  // root. Pin it explicitly, as apps/web does.
+  // root. Pin it explicitly, as apps/pos-web does.
   outputFileTracingRoot: path.join(__dirname, '../../'),
   // react-native-qrcode-svg ships untranspiled JSX (no prebuilt CJS output),
   // unlike react-native-svg which does — Next must run it through its own
   // loader instead of treating it as pre-built.
   transpilePackages: ['react-native-qrcode-svg'],
-  // Mirrors apps/web's build posture (docs/trd-react-compiler-adoption.md):
+  // Mirrors apps/pos-web's build posture (docs/trd-react-compiler-adoption.md):
   // Tamagui's static extraction walks the whole component tree at build
   // time, and Next's default multi-worker compilation multiplies that cost
   // by CPU count, so the build stays single-threaded.

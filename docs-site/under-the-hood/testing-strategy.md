@@ -22,17 +22,17 @@ Together, these two levels mean every CRUD screen's loading, error, empty, and s
 
 ## 3. End-to-end tests — real browser, real API, real database
 
-What neither of the above can catch: a field renamed on the Go side that silently breaks the TypeScript transformer, an SSR auth redirect, a print dialog, or a transaction that's supposed to actually deduct a wallet balance in the database. [Playwright](https://playwright.dev) tests in [`apps/web-e2e`](https://github.com/gatherloop/gatherloop-pos/tree/main/apps/web-e2e/src) drive a real Chromium browser against a real Next.js server, a real Go API, and a real database.
+What neither of the above can catch: a field renamed on the Go side that silently breaks the TypeScript transformer, an SSR auth redirect, a print dialog, or a transaction that's supposed to actually deduct a wallet balance in the database. [Playwright](https://playwright.dev) tests in [`apps/pos-web-e2e`](https://github.com/gatherloop/gatherloop-pos/tree/main/apps/pos-web-e2e/src) drive a real Chromium browser against a real Next.js server, a real Go API, and a real database.
 
 E2E coverage is deliberately narrow — it targets **cross-page, cross-entity, money-handling flows** that the layers above can't reach, and skips what's already well covered by handler tests:
 
 | Flow | File | Why E2E |
 |---|---|---|
-| Authentication | [`auth.spec.ts`](https://github.com/gatherloop/gatherloop-pos/blob/main/apps/web-e2e/src/auth.spec.ts) | Real cookies and `getServerSideProps` redirects |
-| Product CRUD | [`products.spec.ts`](https://github.com/gatherloop/gatherloop-pos/blob/main/apps/web-e2e/src/products.spec.ts) | Full SSR data-fetch pipeline; a dependency for the transaction flow |
-| Wallets & transfers | [`wallets.spec.ts`](https://github.com/gatherloop/gatherloop-pos/blob/main/apps/web-e2e/src/wallets.spec.ts) | Real money movement between two records at once |
-| Transactions | [`transactions.spec.ts`](https://github.com/gatherloop/gatherloop-pos/blob/main/apps/web-e2e/src/transactions.spec.ts) | The core POS flow: products → coupon → payment → wallet, spanning multiple entities |
-| Expenses & budgets | [`expenses.spec.ts`](https://github.com/gatherloop/gatherloop-pos/blob/main/apps/web-e2e/src/expenses.spec.ts) | Cross-entity relationship between expense, budget, and wallet |
+| Authentication | [`auth.spec.ts`](https://github.com/gatherloop/gatherloop-pos/blob/main/apps/pos-web-e2e/src/auth.spec.ts) | Real cookies and `getServerSideProps` redirects |
+| Product CRUD | [`products.spec.ts`](https://github.com/gatherloop/gatherloop-pos/blob/main/apps/pos-web-e2e/src/products.spec.ts) | Full SSR data-fetch pipeline; a dependency for the transaction flow |
+| Wallets & transfers | [`wallets.spec.ts`](https://github.com/gatherloop/gatherloop-pos/blob/main/apps/pos-web-e2e/src/wallets.spec.ts) | Real money movement between two records at once |
+| Transactions | [`transactions.spec.ts`](https://github.com/gatherloop/gatherloop-pos/blob/main/apps/pos-web-e2e/src/transactions.spec.ts) | The core POS flow: products → coupon → payment → wallet, spanning multiple entities |
+| Expenses & budgets | [`expenses.spec.ts`](https://github.com/gatherloop/gatherloop-pos/blob/main/apps/pos-web-e2e/src/expenses.spec.ts) | Cross-entity relationship between expense, budget, and wallet |
 
 Simple, self-contained entities — categories, materials, suppliers, coupon creation — are intentionally *not* E2E tested; handler tests already cover their CRUD states fully, and the incremental value of a full browser round-trip is low. Test data for each spec is created and torn down through direct API calls in `beforeAll`/`afterAll` rather than through the UI, keeping runs fast and independent of each other. The full rationale lives in [`E2E_TEST_PLAN.md`](https://github.com/gatherloop/gatherloop-pos/blob/main/E2E_TEST_PLAN.md) at the repo root.
 

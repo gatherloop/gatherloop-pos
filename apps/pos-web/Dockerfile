@@ -15,10 +15,10 @@ RUN npx nx run api-contract:generate:ts
 # the build, which let webpack + Tamagui's static extraction balloon past
 # Render's memory ceiling instead of triggering GC early enough.
 ENV NODE_OPTIONS=--max-old-space-size=6144
-RUN npx nx run web:build
+RUN npx nx run pos-web:build
 
 FROM node:22-alpine
 WORKDIR /app
-COPY --from=build /app/apps/web/.next ./.next
+COPY --from=build /app/apps/pos-web/.next ./.next
 COPY --from=build /app/node_modules ./node_modules
 CMD ["npx", "next", "start"]

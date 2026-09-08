@@ -27,7 +27,7 @@ Every rupiah leaving the business should be traceable to two things: what it was
 
 ## For engineers
 
-- Web routes: `apps/web/src/pages/expenses/{index,create,[expenseId]}.tsx`
+- Web routes: `apps/pos-web/src/pages/expenses/{index,create,[expenseId]}.tsx`
 - Screens: `libs/ui/src/presentation/screens/Expense{List,Create,Update,Statistic}Screen.tsx`
 - Components: `libs/ui/src/presentation/components/expenses/{ExpenseList,ExpenseListItem,ExpenseFormView,ExpenseDeleteAlert}.tsx`
 - Entity: `libs/ui/src/domain/entities/Expense.ts`

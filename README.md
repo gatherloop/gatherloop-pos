@@ -47,7 +47,7 @@ to both React DOM and React Native.
 ```bash
 npm install
 cp apps/api/.env.example apps/api/.env    # DB credentials, JWT secret, CORS origins
-cp apps/web/.env.example apps/web/.env.local
+cp apps/pos-web/.env.example apps/pos-web/.env.local
 cp apps/order/.env.example apps/order/.env.local
 cp apps/mobile/.env.example apps/mobile/.env
 ```
@@ -56,7 +56,7 @@ cp apps/mobile/.env.example apps/mobile/.env
 
 ```bash
 npx nx run api:serve      # Go API, on the PORT set in apps/api/.env
-npx nx run web:dev        # POS web app     → http://localhost:3000
+npx nx run pos-web:dev    # POS web app     → http://localhost:3000
 npx nx run order:dev      # customer app    → http://localhost:3000
 npx nx run mobile:start   # React Native dev server (then run-android / run-ios)
 npx nx run ui:storybook   # component explorer → http://localhost:6006
@@ -71,7 +71,7 @@ add that origin to `CORS_ALLOWED_ORIGINS` in `apps/api/.env`.
 ```bash
 npm test                            # all unit tests (Jest for TS, go test for the API)
 npm run lint
-npx nx run web-e2e:e2e              # Playwright end-to-end tests
+npx nx run pos-web-e2e:e2e          # Playwright end-to-end tests
 npx nx run api-contract:generate:ts # regenerate TS client after editing src/api.yaml
 npx nx run api-contract:generate:go # regenerate Go models
 ```
@@ -124,7 +124,7 @@ app/          per-route composition: builds repositories + use cases, renders a 
   (`useReducer` + effects); a `*Handler` maps that state to props with `ts-pattern`; a `*Screen`
   is pure Tamagui JSX with Storybook stories.
 - **app/** — the composition root: instantiates repositories and use cases, then renders the
-  handler. Pages in `apps/web`, `apps/order` and `apps/mobile` mostly just re-export these.
+  handler. Pages in `apps/pos-web`, `apps/order` and `apps/mobile` mostly just re-export these.
 
 Every surface builds with the [React Compiler](https://react.dev/learn/react-compiler), so don't
 hand-write `useMemo`/`useCallback`/`React.memo` for re-render performance — opt a misbehaving

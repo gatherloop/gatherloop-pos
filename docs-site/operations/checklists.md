@@ -32,6 +32,6 @@ Templates and sessions are deliberately kept separate so that editing a template
 - Components: `libs/ui/src/presentation/components/checklistTemplates/{ChecklistTemplateList,ChecklistTemplateListItem,ChecklistTemplateFormView}.tsx`, `libs/ui/src/presentation/components/checklistSessions/{ChecklistSessionList,ChecklistSessionFormView,ChecklistSessionExecution,ChecklistSessionItemRow,ChecklistSessionSubItemRow}.tsx`
 - Entities: `libs/ui/src/domain/entities/ChecklistTemplate.ts`, `ChecklistSession.ts`
 - Backend: `apps/api/domain/checklist_template_{entity,usecase}.go`, `checklist_session_{entity,usecase}.go`; routes in `apps/api/presentation/restapi/checklist_template_route.go`, `checklist_session_route.go`
-- Web routes: `apps/web/src/pages/checklist-templates/{index,create,[checklistTemplateId]}.tsx`, `apps/web/src/pages/checklist-sessions/{index,[checklistSessionId]}.tsx`
+- Web routes: `apps/pos-web/src/pages/checklist-templates/{index,create,[checklistTemplateId]}.tsx`, `apps/pos-web/src/pages/checklist-sessions/{index,[checklistSessionId]}.tsx`
 - Design docs: `docs/prd-operational-checklist.md` (data model, templates vs. sessions, the full v1 scope), `docs/plan-operational-checklist-improvement.md` (Markdown descriptions and progressive disclosure to keep checklists from becoming bloated)
 - Related: [Stock Checks](/inventory/stock-checks) for the same frozen-snapshot pattern applied to inventory counts

@@ -5,7 +5,7 @@ import { createAnimations } from '@tamagui/animations-css';
 // Web build of the shared Tamagui config (see config.native.ts for the
 // React Native / Moti build — Metro resolves `.native.ts` over this file
 // automatically, while webpack resolves this plain `.ts` file for
-// apps/web and apps/order). @tamagui/animations-moti resolves an animated
+// apps/pos-web and apps/order). @tamagui/animations-moti resolves an animated
 // view's `style` to an array (base + enter-variant) rather than a merged
 // object; react-dom then does `element.style[0] = ...`, which crashes with
 // "Indexed property setter is not supported" the first time any animated

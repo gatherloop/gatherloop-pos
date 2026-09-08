@@ -1,7 +1,7 @@
 {
-  "name": "web",
+  "name": "pos-web",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "apps/web",
+  "sourceRoot": "apps/pos-web",
   "projectType": "application",
   "tags": [],
   "targets": {
