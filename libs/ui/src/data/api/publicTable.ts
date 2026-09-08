@@ -11,9 +11,10 @@ import { toPublicTable } from './publicTable.transformer';
 
 export class ApiPublicTableRepository implements PublicTableRepository {
   resolveTableByCode: PublicTableRepository['resolveTableByCode'] = (
-    code
+    code,
+    options
   ) => {
-    return publicTableFindByCode(code)
+    return publicTableFindByCode(code, options)
       .then(({ data }) => toPublicTable(data))
       .catch((error) => {
         if (axios.isAxiosError(error) && error.response?.status === 404) {

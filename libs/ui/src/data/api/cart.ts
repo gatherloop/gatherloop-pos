@@ -19,31 +19,35 @@ import { toCart } from './cart.transformer';
 // `SessionProvider` registers (D22) — this repository never touches the
 // session itself.
 export class ApiCartRepository implements CartRepository {
-  fetchCurrentCart: CartRepository['fetchCurrentCart'] = () => {
-    return cartGetCurrent().then(({ data }) => toCart(data));
+  fetchCurrentCart: CartRepository['fetchCurrentCart'] = (options) => {
+    return cartGetCurrent(options).then(({ data }) => toCart(data));
   };
 
-  addItem: CartRepository['addItem'] = ({ variantId, amount, note }) => {
-    return cartItemCreate({ variantId, amount, note }).then(({ data }) =>
-      toCart(data)
-    );
-  };
-
-  updateItem: CartRepository['updateItem'] = ({
-    cartItemId,
-    amount,
-    note,
-  }) => {
-    return cartItemUpdateById(cartItemId, { amount, note }).then(
+  addItem: CartRepository['addItem'] = (
+    { variantId, amount, note },
+    options
+  ) => {
+    return cartItemCreate({ variantId, amount, note }, options).then(
       ({ data }) => toCart(data)
     );
   };
 
-  removeItem: CartRepository['removeItem'] = (cartItemId) => {
-    return cartItemDeleteById(cartItemId).then(({ data }) => toCart(data));
+  updateItem: CartRepository['updateItem'] = (
+    { cartItemId, amount, note },
+    options
+  ) => {
+    return cartItemUpdateById(cartItemId, { amount, note }, options).then(
+      ({ data }) => toCart(data)
+    );
   };
 
-  clearCart: CartRepository['clearCart'] = () => {
-    return cartClear().then(({ data }) => toCart(data));
+  removeItem: CartRepository['removeItem'] = (cartItemId, options) => {
+    return cartItemDeleteById(cartItemId, options).then(({ data }) =>
+      toCart(data)
+    );
+  };
+
+  clearCart: CartRepository['clearCart'] = (options) => {
+    return cartClear(options).then(({ data }) => toCart(data));
   };
 }

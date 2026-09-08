@@ -25,7 +25,7 @@ export class ApiMenuRepository implements MenuRepository {
     this.client = client;
   }
 
-  fetchMenu: MenuRepository['fetchMenu'] = ({ query }) => {
+  fetchMenu: MenuRepository['fetchMenu'] = ({ query }, options) => {
     const productParams = { query };
     // No `limit`: the API treats an absent limit as "no limit" (mirrors how
     // /public/categories returns everything), so this stays a single
@@ -35,15 +35,15 @@ export class ApiMenuRepository implements MenuRepository {
     return Promise.all([
       this.client.fetchQuery({
         queryKey: publicProductListQueryKey(productParams),
-        queryFn: () => publicProductList(productParams),
+        queryFn: () => publicProductList(productParams, options),
       }),
       this.client.fetchQuery({
         queryKey: publicCategoryListQueryKey(),
-        queryFn: () => publicCategoryList(),
+        queryFn: () => publicCategoryList(options),
       }),
       this.client.fetchQuery({
         queryKey: publicVariantListQueryKey(variantParams),
-        queryFn: () => publicVariantList(variantParams),
+        queryFn: () => publicVariantList(variantParams, options),
       }),
     ]).then(([productList, categoryList, variantList]) => ({
       products: productList.data.map(toProduct),
@@ -52,25 +52,28 @@ export class ApiMenuRepository implements MenuRepository {
     }));
   };
 
-  fetchProductById: MenuRepository['fetchProductById'] = (productId) => {
+  fetchProductById: MenuRepository['fetchProductById'] = (
+    productId,
+    options
+  ) => {
     return this.client
       .fetchQuery({
         queryKey: publicProductFindByIdQueryKey(productId),
-        queryFn: () => publicProductFindById(productId),
+        queryFn: () => publicProductFindById(productId, options),
       })
       .then(({ data }) => toProduct(data));
   };
 
-  resolveVariant: MenuRepository['resolveVariant'] = ({
-    productId,
-    optionValueIds,
-  }) => {
+  resolveVariant: MenuRepository['resolveVariant'] = (
+    { productId, optionValueIds },
+    options
+  ) => {
     const params = { productId, optionValueIds, limit: 1 };
 
     return this.client
       .fetchQuery({
         queryKey: publicVariantListQueryKey(params),
-        queryFn: () => publicVariantList(params),
+        queryFn: () => publicVariantList(params, options),
       })
       .then(({ data }) => {
         const [variant] = data;
