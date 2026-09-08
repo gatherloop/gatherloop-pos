@@ -26,6 +26,23 @@
       "env": {
         "jest": true
       }
+    },
+    {
+      "files": ["src/pages/**/*.ts", "src/pages/**/*.tsx"],
+      "excludedFiles": ["src/pages/_app.tsx", "src/pages/_document.tsx"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["react", "tamagui", "next/router", "./*", "../*"],
+                "message": "An order page is a getServerSideProps and a default export. See docs/trd-order-app-composition-and-ssr.md."
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }

@@ -28,6 +28,34 @@
               {
                 "name": "@hookform/resolvers/zod",
                 "message": "Form resolvers belong next to the form view, not the controller. See docs/trd-form-ownership-refactor.md and docs/forms.md."
+              },
+              {
+                "name": "next",
+                "message": "libs/ui is Metro-bundled for apps/pos-mobile; Next has no business outside utils/. See docs/trd-order-app-composition-and-ssr.md."
+              },
+              {
+                "name": "next/router",
+                "message": "libs/ui is Metro-bundled for apps/pos-mobile; Next has no business outside utils/. See docs/trd-order-app-composition-and-ssr.md."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/presentation/components/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "next",
+                "message": "libs/ui is Metro-bundled for apps/pos-mobile; Next has no business outside utils/. See docs/trd-order-app-composition-and-ssr.md."
+              },
+              {
+                "name": "next/router",
+                "message": "libs/ui is Metro-bundled for apps/pos-mobile; Next has no business outside utils/. See docs/trd-order-app-composition-and-ssr.md."
               }
             ]
           }
@@ -40,6 +68,16 @@
         "no-restricted-imports": [
           "error",
           {
+            "paths": [
+              {
+                "name": "next",
+                "message": "libs/ui is Metro-bundled for apps/pos-mobile; Next has no business outside utils/. See docs/trd-order-app-composition-and-ssr.md."
+              },
+              {
+                "name": "next/router",
+                "message": "libs/ui is Metro-bundled for apps/pos-mobile; Next has no business outside utils/. See docs/trd-order-app-composition-and-ssr.md."
+              }
+            ],
             "patterns": [
               {
                 "group": ["**/app/order/**", "**/screens/order/**", "../order/**"],
@@ -51,11 +89,51 @@
       }
     },
     {
-      "files": ["src/app/order/**", "src/presentation/screens/order/**"],
+      "files": ["src/presentation/screens/order/**"],
       "rules": {
         "no-restricted-imports": [
           "error",
           {
+            "paths": [
+              {
+                "name": "next",
+                "message": "libs/ui is Metro-bundled for apps/pos-mobile; Next has no business outside utils/. See docs/trd-order-app-composition-and-ssr.md."
+              },
+              {
+                "name": "next/router",
+                "message": "libs/ui is Metro-bundled for apps/pos-mobile; Next has no business outside utils/. See docs/trd-order-app-composition-and-ssr.md."
+              }
+            ],
+            "patterns": [
+              {
+                "group": ["**/app/pos/**", "**/screens/pos/**", "../pos/**"],
+                "message": "Order must not import the POS app's screens or composition roots."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/app/order/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "react",
+                "message": "A composition root news up repositories and usecases and returns one Handler — no hooks, no context. See docs/trd-order-app-composition-and-ssr.md."
+              },
+              {
+                "name": "next",
+                "message": "libs/ui is Metro-bundled for apps/pos-mobile; Next has no business outside utils/. See docs/trd-order-app-composition-and-ssr.md."
+              },
+              {
+                "name": "next/router",
+                "message": "libs/ui is Metro-bundled for apps/pos-mobile; Next has no business outside utils/. See docs/trd-order-app-composition-and-ssr.md."
+              }
+            ],
             "patterns": [
               {
                 "group": ["**/app/pos/**", "**/screens/pos/**", "../pos/**"],
