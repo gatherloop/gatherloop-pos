@@ -20,7 +20,7 @@ An [Nx](https://nx.dev) monorepo. Apps are thin shells; nearly all frontend code
 apps/
   api/          Go backend (REST API, MySQL)
   web/          Next.js admin/cashier app (Pages Router)
-  order/        Next.js customer app — scan a table QR, order from your phone
+  order-web/    Next.js customer app — scan a table QR, order from your phone
   mobile/       React Native (Expo) app for iOS/Android
   *-e2e/        Playwright end-to-end tests per app
 libs/
@@ -48,7 +48,7 @@ to both React DOM and React Native.
 npm install
 cp apps/api/.env.example apps/api/.env    # DB credentials, JWT secret, CORS origins
 cp apps/pos-web/.env.example apps/pos-web/.env.local
-cp apps/order/.env.example apps/order/.env.local
+cp apps/order-web/.env.example apps/order-web/.env.local
 cp apps/mobile/.env.example apps/mobile/.env
 ```
 
@@ -57,13 +57,13 @@ cp apps/mobile/.env.example apps/mobile/.env
 ```bash
 npx nx run api:serve      # Go API, on the PORT set in apps/api/.env
 npx nx run pos-web:dev    # POS web app     → http://localhost:3000
-npx nx run order:dev      # customer app    → http://localhost:3000
+npx nx run order-web:dev  # customer app    → http://localhost:3000
 npx nx run mobile:start   # React Native dev server (then run-android / run-ios)
 npx nx run ui:storybook   # component explorer → http://localhost:6006
 ```
 
 Web and order proxy `/api/*` to `NEXT_PUBLIC_API_BASE_URL`, so start the API first. Both default to
-port 3000 — to run them side by side, give one another port (`npx nx run order:dev --port=3001`) and
+port 3000 — to run them side by side, give one another port (`npx nx run order-web:dev --port=3001`) and
 add that origin to `CORS_ALLOWED_ORIGINS` in `apps/api/.env`.
 
 ### Test, lint, and codegen
@@ -124,7 +124,7 @@ app/          per-route composition: builds repositories + use cases, renders a 
   (`useReducer` + effects); a `*Handler` maps that state to props with `ts-pattern`; a `*Screen`
   is pure Tamagui JSX with Storybook stories.
 - **app/** — the composition root: instantiates repositories and use cases, then renders the
-  handler. Pages in `apps/pos-web`, `apps/order` and `apps/mobile` mostly just re-export these.
+  handler. Pages in `apps/pos-web`, `apps/order-web` and `apps/mobile` mostly just re-export these.
 
 Every surface builds with the [React Compiler](https://react.dev/learn/react-compiler), so don't
 hand-write `useMemo`/`useCallback`/`React.memo` for re-render performance — opt a misbehaving
@@ -138,6 +138,6 @@ callback is still needed, because the Jest setup has no compiler pass.) See
 - `docs/forms.md` — form conventions (react-hook-form + zod).
 - `docs/trd-vps-deployment-automation.md` — how the API ships: a static binary built in CI and run
   on a VPS under systemd (`.github/workflows/deploy-api.yml`). The order app deploys to its own
-  Vercel project (`apps/order/vercel.json`).
+  Vercel project (`apps/order-web/vercel.json`).
 - `docs/trd-storybook-vercel-deployment.md` — how the component explorer ships: its own Vercel
   project rooted at `libs/ui` (`libs/ui/vercel.json`).

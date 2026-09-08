@@ -37,7 +37,7 @@ export default defineConfig({
   /* Build and start the real Next.js server (D2/D13) — no dev server, no
    * static export, matching how the app actually runs in production. */
   webServer: {
-    command: 'npx nx run order:build && npx nx run order:start',
+    command: 'npx nx run order-web:build && npx nx run order-web:start',
     url: baseURL,
     reuseExistingServer: !process.env['CI'],
     cwd: workspaceRoot,

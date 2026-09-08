@@ -756,3 +756,10 @@ and can ship as their own PR the moment step 2 is done. Nothing else in this pla
 - `apps/order/src/app/app.tsx` — the route table §2.2 is derived from
 - Next.js Pages Router: [Layouts](https://nextjs.org/docs/pages/building-your-application/routing/pages-and-layouts#layout-pattern),
   [Automatic Static Optimization](https://nextjs.org/docs/pages/building-your-application/rendering/automatic-static-optimization)
+
+---
+
+**Note (2026-09-08):** `apps/order` and `apps/order-e2e`, as referenced throughout this TRD, were
+renamed to `apps/order-web` and `apps/order-web-e2e` in Phase 7 of
+`docs/trd-ui-presentation-split-by-app.md`. This document is left as written at the time of the
+Next.js migration and is not retroactively updated.
