@@ -11,8 +11,7 @@ import {
 } from '../../screens/pos/ChecklistTemplateListScreen';
 import { match, P } from 'ts-pattern';
 import { useCallback, useEffect } from 'react';
-import { useController } from '../../controllers/controller';
-import { useAuthLogoutController } from '../../controllers';
+import { useUsecase, useAuthLogout } from '../hooks';
 import { useFocusEffect } from '../../../utils';
 
 export type ChecklistTemplateListHandlerProps = {
@@ -26,9 +25,9 @@ export const ChecklistTemplateListHandler = ({
   checklistTemplateListUsecase,
   checklistTemplateDeleteUsecase,
 }: ChecklistTemplateListHandlerProps) => {
-  const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const checklistTemplateList = useController(checklistTemplateListUsecase);
-  const checklistTemplateDelete = useController(checklistTemplateDeleteUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
+  const checklistTemplateList = useUsecase(checklistTemplateListUsecase);
+  const checklistTemplateDelete = useUsecase(checklistTemplateDeleteUsecase);
   const router = useRouter();
 
   useFocusEffect(

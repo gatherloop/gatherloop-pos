@@ -117,17 +117,14 @@ const authLogoutCtrl = {
   dispatch: jest.fn(),
 };
 
-jest.mock('../../controllers', () => ({
-  useTransactionItemSelectController: () => transactionItemSelectCtrl,
-  useTransactionPayController: () => transactionPayCtrl,
-  useCouponListController: () => couponListCtrl,
-  useAuthLogoutController: () => authLogoutCtrl,
-}));
-
 // TransactionCreate is folded into the handler (Phase 5) and calls the base
-// `useController` hook directly rather than a named per-feature hook.
-jest.mock('../../controllers/controller', () => ({
-  useController: () => transactionCreateCtrl,
+// `useUsecase` hook directly rather than a named per-feature hook.
+jest.mock('../hooks', () => ({
+  useTransactionItemSelect: () => transactionItemSelectCtrl,
+  useTransactionPay: () => transactionPayCtrl,
+  useCouponList: () => couponListCtrl,
+  useAuthLogout: () => authLogoutCtrl,
+  useUsecase: () => transactionCreateCtrl,
 }));
 
 const usecaseProps = {

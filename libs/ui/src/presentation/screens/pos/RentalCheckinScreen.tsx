@@ -21,7 +21,7 @@ export type RentalCheckinScreenProps = {
   onLogoutPress: () => void;
   /**
    * Escape hatch so `RentalCheckinHandler` can push an item picked in the
-   * sibling `transactionItemSelect` controller into the form. Null until
+   * sibling `transactionItemSelect` handler into the form. Null until
    * the form's `loaded` branch mounts.
    */
   formRef?: MutableRefObject<UseFormReturn<RentalCheckinForm> | null>;

@@ -4,8 +4,7 @@ import { CalculationUpdateScreen, CalculationUpdateScreenProps } from '../../scr
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';
-import { useController } from '../../controllers/controller';
-import { useAuthLogoutController } from '../../controllers';
+import { useUsecase, useAuthLogout } from '../hooks';
 
 export type CalculationUpdateHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;
@@ -16,8 +15,8 @@ export const CalculationUpdateHandler = ({
   authLogoutUsecase,
   calculationUpdateUsecase,
 }: CalculationUpdateHandlerProps) => {
-  const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const calculationUpdate = useController(calculationUpdateUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
+  const calculationUpdate = useUsecase(calculationUpdateUsecase);
   const router = useRouter();
   const toast = useToastController();
 

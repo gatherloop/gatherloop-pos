@@ -1,6 +1,6 @@
 import { useRouter } from 'solito/router';
 import { AuthLoginUsecase } from '../../../domain';
-import { useController } from '../../controllers/controller';
+import { useUsecase } from '../hooks';
 import { useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';
 import { AuthLoginScreen } from '../../screens/pos/AuthLoginScreen';
@@ -10,7 +10,7 @@ export type AuthLoginHandlerProps = {
 };
 
 export const AuthLoginHandler = (props: AuthLoginHandlerProps) => {
-  const { state, dispatch } = useController(props.authLoginUsecase);
+  const { state, dispatch } = useUsecase(props.authLoginUsecase);
   const router = useRouter();
   const toast = useToastController();
 

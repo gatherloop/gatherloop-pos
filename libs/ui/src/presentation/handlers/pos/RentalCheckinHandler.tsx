@@ -3,12 +3,7 @@ import { useEffect, useRef } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { match, P } from 'ts-pattern';
 import { useToastController } from '@tamagui/toast';
-import { useController } from '../../controllers/controller';
-import {
-  useAuthLogoutController,
-  useTransactionItemSelectController,
-  useTicketListController,
-} from '../../controllers';
+import { useUsecase, useAuthLogout, useTransactionItemSelect, useTicketList } from '../hooks';
 import {
   AuthLogoutUsecase,
   RentalCheckinForm,
@@ -42,12 +37,12 @@ export const RentalCheckinHandler = ({
   const { print } = usePrinter();
   const { show } = useConfirmationAlert();
   const toast = useToastController();
-  const rentalCheckin = useController(rentalCheckinUsecase);
-  const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const transactionItemSelect = useTransactionItemSelectController(
+  const rentalCheckin = useUsecase(rentalCheckinUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
+  const transactionItemSelect = useTransactionItemSelect(
     transactionItemSelectUsecase
   );
-  const ticketList = useTicketListController(ticketListUsecase);
+  const ticketList = useTicketList(ticketListUsecase);
   const hasShownPrintDialogRef = useRef(false);
 
   const formRef = useRef<UseFormReturn<RentalCheckinForm> | null>(null);

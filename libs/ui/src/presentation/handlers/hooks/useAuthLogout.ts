@@ -1,11 +1,11 @@
-import { AuthLogoutUsecase } from '../../domain';
-import { useController } from './controller';
+import { AuthLogoutUsecase } from '../../../domain';
+import { useUsecase } from './useUsecase';
 import { useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';
 import { useRouter } from 'solito/router';
 
-export const useAuthLogoutController = (usecase: AuthLogoutUsecase) => {
-  const { state, dispatch } = useController(usecase);
+export const useAuthLogout = (usecase: AuthLogoutUsecase) => {
+  const { state, dispatch } = useUsecase(usecase);
   const router = useRouter();
   const toast = useToastController();
 

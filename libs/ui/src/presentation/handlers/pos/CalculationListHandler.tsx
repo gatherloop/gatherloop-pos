@@ -10,8 +10,7 @@ import { CalculationListScreen, CalculationListScreenProps } from '../../screens
 import { match, P } from 'ts-pattern';
 import { useCallback, useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';
-import { useController } from '../../controllers/controller';
-import { useAuthLogoutController } from '../../controllers';
+import { useUsecase, useAuthLogout } from '../hooks';
 import { useFocusEffect } from '../../../utils';
 
 export type CalculationListHandlerProps = {
@@ -27,10 +26,10 @@ export const CalculationListHandler = ({
   calculationDeleteUsecase,
   calculationCompleteUsecase,
 }: CalculationListHandlerProps) => {
-  const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const calculationList = useController(calculationListUsecase);
-  const calculationDelete = useController(calculationDeleteUsecase);
-  const calculationComplete = useController(calculationCompleteUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
+  const calculationList = useUsecase(calculationListUsecase);
+  const calculationDelete = useUsecase(calculationDeleteUsecase);
+  const calculationComplete = useUsecase(calculationCompleteUsecase);
   const router = useRouter();
   const toast = useToastController();
 

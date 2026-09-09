@@ -3,8 +3,7 @@ import { AuthLogoutUsecase, CalculationCreateUsecase } from '../../../domain';
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';
-import { useController } from '../../controllers/controller';
-import { useAuthLogoutController } from '../../controllers';
+import { useUsecase, useAuthLogout } from '../hooks';
 import {
   CalculationCreateScreen,
   CalculationCreateScreenProps,
@@ -19,8 +18,8 @@ export const CalculationCreateHandler = ({
   authLogoutUsecase,
   calculationCreateUsecase,
 }: CalculationCreateHandlerProps) => {
-  const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const calculationCreate = useController(calculationCreateUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
+  const calculationCreate = useUsecase(calculationCreateUsecase);
 
   const router = useRouter();
   const toast = useToastController();

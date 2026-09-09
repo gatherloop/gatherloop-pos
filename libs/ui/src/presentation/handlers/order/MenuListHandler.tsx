@@ -15,9 +15,9 @@ import {
 import { MenuListUsecase } from '../../../domain/usecases/menuList';
 import { TableResolveUsecase } from '../../../domain/usecases/tableResolve';
 import { CartBar } from '../../components/cart/CartBar';
-import { useController } from '../../controllers/controller';
-import { useCartController } from '../../controllers/CartController';
-import { useTableResolveController } from '../../controllers/TableResolveController';
+import { useUsecase } from '../hooks/useUsecase';
+import { useCart } from '../hooks/useCart';
+import { useTableResolve } from '../hooks/useTableResolve';
 import { MenuItemDetailScreenProps } from '../../screens/order/MenuItemDetailScreen';
 import { MenuListScreen, MenuListScreenProps } from '../../screens/order/MenuListScreen';
 import { TableResolveScreenProps } from '../../screens/order/TableResolveScreen';
@@ -133,10 +133,10 @@ export const MenuListHandler = ({
   sessionRepository,
   tableCode,
 }: MenuListHandlerProps) => {
-  const tableResolve = useTableResolveController(tableResolveUsecase);
-  const menuList = useController(menuListUsecase);
-  const menuItemDetail = useController(menuItemDetailUsecase);
-  const cart = useCartController(cartUsecase);
+  const tableResolve = useTableResolve(tableResolveUsecase);
+  const menuList = useUsecase(menuListUsecase);
+  const menuItemDetail = useUsecase(menuItemDetailUsecase);
+  const cart = useCart(cartUsecase);
   const router = useRouter();
   // FR-5: set to the product id once the guest presses the CTA while options
   // are incomplete. Keyed by product id, rather than a plain boolean, so a

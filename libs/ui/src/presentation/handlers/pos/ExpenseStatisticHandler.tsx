@@ -1,9 +1,5 @@
 import { match, P } from 'ts-pattern';
-import {
-  useBudgetListController,
-  useTransactionStatisticListController,
-} from '../../controllers';
-import { useController } from '../../controllers/controller';
+import { useUsecase, useBudgetList, useTransactionStatisticList } from '../hooks';
 import {
   BudgetListUsecase,
   combineExpenseStatistics,
@@ -28,13 +24,13 @@ export const ExpenseStatisticHandler = ({
   transactionStatisticListUsecase,
   budgetListUsecase,
 }: ExpenseStatisticHandlerProps) => {
-  const expenseStatisticList = useController(expenseStatisticListUsecase);
+  const expenseStatisticList = useUsecase(expenseStatisticListUsecase);
   // Revenue for the variance report; kept in lockstep with the expense date
   // range below rather than exposing its own date-range controls.
-  const revenueStatisticList = useTransactionStatisticListController(
+  const revenueStatisticList = useTransactionStatisticList(
     transactionStatisticListUsecase
   );
-  const budgetList = useBudgetListController(budgetListUsecase);
+  const budgetList = useBudgetList(budgetListUsecase);
 
   const varianceReport = computeExpenseVariance(
     expenseStatisticList.state.expenseStatistics,

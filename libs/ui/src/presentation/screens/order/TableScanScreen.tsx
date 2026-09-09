@@ -5,7 +5,7 @@ import { TableResolveScreen } from './TableResolveScreen';
 // docs/prd-table-ordering.md). There is no code to resolve — `code` is
 // always `null` here and `TableResolveUsecase` never leaves `noCode` for
 // that params — so this renders the outcome directly instead of running a
-// usecase and a controller for a state that can never change.
+// usecase and a handler hook for a state that can never change.
 export const TableScanScreen = () => (
   <TableResolveScreen variant={{ type: 'noQr' }} />
 );

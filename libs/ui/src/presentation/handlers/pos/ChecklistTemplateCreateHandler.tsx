@@ -3,8 +3,7 @@ import { AuthLogoutUsecase, ChecklistTemplateCreateUsecase } from '../../../doma
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';
-import { useController } from '../../controllers/controller';
-import { useAuthLogoutController } from '../../controllers';
+import { useUsecase, useAuthLogout } from '../hooks';
 import {
   ChecklistTemplateCreateScreen,
   ChecklistTemplateCreateScreenProps,
@@ -19,8 +18,8 @@ export const ChecklistTemplateCreateHandler = ({
   authLogoutUsecase,
   checklistTemplateCreateUsecase,
 }: ChecklistTemplateCreateHandlerProps) => {
-  const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const checklistTemplateCreate = useController(checklistTemplateCreateUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
+  const checklistTemplateCreate = useUsecase(checklistTemplateCreateUsecase);
   const router = useRouter();
   const toast = useToastController();
 

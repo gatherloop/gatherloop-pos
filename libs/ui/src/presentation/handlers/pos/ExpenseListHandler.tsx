@@ -9,8 +9,7 @@ import { ExpenseListScreen, ExpenseListScreenProps } from '../../screens/pos/Exp
 import { match, P } from 'ts-pattern';
 import { useCallback, useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';
-import { useController } from '../../controllers/controller';
-import { useAuthLogoutController } from '../../controllers';
+import { useUsecase, useAuthLogout } from '../hooks';
 import { useFocusEffect } from '../../../utils';
 
 export type ExpenseListHandlerProps = {
@@ -24,9 +23,9 @@ export const ExpenseListHandler = ({
   expenseListUsecase,
   expenseDeleteUsecase,
 }: ExpenseListHandlerProps) => {
-  const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const expenseList = useController(expenseListUsecase);
-  const expenseDelete = useController(expenseDeleteUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
+  const expenseList = useUsecase(expenseListUsecase);
+  const expenseDelete = useUsecase(expenseDeleteUsecase);
   const router = useRouter();
   const toast = useToastController();
 

@@ -5,7 +5,7 @@ import { useRouter } from 'solito/router';
 // every POS usecase, which drags unrelated weight into the order bundle.
 import { SessionRepository } from '../../../domain/repositories/session';
 import { TableResolveUsecase } from '../../../domain/usecases/tableResolve';
-import { useTableResolveController } from '../../controllers/TableResolveController';
+import { useTableResolve } from '../hooks/useTableResolve';
 import { CheckoutScreen } from '../../screens/order/CheckoutScreen';
 import { TableResolveScreenProps } from '../../screens/order/TableResolveScreen';
 
@@ -29,7 +29,7 @@ export const CheckoutHandler = ({
   enabled,
   tableCode,
 }: CheckoutHandlerProps) => {
-  const tableResolve = useTableResolveController(tableResolveUsecase);
+  const tableResolve = useTableResolve(tableResolveUsecase);
   const router = useRouter();
 
   // Only a successful resolution is worth remembering (FR-4) — a code the

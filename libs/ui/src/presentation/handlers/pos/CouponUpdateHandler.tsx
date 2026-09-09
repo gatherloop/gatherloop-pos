@@ -3,8 +3,7 @@ import { AuthLogoutUsecase, CouponUpdateUsecase } from '../../../domain';
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';
-import { useController } from '../../controllers/controller';
-import { useAuthLogoutController } from '../../controllers';
+import { useUsecase, useAuthLogout } from '../hooks';
 import {
   CouponUpdateScreen,
   CouponUpdateScreenProps,
@@ -19,8 +18,8 @@ export const CouponUpdateHandler = ({
   authLogoutUsecase,
   couponUpdateUsecase,
 }: CouponUpdateHandlerProps) => {
-  const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const couponUpdate = useController(couponUpdateUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
+  const couponUpdate = useUsecase(couponUpdateUsecase);
   const router = useRouter();
   const toast = useToastController();
 

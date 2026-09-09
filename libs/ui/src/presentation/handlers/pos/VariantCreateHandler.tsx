@@ -2,11 +2,7 @@ import { useRouter } from 'solito/router';
 import { useEffect } from 'react';
 import { match, P } from 'ts-pattern';
 import { useToastController } from '@tamagui/toast';
-import { useController } from '../../controllers/controller';
-import {
-  useAuthLogoutController,
-  useMaterialListController,
-} from '../../controllers';
+import { useUsecase, useAuthLogout, useMaterialList } from '../hooks';
 import {
   AuthLogoutUsecase,
   MaterialListUsecase,
@@ -29,9 +25,9 @@ export const VariantCreateHandler = ({
   authLogoutUsecase,
 }: VariantCreateHandlerProps) => {
   const router = useRouter();
-  const variantCreate = useController(variantCreateUsecase);
-  const materialList = useMaterialListController(materialListUsecase);
-  const authLogout = useAuthLogoutController(authLogoutUsecase);
+  const variantCreate = useUsecase(variantCreateUsecase);
+  const materialList = useMaterialList(materialListUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
   const toast = useToastController();
 
   useEffect(() => {

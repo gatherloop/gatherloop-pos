@@ -2,8 +2,7 @@ import { useRouter } from 'solito/router';
 import { AuthLogoutUsecase, ChecklistTemplateUpdateUsecase } from '../../../domain';
 import { useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';
-import { useController } from '../../controllers/controller';
-import { useAuthLogoutController } from '../../controllers';
+import { useUsecase, useAuthLogout } from '../hooks';
 import {
   ChecklistTemplateUpdateScreen,
   ChecklistTemplateUpdateScreenProps,
@@ -19,8 +18,8 @@ export const ChecklistTemplateUpdateHandler = ({
   authLogoutUsecase,
   checklistTemplateUpdateUsecase,
 }: ChecklistTemplateUpdateHandlerProps) => {
-  const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const checklistTemplateUpdate = useController(checklistTemplateUpdateUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
+  const checklistTemplateUpdate = useUsecase(checklistTemplateUpdateUsecase);
   const router = useRouter();
   const toast = useToastController();
 

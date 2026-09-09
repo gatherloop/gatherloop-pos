@@ -44,7 +44,7 @@ export type TransactionFormViewProps = {
   /**
    * Escape hatch so `TransactionCreateHandler` / `TransactionUpdateHandler`
    * can push an item picked in the sibling `transactionItemSelect`
-   * controller into this form (see TRD §4.6). Null until this view's
+   * handler into this form (see TRD §4.6). Null until this view's
    * `loaded` branch mounts.
    */
   formRef?: MutableRefObject<UseFormReturn<TransactionForm> | null>;

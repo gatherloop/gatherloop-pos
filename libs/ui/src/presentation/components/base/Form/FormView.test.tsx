@@ -209,7 +209,7 @@ describe('FormView', () => {
       ).not.toThrow();
     });
 
-    it('is populated once the loaded branch mounts, letting a sibling controller write into the form', async () => {
+    it('is populated once the loaded branch mounts, letting a sibling handler write into the form', async () => {
       const user = userEvent.setup();
       render(<FormRefHarness variant={{ type: 'loaded' }} />);
 

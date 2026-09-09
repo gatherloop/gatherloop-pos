@@ -10,11 +10,7 @@ import { MaterialListScreen, MaterialListScreenProps } from '../../screens/pos/M
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';
-import { useController } from '../../controllers/controller';
-import {
-  useAuthLogoutController,
-  useMaterialListController,
-} from '../../controllers';
+import { useUsecase, useAuthLogout, useMaterialList } from '../hooks';
 
 export type MaterialListHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;
@@ -27,9 +23,9 @@ export const MaterialListHandler = ({
   materialListUsecase,
   materialDeleteUsecase,
 }: MaterialListHandlerProps) => {
-  const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const materialList = useMaterialListController(materialListUsecase);
-  const materialDelete = useController(materialDeleteUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
+  const materialList = useMaterialList(materialListUsecase);
+  const materialDelete = useUsecase(materialDeleteUsecase);
   const router = useRouter();
   const toast = useToastController();
 

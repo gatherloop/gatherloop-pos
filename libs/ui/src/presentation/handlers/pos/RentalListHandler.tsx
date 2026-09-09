@@ -8,11 +8,7 @@ import { RentalListScreen, RentalListScreenProps } from '../../screens/pos/Renta
 import { match, P } from 'ts-pattern';
 import { useEffect, useRef } from 'react';
 import { useToastController } from '@tamagui/toast';
-import { useController } from '../../controllers/controller';
-import {
-  useAuthLogoutController,
-  useRentalListController,
-} from '../../controllers';
+import { useUsecase, useAuthLogout, useRentalList } from '../hooks';
 
 export type RentalListHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;
@@ -25,9 +21,9 @@ export const RentalListHandler = ({
   rentalListUsecase,
   rentalDeleteUsecase,
 }: RentalListHandlerProps) => {
-  const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const rentalList = useRentalListController(rentalListUsecase);
-  const rentalDelete = useController(rentalDeleteUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
+  const rentalList = useRentalList(rentalListUsecase);
+  const rentalDelete = useUsecase(rentalDeleteUsecase);
   const router = useRouter();
   const toast = useToastController();
   const debounceTimeoutRef = useRef<NodeJS.Timeout>();

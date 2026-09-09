@@ -9,8 +9,7 @@ import {
   PurchaseListScreen,
   PurchaseListScreenProps,
 } from '../../screens/pos/PurchaseListScreen';
-import { useController } from '../../controllers/controller';
-import { useAuthLogoutController } from '../../controllers';
+import { useUsecase, useAuthLogout } from '../hooks';
 import { usePrinter, useFocusEffect } from '../../../utils';
 
 export type PurchaseListHandlerProps = {
@@ -22,8 +21,8 @@ export const PurchaseListHandler = ({
   authLogoutUsecase,
   purchaseListGetUsecase,
 }: PurchaseListHandlerProps) => {
-  const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const purchaseListGet = useController(purchaseListGetUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
+  const purchaseListGet = useUsecase(purchaseListGetUsecase);
 
   useFocusEffect(
     useCallback(() => {

@@ -2,13 +2,7 @@ import { useRouter } from 'solito/router';
 import { useEffect, useRef } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { useToastController } from '@tamagui/toast';
-import { useController } from '../../controllers/controller';
-import {
-  useAuthLogoutController,
-  useTransactionItemSelectController,
-  useTransactionPayController,
-  useCouponListController,
-} from '../../controllers';
+import { useUsecase, useAuthLogout, useTransactionItemSelect, useTransactionPay, useCouponList } from '../hooks';
 import {
   AuthLogoutUsecase,
   TransactionCreateUsecase,
@@ -53,15 +47,15 @@ export const TransactionCreateHandler = ({
   const { show } = useConfirmationAlert();
   const toast = useToastController();
 
-  const transactionCreateController = useController(transactionCreateUsecase);
-  const transactionItemSelectController = useTransactionItemSelectController(
+  const transactionCreate = useUsecase(transactionCreateUsecase);
+  const transactionItemSelect = useTransactionItemSelect(
     transactionItemSelectUsecase
   );
-  const transactionPayController = useTransactionPayController(
+  const transactionPay = useTransactionPay(
     transactionPayUsecase
   );
-  const couponListController = useCouponListController(couponListUsecase);
-  const authLogoutController = useAuthLogoutController(authLogoutUsecase);
+  const couponList = useCouponList(couponListUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
 
   const formRef = useRef<UseFormReturn<TransactionForm> | null>(null);
 
@@ -102,25 +96,25 @@ export const TransactionCreateHandler = ({
   };
 
   useEffect(() => {
-    if (transactionCreateController.state.type === 'submitSuccess')
+    if (transactionCreate.state.type === 'submitSuccess')
       toast.show('Create Transaction Success');
-    else if (transactionCreateController.state.type === 'submitError')
+    else if (transactionCreate.state.type === 'submitError')
       toast.show('Create Transaction Error');
-  }, [toast, transactionCreateController.state.type]);
+  }, [toast, transactionCreate.state.type]);
 
   useEffect(() => {
     if (
-      transactionCreateController.state.type === 'submitSuccess' &&
-      transactionPayController.state.type === 'hidden'
+      transactionCreate.state.type === 'submitSuccess' &&
+      transactionPay.state.type === 'hidden'
     ) {
       let transactionTotal =
-        transactionCreateController.state.values.transactionItems.reduce(
+        transactionCreate.state.values.transactionItems.reduce(
           (prev, curr) =>
             prev + (curr.variant.price * curr.amount - curr.discountAmount),
           0
         );
 
-      transactionCreateController.state.values.transactionCoupons.forEach(
+      transactionCreate.state.values.transactionCoupons.forEach(
         (couponItem) => {
           const discountAmount =
             couponItem.coupon.type === 'fixed'
@@ -134,27 +128,27 @@ export const TransactionCreateHandler = ({
         }
       );
 
-      transactionPayController.dispatch({
+      transactionPay.dispatch({
         type: 'SHOW_CONFIRMATION',
-        transactionId: transactionCreateController.state.transactionId ?? -1,
+        transactionId: transactionCreate.state.transactionId ?? -1,
         transactionTotal,
       });
     }
   }, [
-    transactionCreateController.state.transactionId,
-    transactionCreateController.state.type,
-    transactionCreateController.state.values.transactionCoupons,
-    transactionCreateController.state.values.transactionItems,
-    transactionPayController,
+    transactionCreate.state.transactionId,
+    transactionCreate.state.type,
+    transactionCreate.state.values.transactionCoupons,
+    transactionCreate.state.values.transactionItems,
+    transactionPay,
   ]);
 
   useEffect(() => {
-    const selectedWallet = transactionPayController.state.wallets.find(
-      ({ id }) => id === transactionPayController.state.walletId
+    const selectedWallet = transactionPay.state.wallets.find(
+      ({ id }) => id === transactionPay.state.walletId
     );
 
     if (
-      transactionPayController.state.type === 'payingSuccess' &&
+      transactionPay.state.type === 'payingSuccess' &&
       selectedWallet
     ) {
       // Reads the submitted values off the usecase rather than the form
@@ -162,7 +156,7 @@ export const TransactionCreateHandler = ({
       // persist through `submitSuccess`, which is the only state this
       // effect fires in.
       const transactionItems =
-        transactionCreateController.state.values.transactionItems
+        transactionCreate.state.values.transactionItems
           .slice()
           .sort((a, b) =>
             a.variant.product.name.localeCompare(b.variant.product.name)
@@ -171,8 +165,8 @@ export const TransactionCreateHandler = ({
       const transaction: TransactionPrintPayload = {
         createdAt: dayjs(new Date().toISOString()).format('DD/MM/YYYY HH:mm'),
         paidAt: dayjs(new Date().toISOString()).format('DD/MM/YYYY HH:mm'),
-        name: transactionCreateController.state.values.name,
-        orderNumber: transactionCreateController.state.values.orderNumber,
+        name: transactionCreate.state.values.name,
+        orderNumber: transactionCreate.state.values.orderNumber,
         items: transactionItems.map(
           ({ variant, price, amount, discountAmount, note }) => ({
             name: `${variant.product.name} - ${variant.values
@@ -184,7 +178,7 @@ export const TransactionCreateHandler = ({
             note,
           })
         ),
-        coupons: transactionCreateController.state.values.transactionCoupons.map(
+        coupons: transactionCreate.state.values.transactionCoupons.map(
           ({ coupon }) => ({
             amount: coupon.amount,
             type: coupon.type === 'fixed' ? 'FIXED' : 'PERCENTAGE',
@@ -192,7 +186,7 @@ export const TransactionCreateHandler = ({
           })
         ),
         isCashless: selectedWallet.isCashless,
-        paidAmount: transactionPayController.state.paidAmount,
+        paidAmount: transactionPay.state.paidAmount,
       };
 
       const orderSlipSource: OrderSlipSource = {
@@ -235,48 +229,48 @@ export const TransactionCreateHandler = ({
     print,
     router,
     show,
-    transactionCreateController.state.values,
-    transactionPayController.state.paidAmount,
-    transactionPayController.state.type,
-    transactionPayController.state.walletId,
-    transactionPayController.state.wallets,
+    transactionCreate.state.values,
+    transactionPay.state.paidAmount,
+    transactionPay.state.type,
+    transactionPay.state.walletId,
+    transactionPay.state.wallets,
   ]);
 
   useEffect(() => {
     if (
-      transactionItemSelectController.state.type === 'loadingVariantSuccess' &&
-      transactionItemSelectController.state.selectedVariant
+      transactionItemSelect.state.type === 'loadingVariantSuccess' &&
+      transactionItemSelect.state.selectedVariant
     ) {
       addItemToForm(
-        transactionItemSelectController.state.selectedVariant,
-        transactionItemSelectController.state.amount
+        transactionItemSelect.state.selectedVariant,
+        transactionItemSelect.state.amount
       );
     }
   }, [
-    transactionItemSelectController.state.amount,
-    transactionItemSelectController.state.selectedVariant,
-    transactionItemSelectController.state.type,
+    transactionItemSelect.state.amount,
+    transactionItemSelect.state.selectedVariant,
+    transactionItemSelect.state.type,
   ]);
 
   const props: TransactionCreateScreenProps = {
     variant: { type: 'loaded' },
-    defaultValues: transactionCreateController.state.values,
+    defaultValues: transactionCreate.state.values,
     onSubmit: (values) =>
-      transactionCreateController.dispatch({ type: 'SUBMIT', values }),
-    isSubmitDisabled: transactionCreateController.state.type === 'submitting',
-    isSubmitting: transactionCreateController.state.type === 'submitting',
+      transactionCreate.dispatch({ type: 'SUBMIT', values }),
+    isSubmitDisabled: transactionCreate.state.type === 'submitting',
+    isSubmitting: transactionCreate.state.type === 'submitting',
     isSubmitSuccess:
-      transactionCreateController.state.type === 'submitSuccess',
+      transactionCreate.state.type === 'submitSuccess',
     serverError:
-      transactionCreateController.state.type === 'submitError'
+      transactionCreate.state.type === 'submitError'
         ? 'Failed to submit. Please try again.'
         : undefined,
-    onLogoutPress: () => authLogoutController.dispatch({ type: 'LOGOUT' }),
+    onLogoutPress: () => authLogout.dispatch({ type: 'LOGOUT' }),
     formRef,
     couponList: {
       onRetryButtonPress: () =>
-        couponListController.dispatch({ type: 'FETCH' }),
-      variant: match(couponListController.state)
+        couponList.dispatch({ type: 'FETCH' }),
+      variant: match(couponList.state)
         .returnType<TransactionCreateScreenProps['couponList']['variant']>()
         .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))
         .with({ type: P.union('loaded', 'revalidating') }, ({ coupons }) => ({
@@ -287,48 +281,48 @@ export const TransactionCreateHandler = ({
         .exhaustive(),
     },
     transactionItemSelect: {
-      amount: transactionItemSelectController.state.amount,
-      currentPage: transactionItemSelectController.state.page,
-      itemPerPage: transactionItemSelectController.state.itemPerPage,
+      amount: transactionItemSelect.state.amount,
+      currentPage: transactionItemSelect.state.page,
+      itemPerPage: transactionItemSelect.state.itemPerPage,
       onAmountChange: (amount) =>
-        transactionItemSelectController.dispatch({
+        transactionItemSelect.dispatch({
           type: 'CHANGE_AMOUNT',
           amount,
         }),
       onOptionValuesChange: (optionValues) =>
-        transactionItemSelectController.dispatch({
+        transactionItemSelect.dispatch({
           type: 'UPDATE_OPTION_VALUES',
           optionValues,
         }),
       onPageChange: (page) =>
-        transactionItemSelectController.dispatch({
+        transactionItemSelect.dispatch({
           type: 'CHANGE_PARAMS',
           page,
         }),
       onRetryButtonPress: () =>
-        transactionItemSelectController.dispatch({ type: 'FETCH' }),
+        transactionItemSelect.dispatch({ type: 'FETCH' }),
       onSearchValueChange: (query) =>
-        transactionItemSelectController.dispatch({
+        transactionItemSelect.dispatch({
           type: 'CHANGE_PARAMS',
           query,
           fetchDebounceDelay: 600,
         }),
       onSelectProduct: (product) =>
-        transactionItemSelectController.dispatch({
+        transactionItemSelect.dispatch({
           type: 'SELECT_PRODUCT',
           product,
         }),
       onSubmit: () =>
-        transactionItemSelectController.dispatch({ type: 'FETCH_VARIANT' }),
+        transactionItemSelect.dispatch({ type: 'FETCH_VARIANT' }),
       onUnselectProduct: () =>
-        transactionItemSelectController.dispatch({ type: 'UNSELECT_PRODUCT' }),
-      products: transactionItemSelectController.state.products,
-      searchValue: transactionItemSelectController.state.query,
+        transactionItemSelect.dispatch({ type: 'UNSELECT_PRODUCT' }),
+      products: transactionItemSelect.state.products,
+      searchValue: transactionItemSelect.state.query,
       selectedOptionValues:
-        transactionItemSelectController.state.selectedOptionValues,
-      totalItem: transactionItemSelectController.state.totalItem,
-      selectedProduct: transactionItemSelectController.state.selectedProduct,
-      variant: match(transactionItemSelectController.state)
+        transactionItemSelect.state.selectedOptionValues,
+      totalItem: transactionItemSelect.state.totalItem,
+      selectedProduct: transactionItemSelect.state.selectedProduct,
+      variant: match(transactionItemSelect.state)
         .returnType<
           TransactionCreateScreenProps['transactionItemSelect']['variant']
         >()
@@ -347,22 +341,22 @@ export const TransactionCreateHandler = ({
     },
     transactionPayment: {
       isButtonDisabled:
-        transactionPayController.state.type === 'paying' ||
-        transactionPayController.state.type === 'payingSuccess',
+        transactionPay.state.type === 'paying' ||
+        transactionPay.state.type === 'payingSuccess',
       isOpen:
-        transactionPayController.state.type === 'shown' ||
-        transactionPayController.state.type === 'paying' ||
-        transactionPayController.state.type === 'payingSuccess' ||
-        transactionPayController.state.type === 'payingError',
+        transactionPay.state.type === 'shown' ||
+        transactionPay.state.type === 'paying' ||
+        transactionPay.state.type === 'payingSuccess' ||
+        transactionPay.state.type === 'payingError',
       onCancel: () => router.push('/transactions'),
       onSubmit: (values) =>
-        transactionPayController.dispatch({
+        transactionPay.dispatch({
           type: 'PAY',
           walletId: values.wallet.id,
           paidAmount: values.paidAmount,
         }),
-      transactionTotal: transactionPayController.state.transactionTotal,
-      walletSelectOptions: transactionPayController.state.wallets
+      transactionTotal: transactionPay.state.transactionTotal,
+      walletSelectOptions: transactionPay.state.wallets
         .filter((wallet) => wallet.isPaymentTarget)
         .map((wallet) => ({
           label: wallet.name,

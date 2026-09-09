@@ -1,8 +1,7 @@
 import { useRouter } from 'solito/router';
 import { useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';
-import { useController } from '../../controllers/controller';
-import { useAuthLogoutController } from '../../controllers';
+import { useUsecase, useAuthLogout } from '../hooks';
 import { AuthLogoutUsecase, BudgetCreateUsecase } from '../../../domain';
 import { BudgetCreateScreen } from '../../screens/pos/BudgetCreateScreen';
 
@@ -16,8 +15,8 @@ export const BudgetCreateHandler = ({
   authLogoutUsecase,
 }: BudgetCreateHandlerProps) => {
   const router = useRouter();
-  const budgetCreate = useController(budgetCreateUsecase);
-  const authLogout = useAuthLogoutController(authLogoutUsecase);
+  const budgetCreate = useUsecase(budgetCreateUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
   const toast = useToastController();
 
   useEffect(() => {

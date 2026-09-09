@@ -9,8 +9,7 @@ import { TableListScreen, TableListScreenProps } from '../../screens/pos/TableLi
 import { match, P } from 'ts-pattern';
 import { useCallback, useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';
-import { useController } from '../../controllers/controller';
-import { useAuthLogoutController } from '../../controllers';
+import { useUsecase, useAuthLogout } from '../hooks';
 import { useFocusEffect } from '../../../utils';
 
 export type TableListHandlerProps = {
@@ -24,9 +23,9 @@ export const TableListHandler = ({
   tableListUsecase,
   tableDeleteUsecase,
 }: TableListHandlerProps) => {
-  const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const tableList = useController(tableListUsecase);
-  const tableDelete = useController(tableDeleteUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
+  const tableList = useUsecase(tableListUsecase);
+  const tableDelete = useUsecase(tableDeleteUsecase);
   const router = useRouter();
   const toast = useToastController();
 

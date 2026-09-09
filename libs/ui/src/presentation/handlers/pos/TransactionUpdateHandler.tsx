@@ -3,12 +3,7 @@ import { useEffect, useRef } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { match, P } from 'ts-pattern';
 import { useToastController } from '@tamagui/toast';
-import { useController } from '../../controllers/controller';
-import {
-  useAuthLogoutController,
-  useTransactionItemSelectController,
-  useCouponListController,
-} from '../../controllers';
+import { useUsecase, useAuthLogout, useTransactionItemSelect, useCouponList } from '../hooks';
 import {
   AuthLogoutUsecase,
   TransactionUpdateUsecase,
@@ -37,12 +32,12 @@ export const TransactionUpdateHandler = ({
 }: TransactionUpdateHandlerProps) => {
   const router = useRouter();
   const toast = useToastController();
-  const transactionUpdate = useController(transactionUpdateUsecase);
-  const transactionItemSelect = useTransactionItemSelectController(
+  const transactionUpdate = useUsecase(transactionUpdateUsecase);
+  const transactionItemSelect = useTransactionItemSelect(
     transactionItemSelectUsecase
   );
-  const couponList = useCouponListController(couponListUsecase);
-  const authLogout = useAuthLogoutController(authLogoutUsecase);
+  const couponList = useCouponList(couponListUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
 
   const formRef = useRef<UseFormReturn<TransactionForm> | null>(null);
 

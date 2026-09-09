@@ -3,8 +3,7 @@ import { AuthLogoutUsecase, StockCheckUpdateUsecase } from '../../../domain';
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';
-import { useController } from '../../controllers/controller';
-import { useAuthLogoutController } from '../../controllers';
+import { useUsecase, useAuthLogout } from '../hooks';
 import {
   StockCheckUpdateScreen,
   StockCheckUpdateScreenProps,
@@ -19,8 +18,8 @@ export const StockCheckUpdateHandler = ({
   authLogoutUsecase,
   stockCheckUpdateUsecase,
 }: StockCheckUpdateHandlerProps) => {
-  const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const stockCheckUpdate = useController(stockCheckUpdateUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
+  const stockCheckUpdate = useUsecase(stockCheckUpdateUsecase);
   const router = useRouter();
   const toast = useToastController();
 

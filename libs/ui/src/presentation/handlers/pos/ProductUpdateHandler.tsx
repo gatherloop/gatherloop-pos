@@ -8,11 +8,7 @@ import {
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';
-import { useController } from '../../controllers/controller';
-import {
-  useAuthLogoutController,
-  useVariantDeleteController,
-} from '../../controllers';
+import { useUsecase, useAuthLogout, useVariantDelete } from '../hooks';
 import {
   ProductUpdateScreen,
   ProductUpdateScreenProps,
@@ -29,9 +25,9 @@ export const ProductUpdateHandler = ({
   productUpdateUsecase,
   variantDeleteUsecase,
 }: ProductUpdateHandlerProps) => {
-  const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const productUpdate = useController(productUpdateUsecase);
-  const variantDelete = useVariantDeleteController(variantDeleteUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
+  const productUpdate = useUsecase(productUpdateUsecase);
+  const variantDelete = useVariantDelete(variantDeleteUsecase);
   const router = useRouter();
   const toast = useToastController();
 

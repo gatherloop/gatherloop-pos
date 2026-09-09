@@ -1,5 +1,4 @@
-import { useController } from '../../controllers/controller';
-import { useAuthLogoutController } from '../../controllers';
+import { useUsecase, useAuthLogout } from '../hooks';
 import { AuthLogoutUsecase, TransactionDetailUsecase } from '../../../domain';
 import { TransactionDetailScreen } from '../../screens/pos/TransactionDetailScreen';
 
@@ -12,8 +11,8 @@ export const TransactionDetailHandler = ({
   transactionDetailUsecase,
   authLogoutUsecase,
 }: TransactionDetailHandlerProps) => {
-  const transactionDetail = useController(transactionDetailUsecase);
-  const authLogout = useAuthLogoutController(authLogoutUsecase);
+  const transactionDetail = useUsecase(transactionDetailUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
 
   return (
     <TransactionDetailScreen
