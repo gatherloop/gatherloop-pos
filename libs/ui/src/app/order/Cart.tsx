@@ -7,7 +7,7 @@ import { UrlCartQueryRepository } from '../../data/url/cartQuery';
 import { PublicTable } from '../../domain/entities/PublicTable';
 import { CartUsecase } from '../../domain/usecases/cart';
 import { TableResolveUsecase } from '../../domain/usecases/tableResolve';
-import { CartHandler } from '../../presentation/screens/order/CartHandler';
+import { CartHandler } from '../../presentation/handlers/order/CartHandler';
 
 export type CartProps = {
   sessionId: string;

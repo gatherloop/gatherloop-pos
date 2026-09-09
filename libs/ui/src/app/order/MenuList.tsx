@@ -15,7 +15,7 @@ import { CartUsecase } from '../../domain/usecases/cart';
 import { MenuItemDetailUsecase } from '../../domain/usecases/menuItemDetail';
 import { MenuListUsecase } from '../../domain/usecases/menuList';
 import { TableResolveUsecase } from '../../domain/usecases/tableResolve';
-import { MenuListHandler } from '../../presentation/screens/order/MenuListHandler';
+import { MenuListHandler } from '../../presentation/handlers/order/MenuListHandler';
 
 export type MenuListProps = {
   sessionId: string;

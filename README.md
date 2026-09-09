@@ -26,7 +26,7 @@ apps/
 libs/
   ui/           All shared frontend code: entities, use cases, screens, components
     src/app/            per-app composition roots — pos/ and order/
-    src/presentation/   controllers/, components/ (shared), screens/pos/ and screens/order/
+    src/presentation/   handlers/{pos,order,hooks}, views/components/ (shared), views/screens/pos/ and views/screens/order/
   api-contract/ OpenAPI spec (src/api.yaml) + generated TS and Go clients
   provider/     App-level providers (Tamagui, theme, toast)
 docs/           PRDs and TRDs (product and technical design docs)
@@ -119,7 +119,7 @@ Dependencies are constructed once in `main.go` and injected, so use cases are te
 ```
 domain/       entities, repository interfaces, use cases (framework-agnostic)
 data/         api/ (OpenAPI client), mock/, memory/, browser/ repository implementations
-presentation/ controllers/, screens/, components/
+presentation/ handlers/ (+ handlers/hooks/), views/ (screens/, components/)
 app/          per-route composition: builds repositories + use cases, renders a Handler
 ```
 
@@ -128,9 +128,10 @@ app/          per-route composition: builds repositories + use cases, renders a 
 - **Data** — implements the repository interfaces, mostly against the generated OpenAPI client with
   TanStack Query, and maps API types to entities. Swapping in a mock repository is how use cases
   and screens are tested.
-- **Presentation** — a **controller** hook binds a use case's state machine to React
-  (`useReducer` + effects); a `*Handler` maps that state to props with `ts-pattern`; a `*Screen`
-  is pure Tamagui JSX with Storybook stories.
+- **Presentation** — `useUsecase` binds a use case's state machine to React (`useReducer` +
+  effects); a `*Handler` calls it directly (or a shared hook in `handlers/hooks/` when ≥2 handlers
+  need the same one), maps that state to props with `ts-pattern`; a `*Screen` is pure Tamagui JSX
+  with Storybook stories.
 - **app/** — the composition root: instantiates repositories and use cases, then renders the
   handler. Split into `app/pos/` and `app/order/`; pages in `apps/pos-web`, `apps/order-web` and
   `apps/pos-mobile` mostly just re-export these.

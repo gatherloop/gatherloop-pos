@@ -1,0 +1,113 @@
+import { useRouter } from 'solito/router';
+import { useEffect } from 'react';
+import { match, P } from 'ts-pattern';
+import { useToastController } from '@tamagui/toast';
+import { useUsecase, useAuthLogout, useMaterialList } from '../hooks';
+import {
+  AuthLogoutUsecase,
+  MaterialListUsecase,
+  VariantCreateUsecase,
+} from '../../../domain';
+import {
+  VariantCreateScreen,
+  VariantCreateScreenProps,
+} from '../../views/screens/pos/VariantCreateScreen';
+
+export type VariantCreateHandlerProps = {
+  variantCreateUsecase: VariantCreateUsecase;
+  materialListUsecase: MaterialListUsecase;
+  authLogoutUsecase: AuthLogoutUsecase;
+};
+
+export const VariantCreateHandler = ({
+  variantCreateUsecase,
+  materialListUsecase,
+  authLogoutUsecase,
+}: VariantCreateHandlerProps) => {
+  const router = useRouter();
+  const variantCreate = useUsecase(variantCreateUsecase);
+  const materialList = useMaterialList(materialListUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
+  const toast = useToastController();
+
+  useEffect(() => {
+    if (variantCreate.state.type === 'submitSuccess') {
+      toast.show('Create Variant Success');
+      router.push(`/products/${variantCreate.state.values.productId}`);
+    } else if (variantCreate.state.type === 'submitError') {
+      toast.show('Create Variant Error');
+    }
+  }, [
+    variantCreate.state.type,
+    router,
+    variantCreate.state.values.productId,
+    toast,
+  ]);
+
+  return (
+    <VariantCreateScreen
+      defaultValues={variantCreate.state.values}
+      onSubmit={(values) => variantCreate.dispatch({ type: 'SUBMIT', values })}
+      isSubmitDisabled={
+        variantCreate.state.type === 'submitting' ||
+        variantCreate.state.type === 'submitSuccess'
+      }
+      isSubmitting={variantCreate.state.type === 'submitting'}
+      serverError={
+        variantCreate.state.type === 'submitError'
+          ? 'Failed to submit. Please try again.'
+          : undefined
+      }
+      onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
+      variant={match(variantCreate.state)
+        .returnType<VariantCreateScreenProps['variant']>()
+        .with({ type: P.union('idle', 'loading') }, () => ({
+          type: 'loading',
+        }))
+        .with(
+          {
+            type: P.union(
+              'loaded',
+              'submitSuccess',
+              'submitError',
+              'submitting'
+            ),
+          },
+          () => ({
+            type: 'loaded',
+          })
+        )
+        .with({ type: 'error' }, () => ({
+          type: 'error',
+          onRetryButtonPress: () => variantCreate.dispatch({ type: 'FETCH' }),
+        }))
+        .exhaustive()}
+      product={variantCreate.state.product}
+      materialList={{
+        currentPage: materialList.state.page,
+        itemPerPage: materialList.state.itemPerPage,
+        onPageChange: (page) =>
+          materialList.dispatch({ type: 'CHANGE_PARAMS', page }),
+        onRetryButtonPress: () => materialList.dispatch({ type: 'FETCH' }),
+        onSearchValueChange: (query) =>
+          materialList.dispatch({ type: 'CHANGE_PARAMS', query }),
+        searchValue: materialList.state.query,
+        totalItem: materialList.state.totalItem,
+        variant: match(materialList.state)
+          .returnType<VariantCreateScreenProps['materialList']['variant']>()
+          .with({ type: P.union('idle', 'loading') }, () => ({
+            type: 'loading',
+          }))
+          .with(
+            { type: P.union('changingParams', 'loaded', 'revalidating') },
+            ({ materials }) => ({
+              type: materials.length > 0 ? 'loaded' : 'empty',
+              items: materials,
+            })
+          )
+          .with({ type: 'error' }, () => ({ type: 'error' }))
+          .exhaustive(),
+      }}
+    />
+  );
+};

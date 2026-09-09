@@ -15,7 +15,7 @@
       "rules": {}
     },
     {
-      "files": ["src/presentation/controllers/**/*.ts", "src/presentation/controllers/**/*.tsx"],
+      "files": ["src/presentation/handlers/hooks/**"],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -23,11 +23,12 @@
             "paths": [
               {
                 "name": "react-hook-form",
-                "message": "useForm belongs to the component that renders the fields, not the controller. See docs/trd-form-ownership-refactor.md and docs/forms.md."
+                "importNames": ["useForm"],
+                "message": "useForm belongs to the component that renders the fields, not a handler. The formRef escape hatch (docs/forms.md) may still import UseFormReturn as a type. See docs/trd-form-ownership-refactor.md."
               },
               {
                 "name": "@hookform/resolvers/zod",
-                "message": "Form resolvers belong next to the form view, not the controller. See docs/trd-form-ownership-refactor.md and docs/forms.md."
+                "message": "Form resolvers belong next to the form view, not a handler hook. See docs/trd-form-ownership-refactor.md and docs/forms.md."
               },
               {
                 "name": "next",
@@ -43,27 +44,7 @@
       }
     },
     {
-      "files": ["src/presentation/components/**"],
-      "rules": {
-        "no-restricted-imports": [
-          "error",
-          {
-            "paths": [
-              {
-                "name": "next",
-                "message": "libs/ui is Metro-bundled for apps/pos-mobile; Next has no business outside utils/. See docs/trd-order-app-composition-and-ssr.md."
-              },
-              {
-                "name": "next/router",
-                "message": "libs/ui is Metro-bundled for apps/pos-mobile; Next has no business outside utils/. See docs/trd-order-app-composition-and-ssr.md."
-              }
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "files": ["src/app/pos/**", "src/presentation/screens/pos/**"],
+      "files": ["src/presentation/views/components/**"],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -80,8 +61,73 @@
             ],
             "patterns": [
               {
-                "group": ["**/app/order/**", "**/screens/order/**", "../order/**"],
+                "group": ["**/handlers/**", "**/data/**"],
+                "message": "views/components is pure prop-driven rendering — no usecases, no repositories. See §4 in docs/trd-presentation-layer-architecture.md."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/presentation/views/screens/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "next",
+                "message": "libs/ui is Metro-bundled for apps/pos-mobile; Next has no business outside utils/. See docs/trd-order-app-composition-and-ssr.md."
+              },
+              {
+                "name": "next/router",
+                "message": "libs/ui is Metro-bundled for apps/pos-mobile; Next has no business outside utils/. See docs/trd-order-app-composition-and-ssr.md."
+              }
+            ],
+            "patterns": [
+              {
+                "group": ["**/handlers/**", "**/domain/usecases/**", "**/data/**"],
+                "message": "views/screens is pure prop-driven rendering — no usecases, no repositories. See §4 in docs/trd-presentation-layer-architecture.md."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/app/pos/**", "src/presentation/handlers/pos/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "react-hook-form",
+                "importNames": ["useForm"],
+                "message": "useForm belongs to the component that renders the fields, not a handler. The formRef escape hatch (docs/forms.md) may still import UseFormReturn as a type. See docs/trd-form-ownership-refactor.md."
+              },
+              {
+                "name": "@hookform/resolvers/zod",
+                "message": "Form resolvers belong next to the form view, not a handler hook. See docs/trd-form-ownership-refactor.md and docs/forms.md."
+              },
+              {
+                "name": "next",
+                "message": "libs/ui is Metro-bundled for apps/pos-mobile; Next has no business outside utils/. See docs/trd-order-app-composition-and-ssr.md."
+              },
+              {
+                "name": "next/router",
+                "message": "libs/ui is Metro-bundled for apps/pos-mobile; Next has no business outside utils/. See docs/trd-order-app-composition-and-ssr.md."
+              }
+            ],
+            "patterns": [
+              {
+                "group": ["**/app/order/**", "**/screens/order/**", "**/handlers/order/**", "../order/**"],
                 "message": "POS must not import the order app's screens or composition roots."
+              },
+              {
+                "group": ["**/hooks/useCart", "**/hooks/useTableResolve"],
+                "message": "Order-only hooks — see D2b in docs/trd-presentation-layer-architecture.md."
               }
             ]
           }
@@ -89,12 +135,21 @@
       }
     },
     {
-      "files": ["src/presentation/screens/order/**"],
+      "files": ["src/presentation/handlers/order/**"],
       "rules": {
         "no-restricted-imports": [
           "error",
           {
             "paths": [
+              {
+                "name": "react-hook-form",
+                "importNames": ["useForm"],
+                "message": "useForm belongs to the component that renders the fields, not a handler. The formRef escape hatch (docs/forms.md) may still import UseFormReturn as a type. See docs/trd-form-ownership-refactor.md."
+              },
+              {
+                "name": "@hookform/resolvers/zod",
+                "message": "Form resolvers belong next to the form view, not a handler hook. See docs/trd-form-ownership-refactor.md and docs/forms.md."
+              },
               {
                 "name": "next",
                 "message": "libs/ui is Metro-bundled for apps/pos-mobile; Next has no business outside utils/. See docs/trd-order-app-composition-and-ssr.md."
@@ -106,8 +161,24 @@
             ],
             "patterns": [
               {
-                "group": ["**/app/pos/**", "**/screens/pos/**", "../pos/**"],
+                "group": ["**/app/pos/**", "**/screens/pos/**", "**/handlers/pos/**", "../pos/**"],
                 "message": "Order must not import the POS app's screens or composition roots."
+              },
+              {
+                "group": [
+                  "**/hooks/useAuthLogout",
+                  "**/hooks/useBudgetList",
+                  "**/hooks/useCouponList",
+                  "**/hooks/useMaterialList",
+                  "**/hooks/useRentalList",
+                  "**/hooks/useSupplierList",
+                  "**/hooks/useTicketList",
+                  "**/hooks/useTransactionItemSelect",
+                  "**/hooks/useTransactionPay",
+                  "**/hooks/useTransactionStatisticList",
+                  "**/hooks/useVariantDelete"
+                ],
+                "message": "POS-only hooks — see D2b in docs/trd-presentation-layer-architecture.md."
               }
             ]
           }
@@ -136,7 +207,7 @@
             ],
             "patterns": [
               {
-                "group": ["**/app/pos/**", "**/screens/pos/**", "../pos/**"],
+                "group": ["**/app/pos/**", "**/screens/pos/**", "**/handlers/pos/**", "../pos/**"],
                 "message": "Order must not import the POS app's screens or composition roots."
               }
             ]

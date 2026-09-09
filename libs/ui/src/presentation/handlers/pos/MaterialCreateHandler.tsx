@@ -1,0 +1,70 @@
+import { useRouter } from 'solito/router';
+import { AuthLogoutUsecase, MaterialCreateUsecase, SupplierListUsecase } from '../../../domain';
+import { match, P } from 'ts-pattern';
+import { useEffect } from 'react';
+import { useToastController } from '@tamagui/toast';
+import { useUsecase, useAuthLogout, useSupplierList } from '../hooks';
+import {
+  MaterialCreateScreen,
+  MaterialCreateScreenProps,
+} from '../../views/screens/pos/MaterialCreateScreen';
+
+export type MaterialCreateHandlerProps = {
+  authLogoutUsecase: AuthLogoutUsecase;
+  materialCreateUsecase: MaterialCreateUsecase;
+  supplierListUsecase: SupplierListUsecase;
+};
+
+export const MaterialCreateHandler = ({
+  authLogoutUsecase,
+  materialCreateUsecase,
+  supplierListUsecase,
+}: MaterialCreateHandlerProps) => {
+  const authLogout = useAuthLogout(authLogoutUsecase);
+  const materialCreate = useUsecase(materialCreateUsecase);
+  const supplierList = useSupplierList(supplierListUsecase);
+  const router = useRouter();
+  const toast = useToastController();
+
+  useEffect(() => {
+    if (materialCreate.state.type === 'submitSuccess') {
+      toast.show('Create Material Success');
+      router.push('/materials');
+    } else if (materialCreate.state.type === 'submitError') {
+      toast.show('Create Material Error');
+    }
+  }, [materialCreate.state.type, router, toast]);
+
+  return (
+    <MaterialCreateScreen
+      defaultValues={materialCreate.state.values}
+      onSubmit={(values) =>
+        materialCreate.dispatch({ type: 'SUBMIT', values })
+      }
+      isSubmitDisabled={
+        materialCreate.state.type === 'submitting' ||
+        materialCreate.state.type === 'submitError' ||
+        materialCreate.state.type === 'submitSuccess'
+      }
+      isSubmitting={materialCreate.state.type === 'submitting'}
+      serverError={
+        materialCreate.state.type === 'submitError'
+          ? 'Failed to submit. Please try again.'
+          : undefined
+      }
+      onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
+      suppliers={supplierList.state.suppliers}
+      isLoadingSuppliers={
+        supplierList.state.type === 'idle' ||
+        supplierList.state.type === 'loading'
+      }
+      variant={match(materialCreate.state)
+        .returnType<MaterialCreateScreenProps['variant']>()
+        .with(
+          { type: P.union('loaded', 'submitting', 'submitSuccess', 'submitError') },
+          () => ({ type: 'loaded' })
+        )
+        .exhaustive()}
+    />
+  );
+};

@@ -1,4 +1,4 @@
-import { TableScanScreen } from '../../presentation/screens/order/TableScanScreen';
+import { TableScanScreen } from '../../presentation/views/screens/order/TableScanScreen';
 
 // Composition root for `/` and the unmatched-route fallback (D10 in
 // docs/trd-order-app-composition-and-ssr.md), both landing on the

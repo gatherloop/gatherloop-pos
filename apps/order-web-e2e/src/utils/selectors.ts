@@ -1,8 +1,8 @@
 /**
  * Shared locator helpers organized by feature area, mirroring the pattern in
  * apps/pos-web-e2e/src/utils/selectors.ts. Copy and accessible names below come
- * straight from the screens in libs/ui/src/presentation/screens/*.tsx and
- * libs/ui/src/presentation/components/{menu,cart}/*.tsx — all Bahasa
+ * straight from the screens in libs/ui/src/presentation/views/screens/*.tsx and
+ * libs/ui/src/presentation/views/components/{menu,cart}/*.tsx — all Bahasa
  * Indonesia per D15 in docs/prd-table-ordering.md.
  *
  * Convention:
