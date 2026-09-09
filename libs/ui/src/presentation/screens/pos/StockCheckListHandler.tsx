@@ -7,12 +7,11 @@ import {
 } from '../../../domain';
 import { StockCheckListScreen, StockCheckListScreenProps } from './StockCheckListScreen';
 import { match, P } from 'ts-pattern';
-import { useEffect } from 'react';
-import {
-  useAuthLogoutController,
-  useStockCheckDeleteController,
-  useStockCheckListController,
-} from '../../controllers';
+import { useCallback, useEffect } from 'react';
+import { useToastController } from '@tamagui/toast';
+import { useFocusEffect } from '../../../utils';
+import { useController } from '../../controllers/controller';
+import { useAuthLogoutController } from '../../controllers';
 
 export type StockCheckListHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;
@@ -26,19 +25,30 @@ export const StockCheckListHandler = ({
   stockCheckDeleteUsecase,
 }: StockCheckListHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const stockCheckList = useStockCheckListController(stockCheckListUsecase);
-  const stockCheckDelete = useStockCheckDeleteController(stockCheckDeleteUsecase);
+  const stockCheckList = useController(stockCheckListUsecase);
+  const stockCheckDelete = useController(stockCheckDeleteUsecase);
   const router = useRouter();
+  const toast = useToastController();
+
+  useFocusEffect(
+    useCallback(() => {
+      stockCheckList.dispatch({ type: 'FETCH' });
+    }, [stockCheckList.dispatch])
+  );
 
   useEffect(() => {
     match(stockCheckDelete.state)
       .with({ type: 'deletingSuccess' }, () => {
+        toast.show('Delete Stock Check Success');
         stockCheckList.dispatch({ type: 'FETCH' });
+      })
+      .with({ type: 'deletingError' }, () => {
+        toast.show('Delete Stock Check Error');
       })
       .otherwise(() => {
         // noop
       });
-  }, [stockCheckDelete.state, stockCheckList]);
+  }, [stockCheckDelete.state, stockCheckList, toast]);
 
   return (
     <StockCheckListScreen

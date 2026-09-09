@@ -2,10 +2,9 @@ import { useRouter } from 'solito/router';
 import { AuthLogoutUsecase, ProductCreateUsecase } from '../../../domain';
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
-import {
-  useAuthLogoutController,
-  useProductCreateController,
-} from '../../controllers';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
+import { useAuthLogoutController } from '../../controllers';
 import {
   ProductCreateScreen,
   ProductCreateScreenProps,
@@ -21,14 +20,18 @@ export const ProductCreateHandler = ({
   productCreateUsecase,
 }: ProductCreateHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const productCreate = useProductCreateController(productCreateUsecase);
+  const productCreate = useController(productCreateUsecase);
   const router = useRouter();
+  const toast = useToastController();
 
   useEffect(() => {
     if (productCreate.state.type === 'submitSuccess') {
+      toast.show('Create Product Success');
       router.push('/products');
+    } else if (productCreate.state.type === 'submitError') {
+      toast.show('Create Product Error');
     }
-  }, [productCreate.state.type, router]);
+  }, [productCreate.state.type, router, toast]);
 
   return (
     <ProductCreateScreen

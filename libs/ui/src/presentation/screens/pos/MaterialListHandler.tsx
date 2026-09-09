@@ -9,9 +9,10 @@ import {
 import { MaterialListScreen, MaterialListScreenProps } from './MaterialListScreen';
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
 import {
   useAuthLogoutController,
-  useMaterialDeleteController,
   useMaterialListController,
 } from '../../controllers';
 
@@ -28,18 +29,23 @@ export const MaterialListHandler = ({
 }: MaterialListHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
   const materialList = useMaterialListController(materialListUsecase);
-  const materialDelete = useMaterialDeleteController(materialDeleteUsecase);
+  const materialDelete = useController(materialDeleteUsecase);
   const router = useRouter();
+  const toast = useToastController();
 
   useEffect(() => {
     match(materialDelete.state)
       .with({ type: 'deletingSuccess' }, () => {
+        toast.show('Delete Material Success');
         materialList.dispatch({ type: 'FETCH' });
+      })
+      .with({ type: 'deletingError' }, () => {
+        toast.show('Delete Material Error');
       })
       .otherwise(() => {
         // noop
       });
-  }, [materialDelete.state, materialList]);
+  }, [materialDelete.state, materialList, toast]);
 
   return (
     <MaterialListScreen

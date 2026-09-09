@@ -1,8 +1,9 @@
 import { useRouter } from 'solito/router';
 import { useEffect } from 'react';
 import { match, P } from 'ts-pattern';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
 import {
-  useVariantCreateController,
   useAuthLogoutController,
   useMaterialListController,
 } from '../../controllers';
@@ -28,14 +29,24 @@ export const VariantCreateHandler = ({
   authLogoutUsecase,
 }: VariantCreateHandlerProps) => {
   const router = useRouter();
-  const variantCreate = useVariantCreateController(variantCreateUsecase);
+  const variantCreate = useController(variantCreateUsecase);
   const materialList = useMaterialListController(materialListUsecase);
   const authLogout = useAuthLogoutController(authLogoutUsecase);
+  const toast = useToastController();
 
   useEffect(() => {
-    if (variantCreate.state.type === 'submitSuccess')
+    if (variantCreate.state.type === 'submitSuccess') {
+      toast.show('Create Variant Success');
       router.push(`/products/${variantCreate.state.values.productId}`);
-  }, [variantCreate.state.type, router, variantCreate.state.values.productId]);
+    } else if (variantCreate.state.type === 'submitError') {
+      toast.show('Create Variant Error');
+    }
+  }, [
+    variantCreate.state.type,
+    router,
+    variantCreate.state.values.productId,
+    toast,
+  ]);
 
   return (
     <VariantCreateScreen

@@ -1,10 +1,9 @@
 import { useRouter } from 'solito/router';
 import { AuthLogoutUsecase, StockCheckCreateUsecase } from '../../../domain';
 import { useEffect } from 'react';
-import {
-  useAuthLogoutController,
-  useStockCheckCreateController,
-} from '../../controllers';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
+import { useAuthLogoutController } from '../../controllers';
 import { StockCheckCreateScreen } from './StockCheckCreateScreen';
 
 export type StockCheckCreateHandlerProps = {
@@ -17,16 +16,18 @@ export const StockCheckCreateHandler = ({
   stockCheckCreateUsecase,
 }: StockCheckCreateHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const stockCheckCreate = useStockCheckCreateController(
-    stockCheckCreateUsecase
-  );
+  const stockCheckCreate = useController(stockCheckCreateUsecase);
   const router = useRouter();
+  const toast = useToastController();
 
   useEffect(() => {
     if (stockCheckCreate.state.type === 'submitSuccess') {
+      toast.show('Create Stock Check Success');
       router.push('/stock-checks');
+    } else if (stockCheckCreate.state.type === 'submitError') {
+      toast.show('Create Stock Check Error');
     }
-  }, [stockCheckCreate.state.type, router]);
+  }, [stockCheckCreate.state.type, router, toast]);
 
   return (
     <StockCheckCreateScreen
