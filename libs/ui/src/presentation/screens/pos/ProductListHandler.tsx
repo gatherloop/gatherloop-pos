@@ -9,12 +9,11 @@ import {
 } from '../../../domain';
 import { ProductListScreen, ProductListScreenProps } from './ProductListScreen';
 import { match, P } from 'ts-pattern';
-import { useEffect } from 'react';
-import {
-  useAuthLogoutController,
-  useProductDeleteController,
-  useProductListController,
-} from '../../controllers';
+import { useCallback, useEffect } from 'react';
+import { useToastController } from '@tamagui/toast';
+import { useFocusEffect } from '../../../utils';
+import { useController } from '../../controllers/controller';
+import { useAuthLogoutController } from '../../controllers';
 
 export type ProductListHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;
@@ -28,19 +27,30 @@ export const ProductListHandler = ({
   productDeleteUsecase,
 }: ProductListHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const productList = useProductListController(productListUsecase);
-  const productDelete = useProductDeleteController(productDeleteUsecase);
+  const productList = useController(productListUsecase);
+  const productDelete = useController(productDeleteUsecase);
   const router = useRouter();
+  const toast = useToastController();
+
+  useFocusEffect(
+    useCallback(() => {
+      productList.dispatch({ type: 'FETCH' });
+    }, [productList.dispatch])
+  );
 
   useEffect(() => {
     match(productDelete.state)
       .with({ type: 'deletingSuccess' }, () => {
+        toast.show('Delete Product Success');
         productList.dispatch({ type: 'FETCH' });
+      })
+      .with({ type: 'deletingError' }, () => {
+        toast.show('Delete Product Error');
       })
       .otherwise(() => {
         // NOTHING TODO
       });
-  }, [productDelete.state, productList]);
+  }, [productDelete.state, productList, toast]);
 
   return (
     <ProductListScreen

@@ -7,11 +7,12 @@ import {
 import { Variant } from '../../../domain';
 import { VariantListScreen, VariantListScreenProps } from './VariantListScreen';
 import { match, P } from 'ts-pattern';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
+import { useFocusEffect } from '../../../utils';
+import { useController } from '../../controllers/controller';
 import {
   useAuthLogoutController,
   useVariantDeleteController,
-  useVariantListController,
 } from '../../controllers';
 
 export type VariantListHandlerProps = {
@@ -26,9 +27,15 @@ export const VariantListHandler = ({
   variantDeleteUsecase,
 }: VariantListHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const variantList = useVariantListController(variantListUsecase);
+  const variantList = useController(variantListUsecase);
   const variantDelete = useVariantDeleteController(variantDeleteUsecase);
   const router = useRouter();
+
+  useFocusEffect(
+    useCallback(() => {
+      variantList.dispatch({ type: 'FETCH' });
+    }, [variantList.dispatch])
+  );
 
   useEffect(() => {
     match(variantDelete.state)

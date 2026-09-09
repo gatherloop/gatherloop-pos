@@ -2,9 +2,10 @@ import { useRouter } from 'solito/router';
 import { AuthLogoutUsecase, MaterialCreateUsecase, SupplierListUsecase } from '../../../domain';
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
 import {
   useAuthLogoutController,
-  useMaterialCreateController,
   useSupplierListController,
 } from '../../controllers';
 import {
@@ -24,15 +25,19 @@ export const MaterialCreateHandler = ({
   supplierListUsecase,
 }: MaterialCreateHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const materialCreate = useMaterialCreateController(materialCreateUsecase);
+  const materialCreate = useController(materialCreateUsecase);
   const supplierList = useSupplierListController(supplierListUsecase);
   const router = useRouter();
+  const toast = useToastController();
 
   useEffect(() => {
     if (materialCreate.state.type === 'submitSuccess') {
+      toast.show('Create Material Success');
       router.push('/materials');
+    } else if (materialCreate.state.type === 'submitError') {
+      toast.show('Create Material Error');
     }
-  }, [materialCreate.state.type, router]);
+  }, [materialCreate.state.type, router, toast]);
 
   return (
     <MaterialCreateScreen

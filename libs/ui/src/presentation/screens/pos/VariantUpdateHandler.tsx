@@ -1,8 +1,9 @@
 import { useRouter } from 'solito/router';
 import { useEffect } from 'react';
 import { match, P } from 'ts-pattern';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
 import {
-  useVariantUpdateController,
   useAuthLogoutController,
   useMaterialListController,
 } from '../../controllers';
@@ -28,14 +29,24 @@ export const VariantUpdateHandler = ({
   authLogoutUsecase,
 }: VariantUpdateHandlerProps) => {
   const router = useRouter();
-  const variantUpdate = useVariantUpdateController(variantUpdateUsecase);
+  const variantUpdate = useController(variantUpdateUsecase);
   const materialList = useMaterialListController(materialListUsecase);
   const authLogout = useAuthLogoutController(authLogoutUsecase);
+  const toast = useToastController();
 
   useEffect(() => {
-    if (variantUpdate.state.type === 'submitSuccess')
+    if (variantUpdate.state.type === 'submitSuccess') {
+      toast.show('Update Variant Success');
       router.push(`/products/${variantUpdate.state.values.productId}`);
-  }, [variantUpdate.state.type, router, variantUpdate.state.values.productId]);
+    } else if (variantUpdate.state.type === 'submitError') {
+      toast.show('Update Variant Error');
+    }
+  }, [
+    variantUpdate.state.type,
+    router,
+    variantUpdate.state.values.productId,
+    toast,
+  ]);
 
   return (
     <VariantUpdateScreen

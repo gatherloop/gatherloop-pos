@@ -7,9 +7,10 @@ import {
 } from '../../../domain';
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
 import {
   useAuthLogoutController,
-  useProductUpdateController,
   useVariantDeleteController,
 } from '../../controllers';
 import {
@@ -29,15 +30,19 @@ export const ProductUpdateHandler = ({
   variantDeleteUsecase,
 }: ProductUpdateHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const productUpdate = useProductUpdateController(productUpdateUsecase);
+  const productUpdate = useController(productUpdateUsecase);
   const variantDelete = useVariantDeleteController(variantDeleteUsecase);
   const router = useRouter();
+  const toast = useToastController();
 
   useEffect(() => {
     if (productUpdate.state.type === 'submitSuccess') {
+      toast.show('Update Product Success');
       router.push('/products');
+    } else if (productUpdate.state.type === 'submitError') {
+      toast.show('Update Product Error');
     }
-  }, [productUpdate.state.type, router]);
+  }, [productUpdate.state.type, router, toast]);
 
   useEffect(() => {
     if (variantDelete.state.type === 'deletingSuccess') {
