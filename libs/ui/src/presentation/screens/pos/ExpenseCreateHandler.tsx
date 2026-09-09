@@ -2,10 +2,9 @@ import { useRouter } from 'solito/router';
 import { AuthLogoutUsecase, ExpenseCreateUsecase } from '../../../domain';
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
-import {
-  useAuthLogoutController,
-  useExpenseCreateController,
-} from '../../controllers';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
+import { useAuthLogoutController } from '../../controllers';
 import {
   ExpenseCreateScreen,
   ExpenseCreateScreenProps,
@@ -21,13 +20,18 @@ export const ExpenseCreateHandler = ({
   expenseCreateUsecase,
 }: ExpenseCreateHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const expenseCreate = useExpenseCreateController(expenseCreateUsecase);
+  const expenseCreate = useController(expenseCreateUsecase);
   const router = useRouter();
+  const toast = useToastController();
 
   useEffect(() => {
-    if (expenseCreate.state.type === 'submitSuccess')
+    if (expenseCreate.state.type === 'submitSuccess') {
+      toast.show('Create Expense Success');
       router.push('/expenses');
-  }, [expenseCreate.state.type, router]);
+    } else if (expenseCreate.state.type === 'submitError') {
+      toast.show('Create Expense Error');
+    }
+  }, [expenseCreate.state.type, router, toast]);
 
   return (
     <ExpenseCreateScreen

@@ -7,12 +7,11 @@ import {
 } from '../../../domain';
 import { ExpenseListScreen, ExpenseListScreenProps } from './ExpenseListScreen';
 import { match, P } from 'ts-pattern';
-import { useEffect } from 'react';
-import {
-  useAuthLogoutController,
-  useExpenseDeleteController,
-  useExpenseListController,
-} from '../../controllers';
+import { useCallback, useEffect } from 'react';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
+import { useAuthLogoutController } from '../../controllers';
+import { useFocusEffect } from '../../../utils';
 
 export type ExpenseListHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;
@@ -26,19 +25,30 @@ export const ExpenseListHandler = ({
   expenseDeleteUsecase,
 }: ExpenseListHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const expenseList = useExpenseListController(expenseListUsecase);
-  const expenseDelete = useExpenseDeleteController(expenseDeleteUsecase);
+  const expenseList = useController(expenseListUsecase);
+  const expenseDelete = useController(expenseDeleteUsecase);
   const router = useRouter();
+  const toast = useToastController();
+
+  useFocusEffect(
+    useCallback(() => {
+      expenseList.dispatch({ type: 'FETCH' });
+    }, [expenseList.dispatch])
+  );
 
   useEffect(() => {
     match(expenseDelete.state)
       .with({ type: 'deletingSuccess' }, () => {
+        toast.show('Delete Expense Success');
         expenseList.dispatch({ type: 'FETCH' });
+      })
+      .with({ type: 'deletingError' }, () => {
+        toast.show('Delete Expense Error');
       })
       .otherwise(() => {
         // noop
       });
-  }, [expenseDelete.state, expenseList]);
+  }, [expenseDelete.state, expenseList, toast]);
 
   return (
     <ExpenseListScreen
