@@ -1,9 +1,8 @@
 import { useRouter } from 'solito/router';
 import { useEffect } from 'react';
-import {
-  useBudgetCreateController,
-  useAuthLogoutController,
-} from '../../controllers';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
+import { useAuthLogoutController } from '../../controllers';
 import { AuthLogoutUsecase, BudgetCreateUsecase } from '../../../domain';
 import { BudgetCreateScreen } from './BudgetCreateScreen';
 
@@ -17,12 +16,18 @@ export const BudgetCreateHandler = ({
   authLogoutUsecase,
 }: BudgetCreateHandlerProps) => {
   const router = useRouter();
-  const budgetCreate = useBudgetCreateController(budgetCreateUsecase);
+  const budgetCreate = useController(budgetCreateUsecase);
   const authLogout = useAuthLogoutController(authLogoutUsecase);
+  const toast = useToastController();
 
   useEffect(() => {
-    if (budgetCreate.state.type === 'submitSuccess') router.push('/budgets');
-  }, [budgetCreate.state.type, router]);
+    if (budgetCreate.state.type === 'submitSuccess') {
+      toast.show('Create Budget Success');
+      router.push('/budgets');
+    } else if (budgetCreate.state.type === 'submitError') {
+      toast.show('Create Budget Error');
+    }
+  }, [budgetCreate.state.type, toast, router]);
 
   return (
     <BudgetCreateScreen
