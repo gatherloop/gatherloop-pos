@@ -2,7 +2,6 @@ import { useRouter } from 'solito/router';
 import { match, P } from 'ts-pattern';
 import { useCallback, useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';
-import { useController } from '../../controllers/controller';
 import {
   AuthLogoutUsecase,
   ChecklistSession,
@@ -11,7 +10,7 @@ import {
   ChecklistSessionListUsecase,
   ChecklistTemplate,
 } from '../../../domain';
-import { useAuthLogoutController } from '../../controllers';
+import { useUsecase, useAuthLogout } from '../hooks';
 import { useFocusEffect } from '../../../utils';
 import {
   ChecklistSessionListScreen,
@@ -31,9 +30,9 @@ export const ChecklistSessionListHandler = ({
   checklistSessionCreateUsecase,
   checklistTemplates,
 }: ChecklistSessionListHandlerProps) => {
-  const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const checklistSessionList = useController(checklistSessionListUsecase);
-  const checklistSessionCreate = useController(checklistSessionCreateUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
+  const checklistSessionList = useUsecase(checklistSessionListUsecase);
+  const checklistSessionCreate = useUsecase(checklistSessionCreateUsecase);
   const router = useRouter();
   const toast = useToastController();
 

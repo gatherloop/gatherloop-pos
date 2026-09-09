@@ -31,7 +31,7 @@ export type FormViewProps<T extends FieldValues> = {
   // here overrides it.
   formProps?: Omit<ComponentProps<typeof Form>, 'onSubmit' | 'children'>;
   /**
-   * Escape hatch for surfaces where a sibling controller must drive the form
+   * Escape hatch for surfaces where a sibling handler must drive the form
    * imperatively (see TRD §4.6). `current` is null until the loaded branch
    * mounts — always null-check. Do not use this to read values for
    * rendering; use `FieldWatch`. Do not use it to read submitted values

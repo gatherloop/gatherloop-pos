@@ -3,8 +3,7 @@ import { AuthLogoutUsecase, ExpenseUpdateUsecase } from '../../../domain';
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';
-import { useController } from '../../controllers/controller';
-import { useAuthLogoutController } from '../../controllers';
+import { useUsecase, useAuthLogout } from '../hooks';
 import {
   ExpenseUpdateScreen,
   ExpenseUpdateScreenProps,
@@ -19,8 +18,8 @@ export const ExpenseUpdateHandler = ({
   authLogoutUsecase,
   expenseUpdateUsecase,
 }: ExpenseUpdateHandlerProps) => {
-  const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const expenseUpdate = useController(expenseUpdateUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
+  const expenseUpdate = useUsecase(expenseUpdateUsecase);
   const router = useRouter();
   const toast = useToastController();
 

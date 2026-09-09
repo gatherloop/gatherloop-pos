@@ -9,11 +9,7 @@ import { TicketListScreen, TicketListScreenProps } from '../../screens/pos/Ticke
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';
-import { useController } from '../../controllers/controller';
-import {
-  useAuthLogoutController,
-  useTicketListController,
-} from '../../controllers';
+import { useUsecase, useAuthLogout, useTicketList } from '../hooks';
 
 export type TicketListHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;
@@ -26,9 +22,9 @@ export const TicketListHandler = ({
   ticketListUsecase,
   ticketDeleteUsecase,
 }: TicketListHandlerProps) => {
-  const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const ticketList = useTicketListController(ticketListUsecase);
-  const ticketDelete = useController(ticketDeleteUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
+  const ticketList = useTicketList(ticketListUsecase);
+  const ticketDelete = useUsecase(ticketDeleteUsecase);
   const router = useRouter();
   const toast = useToastController();
 

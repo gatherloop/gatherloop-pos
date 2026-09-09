@@ -10,8 +10,7 @@ import { match, P } from 'ts-pattern';
 import { useCallback, useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';
 import { useFocusEffect } from '../../../utils';
-import { useController } from '../../controllers/controller';
-import { useAuthLogoutController } from '../../controllers';
+import { useUsecase, useAuthLogout } from '../hooks';
 
 export type StockCheckListHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;
@@ -24,9 +23,9 @@ export const StockCheckListHandler = ({
   stockCheckListUsecase,
   stockCheckDeleteUsecase,
 }: StockCheckListHandlerProps) => {
-  const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const stockCheckList = useController(stockCheckListUsecase);
-  const stockCheckDelete = useController(stockCheckDeleteUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
+  const stockCheckList = useUsecase(stockCheckListUsecase);
+  const stockCheckDelete = useUsecase(stockCheckDeleteUsecase);
   const router = useRouter();
   const toast = useToastController();
 

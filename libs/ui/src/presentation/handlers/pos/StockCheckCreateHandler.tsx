@@ -2,8 +2,7 @@ import { useRouter } from 'solito/router';
 import { AuthLogoutUsecase, StockCheckCreateUsecase } from '../../../domain';
 import { useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';
-import { useController } from '../../controllers/controller';
-import { useAuthLogoutController } from '../../controllers';
+import { useUsecase, useAuthLogout } from '../hooks';
 import { StockCheckCreateScreen } from '../../screens/pos/StockCheckCreateScreen';
 
 export type StockCheckCreateHandlerProps = {
@@ -15,8 +14,8 @@ export const StockCheckCreateHandler = ({
   authLogoutUsecase,
   stockCheckCreateUsecase,
 }: StockCheckCreateHandlerProps) => {
-  const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const stockCheckCreate = useController(stockCheckCreateUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
+  const stockCheckCreate = useUsecase(stockCheckCreateUsecase);
   const router = useRouter();
   const toast = useToastController();
 

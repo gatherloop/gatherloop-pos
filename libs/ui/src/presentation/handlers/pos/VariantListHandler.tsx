@@ -9,11 +9,7 @@ import { VariantListScreen, VariantListScreenProps } from '../../screens/pos/Var
 import { match, P } from 'ts-pattern';
 import { useCallback, useEffect } from 'react';
 import { useFocusEffect } from '../../../utils';
-import { useController } from '../../controllers/controller';
-import {
-  useAuthLogoutController,
-  useVariantDeleteController,
-} from '../../controllers';
+import { useUsecase, useAuthLogout, useVariantDelete } from '../hooks';
 
 export type VariantListHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;
@@ -26,9 +22,9 @@ export const VariantListHandler = ({
   variantListUsecase,
   variantDeleteUsecase,
 }: VariantListHandlerProps) => {
-  const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const variantList = useController(variantListUsecase);
-  const variantDelete = useVariantDeleteController(variantDeleteUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
+  const variantList = useUsecase(variantListUsecase);
+  const variantDelete = useVariantDelete(variantDeleteUsecase);
   const router = useRouter();
 
   useFocusEffect(

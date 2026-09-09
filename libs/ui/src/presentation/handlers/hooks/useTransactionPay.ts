@@ -1,10 +1,10 @@
 import { useToastController } from '@tamagui/toast';
-import { TransactionPayUsecase } from '../../domain';
-import { useController } from './controller';
+import { TransactionPayUsecase } from '../../../domain';
+import { useUsecase } from './useUsecase';
 import { useEffect } from 'react';
 
-export const useTransactionPayController = (usecase: TransactionPayUsecase) => {
-  const { state, dispatch } = useController(usecase);
+export const useTransactionPay = (usecase: TransactionPayUsecase) => {
+  const { state, dispatch } = useUsecase(usecase);
 
   const toast = useToastController();
   useEffect(() => {

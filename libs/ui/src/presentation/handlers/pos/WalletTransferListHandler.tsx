@@ -1,8 +1,7 @@
 import { useRouter } from 'solito/router';
 import { match, P } from 'ts-pattern';
 import { useCallback } from 'react';
-import { useController } from '../../controllers/controller';
-import { useAuthLogoutController } from '../../controllers';
+import { useUsecase, useAuthLogout } from '../hooks';
 import { useFocusEffect } from '../../../utils';
 import {
   AuthLogoutUsecase,
@@ -25,9 +24,9 @@ export const WalletTransferListHandler = ({
   walletDetailUsecase,
   walletTransferListUsecase,
 }: WalletTransferListHandlerProps) => {
-  const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const walletDetail = useController(walletDetailUsecase);
-  const walletTransfers = useController(walletTransferListUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
+  const walletDetail = useUsecase(walletDetailUsecase);
+  const walletTransfers = useUsecase(walletTransferListUsecase);
   const router = useRouter();
 
   useFocusEffect(

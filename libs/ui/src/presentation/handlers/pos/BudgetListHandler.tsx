@@ -7,9 +7,9 @@ import { BudgetListScreen, BudgetListScreenProps } from '../../screens/pos/Budge
 import { BudgetListItemProps } from '../../components';
 import { match, P } from 'ts-pattern';
 import {
-  useAuthLogoutController,
-  useBudgetListController,
-} from '../../controllers';
+  useAuthLogout,
+  useBudgetList,
+} from '../hooks';
 
 export type BudgetListHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;
@@ -20,8 +20,8 @@ export const BudgetListHandler = ({
   authLogoutUsecase,
   budgetListUsecase,
 }: BudgetListHandlerProps) => {
-  const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const budgetList = useBudgetListController(budgetListUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
+  const budgetList = useBudgetList(budgetListUsecase);
   const router = useRouter();
   return (
     <BudgetListScreen

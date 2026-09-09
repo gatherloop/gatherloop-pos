@@ -1,10 +1,10 @@
 import { useToastController } from '@tamagui/toast';
-import { VariantDeleteUsecase } from '../../domain';
-import { useController } from './controller';
+import { VariantDeleteUsecase } from '../../../domain';
+import { useUsecase } from './useUsecase';
 import { useEffect } from 'react';
 
-export const useVariantDeleteController = (usecase: VariantDeleteUsecase) => {
-  const { state, dispatch } = useController(usecase);
+export const useVariantDelete = (usecase: VariantDeleteUsecase) => {
+  const { state, dispatch } = useUsecase(usecase);
 
   const toast = useToastController();
   useEffect(() => {

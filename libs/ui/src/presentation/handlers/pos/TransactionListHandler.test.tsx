@@ -135,22 +135,19 @@ const authLogoutCtrl = {
   dispatch: jest.fn(),
 };
 
-jest.mock('../../controllers', () => ({
-  useTransactionPayController: () => ({
+// TransactionList/Delete/Unpay are folded into the handler (Phase 5) and call
+// the base `useUsecase` hook directly rather than a named per-feature
+// hook, so the fake states above are wired in by usecase identity instead.
+jest.mock('../hooks', () => ({
+  useTransactionPay: () => ({
     state: transactionPayCtrl.state,
     dispatch: transactionPayCtrl.dispatch,
   }),
-  useAuthLogoutController: () => ({
+  useAuthLogout: () => ({
     state: authLogoutCtrl.state,
     dispatch: authLogoutCtrl.dispatch,
   }),
-}));
-
-// TransactionList/Delete/Unpay are folded into the handler (Phase 5) and call
-// the base `useController` hook directly rather than a named per-feature
-// hook, so the fake states above are wired in by usecase identity instead.
-jest.mock('../../controllers/controller', () => ({
-  useController: (usecase: { constructor: { name: string } }) => {
+  useUsecase: (usecase: { constructor: { name: string } }) => {
     switch (usecase.constructor.name) {
       case 'TransactionListUsecase':
         return {

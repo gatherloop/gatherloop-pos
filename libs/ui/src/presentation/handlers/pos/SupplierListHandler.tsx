@@ -9,11 +9,7 @@ import { SupplierListScreen, SupplierListScreenProps } from '../../screens/pos/S
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';
-import { useController } from '../../controllers/controller';
-import {
-  useAuthLogoutController,
-  useSupplierListController,
-} from '../../controllers';
+import { useUsecase, useAuthLogout, useSupplierList } from '../hooks';
 
 export type SupplierListHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;
@@ -26,9 +22,9 @@ export const SupplierListHandler = ({
   supplierListUsecase,
   supplierDeleteUsecase,
 }: SupplierListHandlerProps) => {
-  const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const supplierList = useSupplierListController(supplierListUsecase);
-  const supplierDelete = useController(supplierDeleteUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
+  const supplierList = useSupplierList(supplierListUsecase);
+  const supplierDelete = useUsecase(supplierDeleteUsecase);
   const router = useRouter();
   const toast = useToastController();
 

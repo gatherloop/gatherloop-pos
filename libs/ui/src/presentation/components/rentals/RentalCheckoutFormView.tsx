@@ -45,7 +45,7 @@ export type RentalCheckoutFormViewProps = {
   RentalItemSelect: (selectedRentalIds: number[]) => ReactNode;
   /**
    * Escape hatch so `RentalCheckoutHandler` can push a rental picked in the
-   * sibling `rentalList` controller into this form. Null until this view's
+   * sibling `rentalList` handler into this form. Null until this view's
    * `loaded` branch mounts.
    */
   formRef?: MutableRefObject<UseFormReturn<RentalCheckoutForm> | null>;

@@ -9,11 +9,7 @@ import { CouponListScreen, CouponListScreenProps } from '../../screens/pos/Coupo
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';
-import { useController } from '../../controllers/controller';
-import {
-  useAuthLogoutController,
-  useCouponListController,
-} from '../../controllers';
+import { useUsecase, useAuthLogout, useCouponList } from '../hooks';
 
 export type CouponListHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;
@@ -26,9 +22,9 @@ export const CouponListHandler = ({
   couponListUsecase,
   couponDeleteUsecase,
 }: CouponListHandlerProps) => {
-  const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const couponList = useCouponListController(couponListUsecase);
-  const couponDelete = useController(couponDeleteUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
+  const couponList = useCouponList(couponListUsecase);
+  const couponDelete = useUsecase(couponDeleteUsecase);
   const router = useRouter();
   const toast = useToastController();
 

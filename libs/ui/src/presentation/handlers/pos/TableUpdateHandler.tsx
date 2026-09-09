@@ -7,8 +7,7 @@ import {
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';
-import { useController } from '../../controllers/controller';
-import { useAuthLogoutController } from '../../controllers';
+import { useUsecase, useAuthLogout } from '../hooks';
 import {
   TableUpdateScreen,
   TableUpdateScreenProps,
@@ -25,9 +24,9 @@ export const TableUpdateHandler = ({
   tableUpdateUsecase,
   tableRegenerateCodeUsecase,
 }: TableUpdateHandlerProps) => {
-  const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const tableUpdate = useController(tableUpdateUsecase);
-  const tableRegenerateCode = useController(tableRegenerateCodeUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
+  const tableUpdate = useUsecase(tableUpdateUsecase);
+  const tableRegenerateCode = useUsecase(tableRegenerateCodeUsecase);
   const router = useRouter();
   const toast = useToastController();
 

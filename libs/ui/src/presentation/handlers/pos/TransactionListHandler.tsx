@@ -3,8 +3,7 @@ import { useCallback, useEffect } from 'react';
 import { match, P } from 'ts-pattern';
 import dayjs from 'dayjs';
 import { useToastController } from '@tamagui/toast';
-import { useController } from '../../controllers/controller';
-import { useAuthLogoutController, useTransactionPayController } from '../../controllers';
+import { useUsecase, useAuthLogout, useTransactionPay } from '../hooks';
 import { useFocusEffect } from '../../../utils';
 import {
   AuthLogoutUsecase,
@@ -41,11 +40,11 @@ export const TransactionListHandler = ({
   transactionPayUsecase,
   transactionUnpayUsecase,
 }: TransactionListHandlerProps) => {
-  const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const transactionList = useController(transactionListUsecase);
-  const transactionDelete = useController(transactionDeleteUsecase);
-  const transactionPay = useTransactionPayController(transactionPayUsecase);
-  const transactionUnpay = useController(transactionUnpayUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
+  const transactionList = useUsecase(transactionListUsecase);
+  const transactionDelete = useUsecase(transactionDeleteUsecase);
+  const transactionPay = useTransactionPay(transactionPayUsecase);
+  const transactionUnpay = useUsecase(transactionUnpayUsecase);
   const router = useRouter();
   const { print } = usePrinter();
   const toast = useToastController();

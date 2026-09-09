@@ -1,5 +1,5 @@
 import { match, P } from 'ts-pattern';
-import { useTransactionStatisticListController } from '../../controllers';
+import { useTransactionStatisticList } from '../hooks';
 import { TransactionStatisticListUsecase } from '../../../domain';
 import {
   TransactionStatisticScreen,
@@ -14,7 +14,7 @@ export const TransactionStatisticHandler = ({
   transactionStatisticListUsecase,
 }: TransactionStatisticHandlerProps) => {
   const transactionStatisticList =
-    useTransactionStatisticListController(transactionStatisticListUsecase);
+    useTransactionStatisticList(transactionStatisticListUsecase);
 
   return (
     <TransactionStatisticScreen

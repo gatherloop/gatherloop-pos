@@ -1,4 +1,4 @@
-import { useAuthLogoutController } from '../../controllers';
+import { useAuthLogout } from '../hooks';
 import {
   AuthLogoutUsecase,
   BudgetListUsecase,
@@ -24,7 +24,7 @@ export const DashboardHandler = ({
   expenseRevenueStatisticListUsecase,
   budgetListUsecase,
 }: DashboardHandlerProps) => {
-  const authLogout = useAuthLogoutController(authLogoutUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
 
   return (
     <DashboardScreen

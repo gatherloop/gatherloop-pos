@@ -44,7 +44,7 @@ export type RentalCheckinFormViewProps = {
   tickets: Ticket[];
   /**
    * Escape hatch so `RentalCheckinHandler` can push an item picked in the
-   * sibling `transactionItemSelect` controller into this form. Null until
+   * sibling `transactionItemSelect` handler into this form. Null until
    * this view's `loaded` branch mounts.
    */
   formRef?: MutableRefObject<UseFormReturn<RentalCheckinForm> | null>;

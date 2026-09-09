@@ -3,11 +3,7 @@ import { useEffect, useRef } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { match, P } from 'ts-pattern';
 import { useToastController } from '@tamagui/toast';
-import { useController } from '../../controllers/controller';
-import {
-  useAuthLogoutController,
-  useRentalListController,
-} from '../../controllers';
+import { useUsecase, useAuthLogout, useRentalList } from '../hooks';
 import {
   AuthLogoutUsecase,
   Rental,
@@ -33,9 +29,9 @@ export const RentalCheckoutHandler = ({
 }: RentalCheckoutHandlerProps) => {
   const router = useRouter();
 
-  const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const rentalCheckout = useController(rentalCheckoutUsecase);
-  const rentalList = useRentalListController(rentalListUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
+  const rentalCheckout = useUsecase(rentalCheckoutUsecase);
+  const rentalList = useRentalList(rentalListUsecase);
   const toast = useToastController();
 
   const formRef = useRef<UseFormReturn<RentalCheckoutForm> | null>(null);

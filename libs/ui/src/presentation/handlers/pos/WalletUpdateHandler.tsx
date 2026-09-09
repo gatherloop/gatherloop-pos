@@ -2,8 +2,7 @@ import { useRouter } from 'solito/router';
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';
-import { useController } from '../../controllers/controller';
-import { useAuthLogoutController } from '../../controllers';
+import { useUsecase, useAuthLogout } from '../hooks';
 import { AuthLogoutUsecase, WalletUpdateUsecase } from '../../../domain';
 import { WalletUpdateScreen, WalletUpdateScreenProps } from '../../screens/pos/WalletUpdateScreen';
 
@@ -17,8 +16,8 @@ export const WalletUpdateHandler = ({
   authLogoutUsecase,
 }: WalletUpdateHandlerProps) => {
   const router = useRouter();
-  const walletUpdate = useController(walletUpdateUsecase);
-  const authLogout = useAuthLogoutController(authLogoutUsecase);
+  const walletUpdate = useUsecase(walletUpdateUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
   const toast = useToastController();
 
   useEffect(() => {

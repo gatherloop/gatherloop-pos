@@ -2,8 +2,7 @@ import { useRouter } from 'solito/router';
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';
-import { useController } from '../../controllers/controller';
-import { useAuthLogoutController } from '../../controllers';
+import { useUsecase, useAuthLogout } from '../hooks';
 import { AuthLogoutUsecase, BudgetUpdateUsecase } from '../../../domain';
 import {
   BudgetUpdateScreen,
@@ -20,8 +19,8 @@ export const BudgetUpdateHandler = ({
   authLogoutUsecase,
 }: BudgetUpdateHandlerProps) => {
   const router = useRouter();
-  const budgetUpdate = useController(budgetUpdateUsecase);
-  const authLogout = useAuthLogoutController(authLogoutUsecase);
+  const budgetUpdate = useUsecase(budgetUpdateUsecase);
+  const authLogout = useAuthLogout(authLogoutUsecase);
   const toast = useToastController();
 
   useEffect(() => {

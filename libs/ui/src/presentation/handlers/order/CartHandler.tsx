@@ -6,8 +6,8 @@ import { useRouter } from 'solito/router';
 import { SessionRepository } from '../../../domain/repositories/session';
 import { CartState, CartUsecase } from '../../../domain/usecases/cart';
 import { TableResolveUsecase } from '../../../domain/usecases/tableResolve';
-import { useCartController } from '../../controllers/CartController';
-import { useTableResolveController } from '../../controllers/TableResolveController';
+import { useCart } from '../hooks/useCart';
+import { useTableResolve } from '../hooks/useTableResolve';
 import { CartItemEditScreenProps } from '../../screens/order/CartItemEditScreen';
 import { CartScreen, CartScreenProps } from '../../screens/order/CartScreen';
 import { TableResolveScreenProps } from '../../screens/order/TableResolveScreen';
@@ -54,8 +54,8 @@ export const CartHandler = ({
   sessionRepository,
   tableCode,
 }: CartHandlerProps) => {
-  const tableResolve = useTableResolveController(tableResolveUsecase);
-  const cart = useCartController(cartUsecase);
+  const tableResolve = useTableResolve(tableResolveUsecase);
+  const cart = useCart(cartUsecase);
   const router = useRouter();
   const [isClearConfirmationOpen, setIsClearConfirmationOpen] =
     useState(false);
