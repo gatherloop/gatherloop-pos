@@ -63,7 +63,7 @@
       }
     },
     {
-      "files": ["src/app/pos/**", "src/presentation/screens/pos/**"],
+      "files": ["src/app/pos/**", "src/presentation/handlers/pos/**"],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -80,7 +80,7 @@
             ],
             "patterns": [
               {
-                "group": ["**/app/order/**", "**/screens/order/**", "../order/**"],
+                "group": ["**/app/order/**", "**/screens/order/**", "**/handlers/order/**", "../order/**"],
                 "message": "POS must not import the order app's screens or composition roots."
               }
             ]
@@ -89,7 +89,7 @@
       }
     },
     {
-      "files": ["src/presentation/screens/order/**"],
+      "files": ["src/presentation/handlers/order/**"],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -106,7 +106,7 @@
             ],
             "patterns": [
               {
-                "group": ["**/app/pos/**", "**/screens/pos/**", "../pos/**"],
+                "group": ["**/app/pos/**", "**/screens/pos/**", "**/handlers/pos/**", "../pos/**"],
                 "message": "Order must not import the POS app's screens or composition roots."
               }
             ]
@@ -136,7 +136,7 @@
             ],
             "patterns": [
               {
-                "group": ["**/app/pos/**", "**/screens/pos/**", "../pos/**"],
+                "group": ["**/app/pos/**", "**/screens/pos/**", "**/handlers/pos/**", "../pos/**"],
                 "message": "Order must not import the POS app's screens or composition roots."
               }
             ]
