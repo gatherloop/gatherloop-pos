@@ -8,9 +8,10 @@ import {
 import { CouponListScreen, CouponListScreenProps } from './CouponListScreen';
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
 import {
   useAuthLogoutController,
-  useCouponDeleteController,
   useCouponListController,
 } from '../../controllers';
 
@@ -27,18 +28,23 @@ export const CouponListHandler = ({
 }: CouponListHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
   const couponList = useCouponListController(couponListUsecase);
-  const couponDelete = useCouponDeleteController(couponDeleteUsecase);
+  const couponDelete = useController(couponDeleteUsecase);
   const router = useRouter();
+  const toast = useToastController();
 
   useEffect(() => {
     match(couponDelete.state)
       .with({ type: 'deletingSuccess' }, () => {
+        toast.show('Delete Coupon Success');
         couponList.dispatch({ type: 'FETCH' });
+      })
+      .with({ type: 'deletingError' }, () => {
+        toast.show('Delete Coupon Error');
       })
       .otherwise(() => {
         // noop
       });
-  }, [couponDelete.state, couponList]);
+  }, [couponDelete.state, couponList, toast]);
 
   return (
     <CouponListScreen

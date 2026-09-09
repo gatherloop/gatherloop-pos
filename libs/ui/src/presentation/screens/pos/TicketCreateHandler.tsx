@@ -2,10 +2,9 @@ import { useRouter } from 'solito/router';
 import { AuthLogoutUsecase, TicketCreateUsecase } from '../../../domain';
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
-import {
-  useAuthLogoutController,
-  useTicketCreateController,
-} from '../../controllers';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
+import { useAuthLogoutController } from '../../controllers';
 import {
   TicketCreateScreen,
   TicketCreateScreenProps,
@@ -21,13 +20,18 @@ export const TicketCreateHandler = ({
   ticketCreateUsecase,
 }: TicketCreateHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const ticketCreate = useTicketCreateController(ticketCreateUsecase);
+  const ticketCreate = useController(ticketCreateUsecase);
   const router = useRouter();
+  const toast = useToastController();
 
   useEffect(() => {
-    if (ticketCreate.state.type === 'submitSuccess')
+    if (ticketCreate.state.type === 'submitSuccess') {
+      toast.show('Create Ticket Success');
       router.push('/tickets');
-  }, [ticketCreate.state.type, router]);
+    } else if (ticketCreate.state.type === 'submitError') {
+      toast.show('Create Ticket Error');
+    }
+  }, [ticketCreate.state.type, toast, router]);
 
   return (
     <TicketCreateScreen

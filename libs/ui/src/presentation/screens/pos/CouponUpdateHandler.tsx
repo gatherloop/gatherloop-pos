@@ -2,10 +2,9 @@ import { useRouter } from 'solito/router';
 import { AuthLogoutUsecase, CouponUpdateUsecase } from '../../../domain';
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
-import {
-  useAuthLogoutController,
-  useCouponUpdateController,
-} from '../../controllers';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
+import { useAuthLogoutController } from '../../controllers';
 import {
   CouponUpdateScreen,
   CouponUpdateScreenProps,
@@ -21,13 +20,18 @@ export const CouponUpdateHandler = ({
   couponUpdateUsecase,
 }: CouponUpdateHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const couponUpdate = useCouponUpdateController(couponUpdateUsecase);
+  const couponUpdate = useController(couponUpdateUsecase);
   const router = useRouter();
+  const toast = useToastController();
 
   useEffect(() => {
-    if (couponUpdate.state.type === 'submitSuccess')
+    if (couponUpdate.state.type === 'submitSuccess') {
+      toast.show('Update Coupon Success');
       router.push('/coupons');
-  }, [couponUpdate.state.type, router]);
+    } else if (couponUpdate.state.type === 'submitError') {
+      toast.show('Update Coupon Error');
+    }
+  }, [couponUpdate.state.type, toast, router]);
 
   return (
     <CouponUpdateScreen

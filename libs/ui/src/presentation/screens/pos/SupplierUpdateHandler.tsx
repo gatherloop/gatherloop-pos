@@ -2,10 +2,9 @@ import { useRouter } from 'solito/router';
 import { AuthLogoutUsecase, SupplierUpdateUsecase } from '../../../domain';
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
-import {
-  useSupplierUpdateController,
-  useAuthLogoutController,
-} from '../../controllers';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
+import { useAuthLogoutController } from '../../controllers';
 import {
   SupplierUpdateScreen,
   SupplierUpdateScreenProps,
@@ -20,14 +19,19 @@ export const SupplierUpdateHandler = ({
   authLogoutUsecase,
   supplierUpdateUsecase,
 }: SupplierUpdateHandlerProps) => {
-  const supplierUpdate = useSupplierUpdateController(supplierUpdateUsecase);
+  const supplierUpdate = useController(supplierUpdateUsecase);
   const authLogout = useAuthLogoutController(authLogoutUsecase);
   const router = useRouter();
+  const toast = useToastController();
 
   useEffect(() => {
-    if (supplierUpdate.state.type === 'submitSuccess')
+    if (supplierUpdate.state.type === 'submitSuccess') {
+      toast.show('Update Supplier Success');
       router.push('/suppliers');
-  }, [supplierUpdate.state.type, router]);
+    } else if (supplierUpdate.state.type === 'submitError') {
+      toast.show('Update Supplier Error');
+    }
+  }, [supplierUpdate.state.type, toast, router]);
 
   return (
     <SupplierUpdateScreen
