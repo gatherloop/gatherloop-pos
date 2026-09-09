@@ -98,7 +98,7 @@ and carry `X-PARTNER-ID` (our DOKU client id), `X-EXTERNAL-ID` (a numeric refere
 
 Base URLs: `https://api-sandbox.doku.com` (sandbox) and `https://api.doku.com` (production).
 
-> **Verification note.** The egress proxy in the authoring environment blocks `developers.doku.com`, `docs.doku.com` and `sandbox.doku.com`, so the table above is assembled from DOKU's public documentation index and secondary sources, not read off the live docs. **Phase 3 must confirm every path, header name, field name and response code against the DOKU dashboard for our own merchant account before any of it is hard-coded**, and the PR description must say which page each was confirmed from. Nothing downstream of the `PaymentGateway` port depends on these details being right, which is exactly why the port exists (D2).
+> **Verification note.** The egress proxy in the authoring environment blocks `developers.doku.com`, `docs.doku.com` and `sandbox.doku.com`, so the table above is assembled from DOKU's public documentation index and secondary sources, not read off the live docs. **Phase 3 must confirm every path, header name, field name and response code against the DOKU dashboard for our own merchant account before any of it is hard-coded**, and the PR description must say which page each was confirmed from. Nothing downstream of the `PaymentGatewayRepository` port depends on these details being right, which is exactly why the port exists (D2).
 
 ---
 
@@ -138,7 +138,7 @@ The screen polls its own API for status. It never polls DOKU.
 | # | Decision | Choice | Rationale |
 |---|---|---|---|
 | **D1** | Where the gateway lives | **Entirely in `apps/api` (Go).** The order app calls only our own endpoints; DOKU credentials, signing keys and the notification URL exist only on the API host. | Required by the acceptance criteria, and already the assumption `prd-table-ordering.md` was written against ("the Go API owns it — gateway secrets and payment callbacks terminate at `apps/api`, never in the customer bundle"). A browser-visible DOKU credential is a credential anyone can mint QRs with. |
-| **D2** | Gateway as a domain port | The gateway is **a second port on the `payment` feature, not a feature of its own**: `domain/payment_repository.go` declares both `PaymentRepository` (persistence) and `PaymentGateway` (the external service), under the one `//go:generate mockgen` header the file already needs. `data/doku/` holds the only code that knows what DOKU is. | The repo's domain layer has exactly three file suffixes — `_entity`, `_repository`, `_usecase` — and a gateway is structurally a repository: an interface the domain declares and an outer layer implements, exactly like `CartRepository` over MySQL. An invented fourth suffix (`payment_gateway.go`) would have made the payment slice the only one that does not read like every other. One source file also means one `mockgen` invocation producing both mocks in `data/mock/payment_repository.go`, matching every other feature. |
+| **D2** | Gateway as a domain port | **Two ports, two files, both `*Repository`:** `domain/payment_repository.go` declares `PaymentRepository` (persistence), and `domain/payment_gateway_repository.go` declares **`PaymentGatewayRepository`** (the external service), each with its own `//go:generate mockgen` header. `data/doku/` holds the only code that knows what DOKU is. | Follows the codebase's actual convention rather than an imagined one. **Every port in the repo is named `*Repository` — 19 of 19 in `apps/api/domain`, 36 of 36 in `libs/ui/src/domain/repositories` — and the suffix does not mean "database":** `SessionRepository` is backed by a cookie and `localStorage`, `CartQueryRepository` and every `*ListQueryRepository` by the URL query string. A port backed by DOKU's HTTP API is the same kind of thing, and naming it `PaymentGateway` would make it the one port in the codebase that reads differently. Go is also strictly **one interface per file** (19 interfaces across 19 `*_repository.go` files), and `libs/ui` splits a second port on the same feature into its own file (`cart.ts` + `cartQuery.ts`) — so the gateway gets its own file, not a second declaration inside the persistence one. The compound name is unremarkable here next to `TransactionStatisticListQueryRepository`. |
 | **D3** | DOKU API flavour | **SNAP Direct API**, QRIS MPM dynamic (`qr-mpm-generate` / `qr-mpm-query`), not DOKU Checkout and not the archived non-SNAP QRIS API. | SNAP is the Bank Indonesia standard DOKU documents as current; the archived non-SNAP QRIS endpoints are labelled as such in DOKU's own docs. Building on the archived surface would buy a rewrite. **Rejected:** DOKU Checkout — the acceptance criteria require our own UI. |
 | **D4** | When the `Transaction` is created | **At QR generation, unpaid**, in the same DB write as the payment record. `PayTransaction` runs when DOKU confirms. | `transaction_items` **is** the price snapshot — it already stores `price`, `productName` and the option values at creation time, which is exactly what must be frozen when an amount is locked into a QR. Creating the transaction later would mean building a second snapshot table that duplicates it. Reusing the existing unpaid → paid lifecycle also means the wallet credit, MDR and `totalIncome` math is code that already ships and is already tested. **Rejected:** create-on-success — it either recomputes prices after the fact (charging one amount and recording another when staff edit a price mid-checkout) or duplicates `transaction_items`. **Accepted cost:** an abandoned checkout leaves an unpaid transaction; D5 disposes of it. |
 | **D5** | Abandoned checkouts | When a payment expires, the payment row goes to `expired` **and its transaction is soft-deleted** (`deleted_at`), which `GetTransactionList` already excludes. A late `paid` notification for an expired payment un-deletes the transaction, pays it, and logs at `warn`. | Keeps the POS list free of orders nobody paid for, without inventing a transaction status. The un-delete path exists because "expired locally, paid at DOKU" is a real race, and the money is real — the payment record, not our timer, is the authority. `DeleteTransactionById` already refuses to delete a paid transaction, so the guard is in place. |
@@ -199,7 +199,12 @@ Handler tests assert: an existing (`pos`) transaction serialises as `source: "po
 
 ### FR-3 — Payment gateway port and DOKU client (API)
 
-The `payment` feature follows the repo's domain file convention exactly — `payment_entity.go`, `payment_repository.go`, `payment_usecase.go` — with **both** ports declared in `payment_repository.go` under its single `//go:generate mockgen` header (D2), so one invocation generates `data/mock/payment_repository.go` containing both mocks:
+The `payment` feature follows the repo's domain file convention exactly — `payment_entity.go`, `payment_usecase.go`, and **one file per port**, each with its own `//go:generate mockgen` header (D2):
+
+| File | Declares | Implemented by | Mock |
+|---|---|---|---|
+| `domain/payment_repository.go` | `PaymentRepository` | `data/mysql` | `data/mock/payment_repository.go` |
+| `domain/payment_gateway_repository.go` | `PaymentGatewayRepository` | `data/doku` | `data/mock/payment_gateway_repository.go` |
 
 `domain/payment_entity.go`:
 
@@ -219,15 +224,16 @@ type QrisStatus struct {
     RawStatusCode      string
 }
 
-`domain/payment_repository.go` — one `//go:generate mockgen` header, two ports:
+`domain/payment_gateway_repository.go`:
 
 ```go
-// PaymentRepository is the persistence port (FR-4).
-type PaymentRepository interface { /* … */ }
+//go:generate mockgen -source=payment_gateway_repository.go -destination=../data/mock/payment_gateway_repository.go -package=mock
 
-// PaymentGateway is the external-service port. Structurally a repository:
-// declared by the domain, implemented in an outer layer (data/doku).
-type PaymentGateway interface {
+// PaymentGatewayRepository is the port to the payment provider. It is named
+// like every other port in the repo: the `Repository` suffix marks a domain
+// -declared interface implemented in an outer layer, not a database —
+// SessionRepository is a cookie, CartQueryRepository is the URL (D2).
+type PaymentGatewayRepository interface {
     GenerateQris(ctx context.Context, input GenerateQrisInput) (QrisPayment, *Error)
     QueryQris(ctx context.Context, input QueryQrisInput) (QrisStatus, *Error)
     VerifyNotificationSignature(method, path string, headers NotificationHeaders, body []byte) *Error
@@ -235,7 +241,7 @@ type PaymentGateway interface {
 }
 ```
 
-`data/doku/` — a new sibling of the existing `data/mysql` and `data/mock` — implements the gateway port:
+`data/doku/` — a new sibling of the existing `data/mysql` and `data/mock` — implements it:
 
 - `client.go` — base URL, HTTP client with an explicit 10 s timeout, structured logging of every call with the reference number and **never** the signature, secret, private key or access token.
 - `token.go` — the B2B access token, cached in memory with a margin (refresh at `expiresIn - 60s`), guarded by a mutex, refetched once on a `401`.
@@ -310,7 +316,7 @@ Notes: no raw-notification blob column — the notification is logged, not store
 
 **What a `payments` row is not:** it records a *gateway* payment attempt, so the table is not a ledger of all money received. A cashier taking cash or card on the POS still produces nothing here — that payment lives, as it always has, in `transactions.paid_at` / `wallet_id`. Any reporting that wants "everything paid" reads `transactions`, not `payments`.
 
-Domain entity `Payment` in `payment_entity.go`, `PaymentRepository` in `payment_repository.go` (alongside `PaymentGateway`, D2), MySQL repo + transformer, repo tests — following the `cart` slice exactly.
+Domain entity `Payment` in `payment_entity.go` and `PaymentRepository` in its own `payment_repository.go` (D2), MySQL repo + transformer, repo tests — following the `cart` slice exactly.
 
 ### FR-6 — Checkout endpoints (API)
 
@@ -330,7 +336,7 @@ All session routes require a valid `X-Session-Id` (`RequireSessionId`, unchanged
 4. Compute the total from current variant prices (D9).
 5. `CreateTransaction` with `source = order`, `cartId`, `name = customerName` (D17), **`orderNumber = 0`** (D16), one `TransactionItem` per cart line (`variantId`, `amount`, `note`, `discountAmount: 0`), `transactionCoupons: []`. This snapshots price, product name and option values.
 6. Mint `partnerReferenceNo` (D18); insert the payment row `pending` with `expired_at = now + DOKU_QRIS_EXPIRY_SECONDS`.
-7. Call `PaymentGateway.GenerateQris`. On error the whole DB transaction rolls back — no orphan transaction, nothing to reconcile — and the endpoint returns `502` `internal_server_error`.
+7. Call `PaymentGatewayRepository.GenerateQris`. On error the whole DB transaction rolls back — no orphan transaction, nothing to reconcile — and the endpoint returns `502` `internal_server_error`.
 8. Store `qrContent` and `gatewayReferenceNo`; return the payment.
 
 The cart is **not** converted here — only a paid payment converts it (D10).
@@ -471,7 +477,7 @@ The notification URL (`https://<api-host>/payments/doku/notification`) is regist
 
 | Risk | Mitigation |
 |---|---|
-| The DOKU API details in this document are wrong (docs unreachable while authoring) | Everything DOKU-shaped is behind `PaymentGateway` (D2) and lands in one phase (3) whose acceptance criterion is a successful sandbox round trip. A wrong path or field name costs that PR, not the design. |
+| The DOKU API details in this document are wrong (docs unreachable while authoring) | Everything DOKU-shaped is behind `PaymentGatewayRepository` (D2) and lands in one phase (3) whose acceptance criterion is a successful sandbox round trip. A wrong path or field name costs that PR, not the design. |
 | The notification never arrives (misregistered URL, DOKU outage, our host unreachable) | Polling re-queries DOKU (D12), so confirmation does not depend on it. Metric 3 makes silent breakage visible. |
 | Notification arrives after we expired the payment locally | D5's un-delete-and-pay path, logged at `warn`. The payment record, not our timer, is the authority. |
 | Guest pays, then our DB write fails | The payment stays `pending` and both the next poll and any notification retry re-attempt the same idempotent transition (D14). A permanent failure surfaces as a nonzero metric 2 and is reconciled from the DOKU dashboard by reference. |
@@ -514,7 +520,7 @@ Thirteen PRs. Each is independently mergeable and deployable; nothing before pha
 
 ### Phase 3 — DOKU client behind a domain port (API)
 
-**Deliver:** FR-3 in full — `domain/payment_entity.go` and `domain/payment_repository.go` carrying the `PaymentGateway` port and its mockgen header (phase 5 adds `PaymentRepository` to the same file, D2), the generated mock, `data/doku/**`, env configuration, `.env.example`. **Wired into nothing.**
+**Deliver:** FR-3 in full — `domain/payment_entity.go` and `domain/payment_gateway_repository.go` declaring `PaymentGatewayRepository` with its own mockgen header (D2), the generated mock, `data/doku/**`, env configuration, `.env.example`. **Wired into nothing.**
 **Tests:** `httptest` coverage of token caching/refresh, both signature schemes against fixed vectors, generate/query response mapping, notification verification including tampering and clock skew.
 **Done when:** a scratch `main` (not committed) generates a real QR against the DOKU sandbox and queries its status, and the PR description cites the DOKU documentation page confirming each path and field name.
 
@@ -526,7 +532,7 @@ Thirteen PRs. Each is independently mergeable and deployable; nothing before pha
 
 ### Phase 5 — `payments` model (API)
 
-**Deliver:** FR-5 — migration `000025`, `domain/payment_entity.go`, `domain/payment_repository.go` declaring both `PaymentRepository` and the phase-3 `PaymentGateway` under one mockgen header (D2), generated mocks, MySQL repo + transformer, `api.yaml` schemas (`Payment`, `PaymentResponse`). **No routes.**
+**Deliver:** FR-5 — migration `000025`, `domain/payment_repository.go` declaring `PaymentRepository` with its own mockgen header (D2), generated mock, MySQL repo + transformer, `api.yaml` schemas (`Payment`, `PaymentResponse`). Phase 3 already added `payment_entity.go`; this phase extends it with the `Payment` entity. **No routes.**
 **Tests:** repository tests following the `cart` repo's shape, including the unique-reference constraint.
 **Done when:** the migration applies and rolls back cleanly and the repo round-trips a payment.
 
@@ -582,7 +588,7 @@ Thirteen PRs. Each is independently mergeable and deployable; nothing before pha
 ## Future Work (post-PRD)
 
 - Notifying kitchen/bar when an `order` transaction is created, and notifying the guest when it is ready — the two explicit non-goals, and the natural next PRD now that a transaction exists to hang them on.
-- More payment methods (virtual account, e-wallet) through the same `PaymentGateway` port and the `payments.method` column.
+- More payment methods (virtual account, e-wallet) through the same `PaymentGatewayRepository` port and the `payments.method` column.
 - Refunds and cancellation, which need a POS-side flow before they need a gateway call.
 - Moving the POS's own QRIS acceptance onto DOKU so both channels reconcile from one source.
 - A settlement wallet and an automated T+1 transfer (open question 4).
