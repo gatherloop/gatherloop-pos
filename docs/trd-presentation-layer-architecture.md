@@ -145,9 +145,9 @@ entries in which the layer boundary is spelled only in the filename suffix.
 ```
 libs/ui/src/presentation/
   handlers/                       ← stateful: usecases, reducers, effects, router, toast, printer
-    useUsecase.ts                 ← the useReducer↔Usecase bridge (was controllers/controller.ts)
-    shared/                       ← the 13 hooks with ≥2 call sites
-      useAuthLogout.ts
+    hooks/                        ← everything in handlers/ that is not a component (D2b)
+      useUsecase.ts               ← the useReducer↔Usecase bridge (was controllers/controller.ts)
+      useAuthLogout.ts            ← + the 12 other hooks with ≥2 call sites
       useCouponList.ts
       ...
       index.ts
@@ -174,8 +174,8 @@ libs/ui/src/presentation/
 
 | Layer | May import | May **not** import |
 | --- | --- | --- |
-| `handlers/**` | `domain`, `data`, `utils`, `views/**`, `handlers/shared` | another app's handlers |
-| `handlers/shared/**` | `domain`, `utils`, `handlers/useUsecase` | any `handlers/{pos,order}/**` |
+| `handlers/**` | `domain`, `data`, `utils`, `views/**`, `handlers/hooks` | another app's handlers |
+| `handlers/hooks/**` | `domain`, `utils`, `handlers/hooks` | any `handlers/{pos,order}/**` |
 | `views/screens/**` | `views/components`, `domain` **entities/forms only** | `handlers/**`, `domain/usecases`, `data/**` |
 | `views/components/**` | `views/components`, `domain` entities | `handlers/**`, `data/**` |
 
@@ -184,8 +184,13 @@ libs/ui/src/presentation/
 ## 5. Design decisions
 
 **D1 — Inline a controller only when it has exactly one call site.** 71 of 84 qualify. The 13 shared
-ones (§1.1) move to `handlers/shared/` as hooks. Inlining `useAuthLogoutController` into its 55
-handlers would duplicate a router push and a toast 55 times; that is the opposite of the goal.
+ones (§1.1) move to `handlers/hooks/`. Inlining `useAuthLogoutController` into its 55 handlers would
+duplicate a router push and a toast 55 times; that is the opposite of the goal.
+
+The rule is symmetric and stays live after this TRD: a hook in `handlers/hooks/` that falls back to
+a single call site gets inlined into that handler, and a handler's local hook that gains a second
+caller moves up into `handlers/hooks/`. `docs/handlers.md` (Phase 1) is where that rule is written
+down, because the folder name no longer states it — see D2b.
 
 **D2 — the base hook survives, relocated and renamed `useUsecase`.** It is the actual
 `Usecase`↔React binding and is called by all 84 controllers today; it becomes
@@ -236,6 +241,20 @@ something entirely different by the same word.
 The 13 shared hooks follow the same rule and take no suffix at all: `useAuthLogout`, not
 `useAuthLogoutController` and not `useAuthLogoutHandler`. They are plain hooks that happen to be
 used by more than one handler.
+
+**D2b — one folder, `handlers/hooks/`, holds `useUsecase` and the 13 shared hooks alike.** An
+earlier draft kept `useUsecase` at the root of `handlers/` and put only the 13 in a folder called
+`shared/`, on the reasoning that `useUsecase` is the layer's primitive while the other 13 are
+feature hooks that outgrew one handler. That distinction is real but thin, and it fights the folder
+name: `useUsecase` is used by all 61 handlers, so under any literal reading of "shared" it is the
+most shared thing in the layer. Naming the folder for *what it holds* rather than *why* removes the
+argument entirely — everything in `handlers/` is either a `*Handler` component or a hook in
+`hooks/`.
+
+What this costs: the folder name no longer encodes the promotion rule ("here because ≥2 callers"),
+which `shared/` did state. D1 carries that rule instead, and `docs/handlers.md` writes it down.
+That is the right trade — a rule that only holds for 13 of 14 files was never safe to infer from a
+folder name anyway.
 
 **D3 — `views/` wraps both `components/` and `screens/`.** The request's tree, adopted as-is. It
 gives the tree one bit that answers "can this file have side effects?" without opening it, and it
@@ -299,7 +318,7 @@ Track A; they change once, in Phase 8, when those hooks are renamed.
 - Inline `useAuthLoginController`, `useBudgetCreateController`, `useBudgetUpdateController` into
   their handlers; delete those three files and their barrel lines.
 - `useBudgetListController` has 2 call sites (§1.1) → leave it in `controllers/` untouched; it
-  becomes a `handlers/shared/` hook in Phase 8.
+  becomes a `handlers/hooks/` hook in Phase 8.
 - Add `docs/handlers.md`: the rule from D1, the shape from D2, and "a new screen gets a handler, not
   a controller".
 - **Check:** `AuthLoginHandler.test.tsx` and the two Budget handler tests pass unmodified (D5).
@@ -329,11 +348,11 @@ controllers — 15 files, down from 87.
 - **Check:** `git diff --stat -M` reports 100% rename for all 118 files; `nx run ui:test` runs the
   same 57 test files with the same results.
 
-**Phase 8 — the base hook, the shared hooks, and the vocabulary (D2a).**
-- `controllers/controller.ts` → `handlers/useUsecase.ts`; `useController` → `useUsecase`,
+**Phase 8 — the base hook, the shared hooks, and the vocabulary (D2a, D2b).**
+- `controllers/controller.ts` → `handlers/hooks/useUsecase.ts`; `useController` → `useUsecase`,
   `Controller<State, Action>` → `UsecaseBinding<State, Action>`. Touches every handler, all
   mechanically.
-- The 13 shared controllers → `handlers/shared/use<Name>.ts`, dropping the `Controller` suffix
+- The 13 shared controllers → `handlers/hooks/use<Name>.ts`, dropping the `Controller` suffix
   (`useAuthLogoutController` → `useAuthLogout`). This renames one symbol across 55 handler files —
   mechanical, and the last PR in which that symbol moves.
 - Delete `presentation/controllers/` and the controllers ESLint override; port its
@@ -411,11 +430,8 @@ beside their handlers in `handlers/{pos,order}`, which is where the interaction 
 
 ## 10. Open questions
 
-1. **`handlers/shared/` vs `handlers/hooks/`** — the 13 shared hooks need a home; `shared/` is
-   assumed here. With D2a's rename, everything in `handlers/` that is not a component is now a
-   plain hook, so `hooks/` would also read well and could hold `useUsecase` too. `shared/` keeps the
-   *why* (used by ≥2 handlers) rather than the *what*. Cosmetic; decide in Phase 8.
-2. **Does `handlers/shared/` want per-app subfolders?** 11 of the 13 are POS-only; `useCartController`
-   and `useTableResolveController` are order-only. A flat `shared/` cannot be lint-fenced by app the
-   way `handlers/{pos,order}` can, so those two would sit outside the boundary the ESLint globs
-   enforce today. Flat is assumed; revisit in Phase 8 if that looks too loose.
+1. **Does `handlers/hooks/` want per-app subfolders?** 11 of the 14 are POS-only; `useCart` and
+   `useTableResolve` are order-only, and `useUsecase` belongs to neither. A flat `hooks/` cannot be
+   lint-fenced by app the way `handlers/{pos,order}` can, so those two order hooks would sit outside
+   the boundary the ESLint globs enforce today. Flat is assumed; revisit in Phase 8 if that looks
+   too loose — the shape would be `hooks/{pos,order}/` with `useUsecase` staying at `hooks/`.
