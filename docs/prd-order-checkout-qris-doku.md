@@ -1,6 +1,6 @@
 # PRD: Order App Checkout — QRIS Payment via DOKU
 
-**Status:** Draft for review
+**Status:** Draft for review — all open questions resolved (see [Resolved Questions](#resolved-questions))
 **Scope:** the second half of `docs/prd-table-ordering.md` — turning a customer's cart into a **paid** `Transaction` through a **QRIS** payment served by **DOKU**, with our own checkout UI.
 **Supersedes:** D10 in `docs/prd-table-ordering.md` (the flagged "Pembayaran QRIS — segera hadir" stub) and the `NEXT_PUBLIC_ORDER_CHECKOUT_ENABLED` behaviour it describes.
 
@@ -35,6 +35,7 @@ This PRD closes the loop: **cart → QRIS payment → paid `Transaction` visible
 | Coupons / discounts at customer checkout | `TransactionCoupon` stays a staff-only concept. Order-app transactions are created with `transactionCoupons: []`. |
 | Splitting the bill, paying for someone else's table, order history | No accounts exist (the session is anonymous), so none of these have an owner. |
 | Rentals through the order app | Unchanged from `prd-table-ordering.md`: the customer menu is `saleType=purchase` only. |
+| A minimum order amount | Resolved question 5: not implemented in this PRD. QRIS issuers have practical floors, but the menu's cheapest item makes hitting one unlikely; a cart that does gets the generic gateway-failure state. Revisit only if it is actually hit. |
 | POS-side QRIS (a cashier charging a walk-up guest through DOKU) | The cashier already has a physical QRIS acceptance path and books it against the `QRIS` wallet manually. Bringing that into DOKU is a separate migration with its own reconciliation story. |
 
 ---
@@ -150,9 +151,10 @@ The screen polls its own API for status. It never polls DOKU.
 | **D10** | Cart freeze | While a payment for a cart is `pending` and unexpired, every `/carts/current*` **write** returns `400` (`bad_request`, "cart is locked by a pending payment"). Reads are unaffected. `expired` or `failed` unlocks it; `paid` converts it. | The cart is the thing the amount was computed from. Letting a guest add an item to a cart whose QRIS QR is on screen produces an order that is either underpaid or mis-prepared. The freeze is the smallest correct answer, and it is naturally released by the expiry the guest can already see counting down. |
 | **D11** | One QR per cart | `POST /carts/current/checkout` is idempotent: with a `pending`, unexpired payment on the active cart it returns **that** payment rather than minting a second one. | A double-tapped button or a reloaded screen must not produce two QRs for one order — two QRs means two possible payments for one set of drinks. |
 | **D12** | Learning that payment succeeded | **Both**: DOKU's notification webhook is the primary path; the order app polls `GET /payments/{reference}` every 3 s while `pending`, and that read **re-queries DOKU** (`qr-mpm-query`) when the payment is still `pending` and its status was last checked more than 10 s ago. | A webhook we do not control is a single point of failure, and its absence is silent — the guest would stare at a paid QR and a spinner. The poll's re-query makes the webhook an optimisation rather than a dependency. The 10 s floor keeps a rapid client poll from becoming a rapid DOKU poll. |
+| **D12a** | Who is allowed to declare expiry | **The server, never the client's clock.** When the countdown reaches zero the machine does not go to `expired`; it issues one final `POLL` and lets the response decide — `paid` wins, anything else moves to `expired`. The server in turn treats a payment as expired only past `expired_at` **and** after a confirming `QueryQris` (FR-9). | At a 5-minute window (resolved question 2) a few seconds of phone-clock skew is a meaningful fraction of the total, and the failure it causes is the worst one available: telling a guest who has just paid that their payment window closed. One extra request at the end of a countdown is a trivial price for never showing a false expiry. |
 | **D13** | Notification authentication | The route is unauthenticated but **signature-verified**: the symmetric HMAC-SHA512 scheme, recomputed over the received body, compared in constant time; a skewed or missing `X-TIMESTAMP` (> 5 min) is rejected. A rejected notification is `401` and is logged with the reference number. | It is the only unauthenticated write in the API, and it is the one that marks money received. Its own middleware (`VerifyDokuSignature`), sitting beside `CheckAuth` and `RequireSessionId`, keeps that fact legible in `*_route.go` instead of buried in a handler. |
 | **D14** | Notification idempotency | The handler is keyed on `partner_reference_no`. A notification for a payment already `paid` is a no-op returning `200`. Transitions are one-way: `pending → paid \| expired \| failed`, and `expired → paid` only via D5. | DOKU retries until it sees a 200, so duplicates are expected traffic, not an error. Paying a transaction twice would credit the wallet twice — `PayTransaction` already guards with "transaction already paid", and this is the second lock. |
-| **D15** | Which wallet the money lands in | A configured wallet id, `ORDER_PAYMENT_WALLET_ID`, pointed at the existing `QRIS` wallet. Validated at startup: unset, unknown, deleted, or `is_payment_target = false` fails the boot with a named error. | `PayTransaction` already credits a wallet and subtracts its `paymentCostPercentage`, which is precisely the DOKU MDR — so settlement accounting is configuration, not code. Failing at boot rather than at the first checkout means a misconfiguration is found by a deploy, not by a guest holding a phone. **Rejected:** matching a wallet by the name `"QRIS"` — a rename would silently redirect revenue. |
+| **D15** | Which wallet the money lands in | A configured wallet id, `ORDER_PAYMENT_WALLET_ID`, pointed at the existing `QRIS` wallet. Validated at startup: unset, unknown, deleted, or `is_payment_target = false` fails the boot with a named error. | `PayTransaction` already credits a wallet and subtracts its `paymentCostPercentage`, which is precisely the DOKU MDR — so settlement accounting is configuration, not code. Failing at boot rather than at the first checkout means a misconfiguration is found by a deploy, not by a guest holding a phone. **Rejected:** matching a wallet by the name `"QRIS"` — a rename would silently redirect revenue. Per resolved question 4 this wallet is credited on confirmation, ahead of DOKU's actual settlement, so its balance is recognised revenue rather than bank cash. |
 | **D16** | `orderNumber` for order-app transactions | **None.** Order-app transactions keep `order_number = 0`, the column's existing default. Nothing is assigned, and no sequence is shared with the counter. | Corrected from an earlier draft: the order number **is** the pager number, and a pager is something a cashier physically hands over — a guest ordering from their table never receives one, so a number for them would be meaningless at best and would collide with a real pager at worst. The existing UI needs no change to accommodate this: `TransactionListItem` already gates its ORDER NUMBER footer row on `isShown: orderNumber > 0` and `TransactionDetail` on `orderNumber > 0`, so a `0` simply renders nothing. The order is instead identified by its **table** (D7) — which is where the drink is going anyway. |
 | **D17** | `Transaction.name` for order-app transactions | **The guest's own name, asked for at checkout.** The name sheet opens when they tap the pay button, *before* any QR is generated, prefilled from `customers` (D24) when this session has ordered before. Required, trimmed, 1–60 characters. | The column is exactly this — a customer name the POS list searches on ("Search Customer Name") and the order slip prints — so filling it with anything else (a table label, a placeholder) would mean staff searching a field that no longer holds what it says. Asking before QR generation, rather than after payment, means an abandoned prompt has created nothing at all: no transaction, no payment, no QR. The prefill is what keeps a second order to one tap. |
 | **D18** | Where the payment reference lives in the URL | The status screen is `/t/{code}/status?ref={partnerReferenceNo}`, and `partnerReferenceNo` is `ORD` + 13 random Crockford base32 characters from the existing table-code generator — never a sequence. | The reference must survive the cart converting (after which `GET /carts/current` returns a fresh empty cart and can no longer reach the payment). Putting it in the URL makes reload and back work. Reads are still scoped by `X-Session-Id`, so the random reference is defence in depth, not the lock — but a sequential id in a URL invites enumeration and there is no reason to offer it. |
@@ -256,7 +258,7 @@ type PaymentGatewayRepository interface {
 
 Tests are `httptest`-based and cover: token caching and refresh; a signature computed against a fixed vector; `2004700`-shaped success mapped to `QrisPayment`; `latestTransactionStatus` `"00"` → `paid`, expiry/failure codes → `expired` / `failed`, anything unknown → `pending` (never optimistically `paid`); a notification with a tampered body rejected; a notification older than 5 minutes rejected.
 
-Configuration in `utils/env.go` (all read once, all required when checkout is enabled): `DOKU_BASE_URL`, `DOKU_CLIENT_ID`, `DOKU_CLIENT_SECRET`, `DOKU_PRIVATE_KEY` (PEM), `DOKU_MERCHANT_ID`, `DOKU_CHANNEL_ID`, `DOKU_QRIS_EXPIRY_SECONDS` (default 900), `ORDER_PAYMENT_WALLET_ID`.
+Configuration in `utils/env.go` (all read once, all required when checkout is enabled): `DOKU_BASE_URL`, `DOKU_CLIENT_ID`, `DOKU_CLIENT_SECRET`, `DOKU_PRIVATE_KEY` (PEM), `DOKU_MERCHANT_ID`, `DOKU_CHANNEL_ID`, `DOKU_QRIS_EXPIRY_SECONDS` (default `300` — resolved question 2), `ORDER_PAYMENT_WALLET_ID`.
 
 ### FR-4 — `customers`: the guest's name (API)
 
@@ -347,7 +349,7 @@ All session routes require a valid `X-Session-Id` (`RequireSessionId`, unchanged
 
 The cart is **not** converted here — only a paid payment converts it (D10).
 
-`GET /payments/{partnerReferenceNo}`: if `status = pending` and `status_checked_at` is null or older than 10 s, call `QueryQris` and apply the result through the same state transition used by the notification handler, so both paths share one code path and one set of guards. Response carries `partnerReferenceNo`, `status`, `amount`, `qrContent`, `expiredAt`, `paidAt`, `customerName`, `tableLabel`, and the paid line items — enough for the status screen to render without a second call. No order number: there is none (D16).
+`GET /payments/{partnerReferenceNo}`: if `status = pending` and `status_checked_at` is null or older than 10 s, call `QueryQris` and apply the result through the same state transition used by the notification handler, so both paths share one code path and one set of guards. A payment is marked `expired` only when it is past `expired_at` **and** a confirming `QueryQris` agrees it was not paid (D12a) — being past a timestamp is never on its own enough to expire a payment that DOKU may already have collected. Response carries `partnerReferenceNo`, `status`, `amount`, `qrContent`, `expiredAt`, `paidAt`, `customerName`, `tableLabel`, and the paid line items — enough for the status screen to render without a second call. No order number: there is none (D16).
 
 `POST /payments/doku/notification`:
 
@@ -404,14 +406,15 @@ export type CheckoutAction =
   | { type: 'POLL' }
   | { type: 'POLL_SUCCESS'; payment: Payment }
   | { type: 'POLL_ERROR'; message: string }
-  | { type: 'EXPIRE' };
+  | { type: 'COUNTDOWN_ELAPSED' }   // triggers a final poll, never expires directly (D12a)
+  | { type: 'EXPIRE' };           // only ever dispatched from a server status
 ```
 
 `SUBMIT_NAME` on an empty or over-long trimmed name stays in `askingName` and sets `nameErrorMessage` — the reducer is where that rule lives, so the screen renders the error rather than deciding it. Retry from `expired` goes straight to `creatingPayment`, skipping `askingName`, because the name is already in context (UX step 7).
 
-`onStateChange` owns the 3 s poll while `awaitingPayment` and clears it on every other state. A `POLL_ERROR` does **not** leave `awaitingPayment` — a dropped poll on a café network must not tell a guest their payment failed; it is logged and the next tick retries. Only an explicit `expired`/`failed` status, or the local countdown reaching `expiredAt`, leaves the state.
+`onStateChange` owns the 3 s poll while `awaitingPayment` and clears it on every other state. A `POLL_ERROR` does **not** leave `awaitingPayment` — a dropped poll on a café network must not tell a guest their payment failed; it is logged and the next tick retries. Only an explicit `expired`/`failed` status from the server leaves the state. The local countdown reaching `expiredAt` dispatches `COUNTDOWN_ELAPSED`, which triggers **one final poll** rather than moving straight to `expired` (D12a) — the client's clock never declares expiry on its own, because at a 5-minute window a skewed phone clock would otherwise tell a guest who just paid that their window closed.
 
-`checkout.test.ts` covers, via `UsecaseTester` with `MockPaymentRepository`: `idle → askingName → creatingPayment → awaitingPayment`; an empty and an over-long name each held at `askingName` with an error; `CANCEL_NAME` returning to `idle` having created nothing; a seeded name still requiring an explicit submit; `awaitingPayment → paid`; a poll error keeping `awaitingPayment`; `awaitingPayment → expired` on both the server status and the local countdown; `expired → creatingPayment` skipping the prompt; `creatingPayment → error` and retry.
+`checkout.test.ts` covers, via `UsecaseTester` with `MockPaymentRepository`: `idle → askingName → creatingPayment → awaitingPayment`; an empty and an over-long name each held at `askingName` with an error; `CANCEL_NAME` returning to `idle` having created nothing; a seeded name still requiring an explicit submit; `awaitingPayment → paid`; a poll error keeping `awaitingPayment`; `awaitingPayment → expired` on a server status; `COUNTDOWN_ELAPSED` issuing a final poll and **not** expiring on its own; that final poll returning `paid` winning over the elapsed countdown (D12a); `expired → creatingPayment` skipping the prompt; `creatingPayment → error` and retry.
 
 ### FR-9 — Checkout screen (frontend)
 
@@ -447,7 +450,7 @@ All customer-facing copy is Bahasa Indonesia (D15 of `prd-table-ordering.md`), m
 | `DOKU_PRIVATE_KEY` | `apps/api/.env` | PEM, newline-escaped. Asymmetric signing key. **Secret.** |
 | `DOKU_MERCHANT_ID` | `apps/api/.env` | Required by `qr-mpm-query`. |
 | `DOKU_CHANNEL_ID` | `apps/api/.env` | `CHANNEL-ID` header. |
-| `DOKU_QRIS_EXPIRY_SECONDS` | `apps/api/.env` | Default `900`. Drives both the QR and the local countdown. |
+| `DOKU_QRIS_EXPIRY_SECONDS` | `apps/api/.env` | Default `300` (5 minutes, resolved question 2). Drives the QR's expiry, `payments.expired_at`, and the countdown the guest sees. |
 | `ORDER_PAYMENT_WALLET_ID` | `apps/api/.env` | The `QRIS` wallet (D15). Validated at boot. |
 
 `.env.example` gains all eight with empty values and comments. **No DOKU variable is ever added to `apps/order-web` or any Vercel project** — a `NEXT_PUBLIC_` DOKU key would be a published credential.
@@ -493,17 +496,19 @@ The notification URL (`https://<api-host>/payments/doku/notification`) is regist
 | **The QR download silently fails on a guest's browser, leaving them unable to pay at all** | The highest-severity UX risk in the feature, because the guest cannot scan a QR shown on the phone they are holding. Feature-detected fallback to a long-press-to-save sheet (D23), and phase 11 is not done until it is verified on real iOS Safari and real Android Chrome — a Storybook story cannot catch this. |
 | Guests type junk names ("a", "asdf"), degrading the POS list | Accepted for v1: the name is a convenience for staff calling an order, not an identity. Validation is length-only — rejecting "unrealistic" names would reject real ones. The table label (D7) is the authoritative delivery target, so a junk name costs nothing operationally. |
 | Abuse: someone mints QRs in a loop | Each QR is scoped to one cart with one pending payment (D11), so the ceiling is one QR per session per expiry window. Rate limiting remains out of scope (D12 of `prd-table-ordering.md`), still noted. |
-| MDR mis-booked, understating income | `paymentCostPercentage` on the configured wallet is the single MDR input, and `PayTransaction` already applies it. Verify the configured percentage against the DOKU merchant agreement in phase 13. |
+| MDR mis-booked, understating income | `paymentCostPercentage` on the configured wallet is the single MDR input, and `PayTransaction` already applies it. The `QRIS` wallet is already set to the agreed rate (resolved question 3), so phase 13 confirms it rather than changing it. |
 
 ---
 
-## Open Questions
+## Resolved Questions
 
-1. **DOKU merchant account** — do we hold production credentials, or sandbox only? Phase 3 can complete on sandbox alone; phase 13 cannot.
-2. **QR expiry window** — 15 minutes is the assumed default. Is a shorter window (5 min) better for table turnover, given that expiry unfreezes the cart and re-checkout is one tap?
-3. **MDR** — what `paymentCostPercentage` does our DOKU QRIS agreement imply, and is the existing `QRIS` wallet already set to it?
-4. **Settlement timing** — DOKU settles T+1 or later, but `PayTransaction` credits the wallet immediately. Is same-day wallet balance the behaviour finance wants, or should order-app revenue land in a "DOKU (belum settle)" wallet and be transferred on settlement? This changes only `ORDER_PAYMENT_WALLET_ID` and a manual transfer habit, so it does not block any phase.
-5. **Minimum order amount** — QRIS has practical floors per issuer. Should checkout reject a cart below some threshold with a clear message rather than surfacing a gateway error?
+All five are answered; none blocks any phase.
+
+1. **DOKU merchant account — production credentials are held.** Phase 13 is unblocked; sandbox is still what phases 3–12 and CI run against (D21).
+2. **QR expiry window — 5 minutes** (`DOKU_QRIS_EXPIRY_SECONDS=300`). Tight but correct for table turnover, and cheap to get wrong in the guest's favour: expiry unfreezes the cart, retry is one tap, and the name prompt is skipped on retry because the name is already known. **What makes the short window safe is D5** — a guest who pays at 4:58 while our timer fires at 5:00 is not charged for nothing; the late `paid` notification un-deletes the transaction and pays it. **Two consequences accepted and handled:** the D5 race path, designed as an exception, will now fire more often than it would have at 15 minutes — it is logged at `warn` so its true frequency is measurable rather than assumed; and the client's countdown is no longer allowed to declare expiry on its own (FR-8, D12a below), because at 300 s a few seconds of clock skew is a much larger share of the window.
+3. **MDR — already configured.** The existing `QRIS` wallet's `paymentCostPercentage` already matches the DOKU agreement, so phase 13 *verifies* it rather than setting it, and no wallet edit ships in this PRD.
+4. **Settlement timing — same-day wallet balance, everything into the `QRIS` wallet.** `PayTransaction` credits it the moment DOKU confirms, even though DOKU settles to the bank later. No "belum settle" wallet, no transfer habit. **The bookkeeping consequence, accepted:** between a guest paying and DOKU settling, the `QRIS` wallet balance is *revenue recognised*, not *cash in the bank* — it will run ahead of the actual DOKU account, by roughly one settlement cycle of order-app takings. That is a reporting caveat for whoever reconciles the wallet against a bank statement, not a defect, and it is the same shape the wallet already has for cashier-side QRIS.
+5. **Minimum order amount — not implemented.** Moved to Non-Goals. A cart below an issuer's floor surfaces whatever error DOKU returns, mapped to the generic gateway-failure state (UX step 8). Revisit if it is ever actually hit; the menu's cheapest item makes it unlikely.
 
 ---
 
@@ -563,7 +568,7 @@ Thirteen PRs. Each is independently mergeable and deployable; nothing before pha
 ### Phase 9 — Payment status read and expiry (API)
 
 **Deliver:** `GET /payments/{partnerReferenceNo}` with session scoping and the D12 re-query (sharing the transition code path with phase 8's notification handler), the expiry transition (payment `expired`, transaction soft-deleted, cart unfrozen), `api.yaml` path.
-**Tests:** foreign session ⇒ `404`; a `pending` payment past `expired_at` transitions on read; the 10 s floor prevents a re-query storm; a DOKU `paid` result reached by query pays exactly as the notification does.
+**Tests:** foreign session ⇒ `404`; a `pending` payment past `expired_at` expires on read **only after a confirming `QueryQris`** (D12a); a payment past `expired_at` that DOKU reports `paid` is paid, not expired; the 10 s floor prevents a re-query storm; a DOKU `paid` result reached by query pays exactly as the notification does.
 **Done when:** the whole backend flow works with the webhook route disabled — proving the webhook is an optimisation, not a dependency.
 
 ### Phase 10 — Frontend payment slice (domain + data)
@@ -586,7 +591,7 @@ Thirteen PRs. Each is independently mergeable and deployable; nothing before pha
 
 ### Phase 13 — Enable, verify, document
 
-**Deliver:** `apps/order-web-e2e` coverage of cart → checkout → QR → paid → status against a stubbed gateway; production DOKU credentials in the API host's systemd `EnvironmentFile`; the notification URL registered in the DOKU dashboard; `ORDER_PAYMENT_WALLET_ID` and the `QRIS` wallet's `paymentCostPercentage` verified against the merchant agreement (open question 3); `NEXT_PUBLIC_ORDER_CHECKOUT_ENABLED=true`; a `docs-site/sales/` page for the checkout flow and an update to `docs-site/sales/table-ordering.md`; `README.md` pointed at this PRD.
+**Deliver:** `apps/order-web-e2e` coverage of cart → checkout → QR → paid → status against a stubbed gateway; the held production DOKU credentials (resolved question 1) installed in the API host's systemd `EnvironmentFile`; `DOKU_QRIS_EXPIRY_SECONDS=300` (resolved question 2); the notification URL registered in the DOKU dashboard; `ORDER_PAYMENT_WALLET_ID` pointed at the `QRIS` wallet and its already-configured `paymentCostPercentage` confirmed against the merchant agreement (resolved question 3); `NEXT_PUBLIC_ORDER_CHECKOUT_ENABLED=true`; a `docs-site/sales/` page for the checkout flow and an update to `docs-site/sales/table-ordering.md`; `README.md` pointed at this PRD.
 **Done when:** a real guest completes a real QRIS payment on the real menu, the transaction appears on the POS badged "Order App" with the right table and the guest's name, and the `QRIS` wallet balance moves by the amount less MDR.
 
 ---
@@ -597,5 +602,6 @@ Thirteen PRs. Each is independently mergeable and deployable; nothing before pha
 - More payment methods (virtual account, e-wallet) through the same `PaymentGatewayRepository` port and the `payments.method` column.
 - Refunds and cancellation, which need a POS-side flow before they need a gateway call.
 - Moving the POS's own QRIS acceptance onto DOKU so both channels reconcile from one source.
-- A settlement wallet and an automated T+1 transfer (open question 4).
+- A settlement wallet and an automated T+1 transfer, if the recognised-revenue-vs-bank-cash gap in the `QRIS` wallet ever becomes annoying to reconcile (resolved question 4 accepted it for now).
+- A minimum order amount, if an issuer floor is ever actually hit (resolved question 5).
 - Rate limiting the public and session routes (still open from D12 of `prd-table-ordering.md`, and now guarding a money path).
