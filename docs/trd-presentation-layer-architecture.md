@@ -96,8 +96,9 @@ watchable.
 1. One screen's stateful logic lives in **one** file (its handler), except where a hook is genuinely
    shared by ≥2 handlers.
 2. The presentation tree names the split it already has: stateful handlers apart from pure views.
-3. Every handler test is a single spec that runs **both** under Jest (`nx run ui:test`) and as a
-   Storybook interaction test (`play`), with no duplicated assertions.
+3. Every handler test case is written once, in one file, and runs **both** under Jest
+   (`nx run ui:test`) and as a Storybook interaction test (`play`). The `.test.tsx` and
+   `.stories.tsx` files hold wiring only — no setup, no actions, no assertions.
 4. Each phase is one small, reviewable PR that leaves `nx run-many --target=lint,test --all` green.
 5. No behaviour change anywhere. Every diff is a move, an inline, or a test-harness change.
 
@@ -187,6 +188,7 @@ Three of these are blockers with concrete, already-verifiable failure modes:
 libs/ui/src/presentation/
   handlers/                       ← stateful: usecases, reducers, effects, router, toast, printer
     useController.ts              ← the useReducer↔Usecase bridge (was controllers/controller.ts)
+    interactions.ts               ← HandlerInteraction type + runInteractions/handlerStories (D11)
     shared/                       ← the 13 hooks with ≥2 call sites
       useAuthLogout.ts
       useCouponList.ts
@@ -194,9 +196,9 @@ libs/ui/src/presentation/
       index.ts
     pos/
       AuthLoginHandler.tsx
-      AuthLoginHandler.interactions.ts     ← the shared spec (D11)
-      AuthLoginHandler.test.tsx            ← Jest driver over the spec
-      AuthLoginHandler.stories.tsx         ← Storybook driver over the same spec
+      AuthLoginHandler.interactions.ts     ← every test case for this handler (D11)
+      AuthLoginHandler.test.tsx            ← Jest driver: imports and runs them, no test logic
+      AuthLoginHandler.stories.tsx         ← Storybook driver: same cases, no test logic
       index.ts
     order/
       ...
@@ -307,49 +309,122 @@ invents.** Concretely: `getByLabelText('Password')` and `getByTestId(...)` hold 
 Phase 11 fixes the rest as it ports them. Queries are the only part of a test body that the porting
 phases are allowed to change — assertions must stay identical.
 
-**D11 — The shared spec is a plain module of named steps, not a test framework.**
+**D11 — `*.interactions.ts` owns whole test cases; the two driver files contain no test logic at
+all.** One test case is one exported object. `*.test.tsx` and `*.stories.tsx` import them and run
+them — nothing else lives in either file.
+
+A case cannot be a bare `async` function, because Storybook builds the component tree from the story
+definition *before* `play` runs, so the case has to declare what to mount as well as what to do. It
+is therefore an object with three fields:
+
+```ts
+// presentation/handlers/interactions.ts — written once, ~40 lines
+export type HandlerInteraction<Props> = {
+  name: string;                                  // becomes the `it` name and the story name
+  props: () => Props;                            // fresh mock repos + usecases per run
+  play: (canvasElement: HTMLElement) => Promise<void>;
+};
+```
 
 ```ts
 // AuthLoginHandler.interactions.ts
 import { expect, userEvent, waitFor, within } from '@storybook/test';
-import { getRouterMock, getToastMock } from '../../../../.storybook/mocks/recorders';
+import { MockAuthRepository } from '../../../data/mock';
+import { AuthLoginUsecase } from '../../../domain';
+import { getRouterMock } from '../../../../.storybook/mocks/recorders';
+import type { HandlerInteraction } from '../interactions';
+import type { AuthLoginHandlerProps } from './AuthLoginHandler';
 
-export const login = async (canvasElement: HTMLElement) => {
+type Interaction = HandlerInteraction<AuthLoginHandlerProps>;
+
+// Plain functions are shared steps, not cases — only exported *objects* are collected.
+const props = (shouldFail = false): AuthLoginHandlerProps => {
+  const repo = new MockAuthRepository();
+  if (shouldFail) repo.setShouldFail(true);
+  return { authLoginUsecase: new AuthLoginUsecase(repo) };
+};
+
+const submitCredentials = async (canvasElement: HTMLElement, password: string) => {
   const canvas = within(canvasElement);
   await userEvent.type(canvas.getByLabelText('Username'), 'admin');
-  await userEvent.type(canvas.getByLabelText('Password'), 'secret');
+  await userEvent.type(canvas.getByLabelText('Password'), password);
   await userEvent.click(canvas.getByRole('button', { name: 'Submit' }));
 };
 
-export const expectsRedirectHome = async () => {
-  await waitFor(() => expect(getRouterMock().push).toHaveBeenCalledWith('/'));
+export const navigatesHomeOnSuccess: Interaction = {
+  name: 'navigates to "/" after a successful login',
+  props: () => props(),
+  play: async (canvasElement) => {
+    await submitCredentials(canvasElement, 'secret');
+    await waitFor(() => expect(getRouterMock().push).toHaveBeenCalledWith('/'));
+  },
 };
-```
 
-The Jest file and the story file each import these and supply their own rendering:
-
-```ts
-// AuthLoginHandler.test.tsx
-it('redirects home after a successful login', async () => {
-  const { container } = render(<AuthLoginHandler {...createProps()} />);
-  await login(container);
-  await expectsRedirectHome();
-});
-```
-
-```ts
-// AuthLoginHandler.stories.tsx
-export const SuccessfulLogin: Story = {
-  play: async ({ canvasElement }) => {
-    await login(canvasElement);
-    await expectsRedirectHome();
+export const staysOnPageOnFailure: Interaction = {
+  name: 'does not navigate and shows the error banner when login fails',
+  props: () => props(true),
+  play: async (canvasElement) => {
+    await submitCredentials(canvasElement, 'wrong');
+    const canvas = within(canvasElement);
+    await canvas.findByText('Failed to submit. Please try again.');
+    expect(getRouterMock().push).not.toHaveBeenCalled();
   },
 };
 ```
 
+Both drivers then carry only wiring:
+
+```tsx
+// AuthLoginHandler.test.tsx
+import { AuthLoginHandler } from './AuthLoginHandler';
+import * as interactions from './AuthLoginHandler.interactions';
+import { runInteractions } from '../interactions';
+
+runInteractions('AuthLoginHandler', AuthLoginHandler, interactions);
+```
+
+```tsx
+// AuthLoginHandler.stories.tsx
+import { AuthLoginHandler } from './AuthLoginHandler';
+import * as interactions from './AuthLoginHandler.interactions';
+import { handlerStories } from '../interactions';
+
+const { meta, toStory } = handlerStories('Handlers/POS/AuthLoginHandler', AuthLoginHandler);
+export default meta;
+
+export const NavigatesHomeOnSuccess = toStory(interactions.navigatesHomeOnSuccess);
+export const StaysOnPageOnFailure = toStory(interactions.staysOnPageOnFailure);
+```
+
+Four mechanics make this work, all of them in the shared `handlers/interactions.ts`:
+
+- **`runInteractions`** wraps `describe` + `it` + `render` + `play`, and collects cases from the
+  namespace import by *shape* (`typeof v === 'object' && 'play' in v`). That is what lets shared
+  steps like `submitCredentials` and `props` live in the same file without being mistaken for cases —
+  a case is an object, a step is a function.
+- **`toStory`** builds the CSF object: `loaders: [async () => ({ props: interaction.props() })]` plus
+  `render: (_args, { loaded }) => <Handler {...loaded.props} />`. Loaders re-run on every story
+  render, so replaying a story in the Interactions panel gets a *fresh* mock repository rather than
+  one dirtied by the previous run. (`loaders`, `beforeEach` with a cleanup callback, and `loaded` on
+  the story context are all present in `@storybook/csf` as locked at Storybook 8.6 — verified against
+  `package-lock.json`, not assumed.)
+- **`beforeEach`** resets the router/toast recorders (D6) in both runners.
+- **`handlerStories`** supplies the `meta` — `component`, `title`, and
+  `parameters: { controls: { disable: true } }`, since a handler's only args are usecases and the
+  controls panel is noise for them.
+
+Two consequences worth accepting deliberately:
+
+1. **The stories file needs one named export per case.** CSF's indexer reads named exports
+   statically, so stories cannot be generated in a loop the way `runInteractions` generates `it`s.
+   One line per case is the floor; the test file gets away with a single line for the whole suite.
+2. **A case that cannot run in Storybook simply gets no story line** — the printer (`usePrinter`,
+   WebSocket) and QR-scanner flows are the expected cases. It still runs under Jest, and Phase 12's
+   PR body lists any case left out and why.
+
 `@storybook/test` re-exports Testing Library plus a Jest-compatible `expect` and `fn`, so one import
-serves both runners. `waitFor` replaces `act(async () => flushPromises())`, which has no meaning
-outside Jest. `flushPromises` stays in `utils/testUtils.tsx` for specs not yet ported.
+serves both runners. `waitFor`/`findBy*` replace `act(async () => flushPromises())`, which has no
+meaning outside Jest. `flushPromises` stays in `utils/testUtils.tsx` for specs not yet ported.
 
 **D12 — Boundaries are lint rules, not conventions.** The existing per-app `no-restricted-imports`
 globs in `libs/ui/.eslintrc.json` move to the new paths in Phase 7, and Phase 9 adds the
@@ -446,28 +521,30 @@ one PR; they are independent.
 - Point `solito/router$` at the recording version; add a `@tamagui/toast$` alias to the same
   registry; wire `ToastProvider`/`PortalProvider` into `preview.tsx` for any story that renders a
   real toast.
+- Write `presentation/handlers/interactions.ts` — the `HandlerInteraction` type, `runInteractions`
+  (Jest) and `handlerStories`/`toStory` (Storybook) from D11.
 - Add `@storybook/test-runner` + a `test-storybook` target in `libs/ui/project.json`; add the
   `main`-only workflow job (D7).
-- Prove it with a throwaway story that asserts on a recorded `push`.
-- **Check:** `nx run ui:test-storybook` passes locally against the three existing `play` stories.
+- **Check:** `nx run ui:test-storybook` passes locally against the three existing `play` stories, and
+  a throwaway interaction proves the `loaders` path really does hand a story replay a fresh mock repo.
 
-**Phase 11 — Pilot the shared spec (`AuthLoginHandler`).**
-- Extract `AuthLoginHandler.interactions.ts` (D11); rewrite `AuthLoginHandler.test.tsx` as a driver
-  over it; add `AuthLoginHandler.stories.tsx` under `Handlers/POS/…` with one story per flow.
+**Phase 11 — Pilot the case shape (`AuthLoginHandler`).**
+- Turn `AuthLoginHandler.test.tsx`'s nine `it`s into nine exported cases in
+  `AuthLoginHandler.interactions.ts`; reduce the test file to the single `runInteractions(...)` call;
+  add `AuthLoginHandler.stories.tsx` with one `toStory` line per case.
 - Fix the password query per D10 and record the divergence in a comment.
-- **Check:** the same spec passes under `nx run ui:test` **and** `nx run ui:test-storybook`; both
-  assert the same recorded `push('/')`.
+- **Check:** the same nine cases pass under `nx run ui:test` **and** `nx run ui:test-storybook`;
+  `AuthLoginHandler.test.tsx` is four lines.
 
-**Phase 12 — Port the remaining 55 handler specs.** In the Track A batches (§Track A table) so each
-PR is one domain group, ~6–12 specs. Per spec: extract steps, add the story, keep assertions
-byte-identical, change only queries (D10). A spec that cannot be made to pass in Storybook is
-**not** forced: leave the Jest test as-is, add a `// storybook: <reason>` comment, and list it in
-the phase's PR body. Expect a handful — the printer (`usePrinter`, WebSocket) and QR-scanner screens
-are the likely candidates.
+**Phase 12 — Port the remaining 55 handlers.** In the Track A batches (§Track A table) so each PR is
+one domain group, ~6–12 handlers. Per handler: lift each `it` body into a case, factor the repeated
+setup into unexported step functions, keep assertions byte-identical, change only queries (D10). A
+case that cannot run in Storybook keeps its Jest run and gets no story line — the phase's PR body
+lists each one and why. Expect a handful: the printer (`usePrinter`, WebSocket) and QR-scanner flows.
 
-**Phase 13 — Close the gap.** Write specs for the 5 untested handlers — `ChecklistSessionDetail`,
-`ChecklistSessionList`, `ChecklistTemplateList`, `PurchaseList`, `StockCheckList` — in the new
-shared-spec shape, so they land in both runners at once. Optional; schedule it independently.
+**Phase 13 — Close the gap.** Write cases for the 5 untested handlers — `ChecklistSessionDetail`,
+`ChecklistSessionList`, `ChecklistTemplateList`, `PurchaseList`, `StockCheckList` — in the D11 shape,
+so they land in both runners at once. Optional; schedule it independently.
 
 ---
 
@@ -478,8 +555,10 @@ shared-spec shape, so they land in both runners at once. Optional; schedule it i
 | An inline changes effect ordering or dependency arrays and alters behaviour | Medium | Existing handler tests must pass **unmodified** in every Track A PR — that is the phase gate, not a suggestion. Merge two effects only when they key off the same state field. |
 | A 298-file rename is unreviewable | Medium | D5: rename-detection means the reviewer reads the barrel and config diff, not 298 files. Phase 9 splits in two if desired. |
 | Real Tamagui breaks ported queries (§3.3) | **High — already demonstrated** | D10; and Phase 12 explicitly permits Jest-only specs with a recorded reason rather than forcing a bad port. |
-| `@storybook/test`'s `expect` misbehaves under Jest | Low | Proven or disproven in Phase 11 on one file. Fallback: the spec module takes the assertion helpers as a parameter, and each runner passes its own. |
+| `@storybook/test`'s `expect` misbehaves under Jest | Low | Proven or disproven in Phase 11 on one file. Fallback: the case module takes the assertion helpers as a parameter, and each runner passes its own. |
 | Storybook build time makes CI unpleasant | Medium | D7 keeps it off the PR path entirely. |
+| The sidebar grows by one entry per test case (~400–500 across 61 handlers) | **High — by construction** | Each handler's cases nest under its own `Handlers/POS/<Name>` folder, so the top level grows by 61, not 500. If it still reads as clutter, tag the non-showcase cases `['!dev']` — they stay out of the sidebar and still run in the test-runner. Decide at the end of Phase 12, with the real list in front of you. |
+| A Jest failure's stack points into `.interactions.ts`, not the test file | Low | `runInteractions` names each `it` from `interaction.name`, so the report still identifies the case; the driver file has no logic worth pointing at. |
 | Order app's bundle regains POS code via a careless barrel | Low | Phase 7 preserves the deep-import discipline in `app/order/*` and moves the app-boundary lint rules with the files. |
 
 ## 8. Rollback
@@ -495,5 +574,8 @@ untouched, since the specs (D11) run under Jest regardless of whether Storybook 
 2. **Story namespace for handlers** — `Handlers/POS/AuthLoginHandler` is assumed, alongside the
    existing `Screens/POS/AuthLoginScreen`. The alternative is nesting the interaction story under
    the screen's own namespace so both appear together in the sidebar.
-3. **Should Phase 13 block the TRD's completion?** It is the only phase that writes new test
+3. **Is every case a visible story?** D11 makes them all visible, which is the point of the request —
+   the sidebar becomes a browsable catalogue of what the app is tested to do. The cost is the row in
+   §7; `['!dev']` is the dial if it proves too much.
+4. **Should Phase 13 block the TRD's completion?** It is the only phase that writes new test
    coverage rather than relocating existing behaviour.
