@@ -6,11 +6,9 @@ import {
 } from '../../../domain';
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
-import {
-  useAuthLogoutController,
-  useTableRegenerateCodeController,
-  useTableUpdateController,
-} from '../../controllers';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
+import { useAuthLogoutController } from '../../controllers';
 import {
   TableUpdateScreen,
   TableUpdateScreenProps,
@@ -28,27 +26,35 @@ export const TableUpdateHandler = ({
   tableRegenerateCodeUsecase,
 }: TableUpdateHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const tableUpdate = useTableUpdateController(tableUpdateUsecase);
-  const tableRegenerateCode = useTableRegenerateCodeController(
-    tableRegenerateCodeUsecase
-  );
+  const tableUpdate = useController(tableUpdateUsecase);
+  const tableRegenerateCode = useController(tableRegenerateCodeUsecase);
   const router = useRouter();
+  const toast = useToastController();
 
   useEffect(() => {
-    if (tableUpdate.state.type === 'submitSuccess') router.push('/tables');
-  }, [tableUpdate.state.type, router]);
+    if (tableUpdate.state.type === 'submitSuccess') {
+      toast.show('Update Table Success');
+      router.push('/tables');
+    } else if (tableUpdate.state.type === 'submitError') {
+      toast.show('Update Table Error');
+    }
+  }, [tableUpdate.state.type, toast, router]);
 
   useEffect(() => {
     match(tableRegenerateCode.state)
       .with({ type: 'regeneratingSuccess' }, () => {
+        toast.show('Regenerate Table Code Success');
         // Picks up the new code by refetching the table (loaded -> loading
         // -> loaded), rather than trusting the client to merge it in.
         tableUpdate.dispatch({ type: 'FETCH' });
       })
+      .with({ type: 'regeneratingError' }, () => {
+        toast.show('Regenerate Table Code Error');
+      })
       .otherwise(() => {
         // noop
       });
-  }, [tableRegenerateCode.state, tableUpdate]);
+  }, [tableRegenerateCode.state, tableUpdate, toast]);
 
   return (
     <TableUpdateScreen

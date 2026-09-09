@@ -7,9 +7,10 @@ import {
 import { RentalListScreen, RentalListScreenProps } from './RentalListScreen';
 import { match, P } from 'ts-pattern';
 import { useEffect, useRef } from 'react';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
 import {
   useAuthLogoutController,
-  useRentalDeleteController,
   useRentalListController,
 } from '../../controllers';
 
@@ -26,19 +27,24 @@ export const RentalListHandler = ({
 }: RentalListHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
   const rentalList = useRentalListController(rentalListUsecase);
-  const rentalDelete = useRentalDeleteController(rentalDeleteUsecase);
+  const rentalDelete = useController(rentalDeleteUsecase);
   const router = useRouter();
+  const toast = useToastController();
   const debounceTimeoutRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
     match(rentalDelete.state)
       .with({ type: 'deletingSuccess' }, () => {
+        toast.show('Delete Rental Success');
         rentalList.dispatch({ type: 'FETCH' });
+      })
+      .with({ type: 'deletingError' }, () => {
+        toast.show('Delete Rental Error');
       })
       .otherwise(() => {
         // noop
       });
-  }, [rentalDelete.state, rentalList]);
+  }, [rentalDelete.state, rentalList, toast]);
 
   const onSearchValueChange = (query: string) => {
     if (debounceTimeoutRef.current) {

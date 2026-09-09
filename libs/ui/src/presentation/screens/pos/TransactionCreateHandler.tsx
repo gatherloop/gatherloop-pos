@@ -1,8 +1,9 @@
 import { useRouter } from 'solito/router';
 import { useEffect, useRef } from 'react';
 import { UseFormReturn } from 'react-hook-form';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
 import {
-  useTransactionCreateController,
   useAuthLogoutController,
   useTransactionItemSelectController,
   useTransactionPayController,
@@ -50,10 +51,9 @@ export const TransactionCreateHandler = ({
   const router = useRouter();
   const { print } = usePrinter();
   const { show } = useConfirmationAlert();
+  const toast = useToastController();
 
-  const transactionCreateController = useTransactionCreateController(
-    transactionCreateUsecase
-  );
+  const transactionCreateController = useController(transactionCreateUsecase);
   const transactionItemSelectController = useTransactionItemSelectController(
     transactionItemSelectUsecase
   );
@@ -100,6 +100,13 @@ export const TransactionCreateHandler = ({
       ]);
     }
   };
+
+  useEffect(() => {
+    if (transactionCreateController.state.type === 'submitSuccess')
+      toast.show('Create Transaction Success');
+    else if (transactionCreateController.state.type === 'submitError')
+      toast.show('Create Transaction Error');
+  }, [toast, transactionCreateController.state.type]);
 
   useEffect(() => {
     if (

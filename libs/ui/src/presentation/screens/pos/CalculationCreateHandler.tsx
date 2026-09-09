@@ -2,10 +2,9 @@ import { useRouter } from 'solito/router';
 import { AuthLogoutUsecase, CalculationCreateUsecase } from '../../../domain';
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
-import {
-  useAuthLogoutController,
-  useCalculationCreateController,
-} from '../../controllers';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
+import { useAuthLogoutController } from '../../controllers';
 import {
   CalculationCreateScreen,
   CalculationCreateScreenProps,
@@ -21,16 +20,19 @@ export const CalculationCreateHandler = ({
   calculationCreateUsecase,
 }: CalculationCreateHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const calculationCreate = useCalculationCreateController(
-    calculationCreateUsecase
-  );
+  const calculationCreate = useController(calculationCreateUsecase);
 
   const router = useRouter();
+  const toast = useToastController();
 
   useEffect(() => {
-    if (calculationCreate.state.type === 'submitSuccess')
+    if (calculationCreate.state.type === 'submitSuccess') {
+      toast.show('Create Calculation Success');
       router.push('/calculations');
-  }, [calculationCreate.state.type, router]);
+    } else if (calculationCreate.state.type === 'submitError') {
+      toast.show('Create Calculation Error');
+    }
+  }, [calculationCreate.state.type, toast, router]);
 
   return (
     <CalculationCreateScreen
