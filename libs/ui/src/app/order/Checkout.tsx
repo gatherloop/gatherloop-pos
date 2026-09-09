@@ -4,7 +4,7 @@ import { ApiPublicTableRepository } from '../../data/api/publicTable';
 import { CookieSessionRepository } from '../../data/session/CookieSessionRepository';
 import { PublicTable } from '../../domain/entities/PublicTable';
 import { TableResolveUsecase } from '../../domain/usecases/tableResolve';
-import { CheckoutHandler } from '../../presentation/screens/order/CheckoutHandler';
+import { CheckoutHandler } from '../../presentation/handlers/order/CheckoutHandler';
 
 export type CheckoutProps = {
   sessionId: string;

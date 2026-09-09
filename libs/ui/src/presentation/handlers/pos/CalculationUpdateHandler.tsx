@@ -1,0 +1,83 @@
+import { useRouter } from 'solito/router';
+import { AuthLogoutUsecase, CalculationUpdateUsecase } from '../../../domain';
+import { CalculationUpdateScreen, CalculationUpdateScreenProps } from '../../screens/pos/CalculationUpdateScreen';
+import { match, P } from 'ts-pattern';
+import { useEffect } from 'react';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
+import { useAuthLogoutController } from '../../controllers';
+
+export type CalculationUpdateHandlerProps = {
+  authLogoutUsecase: AuthLogoutUsecase;
+  calculationUpdateUsecase: CalculationUpdateUsecase;
+};
+
+export const CalculationUpdateHandler = ({
+  authLogoutUsecase,
+  calculationUpdateUsecase,
+}: CalculationUpdateHandlerProps) => {
+  const authLogout = useAuthLogoutController(authLogoutUsecase);
+  const calculationUpdate = useController(calculationUpdateUsecase);
+  const router = useRouter();
+  const toast = useToastController();
+
+  useEffect(() => {
+    if (calculationUpdate.state.type === 'submitSuccess') {
+      toast.show('Update Calculation Success');
+      router.push('/calculations');
+    } else if (calculationUpdate.state.type === 'submitError') {
+      toast.show('Update Calculation Error');
+    }
+  }, [calculationUpdate.state.type, toast, router]);
+
+  return (
+    <CalculationUpdateScreen
+      onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
+      defaultValues={calculationUpdate.state.values}
+      getTotalWallet={(totalWallet, walletId) => {
+        return isNaN(totalWallet)
+          ? calculationUpdate.state.wallets.find(
+              (wallet) => wallet.id === walletId
+            )?.balance ?? 0
+          : totalWallet;
+      }}
+      isSubmitDisabled={calculationUpdate.state.isComplete}
+      isSubmitting={calculationUpdate.state.type === 'submitting'}
+      serverError={
+        calculationUpdate.state.type === 'submitError'
+          ? 'Failed to submit. Please try again.'
+          : undefined
+      }
+      onSubmit={(values) =>
+        calculationUpdate.dispatch({ type: 'SUBMIT', values })
+      }
+      variant={match(calculationUpdate.state)
+        .returnType<CalculationUpdateScreenProps['variant']>()
+        .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))
+        .with(
+          {
+            type: P.union(
+              'loaded',
+              'submitting',
+              'submitSuccess',
+              'submitError'
+            ),
+          },
+          () => ({
+            type: 'loaded',
+          })
+        )
+        .with({ type: 'error' }, () => ({
+          type: 'error',
+          onRetryButtonPress: () =>
+            calculationUpdate.dispatch({ type: 'FETCH' }),
+        }))
+        .exhaustive()}
+      walletSelectOptions={calculationUpdate.state.wallets.map((wallet) => ({
+        label: wallet.name,
+        value: wallet.id,
+      }))}
+    />
+  );
+};
+
