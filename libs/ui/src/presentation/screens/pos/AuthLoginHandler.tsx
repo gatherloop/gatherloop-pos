@@ -1,7 +1,8 @@
 import { useRouter } from 'solito/router';
 import { AuthLoginUsecase } from '../../../domain';
-import { useAuthLoginController } from '../../controllers';
+import { useController } from '../../controllers/controller';
 import { useEffect } from 'react';
+import { useToastController } from '@tamagui/toast';
 import { AuthLoginScreen } from './AuthLoginScreen';
 
 export type AuthLoginHandlerProps = {
@@ -9,28 +10,31 @@ export type AuthLoginHandlerProps = {
 };
 
 export const AuthLoginHandler = (props: AuthLoginHandlerProps) => {
-  const authLoginController = useAuthLoginController(props.authLoginUsecase);
+  const { state, dispatch } = useController(props.authLoginUsecase);
   const router = useRouter();
+  const toast = useToastController();
 
   useEffect(() => {
-    if (authLoginController.state.type === 'submitSuccess') router.push('/');
-  }, [authLoginController.state.type, router]);
+    if (state.type === 'submitSuccess') {
+      toast.show('Login Success');
+      router.push('/');
+    }
+  }, [state.type, toast, router]);
 
   return (
     <AuthLoginScreen
-      defaultValues={authLoginController.state.values}
+      defaultValues={state.values}
       isSubmitDisabled={
-        authLoginController.state.type === 'submitting' ||
-        authLoginController.state.type === 'submitSuccess'
+        state.type === 'submitting' || state.type === 'submitSuccess'
       }
-      isSubmitting={authLoginController.state.type === 'submitting'}
+      isSubmitting={state.type === 'submitting'}
       serverError={
-        authLoginController.state.type === 'submitError'
+        state.type === 'submitError'
           ? 'Failed to submit. Please try again.'
           : undefined
       }
       onSubmit={(values) => {
-        authLoginController.dispatch({ type: 'SUBMIT', values });
+        dispatch({ type: 'SUBMIT', values });
       }}
       variant={{ type: 'loaded' }}
     />
