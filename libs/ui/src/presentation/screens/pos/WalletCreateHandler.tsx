@@ -1,10 +1,9 @@
 import { useRouter } from 'solito/router';
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
-import {
-  useWalletCreateController,
-  useAuthLogoutController,
-} from '../../controllers';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
+import { useAuthLogoutController } from '../../controllers';
 import { AuthLogoutUsecase, WalletCreateUsecase } from '../../../domain';
 import { WalletCreateScreen, WalletCreateScreenProps } from './WalletCreateScreen';
 
@@ -18,12 +17,18 @@ export const WalletCreateHandler = ({
   authLogoutUsecase,
 }: WalletCreateHandlerProps) => {
   const router = useRouter();
-  const walletCreate = useWalletCreateController(walletCreateUsecase);
+  const walletCreate = useController(walletCreateUsecase);
   const authLogout = useAuthLogoutController(authLogoutUsecase);
+  const toast = useToastController();
 
   useEffect(() => {
-    if (walletCreate.state.type === 'submitSuccess') router.push('/wallets');
-  }, [walletCreate.state.type, router]);
+    if (walletCreate.state.type === 'submitSuccess') {
+      toast.show('Create Wallet Success');
+      router.push('/wallets');
+    } else if (walletCreate.state.type === 'submitError') {
+      toast.show('Create Wallet Error');
+    }
+  }, [walletCreate.state.type, router, toast]);
 
   return (
     <WalletCreateScreen

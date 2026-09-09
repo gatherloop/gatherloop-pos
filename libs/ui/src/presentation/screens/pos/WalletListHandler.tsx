@@ -1,9 +1,9 @@
 import { useRouter } from 'solito/router';
 import { match, P } from 'ts-pattern';
-import {
-  useAuthLogoutController,
-  useWalletListController,
-} from '../../controllers';
+import { useCallback } from 'react';
+import { useController } from '../../controllers/controller';
+import { useAuthLogoutController } from '../../controllers';
+import { useFocusEffect } from '../../../utils';
 import { AuthLogoutUsecase, WalletListUsecase } from '../../../domain';
 import { Wallet } from '../../../domain';
 import { WalletListScreen, WalletListScreenProps } from './WalletListScreen';
@@ -18,8 +18,14 @@ export const WalletListHandler = ({
   walletListUsecase,
 }: WalletListHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const walletList = useWalletListController(walletListUsecase);
+  const walletList = useController(walletListUsecase);
   const router = useRouter();
+
+  useFocusEffect(
+    useCallback(() => {
+      walletList.dispatch({ type: 'FETCH' });
+    }, [walletList.dispatch])
+  );
 
   return (
     <WalletListScreen
