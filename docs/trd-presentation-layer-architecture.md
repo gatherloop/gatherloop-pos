@@ -2,7 +2,8 @@
 
 **Status:** proposed
 **Scope:** `libs/ui/src/presentation/**`, `libs/ui/src/index*.ts`, `libs/ui/.eslintrc.json`,
-`libs/ui/src/app/**` (import paths only)
+`libs/ui/src/app/**` (import paths only), `README.md` and `docs/forms.md` (the paragraphs that teach
+the layer names)
 **Non-scope:** `libs/ui/src/{domain,data,utils}`, `libs/api-contract`, `libs/provider`, `apps/api`,
 any runtime behaviour, any component or screen prop API, the test suites' content, the e2e suites,
 running handler tests in Storybook (deferred — see §9)
@@ -144,7 +145,7 @@ entries in which the layer boundary is spelled only in the filename suffix.
 ```
 libs/ui/src/presentation/
   handlers/                       ← stateful: usecases, reducers, effects, router, toast, printer
-    useController.ts              ← the useReducer↔Usecase bridge (was controllers/controller.ts)
+    useUsecase.ts                 ← the useReducer↔Usecase bridge (was controllers/controller.ts)
     shared/                       ← the 13 hooks with ≥2 call sites
       useAuthLogout.ts
       useCouponList.ts
@@ -174,7 +175,7 @@ libs/ui/src/presentation/
 | Layer | May import | May **not** import |
 | --- | --- | --- |
 | `handlers/**` | `domain`, `data`, `utils`, `views/**`, `handlers/shared` | another app's handlers |
-| `handlers/shared/**` | `domain`, `utils`, `handlers/useController` | any `handlers/{pos,order}/**` |
+| `handlers/shared/**` | `domain`, `utils`, `handlers/useUsecase` | any `handlers/{pos,order}/**` |
 | `views/screens/**` | `views/components`, `domain` **entities/forms only** | `handlers/**`, `domain/usecases`, `data/**` |
 | `views/components/**` | `views/components`, `domain` entities | `handlers/**`, `data/**` |
 
@@ -186,14 +187,16 @@ libs/ui/src/presentation/
 ones (§1.1) move to `handlers/shared/` as hooks. Inlining `useAuthLogoutController` into its 55
 handlers would duplicate a router push and a toast 55 times; that is the opposite of the goal.
 
-**D2 — `useController` survives, renamed and relocated.** It is the actual `Usecase`↔React binding
-and is called by all 84 controllers today. It becomes `handlers/useController.ts`. Handlers call it
-directly:
+**D2 — the base hook survives, relocated and renamed `useUsecase`.** It is the actual
+`Usecase`↔React binding and is called by all 84 controllers today; it becomes
+`handlers/useUsecase.ts`, and the `Controller<State, Action>` type it returns becomes
+`UsecaseBinding<State, Action>` (nothing outside `controller.ts` references that type, so the rename
+is free). Handlers call it directly:
 
 ```tsx
 // after
 export const AuthLoginHandler = ({ authLoginUsecase }: AuthLoginHandlerProps) => {
-  const { state, dispatch } = useController(authLoginUsecase);
+  const { state, dispatch } = useUsecase(authLoginUsecase);
   const router = useRouter();
   const toast = useToastController();
 
@@ -210,6 +213,29 @@ export const AuthLoginHandler = ({ authLoginUsecase }: AuthLoginHandlerProps) =>
 
 Note the incidental win: the toast and the redirect that fire on the *same* state end up in the same
 effect, instead of two effects in two files.
+
+**D2a — the word "controller" leaves the codebase entirely, and "handler" does not replace it.**
+Once `controllers/` is deleted, a surviving `useController` would name a layer that no longer
+exists. Two candidate replacements were considered:
+
+- **`useHandler`** — rejected. `Handler` already names a *component* (`AuthLoginHandler`), so
+  `useHandler(usecase)` inside `AuthLoginHandler` reads as a handler using a handler, and the
+  returned type (`{ state, dispatch }`) would collide with that meaning. Hook convention is that
+  `useX` returns an `X`; this hook does not return a handler.
+- **`useUsecase`** — chosen. It returns the React binding of a `Usecase`, which is vocabulary
+  `domain/` already owns (`IUsecase.ts`, `Usecase<State, Action, Params>`), and it reads correctly
+  at every call site: `useUsecase(authLoginUsecase)`. Runner-up was `useStateMachine`, which the
+  README's own description of usecases would also support.
+
+There is a second reason not to keep the old name: `Controller` is **already taken** in this
+codebase by `react-hook-form`'s `Controller`, imported by six form components
+(`base/Form/{InputText,InputNumber,Select,Switch,Textarea}.tsx`, `materials/MaterialFormView.tsx`).
+After Phase 9 those files sit under `views/`, one folder away from a hook that would otherwise mean
+something entirely different by the same word.
+
+The 13 shared hooks follow the same rule and take no suffix at all: `useAuthLogout`, not
+`useAuthLogoutController` and not `useAuthLogoutHandler`. They are plain hooks that happen to be
+used by more than one handler.
 
 **D3 — `views/` wraps both `components/` and `screens/`.** The request's tree, adopted as-is. It
 gives the tree one bit that answers "can this file have side effects?" without opening it, and it
@@ -281,7 +307,8 @@ Track A; they change once, in Phase 8, when those hooks are renamed.
 **Phases 2–6 — the sweep.** Same mechanical recipe per handler:
 1. Move the controller's `useEffect`/`useFocusEffect` bodies into the handler, merging effects that
    key off the same state.
-2. Replace `useXController(usecase)` with `useController(usecase)`.
+2. Replace `useXController(usecase)` with `useController(usecase)` — still under its old name; the
+   rename to `useUsecase` happens once, in Phase 8, rather than drifting across six PRs.
 3. Delete the controller file and its `controllers/index.ts` line.
 4. Leave any controller listed in §1.1 alone.
 - **Check per PR:** the touched handlers' existing tests pass **unmodified** (D5), and
@@ -302,15 +329,23 @@ controllers — 15 files, down from 87.
 - **Check:** `git diff --stat -M` reports 100% rename for all 118 files; `nx run ui:test` runs the
   same 57 test files with the same results.
 
-**Phase 8 — `useController` and the shared hooks.**
-- `controllers/controller.ts` → `handlers/useController.ts`.
+**Phase 8 — the base hook, the shared hooks, and the vocabulary (D2a).**
+- `controllers/controller.ts` → `handlers/useUsecase.ts`; `useController` → `useUsecase`,
+  `Controller<State, Action>` → `UsecaseBinding<State, Action>`. Touches every handler, all
+  mechanically.
 - The 13 shared controllers → `handlers/shared/use<Name>.ts`, dropping the `Controller` suffix
   (`useAuthLogoutController` → `useAuthLogout`). This renames one symbol across 55 handler files —
   mechanical, and the last PR in which that symbol moves.
 - Delete `presentation/controllers/` and the controllers ESLint override; port its
   `react-hook-form` / `next` restrictions onto `handlers/**` so the form-ownership rule from
   `trd-form-ownership-refactor.md` keeps its teeth.
-- **Check:** `rg "presentation/controllers" libs apps` returns nothing but this TRD.
+- Update the two living docs that teach the old vocabulary — `README.md` (the tree at line 29, the
+  layer diagram at 122, and the "a **controller** hook binds a use case's state machine to React"
+  paragraph at 131) and `docs/forms.md` (the controller/handler split at lines 13, 38 and 46, plus
+  the `no-restricted-imports` path at line 16). Historical PRDs and superseded TRDs keep their
+  original wording; they describe what was true when they were written.
+- **Check:** `rg -i "controller" libs apps` returns only `react-hook-form`'s `Controller` in the six
+  form components and `useToastController` from Tamagui.
 
 **Phase 9 — Create `views/`.**
 - `git mv presentation/screens presentation/views/screens` (123 remaining files: 65 screens,
@@ -377,7 +412,9 @@ beside their handlers in `handlers/{pos,order}`, which is where the interaction 
 ## 10. Open questions
 
 1. **`handlers/shared/` vs `handlers/hooks/`** — the 13 shared hooks need a home; `shared/` is
-   assumed here. Cosmetic; decide in Phase 8.
+   assumed here. With D2a's rename, everything in `handlers/` that is not a component is now a
+   plain hook, so `hooks/` would also read well and could hold `useUsecase` too. `shared/` keeps the
+   *why* (used by ≥2 handlers) rather than the *what*. Cosmetic; decide in Phase 8.
 2. **Does `handlers/shared/` want per-app subfolders?** 11 of the 13 are POS-only; `useCartController`
    and `useTableResolveController` are order-only. A flat `shared/` cannot be lint-fenced by app the
    way `handlers/{pos,order}` can, so those two would sit outside the boundary the ESLint globs
