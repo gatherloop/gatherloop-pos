@@ -1,4 +1,5 @@
 import { match, P } from 'ts-pattern';
+import { useCallback } from 'react';
 import {
   AuthLogoutUsecase,
   PurchaseList,
@@ -8,11 +9,9 @@ import {
   PurchaseListScreen,
   PurchaseListScreenProps,
 } from './PurchaseListScreen';
-import {
-  useAuthLogoutController,
-  usePurchaseListGetController,
-} from '../../controllers';
-import { usePrinter } from '../../../utils';
+import { useController } from '../../controllers/controller';
+import { useAuthLogoutController } from '../../controllers';
+import { usePrinter, useFocusEffect } from '../../../utils';
 
 export type PurchaseListHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;
@@ -24,7 +23,14 @@ export const PurchaseListHandler = ({
   purchaseListGetUsecase,
 }: PurchaseListHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const purchaseListGet = usePurchaseListGetController(purchaseListGetUsecase);
+  const purchaseListGet = useController(purchaseListGetUsecase);
+
+  useFocusEffect(
+    useCallback(() => {
+      purchaseListGet.dispatch({ type: 'FETCH' });
+    }, [purchaseListGet.dispatch])
+  );
+
   const filteredItems =
     purchaseListGet.state.purchaseList?.items.filter((item) =>
       purchaseListGet.state.purchaseTypeFilter === 'all'

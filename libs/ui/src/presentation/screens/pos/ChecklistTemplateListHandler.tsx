@@ -10,12 +10,10 @@ import {
   ChecklistTemplateListScreenProps,
 } from './ChecklistTemplateListScreen';
 import { match, P } from 'ts-pattern';
-import { useEffect } from 'react';
-import {
-  useAuthLogoutController,
-  useChecklistTemplateDeleteController,
-  useChecklistTemplateListController,
-} from '../../controllers';
+import { useCallback, useEffect } from 'react';
+import { useController } from '../../controllers/controller';
+import { useAuthLogoutController } from '../../controllers';
+import { useFocusEffect } from '../../../utils';
 
 export type ChecklistTemplateListHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;
@@ -29,13 +27,15 @@ export const ChecklistTemplateListHandler = ({
   checklistTemplateDeleteUsecase,
 }: ChecklistTemplateListHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const checklistTemplateList = useChecklistTemplateListController(
-    checklistTemplateListUsecase
-  );
-  const checklistTemplateDelete = useChecklistTemplateDeleteController(
-    checklistTemplateDeleteUsecase
-  );
+  const checklistTemplateList = useController(checklistTemplateListUsecase);
+  const checklistTemplateDelete = useController(checklistTemplateDeleteUsecase);
   const router = useRouter();
+
+  useFocusEffect(
+    useCallback(() => {
+      checklistTemplateList.dispatch({ type: 'FETCH' });
+    }, [checklistTemplateList.dispatch])
+  );
 
   useEffect(() => {
     match(checklistTemplateDelete.state)
