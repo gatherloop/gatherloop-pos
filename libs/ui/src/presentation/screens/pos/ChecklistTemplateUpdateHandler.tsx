@@ -1,10 +1,9 @@
 import { useRouter } from 'solito/router';
 import { AuthLogoutUsecase, ChecklistTemplateUpdateUsecase } from '../../../domain';
 import { useEffect } from 'react';
-import {
-  useAuthLogoutController,
-  useChecklistTemplateUpdateController,
-} from '../../controllers';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
+import { useAuthLogoutController } from '../../controllers';
 import {
   ChecklistTemplateUpdateScreen,
   ChecklistTemplateUpdateScreenProps,
@@ -21,16 +20,18 @@ export const ChecklistTemplateUpdateHandler = ({
   checklistTemplateUpdateUsecase,
 }: ChecklistTemplateUpdateHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const checklistTemplateUpdate = useChecklistTemplateUpdateController(
-    checklistTemplateUpdateUsecase
-  );
+  const checklistTemplateUpdate = useController(checklistTemplateUpdateUsecase);
   const router = useRouter();
+  const toast = useToastController();
 
   useEffect(() => {
     if (checklistTemplateUpdate.state.type === 'submitSuccess') {
+      toast.show('Update Checklist Template Success');
       router.push('/checklist-templates');
+    } else if (checklistTemplateUpdate.state.type === 'submitError') {
+      toast.show('Update Checklist Template Error');
     }
-  }, [checklistTemplateUpdate.state.type, router]);
+  }, [checklistTemplateUpdate.state.type, router, toast]);
 
   return (
     <ChecklistTemplateUpdateScreen

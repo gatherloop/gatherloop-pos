@@ -2,10 +2,9 @@ import { useRouter } from 'solito/router';
 import { AuthLogoutUsecase, ChecklistTemplateCreateUsecase } from '../../../domain';
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
-import {
-  useAuthLogoutController,
-  useChecklistTemplateCreateController,
-} from '../../controllers';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
+import { useAuthLogoutController } from '../../controllers';
 import {
   ChecklistTemplateCreateScreen,
   ChecklistTemplateCreateScreenProps,
@@ -21,16 +20,18 @@ export const ChecklistTemplateCreateHandler = ({
   checklistTemplateCreateUsecase,
 }: ChecklistTemplateCreateHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const checklistTemplateCreate = useChecklistTemplateCreateController(
-    checklistTemplateCreateUsecase
-  );
+  const checklistTemplateCreate = useController(checklistTemplateCreateUsecase);
   const router = useRouter();
+  const toast = useToastController();
 
   useEffect(() => {
     if (checklistTemplateCreate.state.type === 'submitSuccess') {
+      toast.show('Create Checklist Template Success');
       router.push('/checklist-templates');
+    } else if (checklistTemplateCreate.state.type === 'submitError') {
+      toast.show('Create Checklist Template Error');
     }
-  }, [checklistTemplateCreate.state.type, router]);
+  }, [checklistTemplateCreate.state.type, router, toast]);
 
   return (
     <ChecklistTemplateCreateScreen

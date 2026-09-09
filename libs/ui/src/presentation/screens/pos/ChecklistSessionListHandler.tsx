@@ -1,6 +1,8 @@
 import { useRouter } from 'solito/router';
 import { match, P } from 'ts-pattern';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
 import {
   AuthLogoutUsecase,
   ChecklistSession,
@@ -9,11 +11,8 @@ import {
   ChecklistSessionListUsecase,
   ChecklistTemplate,
 } from '../../../domain';
-import {
-  useAuthLogoutController,
-  useChecklistSessionCreateController,
-  useChecklistSessionListController,
-} from '../../controllers';
+import { useAuthLogoutController } from '../../controllers';
+import { useFocusEffect } from '../../../utils';
 import {
   ChecklistSessionListScreen,
   ChecklistSessionListScreenProps,
@@ -33,20 +32,26 @@ export const ChecklistSessionListHandler = ({
   checklistTemplates,
 }: ChecklistSessionListHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const checklistSessionList = useChecklistSessionListController(
-    checklistSessionListUsecase
-  );
-  const checklistSessionCreate = useChecklistSessionCreateController(
-    checklistSessionCreateUsecase
-  );
+  const checklistSessionList = useController(checklistSessionListUsecase);
+  const checklistSessionCreate = useController(checklistSessionCreateUsecase);
   const router = useRouter();
+  const toast = useToastController();
+
+  useFocusEffect(
+    useCallback(() => {
+      checklistSessionList.dispatch({ type: 'FETCH' });
+    }, [checklistSessionList.dispatch])
+  );
 
   useEffect(() => {
     if (checklistSessionCreate.state.type === 'submitSuccess') {
+      toast.show('Checklist session created');
       const session = checklistSessionCreate.state.checklistSession;
       router.push(`/checklist-sessions/${session.id}`);
+    } else if (checklistSessionCreate.state.type === 'submitError') {
+      toast.show('Failed to create checklist session');
     }
-  }, [checklistSessionCreate.state, router]);
+  }, [checklistSessionCreate.state, router, toast]);
 
   return (
     <ChecklistSessionListScreen

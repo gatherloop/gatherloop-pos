@@ -7,11 +7,8 @@ import {
   ChecklistSessionDeleteUsecase,
   ChecklistSessionDetailUsecase,
 } from '../../../domain';
-import {
-  useAuthLogoutController,
-  useChecklistSessionDeleteController,
-  useChecklistSessionDetailController,
-} from '../../controllers';
+import { useController } from '../../controllers/controller';
+import { useAuthLogoutController } from '../../controllers';
 import {
   ChecklistSessionDetailScreen,
   ChecklistSessionDetailScreenProps,
@@ -29,12 +26,8 @@ export const ChecklistSessionDetailHandler = ({
   checklistSessionDeleteUsecase,
 }: ChecklistSessionDetailHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const checklistSessionDetail = useChecklistSessionDetailController(
-    checklistSessionDetailUsecase
-  );
-  const checklistSessionDelete = useChecklistSessionDeleteController(
-    checklistSessionDeleteUsecase
-  );
+  const checklistSessionDetail = useController(checklistSessionDetailUsecase);
+  const checklistSessionDelete = useController(checklistSessionDeleteUsecase);
   const router = useRouter();
 
   // Navigate back after deletion

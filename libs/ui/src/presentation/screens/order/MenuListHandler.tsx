@@ -15,9 +15,8 @@ import {
 import { MenuListUsecase } from '../../../domain/usecases/menuList';
 import { TableResolveUsecase } from '../../../domain/usecases/tableResolve';
 import { CartBar } from '../../components/cart/CartBar';
+import { useController } from '../../controllers/controller';
 import { useCartController } from '../../controllers/CartController';
-import { useMenuItemDetailController } from '../../controllers/MenuItemDetailController';
-import { useMenuListController } from '../../controllers/MenuListController';
 import { useTableResolveController } from '../../controllers/TableResolveController';
 import { MenuItemDetailScreenProps } from './MenuItemDetailScreen';
 import { MenuListScreen, MenuListScreenProps } from './MenuListScreen';
@@ -135,8 +134,8 @@ export const MenuListHandler = ({
   tableCode,
 }: MenuListHandlerProps) => {
   const tableResolve = useTableResolveController(tableResolveUsecase);
-  const menuList = useMenuListController(menuListUsecase);
-  const menuItemDetail = useMenuItemDetailController(menuItemDetailUsecase);
+  const menuList = useController(menuListUsecase);
+  const menuItemDetail = useController(menuItemDetailUsecase);
   const cart = useCartController(cartUsecase);
   const router = useRouter();
   // FR-5: set to the product id once the guest presses the CTA while options
