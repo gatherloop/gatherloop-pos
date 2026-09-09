@@ -3,10 +3,9 @@ import { AuthLogoutUsecase, CalculationUpdateUsecase } from '../../../domain';
 import { CalculationUpdateScreen, CalculationUpdateScreenProps } from './CalculationUpdateScreen';
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
-import {
-  useAuthLogoutController,
-  useCalculationUpdateController,
-} from '../../controllers';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
+import { useAuthLogoutController } from '../../controllers';
 
 export type CalculationUpdateHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;
@@ -18,16 +17,18 @@ export const CalculationUpdateHandler = ({
   calculationUpdateUsecase,
 }: CalculationUpdateHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const calculationUpdate = useCalculationUpdateController(
-    calculationUpdateUsecase
-  );
+  const calculationUpdate = useController(calculationUpdateUsecase);
   const router = useRouter();
+  const toast = useToastController();
 
   useEffect(() => {
     if (calculationUpdate.state.type === 'submitSuccess') {
+      toast.show('Update Calculation Success');
       router.push('/calculations');
+    } else if (calculationUpdate.state.type === 'submitError') {
+      toast.show('Update Calculation Error');
     }
-  }, [calculationUpdate.state.type, router]);
+  }, [calculationUpdate.state.type, toast, router]);
 
   return (
     <CalculationUpdateScreen

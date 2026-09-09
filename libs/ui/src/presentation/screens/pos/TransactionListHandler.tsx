@@ -1,14 +1,11 @@
 import { useRouter } from 'solito/router';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { match, P } from 'ts-pattern';
 import dayjs from 'dayjs';
-import {
-  useAuthLogoutController,
-  useTransactionDeleteController,
-  useTransactionListController,
-  useTransactionPayController,
-  useTransactionUnpayController,
-} from '../../controllers';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
+import { useAuthLogoutController, useTransactionPayController } from '../../controllers';
+import { useFocusEffect } from '../../../utils';
 import {
   AuthLogoutUsecase,
   Transaction,
@@ -45,26 +42,33 @@ export const TransactionListHandler = ({
   transactionUnpayUsecase,
 }: TransactionListHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const transactionList = useTransactionListController(transactionListUsecase);
-  const transactionDelete = useTransactionDeleteController(
-    transactionDeleteUsecase
-  );
+  const transactionList = useController(transactionListUsecase);
+  const transactionDelete = useController(transactionDeleteUsecase);
   const transactionPay = useTransactionPayController(transactionPayUsecase);
-  const transactionUnpay = useTransactionUnpayController(
-    transactionUnpayUsecase
-  );
+  const transactionUnpay = useController(transactionUnpayUsecase);
   const router = useRouter();
   const { print } = usePrinter();
+  const toast = useToastController();
+
+  useFocusEffect(
+    useCallback(() => {
+      transactionList.dispatch({ type: 'FETCH' });
+    }, [transactionList.dispatch])
+  );
 
   useEffect(() => {
     match(transactionDelete.state)
       .with({ type: 'deletingSuccess' }, () => {
+        toast.show('Delete Transaction Success');
         transactionList.dispatch({ type: 'FETCH' });
+      })
+      .with({ type: 'deletingError' }, () => {
+        toast.show('Delete Transaction Error');
       })
       .otherwise(() => {
         // Default case, do nothing
       });
-  }, [transactionDelete.state, transactionList]);
+  }, [transactionDelete.state, transactionList, toast]);
 
   useEffect(() => {
     match(transactionPay.state)
@@ -79,12 +83,16 @@ export const TransactionListHandler = ({
   useEffect(() => {
     match(transactionUnpay.state)
       .with({ type: 'unpayingSuccess' }, () => {
+        toast.show('Transaction Unpaid');
         transactionList.dispatch({ type: 'FETCH' });
+      })
+      .with({ type: 'unpayingError' }, () => {
+        toast.show('Failed to unpay transaction');
       })
       .otherwise(() => {
         // Default case, do nothing
       });
-  }, [transactionUnpay.state, transactionList]);
+  }, [transactionUnpay.state, transactionList, toast]);
 
   const buildPrintTransaction = (
     transaction: Transaction

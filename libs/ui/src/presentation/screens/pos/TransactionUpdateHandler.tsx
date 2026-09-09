@@ -2,8 +2,9 @@ import { useRouter } from 'solito/router';
 import { useEffect, useRef } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { match, P } from 'ts-pattern';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
 import {
-  useTransactionUpdateController,
   useAuthLogoutController,
   useTransactionItemSelectController,
   useCouponListController,
@@ -35,9 +36,8 @@ export const TransactionUpdateHandler = ({
   authLogoutUsecase,
 }: TransactionUpdateHandlerProps) => {
   const router = useRouter();
-  const transactionUpdate = useTransactionUpdateController(
-    transactionUpdateUsecase
-  );
+  const toast = useToastController();
+  const transactionUpdate = useController(transactionUpdateUsecase);
   const transactionItemSelect = useTransactionItemSelectController(
     transactionItemSelectUsecase
   );
@@ -83,9 +83,13 @@ export const TransactionUpdateHandler = ({
   };
 
   useEffect(() => {
-    if (transactionUpdate.state.type === 'submitSuccess')
+    if (transactionUpdate.state.type === 'submitSuccess') {
+      toast.show('Update Transaction Success');
       router.push('/transactions');
-  }, [transactionUpdate.state.type, router]);
+    } else if (transactionUpdate.state.type === 'submitError') {
+      toast.show('Update Transaction Error');
+    }
+  }, [transactionUpdate.state.type, toast, router]);
 
   useEffect(() => {
     if (

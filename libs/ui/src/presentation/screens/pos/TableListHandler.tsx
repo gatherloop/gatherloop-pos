@@ -7,12 +7,11 @@ import {
 } from '../../../domain';
 import { TableListScreen, TableListScreenProps } from './TableListScreen';
 import { match, P } from 'ts-pattern';
-import { useEffect } from 'react';
-import {
-  useAuthLogoutController,
-  useTableDeleteController,
-  useTableListController,
-} from '../../controllers';
+import { useCallback, useEffect } from 'react';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
+import { useAuthLogoutController } from '../../controllers';
+import { useFocusEffect } from '../../../utils';
 
 export type TableListHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;
@@ -26,19 +25,30 @@ export const TableListHandler = ({
   tableDeleteUsecase,
 }: TableListHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const tableList = useTableListController(tableListUsecase);
-  const tableDelete = useTableDeleteController(tableDeleteUsecase);
+  const tableList = useController(tableListUsecase);
+  const tableDelete = useController(tableDeleteUsecase);
   const router = useRouter();
+  const toast = useToastController();
+
+  useFocusEffect(
+    useCallback(() => {
+      tableList.dispatch({ type: 'FETCH' });
+    }, [tableList.dispatch])
+  );
 
   useEffect(() => {
     match(tableDelete.state)
       .with({ type: 'deletingSuccess' }, () => {
+        toast.show('Delete Table Success');
         tableList.dispatch({ type: 'FETCH' });
+      })
+      .with({ type: 'deletingError' }, () => {
+        toast.show('Delete Table Error');
       })
       .otherwise(() => {
         // noop
       });
-  }, [tableDelete.state, tableList]);
+  }, [tableDelete.state, tableList, toast]);
 
   return (
     <TableListScreen

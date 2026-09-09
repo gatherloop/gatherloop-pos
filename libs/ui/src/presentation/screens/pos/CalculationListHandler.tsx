@@ -8,13 +8,11 @@ import {
 } from '../../../domain';
 import { CalculationListScreen, CalculationListScreenProps } from './CalculationListScreen';
 import { match, P } from 'ts-pattern';
-import { useEffect } from 'react';
-import {
-  useAuthLogoutController,
-  useCalculationCompleteController,
-  useCalculationDeleteController,
-  useCalculationListController,
-} from '../../controllers';
+import { useCallback, useEffect } from 'react';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
+import { useAuthLogoutController } from '../../controllers';
+import { useFocusEffect } from '../../../utils';
 
 export type CalculationListHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;
@@ -30,34 +28,45 @@ export const CalculationListHandler = ({
   calculationCompleteUsecase,
 }: CalculationListHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const calculationList = useCalculationListController(calculationListUsecase);
-  const calculationDelete = useCalculationDeleteController(
-    calculationDeleteUsecase
-  );
-  const calculationComplete = useCalculationCompleteController(
-    calculationCompleteUsecase
-  );
+  const calculationList = useController(calculationListUsecase);
+  const calculationDelete = useController(calculationDeleteUsecase);
+  const calculationComplete = useController(calculationCompleteUsecase);
   const router = useRouter();
+  const toast = useToastController();
+
+  useFocusEffect(
+    useCallback(() => {
+      calculationList.dispatch({ type: 'FETCH' });
+    }, [calculationList.dispatch])
+  );
 
   useEffect(() => {
     match(calculationDelete.state)
       .with({ type: 'deletingSuccess' }, () => {
+        toast.show('Delete Calculation Success');
         calculationList.dispatch({ type: 'FETCH' });
+      })
+      .with({ type: 'deletingError' }, () => {
+        toast.show('Delete Calculation Error');
       })
       .otherwise(() => {
         // no-op
       });
-  }, [calculationDelete.state, calculationList]);
+  }, [calculationDelete.state, calculationList, toast]);
 
   useEffect(() => {
     match(calculationComplete.state)
       .with({ type: 'completingSuccess' }, () => {
+        toast.show('Complete Calculation Success');
         calculationList.dispatch({ type: 'FETCH' });
+      })
+      .with({ type: 'completingError' }, () => {
+        toast.show('Complete Calculation Error');
       })
       .otherwise(() => {
         // no-op
       });
-  }, [calculationComplete.state, calculationList]);
+  }, [calculationComplete.state, calculationList, toast]);
 
   return (
     <CalculationListScreen

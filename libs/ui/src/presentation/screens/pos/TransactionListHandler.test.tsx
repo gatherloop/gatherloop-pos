@@ -26,11 +26,18 @@ jest.mock('@tamagui/toast', () => ({
   useToastController: () => ({ show: jest.fn() }),
 }));
 
-// usePrinter uses WebSocket — mock it to avoid runtime errors
+// usePrinter uses WebSocket — mock it to avoid runtime errors. useFocusEffect
+// is stubbed out too: these tests assert dispatch was/wasn't called with
+// FETCH from delete/pay/unpay orchestration, and the real useFocusEffect
+// would also dispatch FETCH on mount, which the pre-inline controller mocks
+// happened to swallow.
 const mockPrint = jest.fn();
 jest.mock('../../../utils', () => ({
   ...jest.requireActual('../../../utils'),
   usePrinter: () => ({ print: mockPrint }),
+  useFocusEffect: () => {
+    // no-op
+  },
 }));
 
 // Mock the Screen — tests focus on handler orchestration logic. We capture
@@ -129,26 +136,41 @@ const authLogoutCtrl = {
 };
 
 jest.mock('../../controllers', () => ({
-  useTransactionListController: () => ({
-    state: transactionListCtrl.state,
-    dispatch: transactionListCtrl.dispatch,
-  }),
-  useTransactionDeleteController: () => ({
-    state: transactionDeleteCtrl.state,
-    dispatch: transactionDeleteCtrl.dispatch,
-  }),
   useTransactionPayController: () => ({
     state: transactionPayCtrl.state,
     dispatch: transactionPayCtrl.dispatch,
-  }),
-  useTransactionUnpayController: () => ({
-    state: transactionUnpayCtrl.state,
-    dispatch: transactionUnpayCtrl.dispatch,
   }),
   useAuthLogoutController: () => ({
     state: authLogoutCtrl.state,
     dispatch: authLogoutCtrl.dispatch,
   }),
+}));
+
+// TransactionList/Delete/Unpay are folded into the handler (Phase 5) and call
+// the base `useController` hook directly rather than a named per-feature
+// hook, so the fake states above are wired in by usecase identity instead.
+jest.mock('../../controllers/controller', () => ({
+  useController: (usecase: { constructor: { name: string } }) => {
+    switch (usecase.constructor.name) {
+      case 'TransactionListUsecase':
+        return {
+          state: transactionListCtrl.state,
+          dispatch: transactionListCtrl.dispatch,
+        };
+      case 'TransactionDeleteUsecase':
+        return {
+          state: transactionDeleteCtrl.state,
+          dispatch: transactionDeleteCtrl.dispatch,
+        };
+      case 'TransactionUnpayUsecase':
+        return {
+          state: transactionUnpayCtrl.state,
+          dispatch: transactionUnpayCtrl.dispatch,
+        };
+      default:
+        throw new Error(`Unexpected usecase: ${usecase.constructor.name}`);
+    }
+  },
 }));
 
 const createProps = () => ({

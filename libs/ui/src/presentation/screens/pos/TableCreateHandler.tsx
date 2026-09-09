@@ -2,10 +2,9 @@ import { useRouter } from 'solito/router';
 import { AuthLogoutUsecase, TableCreateUsecase } from '../../../domain';
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
-import {
-  useAuthLogoutController,
-  useTableCreateController,
-} from '../../controllers';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
+import { useAuthLogoutController } from '../../controllers';
 import {
   TableCreateScreen,
   TableCreateScreenProps,
@@ -21,12 +20,18 @@ export const TableCreateHandler = ({
   tableCreateUsecase,
 }: TableCreateHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const tableCreate = useTableCreateController(tableCreateUsecase);
+  const tableCreate = useController(tableCreateUsecase);
   const router = useRouter();
+  const toast = useToastController();
 
   useEffect(() => {
-    if (tableCreate.state.type === 'submitSuccess') router.push('/tables');
-  }, [tableCreate.state.type, router]);
+    if (tableCreate.state.type === 'submitSuccess') {
+      toast.show('Create Table Success');
+      router.push('/tables');
+    } else if (tableCreate.state.type === 'submitError') {
+      toast.show('Create Table Error');
+    }
+  }, [tableCreate.state.type, toast, router]);
 
   return (
     <TableCreateScreen

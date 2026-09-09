@@ -2,8 +2,9 @@ import { useRouter } from 'solito/router';
 import { useEffect, useRef } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { match, P } from 'ts-pattern';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
 import {
-  useRentalCheckinController,
   useAuthLogoutController,
   useTransactionItemSelectController,
   useTicketListController,
@@ -40,7 +41,8 @@ export const RentalCheckinHandler = ({
   const router = useRouter();
   const { print } = usePrinter();
   const { show } = useConfirmationAlert();
-  const rentalCheckin = useRentalCheckinController(rentalCheckinUsecase);
+  const toast = useToastController();
+  const rentalCheckin = useController(rentalCheckinUsecase);
   const authLogout = useAuthLogoutController(authLogoutUsecase);
   const transactionItemSelect = useTransactionItemSelectController(
     transactionItemSelectUsecase
@@ -85,6 +87,11 @@ export const RentalCheckinHandler = ({
   ]);
 
   useEffect(() => {
+    if (rentalCheckin.state.type === 'submitError') {
+      toast.show('Checkin Rental Error');
+      return;
+    }
+
     if (rentalCheckin.state.type !== 'submitSuccess') {
       hasShownPrintDialogRef.current = false;
       return;
@@ -96,6 +103,7 @@ export const RentalCheckinHandler = ({
     // exactly once and never re-opens to block the redirect to /rentals.
     if (hasShownPrintDialogRef.current) return;
     hasShownPrintDialogRef.current = true;
+    toast.show('Checkin Rental Success');
 
     const checkin: CheckinPrintPayload = {
       createdAt: dayjs(new Date().toISOString()).format('DD/MM/YYYY HH:mm'),
@@ -127,6 +135,7 @@ export const RentalCheckinHandler = ({
     router,
     show,
     print,
+    toast,
   ]);
 
   return (

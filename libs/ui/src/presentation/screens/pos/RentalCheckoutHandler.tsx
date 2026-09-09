@@ -2,9 +2,10 @@ import { useRouter } from 'solito/router';
 import { useEffect, useRef } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { match, P } from 'ts-pattern';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
 import {
   useAuthLogoutController,
-  useRentalCheckoutController,
   useRentalListController,
 } from '../../controllers';
 import {
@@ -33,8 +34,9 @@ export const RentalCheckoutHandler = ({
   const router = useRouter();
 
   const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const rentalCheckout = useRentalCheckoutController(rentalCheckoutUsecase);
+  const rentalCheckout = useController(rentalCheckoutUsecase);
   const rentalList = useRentalListController(rentalListUsecase);
+  const toast = useToastController();
 
   const formRef = useRef<UseFormReturn<RentalCheckoutForm> | null>(null);
 
@@ -64,14 +66,18 @@ export const RentalCheckoutHandler = ({
 
   useEffect(() => {
     if (rentalCheckout.state.type === 'submitSuccess') {
+      toast.show('Checkout Rental Success');
       router.push(
         `/transactions/${rentalCheckout.state.transactionId}`
       );
+    } else if (rentalCheckout.state.type === 'submitError') {
+      toast.show('Checkout Rental Error');
     }
   }, [
     rentalCheckout.state.transactionId,
     rentalCheckout.state.type,
     router,
+    toast,
   ]);
 
   useEffect(() => {
