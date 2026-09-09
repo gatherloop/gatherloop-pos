@@ -7,12 +7,11 @@ import {
 } from '../../../domain';
 import { CategoryListScreen, CategoryListScreenProps } from './CategoryListScreen';
 import { match, P } from 'ts-pattern';
-import { useEffect } from 'react';
-import {
-  useAuthLogoutController,
-  useCategoryDeleteController,
-  useCategoryListController,
-} from '../../controllers';
+import { useCallback, useEffect } from 'react';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
+import { useAuthLogoutController } from '../../controllers';
+import { useFocusEffect } from '../../../utils';
 
 export type CategoryListHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;
@@ -26,19 +25,30 @@ export const CategoryListHandler = ({
   categoryDeleteUsecase,
 }: CategoryListHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const categoryList = useCategoryListController(categoryListUsecase);
-  const categoryDelete = useCategoryDeleteController(categoryDeleteUsecase);
+  const categoryList = useController(categoryListUsecase);
+  const categoryDelete = useController(categoryDeleteUsecase);
   const router = useRouter();
+  const toast = useToastController();
+
+  useFocusEffect(
+    useCallback(() => {
+      categoryList.dispatch({ type: 'FETCH' });
+    }, [categoryList.dispatch])
+  );
 
   useEffect(() => {
     match(categoryDelete.state)
       .with({ type: 'deletingSuccess' }, () => {
+        toast.show('Delete Category Success');
         categoryList.dispatch({ type: 'FETCH' });
+      })
+      .with({ type: 'deletingError' }, () => {
+        toast.show('Delete Category Error');
       })
       .otherwise(() => {
         // nothing to do
       });
-  }, [categoryDelete.state, categoryList]);
+  }, [categoryDelete.state, categoryList, toast]);
 
   return (
     <CategoryListScreen

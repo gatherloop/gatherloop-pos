@@ -2,10 +2,9 @@ import { useRouter } from 'solito/router';
 import { AuthLogoutUsecase, CategoryCreateUsecase } from '../../../domain';
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
-import {
-  useAuthLogoutController,
-  useCategoryCreateController,
-} from '../../controllers';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
+import { useAuthLogoutController } from '../../controllers';
 import {
   CategoryCreateScreen,
   CategoryCreateScreenProps,
@@ -21,13 +20,18 @@ export const CategoryCreateHandler = ({
   categoryCreateUsecase,
 }: CategoryCreateHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const categoryCreate = useCategoryCreateController(categoryCreateUsecase);
+  const categoryCreate = useController(categoryCreateUsecase);
   const router = useRouter();
+  const toast = useToastController();
 
   useEffect(() => {
-    if (categoryCreate.state.type === 'submitSuccess')
+    if (categoryCreate.state.type === 'submitSuccess') {
+      toast.show('Create Category Success');
       router.push('/categories');
-  }, [categoryCreate.state.type, router]);
+    } else if (categoryCreate.state.type === 'submitError') {
+      toast.show('Create Category Error');
+    }
+  }, [categoryCreate.state.type, toast, router]);
 
   return (
     <CategoryCreateScreen

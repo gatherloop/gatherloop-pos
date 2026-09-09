@@ -2,10 +2,9 @@ import { useRouter } from 'solito/router';
 import { AuthLogoutUsecase, CouponCreateUsecase } from '../../../domain';
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
-import {
-  useAuthLogoutController,
-  useCouponCreateController,
-} from '../../controllers';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
+import { useAuthLogoutController } from '../../controllers';
 import {
   CouponCreateScreen,
   CouponCreateScreenProps,
@@ -21,13 +20,18 @@ export const CouponCreateHandler = ({
   couponCreateUsecase,
 }: CouponCreateHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const couponCreate = useCouponCreateController(couponCreateUsecase);
+  const couponCreate = useController(couponCreateUsecase);
   const router = useRouter();
+  const toast = useToastController();
 
   useEffect(() => {
-    if (couponCreate.state.type === 'submitSuccess')
+    if (couponCreate.state.type === 'submitSuccess') {
+      toast.show('Create Coupon Success');
       router.push('/coupons');
-  }, [couponCreate.state.type, router]);
+    } else if (couponCreate.state.type === 'submitError') {
+      toast.show('Create Coupon Error');
+    }
+  }, [couponCreate.state.type, toast, router]);
 
   return (
     <CouponCreateScreen

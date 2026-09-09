@@ -8,9 +8,10 @@ import {
 import { SupplierListScreen, SupplierListScreenProps } from './SupplierListScreen';
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
 import {
   useAuthLogoutController,
-  useSupplierDeleteController,
   useSupplierListController,
 } from '../../controllers';
 
@@ -27,18 +28,23 @@ export const SupplierListHandler = ({
 }: SupplierListHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
   const supplierList = useSupplierListController(supplierListUsecase);
-  const supplierDelete = useSupplierDeleteController(supplierDeleteUsecase);
+  const supplierDelete = useController(supplierDeleteUsecase);
   const router = useRouter();
+  const toast = useToastController();
 
   useEffect(() => {
     match(supplierDelete.state)
       .with({ type: 'deletingSuccess' }, () => {
+        toast.show('Delete Supplier Success');
         supplierList.dispatch({ type: 'FETCH' });
+      })
+      .with({ type: 'deletingError' }, () => {
+        toast.show('Delete Supplier Error');
       })
       .otherwise(() => {
         // noop
       });
-  }, [supplierDelete.state, supplierList]);
+  }, [supplierDelete.state, supplierList, toast]);
 
   return (
     <SupplierListScreen

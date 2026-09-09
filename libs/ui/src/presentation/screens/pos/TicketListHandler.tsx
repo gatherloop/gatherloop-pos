@@ -8,9 +8,10 @@ import {
 import { TicketListScreen, TicketListScreenProps } from './TicketListScreen';
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
 import {
   useAuthLogoutController,
-  useTicketDeleteController,
   useTicketListController,
 } from '../../controllers';
 
@@ -27,18 +28,23 @@ export const TicketListHandler = ({
 }: TicketListHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
   const ticketList = useTicketListController(ticketListUsecase);
-  const ticketDelete = useTicketDeleteController(ticketDeleteUsecase);
+  const ticketDelete = useController(ticketDeleteUsecase);
   const router = useRouter();
+  const toast = useToastController();
 
   useEffect(() => {
     match(ticketDelete.state)
       .with({ type: 'deletingSuccess' }, () => {
+        toast.show('Delete Ticket Success');
         ticketList.dispatch({ type: 'FETCH' });
+      })
+      .with({ type: 'deletingError' }, () => {
+        toast.show('Delete Ticket Error');
       })
       .otherwise(() => {
         // noop
       });
-  }, [ticketDelete.state, ticketList]);
+  }, [ticketDelete.state, ticketList, toast]);
 
   return (
     <TicketListScreen

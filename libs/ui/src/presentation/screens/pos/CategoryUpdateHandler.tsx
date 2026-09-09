@@ -2,10 +2,9 @@ import { useRouter } from 'solito/router';
 import { AuthLogoutUsecase, CategoryUpdateUsecase } from '../../../domain';
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
-import {
-  useAuthLogoutController,
-  useCategoryUpdateController,
-} from '../../controllers';
+import { useToastController } from '@tamagui/toast';
+import { useController } from '../../controllers/controller';
+import { useAuthLogoutController } from '../../controllers';
 import {
   CategoryUpdateScreen,
   CategoryUpdateScreenProps,
@@ -21,13 +20,18 @@ export const CategoryUpdateHandler = ({
   categoryUpdateUsecase,
 }: CategoryUpdateHandlerProps) => {
   const authLogout = useAuthLogoutController(authLogoutUsecase);
-  const categoryUpdate = useCategoryUpdateController(categoryUpdateUsecase);
+  const categoryUpdate = useController(categoryUpdateUsecase);
   const router = useRouter();
+  const toast = useToastController();
 
   useEffect(() => {
-    if (categoryUpdate.state.type === 'submitSuccess')
+    if (categoryUpdate.state.type === 'submitSuccess') {
+      toast.show('Update Category Success');
       router.push('/categories');
-  }, [categoryUpdate.state.type, router]);
+    } else if (categoryUpdate.state.type === 'submitError') {
+      toast.show('Update Category Error');
+    }
+  }, [categoryUpdate.state.type, toast, router]);
 
   return (
     <CategoryUpdateScreen
