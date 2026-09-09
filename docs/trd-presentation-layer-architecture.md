@@ -1,6 +1,6 @@
 # TRD — Fold controllers into handlers, and split handlers from views
 
-**Status:** proposed
+**Status:** proposed — no open questions (§10); ready to schedule from Phase 1
 **Scope:** `libs/ui/src/presentation/**`, `libs/ui/src/index*.ts`, `libs/ui/.eslintrc.json`,
 `libs/ui/src/app/**` (import paths only), `README.md` and `docs/forms.md` (the paragraphs that teach
 the layer names)
@@ -256,6 +256,27 @@ which `shared/` did state. D1 carries that rule instead, and `docs/handlers.md` 
 That is the right trade — a rule that only holds for 13 of 14 files was never safe to infer from a
 folder name anyway.
 
+**`hooks/` stays flat — it is not grouped by app.** 11 of the 14 are POS-only, `useCart` and
+`useTableResolve` are order-only, and `useUsecase` belongs to neither, but splitting the folder into
+`hooks/{pos,order}/` would put a two-file directory next to an eleven-file one and force a
+judgement call every time a hook is added. Flat it is.
+
+The one thing that buys the split — the app boundary — is recovered without it. `handlers/{pos,order}`
+are fenced from each other by the path globs that move in Phase 7, but a flat `hooks/` sits outside
+those globs, so nothing would stop `handlers/pos/*` from importing `useCart`. Phase 8 closes that by
+naming the two order-only hooks explicitly in the POS override, and vice versa:
+
+```jsonc
+// libs/ui/.eslintrc.json — files: ["src/presentation/handlers/pos/**"]
+"patterns": [
+  { "group": ["**/handlers/order/**", "../order/**"], "message": "POS must not import order handlers." },
+  { "group": ["**/hooks/useCart", "**/hooks/useTableResolve"], "message": "Order-only hooks — see D2b." }
+]
+```
+
+Two names to maintain instead of a folder convention. If that list ever grows past a handful, the
+`hooks/{pos,order}/` split becomes the cheaper option and this decision should be revisited.
+
 **D3 — `views/` wraps both `components/` and `screens/`.** The request's tree, adopted as-is. It
 gives the tree one bit that answers "can this file have side effects?" without opening it, and it
 keeps `screens` and `components` — which share the same purity rule — under one root that the lint
@@ -358,6 +379,8 @@ controllers — 15 files, down from 87.
 - Delete `presentation/controllers/` and the controllers ESLint override; port its
   `react-hook-form` / `next` restrictions onto `handlers/**` so the form-ownership rule from
   `trd-form-ownership-refactor.md` keeps its teeth.
+- Add the two cross-app hook exclusions to the POS and order overrides (D2b), so a flat `hooks/`
+  does not become a hole in the app boundary Phase 7 preserves.
 - Update the two living docs that teach the old vocabulary — `README.md` (the tree at line 29, the
   layer diagram at 122, and the "a **controller** hook binds a use case's state machine to React"
   paragraph at 131) and `docs/forms.md` (the controller/handler split at lines 13, 38 and 46, plus
@@ -428,10 +451,13 @@ the whole TRD slower to land. Recorded so the groundwork isn't re-done if it com
 **This work gets easier after the phases above land**, not harder: handler tests will already sit
 beside their handlers in `handlers/{pos,order}`, which is where the interaction files would go.
 
-## 10. Open questions
+## 10. Settled in review
 
-1. **Does `handlers/hooks/` want per-app subfolders?** 11 of the 14 are POS-only; `useCart` and
-   `useTableResolve` are order-only, and `useUsecase` belongs to neither. A flat `hooks/` cannot be
-   lint-fenced by app the way `handlers/{pos,order}` can, so those two order hooks would sit outside
-   the boundary the ESLint globs enforce today. Flat is assumed; revisit in Phase 8 if that looks
-   too loose — the shape would be `hooks/{pos,order}/` with `useUsecase` staying at `hooks/`.
+No open questions remain. Three were raised and closed while this TRD was drafted; they are recorded
+here because each shaped a decision above rather than being dropped.
+
+| Question | Outcome |
+| --- | --- |
+| Rename `useController` to `useHandler`? | No — `Handler` names a component, and `Controller` is already react-hook-form's. It becomes `useUsecase` (D2a). |
+| Keep `useUsecase` out of the shared-hook folder? | No — one flat `handlers/hooks/` holds it and the 13 (D2b). |
+| Group `handlers/hooks/` by app? | No — flat, with two named ESLint exclusions standing in for the folder boundary (D2b). |
