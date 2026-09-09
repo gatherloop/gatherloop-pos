@@ -1,0 +1,70 @@
+import { Spinner, YStack } from 'tamagui';
+import { CategoryListItem } from './CategoryListItem';
+import { EmptyView, ErrorView, SkeletonList } from '../base';
+import { FlatList } from 'react-native';
+import { match } from 'ts-pattern';
+import { Category } from '../../../../domain';
+
+export type CategoryListProps = {
+  onRetryButtonPress: () => void;
+  onEmptyActionPress?: () => void;
+  onDeleteMenuPress: (category: Category) => void;
+  onEditMenuPress: (category: Category) => void;
+  onItemPress: (category: Category) => void;
+  isRevalidating?: boolean;
+  variant:
+    | { type: 'loading' }
+    | { type: 'error' }
+    | { type: 'empty' }
+    | { type: 'loaded'; categories: Category[] };
+};
+
+export const CategoryList = ({
+  onRetryButtonPress,
+  onEmptyActionPress,
+  onDeleteMenuPress,
+  onEditMenuPress,
+  onItemPress,
+  isRevalidating,
+  variant,
+}: CategoryListProps) => {
+  return (
+    <YStack gap="$3" flex={1}>
+      {isRevalidating && <Spinner size="small" alignSelf="flex-end" />}
+      {match(variant)
+        .with({ type: 'loading' }, () => <SkeletonList />)
+        .with({ type: 'empty' }, () => (
+          <EmptyView
+            title="Oops, Category is Empty"
+            subtitle="Please create a new category"
+            actionLabel="Create Category"
+            onActionPress={onEmptyActionPress}
+          />
+        ))
+        .with({ type: 'loaded' }, ({ categories }) => (
+          <FlatList
+            nestedScrollEnabled
+            data={categories}
+            renderItem={({ item }) => (
+              <CategoryListItem
+                name={item.name}
+                station={item.station}
+                onDeleteMenuPress={() => onDeleteMenuPress(item)}
+                onEditMenuPress={() => onEditMenuPress(item)}
+                onPress={() => onItemPress(item)}
+              />
+            )}
+            ItemSeparatorComponent={() => <YStack height="$1" />}
+          />
+        ))
+        .with({ type: 'error' }, () => (
+          <ErrorView
+            title="Failed to Fetch Categories"
+            subtitle="Please click the retry button to refetch data"
+            onRetryButtonPress={onRetryButtonPress}
+          />
+        ))
+        .otherwise(() => null)}
+    </YStack>
+  );
+};

@@ -5,7 +5,7 @@ import {
   ExpenseStatisticListUsecase,
   TransactionStatisticListUsecase,
 } from '../../../domain';
-import { DashboardScreen } from '../../screens/pos/DashboardScreen';
+import { DashboardScreen } from '../../views/screens/pos/DashboardScreen';
 import { TransactionStatisticHandler } from './TransactionStatisticHandler';
 import { ExpenseStatisticHandler } from './ExpenseStatisticHandler';
 

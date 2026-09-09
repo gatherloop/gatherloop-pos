@@ -14,7 +14,7 @@ import { RentalCheckoutForm } from '../../../domain';
 import {
   RentalCheckoutScreen,
   RentalCheckoutScreenProps,
-} from '../../screens/pos/RentalCheckoutScreen';
+} from '../../views/screens/pos/RentalCheckoutScreen';
 
 export type RentalCheckoutHandlerProps = {
   rentalCheckoutUsecase: RentalCheckoutUsecase;

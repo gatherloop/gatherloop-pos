@@ -5,7 +5,7 @@ import {
   TableDeleteUsecase,
   TableListUsecase,
 } from '../../../domain';
-import { TableListScreen, TableListScreenProps } from '../../screens/pos/TableListScreen';
+import { TableListScreen, TableListScreenProps } from '../../views/screens/pos/TableListScreen';
 import { match, P } from 'ts-pattern';
 import { useCallback, useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';

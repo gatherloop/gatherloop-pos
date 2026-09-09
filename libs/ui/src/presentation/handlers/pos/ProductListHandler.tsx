@@ -7,7 +7,7 @@ import {
   SaleType,
   StatusFilter,
 } from '../../../domain';
-import { ProductListScreen, ProductListScreenProps } from '../../screens/pos/ProductListScreen';
+import { ProductListScreen, ProductListScreenProps } from '../../views/screens/pos/ProductListScreen';
 import { match, P } from 'ts-pattern';
 import { useCallback, useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';

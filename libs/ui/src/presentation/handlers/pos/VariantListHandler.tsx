@@ -5,7 +5,7 @@ import {
   VariantListUsecase,
 } from '../../../domain';
 import { Variant } from '../../../domain';
-import { VariantListScreen, VariantListScreenProps } from '../../screens/pos/VariantListScreen';
+import { VariantListScreen, VariantListScreenProps } from '../../views/screens/pos/VariantListScreen';
 import { match, P } from 'ts-pattern';
 import { useCallback, useEffect } from 'react';
 import { useFocusEffect } from '../../../utils';

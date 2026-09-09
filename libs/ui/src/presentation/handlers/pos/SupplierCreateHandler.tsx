@@ -7,7 +7,7 @@ import { useUsecase, useAuthLogout } from '../hooks';
 import {
   SupplierCreateScreen,
   SupplierCreateScreenProps,
-} from '../../screens/pos/SupplierCreateScreen';
+} from '../../views/screens/pos/SupplierCreateScreen';
 
 export type SupplierCreateHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;

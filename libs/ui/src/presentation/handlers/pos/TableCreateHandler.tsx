@@ -7,7 +7,7 @@ import { useUsecase, useAuthLogout } from '../hooks';
 import {
   TableCreateScreen,
   TableCreateScreenProps,
-} from '../../screens/pos/TableCreateScreen';
+} from '../../views/screens/pos/TableCreateScreen';
 
 export type TableCreateHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;

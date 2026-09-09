@@ -5,7 +5,7 @@ import {
   SupplierDeleteUsecase,
   SupplierListUsecase,
 } from '../../../domain';
-import { SupplierListScreen, SupplierListScreenProps } from '../../screens/pos/SupplierListScreen';
+import { SupplierListScreen, SupplierListScreenProps } from '../../views/screens/pos/SupplierListScreen';
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';

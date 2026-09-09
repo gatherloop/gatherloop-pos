@@ -3,7 +3,7 @@ import { AuthLogoutUsecase, StockCheckCreateUsecase } from '../../../domain';
 import { useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';
 import { useUsecase, useAuthLogout } from '../hooks';
-import { StockCheckCreateScreen } from '../../screens/pos/StockCheckCreateScreen';
+import { StockCheckCreateScreen } from '../../views/screens/pos/StockCheckCreateScreen';
 
 export type StockCheckCreateHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;

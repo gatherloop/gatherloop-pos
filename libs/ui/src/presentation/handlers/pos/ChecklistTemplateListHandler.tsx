@@ -8,7 +8,7 @@ import {
 import {
   ChecklistTemplateListScreen,
   ChecklistTemplateListScreenProps,
-} from '../../screens/pos/ChecklistTemplateListScreen';
+} from '../../views/screens/pos/ChecklistTemplateListScreen';
 import { match, P } from 'ts-pattern';
 import { useCallback, useEffect } from 'react';
 import { useUsecase, useAuthLogout } from '../hooks';

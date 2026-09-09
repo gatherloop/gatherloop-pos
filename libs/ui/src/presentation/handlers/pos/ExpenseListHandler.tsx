@@ -5,7 +5,7 @@ import {
   ExpenseDeleteUsecase,
   ExpenseListUsecase,
 } from '../../../domain';
-import { ExpenseListScreen, ExpenseListScreenProps } from '../../screens/pos/ExpenseListScreen';
+import { ExpenseListScreen, ExpenseListScreenProps } from '../../views/screens/pos/ExpenseListScreen';
 import { match, P } from 'ts-pattern';
 import { useCallback, useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';

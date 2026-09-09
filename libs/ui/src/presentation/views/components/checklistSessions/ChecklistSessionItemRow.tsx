@@ -1,0 +1,164 @@
+import { Check, ChevronDown, ChevronUp, Info } from '@tamagui/lucide-icons';
+import {
+  Card,
+  Checkbox,
+  Paragraph,
+  Separator,
+  Spinner,
+  Text,
+  XStack,
+  YStack,
+} from 'tamagui';
+import { useState } from 'react';
+import { ChecklistSessionItem, ChecklistSessionSubItem } from '../../../../domain';
+import { Markdown } from '../base';
+import { ChecklistSessionSubItemRow } from './ChecklistSessionSubItemRow';
+
+export type ChecklistSessionItemRowProps = {
+  item: ChecklistSessionItem;
+  onCheckItem: (itemId: number) => void;
+  onUncheckItem: (itemId: number) => void;
+  onCheckSubItem: (subItemId: number) => void;
+  onUncheckSubItem: (subItemId: number) => void;
+  togglingItemId: number | null;
+  togglingSubItemId: number | null;
+};
+
+export function ChecklistSessionItemRow({
+  item,
+  onCheckItem,
+  onUncheckItem,
+  onCheckSubItem,
+  onUncheckSubItem,
+  togglingItemId,
+  togglingSubItemId,
+}: ChecklistSessionItemRowProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const hasSubItems = item.subItems.length > 0;
+  const isCompleted = item.completedAt != null;
+  const isToggling = togglingItemId === item.id;
+
+  const completedSubItems = item.subItems.filter(
+    (sub) => sub.completedAt != null
+  ).length;
+  const totalSubItems = item.subItems.length;
+
+  return (
+    <Card padding="$3" gap="$2">
+      <XStack
+        gap="$3"
+        alignItems="center"
+        onPress={() => {
+          if (hasSubItems) {
+            setIsExpanded((prev) => !prev);
+          } else {
+            if (isToggling) return;
+            if (isCompleted) {
+              onUncheckItem(item.id);
+            } else {
+              onCheckItem(item.id);
+            }
+          }
+        }}
+        pressStyle={{ opacity: 0.7 }}
+      >
+        {!hasSubItems &&
+          (isToggling ? (
+            <Spinner size="small" />
+          ) : (
+            <YStack pointerEvents="none">
+              <Checkbox checked={isCompleted} size="$4">
+                <Checkbox.Indicator>
+                  <Check />
+                </Checkbox.Indicator>
+              </Checkbox>
+            </YStack>
+          ))}
+
+        {hasSubItems && (
+          <XStack
+            backgroundColor={isCompleted ? '$green5' : '$gray5'}
+            borderRadius="$2"
+            paddingHorizontal="$2"
+            paddingVertical="$1"
+          >
+            <Text fontSize="$2" fontWeight="bold">
+              {completedSubItems}/{totalSubItems}
+            </Text>
+          </XStack>
+        )}
+
+        <YStack flex={1} gap="$1">
+          <XStack alignItems="center" justifyContent="space-between" gap="$2">
+            <Text
+              flex={1}
+              fontSize="$5"
+              fontWeight="bold"
+              textDecorationLine={isCompleted ? 'line-through' : 'none'}
+              color={isCompleted ? '$gray9' : '$color'}
+            >
+              {item.name}
+            </Text>
+            {item.description && (
+              <XStack
+                testID="description-toggle"
+                accessibilityLabel={
+                  isDescriptionExpanded
+                    ? 'Hide description'
+                    : 'Show description'
+                }
+                onPress={(event) => {
+                  event.stopPropagation();
+                  setIsDescriptionExpanded((prev) => !prev);
+                }}
+                pressStyle={{ opacity: 0.6 }}
+                padding="$1"
+                flexShrink={0}
+              >
+                <Info
+                  size="$1"
+                  color={isDescriptionExpanded ? '$blue10' : '$gray9'}
+                />
+              </XStack>
+            )}
+            {isCompleted && !hasSubItems && item.completedAt && (
+              <Paragraph fontSize="$2" color="$gray9" flexShrink={0}>
+                {new Date(item.completedAt).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false,
+                })}
+              </Paragraph>
+            )}
+          </XStack>
+          {item.description && isDescriptionExpanded && (
+            <YStack theme="alt1">
+              <Markdown content={item.description} />
+            </YStack>
+          )}
+        </YStack>
+
+        {hasSubItems &&
+          (isExpanded ? <ChevronUp size="$1" /> : <ChevronDown size="$1" />)}
+      </XStack>
+
+      {hasSubItems && isExpanded && (
+        <>
+          <Separator />
+          <YStack gap="$1">
+            {item.subItems.map((subItem: ChecklistSessionSubItem) => (
+              <ChecklistSessionSubItemRow
+                key={subItem.id}
+                subItem={subItem}
+                onCheck={onCheckSubItem}
+                onUncheck={onUncheckSubItem}
+                isToggling={togglingSubItemId === subItem.id}
+              />
+            ))}
+          </YStack>
+        </>
+      )}
+    </Card>
+  );
+}

@@ -11,7 +11,7 @@ import {
 import {
   VariantUpdateScreen,
   VariantUpdateScreenProps,
-} from '../../screens/pos/VariantUpdateScreen';
+} from '../../views/screens/pos/VariantUpdateScreen';
 
 export type VariantUpdateHandlerProps = {
   variantUpdateUsecase: VariantUpdateUsecase;

@@ -5,7 +5,7 @@ import {
   CategoryDeleteUsecase,
   CategoryListUsecase,
 } from '../../../domain';
-import { CategoryListScreen, CategoryListScreenProps } from '../../screens/pos/CategoryListScreen';
+import { CategoryListScreen, CategoryListScreenProps } from '../../views/screens/pos/CategoryListScreen';
 import { match, P } from 'ts-pattern';
 import { useCallback, useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';

@@ -7,7 +7,7 @@ import { useUsecase, useAuthLogout } from '../hooks';
 import {
   CategoryCreateScreen,
   CategoryCreateScreenProps,
-} from '../../screens/pos/CategoryCreateScreen';
+} from '../../views/screens/pos/CategoryCreateScreen';
 
 export type CategoryCreateHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;

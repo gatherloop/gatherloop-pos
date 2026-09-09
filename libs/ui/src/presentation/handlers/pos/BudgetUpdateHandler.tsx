@@ -7,7 +7,7 @@ import { AuthLogoutUsecase, BudgetUpdateUsecase } from '../../../domain';
 import {
   BudgetUpdateScreen,
   BudgetUpdateScreenProps,
-} from '../../screens/pos/BudgetUpdateScreen';
+} from '../../views/screens/pos/BudgetUpdateScreen';
 
 export type BudgetUpdateHandlerProps = {
   budgetUpdateUsecase: BudgetUpdateUsecase;

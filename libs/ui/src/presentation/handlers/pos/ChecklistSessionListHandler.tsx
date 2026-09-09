@@ -15,7 +15,7 @@ import { useFocusEffect } from '../../../utils';
 import {
   ChecklistSessionListScreen,
   ChecklistSessionListScreenProps,
-} from '../../screens/pos/ChecklistSessionListScreen';
+} from '../../views/screens/pos/ChecklistSessionListScreen';
 
 export type ChecklistSessionListHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;

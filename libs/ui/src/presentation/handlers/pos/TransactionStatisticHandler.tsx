@@ -4,7 +4,7 @@ import { TransactionStatisticListUsecase } from '../../../domain';
 import {
   TransactionStatisticScreen,
   TransactionStatisticScreenProps,
-} from '../../screens/pos/TransactionStatisticScreen';
+} from '../../views/screens/pos/TransactionStatisticScreen';
 
 export type TransactionStatisticHandlerProps = {
   transactionStatisticListUsecase: TransactionStatisticListUsecase;

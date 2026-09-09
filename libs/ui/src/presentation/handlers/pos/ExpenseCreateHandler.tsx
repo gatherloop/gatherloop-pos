@@ -7,7 +7,7 @@ import { useUsecase, useAuthLogout } from '../hooks';
 import {
   ExpenseCreateScreen,
   ExpenseCreateScreenProps,
-} from '../../screens/pos/ExpenseCreateScreen';
+} from '../../views/screens/pos/ExpenseCreateScreen';
 
 export type ExpenseCreateHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;

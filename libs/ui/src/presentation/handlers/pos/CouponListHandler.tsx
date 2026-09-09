@@ -5,7 +5,7 @@ import {
   CouponDeleteUsecase,
   CouponListUsecase,
 } from '../../../domain';
-import { CouponListScreen, CouponListScreenProps } from '../../screens/pos/CouponListScreen';
+import { CouponListScreen, CouponListScreenProps } from '../../views/screens/pos/CouponListScreen';
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';

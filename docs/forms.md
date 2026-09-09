@@ -17,7 +17,7 @@ An ESLint rule enforces this: `react-hook-form` and `@hookform/resolvers/zod` ar
 
 ## The `FormView` contract
 
-`FormView` (`libs/ui/src/presentation/components/base/Form/FormView.tsx`) is the single place
+`FormView` (`libs/ui/src/presentation/views/components/base/Form/FormView.tsx`) is the single place
 that owns the loading/error gate, the `useForm` call, and the `FormProvider` + Tamagui `<Form>`
 wiring:
 

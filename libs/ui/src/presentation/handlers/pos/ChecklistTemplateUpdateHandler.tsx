@@ -6,7 +6,7 @@ import { useUsecase, useAuthLogout } from '../hooks';
 import {
   ChecklistTemplateUpdateScreen,
   ChecklistTemplateUpdateScreenProps,
-} from '../../screens/pos/ChecklistTemplateUpdateScreen';
+} from '../../views/screens/pos/ChecklistTemplateUpdateScreen';
 import { match, P } from 'ts-pattern';
 
 export type ChecklistTemplateUpdateHandlerProps = {

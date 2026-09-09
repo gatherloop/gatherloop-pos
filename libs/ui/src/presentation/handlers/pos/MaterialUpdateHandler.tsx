@@ -7,7 +7,7 @@ import { useUsecase, useAuthLogout, useSupplierList } from '../hooks';
 import {
   MaterialUpdateScreen,
   MaterialUpdateScreenProps,
-} from '../../screens/pos/MaterialUpdateScreen';
+} from '../../views/screens/pos/MaterialUpdateScreen';
 
 export type MaterialUpdateHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;

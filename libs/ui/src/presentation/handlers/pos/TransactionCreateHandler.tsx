@@ -15,7 +15,7 @@ import {
 import {
   TransactionCreateScreen,
   TransactionCreateScreenProps,
-} from '../../screens/pos/TransactionCreateScreen';
+} from '../../views/screens/pos/TransactionCreateScreen';
 import {
   buildOrderSlipPayload,
   OrderSlipSource,
@@ -23,7 +23,7 @@ import {
   TransactionPrintPayload,
   usePrinter,
 } from '../../../utils';
-import { useConfirmationAlert } from '../../components';
+import { useConfirmationAlert } from '../../views/components';
 import dayjs from 'dayjs';
 import { match, P } from 'ts-pattern';
 

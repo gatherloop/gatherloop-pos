@@ -5,7 +5,7 @@ import {
   StockCheckDeleteUsecase,
   StockCheckListUsecase,
 } from '../../../domain';
-import { StockCheckListScreen, StockCheckListScreenProps } from '../../screens/pos/StockCheckListScreen';
+import { StockCheckListScreen, StockCheckListScreenProps } from '../../views/screens/pos/StockCheckListScreen';
 import { match, P } from 'ts-pattern';
 import { useCallback, useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';
