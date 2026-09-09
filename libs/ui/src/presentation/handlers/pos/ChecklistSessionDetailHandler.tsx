@@ -11,7 +11,7 @@ import { useUsecase, useAuthLogout } from '../hooks';
 import {
   ChecklistSessionDetailScreen,
   ChecklistSessionDetailScreenProps,
-} from '../../screens/pos/ChecklistSessionDetailScreen';
+} from '../../views/screens/pos/ChecklistSessionDetailScreen';
 
 export type ChecklistSessionDetailHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;

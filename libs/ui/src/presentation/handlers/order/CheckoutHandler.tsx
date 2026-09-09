@@ -6,8 +6,8 @@ import { useRouter } from 'solito/router';
 import { SessionRepository } from '../../../domain/repositories/session';
 import { TableResolveUsecase } from '../../../domain/usecases/tableResolve';
 import { useTableResolve } from '../hooks/useTableResolve';
-import { CheckoutScreen } from '../../screens/order/CheckoutScreen';
-import { TableResolveScreenProps } from '../../screens/order/TableResolveScreen';
+import { CheckoutScreen } from '../../views/screens/order/CheckoutScreen';
+import { TableResolveScreenProps } from '../../views/screens/order/TableResolveScreen';
 
 export type CheckoutHandlerProps = {
   tableResolveUsecase: TableResolveUsecase;

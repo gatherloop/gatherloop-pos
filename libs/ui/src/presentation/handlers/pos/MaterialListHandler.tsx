@@ -6,7 +6,7 @@ import {
   MaterialListUsecase,
   MaterialStockCheckStatus,
 } from '../../../domain';
-import { MaterialListScreen, MaterialListScreenProps } from '../../screens/pos/MaterialListScreen';
+import { MaterialListScreen, MaterialListScreenProps } from '../../views/screens/pos/MaterialListScreen';
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';

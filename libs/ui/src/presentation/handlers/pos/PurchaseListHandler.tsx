@@ -8,7 +8,7 @@ import {
 import {
   PurchaseListScreen,
   PurchaseListScreenProps,
-} from '../../screens/pos/PurchaseListScreen';
+} from '../../views/screens/pos/PurchaseListScreen';
 import { useUsecase, useAuthLogout } from '../hooks';
 import { usePrinter, useFocusEffect } from '../../../utils';
 

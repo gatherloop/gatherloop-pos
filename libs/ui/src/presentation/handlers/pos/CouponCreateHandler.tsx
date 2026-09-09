@@ -7,7 +7,7 @@ import { useUsecase, useAuthLogout } from '../hooks';
 import {
   CouponCreateScreen,
   CouponCreateScreenProps,
-} from '../../screens/pos/CouponCreateScreen';
+} from '../../views/screens/pos/CouponCreateScreen';
 
 export type CouponCreateHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;

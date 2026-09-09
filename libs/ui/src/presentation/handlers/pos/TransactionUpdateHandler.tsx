@@ -15,7 +15,7 @@ import {
 import {
   TransactionUpdateScreen,
   TransactionUpdateScreenProps,
-} from '../../screens/pos/TransactionUpdateScreen';
+} from '../../views/screens/pos/TransactionUpdateScreen';
 
 export type TransactionUpdateHandlerProps = {
   transactionUpdateUsecase: TransactionUpdateUsecase;

@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';
 import { useUsecase, useAuthLogout } from '../hooks';
 import { AuthLogoutUsecase, WalletUpdateUsecase } from '../../../domain';
-import { WalletUpdateScreen, WalletUpdateScreenProps } from '../../screens/pos/WalletUpdateScreen';
+import { WalletUpdateScreen, WalletUpdateScreenProps } from '../../views/screens/pos/WalletUpdateScreen';
 
 export type WalletUpdateHandlerProps = {
   walletUpdateUsecase: WalletUpdateUsecase;

@@ -15,9 +15,9 @@ import {
 import {
   RentalCheckinScreen,
   RentalCheckinScreenProps,
-} from '../../screens/pos/RentalCheckinScreen';
+} from '../../views/screens/pos/RentalCheckinScreen';
 import { CheckinPrintPayload, usePrinter } from '../../../utils';
-import { useConfirmationAlert } from '../../components';
+import { useConfirmationAlert } from '../../views/components';
 import dayjs from 'dayjs';
 
 export type RentalCheckinHandlerProps = {

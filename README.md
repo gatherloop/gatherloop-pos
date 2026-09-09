@@ -26,7 +26,7 @@ apps/
 libs/
   ui/           All shared frontend code: entities, use cases, screens, components
     src/app/            per-app composition roots — pos/ and order/
-    src/presentation/   handlers/{pos,order,hooks}, components/ (shared), screens/pos/ and screens/order/
+    src/presentation/   handlers/{pos,order,hooks}, views/components/ (shared), views/screens/pos/ and views/screens/order/
   api-contract/ OpenAPI spec (src/api.yaml) + generated TS and Go clients
   provider/     App-level providers (Tamagui, theme, toast)
 docs/           PRDs and TRDs (product and technical design docs)
@@ -119,7 +119,7 @@ Dependencies are constructed once in `main.go` and injected, so use cases are te
 ```
 domain/       entities, repository interfaces, use cases (framework-agnostic)
 data/         api/ (OpenAPI client), mock/, memory/, browser/ repository implementations
-presentation/ handlers/ (+ handlers/hooks/), screens/, components/
+presentation/ handlers/ (+ handlers/hooks/), views/ (screens/, components/)
 app/          per-route composition: builds repositories + use cases, renders a Handler
 ```
 

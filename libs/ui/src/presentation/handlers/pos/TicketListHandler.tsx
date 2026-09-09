@@ -5,7 +5,7 @@ import {
   TicketDeleteUsecase,
   TicketListUsecase,
 } from '../../../domain';
-import { TicketListScreen, TicketListScreenProps } from '../../screens/pos/TicketListScreen';
+import { TicketListScreen, TicketListScreenProps } from '../../views/screens/pos/TicketListScreen';
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';

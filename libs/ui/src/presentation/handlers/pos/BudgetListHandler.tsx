@@ -3,8 +3,8 @@ import {
   AuthLogoutUsecase,
   BudgetListUsecase,
 } from '../../../domain';
-import { BudgetListScreen, BudgetListScreenProps } from '../../screens/pos/BudgetListScreen';
-import { BudgetListItemProps } from '../../components';
+import { BudgetListScreen, BudgetListScreenProps } from '../../views/screens/pos/BudgetListScreen';
+import { BudgetListItemProps } from '../../views/components';
 import { match, P } from 'ts-pattern';
 import {
   useAuthLogout,

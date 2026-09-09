@@ -8,10 +8,10 @@
 // Customer-specific slices (Menu*, Cart*) land here as their phases ship;
 // today it only carries what's already POS-free and shared with the web app.
 export * from './config';
-export * from './presentation/components/base/ConfirmationAlert';
-export * from './presentation/components/base/LoadingView';
-export * from './presentation/components/base/OrderLayout';
-export * from './presentation/components/menu/MenuItemThumbnail';
+export * from './presentation/views/components/base/ConfirmationAlert';
+export * from './presentation/views/components/base/LoadingView';
+export * from './presentation/views/components/base/OrderLayout';
+export * from './presentation/views/components/menu/MenuItemThumbnail';
 export * from './utils/currency';
 export * from './app/order/MenuList';
 export * from './app/order/Cart';

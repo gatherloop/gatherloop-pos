@@ -11,7 +11,7 @@ import {
 import {
   ExpenseStatisticScreen,
   ExpenseStatisticScreenProps,
-} from '../../screens/pos/ExpenseStatisticScreen';
+} from '../../views/screens/pos/ExpenseStatisticScreen';
 
 export type ExpenseStatisticHandlerProps = {
   expenseStatisticListUsecase: ExpenseStatisticListUsecase;

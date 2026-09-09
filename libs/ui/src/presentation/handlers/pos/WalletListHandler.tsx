@@ -5,7 +5,7 @@ import { useUsecase, useAuthLogout } from '../hooks';
 import { useFocusEffect } from '../../../utils';
 import { AuthLogoutUsecase, WalletListUsecase } from '../../../domain';
 import { Wallet } from '../../../domain';
-import { WalletListScreen, WalletListScreenProps } from '../../screens/pos/WalletListScreen';
+import { WalletListScreen, WalletListScreenProps } from '../../views/screens/pos/WalletListScreen';
 
 export type WalletListHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;

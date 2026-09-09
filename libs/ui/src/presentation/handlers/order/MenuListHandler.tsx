@@ -14,13 +14,13 @@ import {
 } from '../../../domain/usecases/menuItemDetail';
 import { MenuListUsecase } from '../../../domain/usecases/menuList';
 import { TableResolveUsecase } from '../../../domain/usecases/tableResolve';
-import { CartBar } from '../../components/cart/CartBar';
+import { CartBar } from '../../views/components/cart/CartBar';
 import { useUsecase } from '../hooks/useUsecase';
 import { useCart } from '../hooks/useCart';
 import { useTableResolve } from '../hooks/useTableResolve';
-import { MenuItemDetailScreenProps } from '../../screens/order/MenuItemDetailScreen';
-import { MenuListScreen, MenuListScreenProps } from '../../screens/order/MenuListScreen';
-import { TableResolveScreenProps } from '../../screens/order/TableResolveScreen';
+import { MenuItemDetailScreenProps } from '../../views/screens/order/MenuItemDetailScreen';
+import { MenuListScreen, MenuListScreenProps } from '../../views/screens/order/MenuListScreen';
+import { TableResolveScreenProps } from '../../views/screens/order/TableResolveScreen';
 
 export type MenuListHandlerProps = {
   tableResolveUsecase: TableResolveUsecase;

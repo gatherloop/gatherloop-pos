@@ -8,9 +8,9 @@ import { CartState, CartUsecase } from '../../../domain/usecases/cart';
 import { TableResolveUsecase } from '../../../domain/usecases/tableResolve';
 import { useCart } from '../hooks/useCart';
 import { useTableResolve } from '../hooks/useTableResolve';
-import { CartItemEditScreenProps } from '../../screens/order/CartItemEditScreen';
-import { CartScreen, CartScreenProps } from '../../screens/order/CartScreen';
-import { TableResolveScreenProps } from '../../screens/order/TableResolveScreen';
+import { CartItemEditScreenProps } from '../../views/screens/order/CartItemEditScreen';
+import { CartScreen, CartScreenProps } from '../../views/screens/order/CartScreen';
+import { TableResolveScreenProps } from '../../views/screens/order/TableResolveScreen';
 
 export type CartHandlerProps = {
   tableResolveUsecase: TableResolveUsecase;

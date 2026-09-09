@@ -6,7 +6,7 @@ import {
   CalculationDeleteUsecase,
   CalculationListUsecase,
 } from '../../../domain';
-import { CalculationListScreen, CalculationListScreenProps } from '../../screens/pos/CalculationListScreen';
+import { CalculationListScreen, CalculationListScreenProps } from '../../views/screens/pos/CalculationListScreen';
 import { match, P } from 'ts-pattern';
 import { useCallback, useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';

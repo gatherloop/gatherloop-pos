@@ -7,7 +7,7 @@ import { useUsecase, useAuthLogout } from '../hooks';
 import {
   ChecklistTemplateCreateScreen,
   ChecklistTemplateCreateScreenProps,
-} from '../../screens/pos/ChecklistTemplateCreateScreen';
+} from '../../views/screens/pos/ChecklistTemplateCreateScreen';
 
 export type ChecklistTemplateCreateHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;

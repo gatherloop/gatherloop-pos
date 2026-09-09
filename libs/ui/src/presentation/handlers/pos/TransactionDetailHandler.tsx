@@ -1,6 +1,6 @@
 import { useUsecase, useAuthLogout } from '../hooks';
 import { AuthLogoutUsecase, TransactionDetailUsecase } from '../../../domain';
-import { TransactionDetailScreen } from '../../screens/pos/TransactionDetailScreen';
+import { TransactionDetailScreen } from '../../views/screens/pos/TransactionDetailScreen';
 
 export type TransactionDetailHandlerProps = {
   transactionDetailUsecase: TransactionDetailUsecase;

@@ -11,7 +11,7 @@ import {
 import {
   VariantCreateScreen,
   VariantCreateScreenProps,
-} from '../../screens/pos/VariantCreateScreen';
+} from '../../views/screens/pos/VariantCreateScreen';
 
 export type VariantCreateHandlerProps = {
   variantCreateUsecase: VariantCreateUsecase;

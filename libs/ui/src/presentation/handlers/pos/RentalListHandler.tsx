@@ -4,7 +4,7 @@ import {
   RentalDeleteUsecase,
   RentalListUsecase,
 } from '../../../domain';
-import { RentalListScreen, RentalListScreenProps } from '../../screens/pos/RentalListScreen';
+import { RentalListScreen, RentalListScreenProps } from '../../views/screens/pos/RentalListScreen';
 import { match, P } from 'ts-pattern';
 import { useEffect, useRef } from 'react';
 import { useToastController } from '@tamagui/toast';

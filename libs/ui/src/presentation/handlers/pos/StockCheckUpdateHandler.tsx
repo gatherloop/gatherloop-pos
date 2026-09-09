@@ -7,7 +7,7 @@ import { useUsecase, useAuthLogout } from '../hooks';
 import {
   StockCheckUpdateScreen,
   StockCheckUpdateScreenProps,
-} from '../../screens/pos/StockCheckUpdateScreen';
+} from '../../views/screens/pos/StockCheckUpdateScreen';
 
 export type StockCheckUpdateHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;

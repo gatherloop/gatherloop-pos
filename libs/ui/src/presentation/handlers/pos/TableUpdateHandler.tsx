@@ -11,7 +11,7 @@ import { useUsecase, useAuthLogout } from '../hooks';
 import {
   TableUpdateScreen,
   TableUpdateScreenProps,
-} from '../../screens/pos/TableUpdateScreen';
+} from '../../views/screens/pos/TableUpdateScreen';
 
 export type TableUpdateHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;

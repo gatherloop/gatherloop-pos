@@ -23,7 +23,7 @@ import {
 import {
   TransactionListScreen,
   TransactionListScreenProps,
-} from '../../screens/pos/TransactionListScreen';
+} from '../../views/screens/pos/TransactionListScreen';
 
 export type TransactionListHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;

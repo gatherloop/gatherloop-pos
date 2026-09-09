@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';
 import { useUsecase, useAuthLogout } from '../hooks';
 import { AuthLogoutUsecase, WalletTransferCreateUsecase } from '../../../domain';
-import { WalletTransferCreateScreen } from '../../screens/pos/WalletTransferCreateScreen';
+import { WalletTransferCreateScreen } from '../../views/screens/pos/WalletTransferCreateScreen';
 
 export type WalletTransferCreateHandlerProps = {
   walletId: number;

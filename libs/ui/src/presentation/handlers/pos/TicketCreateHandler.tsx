@@ -7,7 +7,7 @@ import { useUsecase, useAuthLogout } from '../hooks';
 import {
   TicketCreateScreen,
   TicketCreateScreenProps,
-} from '../../screens/pos/TicketCreateScreen';
+} from '../../views/screens/pos/TicketCreateScreen';
 
 export type TicketCreateHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;

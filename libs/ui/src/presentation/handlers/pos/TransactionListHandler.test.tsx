@@ -15,7 +15,7 @@ import {
   TransactionPayUsecase,
   TransactionUnpayUsecase,
 } from '../../../domain';
-import type { TransactionListScreenProps } from '../../screens/pos/TransactionListScreen';
+import type { TransactionListScreenProps } from '../../views/screens/pos/TransactionListScreen';
 
 const mockRouterPush = jest.fn();
 jest.mock('solito/router', () => ({
@@ -43,7 +43,7 @@ jest.mock('../../../utils', () => ({
 // Mock the Screen — tests focus on handler orchestration logic. We capture
 // the props passed in so individual menu-press handlers can be invoked.
 let latestScreenProps: TransactionListScreenProps;
-jest.mock('../../screens/pos/TransactionListScreen', () => ({
+jest.mock('../../views/screens/pos/TransactionListScreen', () => ({
   TransactionListScreen: (props: TransactionListScreenProps) => {
     latestScreenProps = props;
     return null;
@@ -294,7 +294,7 @@ describe('TransactionListHandler', () => {
       transactionListCtrl.state = { ...transactionListCtrl.state, type: 'changingParams' };
 
       const mockScreen = jest.fn(() => null);
-      jest.doMock('../../screens/pos/TransactionListScreen', () => ({
+      jest.doMock('../../views/screens/pos/TransactionListScreen', () => ({
         TransactionListScreen: mockScreen,
       }));
 

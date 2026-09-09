@@ -1,6 +1,6 @@
 import { useRouter } from 'solito/router';
 import { AuthLogoutUsecase, CalculationUpdateUsecase } from '../../../domain';
-import { CalculationUpdateScreen, CalculationUpdateScreenProps } from '../../screens/pos/CalculationUpdateScreen';
+import { CalculationUpdateScreen, CalculationUpdateScreenProps } from '../../views/screens/pos/CalculationUpdateScreen';
 import { match, P } from 'ts-pattern';
 import { useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';

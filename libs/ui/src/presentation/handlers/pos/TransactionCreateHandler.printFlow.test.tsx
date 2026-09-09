@@ -20,14 +20,14 @@ jest.mock('../../../utils', () => ({
 }));
 
 const mockConfirmationShow = jest.fn();
-jest.mock('../../components', () => ({
-  ...jest.requireActual('../../components'),
+jest.mock('../../views/components', () => ({
+  ...jest.requireActual('../../views/components'),
   useConfirmationAlert: () => ({ show: mockConfirmationShow }),
 }));
 
 // Avoid rendering the real screen tree — these tests only exercise the
 // payingSuccess print-chain orchestration in the handler.
-jest.mock('../../screens/pos/TransactionCreateScreen', () => ({
+jest.mock('../../views/screens/pos/TransactionCreateScreen', () => ({
   TransactionCreateScreen: () => null,
 }));
 

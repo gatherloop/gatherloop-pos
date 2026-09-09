@@ -44,7 +44,7 @@
       }
     },
     {
-      "files": ["src/presentation/components/**"],
+      "files": ["src/presentation/views/components/**"],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -57,6 +57,38 @@
               {
                 "name": "next/router",
                 "message": "libs/ui is Metro-bundled for apps/pos-mobile; Next has no business outside utils/. See docs/trd-order-app-composition-and-ssr.md."
+              }
+            ],
+            "patterns": [
+              {
+                "group": ["**/handlers/**", "**/data/**"],
+                "message": "views/components is pure prop-driven rendering — no usecases, no repositories. See §4 in docs/trd-presentation-layer-architecture.md."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/presentation/views/screens/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "next",
+                "message": "libs/ui is Metro-bundled for apps/pos-mobile; Next has no business outside utils/. See docs/trd-order-app-composition-and-ssr.md."
+              },
+              {
+                "name": "next/router",
+                "message": "libs/ui is Metro-bundled for apps/pos-mobile; Next has no business outside utils/. See docs/trd-order-app-composition-and-ssr.md."
+              }
+            ],
+            "patterns": [
+              {
+                "group": ["**/handlers/**", "**/domain/usecases/**", "**/data/**"],
+                "message": "views/screens is pure prop-driven rendering — no usecases, no repositories. See §4 in docs/trd-presentation-layer-architecture.md."
               }
             ]
           }

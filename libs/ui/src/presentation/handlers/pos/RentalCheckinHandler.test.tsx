@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, act, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { RentalCheckinHandler } from './RentalCheckinHandler';
-import { ConfirmationAlertProvider } from '../../components';
+import { ConfirmationAlertProvider } from '../../views/components';
 import {
   MockAuthRepository,
   MockProductRepository,

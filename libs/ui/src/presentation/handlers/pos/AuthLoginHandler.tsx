@@ -3,7 +3,7 @@ import { AuthLoginUsecase } from '../../../domain';
 import { useUsecase } from '../hooks';
 import { useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';
-import { AuthLoginScreen } from '../../screens/pos/AuthLoginScreen';
+import { AuthLoginScreen } from '../../views/screens/pos/AuthLoginScreen';
 
 export type AuthLoginHandlerProps = {
   authLoginUsecase: AuthLoginUsecase;

@@ -12,7 +12,7 @@ import { useUsecase, useAuthLogout, useVariantDelete } from '../hooks';
 import {
   ProductUpdateScreen,
   ProductUpdateScreenProps,
-} from '../../screens/pos/ProductUpdateScreen';
+} from '../../views/screens/pos/ProductUpdateScreen';
 
 export type ProductUpdateHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;

@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { useToastController } from '@tamagui/toast';
 import { useUsecase, useAuthLogout } from '../hooks';
 import { AuthLogoutUsecase, BudgetCreateUsecase } from '../../../domain';
-import { BudgetCreateScreen } from '../../screens/pos/BudgetCreateScreen';
+import { BudgetCreateScreen } from '../../views/screens/pos/BudgetCreateScreen';
 
 export type BudgetCreateHandlerProps = {
   budgetCreateUsecase: BudgetCreateUsecase;

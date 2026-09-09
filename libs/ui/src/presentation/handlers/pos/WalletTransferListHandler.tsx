@@ -8,8 +8,8 @@ import {
   WalletDetailUsecase,
   WalletTransferListUsecase,
 } from '../../../domain';
-import { WalletTransferListScreen, WalletTransferListScreenProps } from '../../screens/pos/WalletTransferListScreen';
-import { WalletTransferListProps } from '../../components';
+import { WalletTransferListScreen, WalletTransferListScreenProps } from '../../views/screens/pos/WalletTransferListScreen';
+import { WalletTransferListProps } from '../../views/components';
 
 export type WalletTransferListHandlerProps = {
   walletId: number;
