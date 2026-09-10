@@ -5,16 +5,11 @@ import { Usecase } from './IUsecase';
 
 const NAME_MAX_LENGTH = 60;
 
-// FR-6/FR-8/D17/D18/D12a in docs/prd-order-checkout-qris-doku.md.
 type Context = {
   payment: Payment | null;
   customerName: string;
   nameErrorMessage: string | null;
   errorMessage: string | null;
-  // Not in FR-8's illustrative sketch — onStateChange only ever sees
-  // `state`, never the action that produced it, so there is nowhere else to
-  // tell "just entered awaitingPayment" apart from "a POLL/COUNTDOWN_ELAPSED
-  // tick landed". Same reasoning as `CartUsecase.pendingMutation`.
   isPolling: boolean;
 };
 
@@ -43,8 +38,6 @@ export type CheckoutAction =
   | { type: 'EXPIRE' };
 
 export type CheckoutParams = {
-  // Seeded from `GET /customers/current` at SSR (D24) by the composition
-  // root — this usecase never calls `CustomerRepository` itself.
   customerName?: string;
 };
 
@@ -101,9 +94,6 @@ export class CheckoutUsecase extends Usecase<
         type: 'idle',
         nameErrorMessage: null,
       }))
-      // SUBMIT_NAME doubles as the retry trigger from `error`/`expired`
-      // (UX steps 7/8) — the name is already valid there, so validation is
-      // a no-op and the machine goes straight to `creatingPayment`.
       .with(
         [
           { type: P.union('askingName', 'error', 'expired') },

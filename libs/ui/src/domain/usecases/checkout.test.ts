@@ -7,10 +7,6 @@ import {
 import { MockPaymentRepository } from '../../data/mock';
 import { UsecaseTester } from '../../utils/usecase';
 
-// Fake timers throughout: the usecase owns a real `setInterval` while
-// `awaitingPayment` (FR-8), and `advanceTimersByTimeAsync` both advances
-// time and flushes the microtask queue, which a plain `flushPromises`
-// cannot do once real timers are swapped out.
 const flushMicrotasks = () => jest.advanceTimersByTimeAsync(0);
 
 const createTester = (repository: MockPaymentRepository, customerName = '') =>
@@ -160,8 +156,6 @@ describe('CheckoutUsecase', () => {
       repository.payment = { ...repository.payment, status: 'expired' };
       checkout.dispatch({ type: 'COUNTDOWN_ELAPSED' });
 
-      // Still awaitingPayment immediately after dispatch — only the
-      // in-flight final poll's response is allowed to move it (D12a).
       expect(checkout.state.type).toBe('awaitingPayment');
       expect(checkout.state.isPolling).toBe(true);
 

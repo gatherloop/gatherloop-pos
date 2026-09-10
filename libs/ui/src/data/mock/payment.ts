@@ -22,8 +22,6 @@ const initialPayment = (): Payment => ({
   ],
 });
 
-// Mutate `payment` directly between dispatches to simulate the status a
-// poll observes next — mirrors `MockCartRepository.cart`.
 export class MockPaymentRepository implements PaymentRepository {
   payment: Payment = initialPayment();
 
