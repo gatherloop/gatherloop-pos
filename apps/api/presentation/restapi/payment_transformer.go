@@ -15,12 +15,13 @@ func GetPaymentCheckoutRequest(r *http.Request) (apiContract.PaymentCheckoutRequ
 	return request, err
 }
 
-func GetDokuNotification(body []byte) (domain.QrisStatus, error) {
+func GetDokuNotificationRequest(body []byte) (apiContract.DokuNotificationRequest, error) {
 	var request apiContract.DokuNotificationRequest
-	if err := json.Unmarshal(body, &request); err != nil {
-		return domain.QrisStatus{}, err
-	}
+	err := json.Unmarshal(body, &request)
+	return request, err
+}
 
+func ToQrisStatus(request apiContract.DokuNotificationRequest) domain.QrisStatus {
 	paidAmount, _ := strconv.ParseFloat(request.Amount.Value, 32)
 
 	return domain.QrisStatus{
@@ -29,7 +30,7 @@ func GetDokuNotification(body []byte) (domain.QrisStatus, error) {
 		Status:             doku.MapTransactionStatus(request.LatestTransactionStatus),
 		PaidAmount:         float32(paidAmount),
 		RawStatusCode:      request.LatestTransactionStatus,
-	}, nil
+	}
 }
 
 func ToApiPayment(payment domain.Payment, transaction domain.Transaction) apiContract.Payment {

@@ -182,13 +182,3 @@ func ValidateOrderPaymentWallet(wallet Wallet) *Error {
 	}
 	return nil
 }
-
-// NotificationHeaders carries the SNAP headers a DOKU payment notification
-// arrives with — only what VerifyNotificationSignature needs to recompute
-// and check the symmetric signature (D13). Never a secret, and never the
-// signature of an outbound call.
-type NotificationHeaders struct {
-	Timestamp string
-	Signature string
-	PartnerId string
-}

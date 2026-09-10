@@ -51,11 +51,12 @@ func (handler PaymentHandler) Notification(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	status, parseErr := GetDokuNotification(body)
+	request, parseErr := GetDokuNotificationRequest(body)
 	if parseErr != nil {
 		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: parseErr.Error()})
 		return
 	}
+	status := ToQrisStatus(request)
 
 	payment, outcome, usecaseErr := handler.usecase.ConfirmPayment(ctx, status)
 	if usecaseErr != nil {
