@@ -72,6 +72,18 @@ async function apiPost<T>(path: string, body: unknown): Promise<T> {
   return json.data as T;
 }
 
+async function apiGet<T>(path: string): Promise<T> {
+  const context = await getContext();
+  const response = await context.get(path);
+  if (!response.ok()) {
+    throw new Error(
+      `GET ${path} failed: ${response.status()} ${await response.text()}`
+    );
+  }
+  const json = await response.json();
+  return json.data as T;
+}
+
 async function apiDelete(path: string): Promise<void> {
   const context = await getContext();
   const response = await context.delete(path);
@@ -178,6 +190,29 @@ export async function deleteVariant(id: number): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// Wallet (FR-6/D15 in docs/prd-order-checkout-qris-doku.md — the checkout
+// endpoint credits ORDER_PAYMENT_WALLET_ID). The wallet itself is seeded
+// directly in the database before the API starts (its id has to be known
+// ahead of time to configure ORDER_PAYMENT_WALLET_ID — see
+// .github/workflows/e2e-main.yml), so this is a read only, to check its
+// balance moved after a payment.
+// ---------------------------------------------------------------------------
+
+export interface Wallet {
+  id: number;
+  name: string;
+  balance: number;
+  paymentCostPercentage: number;
+  isCashless: boolean;
+  isPaymentTarget: boolean;
+  createdAt: string;
+}
+
+export async function getWallet(id: number): Promise<Wallet> {
+  return apiGet<Wallet>(`/wallets/${id}`);
+}
+
+// ---------------------------------------------------------------------------
 // Table (D6/FR-2 in docs/prd-table-ordering.md)
 // ---------------------------------------------------------------------------
 
@@ -185,11 +220,15 @@ export interface Table {
   id: number;
   code: string;
   label: string;
+  floorNumber: number;
   createdAt: string;
 }
 
-export async function createTable(data: { label: string }): Promise<Table> {
-  return apiPost<Table>('/tables', data);
+export async function createTable(data: {
+  label: string;
+  floorNumber?: number;
+}): Promise<Table> {
+  return apiPost<Table>('/tables', { floorNumber: 1, ...data });
 }
 
 export async function deleteTable(id: number): Promise<void> {

@@ -20,7 +20,7 @@ An [Nx](https://nx.dev) monorepo. Apps are thin shells; nearly all frontend code
 apps/
   api/          Go backend (REST API, MySQL)
   pos-web/      Next.js admin/cashier app (Pages Router)
-  order-web/    Next.js customer app — scan a table QR, order from your phone
+  order-web/    Next.js customer app — scan a table QR, order and pay by QRIS from your phone
   pos-mobile/   React Native (Expo) app for iOS/Android
   *-e2e/        Playwright end-to-end tests per app
 libs/

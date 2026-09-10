@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { match, P } from 'ts-pattern';
 import { useRouter } from 'solito/router';
 // Deep imports, not the `domain` barrel (D20): that barrel also re-exports
@@ -6,6 +6,7 @@ import { useRouter } from 'solito/router';
 import { Category } from '../../../domain/entities/Category';
 import { Product } from '../../../domain/entities/Product';
 import { Variant } from '../../../domain/entities/Variant';
+import { CartRepository } from '../../../domain/repositories/cart';
 import { SessionRepository } from '../../../domain/repositories/session';
 import { CartUsecase } from '../../../domain/usecases/cart';
 import {
@@ -27,6 +28,7 @@ export type MenuListHandlerProps = {
   menuListUsecase: MenuListUsecase;
   menuItemDetailUsecase: MenuItemDetailUsecase;
   cartUsecase: CartUsecase;
+  cartRepository: CartRepository;
   sessionRepository: SessionRepository;
   tableCode: string;
 };
@@ -130,6 +132,7 @@ export const MenuListHandler = ({
   menuListUsecase,
   menuItemDetailUsecase,
   cartUsecase,
+  cartRepository,
   sessionRepository,
   tableCode,
 }: MenuListHandlerProps) => {
@@ -154,6 +157,19 @@ export const MenuListHandler = ({
       sessionRepository.setTableCode(tableResolve.state.code);
     }
   }, [tableResolve.state, sessionRepository]);
+
+  const boundTableCodeRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (tableResolve.state.type !== 'resolved' || !tableResolve.state.code) {
+      return;
+    }
+    const code = tableResolve.state.code;
+    if (boundTableCodeRef.current === code) return;
+    boundTableCodeRef.current = code;
+    cartRepository.updateTable(code).catch(() => {
+      boundTableCodeRef.current = null;
+    });
+  }, [tableResolve.state, cartRepository]);
 
   // D6: opening the sheet is a state transition, not a route — this is the
   // sole trigger for `menuItemDetailUsecase`, covering both a fresh click

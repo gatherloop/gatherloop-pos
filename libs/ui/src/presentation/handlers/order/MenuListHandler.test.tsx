@@ -72,6 +72,7 @@ const renderHandler = ({
         menuListUsecase={menuListUsecase}
         menuItemDetailUsecase={menuItemDetailUsecase}
         cartUsecase={cartUsecase}
+        cartRepository={cartRepository}
         sessionRepository={new MockSessionRepository()}
         tableCode={TABLE_CODE}
       />
@@ -117,6 +118,16 @@ describe('MenuListHandler', () => {
     expect(screen.getByText('Nasi Goreng')).toBeTruthy();
     expect(screen.getAllByText('Minuman')).toHaveLength(2);
     expect(screen.getAllByText('Makanan')).toHaveLength(2);
+  });
+
+  it('attaches the resolved table to the cart', async () => {
+    const cartRepository = new MockCartRepository();
+    const updateTableSpy = jest.spyOn(cartRepository, 'updateTable');
+    renderHandler({ cartRepository });
+
+    await settle();
+
+    expect(updateTableSpy).toHaveBeenCalledWith(TABLE_CODE);
   });
 
   it('shows the lowest variant price as a starting price', async () => {

@@ -1,4 +1,4 @@
-import { Cart, CartItem, Product, Variant } from '../../domain/entities';
+import { Cart, CartItem, PublicTable, Product, Variant } from '../../domain/entities';
 import { CartRepository } from '../../domain/repositories/cart';
 
 // Mirrors the fixture in `data/mock/menu.ts` so a story or test wiring both
@@ -98,6 +98,13 @@ export class MockCartRepository implements CartRepository {
 
   fetchCurrentCart: CartRepository['fetchCurrentCart'] = async () => {
     if (this.shouldFail) throw new Error('Failed to fetch cart');
+    return { ...this.cart };
+  };
+
+  updateTable: CartRepository['updateTable'] = async () => {
+    if (this.shouldFail) throw new Error('Failed to update table');
+    const table: PublicTable = { id: 1, label: 'Meja 1', floorNumber: 1 };
+    this.cart = { ...this.cart, tableId: table.id, table };
     return { ...this.cart };
   };
 
