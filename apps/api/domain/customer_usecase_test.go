@@ -77,34 +77,21 @@ func TestCustomerUsecase_UpsertCustomerName(t *testing.T) {
 		expectedError *domain.Error
 	}{
 		{
-			name:      "first name for a session creates the row",
+			name:      "a valid name is upserted",
 			sessionId: "session-1",
 			input:     "Budi",
 			setupMock: func(r *mock.MockCustomerRepository) {
-				r.EXPECT().GetCustomerBySessionId(gomock.Any(), "session-1").Return(domain.Customer{}, &domain.Error{Type: domain.NotFound})
-				r.EXPECT().CreateCustomer(gomock.Any(), domain.Customer{SessionId: "session-1", Name: "Budi"}).
+				r.EXPECT().UpsertCustomerBySessionId(gomock.Any(), "session-1", "Budi").
 					Return(domain.Customer{Id: 1, SessionId: "session-1", Name: "Budi"}, nil)
 			},
 			expectedName: "Budi",
-		},
-		{
-			name:      "a name change updates the existing row rather than adding one",
-			sessionId: "session-1",
-			input:     "Budi Santoso",
-			setupMock: func(r *mock.MockCustomerRepository) {
-				r.EXPECT().GetCustomerBySessionId(gomock.Any(), "session-1").Return(domain.Customer{Id: 7, SessionId: "session-1", Name: "Budi"}, nil)
-				r.EXPECT().UpdateCustomerById(gomock.Any(), domain.Customer{Id: 7, SessionId: "session-1", Name: "Budi Santoso"}, int64(7)).
-					Return(domain.Customer{Id: 7, SessionId: "session-1", Name: "Budi Santoso"}, nil)
-			},
-			expectedName: "Budi Santoso",
 		},
 		{
 			name:      "surrounding whitespace is trimmed before it is stored",
 			sessionId: "session-1",
 			input:     "  Budi  ",
 			setupMock: func(r *mock.MockCustomerRepository) {
-				r.EXPECT().GetCustomerBySessionId(gomock.Any(), "session-1").Return(domain.Customer{}, &domain.Error{Type: domain.NotFound})
-				r.EXPECT().CreateCustomer(gomock.Any(), domain.Customer{SessionId: "session-1", Name: "Budi"}).
+				r.EXPECT().UpsertCustomerBySessionId(gomock.Any(), "session-1", "Budi").
 					Return(domain.Customer{Id: 1, SessionId: "session-1", Name: "Budi"}, nil)
 			},
 			expectedName: "Budi",
@@ -135,8 +122,7 @@ func TestCustomerUsecase_UpsertCustomerName(t *testing.T) {
 			sessionId: "session-1",
 			input:     strings.Repeat("a", 60),
 			setupMock: func(r *mock.MockCustomerRepository) {
-				r.EXPECT().GetCustomerBySessionId(gomock.Any(), "session-1").Return(domain.Customer{}, &domain.Error{Type: domain.NotFound})
-				r.EXPECT().CreateCustomer(gomock.Any(), gomock.Any()).
+				r.EXPECT().UpsertCustomerBySessionId(gomock.Any(), "session-1", strings.Repeat("a", 60)).
 					Return(domain.Customer{Id: 1, SessionId: "session-1", Name: strings.Repeat("a", 60)}, nil)
 			},
 			expectedName: strings.Repeat("a", 60),
@@ -149,18 +135,18 @@ func TestCustomerUsecase_UpsertCustomerName(t *testing.T) {
 			sessionId: "session-1",
 			input:     strings.Repeat("é", 60),
 			setupMock: func(r *mock.MockCustomerRepository) {
-				r.EXPECT().GetCustomerBySessionId(gomock.Any(), "session-1").Return(domain.Customer{}, &domain.Error{Type: domain.NotFound})
-				r.EXPECT().CreateCustomer(gomock.Any(), gomock.Any()).
+				r.EXPECT().UpsertCustomerBySessionId(gomock.Any(), "session-1", strings.Repeat("é", 60)).
 					Return(domain.Customer{Id: 1, SessionId: "session-1", Name: strings.Repeat("é", 60)}, nil)
 			},
 			expectedName: strings.Repeat("é", 60),
 		},
 		{
-			name:      "a read failure that is not NotFound is surfaced, not treated as a first name",
+			name:      "a repository error is surfaced",
 			sessionId: "session-1",
 			input:     "Budi",
 			setupMock: func(r *mock.MockCustomerRepository) {
-				r.EXPECT().GetCustomerBySessionId(gomock.Any(), "session-1").Return(domain.Customer{}, &domain.Error{Type: domain.InternalServerError})
+				r.EXPECT().UpsertCustomerBySessionId(gomock.Any(), "session-1", "Budi").
+					Return(domain.Customer{}, &domain.Error{Type: domain.InternalServerError})
 			},
 			expectedError: &domain.Error{Type: domain.InternalServerError},
 		},

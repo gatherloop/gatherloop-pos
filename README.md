@@ -59,6 +59,11 @@ cp apps/order-web/.env.example apps/order-web/.env.local
 cp apps/pos-mobile/.env.example apps/pos-mobile/.env
 ```
 
+`apps/api`'s checkout endpoint validates `ORDER_PAYMENT_WALLET_ID` on each request and returns an
+error if it is unset, unknown, deleted, or not a payment target (`docs/prd-order-checkout-qris-doku.md`,
+D15) — before trying checkout locally, create a wallet (POS → Wallets) and point `apps/api/.env` at
+its id.
+
 ### Run
 
 ```bash

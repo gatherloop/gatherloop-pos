@@ -41,21 +41,16 @@ func (usecase CustomerUsecase) GetCurrentCustomerName(ctx context.Context, sessi
 // Callers run it inside their own transaction; see CustomerRepository for why
 // this usecase does not open one.
 func (usecase CustomerUsecase) UpsertCustomerName(ctx context.Context, sessionId string, name string) (Customer, *Error) {
+	return upsertCustomerName(ctx, usecase.repository, sessionId, name)
+}
+
+func upsertCustomerName(ctx context.Context, repository CustomerRepository, sessionId string, name string) (Customer, *Error) {
 	name = strings.TrimSpace(name)
 	if err := validateCustomerName(name); err != nil {
 		return Customer{}, err
 	}
 
-	existing, err := usecase.repository.GetCustomerBySessionId(ctx, sessionId)
-	if err != nil {
-		if err.Type != NotFound {
-			return Customer{}, err
-		}
-		return usecase.repository.CreateCustomer(ctx, Customer{SessionId: sessionId, Name: name})
-	}
-
-	existing.Name = name
-	return usecase.repository.UpdateCustomerById(ctx, existing, existing.Id)
+	return repository.UpsertCustomerBySessionId(ctx, sessionId, name)
 }
 
 // validateCustomerName enforces the 1–60 character rule on an

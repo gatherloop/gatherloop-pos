@@ -1,6 +1,9 @@
 package domain
 
-import "time"
+import (
+	"crypto/rand"
+	"time"
+)
 
 // PaymentGatewayStatus is the state DOKU reports for a QRIS payment,
 // normalised away from DOKU's own status/response codes (FR-3).
@@ -139,6 +142,32 @@ type Payment struct {
 // (D12a). This one only decides whether the cart stays frozen.
 func (payment Payment) IsAwaitingPayment(now time.Time) bool {
 	return payment.Status == PaymentStatePending && now.Before(payment.ExpiredAt)
+}
+
+const partnerReferenceNoRandomLength = 13
+
+func GeneratePartnerReferenceNo() (string, error) {
+	randomBytes := make([]byte, partnerReferenceNoRandomLength)
+	if _, err := rand.Read(randomBytes); err != nil {
+		return "", err
+	}
+
+	code := make([]byte, partnerReferenceNoRandomLength)
+	for i, b := range randomBytes {
+		code[i] = tableCodeAlphabet[int(b)%len(tableCodeAlphabet)]
+	}
+
+	return "ORD" + string(code), nil
+}
+
+func ValidateOrderPaymentWallet(wallet Wallet) *Error {
+	if wallet.DeletedAt != nil {
+		return &Error{Type: InternalServerError, Message: "ORDER_PAYMENT_WALLET_ID points at a deleted wallet"}
+	}
+	if !wallet.IsPaymentTarget {
+		return &Error{Type: InternalServerError, Message: "ORDER_PAYMENT_WALLET_ID points at a wallet that is not a payment target"}
+	}
+	return nil
 }
 
 // NotificationHeaders carries the SNAP headers a DOKU payment notification

@@ -41,21 +41,6 @@ func (m *MockCustomerRepository) EXPECT() *MockCustomerRepositoryMockRecorder {
 	return m.recorder
 }
 
-// CreateCustomer mocks base method.
-func (m *MockCustomerRepository) CreateCustomer(ctx context.Context, customer domain.Customer) (domain.Customer, *domain.Error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateCustomer", ctx, customer)
-	ret0, _ := ret[0].(domain.Customer)
-	ret1, _ := ret[1].(*domain.Error)
-	return ret0, ret1
-}
-
-// CreateCustomer indicates an expected call of CreateCustomer.
-func (mr *MockCustomerRepositoryMockRecorder) CreateCustomer(ctx, customer any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCustomer", reflect.TypeOf((*MockCustomerRepository)(nil).CreateCustomer), ctx, customer)
-}
-
 // GetCustomerBySessionId mocks base method.
 func (m *MockCustomerRepository) GetCustomerBySessionId(ctx context.Context, sessionId string) (domain.Customer, *domain.Error) {
 	m.ctrl.T.Helper()
@@ -71,17 +56,17 @@ func (mr *MockCustomerRepositoryMockRecorder) GetCustomerBySessionId(ctx, sessio
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCustomerBySessionId", reflect.TypeOf((*MockCustomerRepository)(nil).GetCustomerBySessionId), ctx, sessionId)
 }
 
-// UpdateCustomerById mocks base method.
-func (m *MockCustomerRepository) UpdateCustomerById(ctx context.Context, customer domain.Customer, id int64) (domain.Customer, *domain.Error) {
+// UpsertCustomerBySessionId mocks base method.
+func (m *MockCustomerRepository) UpsertCustomerBySessionId(ctx context.Context, sessionId, name string) (domain.Customer, *domain.Error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateCustomerById", ctx, customer, id)
+	ret := m.ctrl.Call(m, "UpsertCustomerBySessionId", ctx, sessionId, name)
 	ret0, _ := ret[0].(domain.Customer)
 	ret1, _ := ret[1].(*domain.Error)
 	return ret0, ret1
 }
 
-// UpdateCustomerById indicates an expected call of UpdateCustomerById.
-func (mr *MockCustomerRepositoryMockRecorder) UpdateCustomerById(ctx, customer, id any) *gomock.Call {
+// UpsertCustomerBySessionId indicates an expected call of UpsertCustomerBySessionId.
+func (mr *MockCustomerRepositoryMockRecorder) UpsertCustomerBySessionId(ctx, sessionId, name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCustomerById", reflect.TypeOf((*MockCustomerRepository)(nil).UpdateCustomerById), ctx, customer, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertCustomerBySessionId", reflect.TypeOf((*MockCustomerRepository)(nil).UpsertCustomerBySessionId), ctx, sessionId, name)
 }

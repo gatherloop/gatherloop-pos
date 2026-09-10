@@ -15,7 +15,10 @@ import (
 )
 
 func WriteError(ctx context.Context, w http.ResponseWriter, err apiContract.Error) {
-	httpStatus := ToHttpStatus(err)
+	WriteErrorWithStatus(ctx, w, err, ToHttpStatus(err))
+}
+
+func WriteErrorWithStatus(ctx context.Context, w http.ResponseWriter, err apiContract.Error, httpStatus int) {
 	log := logger.FromCtx(ctx, slog.Default())
 
 	attrs := []any{
@@ -64,6 +67,8 @@ func ToErrorCode(errorType domain.ErrorType) apiContract.ErrorCode {
 	case domain.Unauthorized:
 		return apiContract.UNAUTHORIZED
 	case domain.InternalServerError:
+		return apiContract.INTERNAL_SERVER_ERROR
+	case domain.BadGateway:
 		return apiContract.INTERNAL_SERVER_ERROR
 	default:
 		return apiContract.INTERNAL_SERVER_ERROR

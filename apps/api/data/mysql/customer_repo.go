@@ -5,6 +5,7 @@ import (
 	"context"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 func NewCustomerRepository(db *gorm.DB) domain.CustomerRepository {
@@ -27,40 +28,19 @@ func (repo Repository) GetCustomerBySessionId(ctx context.Context, sessionId str
 	return ToCustomerDomain(customer), ToErrorCtx(ctx, result.Error, "GetCustomerBySessionId")
 }
 
-// GetCustomerById is the read-back the two writers below use to return a
-// fully-populated row (created_at/updated_at come from the DB). It is
-// deliberately not on CustomerRepository: nothing in the domain ever holds a
-// customer id, only a session id, so exposing it would widen the port with a
-// lookup no usecase can make.
-func (repo Repository) GetCustomerById(ctx context.Context, id int64) (domain.Customer, *domain.Error) {
+func (repo Repository) UpsertCustomerBySessionId(ctx context.Context, sessionId string, name string) (domain.Customer, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
-	var customer Customer
+	payload := Customer{SessionId: sessionId, Name: name}
+
 	result := db.Table("customers").
-		Where("id = ? AND deleted_at IS NULL", id).
-		First(&customer)
-	return ToCustomerDomain(customer), ToErrorCtx(ctx, result.Error, "GetCustomerById")
-}
-
-func (repo Repository) CreateCustomer(ctx context.Context, customer domain.Customer) (domain.Customer, *domain.Error) {
-	db := GetDbFromCtx(ctx, repo.db)
-	payload := ToCustomerDB(customer)
-
-	if result := db.Table("customers").Create(&payload); result.Error != nil {
-		return domain.Customer{}, ToErrorCtx(ctx, result.Error, "CreateCustomer")
+		Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "session_id"}},
+			DoUpdates: clause.AssignmentColumns([]string{"name"}),
+		}).
+		Create(&payload)
+	if result.Error != nil {
+		return domain.Customer{}, ToErrorCtx(ctx, result.Error, "UpsertCustomerBySessionId")
 	}
 
-	return repo.GetCustomerById(ctx, payload.Id)
-}
-
-func (repo Repository) UpdateCustomerById(ctx context.Context, customer domain.Customer, id int64) (domain.Customer, *domain.Error) {
-	db := GetDbFromCtx(ctx, repo.db)
-	payload := ToCustomerDB(customer)
-
-	if result := db.Table("customers").Where("id = ?", id).Updates(map[string]any{
-		"name": payload.Name,
-	}); result.Error != nil {
-		return domain.Customer{}, ToErrorCtx(ctx, result.Error, "UpdateCustomerById")
-	}
-
-	return repo.GetCustomerById(ctx, id)
+	return repo.GetCustomerBySessionId(ctx, sessionId)
 }

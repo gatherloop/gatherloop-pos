@@ -1,6 +1,7 @@
 package main
 
 import (
+	"apps/api/data/doku"
 	"apps/api/data/mysql"
 	"apps/api/domain"
 	"apps/api/presentation/restapi"
@@ -9,6 +10,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 )
@@ -41,6 +43,17 @@ func main() {
 		panic("failed to connect database")
 	}
 
+	dokuPrivateKey, _ := doku.ParsePrivateKeyPEM(env.DokuPrivateKey)
+
+	paymentGatewayRepository := doku.NewPaymentGatewayRepository(doku.Config{
+		BaseURL:      env.DokuBaseURL,
+		ClientId:     env.DokuClientId,
+		ClientSecret: env.DokuClientSecret,
+		PrivateKey:   dokuPrivateKey,
+		MerchantId:   env.DokuMerchantId,
+		ChannelId:    env.DokuChannelId,
+	})
+
 	router := mux.NewRouter().StrictSlash(true)
 	router.Use(restapi.EnableCORS)
 	router.Use(logger.RequestLogger(rootLogger))
@@ -59,12 +72,15 @@ func main() {
 	tableRepository := mysql.NewTableRepository(db)
 	cartRepository := mysql.NewCartRepository(db)
 	customerRepository := mysql.NewCustomerRepository(db)
+	paymentRepository := mysql.NewPaymentRepository(db)
 	authRepository := mysql.NewAuthRepository(db)
 	calculationRepository := mysql.NewCalculationRepository(db)
 	rentalRepository := mysql.NewRentalRepository(db)
 	checklistTemplateRepository := mysql.NewChecklistTemplateRepository(db)
 	checklistSessionRepository := mysql.NewChecklistSessionRepository(db)
 	stockCheckRepository := mysql.NewStockCheckRepository(db)
+
+	orderPaymentWalletId, _ := strconv.ParseInt(env.OrderPaymentWalletId, 10, 64)
 
 	walletUsecase := domain.NewWalletUsecase(walletRepository)
 	transactionUsecase := domain.NewTransactionUsecase(transactionRepository, variantRepository, couponRepository, walletRepository)
@@ -79,6 +95,7 @@ func main() {
 	tableUsecase := domain.NewTableUsecase(tableRepository)
 	cartUsecase := domain.NewCartUsecase(cartRepository, variantRepository, tableRepository)
 	customerUsecase := domain.NewCustomerUsecase(customerRepository)
+	paymentUsecase := domain.NewPaymentUsecase(paymentRepository, paymentGatewayRepository, customerRepository, cartRepository, transactionRepository, variantRepository, walletRepository, env.DokuQrisExpirySeconds, orderPaymentWalletId)
 	budgetUsecase := domain.NewBudgetUsecase(budgetRepository)
 	authUsecase := domain.NewAuthUsecase(authRepository)
 	calculationUsecase := domain.NewCalculationUsecase(calculationRepository, walletRepository)
@@ -100,6 +117,7 @@ func main() {
 	tableHandler := restapi.NewTableHandler(tableUsecase)
 	cartHandler := restapi.NewCartHandler(cartUsecase)
 	customerHandler := restapi.NewCustomerHandler(customerUsecase)
+	paymentHandler := restapi.NewPaymentHandler(paymentUsecase)
 	budgetHandler := restapi.NewBudgetHandler(budgetUsecase)
 	authHandler := restapi.NewAuthHandler(authUsecase)
 	calculationHandler := restapi.NewCalculationHandler(calculationUsecase)
@@ -117,6 +135,7 @@ func main() {
 	restapi.NewTableRouter(tableHandler).AddRouter(router)
 	restapi.NewCartRouter(cartHandler).AddRouter(router)
 	restapi.NewCustomerRouter(customerHandler).AddRouter(router)
+	restapi.NewPaymentRouter(paymentHandler).AddRouter(router)
 	restapi.NewExpenseRouter(expenseHandler).AddRouter(router)
 	restapi.NewMaterialRouter(materialHandler).AddRouter(router)
 	restapi.NewSupplierRouter(supplierHandler).AddRouter(router)
