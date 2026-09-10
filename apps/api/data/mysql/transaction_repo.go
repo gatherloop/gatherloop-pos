@@ -108,8 +108,6 @@ func (repo Repository) UpdateTransactionById(ctx context.Context, transaction do
 	dbTransaction := ToTransactionDB(transaction)
 
 	if dbTransaction.TransactionItems != nil {
-		// Values are re-snapshotted on every update, so clear existing rows before
-		// FullSaveAssociations inserts the new ones to avoid duplicates.
 		var existingItemIds []int64
 		if err := db.Model(&TransactionItem{}).Where("transaction_id = ?", id).Pluck("id", &existingItemIds).Error; err != nil {
 			return domain.Transaction{}, ToErrorCtx(ctx, err, "UpdateTransactionById")
@@ -126,7 +124,6 @@ func (repo Repository) UpdateTransactionById(ctx context.Context, transaction do
 	}
 
 	if dbTransaction.TransactionItems != nil {
-		// Determine which existing item IDs to keep (those that are present in the incoming payload)
 		transactionItemIdsToKeep := []int64{}
 		for _, it := range dbTransaction.TransactionItems {
 			if it.Id > 0 {
@@ -135,12 +132,10 @@ func (repo Repository) UpdateTransactionById(ctx context.Context, transaction do
 		}
 
 		if len(transactionItemIdsToKeep) > 0 {
-			// delete items that were present before but are not in the incoming idsToKeep
 			if result := db.Table("transaction_items").Where("transaction_id = ? AND id NOT IN ?", id, transactionItemIdsToKeep).Delete(&TransactionItem{}); result.Error != nil {
 				return domain.Transaction{}, ToErrorCtx(ctx, result.Error, "UpdateTransactionById")
 			}
 		} else {
-			// If incoming payload has no existing IDs, remove all previously existing items
 			if result := db.Table("transaction_items").Where("transaction_id = ?", id).Delete(&TransactionItem{}); result.Error != nil {
 				return domain.Transaction{}, ToErrorCtx(ctx, result.Error, "UpdateTransactionById")
 			}
@@ -148,7 +143,6 @@ func (repo Repository) UpdateTransactionById(ctx context.Context, transaction do
 	}
 
 	if dbTransaction.TransactionCoupons != nil {
-		// Determine which existing coupon IDs to keep (those that are present in the incoming payload)
 		transactionCouponIdsToKeep := []int64{}
 		for _, it := range dbTransaction.TransactionCoupons {
 			if it.Id > 0 {
@@ -157,12 +151,10 @@ func (repo Repository) UpdateTransactionById(ctx context.Context, transaction do
 		}
 
 		if len(transactionCouponIdsToKeep) > 0 {
-			// delete coupons that were present before but are not in the incoming idsToKeep
 			if result := db.Table("transaction_coupons").Where("transaction_id = ? AND id NOT IN ?", id, transactionCouponIdsToKeep).Delete(&TransactionCoupon{}); result.Error != nil {
 				return domain.Transaction{}, ToErrorCtx(ctx, result.Error, "UpdateTransactionById")
 			}
 		} else {
-			// If incoming payload has no existing IDs, remove all previously existing items
 			if result := db.Table("transaction_coupons").Where("transaction_id = ?", id).Delete(&TransactionCoupon{}); result.Error != nil {
 				return domain.Transaction{}, ToErrorCtx(ctx, result.Error, "UpdateTransactionById")
 			}

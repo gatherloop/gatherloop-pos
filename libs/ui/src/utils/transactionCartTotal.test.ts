@@ -48,15 +48,12 @@ describe('calculateTransactionCouponDiscount', () => {
 
 describe('calculateTransactionCouponDiscounts', () => {
   it('applies coupons sequentially, each on top of the previous discount', () => {
-    // 45000 -[10%]-> 40500 discount, running total 4500 left... actually
-    // verify against a simpler, hand-checked stack: fixed then percentage.
     const discounts = calculateTransactionCouponDiscounts(50000, [
       { coupon: { type: 'fixed', amount: 10000 } },
       { coupon: { type: 'percentage', amount: 50 } },
     ]);
 
     expect(discounts[0]).toBe(10000);
-    // second coupon applies to the running total after the first: 40000
     expect(discounts[1]).toBe(20000);
   });
 
@@ -66,9 +63,7 @@ describe('calculateTransactionCouponDiscounts', () => {
       { coupon: { type: 'percentage', amount: 25 } },
     ]);
 
-    // 40000 * 25% = 10000, running total 30000
     expect(discounts[0]).toBe(10000);
-    // 30000 * 25% = 7500, rounds to nearest 500 (already exact)
     expect(discounts[1]).toBe(7500);
   });
 
@@ -97,7 +92,6 @@ describe('calculateTransactionFinalTotal', () => {
   });
 
   it('stacks a fixed coupon followed by a percentage coupon', () => {
-    // items total 50000, fixed -10000 -> 40000 left, then 50% of 40000 = -20000
     expect(
       calculateTransactionFinalTotal(
         [{ amount: 1, price: 50000, discountAmount: 0 }],
@@ -110,7 +104,6 @@ describe('calculateTransactionFinalTotal', () => {
   });
 
   it('stacks two percentage coupons compounding on the running total', () => {
-    // items total 40000, 25% -> -10000 (30000 left), 25% of 30000 -> -7500 (22500 left)
     expect(
       calculateTransactionFinalTotal(
         [{ amount: 1, price: 40000, discountAmount: 0 }],

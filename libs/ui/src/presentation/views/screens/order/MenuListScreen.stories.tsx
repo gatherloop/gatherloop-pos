@@ -105,13 +105,10 @@ export const Error: Story = {
   args: { variant: { type: 'error' } },
 };
 
-// D9 in docs/trd-order-app-composition-and-ssr.md: the table shell is this
-// screen's own now, not a wrapper it's rendered inside.
 export const ResolvingTable: Story = {
   args: { tableVariant: { type: 'resolving' }, variant: { type: 'loading' } },
 };
 
-// D6: the item sheet is a child of this screen, not a route of its own.
 export const ItemSheetOpen: Story = {
   args: {
     ...Loaded.args,

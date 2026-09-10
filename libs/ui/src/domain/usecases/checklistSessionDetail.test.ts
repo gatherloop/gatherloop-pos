@@ -87,16 +87,13 @@ describe('ChecklistSessionDetailUsecase', () => {
       const repository = new MockChecklistSessionRepository();
       const tester = makeTester(repository);
 
-      // item 2 has no sub-items, so checking it is straightforward
       tester.dispatch({ type: 'CHECK_ITEM', itemId: 2 });
       expect(tester.state.type).toBe('checkingItem');
       if (tester.state.type === 'checkingItem') {
         expect(tester.state.itemId).toBe(2);
       }
-      // Session data is still available (no blink)
       expect(tester.state.checklistSession).not.toBeNull();
 
-      // Both toggle and revalidation resolve within one microtask batch
       await flushPromises();
       expect(tester.state.type).toBe('loaded');
 
@@ -108,7 +105,6 @@ describe('ChecklistSessionDetailUsecase', () => {
   describe('uncheck item flow', () => {
     it('should untoggle item and end in loaded state with updated data', async () => {
       const repository = new MockChecklistSessionRepository();
-      // Pre-check item 2
       repository.sessions[0].items[1].completedAt = '2024-03-20T10:00:00.000Z';
       const tester = makeTester(repository);
 
@@ -134,7 +130,6 @@ describe('ChecklistSessionDetailUsecase', () => {
       if (tester.state.type === 'checkingSubItem') {
         expect(tester.state.subItemId).toBe(1);
       }
-      // Session data is still available (no blink)
       expect(tester.state.checklistSession).not.toBeNull();
 
       await flushPromises();
@@ -150,7 +145,6 @@ describe('ChecklistSessionDetailUsecase', () => {
   describe('uncheck sub-item flow', () => {
     it('should untoggle sub-item and end in loaded state with updated data', async () => {
       const repository = new MockChecklistSessionRepository();
-      // Pre-check sub-item 1
       repository.sessions[0].items[0].subItems[0].completedAt =
         '2024-03-20T10:00:00.000Z';
       const tester = makeTester(repository);
@@ -226,7 +220,6 @@ describe('ChecklistSessionDetailUsecase', () => {
       const repository = new MockChecklistSessionRepository();
       const tester = makeIdleTester(repository);
 
-      // State is loading (auto-fetching from idle)
       expect(tester.state.type).toBe('loading');
 
       tester.dispatch({ type: 'CHECK_ITEM', itemId: 2 });

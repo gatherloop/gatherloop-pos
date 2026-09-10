@@ -70,7 +70,6 @@ describe('TransactionDetailHandler', () => {
         await flushPromises();
       });
 
-      // Transaction 1 has orderNumber: 1 (> 0), so the label is shown
       expect(screen.getByText('Order Number')).toBeTruthy();
     });
 

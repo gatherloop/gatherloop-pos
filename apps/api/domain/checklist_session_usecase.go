@@ -53,7 +53,6 @@ func (usecase ChecklistSessionUsecase) CreateChecklistSession(ctx context.Contex
 			return &Error{Type: BadRequest, Message: "a session for this template and date already exists"}
 		}
 
-		// Build snapshot of session items from template items
 		sessionItems := []ChecklistSessionItem{}
 		for _, templateItem := range template.Items {
 			templateItemId := templateItem.Id
@@ -165,7 +164,6 @@ func (usecase ChecklistSessionUsecase) CheckSessionSubItem(ctx context.Context, 
 		subItem.CompletedAt = &now
 		result = subItem
 
-		// Check if all sub-items are now completed → auto-complete parent item
 		subItems, err := usecase.repository.GetChecklistSessionSubItemsByItemId(ctxWithTx, subItem.ChecklistSessionItemId)
 		if err != nil {
 			return err
@@ -205,7 +203,6 @@ func (usecase ChecklistSessionUsecase) UncheckSessionSubItem(ctx context.Context
 		subItem.CompletedAt = nil
 		result = subItem
 
-		// Check parent item completion → revert if needed
 		parentItem, err := usecase.repository.GetChecklistSessionItemById(ctxWithTx, subItem.ChecklistSessionItemId)
 		if err != nil {
 			return err
@@ -223,7 +220,6 @@ func (usecase ChecklistSessionUsecase) UncheckSessionSubItem(ctx context.Context
 	return result, txErr
 }
 
-// autoCompleteSessionIfNeeded checks if all items are completed and marks the session as completed.
 func (usecase ChecklistSessionUsecase) autoCompleteSessionIfNeeded(ctx context.Context, sessionId int64) *Error {
 	items, err := usecase.repository.GetChecklistSessionItemsBySessionId(ctx, sessionId)
 	if err != nil {
@@ -238,7 +234,6 @@ func (usecase ChecklistSessionUsecase) autoCompleteSessionIfNeeded(ctx context.C
 	return nil
 }
 
-// revertSessionCompletionIfNeeded clears session completion if it was previously marked complete.
 func (usecase ChecklistSessionUsecase) revertSessionCompletionIfNeeded(ctx context.Context, sessionId int64) *Error {
 	session, err := usecase.repository.GetChecklistSessionById(ctx, sessionId)
 	if err != nil {

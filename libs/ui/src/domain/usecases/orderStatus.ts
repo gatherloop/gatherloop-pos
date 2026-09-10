@@ -26,7 +26,6 @@ export type OrderStatusAction =
 
 export type OrderStatusParams = {
   reference: string;
-  // undefined fetches on mount; null seeds notFound; a Payment seeds loaded.
   payment?: Payment | null;
 };
 

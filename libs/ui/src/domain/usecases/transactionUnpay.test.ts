@@ -22,7 +22,6 @@ describe('TransactionUnpayUsecase', () => {
       expect(tester.state.type).toBe('unpaying');
 
       await flushPromises();
-      // unpayingSuccess -> onStateChange dispatches HIDE_CONFIRMATION -> hidden
       expect(tester.state.type).toBe('hidden');
     });
   });
@@ -52,7 +51,6 @@ describe('TransactionUnpayUsecase', () => {
       expect(tester.state.type).toBe('unpaying');
 
       await flushPromises();
-      // unpaying -> unpayingError -> onStateChange(unpayingError) -> UNPAY_CANCEL -> shown
       expect(tester.state.type).toBe('shown');
     });
   });

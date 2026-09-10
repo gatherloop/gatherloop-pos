@@ -75,7 +75,6 @@ describe('WalletTransferListHandler', () => {
         await flushPromises();
       });
 
-      // MockWalletRepository has a transfer to 'Bank Transfer'
       expect(screen.getByRole('heading', { name: 'Bank Transfer' })).toBeTruthy();
     });
 

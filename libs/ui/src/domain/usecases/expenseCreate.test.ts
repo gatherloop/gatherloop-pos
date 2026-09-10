@@ -19,7 +19,6 @@ describe('ExpenseCreateUsecase', () => {
       });
       const tester = new UsecaseTester<ExpenseCreateUsecase, ExpenseCreateState, ExpenseCreateAction, ExpenseCreateParams>(usecase);
 
-      // idle -> onStateChange(idle) dispatches FETCH -> loading
       expect(tester.state.type).toBe('loading');
 
       await flushPromises();
@@ -48,7 +47,6 @@ describe('ExpenseCreateUsecase', () => {
       });
       const tester = new UsecaseTester<ExpenseCreateUsecase, ExpenseCreateState, ExpenseCreateAction, ExpenseCreateParams>(usecase);
 
-      // idle -> onStateChange(idle) dispatches FETCH -> loading
       expect(tester.state.type).toBe('loading');
 
       await flushPromises();

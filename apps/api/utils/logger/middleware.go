@@ -10,7 +10,6 @@ import (
 
 const correlationIDHeader = "X-Correlation-ID"
 
-// responseWriter wraps http.ResponseWriter to capture the status code.
 type responseWriter struct {
 	http.ResponseWriter
 	statusCode int
@@ -21,21 +20,14 @@ func (rw *responseWriter) WriteHeader(code int) {
 	rw.ResponseWriter.WriteHeader(code)
 }
 
-// newUUID generates a random UUID v4 string using crypto/rand.
 func newUUID() string {
 	var b [16]byte
 	_, _ = rand.Read(b[:])
-	b[6] = (b[6] & 0x0f) | 0x40 // version 4
-	b[8] = (b[8] & 0x3f) | 0x80 // variant bits
+	b[6] = (b[6] & 0x0f) | 0x40
+	b[8] = (b[8] & 0x3f) | 0x80
 	return fmt.Sprintf("%08x-%04x-%04x-%04x-%012x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
 }
 
-// RequestLogger returns a middleware that:
-//   - Reads or generates a correlation_id
-//   - Injects a request-scoped logger (enriched with correlation_id, method, path, remote_addr) into ctx
-//   - Logs request start at INFO
-//   - Logs request completion at INFO (with status and latency_ms)
-//   - Returns the correlation_id to the client via X-Correlation-ID response header
 func RequestLogger(root *slog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

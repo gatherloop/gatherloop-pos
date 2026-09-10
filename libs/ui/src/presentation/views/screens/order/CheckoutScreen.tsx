@@ -1,9 +1,6 @@
 import { ReactNode } from 'react';
 import { match } from 'ts-pattern';
 import { Button, Paragraph, Text, YStack } from 'tamagui';
-// Deep imports, not the `domain`/`components/base` barrels (D20): those
-// barrels also re-export POS-only components and every POS usecase — dead
-// weight the customer bundle does not ship (D6).
 import { Cart } from '../../../../domain/entities/Cart';
 import { Payment } from '../../../../domain/entities/Payment';
 import { EmptyView } from '../../components/base/EmptyView';
@@ -45,21 +42,11 @@ export type CheckoutScreenVariant =
   | { type: 'error'; onRetryPress: () => void };
 
 export type CheckoutScreenProps = {
-  // D9 in docs/trd-order-app-composition-and-ssr.md: this screen renders its
-  // own table shell now (formerly `TableResolve`, a wrapper root) — the same
-  // shape `CartScreen`/`MenuListScreen` render it in. No footer (unlike
-  // `MenuListScreen`): the floating cart bar has no place on this screen,
-  // the same way `CartScreen` renders none.
   tableVariant: TableResolveScreenProps['variant'];
   variant: CheckoutScreenVariant;
   onBackToCartPress: () => void;
 };
 
-// FR-9 in docs/prd-order-checkout-qris-doku.md: `/t/{code}/checkout`.
-// `variant` mirrors `CheckoutUsecase`'s own state one-for-one (plus
-// `disabled`, the flag's kill switch, D20), so `CheckoutHandler`'s mapping
-// is an exhaustive `match` rather than a second source of truth for what
-// states exist.
 export const CheckoutScreen = ({
   tableVariant,
   variant,
@@ -155,10 +142,6 @@ export const CheckoutScreen = ({
         />
       ))
       .with({ type: 'expired' }, ({ onRetryPress }) => (
-        // FR-9: unlike every other empty/error state, this one needs two
-        // actions — retry (skips the name prompt, D17) and a way back to
-        // the cart — so it renders inline instead of through `EmptyView`,
-        // which only ever has one.
         <YStack flex={1} alignItems="center" justifyContent="center" gap="$3">
           <Text fontWeight="bold" fontSize="$6" textAlign="center">
             Waktu pembayaran habis

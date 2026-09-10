@@ -25,8 +25,6 @@ func TestGenerateTableCode(t *testing.T) {
 			assert.False(t, strings.ContainsRune(excludedGlyphs, c), "code %q contains an excluded glyph", code)
 		}
 
-		// Collisions across 1000 draws from ~50 bits of entropy are
-		// vanishingly unlikely; a repeat here signals a broken generator.
 		assert.False(t, seen[code], "code %q was generated twice", code)
 		seen[code] = true
 	}

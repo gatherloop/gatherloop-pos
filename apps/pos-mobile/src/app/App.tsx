@@ -136,12 +136,6 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export const App = () => {
-  // Native has no server-rendered guard like the web app's
-  // getServerSideProps cookie check, so on cold start there is nothing
-  // stopping the app from landing straight on the dashboard: check for a
-  // stored session token before picking the first screen, and register the
-  // interceptor that attaches it to every request before any screen can
-  // issue one.
   const [initialRouteName, setInitialRouteName] = useState<
     'dashboard' | 'authLogin' | null
   >(null);

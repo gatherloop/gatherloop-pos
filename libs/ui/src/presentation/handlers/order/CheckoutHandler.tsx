@@ -1,8 +1,6 @@
 import { useEffect } from 'react';
 import { match, P } from 'ts-pattern';
 import { useRouter } from 'solito/router';
-// Deep imports, not the `domain` barrel (D20): that barrel also re-exports
-// every POS usecase, which drags unrelated weight into the order bundle.
 import { SessionRepository } from '../../../domain/repositories/session';
 import { CartUsecase } from '../../../domain/usecases/cart';
 import { CheckoutUsecase } from '../../../domain/usecases/checkout';
@@ -25,16 +23,8 @@ export type CheckoutHandlerProps = {
   tableCode: string;
 };
 
-// FR-9/UX step 5: the redirect off the success view is deliberately delayed
-// — an instant one makes a guest doubt the payment landed.
 const PAID_REDIRECT_DELAY_MS = 2000;
 
-// D9 in docs/trd-order-app-composition-and-ssr.md: the table shell
-// (formerly the `TableResolve` wrapper) is folded in here, the same shape
-// `CartHandler`/`MenuListHandler` fold it into themselves in. The cart
-// usecase is reused as-is from `CartHandler` (FR-7 in
-// docs/prd-table-ordering.md) purely to read the recap this screen shows
-// before any payment exists — nothing here ever mutates the cart.
 export const CheckoutHandler = ({
   tableResolveUsecase,
   cartUsecase,
@@ -48,8 +38,6 @@ export const CheckoutHandler = ({
   const checkout = useCheckout(checkoutUsecase);
   const router = useRouter();
 
-  // Only a successful resolution is worth remembering (FR-4) — a code the
-  // API just rejected has nothing useful to persist for a future cart.
   useEffect(() => {
     if (tableResolve.state.type === 'resolved' && tableResolve.state.code) {
       sessionRepository.setTableCode(tableResolve.state.code);
@@ -88,8 +76,6 @@ export const CheckoutHandler = ({
         )
         .with({ type: 'expired' }, () => ({
           type: 'expired',
-          // FR-8: retrying from `expired` skips `askingName` — the name is
-          // already known — and dispatches `SUBMIT_NAME` directly.
           onRetryPress: () => checkout.dispatch({ type: 'SUBMIT_NAME' }),
         }))
         .with({ type: 'error' }, () => ({

@@ -10,10 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// testPrivateKeyPEM and the vectors below were generated independently of
-// this package with `openssl genrsa` / `openssl dgst -sign` and
-// `sha256sum` / `openssl dgst -hmac`, so the tests check this
-// implementation against an external oracle rather than against itself.
 const testPrivateKeyPEM = `-----BEGIN PRIVATE KEY-----
 MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC6r6NZOHR/S16h
 UpNx6jnN1m22sIz8ejBRv8Bee8IuYl5CFw0596f8tgJzo7kss5UkDnuYWTBLVlHI

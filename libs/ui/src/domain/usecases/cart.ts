@@ -3,12 +3,6 @@ import { Cart, CartItem } from '../entities';
 import { CartQueryRepository, CartRepository } from '../repositories';
 import { Usecase } from './IUsecase';
 
-// FR-7/D14 in docs/prd-table-ordering.md. One machine owns the whole cart —
-// fetch and every mutation — because the floating bar, the cart screen and
-// add-to-cart (phase 8's CTA) all read the same cart. `pendingMutation`
-// carries whatever `onStateChange` needs to replay the in-flight call; it
-// isn't part of the PRD's illustrative sketch, but a reducer that only sees
-// `state` (never the triggering action) has nowhere else to keep it.
 type PendingMutation =
   | { kind: 'add'; variantId: number; amount: number; note: string }
   | { kind: 'update'; cartItemId: number; amount: number; note: string }
@@ -20,10 +14,6 @@ type Context = {
   previousCart: Cart | null;
   pendingMutation: PendingMutation | null;
   errorMessage: string | null;
-  // D6/D9 in docs/trd-order-app-composition-and-ssr.md: the cart-item-edit
-  // modal's open line, read from and written to the URL through
-  // `cartQueryRepository` rather than a route of its own — the same shape
-  // `MenuListUsecase` holds `selectedProductId` in.
   selectedItemId: number | null;
 };
 
@@ -56,13 +46,6 @@ export type CartParams = {
   cart?: Cart | null;
 };
 
-// Recomputes the lines a mutating action touches optimistically (D9's merge
-// rule is server-side; here it's just quantity/removal). `price` on an
-// existing line is already server-resolved, so this stays a client-side
-// arithmetic mirror of D7, not a new price source. `ADD_ITEM` is the one
-// mutation with no optimistic line — the added line's price and resolved
-// variant only exist once the server responds, so `adding` leaves `cart`
-// untouched until `MUTATE_SUCCESS`.
 function recomputeCart(cart: Cart, items: CartItem[]): Cart {
   return {
     ...cart,
@@ -231,10 +214,6 @@ export class CartUsecase extends Usecase<CartState, CartAction, CartParams> {
   }
 
   onStateChange(state: CartState, dispatch: (action: CartAction) => void): void {
-    // Mirrors the selection into the URL (D6) whenever it actually changed —
-    // guarded against the current URL rather than folded into a `type`
-    // branch above, the same way `MenuListUsecase` mirrors
-    // `selectedProductId`.
     if (
       state.selectedItemId !== this.cartQueryRepository.getSelectedItemId()
     ) {

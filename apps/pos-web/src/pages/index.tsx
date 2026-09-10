@@ -59,8 +59,6 @@ export const getServerSideProps: GetServerSideProps<
       { headers: { Cookie: ctx.req.headers.cookie } }
     );
 
-  // Revenue for the same period as the expense widget, powering its target
-  // vs. actual variance report.
   const expenseRevenueStatistics =
     await transactionRepository.fetchTransactionStatisticList(
       {

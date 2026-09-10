@@ -2,9 +2,6 @@ package mysql
 
 import "apps/api/domain"
 
-// ToPaymentDB maps an empty QR content to NULL rather than to an empty
-// string: a payment that has no QR yet and one whose QR is empty are the same
-// thing, and NULL is how the column says it.
 func ToPaymentDB(d domain.Payment) Payment {
 	var qrContent *string
 	if d.QrContent != "" {

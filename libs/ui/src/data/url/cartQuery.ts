@@ -2,9 +2,6 @@
 import { CartQueryRepository } from '../../domain/repositories/cartQuery';
 import { getQueryParam, setQueryParam } from '../../utils/queryParam';
 
-// D6 in docs/trd-order-app-composition-and-ssr.md: the same shape as
-// `UrlMenuListQueryRepository`, one param (`item`) for the cart route
-// instead of `product` for the menu route.
 export class UrlCartQueryRepository implements CartQueryRepository {
   getSelectedItemId = (url?: string): number | null => {
     const itemIdQuery = getQueryParam('item', url);

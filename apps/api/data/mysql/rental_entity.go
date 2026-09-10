@@ -7,8 +7,6 @@ import (
 	"time"
 )
 
-// PricingTiersJSON is a []byte-backed type that reads and writes the MySQL JSON
-// column storing the pricing-tier snapshot on a rental row.
 type PricingTiersJSON []byte
 
 func (p PricingTiersJSON) Value() (driver.Value, error) {
@@ -48,14 +46,12 @@ type Rental struct {
 	TicketName   *string
 }
 
-// toPricingTierList unmarshals the JSON snapshot into a slice of PricingTier.
 func (p PricingTiersJSON) toPricingTierList() []PricingTier {
 	var tiers []PricingTier
 	_ = json.Unmarshal(p, &tiers)
 	return tiers
 }
 
-// pricingTierListToJSON marshals a slice of PricingTier to PricingTiersJSON.
 func pricingTierListToJSON(tiers []PricingTier) PricingTiersJSON {
 	b, _ := json.Marshal(tiers)
 	return PricingTiersJSON(b)

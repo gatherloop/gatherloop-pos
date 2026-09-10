@@ -26,9 +26,6 @@ import {
 import { formatRupiah } from '../../../../utils/currency';
 import { X } from '@tamagui/lucide-icons';
 
-// `rentalCheckoutFormSchema` is a partial validator (only enforces "at least
-// one rental"), so `{ raw: true }` is required to keep the full `Rental`
-// objects intact instead of being stripped down to `z.any()`.
 const rentalCheckoutFormResolver = zodResolver(
   rentalCheckoutFormSchema,
   {},
@@ -43,11 +40,6 @@ export type RentalCheckoutFormViewProps = {
   isSubmitting: boolean;
   isSubmitSuccess: boolean;
   RentalItemSelect: (selectedRentalIds: number[]) => ReactNode;
-  /**
-   * Escape hatch so `RentalCheckoutHandler` can push a rental picked in the
-   * sibling `rentalList` handler into this form. Null until this view's
-   * `loaded` branch mounts.
-   */
   formRef?: MutableRefObject<UseFormReturn<RentalCheckoutForm> | null>;
   serverError?: string;
 };
@@ -76,10 +68,6 @@ export const RentalCheckoutFormView = ({
       loadingTitle="Loading Checkout..."
       errorTitle="Failed to Load Checkout"
       formRef={formRef}
-      // Mirrors the two layouts the old hand-rolled `<Form>` elements used:
-      // compact needs to flex-fill its container for the floating cart
-      // button positioning, desktop just wants breathing room between
-      // fields.
       formProps={isCompactLayout ? { flex: 1, gap: undefined } : { gap: '$3' }}
     >
       {(form) => (
@@ -89,14 +77,6 @@ export const RentalCheckoutFormView = ({
           control={form.control}
         >
           {(rentalsFieldArray) => {
-            // Mirrors the button's own visibility rule (PRD Open Question 2): once the
-            // last rental is removed there is nothing left to submit, so the sheet is
-            // forced closed rather than stranding staff on an empty cart with a dead
-            // Submit button. A successful submit forces it closed too, so it can't be
-            // left mounted painting its overlay over the destination screen on native
-            // during the redirect (PRD FR-3, mirroring `RentalCheckinFormView`'s
-            // close-on-success behavior). Derived during render instead of an effect
-            // so the sheet never flashes open on the frame before it closes.
             const isCartSheetVisible =
               isCartSheetOpen &&
               rentalsFieldArray.fields.length > 0 &&
@@ -115,9 +95,6 @@ export const RentalCheckoutFormView = ({
             );
 
             if (isCompactLayout) {
-              // One `now`/one reduce shared by the button label and the sheet footer
-              // (PRD Core Rule 5, "Constraint: one `now` per render pass") so the two
-              // surfaces can never disagree on the total.
               const grandTotal = rentalsFieldArray.fields.reduce(
                 (sum, rental) => {
                   return (
@@ -132,10 +109,6 @@ export const RentalCheckoutFormView = ({
                 <YStack flex={1} position="relative">
                   <YStack
                     flex={1}
-                    // Reserves room below the picker so the floating cart button
-                    // never covers the last `RentalListItem` or the `Pagination`
-                    // control (PRD FR-2). Applied here, not inside `RentalList`,
-                    // which is shared with `RentalListScreen` and has no button.
                     paddingBottom={
                       rentalsFieldArray.fields.length > 0 ? 90 : undefined
                     }
@@ -158,13 +131,6 @@ export const RentalCheckoutFormView = ({
                     isOpen={isCartSheetVisible}
                     onOpenChange={setIsCartSheetOpen}
                   >
-                    {/* Tamagui's modal `Sheet` portals its content, which on some
-                        platforms (e.g. Android) does not carry the ambient React
-                        context down from the outer `FormProvider` above. The cart
-                        view reads the form via field array props directly, but
-                        `FormErrorBanner` and any future field read context, so
-                        re-establish the provider inside the sheet (PRD
-                        "Constraint: `FormProvider` inside the sheet"). */}
                     <FormProvider {...form}>
                       <YStack flex={1}>
                         <XStack

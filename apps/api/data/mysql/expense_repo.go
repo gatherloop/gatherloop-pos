@@ -85,15 +85,13 @@ func (repo Repository) CreateExpense(ctx context.Context, expense domain.Expense
 
 func (repo Repository) UpdateExpenseById(ctx context.Context, expense domain.Expense, id int64) (domain.Expense, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
-	expense.Id = id // Ensure the ID is set on the payload to correctly associate items with the parent expense
+	expense.Id = id
 
-	// Perform update with full save associations to insert/update items automatically
 	expensePayload := ToExpenseDB(expense)
 	if result := db.Session(&gorm.Session{FullSaveAssociations: true}).Table("expenses").Where("id = ?", id).Updates(&expensePayload); result.Error != nil {
 		return domain.Expense{}, ToErrorCtx(ctx, result.Error, "UpdateExpenseById")
 	}
 
-	// Determine which existing item IDs to keep (those that are present in the incoming payload)
 	idsToKeep := []int64{}
 	for _, it := range expensePayload.ExpenseItems {
 		if it.Id > 0 {
@@ -102,18 +100,15 @@ func (repo Repository) UpdateExpenseById(ctx context.Context, expense domain.Exp
 	}
 
 	if len(idsToKeep) > 0 {
-		// delete items that were present before but are not in the incoming idsToKeep
 		if result := db.Table("expense_items").Where("expense_id = ? AND id NOT IN ?", id, idsToKeep).Delete(&ExpenseItem{}); result.Error != nil {
 			return domain.Expense{}, ToErrorCtx(ctx, result.Error, "UpdateExpenseById")
 		}
 	} else {
-		// If incoming payload has no existing IDs, remove all previously existing items
 		if result := db.Table("expense_items").Where("expense_id = ?", id).Delete(&ExpenseItem{}); result.Error != nil {
 			return domain.Expense{}, ToErrorCtx(ctx, result.Error, "UpdateExpenseById")
 		}
 	}
 
-	// Fetch updated record to return complete domain object with all associations
 	var updated Expense
 	fetchResult := db.Table("expenses").Where("id = ?", id).Preload("ExpenseItems").Preload("Wallet").Preload("Budget").First(&updated)
 	return ToExpenseDomain(updated), ToErrorCtx(ctx, fetchResult.Error, "UpdateExpenseById")

@@ -80,10 +80,6 @@ func TestCustomerHandler_GetCurrentCustomer(t *testing.T) {
 	}
 }
 
-// TestCustomerRoute_RequiresSessionId asserts the route is actually wrapped in
-// RequireSessionId — the guard is what scopes a name to the session that gave
-// it (D8), and a route registered without it would read as working in every
-// test that sets the header.
 func TestCustomerRoute_RequiresSessionId(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -98,8 +94,6 @@ func TestCustomerRoute_RequiresSessionId(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			// No EXPECT: a request rejected by the guard must never reach the
-			// usecase, so any repository call here fails the test.
 			repo := mock.NewMockCustomerRepository(ctrl)
 
 			router := mux.NewRouter()

@@ -52,9 +52,6 @@ export type OrderSlipItem = {
   note: string;
 };
 
-// A single combined order slip whose items are grouped by station, so the bar
-// and the kitchen see one slip listing each other's items (the bar can tell
-// whether the kitchen still owes the customer food before calling them).
 export type OrderSlipPrintPayload = {
   createdAt: string;
   paidAt?: string;
@@ -100,10 +97,6 @@ export type OrderSlipSource = {
   items: OrderSlipSourceItem[];
 };
 
-// Builds a single ORDER_SLIP payload with items grouped by station. Items in a
-// NONE-station category (e.g. a Board Game Ticket) belong on neither group, so
-// they are excluded. Returns null when no item belongs to the bar or kitchen,
-// letting callers skip an empty slip.
 export const buildOrderSlipPayload = (
   transaction: OrderSlipSource
 ): PrintPayload | null => {

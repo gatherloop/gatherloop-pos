@@ -25,9 +25,6 @@ func TestPaymentIsAwaitingPayment(t *testing.T) {
 			expected: true,
 		},
 		{
-			// Exclusive: at exactly expired_at the window is over, so a
-			// cart frozen by this payment is released rather than held for
-			// one more instant.
 			name:     "pending at exactly the expiry instant",
 			status:   domain.PaymentStatePending,
 			now:      expiredAt,
@@ -40,8 +37,6 @@ func TestPaymentIsAwaitingPayment(t *testing.T) {
 			expected: false,
 		},
 		{
-			// A paid payment converts the cart; it never freezes it, and a
-			// second checkout must not reuse its QR.
 			name:     "paid inside the window",
 			status:   domain.PaymentStatePaid,
 			now:      expiredAt.Add(-1 * time.Second),

@@ -14,8 +14,6 @@ export type QrisPaymentViewProps = {
   amount: number;
   expiredAt: string;
   reference: string;
-  // D12a: the client's clock never declares expiry on its own — this only
-  // ever triggers one final poll, which the server's response decides.
   onCountdownElapsed: () => void;
 };
 
@@ -36,10 +34,6 @@ function formatCountdown(totalSeconds: number): string {
   return `${minutes}:${seconds}`;
 }
 
-// FR-9/UX step 4. `react-native-qrcode-svg`'s `getRef` hands back the
-// underlying SVG, whose `toDataURL` (D23) is the only path to a PNG the
-// guest can save — they're paying on the same phone the QR is displayed
-// on, so scanning it with a camera is impossible.
 export const QrisPaymentView = ({
   qrContent,
   amount,

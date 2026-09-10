@@ -25,9 +25,6 @@ type Env struct {
 	ServiceName        string
 	CorsAllowedOrigins []string
 
-	// DOKU (FR-3, D21): sandbox vs production is selected entirely by
-	// these values, never by a build flag. Read once at boot; wired into
-	// nothing until phase 6.
 	DokuBaseURL           string
 	DokuClientId          string
 	DokuClientSecret      string
@@ -78,9 +75,6 @@ func GetEnv() Env {
 	}
 }
 
-// parseIntWithDefault parses raw as an integer, falling back to def when raw
-// is empty or not a valid integer (DOKU_QRIS_EXPIRY_SECONDS defaults to 300
-// per D-resolved-question-2).
 func parseIntWithDefault(raw string, def int) int {
 	if raw == "" {
 		return def
@@ -92,9 +86,6 @@ func parseIntWithDefault(raw string, def int) int {
 	return value
 }
 
-// parseCorsAllowedOrigins splits a comma-separated list of origins (e.g.
-// "https://gatherloop.github.io,http://localhost:3000") into a trimmed,
-// non-empty slice.
 func parseCorsAllowedOrigins(raw string) []string {
 	if raw == "" {
 		return nil

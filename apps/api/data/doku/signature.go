@@ -9,8 +9,6 @@ import (
 	"fmt"
 )
 
-// signAsymmetric implements DOKU's B2B access-token signature: SHA256withRSA
-// over `clientId + "|" + timestamp`, base64-encoded ("What DOKU gives us").
 func signAsymmetric(privateKey *rsa.PrivateKey, clientId, timestamp string) (string, error) {
 	if privateKey == nil {
 		return "", fmt.Errorf("doku: no private key configured")

@@ -17,10 +17,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// sessionIdPattern matches a UUIDv4, the shape BrowserSessionRepository mints
-// client-side (D3). An anonymous guest has no credential to check — the
-// session ID itself is the capability that owns a cart (D8), so this is the
-// closest anonymous equivalent to CheckAuth.
 var sessionIdPattern = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$`)
 
 func EnableCORS(next http.Handler) http.Handler {
@@ -48,9 +44,6 @@ func EnableCORS(next http.Handler) http.Handler {
 	})
 }
 
-// isOriginAllowed reports whether origin is present in allowedOrigins. An
-// empty origin (same-origin or non-browser requests never send the header)
-// is never treated as allowed.
 func isOriginAllowed(origin string, allowedOrigins []string) bool {
 	if origin == "" {
 		return false
@@ -103,9 +96,6 @@ func CheckAuth(next http.HandlerFunc) http.HandlerFunc {
 	})
 }
 
-// RequireSessionId guards the cart routes (FR-3). Missing or malformed
-// X-Session-Id is a 400, not a 401/404 — there is no credential to be
-// unauthorized about, just a header the client is expected to always send.
 func RequireSessionId(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sessionId := r.Header.Get("X-Session-Id")
@@ -118,8 +108,6 @@ func RequireSessionId(next http.HandlerFunc) http.HandlerFunc {
 	})
 }
 
-// dokuNotificationTimestampSkew is D13's window: "a skewed or missing
-// X-TIMESTAMP (> 5 min) is rejected".
 const dokuNotificationTimestampSkew = 5 * time.Minute
 
 func VerifyDokuSignature(next http.HandlerFunc) http.HandlerFunc {
@@ -150,10 +138,6 @@ func VerifyDokuSignature(next http.HandlerFunc) http.HandlerFunc {
 	})
 }
 
-// verifyDokuNotificationSignature checks a DOKU notification's symmetric
-// signature and timestamp freshness (D13), using the client secret from
-// env directly — like CheckAuth reads JWT_SECRET — so this middleware
-// depends on nothing but utils.
 func verifyDokuNotificationSignature(method, path, timestamp, signature string, body []byte) error {
 	if timestamp == "" {
 		return fmt.Errorf("missing X-TIMESTAMP")
@@ -172,8 +156,6 @@ func verifyDokuNotificationSignature(method, path, timestamp, signature string, 
 		return fmt.Errorf("missing X-SIGNATURE")
 	}
 
-	// The notification arrives unauthenticated (no bearer token), so its
-	// signature is computed with an empty accessToken segment (D13).
 	expected, sigErr := utils.SignDokuSymmetric(utils.GetEnv().DokuClientSecret, method, path, "", body, timestamp)
 	if sigErr != nil {
 		return fmt.Errorf("failed to verify DOKU notification signature: %w", sigErr)

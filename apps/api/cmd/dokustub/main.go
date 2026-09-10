@@ -1,14 +1,3 @@
-// Command dokustub is a throwaway stand-in for DOKU's SNAP sandbox, used
-// only by apps/order-web-e2e (phase 13 in
-// docs/prd-order-checkout-qris-doku.md). It speaks just enough of the
-// token/qr-mpm-generate/qr-mpm-query surface (apps/api/data/doku) for a real
-// checkout round trip to complete, and exposes one extra, non-DOKU endpoint
-// — POST /_stub/pay — that the e2e spec calls to simulate a guest paying:
-// it flips the stubbed payment to paid and pushes a correctly signed
-// notification to the real API, exactly as DOKU's own webhook would.
-//
-// Never built into the production binary and never pointed at by anything
-// but DOKU_BASE_URL in a test environment.
 package main
 
 import (
@@ -133,7 +122,7 @@ func main() {
 			return
 		}
 
-		status := "03" // unmapped -> pending (doku.MapTransactionStatus)
+		status := "03"
 		if rec.paid {
 			status = "00"
 		}
@@ -186,11 +175,6 @@ func main() {
 	}
 }
 
-// pushNotification replays exactly the DOKU notification shape and symmetric
-// signature scheme apps/api/presentation/restapi/base_middlewares.go
-// verifies (D13) — method + path + empty accessToken (notifications arrive
-// unauthenticated) + the body's digest + timestamp, HMAC-SHA512 over the
-// shared client secret.
 func pushNotification(client *http.Client, clientSecret, notificationURL string, rec *record) error {
 	body, err := json.Marshal(map[string]any{
 		"originalPartnerReferenceNo": rec.partnerReferenceNo,

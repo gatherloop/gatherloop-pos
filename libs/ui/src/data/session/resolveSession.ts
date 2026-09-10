@@ -6,9 +6,6 @@ import {
 
 export type ResolvedSession = {
   sessionId: string;
-  // Present only when the incoming cookie was missing or malformed — the
-  // caller (a page's getServerSideProps) is expected to forward this as a
-  // `Set-Cookie` response header.
   setCookie?: string;
 };
 
@@ -24,12 +21,6 @@ const buildSetCookie = (sessionId: string): string =>
     'Secure',
   ].join('; ');
 
-// D3 in docs/trd-order-app-composition-and-ssr.md: pure — takes and returns
-// strings, so it carries no `next` dependency and runs identically inside
-// getServerSideProps for every route. Mints a fresh id only when the
-// incoming cookie is missing or fails the same UUIDv4 check
-// CookieSessionRepository uses, so server and client never disagree about
-// what counts as a valid session id.
 export const resolveSession = (cookieValue?: string): ResolvedSession => {
   if (isValidSessionId(cookieValue)) {
     return { sessionId: cookieValue };

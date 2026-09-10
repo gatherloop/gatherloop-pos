@@ -12,8 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// decodeJSON reads and decodes a request body, for tests that assert on
-// what this package actually sent DOKU.
 func decodeJSON(r *http.Request, v any) error {
 	defer r.Body.Close()
 	return json.NewDecoder(r.Body).Decode(v)
@@ -32,7 +30,6 @@ func TestParsePrivateKeyPEM_InvalidPEM(t *testing.T) {
 }
 
 func TestParsePrivateKeyPEM_NotAKey(t *testing.T) {
-	// A validly PEM-armored block that isn't a private key at all.
 	_, err := ParsePrivateKeyPEM("-----BEGIN CERTIFICATE-----\nAAAA\n-----END CERTIFICATE-----")
 	assert.Error(t, err)
 }

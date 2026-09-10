@@ -14,7 +14,6 @@ describe('CategoryUpdateUsecase', () => {
       const usecase = new CategoryUpdateUsecase(repository, { categoryId: 1, category: null });
       const tester = new UsecaseTester<CategoryUpdateUsecase, CategoryUpdateState, CategoryUpdateAction, CategoryUpdateParams>(usecase);
 
-      // idle -> onStateChange(idle) dispatches FETCH -> loading
       expect(tester.state.type).toBe('loading');
 
       await flushPromises();

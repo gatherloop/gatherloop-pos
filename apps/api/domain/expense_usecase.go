@@ -40,7 +40,6 @@ func (usecase ExpenseUsecase) GetExpenseById(ctx context.Context, id int64) (Exp
 func (usecase ExpenseUsecase) CreateExpense(ctx context.Context, expense Expense) (Expense, *Error) {
 	var created Expense
 	err := usecase.expenseRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		// budget_id is pure spend classification; only existence is validated, no balance is touched.
 		expenseBudget, err := usecase.budgetRepository.GetBudgetById(ctxWithTx, expense.BudgetId)
 		if err != nil {
 			return err
@@ -49,7 +48,6 @@ func (usecase ExpenseUsecase) CreateExpense(ctx context.Context, expense Expense
 			return &Error{Type: NotFound, Message: "budget not found"}
 		}
 
-		// Check if the wallet have sufficient balance before creating the expense, and update it's balance accordingly
 		expenseWallet, walletErr := usecase.walletRepository.GetWalletById(ctxWithTx, expense.WalletId)
 		if walletErr != nil {
 			return walletErr
@@ -86,7 +84,6 @@ func (usecase ExpenseUsecase) UpdateExpenseById(ctx context.Context, expense Exp
 			return err
 		}
 
-		// budget_id is pure spend classification; only existence is validated, no balance is touched.
 		expenseBudget, err := usecase.budgetRepository.GetBudgetById(ctxWithTx, expense.BudgetId)
 		if err != nil {
 			return err
@@ -95,7 +92,6 @@ func (usecase ExpenseUsecase) UpdateExpenseById(ctx context.Context, expense Exp
 			return &Error{Type: NotFound, Message: "budget not found"}
 		}
 
-		// Refund the old wallet balance with the existing expense's total
 		expenseWallet, err := usecase.walletRepository.GetWalletById(ctxWithTx, existingExpense.WalletId)
 		if err != nil {
 			return err
@@ -110,7 +106,6 @@ func (usecase ExpenseUsecase) UpdateExpenseById(ctx context.Context, expense Exp
 			return err
 		}
 
-		// Check if the new wallet have sufficient balance and update it's balance accordingly
 		expenseWallet, err = usecase.walletRepository.GetWalletById(ctxWithTx, expense.WalletId)
 		if err != nil {
 			return err
@@ -128,7 +123,6 @@ func (usecase ExpenseUsecase) UpdateExpenseById(ctx context.Context, expense Exp
 			return err
 		}
 
-		// Update the expense with the new data
 		updated, err := usecase.expenseRepository.UpdateExpenseById(ctxWithTx, expense, id)
 		if err != nil {
 			return err

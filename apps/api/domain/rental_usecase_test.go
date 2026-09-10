@@ -261,7 +261,7 @@ func TestRentalUsecase_CheckoutRentals(t *testing.T) {
 		name                string
 		rentalIds           []int64
 		setupMock           func(rentalRepo *mock.MockRentalRepository, variantRepo *mock.MockVariantRepository, txRepo *mock.MockTransactionRepository, checkinAt time.Time)
-		checkinAt           int // minutes ago
+		checkinAt           int
 		expectedPrice       float32
 		expectedNote        *string
 		expectedProductName string

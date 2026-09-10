@@ -1,5 +1,3 @@
-// React Compiler must run before anything else lowers the source; the Reanimated
-// plugin must stay last (its own requirement). Both hold simultaneously.
 const reactCompiler = ['babel-plugin-react-compiler', { target: '18' }];
 
 module.exports = function (api) {

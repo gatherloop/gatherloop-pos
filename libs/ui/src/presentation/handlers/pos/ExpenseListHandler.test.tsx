@@ -67,7 +67,6 @@ describe('ExpenseListHandler', () => {
         await flushPromises();
       });
 
-      // Both mock expenses have budget name "Operating"
       const expenseHeadings = screen.getAllByRole('heading', { name: 'Operating' });
       expect(expenseHeadings.length).toBe(2);
     });

@@ -1,10 +1,6 @@
 import { randomUUID } from 'crypto';
 import { CookieSessionRepository } from './CookieSessionRepository';
 
-// jest-environment-jsdom's bundled jsdom predates `crypto.randomUUID`, even
-// though every real browser CookieSessionRepository targets has it (D3/D4).
-// Polyfilled here for the test environment only — production code is
-// unchanged.
 if (typeof globalThis.crypto.randomUUID !== 'function') {
   globalThis.crypto.randomUUID =
     randomUUID as typeof globalThis.crypto.randomUUID;
@@ -13,11 +9,6 @@ if (typeof globalThis.crypto.randomUUID !== 'function') {
 const UUID_V4_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-// jsdom's cookie jar silently drops `Secure` cookies on its default
-// http://localhost test origin, which would make every write in
-// CookieSessionRepository a no-op. This stub keeps the real name=value
-// read/write semantics CookieSessionRepository actually depends on, without
-// enforcing a browser transport policy these tests aren't about.
 const installCookieJarStub = () => {
   let store: Record<string, string> = {};
 
@@ -90,8 +81,6 @@ describe('CookieSessionRepository', () => {
 
       expect(repository.getSessionId()).toBe(stored);
 
-      // A later, unrelated localStorage change should not un-cache the
-      // already-reconciled id.
       window.localStorage.setItem(
         'gl_session_id',
         '33333333-3333-4333-8333-333333333333'

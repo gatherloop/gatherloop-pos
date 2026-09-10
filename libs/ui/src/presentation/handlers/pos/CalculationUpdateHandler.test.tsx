@@ -186,7 +186,6 @@ describe('CalculationUpdateHandler', () => {
     it('should disable submit button when calculation is already complete', async () => {
       const calculationRepo = new MockCalculationRepository();
       const walletRepo = new MockWalletRepository();
-      // Mark calculation as complete
       calculationRepo.calculations[0].completedAt = '2024-03-20T12:00:00.000Z';
       const preloadedCalculation = calculationRepo.calculations[0];
       const preloadedWallets = walletRepo.wallets;

@@ -171,7 +171,6 @@ describe('ProductCreateHandler', () => {
         await flushPromises();
       });
 
-      // Still error because categoryShouldFail stays true
       expect(screen.getByRole('heading', { name: 'Failed to Fetch Product' })).toBeTruthy();
     });
   });

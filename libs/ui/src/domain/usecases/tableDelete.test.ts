@@ -27,7 +27,6 @@ describe('TableDeleteUsecase', () => {
       expect(tester.state.type).toBe('deleting');
 
       await flushPromises();
-      // deletingSuccess -> onStateChange dispatches HIDE_CONFIRMATION -> hidden
       expect(tester.state.type).toBe('hidden');
     });
   });
@@ -67,7 +66,6 @@ describe('TableDeleteUsecase', () => {
       expect(tester.state.type).toBe('deleting');
 
       await flushPromises();
-      // deleting -> deletingError -> onStateChange(deletingError) -> DELETE_CANCEL -> shown
       expect(tester.state.type).toBe('shown');
     });
   });

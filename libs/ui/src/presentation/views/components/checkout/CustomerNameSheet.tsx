@@ -10,10 +10,6 @@ export type CustomerNameSheetProps = {
   onCancelPress: () => void;
 };
 
-// FR-9/UX step 3: opens on the pay button before any QR is generated (D17)
-// — a cancel here has created nothing at all. `name`/`errorMessage` are
-// machine state (CheckoutUsecase), not local form state, so validation
-// stays in the reducer and this stays a dumb view.
 export const CustomerNameSheet = ({
   isOpen,
   name,

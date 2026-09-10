@@ -14,7 +14,6 @@ describe('TransactionUpdateUsecase', () => {
       const usecase = new TransactionUpdateUsecase(repository, { transactionId: 1, transaction: null });
       const tester = new UsecaseTester<TransactionUpdateUsecase, TransactionUpdateState, TransactionUpdateAction, TransactionUpdateParams>(usecase);
 
-      // idle -> onStateChange(idle) dispatches FETCH -> loading
       expect(tester.state.type).toBe('loading');
 
       await flushPromises();
@@ -71,7 +70,6 @@ describe('TransactionUpdateUsecase', () => {
       expect(tester.state.type).toBe('submitting');
 
       await flushPromises();
-      // submitError auto-cancels to loaded via onStateChange(submitError) -> SUBMIT_CANCEL
       expect(tester.state.type).toBe('submitError');
     });
   });

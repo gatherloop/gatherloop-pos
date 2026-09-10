@@ -27,7 +27,6 @@ function normalizeColor(color) {
   const matchers = getMatchers();
   let match;
 
-  // Ordered based on occurrences on Facebook codebase
   if ((match = matchers.hex6.exec(color))) {
     return parseInt(match[1] + 'ff', 16) >>> 0;
   }
@@ -39,32 +38,30 @@ function normalizeColor(color) {
 
   if ((match = matchers.rgb.exec(color))) {
     return (
-      ((parse255(match[1]) << 24) | // r
-        (parse255(match[2]) << 16) | // g
-        (parse255(match[3]) << 8) | // b
-        0x000000ff) >>> // a
+      ((parse255(match[1]) << 24) |
+        (parse255(match[2]) << 16) |
+        (parse255(match[3]) << 8) |
+        0x000000ff) >>>
       0
     );
   }
 
   if ((match = matchers.rgba.exec(color))) {
-    // rgba(R G B / A) notation
     if (match[6] !== undefined) {
       return (
-        ((parse255(match[6]) << 24) | // r
-          (parse255(match[7]) << 16) | // g
-          (parse255(match[8]) << 8) | // b
-          parse1(match[9])) >>> // a
+        ((parse255(match[6]) << 24) |
+          (parse255(match[7]) << 16) |
+          (parse255(match[8]) << 8) |
+          parse1(match[9])) >>>
         0
       );
     }
 
-    // rgba(R, G, B, A) notation
     return (
-      ((parse255(match[2]) << 24) | // r
-        (parse255(match[3]) << 16) | // g
-        (parse255(match[4]) << 8) | // b
-        parse1(match[5])) >>> // a
+      ((parse255(match[2]) << 24) |
+        (parse255(match[3]) << 16) |
+        (parse255(match[4]) << 8) |
+        parse1(match[5])) >>>
       0
     );
   }
@@ -73,18 +70,17 @@ function normalizeColor(color) {
     return (
       parseInt(
         match[1] +
-          match[1] + // r
+          match[1] +
           match[2] +
-          match[2] + // g
+          match[2] +
           match[3] +
-          match[3] + // b
+          match[3] +
           'ff', // a
         16,
       ) >>> 0
     );
   }
 
-  // https://drafts.csswg.org/css-color-4/#hex-notation
   if ((match = matchers.hex8.exec(color))) {
     return parseInt(match[1], 16) >>> 0;
   }
@@ -93,11 +89,11 @@ function normalizeColor(color) {
     return (
       parseInt(
         match[1] +
-          match[1] + // r
+          match[1] +
           match[2] +
-          match[2] + // g
+          match[2] +
           match[3] +
-          match[3] + // b
+          match[3] +
           match[4] +
           match[4], // a
         16,
@@ -112,13 +108,12 @@ function normalizeColor(color) {
         parsePercentage(match[2]), // s
         parsePercentage(match[3]), // l
       ) |
-        0x000000ff) >>> // a
+        0x000000ff) >>>
       0
     );
   }
 
   if ((match = matchers.hsla.exec(color))) {
-    // hsla(H S L / A) notation
     if (match[6] !== undefined) {
       return (
         (hslToRgb(
@@ -126,19 +121,18 @@ function normalizeColor(color) {
           parsePercentage(match[7]), // s
           parsePercentage(match[8]), // l
         ) |
-          parse1(match[9])) >>> // a
+          parse1(match[9])) >>>
         0
       );
     }
 
-    // hsla(H, S, L, A) notation
     return (
       (hslToRgb(
         parse360(match[2]), // h
         parsePercentage(match[3]), // s
         parsePercentage(match[4]), // l
       ) |
-        parse1(match[5])) >>> // a
+        parse1(match[5])) >>>
       0
     );
   }
@@ -150,7 +144,7 @@ function normalizeColor(color) {
         parsePercentage(match[2]), // w
         parsePercentage(match[3]), // b
       ) |
-        0x000000ff) >>> // a
+        0x000000ff) >>>
       0
     );
   }
@@ -289,7 +283,6 @@ function parse1(str) {
 }
 
 function parsePercentage(str) {
-  // parseFloat conveniently ignores the final %
   const int = parseFloat(str);
   if (int < 0) {
     return 0;
@@ -304,7 +297,6 @@ function normalizeKeyword(name) {
   // prettier-ignore
   switch (name) {
     case 'transparent': return 0x00000000;
-    // http://www.w3.org/TR/css3-color/#svg-color
     case 'aliceblue': return 0xf0f8ffff;
     case 'antiquewhite': return 0xfaebd7ff;
     case 'aqua': return 0x00ffffff;

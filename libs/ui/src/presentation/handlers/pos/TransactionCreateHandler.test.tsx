@@ -30,7 +30,6 @@ jest.mock('@tamagui/toast', () => ({
   useToastController: () => ({ show: mockToastShow }),
 }));
 
-// usePrinter uses WebSocket — mock to avoid runtime errors
 jest.mock('../../../utils', () => ({
   ...jest.requireActual('../../../utils'),
   usePrinter: () => ({ print: jest.fn().mockResolvedValue(undefined) }),
@@ -285,8 +284,6 @@ describe('TransactionCreateHandler', () => {
         await flushPromises();
       });
 
-      // The cart sheet is gone — no "Close Cart" control, no cart Submit
-      // behind the alert — and the payment alert is what's now showing.
       expect(screen.queryByRole('button', { name: 'Close Cart' })).toBeNull();
       expect(screen.getByText('Pay Transaction')).toBeTruthy();
       expect(screen.getByRole('option', { name: 'Cash' })).toBeTruthy();

@@ -11,7 +11,7 @@ type ChecklistSessionFilter struct {
 	TemplateId *int64
 	DateFrom   *string
 	DateTo     *string
-	Status     *string // "completed" or "incomplete"
+	Status     *string
 }
 
 type ChecklistSessionRepository interface {

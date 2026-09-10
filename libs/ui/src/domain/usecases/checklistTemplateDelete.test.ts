@@ -60,7 +60,6 @@ describe('ChecklistTemplateDeleteUsecase', () => {
       expect(tester.state.type).toBe('deleting');
 
       await flushPromises();
-      // deletingSuccess auto-hides via onStateChange
       expect(tester.state.type).toBe('hidden');
       expect(repository.checklistTemplates).toHaveLength(1);
     });
@@ -82,7 +81,6 @@ describe('ChecklistTemplateDeleteUsecase', () => {
       tester.dispatch({ type: 'DELETE' });
 
       await flushPromises();
-      // deletingError auto-cancels back to shown
       expect(tester.state.type).toBe('shown');
     });
   });

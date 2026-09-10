@@ -9,8 +9,6 @@ import (
 
 type contextKey struct{}
 
-// New creates a root *slog.Logger backed by a JSON handler writing to stdout.
-// It reads LOG_LEVEL, SERVICE_NAME, and APP_ENV from the provided config values.
 func New(serviceName, appEnv, logLevel string) *slog.Logger {
 	level := parseLevel(logLevel)
 
@@ -23,7 +21,6 @@ func New(serviceName, appEnv, logLevel string) *slog.Logger {
 	)
 }
 
-// FromCtx returns the logger stored in ctx, or the provided fallback if none is set.
 func FromCtx(ctx context.Context, fallback *slog.Logger) *slog.Logger {
 	if l, ok := ctx.Value(contextKey{}).(*slog.Logger); ok && l != nil {
 		return l
@@ -31,7 +28,6 @@ func FromCtx(ctx context.Context, fallback *slog.Logger) *slog.Logger {
 	return fallback
 }
 
-// WithCtx stores logger in ctx and returns the new context.
 func WithCtx(ctx context.Context, logger *slog.Logger) context.Context {
 	return context.WithValue(ctx, contextKey{}, logger)
 }

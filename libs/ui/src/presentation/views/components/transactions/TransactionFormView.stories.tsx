@@ -59,8 +59,6 @@ const CouponSheetOpenStory = () => (
   />
 );
 
-// PRD FR-5: on compact, applying a coupon swaps the cart sheet's own content
-// to the coupon list with a back header, instead of opening a second sheet.
 const CompactCouponSwapStory = () => (
   <TransactionFormView
     variant={{ type: 'loaded' }}
@@ -122,8 +120,6 @@ export const CouponSheetOpen: Story = {
   render: () => <CouponSheetOpenStory />,
 };
 
-// Compact layout (PRD FR-3): at ≤800px the picker fills the screen and the
-// cart moves into a sheet behind a floating button.
 export const CompactEmptyCart: Story = {
   parameters: {
     viewport: { defaultViewport: 'mobile' },

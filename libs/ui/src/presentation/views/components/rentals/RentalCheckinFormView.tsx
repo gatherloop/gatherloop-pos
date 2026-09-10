@@ -23,10 +23,6 @@ import {
 } from '../base';
 import { X } from '@tamagui/lucide-icons';
 
-// `rentalCheckinFormSchema` is a partial validator: `checkinAt` is entirely
-// unvalidated and each rental's `variant` is `z.any()`, so `{ raw: true }`
-// is required to keep the full values intact instead of being stripped down
-// to whatever this schema happens to describe.
 const rentalCheckinFormResolver = zodResolver(
   rentalCheckinFormSchema,
   {},
@@ -42,19 +38,10 @@ export type RentalCheckinFormViewProps = {
   isSubmitSuccess: boolean;
   RentalItemSelect: () => ReactNode;
   tickets: Ticket[];
-  /**
-   * Escape hatch so `RentalCheckinHandler` can push an item picked in the
-   * sibling `transactionItemSelect` handler into this form. Null until
-   * this view's `loaded` branch mounts.
-   */
   formRef?: MutableRefObject<UseFormReturn<RentalCheckinForm> | null>;
   serverError?: string;
 };
 
-// `{n} ticket(s) · {m} code(s) left · View Cart`, collapsing to
-// `{n} ticket(s) · View Cart` once every code is filled — the only number
-// that tells staff whether they can submit, since checkin has no total
-// (PRD "Confirmed Product & Technical Decisions").
 const formatCartSummary = (
   ticketCount: number,
   codesLeft: number,
@@ -85,13 +72,6 @@ export const RentalCheckinFormView = ({
   const isCompactLayout = useIsCompactLayout();
   const [isCartSheetOpen, setIsCartSheetOpen] = useState(false);
 
-  // A successful submit must close the cart sheet before the print
-  // confirmation opens on top of it — an `AlertDialog` stacked over a
-  // `modal` `Sheet` is the exact failure this guards against (PRD FR-4,
-  // mirroring `TransactionFormView`'s close-on-success adjustment).
-  // Adjusted during render (not in an effect) so it is guaranteed to land
-  // before any effect — including the caller's own "submit succeeded"
-  // effect that opens the print dialog.
   const [wasSubmitSuccess, setWasSubmitSuccess] = useState(isSubmitSuccess);
   if (isSubmitSuccess !== wasSubmitSuccess) {
     setWasSubmitSuccess(isSubmitSuccess);
@@ -173,12 +153,6 @@ export const RentalCheckinFormView = ({
                       isOpen={isCartSheetOpen}
                       onOpenChange={setIsCartSheetOpen}
                     >
-                      {/* Tamagui's modal `Sheet` portals its content, which on some
-                          platforms (e.g. Android) does not carry the ambient React
-                          context down from the outer `FormProvider` above. Everything
-                          in here reads the form via `useFormContext()`, so
-                          re-establish the provider inside the sheet (PRD
-                          "Constraint: `FormProvider` inside the sheet"). */}
                       <FormProvider {...form}>
                         <YStack flex={1}>
                           <XStack

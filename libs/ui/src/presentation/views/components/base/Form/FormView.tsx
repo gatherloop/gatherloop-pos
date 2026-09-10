@@ -25,18 +25,7 @@ export type FormViewProps<T extends FieldValues> = {
   loadingTitle: string;
   errorTitle: string;
   errorSubtitle?: string;
-  // Escape hatch for form views whose layout can't use the default
-  // `gap="$3"` container (e.g. a bounded scroll region needs `flex={1}`
-  // instead). Spread onto the inner `<Form>` after the default, so any key
-  // here overrides it.
   formProps?: Omit<ComponentProps<typeof Form>, 'onSubmit' | 'children'>;
-  /**
-   * Escape hatch for surfaces where a sibling handler must drive the form
-   * imperatively (see TRD §4.6). `current` is null until the loaded branch
-   * mounts — always null-check. Do not use this to read values for
-   * rendering; use `FieldWatch`. Do not use it to read submitted values
-   * either; read them off the usecase's `state.values` instead.
-   */
   formRef?: MutableRefObject<UseFormReturn<T> | null>;
   children: (form: UseFormReturn<T>) => ReactNode;
 };
@@ -65,9 +54,6 @@ export function FormView<T extends FieldValues>(props: FormViewProps<T>) {
     .exhaustive();
 }
 
-// A separate component so `useForm` only mounts once `defaultValues` are final:
-// the `loading` branch above never calls this hook, so the eventual mount into
-// the `loaded` branch reads the fetched values, not the pre-fetch blanks.
 function LoadedForm<T extends FieldValues>({
   defaultValues,
   resolver,

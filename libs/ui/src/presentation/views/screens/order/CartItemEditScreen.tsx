@@ -1,20 +1,11 @@
 import { X } from '@tamagui/lucide-icons';
 import { Button, Text, TextArea, XStack, YStack } from 'tamagui';
-// Deep imports, not the `domain`/`components/base` barrels (D20): those
-// barrels also re-export every POS usecase and Navbar/Sidebar — dead weight
-// the customer bundle does not ship (D6).
 import { CartItem } from '../../../../domain/entities/Cart';
 import { formatRupiah } from '../../../../utils/currency';
 import { Sheet } from '../../components/base/Sheet/Sheet';
 import { AmountStepper } from '../../components/menu/AmountStepper';
 import { MenuItemThumbnail } from '../../components/menu/MenuItemThumbnail';
 
-// FR-9 in docs/prd-order-app-ux-improvements.md: a small, presentational
-// "review this line" modal. Only `amount` and `note` are editable — the
-// variant renders as plain muted text, never as a chip or a control, per the
-// scope decision in the PRD (changing a line's variant needs backend work
-// this phase deliberately doesn't do). Everything rendered here already
-// lives on the `CartItem` the composition root passes in — no fetch.
 export type CartItemEditScreenProps = {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;

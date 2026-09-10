@@ -25,10 +25,6 @@ export type TableRegenerateCodeAction =
   | { type: 'REGENERATE_ERROR' }
   | { type: 'REGENERATE_CANCEL' };
 
-// Regenerating a table's code invalidates any QR sticker printed for the
-// previous one (D6) — this is the "rotate a leaked code" mechanism, so it is
-// modeled as a confirmable action rather than a plain button, same shape as
-// TableDeleteUsecase.
 export class TableRegenerateCodeUsecase extends Usecase<
   TableRegenerateCodeState,
   TableRegenerateCodeAction

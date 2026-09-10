@@ -21,10 +21,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// computeDokuSymmetricSignature is an independent reimplementation of
-// DOKU's SNAP symmetric signature scheme (PRD "What DOKU gives us"), so
-// these tests check VerifyDokuSignature against an external oracle rather
-// than against data/doku's own implementation.
 func computeDokuSymmetricSignature(t *testing.T, secret, method, path, timestamp string, body []byte) string {
 	t.Helper()
 
@@ -75,9 +71,6 @@ func TestEnableCORS_RejectsOriginNotInAllowlist(t *testing.T) {
 
 	restapi.EnableCORS(next).ServeHTTP(w, req)
 
-	// The request still reaches the handler (CORS is a browser-enforced
-	// restriction, not a server-side block) but no browser will expose the
-	// response body without these headers.
 	assert.True(t, nextCalled)
 	assert.Empty(t, w.Header().Get("Access-Control-Allow-Origin"))
 	assert.Empty(t, w.Header().Get("Access-Control-Allow-Credentials"))
@@ -212,7 +205,7 @@ func TestVerifyDokuSignature_InvalidSignatureIsRejected(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodPost, "/payments/doku/notification", bytes.NewBufferString(`{"originalPartnerReferenceNo":"ORD1"}`))
 	req.Header.Set("X-TIMESTAMP", time.Now().Format("2006-01-02T15:04:05.000Z07:00"))
-	req.Header.Set("X-SIGNATURE", "dGFtcGVyZWQtc2lnbmF0dXJl") // base64("tampered-signature")
+	req.Header.Set("X-SIGNATURE", "dGFtcGVyZWQtc2lnbmF0dXJl")
 	w := httptest.NewRecorder()
 
 	restapi.VerifyDokuSignature(next).ServeHTTP(w, req)
@@ -308,7 +301,6 @@ func TestVerifyDokuSignature_WithinSkewWindowIsAccepted(t *testing.T) {
 	method := http.MethodPost
 	path := "/payments/doku/notification"
 	body := []byte(`{"originalPartnerReferenceNo":"ORD1"}`)
-	// Just inside the 5-minute window (D13).
 	timestamp := time.Now().Add(-4*time.Minute - 30*time.Second).Format("2006-01-02T15:04:05.000Z07:00")
 	signature := computeDokuSymmetricSignature(t, "test-client-secret", method, path, timestamp, body)
 

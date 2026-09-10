@@ -150,8 +150,6 @@ func (repo Repository) UpdateMaterialById(ctx context.Context, material domain.M
 		if result := tx.Table("materials").Where("id = ?", id).Updates(&materialPayload); result.Error != nil {
 			return result.Error
 		}
-		// Updates(&struct) skips zero-value fields, so a bool being set to
-		// false (e.g. IsStockCheckRequired) would otherwise never persist.
 		if err := tx.Table("materials").Where("id = ?", id).Update("is_stock_check_required", material.IsStockCheckRequired).Error; err != nil {
 			return err
 		}
@@ -177,8 +175,6 @@ func (repo Repository) DeleteMaterialById(ctx context.Context, id int64) *domain
 	return ToErrorCtx(ctx, result.Error, "DeleteMaterialById")
 }
 
-// replaceSuppliers performs a diff/upsert/soft-delete of material_suppliers
-// within the provided DB connection (expected to be a transaction).
 func replaceSuppliers(db *gorm.DB, materialId int64, payload []domain.MaterialSupplier) error {
 	type lookupKey struct {
 		SupplierId   int64

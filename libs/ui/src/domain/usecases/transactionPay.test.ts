@@ -26,7 +26,6 @@ describe('TransactionPayUsecase', () => {
       expect(tester.state.type).toBe('paying');
 
       await flushPromises();
-      // payingSuccess -> onStateChange dispatches HIDE_CONFIRMATION -> hidden
       expect(tester.state.type).toBe('hidden');
     });
   });
@@ -56,7 +55,6 @@ describe('TransactionPayUsecase', () => {
       expect(tester.state.type).toBe('shown');
 
       await flushPromises();
-      // onStateChange(shown) with wallets=[] fetches wallets and dispatches SET_WALLETS
       expect(tester.state.type).toBe('shown');
       expect((tester.state as { type: 'shown'; wallets: unknown[] }).wallets.length).toBeGreaterThan(0);
     });
@@ -81,7 +79,6 @@ describe('TransactionPayUsecase', () => {
       expect(tester.state.type).toBe('paying');
 
       await flushPromises();
-      // paying -> payingError -> onStateChange(payingError) -> PAY_CANCEL -> shown
       expect(tester.state.type).toBe('shown');
     });
   });

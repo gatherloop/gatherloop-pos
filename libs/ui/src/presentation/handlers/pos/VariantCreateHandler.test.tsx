@@ -148,7 +148,6 @@ describe('VariantCreateHandler', () => {
       const productRepo = new MockProductRepository();
       const variantRepo = new MockVariantRepository();
       const materialRepo = new MockMaterialRepository();
-      // Use product with no options so the values[] array stays empty and passes z.array() validation
       const preloadedProduct = { ...productRepo.products[0], options: [] };
 
       const variantCreateUsecase = new VariantCreateUsecase(

@@ -19,11 +19,6 @@ export type RentalCheckinScreenProps = {
   isSubmitting: boolean;
   isSubmitSuccess: boolean;
   onLogoutPress: () => void;
-  /**
-   * Escape hatch so `RentalCheckinHandler` can push an item picked in the
-   * sibling `transactionItemSelect` handler into the form. Null until
-   * the form's `loaded` branch mounts.
-   */
   formRef?: MutableRefObject<UseFormReturn<RentalCheckinForm> | null>;
   tickets: Ticket[];
   rentalItemSelect: {
@@ -93,9 +88,6 @@ export const RentalCheckinScreen = (props: RentalCheckinScreenProps) => {
       onLogoutPress={props.onLogoutPress}
     >
       {isCompactLayout ? (
-        // On compact, the product picker owns a bounded `flex: 1` region and
-        // scrolls internally — an outer `ScrollView` here would give it no
-        // height to bound against (PRD FR-3).
         <YStack flex={1}>{formView}</YStack>
       ) : (
         <ScrollView>{formView}</ScrollView>

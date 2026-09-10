@@ -1,9 +1,6 @@
 import { ReactNode } from 'react';
 import { match } from 'ts-pattern';
 import { Text, XStack } from 'tamagui';
-// Deep imports, not the `domain`/`components/base` barrels (D20): those
-// barrels also re-export every POS usecase and Navbar/Sidebar — dead weight
-// the customer bundle does not ship (D6).
 import { PublicTable } from '../../../../domain/entities/PublicTable';
 import { EmptyView } from '../../components/base/EmptyView';
 import { LoadingView } from '../../components/base/LoadingView';
@@ -22,14 +19,6 @@ export type TableResolveScreenProps = {
   footer?: ReactNode;
 };
 
-// FR-4 in docs/prd-table-ordering.md: the three outcomes of resolving the
-// table code from `/order/t/{code}`. `resolved` renders `children` so a
-// later phase can drop the menu screen in here without touching this file.
-// `footer` is the floating cart bar (FR-7 phase 10) — only meaningful once
-// a table has actually resolved, so no other variant accepts it.
-// EmptyView/LoadingView carry no copy of their own — unlike ErrorView, which
-// hardcodes an English "Retry" label — so every string here stays Bahasa
-// Indonesia per D15.
 export const TableResolveScreen = ({
   variant,
   children,

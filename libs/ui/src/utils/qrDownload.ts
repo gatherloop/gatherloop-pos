@@ -1,9 +1,3 @@
-// D23: the guest is paying on the same phone the QR is displayed on, so the
-// only path to a working QR is downloading it and paying from the gallery.
-// This is DOM-only and web-only (correct — the order app is web-only), but
-// it must not assume the DOM at module scope so the component that uses it
-// stays importable/testable outside a browser.
-
 export function isQrDownloadSupported(): boolean {
   return (
     typeof document !== 'undefined' && 'download' in document.createElement('a')

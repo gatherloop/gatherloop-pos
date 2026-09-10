@@ -73,8 +73,6 @@ export const WithServerError: Story = {
   ),
 };
 
-// Compact layout (PRD FR-3): the datetime selects wrap instead of dividing
-// a narrow sheet width five ways.
 export const CompactWithDatetime: Story = {
   parameters: {
     viewport: { defaultViewport: 'mobile' },

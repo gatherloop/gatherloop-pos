@@ -194,9 +194,6 @@ describe('CheckoutHandler', () => {
     expect(screen.getByText('Simpan QR')).toBeTruthy();
   });
 
-  // D12a: the client's clock never declares expiry on its own — an
-  // already-elapsed countdown only triggers one final poll, and it's that
-  // poll's server-reported status which decides paid vs expired.
   it('redirects to the status page ~2s after the final poll confirms paid', async () => {
     jest.useFakeTimers();
     try {

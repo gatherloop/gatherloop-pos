@@ -25,7 +25,6 @@ const createProps = (options: {
   const walletRepo = new MockWalletRepository();
   if (options.shouldFail) walletRepo.setShouldFail(true);
 
-  // WalletTransferCreateUsecase auto-fetches from idle, but we can also preload
   const preloadedWallets = options.preloaded ? walletRepo.wallets : [];
 
   return {
@@ -46,7 +45,6 @@ describe('WalletTransferCreateHandler', () => {
   describe('form rendering', () => {
     it('should render the create transfer form immediately', async () => {
       render(<WalletTransferCreateHandler {...createProps()} />);
-      // The form is always shown (no loading state in WalletTransferCreateScreen)
       expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
       await act(async () => {
         await flushPromises();
@@ -55,7 +53,6 @@ describe('WalletTransferCreateHandler', () => {
 
     it('should show wallet options after wallets are preloaded', async () => {
       render(<WalletTransferCreateHandler {...createProps({ preloaded: true, walletId: 1 })} />);
-      // fromWalletId=1 (Cash) is excluded, only Bank Transfer (id=2) should appear
       expect(screen.getByText('Bank Transfer')).toBeTruthy();
       await act(async () => {
         await flushPromises();
@@ -153,7 +150,6 @@ describe('WalletTransferCreateHandler', () => {
 
   describe('wallet filter', () => {
     it('should exclude fromWallet from transfer target options', async () => {
-      // fromWalletId=1 (Cash) should not appear as a transfer target
       render(<WalletTransferCreateHandler {...createProps({ preloaded: true, walletId: 1 })} />);
       expect(screen.queryByText('Cash')).toBeNull();
       expect(screen.getByText('Bank Transfer')).toBeTruthy();

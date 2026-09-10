@@ -24,8 +24,6 @@ import {
 import { ArrowLeft, X } from '@tamagui/lucide-icons';
 import { applyCouponToBase, calculateTransactionFinalTotal } from '../../../../utils';
 
-// `transactionFormSchema` is a partial validator (§4.4.2), so `{ raw: true }`
-// is required to keep `variant`, `price` and `coupon` intact on submit.
 const transactionFormResolver = zodResolver(
   transactionFormSchema,
   {},
@@ -41,12 +39,6 @@ export type TransactionFormViewProps = {
   isSubmitSuccess: boolean;
   TransactionItemSelect: () => ReactNode;
   TransactionCouponList: (onItemPress: (coupon: Coupon) => void) => ReactNode;
-  /**
-   * Escape hatch so `TransactionCreateHandler` / `TransactionUpdateHandler`
-   * can push an item picked in the sibling `transactionItemSelect`
-   * handler into this form (see TRD §4.6). Null until this view's
-   * `loaded` branch mounts.
-   */
   formRef?: MutableRefObject<UseFormReturn<TransactionForm> | null>;
   serverError?: string;
 };
@@ -78,11 +70,6 @@ export const TransactionFormView = (props: TransactionFormViewProps) => {
     setIsCouponSheetOpen(true);
   };
 
-  // A successful submit must close the cart sheet before any dialog that
-  // follows it (e.g. the payment alert on Create) opens on top — see PRD
-  // FR-7 and the "AlertDialog over Sheet" risk. Adjusted during render (not
-  // in an effect) so it is guaranteed to land before any effect — including
-  // the caller's own "submit succeeded" effect that opens that dialog.
   const [wasSubmitSuccess, setWasSubmitSuccess] = useState(isSubmitSuccess);
   if (isSubmitSuccess !== wasSubmitSuccess) {
     setWasSubmitSuccess(isSubmitSuccess);
@@ -193,16 +180,6 @@ export const TransactionFormView = (props: TransactionFormViewProps) => {
                         isOpen={isCartSheetOpen}
                         onOpenChange={setIsCartSheetOpen}
                       >
-                        {/* Tamagui's modal `Sheet` renders its content
-                            through its own portal host rather than as a
-                            plain DOM/native child, which on some platforms
-                            (e.g. Android) does not carry the ambient React
-                            context down from the outer `FormProvider` above.
-                            Since everything in here reads the transaction
-                            form via `useFormContext()`, re-establish the
-                            provider inside the sheet so it survives
-                            regardless of how the sheet portals its
-                            content. */}
                         <FormProvider {...form}>
                           <YStack flex={1}>
                             <XStack

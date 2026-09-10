@@ -4,23 +4,12 @@ import { MenuListQueryRepository, MenuRepository } from '../repositories';
 import { createDebounce } from '../../utils';
 import { Usecase } from './IUsecase';
 
-// FR-5 in docs/prd-table-ordering.md. Mirrors ProductListUsecase minus
-// pagination — the menu is one fetch (D4) — and minus a sync "getX" cache
-// read, since the public catalog has no equivalent of the POS's
-// query-cache short-circuit; every revalidation goes straight to the
-// network.
 type Context = {
   products: Product[];
   categories: Category[];
-  // Every variant of every published purchase product (one fetch, mirroring
-  // D4) — lets the menu cards show a "mulai Rp X" starting price without a
-  // per-product request.
   variants: Variant[];
   query: string;
   selectedCategoryId: number | null;
-  // D6 in docs/trd-order-app-composition-and-ssr.md: the item sheet's open
-  // product, read from and written to the URL through
-  // `menuListQueryRepository` rather than a route of its own.
   selectedProductId: number | null;
   errorMessage: string | null;
   fetchDebounceDelay: number;
@@ -187,11 +176,6 @@ export class MenuListUsecase extends Usecase<
     state: MenuListState,
     dispatch: (action: MenuListAction) => void
   ): void {
-    // Mirrors the selection into the URL (D6) whenever it actually changed
-    // — guarded against the current URL rather than folded into a `type`
-    // branch below, since SELECT_ITEM/CLEAR_ITEM don't have one of their
-    // own and this would otherwise re-push on every unrelated state change
-    // (e.g. every keystroke while searching).
     if (
       state.selectedProductId !==
       this.menuListQueryRepository.getSelectedProductId()

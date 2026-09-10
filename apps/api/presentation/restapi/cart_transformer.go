@@ -10,9 +10,6 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// GetSessionId reads the X-Session-Id header. RequireSessionId has already
-// validated it is a well-formed UUIDv4 before a handler ever sees the
-// request, so no error return is needed here.
 func GetSessionId(r *http.Request) string {
 	return r.Header.Get("X-Session-Id")
 }
@@ -42,10 +39,6 @@ func GetCartItemUpdateRequest(r *http.Request) (apiContract.CartItemUpdateReques
 	return request, err
 }
 
-// ToApiCartItem derives price and subtotal from the variant's current price
-// at read time (D7) — a cart item stores only variant_id/amount/note, never
-// anything money-shaped. The embedded variant is public-shaped (D2), the
-// same as the public catalog.
 func ToApiCartItem(item domain.CartItem) apiContract.CartItem {
 	price := item.Variant.Price
 	amount := int32(item.Amount)
@@ -63,8 +56,6 @@ func ToApiCartItem(item domain.CartItem) apiContract.CartItem {
 	}
 }
 
-// ToApiCart derives itemCount and total from its items at read time (D7),
-// the same as every per-item price.
 func ToApiCart(cart domain.Cart) apiContract.Cart {
 	apiItems := []apiContract.CartItem{}
 	var total float32

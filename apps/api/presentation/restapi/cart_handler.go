@@ -9,9 +9,6 @@ import (
 	"net/http"
 )
 
-// CartHandler serves the session-scoped cart endpoints (FR-3). Every route
-// this handler backs is wrapped in RequireSessionId, never CheckAuth — the
-// session ID is the capability that owns the cart (D8), not a credential.
 type CartHandler struct {
 	usecase domain.CartUsecase
 }
@@ -145,9 +142,6 @@ func noteOrEmpty(note *string) string {
 	return *note
 }
 
-// logCartMutation records session_id and table_id for support (NFR:
-// Observability). Table codes are deliberately excluded — a logged code is
-// a reusable off-premise ordering key (D6).
 func logCartMutation(ctx context.Context, message string, sessionId string, tableId *int64) {
 	log := logger.FromCtx(ctx, slog.Default())
 

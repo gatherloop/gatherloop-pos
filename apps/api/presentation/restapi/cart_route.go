@@ -6,18 +6,6 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// CartRouter registers the session-scoped cart routes (FR-3). Every route is
-// wrapped in RequireSessionId rather than CheckAuth — an anonymous guest has
-// no credential, only the session ID that is the capability bearing the
-// cart (D8).
-//
-// Every route also accepts OPTIONS explicitly. gorilla/mux only runs the
-// `EnableCORS` middleware (which answers a preflight itself) for a request
-// whose method matches *some* registration on that exact path — GET/DELETE
-// previously relied on a sibling PUT/POST registration on the same path
-// happening to list OPTIONS too, which answered preflights by accident
-// (order-dependent, not something to leave implicit) rather than because
-// each route declared it needed to.
 type CartRouter struct {
 	handler CartHandler
 }

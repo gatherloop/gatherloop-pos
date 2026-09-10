@@ -14,7 +14,6 @@ describe('TransactionDetailUsecase', () => {
       const usecase = new TransactionDetailUsecase(repository, { transactionId: 1, transaction: null });
       const tester = new UsecaseTester<TransactionDetailUsecase, TransactionDetailState, TransactionDetailAction, TransactionDetailParams>(usecase);
 
-      // idle -> onStateChange(idle) dispatches FETCH -> loading
       expect(tester.state.type).toBe('loading');
 
       await flushPromises();

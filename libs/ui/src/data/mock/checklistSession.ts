@@ -202,7 +202,6 @@ export class MockChecklistSessionRepository
       const item = session.items.find((i) => i.id === checklistSessionItemId);
       if (item) {
         item.completedAt = new Date().toISOString();
-        // Check if all items are completed to mark session complete
         const allCompleted = session.items.every((i) => {
           if (i.subItems.length > 0) {
             return i.subItems.every((sub) => sub.completedAt != null);
@@ -244,14 +243,12 @@ export class MockChecklistSessionRepository
         );
         if (subItem) {
           subItem.completedAt = new Date().toISOString();
-          // Auto-complete parent item if all sub-items done
           const allSubItemsDone = item.subItems.every(
             (sub) => sub.completedAt != null
           );
           if (allSubItemsDone) {
             item.completedAt = new Date().toISOString();
           }
-          // Auto-complete session if all items done
           const allItemsDone = session.items.every((i) => {
             if (i.subItems.length > 0) {
               return i.subItems.every((sub) => sub.completedAt != null);

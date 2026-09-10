@@ -7,9 +7,6 @@ export type PaymentSuccessViewProps = {
   customerName: string;
 };
 
-// FR-9/UX step 5: shown for ~2s before `CheckoutHandler` redirects to the
-// status screen — an instant redirect would make a guest doubt the payment
-// landed.
 export const PaymentSuccessView = ({
   amount,
   customerName,

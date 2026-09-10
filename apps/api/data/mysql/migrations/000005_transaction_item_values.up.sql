@@ -10,8 +10,6 @@ CREATE TABLE IF NOT EXISTS `transaction_item_values` (
         ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Backfill snapshots for existing transaction items from the current
--- variant_values graph so historical receipts keep showing their options.
 INSERT INTO `transaction_item_values` (`transaction_item_id`, `option_name`, `option_value_name`)
 SELECT ti.`id`, o.`name`, ov.`name`
 FROM `transaction_items` ti

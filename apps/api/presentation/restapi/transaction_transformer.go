@@ -43,8 +43,6 @@ func GetPaymentStatus(r *http.Request) domain.PaymentStatus {
 	}
 }
 
-// GetTransactionSourceQuery returns nil for "all"/missing/unrecognised values,
-// meaning no source filter is applied (FR-1).
 func GetTransactionSourceQuery(r *http.Request) *domain.TransactionSource {
 	sourceQuery := r.URL.Query().Get("source")
 	switch sourceQuery {

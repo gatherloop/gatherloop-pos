@@ -1,4 +1,3 @@
-// Deep imports, not the root barrels: those also re-export every POS composition root.
 import { ApiPaymentRepository } from '../../data/api/payment';
 import { ApiPublicTableRepository } from '../../data/api/publicTable';
 import { CookieSessionRepository } from '../../data/session/CookieSessionRepository';

@@ -14,7 +14,6 @@ describe('SupplierUpdateUsecase', () => {
       const usecase = new SupplierUpdateUsecase(repository, { supplierId: 1, supplier: null });
       const tester = new UsecaseTester<SupplierUpdateUsecase, SupplierUpdateState, SupplierUpdateAction, SupplierUpdateParams>(usecase);
 
-      // idle -> onStateChange(idle) dispatches FETCH -> loading
       expect(tester.state.type).toBe('loading');
 
       await flushPromises();
@@ -71,7 +70,6 @@ describe('SupplierUpdateUsecase', () => {
       expect(tester.state.type).toBe('submitting');
 
       await flushPromises();
-      // submitError auto-cancels to loaded via onStateChange(submitError) -> SUBMIT_CANCEL
       expect(tester.state.type).toBe('submitError');
     });
   });

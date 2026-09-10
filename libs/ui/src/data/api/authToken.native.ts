@@ -13,13 +13,6 @@ export const setStoredAuthToken = (token: string): Promise<void> =>
 export const clearStoredAuthToken = (): Promise<void> =>
   AsyncStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
 
-// The API's session cookie is Secure-only (auth_handler.go) and native dev
-// (and some prod) setups talk to it over plain HTTP, so the cookie never
-// round-trips — CheckAuth on the API falls back to a plain `Authorization`
-// header for exactly this reason (base_middlewares.go), and the login
-// response already carries the raw JWT (AuthLoginResponse.data) for a
-// client to keep. This attaches it to every request from storage instead of
-// relying on the cookie jar.
 export const registerAuthTokenInterceptor = (): (() => void) => {
   axiosInstance.defaults.withCredentials = false;
 
