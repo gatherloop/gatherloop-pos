@@ -1,5 +1,9 @@
 // eslint-disable-next-line @nx/enforce-module-boundaries
-import { PaymentStatus, TransactionListQueryRepository } from '../../domain';
+import {
+  PaymentStatus,
+  TransactionListQueryRepository,
+  TransactionSourceFilter,
+} from '../../domain';
 import { getQueryParam, setQueryParam } from '../../utils/queryParam';
 import { createStringUnionParser } from '../../utils/stringUnionParser';
 
@@ -76,6 +80,15 @@ export class UrlTransactionListQueryRepository
   setWalletId = (walletId: number | null) => {
     setQueryParam('walletId', walletId === null ? 'all' : walletId.toString());
   };
+
+  getSource = (url?: string): TransactionSourceFilter => {
+    const sourceQuery = getQueryParam('source', url);
+    return sourceQuery ? toSource(sourceQuery) ?? 'all' : 'all';
+  };
+
+  setSource = (source: TransactionSourceFilter) => {
+    setQueryParam('source', source);
+  };
 }
 
 const toSortBy = createStringUnionParser<'created_at'[]>(['created_at']);
@@ -84,4 +97,9 @@ const toPaymentStatus = createStringUnionParser<PaymentStatus[]>([
   'all',
   'paid',
   'unpaid',
+]);
+const toSource = createStringUnionParser<TransactionSourceFilter[]>([
+  'all',
+  'pos',
+  'order',
 ]);

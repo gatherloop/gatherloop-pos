@@ -1,4 +1,4 @@
-import { PaymentStatus } from '../entities';
+import { PaymentStatus, TransactionSourceFilter } from '../entities';
 
 export interface TransactionListQueryRepository {
   getPage: () => number;
@@ -21,4 +21,7 @@ export interface TransactionListQueryRepository {
 
   getWalletId: () => number | null;
   setWalletId: (walletId: number | null) => void;
+
+  getSource: () => TransactionSourceFilter;
+  setSource: (source: TransactionSourceFilter) => void;
 }

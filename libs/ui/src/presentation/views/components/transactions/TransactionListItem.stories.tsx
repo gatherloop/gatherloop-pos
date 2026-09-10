@@ -7,6 +7,8 @@ const meta: Meta<typeof TransactionListItem> = {
   component: TransactionListItem,
   args: {
     name: 'Order #001',
+    source: 'pos',
+    table: null,
     orderNumber: 1,
     total: 70000,
     createdAt: '2024-01-20T10:00:00.000Z',
@@ -39,5 +41,21 @@ export const HighValue: Story = {
     orderNumber: 99,
     total: 350000,
     walletName: 'Bank Transfer',
+  },
+};
+
+export const FromOrderApp: Story = {
+  args: {
+    name: 'Budi',
+    source: 'order',
+    table: { id: 1, label: 'A1', floorNumber: 1 },
+    orderNumber: 0,
+  },
+};
+
+export const FromPos: Story = {
+  args: {
+    source: 'pos',
+    table: null,
   },
 };

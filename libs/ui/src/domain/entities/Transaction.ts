@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { Coupon, CouponType } from './Coupon';
 import { Variant } from './Variant';
 import { Wallet } from './Wallet';
+import { PublicTable } from './PublicTable';
 
 export type TransactionItemValue = {
   id: number;
@@ -29,10 +30,16 @@ export type TransactionCoupon = {
   transactionItemId: number | null;
 };
 
+export type TransactionSource = 'pos' | 'order';
+
+export type TransactionSourceFilter = TransactionSource | 'all';
+
 export type Transaction = {
   id: number;
   createdAt: string;
   name: string;
+  source: TransactionSource;
+  table: PublicTable | null;
   orderNumber: number;
   total: number;
   totalIncome: number;

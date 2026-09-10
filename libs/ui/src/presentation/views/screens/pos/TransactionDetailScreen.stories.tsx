@@ -7,6 +7,8 @@ const defaultArgs = {
   onLogoutPress: fn(),
   createdAt: mockTransaction.createdAt,
   name: mockTransaction.name,
+  source: mockTransaction.source,
+  table: mockTransaction.table,
   orderNumber: mockTransaction.orderNumber,
   total: mockTransaction.total,
   transactionItems: mockTransaction.transactionItems,
