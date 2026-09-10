@@ -39,8 +39,6 @@ export const ResolvedFloor2: Story = {
   },
 };
 
-// A long label proves the muted floor text wraps to a second line rather
-// than pushing off-screen (FR-8).
 export const ResolvedLongLabel: Story = {
   args: {
     variant: {
@@ -55,15 +53,12 @@ export const ResolvedLongLabel: Story = {
   },
 };
 
-// D6: a fabricated or deleted table code lands here instead of silently
-// opening an orderable menu.
 export const InvalidQr: Story = {
   args: {
     variant: { type: 'invalidQr' },
   },
 };
 
-// D17: landing on `/order` with no code at all.
 export const NoQr: Story = {
   args: {
     variant: { type: 'noQr' },

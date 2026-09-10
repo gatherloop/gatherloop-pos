@@ -140,8 +140,6 @@ describe('FormView', () => {
     await user.clear(screen.getByRole('textbox'));
     await user.type(screen.getByRole('textbox'), 'Edited by user');
 
-    // A brand-new object reference with the same shape, as happens on every
-    // parent re-render - must not remount `LoadedForm` or reset the field.
     rerender(
       <FormView<DemoForm>
         variant={{ type: 'loaded' }}

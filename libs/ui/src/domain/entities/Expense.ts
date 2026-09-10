@@ -33,9 +33,6 @@ export type ExpenseForm = {
   expenseItems: ExpenseItemForm[];
 };
 
-// { raw: true } is required at the call site: this schema does not describe
-// expenseItems[].id, so existing items keep their id on submit instead of
-// having it stripped by the parser.
 export const expenseFormSchema = z.object({
   walletId: z.number(),
   budgetId: z.number(),

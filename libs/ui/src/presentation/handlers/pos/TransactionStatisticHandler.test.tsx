@@ -67,7 +67,6 @@ describe('TransactionStatisticHandler', () => {
         await flushPromises();
       });
 
-      // Group by buttons: Date and Month
       expect(screen.getByRole('button', { name: 'Date' })).toBeTruthy();
       expect(screen.getByRole('button', { name: 'Month' })).toBeTruthy();
     });

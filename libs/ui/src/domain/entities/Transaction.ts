@@ -65,10 +65,6 @@ export type TransactionForm = {
   transactionCoupons: TransactionCouponForm[];
 };
 
-// Partial validator, not a full parser (§4.4.2): `transactionCoupons` is
-// entirely unvalidated, and `variant`, `price`, `id` and `coupon` on each
-// item pass straight through — `{ raw: true }` is required at the call site
-// to keep them intact instead of the resolver stripping them to `z.any()`.
 export const transactionFormSchema = z.object({
   name: z.string().min(1),
   orderNumber: z.number(),
@@ -92,12 +88,6 @@ export type TransactionPayForm = {
   paidAmount: number;
 };
 
-// Partial validator, not a full parser (§4.4.2): only `wallet.id` is
-// checked — `TransactionPaymentAlert` reads the rest of the selected
-// `Wallet` (e.g. `isCashless`) straight from live form state, not from this
-// schema's parsed output. It also closes over `transactionTotal`, which is
-// only known at render time, so it is a factory rather than a module-level
-// constant.
 export const transactionPayFormSchema = (transactionTotal: number) =>
   z.object({
     wallet: z.object({ id: z.number() }),

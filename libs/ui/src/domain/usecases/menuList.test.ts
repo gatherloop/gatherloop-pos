@@ -161,7 +161,6 @@ describe('MenuListUsecase', () => {
     expect(menuList.state.categories).toEqual(categories);
   });
 
-  // D6 in docs/trd-order-app-composition-and-ssr.md.
   describe('item selection', () => {
     it('holds the selected product id, from any fetch state, without changing it', async () => {
       const repository = new MockMenuRepository();

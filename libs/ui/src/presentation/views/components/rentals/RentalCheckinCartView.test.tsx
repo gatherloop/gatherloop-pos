@@ -44,9 +44,6 @@ const threeRentals: RentalCheckinForm = {
 
 describe('RentalCheckinCartView', () => {
   beforeEach(() => {
-    // jsdom does not implement `scrollIntoView`; the component calls it
-    // optionally, so stub it to assert it was invoked (PRD Phase 4,
-    // "Code-entry ergonomics in the sheet").
     Element.prototype.scrollIntoView = jest.fn();
   });
 

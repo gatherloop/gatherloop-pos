@@ -306,8 +306,6 @@ describe('ProductListHandler', () => {
     it('should show search spinner when revalidating', async () => {
       render(<ProductListHandler {...createProps()} />);
       await act(async () => { await flushPromises(); });
-      // The search-spinner appears when isRevalidating or isChangingParams is true
-      // isRevalidating is tested indirectly via the delete flow
       expect(screen.queryByTestId('search-spinner')).toBeNull();
     });
   });

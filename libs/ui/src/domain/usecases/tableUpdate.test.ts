@@ -22,7 +22,6 @@ describe('TableUpdateUsecase', () => {
         TableUpdateParams
       >(usecase);
 
-      // idle -> onStateChange(idle) dispatches FETCH -> loading
       expect(tester.state.type).toBe('loading');
 
       await flushPromises();

@@ -1,23 +1,14 @@
 import { Minus, Plus } from '@tamagui/lucide-icons';
 import { Button, Text, XStack } from 'tamagui';
 
-// FR-6 in docs/prd-table-ordering.md: the quantity stepper on the item
-// detail sheet. `min` mirrors the usecase's own floor (CHANGE_AMOUNT clamps
-// to 1) so the decrement button disables in lockstep with what the machine
-// would clamp anyway, rather than allowing a press that visibly no-ops.
 export type AmountStepperProps = {
   amount: number;
   onChange: (amount: number) => void;
   min?: number;
   disabled?: boolean;
-  // FR-7 in docs/prd-order-app-ux-improvements.md: 'sm' is the cart row's
-  // compact 32x32 button; 'md' (default) stays the item detail sheet's
-  // original 44x44. One component, no `CartAmountStepper` fork (Core Rule 4).
   size?: 'sm' | 'md';
 };
 
-// 32px is the accepted floor for a secondary control; hitSlop pads the
-// touch target back up to the 44px ideal without growing the visible button.
 const SM_HIT_SLOP = { top: 6, bottom: 6, left: 6, right: 6 };
 
 export const AmountStepper = ({

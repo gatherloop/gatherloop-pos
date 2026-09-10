@@ -1,10 +1,6 @@
 import { randomUUID } from 'crypto';
 import { resolveSession } from './resolveSession';
 
-// jest-environment-jsdom's bundled jsdom predates `crypto.randomUUID`, even
-// though every real Node runtime resolveSession targets has it (D3).
-// Polyfilled here for the test environment only — production code is
-// unchanged.
 if (typeof globalThis.crypto.randomUUID !== 'function') {
   globalThis.crypto.randomUUID =
     randomUUID as typeof globalThis.crypto.randomUUID;

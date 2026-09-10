@@ -3,11 +3,6 @@ import { Product } from '../../../../domain/entities/Product';
 import { formatRupiah } from '../../../../utils/currency';
 import { MenuItemThumbnail } from './MenuItemThumbnail';
 
-// FR-5 in docs/prd-table-ordering.md: one card per product in the menu
-// list. `startingPrice` is the lowest resolved variant price for this
-// product (D15's formatRupiah, "mulai Rp X") — `null` when no variant of
-// this product could be found, which the card renders by simply omitting
-// the price line rather than showing a broken value.
 export type MenuProductCardProps = {
   product: Product;
   startingPrice: number | null;

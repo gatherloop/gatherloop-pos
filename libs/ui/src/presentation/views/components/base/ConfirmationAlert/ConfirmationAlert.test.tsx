@@ -64,11 +64,6 @@ describe('ConfirmationAlert', () => {
     expect(onCancel).toHaveBeenCalled();
   });
 
-  // PRD "rental checkin mobile" FR-5: the print prompt (and any other
-  // `useConfirmationAlert()` caller) must stay fully usable at compact
-  // widths — bounded width/height on the dialog, with the title and
-  // description scrolling internally so the Yes/No row is never pushed
-  // off-screen.
   describe('compact layout (media.sm true)', () => {
     beforeEach(() => {
       (useMedia as jest.Mock).mockReturnValue({ sm: true });

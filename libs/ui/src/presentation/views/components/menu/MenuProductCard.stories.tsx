@@ -38,8 +38,6 @@ export const WithDescriptionAndPrice: Story = {
   },
 };
 
-// D16: an empty description reserves no space instead of collapsing the
-// layout.
 export const NoDescription: Story = {
   args: {
     product: {

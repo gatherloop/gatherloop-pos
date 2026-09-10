@@ -3,11 +3,6 @@ import { TamaguiProvider, createTamagui } from 'tamagui';
 import { config } from '@tamagui/config/v3';
 import { createAnimations } from '@tamagui/animations-css';
 
-// Use CSS-based animations in Storybook instead of @tamagui/animations-moti.
-// The moti driver relies on react-native-reanimated which, even when mocked,
-// produces style objects with numeric indexed keys that cause a
-// "Indexed property setter is not supported" error in CSSStyleDeclaration.
-// CSS animations (transitions) are the correct driver for web/Storybook.
 const storybookTamaguiConfig = createTamagui({
   ...config,
   animations: createAnimations({

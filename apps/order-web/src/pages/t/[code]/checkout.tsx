@@ -7,9 +7,6 @@ import {
 import { Checkout, CheckoutProps } from '@gatherloop-pos/ui/order';
 import { GetServerSideProps } from 'next';
 
-// P6 in docs/trd-order-app-composition-and-ssr.md: resolves the session
-// and the table, so menu → cart → checkout shows no "Memuat meja…" on the
-// first response.
 export const getServerSideProps: GetServerSideProps<CheckoutProps> = async (
   ctx
 ) => {
@@ -19,9 +16,6 @@ export const getServerSideProps: GetServerSideProps<CheckoutProps> = async (
   if (setCookie) ctx.res.setHeader('Set-Cookie', setCookie);
 
   const code = String(ctx.params?.code ?? '');
-  // `undefined` (an unexpected transport error) keeps today's client-only
-  // retry path instead of failing the whole page; `null` (a known-bad
-  // code) seeds `notFound` directly.
   const table = await new ApiPublicTableRepository()
     .resolveTableByCode(code)
     .catch((error) =>

@@ -56,9 +56,6 @@ func GetEnv() Env {
 	}
 }
 
-// parseCorsAllowedOrigins splits a comma-separated list of origins (e.g.
-// "https://gatherloop.github.io,http://localhost:3000") into a trimmed,
-// non-empty slice.
 func parseCorsAllowedOrigins(raw string) []string {
 	if raw == "" {
 		return nil

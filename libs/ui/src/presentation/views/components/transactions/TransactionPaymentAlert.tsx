@@ -17,12 +17,6 @@ import {
   Wallet,
 } from '../../../../domain';
 
-// The compact cart `Sheet` (PRD FR-4) sits at an explicit `zIndex={100_000}`
-// and, while it animates closed, can still be in the DOM at the same time
-// this alert opens (PRD FR-7 closes it first, but the exit animation is not
-// instant). `AlertDialog` otherwise defaults to the same 100_000, so without
-// an explicit bump here the two would be one paint order away from the
-// alert rendering behind the sheet's overlay.
 const ALERT_Z_INDEX = 100_001;
 
 export type TransactionPaymentAlertProps = {
@@ -44,10 +38,6 @@ export const TransactionPaymentAlert = ({
 }: TransactionPaymentAlertProps) => {
   const isCompactLayout = useIsCompactLayout();
 
-  // `transactionTotal` can change after mount (a different transaction is
-  // opened while this alert stays mounted for animation); `resolver` — unlike
-  // `defaultValues` — is re-read from props by react-hook-form on every
-  // render, so a fresh resolver here is honoured without a form remount.
   const form = useForm<TransactionPayForm>({
     defaultValues: { paidAmount: 0 },
     resolver: zodResolver(transactionPayFormSchema(transactionTotal)),
@@ -96,9 +86,6 @@ export const TransactionPaymentAlert = ({
           scale={1}
           opacity={1}
           y={0}
-          // Desktop keeps its intrinsic, unbounded width — this only bounds
-          // the dialog on compact so the side-by-side rows below never
-          // overflow a phone viewport (PRD FR-7: usable at 390px).
           width={isCompactLayout ? '90%' : undefined}
           maxWidth={isCompactLayout ? 420 : undefined}
         >

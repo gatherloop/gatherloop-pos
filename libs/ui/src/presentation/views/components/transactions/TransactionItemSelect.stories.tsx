@@ -8,8 +8,6 @@ import {
 } from '../../../../../.storybook/mocks/mockData';
 import type { Product } from '../../../../domain';
 
-// A product with enough options/values to exceed a phone screen's height,
-// exercising the compact dialog's internal scroll (PRD FR-6).
 const mockProductManyOptions: Product = {
   ...mockProduct,
   name: 'Build-Your-Own Bowl',
@@ -155,9 +153,6 @@ export const Submitted: Story = {
   },
 };
 
-// Compact layout (PRD FR-3): autoFocus is disabled and the list reserves
-// bottom padding for the floating cart button rendered by
-// `TransactionFormView`.
 export const CompactLoaded: Story = {
   parameters: {
     viewport: { defaultViewport: 'mobile' },
@@ -167,9 +162,6 @@ export const CompactLoaded: Story = {
   },
 };
 
-// Compact variant dialog (PRD FR-6): width follows the viewport instead of
-// a fixed 500px, and Cancel/Submit stay reachable by scrolling the options
-// area rather than growing past the screen.
 export const CompactSelectingOptions: Story = {
   parameters: {
     viewport: { defaultViewport: 'mobile' },
@@ -181,8 +173,6 @@ export const CompactSelectingOptions: Story = {
   },
 };
 
-// A many-option product on a phone: the options list scrolls inside the
-// dialog while Cancel/Submit remain pinned and reachable.
 export const CompactSelectingOptionsManyOptions: Story = {
   parameters: {
     viewport: { defaultViewport: 'mobile' },

@@ -13,10 +13,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// sessionIdPattern matches a UUIDv4, the shape BrowserSessionRepository mints
-// client-side (D3). An anonymous guest has no credential to check — the
-// session ID itself is the capability that owns a cart (D8), so this is the
-// closest anonymous equivalent to CheckAuth.
 var sessionIdPattern = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$`)
 
 func EnableCORS(next http.Handler) http.Handler {
@@ -44,9 +40,6 @@ func EnableCORS(next http.Handler) http.Handler {
 	})
 }
 
-// isOriginAllowed reports whether origin is present in allowedOrigins. An
-// empty origin (same-origin or non-browser requests never send the header)
-// is never treated as allowed.
 func isOriginAllowed(origin string, allowedOrigins []string) bool {
 	if origin == "" {
 		return false
@@ -99,9 +92,6 @@ func CheckAuth(next http.HandlerFunc) http.HandlerFunc {
 	})
 }
 
-// RequireSessionId guards the cart routes (FR-3). Missing or malformed
-// X-Session-Id is a 400, not a 401/404 — there is no credential to be
-// unauthorized about, just a header the client is expected to always send.
 func RequireSessionId(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sessionId := r.Header.Get("X-Session-Id")

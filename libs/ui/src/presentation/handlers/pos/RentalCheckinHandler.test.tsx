@@ -234,8 +234,6 @@ describe('RentalCheckinHandler', () => {
         await flushPromises();
       });
 
-      // Select a product to add a rental item (required by form validation)
-      // Use fireEvent to directly trigger the click which bubbles to the XStack's onClick
       await act(async () => {
         fireEvent.click(screen.getByRole('heading', { name: 'Product 1' }));
       });
@@ -244,14 +242,12 @@ describe('RentalCheckinHandler', () => {
         await flushPromises();
       });
 
-      // Dialog is open — click the first Submit (inside dialog, before the form's Submit)
       await user.click(screen.getAllByRole('button', { name: 'Submit' })[0]);
 
       await act(async () => {
         await flushPromises();
       });
 
-      // Fill in the rental code (required by form validation: code.min(1))
       const codeInput = screen.getByPlaceholderText('Code');
       await user.type(codeInput, 'RENTAL001');
 
@@ -264,8 +260,6 @@ describe('RentalCheckinHandler', () => {
         await flushPromises();
       });
 
-      // After a successful checkin the print confirmation dialog appears.
-      // Declining it ("No") must still redirect to the rental list screen.
       await user.click(screen.getByRole('button', { name: 'No' }));
 
       await act(async () => {
@@ -313,8 +307,6 @@ describe('RentalCheckinHandler', () => {
         await flushPromises();
       });
 
-      // The print confirmation dialog must be shown exactly once. A second
-      // dialog would mean the effect re-fired and could block the redirect.
       expect(screen.getAllByText('Print Checkin Slip')).toHaveLength(1);
 
       await user.click(screen.getByRole('button', { name: 'No' }));
@@ -323,7 +315,6 @@ describe('RentalCheckinHandler', () => {
         await flushPromises();
       });
 
-      // Declining closes the dialog and redirects without re-opening it.
       expect(screen.queryByText('Print Checkin Slip')).toBeNull();
       expect(mockRouterPush).toHaveBeenCalledTimes(1);
       expect(mockRouterPush).toHaveBeenCalledWith('/rentals');
@@ -349,7 +340,6 @@ describe('RentalCheckinHandler', () => {
         await flushPromises();
       });
 
-      // Select a product to add a rental item (required by form validation)
       await act(async () => {
         fireEvent.click(screen.getByRole('heading', { name: 'Product 1' }));
       });
@@ -358,14 +348,12 @@ describe('RentalCheckinHandler', () => {
         await flushPromises();
       });
 
-      // Dialog is open — click the first Submit (inside dialog)
       await user.click(screen.getAllByRole('button', { name: 'Submit' })[0]);
 
       await act(async () => {
         await flushPromises();
       });
 
-      // Fill in the rental code (required by form validation: code.min(1))
       const codeInput1 = screen.getByPlaceholderText('Code');
       await user.type(codeInput1, 'RENTAL001');
 
@@ -389,7 +377,6 @@ describe('RentalCheckinHandler', () => {
         await flushPromises();
       });
 
-      // Select a product to add a rental item (required by form validation)
       await act(async () => {
         fireEvent.click(screen.getByRole('heading', { name: 'Product 1' }));
       });
@@ -398,14 +385,12 @@ describe('RentalCheckinHandler', () => {
         await flushPromises();
       });
 
-      // Dialog is open — click the first Submit (inside dialog)
       await user.click(screen.getAllByRole('button', { name: 'Submit' })[0]);
 
       await act(async () => {
         await flushPromises();
       });
 
-      // Fill in the rental code (required by form validation: code.min(1))
       const codeInput2 = screen.getByPlaceholderText('Code');
       await user.type(codeInput2, 'RENTAL001');
 

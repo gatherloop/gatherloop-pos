@@ -18,7 +18,6 @@ describe('TransactionItemSelectUsecase', () => {
       });
       const tester = new UsecaseTester<TransactionItemSelectUsecase, TransactionItemSelectState, TransactionItemSelectAction, TransactionItemSelectParams>(usecase);
 
-      // idle -> onStateChange(idle) dispatches FETCH -> loading
       expect(tester.state.type).toBe('loading');
 
       await flushPromises();
@@ -30,7 +29,6 @@ describe('TransactionItemSelectUsecase', () => {
     it('should transition loaded → selectingOptions → loadingVariant → loaded', async () => {
       const productRepository = new MockProductRepository();
       const variantRepository = new MockVariantRepository();
-      // Product 1 has 1 option with 2 values (S and M), so goes to selectingOptions
       const usecase = new TransactionItemSelectUsecase(productRepository, variantRepository, {
         products: productRepository.products,
         totalItem: productRepository.products.length,
@@ -39,7 +37,6 @@ describe('TransactionItemSelectUsecase', () => {
 
       expect(tester.state.type).toBe('loaded');
 
-      // Product 1 has option with values [S, M] (2 values) so it goes to selectingOptions
       tester.dispatch({ type: 'SELECT_PRODUCT', product: productRepository.products[0] });
       expect(tester.state.type).toBe('selectingOptions');
 
@@ -47,7 +44,6 @@ describe('TransactionItemSelectUsecase', () => {
       expect(tester.state.type).toBe('loadingVariant');
 
       await flushPromises();
-      // loadingVariantSuccess -> onStateChange dispatches RESET -> loaded
       expect(tester.state.type).toBe('loaded');
     });
   });
@@ -56,7 +52,6 @@ describe('TransactionItemSelectUsecase', () => {
     it('should transition loaded → loadingVariant → loaded', async () => {
       const productRepository = new MockProductRepository();
       const variantRepository = new MockVariantRepository();
-      // Create a product with 1 option and 1 value to trigger direct loadingVariant
       const singleValueProduct = {
         ...productRepository.products[0],
         id: 99,
@@ -80,7 +75,6 @@ describe('TransactionItemSelectUsecase', () => {
       expect(tester.state.type).toBe('loadingVariant');
 
       await flushPromises();
-      // loadingVariantSuccess -> onStateChange dispatches RESET -> loaded
       expect(tester.state.type).toBe('loaded');
     });
   });

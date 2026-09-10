@@ -100,7 +100,6 @@ func (repo Repository) CreateProduct(ctx context.Context, product domain.Product
 		return domain.Product{}, ToErrorCtx(ctx, result.Error, "CreateProduct")
 	}
 
-	// Fetch the created product with all relations
 	var createdProduct Product
 	fetchResult := db.Table("products").Preload("Category").Preload("Options").Preload("Options.Values").Where("id = ?", payload.Id).First(&createdProduct)
 	return ToProductDomain(createdProduct), ToErrorCtx(ctx, fetchResult.Error, "CreateProduct")
@@ -110,13 +109,11 @@ func (repo Repository) UpdateProductById(ctx context.Context, product domain.Pro
 	db := GetDbFromCtx(ctx, repo.db)
 	product.Id = id
 
-	// update product
 	productPayload := ToProductDB(product)
 	if result := db.Session(&gorm.Session{FullSaveAssociations: true}).Table("products").Where("id = ?", id).Updates(&productPayload); result.Error != nil {
 		return domain.Product{}, ToErrorCtx(ctx, result.Error, "UpdateProductById")
 	}
 
-	// Collect IDs of options and option values that should be kept (those that are present in the incoming payload)
 	optionIdsToKeep := []int64{}
 	optionValueIdsToKeep := []int64{}
 	for _, opt := range productPayload.Options {
@@ -131,30 +128,25 @@ func (repo Repository) UpdateProductById(ctx context.Context, product domain.Pro
 	}
 
 	if len(optionIdsToKeep) > 0 {
-		// delete items that were present before but are not in the incoming idsToKeep
 		if err := db.Table("options").Where("product_id = ? AND id NOT IN ?", id, optionIdsToKeep).Delete(&Option{}).Error; err != nil {
 			return domain.Product{}, ToErrorCtx(ctx, err, "UpdateProductById")
 		}
 	} else {
-		// If incoming payload has no existing IDs, remove all previously existing items
 		if err := db.Table("options").Where("product_id = ?", id).Delete(&Option{}).Error; err != nil {
 			return domain.Product{}, ToErrorCtx(ctx, err, "UpdateProductById")
 		}
 	}
 
 	if len(optionValueIdsToKeep) > 0 {
-		// delete items that were present before but are not in the incoming idsToKeep
 		if err := db.Table("option_values").Where("option_id IN (SELECT id FROM options WHERE product_id = ?) AND id NOT IN ?", id, optionValueIdsToKeep).Delete(&OptionValue{}).Error; err != nil {
 			return domain.Product{}, ToErrorCtx(ctx, err, "UpdateProductById")
 		}
 	} else {
-		// If incoming payload has no existing IDs, remove all previously existing items
 		if err := db.Table("option_values").Where("option_id IN (SELECT id FROM options WHERE product_id = ?)", id).Delete(&OptionValue{}).Error; err != nil {
 			return domain.Product{}, ToErrorCtx(ctx, err, "UpdateProductById")
 		}
 	}
 
-	// Fetch the updated product with all relations
 	var updatedProduct Product
 	fetchResult := db.Table("products").Preload("Category").Preload("Options").Preload("Options.Values").Where("id = ?", id).First(&updatedProduct)
 	return ToProductDomain(updatedProduct), ToErrorCtx(ctx, fetchResult.Error, "UpdateProductById")

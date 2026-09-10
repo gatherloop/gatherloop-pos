@@ -1,5 +1,3 @@
-//@ts-check
-
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const path = require('path');
 const { composePlugins, withNx } = require('@nx/next');
@@ -10,23 +8,10 @@ const { withTamagui } = require('@tamagui/next-plugin');
  **/
 const nextConfig = {
   nx: {
-    // Set this to true if you would like to use SVGR
-    // See: https://github.com/gregberge/svgr
     svgr: false,
   },
-  // A stray apps/pos-web/package-lock.json alongside the root lockfile makes
-  // Next 15's output file tracing guess the wrong workspace root. Pin it
-  // explicitly, as Next's own warning suggests.
   outputFileTracingRoot: path.join(__dirname, '../../'),
-  // react-native-qrcode-svg ships untranspiled JSX (no prebuilt CJS output),
-  // unlike react-native-svg which does — Next must run it through its own
-  // loader instead of treating it as pre-built.
   transpilePackages: ['react-native-qrcode-svg'],
-  // Tamagui's static extraction walks the whole component tree at build
-  // time, and Next's default multi-worker compilation multiplies that cost
-  // by CPU count — that combination is what was pushing the Render build
-  // past its memory ceiling. Keeping the build single-threaded trades build
-  // time for a much lower peak.
   experimental: {
     cpus: 1,
     workerThreads: false,
@@ -34,9 +19,6 @@ const nextConfig = {
   },
   webpack(config) {
     config.parallelism = 1;
-    // React 18 has no `react/compiler-runtime` subpath; the standalone runtime
-    // package provides the identical `c()` implementation. Drops out when we
-    // reach React 19 (see docs/trd-react-compiler-adoption.md §D3).
     config.resolve.alias['react/compiler-runtime'] = require.resolve(
       'react-compiler-runtime'
     );
@@ -61,7 +43,6 @@ const tamaguiPlugin = withTamagui({
 });
 
 const plugins = [
-  // Add more Next.js plugins to this list if needed.
   withNx,
   tamaguiPlugin,
 ];

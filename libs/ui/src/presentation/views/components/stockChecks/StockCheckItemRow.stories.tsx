@@ -88,9 +88,6 @@ export const Hidden: Story = {
   ),
 };
 
-// PRD docs/prd-stock-check-form-mobile.md FR-2/FR-3: at ≤800px the row
-// switches to two lines — name (+ badge) on top, unit + stepper below —
-// with ≥44dp stepper targets and a ≥72dp input.
 export const CompactFilled: Story = {
   parameters: {
     viewport: { defaultViewport: 'mobile' },

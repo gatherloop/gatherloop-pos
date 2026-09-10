@@ -19,7 +19,6 @@ describe('CalculationUpdateUsecase', () => {
       });
       const tester = new UsecaseTester<CalculationUpdateUsecase, CalculationUpdateState, CalculationUpdateAction, CalculationUpdateParams>(usecase);
 
-      // idle -> onStateChange(idle) dispatches FETCH -> loading
       expect(tester.state.type).toBe('loading');
 
       await flushPromises();

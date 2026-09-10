@@ -30,8 +30,6 @@ export type CalculationItemForm = {
   amount: number;
 };
 
-// Partial validator, not a parser: `totalWallet` is intentionally undescribed
-// and the resolver is called with `{ raw: true }` so it survives submission.
 export const calculationFormSchema = z.object({
   walletId: z.number(),
   calculationItems: z

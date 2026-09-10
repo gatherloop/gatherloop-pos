@@ -100,8 +100,6 @@ describe('StockCheckFormView', () => {
 
       await user.type(getSearchInput(), 'Botol');
 
-      // `DebouncedInput` only commits to the real `query` state (and thus
-      // shows the Clear button) after its debounce delay elapses.
       const clearButton = await screen.findByRole(
         'button',
         { name: /clear search/i },
@@ -160,27 +158,17 @@ describe('StockCheckFormView', () => {
       expect(onSubmit).toHaveBeenCalled();
     });
 
-    // PRD FR-5: on compact, Submit moves into a pinned bottom bar instead of
-    // trailing the list; desktop keeps the single inline button. Either way
-    // there is exactly one — never both at once.
     it('renders exactly one Submit button', () => {
       render(<StockCheckFormView {...baseProps} />);
 
       expect(screen.getAllByRole('button', { name: 'Submit' })).toHaveLength(1);
     });
 
-    // PRD FR-6: submitting with pending rows clears the search, enables the
-    // pending filter, and focuses the first pending row's input — via a ref
-    // `InputNumber` forwards, replacing the old DOM-only
-    // `querySelector('input')` so this also works on React Native.
     it('clears the search, enables the pending filter and focuses the first pending row on submit', async () => {
       const user = userEvent.setup();
       render(<StockCheckFormView {...baseProps} />);
 
       await user.type(getSearchInput(), 'Botol');
-      // Wait for the search query to commit past `DebouncedInput`'s delay
-      // before submitting, so the search-cleared assertion below reflects a
-      // real state transition rather than a no-op ('' -> '').
       await screen.findByRole(
         'button',
         { name: /clear search/i },
@@ -194,17 +182,12 @@ describe('StockCheckFormView', () => {
         screen.getByRole('button', { name: 'Show all materials' })
       ).toBeTruthy();
 
-      // Index 0 is the search box; items[1] ('Baking Soda') is the only
-      // pending row in the fixture, so its input is index 2.
       const pendingInput = screen.getAllByRole('textbox')[2];
       await waitFor(() => expect(document.activeElement).toBe(pendingInput));
     });
   });
 
   it('reads the fetched item count in the progress counter once loading transitions to loaded', () => {
-    // Regression for TRD §9.1 (Tier B variant): with the empty pre-fetch
-    // defaultValues that used to mount before the entity loaded, this read
-    // "0 / 0" until the removed `reset`-in-an-effect workaround caught up.
     const { rerender } = render(
       <StockCheckFormView
         {...baseProps}

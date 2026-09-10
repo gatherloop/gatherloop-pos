@@ -23,10 +23,6 @@ jest.mock('@tamagui/toast', () => ({
   useToastController: () => ({ show: jest.fn() }),
 }));
 
-// Stand in for the platform `useFocusEffect` so the test can replay a screen
-// refocus, which on native happens when a pushed screen is popped and the
-// list screen becomes visible again without remounting. Also stubs
-// `usePrinter`, which opens a WebSocket the test environment can't provide.
 const focusCallbacks: (() => void)[] = [];
 jest.mock('../../../utils', () => ({
   ...jest.requireActual('../../../utils'),
@@ -75,7 +71,6 @@ describe('TransactionListHandler refetch on focus', () => {
 
     await waitFor(() => expect(fetchTransactionList).toHaveBeenCalledTimes(1));
 
-    // A transaction created on another screen while this one stayed mounted.
     await transactionRepository.createTransaction({
       name: 'Transaction 3',
       orderNumber: 3,

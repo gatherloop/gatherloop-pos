@@ -59,7 +59,6 @@ export const ChecklistSessionExecution = ({
 
       return (
         <YStack flex={1} gap="$3">
-          {/* Progress header */}
           <Card padding="$3">
             <XStack justifyContent="space-between" alignItems="center">
               <YStack gap="$1">
@@ -104,7 +103,6 @@ export const ChecklistSessionExecution = ({
             </Card>
           )}
 
-          {/* Items list */}
           <FlatList
             data={checklistSession.items.sort(
               (a: ChecklistSessionItem, b: ChecklistSessionItem) =>

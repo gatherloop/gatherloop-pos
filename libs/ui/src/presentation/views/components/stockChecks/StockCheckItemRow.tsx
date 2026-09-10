@@ -11,14 +11,7 @@ export type StockCheckItemRowProps = {
   isPending: boolean;
   isErrorRow: boolean;
   hidden: boolean;
-  // PRD docs/prd-stock-check-form-mobile.md FR-6: reports this row's
-  // vertical offset within the row list whenever it (re)lays out, so the
-  // parent can scroll a just-unhidden pending row into view without relying
-  // on DOM-only APIs (`scrollIntoView`).
   onLayout?: (y: number) => void;
-  // FR-6: forwarded to the underlying number input so the parent can
-  // `focus()` it after scrolling to the first pending row — cross-platform,
-  // unlike the old `querySelector('input')`.
   inputRef?: Ref<TextInput>;
 };
 
@@ -64,10 +57,6 @@ export const StockCheckItemRow = ({
     : undefined;
 
   if (isCompactLayout) {
-    // PRD docs/prd-stock-check-form-mobile.md FR-2: two lines on compact —
-    // name (+ badge) on top, unit + stepper below — so the name and the
-    // entered value both get the full row width instead of being crushed
-    // into fixed-width columns.
     return (
       <YStack
         gap="$1"

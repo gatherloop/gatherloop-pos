@@ -1,6 +1,3 @@
--- 000001_initial_schema.down.sql
--- Drop all tables in reverse FK dependency order
-
 DROP TABLE IF EXISTS `rentals`;
 DROP TABLE IF EXISTS `calculation_items`;
 DROP TABLE IF EXISTS `calculations`;

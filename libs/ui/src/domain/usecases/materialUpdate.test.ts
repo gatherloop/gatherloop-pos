@@ -14,7 +14,6 @@ describe('MaterialUpdateUsecase', () => {
       const usecase = new MaterialUpdateUsecase(repository, { materialId: 1, material: null });
       const tester = new UsecaseTester<MaterialUpdateUsecase, MaterialUpdateState, MaterialUpdateAction, MaterialUpdateParams>(usecase);
 
-      // idle -> onStateChange(idle) synchronously dispatches FETCH -> loading
       expect(tester.state.type).toBe('loading');
 
       await flushPromises();
@@ -44,7 +43,6 @@ describe('MaterialUpdateUsecase', () => {
       expect(tester.state.type).toBe('submitting');
 
       await flushPromises();
-      // submitError auto-cancels to loaded via onStateChange(submitError) -> SUBMIT_CANCEL
       expect(tester.state.type).toBe('submitError');
     });
   });

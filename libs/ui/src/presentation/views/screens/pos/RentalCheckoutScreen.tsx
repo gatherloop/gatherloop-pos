@@ -53,13 +53,9 @@ export const RentalCheckoutScreen = (props: RentalCheckoutScreenProps) => {
       RentalItemSelect={(selectedRentalIds) => (
         <RentalList
           {...props.rentalList}
-          // On desktop the field is a scanner target; on a phone it would
-          // raise the keyboard over the list on arrival (PRD FR-2).
           isSearchAutoFocus={
             props.rentalList.isSearchAutoFocus && !isCompactLayout
           }
-          // Surfaces an "In Cart" affordance on rows already added, since
-          // `onAddItem` silently no-ops a duplicate tap (PRD FR-4).
           selectedRentalIds={selectedRentalIds}
         />
       )}
@@ -74,9 +70,6 @@ export const RentalCheckoutScreen = (props: RentalCheckoutScreenProps) => {
       showBackButton
     >
       {isCompactLayout ? (
-        // On compact, the rental list owns a bounded `flex: 1` region and
-        // scrolls internally — an outer `ScrollView` here would give it no
-        // height to bound against (PRD FR-2).
         <YStack flex={1}>{formView}</YStack>
       ) : (
         <ScrollView>{formView}</ScrollView>

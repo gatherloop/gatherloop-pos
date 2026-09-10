@@ -20,15 +20,8 @@ export type InputNumberProps = {
   fractionDigit?: number;
   step?: number;
   error?: boolean;
-  // Stepper button size (Tamagui size token). Defaults to today's '$2' so
-  // existing callers are unaffected; compact call sites pass '$3'.
   buttonSize?: string;
-  // Explicit floor on the stepper buttons' touch target. A Tamagui `size`
-  // token alone doesn't guarantee a given dp value, so compact call sites
-  // pass 44 here to meet the WCAG 2.5.8 minimum.
   buttonMinSize?: number;
-  // Defaults are derived from `fractionDigit` (whole numbers get a numeric
-  // keypad, fractional values get a decimal one); pass either to override.
   inputMode?: InputModeOptions;
   keyboardType?: KeyboardTypeOptions;
 } & Omit<InputProps, 'inputMode' | 'keyboardType'>;
@@ -115,11 +108,6 @@ const InputNumberField = ({
         }}
         value={displayValue}
         onBlur={field.onBlur}
-        // `flex={1}` lets the input grow to fill available space; a caller
-        // that needs a floor under flex-shrink pressure should pass
-        // `minWidth` (forwarded via `...inputProps` above), not just
-        // `width` — `width` alone loses to `flex: 1` when the row is tight
-        // (see docs/prd-stock-check-form-mobile.md FR-3).
         flex={1}
       />
 

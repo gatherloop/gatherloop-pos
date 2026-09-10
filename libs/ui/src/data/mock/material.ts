@@ -77,7 +77,6 @@ export class MockMaterialRepository implements MaterialRepository {
       return Promise.reject(new Error('Failed to fetch materials'));
     }
     const { page, itemPerPage, orderBy } = params;
-    // Sort by createdAt
     const sortedMaterials = [...this.materials].sort((a, b) => {
       if (orderBy === 'asc') {
         return (
@@ -105,7 +104,6 @@ export class MockMaterialRepository implements MaterialRepository {
     orderBy: 'asc' | 'desc';
   }) {
     const { page, itemPerPage, orderBy } = params;
-    // Sort by createdAt
     const sortedMaterials = [...this.materials].sort((a, b) => {
       if (orderBy === 'asc') {
         return (

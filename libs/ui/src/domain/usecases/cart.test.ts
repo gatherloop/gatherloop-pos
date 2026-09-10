@@ -205,7 +205,6 @@ describe('CartUsecase', () => {
     });
   });
 
-  // D6 in docs/trd-order-app-composition-and-ssr.md.
   describe('item selection', () => {
     it('holds the selected item id, from any fetch/mutation state, without changing it', async () => {
       const repository = new MockCartRepository();

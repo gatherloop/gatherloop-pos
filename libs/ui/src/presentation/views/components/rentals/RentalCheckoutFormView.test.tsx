@@ -40,10 +40,6 @@ const Wrapper = ({
 );
 
 describe('RentalCheckoutFormView', () => {
-  // mockRental/mockRentalCheckedOut both check in on 2024-01-20 — always far
-  // more than their last pricing tier's 120-minute cap by the time this
-  // suite runs — so both consistently price at the last tier (Rp 30.000)
-  // regardless of the real clock, with no need to fake `now`.
   afterEach(() => {
     (useMedia as jest.Mock).mockReturnValue({});
   });

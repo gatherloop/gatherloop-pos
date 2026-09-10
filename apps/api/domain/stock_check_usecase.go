@@ -40,10 +40,6 @@ func (usecase StockCheckUsecase) CreateStockCheck(ctx context.Context, itemReque
 		materialMap[m.Id] = m
 	}
 
-	// Only the materials the caller actually submitted become stock check items.
-	// The create form seeds rows exclusively from stock-check-required materials,
-	// so building items from the catalog here would silently re-add excluded ones
-	// (with a made-up currentStock of 0), leaking them into edit and the purchase list.
 	items := make([]StockCheckItem, 0, len(itemRequests))
 	for _, req := range itemRequests {
 		m, ok := materialMap[req.MaterialId]

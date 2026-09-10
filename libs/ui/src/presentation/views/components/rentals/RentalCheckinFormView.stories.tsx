@@ -63,8 +63,6 @@ const ScanResolutionStory = () => (
   />
 );
 
-// Compact layout (PRD FR-3): at ≤800px the picker fills the screen and the
-// cart moves behind a floating button into a sheet.
 const CompactWithTicketsStory = () => (
   <RentalCheckinFormView
     variant={{ type: 'loaded' }}
@@ -85,10 +83,6 @@ const CompactWithTicketsStory = () => (
   />
 );
 
-// Phase 4 keyboard-ergonomics check: 12 rows is enough for the sheet body
-// to scroll well past one screen, so the focus chain and its scroll-into-
-// view behaviour have somewhere to prove themselves (PRD Phase 4, "verified
-// ... with a list long enough to scroll").
 const CompactWithManyTicketsStory = () => (
   <RentalCheckinFormView
     variant={{ type: 'loaded' }}

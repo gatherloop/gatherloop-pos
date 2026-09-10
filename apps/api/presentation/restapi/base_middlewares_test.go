@@ -45,9 +45,6 @@ func TestEnableCORS_RejectsOriginNotInAllowlist(t *testing.T) {
 
 	restapi.EnableCORS(next).ServeHTTP(w, req)
 
-	// The request still reaches the handler (CORS is a browser-enforced
-	// restriction, not a server-side block) but no browser will expose the
-	// response body without these headers.
 	assert.True(t, nextCalled)
 	assert.Empty(t, w.Header().Get("Access-Control-Allow-Origin"))
 	assert.Empty(t, w.Header().Get("Access-Control-Allow-Credentials"))

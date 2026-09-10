@@ -36,7 +36,6 @@ describe('SupplierCreateUsecase', () => {
       expect(tester.state.type).toBe('submitting');
 
       await flushPromises();
-      // submitError auto-cancels to loaded via onStateChange(submitError) -> SUBMIT_CANCEL
       expect(tester.state.type).toBe('submitError');
     });
   });

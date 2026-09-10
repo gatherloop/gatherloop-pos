@@ -19,9 +19,6 @@ export function calculateTransactionItemsTotal(
   );
 }
 
-// Applies one coupon on top of a running total, matching how the
-// transaction-coupon list applies discounts sequentially (each coupon
-// discounts what's left after the ones before it).
 export function calculateTransactionCouponDiscount(
   base: number,
   coupon: { type: 'fixed' | 'percentage'; amount: number }

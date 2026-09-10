@@ -47,12 +47,6 @@ export const RentalCheckinHandler = ({
 
   const formRef = useRef<UseFormReturn<RentalCheckinForm> | null>(null);
 
-  // Writes through the form the same way an item selection would if it
-  // happened from inside the form subtree — see `FormView`'s `formRef`
-  // escape hatch. `formRef.current` is only ever null before the form's
-  // `loaded` branch mounts, which is not reachable here since picking an
-  // item requires the product picker (and therefore the form) to already
-  // be on screen.
   const addItemToForm = (newVariant: Variant, amount: number) => {
     const form = formRef.current;
     if (!form) return;
@@ -92,10 +86,6 @@ export const RentalCheckinHandler = ({
       return;
     }
 
-    // The checkin state machine stays in `submitSuccess` permanently, so this
-    // effect can re-run on later re-renders (e.g. while navigation is in
-    // flight). Guard with a ref so the print confirmation dialog is shown
-    // exactly once and never re-opens to block the redirect to /rentals.
     if (hasShownPrintDialogRef.current) return;
     hasShownPrintDialogRef.current = true;
     toast.show('Checkin Rental Success');

@@ -1,24 +1,8 @@
-/**
- * Direct API helpers for seeding and cleaning up test data.
- *
- * Unlike apps/pos-web-e2e/src/utils/api.ts, these do NOT ride the Playwright
- * `request` fixture's `baseURL` / storageState — that fixture is bound to
- * the *customer SPA* under test (`playwright.config.ts`'s `use.baseURL`),
- * and the SPA is anonymous and talks to the API cross-origin with no proxy
- * (D18/D22 in docs/prd-table-ordering.md). Staff-only setup (category,
- * product, variant, table) needs its own authenticated context pointed
- * straight at the API, so this file opens and memoizes one.
- */
-
 import { APIRequestContext, request as playwrightRequest } from '@playwright/test';
 
 const API_BASE_URL = process.env['API_BASE_URL'] || 'http://127.0.0.1:8080';
 const E2E_USERNAME = process.env['E2E_USERNAME'] ?? 'mnindrazaka';
 const E2E_PASSWORD = process.env['E2E_PASSWORD'] ?? '((mnindrazaka))';
-
-// ---------------------------------------------------------------------------
-// Authenticated context (memoized — one login for the whole suite)
-// ---------------------------------------------------------------------------
 
 let contextPromise: Promise<APIRequestContext> | null = null;
 
@@ -48,17 +32,12 @@ async function getContext(): Promise<APIRequestContext> {
   return contextPromise;
 }
 
-/** Closes the shared authenticated context. Call once from global-teardown. */
 export async function disposeApiContext(): Promise<void> {
   if (!contextPromise) return;
   const context = await contextPromise;
   contextPromise = null;
   await context.dispose();
 }
-
-// ---------------------------------------------------------------------------
-// Internal helpers
-// ---------------------------------------------------------------------------
 
 async function apiPost<T>(path: string, body: unknown): Promise<T> {
   const context = await getContext();
@@ -82,10 +61,6 @@ async function apiDelete(path: string): Promise<void> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Category
-// ---------------------------------------------------------------------------
-
 export interface Category {
   id: number;
   name: string;
@@ -103,10 +78,6 @@ export async function createCategory(data: {
 export async function deleteCategory(id: number): Promise<void> {
   return apiDelete(`/categories/${id}`);
 }
-
-// ---------------------------------------------------------------------------
-// Product (published + purchase, so it is visible through /public/*)
-// ---------------------------------------------------------------------------
 
 export interface OptionValue {
   id: number;
@@ -149,10 +120,6 @@ export async function deleteProduct(id: number): Promise<void> {
   return apiDelete(`/products/${id}`);
 }
 
-// ---------------------------------------------------------------------------
-// Variant
-// ---------------------------------------------------------------------------
-
 export interface Variant {
   id: number;
   productId: number;
@@ -176,10 +143,6 @@ export async function createVariant(data: CreateVariantInput): Promise<Variant> 
 export async function deleteVariant(id: number): Promise<void> {
   return apiDelete(`/variants/${id}`);
 }
-
-// ---------------------------------------------------------------------------
-// Table (D6/FR-2 in docs/prd-table-ordering.md)
-// ---------------------------------------------------------------------------
 
 export interface Table {
   id: number;

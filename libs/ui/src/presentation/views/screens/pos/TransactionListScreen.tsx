@@ -33,19 +33,16 @@ export type TransactionListScreenProps = {
   wallets: Wallet[];
   walletId: number | null;
   onWalletIdChange: (walletId: number | null) => void;
-  // Delete alert
   isDeleteModalOpen: boolean;
   isDeleteButtonDisabled: boolean;
   onDeleteCancel: () => void;
   onDeleteConfirm: () => void;
-  // Pay alert
   isPayModalOpen: boolean;
   onPayCancel: () => void;
   onPaySubmit: (values: TransactionPayForm) => void;
   payWalletSelectOptions: { label: string; value: Wallet }[];
   payTransactionTotal: number;
   isPayButtonDisabled: boolean;
-  // Unpay alert
   isUnpayModalOpen: boolean;
   isUnpayButtonDisabled: boolean;
   onUnpayCancel: () => void;

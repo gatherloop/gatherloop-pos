@@ -107,7 +107,6 @@ func (repo Repository) CreateChecklistTemplate(ctx context.Context, template dom
 func (repo Repository) UpdateChecklistTemplateById(ctx context.Context, template domain.ChecklistTemplate, id int64) (domain.ChecklistTemplate, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 
-	// Update the template header
 	if result := db.Table("checklist_templates").Where("id = ?", id).Updates(map[string]interface{}{
 		"name":        template.Name,
 		"description": template.Description,
@@ -115,7 +114,6 @@ func (repo Repository) UpdateChecklistTemplateById(ctx context.Context, template
 		return domain.ChecklistTemplate{}, ToErrorCtx(ctx, result.Error, "UpdateChecklistTemplateById")
 	}
 
-	// Collect incoming item IDs that already exist
 	incomingItemIds := []int64{}
 	for _, item := range template.Items {
 		if item.Id > 0 {
@@ -123,7 +121,6 @@ func (repo Repository) UpdateChecklistTemplateById(ctx context.Context, template
 		}
 	}
 
-	// Soft-delete items not in the incoming list
 	if len(incomingItemIds) > 0 {
 		if result := db.Table("checklist_template_items").
 			Where("checklist_template_id = ? AND id NOT IN ? AND deleted_at IS NULL", id, incomingItemIds).
@@ -138,12 +135,10 @@ func (repo Repository) UpdateChecklistTemplateById(ctx context.Context, template
 		}
 	}
 
-	// Upsert items
 	for _, item := range template.Items {
 		item.ChecklistTemplateId = id
 
 		if item.Id > 0 {
-			// Update existing item
 			if result := db.Table("checklist_template_items").Where("id = ?", item.Id).Updates(map[string]interface{}{
 				"name":          item.Name,
 				"description":   item.Description,
@@ -153,7 +148,6 @@ func (repo Repository) UpdateChecklistTemplateById(ctx context.Context, template
 				return domain.ChecklistTemplate{}, ToErrorCtx(ctx, result.Error, "UpdateChecklistTemplateById-update-item")
 			}
 		} else {
-			// Insert new item
 			itemPayload := ToChecklistTemplateItemDB(item)
 			if result := db.Table("checklist_template_items").Omit("SubItems").Create(&itemPayload); result.Error != nil {
 				return domain.ChecklistTemplate{}, ToErrorCtx(ctx, result.Error, "UpdateChecklistTemplateById-create-item")
@@ -161,7 +155,6 @@ func (repo Repository) UpdateChecklistTemplateById(ctx context.Context, template
 			item.Id = itemPayload.Id
 		}
 
-		// Collect incoming sub-item IDs
 		incomingSubItemIds := []int64{}
 		for _, subItem := range item.SubItems {
 			if subItem.Id > 0 {
@@ -169,7 +162,6 @@ func (repo Repository) UpdateChecklistTemplateById(ctx context.Context, template
 			}
 		}
 
-		// Soft-delete sub-items not in incoming list
 		if len(incomingSubItemIds) > 0 {
 			if result := db.Table("checklist_template_sub_items").
 				Where("checklist_template_item_id = ? AND id NOT IN ? AND deleted_at IS NULL", item.Id, incomingSubItemIds).
@@ -184,7 +176,6 @@ func (repo Repository) UpdateChecklistTemplateById(ctx context.Context, template
 			}
 		}
 
-		// Upsert sub-items
 		for _, subItem := range item.SubItems {
 			subItem.ChecklistTemplateItemId = item.Id
 

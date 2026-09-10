@@ -8,10 +8,6 @@ export const credentials = {
   password: DEFAULT_PASSWORD,
 };
 
-/**
- * Log in via the UI login form.
- * Use this in auth.spec.ts tests that exercise the login flow itself.
- */
 export async function loginViaUI(
   page: Page,
   username = DEFAULT_USERNAME,
@@ -21,14 +17,9 @@ export async function loginViaUI(
   await page.getByPlaceholder('Username').fill(username);
   await page.getByPlaceholder('Password').fill(password);
   await page.getByRole('button', { name: 'Login' }).click();
-  // Wait for redirect to dashboard after successful login
   await page.waitForURL('/', { timeout: 15_000 });
 }
 
-/**
- * Log in directly via the API (bypasses UI for faster test setup).
- * Returns the cookie string that can be used in subsequent requests.
- */
 export async function loginViaApi(
   request: APIRequestContext,
   username = DEFAULT_USERNAME,
@@ -48,9 +39,6 @@ export async function loginViaApi(
   return cookies;
 }
 
-/**
- * Log out via the API.
- */
 export async function logoutViaApi(
   request: APIRequestContext
 ): Promise<void> {

@@ -36,11 +36,6 @@ export const RentalCheckoutHandler = ({
 
   const formRef = useRef<UseFormReturn<RentalCheckoutForm> | null>(null);
 
-  // Writes through the form the same way an item selection would if it
-  // happened from inside the form subtree — see `FormView`'s `formRef`
-  // escape hatch. `formRef.current` is only ever null before the form's
-  // `loaded` branch mounts, which is not reachable here since a rental
-  // pick requires the list (and therefore the form) to already be on screen.
   const addRentalToForm = (rental: Rental) => {
     const form = formRef.current;
     if (!form) return;

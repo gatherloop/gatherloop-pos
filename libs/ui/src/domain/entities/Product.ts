@@ -47,10 +47,6 @@ export type ProductForm = {
   status: ProductStatus;
 };
 
-// Partial validator, not a full parser: `options` only checks that at least
-// one entry exists, each entry's shape (`name`, `values`) is intentionally
-// unvalidated (`z.object({})`), so `{ raw: true }` is required at the call
-// site to pass the raw items through unparsed.
 export const productCreateFormSchema = z.object({
   categoryId: z.number(),
   name: z.string().min(1),
@@ -62,9 +58,6 @@ export const productCreateFormSchema = z.object({
   options: z.array(z.object({})).min(1),
 });
 
-// Partial validator, not a full parser: `options` is not described at all
-// here, so `{ raw: true }` is required at the call site to pass it through
-// unparsed.
 export const productUpdateFormSchema = z.object({
   categoryId: z.number(),
   name: z.string().min(1),

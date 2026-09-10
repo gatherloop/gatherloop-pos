@@ -22,12 +22,6 @@ export const DEFAULT_EXPENSE_STATISTIC_GROUP_BY: 'date' | 'month' = 'month';
 export const DEFAULT_EXPENSE_STATISTIC_PRESET: TransactionStatisticPreset =
   'last12Months';
 
-/**
- * Rows arrive from the API pre-sorted chronologically
- * (`ORDER BY MIN(created_at) ASC, budget name ASC`); the period date strings
- * (`DD-MM-YYYY` / `MM-YYYY`) aren't lexically sortable, so period order is
- * derived from first appearance in `rows` rather than re-sorted.
- */
 export function pivotExpenseStatistics(
   rows: ExpenseStatistic[]
 ): ExpenseStatisticSeries[] {
@@ -70,12 +64,9 @@ export function combineExpenseStatistics(
 export type ExpenseVarianceRow = {
   budgetId: number;
   budgetName: string;
-  /** null means the budget has no target (percentage 0) — render "—". */
   targetPercentage: number | null;
   actualAmount: number;
-  /** null when the period has zero revenue — render the absolute amount instead. */
   actualPercentage: number | null;
-  /** actual % − target %; null whenever either side is unavailable. */
   deltaPercentage: number | null;
   isOverTarget: boolean;
 };
@@ -84,17 +75,9 @@ export type ExpenseVarianceReport = {
   rows: ExpenseVarianceRow[];
   totalRevenue: number;
   totalExpense: number;
-  /** 100 − Σ actual %; null when the period has zero revenue. */
   unspentPercentage: number | null;
 };
 
-/**
- * Actual % is expense total ÷ period revenue (`TransactionStatistic.totalIncome`,
- * i.e. net income — the same figure the old budget-allocation loop used), matching
- * how `Budget.percentage` targets are defined. Budgets are merged with expense rows
- * by id so a budget with no spend still gets a row, and an expense referencing a
- * budget outside the current budget list still surfaces (target shows as "—").
- */
 export function computeExpenseVariance(
   expenseStatistics: ExpenseStatistic[],
   transactionStatistics: TransactionStatistic[],

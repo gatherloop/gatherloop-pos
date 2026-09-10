@@ -159,9 +159,6 @@ describe('TransactionFormView', () => {
         screen.queryByRole('textbox', { name: 'Customer Name' })
       ).toBeNull();
       expect(screen.queryByRole('button', { name: 'Submit' })).toBeNull();
-      // Exactly one sheet header renders at a time — "Cart" is gone while
-      // the coupon list is showing, proving the content swapped in place
-      // rather than a second sheet mounting on top.
       expect(screen.queryByText('Cart')).toBeNull();
     });
 

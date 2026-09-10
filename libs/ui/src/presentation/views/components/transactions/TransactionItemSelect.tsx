@@ -125,14 +125,6 @@ export const TransactionItemSelect = ({
             enterStyle={{ x: 0, y: 20, opacity: 0 }}
             exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
             gap="$4"
-            // On compact, the dialog follows the viewport instead of a fixed
-            // 500px (PRD FR-6). This is a safety-net cap only — Dialog.Content
-            // is centered (not stretched) by its native portal frame, so it
-            // never gets a *definite* height, just this max. The ScrollView
-            // below can't rely on `flex: 1` to grow into that (Yoga doesn't
-            // redistribute space to a flex child inside an auto/max-height
-            // parent the way browser CSS does), so it gets its own numeric
-            // maxHeight instead.
             width={isCompactLayout ? '90%' : 500}
             maxWidth={500}
             maxHeight="85%"
@@ -224,9 +216,6 @@ export const TransactionItemSelect = ({
       <YStack
         gap="$3"
         flex={1}
-        // Reserves room below the picker so the floating cart button
-        // (rendered by `TransactionFormView` on compact) never covers the
-        // last product row or the pagination controls (PRD FR-3).
         paddingBottom={isCompactLayout ? 90 : undefined}
       >
         <H4>Select Product</H4>
@@ -238,8 +227,6 @@ export const TransactionItemSelect = ({
             placeholder="Search Products by Name"
             value={searchValue}
             onChangeText={onSearchValueChange}
-            // Autofocus would raise the keyboard over the product list
-            // before the user has seen it on a phone (PRD FR-3).
             autoFocus={!isCompactLayout}
             flex={1}
           />

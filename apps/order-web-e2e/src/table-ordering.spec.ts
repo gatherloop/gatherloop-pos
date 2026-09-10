@@ -1,34 +1,3 @@
-/**
- * Phase 12: Table Ordering Happy Path
- *
- * Scan -> browse -> filter -> open item -> choose options -> add to cart ->
- * cart persists across reload -> edit quantity -> edit a line's amount/note
- * via the edit modal (FR-9) -> remove -> checkout CTA,
- * plus a deep-link test proving a hard-navigated
- * `/t/{code}?product={productId}` link renders correctly with no
- * client-side navigation history.
- *
- * The item sheet and the cart-item modal are `?product=`/`?item=` query
- * params on their parent route, not separate pages (D6 in
- * docs/trd-order-app-composition-and-ssr.md) — opening either issues no
- * request, since the sheet/modal render from the payload the parent route
- * already fetched.
- *
- * Runs against the real `next start` production server
- * (docs/trd-order-app-nextjs-migration.md P4) — no dev server, no static
- * export, matching how the app actually runs in production.
- *
- * Test data (a category, a decoy category, a two-variant product, a decoy
- * product and a table) is seeded once against the real API via
- * utils/api.ts — the customer app itself is anonymous (D3/D8 in
- * docs/prd-table-ordering.md) and has no create/login UI of its own.
- *
- * Tests run serially and share one browser session (Playwright reuses the
- * default context's cookies across tests in a file), which is exactly what
- * the anonymous session cookie (`gl_session_id`, D3) is for: the cart built
- * up over the course of this spec is the same cart from test to test.
- */
-
 import { test, expect } from '@playwright/test';
 import * as api from './utils/api';
 import * as sel from './utils/selectors';
@@ -98,9 +67,6 @@ test.describe.serial('Table Ordering', () => {
   });
 
   test.afterAll(async () => {
-    // Tolerant of partial failures mid-suite — a test that failed before
-    // creating something further down the chain shouldn't stop cleanup of
-    // what *did* get created.
     const cleanup = [
       () => api.deleteVariant(variantRegular.id),
       () => api.deleteVariant(variantLarge.id),
@@ -117,10 +83,6 @@ test.describe.serial('Table Ordering', () => {
     }
   });
 
-  // ---------------------------------------------------------------------------
-  // 1. Scan: land on the menu, table label resolved from the QR code (D6/FR-4)
-  // ---------------------------------------------------------------------------
-
   test('scanning the table QR shows the table label and the menu', async ({
     page,
   }) => {
@@ -134,10 +96,6 @@ test.describe.serial('Table Ordering', () => {
       sel.menuList.startingPrice(page, formatRupiah(REGULAR_PRICE))
     ).toBeVisible();
   });
-
-  // ---------------------------------------------------------------------------
-  // 2. Browse: search
-  // ---------------------------------------------------------------------------
 
   test('searching the menu filters to matching products', async ({ page }) => {
     await page.goto(`t/${table.code}`);
@@ -153,10 +111,6 @@ test.describe.serial('Table Ordering', () => {
       sel.menuList.productCard(page, DECOY_PRODUCT_NAME)
     ).toBeHidden();
   });
-
-  // ---------------------------------------------------------------------------
-  // 3. Browse: category chips (D4 — client-side grouping)
-  // ---------------------------------------------------------------------------
 
   test('category chips filter the menu to that category', async ({ page }) => {
     await page.goto(`t/${table.code}`);
@@ -177,19 +131,11 @@ test.describe.serial('Table Ordering', () => {
     ).toBeVisible();
   });
 
-  // ---------------------------------------------------------------------------
-  // 4. Item detail: open, choose an option, set quantity, add a note, add to
-  //    cart (FR-6/FR-7)
-  // ---------------------------------------------------------------------------
-
   test('opens an item, selects an option, sets quantity and a note, and adds it to the cart', async ({
     page,
   }) => {
     await page.goto(`t/${table.code}`);
 
-    // D6: `Product.options` is already in the menu payload the server sent,
-    // so opening the sheet is a URL change with no fetch — unlike the old
-    // `/products/{id}` route, which mounted and fetched.
     const apiRequests: string[] = [];
     page.on('request', (request) => {
       if (request.url().includes('/api/')) apiRequests.push(request.url());
@@ -201,7 +147,6 @@ test.describe.serial('Table Ordering', () => {
     await expect(page.getByText(PRODUCT_NAME)).toBeVisible();
     expect(apiRequests).toEqual([]);
 
-    // No option selected yet — the CTA stays enabled with no price (FR-5).
     await expect(
       page.getByRole('button', { name: 'Tambah ke Keranjang', exact: true })
     ).toBeVisible();
@@ -213,7 +158,6 @@ test.describe.serial('Table Ordering', () => {
       })
     ).toBeVisible();
 
-    // Quantity 1 -> 2, CTA price scales with it live.
     await sel.itemDetail.increaseAmountButton(page).click();
     await expect(
       page.getByRole('button', {
@@ -224,16 +168,11 @@ test.describe.serial('Table Ordering', () => {
     await sel.itemDetail.noteInput(page).fill(NOTE);
     await sel.itemDetail.addToCartButton(page).click();
 
-    // Sheet closes back to the menu, floating cart bar now visible (D9/D14).
     await expect(page).toHaveURL(new RegExp(`/t/${table.code}$`));
     await expect(sel.cartBar.viewCartButton(page)).toContainText(
       `2 item · ${formatRupiah(REGULAR_PRICE * 2)}`
     );
   });
-
-  // ---------------------------------------------------------------------------
-  // 5. Cart survives a full reload (D3/D5 — server-side cart, session cookie)
-  // ---------------------------------------------------------------------------
 
   test('the cart survives a full page reload', async ({ page }) => {
     await page.goto(`t/${table.code}`);
@@ -246,10 +185,6 @@ test.describe.serial('Table Ordering', () => {
     });
     await expect(sel.cartBar.viewCartButton(page)).toContainText('2 item');
   });
-
-  // ---------------------------------------------------------------------------
-  // 6. Cart screen: line item detail, edit quantity, live total (D7/D14)
-  // ---------------------------------------------------------------------------
 
   test('the cart screen shows the line item and updates the total when quantity changes', async ({
     page,
@@ -272,10 +207,6 @@ test.describe.serial('Table Ordering', () => {
     ).toBeVisible({ timeout: 10_000 });
   });
 
-  // ---------------------------------------------------------------------------
-  // 6b. Cart line edit modal: change amount and note, save (FR-9)
-  // ---------------------------------------------------------------------------
-
   test('editing a cart line\'s amount and note updates the line and the total', async ({
     page,
   }) => {
@@ -284,8 +215,6 @@ test.describe.serial('Table Ordering', () => {
     await page.goto(`t/${table.code}/cart`);
     await expect(sel.cartScreen.lineItemName(page, PRODUCT_NAME)).toBeVisible();
 
-    // D6: the edit modal is `?item=` on the cart route, not a separate page
-    // — opening it over the already-rendered cart issues no fetch.
     const apiRequests: string[] = [];
     page.on('request', (request) => {
       if (request.url().includes('/api/')) apiRequests.push(request.url());
@@ -299,18 +228,12 @@ test.describe.serial('Table Ordering', () => {
     await sel.itemDetail.noteInput(page).fill(EDITED_NOTE);
     await sel.cartItemEdit.saveButton(page).click();
 
-    // Modal closes back to the cart; the edited note and the recomputed
-    // total (amount 3 -> 4, from test 6) are both visible.
     await expect(page).toHaveURL(new RegExp(`/t/${table.code}/cart$`));
     await expect(sel.cartScreen.lineItemNote(page, EDITED_NOTE)).toBeVisible();
     await expect(
       sel.cartScreen.total(page, formatRupiah(REGULAR_PRICE * 4))
     ).toBeVisible({ timeout: 10_000 });
   });
-
-  // ---------------------------------------------------------------------------
-  // 7. Remove the line item, cart goes empty
-  // ---------------------------------------------------------------------------
 
   test('removing the item empties the cart', async ({ page }) => {
     await page.goto(`t/${table.code}/cart`);
@@ -322,10 +245,6 @@ test.describe.serial('Table Ordering', () => {
       timeout: 10_000,
     });
   });
-
-  // ---------------------------------------------------------------------------
-  // 8. Checkout CTA: QRIS stub, creates nothing (FR-8/D10)
-  // ---------------------------------------------------------------------------
 
   test('re-adding an item and checking out reaches the QRIS stub without submitting an order', async ({
     page,
@@ -348,25 +267,14 @@ test.describe.serial('Table Ordering', () => {
     await expect(page).toHaveURL(new RegExp(`/t/${table.code}/checkout$`));
     await expect(sel.checkout.qrisTitle(page)).toBeVisible();
 
-    // No transaction is created by this screen (D10) — the cart the guest
-    // built is exactly where they left it if they go back.
     await sel.checkout.backToCartButton(page).click();
     await expect(page).toHaveURL(new RegExp(`/t/${table.code}/cart$`));
     await expect(sel.cartScreen.lineItemName(page, PRODUCT_NAME)).toBeVisible();
   });
 
-  // ---------------------------------------------------------------------------
-  // 9. Deep link: a hard-navigated `?product=` URL renders the sheet over the
-  //    menu via Next's real file-system route, with no client-side
-  //    navigation history.
-  // ---------------------------------------------------------------------------
-
   test('a hard-navigated deep link with a selected product renders the item sheet over the menu', async ({
     browser,
   }) => {
-    // A fresh context — no cookies, no client-side navigation history —
-    // simulating a guest opening the printed QR's URL (or a shared link)
-    // directly.
     const context = await browser.newContext();
     const page = await context.newPage();
 

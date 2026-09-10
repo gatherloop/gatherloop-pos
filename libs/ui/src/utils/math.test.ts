@@ -27,7 +27,6 @@ describe('roundToNearest500', () => {
 });
 
 describe('applyCouponToBase', () => {
-  // PRD FR-4 acceptance table
   it('FREE 1 HOUR (fixed 15000) on 30000 base discounts 15000', () => {
     expect(applyCouponToBase(30000, { type: 'fixed', amount: 15000 })).toBe(15000);
   });

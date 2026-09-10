@@ -1,5 +1,3 @@
-// Stub for solito/link in the Storybook web environment.
-// Renders a plain <a> tag instead of the native-compatible Solito Link.
 import React from 'react';
 
 const baseStyle = { textDecoration: 'none', color: 'inherit' };

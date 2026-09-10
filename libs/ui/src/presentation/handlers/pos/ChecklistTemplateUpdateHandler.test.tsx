@@ -185,11 +185,6 @@ describe('ChecklistTemplateUpdateHandler', () => {
   });
 
   describe('toast notifications', () => {
-    // ChecklistTemplateUpdateUsecase dispatches SUBMIT_CANCEL as soon as it
-    // observes `submitError` (see checklistTemplateUpdate.ts), so the state
-    // returns to `loaded` on its own right after the failure - the error
-    // banner is too transient to assert on. The toast fires on the same
-    // render as the failure, so it is the reliable signal here.
     it('should show toast error message when update fails', async () => {
       const user = userEvent.setup();
       const checklistTemplateRepo = new MockChecklistTemplateRepository();

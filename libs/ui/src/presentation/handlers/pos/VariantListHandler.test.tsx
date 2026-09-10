@@ -63,7 +63,6 @@ describe('VariantListHandler', () => {
         await flushPromises();
       });
 
-      // Variant list items show product name as heading — both variants have product "Product 1"
       const variantHeadings = screen.getAllByRole('heading', { name: 'Product 1' });
       expect(variantHeadings.length).toBe(2);
     });

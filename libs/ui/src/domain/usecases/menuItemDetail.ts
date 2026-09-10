@@ -3,17 +3,7 @@ import { Product, Variant } from '../entities';
 import { MenuRepository } from '../repositories';
 import { Usecase } from './IUsecase';
 
-// FR-6 in docs/prd-table-ordering.md. Selecting a value for every Option
-// moves the machine into resolvingVariant, which resolves the variant the
-// same way TransactionItemSelect does for the POS — GET
-// /public/variants?productId=&optionValueIds[]=. `ready` is reached only
-// once a variant resolves, so the Add-to-cart CTA's enabled rule is a
-// state, not an `if` in the screen.
 type Context = {
-  // D6 in docs/trd-order-app-composition-and-ssr.md: `null` means no item is
-  // selected — one instance of this usecase now serves every selection on
-  // the menu screen (SELECT_PRODUCT), not just the one it was constructed
-  // with.
   productId: number | null;
   product: Product | null;
   selectedOptionValueIds: number[];

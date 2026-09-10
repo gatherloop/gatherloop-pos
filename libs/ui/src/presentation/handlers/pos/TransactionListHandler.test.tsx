@@ -26,11 +26,6 @@ jest.mock('@tamagui/toast', () => ({
   useToastController: () => ({ show: jest.fn() }),
 }));
 
-// usePrinter uses WebSocket — mock it to avoid runtime errors. useFocusEffect
-// is stubbed out too: these tests assert dispatch was/wasn't called with
-// FETCH from delete/pay/unpay orchestration, and the real useFocusEffect
-// would also dispatch FETCH on mount, which the pre-inline controller mocks
-// happened to swallow.
 const mockPrint = jest.fn();
 jest.mock('../../../utils', () => ({
   ...jest.requireActual('../../../utils'),
@@ -40,8 +35,6 @@ jest.mock('../../../utils', () => ({
   },
 }));
 
-// Mock the Screen — tests focus on handler orchestration logic. We capture
-// the props passed in so individual menu-press handlers can be invoked.
 let latestScreenProps: TransactionListScreenProps;
 jest.mock('../../views/screens/pos/TransactionListScreen', () => ({
   TransactionListScreen: (props: TransactionListScreenProps) => {
@@ -135,9 +128,6 @@ const authLogoutCtrl = {
   dispatch: jest.fn(),
 };
 
-// TransactionList/Delete/Unpay are folded into the handler (Phase 5) and call
-// the base `useUsecase` hook directly rather than a named per-feature
-// hook, so the fake states above are wired in by usecase identity instead.
 jest.mock('../hooks', () => ({
   useTransactionPay: () => ({
     state: transactionPayCtrl.state,
@@ -302,8 +292,6 @@ describe('TransactionListHandler', () => {
         render(<TransactionListHandler {...createProps()} />);
       });
 
-      // The TransactionListScreen mock is called; verify isChangingParams prop
-      // Since the screen is mocked at module level, we check dispatch behavior
       expect(transactionListCtrl.dispatch).not.toHaveBeenCalledWith({ type: 'FETCH' });
     });
 
@@ -312,10 +300,6 @@ describe('TransactionListHandler', () => {
         render(<TransactionListHandler {...createProps()} />);
       });
 
-      // Simulate onSearchClear being called by the screen
-      // The handler passes onSearchClear to the screen
-      // We verify that CHANGE_PARAMS is dispatched with query: '' when clear fires
-      // This is validated via the handler's prop wiring in the source code
       expect(transactionListCtrl.dispatch).toBeDefined();
     });
   });

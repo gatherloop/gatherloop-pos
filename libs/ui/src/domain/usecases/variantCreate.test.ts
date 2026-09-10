@@ -15,7 +15,6 @@ describe('VariantCreateUsecase', () => {
       const usecase = new VariantCreateUsecase(variantRepository, productRepository, { productId: 1, product: null });
       const tester = new UsecaseTester<VariantCreateUsecase, VariantCreateState, VariantCreateAction, VariantCreateParams>(usecase);
 
-      // idle -> onStateChange(idle) dispatches FETCH -> loading
       expect(tester.state.type).toBe('loading');
 
       await flushPromises();
@@ -74,7 +73,6 @@ describe('VariantCreateUsecase', () => {
       expect(tester.state.type).toBe('submitting');
 
       await flushPromises();
-      // submitError auto-cancels to loaded via onStateChange(submitError) -> SUBMIT_CANCEL
       expect(tester.state.type).toBe('submitError');
     });
   });

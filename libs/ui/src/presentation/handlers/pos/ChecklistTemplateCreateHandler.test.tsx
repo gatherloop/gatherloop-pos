@@ -27,8 +27,6 @@ const createProps = (options: { shouldFail?: boolean } = {}) => {
   };
 };
 
-// The form starts with no items; the schema requires at least one, so tests
-// that need a successful submit add one item first.
 const fillOneItem = async (user: ReturnType<typeof userEvent.setup>) => {
   await user.click(screen.getByRole('button', { name: 'Add Item' }));
   await user.type(

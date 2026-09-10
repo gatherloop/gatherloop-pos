@@ -178,12 +178,10 @@ describe('CategoryListHandler', () => {
         await flushPromises();
       });
 
-      // Open the delete modal
       const deleteMenuItems = screen.getAllByRole('button', { name: 'Delete' });
       await user.click(deleteMenuItems[0]);
       expect(screen.getByRole('heading', { name: 'Delete Category ?' })).toBeTruthy();
 
-      // Cancel the deletion
       await user.click(screen.getByRole('button', { name: 'No' }));
 
       await act(async () => {
@@ -231,10 +229,8 @@ describe('CategoryListHandler', () => {
         await flushPromises();
       });
 
-      // Verify both categories are shown
       expect(screen.getByRole('heading', { name: 'Mock Category 1' })).toBeTruthy();
 
-      // Open delete modal and confirm
       const deleteMenuItems = screen.getAllByRole('button', { name: 'Delete' });
       await user.click(deleteMenuItems[0]);
       expect(screen.getByRole('heading', { name: 'Delete Category ?' })).toBeTruthy();
@@ -245,9 +241,7 @@ describe('CategoryListHandler', () => {
         await flushPromises();
       });
 
-      // Modal should be gone after delete completes
       expect(screen.queryByRole('heading', { name: 'Delete Category ?' })).toBeNull();
-      // Remaining categories are still displayed
       expect(screen.getByRole('heading', { name: 'Mock Category 2' })).toBeTruthy();
     });
   });
@@ -295,7 +289,6 @@ describe('CategoryListHandler', () => {
 
       expect(screen.getByRole('heading', { name: 'Failed to Fetch Categories' })).toBeTruthy();
 
-      // Fix the repo so fetch succeeds on retry
       categoryRepo.setShouldFail(false);
 
       await user.click(screen.getByRole('button', { name: 'Retry' }));

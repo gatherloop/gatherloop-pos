@@ -7,11 +7,6 @@ export type FloatingCartButtonProps = {
   accessibilityLabel?: string;
 };
 
-// Shared chrome for a floating bottom cart button, shown above a compact
-// product picker once the cart is non-empty (PRD "Compact — step 1", FR-1).
-// Mirrors `cart/CartBar.tsx`'s docked-bar styling; `env(safe-area-inset-bottom)`
-// is web-only (same trick already used in `OrderLayout`'s footer) so native
-// falls back to a fixed padding instead.
 export const FloatingCartButton = ({
   label,
   onPress,

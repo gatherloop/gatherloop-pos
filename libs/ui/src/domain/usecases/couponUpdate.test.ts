@@ -14,7 +14,6 @@ describe('CouponUpdateUsecase', () => {
       const usecase = new CouponUpdateUsecase(repository, { couponId: 1, coupon: null });
       const tester = new UsecaseTester<CouponUpdateUsecase, CouponUpdateState, CouponUpdateAction, CouponUpdateParams>(usecase);
 
-      // idle -> onStateChange(idle) dispatches FETCH -> loading
       expect(tester.state.type).toBe('loading');
 
       await flushPromises();
@@ -65,7 +64,6 @@ describe('CouponUpdateUsecase', () => {
       expect(tester.state.type).toBe('submitting');
 
       await flushPromises();
-      // submitError auto-cancels to loaded via onStateChange(submitError) -> SUBMIT_CANCEL
       expect(tester.state.type).toBe('submitError');
     });
   });

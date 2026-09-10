@@ -31,9 +31,6 @@ const createProps = (
 
   if (options.calculationShouldFail) calculationRepo.setShouldFail(true);
 
-  // CalculationCreateUsecase requires preloaded wallets to start in 'loaded' state.
-  // Without preloaded wallets, it stays in 'idle' (shown as loading) because
-  // the usecase does not auto-fetch from idle state.
   const preloadedWallets = options.preloaded !== false ? walletRepo.wallets : [];
 
   return {
@@ -208,7 +205,6 @@ describe('CalculationCreateHandler', () => {
       const walletRepo = new MockWalletRepository();
       walletRepo.setShouldFail(true);
 
-      // Start in idle (no preloaded wallets), then press retry to trigger fetch
       render(
         <CalculationCreateHandler
           authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
@@ -220,10 +216,8 @@ describe('CalculationCreateHandler', () => {
         />
       );
 
-      // In idle state, shows loading variant
       expect(screen.getByText('Fetching Calculation...')).toBeTruthy();
 
-      // Press retry to trigger FETCH → loading → error
       walletRepo.setShouldFail(true);
       const retryButton = screen.queryByRole('button', { name: 'Retry' });
       if (retryButton) {
