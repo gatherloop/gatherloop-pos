@@ -36,7 +36,7 @@ export type TransactionDetailProps = {
 
 const sourceLabel: Record<TransactionSource, string> = {
   pos: 'POS',
-  order: 'Order App',
+  order: 'Order',
 };
 
 export const TransactionDetail = ({

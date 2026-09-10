@@ -32,7 +32,7 @@ export type TransactionListItemProps = {
   onPrintOrderSlipMenuPress: () => void;
 } & XStackProps;
 
-const OrderAppBadge = () => (
+const OrderBadge = () => (
   <XStack
     backgroundColor="$blue5"
     paddingHorizontal="$2"
@@ -41,7 +41,7 @@ const OrderAppBadge = () => (
     alignSelf="flex-start"
   >
     <Paragraph size="$1" color="$blue11">
-      Order App
+      Order
     </Paragraph>
   </XStack>
 );
@@ -72,7 +72,7 @@ export const TransactionListItem = ({
             <Paragraph textTransform="none" ellipse size="$6">
               Rp. {total.toLocaleString('id')}
             </Paragraph>
-            <OrderAppBadge />
+            <OrderBadge />
           </YStack>
         ) : (
           `Rp. ${total.toLocaleString('id')}`

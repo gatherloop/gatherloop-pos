@@ -226,7 +226,7 @@ export const TransactionList = ({
                       <RadioGroup.Item value="order" id="order-source">
                         <RadioGroup.Indicator />
                       </RadioGroup.Item>
-                      <Label htmlFor="order-source">Order App</Label>
+                      <Label htmlFor="order-source">Order</Label>
                     </XStack>
                   </XStack>
                 </RadioGroup>
