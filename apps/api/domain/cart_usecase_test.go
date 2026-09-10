@@ -20,24 +20,16 @@ func newCartUsecase(cartRepo *mock.MockCartRepository, variantRepo *mock.MockVar
 	return domain.NewCartUsecase(cartRepo, variantRepo, tableRepo, paymentRepo)
 }
 
-// unlockedCart stubs the freeze check (FR-7) as if cartId has no pending
-// payment at all — the common case every mutation test that reaches the
-// check needs.
 func unlockedCart(pr *mock.MockPaymentRepository, cartId int64) {
 	pr.EXPECT().GetPendingPaymentByCartId(gomock.Any(), cartId).Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
 }
 
-// lockedCart stubs a pending, unexpired payment on cartId — the freeze
-// check must reject the write.
 func lockedCart(pr *mock.MockPaymentRepository, cartId int64) {
 	pr.EXPECT().GetPendingPaymentByCartId(gomock.Any(), cartId).Return(domain.Payment{
 		Id: 900, CartId: cartId, Status: domain.PaymentStatePending, ExpiredAt: time.Now().Add(5 * time.Minute),
 	}, nil)
 }
 
-// expiredPendingCart stubs a payment still stored as pending but past its
-// expiry — Payment.IsAwaitingPayment reports false for it, so the freeze
-// check must let the write through (D10).
 func expiredPendingCart(pr *mock.MockPaymentRepository, cartId int64) {
 	pr.EXPECT().GetPendingPaymentByCartId(gomock.Any(), cartId).Return(domain.Payment{
 		Id: 901, CartId: cartId, Status: domain.PaymentStatePending, ExpiredAt: time.Now().Add(-time.Minute),

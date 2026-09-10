@@ -29,8 +29,6 @@ func newCartTestHandler(cartRepo *mock.MockCartRepository, variantRepo *mock.Moc
 	return restapi.NewCartHandler(domain.NewCartUsecase(cartRepo, variantRepo, tableRepo, paymentRepo))
 }
 
-// unlockedCart stubs the freeze check (FR-7) as if cartId has no pending
-// payment — the common case every handler test that reaches the check needs.
 func unlockedCart(pr *mock.MockPaymentRepository, cartId int64) {
 	pr.EXPECT().GetPendingPaymentByCartId(gomock.Any(), cartId).Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
 }

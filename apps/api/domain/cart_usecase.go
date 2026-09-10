@@ -213,13 +213,6 @@ func (usecase CartUsecase) ClearCart(ctx context.Context, sessionId string) (Car
 	return usecase.repository.GetCartById(ctx, cart.Id)
 }
 
-// ensureCartUnlocked enforces D10/FR-7: while a pending, unexpired payment
-// exists for this cart, every write must be rejected — the cart is the
-// thing the QR's amount was computed from, and letting a guest change it
-// while that QR is on screen would produce an order that is either
-// underpaid or mis-prepared. Reads are unaffected: GetCurrentCart never
-// calls this. An expired pending payment does not lock (Payment.IsAwaitingPayment),
-// so the freeze releases on its own once the countdown the guest sees runs out.
 func (usecase CartUsecase) ensureCartUnlocked(ctx context.Context, cartId int64) *Error {
 	payment, err := usecase.paymentRepository.GetPendingPaymentByCartId(ctx, cartId)
 	if err != nil {
