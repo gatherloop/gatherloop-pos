@@ -317,6 +317,25 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /customers/current:
+    get:
+      summary: Get the name the current session gave at its last checkout, for prefilling the name prompt
+      operationId: customerGetCurrent
+      tags:
+        - customer
+      responses:
+        '200':
+          description: success response, with an empty name when this session has never given one
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponse'
+        '400':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /categories:
     get:
       summary: List all categories
@@ -4392,6 +4411,14 @@ components:
         createdAt:
           type: string
           format: date-time
+    Customer:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          maxLength: 60
     CartUpdateTableRequest:
       type: object
       required:
@@ -4673,6 +4700,13 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/Cart'
+    CustomerResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/Customer'
     CategoryListResponse:
       type: object
       required:
