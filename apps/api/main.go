@@ -93,7 +93,7 @@ func main() {
 	couponUsecase := domain.NewCouponUsecase(couponRepository)
 	ticketUsecase := domain.NewTicketUsecase(ticketRepository)
 	tableUsecase := domain.NewTableUsecase(tableRepository)
-	cartUsecase := domain.NewCartUsecase(cartRepository, variantRepository, tableRepository)
+	cartUsecase := domain.NewCartUsecase(cartRepository, variantRepository, tableRepository, paymentRepository)
 	customerUsecase := domain.NewCustomerUsecase(customerRepository)
 	paymentUsecase := domain.NewPaymentUsecase(paymentRepository, paymentGatewayRepository, customerRepository, cartRepository, transactionRepository, variantRepository, walletRepository, env.DokuQrisExpirySeconds, orderPaymentWalletId)
 	budgetUsecase := domain.NewBudgetUsecase(budgetRepository)
