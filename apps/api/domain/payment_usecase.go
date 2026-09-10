@@ -5,6 +5,11 @@ import (
 	"time"
 )
 
+// statusRequeryFloor is D12's 10 s floor: a status read only re-queries DOKU
+// when the last check is this old or older, keeping a rapid client poll from
+// becoming a rapid DOKU poll.
+const statusRequeryFloor = 10 * time.Second
+
 type PaymentUsecase struct {
 	paymentRepository        PaymentRepository
 	paymentGatewayRepository PaymentGatewayRepository
@@ -193,98 +198,189 @@ func (usecase PaymentUsecase) ConfirmPayment(ctx context.Context, status QrisSta
 			return err
 		}
 
-		if payment.Status == PaymentStatePaid {
-			resultPayment = payment
-			outcome = ConfirmPaymentOutcomeAlreadyPaid
-			return nil
+		updatedPayment, transitionOutcome, transitionErr := usecase.applyQrisStatus(ctxWithTx, payment, status)
+		if transitionErr != nil {
+			return transitionErr
 		}
 
-		if status.Status == PaymentGatewayStatusPaid && (payment.Status == PaymentStatePending || payment.Status == PaymentStateExpired) {
-			if status.PaidAmount != payment.Amount {
-				resultPayment = payment
-				outcome = ConfirmPaymentOutcomeAmountMismatch
-				return nil
-			}
-
-			if payment.TransactionId == nil {
-				return &Error{Type: InternalServerError, Message: "payment has no transaction to pay"}
-			}
-
-			outcome = ConfirmPaymentOutcomePaid
-			if payment.Status == PaymentStateExpired {
-				outcome = ConfirmPaymentOutcomePaidLate
-			}
-
-			transaction, txErr := usecase.transactionRepository.GetTransactionById(ctxWithTx, *payment.TransactionId)
-			if txErr != nil {
-				return txErr
-			}
-
-			if transaction.DeletedAt != nil {
-				if undeleteErr := usecase.transactionRepository.UndeleteTransactionById(ctxWithTx, transaction.Id); undeleteErr != nil {
-					return undeleteErr
-				}
-				transaction.DeletedAt = nil
-			}
-
-			if payErr := payTransaction(ctxWithTx, transaction, usecase.transactionRepository, usecase.walletRepository, usecase.orderPaymentWalletId, payment.Amount); payErr != nil {
-				return payErr
-			}
-
-			now := time.Now()
-			payment.GatewayReferenceNo = status.GatewayReferenceNo
-			payment.Status = PaymentStatePaid
-			payment.PaidAt = &now
-			payment.StatusCheckedAt = &now
-
-			updatedPayment, updateErr := usecase.paymentRepository.UpdatePaymentById(ctxWithTx, payment, payment.Id)
-			if updateErr != nil {
-				return updateErr
-			}
-
-			cart, cartErr := usecase.cartRepository.GetCartById(ctxWithTx, payment.CartId)
-			if cartErr != nil {
-				return cartErr
-			}
-			cart.Status = CartStatusConverted
-			if _, updateCartErr := usecase.cartRepository.UpdateCartById(ctxWithTx, cart, cart.Id); updateCartErr != nil {
-				return updateCartErr
-			}
-
-			resultPayment = updatedPayment
-			return nil
-		}
-
-		if (status.Status == PaymentGatewayStatusExpired || status.Status == PaymentGatewayStatusFailed) && payment.Status == PaymentStatePending {
-			payment.Status = PaymentStateExpired
-			outcome = ConfirmPaymentOutcomeExpired
-			if status.Status == PaymentGatewayStatusFailed {
-				payment.Status = PaymentStateFailed
-				outcome = ConfirmPaymentOutcomeFailed
-			}
-
-			now := time.Now()
-			payment.StatusCheckedAt = &now
-
-			updatedPayment, updateErr := usecase.paymentRepository.UpdatePaymentById(ctxWithTx, payment, payment.Id)
-			if updateErr != nil {
-				return updateErr
-			}
-
-			if payment.TransactionId != nil {
-				if deleteErr := usecase.transactionRepository.DeleteTransactionById(ctxWithTx, *payment.TransactionId); deleteErr != nil {
-					return deleteErr
-				}
-			}
-
-			resultPayment = updatedPayment
-			return nil
-		}
-
-		resultPayment = payment
-		outcome = ConfirmPaymentOutcomeIgnored
+		resultPayment = updatedPayment
+		outcome = transitionOutcome
 		return nil
 	})
 
 	return resultPayment, outcome, err
+}
+
+// applyQrisStatus is the one state-transition code path a DOKU notification
+// (ConfirmPayment) and a status poll's requery (GetPaymentStatus) both run
+// through, so the two can never apply different guards to the same status
+// (phase 9's FR-6). It assumes payment was already looked up by its own
+// caller and must run inside that caller's DB transaction.
+func (usecase PaymentUsecase) applyQrisStatus(ctxWithTx context.Context, payment Payment, status QrisStatus) (Payment, ConfirmPaymentOutcome, *Error) {
+	if payment.Status == PaymentStatePaid {
+		return payment, ConfirmPaymentOutcomeAlreadyPaid, nil
+	}
+
+	if status.Status == PaymentGatewayStatusPaid && (payment.Status == PaymentStatePending || payment.Status == PaymentStateExpired) {
+		if status.PaidAmount != payment.Amount {
+			return payment, ConfirmPaymentOutcomeAmountMismatch, nil
+		}
+
+		if payment.TransactionId == nil {
+			return payment, "", &Error{Type: InternalServerError, Message: "payment has no transaction to pay"}
+		}
+
+		outcome := ConfirmPaymentOutcomePaid
+		if payment.Status == PaymentStateExpired {
+			outcome = ConfirmPaymentOutcomePaidLate
+		}
+
+		transaction, txErr := usecase.transactionRepository.GetTransactionById(ctxWithTx, *payment.TransactionId)
+		if txErr != nil {
+			return payment, "", txErr
+		}
+
+		if transaction.DeletedAt != nil {
+			if undeleteErr := usecase.transactionRepository.UndeleteTransactionById(ctxWithTx, transaction.Id); undeleteErr != nil {
+				return payment, "", undeleteErr
+			}
+			transaction.DeletedAt = nil
+		}
+
+		if payErr := payTransaction(ctxWithTx, transaction, usecase.transactionRepository, usecase.walletRepository, usecase.orderPaymentWalletId, payment.Amount); payErr != nil {
+			return payment, "", payErr
+		}
+
+		now := time.Now()
+		payment.GatewayReferenceNo = status.GatewayReferenceNo
+		payment.Status = PaymentStatePaid
+		payment.PaidAt = &now
+		payment.StatusCheckedAt = &now
+
+		updatedPayment, updateErr := usecase.paymentRepository.UpdatePaymentById(ctxWithTx, payment, payment.Id)
+		if updateErr != nil {
+			return payment, "", updateErr
+		}
+
+		cart, cartErr := usecase.cartRepository.GetCartById(ctxWithTx, payment.CartId)
+		if cartErr != nil {
+			return payment, "", cartErr
+		}
+		cart.Status = CartStatusConverted
+		if _, updateCartErr := usecase.cartRepository.UpdateCartById(ctxWithTx, cart, cart.Id); updateCartErr != nil {
+			return payment, "", updateCartErr
+		}
+
+		return updatedPayment, outcome, nil
+	}
+
+	if (status.Status == PaymentGatewayStatusExpired || status.Status == PaymentGatewayStatusFailed) && payment.Status == PaymentStatePending {
+		outcome := ConfirmPaymentOutcomeExpired
+		payment.Status = PaymentStateExpired
+		if status.Status == PaymentGatewayStatusFailed {
+			payment.Status = PaymentStateFailed
+			outcome = ConfirmPaymentOutcomeFailed
+		}
+
+		now := time.Now()
+		payment.StatusCheckedAt = &now
+
+		updatedPayment, updateErr := usecase.paymentRepository.UpdatePaymentById(ctxWithTx, payment, payment.Id)
+		if updateErr != nil {
+			return payment, "", updateErr
+		}
+
+		if payment.TransactionId != nil {
+			if deleteErr := usecase.transactionRepository.DeleteTransactionById(ctxWithTx, *payment.TransactionId); deleteErr != nil {
+				return payment, "", deleteErr
+			}
+		}
+
+		return updatedPayment, outcome, nil
+	}
+
+	return payment, ConfirmPaymentOutcomeIgnored, nil
+}
+
+// GetPaymentStatus is the session-scoped payment read (FR-6, phase 9): a
+// foreign or unknown reference is NotFound, and a still-pending payment is
+// re-queried against DOKU through applyQrisStatus — the same transition path
+// a notification runs — once status_checked_at is missing or past
+// statusRequeryFloor (D12). A payment is only ever forced to expired once
+// that confirming query agrees it was not paid (D12a); a query that lands
+// inside the floor, or that reports still-pending within the expiry window,
+// only bumps status_checked_at.
+func (usecase PaymentUsecase) GetPaymentStatus(ctx context.Context, sessionId string, partnerReferenceNo string) (Payment, Transaction, *Error) {
+	var resultPayment Payment
+	var resultTransaction Transaction
+
+	err := usecase.paymentRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		payment, err := usecase.paymentRepository.GetPaymentByPartnerReferenceNo(ctxWithTx, partnerReferenceNo)
+		if err != nil {
+			if err.Type == NotFound {
+				return &Error{Type: NotFound, Message: "payment not found"}
+			}
+			return err
+		}
+		if payment.SessionId != sessionId {
+			return &Error{Type: NotFound, Message: "payment not found"}
+		}
+
+		if payment.Status == PaymentStatePending {
+			refreshed, refreshErr := usecase.refreshPendingPaymentStatus(ctxWithTx, payment, time.Now())
+			if refreshErr != nil {
+				return refreshErr
+			}
+			payment = refreshed
+		}
+
+		if payment.TransactionId == nil {
+			return &Error{Type: InternalServerError, Message: "payment has no transaction"}
+		}
+		transaction, txErr := usecase.transactionRepository.GetTransactionById(ctxWithTx, *payment.TransactionId)
+		if txErr != nil {
+			return txErr
+		}
+
+		resultPayment = payment
+		resultTransaction = transaction
+		return nil
+	})
+
+	return resultPayment, resultTransaction, err
+}
+
+// refreshPendingPaymentStatus is GetPaymentStatus's D12 requery: it queries
+// DOKU when the floor allows it, and hands anything but "still pending,
+// still within the window" to applyQrisStatus so a poll and a notification
+// share one set of guards. A pending result that has passed ExpiredAt is
+// escalated to Expired before applyQrisStatus sees it — that escalation,
+// gated on a QueryQris call actually having run, is D12a's "past expired_at
+// and a confirming QueryQris agrees it was not paid". A DOKU call that fails
+// outright degrades to a no-op: the guest keeps polling and the next tick
+// retries, rather than the read itself failing.
+func (usecase PaymentUsecase) refreshPendingPaymentStatus(ctxWithTx context.Context, payment Payment, now time.Time) (Payment, *Error) {
+	if payment.StatusCheckedAt != nil && now.Sub(*payment.StatusCheckedAt) < statusRequeryFloor {
+		return payment, nil
+	}
+
+	gatewayStatus, gatewayErr := usecase.paymentGatewayRepository.QueryQris(ctxWithTx, QueryQrisInput{
+		PartnerReferenceNo: payment.PartnerReferenceNo,
+		GatewayReferenceNo: payment.GatewayReferenceNo,
+	})
+	if gatewayErr != nil {
+		return payment, nil
+	}
+
+	if gatewayStatus.Status == PaymentGatewayStatusPending && !now.Before(payment.ExpiredAt) {
+		gatewayStatus.Status = PaymentGatewayStatusExpired
+	}
+
+	if gatewayStatus.Status != PaymentGatewayStatusPending {
+		updated, _, err := usecase.applyQrisStatus(ctxWithTx, payment, gatewayStatus)
+		return updated, err
+	}
+
+	payment.StatusCheckedAt = &now
+	return usecase.paymentRepository.UpdatePaymentById(ctxWithTx, payment, payment.Id)
 }

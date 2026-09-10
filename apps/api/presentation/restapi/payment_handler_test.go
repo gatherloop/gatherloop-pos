@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
@@ -195,6 +196,142 @@ func TestPaymentHandler_Checkout(t *testing.T) {
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
+}
+
+func TestPaymentHandler_GetPaymentByPartnerReferenceNo(t *testing.T) {
+	t.Run("returns the payment for the owning session", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentHandlerMocks(ctrl)
+		withPaymentHandlerTransactionMock(m.paymentRepo)
+
+		transactionId := int64(99)
+		checkedAt := time.Now()
+		payment := domain.Payment{
+			Id: 7, CartId: 1, SessionId: testSessionId, TransactionId: &transactionId,
+			PartnerReferenceNo: "ORD1234567890AB", Status: domain.PaymentStatePending,
+			Amount: 30000, ExpiredAt: time.Now().Add(2 * time.Minute), StatusCheckedAt: &checkedAt,
+		}
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), transactionId).
+			Return(domain.Transaction{Id: transactionId, Name: "Budi"}, nil)
+
+		req := httptest.NewRequest(http.MethodGet, "/payments/"+payment.PartnerReferenceNo, nil)
+		req.Header.Set("X-Session-Id", testSessionId)
+		req = mux.SetURLVars(req, map[string]string{"partnerReferenceNo": payment.PartnerReferenceNo})
+		w := httptest.NewRecorder()
+		m.handler().GetPaymentByPartnerReferenceNo(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		var resp apiContract.PaymentResponse
+		assert.NoError(t, json.NewDecoder(w.Body).Decode(&resp))
+		assert.Equal(t, "pending", resp.Data.Status)
+		assert.Equal(t, "Budi", resp.Data.CustomerName)
+	})
+
+	t.Run("a foreign session gets 404", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentHandlerMocks(ctrl)
+		withPaymentHandlerTransactionMock(m.paymentRepo)
+
+		payment := domain.Payment{
+			Id: 7, SessionId: "someone-elses-session",
+			PartnerReferenceNo: "ORD1234567890AB", Status: domain.PaymentStatePending,
+		}
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+
+		req := httptest.NewRequest(http.MethodGet, "/payments/"+payment.PartnerReferenceNo, nil)
+		req.Header.Set("X-Session-Id", testSessionId)
+		req = mux.SetURLVars(req, map[string]string{"partnerReferenceNo": payment.PartnerReferenceNo})
+		w := httptest.NewRecorder()
+		m.handler().GetPaymentByPartnerReferenceNo(w, req)
+
+		assert.Equal(t, http.StatusNotFound, w.Code)
+	})
+
+	t.Run("an unknown reference gets 404", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentHandlerMocks(ctrl)
+		withPaymentHandlerTransactionMock(m.paymentRepo)
+
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), "ORDUNKNOWN000AB").
+			Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
+
+		req := httptest.NewRequest(http.MethodGet, "/payments/ORDUNKNOWN000AB", nil)
+		req.Header.Set("X-Session-Id", testSessionId)
+		req = mux.SetURLVars(req, map[string]string{"partnerReferenceNo": "ORDUNKNOWN000AB"})
+		w := httptest.NewRecorder()
+		m.handler().GetPaymentByPartnerReferenceNo(w, req)
+
+		assert.Equal(t, http.StatusNotFound, w.Code)
+	})
+
+	t.Run("a stale pending payment re-queries DOKU and reflects the paid result", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentHandlerMocks(ctrl)
+		withPaymentHandlerTransactionMock(m.paymentRepo)
+
+		transactionId := int64(99)
+		payment := domain.Payment{
+			Id: 7, CartId: 1, SessionId: testSessionId, TransactionId: &transactionId,
+			PartnerReferenceNo: "ORD1234567890AB", Status: domain.PaymentStatePending,
+			Amount: 30000, ExpiredAt: time.Now().Add(2 * time.Minute),
+		}
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.gatewayRepo.EXPECT().QueryQris(gomock.Any(), gomock.Any()).
+			Return(domain.QrisStatus{PartnerReferenceNo: payment.PartnerReferenceNo, GatewayReferenceNo: "gw-1", Status: domain.PaymentGatewayStatusPaid, PaidAmount: payment.Amount}, nil)
+
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), transactionId).
+			Return(domain.Transaction{Id: transactionId, Total: payment.Amount}, nil).Times(2)
+		m.walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(paymentHandlerOrderPaymentWalletId)).
+			Return(domain.Wallet{Id: paymentHandlerOrderPaymentWalletId, Name: "QRIS", IsPaymentTarget: true}, nil)
+		m.walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(paymentHandlerOrderPaymentWalletId)).
+			Return(domain.Wallet{}, nil)
+		m.transactionRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), transactionId).
+			Return(domain.Transaction{}, nil)
+		m.transactionRepo.EXPECT().PayTransaction(gomock.Any(), int64(paymentHandlerOrderPaymentWalletId), gomock.Any(), payment.Amount, transactionId).
+			Return(nil)
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), payment.Id).
+			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) { return p, nil })
+		m.cartRepo.EXPECT().GetCartById(gomock.Any(), payment.CartId).
+			Return(domain.Cart{Id: 1, Status: domain.CartStatusActive}, nil)
+		m.cartRepo.EXPECT().UpdateCartById(gomock.Any(), gomock.Any(), int64(1)).
+			DoAndReturn(func(_ context.Context, cart domain.Cart, id int64) (domain.Cart, *domain.Error) { return cart, nil })
+
+		req := httptest.NewRequest(http.MethodGet, "/payments/"+payment.PartnerReferenceNo, nil)
+		req.Header.Set("X-Session-Id", testSessionId)
+		req = mux.SetURLVars(req, map[string]string{"partnerReferenceNo": payment.PartnerReferenceNo})
+		w := httptest.NewRecorder()
+		m.handler().GetPaymentByPartnerReferenceNo(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		var resp apiContract.PaymentResponse
+		assert.NoError(t, json.NewDecoder(w.Body).Decode(&resp))
+		assert.Equal(t, "paid", resp.Data.Status)
+	})
+}
+
+func TestPaymentGetRoute_RequiresSessionId(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	m := newPaymentHandlerMocks(ctrl)
+
+	router := mux.NewRouter()
+	restapi.NewPaymentRouter(m.handler()).AddRouter(router)
+
+	req := httptest.NewRequest(http.MethodGet, "/payments/ORD1234567890AB", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestPaymentRoute_RequiresSessionId(t *testing.T) {

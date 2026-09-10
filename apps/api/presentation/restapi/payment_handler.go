@@ -41,6 +41,21 @@ func (handler PaymentHandler) Checkout(w http.ResponseWriter, r *http.Request) {
 	WriteResponse(w, apiContract.PaymentResponse{Data: ToApiPayment(payment, transaction)})
 }
 
+func (handler PaymentHandler) GetPaymentByPartnerReferenceNo(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	sessionId := GetSessionId(r)
+
+	partnerReferenceNo := GetPartnerReferenceNo(r)
+
+	payment, transaction, usecaseErr := handler.usecase.GetPaymentStatus(ctx, sessionId, partnerReferenceNo)
+	if usecaseErr != nil {
+		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
+		return
+	}
+
+	WriteResponse(w, apiContract.PaymentResponse{Data: ToApiPayment(payment, transaction)})
+}
+
 func (handler PaymentHandler) Notification(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := logger.FromCtx(ctx, slog.Default())

@@ -16,5 +16,6 @@ func NewPaymentRouter(handler PaymentHandler) PaymentRouter {
 
 func (paymentRouter PaymentRouter) AddRouter(router *mux.Router) {
 	router.HandleFunc("/carts/current/checkout", RequireSessionId(paymentRouter.handler.Checkout)).Methods(http.MethodPost, http.MethodOptions)
+	router.HandleFunc("/payments/{partnerReferenceNo}", RequireSessionId(paymentRouter.handler.GetPaymentByPartnerReferenceNo)).Methods(http.MethodGet)
 	router.HandleFunc("/payments/doku/notification", VerifyDokuSignature(paymentRouter.handler.Notification)).Methods(http.MethodPost, http.MethodOptions)
 }
