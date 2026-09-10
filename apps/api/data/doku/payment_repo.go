@@ -1,12 +1,14 @@
 // Package doku implements domain.PaymentGatewayRepository against DOKU's
-// SNAP Direct API for QRIS MPM (D3). Everything DOKU-shaped — base URLs,
-// header names, field names, response codes — lives here and nowhere else,
-// which is the point of the port: a wrong detail costs this package, not
-// the domain (see the PRD's verification note on phase 3).
+// SNAP Direct API for QRIS MPM (D3): the outbound calls (GenerateQris,
+// QueryQris) that need the DOKU HTTP client, credentials and token cache.
+// Inbound notification handling (signature verification, body parsing)
+// lives in presentation/restapi and utils instead — it needs neither, so it
+// no longer needs this port between it and its two callers.
 package doku
 
 import (
 	"apps/api/domain"
+	"apps/api/utils"
 	"bytes"
 	"context"
 	"crypto/rsa"
@@ -29,10 +31,6 @@ const (
 	qrisServiceCode = "47"
 
 	requestTimeout = 10 * time.Second
-
-	// notificationTimestampSkew is D13's window: "a skewed or missing
-	// X-TIMESTAMP (> 5 min) is rejected".
-	notificationTimestampSkew = 5 * time.Minute
 )
 
 // Config is everything the DOKU client needs, sourced from utils.Env — see
@@ -123,7 +121,7 @@ func isSuccessResponseCode(code string) bool {
 // dashboard. Getting one wrong costs only this function — an unrecognised
 // code resolves to pending, never paid, so it can never look like a
 // completed payment (FR-3's test requirement).
-func mapTransactionStatus(code string) domain.PaymentGatewayStatus {
+func MapTransactionStatus(code string) domain.PaymentGatewayStatus {
 	switch code {
 	case "00":
 		return domain.PaymentGatewayStatusPaid
@@ -142,7 +140,7 @@ func mapTransactionStatus(code string) domain.PaymentGatewayStatus {
 // NFR "Secrecy").
 func (c *Client) send(ctx context.Context, path string, body []byte, accessToken string) ([]byte, int, *domain.Error) {
 	timestamp := formatTimestamp(time.Now())
-	signature, sigErr := signSymmetric(c.config.ClientSecret, http.MethodPost, path, accessToken, body, timestamp)
+	signature, sigErr := utils.SignDokuSymmetric(c.config.ClientSecret, http.MethodPost, path, accessToken, body, timestamp)
 	if sigErr != nil {
 		return nil, 0, &domain.Error{Type: domain.InternalServerError, Message: "failed to sign DOKU request"}
 	}
@@ -252,18 +250,6 @@ type queryQrisResponse struct {
 	Amount                     qrisAmount `json:"amount"`
 }
 
-// notificationBody is DOKU's inbound payment notification ("What DOKU gives
-// us"). It shares its status vocabulary with queryQrisResponse, which is
-// why ParseNotification and QueryQris both resolve through
-// mapTransactionStatus.
-type notificationBody struct {
-	OriginalPartnerReferenceNo string     `json:"originalPartnerReferenceNo"`
-	OriginalReferenceNo        string     `json:"originalReferenceNo"`
-	LatestTransactionStatus    string     `json:"latestTransactionStatus"`
-	TransactionStatusDesc      string     `json:"transactionStatusDesc"`
-	Amount                     qrisAmount `json:"amount"`
-}
-
 // GenerateQris calls qr-mpm-generate to mint a dynamic QRIS QR for one
 // partner reference number (FR-3, D3).
 func (c *Client) GenerateQris(ctx context.Context, input domain.GenerateQrisInput) (domain.QrisPayment, *domain.Error) {
@@ -346,7 +332,7 @@ func (c *Client) QueryQris(ctx context.Context, input domain.QueryQrisInput) (do
 	}
 
 	amount, _ := strconv.ParseFloat(parsed.Amount.Value, 32)
-	status := mapTransactionStatus(parsed.LatestTransactionStatus)
+	status := MapTransactionStatus(parsed.LatestTransactionStatus)
 
 	c.logger.Info("doku: queried qris",
 		slog.String("partnerReferenceNo", input.PartnerReferenceNo),
@@ -360,73 +346,6 @@ func (c *Client) QueryQris(ctx context.Context, input domain.QueryQrisInput) (do
 		PaidAmount:         float32(amount),
 		RawStatusCode:      parsed.LatestTransactionStatus,
 	}, nil
-}
-
-// ParseNotification decodes a DOKU payment notification body into a
-// QrisStatus. Call VerifyNotificationSignature first — this makes no trust
-// decision of its own.
-func (c *Client) ParseNotification(body []byte) (domain.QrisStatus, *domain.Error) {
-	var parsed notificationBody
-	if err := json.Unmarshal(body, &parsed); err != nil {
-		return domain.QrisStatus{}, &domain.Error{Type: domain.BadRequest, Message: "invalid DOKU notification body"}
-	}
-	if parsed.OriginalPartnerReferenceNo == "" {
-		return domain.QrisStatus{}, &domain.Error{Type: domain.BadRequest, Message: "DOKU notification is missing originalPartnerReferenceNo"}
-	}
-
-	amount, _ := strconv.ParseFloat(parsed.Amount.Value, 32)
-
-	return domain.QrisStatus{
-		PartnerReferenceNo: parsed.OriginalPartnerReferenceNo,
-		GatewayReferenceNo: parsed.OriginalReferenceNo,
-		Status:             mapTransactionStatus(parsed.LatestTransactionStatus),
-		PaidAmount:         float32(amount),
-		RawStatusCode:      parsed.LatestTransactionStatus,
-	}, nil
-}
-
-// VerifyNotificationSignature checks a DOKU notification's symmetric
-// signature and timestamp freshness (D13). It never logs the signature
-// itself, only the outcome and the partner id DOKU sent.
-func (c *Client) VerifyNotificationSignature(method, path string, headers domain.NotificationHeaders, body []byte) *domain.Error {
-	if headers.Timestamp == "" {
-		c.logger.Error("doku: notification rejected", slog.String("reason", "missing X-TIMESTAMP"))
-		return &domain.Error{Type: domain.Unauthorized, Message: "missing X-TIMESTAMP"}
-	}
-
-	timestamp, parseErr := time.Parse(time.RFC3339Nano, headers.Timestamp)
-	if parseErr != nil {
-		c.logger.Error("doku: notification rejected", slog.String("reason", "invalid X-TIMESTAMP"))
-		return &domain.Error{Type: domain.Unauthorized, Message: "invalid X-TIMESTAMP"}
-	}
-
-	if skew := time.Since(timestamp); skew > notificationTimestampSkew || skew < -notificationTimestampSkew {
-		c.logger.Error("doku: notification rejected",
-			slog.String("reason", "X-TIMESTAMP outside allowed window"),
-			slog.String("partnerId", headers.PartnerId),
-		)
-		return &domain.Error{Type: domain.Unauthorized, Message: "X-TIMESTAMP is outside the allowed window"}
-	}
-
-	if headers.Signature == "" {
-		c.logger.Error("doku: notification rejected", slog.String("reason", "missing X-SIGNATURE"), slog.String("partnerId", headers.PartnerId))
-		return &domain.Error{Type: domain.Unauthorized, Message: "missing X-SIGNATURE"}
-	}
-
-	// The notification arrives unauthenticated (no bearer token), so its
-	// signature is computed with an empty accessToken segment (D13).
-	expected, sigErr := signSymmetric(c.config.ClientSecret, method, path, "", body, headers.Timestamp)
-	if sigErr != nil {
-		c.logger.Error("doku: failed to compute notification signature", slog.String("error", sigErr.Error()))
-		return &domain.Error{Type: domain.InternalServerError, Message: "failed to verify DOKU notification signature"}
-	}
-
-	if !equalSignatures(expected, headers.Signature) {
-		c.logger.Error("doku: notification signature mismatch", slog.String("partnerId", headers.PartnerId))
-		return &domain.Error{Type: domain.Unauthorized, Message: "invalid notification signature"}
-	}
-
-	return nil
 }
 
 // generateExternalId produces the numeric, within-the-day-unique X-EXTERNAL-ID

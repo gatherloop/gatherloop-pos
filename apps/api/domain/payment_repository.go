@@ -55,6 +55,4 @@ type PaymentRepository interface {
 type PaymentGatewayRepository interface {
 	GenerateQris(ctx context.Context, input GenerateQrisInput) (QrisPayment, *Error)
 	QueryQris(ctx context.Context, input QueryQrisInput) (QrisStatus, *Error)
-	VerifyNotificationSignature(method, path string, headers NotificationHeaders, body []byte) *Error
-	ParseNotification(body []byte) (QrisStatus, *Error)
 }

@@ -348,6 +348,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /payments/doku/notification:
+    post:
+      summary: DOKU's inbound QRIS payment notification (D19). Unauthenticated but signature-verified (D13) — the generated client for this route is never imported, because DOKU calls it, not the order app.
+      operationId: paymentDokuNotification
+      tags:
+        - payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DokuNotificationRequest'
+      responses:
+        '200':
+          description: the notification was accepted — always returned once the signature is valid, whatever it resolved to (D14, an amount mismatch, or an unknown reference)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: the notification's signature failed verification
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /customers/current:
     get:
       summary: Get the name the current session gave at its last checkout, for prefilling the name prompt
@@ -4527,6 +4552,33 @@ components:
         customerName:
           type: string
           maxLength: 60
+    DokuNotificationRequest:
+      type: object
+      required:
+        - originalPartnerReferenceNo
+        - originalReferenceNo
+        - latestTransactionStatus
+        - transactionStatusDesc
+        - amount
+      properties:
+        originalPartnerReferenceNo:
+          type: string
+        originalReferenceNo:
+          type: string
+        latestTransactionStatus:
+          type: string
+        transactionStatusDesc:
+          type: string
+        amount:
+          type: object
+          required:
+            - value
+            - currency
+          properties:
+            value:
+              type: string
+            currency:
+              type: string
     CartUpdateTableRequest:
       type: object
       required:

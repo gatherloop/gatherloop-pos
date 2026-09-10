@@ -2,7 +2,10 @@ package restapi
 
 import (
 	"apps/api/domain"
+	"apps/api/utils/logger"
+	"io"
 	apiContract "libs/api-contract"
+	"log/slog"
 	"net/http"
 )
 
@@ -36,4 +39,53 @@ func (handler PaymentHandler) Checkout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	WriteResponse(w, apiContract.PaymentResponse{Data: ToApiPayment(payment, transaction)})
+}
+
+func (handler PaymentHandler) Notification(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	log := logger.FromCtx(ctx, slog.Default())
+
+	body, readErr := io.ReadAll(r.Body)
+	if readErr != nil {
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: "failed to read request body"})
+		return
+	}
+
+	request, parseErr := GetDokuNotificationRequest(body)
+	if parseErr != nil {
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: parseErr.Error()})
+		return
+	}
+	status := ToQrisStatus(request)
+
+	payment, outcome, usecaseErr := handler.usecase.ConfirmPayment(ctx, status)
+	if usecaseErr != nil {
+		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
+		return
+	}
+
+	switch outcome {
+	case domain.ConfirmPaymentOutcomeUnknownReference:
+		log.WarnContext(ctx, "doku notification for an unknown payment reference")
+	case domain.ConfirmPaymentOutcomePaidLate:
+		log.WarnContext(ctx, "doku notification paid a payment our own expiry had already given up on",
+			slog.String("partnerReferenceNo", payment.PartnerReferenceNo),
+		)
+	case domain.ConfirmPaymentOutcomeAmountMismatch:
+		log.ErrorContext(ctx, "doku notification amount does not match the payment on record",
+			slog.String("partnerReferenceNo", payment.PartnerReferenceNo),
+		)
+	case domain.ConfirmPaymentOutcomePaid, domain.ConfirmPaymentOutcomeExpired, domain.ConfirmPaymentOutcomeFailed:
+		log.InfoContext(ctx, "doku notification applied",
+			slog.String("partnerReferenceNo", payment.PartnerReferenceNo),
+			slog.String("outcome", string(outcome)),
+		)
+	default:
+		log.InfoContext(ctx, "doku notification was a no-op",
+			slog.String("partnerReferenceNo", payment.PartnerReferenceNo),
+			slog.String("outcome", string(outcome)),
+		)
+	}
+
+	WriteResponse(w, apiContract.SuccessResponse{Success: true})
 }

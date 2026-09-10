@@ -81,6 +81,19 @@ const (
 	PaymentStateFailed  PaymentState = "failed"
 )
 
+type ConfirmPaymentOutcome string
+
+const (
+	ConfirmPaymentOutcomePaid             ConfirmPaymentOutcome = "paid"
+	ConfirmPaymentOutcomePaidLate         ConfirmPaymentOutcome = "paid_late"
+	ConfirmPaymentOutcomeExpired          ConfirmPaymentOutcome = "expired"
+	ConfirmPaymentOutcomeFailed           ConfirmPaymentOutcome = "failed"
+	ConfirmPaymentOutcomeAlreadyPaid      ConfirmPaymentOutcome = "already_paid"
+	ConfirmPaymentOutcomeUnknownReference ConfirmPaymentOutcome = "unknown_reference"
+	ConfirmPaymentOutcomeAmountMismatch   ConfirmPaymentOutcome = "amount_mismatch"
+	ConfirmPaymentOutcomeIgnored          ConfirmPaymentOutcome = "ignored"
+)
+
 // Payment is one attempt to collect a cart's total through the payment
 // gateway (FR-5).
 //
@@ -168,14 +181,4 @@ func ValidateOrderPaymentWallet(wallet Wallet) *Error {
 		return &Error{Type: InternalServerError, Message: "ORDER_PAYMENT_WALLET_ID points at a wallet that is not a payment target"}
 	}
 	return nil
-}
-
-// NotificationHeaders carries the SNAP headers a DOKU payment notification
-// arrives with — only what VerifyNotificationSignature needs to recompute
-// and check the symmetric signature (D13). Never a secret, and never the
-// signature of an outbound call.
-type NotificationHeaders struct {
-	Timestamp string
-	Signature string
-	PartnerId string
 }

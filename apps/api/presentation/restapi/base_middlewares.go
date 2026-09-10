@@ -3,12 +3,16 @@ package restapi
 import (
 	"apps/api/utils"
 	"apps/api/utils/logger"
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
 	apiContract "libs/api-contract"
 	"log/slog"
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -112,4 +116,72 @@ func RequireSessionId(next http.HandlerFunc) http.HandlerFunc {
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+// dokuNotificationTimestampSkew is D13's window: "a skewed or missing
+// X-TIMESTAMP (> 5 min) is rejected".
+const dokuNotificationTimestampSkew = 5 * time.Minute
+
+func VerifyDokuSignature(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, readErr := io.ReadAll(r.Body)
+		if readErr != nil {
+			WriteError(r.Context(), w, apiContract.Error{Code: apiContract.UNAUTHORIZED, Message: "failed to read request body"})
+			return
+		}
+		r.Body = io.NopCloser(bytes.NewReader(body))
+
+		if err := verifyDokuNotificationSignature(r.Method, r.URL.Path, r.Header.Get("X-TIMESTAMP"), r.Header.Get("X-SIGNATURE"), body); err != nil {
+			var reference struct {
+				OriginalPartnerReferenceNo string `json:"originalPartnerReferenceNo"`
+			}
+			json.Unmarshal(body, &reference)
+
+			log := logger.FromCtx(r.Context(), slog.Default())
+			log.ErrorContext(r.Context(), "doku notification signature verification failed",
+				slog.String("partnerReferenceNo", reference.OriginalPartnerReferenceNo),
+				slog.String("error", err.Error()),
+			)
+			WriteError(r.Context(), w, apiContract.Error{Code: apiContract.UNAUTHORIZED, Message: "invalid notification signature"})
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+// verifyDokuNotificationSignature checks a DOKU notification's symmetric
+// signature and timestamp freshness (D13), using the client secret from
+// env directly — like CheckAuth reads JWT_SECRET — so this middleware
+// depends on nothing but utils.
+func verifyDokuNotificationSignature(method, path, timestamp, signature string, body []byte) error {
+	if timestamp == "" {
+		return fmt.Errorf("missing X-TIMESTAMP")
+	}
+
+	parsedTimestamp, parseErr := time.Parse(time.RFC3339Nano, timestamp)
+	if parseErr != nil {
+		return fmt.Errorf("invalid X-TIMESTAMP")
+	}
+
+	if skew := time.Since(parsedTimestamp); skew > dokuNotificationTimestampSkew || skew < -dokuNotificationTimestampSkew {
+		return fmt.Errorf("X-TIMESTAMP is outside the allowed window")
+	}
+
+	if signature == "" {
+		return fmt.Errorf("missing X-SIGNATURE")
+	}
+
+	// The notification arrives unauthenticated (no bearer token), so its
+	// signature is computed with an empty accessToken segment (D13).
+	expected, sigErr := utils.SignDokuSymmetric(utils.GetEnv().DokuClientSecret, method, path, "", body, timestamp)
+	if sigErr != nil {
+		return fmt.Errorf("failed to verify DOKU notification signature: %w", sigErr)
+	}
+
+	if !utils.EqualDokuSignatures(expected, signature) {
+		return fmt.Errorf("invalid notification signature")
+	}
+
+	return nil
 }
