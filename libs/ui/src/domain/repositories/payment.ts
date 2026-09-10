@@ -1,14 +1,14 @@
 import { Payment } from '../entities';
-import { RequestConfig } from '@kubb/swagger-client/client';
+import { RequestOptions } from './requestOptions';
 
 export interface PaymentRepository {
   checkout: (
     customerName: string,
-    options?: Partial<RequestConfig>
+    options?: RequestOptions
   ) => Promise<Payment>;
 
   fetchPayment: (
     reference: string,
-    options?: Partial<RequestConfig>
+    options?: RequestOptions
   ) => Promise<Payment>;
 }

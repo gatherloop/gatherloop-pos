@@ -36,3 +36,4 @@ export * from './cart';
 export * from './cartQuery';
 export * from './payment';
 export * from './customer';
+export * from './requestOptions';

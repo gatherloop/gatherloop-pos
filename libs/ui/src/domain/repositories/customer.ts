@@ -1,5 +1,5 @@
-import { RequestConfig } from '@kubb/swagger-client/client';
+import { RequestOptions } from './requestOptions';
 
 export interface CustomerRepository {
-  fetchCurrentName: (options?: Partial<RequestConfig>) => Promise<string>;
+  fetchCurrentName: (options?: RequestOptions) => Promise<string>;
 }
