@@ -35,8 +35,6 @@ describe('downloadQrImage', () => {
 
   it('converts the base64 payload into a PNG blob and clicks a download link named after the reference', () => {
     const objectUrl = 'blob:mock-url';
-    // jsdom doesn't implement `URL.createObjectURL`/`revokeObjectURL` at
-    // all, so they're stubbed directly rather than spied on.
     const createObjectURL = jest.fn().mockReturnValue(objectUrl);
     const revokeObjectURL = jest.fn();
     URL.createObjectURL = createObjectURL;

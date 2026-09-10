@@ -12,13 +12,6 @@ func NewCustomerRepository(db *gorm.DB) domain.CustomerRepository {
 	return Repository{db: db}
 }
 
-// GetCustomerBySessionId filters soft-deleted rows the way every other read
-// here does. Note for whoever adds a delete: `uq_customers_session_id` is on
-// session_id alone, so a soft-deleted row stays invisible to this read while
-// still blocking a re-insert for that session. Nothing deletes a customer
-// today (there is no delete route and no delete method on the port), so the
-// case cannot arise yet — a delete would need the unique key widened to
-// (session_id, deleted_at) first.
 func (repo Repository) GetCustomerBySessionId(ctx context.Context, sessionId string) (domain.Customer, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	var customer Customer

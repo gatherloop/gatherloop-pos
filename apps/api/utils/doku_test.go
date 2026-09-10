@@ -7,10 +7,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// The vectors below were generated independently of this package with
-// `sha256sum` / `openssl dgst -hmac`, so the tests check this
-// implementation against an external oracle rather than against itself.
-
 func TestDokuBodyDigest_MatchesExternalVector(t *testing.T) {
 	body := []byte(`{"partnerReferenceNo":"ORD1234567890AB","amount":{"value":"10000.00","currency":"IDR"},"merchantId":"MERCHANT1"}`)
 
@@ -65,10 +61,6 @@ func TestSignDokuSymmetric_MatchesExternalVector(t *testing.T) {
 }
 
 func TestSignDokuSymmetric_EmptyAccessTokenForNotifications(t *testing.T) {
-	// An inbound notification carries no bearer token, so the access-token
-	// segment of the string-to-sign is empty (D13) — this must still
-	// produce a distinct, well-formed signature, not the same one as an
-	// outbound call.
 	body := []byte(`{"originalPartnerReferenceNo":"ORD1"}`)
 
 	withToken, err := SignDokuSymmetric("secret", "POST", "/path", "token", body, "2021-01-08T09:57:39.000+07:00")

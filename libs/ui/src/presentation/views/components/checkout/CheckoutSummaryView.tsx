@@ -1,7 +1,4 @@
 import { Button, Text, XStack, YStack } from 'tamagui';
-// Deep imports, not the `domain`/`components/base` barrels (D20): those
-// barrels also re-export every POS usecase and Navbar/Sidebar — dead weight
-// the customer bundle does not ship (D6).
 import { Cart } from '../../../../domain/entities/Cart';
 import { formatRupiah } from '../../../../utils/currency';
 
@@ -11,9 +8,6 @@ export type CheckoutSummaryViewProps = {
   onPayPress: () => void;
 };
 
-// FR-9/UX step 2: a read-only recap of the cart — no stepper, no edit, no
-// remove, unlike `CartLineItem` — so the guest sees exactly what they're
-// about to be charged before a QR (and therefore an amount) is locked in.
 export const CheckoutSummaryView = ({
   cart,
   isPaying,
@@ -66,9 +60,7 @@ export const CheckoutSummaryView = ({
 
     <YStack
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-expect-error - Tamagui's type doesn't include CSS `sticky`, but
-      // it passes through to the underlying web style (mirrors
-      // `CartScreen`'s sticky checkout bar).
+      // @ts-expect-error
       position="sticky"
       bottom={0}
       zIndex={11}

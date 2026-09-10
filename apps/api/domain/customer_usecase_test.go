@@ -128,9 +128,6 @@ func TestCustomerUsecase_UpsertCustomerName(t *testing.T) {
 			expectedName: strings.Repeat("a", 60),
 		},
 		{
-			// VARCHAR(60) under utf8mb4 counts characters, not bytes, so the
-			// ceiling has to count runes — a 60-character Indonesian name with
-			// accented letters must not be rejected for its byte length.
 			name:      "the ceiling counts characters, not bytes",
 			sessionId: "session-1",
 			input:     strings.Repeat("é", 60),

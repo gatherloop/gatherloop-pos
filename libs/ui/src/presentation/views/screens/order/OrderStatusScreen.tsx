@@ -2,7 +2,6 @@ import { ReactNode } from 'react';
 import { CheckCircle } from '@tamagui/lucide-icons';
 import { match } from 'ts-pattern';
 import { Button, Text, XStack, YStack } from 'tamagui';
-// Deep imports, not the `domain`/`components/base` barrels: those re-export POS-only code.
 import { Payment } from '../../../../domain/entities/Payment';
 import { formatRupiah } from '../../../../utils/currency';
 import { EmptyView } from '../../components/base/EmptyView';
@@ -25,7 +24,6 @@ export type OrderStatusScreenProps = {
   onBackToMenuPress: () => void;
 };
 
-// Terminal — nothing here polls or refreshes.
 export const OrderStatusScreen = ({
   tableVariant,
   variant,

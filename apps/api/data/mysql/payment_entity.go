@@ -2,10 +2,6 @@ package mysql
 
 import "time"
 
-// Payment mirrors the `payments` table. QrContent is a pointer because the
-// column is nullable: the row is inserted before DOKU has answered with a QR
-// (FR-6 steps 6 and 8), so a payment briefly has none, and scanning a NULL
-// into a plain string would fail.
 type Payment struct {
 	Id                 int64
 	CartId             int64

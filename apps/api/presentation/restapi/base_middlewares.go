@@ -108,8 +108,6 @@ func RequireSessionId(next http.HandlerFunc) http.HandlerFunc {
 	})
 }
 
-// dokuNotificationTimestampSkew is D13's window: "a skewed or missing
-// X-TIMESTAMP (> 5 min) is rejected".
 const dokuNotificationTimestampSkew = 5 * time.Minute
 
 func VerifyDokuSignature(next http.HandlerFunc) http.HandlerFunc {
@@ -140,10 +138,6 @@ func VerifyDokuSignature(next http.HandlerFunc) http.HandlerFunc {
 	})
 }
 
-// verifyDokuNotificationSignature checks a DOKU notification's symmetric
-// signature and timestamp freshness (D13), using the client secret from
-// env directly — like CheckAuth reads JWT_SECRET — so this middleware
-// depends on nothing but utils.
 func verifyDokuNotificationSignature(method, path, timestamp, signature string, body []byte) error {
 	if timestamp == "" {
 		return fmt.Errorf("missing X-TIMESTAMP")
@@ -162,8 +156,6 @@ func verifyDokuNotificationSignature(method, path, timestamp, signature string, 
 		return fmt.Errorf("missing X-SIGNATURE")
 	}
 
-	// The notification arrives unauthenticated (no bearer token), so its
-	// signature is computed with an empty accessToken segment (D13).
 	expected, sigErr := utils.SignDokuSymmetric(utils.GetEnv().DokuClientSecret, method, path, "", body, timestamp)
 	if sigErr != nil {
 		return fmt.Errorf("failed to verify DOKU notification signature: %w", sigErr)

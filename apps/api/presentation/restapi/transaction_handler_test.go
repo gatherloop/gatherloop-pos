@@ -75,8 +75,6 @@ func TestTransactionHandler_GetTransactionList(t *testing.T) {
 	}
 }
 
-// TestTransactionHandler_GetTransactionList_SerializesSource asserts an
-// existing (pos) transaction serialises as source: "pos" (FR-1).
 func TestTransactionHandler_GetTransactionList_SerializesSource(t *testing.T) {
 	handler, ctrl := newTransactionHandler(t, func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository) {
 		txRepo.EXPECT().GetTransactionList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
@@ -97,9 +95,6 @@ func TestTransactionHandler_GetTransactionList_SerializesSource(t *testing.T) {
 	assert.Nil(t, response.Data[0].Table)
 }
 
-// TestTransactionHandler_GetTransactionList_FilterBySource asserts
-// ?source=order threads through to the repository as an order-only filter,
-// per FR-1's "source=order filter excludes POS rows".
 func TestTransactionHandler_GetTransactionList_FilterBySource(t *testing.T) {
 	orderSource := domain.TransactionSourceOrder
 
@@ -216,9 +211,6 @@ func TestTransactionHandler_CreateTransaction(t *testing.T) {
 	}
 }
 
-// TestTransactionHandler_CreateTransaction_DefaultsToPos asserts a POS
-// create request — which never sends a source — still creates a `pos`
-// transaction (FR-1).
 func TestTransactionHandler_CreateTransaction_DefaultsToPos(t *testing.T) {
 	handler, ctrl := newTransactionHandler(t, func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository) {
 		txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(

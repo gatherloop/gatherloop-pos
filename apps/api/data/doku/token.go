@@ -13,11 +13,8 @@ import (
 	"time"
 )
 
-// tokenRefreshMargin refreshes the cached access token 60s ahead of its
-// stated expiry (FR-3: "refresh at expiresIn - 60s").
 const tokenRefreshMargin = 60 * time.Second
 
-// tokenResponse is DOKU's B2B access-token response.
 type tokenResponse struct {
 	ResponseCode    string `json:"responseCode"`
 	ResponseMessage string `json:"responseMessage"`
@@ -26,8 +23,6 @@ type tokenResponse struct {
 	ExpiresIn       int    `json:"expiresIn"`
 }
 
-// tokenCache is the in-memory, mutex-guarded cache the PRD requires
-// ("cached in memory with a margin ..., guarded by a mutex").
 type tokenCache struct {
 	mu        sync.Mutex
 	value     string
@@ -56,8 +51,6 @@ func (c *tokenCache) invalidate() {
 	c.value = ""
 }
 
-// getAccessToken returns the cached token when it is still fresh, and
-// fetches a new one otherwise.
 func (c *Client) getAccessToken(ctx context.Context) (string, *domain.Error) {
 	if token, ok := c.token.get(); ok {
 		return token, nil
@@ -65,8 +58,6 @@ func (c *Client) getAccessToken(ctx context.Context) (string, *domain.Error) {
 	return c.fetchAccessToken(ctx)
 }
 
-// fetchAccessToken calls POST /authorization/v1/access-token/b2b, signed
-// with the asymmetric (SHA256withRSA) scheme (FR-3 / "What DOKU gives us").
 func (c *Client) fetchAccessToken(ctx context.Context) (string, *domain.Error) {
 	timestamp := formatTimestamp(time.Now())
 	signature, sigErr := signAsymmetric(c.config.PrivateKey, c.config.ClientId, timestamp)

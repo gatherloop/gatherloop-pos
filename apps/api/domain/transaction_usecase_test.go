@@ -188,10 +188,6 @@ func TestTransactionUsecase_CreateTransaction(t *testing.T) {
 	}
 }
 
-// TestTransactionUsecase_CreateTransaction_DefaultsSourceToPos asserts the
-// POS create path — which never sends a source — still creates a `pos`
-// transaction (FR-1), and that an order-app checkout's explicit source is
-// preserved unchanged.
 func TestTransactionUsecase_CreateTransaction_DefaultsSourceToPos(t *testing.T) {
 	tests := []struct {
 		name           string

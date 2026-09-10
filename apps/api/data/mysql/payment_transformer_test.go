@@ -35,9 +35,6 @@ func TestPaymentTransformerRoundTrip(t *testing.T) {
 	assert.Equal(t, payment, mysql.ToPaymentDomain(mysql.ToPaymentDB(payment)))
 }
 
-// A payment exists before DOKU has answered with a QR (FR-6 steps 6 and 8),
-// so the empty string has to survive the trip out to a nullable column and
-// back rather than becoming a NULL a plain string could not scan.
 func TestPaymentTransformerMapsEmptyQrContentToNull(t *testing.T) {
 	db := mysql.ToPaymentDB(domain.Payment{QrContent: ""})
 

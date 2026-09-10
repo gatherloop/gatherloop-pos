@@ -11,11 +11,6 @@ func NewPaymentRepository(db *gorm.DB) domain.PaymentRepository {
 	return Repository{db: db}
 }
 
-// GetPaymentById is the read-back the two writers below use so a caller
-// always gets a fully-populated row, with created_at/updated_at as the DB
-// wrote them. It is deliberately not on PaymentRepository: every caller in
-// the domain holds a partner reference or a cart id, never a payment id, so
-// exposing it would widen the port with a lookup no usecase can make.
 func (repo Repository) GetPaymentById(ctx context.Context, id int64) (domain.Payment, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	var payment Payment
@@ -34,14 +29,6 @@ func (repo Repository) GetPaymentByPartnerReferenceNo(ctx context.Context, partn
 	return ToPaymentDomain(payment), ToErrorCtx(ctx, result.Error, "GetPaymentByPartnerReferenceNo")
 }
 
-// GetPendingPaymentByCartId reads the newest pending payment for a cart.
-// Ordering by id keeps it deterministic for a cart that has already been
-// through an expiry and a retry — only one payment per cart is ever pending
-// at a time (D11), but the newest is the one that decision is about.
-//
-// Expiry is not filtered here on purpose: the caller compares the row's
-// ExpiredAt through Payment.IsAwaitingPayment (D10/D11), which keeps the
-// clock out of the SQL.
 func (repo Repository) GetPendingPaymentByCartId(ctx context.Context, cartId int64) (domain.Payment, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	var payment Payment
@@ -63,10 +50,6 @@ func (repo Repository) CreatePayment(ctx context.Context, payment domain.Payment
 	return repo.GetPaymentById(ctx, payload.Id)
 }
 
-// UpdatePaymentById writes only the columns that legitimately move after a
-// payment exists. Cart, session, reference, method, amount and expiry are
-// what a QR was minted against and stay frozen (D9), so they are absent from
-// the map rather than merely unwritten by today's callers.
 func (repo Repository) UpdatePaymentById(ctx context.Context, payment domain.Payment, id int64) (domain.Payment, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	payload := ToPaymentDB(payment)

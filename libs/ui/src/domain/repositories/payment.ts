@@ -1,6 +1,5 @@
 import { Payment } from '../entities';
 
-// Distinct from a transport error so OrderStatusUsecase routes to notFound.
 export class PaymentNotFoundError extends Error {
   constructor() {
     super('Payment not found');

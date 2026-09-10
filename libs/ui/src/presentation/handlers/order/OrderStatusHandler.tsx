@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { match, P } from 'ts-pattern';
 import { useRouter } from 'solito/router';
-// Deep imports, not the `domain` barrel: it re-exports every POS usecase.
 import { SessionRepository } from '../../../domain/repositories/session';
 import { OrderStatusUsecase } from '../../../domain/usecases/orderStatus';
 import { TableResolveUsecase } from '../../../domain/usecases/tableResolve';

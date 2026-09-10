@@ -23,7 +23,6 @@ export const getServerSideProps: GetServerSideProps<OrderStatusProps> = async (
   const sessionRepository = new CookieSessionRepository(sessionId);
 
   const [table, payment] = await Promise.all([
-    // undefined keeps the client-only retry path; null seeds notFound.
     new ApiPublicTableRepository()
       .resolveTableByCode(code)
       .catch((error) =>
