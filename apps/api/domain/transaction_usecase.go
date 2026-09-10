@@ -209,15 +209,6 @@ func (usecase TransactionUsecase) PayTransaction(ctx context.Context, walletId i
 	})
 }
 
-// payTransaction is TransactionUsecase.PayTransaction's body, pulled out to
-// package scope so PaymentUsecase.ConfirmPayment (FR-6 step 4) can credit
-// the wallet and derive totalIncome the exact same way a cashier's payment
-// does, without one usecase depending on another — no usecase in this
-// package does (every dependency here is a repository).
-//
-// It takes the transaction already loaded rather than an id: ConfirmPayment
-// needs it loaded anyway to check DeletedAt for D5's un-delete, and a second
-// GetTransactionById here would just repeat that read.
 func payTransaction(ctx context.Context, transaction Transaction, transactionRepository TransactionRepository, walletRepository WalletRepository, walletId int64, paidAmount float32) *Error {
 	if transaction.PaidAt != nil {
 		return &Error{Type: BadRequest, Message: "transaction already paid"}

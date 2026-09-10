@@ -179,14 +179,6 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 	return resultPayment, resultTransaction, err
 }
 
-// ConfirmPayment parses a DOKU payment notification body (FR-6, D19) and
-// applies it through applyGatewayStatus, the same transition phase 9's
-// status read will re-enter with a QueryQris result instead (D12) — one
-// code path, one set of guards, for whichever route learns of a status
-// change first.
-//
-// The signature itself is verified upstream, by the VerifyDokuSignature
-// middleware — this method makes no trust decision, only a parsing one.
 func (usecase PaymentUsecase) ConfirmPayment(ctx context.Context, notificationBody []byte) (Payment, ConfirmPaymentOutcome, *Error) {
 	status, parseErr := usecase.paymentGatewayRepository.ParseNotification(notificationBody)
 	if parseErr != nil {
@@ -196,15 +188,6 @@ func (usecase PaymentUsecase) ConfirmPayment(ctx context.Context, notificationBo
 	return usecase.applyGatewayStatus(ctx, status)
 }
 
-// applyGatewayStatus is FR-6's notification steps 2–6: look the payment up
-// by its partner reference, and apply whatever DOKU says its status is now.
-//
-// Every outcome that is not a genuine system error is reported through the
-// returned ConfirmPaymentOutcome rather than *Error, because FR-6 step 6
-// answers all of them — an unknown reference, an amount mismatch, a paid
-// payment notified again — with the same 200 a real transition gets. Only a
-// failed DB write is an *Error, so the caller (DOKU, via the notification
-// handler) is told to retry.
 func (usecase PaymentUsecase) applyGatewayStatus(ctx context.Context, status QrisStatus) (Payment, ConfirmPaymentOutcome, *Error) {
 	var resultPayment Payment
 	var outcome ConfirmPaymentOutcome
@@ -219,8 +202,6 @@ func (usecase PaymentUsecase) applyGatewayStatus(ctx context.Context, status Qri
 			return err
 		}
 
-		// Paid is terminal (D14): once a payment is paid, no notification —
-		// whatever status it carries — moves it again.
 		if payment.Status == PaymentStatePaid {
 			resultPayment = payment
 			outcome = ConfirmPaymentOutcomeAlreadyPaid
@@ -244,17 +225,11 @@ func (usecase PaymentUsecase) applyGatewayStatus(ctx context.Context, status Qri
 	return resultPayment, outcome, err
 }
 
-// confirmPaymentPaid is FR-6 step 4, reached only for a payment still
-// pending or expired (an already-paid payment never reaches here — see
-// applyGatewayStatus). A payment whose one-way transitions do not include
-// "→ paid" from its current state (i.e. failed) is left alone.
 func (usecase PaymentUsecase) confirmPaymentPaid(ctx context.Context, payment Payment, status QrisStatus) (Payment, ConfirmPaymentOutcome, *Error) {
 	if payment.Status != PaymentStatePending && payment.Status != PaymentStateExpired {
 		return payment, ConfirmPaymentOutcomeIgnored, nil
 	}
 
-	// The hard stop: a mismatched amount pays nothing, and leaves the
-	// payment exactly as it was for staff to reconcile by hand.
 	if status.PaidAmount != payment.Amount {
 		return payment, ConfirmPaymentOutcomeAmountMismatch, nil
 	}
@@ -273,9 +248,6 @@ func (usecase PaymentUsecase) confirmPaymentPaid(ctx context.Context, payment Pa
 		return Payment{}, "", txErr
 	}
 
-	// D5: a late "paid" notification for a payment our own expiry already
-	// soft-deleted the transaction for. The payment record, not our timer,
-	// is the authority, so the transaction comes back before it is paid.
 	if transaction.DeletedAt != nil {
 		if undeleteErr := usecase.transactionRepository.UndeleteTransactionById(ctx, transaction.Id); undeleteErr != nil {
 			return Payment{}, "", undeleteErr
@@ -310,10 +282,6 @@ func (usecase PaymentUsecase) confirmPaymentPaid(ctx context.Context, payment Pa
 	return updatedPayment, outcome, nil
 }
 
-// confirmPaymentUnsuccessful is FR-6 step 5, reached only for a still-pending
-// payment — an expired or failed status for a payment already past pending
-// (expired/failed themselves, or the paid check in applyGatewayStatus) has
-// nothing left to change.
 func (usecase PaymentUsecase) confirmPaymentUnsuccessful(ctx context.Context, payment Payment, gatewayStatus PaymentGatewayStatus) (Payment, ConfirmPaymentOutcome, *Error) {
 	if payment.Status != PaymentStatePending {
 		return payment, ConfirmPaymentOutcomeIgnored, nil

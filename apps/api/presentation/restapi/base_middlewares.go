@@ -117,15 +117,6 @@ func RequireSessionId(next http.HandlerFunc) http.HandlerFunc {
 	})
 }
 
-// VerifyDokuSignature guards the one unauthenticated write route in the API
-// (D13): DOKU's payment notification. There is no session ID and no JWT to
-// check, only the symmetric signature PaymentGatewayRepository knows how to
-// recompute, so verification is delegated to it rather than duplicated here
-// — this middleware's job is only to read the body once, verify it, and put
-// it back for the handler.
-//
-// Sitting beside CheckAuth and RequireSessionId keeps that fact legible in
-// *_route.go instead of buried in a handler.
 func VerifyDokuSignature(gatewayRepository domain.PaymentGatewayRepository) func(http.HandlerFunc) http.HandlerFunc {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

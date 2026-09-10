@@ -41,15 +41,6 @@ func (handler PaymentHandler) Checkout(w http.ResponseWriter, r *http.Request) {
 	WriteResponse(w, apiContract.PaymentResponse{Data: ToApiPayment(payment, transaction)})
 }
 
-// Notification handles DOKU's inbound QRIS payment notification (FR-6, D19).
-// VerifyDokuSignature has already checked its signature by the time this
-// runs, so the only trust decision left here is none — everything from here
-// down is ConfirmPayment applying FR-6's steps 2-6 and this handler logging
-// and responding to whatever it resolved to.
-//
-// Every outcome the usecase reports gets a 200 (D14/FR-6 step 6); only a
-// genuine system error — the usecase's own DB write failing — is answered
-// with anything else, so DOKU retries exactly the cases retrying can fix.
 func (handler PaymentHandler) Notification(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := logger.FromCtx(ctx, slog.Default())
