@@ -7,6 +7,8 @@ const meta: Meta<typeof TransactionDetail> = {
   component: TransactionDetail,
   args: {
     name: mockTransaction.name,
+    source: mockTransaction.source,
+    table: mockTransaction.table,
     orderNumber: mockTransaction.orderNumber,
     createdAt: mockTransaction.createdAt,
     paidAt: mockTransaction.paidAt ?? undefined,
@@ -28,6 +30,21 @@ export const Unpaid: Story = {
     paidAt: undefined,
     walletName: undefined,
     paidAmount: 0,
+  },
+};
+
+export const FromOrderApp: Story = {
+  args: {
+    source: 'order',
+    table: { id: 1, label: 'A1', floorNumber: 1 },
+    orderNumber: 0,
+  },
+};
+
+export const FromPos: Story = {
+  args: {
+    source: 'pos',
+    table: null,
   },
 };
 

@@ -56,6 +56,8 @@ const buildTransaction = (
   id: 1,
   createdAt: '2024-01-01T00:00:00.000Z',
   name: 'Table 1',
+  source: 'pos',
+  table: null,
   orderNumber: 1,
   total: 30000,
   totalIncome: 30000,
@@ -110,6 +112,7 @@ const transactionListCtrl = {
     query: '',
     paymentStatus: null as never,
     walletId: null as never,
+    source: null as never,
   },
   dispatch: jest.fn(),
 };
@@ -201,6 +204,7 @@ describe('TransactionListHandler', () => {
       query: '',
       paymentStatus: null,
       walletId: null,
+      source: null,
     };
     transactionDeleteCtrl.state = { type: 'hidden' };
     transactionPayCtrl.state = {
@@ -317,6 +321,33 @@ describe('TransactionListHandler', () => {
       // We verify that CHANGE_PARAMS is dispatched with query: '' when clear fires
       // This is validated via the handler's prop wiring in the source code
       expect(transactionListCtrl.dispatch).toBeDefined();
+    });
+  });
+
+  describe('source filter', () => {
+    it('should dispatch CHANGE_PARAMS with the selected source, resetting to page 1', async () => {
+      await act(async () => {
+        render(<TransactionListHandler {...createProps()} />);
+      });
+
+      latestScreenProps.onSourceChange('order');
+
+      expect(transactionListCtrl.dispatch).toHaveBeenCalledWith({
+        type: 'CHANGE_PARAMS',
+        source: 'order',
+        page: 1,
+        fetchDebounceDelay: 600,
+      });
+    });
+
+    it('should pass the current source through to the screen', async () => {
+      transactionListCtrl.state = { ...transactionListCtrl.state, source: 'pos' };
+
+      await act(async () => {
+        render(<TransactionListHandler {...createProps()} />);
+      });
+
+      expect(latestScreenProps.source).toBe('pos');
     });
   });
 

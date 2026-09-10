@@ -5,16 +5,25 @@ import {
   Calendar,
   ConciergeBell,
   CreditCard,
+  MapPin,
+  Tag,
   User,
   Wallet,
 } from '@tamagui/lucide-icons';
 import { H5 } from 'tamagui';
-import { TransactionCoupon, TransactionItem } from '../../../../domain';
+import {
+  PublicTable,
+  TransactionCoupon,
+  TransactionItem,
+  TransactionSource,
+} from '../../../../domain';
 import { CouponListItem } from '../coupons';
 import { roundToNearest500 } from '../../../../utils';
 
 export type TransactionDetailProps = {
   name: string;
+  source: TransactionSource;
+  table?: PublicTable | null;
   orderNumber: number;
   createdAt: string;
   paidAt?: string;
@@ -25,8 +34,15 @@ export type TransactionDetailProps = {
   transactionCoupons: TransactionCoupon[];
 };
 
+const sourceLabel: Record<TransactionSource, string> = {
+  pos: 'POS',
+  order: 'Order App',
+};
+
 export const TransactionDetail = ({
   name,
+  source,
+  table,
   orderNumber,
   createdAt,
   paidAt,
@@ -91,6 +107,32 @@ export const TransactionDetail = ({
                 <YStack>
                   <Paragraph size="$1">Order Number</Paragraph>
                   <Paragraph size="$2">{orderNumber}</Paragraph>
+                </YStack>
+              </XStack>
+            </Card.Header>
+          </Card>
+        )}
+
+        <Card>
+          <Card.Header padding="$2.5">
+            <XStack gap="$2" alignItems="center">
+              <Tag size="$2" />
+              <YStack>
+                <Paragraph size="$1">Source</Paragraph>
+                <Paragraph size="$2">{sourceLabel[source]}</Paragraph>
+              </YStack>
+            </XStack>
+          </Card.Header>
+        </Card>
+
+        {table && (
+          <Card>
+            <Card.Header padding="$2.5">
+              <XStack gap="$2" alignItems="center">
+                <MapPin size="$2" />
+                <YStack>
+                  <Paragraph size="$1">Table</Paragraph>
+                  <Paragraph size="$2">{table.label}</Paragraph>
                 </YStack>
               </XStack>
             </Card.Header>

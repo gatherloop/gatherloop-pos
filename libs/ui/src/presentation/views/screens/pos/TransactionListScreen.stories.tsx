@@ -18,6 +18,8 @@ const defaultArgs = {
   onSearchValueChange: fn(),
   paymentStatus: 'all' as const,
   onPaymentStatusChange: fn(),
+  source: 'all' as const,
+  onSourceChange: fn(),
   currentPage: 1,
   onPageChange: fn(),
   totalItem: 2,

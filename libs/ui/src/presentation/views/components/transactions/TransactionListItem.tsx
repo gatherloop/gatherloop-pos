@@ -2,6 +2,7 @@ import {
   Calendar,
   ConciergeBell,
   DollarSign,
+  MapPin,
   Pencil,
   Printer,
   Trash,
@@ -10,11 +11,14 @@ import {
 } from '@tamagui/lucide-icons';
 import { ListItem } from '../base';
 import dayjs from 'dayjs';
-import { XStackProps } from 'tamagui';
+import { Paragraph, XStack, XStackProps, YStack } from 'tamagui';
 import { Platform } from 'react-native';
+import { PublicTable, TransactionSource } from '../../../../domain';
 
 export type TransactionListItemProps = {
   name: string;
+  source: TransactionSource;
+  table?: PublicTable | null;
   orderNumber: number;
   total: number;
   createdAt: string;
@@ -28,8 +32,24 @@ export type TransactionListItemProps = {
   onPrintOrderSlipMenuPress: () => void;
 } & XStackProps;
 
+const OrderAppBadge = () => (
+  <XStack
+    backgroundColor="$blue5"
+    paddingHorizontal="$2"
+    paddingVertical="$1"
+    borderRadius="$10"
+    alignSelf="flex-start"
+  >
+    <Paragraph size="$1" color="$blue11">
+      Order App
+    </Paragraph>
+  </XStack>
+);
+
 export const TransactionListItem = ({
   name,
+  source,
+  table,
   orderNumber,
   total,
   createdAt,
@@ -46,7 +66,18 @@ export const TransactionListItem = ({
   return (
     <ListItem
       title={name}
-      subtitle={`Rp. ${total.toLocaleString('id')}`}
+      subtitle={
+        source === 'order' ? (
+          <YStack gap="$1">
+            <Paragraph textTransform="none" ellipse size="$6">
+              Rp. {total.toLocaleString('id')}
+            </Paragraph>
+            <OrderAppBadge />
+          </YStack>
+        ) : (
+          `Rp. ${total.toLocaleString('id')}`
+        )
+      }
       backgroundColor="$background"
       theme={paidAt ? 'gray' : 'red'}
       menus={[
@@ -111,6 +142,12 @@ export const TransactionListItem = ({
           label: 'ORDER NUMBER',
           value: orderNumber.toString(),
           isShown: orderNumber > 0,
+        },
+        {
+          icon: MapPin,
+          label: 'TABLE',
+          value: table?.label ?? '',
+          isShown: table != null,
         },
       ]}
       {...xStackProps}
