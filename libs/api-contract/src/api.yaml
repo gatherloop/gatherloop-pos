@@ -317,6 +317,37 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /carts/current/checkout:
+    post:
+      summary: Pay the current session's active cart by QRIS via DOKU, creating an unpaid order transaction and a pending payment (idempotent per D11)
+      operationId: paymentCheckout
+      tags:
+        - payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentCheckoutRequest'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '400':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '502':
+          description: the payment gateway failed to generate a QR; nothing was created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /customers/current:
     get:
       summary: Get the name the current session gave at its last checkout, for prefilling the name prompt
@@ -4488,6 +4519,14 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PaymentItem'
+    PaymentCheckoutRequest:
+      type: object
+      required:
+        - customerName
+      properties:
+        customerName:
+          type: string
+          maxLength: 60
     CartUpdateTableRequest:
       type: object
       required:

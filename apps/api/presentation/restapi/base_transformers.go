@@ -15,7 +15,16 @@ import (
 )
 
 func WriteError(ctx context.Context, w http.ResponseWriter, err apiContract.Error) {
-	httpStatus := ToHttpStatus(err)
+	WriteErrorWithStatus(ctx, w, err, ToHttpStatus(err))
+}
+
+// WriteErrorWithStatus is WriteError with the HTTP status chosen by the
+// caller rather than derived from err.Code. It exists for the one response
+// whose status and body code deliberately disagree: a checkout that fails
+// at the payment gateway answers 502 while its body still carries
+// "internal_server_error" (FR-6 step 7), because api.yaml's ErrorCode enum
+// has no dedicated gateway code.
+func WriteErrorWithStatus(ctx context.Context, w http.ResponseWriter, err apiContract.Error, httpStatus int) {
 	log := logger.FromCtx(ctx, slog.Default())
 
 	attrs := []any{
@@ -64,6 +73,8 @@ func ToErrorCode(errorType domain.ErrorType) apiContract.ErrorCode {
 	case domain.Unauthorized:
 		return apiContract.UNAUTHORIZED
 	case domain.InternalServerError:
+		return apiContract.INTERNAL_SERVER_ERROR
+	case domain.BadGateway:
 		return apiContract.INTERNAL_SERVER_ERROR
 	default:
 		return apiContract.INTERNAL_SERVER_ERROR

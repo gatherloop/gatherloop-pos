@@ -2,6 +2,7 @@ package domain_test
 
 import (
 	"apps/api/domain"
+	"regexp"
 	"testing"
 	"time"
 
@@ -68,6 +69,61 @@ func TestPaymentIsAwaitingPayment(t *testing.T) {
 			}
 
 			assert.Equal(t, testCase.expected, payment.IsAwaitingPayment(testCase.now))
+		})
+	}
+}
+
+// partnerReferenceNoPattern is "ORD" plus 13 Crockford base32 characters
+// (D18).
+var partnerReferenceNoPattern = regexp.MustCompile(`^ORD[0-9A-HJKMNP-TV-Z]{13}$`)
+
+func TestGeneratePartnerReferenceNo(t *testing.T) {
+	seen := map[string]bool{}
+
+	for i := 0; i < 100; i++ {
+		code, err := domain.GeneratePartnerReferenceNo()
+
+		assert.NoError(t, err)
+		assert.Regexp(t, partnerReferenceNoPattern, code)
+		assert.False(t, seen[code], "GeneratePartnerReferenceNo produced a duplicate: %q", code)
+		seen[code] = true
+	}
+}
+
+func TestValidateOrderPaymentWallet(t *testing.T) {
+	deletedAt := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	testCases := []struct {
+		name        string
+		wallet      domain.Wallet
+		expectError bool
+	}{
+		{
+			name:        "a wallet that is a live payment target is valid",
+			wallet:      domain.Wallet{Id: 1, Name: "QRIS", IsPaymentTarget: true},
+			expectError: false,
+		},
+		{
+			name:        "a soft-deleted wallet fails validation",
+			wallet:      domain.Wallet{Id: 1, Name: "QRIS", IsPaymentTarget: true, DeletedAt: &deletedAt},
+			expectError: true,
+		},
+		{
+			name:        "a wallet that is not a payment target fails validation",
+			wallet:      domain.Wallet{Id: 1, Name: "Cash", IsPaymentTarget: false},
+			expectError: true,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			err := domain.ValidateOrderPaymentWallet(testCase.wallet)
+
+			if testCase.expectError {
+				assert.NotNil(t, err)
+			} else {
+				assert.Nil(t, err)
+			}
 		})
 	}
 }

@@ -1,6 +1,9 @@
 package domain
 
-import "time"
+import (
+	"crypto/rand"
+	"time"
+)
 
 // PaymentGatewayStatus is the state DOKU reports for a QRIS payment,
 // normalised away from DOKU's own status/response codes (FR-3).
@@ -139,6 +142,46 @@ type Payment struct {
 // (D12a). This one only decides whether the cart stays frozen.
 func (payment Payment) IsAwaitingPayment(now time.Time) bool {
 	return payment.Status == PaymentStatePending && now.Before(payment.ExpiredAt)
+}
+
+// partnerReferenceNoRandomLength is the 13 random characters D18 puts after
+// the "ORD" prefix.
+const partnerReferenceNoRandomLength = 13
+
+// GeneratePartnerReferenceNo mints "ORD" + 13 random Crockford base32
+// characters (D18), reusing tableCodeAlphabet's crypto/rand approach and its
+// reasoning: never a sequence, so a reference that ends up in a URL (the
+// order status screen's ?ref=) invites no enumeration.
+func GeneratePartnerReferenceNo() (string, error) {
+	randomBytes := make([]byte, partnerReferenceNoRandomLength)
+	if _, err := rand.Read(randomBytes); err != nil {
+		return "", err
+	}
+
+	code := make([]byte, partnerReferenceNoRandomLength)
+	for i, b := range randomBytes {
+		code[i] = tableCodeAlphabet[int(b)%len(tableCodeAlphabet)]
+	}
+
+	return "ORD" + string(code), nil
+}
+
+// ValidateOrderPaymentWallet enforces D15's boot-time check on
+// ORDER_PAYMENT_WALLET_ID: the configured wallet must exist, must not be
+// soft-deleted, and must be a payment target. It takes an
+// already-fetched Wallet rather than a repository so the rule itself —
+// the part a test should hold still — stays free of I/O; main.go is the
+// only caller, and it fetches the wallet and turns a failure here into a
+// boot panic (a misconfiguration is found by a deploy, not by a guest
+// holding a phone).
+func ValidateOrderPaymentWallet(wallet Wallet) *Error {
+	if wallet.DeletedAt != nil {
+		return &Error{Type: BadRequest, Message: "ORDER_PAYMENT_WALLET_ID points at a deleted wallet"}
+	}
+	if !wallet.IsPaymentTarget {
+		return &Error{Type: BadRequest, Message: "ORDER_PAYMENT_WALLET_ID points at a wallet that is not a payment target"}
+	}
+	return nil
 }
 
 // NotificationHeaders carries the SNAP headers a DOKU payment notification
