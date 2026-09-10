@@ -5,6 +5,7 @@ export * from './useCart';
 export * from './useCheckout';
 export * from './useCouponList';
 export * from './useMaterialList';
+export * from './useOrderStatus';
 export * from './useRentalList';
 export * from './useSupplierList';
 export * from './useTableResolve';

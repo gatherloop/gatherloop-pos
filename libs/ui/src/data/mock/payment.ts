@@ -1,5 +1,8 @@
 import { Payment } from '../../domain/entities';
-import { PaymentRepository } from '../../domain/repositories/payment';
+import {
+  PaymentNotFoundError,
+  PaymentRepository,
+} from '../../domain/repositories/payment';
 
 const initialPayment = (): Payment => ({
   reference: 'ORD0000000000001',
@@ -42,8 +45,9 @@ export class MockPaymentRepository implements PaymentRepository {
     return { ...this.payment };
   };
 
-  fetchPayment: PaymentRepository['fetchPayment'] = async () => {
+  fetchPayment: PaymentRepository['fetchPayment'] = async (reference) => {
     if (this.shouldFailFetch) throw new Error('Failed to fetch payment');
+    if (reference !== this.payment.reference) throw new PaymentNotFoundError();
     return { ...this.payment };
   };
 
