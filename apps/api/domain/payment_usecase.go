@@ -12,7 +12,9 @@ type PaymentUsecase struct {
 	cartRepository           CartRepository
 	transactionRepository    TransactionRepository
 	variantRepository        VariantRepository
+	walletRepository         WalletRepository
 	qrisExpirySeconds        int
+	orderPaymentWalletId     int64
 }
 
 func NewPaymentUsecase(
@@ -22,7 +24,9 @@ func NewPaymentUsecase(
 	cartRepository CartRepository,
 	transactionRepository TransactionRepository,
 	variantRepository VariantRepository,
+	walletRepository WalletRepository,
 	qrisExpirySeconds int,
+	orderPaymentWalletId int64,
 ) PaymentUsecase {
 	return PaymentUsecase{
 		paymentRepository:        paymentRepository,
@@ -31,8 +35,21 @@ func NewPaymentUsecase(
 		cartRepository:           cartRepository,
 		transactionRepository:    transactionRepository,
 		variantRepository:        variantRepository,
+		walletRepository:         walletRepository,
 		qrisExpirySeconds:        qrisExpirySeconds,
+		orderPaymentWalletId:     orderPaymentWalletId,
 	}
+}
+
+func (usecase PaymentUsecase) validateOrderPaymentWallet(ctx context.Context) *Error {
+	wallet, err := usecase.walletRepository.GetWalletById(ctx, usecase.orderPaymentWalletId)
+	if err != nil {
+		if err.Type == NotFound {
+			return &Error{Type: InternalServerError, Message: "order payment wallet is not configured"}
+		}
+		return err
+	}
+	return ValidateOrderPaymentWallet(wallet)
 }
 
 func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, customerName string) (Payment, Transaction, *Error) {
@@ -40,6 +57,10 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 	var resultTransaction Transaction
 
 	err := usecase.paymentRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		if err := usecase.validateOrderPaymentWallet(ctxWithTx); err != nil {
+			return err
+		}
+
 		customer, err := upsertCustomerName(ctxWithTx, usecase.customerRepository, sessionId, customerName)
 		if err != nil {
 			return err

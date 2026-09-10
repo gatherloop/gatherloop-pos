@@ -13,6 +13,7 @@ import (
 )
 
 const checkoutQrisExpirySeconds = 300
+const checkoutOrderPaymentWalletId = 9
 
 func withPaymentTransactionMock(r *mock.MockPaymentRepository) {
 	r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
@@ -26,6 +27,7 @@ type paymentUsecaseMocks struct {
 	cartRepo        *mock.MockCartRepository
 	transactionRepo *mock.MockTransactionRepository
 	variantRepo     *mock.MockVariantRepository
+	walletRepo      *mock.MockWalletRepository
 }
 
 func newPaymentUsecaseMocks(ctrl *gomock.Controller) paymentUsecaseMocks {
@@ -36,16 +38,21 @@ func newPaymentUsecaseMocks(ctrl *gomock.Controller) paymentUsecaseMocks {
 		cartRepo:        mock.NewMockCartRepository(ctrl),
 		transactionRepo: mock.NewMockTransactionRepository(ctrl),
 		variantRepo:     mock.NewMockVariantRepository(ctrl),
+		walletRepo:      mock.NewMockWalletRepository(ctrl),
 	}
 }
 
 func (m paymentUsecaseMocks) usecase() domain.PaymentUsecase {
-	return domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, checkoutQrisExpirySeconds)
+	return domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, checkoutQrisExpirySeconds, checkoutOrderPaymentWalletId)
+}
+
+func expectValidWallet(m paymentUsecaseMocks) {
+	m.walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(checkoutOrderPaymentWalletId)).
+		Return(domain.Wallet{Id: checkoutOrderPaymentWalletId, Name: "QRIS", IsPaymentTarget: true}, nil)
 }
 
 func expectNameUpsert(m paymentUsecaseMocks, sessionId, name string) {
-	m.customerRepo.EXPECT().GetCustomerBySessionId(gomock.Any(), sessionId).Return(domain.Customer{}, &domain.Error{Type: domain.NotFound})
-	m.customerRepo.EXPECT().CreateCustomer(gomock.Any(), domain.Customer{SessionId: sessionId, Name: name}).
+	m.customerRepo.EXPECT().UpsertCustomerBySessionId(gomock.Any(), sessionId, name).
 		Return(domain.Customer{Id: 1, SessionId: sessionId, Name: name}, nil)
 }
 
@@ -69,12 +76,43 @@ func checkoutVariant(id int64, price float32) domain.Variant {
 }
 
 func TestPaymentUsecase_Checkout(t *testing.T) {
+	t.Run("a misconfigured order payment wallet is rejected before touching the cart", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		withPaymentTransactionMock(m.paymentRepo)
+		m.walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(checkoutOrderPaymentWalletId)).
+			Return(domain.Wallet{}, &domain.Error{Type: domain.NotFound})
+
+		_, _, err := m.usecase().Checkout(context.Background(), "session-1", "Budi")
+
+		assert.NotNil(t, err)
+		assert.Equal(t, domain.InternalServerError, err.Type)
+	})
+
+	t.Run("an order payment wallet that is not a payment target is rejected", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		withPaymentTransactionMock(m.paymentRepo)
+		m.walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(checkoutOrderPaymentWalletId)).
+			Return(domain.Wallet{Id: checkoutOrderPaymentWalletId, Name: "Cash", IsPaymentTarget: false}, nil)
+
+		_, _, err := m.usecase().Checkout(context.Background(), "session-1", "Budi")
+
+		assert.NotNil(t, err)
+		assert.Equal(t, domain.InternalServerError, err.Type)
+	})
+
 	t.Run("an invalid customerName is rejected without touching the cart", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
 		m := newPaymentUsecaseMocks(ctrl)
 		withPaymentTransactionMock(m.paymentRepo)
+		expectValidWallet(m)
 
 		_, _, err := m.usecase().Checkout(context.Background(), "session-1", "   ")
 
@@ -88,6 +126,7 @@ func TestPaymentUsecase_Checkout(t *testing.T) {
 
 		m := newPaymentUsecaseMocks(ctrl)
 		withPaymentTransactionMock(m.paymentRepo)
+		expectValidWallet(m)
 		expectNameUpsert(m, "session-1", "Budi")
 		m.cartRepo.EXPECT().GetActiveCartBySessionId(gomock.Any(), "session-1").Return(domain.Cart{}, &domain.Error{Type: domain.NotFound})
 
@@ -104,6 +143,7 @@ func TestPaymentUsecase_Checkout(t *testing.T) {
 
 		m := newPaymentUsecaseMocks(ctrl)
 		withPaymentTransactionMock(m.paymentRepo)
+		expectValidWallet(m)
 		expectNameUpsert(m, "session-1", "Budi")
 		m.cartRepo.EXPECT().GetActiveCartBySessionId(gomock.Any(), "session-1").
 			Return(domain.Cart{Id: 1, Status: domain.CartStatusActive, Items: []domain.CartItem{}}, nil)
@@ -121,6 +161,7 @@ func TestPaymentUsecase_Checkout(t *testing.T) {
 
 		m := newPaymentUsecaseMocks(ctrl)
 		withPaymentTransactionMock(m.paymentRepo)
+		expectValidWallet(m)
 		expectNameUpsert(m, "session-1", "Budi")
 		m.cartRepo.EXPECT().GetActiveCartBySessionId(gomock.Any(), "session-1").
 			Return(domain.Cart{Id: 1, Status: domain.CartStatusActive, Items: []domain.CartItem{{Id: 1, VariantId: 10, Amount: 1}}}, nil)
@@ -138,6 +179,7 @@ func TestPaymentUsecase_Checkout(t *testing.T) {
 
 		m := newPaymentUsecaseMocks(ctrl)
 		withPaymentTransactionMock(m.paymentRepo)
+		expectValidWallet(m)
 		expectNameUpsert(m, "session-1", "Budi")
 		m.cartRepo.EXPECT().GetActiveCartBySessionId(gomock.Any(), "session-1").Return(domain.Cart{}, &domain.Error{Type: domain.InternalServerError})
 
@@ -153,6 +195,7 @@ func TestPaymentUsecase_Checkout(t *testing.T) {
 
 		m := newPaymentUsecaseMocks(ctrl)
 		withPaymentTransactionMock(m.paymentRepo)
+		expectValidWallet(m)
 		expectNameUpsert(m, "session-1", "Budi Santoso")
 		cart := cartWithOneItem(1, 5)
 		m.cartRepo.EXPECT().GetActiveCartBySessionId(gomock.Any(), "session-1").Return(cart, nil)
@@ -181,6 +224,7 @@ func TestPaymentUsecase_Checkout(t *testing.T) {
 
 		m := newPaymentUsecaseMocks(ctrl)
 		withPaymentTransactionMock(m.paymentRepo)
+		expectValidWallet(m)
 		expectNameUpsert(m, "session-1", "Budi")
 		cart := cartWithOneItem(1, 5)
 		m.cartRepo.EXPECT().GetActiveCartBySessionId(gomock.Any(), "session-1").Return(cart, nil)
@@ -228,6 +272,7 @@ func TestPaymentUsecase_Checkout(t *testing.T) {
 
 		m := newPaymentUsecaseMocks(ctrl)
 		withPaymentTransactionMock(m.paymentRepo)
+		expectValidWallet(m)
 		expectNameUpsert(m, "session-1", "Budi")
 
 		cart := domain.Cart{
@@ -287,6 +332,7 @@ func TestPaymentUsecase_Checkout(t *testing.T) {
 
 		m := newPaymentUsecaseMocks(ctrl)
 		withPaymentTransactionMock(m.paymentRepo)
+		expectValidWallet(m)
 		expectNameUpsert(m, "session-1", "Budi")
 
 		cart := cartWithOneItem(1, 5)
@@ -322,6 +368,7 @@ func TestPaymentUsecase_Checkout(t *testing.T) {
 
 		m := newPaymentUsecaseMocks(ctrl)
 		withPaymentTransactionMock(m.paymentRepo)
+		expectValidWallet(m)
 		expectNameUpsert(m, "session-1", "Budi")
 
 		cart := cartWithOneItem(1, 5)

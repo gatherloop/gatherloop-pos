@@ -50,16 +50,7 @@ func upsertCustomerName(ctx context.Context, repository CustomerRepository, sess
 		return Customer{}, err
 	}
 
-	existing, err := repository.GetCustomerBySessionId(ctx, sessionId)
-	if err != nil {
-		if err.Type != NotFound {
-			return Customer{}, err
-		}
-		return repository.CreateCustomer(ctx, Customer{SessionId: sessionId, Name: name})
-	}
-
-	existing.Name = name
-	return repository.UpdateCustomerById(ctx, existing, existing.Id)
+	return repository.UpsertCustomerBySessionId(ctx, sessionId, name)
 }
 
 // validateCustomerName enforces the 1–60 character rule on an

@@ -17,6 +17,8 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
+const paymentHandlerOrderPaymentWalletId = 9
+
 type paymentHandlerMocks struct {
 	paymentRepo     *mock.MockPaymentRepository
 	gatewayRepo     *mock.MockPaymentGatewayRepository
@@ -24,6 +26,7 @@ type paymentHandlerMocks struct {
 	cartRepo        *mock.MockCartRepository
 	transactionRepo *mock.MockTransactionRepository
 	variantRepo     *mock.MockVariantRepository
+	walletRepo      *mock.MockWalletRepository
 }
 
 func newPaymentHandlerMocks(ctrl *gomock.Controller) paymentHandlerMocks {
@@ -34,12 +37,18 @@ func newPaymentHandlerMocks(ctrl *gomock.Controller) paymentHandlerMocks {
 		cartRepo:        mock.NewMockCartRepository(ctrl),
 		transactionRepo: mock.NewMockTransactionRepository(ctrl),
 		variantRepo:     mock.NewMockVariantRepository(ctrl),
+		walletRepo:      mock.NewMockWalletRepository(ctrl),
 	}
 }
 
 func (m paymentHandlerMocks) handler() restapi.PaymentHandler {
-	usecase := domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, 300)
+	usecase := domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, 300, paymentHandlerOrderPaymentWalletId)
 	return restapi.NewPaymentHandler(usecase)
+}
+
+func expectValidPaymentWallet(m paymentHandlerMocks) {
+	m.walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(paymentHandlerOrderPaymentWalletId)).
+		Return(domain.Wallet{Id: paymentHandlerOrderPaymentWalletId, Name: "QRIS", IsPaymentTarget: true}, nil)
 }
 
 func withPaymentHandlerTransactionMock(r *mock.MockPaymentRepository) {
@@ -59,9 +68,9 @@ func TestPaymentHandler_Checkout(t *testing.T) {
 
 		m := newPaymentHandlerMocks(ctrl)
 		withPaymentHandlerTransactionMock(m.paymentRepo)
+		expectValidPaymentWallet(m)
 
-		m.customerRepo.EXPECT().GetCustomerBySessionId(gomock.Any(), testSessionId).Return(domain.Customer{}, &domain.Error{Type: domain.NotFound})
-		m.customerRepo.EXPECT().CreateCustomer(gomock.Any(), domain.Customer{SessionId: testSessionId, Name: "Budi"}).
+		m.customerRepo.EXPECT().UpsertCustomerBySessionId(gomock.Any(), testSessionId, "Budi").
 			Return(domain.Customer{Id: 1, SessionId: testSessionId, Name: "Budi"}, nil)
 
 		tableId := int64(5)
@@ -113,9 +122,9 @@ func TestPaymentHandler_Checkout(t *testing.T) {
 
 		m := newPaymentHandlerMocks(ctrl)
 		withPaymentHandlerTransactionMock(m.paymentRepo)
+		expectValidPaymentWallet(m)
 
-		m.customerRepo.EXPECT().GetCustomerBySessionId(gomock.Any(), testSessionId).Return(domain.Customer{}, &domain.Error{Type: domain.NotFound})
-		m.customerRepo.EXPECT().CreateCustomer(gomock.Any(), gomock.Any()).
+		m.customerRepo.EXPECT().UpsertCustomerBySessionId(gomock.Any(), testSessionId, gomock.Any()).
 			Return(domain.Customer{Id: 1, SessionId: testSessionId, Name: "Budi"}, nil)
 
 		tableId := int64(5)
@@ -156,9 +165,9 @@ func TestPaymentHandler_Checkout(t *testing.T) {
 
 		m := newPaymentHandlerMocks(ctrl)
 		withPaymentHandlerTransactionMock(m.paymentRepo)
+		expectValidPaymentWallet(m)
 
-		m.customerRepo.EXPECT().GetCustomerBySessionId(gomock.Any(), testSessionId).Return(domain.Customer{}, &domain.Error{Type: domain.NotFound})
-		m.customerRepo.EXPECT().CreateCustomer(gomock.Any(), gomock.Any()).
+		m.customerRepo.EXPECT().UpsertCustomerBySessionId(gomock.Any(), testSessionId, gomock.Any()).
 			Return(domain.Customer{Id: 1, SessionId: testSessionId, Name: "Budi"}, nil)
 		m.cartRepo.EXPECT().GetActiveCartBySessionId(gomock.Any(), testSessionId).Return(domain.Cart{}, &domain.Error{Type: domain.NotFound})
 
@@ -168,6 +177,23 @@ func TestPaymentHandler_Checkout(t *testing.T) {
 		m.handler().Checkout(w, req)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("a misconfigured order payment wallet is a 500 response, not a crash", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentHandlerMocks(ctrl)
+		withPaymentHandlerTransactionMock(m.paymentRepo)
+		m.walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(paymentHandlerOrderPaymentWalletId)).
+			Return(domain.Wallet{}, &domain.Error{Type: domain.NotFound})
+
+		req := httptest.NewRequest(http.MethodPost, "/carts/current/checkout", checkoutRequestBody("Budi"))
+		req.Header.Set("X-Session-Id", testSessionId)
+		w := httptest.NewRecorder()
+		m.handler().Checkout(w, req)
+
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
 }
 

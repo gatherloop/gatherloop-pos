@@ -162,10 +162,10 @@ func GeneratePartnerReferenceNo() (string, error) {
 
 func ValidateOrderPaymentWallet(wallet Wallet) *Error {
 	if wallet.DeletedAt != nil {
-		return &Error{Type: BadRequest, Message: "ORDER_PAYMENT_WALLET_ID points at a deleted wallet"}
+		return &Error{Type: InternalServerError, Message: "ORDER_PAYMENT_WALLET_ID points at a deleted wallet"}
 	}
 	if !wallet.IsPaymentTarget {
-		return &Error{Type: BadRequest, Message: "ORDER_PAYMENT_WALLET_ID points at a wallet that is not a payment target"}
+		return &Error{Type: InternalServerError, Message: "ORDER_PAYMENT_WALLET_ID points at a wallet that is not a payment target"}
 	}
 	return nil
 }

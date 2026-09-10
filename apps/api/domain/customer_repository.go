@@ -15,6 +15,5 @@ import "context"
 // keeps a concurrent first-write from producing two rows.
 type CustomerRepository interface {
 	GetCustomerBySessionId(ctx context.Context, sessionId string) (Customer, *Error)
-	CreateCustomer(ctx context.Context, customer Customer) (Customer, *Error)
-	UpdateCustomerById(ctx context.Context, customer Customer, id int64) (Customer, *Error)
+	UpsertCustomerBySessionId(ctx context.Context, sessionId string, name string) (Customer, *Error)
 }

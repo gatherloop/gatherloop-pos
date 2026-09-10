@@ -7,7 +7,6 @@ import (
 	"apps/api/presentation/restapi"
 	"apps/api/utils"
 	"apps/api/utils/logger"
-	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -44,10 +43,7 @@ func main() {
 		panic("failed to connect database")
 	}
 
-	dokuPrivateKey, dokuKeyErr := doku.ParsePrivateKeyPEM(env.DokuPrivateKey)
-	if dokuKeyErr != nil {
-		rootLogger.Error("invalid DOKU_PRIVATE_KEY; DOKU calls will fail until it is fixed", slog.String("error", dokuKeyErr.Error()))
-	}
+	dokuPrivateKey, _ := doku.ParsePrivateKeyPEM(env.DokuPrivateKey)
 
 	paymentGatewayRepository := doku.NewPaymentGatewayRepository(doku.Config{
 		BaseURL:      env.DokuBaseURL,
@@ -84,7 +80,7 @@ func main() {
 	checklistSessionRepository := mysql.NewChecklistSessionRepository(db)
 	stockCheckRepository := mysql.NewStockCheckRepository(db)
 
-	validateOrderPaymentWallet(walletRepository, env.OrderPaymentWalletId)
+	orderPaymentWalletId, _ := strconv.ParseInt(env.OrderPaymentWalletId, 10, 64)
 
 	walletUsecase := domain.NewWalletUsecase(walletRepository)
 	transactionUsecase := domain.NewTransactionUsecase(transactionRepository, variantRepository, couponRepository, walletRepository)
@@ -99,7 +95,7 @@ func main() {
 	tableUsecase := domain.NewTableUsecase(tableRepository)
 	cartUsecase := domain.NewCartUsecase(cartRepository, variantRepository, tableRepository)
 	customerUsecase := domain.NewCustomerUsecase(customerRepository)
-	paymentUsecase := domain.NewPaymentUsecase(paymentRepository, paymentGatewayRepository, customerRepository, cartRepository, transactionRepository, variantRepository, env.DokuQrisExpirySeconds)
+	paymentUsecase := domain.NewPaymentUsecase(paymentRepository, paymentGatewayRepository, customerRepository, cartRepository, transactionRepository, variantRepository, walletRepository, env.DokuQrisExpirySeconds, orderPaymentWalletId)
 	budgetUsecase := domain.NewBudgetUsecase(budgetRepository)
 	authUsecase := domain.NewAuthUsecase(authRepository)
 	calculationUsecase := domain.NewCalculationUsecase(calculationRepository, walletRepository)
@@ -160,25 +156,4 @@ func main() {
 
 	rootLogger.Info("server listening", slog.String("port", env.Port))
 	http.ListenAndServe(fmt.Sprintf(":%s", env.Port), router)
-}
-
-func validateOrderPaymentWallet(walletRepository domain.WalletRepository, orderPaymentWalletIdEnv string) {
-	if orderPaymentWalletIdEnv == "" {
-		slog.Warn("ORDER_PAYMENT_WALLET_ID is not set; checkout will fail at the gateway step until it is configured")
-		return
-	}
-
-	orderPaymentWalletId, parseErr := strconv.ParseInt(orderPaymentWalletIdEnv, 10, 64)
-	if parseErr != nil {
-		panic(fmt.Sprintf("ORDER_PAYMENT_WALLET_ID must be a valid wallet id, got %q: %v", orderPaymentWalletIdEnv, parseErr))
-	}
-
-	wallet, walletErr := walletRepository.GetWalletById(context.Background(), orderPaymentWalletId)
-	if walletErr != nil {
-		panic(fmt.Sprintf("ORDER_PAYMENT_WALLET_ID %d could not be loaded: %s", orderPaymentWalletId, walletErr.Message))
-	}
-
-	if validationErr := domain.ValidateOrderPaymentWallet(wallet); validationErr != nil {
-		panic(fmt.Sprintf("ORDER_PAYMENT_WALLET_ID %d is invalid: %s", orderPaymentWalletId, validationErr.Message))
-	}
 }
