@@ -5,9 +5,6 @@ import (
 	"time"
 )
 
-// statusRequeryFloor is D12's 10 s floor: a status read only re-queries DOKU
-// when the last check is this old or older, keeping a rapid client poll from
-// becoming a rapid DOKU poll.
 const statusRequeryFloor = 10 * time.Second
 
 type PaymentUsecase struct {
@@ -211,11 +208,6 @@ func (usecase PaymentUsecase) ConfirmPayment(ctx context.Context, status QrisSta
 	return resultPayment, outcome, err
 }
 
-// applyQrisStatus is the one state-transition code path a DOKU notification
-// (ConfirmPayment) and a status poll's requery (GetPaymentStatus) both run
-// through, so the two can never apply different guards to the same status
-// (phase 9's FR-6). It assumes payment was already looked up by its own
-// caller and must run inside that caller's DB transaction.
 func (usecase PaymentUsecase) applyQrisStatus(ctxWithTx context.Context, payment Payment, status QrisStatus) (Payment, ConfirmPaymentOutcome, *Error) {
 	if payment.Status == PaymentStatePaid {
 		return payment, ConfirmPaymentOutcomeAlreadyPaid, nil
@@ -302,14 +294,6 @@ func (usecase PaymentUsecase) applyQrisStatus(ctxWithTx context.Context, payment
 	return payment, ConfirmPaymentOutcomeIgnored, nil
 }
 
-// GetPaymentStatus is the session-scoped payment read (FR-6, phase 9): a
-// foreign or unknown reference is NotFound, and a still-pending payment is
-// re-queried against DOKU through applyQrisStatus — the same transition path
-// a notification runs — once status_checked_at is missing or past
-// statusRequeryFloor (D12). A payment is only ever forced to expired once
-// that confirming query agrees it was not paid (D12a); a query that lands
-// inside the floor, or that reports still-pending within the expiry window,
-// only bumps status_checked_at.
 func (usecase PaymentUsecase) GetPaymentStatus(ctx context.Context, sessionId string, partnerReferenceNo string) (Payment, Transaction, *Error) {
 	var resultPayment Payment
 	var resultTransaction Transaction
@@ -350,15 +334,6 @@ func (usecase PaymentUsecase) GetPaymentStatus(ctx context.Context, sessionId st
 	return resultPayment, resultTransaction, err
 }
 
-// refreshPendingPaymentStatus is GetPaymentStatus's D12 requery: it queries
-// DOKU when the floor allows it, and hands anything but "still pending,
-// still within the window" to applyQrisStatus so a poll and a notification
-// share one set of guards. A pending result that has passed ExpiredAt is
-// escalated to Expired before applyQrisStatus sees it — that escalation,
-// gated on a QueryQris call actually having run, is D12a's "past expired_at
-// and a confirming QueryQris agrees it was not paid". A DOKU call that fails
-// outright degrades to a no-op: the guest keeps polling and the next tick
-// retries, rather than the read itself failing.
 func (usecase PaymentUsecase) refreshPendingPaymentStatus(ctxWithTx context.Context, payment Payment, now time.Time) (Payment, *Error) {
 	if payment.StatusCheckedAt != nil && now.Sub(*payment.StatusCheckedAt) < statusRequeryFloor {
 		return payment, nil
