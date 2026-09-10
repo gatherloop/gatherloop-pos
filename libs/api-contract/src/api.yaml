@@ -1615,6 +1615,7 @@ paths:
         - $ref: '#/components/parameters/Skip'
         - $ref: '#/components/parameters/PaymentStatus'
         - $ref: '#/components/parameters/WalletIdQuery'
+        - $ref: '#/components/parameters/TransactionSource'
       responses:
         '200':
           description: success response
@@ -3704,6 +3705,7 @@ components:
         - id
         - createdAt
         - name
+        - source
         - orderNumber
         - total
         - totalIncome
@@ -3722,6 +3724,11 @@ components:
           format: int64
         name:
           type: string
+        source:
+          type: string
+          enum: [pos, order]
+        table:
+          $ref: '#/components/schemas/PublicTable'
         walletId:
           type: integer
           format: int64
@@ -5373,6 +5380,12 @@ components:
       in: query
       schema:
         type: integer
+    TransactionSource:
+      name: source
+      in: query
+      schema:
+        type: string
+        enum: [pos, order, all]
     SaleType:
       name: saleType
       in: query

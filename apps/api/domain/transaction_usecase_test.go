@@ -46,9 +46,9 @@ func TestTransactionUsecase_GetTransactionList(t *testing.T) {
 		{
 			name: "success",
 			setupMock: func(txRepo *mock.MockTransactionRepository) {
-				txRepo.EXPECT().GetTransactionList(gomock.Any(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.All, nil).
+				txRepo.EXPECT().GetTransactionList(gomock.Any(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.All, nil, nil).
 					Return([]domain.Transaction{{Id: 1}, {Id: 2}}, nil)
-				txRepo.EXPECT().GetTransactionListTotal(gomock.Any(), "", domain.All, nil).Return(int64(2), nil)
+				txRepo.EXPECT().GetTransactionListTotal(gomock.Any(), "", domain.All, nil, nil).Return(int64(2), nil)
 			},
 			expectedLen:   2,
 			expectedTotal: 2,
@@ -56,7 +56,7 @@ func TestTransactionUsecase_GetTransactionList(t *testing.T) {
 		{
 			name: "error on GetTransactionList",
 			setupMock: func(txRepo *mock.MockTransactionRepository) {
-				txRepo.EXPECT().GetTransactionList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				txRepo.EXPECT().GetTransactionList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil, &domain.Error{Type: domain.InternalServerError})
 			},
 			expectedError: &domain.Error{Type: domain.InternalServerError},
@@ -75,7 +75,7 @@ func TestTransactionUsecase_GetTransactionList(t *testing.T) {
 			tt.setupMock(txRepo)
 
 			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo)
-			transactions, total, err := usecase.GetTransactionList(context.Background(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.All, nil)
+			transactions, total, err := usecase.GetTransactionList(context.Background(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.All, nil, nil)
 
 			if tt.expectedError != nil {
 				assert.NotNil(t, err)
@@ -87,6 +87,28 @@ func TestTransactionUsecase_GetTransactionList(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("threads the source filter to both repository calls", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		orderSource := domain.TransactionSourceOrder
+		txRepo := mock.NewMockTransactionRepository(ctrl)
+		variantRepo := mock.NewMockVariantRepository(ctrl)
+		couponRepo := mock.NewMockCouponRepository(ctrl)
+		walletRepo := mock.NewMockWalletRepository(ctrl)
+
+		txRepo.EXPECT().GetTransactionList(gomock.Any(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.All, nil, &orderSource).
+			Return([]domain.Transaction{{Id: 1, Source: domain.TransactionSourceOrder}}, nil)
+		txRepo.EXPECT().GetTransactionListTotal(gomock.Any(), "", domain.All, nil, &orderSource).Return(int64(1), nil)
+
+		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo)
+		transactions, total, err := usecase.GetTransactionList(context.Background(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.All, nil, &orderSource)
+
+		assert.Nil(t, err)
+		assert.Len(t, transactions, 1)
+		assert.Equal(t, int64(1), total)
+	})
 }
 
 func TestTransactionUsecase_CreateTransaction(t *testing.T) {
@@ -166,6 +188,55 @@ func TestTransactionUsecase_CreateTransaction(t *testing.T) {
 				assert.Nil(t, err)
 				assert.Equal(t, tt.expectedTotal, transaction.Total)
 			}
+		})
+	}
+}
+
+// TestTransactionUsecase_CreateTransaction_DefaultsSourceToPos asserts the
+// POS create path — which never sends a source — still creates a `pos`
+// transaction (FR-1), and that an order-app checkout's explicit source is
+// preserved unchanged.
+func TestTransactionUsecase_CreateTransaction_DefaultsSourceToPos(t *testing.T) {
+	tests := []struct {
+		name           string
+		input          domain.Transaction
+		expectedSource domain.TransactionSource
+	}{
+		{
+			name:           "empty source defaults to pos",
+			input:          domain.Transaction{},
+			expectedSource: domain.TransactionSourcePos,
+		},
+		{
+			name:           "explicit order source is preserved",
+			input:          domain.Transaction{Source: domain.TransactionSourceOrder},
+			expectedSource: domain.TransactionSourceOrder,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			txRepo := mock.NewMockTransactionRepository(ctrl)
+			variantRepo := mock.NewMockVariantRepository(ctrl)
+			couponRepo := mock.NewMockCouponRepository(ctrl)
+			walletRepo := mock.NewMockWalletRepository(ctrl)
+
+			txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+				func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+			txRepo.EXPECT().CreateTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+				func(ctx context.Context, tx domain.Transaction) (domain.Transaction, *domain.Error) {
+					assert.Equal(t, tt.expectedSource, tx.Source)
+					return tx, nil
+				})
+
+			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo)
+			created, err := usecase.CreateTransaction(context.Background(), tt.input)
+
+			assert.Nil(t, err)
+			assert.Equal(t, tt.expectedSource, created.Source)
 		})
 	}
 }

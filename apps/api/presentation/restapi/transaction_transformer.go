@@ -43,6 +43,22 @@ func GetPaymentStatus(r *http.Request) domain.PaymentStatus {
 	}
 }
 
+// GetTransactionSourceQuery returns nil for "all"/missing/unrecognised values,
+// meaning no source filter is applied (FR-1).
+func GetTransactionSourceQuery(r *http.Request) *domain.TransactionSource {
+	sourceQuery := r.URL.Query().Get("source")
+	switch sourceQuery {
+	case "pos":
+		source := domain.TransactionSourcePos
+		return &source
+	case "order":
+		source := domain.TransactionSourceOrder
+		return &source
+	default:
+		return nil
+	}
+}
+
 func ToApiTransaction(transaction domain.Transaction) apiContract.Transaction {
 	apiTransactionItems := []apiContract.TransactionItem{}
 	for _, item := range transaction.TransactionItems {
@@ -84,9 +100,17 @@ func ToApiTransaction(transaction domain.Transaction) apiContract.Transaction {
 		})
 	}
 
+	var table *apiContract.PublicTable
+	if transaction.Cart != nil && transaction.Cart.Table != nil {
+		apiTable := ToApiPublicTable(*transaction.Cart.Table)
+		table = &apiTable
+	}
+
 	return apiContract.Transaction{
 		Id:                 transaction.Id,
 		Name:               transaction.Name,
+		Source:             string(transaction.Source),
+		Table:              table,
 		OrderNumber:        transaction.OrderNumber,
 		DeletedAt:          transaction.DeletedAt,
 		CreatedAt:          transaction.CreatedAt,
