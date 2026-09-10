@@ -53,10 +53,6 @@ export function DashboardApp({
     expenseStatisticListQueryRepository,
     expenseStatisticListParams
   );
-  // Revenue for the expense variance report; its date range mirrors the
-  // expense widget's own (see ExpenseStatisticHandler), so it must not share
-  // the top-level revenue chart's URL query params — hence the in-memory
-  // (no-op) query repository instead of `UrlTransactionStatisticListQueryRepository`.
   const expenseRevenueStatisticListUsecase = new TransactionStatisticListUsecase(
     transactionRepository,
     new InMemoryTransactionStatisticListQueryRepository(),

@@ -41,12 +41,6 @@ export const TransactionUpdateHandler = ({
 
   const formRef = useRef<UseFormReturn<TransactionForm> | null>(null);
 
-  // Writes through the form the same way an item selection would if it
-  // happened from inside the form subtree — see `FormView`'s `formRef`
-  // escape hatch (TRD §4.6). `formRef.current` is only ever null before the
-  // form's `loaded` branch mounts, which is not reachable here since a
-  // variant selection requires the product picker (and therefore the form)
-  // to already be on screen.
   const addItemToForm = (newVariant: Variant, amount: number) => {
     const form = formRef.current;
     if (!form) return;

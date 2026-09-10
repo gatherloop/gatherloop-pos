@@ -38,6 +38,9 @@ type Transaction struct {
 	Id                 int64
 	CreatedAt          time.Time
 	Name               string
+	Source             string
+	CartId             *int64
+	Cart               *Cart
 	OrderNumber        int64
 	WalletId           *int64
 	Wallet             *Wallet

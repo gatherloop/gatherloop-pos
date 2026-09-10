@@ -1,15 +1,3 @@
-// Verifies the React Native session lifecycle end to end: the API layer
-// Metro resolves for this app (auth.native.ts / authToken.native.ts)
-// actually persists/clears a bearer token in AsyncStorage and attaches it
-// to outgoing requests, instead of relying on the httpOnly session cookie
-// the web app uses (which RN's networking layer won't reliably store —
-// it's Secure-only, and most native dev/prod setups against this API are
-// plain HTTP).
-// Deep-imports the .native.ts files directly rather than through the
-// @gatherloop-pos/ui barrel: the barrel's index also re-exports the shared
-// Tamagui config, which pulls in the moti/reanimated native animation stack
-// — untranspiled ESM this project's jest config isn't set up to parse, and
-// unrelated to what this spec verifies.
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { ApiAuthRepository } from '../../../../libs/ui/src/data/api/auth.native';
 import {

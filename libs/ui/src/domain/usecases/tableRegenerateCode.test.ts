@@ -36,7 +36,6 @@ describe('TableRegenerateCodeUsecase', () => {
       expect(tester.state.type).toBe('regenerating');
 
       await flushPromises();
-      // regeneratingSuccess -> onStateChange dispatches HIDE_CONFIRMATION -> hidden
       expect(tester.state.type).toBe('hidden');
     });
   });
@@ -76,7 +75,6 @@ describe('TableRegenerateCodeUsecase', () => {
       expect(tester.state.type).toBe('regenerating');
 
       await flushPromises();
-      // regenerating -> regeneratingError -> onStateChange(regeneratingError) -> REGENERATE_CANCEL -> shown
       expect(tester.state.type).toBe('shown');
     });
   });

@@ -83,9 +83,6 @@ export const TransactionUpdateScreen = (
       onLogoutPress={props.onLogoutPress}
     >
       {isCompactLayout ? (
-        // On compact, the product picker owns a bounded `flex: 1` region
-        // and scrolls internally — an outer `ScrollView` here would give it
-        // no height to bound against (PRD FR-3).
         <YStack flex={1}>{formView}</YStack>
       ) : (
         <ScrollView>{formView}</ScrollView>

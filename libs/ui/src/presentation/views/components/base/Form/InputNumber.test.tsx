@@ -34,7 +34,6 @@ describe('InputNumber', () => {
     await user.click(plus);
     expect(getInput().value).toBe('6');
 
-    // clamped at max
     await user.click(plus);
     expect(getInput().value).toBe('6');
 
@@ -44,7 +43,6 @@ describe('InputNumber', () => {
     await user.click(minus);
     await user.click(minus);
     await user.click(minus);
-    // clamped at min
     expect(getInput().value).toBe('0');
   });
 

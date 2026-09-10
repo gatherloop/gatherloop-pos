@@ -39,7 +39,6 @@ func TestPublicHandler_GetCategoryList(t *testing.T) {
 
 	categoryRepo.EXPECT().GetCategoryList(gomock.Any()).Return([]domain.Category{{Id: 1, Name: "Minuman"}}, nil)
 
-	// No Authorization header/cookie is set: the route must not require one.
 	req := httptest.NewRequest(http.MethodGet, "/public/categories", nil)
 	w := httptest.NewRecorder()
 	handler.GetCategoryList(w, req)
@@ -53,8 +52,6 @@ func TestPublicHandler_GetProductList_forcesPublishedPurchase(t *testing.T) {
 	published := domain.ProductStatusPublished
 	purchase := domain.SaleTypePurchase
 
-	// Even though the request asks for draft/rental, the handler must force
-	// published+purchase server-side and ignore the client's attempt to override.
 	productRepo.EXPECT().GetProductList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), &purchase, &published).
 		Return([]domain.Product{{Id: 1, Name: "Es Kopi Susu", Status: domain.ProductStatusPublished, SaleType: domain.SaleTypePurchase}}, nil)
 	productRepo.EXPECT().GetProductListTotal(gomock.Any(), gomock.Any(), &purchase, &published).Return(int64(1), nil)

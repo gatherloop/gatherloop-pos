@@ -38,7 +38,7 @@ func TestCalculationUsecase_CreateCalculation(t *testing.T) {
 						return calc, nil
 					})
 			},
-			expectedTotalCalculation: 13000, // 5000*2 + 3000*1
+			expectedTotalCalculation: 13000,
 			expectedTotalWallet:      100000,
 		},
 		{

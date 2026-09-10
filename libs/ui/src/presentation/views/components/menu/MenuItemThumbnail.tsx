@@ -3,10 +3,6 @@ import { NamedExoticComponent, useState } from 'react';
 import { Image, YStack, YStackProps } from 'tamagui';
 import { CategoryStation } from '../../../../domain';
 
-// D16 in docs/prd-table-ordering.md: the customer menu is a real placeholder,
-// not a collapsed layout. When `imageUrl` is empty, or the image fails to
-// load, this renders a tinted panel with a glyph chosen from the item's
-// category station instead of omitting the thumbnail.
 const stationIcon: Record<CategoryStation, NamedExoticComponent<{ size?: number | string; color?: string }>> = {
   KITCHEN: Utensils,
   BAR: Coffee,

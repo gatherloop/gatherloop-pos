@@ -102,8 +102,6 @@ func TestStockCheckUsecase_CreateStockCheck_OnlyIncludesRequestedMaterials(t *te
 	scRepo := mock.NewMockStockCheckRepository(ctrl)
 	matRepo := mock.NewMockMaterialRepository(ctrl)
 
-	// Material 2 is not stock-check-required, so the create form never sends it.
-	// The usecase must not re-add it just because it exists in the catalog.
 	matRepo.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Material{
 		{Id: 1, Name: "Tepung"},
 		{Id: 2, Name: "Susu"},
@@ -116,7 +114,6 @@ func TestStockCheckUsecase_CreateStockCheck_OnlyIncludesRequestedMaterials(t *te
 	})
 
 	usecase := domain.NewStockCheckUsecase(scRepo, matRepo)
-	// Only material 1 is submitted; material 2 must not appear in the stock check.
 	_, err := usecase.CreateStockCheck(context.Background(), []domain.StockCheckItemRequest{
 		{MaterialId: 1, CurrentStock: 5},
 	})
@@ -155,7 +152,7 @@ func TestStockCheckUsecase_GetPurchaseList(t *testing.T) {
 				PurchaseUnit:     "L",
 				PurchaseUnitSize: 1000,
 				MinimumStock:     0,
-				NormalStock:      0, // unconfigured — excluded
+				NormalStock:      0,
 			},
 		},
 	}, nil)
@@ -171,7 +168,7 @@ func TestStockCheckUsecase_GetPurchaseList(t *testing.T) {
 	item := pl.Items[0]
 	assert.Equal(t, int64(1), item.MaterialId)
 	assert.Equal(t, int64(5), item.PurchaseQuantity)
-	assert.InDelta(t, float64(5*1000*15), item.EstimatedCost, 0.01) // 75000
+	assert.InDelta(t, float64(5*1000*15), item.EstimatedCost, 0.01)
 	assert.InDelta(t, float64(5*1000*15), pl.TotalEstimatedCost, 0.01)
 }
 
@@ -189,7 +186,7 @@ func TestStockCheckUsecase_GetPurchaseList_ExcludesUnconfiguredPolicy(t *testing
 				MaterialId:   1,
 				CurrentStock: 0,
 				MinimumStock: 0,
-				NormalStock:  0, // normal_stock <= minimum_stock → excluded
+				NormalStock:  0,
 			},
 		},
 	}, nil)

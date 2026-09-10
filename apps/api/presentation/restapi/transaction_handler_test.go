@@ -6,6 +6,8 @@ import (
 	"apps/api/presentation/restapi"
 	"bytes"
 	"context"
+	"encoding/json"
+	apiContract "libs/api-contract"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,6 +15,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
 
@@ -38,8 +41,8 @@ func TestTransactionHandler_GetTransactionList(t *testing.T) {
 			name: "success",
 			url:  "/transactions",
 			setupMocks: func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository) {
-				txRepo.EXPECT().GetTransactionList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Transaction{{Id: 1}}, nil)
-				txRepo.EXPECT().GetTransactionListTotal(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(1), nil)
+				txRepo.EXPECT().GetTransactionList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Transaction{{Id: 1, Source: domain.TransactionSourcePos}}, nil)
+				txRepo.EXPECT().GetTransactionListTotal(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(1), nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -54,7 +57,7 @@ func TestTransactionHandler_GetTransactionList(t *testing.T) {
 			name: "repo error",
 			url:  "/transactions",
 			setupMocks: func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository) {
-				txRepo.EXPECT().GetTransactionList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
+				txRepo.EXPECT().GetTransactionList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
 			expectedStatus: http.StatusInternalServerError,
 		},
@@ -70,6 +73,47 @@ func TestTransactionHandler_GetTransactionList(t *testing.T) {
 			assert.Equal(t, tt.expectedStatus, w.Code)
 		})
 	}
+}
+
+func TestTransactionHandler_GetTransactionList_SerializesSource(t *testing.T) {
+	handler, ctrl := newTransactionHandler(t, func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository) {
+		txRepo.EXPECT().GetTransactionList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			Return([]domain.Transaction{{Id: 1, Source: domain.TransactionSourcePos}}, nil)
+		txRepo.EXPECT().GetTransactionListTotal(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(1), nil)
+	})
+	defer ctrl.Finish()
+
+	req := httptest.NewRequest(http.MethodGet, "/transactions", nil)
+	w := httptest.NewRecorder()
+	handler.GetTransactionList(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	var response apiContract.TransactionListResponse
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&response))
+	require.Len(t, response.Data, 1)
+	assert.Equal(t, "pos", response.Data[0].Source)
+	assert.Nil(t, response.Data[0].Table)
+}
+
+func TestTransactionHandler_GetTransactionList_FilterBySource(t *testing.T) {
+	orderSource := domain.TransactionSourceOrder
+
+	handler, ctrl := newTransactionHandler(t, func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository) {
+		txRepo.EXPECT().GetTransactionList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), &orderSource).
+			Return([]domain.Transaction{{Id: 2, Source: domain.TransactionSourceOrder}}, nil)
+		txRepo.EXPECT().GetTransactionListTotal(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), &orderSource).Return(int64(1), nil)
+	})
+	defer ctrl.Finish()
+
+	req := httptest.NewRequest(http.MethodGet, "/transactions?source=order", nil)
+	w := httptest.NewRecorder()
+	handler.GetTransactionList(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	var response apiContract.TransactionListResponse
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&response))
+	require.Len(t, response.Data, 1)
+	assert.Equal(t, "order", response.Data[0].Source)
 }
 
 func TestTransactionHandler_GetTransactionById(t *testing.T) {
@@ -165,6 +209,32 @@ func TestTransactionHandler_CreateTransaction(t *testing.T) {
 			assert.Equal(t, tt.expectedStatus, w.Code)
 		})
 	}
+}
+
+func TestTransactionHandler_CreateTransaction_DefaultsToPos(t *testing.T) {
+	handler, ctrl := newTransactionHandler(t, func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository) {
+		txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+			func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+		variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(1)).Return(domain.Variant{Id: 1, Price: 10000}, nil)
+		txRepo.EXPECT().CreateTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+			func(ctx context.Context, tx domain.Transaction) (domain.Transaction, *domain.Error) {
+				assert.Equal(t, domain.TransactionSourcePos, tx.Source)
+				tx.Id = 1
+				return tx, nil
+			})
+	})
+	defer ctrl.Finish()
+
+	body := `{"name": "Order 1", "orderNumber": 1, "transactionItems": [{"variantId": 1, "amount": 2, "note": "", "discountAmount": 0}], "transactionCoupons": []}`
+	req := httptest.NewRequest(http.MethodPost, "/transactions", bytes.NewBufferString(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	handler.CreateTransaction(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	var response apiContract.TransactionCreateResponse
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&response))
+	assert.Equal(t, "pos", response.Data.Source)
 }
 
 func TestTransactionHandler_UpdateTransactionById(t *testing.T) {

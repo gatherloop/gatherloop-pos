@@ -13,11 +13,11 @@ func NewTransactionRepository(db *gorm.DB) domain.TransactionRepository {
 	return Repository{db: db}
 }
 
-func (repo Repository) GetTransactionList(ctx context.Context, query string, sortBy domain.SortBy, order domain.Order, skip int, limit int, paymentStatus domain.PaymentStatus, walletId *int) ([]domain.Transaction, *domain.Error) {
+func (repo Repository) GetTransactionList(ctx context.Context, query string, sortBy domain.SortBy, order domain.Order, skip int, limit int, paymentStatus domain.PaymentStatus, walletId *int, source *domain.TransactionSource) ([]domain.Transaction, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 
 	var transactionResults []Transaction
-	result := db.Table("transactions").Where("deleted_at is NULL").Preload("TransactionItems").Preload("TransactionItems.Values").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").Preload("TransactionItems.Variant.Product.Category").Preload("TransactionCoupons").Preload("TransactionCoupons.Coupon").Preload("Wallet").Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
+	result := db.Table("transactions").Where("deleted_at is NULL").Preload("TransactionItems").Preload("TransactionItems.Values").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").Preload("TransactionItems.Variant.Product.Category").Preload("TransactionCoupons").Preload("TransactionCoupons.Coupon").Preload("Wallet").Preload("Cart").Preload("Cart.Table").Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
 
 	if query != "" {
 		result = result.Where("name LIKE ?", "%"+query+"%")
@@ -42,12 +42,16 @@ func (repo Repository) GetTransactionList(ctx context.Context, query string, sor
 		result = result.Where("wallet_id = ?", walletId)
 	}
 
+	if source != nil {
+		result = result.Where("source = ?", string(*source))
+	}
+
 	result = result.Find(&transactionResults)
 
 	return ToTransactionsListDomain(transactionResults), ToErrorCtx(ctx, result.Error, "GetTransactionList")
 }
 
-func (repo Repository) GetTransactionListTotal(ctx context.Context, query string, paymentStatus domain.PaymentStatus, walletId *int) (int64, *domain.Error) {
+func (repo Repository) GetTransactionListTotal(ctx context.Context, query string, paymentStatus domain.PaymentStatus, walletId *int, source *domain.TransactionSource) (int64, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	var count int64
 	result := db.Table("transactions").Where("deleted_at", nil)
@@ -67,6 +71,10 @@ func (repo Repository) GetTransactionListTotal(ctx context.Context, query string
 		result = result.Where("wallet_id = ?", walletId)
 	}
 
+	if source != nil {
+		result = result.Where("source = ?", string(*source))
+	}
+
 	result = result.Count(&count)
 
 	return count, ToErrorCtx(ctx, result.Error, "GetTransactionListTotal")
@@ -76,7 +84,7 @@ func (repo Repository) GetTransactionById(ctx context.Context, id int64) (domain
 	db := GetDbFromCtx(ctx, repo.db)
 
 	var transaction Transaction
-	result := db.Table("transactions").Where("id = ?", id).Preload("TransactionItems").Preload("TransactionItems.Values").Preload("Wallet").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.Materials").Preload("TransactionItems.Variant.Materials.Material").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").Preload("TransactionItems.Variant.Product.Category").Preload("TransactionCoupons").Preload("TransactionCoupons.Coupon").First(&transaction)
+	result := db.Table("transactions").Where("id = ?", id).Preload("TransactionItems").Preload("TransactionItems.Values").Preload("Wallet").Preload("Cart").Preload("Cart.Table").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.Materials").Preload("TransactionItems.Variant.Materials.Material").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").Preload("TransactionItems.Variant.Product.Category").Preload("TransactionCoupons").Preload("TransactionCoupons.Coupon").First(&transaction)
 	return ToTransactionDomain(transaction), ToErrorCtx(ctx, result.Error, "GetTransactionById")
 }
 
@@ -89,7 +97,7 @@ func (repo Repository) CreateTransaction(ctx context.Context, transaction domain
 	}
 
 	var created Transaction
-	fetch := db.Table("transactions").Where("id = ?", dbTransaction.Id).Preload("TransactionItems").Preload("TransactionItems.Values").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").Preload("TransactionItems.Variant.Product.Category").Preload("TransactionCoupons").Preload("TransactionCoupons.Coupon").Preload("Wallet").First(&created)
+	fetch := db.Table("transactions").Where("id = ?", dbTransaction.Id).Preload("TransactionItems").Preload("TransactionItems.Values").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").Preload("TransactionItems.Variant.Product.Category").Preload("TransactionCoupons").Preload("TransactionCoupons.Coupon").Preload("Wallet").Preload("Cart").Preload("Cart.Table").First(&created)
 	return ToTransactionDomain(created), ToErrorCtx(ctx, fetch.Error, "CreateTransaction")
 }
 
@@ -100,8 +108,6 @@ func (repo Repository) UpdateTransactionById(ctx context.Context, transaction do
 	dbTransaction := ToTransactionDB(transaction)
 
 	if dbTransaction.TransactionItems != nil {
-		// Values are re-snapshotted on every update, so clear existing rows before
-		// FullSaveAssociations inserts the new ones to avoid duplicates.
 		var existingItemIds []int64
 		if err := db.Model(&TransactionItem{}).Where("transaction_id = ?", id).Pluck("id", &existingItemIds).Error; err != nil {
 			return domain.Transaction{}, ToErrorCtx(ctx, err, "UpdateTransactionById")
@@ -118,7 +124,6 @@ func (repo Repository) UpdateTransactionById(ctx context.Context, transaction do
 	}
 
 	if dbTransaction.TransactionItems != nil {
-		// Determine which existing item IDs to keep (those that are present in the incoming payload)
 		transactionItemIdsToKeep := []int64{}
 		for _, it := range dbTransaction.TransactionItems {
 			if it.Id > 0 {
@@ -127,12 +132,10 @@ func (repo Repository) UpdateTransactionById(ctx context.Context, transaction do
 		}
 
 		if len(transactionItemIdsToKeep) > 0 {
-			// delete items that were present before but are not in the incoming idsToKeep
 			if result := db.Table("transaction_items").Where("transaction_id = ? AND id NOT IN ?", id, transactionItemIdsToKeep).Delete(&TransactionItem{}); result.Error != nil {
 				return domain.Transaction{}, ToErrorCtx(ctx, result.Error, "UpdateTransactionById")
 			}
 		} else {
-			// If incoming payload has no existing IDs, remove all previously existing items
 			if result := db.Table("transaction_items").Where("transaction_id = ?", id).Delete(&TransactionItem{}); result.Error != nil {
 				return domain.Transaction{}, ToErrorCtx(ctx, result.Error, "UpdateTransactionById")
 			}
@@ -140,7 +143,6 @@ func (repo Repository) UpdateTransactionById(ctx context.Context, transaction do
 	}
 
 	if dbTransaction.TransactionCoupons != nil {
-		// Determine which existing coupon IDs to keep (those that are present in the incoming payload)
 		transactionCouponIdsToKeep := []int64{}
 		for _, it := range dbTransaction.TransactionCoupons {
 			if it.Id > 0 {
@@ -149,12 +151,10 @@ func (repo Repository) UpdateTransactionById(ctx context.Context, transaction do
 		}
 
 		if len(transactionCouponIdsToKeep) > 0 {
-			// delete coupons that were present before but are not in the incoming idsToKeep
 			if result := db.Table("transaction_coupons").Where("transaction_id = ? AND id NOT IN ?", id, transactionCouponIdsToKeep).Delete(&TransactionCoupon{}); result.Error != nil {
 				return domain.Transaction{}, ToErrorCtx(ctx, result.Error, "UpdateTransactionById")
 			}
 		} else {
-			// If incoming payload has no existing IDs, remove all previously existing items
 			if result := db.Table("transaction_coupons").Where("transaction_id = ?", id).Delete(&TransactionCoupon{}); result.Error != nil {
 				return domain.Transaction{}, ToErrorCtx(ctx, result.Error, "UpdateTransactionById")
 			}
@@ -162,7 +162,7 @@ func (repo Repository) UpdateTransactionById(ctx context.Context, transaction do
 	}
 
 	var updated Transaction
-	fetch := db.Table("transactions").Where("id = ?", id).Preload("TransactionItems").Preload("TransactionItems.Values").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.Materials").Preload("TransactionItems.Variant.Materials.Material").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").Preload("TransactionItems.Variant.Product.Category").Preload("TransactionCoupons").Preload("TransactionCoupons.Coupon").Preload("Wallet").First(&updated)
+	fetch := db.Table("transactions").Where("id = ?", id).Preload("TransactionItems").Preload("TransactionItems.Values").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.Materials").Preload("TransactionItems.Variant.Materials.Material").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").Preload("TransactionItems.Variant.Product.Category").Preload("TransactionCoupons").Preload("TransactionCoupons.Coupon").Preload("Wallet").Preload("Cart").Preload("Cart.Table").First(&updated)
 	return ToTransactionDomain(updated), ToErrorCtx(ctx, fetch.Error, "UpdateTransactionById")
 }
 
@@ -171,6 +171,12 @@ func (repo Repository) DeleteTransactionById(ctx context.Context, id int64) *dom
 	currentTime := time.Now()
 	result := db.Table("transactions").Where("id = ?", id).Update("deleted_at", currentTime)
 	return ToErrorCtx(ctx, result.Error, "DeleteTransactionById")
+}
+
+func (repo Repository) UndeleteTransactionById(ctx context.Context, id int64) *domain.Error {
+	db := GetDbFromCtx(ctx, repo.db)
+	result := db.Table("transactions").Where("id = ?", id).Update("deleted_at", nil)
+	return ToErrorCtx(ctx, result.Error, "UndeleteTransactionById")
 }
 
 func (repo Repository) PayTransaction(ctx context.Context, walletId int64, paidAt time.Time, paidAmount float32, id int64) *domain.Error {

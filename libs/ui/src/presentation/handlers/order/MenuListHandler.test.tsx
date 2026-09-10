@@ -51,9 +51,6 @@ const renderHandler = ({
     menuListQueryRepository,
     menuListParams
   );
-  // Always starts unselected, exactly like `app/order/MenuList.tsx` — the
-  // handler's own effect is the sole trigger for SELECT_PRODUCT, including
-  // for a seeded `menuListParams.selectedProductId` deep link (D6).
   const menuItemDetailUsecase = new MenuItemDetailUsecase(menuRepository, {
     productId: null,
   });
@@ -72,6 +69,7 @@ const renderHandler = ({
         menuListUsecase={menuListUsecase}
         menuItemDetailUsecase={menuItemDetailUsecase}
         cartUsecase={cartUsecase}
+        cartRepository={cartRepository}
         sessionRepository={new MockSessionRepository()}
         tableCode={TABLE_CODE}
       />
@@ -117,6 +115,16 @@ describe('MenuListHandler', () => {
     expect(screen.getByText('Nasi Goreng')).toBeTruthy();
     expect(screen.getAllByText('Minuman')).toHaveLength(2);
     expect(screen.getAllByText('Makanan')).toHaveLength(2);
+  });
+
+  it('attaches the resolved table to the cart', async () => {
+    const cartRepository = new MockCartRepository();
+    const updateTableSpy = jest.spyOn(cartRepository, 'updateTable');
+    renderHandler({ cartRepository });
+
+    await settle();
+
+    expect(updateTableSpy).toHaveBeenCalledWith(TABLE_CODE);
   });
 
   it('shows the lowest variant price as a starting price', async () => {
@@ -175,8 +183,6 @@ describe('MenuListHandler', () => {
   it('shows the cart bar once the cart is non-empty, and navigates to the cart route on press', async () => {
     const user = userEvent.setup();
     const cartRepository = new MockCartRepository();
-    // Seeded before mount — the composition root's `CartUsecase` fetches
-    // whatever the repository holds on its first render (D14).
     await cartRepository.addItem({ variantId: 1, amount: 2, note: '' });
     renderHandler({ cartRepository });
 
@@ -195,9 +201,6 @@ describe('MenuListHandler', () => {
     expect(screen.queryByText(/Lihat Keranjang/)).toBeNull();
   });
 
-  // D6/D9 in docs/trd-order-app-composition-and-ssr.md: opening the item
-  // sheet is a state transition, not a route — no navigation, no remount of
-  // the menu underneath it.
   describe('the item sheet', () => {
     it('opens with no network request when a product card is pressed, and does not remount the menu', async () => {
       const user = userEvent.setup();
@@ -215,8 +218,6 @@ describe('MenuListHandler', () => {
       expect(fetchProductSpy).not.toHaveBeenCalled();
       expect(screen.getByText('Regular')).toBeTruthy();
       expect(screen.getByText('Large')).toBeTruthy();
-      // The search text survived the sheet opening over the list (parity
-      // item 2) — nothing remounted `MenuListScreen`.
       expect(input.value).toBe('kopi');
       expect(mockPush).not.toHaveBeenCalled();
     });
@@ -232,7 +233,6 @@ describe('MenuListHandler', () => {
 
       await settle();
 
-      // Renders behind the sheet too — one in the list, one in the sheet.
       expect(screen.getAllByText('Es Kopi Susu')).toHaveLength(2);
       expect(screen.getByText('Regular')).toBeTruthy();
     });
@@ -272,10 +272,8 @@ describe('MenuListHandler', () => {
       );
       await settle();
 
-      // Sheet closed — the menu is what's left.
       expect(screen.queryByLabelText('Tutup')).toBeNull();
       expect(screen.getByText('Es Kopi Susu')).toBeTruthy();
-      // Adding a line makes the floating bar appear.
       expect(screen.getByText(/1 item/)).toBeTruthy();
     });
 
@@ -295,10 +293,6 @@ describe('MenuListHandler', () => {
     });
 
     it('falls back to fetching the product directly when a deep link points at an id the menu fetch has not resolved yet, and shows an error if that also fails', async () => {
-      // The selection effect runs on mount, before the menu fetch resolves
-      // (menuList.state.products is still `[]`) — the id isn't found there,
-      // so `menuItemDetailUsecase` falls back to its own fetch (D6), which
-      // fails for an id the mock repository doesn't have.
       renderHandler({
         menuListParams: {
           products: [],
@@ -310,7 +304,6 @@ describe('MenuListHandler', () => {
       await settle();
 
       expect(screen.getByText('Gagal memuat produk')).toBeTruthy();
-      // The menu itself loaded fine — only the sheet's own fetch failed.
       expect(screen.getByText('Es Kopi Susu')).toBeTruthy();
     });
 
@@ -339,7 +332,6 @@ describe('MenuListHandler', () => {
       await user.click(screen.getByText('Nasi Goreng'));
       await settle();
 
-      // Renders behind the sheet too — one in the list, one in the sheet.
       expect(screen.getAllByText('Nasi Goreng')).toHaveLength(2);
       expect(screen.queryByText('Regular')).toBeNull();
     });

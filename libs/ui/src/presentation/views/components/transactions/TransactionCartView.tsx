@@ -72,9 +72,6 @@ export const TransactionCartView = ({
 
       <YStack>
         <YStack gap="$3">
-          {/* On compact, the parent swaps the cart sheet's own content to the
-              coupon list instead (PRD FR-5) — a nested `Sheet` here would be a
-              second `modal` overlay competing with the cart sheet. */}
           {!isCompactLayout && (
             <Sheet
               isOpen={isCouponSheetOpen}

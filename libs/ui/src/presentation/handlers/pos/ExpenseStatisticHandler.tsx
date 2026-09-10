@@ -25,8 +25,6 @@ export const ExpenseStatisticHandler = ({
   budgetListUsecase,
 }: ExpenseStatisticHandlerProps) => {
   const expenseStatisticList = useUsecase(expenseStatisticListUsecase);
-  // Revenue for the variance report; kept in lockstep with the expense date
-  // range below rather than exposing its own date-range controls.
   const revenueStatisticList = useTransactionStatisticList(
     transactionStatisticListUsecase
   );

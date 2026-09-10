@@ -6,12 +6,6 @@ export type PinnedActionBarProps = {
   children: ReactNode;
 };
 
-// Shared chrome for a pinned bottom action bar over scrolling content —
-// background, top border, and env(safe-area-inset-bottom) on web / fixed
-// padding on native. Generalises `FloatingCartButton`'s positioning
-// (PRD docs/prd-stock-check-form-mobile.md FR-5) for callers that need more
-// than a single label+onPress button, e.g. the stock-check compact Submit
-// bar's disabled/Spinner states. Requires a `position: relative` ancestor.
 export const PinnedActionBar = ({ children }: PinnedActionBarProps) => {
   return (
     <YStack

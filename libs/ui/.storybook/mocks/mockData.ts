@@ -18,8 +18,6 @@ import type {
   Table,
 } from '../../src/domain';
 
-// ─── Category ────────────────────────────────────────────────────────────────
-
 export const mockCategory: Category = {
   id: 1,
   name: 'Beverages',
@@ -47,8 +45,6 @@ export const mockCategories: Category[] = [
     createdAt: '2024-01-17T08:00:00.000Z',
   },
 ];
-
-// ─── Material ────────────────────────────────────────────────────────────────
 
 export const mockMaterial: Material = {
   id: 1,
@@ -114,8 +110,6 @@ export const mockMaterials: Material[] = [
   },
 ];
 
-// ─── Product ─────────────────────────────────────────────────────────────────
-
 export const mockProduct: Product = {
   id: 1,
   name: 'Iced Coffee Latte',
@@ -173,16 +167,12 @@ export const mockProducts: Product[] = [
   },
 ];
 
-// ─── OptionValue ─────────────────────────────────────────────────────────────
-
 export const mockOptionValue: OptionValue = { id: 1, name: 'Iced' };
 
 export const mockOptionValues: OptionValue[] = [
   { id: 1, name: 'Iced' },
   { id: 4, name: 'Regular' },
 ];
-
-// ─── Variant ─────────────────────────────────────────────────────────────────
 
 export const mockVariant: Variant = {
   id: 1,
@@ -226,8 +216,6 @@ export const mockVariants: Variant[] = [
   },
 ];
 
-// ─── Wallet ──────────────────────────────────────────────────────────────────
-
 export const mockWallet: Wallet = {
   id: 1,
   name: 'Cash',
@@ -260,8 +248,6 @@ export const mockWallets: Wallet[] = [
   },
 ];
 
-// ─── Budget ──────────────────────────────────────────────────────────────────
-
 export const mockBudget: Budget = {
   id: 1,
   name: 'Raw Materials',
@@ -284,8 +270,6 @@ export const mockBudgets: Budget[] = [
     createdAt: '2024-01-17T08:00:00.000Z',
   },
 ];
-
-// ─── Coupon ──────────────────────────────────────────────────────────────────
 
 export const mockCoupon: Coupon = {
   id: 1,
@@ -313,8 +297,6 @@ export const mockCoupons: Coupon[] = [
   },
 ];
 
-// ─── Ticket ──────────────────────────────────────────────────────────────────
-
 export const mockTicket: Ticket = {
   id: 1,
   code: '0xA3F19C82',
@@ -337,8 +319,6 @@ export const mockTickets: Ticket[] = [
     createdAt: '2024-01-17T08:00:00.000Z',
   },
 ];
-
-// ─── Table ───────────────────────────────────────────────────────────────────
 
 export const mockTable: Table = {
   id: 1,
@@ -366,8 +346,6 @@ export const mockTables: Table[] = [
   },
 ];
 
-// ─── Transaction ─────────────────────────────────────────────────────────────
-
 export const mockTransactionItem: TransactionItem = {
   id: 1,
   variant: mockVariant,
@@ -384,6 +362,8 @@ export const mockTransaction: Transaction = {
   id: 1,
   createdAt: '2024-01-20T10:00:00.000Z',
   name: 'Order #001',
+  source: 'pos',
+  table: null,
   orderNumber: 1,
   total: 70000,
   totalIncome: 60000,
@@ -399,8 +379,10 @@ export const mockTransactions: Transaction[] = [
   {
     id: 2,
     createdAt: '2024-01-21T09:00:00.000Z',
-    name: 'Order #002',
-    orderNumber: 2,
+    name: 'Budi',
+    source: 'order',
+    table: { id: 1, label: 'A1', floorNumber: 1 },
+    orderNumber: 0,
     total: 40000,
     totalIncome: 35000,
     transactionItems: [
@@ -431,8 +413,6 @@ export const mockTransactions: Transaction[] = [
   },
 ];
 
-// ─── Expense ─────────────────────────────────────────────────────────────────
-
 export const mockExpense: Expense = {
   id: 1,
   createdAt: '2024-01-20T10:00:00.000Z',
@@ -459,8 +439,6 @@ export const mockExpenses: Expense[] = [
   },
 ];
 
-// ─── WalletTransfer ──────────────────────────────────────────────────────────
-
 export const mockWalletTransfer: WalletTransfer = {
   id: 1,
   createdAt: '2024-01-20T10:00:00.000Z',
@@ -479,8 +457,6 @@ export const mockWalletTransfers: WalletTransfer[] = [
     toWallet: mockWallets[2],
   },
 ];
-
-// ─── Calculation ─────────────────────────────────────────────────────────────
 
 export const mockCalculation: Calculation = {
   id: 1,
@@ -508,8 +484,6 @@ export const mockCalculations: Calculation[] = [
   mockCalculation,
   mockCalculationCompleted,
 ];
-
-// ─── Rental ──────────────────────────────────────────────────────────────────
 
 const mockRentalVariant: Variant = {
   id: 3,
@@ -553,8 +527,6 @@ export const mockRentalCheckedOut: Rental = {
 };
 
 export const mockRentals: Rental[] = [mockRental, mockRentalCheckedOut];
-
-// ─── Supplier ────────────────────────────────────────────────────────────────
 
 export const mockSupplier: Supplier = {
   id: 1,

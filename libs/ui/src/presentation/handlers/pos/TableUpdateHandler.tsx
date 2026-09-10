@@ -43,8 +43,6 @@ export const TableUpdateHandler = ({
     match(tableRegenerateCode.state)
       .with({ type: 'regeneratingSuccess' }, () => {
         toast.show('Regenerate Table Code Success');
-        // Picks up the new code by refetching the table (loaded -> loading
-        // -> loaded), rather than trusting the client to merge it in.
         tableUpdate.dispatch({ type: 'FETCH' });
       })
       .with({ type: 'regeneratingError' }, () => {

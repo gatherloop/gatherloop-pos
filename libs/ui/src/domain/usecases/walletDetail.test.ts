@@ -14,7 +14,6 @@ describe('WalletDetailUsecase', () => {
       const usecase = new WalletDetailUsecase(repository, { walletId: 1, wallet: null });
       const tester = new UsecaseTester<WalletDetailUsecase, WalletDetailState, WalletDetailAction, WalletDetailParams>(usecase);
 
-      // idle -> onStateChange(idle) dispatches FETCH -> loading
       expect(tester.state.type).toBe('loading');
 
       await flushPromises();

@@ -5,10 +5,6 @@ import (
 	"strings"
 )
 
-// maxTableCodeGenerationAttempts bounds the retry loop guarding against a
-// generated code colliding with one already in use (FR-2). With ~50 bits of
-// entropy per code, exhausting every attempt here would indicate a broken
-// generator, not bad luck.
 const maxTableCodeGenerationAttempts = 5
 
 type TableUsecase struct {
@@ -27,7 +23,6 @@ func (usecase TableUsecase) GetTableById(ctx context.Context, id int64) (Table, 
 	return usecase.repository.GetTableById(ctx, id)
 }
 
-// GetTableByCode resolves a QR code to a table (FR-1's /public/tables/{code}).
 func (usecase TableUsecase) GetTableByCode(ctx context.Context, code string) (Table, *Error) {
 	return usecase.repository.GetTableByCode(ctx, code)
 }
@@ -100,8 +95,6 @@ func (usecase TableUsecase) DeleteTableById(ctx context.Context, id int64) *Erro
 	return usecase.repository.DeleteTableById(ctx, id)
 }
 
-// RegenerateTableCode mints a fresh code for an existing table, invalidating
-// any printed QR — the mechanism for rotating a leaked code (D6).
 func (usecase TableUsecase) RegenerateTableCode(ctx context.Context, id int64) (Table, *Error) {
 	var regenerated Table
 	err := usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
@@ -127,8 +120,6 @@ func (usecase TableUsecase) RegenerateTableCode(ctx context.Context, id int64) (
 	return regenerated, err
 }
 
-// generateUniqueCode mints a code and retries on the vanishingly unlikely
-// event it already belongs to another table (FR-2).
 func (usecase TableUsecase) generateUniqueCode(ctx context.Context) (string, *Error) {
 	for attempt := 0; attempt < maxTableCodeGenerationAttempts; attempt++ {
 		code, err := GenerateTableCode()

@@ -1,6 +1,3 @@
--- 000001_initial_schema.up.sql
--- Initial schema for gatherloop-pos, created in FK dependency order
-
 CREATE TABLE IF NOT EXISTS `users` (
     `id`         BIGINT       NOT NULL AUTO_INCREMENT,
     `username`   VARCHAR(255) NOT NULL,

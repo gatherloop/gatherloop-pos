@@ -20,8 +20,6 @@ export const HasImage: Story = {
   },
 };
 
-// D16: an empty `imageUrl` falls back to a station-keyed glyph instead of an
-// empty box.
 export const EmptyKitchen: Story = {
   args: {
     imageUrl: '',
@@ -43,8 +41,6 @@ export const EmptyNone: Story = {
   },
 };
 
-// D16: `onError` falls back to the same placeholder as an empty `imageUrl`
-// — this URL 404s, so the browser fires `onError` on load.
 export const BrokenUrl: Story = {
   args: {
     imageUrl: 'https://example.com/does-not-exist.jpg',

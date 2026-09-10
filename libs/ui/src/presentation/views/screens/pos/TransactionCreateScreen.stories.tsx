@@ -95,9 +95,6 @@ type Story = StoryObj<typeof TransactionCreateScreen>;
 
 export const Default: Story = { render: () => <CreateStory /> };
 
-// PRD FR-7: a successful submit closes the compact cart sheet before the
-// payment alert opens on top of it — no `AlertDialog` stacked over a
-// `Sheet` at a conflicting z-index.
 export const CompactSubmitSuccessWithPayment: Story = {
   parameters: {
     viewport: { defaultViewport: 'mobile' },

@@ -155,7 +155,6 @@ describe('VariantUpdateHandler', () => {
       const variantRepo = new MockVariantRepository();
       const productRepo = new MockProductRepository();
       const preloadedVariant = variantRepo.variants[0];
-      // Use product with no options so the values[] array stays empty and passes z.array() validation
       const preloadedProduct = { ...productRepo.products[0], options: [] };
 
       const variantUpdateUsecase = new VariantUpdateUsecase(

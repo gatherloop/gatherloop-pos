@@ -26,11 +26,6 @@ jest.mock('@tamagui/toast', () => ({
   useToastController: () => ({ show: jest.fn() }),
 }));
 
-// usePrinter uses WebSocket — mock it to avoid runtime errors. useFocusEffect
-// is stubbed out too: these tests assert dispatch was/wasn't called with
-// FETCH from delete/pay/unpay orchestration, and the real useFocusEffect
-// would also dispatch FETCH on mount, which the pre-inline controller mocks
-// happened to swallow.
 const mockPrint = jest.fn();
 jest.mock('../../../utils', () => ({
   ...jest.requireActual('../../../utils'),
@@ -40,8 +35,6 @@ jest.mock('../../../utils', () => ({
   },
 }));
 
-// Mock the Screen — tests focus on handler orchestration logic. We capture
-// the props passed in so individual menu-press handlers can be invoked.
 let latestScreenProps: TransactionListScreenProps;
 jest.mock('../../views/screens/pos/TransactionListScreen', () => ({
   TransactionListScreen: (props: TransactionListScreenProps) => {
@@ -56,6 +49,8 @@ const buildTransaction = (
   id: 1,
   createdAt: '2024-01-01T00:00:00.000Z',
   name: 'Table 1',
+  source: 'pos',
+  table: null,
   orderNumber: 1,
   total: 30000,
   totalIncome: 30000,
@@ -110,6 +105,7 @@ const transactionListCtrl = {
     query: '',
     paymentStatus: null as never,
     walletId: null as never,
+    source: null as never,
   },
   dispatch: jest.fn(),
 };
@@ -135,9 +131,6 @@ const authLogoutCtrl = {
   dispatch: jest.fn(),
 };
 
-// TransactionList/Delete/Unpay are folded into the handler (Phase 5) and call
-// the base `useUsecase` hook directly rather than a named per-feature
-// hook, so the fake states above are wired in by usecase identity instead.
 jest.mock('../hooks', () => ({
   useTransactionPay: () => ({
     state: transactionPayCtrl.state,
@@ -201,6 +194,7 @@ describe('TransactionListHandler', () => {
       query: '',
       paymentStatus: null,
       walletId: null,
+      source: null,
     };
     transactionDeleteCtrl.state = { type: 'hidden' };
     transactionPayCtrl.state = {
@@ -302,8 +296,6 @@ describe('TransactionListHandler', () => {
         render(<TransactionListHandler {...createProps()} />);
       });
 
-      // The TransactionListScreen mock is called; verify isChangingParams prop
-      // Since the screen is mocked at module level, we check dispatch behavior
       expect(transactionListCtrl.dispatch).not.toHaveBeenCalledWith({ type: 'FETCH' });
     });
 
@@ -312,11 +304,34 @@ describe('TransactionListHandler', () => {
         render(<TransactionListHandler {...createProps()} />);
       });
 
-      // Simulate onSearchClear being called by the screen
-      // The handler passes onSearchClear to the screen
-      // We verify that CHANGE_PARAMS is dispatched with query: '' when clear fires
-      // This is validated via the handler's prop wiring in the source code
       expect(transactionListCtrl.dispatch).toBeDefined();
+    });
+  });
+
+  describe('source filter', () => {
+    it('should dispatch CHANGE_PARAMS with the selected source, resetting to page 1', async () => {
+      await act(async () => {
+        render(<TransactionListHandler {...createProps()} />);
+      });
+
+      latestScreenProps.onSourceChange('order');
+
+      expect(transactionListCtrl.dispatch).toHaveBeenCalledWith({
+        type: 'CHANGE_PARAMS',
+        source: 'order',
+        page: 1,
+        fetchDebounceDelay: 600,
+      });
+    });
+
+    it('should pass the current source through to the screen', async () => {
+      transactionListCtrl.state = { ...transactionListCtrl.state, source: 'pos' };
+
+      await act(async () => {
+        render(<TransactionListHandler {...createProps()} />);
+      });
+
+      expect(latestScreenProps.source).toBe('pos');
     });
   });
 

@@ -343,7 +343,6 @@ describe('TransactionUpdateHandler', () => {
         await flushPromises();
       });
 
-      // unit price, item subtotal, and grand total are all Rp. 50.000
       expect(screen.getAllByText('Rp. 50.000')).toHaveLength(3);
 
       await user.click(screen.getByRole('button', { name: 'Apply Coupon' }));
@@ -351,7 +350,6 @@ describe('TransactionUpdateHandler', () => {
 
       expect(screen.getByText('FIXED5000')).toBeTruthy();
       expect(screen.getByText('- Rp. 5.000')).toBeTruthy();
-      // unit price stays Rp. 50.000, item subtotal and grand total drop to Rp. 45.000
       expect(screen.getAllByText('Rp. 50.000')).toHaveLength(1);
       expect(screen.getAllByText('Rp. 45.000')).toHaveLength(2);
       expect(screen.queryByRole('button', { name: 'Apply Coupon' })).toBeNull();

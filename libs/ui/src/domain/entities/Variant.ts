@@ -54,10 +54,6 @@ export type VariantForm = {
   pricingTiers: PricingTier[];
 };
 
-// Partial validator, not a parser: `price`, and the `id`/`material` fields on
-// each `materials`/`values` entry are intentionally left undescribed. The
-// resolver is called with `{ raw: true }` so those fields pass through
-// unvalidated instead of being stripped.
 export const variantFormSchema = z.object({
   productId: z.number(),
   name: z.string().min(1),

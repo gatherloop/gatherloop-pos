@@ -2,6 +2,7 @@ import {
   PaymentStatus,
   Transaction,
   TransactionForm,
+  TransactionSourceFilter,
   TransactionStatistic,
 } from '../../domain/entities';
 import { TransactionRepository } from '../../domain/repositories/transaction';
@@ -31,6 +32,8 @@ const initialTransactions: Transaction[] = [
     id: 1,
     createdAt: '2024-03-20T00:00:00.000Z',
     name: 'Transaction 1',
+    source: 'pos',
+    table: null,
     orderNumber: 1,
     total: 100000,
     totalIncome: 90000,
@@ -56,7 +59,9 @@ const initialTransactions: Transaction[] = [
     id: 2,
     createdAt: '2024-03-21T00:00:00.000Z',
     name: 'Transaction 2',
-    orderNumber: 2,
+    source: 'order',
+    table: { id: 1, label: 'A1', floorNumber: 1 },
+    orderNumber: 0,
     total: 200000,
     totalIncome: 180000,
     transactionItems: [],
@@ -91,6 +96,7 @@ export class MockTransactionRepository implements TransactionRepository {
     orderBy: 'asc' | 'desc';
     paymentStatus: PaymentStatus;
     walletId: number | null;
+    source: TransactionSourceFilter;
   }): { transactions: Transaction[]; totalItem: number } {
     return {
       transactions: [...this.transactions],
@@ -106,6 +112,7 @@ export class MockTransactionRepository implements TransactionRepository {
     orderBy: 'asc' | 'desc';
     paymentStatus: PaymentStatus;
     walletId: number | null;
+    source: TransactionSourceFilter;
   }): Promise<{ transactions: Transaction[]; totalItem: number }> {
     if (this.shouldFail) throw new Error('Failed to fetch transactions');
     return Promise.resolve({
@@ -134,6 +141,8 @@ export class MockTransactionRepository implements TransactionRepository {
       id: this.nextId++,
       createdAt: new Date().toISOString(),
       name: formValues.name,
+      source: 'pos',
+      table: null,
       orderNumber: formValues.orderNumber,
       total: 0,
       totalIncome: 0,

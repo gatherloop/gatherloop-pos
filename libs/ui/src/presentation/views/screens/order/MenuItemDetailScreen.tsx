@@ -1,9 +1,6 @@
 import { X } from '@tamagui/lucide-icons';
 import { Button, Paragraph, ScrollView, Text, TextArea, XStack, YStack } from 'tamagui';
 import { match, P } from 'ts-pattern';
-// Deep imports, not the `domain`/`components/base` barrels (D20): those
-// barrels also re-export every POS usecase and Navbar/Sidebar — dead weight
-// the customer bundle does not ship (D6).
 import { Product } from '../../../../domain/entities/Product';
 import { formatRupiah } from '../../../../utils/currency';
 import { ErrorView } from '../../components/base/ErrorView';
@@ -33,10 +30,6 @@ export type MenuItemDetailScreenProps = {
   onAmountChange: (amount: number) => void;
   note: string;
   onNoteChange: (note: string) => void;
-  // FR-5 in docs/prd-order-app-ux-improvements.md: replaces the old
-  // `isAddToCartEnabled` boolean so the three CTA cases stay exhaustive. The
-  // CTA is enabled for both `ready` and `incomplete` — only `resolving`
-  // disables it.
   ctaState: 'ready' | 'incomplete' | 'resolving';
   missingOptionNames: string[];
   validationMessage: string | null;
@@ -44,12 +37,6 @@ export type MenuItemDetailScreenProps = {
   onRetryButtonPress: () => void;
 };
 
-// FR-6 in docs/prd-table-ordering.md: the item detail sheet, mounted at
-// `/order/t/{code}/products/{productId}` over the menu (route-addressable
-// so Android back and deep links behave). FR-5 in
-// docs/prd-order-app-ux-improvements.md: the Add-to-cart CTA is always
-// enabled except while resolving, and `missingOptionNames`/
-// `validationMessage` are derived by the handler, not this component.
 export const MenuItemDetailScreen = ({
   isOpen,
   onOpenChange,

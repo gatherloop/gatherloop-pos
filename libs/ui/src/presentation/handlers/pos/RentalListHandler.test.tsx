@@ -44,7 +44,6 @@ const createProps = (
   };
 };
 
-/** Returns a RentalRepository with checkinAt set to now so canDelete is true */
 const createRecentRentalRepo = () => {
   const rentalRepo = new MockRentalRepository();
   rentalRepo.rentals = rentalRepo.rentals.map((r) => ({
@@ -233,7 +232,6 @@ describe('RentalListHandler', () => {
       });
 
       expect(screen.queryByText('Delete Rental')).toBeNull();
-      // After deleting one rental, only one remains
       expect(screen.getAllByText(/Rental [12]/).length).toBe(1);
     });
 

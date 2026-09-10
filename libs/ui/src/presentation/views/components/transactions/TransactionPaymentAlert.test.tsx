@@ -131,9 +131,6 @@ describe('TransactionPaymentAlert', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  // The paidAmount/isCashless sync effect (moved here from the controller,
-  // TRD phase 14) — selecting a cashless wallet forces paidAmount to the
-  // transaction total, and selecting a cash wallet leaves it alone.
   describe('cashless sync', () => {
     it('forces paidAmount to the transaction total when a cashless wallet is selected', async () => {
       const user = userEvent.setup();
@@ -150,8 +147,6 @@ describe('TransactionPaymentAlert', () => {
       await user.click(screen.getByRole('option', { name: 'Bank Transfer' }));
       await user.click(screen.getByRole('button', { name: 'Submit' }));
 
-      // The resolver only validates (and so only passes through)
-      // `wallet.id` — see `transactionPayFormSchema`'s comment.
       expect(onSubmit.mock.calls[0][0]).toEqual({
         wallet: { id: cashlessWallet.id },
         paidAmount: 50000,
@@ -197,8 +192,6 @@ describe('TransactionPaymentAlert', () => {
     });
   });
 
-  // PRD FR-7: the payment alert must be usable at compact width — it can
-  // open on top of (or right after) the compact cart sheet on Create.
   describe('compact layout (media.sm true)', () => {
     beforeEach(() => {
       (useMedia as jest.Mock).mockReturnValue({ sm: true });
@@ -218,8 +211,6 @@ describe('TransactionPaymentAlert', () => {
     });
 
     it('still renders the paid-amount and change fields for a non-cashless wallet', async () => {
-      // mockWallet has isCashless: false — cash payments need a paid amount
-      // and a computed change, unlike a cashless (bank transfer) wallet.
       const user = userEvent.setup();
       const options = [{ label: mockWallet.name, value: mockWallet }];
       render(<Wrapper walletSelectOptions={options} />);

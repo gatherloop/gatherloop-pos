@@ -22,7 +22,6 @@ describe('CalculationCompleteUsecase', () => {
       expect(tester.state.type).toBe('completing');
 
       await flushPromises();
-      // completingSuccess -> onStateChange dispatches HIDE_CONFIRMATION -> hidden
       expect(tester.state.type).toBe('hidden');
     });
   });
@@ -52,7 +51,6 @@ describe('CalculationCompleteUsecase', () => {
       expect(tester.state.type).toBe('completing');
 
       await flushPromises();
-      // completing -> completingError -> onStateChange(completingError) -> COMPLETE_CANCEL -> shown
       expect(tester.state.type).toBe('shown');
     });
   });

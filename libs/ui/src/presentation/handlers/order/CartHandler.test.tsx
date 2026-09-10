@@ -97,8 +97,6 @@ describe('CartHandler', () => {
     expect(screen.getByText('Es Kopi Susu')).toBeTruthy();
     expect(screen.getByText('Regular')).toBeTruthy();
     expect(screen.getByText('Catatan: less sugar')).toBeTruthy();
-    // The single line's subtotal and the cart's total coincide (one line),
-    // so both render "Rp 36.000" — one for the line, one for the summary.
     expect(screen.getAllByText('Rp 36.000')).toHaveLength(2);
   });
 
@@ -112,8 +110,6 @@ describe('CartHandler', () => {
 
     await user.click(screen.getByLabelText('Tambah jumlah'));
 
-    // Optimistic: both the line subtotal and the cart total update
-    // immediately, before the mock repository's promise resolves.
     expect(screen.getAllByText('Rp 36.000')).toHaveLength(2);
 
     await settle();
@@ -233,10 +229,6 @@ describe('CartHandler', () => {
     expect(screen.getByText('Keranjang kosong')).toBeTruthy();
   });
 
-  // D6/D9 in docs/trd-order-app-composition-and-ssr.md: the edit modal is a
-  // state transition, not a route — no navigation, and the cart list stays
-  // mounted behind it (formerly `CartItemEdit`, its own composition root at
-  // `/t/{code}/cart/items/{cartItemId}`).
   describe('the edit modal', () => {
     it('opens with no navigation when the edit button is pressed, seeded from the line', async () => {
       const user = userEvent.setup();
@@ -253,16 +245,12 @@ describe('CartHandler', () => {
       await user.click(screen.getByLabelText('Ubah Es Kopi Susu'));
 
       expect(mockPush).not.toHaveBeenCalled();
-      // Renders behind the modal too — one on the cart line, one in the
-      // modal header.
       expect(screen.getAllByText('Es Kopi Susu')).toHaveLength(2);
       expect(
         (screen.getByPlaceholderText(
           'Contoh: less sugar, tanpa es'
         ) as HTMLTextAreaElement).value
       ).toBe('less sugar');
-      // Two steppers exist while the modal is open — one on the cart line
-      // behind it, seeded from the same line's amount, one in the modal.
       expect(screen.getAllByLabelText('Tambah jumlah')).toHaveLength(2);
     });
 
@@ -284,9 +272,6 @@ describe('CartHandler', () => {
       const noteInput = screen.getByPlaceholderText(
         'Contoh: less sugar, tanpa es'
       );
-      // Two steppers exist while the modal is open — one on the cart line
-      // behind it, one in the modal itself; the modal's is the one mounted
-      // last.
       const steppers = screen.getAllByLabelText('Tambah jumlah');
       await user.click(steppers[steppers.length - 1]);
       await user.clear(noteInput);
@@ -300,7 +285,6 @@ describe('CartHandler', () => {
         note: 'tanpa es',
       });
       expect(screen.queryByLabelText('Tutup')).toBeNull();
-      // The cart, still mounted, reflects the save.
       expect(screen.getByText('Catatan: tanpa es')).toBeTruthy();
     });
 

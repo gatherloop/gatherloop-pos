@@ -22,8 +22,6 @@ const DefaultStory = () => (
   />
 );
 
-// Compact layout (PRD FR-2): at ≤800px the picker fills the screen and the
-// cart moves behind a floating button into a sheet.
 const CompactWithRentalsStory = () => (
   <RentalCheckoutFormView
     variant={{ type: 'loaded' }}

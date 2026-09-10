@@ -14,10 +14,6 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-// TestExpenseRoute_StatisticsNotSwallowedByExpenseId guards against the
-// routing risk called out by the expense statistics PRD: /expenses/statistics
-// must be registered (and therefore matched) before /expenses/{expenseId},
-// otherwise mux would capture "statistics" as an expenseId path variable.
 func TestExpenseRoute_StatisticsNotSwallowedByExpenseId(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

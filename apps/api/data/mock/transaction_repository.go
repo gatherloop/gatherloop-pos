@@ -101,33 +101,33 @@ func (mr *MockTransactionRepositoryMockRecorder) GetTransactionById(ctx, id any)
 }
 
 // GetTransactionList mocks base method.
-func (m *MockTransactionRepository) GetTransactionList(ctx context.Context, query string, sortBy domain.SortBy, order domain.Order, skip, limit int, paymentStatus domain.PaymentStatus, walletId *int) ([]domain.Transaction, *domain.Error) {
+func (m *MockTransactionRepository) GetTransactionList(ctx context.Context, query string, sortBy domain.SortBy, order domain.Order, skip, limit int, paymentStatus domain.PaymentStatus, walletId *int, source *domain.TransactionSource) ([]domain.Transaction, *domain.Error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetTransactionList", ctx, query, sortBy, order, skip, limit, paymentStatus, walletId)
+	ret := m.ctrl.Call(m, "GetTransactionList", ctx, query, sortBy, order, skip, limit, paymentStatus, walletId, source)
 	ret0, _ := ret[0].([]domain.Transaction)
 	ret1, _ := ret[1].(*domain.Error)
 	return ret0, ret1
 }
 
 // GetTransactionList indicates an expected call of GetTransactionList.
-func (mr *MockTransactionRepositoryMockRecorder) GetTransactionList(ctx, query, sortBy, order, skip, limit, paymentStatus, walletId any) *gomock.Call {
+func (mr *MockTransactionRepositoryMockRecorder) GetTransactionList(ctx, query, sortBy, order, skip, limit, paymentStatus, walletId, source any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTransactionList", reflect.TypeOf((*MockTransactionRepository)(nil).GetTransactionList), ctx, query, sortBy, order, skip, limit, paymentStatus, walletId)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTransactionList", reflect.TypeOf((*MockTransactionRepository)(nil).GetTransactionList), ctx, query, sortBy, order, skip, limit, paymentStatus, walletId, source)
 }
 
 // GetTransactionListTotal mocks base method.
-func (m *MockTransactionRepository) GetTransactionListTotal(ctx context.Context, query string, paymentStatus domain.PaymentStatus, walletId *int) (int64, *domain.Error) {
+func (m *MockTransactionRepository) GetTransactionListTotal(ctx context.Context, query string, paymentStatus domain.PaymentStatus, walletId *int, source *domain.TransactionSource) (int64, *domain.Error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetTransactionListTotal", ctx, query, paymentStatus, walletId)
+	ret := m.ctrl.Call(m, "GetTransactionListTotal", ctx, query, paymentStatus, walletId, source)
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(*domain.Error)
 	return ret0, ret1
 }
 
 // GetTransactionListTotal indicates an expected call of GetTransactionListTotal.
-func (mr *MockTransactionRepositoryMockRecorder) GetTransactionListTotal(ctx, query, paymentStatus, walletId any) *gomock.Call {
+func (mr *MockTransactionRepositoryMockRecorder) GetTransactionListTotal(ctx, query, paymentStatus, walletId, source any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTransactionListTotal", reflect.TypeOf((*MockTransactionRepository)(nil).GetTransactionListTotal), ctx, query, paymentStatus, walletId)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTransactionListTotal", reflect.TypeOf((*MockTransactionRepository)(nil).GetTransactionListTotal), ctx, query, paymentStatus, walletId, source)
 }
 
 // GetTransactionStatistics mocks base method.
@@ -157,6 +157,20 @@ func (m *MockTransactionRepository) PayTransaction(ctx context.Context, walletId
 func (mr *MockTransactionRepositoryMockRecorder) PayTransaction(ctx, walletId, paidAt, paidAmount, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PayTransaction", reflect.TypeOf((*MockTransactionRepository)(nil).PayTransaction), ctx, walletId, paidAt, paidAmount, id)
+}
+
+// UndeleteTransactionById mocks base method.
+func (m *MockTransactionRepository) UndeleteTransactionById(ctx context.Context, id int64) *domain.Error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UndeleteTransactionById", ctx, id)
+	ret0, _ := ret[0].(*domain.Error)
+	return ret0
+}
+
+// UndeleteTransactionById indicates an expected call of UndeleteTransactionById.
+func (mr *MockTransactionRepositoryMockRecorder) UndeleteTransactionById(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UndeleteTransactionById", reflect.TypeOf((*MockTransactionRepository)(nil).UndeleteTransactionById), ctx, id)
 }
 
 // UnpayTransaction mocks base method.

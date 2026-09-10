@@ -9,9 +9,6 @@ type Context = {
   errorMessage: string | null;
 };
 
-// FR-4 in docs/prd-table-ordering.md. `noCode` is a distinct terminal state
-// (not just "error") because landing on `/order` with no code at all is an
-// expected, not exceptional, outcome (D17) — it never attempts a fetch.
 export type TableResolveState = (
   | { type: 'noCode' }
   | { type: 'idle' }
@@ -30,12 +27,6 @@ export type TableResolveAction =
 
 export type TableResolveParams = {
   code: string | null;
-  // P6 in docs/trd-order-app-composition-and-ssr.md: seeded by the owning
-  // page's getServerSideProps once the table already resolved on the
-  // server. `undefined` (every call site before P6) keeps the client-only
-  // idle → resolving → resolved/notFound path; `null` seeds `notFound`
-  // directly; a `PublicTable` seeds `resolved` directly — either way the
-  // mount fetch this usecase would otherwise make never fires.
   table?: PublicTable | null;
 };
 

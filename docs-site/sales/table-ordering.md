@@ -6,7 +6,7 @@ A customer sits down, scans the QR code printed on their table, and lands on a h
 
 Each menu item shows only its short, customer-facing **description** — never the staff-only preparation recipe, which the public API never returns (see [Products](/catalog/products) for that split). Once something is in the cart, a customer can edit a line's **quantity and note** at any time before checkout, without deleting and re-adding the item; the variant itself (the size or option combination already chosen) can't be changed from that edit screen — picking a different one still means removing the line and adding the item again.
 
-This ships the **discovery-and-cart half** of the flow only. A visible **Checkout** button explains that payment is QRIS-only and that the order hasn't been sent to the kitchen yet — turning that cart into an actual paid transaction is deliberately left for a follow-up project.
+This ships the **discovery-and-cart half** of the flow. The cart's **Checkout** button leads into a real QRIS payment and an order-status screen — see [Order Checkout (QRIS)](/sales/order-checkout) for that half.
 
 ## Why it matters
 
@@ -24,7 +24,6 @@ It also had to be built without inventing a second product. The customer-facing 
 - **Smart line merging** — adding the same variant with the same note again increases its quantity instead of creating a duplicate line; a different note stays its own line, since the kitchen treats it differently.
 - **Edit a cart line's quantity and note** — every cart line has an edit button that opens a modal with the amount and note editable and the chosen variant shown read-only; saving updates the line without leaving the cart. Changing the variant itself still means deleting the line and re-adding the item.
 - **Table floor shown in the header** — the resolved table's header shows its floor number alongside the label (e.g. "Lantai 2"), so a guest in a multi-floor venue can confirm they scanned the right table's QR.
-- **Checkout stub, not a live checkout** — a clearly-labeled "coming soon" screen closes the loop for review and user testing without creating a transaction or touching payment.
 - **A menu that never looks broken** — items without a photo or a description get a real placeholder (a category-appropriate icon), not a missing image or a collapsed layout.
 - **Bahasa Indonesia, mobile-first** — the customer app is copy-in-Indonesian, single-column, designed for a phone screen, independent of the English, desktop-oriented POS.
 
@@ -39,3 +38,4 @@ It also had to be built without inventing a second product. The customer-facing 
 - Table admin (staff-facing): `libs/ui/src/presentation/screens/Table{List,Create}Screen.tsx`, `apps/api/domain/table_usecase.go` (random Crockford-base32 code generation, `regenerate-code` to invalidate a leaked QR); `floor_number` (migration `000021_add_table_floor_number`) is exposed on `PublicTable` and rendered in `TableResolveScreen.tsx`
 - Design doc: `docs/prd-table-ordering.md` — the full set of decisions, including why the catalog needed a new unauthenticated route group (D1), why table codes are random rather than sequential (D6), and what's explicitly deferred to the next project (turning a cart into a transaction, QRIS payment integration, order status)
 - Follow-up design doc: `docs/prd-order-app-ux-improvements.md` — the floating cart bar fix, the description/recipe split, the floor-number header, and the cart-line edit modal covered above
+- Follow-up design doc: `docs/prd-order-checkout-qris-doku.md` — turns the cart this page builds into a paid `Transaction` via QRIS; see [Order Checkout (QRIS)](/sales/order-checkout)

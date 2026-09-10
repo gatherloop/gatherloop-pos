@@ -37,10 +37,6 @@ const writeLocalStorage = (key: string, value: string): void => {
   }
 };
 
-// D3 in docs/trd-order-app-composition-and-ssr.md: constructed with the id
-// each composition root's page already resolved server-side
-// (resolveSession, from the request cookie) — no context, no
-// `useSessionRepository`.
 export class CookieSessionRepository implements SessionRepository {
   private sessionId: string | null;
   private reconciled = false;
@@ -49,15 +45,6 @@ export class CookieSessionRepository implements SessionRepository {
     this.sessionId = sessionId ?? null;
   }
 
-  // D4: Safari ITP can evict the cookie between the server's resolve and
-  // this call, and a page with no getServerSideProps (the static 404 — Next
-  // rejects data fetching there) never gets a server-resolved id at all. On
-  // the first client-side call, the localStorage mirror wins if it holds a
-  // different valid id (it's what survived the eviction); otherwise the
-  // server-seeded id wins; and if neither is usable, one is minted here —
-  // the same fallback BrowserSessionRepository used to be solely
-  // responsible for, kept only for the pages that can't seed one. This
-  // mutates on read deliberately; see D4.
   getSessionId: SessionRepository['getSessionId'] = () => {
     if (typeof window !== 'undefined' && !this.reconciled) {
       this.reconciled = true;

@@ -62,7 +62,6 @@ describe('RentalCheckoutHandler', () => {
     });
 
     it('should show error state when rental fetch fails', async () => {
-      // Clear rentals so changingParams dispatches FETCH (not REVALIDATE), enabling error state
       const rentalRepo = new MockRentalRepository();
       rentalRepo.rentals = [];
       rentalRepo.setShouldFail(true);
@@ -110,7 +109,6 @@ describe('RentalCheckoutHandler', () => {
         await flushPromises();
       });
 
-      // Press a rental item to add it to the checkout form
       await user.click(screen.getByText('Rental 1'));
 
       await act(async () => {
@@ -123,7 +121,6 @@ describe('RentalCheckoutHandler', () => {
         await flushPromises();
       });
 
-      // MockRentalRepository.checkoutRentals returns { transactionId: 1 }
       expect(mockRouterPush).toHaveBeenCalledWith('/transactions/1');
     });
 
@@ -315,8 +312,6 @@ describe('RentalCheckoutHandler', () => {
         await flushPromises();
       });
 
-      // 'Rental 1' now appears both in the list row and in the cart body, so
-      // disambiguate: the list row is the first occurrence in the tree.
       await user.click(screen.getAllByText('Rental 1')[0]);
 
       await act(async () => {
@@ -330,7 +325,6 @@ describe('RentalCheckoutHandler', () => {
   describe('error recovery', () => {
     it('should refetch rentals when retry button is pressed', async () => {
       const user = userEvent.setup();
-      // Clear rentals so changingParams dispatches FETCH, enabling error state
       const rentalRepo = new MockRentalRepository();
       rentalRepo.rentals = [];
       rentalRepo.setShouldFail(true);
@@ -345,7 +339,6 @@ describe('RentalCheckoutHandler', () => {
         screen.getByRole('heading', { name: 'Failed to Fetch Rentals' })
       ).toBeTruthy();
 
-      // Restore rentals and clear failure flag before retrying
       rentalRepo.reset();
       rentalRepo.setShouldFail(false);
 

@@ -22,7 +22,6 @@ describe('CouponDeleteUsecase', () => {
       expect(tester.state.type).toBe('deleting');
 
       await flushPromises();
-      // deletingSuccess -> onStateChange dispatches HIDE_CONFIRMATION -> hidden
       expect(tester.state.type).toBe('hidden');
     });
   });
@@ -52,7 +51,6 @@ describe('CouponDeleteUsecase', () => {
       expect(tester.state.type).toBe('deleting');
 
       await flushPromises();
-      // deleting -> deletingError -> onStateChange(deletingError) -> DELETE_CANCEL -> shown
       expect(tester.state.type).toBe('shown');
     });
   });

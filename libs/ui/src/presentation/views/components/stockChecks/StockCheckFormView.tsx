@@ -92,12 +92,6 @@ const StockCheckFields = ({
   ).length;
   const pendingRows = watchedItems.map((item) => item.currentStock === null);
 
-  // PRD FR-6: cross-platform replacement for the old
-  // `scrollIntoView` + `querySelector('input')` jump, which is DOM-only and
-  // silently did nothing on React Native. Each row reports its own vertical
-  // offset (relative to the row list below) as it lays out; scrolling reads
-  // the latest reported offset and calls `scrollTo` on the `ScrollView` ref,
-  // then focuses the row's input through the ref `InputNumber` forwards.
   const scrollViewRef = useRef<RNScrollView>(null);
   const scrollViewHeightRef = useRef(0);
   const rowOffsetsRef = useRef<number[]>([]);
@@ -134,10 +128,6 @@ const StockCheckFields = ({
       const firstPendingIndex = pendingRows.findIndex(Boolean);
       if (firstPendingIndex >= 0) {
         pendingJumpIndexRef.current = firstPendingIndex;
-        // Rows hidden by `display: 'none'` re-layout asynchronously once
-        // the query/filter change above takes effect; wait a couple of
-        // frames so `rowOffsetsRef` reflects the post-filter position
-        // before scrolling, not the stale pre-filter one (PRD FR-6).
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
             const index = pendingJumpIndexRef.current;
@@ -150,11 +140,6 @@ const StockCheckFields = ({
     form.handleSubmit(onSubmit)();
   };
 
-  // FR-4 in docs/prd-stock-check-form-mobile.md: `position: sticky` is
-  // web-only, so the search/filter/counter header is rendered as a fixed
-  // sibling above a bounded `ScrollView` instead — this pins it on React
-  // Native as well as web, with no `Platform.OS` branch. Identical on both
-  // layouts; only the header buttons' touch target grows on compact.
   const headerButtonSize = isCompactLayout ? '$3' : '$2';
   const headerButtonMinSize = isCompactLayout ? 44 : undefined;
 
@@ -208,11 +193,6 @@ const StockCheckFields = ({
         </SizableText>
       </YStack>
 
-      {/* PRD FR-5: on compact, Submit moves into a `PinnedActionBar` that
-          overlays the scroll region instead of trailing the list, so it's
-          reachable without scrolling through 82 rows. This wrapper is the
-          `position: relative` anchor the bar needs; on desktop it renders
-          no bar and is otherwise a no-op container. */}
       <YStack flex={1} position="relative">
         <ScrollView
           flex={1}

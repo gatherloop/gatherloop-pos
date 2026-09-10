@@ -12,18 +12,11 @@ export function setNavigationRef(ref: NavigationContainerRef<ParamListBase>) {
 }
 
 export type SetQueryParamOptions = {
-  // D6 in docs/trd-order-app-composition-and-ssr.md: 'replace' (the
-  // default) is today's POS behaviour — no history entry, so Back skips
-  // over it. The order app's overlay params pass 'push' so Back dismisses
-  // them instead.
   history?: 'push' | 'replace';
 };
 
 export function setQueryParam(
   key: string,
-  // `null` removes the param instead of writing an empty string — used to
-  // clear an overlay selection (D6) rather than leaving a stale `?product=`
-  // in the URL.
   value: string | null,
   options?: SetQueryParamOptions
 ) {

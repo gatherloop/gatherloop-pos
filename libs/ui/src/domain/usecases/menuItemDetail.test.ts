@@ -19,9 +19,6 @@ const createTester = (
   >(new MenuItemDetailUsecase(repository, params));
 
 describe('MenuItemDetailUsecase', () => {
-  // D6 in docs/trd-order-app-composition-and-ssr.md: no item selected at
-  // all — the menu screen's default, since one instance now serves every
-  // selection instead of one route per item.
   it('stays idle, with no fetch, when constructed with no productId', async () => {
     const repository = new MockMenuRepository();
     const fetchSpy = jest.spyOn(repository, 'fetchProductById');
@@ -204,8 +201,6 @@ describe('MenuItemDetailUsecase', () => {
     expect(menuItemDetail.state.product).toEqual(repository.products[0]);
   });
 
-  // D6 in docs/trd-order-app-composition-and-ssr.md: one instance serves
-  // successive selections.
   describe('SELECT_PRODUCT', () => {
     it('fetches the newly selected product from idle', async () => {
       const repository = new MockMenuRepository();

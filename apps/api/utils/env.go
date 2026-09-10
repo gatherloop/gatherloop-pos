@@ -2,6 +2,7 @@ package utils
 
 import (
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/joho/godotenv"
@@ -23,6 +24,15 @@ type Env struct {
 	AppEnv             string
 	ServiceName        string
 	CorsAllowedOrigins []string
+
+	DokuBaseURL           string
+	DokuClientId          string
+	DokuClientSecret      string
+	DokuPrivateKey        string
+	DokuMerchantId        string
+	DokuChannelId         string
+	DokuQrisExpirySeconds int
+	OrderPaymentWalletId  string
 }
 
 func GetEnv() Env {
@@ -53,12 +63,29 @@ func GetEnv() Env {
 		AppEnv:             appEnv,
 		ServiceName:        serviceName,
 		CorsAllowedOrigins: parseCorsAllowedOrigins(os.Getenv("CORS_ALLOWED_ORIGINS")),
+
+		DokuBaseURL:           os.Getenv("DOKU_BASE_URL"),
+		DokuClientId:          os.Getenv("DOKU_CLIENT_ID"),
+		DokuClientSecret:      os.Getenv("DOKU_CLIENT_SECRET"),
+		DokuPrivateKey:        os.Getenv("DOKU_PRIVATE_KEY"),
+		DokuMerchantId:        os.Getenv("DOKU_MERCHANT_ID"),
+		DokuChannelId:         os.Getenv("DOKU_CHANNEL_ID"),
+		DokuQrisExpirySeconds: parseIntWithDefault(os.Getenv("DOKU_QRIS_EXPIRY_SECONDS"), 300),
+		OrderPaymentWalletId:  os.Getenv("ORDER_PAYMENT_WALLET_ID"),
 	}
 }
 
-// parseCorsAllowedOrigins splits a comma-separated list of origins (e.g.
-// "https://gatherloop.github.io,http://localhost:3000") into a trimmed,
-// non-empty slice.
+func parseIntWithDefault(raw string, def int) int {
+	if raw == "" {
+		return def
+	}
+	value, err := strconv.Atoi(raw)
+	if err != nil {
+		return def
+	}
+	return value
+}
+
 func parseCorsAllowedOrigins(raw string) []string {
 	if raw == "" {
 		return nil

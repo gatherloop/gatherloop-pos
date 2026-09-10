@@ -7,9 +7,6 @@ export type TransactionCartButtonProps = {
   onPress: () => void;
 };
 
-// Floating button shown above the compact product picker once the cart is
-// non-empty (PRD "Compact — step 1", FR-3). Delegates its chrome to the
-// shared `FloatingCartButton` (`base/`) and owns only its copy/total.
 export const TransactionCartButton = ({
   itemCount,
   total,

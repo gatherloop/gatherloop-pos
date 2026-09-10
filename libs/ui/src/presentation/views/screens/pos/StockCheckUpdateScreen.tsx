@@ -22,11 +22,6 @@ export const StockCheckUpdateScreen = (props: StockCheckUpdateScreenProps) => {
       showBackButton
       onLogoutPress={props.onLogoutPress}
     >
-      {/* PRD docs/prd-stock-check-form-mobile.md FR-4: `StockCheckFormView`
-          owns its own bounded scroll region (pinned header + `ScrollView
-          flex={1}`) so the search/filter header stays visible on both web
-          and React Native — an outer `ScrollView` here would give it no
-          height to bound against. */}
       <StockCheckFormView
         variant={props.variant}
         defaultValues={props.defaultValues}

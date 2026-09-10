@@ -73,13 +73,9 @@ func TestWalletUsecase_CreateWalletTransfer(t *testing.T) {
 			setupMock: func(r *mock.MockWalletRepository) {
 				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
-				// GetWalletById for fromWallet
 				r.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, Name: "Cash", Balance: 1000}, nil)
-				// UpdateWalletById for fromWallet (deduct)
 				r.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
-				// GetWalletById for toWallet
 				r.EXPECT().GetWalletById(gomock.Any(), int64(2)).Return(domain.Wallet{Id: 2, Name: "Bank", Balance: 500}, nil)
-				// UpdateWalletById for toWallet (credit)
 				r.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(2)).Return(domain.Wallet{}, nil)
 				r.EXPECT().CreateWalletTransfer(gomock.Any(), gomock.Any(), int64(1)).Return(domain.WalletTransfer{Id: 1}, nil)
 			},

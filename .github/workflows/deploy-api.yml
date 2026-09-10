@@ -95,6 +95,14 @@ jobs:
             PORT=${{ secrets.PORT }}
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             CORS_ALLOWED_ORIGINS=${{ secrets.CORS_ALLOWED_ORIGINS }}
+            DOKU_BASE_URL=${{ secrets.DOKU_BASE_URL }}
+            DOKU_CLIENT_ID=${{ secrets.DOKU_CLIENT_ID }}
+            DOKU_CLIENT_SECRET=${{ secrets.DOKU_CLIENT_SECRET }}
+            DOKU_PRIVATE_KEY=${{ secrets.DOKU_PRIVATE_KEY }}
+            DOKU_MERCHANT_ID=${{ secrets.DOKU_MERCHANT_ID }}
+            DOKU_CHANNEL_ID=${{ secrets.DOKU_CHANNEL_ID }}
+            DOKU_QRIS_EXPIRY_SECONDS=${{ secrets.DOKU_QRIS_EXPIRY_SECONDS }}
+            ORDER_PAYMENT_WALLET_ID=${{ secrets.ORDER_PAYMENT_WALLET_ID }}
             APP_ENV=production
             ENV_EOF
             sudo cp apps/api/gatherloop-pos-api.service /etc/systemd/system/

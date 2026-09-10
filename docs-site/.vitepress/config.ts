@@ -6,10 +6,6 @@ const description =
 const siteUrl = 'https://gatherloop.github.io/gatherloop-pos/';
 const ogImage = `${siteUrl}og-image.png`;
 
-// The customer order app moved off this Pages site onto its own Next.js
-// host (docs/trd-order-app-nextjs-migration.md, D3/P6). Injected at build
-// time (see .github/workflows/deploy-pages.yml) so the destination can move
-// without a code change here. No trailing slash.
 const orderAppBaseUrl = process.env.ORDER_APP_BASE_URL ?? '';
 
 export default defineConfig({
@@ -33,16 +29,6 @@ export default defineConfig({
     ['meta', { name: 'twitter:description', content: description }],
     ['meta', { name: 'twitter:image', content: ogImage }],
 
-    // The order app no longer lives on this Pages site (D3/P6 in
-    // docs/trd-order-app-nextjs-migration.md) — it's a real Next.js host now,
-    // so any /gatherloop-pos/order/** path is always a miss here and always
-    // falls back to this Pages site's generated 404.html (GitHub Pages only
-    // ever honors the 404.html at the site root). This script — present on
-    // every page via global `head`, including that 404 page — catches that
-    // case and redirects to the same path on the order app's own origin, so
-    // already-printed QR codes (which still encode this old GitHub Pages
-    // URL) keep working. Plain 404s outside /order/ fall through to
-    // VitePress's normal not-found page.
     [
       'script',
       {},
@@ -81,6 +67,7 @@ export default defineConfig({
           { text: 'Coupons', link: '/sales/coupons' },
           { text: 'Board-game Rentals', link: '/sales/rentals' },
           { text: 'Table Ordering', link: '/sales/table-ordering' },
+          { text: 'Order Checkout (QRIS)', link: '/sales/order-checkout' },
         ],
       },
       {

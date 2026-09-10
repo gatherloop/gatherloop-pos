@@ -22,7 +22,6 @@ describe('StockCheckUpdateUsecase', () => {
         StockCheckUpdateParams
       >(usecase);
 
-      // idle -> onStateChange(idle) synchronously dispatches FETCH -> loading
       expect(tester.state.type).toBe('loading');
       expect(tester.state.values.items).toEqual([]);
 

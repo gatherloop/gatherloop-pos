@@ -36,10 +36,20 @@ type TransactionCoupon struct {
 	TransactionItemId *int64
 }
 
+type TransactionSource string
+
+const (
+	TransactionSourcePos   TransactionSource = "pos"
+	TransactionSourceOrder TransactionSource = "order"
+)
+
 type Transaction struct {
 	Id                 int64
 	CreatedAt          time.Time
 	Name               string
+	Source             TransactionSource
+	CartId             *int64
+	Cart               *Cart
 	OrderNumber        int64
 	WalletId           *int64
 	Wallet             *Wallet

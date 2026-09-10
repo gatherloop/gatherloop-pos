@@ -58,7 +58,6 @@ describe('CalculationListHandler', () => {
         await flushPromises();
       });
 
-      // MockCalculationRepository has 2 calculations with wallet name 'Cash'
       const walletHeadings = screen.getAllByRole('heading', { name: 'Cash' });
       expect(walletHeadings.length).toBe(2);
     });

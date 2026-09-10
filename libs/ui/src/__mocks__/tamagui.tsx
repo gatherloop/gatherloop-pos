@@ -88,7 +88,6 @@ export const Separator = () => React.createElement('hr', null);
 export const Spinner = ({ testID }: AnyProps) =>
   React.createElement('div', { 'data-testid': testID ?? 'spinner' });
 
-// Popover
 const PopoverBase = ({ children }: AnyProps) =>
   React.createElement('div', { 'data-component': 'Popover' }, children);
 const PopoverTrigger = ({ children }: AnyProps) =>
@@ -102,7 +101,6 @@ export const Popover = Object.assign(PopoverBase, {
   Arrow: PopoverArrow,
 });
 
-// RadioGroup
 const RadioGroupContext = React.createContext<{
   value?: string;
   onValueChange?: (value: string) => void;
@@ -134,7 +132,6 @@ export const RadioGroup = Object.assign(RadioGroupBase, {
   Indicator: RadioGroupIndicator,
 });
 
-// YGroup
 const YGroupBase = ({ children }: AnyProps) =>
   React.createElement('div', { 'data-component': 'YGroup' }, children);
 const YGroupItem = ({ children }: AnyProps) =>
@@ -143,7 +140,6 @@ export const YGroup = Object.assign(YGroupBase, {
   Item: YGroupItem,
 });
 
-// Tamagui's built-in ListItem (distinct from our base/ListItem.tsx)
 export const ListItem = ({ children, title, onPress }: AnyProps) =>
   React.createElement(
     onPress ? 'button' : 'div',
@@ -152,7 +148,6 @@ export const ListItem = ({ children, title, onPress }: AnyProps) =>
     children
   );
 
-// AlertDialog — supports onOpenChange context so Cancel children can close the dialog
 const AlertDialogContext = React.createContext<{ onOpenChange?: () => void }>({});
 
 const AlertDialogBase = ({ open, children, onOpenChange }: AnyProps) =>
@@ -172,7 +167,6 @@ const AlertDialogTitle = ({ children }: AnyProps) =>
   React.createElement('h3', null, children);
 const AlertDialogDescription = ({ children }: AnyProps) =>
   React.createElement('p', null, children);
-// Cancel: wraps children in a span that calls onOpenChange when clicked (simulates asChild close)
 const AlertDialogCancel = ({ children }: AnyProps) => {
   const { onOpenChange } = React.useContext(AlertDialogContext);
   return React.createElement('span', { onClick: () => onOpenChange?.() }, children);
@@ -189,7 +183,6 @@ export const AlertDialog = Object.assign(AlertDialogBase, {
   Action: AlertDialogAction,
 });
 
-// Dialog — used by TransactionItemSelect and similar components
 const DialogBase = ({ open, children, onOpenChange }: AnyProps) =>
   open ? React.createElement('div', { 'data-component': 'Dialog' }, children) : null;
 const DialogPortal = ({ children }: AnyProps) =>
@@ -212,7 +205,6 @@ export const Dialog = Object.assign(DialogBase, {
   Close: DialogClose,
 });
 
-// Checkbox — used by RentalCheckinFormView
 const CheckboxBase = ({ children, onCheckedChange, checked }: AnyProps) =>
   React.createElement(
     'div',
@@ -225,7 +217,6 @@ export const Checkbox = Object.assign(CheckboxBase, {
   Indicator: CheckboxIndicator,
 });
 
-// Form
 const FormBase = ({ children, onSubmit, testID }: AnyProps) =>
   React.createElement(
     'form',
@@ -236,7 +227,6 @@ const FormTrigger = ({ children }: AnyProps) =>
   React.createElement(React.Fragment, null, children);
 export const Form = Object.assign(FormBase, { Trigger: FormTrigger });
 
-// Card
 const CardBase = ({ children }: AnyProps) =>
   React.createElement('div', { 'data-component': 'Card' }, children);
 const CardHeader = ({ children }: AnyProps) =>
@@ -245,7 +235,6 @@ const CardFooter = ({ children }: AnyProps) =>
   React.createElement('div', { 'data-component': 'Card.Footer' }, children);
 export const Card = Object.assign(CardBase, { Header: CardHeader, Footer: CardFooter });
 
-// Sheet
 const SheetBase = ({ open, children }: AnyProps) =>
   open ? React.createElement('div', { 'data-component': 'Sheet' }, children) : null;
 const SheetFrame = ({ children }: AnyProps) =>
@@ -261,7 +250,6 @@ export const Sheet = Object.assign(SheetBase, {
   ScrollView: SheetScrollView,
 });
 
-// Adapt
 const AdaptBase = ({ children }: AnyProps) =>
   React.createElement(React.Fragment, null, children);
 const AdaptContents = () => null;
@@ -269,7 +257,6 @@ export const Adapt = Object.assign(AdaptBase, {
   Contents: AdaptContents,
 });
 
-// Select
 const SelectContext = React.createContext<{ onValueChange?: (value: string) => void }>({});
 const SelectBase = ({ children, onValueChange, id, name }: AnyProps) =>
   React.createElement(
@@ -313,7 +300,6 @@ export const Select = Object.assign(SelectBase, {
   Group: SelectGroup,
 });
 
-// Tabs
 const TabsBase = ({ children }: AnyProps) =>
   React.createElement('div', { 'data-component': 'Tabs' }, children);
 const TabsList = ({ children }: AnyProps) =>
@@ -331,7 +317,6 @@ export const Tabs = Object.assign(TabsBase, {
   Content: TabsContent,
 });
 
-// Theme, PortalProvider, SizableText, TextArea, Square
 export const Theme = ({ children }: AnyProps) =>
   React.createElement(React.Fragment, null, children);
 export const PortalProvider = ({ children }: AnyProps) =>
@@ -349,7 +334,6 @@ export const TextArea = React.forwardRef(({ value, placeholder, onChangeText }: 
 export const Square = ({ children }: AnyProps) =>
   React.createElement('div', { 'data-component': 'Square' }, children);
 
-// Accordion
 const AccordionBase = ({ children }: AnyProps) =>
   React.createElement('div', { 'data-component': 'Accordion' }, children);
 const AccordionItem = ({ children }: AnyProps) =>
@@ -374,7 +358,6 @@ export const Accordion = Object.assign(AccordionBase, {
   HeightAnimator: AccordionHeightAnimator,
 });
 
-// Switch
 const SwitchBase = ({ checked, onCheckedChange, id, name, children }: AnyProps) =>
   React.createElement(
     'button',
@@ -390,23 +373,15 @@ const SwitchBase = ({ checked, onCheckedChange, id, name, children }: AnyProps) 
 const SwitchThumb = () => null;
 export const Switch = Object.assign(SwitchBase, { Thumb: SwitchThumb });
 
-// Hooks
 export const usePopoverContext = () => ({ onOpenChange: jest.fn() });
 export const useTheme = () => ({});
-// `jest.fn()` so tests can override the return value per-test (e.g.
-// `(useMedia as jest.Mock).mockReturnValue({ sm: true })`) to exercise the
-// compact layout branch, while the default `{}` keeps every media flag
-// `undefined` — matching production's SSR-first-paint state — so existing
-// tests keep asserting the desktop branch with no changes.
 export const useMedia = jest.fn(() => ({}));
 
-// Utilities
 export const createTamagui = (config: unknown) => config;
 export const styled = (Component: unknown) => Component;
 export const getConfig = () => ({});
 export const config = {};
 
-// Type exports
 export type XStackProps = AnyProps;
 export type YStackProps = AnyProps;
 export type StackProps = AnyProps;

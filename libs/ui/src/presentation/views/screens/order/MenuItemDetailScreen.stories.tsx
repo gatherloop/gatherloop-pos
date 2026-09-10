@@ -36,8 +36,6 @@ const esKopiSusu = {
   createdAt: '2024-03-20T00:00:00.000Z',
 };
 
-// FR-5: a two-option product exercises the combined "Lengkapi pilihan A dan
-// B" message when both groups are unselected.
 const esKopiSusuDenganEs = {
   ...esKopiSusu,
   options: [
@@ -103,8 +101,6 @@ export const Loading: Story = {
   args: { variant: { type: 'loading' }, ctaState: 'incomplete' },
 };
 
-// FR-5: options unselected, CTA reads "Tambah ke Keranjang" and is enabled,
-// but the guest hasn't pressed it yet — no error shown.
 export const IncompleteUntouched: Story = {
   args: {
     variant: {
@@ -118,8 +114,6 @@ export const IncompleteUntouched: Story = {
   },
 };
 
-// FR-5: the guest pressed the CTA while options were incomplete — the
-// missing group's label tints red and the inline message names it.
 export const IncompleteWithError: Story = {
   args: {
     variant: {

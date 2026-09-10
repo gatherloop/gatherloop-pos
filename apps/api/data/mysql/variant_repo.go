@@ -92,7 +92,6 @@ func (repo Repository) CreateVariant(ctx context.Context, variant domain.Variant
 	db := GetDbFromCtx(ctx, repo.db)
 	payload := ToVariantDB(variant)
 
-	// Separate tiers so GORM doesn't auto-manage them; we insert manually after.
 	tiers := payload.PricingTiers
 	payload.PricingTiers = nil
 
@@ -130,7 +129,6 @@ func (repo Repository) UpdateVariantById(ctx context.Context, variant domain.Var
 
 	variantPayload := ToVariantDB(variant)
 
-	// Separate tiers so GORM doesn't auto-manage them; we replace them manually.
 	tiers := variantPayload.PricingTiers
 	variantPayload.PricingTiers = nil
 
@@ -138,7 +136,6 @@ func (repo Repository) UpdateVariantById(ctx context.Context, variant domain.Var
 		return domain.Variant{}, ToErrorCtx(ctx, result.Error, "UpdateVariantById")
 	}
 
-	// Handle deletion of removed materials
 	variantMaterialIdsToKeep := []int64{}
 	for _, variantMaterial := range variantPayload.Materials {
 		variantMaterialIdsToKeep = append(variantMaterialIdsToKeep, variantMaterial.Id)
@@ -153,7 +150,6 @@ func (repo Repository) UpdateVariantById(ctx context.Context, variant domain.Var
 		}
 	}
 
-	// Handle deletion of removed variant values
 	variantValueIdsToKeep := []int64{}
 	for _, variantValue := range variantPayload.VariantValues {
 		variantValueIdsToKeep = append(variantValueIdsToKeep, variantValue.Id)
@@ -168,7 +164,6 @@ func (repo Repository) UpdateVariantById(ctx context.Context, variant domain.Var
 		}
 	}
 
-	// Replace pricing tiers atomically: delete all existing, then insert the new set.
 	if result := db.Table("pricing_tiers").Where("variant_id = ?", id).Delete(&PricingTier{}); result.Error != nil {
 		return domain.Variant{}, ToErrorCtx(ctx, result.Error, "UpdateVariantById")
 	}

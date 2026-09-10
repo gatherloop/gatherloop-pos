@@ -14,7 +14,6 @@ describe('WalletUpdateUsecase', () => {
       const usecase = new WalletUpdateUsecase(repository, { walletId: 1, wallet: null });
       const tester = new UsecaseTester<WalletUpdateUsecase, WalletUpdateState, WalletUpdateAction, WalletUpdateParams>(usecase);
 
-      // idle -> onStateChange(idle) dispatches FETCH -> loading
       expect(tester.state.type).toBe('loading');
 
       await flushPromises();
@@ -71,7 +70,6 @@ describe('WalletUpdateUsecase', () => {
       expect(tester.state.type).toBe('submitting');
 
       await flushPromises();
-      // submitError auto-cancels to loaded via onStateChange(submitError) -> SUBMIT_CANCEL
       expect(tester.state.type).toBe('submitError');
     });
   });

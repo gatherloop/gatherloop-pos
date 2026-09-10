@@ -1,5 +1,3 @@
-// Deep imports, not the root barrels (D20): those also re-export every POS
-// composition root, which would bloat the customer bundle with the POS (D6).
 import { ApiCartRepository } from '../../data/api/cart';
 import { ApiPublicTableRepository } from '../../data/api/publicTable';
 import { CookieSessionRepository } from '../../data/session/CookieSessionRepository';
@@ -12,18 +10,9 @@ import { CartHandler } from '../../presentation/handlers/order/CartHandler';
 export type CartProps = {
   sessionId: string;
   code: string;
-  // P6 in docs/trd-order-app-composition-and-ssr.md: seeded by the page's
-  // getServerSideProps (D5 keeps the cart itself unseeded — only the table
-  // is SSR'd here).
   table?: PublicTable | null;
 };
 
-// Composition root for the cart screen (FR-7 in
-// docs/prd-table-ordering.md). Per D9 in
-// docs/trd-order-app-composition-and-ssr.md this now wires up the table
-// shell and the item-edit modal too, in addition to the cart itself — the
-// whole vertical slice `/t/{code}/cart` renders, structurally identical to
-// `app/order/MenuList.tsx` (§3.5).
 export function Cart({ sessionId, code, table }: CartProps) {
   const sessionRepository = new CookieSessionRepository(sessionId);
   const publicTableRepository = new ApiPublicTableRepository();

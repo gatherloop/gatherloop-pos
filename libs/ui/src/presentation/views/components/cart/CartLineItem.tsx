@@ -1,23 +1,10 @@
 import { Pencil, Trash2 } from '@tamagui/lucide-icons';
 import { Button, Text, XStack, YStack } from 'tamagui';
-// Deep imports, not the `domain`/`components/base` barrels (D20): those
-// barrels also re-export every POS usecase and Navbar/Sidebar — dead weight
-// the customer bundle does not ship (D6).
 import { CartItem } from '../../../../domain/entities/Cart';
 import { formatRupiah } from '../../../../utils/currency';
 import { AmountStepper } from '../menu/AmountStepper';
 import { MenuItemThumbnail } from '../menu/MenuItemThumbnail';
 
-// FR-7 in docs/prd-table-ordering.md: one line in the cart screen. Option
-// values are read-only here — re-picking options is an item-detail concern.
-// FR-9 in docs/prd-order-app-ux-improvements.md gives the note and amount an
-// edit path of their own (`onEditPress`), so this line still only ever
-// changes quantity inline, opens the edit modal, or disappears via
-// `onRemovePress`.
-//
-// FR-7 in docs/prd-order-app-ux-improvements.md: the stepper and delete
-// button are compacted to 32x32 here so several stacked rows don't crowd out
-// the product name/options — hitSlop keeps the touch target at 44px.
 export type CartLineItemProps = {
   item: CartItem;
   onAmountChange: (amount: number) => void;

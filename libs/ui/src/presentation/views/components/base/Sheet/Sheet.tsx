@@ -9,12 +9,6 @@ export type SheetProps = {
 };
 
 export const Sheet = ({ isOpen, onOpenChange, children }: SheetProps) => {
-  // Keeps a focused input (and a pinned footer below it) reachable above the
-  // software keyboard: `moveOnKeyboardChange` shrinks the frame by the
-  // keyboard height on native, and `useWebVisualViewportHeight` caps it to
-  // the space the on-screen keyboard actually leaves on web, where the
-  // library's own keyboard handling is a no-op (PRD "rental checkin mobile"
-  // Phase 4).
   const webVisualViewportHeight = useWebVisualViewportHeight();
 
   return (

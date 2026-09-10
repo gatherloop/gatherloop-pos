@@ -1,10 +1,3 @@
--- Backfill transaction_item_values for transaction items that are still
--- missing their option / option-value snapshot. Migration 000005 backfilled
--- once at table creation, but transactions created afterwards skipped the
--- snapshot due to a GORM cascade gap on CreateTransaction, leaving a mix of
--- backfilled and empty items. This re-runs the same snapshot only for items
--- that currently have no rows in transaction_item_values, so already-filled
--- items are untouched.
 INSERT INTO `transaction_item_values` (`transaction_item_id`, `option_name`, `option_value_name`)
 SELECT ti.`id`, o.`name`, ov.`name`
 FROM `transaction_items` ti

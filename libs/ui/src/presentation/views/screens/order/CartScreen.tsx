@@ -1,8 +1,5 @@
 import { Button, Text, XStack, YStack } from 'tamagui';
 import { match } from 'ts-pattern';
-// Deep imports, not the `domain`/`components/base` barrels (D20): those
-// barrels also re-export every POS usecase and Navbar/Sidebar — dead weight
-// the customer bundle does not ship (D6).
 import { Cart } from '../../../../domain/entities/Cart';
 import { formatRupiah } from '../../../../utils/currency';
 import { ConfirmationAlert } from '../../components/base/ConfirmationAlert/ConfirmationAlert';
@@ -26,11 +23,6 @@ export type CartScreenVariant =
   | { type: 'loaded'; cart: Cart };
 
 export type CartScreenProps = {
-  // D9 in docs/trd-order-app-composition-and-ssr.md: this screen renders
-  // its own table shell now (formerly `TableResolve`, a wrapper root) — the
-  // same shape `MenuListScreen` renders it in. No floating cart bar here
-  // (unlike `MenuListScreen`): this screen is the cart, and it already
-  // renders its own sticky Checkout bar in the same footer position.
   tableVariant: TableResolveScreenProps['variant'];
   variant: CartScreenVariant;
   isMutating: boolean;
@@ -46,17 +38,9 @@ export type CartScreenProps = {
   onAddMoreItemsPress: () => void;
   onCheckoutPress: () => void;
   onRetryButtonPress: () => void;
-  // D6/D9: the edit modal is a child of this screen now (formerly its own
-  // route and composition root) — `null` when nothing is selected, the same
-  // shape `MenuListScreen` passes `MenuItemDetailScreen`'s props in.
   itemEdit: (CartItemEditScreenProps & { isOpen: true }) | null;
 };
 
-// FR-7 in docs/prd-table-ordering.md: `/order/t/{code}/cart`. The Checkout
-// button stays sticky via the same CSS `position: sticky` trick
-// MenuListScreen uses for its search bar — bottom instead of top — rather
-// than borrowing `OrderLayout`'s footer slot, which this route hides in
-// favor of this screen's own bottom bar (see `app/TableResolve.tsx`).
 export const CartScreen = ({
   tableVariant,
   variant,
@@ -156,10 +140,7 @@ export const CartScreen = ({
 
               <YStack
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-expect-error - Tamagui's type doesn't include CSS
-                // `sticky`, but it passes through to the underlying web style
-                // (see MenuListScreen for the same pattern, there stuck to
-                // the top instead of the bottom).
+                // @ts-expect-error
                 position="sticky"
                 bottom={0}
                 zIndex={11}

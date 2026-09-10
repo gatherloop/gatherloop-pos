@@ -42,7 +42,6 @@ describe('ChecklistSessionDeleteUsecase', () => {
       expect(tester.state.type).toBe('deleting');
 
       await flushPromises();
-      // deletingSuccess auto-hides via onStateChange
       expect(tester.state.type).toBe('hidden');
       expect(repository.sessions).toHaveLength(0);
     });
@@ -83,7 +82,6 @@ describe('ChecklistSessionDeleteUsecase', () => {
       tester.dispatch({ type: 'DELETE' });
 
       await flushPromises();
-      // deletingError auto-cancels to shown
       expect(tester.state.type).toBe('shown');
     });
   });

@@ -29,7 +29,6 @@ export const ChecklistSessionDetailHandler = ({
   const checklistSessionDelete = useUsecase(checklistSessionDeleteUsecase);
   const router = useRouter();
 
-  // Navigate back after deletion
   useEffect(() => {
     match(checklistSessionDelete.state)
       .with({ type: 'deletingSuccess' }, () => {

@@ -27,6 +27,21 @@ env:
   API_PORT: '8080'
   E2E_USERNAME: e2e
   E2E_PASSWORD: e2e-password
+  # Phase 13 in docs/prd-order-checkout-qris-doku.md: order-web-e2e's
+  # checkout.spec.ts runs the QRIS flow against apps/api/cmd/dokustub, a
+  # stand-in for DOKU's sandbox, never the real thing. None of these are
+  # real DOKU credentials — the stub never checks them — they only have to
+  # agree with each other and with DOKU_PRIVATE_KEY (generated per run,
+  # below).
+  DOKUSTUB_PORT: '8090'
+  DOKU_CLIENT_ID: e2e-doku-client-id
+  DOKU_CLIENT_SECRET: e2e-doku-client-secret
+  DOKU_MERCHANT_ID: e2e-doku-merchant-id
+  DOKU_CHANNEL_ID: e2e-doku-channel-id
+  # D15: the wallet ORDER_PAYMENT_WALLET_ID must already exist when the API
+  # boots, so it is seeded with this fixed id before the API starts rather
+  # than created through the API afterwards.
+  ORDER_PAYMENT_WALLET_ID: '1'
 
 jobs:
   e2e:
@@ -111,8 +126,55 @@ jobs:
           mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" -p"$DB_PASSWORD" "$DB_NAME" \
             -e "INSERT INTO users (username, password) VALUES ('${E2E_USERNAME}', '${hash}');"
 
+      - name: Seed the order-payment QRIS wallet
+        # D15 in docs/prd-order-checkout-qris-doku.md: ORDER_PAYMENT_WALLET_ID
+        # must already point at an existing, non-deleted, is_payment_target
+        # wallet by the time the API boots (PaymentUsecase.Checkout validates
+        # it on every call) — inserted directly, like the E2E user above,
+        # with the fixed id ORDER_PAYMENT_WALLET_ID names.
+        run: |
+          mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" -p"$DB_PASSWORD" "$DB_NAME" \
+            -e "INSERT INTO wallets (id, name, balance, payment_cost_percentage, is_cashless, is_payment_target) VALUES (${ORDER_PAYMENT_WALLET_ID}, 'E2E QRIS', 0, 0.007, 1, 1);"
+
+      - name: Generate a throwaway DOKU signing key
+        # Only has to be valid PEM so ParsePrivateKeyPEM (apps/api/data/doku/payment_repo.go)
+        # succeeds — dokustub never checks this signature (the real
+        # asymmetric scheme is already covered against fixed vectors by
+        # apps/api/data/doku/*_test.go). Generated fresh per run, never a
+        # real DOKU credential, never used outside this job.
+        run: |
+          openssl genrsa -out "$RUNNER_TEMP/doku-private-key.pem" 2048
+          {
+            echo "DOKU_PRIVATE_KEY<<DOKUKEYEOF"
+            cat "$RUNNER_TEMP/doku-private-key.pem"
+            echo "DOKUKEYEOF"
+          } >> "$GITHUB_ENV"
+
       - name: Build the API
         run: npx nx run api:build
+
+      - name: Build the DOKU stub gateway
+        # apps/api/cmd/dokustub (phase 13) — not an Nx target, it exists only
+        # for order-web-e2e's checkout.spec.ts.
+        working-directory: apps/api
+        run: go build -o "$RUNNER_TEMP/dokustub" ./cmd/dokustub
+
+      - name: Start the DOKU stub gateway
+        env:
+          DOKUSTUB_CLIENT_SECRET: ${{ env.DOKU_CLIENT_SECRET }}
+          DOKUSTUB_NOTIFICATION_URL: http://127.0.0.1:${{ env.API_PORT }}/payments/doku/notification
+        run: |
+          nohup "$RUNNER_TEMP/dokustub" > "$RUNNER_TEMP/dokustub.log" 2>&1 &
+          for _ in $(seq 1 30); do
+            if curl -s -o /dev/null "http://127.0.0.1:${DOKUSTUB_PORT}/_stub/health"; then
+              echo "DOKU stub is listening on ${DOKUSTUB_PORT}"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "DOKU stub failed to start within 30s:"
+          cat "$RUNNER_TEMP/dokustub.log"
+          exit 1
 
       - name: Start the API
         env:
@@ -122,6 +184,11 @@ jobs:
           # Both apps proxy /api server-side, but the order app's browser
           # bundle also talks to the API cross-origin.
           CORS_ALLOWED_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+          # Phase 13: points the checkout flow at the DOKU stub started
+          # above instead of the real DOKU sandbox (D21 — sandbox vs
+          # production is a base URL, so a stub is just a third value).
+          DOKU_BASE_URL: http://127.0.0.1:${{ env.DOKUSTUB_PORT }}
+          DOKU_PRIVATE_KEY: ${{ env.DOKU_PRIVATE_KEY }}
         run: |
           nohup ./dist/apps/api > "$RUNNER_TEMP/api.log" 2>&1 &
           # Any HTTP response means the server is listening (GET on the
@@ -157,6 +224,9 @@ jobs:
           API_BASE_URL: http://127.0.0.1:${{ env.API_PORT }}
           NEXT_PUBLIC_API_BASE_URL: http://127.0.0.1:${{ env.API_PORT }}
           NEXT_PUBLIC_ORDER_APP_BASE_URL: http://localhost:3001
+          # order-web-e2e's checkout.spec.ts only; harmless and unused by
+          # pos-web-e2e.
+          DOKU_STUB_URL: http://127.0.0.1:${{ env.DOKUSTUB_PORT }}
         run: npx nx run ${{ matrix.project }}:e2e
 
       - name: Upload Playwright report
@@ -174,5 +244,14 @@ jobs:
         with:
           name: api-log-${{ matrix.project }}
           path: ${{ runner.temp }}/api.log
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Upload DOKU stub log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dokustub-log-${{ matrix.project }}
+          path: ${{ runner.temp }}/dokustub.log
           retention-days: 7
           if-no-files-found: ignore

@@ -6,9 +6,6 @@ import (
 	"net/http"
 )
 
-// PublicHandler serves the unauthenticated customer catalog (FR-1). It reuses the
-// existing Product/Category/Variant usecases and forces published+purchase filters
-// server-side so a customer can never see draft or rental items.
 type PublicHandler struct {
 	productUsecase  domain.ProductUsecase
 	categoryUsecase domain.CategoryUsecase
@@ -61,7 +58,6 @@ func (handler PublicHandler) GetProductList(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Forced server-side; the public list can never be widened by client params.
 	saleType := domain.SaleTypePurchase
 	status := domain.ProductStatusPublished
 
@@ -94,8 +90,6 @@ func (handler PublicHandler) GetProductById(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// GetProductById does not filter by status/saleType/deleted_at, so a draft or
-	// rental product must be rejected here rather than shown to an anonymous guest.
 	if !IsPublicProduct(product) {
 		WriteError(ctx, w, apiContract.Error{Code: apiContract.NOT_FOUND, Message: "product not found"})
 		return
@@ -141,8 +135,6 @@ func (handler PublicHandler) GetVariantList(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// GetVariantList has no saleType/status filter, so variants of draft or rental
-	// products are dropped here, and materials/pricingTiers are stripped (D2).
 	apiVariants := []apiContract.Variant{}
 	for _, variant := range variants {
 		if !IsPublicProduct(variant.Product) {
@@ -154,8 +146,6 @@ func (handler PublicHandler) GetVariantList(w http.ResponseWriter, r *http.Reque
 	WriteResponse(w, apiContract.VariantListResponse{Data: apiVariants, Meta: apiContract.MetaPage{Total: int64(len(apiVariants))}})
 }
 
-// GetTableByCode resolves a QR code to a table's id and label (FR-1, D6). It
-// never returns the full table list, which would defeat non-guessable codes.
 func (handler PublicHandler) GetTableByCode(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

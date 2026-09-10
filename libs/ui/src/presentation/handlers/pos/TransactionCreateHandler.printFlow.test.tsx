@@ -25,8 +25,6 @@ jest.mock('../../views/components', () => ({
   useConfirmationAlert: () => ({ show: mockConfirmationShow }),
 }));
 
-// Avoid rendering the real screen tree — these tests only exercise the
-// payingSuccess print-chain orchestration in the handler.
 jest.mock('../../views/screens/pos/TransactionCreateScreen', () => ({
   TransactionCreateScreen: () => null,
 }));
@@ -117,8 +115,6 @@ const authLogoutCtrl = {
   dispatch: jest.fn(),
 };
 
-// TransactionCreate is folded into the handler (Phase 5) and calls the base
-// `useUsecase` hook directly rather than a named per-feature hook.
 jest.mock('../hooks', () => ({
   useTransactionItemSelect: () => transactionItemSelectCtrl,
   useTransactionPay: () => transactionPayCtrl,
@@ -144,8 +140,6 @@ const confirmLatestPrompt = async (title: string) => {
   });
 };
 
-// onCancel chains to the next prompt via a 200ms setTimeout (see
-// TransactionCreateHandler) — wait past it with real timers.
 const cancelLatestPrompt = async (title: string) => {
   const call = mockConfirmationShow.mock.calls.find(([params]) => params.title === title);
   expect(call).toBeDefined();

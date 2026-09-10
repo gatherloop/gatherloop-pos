@@ -59,7 +59,6 @@ const PRESET_OPTIONS: { value: TransactionStatisticPreset; label: string }[] =
     { value: 'custom', label: 'Custom...' },
   ];
 
-// Fixed-order categorical palette; assigned by position, never re-cycled per filter.
 const SERIES_COLORS = [
   '#2a78d6',
   '#1baf7a',

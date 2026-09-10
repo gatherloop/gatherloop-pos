@@ -21,13 +21,13 @@ func NewTransactionUsecase(transactionRepository TransactionRepository, variantR
 	}
 }
 
-func (usecase TransactionUsecase) GetTransactionList(ctx context.Context, query string, sortBy SortBy, order Order, skip int, limit int, paymentStatus PaymentStatus, walletId *int) ([]Transaction, int64, *Error) {
-	transactions, err := usecase.transactionRepository.GetTransactionList(ctx, query, sortBy, order, skip, limit, paymentStatus, walletId)
+func (usecase TransactionUsecase) GetTransactionList(ctx context.Context, query string, sortBy SortBy, order Order, skip int, limit int, paymentStatus PaymentStatus, walletId *int, source *TransactionSource) ([]Transaction, int64, *Error) {
+	transactions, err := usecase.transactionRepository.GetTransactionList(ctx, query, sortBy, order, skip, limit, paymentStatus, walletId, source)
 	if err != nil {
 		return []Transaction{}, 0, err
 	}
 
-	total, err := usecase.transactionRepository.GetTransactionListTotal(ctx, query, paymentStatus, walletId)
+	total, err := usecase.transactionRepository.GetTransactionListTotal(ctx, query, paymentStatus, walletId, source)
 	if err != nil {
 		return []Transaction{}, 0, err
 	}
@@ -42,9 +42,12 @@ func (usecase TransactionUsecase) GetTransactionById(ctx context.Context, id int
 func (usecase TransactionUsecase) CreateTransaction(ctx context.Context, transaction Transaction) (Transaction, *Error) {
 	var createdTransaction Transaction
 
+	if transaction.Source == "" {
+		transaction.Source = TransactionSourcePos
+	}
+
 	err := usecase.transactionRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 
-		// Calculate total
 		for index, item := range transaction.TransactionItems {
 			variant, err := usecase.variantRepository.GetVariantById(ctxWithTx, item.VariantId)
 			if err != nil {
@@ -70,12 +73,10 @@ func (usecase TransactionUsecase) CreateTransaction(ctx context.Context, transac
 			transaction.TransactionItems[index] = transactionItem
 		}
 
-		// Apply whole-bill and item-linked coupons
 		if err := usecase.applyTransactionCoupons(ctxWithTx, &transaction, createdTransaction.Id); err != nil {
 			return err
 		}
 
-		// Create transaction
 		ct, err := usecase.transactionRepository.CreateTransaction(ctxWithTx, transaction)
 		if err != nil {
 			return err
@@ -101,11 +102,6 @@ func (usecase TransactionUsecase) UpdateTransactionById(ctx context.Context, tra
 			return &Error{Type: BadRequest, Message: "cannot update paid transaction"}
 		}
 
-		// Index existing items so rental-linked items keep the duration-based
-		// price/subtotal that was calculated at checkout. The update request
-		// payload does not carry Price or RentalId, so recalculating these
-		// items from the variant's base price would corrupt their values and
-		// drop the rental link.
 		existingItemsById := map[int64]TransactionItem{}
 		for _, existingItem := range existingTransaction.TransactionItems {
 			existingItemsById[existingItem.Id] = existingItem
@@ -113,14 +109,6 @@ func (usecase TransactionUsecase) UpdateTransactionById(ctx context.Context, tra
 
 		for index, item := range transaction.TransactionItems {
 			if existingItem, ok := existingItemsById[item.Id]; ok && existingItem.RentalId != nil {
-				// Preserve the duration-based Price and the rental link (#131):
-				// the update payload carries neither, and recalculating from the
-				// variant's base price would corrupt them. The DiscountAmount,
-				// however, must come from the request so a per-item coupon can be
-				// removed — otherwise the discount baked in at apply time would be
-				// re-preserved here forever. Subtotal is re-derived from the
-				// preserved Price; if a coupon row still targets this item,
-				// applyTransactionCoupons overwrites both below.
 				subTotal := (existingItem.Price * existingItem.Amount) - item.DiscountAmount
 				transaction.Total += subTotal
 				transaction.TransactionItems[index] = TransactionItem{
@@ -163,7 +151,6 @@ func (usecase TransactionUsecase) UpdateTransactionById(ctx context.Context, tra
 			transaction.TransactionItems[index] = transactionItem
 		}
 
-		// Apply whole-bill and item-linked coupons
 		if err := usecase.applyTransactionCoupons(ctxWithTx, &transaction, id); err != nil {
 			return err
 		}
@@ -201,49 +188,54 @@ func (usecase TransactionUsecase) PayTransaction(ctx context.Context, walletId i
 		if err != nil {
 			return err
 		}
-
-		if transaction.PaidAt != nil {
-			return &Error{Type: BadRequest, Message: "transaction already paid"}
-		}
-
-		paymentWallet, err := usecase.walletRepository.GetWalletById(ctxWithTx, walletId)
-		if err != nil {
-			return err
-		}
-
-		paymentCost := transaction.Total * paymentWallet.PaymentCostPercentage / 100
-		newBalance := paymentWallet.Balance + transaction.Total - paymentCost
-
-		if _, err := usecase.walletRepository.UpdateWalletById(ctxWithTx, Wallet{
-			Name:                  paymentWallet.Name,
-			PaymentCostPercentage: paymentWallet.PaymentCostPercentage,
-			Balance:               newBalance,
-			IsCashless:            paymentWallet.IsCashless,
-			IsPaymentTarget:       paymentWallet.IsPaymentTarget,
-		},
-			walletId); err != nil {
-			return err
-		}
-
-		variantMaterials := []VariantMaterial{}
-
-		for _, item := range transaction.TransactionItems {
-			variantMaterials = append(variantMaterials, item.Variant.Materials...)
-		}
-
-		var foodCost float32
-		for _, variantMaterial := range variantMaterials {
-			foodCost += variantMaterial.Amount * variantMaterial.Material.Price
-		}
-
-		totalIncome := transaction.Total - paymentCost - foodCost
-
-		if _, err := usecase.transactionRepository.UpdateTransactionById(ctxWithTx, Transaction{TotalIncome: totalIncome}, id); err != nil {
-			return err
-		}
-
-		return usecase.transactionRepository.PayTransaction(ctxWithTx, walletId, time.Now(), paidAmount, id)
+		return payTransaction(ctxWithTx, transaction, usecase.transactionRepository, usecase.walletRepository, walletId, paidAmount)
 	})
+}
+
+func payTransaction(ctx context.Context, transaction Transaction, transactionRepository TransactionRepository, walletRepository WalletRepository, walletId int64, paidAmount float32) *Error {
+	if transaction.PaidAt != nil {
+		return &Error{Type: BadRequest, Message: "transaction already paid"}
+	}
+
+	id := transaction.Id
+
+	paymentWallet, err := walletRepository.GetWalletById(ctx, walletId)
+	if err != nil {
+		return err
+	}
+
+	paymentCost := transaction.Total * paymentWallet.PaymentCostPercentage / 100
+	newBalance := paymentWallet.Balance + transaction.Total - paymentCost
+
+	if _, err := walletRepository.UpdateWalletById(ctx, Wallet{
+		Name:                  paymentWallet.Name,
+		PaymentCostPercentage: paymentWallet.PaymentCostPercentage,
+		Balance:               newBalance,
+		IsCashless:            paymentWallet.IsCashless,
+		IsPaymentTarget:       paymentWallet.IsPaymentTarget,
+	},
+		walletId); err != nil {
+		return err
+	}
+
+	variantMaterials := []VariantMaterial{}
+
+	for _, item := range transaction.TransactionItems {
+		variantMaterials = append(variantMaterials, item.Variant.Materials...)
+	}
+
+	var foodCost float32
+	for _, variantMaterial := range variantMaterials {
+		foodCost += variantMaterial.Amount * variantMaterial.Material.Price
+	}
+
+	totalIncome := transaction.Total - paymentCost - foodCost
+
+	if _, err := transactionRepository.UpdateTransactionById(ctx, Transaction{TotalIncome: totalIncome}, id); err != nil {
+		return err
+	}
+
+	return transactionRepository.PayTransaction(ctx, walletId, time.Now(), paidAmount, id)
 }
 
 func (usecase TransactionUsecase) UnpayTransaction(ctx context.Context, id int64) *Error {
@@ -293,19 +285,6 @@ func (usecase TransactionUsecase) GetTransactionStatistics(ctx context.Context, 
 	return usecase.transactionRepository.GetTransactionStatistics(ctx, groupBy, startDate, endDate)
 }
 
-// applyTransactionCoupons resolves each TransactionCoupon against the coupon
-// repository and applies its discount via ApplyCouponToBase.
-//
-// A coupon with TransactionItemId set discounts that line: the discount is
-// computed against the line's pre-discount base (Price * Amount, which #131
-// keeps stable across edits for rental items) and written to the item's
-// DiscountAmount/Subtotal, with transaction.Total adjusted by the resulting
-// delta. Item-linked coupons are applied first so that a whole-bill coupon
-// (TransactionItemId == nil) is computed against the item-adjusted Total, per
-// the PRD's Total = Σ item.Subtotal − whole-bill discounts.
-//
-// Every TransactionCoupon is rewritten with a {type, amount, transactionItemId}
-// snapshot of the coupon at apply time.
 func (usecase TransactionUsecase) applyTransactionCoupons(ctx context.Context, transaction *Transaction, transactionId int64) *Error {
 	itemIndexById := map[int64]int{}
 	for index, item := range transaction.TransactionItems {
@@ -371,10 +350,6 @@ func (usecase TransactionUsecase) applyTransactionCoupons(ctx context.Context, t
 	return nil
 }
 
-// snapshotVariantValues copies the currently selected option / option-value
-// names off the variant so the transaction item keeps a stable record even if
-// the product's options are later edited or deleted. The variant must have
-// Product.Options and VariantValues.OptionValue preloaded.
 func snapshotVariantValues(variant Variant) []TransactionItemValue {
 	optionNamesById := map[int64]string{}
 	for _, opt := range variant.Product.Options {

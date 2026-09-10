@@ -14,10 +14,6 @@ import (
 
 func int64Ptr(v int64) *int64 { return &v }
 
-// setupUpdateTransactionMocks wires the mocks shared by item-coupon update
-// tests: BeginTransaction passthrough, GetTransactionById returning the
-// existing transaction, and UpdateTransactionById echoing back whatever the
-// usecase saved (so callers can assert on the resulting items/coupons/total).
 func setupUpdateTransactionMocks(ctrl *gomock.Controller, id int64, existing domain.Transaction) (*mock.MockTransactionRepository, *mock.MockVariantRepository, *mock.MockCouponRepository, *mock.MockWalletRepository) {
 	txRepo := mock.NewMockTransactionRepository(ctrl)
 	variantRepo := mock.NewMockVariantRepository(ctrl)
@@ -46,9 +42,9 @@ func TestTransactionUsecase_GetTransactionList(t *testing.T) {
 		{
 			name: "success",
 			setupMock: func(txRepo *mock.MockTransactionRepository) {
-				txRepo.EXPECT().GetTransactionList(gomock.Any(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.All, nil).
+				txRepo.EXPECT().GetTransactionList(gomock.Any(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.All, nil, nil).
 					Return([]domain.Transaction{{Id: 1}, {Id: 2}}, nil)
-				txRepo.EXPECT().GetTransactionListTotal(gomock.Any(), "", domain.All, nil).Return(int64(2), nil)
+				txRepo.EXPECT().GetTransactionListTotal(gomock.Any(), "", domain.All, nil, nil).Return(int64(2), nil)
 			},
 			expectedLen:   2,
 			expectedTotal: 2,
@@ -56,7 +52,7 @@ func TestTransactionUsecase_GetTransactionList(t *testing.T) {
 		{
 			name: "error on GetTransactionList",
 			setupMock: func(txRepo *mock.MockTransactionRepository) {
-				txRepo.EXPECT().GetTransactionList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				txRepo.EXPECT().GetTransactionList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil, &domain.Error{Type: domain.InternalServerError})
 			},
 			expectedError: &domain.Error{Type: domain.InternalServerError},
@@ -75,7 +71,7 @@ func TestTransactionUsecase_GetTransactionList(t *testing.T) {
 			tt.setupMock(txRepo)
 
 			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo)
-			transactions, total, err := usecase.GetTransactionList(context.Background(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.All, nil)
+			transactions, total, err := usecase.GetTransactionList(context.Background(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.All, nil, nil)
 
 			if tt.expectedError != nil {
 				assert.NotNil(t, err)
@@ -87,6 +83,28 @@ func TestTransactionUsecase_GetTransactionList(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("threads the source filter to both repository calls", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		orderSource := domain.TransactionSourceOrder
+		txRepo := mock.NewMockTransactionRepository(ctrl)
+		variantRepo := mock.NewMockVariantRepository(ctrl)
+		couponRepo := mock.NewMockCouponRepository(ctrl)
+		walletRepo := mock.NewMockWalletRepository(ctrl)
+
+		txRepo.EXPECT().GetTransactionList(gomock.Any(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.All, nil, &orderSource).
+			Return([]domain.Transaction{{Id: 1, Source: domain.TransactionSourceOrder}}, nil)
+		txRepo.EXPECT().GetTransactionListTotal(gomock.Any(), "", domain.All, nil, &orderSource).Return(int64(1), nil)
+
+		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo)
+		transactions, total, err := usecase.GetTransactionList(context.Background(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.All, nil, &orderSource)
+
+		assert.Nil(t, err)
+		assert.Len(t, transactions, 1)
+		assert.Equal(t, int64(1), total)
+	})
 }
 
 func TestTransactionUsecase_CreateTransaction(t *testing.T) {
@@ -170,6 +188,51 @@ func TestTransactionUsecase_CreateTransaction(t *testing.T) {
 	}
 }
 
+func TestTransactionUsecase_CreateTransaction_DefaultsSourceToPos(t *testing.T) {
+	tests := []struct {
+		name           string
+		input          domain.Transaction
+		expectedSource domain.TransactionSource
+	}{
+		{
+			name:           "empty source defaults to pos",
+			input:          domain.Transaction{},
+			expectedSource: domain.TransactionSourcePos,
+		},
+		{
+			name:           "explicit order source is preserved",
+			input:          domain.Transaction{Source: domain.TransactionSourceOrder},
+			expectedSource: domain.TransactionSourceOrder,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			txRepo := mock.NewMockTransactionRepository(ctrl)
+			variantRepo := mock.NewMockVariantRepository(ctrl)
+			couponRepo := mock.NewMockCouponRepository(ctrl)
+			walletRepo := mock.NewMockWalletRepository(ctrl)
+
+			txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+				func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+			txRepo.EXPECT().CreateTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+				func(ctx context.Context, tx domain.Transaction) (domain.Transaction, *domain.Error) {
+					assert.Equal(t, tt.expectedSource, tx.Source)
+					return tx, nil
+				})
+
+			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo)
+			created, err := usecase.CreateTransaction(context.Background(), tt.input)
+
+			assert.Nil(t, err)
+			assert.Equal(t, tt.expectedSource, created.Source)
+		})
+	}
+}
+
 func TestTransactionUsecase_DeleteTransactionById(t *testing.T) {
 	paidAt := time.Now()
 	tests := []struct {
@@ -236,8 +299,8 @@ func TestTransactionUsecase_DeleteTransactionById(t *testing.T) {
 
 func TestTransactionUsecase_UnpayTransaction(t *testing.T) {
 	now := time.Now()
-	recentPaidAt := now.Add(-1 * time.Hour) // 1 hour ago — within 24h window
-	oldPaidAt := now.Add(-25 * time.Hour)   // more than 24h ago
+	recentPaidAt := now.Add(-1 * time.Hour)
+	oldPaidAt := now.Add(-25 * time.Hour)
 	walletId := int64(1)
 
 	tests := []struct {
@@ -422,8 +485,6 @@ func TestTransactionUsecase_UpdateTransactionById(t *testing.T) {
 			name: "rental item keeps checkout price and rental link",
 			id:   3,
 			input: domain.Transaction{
-				// The update screen submits the rental item with no Price/RentalId,
-				// matching what the frontend actually sends back.
 				TransactionItems: []domain.TransactionItem{
 					{Id: 10, VariantId: 1, Amount: 1, DiscountAmount: 0, Note: "edited note"},
 				},
@@ -439,7 +500,6 @@ func TestTransactionUsecase_UpdateTransactionById(t *testing.T) {
 						{Id: 10, VariantId: 1, Amount: 1, Price: 25000, Subtotal: 25000, RentalId: &rentalId, Note: "2 hour(s)"},
 					},
 				}, nil)
-				// No GetVariantById call expected: the rental item must not be recalculated.
 				txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(3)).DoAndReturn(
 					func(ctx context.Context, tx domain.Transaction, id int64) (domain.Transaction, *domain.Error) {
 						return tx, nil
@@ -501,12 +561,6 @@ func TestTransactionUsecase_UpdateTransactionById(t *testing.T) {
 	}
 }
 
-// TestTransactionUsecase_UpdateTransactionById_ItemCoupons covers the
-// per-item coupon application (Phase 3 of the rental-coupons plan): a coupon
-// with TransactionItemId set discounts that line's DiscountAmount/Subtotal
-// (recomputed from Price so it never compounds across edits) and adjusts the
-// running Total, while a whole-bill coupon (TransactionItemId == nil)
-// continues to subtract from Total as before.
 func TestTransactionUsecase_UpdateTransactionById_ItemCoupons(t *testing.T) {
 	t.Run("FREE 1 HOUR on a 30K rental item discounts the line (FR-4 #1)", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
@@ -553,7 +607,6 @@ func TestTransactionUsecase_UpdateTransactionById_ItemCoupons(t *testing.T) {
 			},
 		}
 
-		// First save: rental item still carries its checkout-time price/subtotal.
 		ctrl1 := gomock.NewController(t)
 		txRepo1, variantRepo1, couponRepo1, walletRepo1 := setupUpdateTransactionMocks(ctrl1, 1, domain.Transaction{
 			Id: 1, PaidAt: nil,
@@ -570,8 +623,6 @@ func TestTransactionUsecase_UpdateTransactionById_ItemCoupons(t *testing.T) {
 		assert.Equal(t, float32(15000), firstSave.TransactionItems[0].DiscountAmount)
 		assert.Equal(t, float32(15000), firstSave.TransactionItems[0].Subtotal)
 
-		// Second save: the stored item now reflects the first save's discount;
-		// re-deriving the base from the unchanged Price must not compound it.
 		ctrl2 := gomock.NewController(t)
 		txRepo2, variantRepo2, couponRepo2, walletRepo2 := setupUpdateTransactionMocks(ctrl2, 1, domain.Transaction{
 			Id: 1, PaidAt: nil,
@@ -593,8 +644,6 @@ func TestTransactionUsecase_UpdateTransactionById_ItemCoupons(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		// The stored item already has the coupon's discount baked in from a
-		// previous save (Subtotal 15000, DiscountAmount 15000 on a 30K rental).
 		rentalId := int64(103)
 		txRepo, variantRepo, couponRepo, walletRepo := setupUpdateTransactionMocks(ctrl, 1, domain.Transaction{
 			Id: 1, PaidAt: nil,
@@ -604,7 +653,6 @@ func TestTransactionUsecase_UpdateTransactionById_ItemCoupons(t *testing.T) {
 		})
 
 		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo)
-		// The frontend removes the coupon: no coupon row, DiscountAmount back to 0.
 		updated, err := usecase.UpdateTransactionById(context.Background(), domain.Transaction{
 			TransactionItems: []domain.TransactionItem{
 				{Id: 13, VariantId: 1, Amount: 1, DiscountAmount: 0, Note: "2 hour(s)"},
@@ -668,7 +716,6 @@ func TestTransactionUsecase_UpdateTransactionById_ItemCoupons(t *testing.T) {
 		}, 1)
 
 		assert.Nil(t, err)
-		// 30000 * 40% = 12000 (already a multiple of 500, see coupon_calculator_test.go row5).
 		assert.Equal(t, float32(18000), updated.Total)
 		assert.Equal(t, float32(12000), updated.TransactionItems[0].DiscountAmount)
 		assert.Equal(t, float32(18000), updated.TransactionItems[0].Subtotal)
@@ -697,7 +744,7 @@ func TestTransactionUsecase_UpdateTransactionById_ItemCoupons(t *testing.T) {
 		}, 1)
 
 		assert.Nil(t, err)
-		assert.Equal(t, float32(63000), updated.Total) // 20000 + 18000 + 25000
+		assert.Equal(t, float32(63000), updated.Total)
 		assert.Equal(t, float32(0), updated.TransactionItems[0].DiscountAmount)
 		assert.Equal(t, float32(20000), updated.TransactionItems[0].Subtotal)
 		assert.Equal(t, float32(12000), updated.TransactionItems[1].DiscountAmount)
@@ -778,8 +825,6 @@ func TestTransactionUsecase_UpdateTransactionById_ItemCoupons(t *testing.T) {
 	})
 }
 
-// TestTransactionUsecase_CreateTransaction_ItemCoupon covers the same
-// item-linked coupon math on the create path (non-rental, FR-3).
 func TestTransactionUsecase_CreateTransaction_ItemCoupon(t *testing.T) {
 	t.Run("item-linked coupon discounts a single line on a new transaction", func(t *testing.T) {
 		ctrl := gomock.NewController(t)

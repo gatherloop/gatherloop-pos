@@ -9,9 +9,18 @@ func ToTransactionDB(domainTransaction domain.Transaction) Transaction {
 		wallet = &w
 	}
 
+	var cart *Cart
+	if domainTransaction.Cart != nil {
+		c := ToCartDB(*domainTransaction.Cart)
+		cart = &c
+	}
+
 	return Transaction{
 		Id:                 domainTransaction.Id,
 		Name:               domainTransaction.Name,
+		Source:             string(domainTransaction.Source),
+		CartId:             domainTransaction.CartId,
+		Cart:               cart,
 		OrderNumber:        domainTransaction.OrderNumber,
 		WalletId:           domainTransaction.WalletId,
 		Wallet:             wallet,
@@ -33,9 +42,18 @@ func ToTransactionDomain(dbTransaction Transaction) domain.Transaction {
 		wallet = &w
 	}
 
+	var cart *domain.Cart
+	if dbTransaction.Cart != nil {
+		c := ToCartDomain(*dbTransaction.Cart)
+		cart = &c
+	}
+
 	return domain.Transaction{
 		Id:                 dbTransaction.Id,
 		Name:               dbTransaction.Name,
+		Source:             domain.TransactionSource(dbTransaction.Source),
+		CartId:             dbTransaction.CartId,
+		Cart:               cart,
 		OrderNumber:        dbTransaction.OrderNumber,
 		WalletId:           dbTransaction.WalletId,
 		Wallet:             wallet,

@@ -1,24 +1,4 @@
-/**
- * Direct API helpers for creating and deleting test data.
- *
- * These helpers use Playwright's APIRequestContext (which carries auth cookies
- * from storageState) to call the backend API directly — no UI interaction
- * needed. This keeps test setup fast and deterministic.
- *
- * Usage in test files:
- *   test.beforeAll(async ({ request }) => {
- *     testCategory = await api.createCategory(request, { name: 'E2E Category' });
- *   });
- *   test.afterAll(async ({ request }) => {
- *     await api.deleteCategory(request, testCategory.id);
- *   });
- */
-
 import { type APIRequestContext } from '@playwright/test';
-
-// ---------------------------------------------------------------------------
-// Types (minimal — mirrors the OpenAPI schema shapes we care about)
-// ---------------------------------------------------------------------------
 
 export type CategoryStation = 'KITCHEN' | 'BAR' | 'NONE';
 
@@ -77,10 +57,6 @@ export interface Expense {
   createdAt: string;
 }
 
-// ---------------------------------------------------------------------------
-// Internal helper
-// ---------------------------------------------------------------------------
-
 async function apiPost<T>(
   request: APIRequestContext,
   path: string,
@@ -119,13 +95,6 @@ async function apiGet<T>(request: APIRequestContext, path: string): Promise<T> {
   return json.data as T;
 }
 
-// ---------------------------------------------------------------------------
-// Category
-// ---------------------------------------------------------------------------
-
-// `station` is required by CategoryRequest (libs/api-contract/src/api.yaml).
-// It defaults to NONE here so specs that don't care about kitchen/bar routing
-// keep reading as one line.
 export async function createCategory(
   request: APIRequestContext,
   data: { name: string; station?: CategoryStation }
@@ -143,10 +112,6 @@ export async function deleteCategory(
   return apiDelete(request, `/api/categories/${id}`);
 }
 
-// ---------------------------------------------------------------------------
-// Wallet
-// ---------------------------------------------------------------------------
-
 export interface CreateWalletInput {
   name: string;
   balance: number;
@@ -155,9 +120,6 @@ export interface CreateWalletInput {
   isPaymentTarget?: boolean;
 }
 
-// `isPaymentTarget` is required by WalletRequest (libs/api-contract/src/api.yaml).
-// It defaults to true because the specs that create a wallet then pay a
-// transaction with it (docs/prd-wallet-payment-eligibility.md).
 export async function createWallet(
   request: APIRequestContext,
   data: CreateWalletInput
@@ -175,10 +137,6 @@ export async function deleteWallet(
   return apiDelete(request, `/api/wallets/${id}`);
 }
 
-// ---------------------------------------------------------------------------
-// Product
-// ---------------------------------------------------------------------------
-
 export interface CreateProductInput {
   categoryId: number;
   name: string;
@@ -192,10 +150,6 @@ export interface CreateProductInput {
   }>;
 }
 
-// `status` is required by ProductRequest (libs/api-contract/src/api.yaml).
-// It defaults to published because a draft product is hidden from the
-// transaction and order flows the specs drive
-// (docs/prd-product-draft-status.md).
 export async function createProduct(
   request: APIRequestContext,
   data: CreateProductInput
@@ -212,10 +166,6 @@ export async function deleteProduct(
 ): Promise<void> {
   return apiDelete(request, `/api/products/${id}`);
 }
-
-// ---------------------------------------------------------------------------
-// Coupon
-// ---------------------------------------------------------------------------
 
 export interface Coupon {
   id: number;
@@ -245,10 +195,6 @@ export async function deleteCoupon(
   return apiDelete(request, `/api/coupons/${id}`);
 }
 
-// ---------------------------------------------------------------------------
-// Variant
-// ---------------------------------------------------------------------------
-
 export interface Variant {
   id: number;
   productId: number;
@@ -264,7 +210,6 @@ export interface CreateVariantInput {
   description?: string;
   materials: Array<{ materialId: number; amount: number }>;
   values: Array<{ optionValueId: number }>;
-  /** Required by `POST /api/rentals/checkin` — a variant with no tiers is rejected. */
   pricingTiers?: Array<{ upToMinutes: number; price: number }>;
 }
 
@@ -281,10 +226,6 @@ export async function deleteVariant(
 ): Promise<void> {
   return apiDelete(request, `/api/variants/${id}`);
 }
-
-// ---------------------------------------------------------------------------
-// Transaction
-// ---------------------------------------------------------------------------
 
 export interface Transaction {
   id: number;
@@ -321,10 +262,6 @@ export async function deleteTransaction(
   return apiDelete(request, `/api/transactions/${id}`);
 }
 
-// ---------------------------------------------------------------------------
-// Ticket
-// ---------------------------------------------------------------------------
-
 export interface Ticket {
   id: number;
   code: string;
@@ -351,10 +288,6 @@ export async function deleteTicket(
   return apiDelete(request, `/api/tickets/${id}`);
 }
 
-// ---------------------------------------------------------------------------
-// Rental
-// ---------------------------------------------------------------------------
-
 export interface Rental {
   id: number;
   code: string;
@@ -363,7 +296,6 @@ export interface Rental {
   createdAt: string;
 }
 
-/** Rental list is searched by ticket code (`code LIKE %query%`), not name. */
 export async function findRentalsByCode(
   request: APIRequestContext,
   query: string
@@ -388,12 +320,6 @@ export interface CreateRentalCheckinInput {
   checkinAt: string;
 }
 
-/**
- * Creates an ongoing rental directly via `POST /api/rentals/checkin`,
- * bypassing the checkin UI. Used to seed rentals for the checkout spec,
- * which only tests the checkout screen — same reasoning as `createProduct`
- * skipping the product form.
- */
 export async function checkinRental(
   request: APIRequestContext,
   data: CreateRentalCheckinInput
@@ -403,10 +329,6 @@ export async function checkinRental(
   ]);
   return rentals[0];
 }
-
-// ---------------------------------------------------------------------------
-// Budget
-// ---------------------------------------------------------------------------
 
 export interface CreateBudgetInput {
   name: string;
@@ -426,10 +348,6 @@ export async function deleteBudget(
 ): Promise<void> {
   return apiDelete(request, `/api/budgets/${id}`);
 }
-
-// ---------------------------------------------------------------------------
-// Material
-// ---------------------------------------------------------------------------
 
 export interface Material {
   id: number;
@@ -463,10 +381,6 @@ export async function deleteMaterial(
 ): Promise<void> {
   return apiDelete(request, `/api/materials/${id}`);
 }
-
-// ---------------------------------------------------------------------------
-// Stock Check
-// ---------------------------------------------------------------------------
 
 export interface StockCheckItem {
   id: number;
@@ -506,10 +420,6 @@ export async function deleteStockCheck(
 ): Promise<void> {
   return apiDelete(request, `/api/stock-checks/${id}`);
 }
-
-// ---------------------------------------------------------------------------
-// Expense
-// ---------------------------------------------------------------------------
 
 export interface CreateExpenseInput {
   walletId: number;

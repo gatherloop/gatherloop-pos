@@ -91,8 +91,6 @@ export const Disabled: Story = {
   },
 };
 
-// PRD docs/prd-stock-check-form-mobile.md FR-3: compact call sites request
-// larger stepper buttons and an explicit 44dp touch-target floor.
 export const LargeTouchTargets: Story = {
   render: (args) => (
     <Field name="quantity" label="Quantity">

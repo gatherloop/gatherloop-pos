@@ -25,8 +25,6 @@ const createProps = (options: {
   const categoryRepo = new MockCategoryRepository();
   if (options.shouldFail) categoryRepo.setShouldFail(true);
 
-  // When preloaded=true, pass the existing category object to skip async fetch
-  // and immediately start in loaded state with pre-filled form values
   const preloadedCategory = options.preloaded
     ? categoryRepo.categories.find((c) => c.id === categoryId) ?? null
     : null;
@@ -157,13 +155,11 @@ describe('CategoryUpdateHandler', () => {
     it('should not navigate when update fails', async () => {
       const user = userEvent.setup();
       const categoryRepo = new MockCategoryRepository();
-      // Allow fetch to succeed but fail on update
       const preloadedCategory = categoryRepo.categories[0];
       const categoryUpdateUsecase = new CategoryUpdateUsecase(categoryRepo, {
         categoryId: preloadedCategory.id,
         category: preloadedCategory,
       });
-      // Set shouldFail after usecase is created (affects updateCategory)
       categoryRepo.setShouldFail(true);
 
       render(
@@ -350,7 +346,6 @@ describe('CategoryUpdateHandler', () => {
 
       expect(screen.getByRole('heading', { name: 'Failed to Fetch Category' })).toBeTruthy();
 
-      // Fix repo so retry succeeds
       categoryRepo.setShouldFail(false);
 
       await user.click(screen.getByRole('button', { name: 'Retry' }));

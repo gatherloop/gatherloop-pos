@@ -146,7 +146,6 @@ describe('ExpenseCreateHandler', () => {
         await flushPromises();
       });
 
-      // Still error since walletShouldFail stays true
       expect(screen.getByRole('heading', { name: 'Failed to Fetch Expense' })).toBeTruthy();
     });
   });

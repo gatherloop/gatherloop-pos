@@ -18,6 +18,8 @@ export const TransactionDetailHandler = ({
     <TransactionDetailScreen
       createdAt={transactionDetail.state.transaction?.createdAt ?? ''}
       name={transactionDetail.state.transaction?.name ?? ''}
+      source={transactionDetail.state.transaction?.source ?? 'pos'}
+      table={transactionDetail.state.transaction?.table ?? null}
       orderNumber={transactionDetail.state.transaction?.orderNumber ?? 0}
       total={transactionDetail.state.transaction?.total ?? 0}
       transactionItems={
