@@ -154,21 +154,6 @@ func (mr *MockPaymentGatewayRepositoryMockRecorder) GenerateQris(ctx, input any)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateQris", reflect.TypeOf((*MockPaymentGatewayRepository)(nil).GenerateQris), ctx, input)
 }
 
-// ParseNotification mocks base method.
-func (m *MockPaymentGatewayRepository) ParseNotification(body []byte) (domain.QrisStatus, *domain.Error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ParseNotification", body)
-	ret0, _ := ret[0].(domain.QrisStatus)
-	ret1, _ := ret[1].(*domain.Error)
-	return ret0, ret1
-}
-
-// ParseNotification indicates an expected call of ParseNotification.
-func (mr *MockPaymentGatewayRepositoryMockRecorder) ParseNotification(body any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ParseNotification", reflect.TypeOf((*MockPaymentGatewayRepository)(nil).ParseNotification), body)
-}
-
 // QueryQris mocks base method.
 func (m *MockPaymentGatewayRepository) QueryQris(ctx context.Context, input domain.QueryQrisInput) (domain.QrisStatus, *domain.Error) {
 	m.ctrl.T.Helper()
@@ -182,18 +167,4 @@ func (m *MockPaymentGatewayRepository) QueryQris(ctx context.Context, input doma
 func (mr *MockPaymentGatewayRepositoryMockRecorder) QueryQris(ctx, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "QueryQris", reflect.TypeOf((*MockPaymentGatewayRepository)(nil).QueryQris), ctx, input)
-}
-
-// VerifyNotificationSignature mocks base method.
-func (m *MockPaymentGatewayRepository) VerifyNotificationSignature(method, path string, headers domain.NotificationHeaders, body []byte) *domain.Error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "VerifyNotificationSignature", method, path, headers, body)
-	ret0, _ := ret[0].(*domain.Error)
-	return ret0
-}
-
-// VerifyNotificationSignature indicates an expected call of VerifyNotificationSignature.
-func (mr *MockPaymentGatewayRepositoryMockRecorder) VerifyNotificationSignature(method, path, headers, body any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VerifyNotificationSignature", reflect.TypeOf((*MockPaymentGatewayRepository)(nil).VerifyNotificationSignature), method, path, headers, body)
 }

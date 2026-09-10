@@ -1,10 +1,12 @@
 package restapi
 
 import (
+	"apps/api/data/doku"
 	"apps/api/domain"
 	"apps/api/utils"
 	"apps/api/utils/logger"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	apiContract "libs/api-contract"
@@ -117,38 +119,36 @@ func RequireSessionId(next http.HandlerFunc) http.HandlerFunc {
 	})
 }
 
-func VerifyDokuSignature(usecase domain.PaymentUsecase) func(http.HandlerFunc) http.HandlerFunc {
-	return func(next http.HandlerFunc) http.HandlerFunc {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			body, readErr := io.ReadAll(r.Body)
-			if readErr != nil {
-				WriteError(r.Context(), w, apiContract.Error{Code: apiContract.UNAUTHORIZED, Message: "failed to read request body"})
-				return
+func VerifyDokuSignature(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, readErr := io.ReadAll(r.Body)
+		if readErr != nil {
+			WriteError(r.Context(), w, apiContract.Error{Code: apiContract.UNAUTHORIZED, Message: "failed to read request body"})
+			return
+		}
+		r.Body = io.NopCloser(bytes.NewReader(body))
+
+		headers := domain.NotificationHeaders{
+			Timestamp: r.Header.Get("X-TIMESTAMP"),
+			Signature: r.Header.Get("X-SIGNATURE"),
+			PartnerId: r.Header.Get("X-PARTNER-ID"),
+		}
+
+		if err := doku.VerifyNotificationSignature(utils.GetEnv().DokuClientSecret, r.Method, r.URL.Path, headers, body); err != nil {
+			var reference struct {
+				OriginalPartnerReferenceNo string `json:"originalPartnerReferenceNo"`
 			}
-			r.Body = io.NopCloser(bytes.NewReader(body))
+			json.Unmarshal(body, &reference)
 
-			headers := domain.NotificationHeaders{
-				Timestamp: r.Header.Get("X-TIMESTAMP"),
-				Signature: r.Header.Get("X-SIGNATURE"),
-				PartnerId: r.Header.Get("X-PARTNER-ID"),
-			}
+			log := logger.FromCtx(r.Context(), slog.Default())
+			log.ErrorContext(r.Context(), "doku notification signature verification failed",
+				slog.String("partnerReferenceNo", reference.OriginalPartnerReferenceNo),
+				slog.String("error", err.Message),
+			)
+			WriteError(r.Context(), w, apiContract.Error{Code: apiContract.UNAUTHORIZED, Message: "invalid notification signature"})
+			return
+		}
 
-			if err := usecase.VerifyNotificationSignature(r.Method, r.URL.Path, headers, body); err != nil {
-				referenceNo := ""
-				if status, parseErr := usecase.ParseNotification(body); parseErr == nil {
-					referenceNo = status.PartnerReferenceNo
-				}
-
-				log := logger.FromCtx(r.Context(), slog.Default())
-				log.ErrorContext(r.Context(), "doku notification signature verification failed",
-					slog.String("partnerReferenceNo", referenceNo),
-					slog.String("error", err.Message),
-				)
-				WriteError(r.Context(), w, apiContract.Error{Code: apiContract.UNAUTHORIZED, Message: "invalid notification signature"})
-				return
-			}
-
-			next.ServeHTTP(w, r)
-		})
-	}
+		next.ServeHTTP(w, r)
+	})
 }

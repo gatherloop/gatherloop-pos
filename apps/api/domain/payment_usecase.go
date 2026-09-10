@@ -179,14 +179,6 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 	return resultPayment, resultTransaction, err
 }
 
-func (usecase PaymentUsecase) VerifyNotificationSignature(method, path string, headers NotificationHeaders, body []byte) *Error {
-	return usecase.paymentGatewayRepository.VerifyNotificationSignature(method, path, headers, body)
-}
-
-func (usecase PaymentUsecase) ParseNotification(body []byte) (QrisStatus, *Error) {
-	return usecase.paymentGatewayRepository.ParseNotification(body)
-}
-
 func (usecase PaymentUsecase) ConfirmPayment(ctx context.Context, status QrisStatus) (Payment, ConfirmPaymentOutcome, *Error) {
 	var resultPayment Payment
 	var outcome ConfirmPaymentOutcome

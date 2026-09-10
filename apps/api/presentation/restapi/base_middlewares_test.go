@@ -2,18 +2,43 @@ package restapi_test
 
 import (
 	"bytes"
+	"crypto/hmac"
+	"crypto/sha256"
+	"crypto/sha512"
+	"encoding/base64"
+	"encoding/hex"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+	"time"
 
-	"apps/api/data/mock"
-	"apps/api/domain"
 	"apps/api/presentation/restapi"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/mock/gomock"
+	"github.com/stretchr/testify/require"
 )
+
+// computeDokuSymmetricSignature is an independent reimplementation of
+// DOKU's SNAP symmetric signature scheme (PRD "What DOKU gives us"), so
+// these tests check VerifyDokuSignature against an external oracle rather
+// than against data/doku's own implementation.
+func computeDokuSymmetricSignature(t *testing.T, secret, method, path, timestamp string, body []byte) string {
+	t.Helper()
+
+	var compact bytes.Buffer
+	require.NoError(t, json.Compact(&compact, body))
+
+	digest := sha256.Sum256(compact.Bytes())
+	digestHex := strings.ToLower(hex.EncodeToString(digest[:]))
+
+	stringToSign := method + ":" + path + ":" + ":" + digestHex + ":" + timestamp
+	mac := hmac.New(sha512.New, []byte(secret))
+	mac.Write([]byte(stringToSign))
+	return base64.StdEncoding.EncodeToString(mac.Sum(nil))
+}
 
 func TestEnableCORS_AllowsOriginInAllowlist(t *testing.T) {
 	t.Setenv("CORS_ALLOWED_ORIGINS", "https://gatherloop.github.io,http://localhost:3000")
@@ -148,18 +173,14 @@ func TestRequireSessionId(t *testing.T) {
 	}
 }
 
-func testPaymentUsecaseForSignatureVerification(gatewayRepo domain.PaymentGatewayRepository) domain.PaymentUsecase {
-	return domain.NewPaymentUsecase(nil, gatewayRepo, nil, nil, nil, nil, nil, 0, 0)
-}
-
 func TestVerifyDokuSignature_ValidSignaturePassesThroughWithBodyIntact(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	t.Setenv("DOKU_CLIENT_SECRET", "test-client-secret")
 
-	gatewayRepo := mock.NewMockPaymentGatewayRepository(ctrl)
-	gatewayRepo.EXPECT().
-		VerifyNotificationSignature(http.MethodPost, "/payments/doku/notification", gomock.Any(), []byte(`{"originalPartnerReferenceNo":"ORD1"}`)).
-		Return(nil)
+	method := http.MethodPost
+	path := "/payments/doku/notification"
+	body := []byte(`{"originalPartnerReferenceNo":"ORD1"}`)
+	timestamp := time.Now().Format("2006-01-02T15:04:05.000Z07:00")
+	signature := computeDokuSymmetricSignature(t, "test-client-secret", method, path, timestamp, body)
 
 	var bodyInHandler []byte
 	nextCalled := false
@@ -169,26 +190,20 @@ func TestVerifyDokuSignature_ValidSignaturePassesThroughWithBodyIntact(t *testin
 		w.WriteHeader(http.StatusOK)
 	})
 
-	req := httptest.NewRequest(http.MethodPost, "/payments/doku/notification", bytes.NewBufferString(`{"originalPartnerReferenceNo":"ORD1"}`))
+	req := httptest.NewRequest(method, path, bytes.NewReader(body))
+	req.Header.Set("X-TIMESTAMP", timestamp)
+	req.Header.Set("X-SIGNATURE", signature)
 	w := httptest.NewRecorder()
 
-	restapi.VerifyDokuSignature(testPaymentUsecaseForSignatureVerification(gatewayRepo))(next).ServeHTTP(w, req)
+	restapi.VerifyDokuSignature(next).ServeHTTP(w, req)
 
 	assert.True(t, nextCalled)
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, `{"originalPartnerReferenceNo":"ORD1"}`, string(bodyInHandler))
+	assert.Equal(t, string(body), string(bodyInHandler))
 }
 
 func TestVerifyDokuSignature_InvalidSignatureIsRejected(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	gatewayRepo := mock.NewMockPaymentGatewayRepository(ctrl)
-	gatewayRepo.EXPECT().
-		VerifyNotificationSignature(http.MethodPost, "/payments/doku/notification", gomock.Any(), gomock.Any()).
-		Return(&domain.Error{Type: domain.Unauthorized, Message: "invalid notification signature"})
-	gatewayRepo.EXPECT().ParseNotification(gomock.Any()).
-		Return(domain.QrisStatus{PartnerReferenceNo: "ORD1"}, nil)
+	t.Setenv("DOKU_CLIENT_SECRET", "test-client-secret")
 
 	nextCalled := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -196,9 +211,11 @@ func TestVerifyDokuSignature_InvalidSignatureIsRejected(t *testing.T) {
 	})
 
 	req := httptest.NewRequest(http.MethodPost, "/payments/doku/notification", bytes.NewBufferString(`{"originalPartnerReferenceNo":"ORD1"}`))
+	req.Header.Set("X-TIMESTAMP", time.Now().Format("2006-01-02T15:04:05.000Z07:00"))
+	req.Header.Set("X-SIGNATURE", "dGFtcGVyZWQtc2lnbmF0dXJl") // base64("tampered-signature")
 	w := httptest.NewRecorder()
 
-	restapi.VerifyDokuSignature(testPaymentUsecaseForSignatureVerification(gatewayRepo))(next).ServeHTTP(w, req)
+	restapi.VerifyDokuSignature(next).ServeHTTP(w, req)
 
 	assert.False(t, nextCalled)
 	assert.Equal(t, http.StatusUnauthorized, w.Code)

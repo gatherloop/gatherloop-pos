@@ -228,7 +228,19 @@ func TestPaymentRoute_RequiresSessionId(t *testing.T) {
 	}
 }
 
-var notificationBody = []byte(`{"originalPartnerReferenceNo":"ORD1234567890AB"}`)
+func dokuNotificationBody(partnerReferenceNo, gatewayReferenceNo, transactionStatus, amount string) []byte {
+	body, _ := json.Marshal(apiContract.DokuNotificationRequest{
+		OriginalPartnerReferenceNo: partnerReferenceNo,
+		OriginalReferenceNo:        gatewayReferenceNo,
+		LatestTransactionStatus:    transactionStatus,
+		TransactionStatusDesc:      "",
+		Amount: apiContract.DokuNotificationRequestAmount{
+			Value:    amount,
+			Currency: "IDR",
+		},
+	})
+	return body
+}
 
 func TestPaymentHandler_Notification(t *testing.T) {
 	t.Run("a valid paid notification pays the transaction and returns success", func(t *testing.T) {
@@ -243,14 +255,8 @@ func TestPaymentHandler_Notification(t *testing.T) {
 			Id: 7, CartId: 1, TransactionId: &transactionId,
 			PartnerReferenceNo: "ORD1234567890AB", Status: domain.PaymentStatePending, Amount: 30000,
 		}
-		status := domain.QrisStatus{
-			PartnerReferenceNo: payment.PartnerReferenceNo,
-			GatewayReferenceNo: "gw-1",
-			Status:             domain.PaymentGatewayStatusPaid,
-			PaidAmount:         payment.Amount,
-		}
+		notificationBody := dokuNotificationBody(payment.PartnerReferenceNo, "gw-1", "00", "30000.00")
 
-		m.gatewayRepo.EXPECT().ParseNotification(notificationBody).Return(status, nil)
 		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), transactionId).
 			Return(domain.Transaction{Id: transactionId, Total: payment.Amount}, nil)
@@ -289,8 +295,7 @@ func TestPaymentHandler_Notification(t *testing.T) {
 		m := newPaymentHandlerMocks(ctrl)
 		withPaymentHandlerTransactionMock(m.paymentRepo)
 
-		status := domain.QrisStatus{PartnerReferenceNo: "ORD1234567890AB", Status: domain.PaymentGatewayStatusPaid, PaidAmount: 30000}
-		m.gatewayRepo.EXPECT().ParseNotification(notificationBody).Return(status, nil)
+		notificationBody := dokuNotificationBody("ORD1234567890AB", "gw-1", "00", "30000.00")
 		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), "ORD1234567890AB").
 			Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
 
@@ -312,8 +317,7 @@ func TestPaymentHandler_Notification(t *testing.T) {
 			Id: 7, CartId: 1, PartnerReferenceNo: "ORD1234567890AB",
 			Status: domain.PaymentStatePaid, Amount: 30000,
 		}
-		status := domain.QrisStatus{PartnerReferenceNo: payment.PartnerReferenceNo, Status: domain.PaymentGatewayStatusPaid, PaidAmount: payment.Amount}
-		m.gatewayRepo.EXPECT().ParseNotification(notificationBody).Return(status, nil)
+		notificationBody := dokuNotificationBody(payment.PartnerReferenceNo, "gw-1", "00", "30000.00")
 		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 
 		req := httptest.NewRequest(http.MethodPost, "/payments/doku/notification", bytes.NewReader(notificationBody))
@@ -334,8 +338,7 @@ func TestPaymentHandler_Notification(t *testing.T) {
 			Id: 7, CartId: 1, PartnerReferenceNo: "ORD1234567890AB",
 			Status: domain.PaymentStatePending, Amount: 30000,
 		}
-		status := domain.QrisStatus{PartnerReferenceNo: payment.PartnerReferenceNo, Status: domain.PaymentGatewayStatusPaid, PaidAmount: 10000}
-		m.gatewayRepo.EXPECT().ParseNotification(notificationBody).Return(status, nil)
+		notificationBody := dokuNotificationBody(payment.PartnerReferenceNo, "gw-1", "00", "10000.00")
 		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 
 		req := httptest.NewRequest(http.MethodPost, "/payments/doku/notification", bytes.NewReader(notificationBody))

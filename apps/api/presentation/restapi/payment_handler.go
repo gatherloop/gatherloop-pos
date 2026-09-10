@@ -51,9 +51,9 @@ func (handler PaymentHandler) Notification(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	status, parseErr := handler.usecase.ParseNotification(body)
+	status, parseErr := GetDokuNotification(body)
 	if parseErr != nil {
-		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(parseErr.Type), Message: parseErr.Message})
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: parseErr.Error()})
 		return
 	}
 

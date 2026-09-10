@@ -1,16 +1,35 @@
 package restapi
 
 import (
+	"apps/api/data/doku"
 	"apps/api/domain"
 	"encoding/json"
 	apiContract "libs/api-contract"
 	"net/http"
+	"strconv"
 )
 
 func GetPaymentCheckoutRequest(r *http.Request) (apiContract.PaymentCheckoutRequest, error) {
 	var request apiContract.PaymentCheckoutRequest
 	err := json.NewDecoder(r.Body).Decode(&request)
 	return request, err
+}
+
+func GetDokuNotification(body []byte) (domain.QrisStatus, error) {
+	var request apiContract.DokuNotificationRequest
+	if err := json.Unmarshal(body, &request); err != nil {
+		return domain.QrisStatus{}, err
+	}
+
+	paidAmount, _ := strconv.ParseFloat(request.Amount.Value, 32)
+
+	return domain.QrisStatus{
+		PartnerReferenceNo: request.OriginalPartnerReferenceNo,
+		GatewayReferenceNo: request.OriginalReferenceNo,
+		Status:             doku.MapTransactionStatus(request.LatestTransactionStatus),
+		PaidAmount:         float32(paidAmount),
+		RawStatusCode:      request.LatestTransactionStatus,
+	}, nil
 }
 
 func ToApiPayment(payment domain.Payment, transaction domain.Transaction) apiContract.Payment {
