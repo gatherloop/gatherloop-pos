@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { match, P } from 'ts-pattern';
 import { useRouter } from 'solito/router';
+// Deep imports, not the `domain` barrel (D20): that barrel also re-exports
+// every POS usecase, which drags unrelated weight into the order bundle.
 import { Category } from '../../../domain/entities/Category';
 import { Product } from '../../../domain/entities/Product';
 import { Variant } from '../../../domain/entities/Variant';
+import { CartRepository } from '../../../domain/repositories/cart';
 import { SessionRepository } from '../../../domain/repositories/session';
 import { CartUsecase } from '../../../domain/usecases/cart';
 import {
@@ -25,10 +28,16 @@ export type MenuListHandlerProps = {
   menuListUsecase: MenuListUsecase;
   menuItemDetailUsecase: MenuItemDetailUsecase;
   cartUsecase: CartUsecase;
+  cartRepository: CartRepository;
   sessionRepository: SessionRepository;
   tableCode: string;
 };
 
+// D4 in docs/trd-order-app-composition-and-ssr.md: grouping is client-side,
+// by the category already embedded on each product — there is no
+// `categoryId` filter on the underlying fetch. Only categories with at
+// least one matching product are kept, so the chip row (FR-5) never offers
+// a category that would render an empty section.
 function groupByCategory(products: Product[], categories: Category[]) {
   return categories
     .map((category) => ({
@@ -40,6 +49,10 @@ function groupByCategory(products: Product[], categories: Category[]) {
     .filter((group) => group.products.length > 0);
 }
 
+// FR-5: the "mulai Rp X" starting price is the lowest price among a
+// product's own variants. `variants` carries every variant of every
+// published purchase product (menuList.ts), so this is a pure client-side
+// reduction, not a second fetch.
 function computeStartingPriceByProductId(
   variants: Variant[]
 ): Record<number, number> {
@@ -52,6 +65,11 @@ function computeStartingPriceByProductId(
   }, {});
 }
 
+// `product` is `Product | null` in the state's type regardless of `type`
+// (the machine's own invariant — every non-loading, non-fetch-failed state
+// has a product — isn't expressible in the discriminated union). A plain
+// function reads better here than forcing ts-pattern to prove exhaustiveness
+// over a combination the type system can't actually rule out.
 function toItemDetailScreenVariant(
   state: MenuItemDetailState
 ): MenuItemDetailScreenProps['variant'] {
@@ -69,6 +87,7 @@ function toItemDetailScreenVariant(
   };
 }
 
+// FR-5 in docs/prd-order-app-ux-improvements.md.
 function toCtaState(
   state: MenuItemDetailState
 ): 'ready' | 'incomplete' | 'resolving' {
@@ -102,11 +121,18 @@ function buildValidationMessage(missingOptionNames: string[]): string | null {
   return `Lengkapi pilihan ${rest} dan ${last}`;
 }
 
+// D9 in docs/trd-order-app-composition-and-ssr.md: the table shell
+// (formerly the `TableResolve` wrapper) and the item detail sheet (formerly
+// `MenuItemDetail`, its own composition root) are both folded in here —
+// `tableResolveUsecase` and `menuItemDetailUsecase` are sub-usecases of this
+// screen now, the same shape `ProductListHandler` runs
+// `productDeleteUsecase` in for the POS (§2.3a).
 export const MenuListHandler = ({
   tableResolveUsecase,
   menuListUsecase,
   menuItemDetailUsecase,
   cartUsecase,
+  cartRepository,
   sessionRepository,
   tableCode,
 }: MenuListHandlerProps) => {
@@ -115,16 +141,44 @@ export const MenuListHandler = ({
   const menuItemDetail = useUsecase(menuItemDetailUsecase);
   const cart = useCart(cartUsecase);
   const router = useRouter();
+  // FR-5: set to the product id once the guest presses the CTA while options
+  // are incomplete. Keyed by product id, rather than a plain boolean, so a
+  // newly selected item starts clean with no separate reset effect needed
+  // (react-hooks/set-state-in-effect) — the comparison below just stops
+  // matching once `menuItemDetail`'s own productId moves on.
   const [validationErrorProductId, setValidationErrorProductId] = useState<
     number | null
   >(null);
 
+  // Only a successful resolution is worth remembering (FR-4) — a code the
+  // API just rejected has nothing useful to persist for a future cart.
   useEffect(() => {
     if (tableResolve.state.type === 'resolved' && tableResolve.state.code) {
       sessionRepository.setTableCode(tableResolve.state.code);
     }
   }, [tableResolve.state, sessionRepository]);
 
+  const boundTableCodeRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (tableResolve.state.type !== 'resolved' || !tableResolve.state.code) {
+      return;
+    }
+    const code = tableResolve.state.code;
+    if (boundTableCodeRef.current === code) return;
+    boundTableCodeRef.current = code;
+    cartRepository.updateTable(code).catch(() => {
+      boundTableCodeRef.current = null;
+    });
+  }, [tableResolve.state, cartRepository]);
+
+  // D6: opening the sheet is a state transition, not a route — this is the
+  // sole trigger for `menuItemDetailUsecase`, covering both a fresh click
+  // (`menuList.dispatch({ type: 'SELECT_ITEM' })`) and a `?product=` deep
+  // link already present at mount (`menuList`'s own initial state). The
+  // product is looked up from the menu already fetched (§2.4/D6) so opening
+  // costs no network call — `menuItemDetailUsecase` falls back to its own
+  // fetch only if the id isn't found there yet (a deep link racing the
+  // menu fetch).
   useEffect(() => {
     const { selectedProductId } = menuList.state;
     if (selectedProductId !== null) {

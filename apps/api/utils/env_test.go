@@ -46,3 +46,45 @@ func TestGetEnv_CorsAllowedOrigins(t *testing.T) {
 		})
 	}
 }
+
+func TestGetEnv_DokuQrisExpirySeconds(t *testing.T) {
+	tests := []struct {
+		name     string
+		raw      string
+		expected int
+	}{
+		{name: "unset defaults to 300", raw: "", expected: 300},
+		{name: "explicit value", raw: "120", expected: 120},
+		{name: "non-numeric falls back to default", raw: "not-a-number", expected: 300},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("DOKU_QRIS_EXPIRY_SECONDS", tt.raw)
+
+			env := utils.GetEnv()
+
+			assert.Equal(t, tt.expected, env.DokuQrisExpirySeconds)
+		})
+	}
+}
+
+func TestGetEnv_DokuConfig(t *testing.T) {
+	t.Setenv("DOKU_BASE_URL", "https://api-sandbox.doku.com")
+	t.Setenv("DOKU_CLIENT_ID", "client-id")
+	t.Setenv("DOKU_CLIENT_SECRET", "client-secret")
+	t.Setenv("DOKU_PRIVATE_KEY", "pem")
+	t.Setenv("DOKU_MERCHANT_ID", "merchant-id")
+	t.Setenv("DOKU_CHANNEL_ID", "channel-id")
+	t.Setenv("ORDER_PAYMENT_WALLET_ID", "42")
+
+	env := utils.GetEnv()
+
+	assert.Equal(t, "https://api-sandbox.doku.com", env.DokuBaseURL)
+	assert.Equal(t, "client-id", env.DokuClientId)
+	assert.Equal(t, "client-secret", env.DokuClientSecret)
+	assert.Equal(t, "pem", env.DokuPrivateKey)
+	assert.Equal(t, "merchant-id", env.DokuMerchantId)
+	assert.Equal(t, "channel-id", env.DokuChannelId)
+	assert.Equal(t, "42", env.OrderPaymentWalletId)
+}

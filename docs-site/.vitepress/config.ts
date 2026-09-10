@@ -67,6 +67,7 @@ export default defineConfig({
           { text: 'Coupons', link: '/sales/coupons' },
           { text: 'Board-game Rentals', link: '/sales/rentals' },
           { text: 'Table Ordering', link: '/sales/table-ordering' },
+          { text: 'Order Checkout (QRIS)', link: '/sales/order-checkout' },
         ],
       },
       {

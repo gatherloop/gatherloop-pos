@@ -34,3 +34,5 @@ export * from './menu';
 export * from './menuListQuery';
 export * from './cart';
 export * from './cartQuery';
+export * from './payment';
+export * from './customer';

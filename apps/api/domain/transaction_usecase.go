@@ -21,13 +21,13 @@ func NewTransactionUsecase(transactionRepository TransactionRepository, variantR
 	}
 }
 
-func (usecase TransactionUsecase) GetTransactionList(ctx context.Context, query string, sortBy SortBy, order Order, skip int, limit int, paymentStatus PaymentStatus, walletId *int) ([]Transaction, int64, *Error) {
-	transactions, err := usecase.transactionRepository.GetTransactionList(ctx, query, sortBy, order, skip, limit, paymentStatus, walletId)
+func (usecase TransactionUsecase) GetTransactionList(ctx context.Context, query string, sortBy SortBy, order Order, skip int, limit int, paymentStatus PaymentStatus, walletId *int, source *TransactionSource) ([]Transaction, int64, *Error) {
+	transactions, err := usecase.transactionRepository.GetTransactionList(ctx, query, sortBy, order, skip, limit, paymentStatus, walletId, source)
 	if err != nil {
 		return []Transaction{}, 0, err
 	}
 
-	total, err := usecase.transactionRepository.GetTransactionListTotal(ctx, query, paymentStatus, walletId)
+	total, err := usecase.transactionRepository.GetTransactionListTotal(ctx, query, paymentStatus, walletId, source)
 	if err != nil {
 		return []Transaction{}, 0, err
 	}
@@ -41,6 +41,10 @@ func (usecase TransactionUsecase) GetTransactionById(ctx context.Context, id int
 
 func (usecase TransactionUsecase) CreateTransaction(ctx context.Context, transaction Transaction) (Transaction, *Error) {
 	var createdTransaction Transaction
+
+	if transaction.Source == "" {
+		transaction.Source = TransactionSourcePos
+	}
 
 	err := usecase.transactionRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 
@@ -184,49 +188,54 @@ func (usecase TransactionUsecase) PayTransaction(ctx context.Context, walletId i
 		if err != nil {
 			return err
 		}
-
-		if transaction.PaidAt != nil {
-			return &Error{Type: BadRequest, Message: "transaction already paid"}
-		}
-
-		paymentWallet, err := usecase.walletRepository.GetWalletById(ctxWithTx, walletId)
-		if err != nil {
-			return err
-		}
-
-		paymentCost := transaction.Total * paymentWallet.PaymentCostPercentage / 100
-		newBalance := paymentWallet.Balance + transaction.Total - paymentCost
-
-		if _, err := usecase.walletRepository.UpdateWalletById(ctxWithTx, Wallet{
-			Name:                  paymentWallet.Name,
-			PaymentCostPercentage: paymentWallet.PaymentCostPercentage,
-			Balance:               newBalance,
-			IsCashless:            paymentWallet.IsCashless,
-			IsPaymentTarget:       paymentWallet.IsPaymentTarget,
-		},
-			walletId); err != nil {
-			return err
-		}
-
-		variantMaterials := []VariantMaterial{}
-
-		for _, item := range transaction.TransactionItems {
-			variantMaterials = append(variantMaterials, item.Variant.Materials...)
-		}
-
-		var foodCost float32
-		for _, variantMaterial := range variantMaterials {
-			foodCost += variantMaterial.Amount * variantMaterial.Material.Price
-		}
-
-		totalIncome := transaction.Total - paymentCost - foodCost
-
-		if _, err := usecase.transactionRepository.UpdateTransactionById(ctxWithTx, Transaction{TotalIncome: totalIncome}, id); err != nil {
-			return err
-		}
-
-		return usecase.transactionRepository.PayTransaction(ctxWithTx, walletId, time.Now(), paidAmount, id)
+		return payTransaction(ctxWithTx, transaction, usecase.transactionRepository, usecase.walletRepository, walletId, paidAmount)
 	})
+}
+
+func payTransaction(ctx context.Context, transaction Transaction, transactionRepository TransactionRepository, walletRepository WalletRepository, walletId int64, paidAmount float32) *Error {
+	if transaction.PaidAt != nil {
+		return &Error{Type: BadRequest, Message: "transaction already paid"}
+	}
+
+	id := transaction.Id
+
+	paymentWallet, err := walletRepository.GetWalletById(ctx, walletId)
+	if err != nil {
+		return err
+	}
+
+	paymentCost := transaction.Total * paymentWallet.PaymentCostPercentage / 100
+	newBalance := paymentWallet.Balance + transaction.Total - paymentCost
+
+	if _, err := walletRepository.UpdateWalletById(ctx, Wallet{
+		Name:                  paymentWallet.Name,
+		PaymentCostPercentage: paymentWallet.PaymentCostPercentage,
+		Balance:               newBalance,
+		IsCashless:            paymentWallet.IsCashless,
+		IsPaymentTarget:       paymentWallet.IsPaymentTarget,
+	},
+		walletId); err != nil {
+		return err
+	}
+
+	variantMaterials := []VariantMaterial{}
+
+	for _, item := range transaction.TransactionItems {
+		variantMaterials = append(variantMaterials, item.Variant.Materials...)
+	}
+
+	var foodCost float32
+	for _, variantMaterial := range variantMaterials {
+		foodCost += variantMaterial.Amount * variantMaterial.Material.Price
+	}
+
+	totalIncome := transaction.Total - paymentCost - foodCost
+
+	if _, err := transactionRepository.UpdateTransactionById(ctx, Transaction{TotalIncome: totalIncome}, id); err != nil {
+		return err
+	}
+
+	return transactionRepository.PayTransaction(ctx, walletId, time.Now(), paidAmount, id)
 }
 
 func (usecase TransactionUsecase) UnpayTransaction(ctx context.Context, id int64) *Error {

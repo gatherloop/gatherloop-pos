@@ -211,6 +211,15 @@ export const TransactionListHandler = ({
           fetchDebounceDelay: 600,
         })
       }
+      source={transactionList.state.source}
+      onSourceChange={(source) =>
+        transactionList.dispatch({
+          type: 'CHANGE_PARAMS',
+          source,
+          page: 1,
+          fetchDebounceDelay: 600,
+        })
+      }
       currentPage={transactionList.state.page}
       onPageChange={(page: number) =>
         transactionList.dispatch({ type: 'CHANGE_PARAMS', page })

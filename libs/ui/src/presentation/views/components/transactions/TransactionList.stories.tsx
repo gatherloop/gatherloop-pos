@@ -8,6 +8,8 @@ const defaultArgs = {
   onSearchValueChange: fn(),
   paymentStatus: 'all' as const,
   onPaymentStatusChange: fn(),
+  source: 'all' as const,
+  onSourceChange: fn(),
   transactions: mockTransactions,
   currentPage: 1,
   onPageChange: fn(),
@@ -78,6 +80,15 @@ export const UnpaidFilter: Story = {
     variant: { type: 'loaded' },
     paymentStatus: 'unpaid' as const,
     transactions: mockTransactions.filter((t) => t.paidAt === null),
+    totalItem: 1,
+  },
+};
+
+export const FilteredBySource: Story = {
+  args: {
+    variant: { type: 'loaded' },
+    source: 'order' as const,
+    transactions: mockTransactions.filter((t) => t.source === 'order'),
     totalItem: 1,
   },
 };

@@ -1,6 +1,8 @@
-import { Cart, CartItem, Product, Variant } from '../../domain/entities';
+import { Cart, CartItem, PublicTable, Product, Variant } from '../../domain/entities';
 import { CartRepository } from '../../domain/repositories/cart';
 
+// Mirrors the fixture in `data/mock/menu.ts` so a story or test wiring both
+// mocks together sees the same products/variants in the cart as in the menu.
 const product: Product = {
   id: 1,
   name: 'Es Kopi Susu',
@@ -99,6 +101,15 @@ export class MockCartRepository implements CartRepository {
     return { ...this.cart };
   };
 
+  updateTable: CartRepository['updateTable'] = async () => {
+    if (this.shouldFail) throw new Error('Failed to update table');
+    const table: PublicTable = { id: 1, label: 'Meja 1', floorNumber: 1 };
+    this.cart = { ...this.cart, tableId: table.id, table };
+    return { ...this.cart };
+  };
+
+  // Mirrors D9: adding an item whose variantId and trimmed note match an
+  // existing line increments that line instead of creating a second one.
   addItem: CartRepository['addItem'] = async ({
     variantId,
     amount,

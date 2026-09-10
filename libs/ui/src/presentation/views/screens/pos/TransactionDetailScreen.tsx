@@ -1,10 +1,17 @@
 import { ScrollView } from 'tamagui';
 import { TransactionDetail, Layout } from '../../components';
-import { TransactionCoupon, TransactionItem } from '../../../../domain';
+import {
+  PublicTable,
+  TransactionCoupon,
+  TransactionItem,
+  TransactionSource,
+} from '../../../../domain';
 
 export type TransactionDetailScreenProps = {
   createdAt: string;
   name: string;
+  source: TransactionSource;
+  table?: PublicTable | null;
   orderNumber: number;
   total: number;
   transactionItems: TransactionItem[];
@@ -28,6 +35,8 @@ export const TransactionDetailScreen = (
         <TransactionDetail
           createdAt={props.createdAt}
           name={props.name}
+          source={props.source}
+          table={props.table}
           orderNumber={props.orderNumber}
           total={props.total}
           transactionItems={props.transactionItems}

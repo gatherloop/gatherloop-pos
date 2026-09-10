@@ -13,7 +13,12 @@ import {
 } from 'tamagui';
 import { FlatList } from 'react-native';
 import { TransactionListItem } from './TransactionListItem';
-import { PaymentStatus, Transaction, Wallet } from '../../../../domain';
+import {
+  PaymentStatus,
+  Transaction,
+  TransactionSourceFilter,
+  Wallet,
+} from '../../../../domain';
 import { Filter, X } from '@tamagui/lucide-icons';
 
 export type TransactionListProps = {
@@ -22,6 +27,8 @@ export type TransactionListProps = {
   onSearchClear?: () => void;
   paymentStatus: PaymentStatus;
   onPaymentStatusChange: (paymentStatus: PaymentStatus) => void;
+  source: TransactionSourceFilter;
+  onSourceChange: (source: TransactionSourceFilter) => void;
   variant: { type: 'loading' } | { type: 'loaded' } | { type: 'error' };
   transactions: Transaction[];
   currentPage: number;
@@ -50,6 +57,8 @@ export const TransactionList = ({
   onSearchClear,
   paymentStatus,
   onPaymentStatusChange,
+  source,
+  onSourceChange,
   variant,
   transactions,
   itemPerPage,
@@ -186,6 +195,42 @@ export const TransactionList = ({
                   </XStack>
                 </RadioGroup>
               </YStack>
+
+              <Separator />
+
+              <YStack>
+                <Paragraph>Source</Paragraph>
+                <RadioGroup
+                  value={source}
+                  onValueChange={(value) =>
+                    onSourceChange(value as TransactionSourceFilter)
+                  }
+                  gap="$2"
+                >
+                  <XStack gap="$3">
+                    <XStack gap="$2" alignItems="center">
+                      <RadioGroup.Item value="all" id="all-source">
+                        <RadioGroup.Indicator />
+                      </RadioGroup.Item>
+                      <Label htmlFor="all-source">All</Label>
+                    </XStack>
+
+                    <XStack gap="$2" alignItems="center">
+                      <RadioGroup.Item value="pos" id="pos-source">
+                        <RadioGroup.Indicator />
+                      </RadioGroup.Item>
+                      <Label htmlFor="pos-source">POS</Label>
+                    </XStack>
+
+                    <XStack gap="$2" alignItems="center">
+                      <RadioGroup.Item value="order" id="order-source">
+                        <RadioGroup.Indicator />
+                      </RadioGroup.Item>
+                      <Label htmlFor="order-source">Order</Label>
+                    </XStack>
+                  </XStack>
+                </RadioGroup>
+              </YStack>
             </YStack>
           </Popover.Content>
         </Popover>
@@ -205,6 +250,8 @@ export const TransactionList = ({
                 <TransactionListItem
                   createdAt={item.createdAt}
                   name={item.name}
+                  source={item.source}
+                  table={item.table}
                   orderNumber={item.orderNumber}
                   total={item.total}
                   paidAt={item.paidAt ?? undefined}

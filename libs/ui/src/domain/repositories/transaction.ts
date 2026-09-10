@@ -2,6 +2,7 @@ import {
   PaymentStatus,
   Transaction,
   TransactionForm,
+  TransactionSourceFilter,
   TransactionStatistic,
 } from '../entities';
 
@@ -14,6 +15,7 @@ export interface TransactionRepository {
     orderBy: 'asc' | 'desc';
     paymentStatus: PaymentStatus;
     walletId: number | null;
+    source: TransactionSourceFilter;
   }) => {
     transactions: Transaction[];
     totalItem: number;
@@ -27,6 +29,7 @@ export interface TransactionRepository {
     orderBy: 'asc' | 'desc';
     paymentStatus: PaymentStatus;
     walletId: number | null;
+    source: TransactionSourceFilter;
   }) => Promise<{
     transactions: Transaction[];
     totalItem: number;

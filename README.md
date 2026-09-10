@@ -20,7 +20,7 @@ An [Nx](https://nx.dev) monorepo. Apps are thin shells; nearly all frontend code
 apps/
   api/          Go backend (REST API, MySQL)
   pos-web/      Next.js admin/cashier app (Pages Router)
-  order-web/    Next.js customer app — scan a table QR, order from your phone
+  order-web/    Next.js customer app — scan a table QR, order and pay by QRIS from your phone
   pos-mobile/   React Native (Expo) app for iOS/Android
   *-e2e/        Playwright end-to-end tests per app
 libs/
@@ -58,6 +58,11 @@ cp apps/pos-web/.env.example apps/pos-web/.env.local
 cp apps/order-web/.env.example apps/order-web/.env.local
 cp apps/pos-mobile/.env.example apps/pos-mobile/.env
 ```
+
+`apps/api`'s checkout endpoint validates `ORDER_PAYMENT_WALLET_ID` on each request and returns an
+error if it is unset, unknown, deleted, or not a payment target (`docs/prd-order-checkout-qris-doku.md`,
+D15) — before trying checkout locally, create a wallet (POS → Wallets) and point `apps/api/.env` at
+its id.
 
 ### Run
 

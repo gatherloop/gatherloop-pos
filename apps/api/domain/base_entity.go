@@ -20,6 +20,7 @@ const (
 	Unauthorized
 	NotFound
 	InternalServerError
+	BadGateway
 )
 
 type Error struct {

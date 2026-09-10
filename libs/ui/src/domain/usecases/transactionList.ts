@@ -1,5 +1,10 @@
 import { match, P } from 'ts-pattern';
-import { PaymentStatus, Transaction, Wallet } from '../entities';
+import {
+  PaymentStatus,
+  Transaction,
+  TransactionSourceFilter,
+  Wallet,
+} from '../entities';
 import {
   TransactionRepository,
   TransactionListQueryRepository,
@@ -17,6 +22,7 @@ type Context = {
   orderBy: 'asc' | 'desc';
   paymentStatus: PaymentStatus;
   walletId: number | null;
+  source: TransactionSourceFilter;
   wallets: Wallet[];
   itemPerPage: number;
   totalItem: number;
@@ -49,6 +55,7 @@ export type TransactionListAction =
       fetchDebounceDelay?: number;
       paymentStatus?: PaymentStatus;
       walletId?: number | null;
+      source?: TransactionSourceFilter;
     }
   | { type: 'REVALIDATE'; transactions: Transaction[]; totalItem: number }
   | {
@@ -62,6 +69,7 @@ export type TransactionListParams = {
   query?: string;
   paymentStatus?: PaymentStatus;
   walletId?: number | null;
+  source?: TransactionSourceFilter;
   wallets: Wallet[];
   sortBy?: 'created_at';
   orderBy?: 'asc' | 'desc';
@@ -107,6 +115,8 @@ export class TransactionListUsecase extends Usecase<
         this.params.paymentStatus ??
         this.transactionListQueryRepository.getPaymentStatus(),
       walletId: this.params.walletId ?? null,
+      source:
+        this.params.source ?? this.transactionListQueryRepository.getSource(),
       wallets: this.params.wallets,
       errorMessage: null,
       sortBy:
@@ -212,6 +222,7 @@ export class TransactionListUsecase extends Usecase<
           sortBy,
           paymentStatus,
           walletId,
+          source,
         }) => {
           Promise.all([
             this.transactionRepository.fetchTransactionList({
@@ -222,6 +233,7 @@ export class TransactionListUsecase extends Usecase<
               sortBy,
               paymentStatus,
               walletId,
+              source,
             }),
             this.walletRepository.fetchWalletList(),
           ])
@@ -252,6 +264,7 @@ export class TransactionListUsecase extends Usecase<
           fetchDebounceDelay,
           paymentStatus,
           walletId,
+          source,
         }) => {
           this.transactionListQueryRepository.setPage(page);
           this.transactionListQueryRepository.setSearchQuery(query);
@@ -260,6 +273,7 @@ export class TransactionListUsecase extends Usecase<
           this.transactionListQueryRepository.setItemPerPage(itemPerPage);
           this.transactionListQueryRepository.setPaymentStatus(paymentStatus);
           this.transactionListQueryRepository.setWalletId(walletId);
+          this.transactionListQueryRepository.setSource(source);
 
           changeParamsDebounce(() => {
             const { transactions, totalItem } =
@@ -271,6 +285,7 @@ export class TransactionListUsecase extends Usecase<
                 sortBy,
                 paymentStatus,
                 walletId,
+                source,
               });
 
             if (transactions.length > 0) {
@@ -293,6 +308,7 @@ export class TransactionListUsecase extends Usecase<
           transactions,
           totalItem,
           walletId,
+          source,
         }) => {
           this.transactionRepository
             .fetchTransactionList({
@@ -303,6 +319,7 @@ export class TransactionListUsecase extends Usecase<
               sortBy,
               paymentStatus,
               walletId,
+              source,
             })
             .then(({ transactions, totalItem }) =>
               dispatch({ type: 'REVALIDATE_FINISH', transactions, totalItem })

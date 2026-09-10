@@ -8,7 +8,12 @@ import {
 } from '../../components';
 import { Link } from 'solito/link';
 import { Plus } from '@tamagui/lucide-icons';
-import { Transaction, TransactionPayForm, Wallet } from '../../../../domain';
+import {
+  Transaction,
+  TransactionPayForm,
+  TransactionSourceFilter,
+  Wallet,
+} from '../../../../domain';
 
 export type TransactionListScreenProps = {
   onLogoutPress: () => void;
@@ -26,6 +31,8 @@ export type TransactionListScreenProps = {
   onSearchValueChange: (value: string) => void;
   paymentStatus: 'all' | 'paid' | 'unpaid';
   onPaymentStatusChange: (paymentStatus: 'all' | 'paid' | 'unpaid') => void;
+  source: TransactionSourceFilter;
+  onSourceChange: (source: TransactionSourceFilter) => void;
   currentPage: number;
   onPageChange: (page: number) => void;
   totalItem: number;
@@ -69,6 +76,8 @@ export const TransactionListScreen = ({
   onSearchValueChange,
   paymentStatus,
   onPaymentStatusChange,
+  source,
+  onSourceChange,
   currentPage,
   onPageChange,
   totalItem,
@@ -110,6 +119,8 @@ export const TransactionListScreen = ({
         onSearchValueChange={onSearchValueChange}
         paymentStatus={paymentStatus}
         onPaymentStatusChange={onPaymentStatusChange}
+        source={source}
+        onSourceChange={onSourceChange}
         variant={variant}
         transactions={transactions}
         currentPage={currentPage}
