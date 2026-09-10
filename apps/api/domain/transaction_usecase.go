@@ -21,13 +21,13 @@ func NewTransactionUsecase(transactionRepository TransactionRepository, variantR
 	}
 }
 
-func (usecase TransactionUsecase) GetTransactionList(ctx context.Context, query string, sortBy SortBy, order Order, skip int, limit int, paymentStatus PaymentStatus, walletId *int) ([]Transaction, int64, *Error) {
-	transactions, err := usecase.transactionRepository.GetTransactionList(ctx, query, sortBy, order, skip, limit, paymentStatus, walletId)
+func (usecase TransactionUsecase) GetTransactionList(ctx context.Context, query string, sortBy SortBy, order Order, skip int, limit int, paymentStatus PaymentStatus, walletId *int, source *TransactionSource) ([]Transaction, int64, *Error) {
+	transactions, err := usecase.transactionRepository.GetTransactionList(ctx, query, sortBy, order, skip, limit, paymentStatus, walletId, source)
 	if err != nil {
 		return []Transaction{}, 0, err
 	}
 
-	total, err := usecase.transactionRepository.GetTransactionListTotal(ctx, query, paymentStatus, walletId)
+	total, err := usecase.transactionRepository.GetTransactionListTotal(ctx, query, paymentStatus, walletId, source)
 	if err != nil {
 		return []Transaction{}, 0, err
 	}
@@ -41,6 +41,10 @@ func (usecase TransactionUsecase) GetTransactionById(ctx context.Context, id int
 
 func (usecase TransactionUsecase) CreateTransaction(ctx context.Context, transaction Transaction) (Transaction, *Error) {
 	var createdTransaction Transaction
+
+	if transaction.Source == "" {
+		transaction.Source = TransactionSourcePos
+	}
 
 	err := usecase.transactionRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 
