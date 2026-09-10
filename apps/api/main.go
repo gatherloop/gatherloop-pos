@@ -135,7 +135,7 @@ func main() {
 	restapi.NewTableRouter(tableHandler).AddRouter(router)
 	restapi.NewCartRouter(cartHandler).AddRouter(router)
 	restapi.NewCustomerRouter(customerHandler).AddRouter(router)
-	restapi.NewPaymentRouter(paymentHandler).AddRouter(router)
+	restapi.NewPaymentRouter(paymentHandler, paymentGatewayRepository).AddRouter(router)
 	restapi.NewExpenseRouter(expenseHandler).AddRouter(router)
 	restapi.NewMaterialRouter(materialHandler).AddRouter(router)
 	restapi.NewSupplierRouter(supplierHandler).AddRouter(router)

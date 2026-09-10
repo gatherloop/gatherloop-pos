@@ -1,13 +1,18 @@
 package restapi_test
 
 import (
+	"bytes"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"apps/api/data/mock"
+	"apps/api/domain"
 	"apps/api/presentation/restapi"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestEnableCORS_AllowsOriginInAllowlist(t *testing.T) {
@@ -141,4 +146,56 @@ func TestRequireSessionId(t *testing.T) {
 			assert.Equal(t, tt.expectedStatus == http.StatusOK, nextCalled)
 		})
 	}
+}
+
+func TestVerifyDokuSignature_ValidSignaturePassesThroughWithBodyIntact(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	gatewayRepo := mock.NewMockPaymentGatewayRepository(ctrl)
+	gatewayRepo.EXPECT().
+		VerifyNotificationSignature(http.MethodPost, "/payments/doku/notification", gomock.Any(), []byte(`{"originalPartnerReferenceNo":"ORD1"}`)).
+		Return(nil)
+
+	var bodyInHandler []byte
+	nextCalled := false
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		nextCalled = true
+		bodyInHandler, _ = io.ReadAll(r.Body)
+		w.WriteHeader(http.StatusOK)
+	})
+
+	req := httptest.NewRequest(http.MethodPost, "/payments/doku/notification", bytes.NewBufferString(`{"originalPartnerReferenceNo":"ORD1"}`))
+	w := httptest.NewRecorder()
+
+	restapi.VerifyDokuSignature(gatewayRepo)(next).ServeHTTP(w, req)
+
+	assert.True(t, nextCalled)
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, `{"originalPartnerReferenceNo":"ORD1"}`, string(bodyInHandler))
+}
+
+func TestVerifyDokuSignature_InvalidSignatureIsRejected(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	gatewayRepo := mock.NewMockPaymentGatewayRepository(ctrl)
+	gatewayRepo.EXPECT().
+		VerifyNotificationSignature(http.MethodPost, "/payments/doku/notification", gomock.Any(), gomock.Any()).
+		Return(&domain.Error{Type: domain.Unauthorized, Message: "invalid notification signature"})
+	gatewayRepo.EXPECT().ParseNotification(gomock.Any()).
+		Return(domain.QrisStatus{PartnerReferenceNo: "ORD1"}, nil)
+
+	nextCalled := false
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		nextCalled = true
+	})
+
+	req := httptest.NewRequest(http.MethodPost, "/payments/doku/notification", bytes.NewBufferString(`{"originalPartnerReferenceNo":"ORD1"}`))
+	w := httptest.NewRecorder()
+
+	restapi.VerifyDokuSignature(gatewayRepo)(next).ServeHTTP(w, req)
+
+	assert.False(t, nextCalled)
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
 }

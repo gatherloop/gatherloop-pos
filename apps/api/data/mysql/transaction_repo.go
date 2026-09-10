@@ -181,6 +181,12 @@ func (repo Repository) DeleteTransactionById(ctx context.Context, id int64) *dom
 	return ToErrorCtx(ctx, result.Error, "DeleteTransactionById")
 }
 
+func (repo Repository) UndeleteTransactionById(ctx context.Context, id int64) *domain.Error {
+	db := GetDbFromCtx(ctx, repo.db)
+	result := db.Table("transactions").Where("id = ?", id).Update("deleted_at", nil)
+	return ToErrorCtx(ctx, result.Error, "UndeleteTransactionById")
+}
+
 func (repo Repository) PayTransaction(ctx context.Context, walletId int64, paidAt time.Time, paidAmount float32, id int64) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	result := db.Table("transactions").Where("id = ?", id).Updates(Transaction{WalletId: &walletId, PaidAt: &paidAt, PaidAmount: paidAmount})

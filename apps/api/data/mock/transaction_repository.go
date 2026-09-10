@@ -159,6 +159,20 @@ func (mr *MockTransactionRepositoryMockRecorder) PayTransaction(ctx, walletId, p
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PayTransaction", reflect.TypeOf((*MockTransactionRepository)(nil).PayTransaction), ctx, walletId, paidAt, paidAmount, id)
 }
 
+// UndeleteTransactionById mocks base method.
+func (m *MockTransactionRepository) UndeleteTransactionById(ctx context.Context, id int64) *domain.Error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UndeleteTransactionById", ctx, id)
+	ret0, _ := ret[0].(*domain.Error)
+	return ret0
+}
+
+// UndeleteTransactionById indicates an expected call of UndeleteTransactionById.
+func (mr *MockTransactionRepositoryMockRecorder) UndeleteTransactionById(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UndeleteTransactionById", reflect.TypeOf((*MockTransactionRepository)(nil).UndeleteTransactionById), ctx, id)
+}
+
 // UnpayTransaction mocks base method.
 func (m *MockTransactionRepository) UnpayTransaction(ctx context.Context, id int64) *domain.Error {
 	m.ctrl.T.Helper()

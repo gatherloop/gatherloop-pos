@@ -1,9 +1,12 @@
 package restapi
 
 import (
+	"apps/api/domain"
 	"apps/api/utils"
 	"apps/api/utils/logger"
+	"bytes"
 	"fmt"
+	"io"
 	apiContract "libs/api-contract"
 	"log/slog"
 	"net/http"
@@ -112,4 +115,49 @@ func RequireSessionId(next http.HandlerFunc) http.HandlerFunc {
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+// VerifyDokuSignature guards the one unauthenticated write route in the API
+// (D13): DOKU's payment notification. There is no session ID and no JWT to
+// check, only the symmetric signature PaymentGatewayRepository knows how to
+// recompute, so verification is delegated to it rather than duplicated here
+// — this middleware's job is only to read the body once, verify it, and put
+// it back for the handler.
+//
+// Sitting beside CheckAuth and RequireSessionId keeps that fact legible in
+// *_route.go instead of buried in a handler.
+func VerifyDokuSignature(gatewayRepository domain.PaymentGatewayRepository) func(http.HandlerFunc) http.HandlerFunc {
+	return func(next http.HandlerFunc) http.HandlerFunc {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			body, readErr := io.ReadAll(r.Body)
+			if readErr != nil {
+				WriteError(r.Context(), w, apiContract.Error{Code: apiContract.UNAUTHORIZED, Message: "failed to read request body"})
+				return
+			}
+			r.Body = io.NopCloser(bytes.NewReader(body))
+
+			headers := domain.NotificationHeaders{
+				Timestamp: r.Header.Get("X-TIMESTAMP"),
+				Signature: r.Header.Get("X-SIGNATURE"),
+				PartnerId: r.Header.Get("X-PARTNER-ID"),
+			}
+
+			if err := gatewayRepository.VerifyNotificationSignature(r.Method, r.URL.Path, headers, body); err != nil {
+				referenceNo := ""
+				if status, parseErr := gatewayRepository.ParseNotification(body); parseErr == nil {
+					referenceNo = status.PartnerReferenceNo
+				}
+
+				log := logger.FromCtx(r.Context(), slog.Default())
+				log.ErrorContext(r.Context(), "doku notification signature verification failed",
+					slog.String("partnerReferenceNo", referenceNo),
+					slog.String("error", err.Message),
+				)
+				WriteError(r.Context(), w, apiContract.Error{Code: apiContract.UNAUTHORIZED, Message: "invalid notification signature"})
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
 }

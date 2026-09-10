@@ -81,6 +81,51 @@ const (
 	PaymentStateFailed  PaymentState = "failed"
 )
 
+// ConfirmPaymentOutcome is what PaymentUsecase.ConfirmPayment resolved a
+// gateway status to. It exists so the notification handler (FR-6) — and,
+// sharing the same transition, phase 9's status read (D12) — can log and
+// respond without ConfirmPayment reaching into logging or HTTP itself: a
+// domain usecase stays free of both (see the rest of this package).
+//
+// Every outcome below is still answered with an HTTP 200 once the caller's
+// signature was valid (D13/D14) — only a genuine system error, returned
+// alongside a zero outcome, is not.
+type ConfirmPaymentOutcome string
+
+const (
+	// ConfirmPaymentOutcomePaid is FR-6 step 4: a pending payment just paid,
+	// its transaction paid and its cart converted.
+	ConfirmPaymentOutcomePaid ConfirmPaymentOutcome = "paid"
+	// ConfirmPaymentOutcomePaidLate is the same transition, but for a
+	// payment our own expiry had already moved to expired (D5) — the
+	// transaction is un-deleted before it is paid. Kept distinct from
+	// ConfirmPaymentOutcomePaid so the caller can log it at warn per D5
+	// ("logged at warn" — its true frequency is meant to be measurable).
+	ConfirmPaymentOutcomePaidLate ConfirmPaymentOutcome = "paid_late"
+	// ConfirmPaymentOutcomeExpired and ConfirmPaymentOutcomeFailed are FR-6
+	// step 5: a pending payment's transaction was soft-deleted, its cart
+	// left active and thereby unfrozen.
+	ConfirmPaymentOutcomeExpired ConfirmPaymentOutcome = "expired"
+	ConfirmPaymentOutcomeFailed  ConfirmPaymentOutcome = "failed"
+	// ConfirmPaymentOutcomeAlreadyPaid is D14: a "paid" notification for a
+	// payment already paid is a no-op, however many times it is retried.
+	ConfirmPaymentOutcomeAlreadyPaid ConfirmPaymentOutcome = "already_paid"
+	// ConfirmPaymentOutcomeUnknownReference is FR-6 step 2: a
+	// partnerReferenceNo we never minted a payment for. Never a 404 —
+	// that would make DOKU retry a notification we can never handle.
+	ConfirmPaymentOutcomeUnknownReference ConfirmPaymentOutcome = "unknown_reference"
+	// ConfirmPaymentOutcomeAmountMismatch is FR-6's hard stop: the
+	// notification's amount differs from payment.Amount, so nothing is
+	// paid and the payment is left exactly as it was.
+	ConfirmPaymentOutcomeAmountMismatch ConfirmPaymentOutcome = "amount_mismatch"
+	// ConfirmPaymentOutcomeIgnored covers every other one-way transition
+	// this notification does not carry — e.g. a "paid" status arriving for
+	// a payment already failed, or an unrecognised gateway status. Never
+	// observed in a genuine DOKU notification, but a defensive no-op is
+	// cheaper than a state machine that only handles the documented cases.
+	ConfirmPaymentOutcomeIgnored ConfirmPaymentOutcome = "ignored"
+)
+
 // Payment is one attempt to collect a cart's total through the payment
 // gateway (FR-5).
 //

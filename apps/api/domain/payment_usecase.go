@@ -178,3 +178,168 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 
 	return resultPayment, resultTransaction, err
 }
+
+// ConfirmPayment parses a DOKU payment notification body (FR-6, D19) and
+// applies it through applyGatewayStatus, the same transition phase 9's
+// status read will re-enter with a QueryQris result instead (D12) — one
+// code path, one set of guards, for whichever route learns of a status
+// change first.
+//
+// The signature itself is verified upstream, by the VerifyDokuSignature
+// middleware — this method makes no trust decision, only a parsing one.
+func (usecase PaymentUsecase) ConfirmPayment(ctx context.Context, notificationBody []byte) (Payment, ConfirmPaymentOutcome, *Error) {
+	status, parseErr := usecase.paymentGatewayRepository.ParseNotification(notificationBody)
+	if parseErr != nil {
+		return Payment{}, "", parseErr
+	}
+
+	return usecase.applyGatewayStatus(ctx, status)
+}
+
+// applyGatewayStatus is FR-6's notification steps 2–6: look the payment up
+// by its partner reference, and apply whatever DOKU says its status is now.
+//
+// Every outcome that is not a genuine system error is reported through the
+// returned ConfirmPaymentOutcome rather than *Error, because FR-6 step 6
+// answers all of them — an unknown reference, an amount mismatch, a paid
+// payment notified again — with the same 200 a real transition gets. Only a
+// failed DB write is an *Error, so the caller (DOKU, via the notification
+// handler) is told to retry.
+func (usecase PaymentUsecase) applyGatewayStatus(ctx context.Context, status QrisStatus) (Payment, ConfirmPaymentOutcome, *Error) {
+	var resultPayment Payment
+	var outcome ConfirmPaymentOutcome
+
+	err := usecase.paymentRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		payment, err := usecase.paymentRepository.GetPaymentByPartnerReferenceNo(ctxWithTx, status.PartnerReferenceNo)
+		if err != nil {
+			if err.Type == NotFound {
+				outcome = ConfirmPaymentOutcomeUnknownReference
+				return nil
+			}
+			return err
+		}
+
+		// Paid is terminal (D14): once a payment is paid, no notification —
+		// whatever status it carries — moves it again.
+		if payment.Status == PaymentStatePaid {
+			resultPayment = payment
+			outcome = ConfirmPaymentOutcomeAlreadyPaid
+			return nil
+		}
+
+		switch status.Status {
+		case PaymentGatewayStatusPaid:
+			resultPayment, outcome, err = usecase.confirmPaymentPaid(ctxWithTx, payment, status)
+			return err
+		case PaymentGatewayStatusExpired, PaymentGatewayStatusFailed:
+			resultPayment, outcome, err = usecase.confirmPaymentUnsuccessful(ctxWithTx, payment, status.Status)
+			return err
+		default:
+			resultPayment = payment
+			outcome = ConfirmPaymentOutcomeIgnored
+			return nil
+		}
+	})
+
+	return resultPayment, outcome, err
+}
+
+// confirmPaymentPaid is FR-6 step 4, reached only for a payment still
+// pending or expired (an already-paid payment never reaches here — see
+// applyGatewayStatus). A payment whose one-way transitions do not include
+// "→ paid" from its current state (i.e. failed) is left alone.
+func (usecase PaymentUsecase) confirmPaymentPaid(ctx context.Context, payment Payment, status QrisStatus) (Payment, ConfirmPaymentOutcome, *Error) {
+	if payment.Status != PaymentStatePending && payment.Status != PaymentStateExpired {
+		return payment, ConfirmPaymentOutcomeIgnored, nil
+	}
+
+	// The hard stop: a mismatched amount pays nothing, and leaves the
+	// payment exactly as it was for staff to reconcile by hand.
+	if status.PaidAmount != payment.Amount {
+		return payment, ConfirmPaymentOutcomeAmountMismatch, nil
+	}
+
+	if payment.TransactionId == nil {
+		return Payment{}, "", &Error{Type: InternalServerError, Message: "payment has no transaction to pay"}
+	}
+
+	outcome := ConfirmPaymentOutcomePaid
+	if payment.Status == PaymentStateExpired {
+		outcome = ConfirmPaymentOutcomePaidLate
+	}
+
+	transaction, txErr := usecase.transactionRepository.GetTransactionById(ctx, *payment.TransactionId)
+	if txErr != nil {
+		return Payment{}, "", txErr
+	}
+
+	// D5: a late "paid" notification for a payment our own expiry already
+	// soft-deleted the transaction for. The payment record, not our timer,
+	// is the authority, so the transaction comes back before it is paid.
+	if transaction.DeletedAt != nil {
+		if undeleteErr := usecase.transactionRepository.UndeleteTransactionById(ctx, transaction.Id); undeleteErr != nil {
+			return Payment{}, "", undeleteErr
+		}
+		transaction.DeletedAt = nil
+	}
+
+	if payErr := payTransaction(ctx, transaction, usecase.transactionRepository, usecase.walletRepository, usecase.orderPaymentWalletId, payment.Amount); payErr != nil {
+		return Payment{}, "", payErr
+	}
+
+	now := time.Now()
+	payment.GatewayReferenceNo = status.GatewayReferenceNo
+	payment.Status = PaymentStatePaid
+	payment.PaidAt = &now
+	payment.StatusCheckedAt = &now
+
+	updatedPayment, updateErr := usecase.paymentRepository.UpdatePaymentById(ctx, payment, payment.Id)
+	if updateErr != nil {
+		return Payment{}, "", updateErr
+	}
+
+	cart, cartErr := usecase.cartRepository.GetCartById(ctx, payment.CartId)
+	if cartErr != nil {
+		return Payment{}, "", cartErr
+	}
+	cart.Status = CartStatusConverted
+	if _, updateCartErr := usecase.cartRepository.UpdateCartById(ctx, cart, cart.Id); updateCartErr != nil {
+		return Payment{}, "", updateCartErr
+	}
+
+	return updatedPayment, outcome, nil
+}
+
+// confirmPaymentUnsuccessful is FR-6 step 5, reached only for a still-pending
+// payment — an expired or failed status for a payment already past pending
+// (expired/failed themselves, or the paid check in applyGatewayStatus) has
+// nothing left to change.
+func (usecase PaymentUsecase) confirmPaymentUnsuccessful(ctx context.Context, payment Payment, gatewayStatus PaymentGatewayStatus) (Payment, ConfirmPaymentOutcome, *Error) {
+	if payment.Status != PaymentStatePending {
+		return payment, ConfirmPaymentOutcomeIgnored, nil
+	}
+
+	newStatus := PaymentStateExpired
+	outcome := ConfirmPaymentOutcomeExpired
+	if gatewayStatus == PaymentGatewayStatusFailed {
+		newStatus = PaymentStateFailed
+		outcome = ConfirmPaymentOutcomeFailed
+	}
+
+	now := time.Now()
+	payment.Status = newStatus
+	payment.StatusCheckedAt = &now
+
+	updatedPayment, updateErr := usecase.paymentRepository.UpdatePaymentById(ctx, payment, payment.Id)
+	if updateErr != nil {
+		return Payment{}, "", updateErr
+	}
+
+	if payment.TransactionId != nil {
+		if deleteErr := usecase.transactionRepository.DeleteTransactionById(ctx, *payment.TransactionId); deleteErr != nil {
+			return Payment{}, "", deleteErr
+		}
+	}
+
+	return updatedPayment, outcome, nil
+}

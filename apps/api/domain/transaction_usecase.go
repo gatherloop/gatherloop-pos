@@ -205,49 +205,63 @@ func (usecase TransactionUsecase) PayTransaction(ctx context.Context, walletId i
 		if err != nil {
 			return err
 		}
-
-		if transaction.PaidAt != nil {
-			return &Error{Type: BadRequest, Message: "transaction already paid"}
-		}
-
-		paymentWallet, err := usecase.walletRepository.GetWalletById(ctxWithTx, walletId)
-		if err != nil {
-			return err
-		}
-
-		paymentCost := transaction.Total * paymentWallet.PaymentCostPercentage / 100
-		newBalance := paymentWallet.Balance + transaction.Total - paymentCost
-
-		if _, err := usecase.walletRepository.UpdateWalletById(ctxWithTx, Wallet{
-			Name:                  paymentWallet.Name,
-			PaymentCostPercentage: paymentWallet.PaymentCostPercentage,
-			Balance:               newBalance,
-			IsCashless:            paymentWallet.IsCashless,
-			IsPaymentTarget:       paymentWallet.IsPaymentTarget,
-		},
-			walletId); err != nil {
-			return err
-		}
-
-		variantMaterials := []VariantMaterial{}
-
-		for _, item := range transaction.TransactionItems {
-			variantMaterials = append(variantMaterials, item.Variant.Materials...)
-		}
-
-		var foodCost float32
-		for _, variantMaterial := range variantMaterials {
-			foodCost += variantMaterial.Amount * variantMaterial.Material.Price
-		}
-
-		totalIncome := transaction.Total - paymentCost - foodCost
-
-		if _, err := usecase.transactionRepository.UpdateTransactionById(ctxWithTx, Transaction{TotalIncome: totalIncome}, id); err != nil {
-			return err
-		}
-
-		return usecase.transactionRepository.PayTransaction(ctxWithTx, walletId, time.Now(), paidAmount, id)
+		return payTransaction(ctxWithTx, transaction, usecase.transactionRepository, usecase.walletRepository, walletId, paidAmount)
 	})
+}
+
+// payTransaction is TransactionUsecase.PayTransaction's body, pulled out to
+// package scope so PaymentUsecase.ConfirmPayment (FR-6 step 4) can credit
+// the wallet and derive totalIncome the exact same way a cashier's payment
+// does, without one usecase depending on another — no usecase in this
+// package does (every dependency here is a repository).
+//
+// It takes the transaction already loaded rather than an id: ConfirmPayment
+// needs it loaded anyway to check DeletedAt for D5's un-delete, and a second
+// GetTransactionById here would just repeat that read.
+func payTransaction(ctx context.Context, transaction Transaction, transactionRepository TransactionRepository, walletRepository WalletRepository, walletId int64, paidAmount float32) *Error {
+	if transaction.PaidAt != nil {
+		return &Error{Type: BadRequest, Message: "transaction already paid"}
+	}
+
+	id := transaction.Id
+
+	paymentWallet, err := walletRepository.GetWalletById(ctx, walletId)
+	if err != nil {
+		return err
+	}
+
+	paymentCost := transaction.Total * paymentWallet.PaymentCostPercentage / 100
+	newBalance := paymentWallet.Balance + transaction.Total - paymentCost
+
+	if _, err := walletRepository.UpdateWalletById(ctx, Wallet{
+		Name:                  paymentWallet.Name,
+		PaymentCostPercentage: paymentWallet.PaymentCostPercentage,
+		Balance:               newBalance,
+		IsCashless:            paymentWallet.IsCashless,
+		IsPaymentTarget:       paymentWallet.IsPaymentTarget,
+	},
+		walletId); err != nil {
+		return err
+	}
+
+	variantMaterials := []VariantMaterial{}
+
+	for _, item := range transaction.TransactionItems {
+		variantMaterials = append(variantMaterials, item.Variant.Materials...)
+	}
+
+	var foodCost float32
+	for _, variantMaterial := range variantMaterials {
+		foodCost += variantMaterial.Amount * variantMaterial.Material.Price
+	}
+
+	totalIncome := transaction.Total - paymentCost - foodCost
+
+	if _, err := transactionRepository.UpdateTransactionById(ctx, Transaction{TotalIncome: totalIncome}, id); err != nil {
+		return err
+	}
+
+	return transactionRepository.PayTransaction(ctx, walletId, time.Now(), paidAmount, id)
 }
 
 func (usecase TransactionUsecase) UnpayTransaction(ctx context.Context, id int64) *Error {
