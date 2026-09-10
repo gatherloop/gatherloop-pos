@@ -7,12 +7,18 @@ import (
 	apiContract "libs/api-contract"
 	"net/http"
 	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
 func GetPaymentCheckoutRequest(r *http.Request) (apiContract.PaymentCheckoutRequest, error) {
 	var request apiContract.PaymentCheckoutRequest
 	err := json.NewDecoder(r.Body).Decode(&request)
 	return request, err
+}
+
+func GetPartnerReferenceNo(r *http.Request) string {
+	return mux.Vars(r)["partnerReferenceNo"]
 }
 
 func GetDokuNotificationRequest(body []byte) (apiContract.DokuNotificationRequest, error) {

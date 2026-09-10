@@ -348,6 +348,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /payments/{partnerReferenceNo}:
+    get:
+      summary: Get a payment by its reference, re-querying DOKU when it is still pending and the last check is stale (D12, D12a). 404 unless the payment belongs to the requesting session.
+      operationId: paymentFindByPartnerReferenceNo
+      tags:
+        - payment
+      parameters:
+        - $ref: '#/components/parameters/PartnerReferenceNo'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /payments/doku/notification:
     post:
       summary: DOKU's inbound QRIS payment notification (D19). Unauthenticated but signature-verified (D13) — the generated client for this route is never imported, because DOKU calls it, not the order app.
@@ -5475,6 +5496,12 @@ components:
       in: path
       schema:
         type: integer
+      required: true
+    PartnerReferenceNo:
+      name: partnerReferenceNo
+      in: path
+      schema:
+        type: string
       required: true
     RentalId:
       name: rentalId
