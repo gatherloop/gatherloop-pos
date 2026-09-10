@@ -13,6 +13,10 @@ import (
 	"time"
 )
 
+// tokenRefreshMargin refreshes the cached access token 60s ahead of its
+// stated expiry (FR-3: "refresh at expiresIn - 60s").
+const tokenRefreshMargin = 60 * time.Second
+
 // tokenResponse is DOKU's B2B access-token response.
 type tokenResponse struct {
 	ResponseCode    string `json:"responseCode"`
