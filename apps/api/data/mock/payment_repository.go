@@ -17,6 +17,104 @@ import (
 	gomock "go.uber.org/mock/gomock"
 )
 
+// MockPaymentRepository is a mock of PaymentRepository interface.
+type MockPaymentRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockPaymentRepositoryMockRecorder
+	isgomock struct{}
+}
+
+// MockPaymentRepositoryMockRecorder is the mock recorder for MockPaymentRepository.
+type MockPaymentRepositoryMockRecorder struct {
+	mock *MockPaymentRepository
+}
+
+// NewMockPaymentRepository creates a new mock instance.
+func NewMockPaymentRepository(ctrl *gomock.Controller) *MockPaymentRepository {
+	mock := &MockPaymentRepository{ctrl: ctrl}
+	mock.recorder = &MockPaymentRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockPaymentRepository) EXPECT() *MockPaymentRepositoryMockRecorder {
+	return m.recorder
+}
+
+// BeginTransaction mocks base method.
+func (m *MockPaymentRepository) BeginTransaction(ctx context.Context, callback func(context.Context) *domain.Error) *domain.Error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BeginTransaction", ctx, callback)
+	ret0, _ := ret[0].(*domain.Error)
+	return ret0
+}
+
+// BeginTransaction indicates an expected call of BeginTransaction.
+func (mr *MockPaymentRepositoryMockRecorder) BeginTransaction(ctx, callback any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BeginTransaction", reflect.TypeOf((*MockPaymentRepository)(nil).BeginTransaction), ctx, callback)
+}
+
+// CreatePayment mocks base method.
+func (m *MockPaymentRepository) CreatePayment(ctx context.Context, payment domain.Payment) (domain.Payment, *domain.Error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreatePayment", ctx, payment)
+	ret0, _ := ret[0].(domain.Payment)
+	ret1, _ := ret[1].(*domain.Error)
+	return ret0, ret1
+}
+
+// CreatePayment indicates an expected call of CreatePayment.
+func (mr *MockPaymentRepositoryMockRecorder) CreatePayment(ctx, payment any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePayment", reflect.TypeOf((*MockPaymentRepository)(nil).CreatePayment), ctx, payment)
+}
+
+// GetPaymentByPartnerReferenceNo mocks base method.
+func (m *MockPaymentRepository) GetPaymentByPartnerReferenceNo(ctx context.Context, partnerReferenceNo string) (domain.Payment, *domain.Error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPaymentByPartnerReferenceNo", ctx, partnerReferenceNo)
+	ret0, _ := ret[0].(domain.Payment)
+	ret1, _ := ret[1].(*domain.Error)
+	return ret0, ret1
+}
+
+// GetPaymentByPartnerReferenceNo indicates an expected call of GetPaymentByPartnerReferenceNo.
+func (mr *MockPaymentRepositoryMockRecorder) GetPaymentByPartnerReferenceNo(ctx, partnerReferenceNo any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPaymentByPartnerReferenceNo", reflect.TypeOf((*MockPaymentRepository)(nil).GetPaymentByPartnerReferenceNo), ctx, partnerReferenceNo)
+}
+
+// GetPendingPaymentByCartId mocks base method.
+func (m *MockPaymentRepository) GetPendingPaymentByCartId(ctx context.Context, cartId int64) (domain.Payment, *domain.Error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPendingPaymentByCartId", ctx, cartId)
+	ret0, _ := ret[0].(domain.Payment)
+	ret1, _ := ret[1].(*domain.Error)
+	return ret0, ret1
+}
+
+// GetPendingPaymentByCartId indicates an expected call of GetPendingPaymentByCartId.
+func (mr *MockPaymentRepositoryMockRecorder) GetPendingPaymentByCartId(ctx, cartId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPendingPaymentByCartId", reflect.TypeOf((*MockPaymentRepository)(nil).GetPendingPaymentByCartId), ctx, cartId)
+}
+
+// UpdatePaymentById mocks base method.
+func (m *MockPaymentRepository) UpdatePaymentById(ctx context.Context, payment domain.Payment, id int64) (domain.Payment, *domain.Error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdatePaymentById", ctx, payment, id)
+	ret0, _ := ret[0].(domain.Payment)
+	ret1, _ := ret[1].(*domain.Error)
+	return ret0, ret1
+}
+
+// UpdatePaymentById indicates an expected call of UpdatePaymentById.
+func (mr *MockPaymentRepositoryMockRecorder) UpdatePaymentById(ctx, payment, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePaymentById", reflect.TypeOf((*MockPaymentRepository)(nil).UpdatePaymentById), ctx, payment, id)
+}
+
 // MockPaymentGatewayRepository is a mock of PaymentGatewayRepository interface.
 type MockPaymentGatewayRepository struct {
 	ctrl     *gomock.Controller

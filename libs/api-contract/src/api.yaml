@@ -4419,6 +4419,75 @@ components:
         name:
           type: string
           maxLength: 60
+    PaymentItemOption:
+      type: object
+      required:
+        - name
+        - value
+      properties:
+        name:
+          type: string
+        value:
+          type: string
+    PaymentItem:
+      type: object
+      required:
+        - name
+        - amount
+        - price
+        - subtotal
+        - note
+        - options
+      properties:
+        name:
+          type: string
+        amount:
+          type: number
+        price:
+          type: number
+        subtotal:
+          type: number
+        note:
+          type: string
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentItemOption'
+    Payment:
+      type: object
+      required:
+        - partnerReferenceNo
+        - status
+        - amount
+        - qrContent
+        - expiredAt
+        - customerName
+        - tableLabel
+        - items
+      properties:
+        partnerReferenceNo:
+          type: string
+        status:
+          type: string
+          enum: [pending, paid, expired, failed]
+        amount:
+          type: number
+        qrContent:
+          type: string
+        expiredAt:
+          type: string
+          format: date-time
+        paidAt:
+          type: string
+          format: date-time
+        customerName:
+          type: string
+        tableLabel:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentItem'
     CartUpdateTableRequest:
       type: object
       required:
@@ -4707,6 +4776,13 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/Customer'
+    PaymentResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/Payment'
     CategoryListResponse:
       type: object
       required:
