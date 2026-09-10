@@ -6,21 +6,22 @@ import (
 )
 
 // PaymentUsecase is FR-6's checkout endpoint: cart → QRIS payment → unpaid
-// order Transaction. It depends on repositories rather than other usecases,
-// the same way every usecase in this package does (see cart_usecase.go,
-// rental_usecase.go): PaymentRepository.BeginTransaction is the one
-// transaction boundary Checkout opens, and every write inside it must reach
-// the database through that same ambient tx (data/mysql's
-// GetDbFromCtx) rather than opening a second, uncoordinated one — which is
-// exactly what would happen if this depended on TransactionUsecase, whose
-// own CreateTransaction calls TransactionRepository.BeginTransaction itself.
-// CustomerUsecase is the one exception: it never opens a transaction of its
-// own (see customer_repository.go), which is what makes composing
-// CustomerUsecase.UpsertCustomerName into this one safe.
+// order Transaction. It depends on repositories only, the same way every
+// usecase in this package does (see cart_usecase.go, rental_usecase.go):
+// PaymentRepository.BeginTransaction is the one transaction boundary
+// Checkout opens, and every write inside it must reach the database through
+// that same ambient tx (data/mysql's GetDbFromCtx) rather than opening a
+// second, uncoordinated one — which is exactly what would happen if this
+// depended on TransactionUsecase, whose own CreateTransaction calls
+// TransactionRepository.BeginTransaction itself. The name upsert (D17, FR-4)
+// is the shared upsertCustomerName function in customer_usecase.go, called
+// here against customerRepository directly rather than through
+// CustomerUsecase, for the same reason: this package has no usecase
+// depending on another.
 type PaymentUsecase struct {
 	paymentRepository        PaymentRepository
 	paymentGatewayRepository PaymentGatewayRepository
-	customerUsecase          CustomerUsecase
+	customerRepository       CustomerRepository
 	cartRepository           CartRepository
 	transactionRepository    TransactionRepository
 	variantRepository        VariantRepository
@@ -30,7 +31,7 @@ type PaymentUsecase struct {
 func NewPaymentUsecase(
 	paymentRepository PaymentRepository,
 	paymentGatewayRepository PaymentGatewayRepository,
-	customerUsecase CustomerUsecase,
+	customerRepository CustomerRepository,
 	cartRepository CartRepository,
 	transactionRepository TransactionRepository,
 	variantRepository VariantRepository,
@@ -39,7 +40,7 @@ func NewPaymentUsecase(
 	return PaymentUsecase{
 		paymentRepository:        paymentRepository,
 		paymentGatewayRepository: paymentGatewayRepository,
-		customerUsecase:          customerUsecase,
+		customerRepository:       customerRepository,
 		cartRepository:           cartRepository,
 		transactionRepository:    transactionRepository,
 		variantRepository:        variantRepository,
@@ -57,12 +58,12 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 	var resultTransaction Transaction
 
 	err := usecase.paymentRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		// Step 1: validate and upsert the name (D17, FR-4). CustomerUsecase
-		// does its own trimming and length validation, so this usecase adds
-		// none of its own — the transaction below is named after the
-		// trimmed result, not the raw input, so it never freezes stray
-		// whitespace into the record the POS searches on.
-		customer, err := usecase.customerUsecase.UpsertCustomerName(ctxWithTx, sessionId, customerName)
+		// Step 1: validate and upsert the name (D17, FR-4).
+		// upsertCustomerName does its own trimming and length validation, so
+		// this usecase adds none of its own — the transaction below is named
+		// after the trimmed result, not the raw input, so it never freezes
+		// stray whitespace into the record the POS searches on.
+		customer, err := upsertCustomerName(ctxWithTx, usecase.customerRepository, sessionId, customerName)
 		if err != nil {
 			return err
 		}

@@ -38,8 +38,7 @@ func newPaymentHandlerMocks(ctrl *gomock.Controller) paymentHandlerMocks {
 }
 
 func (m paymentHandlerMocks) handler() restapi.PaymentHandler {
-	customerUsecase := domain.NewCustomerUsecase(m.customerRepo)
-	usecase := domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, customerUsecase, m.cartRepo, m.transactionRepo, m.variantRepo, 300)
+	usecase := domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, 300)
 	return restapi.NewPaymentHandler(usecase)
 }
 

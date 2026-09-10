@@ -40,8 +40,7 @@ func newPaymentUsecaseMocks(ctrl *gomock.Controller) paymentUsecaseMocks {
 }
 
 func (m paymentUsecaseMocks) usecase() domain.PaymentUsecase {
-	customerUsecase := domain.NewCustomerUsecase(m.customerRepo)
-	return domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, customerUsecase, m.cartRepo, m.transactionRepo, m.variantRepo, checkoutQrisExpirySeconds)
+	return domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, checkoutQrisExpirySeconds)
 }
 
 // expectNameUpsert stubs the D17 name upsert (step 1) that every successful

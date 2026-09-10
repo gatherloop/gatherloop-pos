@@ -104,7 +104,7 @@ func main() {
 	tableUsecase := domain.NewTableUsecase(tableRepository)
 	cartUsecase := domain.NewCartUsecase(cartRepository, variantRepository, tableRepository)
 	customerUsecase := domain.NewCustomerUsecase(customerRepository)
-	paymentUsecase := domain.NewPaymentUsecase(paymentRepository, paymentGatewayRepository, customerUsecase, cartRepository, transactionRepository, variantRepository, env.DokuQrisExpirySeconds)
+	paymentUsecase := domain.NewPaymentUsecase(paymentRepository, paymentGatewayRepository, customerRepository, cartRepository, transactionRepository, variantRepository, env.DokuQrisExpirySeconds)
 	budgetUsecase := domain.NewBudgetUsecase(budgetRepository)
 	authUsecase := domain.NewAuthUsecase(authRepository)
 	calculationUsecase := domain.NewCalculationUsecase(calculationRepository, walletRepository)
