@@ -4,6 +4,7 @@ import (
 	"context"
 	"regexp"
 	"strings"
+	"time"
 )
 
 // tableCodePattern is Crockford base32 (D6, matching GenerateTableCode's
@@ -18,13 +19,15 @@ type CartUsecase struct {
 	repository        CartRepository
 	variantRepository VariantRepository
 	tableRepository   TableRepository
+	paymentRepository PaymentRepository
 }
 
-func NewCartUsecase(repository CartRepository, variantRepository VariantRepository, tableRepository TableRepository) CartUsecase {
+func NewCartUsecase(repository CartRepository, variantRepository VariantRepository, tableRepository TableRepository, paymentRepository PaymentRepository) CartUsecase {
 	return CartUsecase{
 		repository:        repository,
 		variantRepository: variantRepository,
 		tableRepository:   tableRepository,
+		paymentRepository: paymentRepository,
 	}
 }
 
@@ -61,6 +64,9 @@ func (usecase CartUsecase) UpdateCartTable(ctx context.Context, sessionId string
 		if cartErr != nil {
 			return cartErr
 		}
+		if lockErr := usecase.ensureCartUnlocked(ctxWithTx, cart.Id); lockErr != nil {
+			return lockErr
+		}
 
 		cart.TableId = &table.Id
 		updated, updateErr := usecase.repository.UpdateCartById(ctxWithTx, cart, cart.Id)
@@ -93,6 +99,9 @@ func (usecase CartUsecase) AddCartItem(ctx context.Context, sessionId string, va
 		cart, cartErr := usecase.getOrCreateActiveCart(ctxWithTx, sessionId)
 		if cartErr != nil {
 			return cartErr
+		}
+		if lockErr := usecase.ensureCartUnlocked(ctxWithTx, cart.Id); lockErr != nil {
+			return lockErr
 		}
 
 		if existing, found := findMatchingCartItem(cart.Items, variantId, note); found {
@@ -133,6 +142,9 @@ func (usecase CartUsecase) UpdateCartItem(ctx context.Context, sessionId string,
 		if ownedErr != nil {
 			return ownedErr
 		}
+		if lockErr := usecase.ensureCartUnlocked(ctxWithTx, cart.Id); lockErr != nil {
+			return lockErr
+		}
 
 		item := CartItem{Amount: amount, Note: note}
 		if _, updateErr := usecase.repository.UpdateCartItemById(ctxWithTx, item, cartItemId); updateErr != nil {
@@ -158,6 +170,9 @@ func (usecase CartUsecase) RemoveCartItem(ctx context.Context, sessionId string,
 		cart, ownedErr := usecase.getOwnedCart(ctxWithTx, sessionId, cartItemId)
 		if ownedErr != nil {
 			return ownedErr
+		}
+		if lockErr := usecase.ensureCartUnlocked(ctxWithTx, cart.Id); lockErr != nil {
+			return lockErr
 		}
 
 		if deleteErr := usecase.repository.DeleteCartItemById(ctxWithTx, cartItemId); deleteErr != nil {
@@ -187,11 +202,36 @@ func (usecase CartUsecase) ClearCart(ctx context.Context, sessionId string) (Car
 		return Cart{}, err
 	}
 
+	if lockErr := usecase.ensureCartUnlocked(ctx, cart.Id); lockErr != nil {
+		return Cart{}, lockErr
+	}
+
 	if clearErr := usecase.repository.DeleteCartItemsByCartId(ctx, cart.Id); clearErr != nil {
 		return Cart{}, clearErr
 	}
 
 	return usecase.repository.GetCartById(ctx, cart.Id)
+}
+
+// ensureCartUnlocked enforces D10/FR-7: while a pending, unexpired payment
+// exists for this cart, every write must be rejected — the cart is the
+// thing the QR's amount was computed from, and letting a guest change it
+// while that QR is on screen would produce an order that is either
+// underpaid or mis-prepared. Reads are unaffected: GetCurrentCart never
+// calls this. An expired pending payment does not lock (Payment.IsAwaitingPayment),
+// so the freeze releases on its own once the countdown the guest sees runs out.
+func (usecase CartUsecase) ensureCartUnlocked(ctx context.Context, cartId int64) *Error {
+	payment, err := usecase.paymentRepository.GetPendingPaymentByCartId(ctx, cartId)
+	if err != nil {
+		if err.Type == NotFound {
+			return nil
+		}
+		return err
+	}
+	if payment.IsAwaitingPayment(time.Now()) {
+		return &Error{Type: BadRequest, Message: "cart is locked by a pending payment"}
+	}
+	return nil
 }
 
 // getOrCreateActiveCart implements the "created lazily on first write" rule
