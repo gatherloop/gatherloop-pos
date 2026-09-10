@@ -51,7 +51,13 @@ func (handler PaymentHandler) Notification(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	payment, outcome, usecaseErr := handler.usecase.ConfirmPayment(ctx, body)
+	status, parseErr := handler.usecase.ParseNotification(body)
+	if parseErr != nil {
+		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(parseErr.Type), Message: parseErr.Message})
+		return
+	}
+
+	payment, outcome, usecaseErr := handler.usecase.ConfirmPayment(ctx, status)
 	if usecaseErr != nil {
 		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return

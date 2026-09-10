@@ -117,7 +117,7 @@ func RequireSessionId(next http.HandlerFunc) http.HandlerFunc {
 	})
 }
 
-func VerifyDokuSignature(gatewayRepository domain.PaymentGatewayRepository) func(http.HandlerFunc) http.HandlerFunc {
+func VerifyDokuSignature(usecase domain.PaymentUsecase) func(http.HandlerFunc) http.HandlerFunc {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			body, readErr := io.ReadAll(r.Body)
@@ -133,9 +133,9 @@ func VerifyDokuSignature(gatewayRepository domain.PaymentGatewayRepository) func
 				PartnerId: r.Header.Get("X-PARTNER-ID"),
 			}
 
-			if err := gatewayRepository.VerifyNotificationSignature(r.Method, r.URL.Path, headers, body); err != nil {
+			if err := usecase.VerifyNotificationSignature(r.Method, r.URL.Path, headers, body); err != nil {
 				referenceNo := ""
-				if status, parseErr := gatewayRepository.ParseNotification(body); parseErr == nil {
+				if status, parseErr := usecase.ParseNotification(body); parseErr == nil {
 					referenceNo = status.PartnerReferenceNo
 				}
 

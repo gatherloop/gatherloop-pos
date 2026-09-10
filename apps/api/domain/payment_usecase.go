@@ -179,16 +179,15 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 	return resultPayment, resultTransaction, err
 }
 
-func (usecase PaymentUsecase) ConfirmPayment(ctx context.Context, notificationBody []byte) (Payment, ConfirmPaymentOutcome, *Error) {
-	status, parseErr := usecase.paymentGatewayRepository.ParseNotification(notificationBody)
-	if parseErr != nil {
-		return Payment{}, "", parseErr
-	}
-
-	return usecase.applyGatewayStatus(ctx, status)
+func (usecase PaymentUsecase) VerifyNotificationSignature(method, path string, headers NotificationHeaders, body []byte) *Error {
+	return usecase.paymentGatewayRepository.VerifyNotificationSignature(method, path, headers, body)
 }
 
-func (usecase PaymentUsecase) applyGatewayStatus(ctx context.Context, status QrisStatus) (Payment, ConfirmPaymentOutcome, *Error) {
+func (usecase PaymentUsecase) ParseNotification(body []byte) (QrisStatus, *Error) {
+	return usecase.paymentGatewayRepository.ParseNotification(body)
+}
+
+func (usecase PaymentUsecase) ConfirmPayment(ctx context.Context, status QrisStatus) (Payment, ConfirmPaymentOutcome, *Error) {
 	var resultPayment Payment
 	var outcome ConfirmPaymentOutcome
 
@@ -208,106 +207,92 @@ func (usecase PaymentUsecase) applyGatewayStatus(ctx context.Context, status Qri
 			return nil
 		}
 
-		switch status.Status {
-		case PaymentGatewayStatusPaid:
-			resultPayment, outcome, err = usecase.confirmPaymentPaid(ctxWithTx, payment, status)
-			return err
-		case PaymentGatewayStatusExpired, PaymentGatewayStatusFailed:
-			resultPayment, outcome, err = usecase.confirmPaymentUnsuccessful(ctxWithTx, payment, status.Status)
-			return err
-		default:
-			resultPayment = payment
-			outcome = ConfirmPaymentOutcomeIgnored
+		if status.Status == PaymentGatewayStatusPaid && (payment.Status == PaymentStatePending || payment.Status == PaymentStateExpired) {
+			if status.PaidAmount != payment.Amount {
+				resultPayment = payment
+				outcome = ConfirmPaymentOutcomeAmountMismatch
+				return nil
+			}
+
+			if payment.TransactionId == nil {
+				return &Error{Type: InternalServerError, Message: "payment has no transaction to pay"}
+			}
+
+			outcome = ConfirmPaymentOutcomePaid
+			if payment.Status == PaymentStateExpired {
+				outcome = ConfirmPaymentOutcomePaidLate
+			}
+
+			transaction, txErr := usecase.transactionRepository.GetTransactionById(ctxWithTx, *payment.TransactionId)
+			if txErr != nil {
+				return txErr
+			}
+
+			if transaction.DeletedAt != nil {
+				if undeleteErr := usecase.transactionRepository.UndeleteTransactionById(ctxWithTx, transaction.Id); undeleteErr != nil {
+					return undeleteErr
+				}
+				transaction.DeletedAt = nil
+			}
+
+			if payErr := payTransaction(ctxWithTx, transaction, usecase.transactionRepository, usecase.walletRepository, usecase.orderPaymentWalletId, payment.Amount); payErr != nil {
+				return payErr
+			}
+
+			now := time.Now()
+			payment.GatewayReferenceNo = status.GatewayReferenceNo
+			payment.Status = PaymentStatePaid
+			payment.PaidAt = &now
+			payment.StatusCheckedAt = &now
+
+			updatedPayment, updateErr := usecase.paymentRepository.UpdatePaymentById(ctxWithTx, payment, payment.Id)
+			if updateErr != nil {
+				return updateErr
+			}
+
+			cart, cartErr := usecase.cartRepository.GetCartById(ctxWithTx, payment.CartId)
+			if cartErr != nil {
+				return cartErr
+			}
+			cart.Status = CartStatusConverted
+			if _, updateCartErr := usecase.cartRepository.UpdateCartById(ctxWithTx, cart, cart.Id); updateCartErr != nil {
+				return updateCartErr
+			}
+
+			resultPayment = updatedPayment
 			return nil
 		}
+
+		if (status.Status == PaymentGatewayStatusExpired || status.Status == PaymentGatewayStatusFailed) && payment.Status == PaymentStatePending {
+			payment.Status = PaymentStateExpired
+			outcome = ConfirmPaymentOutcomeExpired
+			if status.Status == PaymentGatewayStatusFailed {
+				payment.Status = PaymentStateFailed
+				outcome = ConfirmPaymentOutcomeFailed
+			}
+
+			now := time.Now()
+			payment.StatusCheckedAt = &now
+
+			updatedPayment, updateErr := usecase.paymentRepository.UpdatePaymentById(ctxWithTx, payment, payment.Id)
+			if updateErr != nil {
+				return updateErr
+			}
+
+			if payment.TransactionId != nil {
+				if deleteErr := usecase.transactionRepository.DeleteTransactionById(ctxWithTx, *payment.TransactionId); deleteErr != nil {
+					return deleteErr
+				}
+			}
+
+			resultPayment = updatedPayment
+			return nil
+		}
+
+		resultPayment = payment
+		outcome = ConfirmPaymentOutcomeIgnored
+		return nil
 	})
 
 	return resultPayment, outcome, err
-}
-
-func (usecase PaymentUsecase) confirmPaymentPaid(ctx context.Context, payment Payment, status QrisStatus) (Payment, ConfirmPaymentOutcome, *Error) {
-	if payment.Status != PaymentStatePending && payment.Status != PaymentStateExpired {
-		return payment, ConfirmPaymentOutcomeIgnored, nil
-	}
-
-	if status.PaidAmount != payment.Amount {
-		return payment, ConfirmPaymentOutcomeAmountMismatch, nil
-	}
-
-	if payment.TransactionId == nil {
-		return Payment{}, "", &Error{Type: InternalServerError, Message: "payment has no transaction to pay"}
-	}
-
-	outcome := ConfirmPaymentOutcomePaid
-	if payment.Status == PaymentStateExpired {
-		outcome = ConfirmPaymentOutcomePaidLate
-	}
-
-	transaction, txErr := usecase.transactionRepository.GetTransactionById(ctx, *payment.TransactionId)
-	if txErr != nil {
-		return Payment{}, "", txErr
-	}
-
-	if transaction.DeletedAt != nil {
-		if undeleteErr := usecase.transactionRepository.UndeleteTransactionById(ctx, transaction.Id); undeleteErr != nil {
-			return Payment{}, "", undeleteErr
-		}
-		transaction.DeletedAt = nil
-	}
-
-	if payErr := payTransaction(ctx, transaction, usecase.transactionRepository, usecase.walletRepository, usecase.orderPaymentWalletId, payment.Amount); payErr != nil {
-		return Payment{}, "", payErr
-	}
-
-	now := time.Now()
-	payment.GatewayReferenceNo = status.GatewayReferenceNo
-	payment.Status = PaymentStatePaid
-	payment.PaidAt = &now
-	payment.StatusCheckedAt = &now
-
-	updatedPayment, updateErr := usecase.paymentRepository.UpdatePaymentById(ctx, payment, payment.Id)
-	if updateErr != nil {
-		return Payment{}, "", updateErr
-	}
-
-	cart, cartErr := usecase.cartRepository.GetCartById(ctx, payment.CartId)
-	if cartErr != nil {
-		return Payment{}, "", cartErr
-	}
-	cart.Status = CartStatusConverted
-	if _, updateCartErr := usecase.cartRepository.UpdateCartById(ctx, cart, cart.Id); updateCartErr != nil {
-		return Payment{}, "", updateCartErr
-	}
-
-	return updatedPayment, outcome, nil
-}
-
-func (usecase PaymentUsecase) confirmPaymentUnsuccessful(ctx context.Context, payment Payment, gatewayStatus PaymentGatewayStatus) (Payment, ConfirmPaymentOutcome, *Error) {
-	if payment.Status != PaymentStatePending {
-		return payment, ConfirmPaymentOutcomeIgnored, nil
-	}
-
-	newStatus := PaymentStateExpired
-	outcome := ConfirmPaymentOutcomeExpired
-	if gatewayStatus == PaymentGatewayStatusFailed {
-		newStatus = PaymentStateFailed
-		outcome = ConfirmPaymentOutcomeFailed
-	}
-
-	now := time.Now()
-	payment.Status = newStatus
-	payment.StatusCheckedAt = &now
-
-	updatedPayment, updateErr := usecase.paymentRepository.UpdatePaymentById(ctx, payment, payment.Id)
-	if updateErr != nil {
-		return Payment{}, "", updateErr
-	}
-
-	if payment.TransactionId != nil {
-		if deleteErr := usecase.transactionRepository.DeleteTransactionById(ctx, *payment.TransactionId); deleteErr != nil {
-			return Payment{}, "", deleteErr
-		}
-	}
-
-	return updatedPayment, outcome, nil
 }

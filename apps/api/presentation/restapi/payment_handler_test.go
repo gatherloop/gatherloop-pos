@@ -214,7 +214,7 @@ func TestPaymentRoute_RequiresSessionId(t *testing.T) {
 			m := newPaymentHandlerMocks(ctrl)
 
 			router := mux.NewRouter()
-			restapi.NewPaymentRouter(m.handler(), m.gatewayRepo).AddRouter(router)
+			restapi.NewPaymentRouter(m.handler()).AddRouter(router)
 
 			req := httptest.NewRequest(http.MethodPost, "/carts/current/checkout", checkoutRequestBody("Budi"))
 			if tt.sessionId != "" {

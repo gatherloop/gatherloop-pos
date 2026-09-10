@@ -397,8 +397,6 @@ func TestPaymentUsecase_Checkout(t *testing.T) {
 	})
 }
 
-var confirmPaymentNotificationBody = []byte(`{"originalPartnerReferenceNo":"ORD1234567890AB"}`)
-
 func pendingPaymentFixture() domain.Payment {
 	transactionId := int64(99)
 	return domain.Payment{
@@ -436,7 +434,6 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 			PaidAmount:         payment.Amount,
 			RawStatusCode:      "00",
 		}
-		m.gatewayRepo.EXPECT().ParseNotification(confirmPaymentNotificationBody).Return(status, nil)
 		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 
 		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).
@@ -461,7 +458,7 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 				return cart, nil
 			})
 
-		updatedPayment, outcome, err := m.usecase().ConfirmPayment(context.Background(), confirmPaymentNotificationBody)
+		updatedPayment, outcome, err := m.usecase().ConfirmPayment(context.Background(), status)
 
 		assert.Nil(t, err)
 		assert.Equal(t, domain.ConfirmPaymentOutcomePaid, outcome)
@@ -481,10 +478,9 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 		payment.PaidAt = &paidAt
 
 		status := domain.QrisStatus{PartnerReferenceNo: payment.PartnerReferenceNo, Status: domain.PaymentGatewayStatusPaid, PaidAmount: payment.Amount}
-		m.gatewayRepo.EXPECT().ParseNotification(confirmPaymentNotificationBody).Return(status, nil)
 		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 
-		result, outcome, err := m.usecase().ConfirmPayment(context.Background(), confirmPaymentNotificationBody)
+		result, outcome, err := m.usecase().ConfirmPayment(context.Background(), status)
 
 		assert.Nil(t, err)
 		assert.Equal(t, domain.ConfirmPaymentOutcomeAlreadyPaid, outcome)
@@ -499,11 +495,10 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 		withPaymentTransactionMock(m.paymentRepo)
 
 		status := domain.QrisStatus{PartnerReferenceNo: "ORDUNKNOWN000AB", Status: domain.PaymentGatewayStatusPaid, PaidAmount: 30000}
-		m.gatewayRepo.EXPECT().ParseNotification(confirmPaymentNotificationBody).Return(status, nil)
 		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), "ORDUNKNOWN000AB").
 			Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
 
-		_, outcome, err := m.usecase().ConfirmPayment(context.Background(), confirmPaymentNotificationBody)
+		_, outcome, err := m.usecase().ConfirmPayment(context.Background(), status)
 
 		assert.Nil(t, err)
 		assert.Equal(t, domain.ConfirmPaymentOutcomeUnknownReference, outcome)
@@ -518,10 +513,9 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 
 		payment := pendingPaymentFixture()
 		status := domain.QrisStatus{PartnerReferenceNo: payment.PartnerReferenceNo, Status: domain.PaymentGatewayStatusPaid, PaidAmount: 10000}
-		m.gatewayRepo.EXPECT().ParseNotification(confirmPaymentNotificationBody).Return(status, nil)
 		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 
-		result, outcome, err := m.usecase().ConfirmPayment(context.Background(), confirmPaymentNotificationBody)
+		result, outcome, err := m.usecase().ConfirmPayment(context.Background(), status)
 
 		assert.Nil(t, err)
 		assert.Equal(t, domain.ConfirmPaymentOutcomeAmountMismatch, outcome)
@@ -544,7 +538,6 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 			Status:             domain.PaymentGatewayStatusPaid,
 			PaidAmount:         payment.Amount,
 		}
-		m.gatewayRepo.EXPECT().ParseNotification(confirmPaymentNotificationBody).Return(status, nil)
 		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 
 		deletedAt := time.Now().Add(-time.Minute)
@@ -563,7 +556,7 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 		m.cartRepo.EXPECT().UpdateCartById(gomock.Any(), gomock.Any(), int64(1)).
 			DoAndReturn(func(_ context.Context, cart domain.Cart, id int64) (domain.Cart, *domain.Error) { return cart, nil })
 
-		_, outcome, err := m.usecase().ConfirmPayment(context.Background(), confirmPaymentNotificationBody)
+		_, outcome, err := m.usecase().ConfirmPayment(context.Background(), status)
 
 		assert.Nil(t, err)
 		assert.Equal(t, domain.ConfirmPaymentOutcomePaidLate, outcome)
@@ -589,7 +582,6 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 
 				payment := pendingPaymentFixture()
 				status := domain.QrisStatus{PartnerReferenceNo: payment.PartnerReferenceNo, Status: tt.gatewayStatus}
-				m.gatewayRepo.EXPECT().ParseNotification(confirmPaymentNotificationBody).Return(status, nil)
 				m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 
 				m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), payment.Id).
@@ -599,7 +591,7 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 					})
 				m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), int64(99)).Return(nil)
 
-				_, outcome, err := m.usecase().ConfirmPayment(context.Background(), confirmPaymentNotificationBody)
+				_, outcome, err := m.usecase().ConfirmPayment(context.Background(), status)
 
 				assert.Nil(t, err)
 				assert.Equal(t, tt.expectedOutcome, outcome)
@@ -618,10 +610,9 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 		payment.Status = domain.PaymentStateFailed
 
 		status := domain.QrisStatus{PartnerReferenceNo: payment.PartnerReferenceNo, Status: domain.PaymentGatewayStatusPaid, PaidAmount: payment.Amount}
-		m.gatewayRepo.EXPECT().ParseNotification(confirmPaymentNotificationBody).Return(status, nil)
 		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 
-		result, outcome, err := m.usecase().ConfirmPayment(context.Background(), confirmPaymentNotificationBody)
+		result, outcome, err := m.usecase().ConfirmPayment(context.Background(), status)
 
 		assert.Nil(t, err)
 		assert.Equal(t, domain.ConfirmPaymentOutcomeIgnored, outcome)

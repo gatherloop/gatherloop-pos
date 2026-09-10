@@ -148,6 +148,10 @@ func TestRequireSessionId(t *testing.T) {
 	}
 }
 
+func testPaymentUsecaseForSignatureVerification(gatewayRepo domain.PaymentGatewayRepository) domain.PaymentUsecase {
+	return domain.NewPaymentUsecase(nil, gatewayRepo, nil, nil, nil, nil, nil, 0, 0)
+}
+
 func TestVerifyDokuSignature_ValidSignaturePassesThroughWithBodyIntact(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -168,7 +172,7 @@ func TestVerifyDokuSignature_ValidSignaturePassesThroughWithBodyIntact(t *testin
 	req := httptest.NewRequest(http.MethodPost, "/payments/doku/notification", bytes.NewBufferString(`{"originalPartnerReferenceNo":"ORD1"}`))
 	w := httptest.NewRecorder()
 
-	restapi.VerifyDokuSignature(gatewayRepo)(next).ServeHTTP(w, req)
+	restapi.VerifyDokuSignature(testPaymentUsecaseForSignatureVerification(gatewayRepo))(next).ServeHTTP(w, req)
 
 	assert.True(t, nextCalled)
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -194,7 +198,7 @@ func TestVerifyDokuSignature_InvalidSignatureIsRejected(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/payments/doku/notification", bytes.NewBufferString(`{"originalPartnerReferenceNo":"ORD1"}`))
 	w := httptest.NewRecorder()
 
-	restapi.VerifyDokuSignature(gatewayRepo)(next).ServeHTTP(w, req)
+	restapi.VerifyDokuSignature(testPaymentUsecaseForSignatureVerification(gatewayRepo))(next).ServeHTTP(w, req)
 
 	assert.False(t, nextCalled)
 	assert.Equal(t, http.StatusUnauthorized, w.Code)

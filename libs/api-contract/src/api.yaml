@@ -4552,16 +4552,6 @@ components:
         customerName:
           type: string
           maxLength: 60
-    DokuAmount:
-      type: object
-      required:
-        - value
-        - currency
-      properties:
-        value:
-          type: string
-        currency:
-          type: string
     DokuNotificationRequest:
       type: object
       required:
@@ -4580,7 +4570,15 @@ components:
         transactionStatusDesc:
           type: string
         amount:
-          $ref: '#/components/schemas/DokuAmount'
+          type: object
+          required:
+            - value
+            - currency
+          properties:
+            value:
+              type: string
+            currency:
+              type: string
     CartUpdateTableRequest:
       type: object
       required:
