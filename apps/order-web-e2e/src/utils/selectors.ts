@@ -100,12 +100,51 @@ export const cartItemEdit = {
 };
 
 // ---------------------------------------------------------------------------
-// Checkout stub (CheckoutScreen.tsx, /t/{code}/checkout)
+// Checkout (CheckoutScreen.tsx + its checkout/* components,
+// /t/{code}/checkout) — FR-9/UX steps 2-8 in
+// docs/prd-order-checkout-qris-doku.md
 // ---------------------------------------------------------------------------
 
 export const checkout = {
-  qrisTitle: (page: Page) =>
-    page.getByText('Pembayaran QRIS — segera hadir'),
+  summaryTitle: (page: Page) => page.getByText('Ringkasan Pesanan'),
+  payButton: (page: Page, formattedTotal: string) =>
+    page.getByRole('button', { name: `Bayar dengan QRIS · ${formattedTotal}` }),
   backToCartButton: (page: Page) =>
     page.getByRole('button', { name: 'Kembali ke keranjang' }),
+
+  // Name sheet (CustomerNameSheet.tsx, D17)
+  nameInput: (page: Page) => page.getByLabel('Nama Anda'),
+  submitNameButton: (page: Page) =>
+    page.getByRole('button', { name: 'Lanjutkan ke pembayaran' }),
+  cancelNameButton: (page: Page) => page.getByRole('button', { name: 'Batal' }),
+
+  // QR view (QrisPaymentView.tsx, D23)
+  saveQrButton: (page: Page) => page.getByRole('button', { name: 'Simpan QR' }),
+  waitingForPaymentText: (page: Page) => page.getByText('Menunggu pembayaran…'),
+
+  // Success view (PaymentSuccessView.tsx)
+  paymentSuccessTitle: (page: Page) => page.getByText('Pembayaran berhasil'),
+
+  // Expired state (inline in CheckoutScreen.tsx)
+  expiredTitle: (page: Page) => page.getByText('Waktu pembayaran habis'),
+  retryPaymentButton: (page: Page) =>
+    page.getByRole('button', { name: 'Coba bayar lagi' }),
+
+  disabledTitle: (page: Page) => page.getByText('Checkout belum tersedia'),
+};
+
+// ---------------------------------------------------------------------------
+// Order status screen (OrderStatusScreen.tsx, /t/{code}/status?ref={reference})
+// ---------------------------------------------------------------------------
+
+export const orderStatus = {
+  preparingTitle: (page: Page) =>
+    page.getByText('Pesanan Anda sedang disiapkan'),
+  tableLabel: (page: Page, label: string) =>
+    page.getByText(label, { exact: true }).last(),
+  customerName: (page: Page, name: string) =>
+    page.getByText(`Atas nama ${name}`),
+  orderAgainButton: (page: Page) =>
+    page.getByRole('button', { name: 'Pesan lagi' }),
+  notFoundView: (page: Page) => page.getByText('Pesanan tidak ditemukan'),
 };

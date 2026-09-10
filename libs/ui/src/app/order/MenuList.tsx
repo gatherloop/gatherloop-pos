@@ -92,6 +92,7 @@ export function MenuList({
       menuListUsecase={menuListUsecase}
       menuItemDetailUsecase={menuItemDetailUsecase}
       cartUsecase={cartUsecase}
+      cartRepository={cartRepository}
       sessionRepository={sessionRepository}
       tableCode={code}
     />

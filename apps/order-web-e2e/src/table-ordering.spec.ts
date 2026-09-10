@@ -186,10 +186,13 @@ test.describe.serial('Table Ordering', () => {
     page,
   }) => {
     await page.goto(`t/${table.code}`);
+    await expect(sel.menuList.productCard(page, PRODUCT_NAME)).toBeVisible();
 
     // D6: `Product.options` is already in the menu payload the server sent,
     // so opening the sheet is a URL change with no fetch — unlike the old
-    // `/products/{id}` route, which mounted and fetched.
+    // `/products/{id}` route, which mounted and fetched. Listener attached
+    // only once the menu (and its own mount-time requests) has settled, so
+    // it captures the click's requests and nothing from the initial load.
     const apiRequests: string[] = [];
     page.on('request', (request) => {
       if (request.url().includes('/api/')) apiRequests.push(request.url());
@@ -198,7 +201,7 @@ test.describe.serial('Table Ordering', () => {
     await sel.menuList.productCard(page, PRODUCT_NAME).click();
 
     await expect(page).toHaveURL(new RegExp(`\\?product=${product.id}$`));
-    await expect(page.getByText(PRODUCT_NAME)).toBeVisible();
+    await expect(page.getByText(PRODUCT_NAME).last()).toBeVisible();
     expect(apiRequests).toEqual([]);
 
     // No option selected yet — the CTA stays enabled with no price (FR-5).
@@ -324,10 +327,12 @@ test.describe.serial('Table Ordering', () => {
   });
 
   // ---------------------------------------------------------------------------
-  // 8. Checkout CTA: QRIS stub, creates nothing (FR-8/D10)
+  // 8. Checkout CTA: reaches the real summary, creates nothing until paid
+  //    (FR-9/D4 — the transaction/payment only appear once the guest
+  //    actually taps pay; see checkout.spec.ts for the full paid flow)
   // ---------------------------------------------------------------------------
 
-  test('re-adding an item and checking out reaches the QRIS stub without submitting an order', async ({
+  test('re-adding an item and checking out reaches the checkout summary without submitting an order', async ({
     page,
   }) => {
     await page.goto(`t/${table.code}`);
@@ -346,12 +351,14 @@ test.describe.serial('Table Ordering', () => {
     await sel.cartScreen.checkoutButton(page).click();
 
     await expect(page).toHaveURL(new RegExp(`/t/${table.code}/checkout$`));
-    await expect(sel.checkout.qrisTitle(page)).toBeVisible();
+    await expect(sel.checkout.summaryTitle(page)).toBeVisible();
+    await expect(
+      sel.checkout.payButton(page, formatRupiah(LARGE_PRICE))
+    ).toBeVisible();
 
-    // No transaction is created by this screen (D10) — the cart the guest
-    // built is exactly where they left it if they go back.
-    await sel.checkout.backToCartButton(page).click();
-    await expect(page).toHaveURL(new RegExp(`/t/${table.code}/cart$`));
+    // No transaction is created by this screen alone (D4) — the cart the
+    // guest built is exactly where they left it if they go back.
+    await page.goto(`t/${table.code}/cart`);
     await expect(sel.cartScreen.lineItemName(page, PRODUCT_NAME)).toBeVisible();
   });
 
@@ -376,7 +383,7 @@ test.describe.serial('Table Ordering', () => {
     await expect(sel.tableResolve.tableLabel(page, TABLE_LABEL)).toBeVisible({
       timeout: 15_000,
     });
-    await expect(page.getByText(PRODUCT_NAME)).toBeVisible();
+    await expect(page.getByText(PRODUCT_NAME).last()).toBeVisible();
     await expect(sel.itemDetail.optionValueChip(page, 'Reguler')).toBeVisible();
 
     await context.close();

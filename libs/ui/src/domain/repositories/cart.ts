@@ -10,6 +10,11 @@ import { RequestConfig } from '@kubb/swagger-client/client';
 export interface CartRepository {
   fetchCurrentCart: (options?: Partial<RequestConfig>) => Promise<Cart>;
 
+  updateTable: (
+    tableCode: string,
+    options?: Partial<RequestConfig>
+  ) => Promise<Cart>;
+
   addItem: (
     params: {
       variantId: number;

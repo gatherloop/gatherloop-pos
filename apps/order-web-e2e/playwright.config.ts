@@ -51,8 +51,6 @@ export default defineConfig({
       // relying on the `NEXT_PUBLIC_API_BASE_URL` fallback, matching the
       // two vars' distinct roles in production (D2/D9).
       API_INTERNAL_BASE_URL: apiBaseURL,
-      // FR-8/D10: the happy path exercises the real QRIS stub copy, not the
-      // kill-switch's "not available" message.
       NEXT_PUBLIC_ORDER_CHECKOUT_ENABLED: 'true',
     },
   },

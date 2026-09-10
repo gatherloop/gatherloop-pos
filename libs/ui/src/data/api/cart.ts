@@ -5,6 +5,7 @@ import {
   cartItemCreate,
   cartItemDeleteById,
   cartItemUpdateById,
+  cartUpdateTable,
 } from '../../../../api-contract/src';
 import { RequestConfig } from '@kubb/swagger-client/client';
 // Deep import, not the `domain` barrel (D20): that barrel also re-exports
@@ -42,6 +43,13 @@ export class ApiCartRepository implements CartRepository {
     return cartGetCurrent(this.withSessionOptions(options)).then(
       ({ data }) => toCart(data)
     );
+  };
+
+  updateTable: CartRepository['updateTable'] = (tableCode, options) => {
+    return cartUpdateTable(
+      { tableCode },
+      this.withSessionOptions(options)
+    ).then(({ data }) => toCart(data));
   };
 
   addItem: CartRepository['addItem'] = (
