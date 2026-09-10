@@ -43,8 +43,6 @@ func (m paymentUsecaseMocks) usecase() domain.PaymentUsecase {
 	return domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, checkoutQrisExpirySeconds)
 }
 
-// expectNameUpsert stubs the D17 name upsert (step 1) that every successful
-// path through Checkout runs first, regardless of what happens afterwards.
 func expectNameUpsert(m paymentUsecaseMocks, sessionId, name string) {
 	m.customerRepo.EXPECT().GetCustomerBySessionId(gomock.Any(), sessionId).Return(domain.Customer{}, &domain.Error{Type: domain.NotFound})
 	m.customerRepo.EXPECT().CreateCustomer(gomock.Any(), domain.Customer{SessionId: sessionId, Name: name}).
@@ -77,8 +75,6 @@ func TestPaymentUsecase_Checkout(t *testing.T) {
 
 		m := newPaymentUsecaseMocks(ctrl)
 		withPaymentTransactionMock(m.paymentRepo)
-		// No CustomerRepository expectations: CustomerUsecase.UpsertCustomerName
-		// rejects a whitespace-only name before it ever reads the repository.
 
 		_, _, err := m.usecase().Checkout(context.Background(), "session-1", "   ")
 
@@ -253,7 +249,7 @@ func TestPaymentUsecase_Checkout(t *testing.T) {
 				assert.Equal(t, int64(1), *transaction.CartId)
 				assert.Equal(t, int64(0), transaction.OrderNumber)
 				assert.Equal(t, []domain.TransactionCoupon{}, transaction.TransactionCoupons)
-				assert.Equal(t, float32(38000), transaction.Total) // 2*15000 + 1*8000
+				assert.Equal(t, float32(38000), transaction.Total)
 				assert.Len(t, transaction.TransactionItems, 2)
 				assert.Equal(t, float32(15000), transaction.TransactionItems[0].Price)
 				assert.Equal(t, float32(30000), transaction.TransactionItems[0].Subtotal)
@@ -346,8 +342,6 @@ func TestPaymentUsecase_Checkout(t *testing.T) {
 
 		m.gatewayRepo.EXPECT().GenerateQris(gomock.Any(), gomock.Any()).
 			Return(domain.QrisPayment{}, &domain.Error{Type: domain.InternalServerError, Message: "DOKU is unreachable"})
-		// UpdatePaymentById is deliberately not stubbed: a gateway failure
-		// must never reach it.
 
 		_, _, err := m.usecase().Checkout(context.Background(), "session-1", "Budi")
 

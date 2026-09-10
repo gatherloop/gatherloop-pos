@@ -171,10 +171,6 @@ func TestPaymentHandler_Checkout(t *testing.T) {
 	})
 }
 
-// TestPaymentRoute_RequiresSessionId mirrors
-// TestCustomerRoute_RequiresSessionId: the checkout route is guarded by
-// RequireSessionId, never CheckAuth (D8), and a request rejected by the
-// guard must never reach any repository.
 func TestPaymentRoute_RequiresSessionId(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -189,8 +185,6 @@ func TestPaymentRoute_RequiresSessionId(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			// No EXPECT on any repository: a request rejected by the guard
-			// must never reach the usecase.
 			m := newPaymentHandlerMocks(ctrl)
 
 			router := mux.NewRouter()

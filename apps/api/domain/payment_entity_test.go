@@ -73,8 +73,6 @@ func TestPaymentIsAwaitingPayment(t *testing.T) {
 	}
 }
 
-// partnerReferenceNoPattern is "ORD" plus 13 Crockford base32 characters
-// (D18).
 var partnerReferenceNoPattern = regexp.MustCompile(`^ORD[0-9A-HJKMNP-TV-Z]{13}$`)
 
 func TestGeneratePartnerReferenceNo(t *testing.T) {

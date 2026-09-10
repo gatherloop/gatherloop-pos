@@ -5,19 +5,6 @@ import (
 	"time"
 )
 
-// PaymentUsecase is FR-6's checkout endpoint: cart → QRIS payment → unpaid
-// order Transaction. It depends on repositories only, the same way every
-// usecase in this package does (see cart_usecase.go, rental_usecase.go):
-// PaymentRepository.BeginTransaction is the one transaction boundary
-// Checkout opens, and every write inside it must reach the database through
-// that same ambient tx (data/mysql's GetDbFromCtx) rather than opening a
-// second, uncoordinated one — which is exactly what would happen if this
-// depended on TransactionUsecase, whose own CreateTransaction calls
-// TransactionRepository.BeginTransaction itself. The name upsert (D17, FR-4)
-// is the shared upsertCustomerName function in customer_usecase.go, called
-// here against customerRepository directly rather than through
-// CustomerUsecase, for the same reason: this package has no usecase
-// depending on another.
 type PaymentUsecase struct {
 	paymentRepository        PaymentRepository
 	paymentGatewayRepository PaymentGatewayRepository
@@ -48,28 +35,16 @@ func NewPaymentUsecase(
 	}
 }
 
-// Checkout is FR-6's POST /carts/current/checkout, steps 1-8. It returns the
-// payment together with the order transaction it pays for — the transaction
-// carries what the API response needs beyond the payment row itself: the
-// frozen customer name, the priced line items and, through its cart, the
-// table (D7).
 func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, customerName string) (Payment, Transaction, *Error) {
 	var resultPayment Payment
 	var resultTransaction Transaction
 
 	err := usecase.paymentRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		// Step 1: validate and upsert the name (D17, FR-4).
-		// upsertCustomerName does its own trimming and length validation, so
-		// this usecase adds none of its own — the transaction below is named
-		// after the trimmed result, not the raw input, so it never freezes
-		// stray whitespace into the record the POS searches on.
 		customer, err := upsertCustomerName(ctxWithTx, usecase.customerRepository, sessionId, customerName)
 		if err != nil {
 			return err
 		}
 
-		// Step 2: load the session's active cart. A session with no cart at
-		// all is, for checkout's purposes, the same as an empty one.
 		cart, err := usecase.cartRepository.GetActiveCartBySessionId(ctxWithTx, sessionId)
 		if err != nil {
 			if err.Type != NotFound {
@@ -84,10 +59,6 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 			return &Error{Type: BadRequest, Message: "table is not set"}
 		}
 
-		// Step 3: idempotent re-checkout (D11) — a pending, unexpired
-		// payment on this cart is returned as-is rather than minting a
-		// second QR. The name upsert above still ran, so a corrected name
-		// is saved for next time even though this QR is reused.
 		if existingPayment, err := usecase.paymentRepository.GetPendingPaymentByCartId(ctxWithTx, cart.Id); err != nil {
 			if err.Type != NotFound {
 				return err
@@ -105,11 +76,6 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 			return nil
 		}
 
-		// Step 4-5: price the cart from current variant prices (D9) and
-		// create the unpaid order transaction, snapshotting price, product
-		// name and option values exactly as a POS-created transaction does
-		// (transaction_usecase.go's CreateTransaction). orderNumber stays 0
-		// (D16); transactionCoupons stays empty (Non-Goals).
 		transactionItems := []TransactionItem{}
 		var total float32
 		for _, cartItem := range cart.Items {
@@ -146,7 +112,6 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 			return err
 		}
 
-		// Step 6: mint the reference (D18) and insert the pending payment.
 		partnerReferenceNo, genErr := GeneratePartnerReferenceNo()
 		if genErr != nil {
 			return &Error{Type: InternalServerError, Message: "failed to generate payment reference"}
@@ -168,10 +133,6 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 			return err
 		}
 
-		// Step 7: call the gateway. Any failure rolls back the whole
-		// transaction — no orphan transaction or payment row, nothing to
-		// reconcile — and is reported as a gateway failure (502), not a
-		// generic 500.
 		qrisPayment, gatewayErr := usecase.paymentGatewayRepository.GenerateQris(ctxWithTx, GenerateQrisInput{
 			PartnerReferenceNo: partnerReferenceNo,
 			Amount:             total,
@@ -181,7 +142,6 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 			return &Error{Type: BadGateway, Message: gatewayErr.Message}
 		}
 
-		// Step 8: store the QR and gateway reference.
 		createdPayment.GatewayReferenceNo = qrisPayment.GatewayReferenceNo
 		createdPayment.QrContent = qrisPayment.QrContent
 

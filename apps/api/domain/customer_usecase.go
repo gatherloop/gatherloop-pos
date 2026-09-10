@@ -44,12 +44,6 @@ func (usecase CustomerUsecase) UpsertCustomerName(ctx context.Context, sessionId
 	return upsertCustomerName(ctx, usecase.repository, sessionId, name)
 }
 
-// upsertCustomerName is the shared implementation behind
-// CustomerUsecase.UpsertCustomerName. PaymentUsecase.Checkout (FR-6 step 1)
-// calls it directly against its own CustomerRepository, rather than through
-// CustomerUsecase, so that every usecase in this package keeps depending on
-// repositories only — the same shape cart_usecase.go and rental_usecase.go
-// already have — instead of one usecase reaching into another.
 func upsertCustomerName(ctx context.Context, repository CustomerRepository, sessionId string, name string) (Customer, *Error) {
 	name = strings.TrimSpace(name)
 	if err := validateCustomerName(name); err != nil {
