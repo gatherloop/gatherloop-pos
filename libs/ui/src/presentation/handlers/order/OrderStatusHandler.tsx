@@ -1,8 +1,7 @@
 import { useEffect } from 'react';
 import { match, P } from 'ts-pattern';
 import { useRouter } from 'solito/router';
-// Deep imports, not the `domain` barrel (D20): that barrel also re-exports
-// every POS usecase, which drags unrelated weight into the order bundle.
+// Deep imports, not the `domain` barrel: it re-exports every POS usecase.
 import { SessionRepository } from '../../../domain/repositories/session';
 import { OrderStatusUsecase } from '../../../domain/usecases/orderStatus';
 import { TableResolveUsecase } from '../../../domain/usecases/tableResolve';
@@ -21,10 +20,6 @@ export type OrderStatusHandlerProps = {
   tableCode: string;
 };
 
-// D9 in docs/trd-order-app-composition-and-ssr.md: the table shell is folded
-// in here, the same shape `CheckoutHandler`/`CartHandler` fold it into
-// themselves in. FR-10 in docs/prd-order-checkout-qris-doku.md: terminal —
-// nothing here polls, unlike `CheckoutHandler`.
 export const OrderStatusHandler = ({
   tableResolveUsecase,
   orderStatusUsecase,
@@ -35,8 +30,6 @@ export const OrderStatusHandler = ({
   const orderStatus = useOrderStatus(orderStatusUsecase);
   const router = useRouter();
 
-  // Only a successful resolution is worth remembering (FR-4) — a code the
-  // API just rejected has nothing useful to persist for a future cart.
   useEffect(() => {
     if (tableResolve.state.type === 'resolved' && tableResolve.state.code) {
       sessionRepository.setTableCode(tableResolve.state.code);

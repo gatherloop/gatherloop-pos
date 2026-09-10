@@ -9,12 +9,6 @@ type Context = {
   errorMessage: string | null;
 };
 
-// FR-10 in docs/prd-order-checkout-qris-doku.md. Mirrors TableResolveUsecase's
-// shape: a single fetch by reference, seedable from getServerSideProps (P6
-// in docs/trd-order-app-composition-and-ssr.md) so the first paint is the
-// real order and not a spinner. `notFound` covers both an unknown reference
-// and one belonging to another session (D18) — the API returns the same 404
-// either way, so there is nothing to tell them apart on.
 export type OrderStatusState = (
   | { type: 'idle' }
   | { type: 'loading' }
@@ -32,11 +26,7 @@ export type OrderStatusAction =
 
 export type OrderStatusParams = {
   reference: string;
-  // P6 in docs/trd-order-app-composition-and-ssr.md: seeded by the owning
-  // page's getServerSideProps. `undefined` (client-only rendering) keeps
-  // the idle → loading → loaded/notFound path; `null` seeds `notFound`
-  // directly; a `Payment` seeds `loaded` directly — either way the mount
-  // fetch this usecase would otherwise make never fires.
+  // undefined fetches on mount; null seeds notFound; a Payment seeds loaded.
   payment?: Payment | null;
 };
 
@@ -91,10 +81,11 @@ export class OrderStatusUsecase extends Usecase<
           errorMessage: null,
         })
       )
-      .with(
-        [{ type: 'loading' }, { type: 'FETCH_NOT_FOUND' }],
-        ([state]) => ({ ...state, type: 'notFound', payment: null })
-      )
+      .with([{ type: 'loading' }, { type: 'FETCH_NOT_FOUND' }], ([state]) => ({
+        ...state,
+        type: 'notFound',
+        payment: null,
+      }))
       .with(
         [{ type: 'loading' }, { type: 'FETCH_ERROR' }],
         ([state, { message }]) => ({
@@ -128,7 +119,7 @@ export class OrderStatusUsecase extends Usecase<
           });
       })
       .otherwise(() => {
-        // No action needed for other states
+        // no-op for terminal states
       });
   }
 }

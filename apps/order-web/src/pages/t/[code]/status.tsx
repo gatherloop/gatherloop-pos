@@ -10,9 +10,6 @@ import {
 import { OrderStatus, OrderStatusProps } from '@gatherloop-pos/ui/order';
 import { GetServerSideProps } from 'next';
 
-// P6 in docs/trd-order-app-composition-and-ssr.md: resolves the session,
-// the table and (FR-10) the payment by reference, so the first paint is the
-// real order and not a spinner.
 export const getServerSideProps: GetServerSideProps<OrderStatusProps> = async (
   ctx
 ) => {
@@ -26,9 +23,7 @@ export const getServerSideProps: GetServerSideProps<OrderStatusProps> = async (
   const sessionRepository = new CookieSessionRepository(sessionId);
 
   const [table, payment] = await Promise.all([
-    // `undefined` (an unexpected transport error) keeps today's client-only
-    // retry path instead of failing the whole page; `null` (a known-bad
-    // code) seeds `notFound` directly.
+    // undefined keeps the client-only retry path; null seeds notFound.
     new ApiPublicTableRepository()
       .resolveTableByCode(code)
       .catch((error) =>

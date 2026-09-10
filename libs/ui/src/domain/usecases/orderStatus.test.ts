@@ -80,9 +80,6 @@ describe('OrderStatusUsecase', () => {
     });
   });
 
-  // P6 in docs/trd-order-app-composition-and-ssr.md: a page's
-  // getServerSideProps already fetched the payment, so the usecase starts
-  // seeded and never fetches.
   it('starts loaded and never fetches when seeded with a payment', async () => {
     const repository = new MockPaymentRepository();
     const fetchSpy = jest.spyOn(repository, 'fetchPayment');
@@ -93,7 +90,12 @@ describe('OrderStatusUsecase', () => {
       OrderStatusState,
       OrderStatusAction,
       OrderStatusParams
-    >(new OrderStatusUsecase(repository, { reference, payment: repository.payment }));
+    >(
+      new OrderStatusUsecase(repository, {
+        reference,
+        payment: repository.payment,
+      })
+    );
 
     expect(orderStatus.state).toEqual({
       type: 'loaded',
@@ -106,8 +108,6 @@ describe('OrderStatusUsecase', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  // Seeded with `payment: null` (the reference resolved server-side to "not
-  // found") — distinct from `undefined`, which keeps the client-only path.
   it('starts notFound and never fetches when seeded with a null payment', async () => {
     const repository = new MockPaymentRepository();
     const fetchSpy = jest.spyOn(repository, 'fetchPayment');

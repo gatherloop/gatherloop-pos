@@ -2,9 +2,7 @@ import { ReactNode } from 'react';
 import { CheckCircle } from '@tamagui/lucide-icons';
 import { match } from 'ts-pattern';
 import { Button, Text, XStack, YStack } from 'tamagui';
-// Deep imports, not the `domain`/`components/base` barrels (D20): those
-// barrels also re-export every POS usecase and Navbar/Sidebar — dead weight
-// the customer bundle does not ship (D6).
+// Deep imports, not the `domain`/`components/base` barrels: those re-export POS-only code.
 import { Payment } from '../../../../domain/entities/Payment';
 import { formatRupiah } from '../../../../utils/currency';
 import { EmptyView } from '../../components/base/EmptyView';
@@ -22,17 +20,12 @@ export type OrderStatusScreenVariant =
   | { type: 'error'; onRetryPress: () => void };
 
 export type OrderStatusScreenProps = {
-  // D9 in docs/trd-order-app-composition-and-ssr.md: this screen renders its
-  // own table shell, the same shape `CheckoutScreen`/`CartScreen` do.
   tableVariant: TableResolveScreenProps['variant'];
   variant: OrderStatusScreenVariant;
   onBackToMenuPress: () => void;
 };
 
-// FR-10 in docs/prd-order-checkout-qris-doku.md: `/t/{code}/status?ref={...}`.
-// Terminal — nothing here polls or refreshes; the guest's table (D7) is the
-// only "you'll be found" mechanism, rendered large per UX step 6 since
-// there is no pager and no order number (D16).
+// Terminal — nothing here polls or refreshes.
 export const OrderStatusScreen = ({
   tableVariant,
   variant,

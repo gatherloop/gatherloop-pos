@@ -1,5 +1,4 @@
-// Deep imports, not the root barrels (D20): those also re-export every POS
-// composition root, which would bloat the customer bundle with the POS (D6).
+// Deep imports, not the root barrels: those also re-export every POS composition root.
 import { ApiPaymentRepository } from '../../data/api/payment';
 import { ApiPublicTableRepository } from '../../data/api/publicTable';
 import { CookieSessionRepository } from '../../data/session/CookieSessionRepository';
@@ -13,18 +12,10 @@ export type OrderStatusProps = {
   sessionId: string;
   code: string;
   reference: string;
-  // P6 in docs/trd-order-app-composition-and-ssr.md: seeded by the page's
-  // getServerSideProps.
   table?: PublicTable | null;
-  // Seeded by the page's getServerSideProps so the first paint is the real
-  // order and not a spinner (FR-10).
   payment?: Payment | null;
 };
 
-// Composition root for the order status screen (FR-10, phase 12 in
-// docs/prd-order-checkout-qris-doku.md). Per D9 in
-// docs/trd-order-app-composition-and-ssr.md this wires up the table shell
-// too, structurally identical to `app/order/Checkout.tsx`.
 export function OrderStatus({
   sessionId,
   code,
