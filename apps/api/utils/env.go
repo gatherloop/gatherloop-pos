@@ -64,15 +64,20 @@ func GetEnv() Env {
 		ServiceName:        serviceName,
 		CorsAllowedOrigins: parseCorsAllowedOrigins(os.Getenv("CORS_ALLOWED_ORIGINS")),
 
-		DokuBaseURL:           os.Getenv("DOKU_BASE_URL"),
-		DokuClientId:          os.Getenv("DOKU_CLIENT_ID"),
-		DokuClientSecret:      os.Getenv("DOKU_CLIENT_SECRET"),
+		DokuBaseURL:           getCredential("DOKU_BASE_URL"),
+		DokuClientId:          getCredential("DOKU_CLIENT_ID"),
+		DokuClientSecret:      getCredential("DOKU_CLIENT_SECRET"),
 		DokuPrivateKey:        os.Getenv("DOKU_PRIVATE_KEY"),
-		DokuMerchantId:        os.Getenv("DOKU_MERCHANT_ID"),
-		DokuChannelId:         os.Getenv("DOKU_CHANNEL_ID"),
+		DokuMerchantId:        getCredential("DOKU_MERCHANT_ID"),
+		DokuChannelId:         getCredential("DOKU_CHANNEL_ID"),
 		DokuQrisExpirySeconds: parseIntWithDefault(os.Getenv("DOKU_QRIS_EXPIRY_SECONDS"), 300),
 		OrderPaymentWalletId:  os.Getenv("ORDER_PAYMENT_WALLET_ID"),
 	}
+}
+
+// A CI-written .env can leave a credential quoted or newline-terminated, which DOKU rejects as an unknown client.
+func getCredential(name string) string {
+	return strings.Trim(strings.TrimSpace(os.Getenv(name)), `"'`)
 }
 
 func parseIntWithDefault(raw string, def int) int {

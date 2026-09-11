@@ -49,14 +49,20 @@ func main() {
 		panic("failed to parse doku private key")
 	}
 
-	paymentGatewayRepository := doku.NewPaymentGatewayRepository(doku.Config{
+	dokuConfig := doku.Config{
 		BaseURL:      env.DokuBaseURL,
 		ClientId:     env.DokuClientId,
 		ClientSecret: env.DokuClientSecret,
 		PrivateKey:   dokuPrivateKey,
 		MerchantId:   env.DokuMerchantId,
 		ChannelId:    env.DokuChannelId,
-	})
+	}
+	if err := dokuConfig.Validate(); err != nil {
+		rootLogger.Error("invalid doku configuration", slog.Any("error", err))
+		panic("invalid doku configuration")
+	}
+
+	paymentGatewayRepository := doku.NewPaymentGatewayRepository(dokuConfig)
 
 	router := mux.NewRouter().StrictSlash(true)
 	router.Use(restapi.EnableCORS)

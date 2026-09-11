@@ -88,3 +88,19 @@ func TestGetEnv_DokuConfig(t *testing.T) {
 	assert.Equal(t, "channel-id", env.DokuChannelId)
 	assert.Equal(t, "42", env.OrderPaymentWalletId)
 }
+
+func TestGetEnv_DokuCredentialsAreTrimmedAndUnquoted(t *testing.T) {
+	t.Setenv("DOKU_BASE_URL", " https://api-sandbox.doku.com\n")
+	t.Setenv("DOKU_CLIENT_ID", `"BRN-0221-1234567890"`)
+	t.Setenv("DOKU_CLIENT_SECRET", "  client-secret  ")
+	t.Setenv("DOKU_MERCHANT_ID", "'merchant-id'")
+	t.Setenv("DOKU_CHANNEL_ID", "channel-id\r")
+
+	env := utils.GetEnv()
+
+	assert.Equal(t, "https://api-sandbox.doku.com", env.DokuBaseURL)
+	assert.Equal(t, "BRN-0221-1234567890", env.DokuClientId)
+	assert.Equal(t, "client-secret", env.DokuClientSecret)
+	assert.Equal(t, "merchant-id", env.DokuMerchantId)
+	assert.Equal(t, "channel-id", env.DokuChannelId)
+}

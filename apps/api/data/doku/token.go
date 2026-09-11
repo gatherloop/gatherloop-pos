@@ -97,8 +97,11 @@ func (c *Client) fetchAccessToken(ctx context.Context) (string, *domain.Error) {
 		c.logger.Error("doku: access token request rejected",
 			slog.Int("status", resp.StatusCode),
 			slog.String("responseCode", parsed.ResponseCode),
+			slog.String("responseMessage", parsed.ResponseMessage),
+			slog.String("baseUrl", c.config.BaseURL),
+			slog.String("clientId", maskCredential(c.config.ClientId)),
 		)
-		return "", &domain.Error{Type: domain.InternalServerError, Message: fmt.Sprintf("DOKU access token request failed: %s", parsed.ResponseMessage)}
+		return "", &domain.Error{Type: domain.InternalServerError, Message: fmt.Sprintf("DOKU access token request failed: %s (%s)", parsed.ResponseMessage, parsed.ResponseCode)}
 	}
 
 	c.token.set(parsed.AccessToken, parsed.ExpiresIn)
