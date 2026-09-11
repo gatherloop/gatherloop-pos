@@ -43,7 +43,11 @@ func main() {
 		panic("failed to connect database")
 	}
 
-	dokuPrivateKey, _ := doku.ParsePrivateKeyPEM(env.DokuPrivateKey)
+	dokuPrivateKey, err := doku.ParsePrivateKeyPEM(env.DokuPrivateKey)
+	if err != nil {
+		rootLogger.Error("failed to parse doku private key", slog.Any("error", err))
+		panic("failed to parse doku private key")
+	}
 
 	paymentGatewayRepository := doku.NewPaymentGatewayRepository(doku.Config{
 		BaseURL:      env.DokuBaseURL,
