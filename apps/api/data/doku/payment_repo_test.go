@@ -230,6 +230,66 @@ func TestDoSignedRequest_NonRetryableFailureIsNotRetried(t *testing.T) {
 	assert.Equal(t, 1, requests)
 }
 
+func TestDoSignedRequest_ReportsWhyDokuRejectedTheCall(t *testing.T) {
+	client := stubTokenAndPath(t, qrGeneratePath, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		writeJSON(w, failureResponse{ResponseCode: "5004700", ResponseMessage: "Internal Server Error"})
+	})
+
+	_, err := client.GenerateQris(t.Context(), domain.GenerateQrisInput{PartnerReferenceNo: "ORD1", Amount: 10000})
+
+	require.NotNil(t, err)
+	assert.Contains(t, err.Message, "5004700")
+	assert.Contains(t, err.Message, "Internal Server Error")
+}
+
+func TestDescribeFailure(t *testing.T) {
+	tests := []struct {
+		name     string
+		body     string
+		expected string
+	}{
+		{"doku error", `{"responseCode":"4004701","responseMessage":"Invalid Field Format terminalId"}`, "4004701 Invalid Field Format terminalId"},
+		{"message only", `{"responseMessage":"Internal Server Error"}`, "Internal Server Error"},
+		{"non json", "<html>502 Bad Gateway</html>", "<html>502 Bad Gateway</html>"},
+		{"empty", "  ", "<empty response body>"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, describeFailure([]byte(tt.body)))
+		})
+	}
+}
+
+func TestDescribeFailure_TruncatesLongBody(t *testing.T) {
+	detail := describeFailure([]byte(strings.Repeat("x", maxFailureDetailLength+100)))
+
+	assert.Equal(t, strings.Repeat("x", maxFailureDetailLength)+"...", detail)
+}
+
+func TestNewClient_TrimsTrailingSlashFromBaseURL(t *testing.T) {
+	requestedPaths := []string{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestedPaths = append(requestedPaths, r.URL.Path)
+		switch r.URL.Path {
+		case tokenPath:
+			writeJSON(w, tokenResponse{ResponseCode: "2007300", AccessToken: "token", ExpiresIn: 900})
+		case qrGeneratePath:
+			writeJSON(w, generateQrisResponse{ResponseCode: "2004700", PartnerReferenceNo: "ORD1", ReferenceNo: "REF1"})
+		}
+	}))
+	defer server.Close()
+
+	client := NewClient(testClient(t, server.URL+"/").config)
+	client.logger = testLogger()
+
+	_, err := client.GenerateQris(t.Context(), domain.GenerateQrisInput{PartnerReferenceNo: "ORD1", Amount: 10000})
+
+	require.Nil(t, err)
+	assert.Equal(t, []string{tokenPath, qrGeneratePath}, requestedPaths, "a trailing slash must not double the slash the signature was computed over")
+}
+
 func stubTokenAndPath(t *testing.T, path string, handler http.HandlerFunc) *Client {
 	t.Helper()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

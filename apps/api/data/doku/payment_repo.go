@@ -83,6 +83,7 @@ func NewPaymentGatewayRepository(config Config) domain.PaymentGatewayRepository 
 }
 
 func NewClient(config Config) *Client {
+	config.BaseURL = strings.TrimRight(config.BaseURL, "/")
 	return &Client{
 		config:     config,
 		httpClient: &http.Client{Timeout: requestTimeout},
@@ -149,6 +150,29 @@ func formatValidityPeriod(expiredAt time.Time) string {
 
 func formatAmount(amount float32) string {
 	return strconv.FormatFloat(float64(amount), 'f', 2, 32)
+}
+
+const maxFailureDetailLength = 512
+
+type failureResponse struct {
+	ResponseCode    string `json:"responseCode"`
+	ResponseMessage string `json:"responseMessage"`
+}
+
+func describeFailure(body []byte) string {
+	var parsed failureResponse
+	if json.Unmarshal(body, &parsed) == nil && (parsed.ResponseCode != "" || parsed.ResponseMessage != "") {
+		return strings.TrimSpace(parsed.ResponseCode + " " + parsed.ResponseMessage)
+	}
+
+	raw := strings.TrimSpace(string(body))
+	if raw == "" {
+		return "<empty response body>"
+	}
+	if len(raw) > maxFailureDetailLength {
+		return raw[:maxFailureDetailLength] + "..."
+	}
+	return raw
 }
 
 func isSuccessResponseCode(code string) bool {
@@ -232,8 +256,13 @@ func (c *Client) doSignedRequest(ctx context.Context, path string, requestBody a
 	}
 
 	if status < 200 || status >= 300 {
-		c.logger.Error("doku: request rejected", slog.String("path", path), slog.Int("status", status))
-		return nil, &domain.Error{Type: domain.InternalServerError, Message: fmt.Sprintf("DOKU request to %s failed with status %d", path, status)}
+		detail := describeFailure(respBody)
+		c.logger.Error("doku: request rejected",
+			slog.String("path", path),
+			slog.Int("status", status),
+			slog.String("response", detail),
+		)
+		return nil, &domain.Error{Type: domain.InternalServerError, Message: fmt.Sprintf("DOKU request to %s failed with status %d: %s", path, status, detail)}
 	}
 
 	return respBody, nil
@@ -313,7 +342,7 @@ func (c *Client) GenerateQris(ctx context.Context, input domain.GenerateQrisInpu
 			slog.String("partnerReferenceNo", input.PartnerReferenceNo),
 			slog.String("responseCode", parsed.ResponseCode),
 		)
-		return domain.QrisPayment{}, &domain.Error{Type: domain.InternalServerError, Message: fmt.Sprintf("DOKU rejected the QRIS generation request: %s", parsed.ResponseMessage)}
+		return domain.QrisPayment{}, &domain.Error{Type: domain.InternalServerError, Message: fmt.Sprintf("DOKU rejected the QRIS generation request: %s", strings.TrimSpace(parsed.ResponseCode+" "+parsed.ResponseMessage))}
 	}
 
 	c.logger.Info("doku: generated qris",
