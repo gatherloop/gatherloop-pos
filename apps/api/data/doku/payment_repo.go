@@ -37,6 +37,9 @@ type Config struct {
 	PrivateKey   *rsa.PrivateKey
 	MerchantId   string
 	ChannelId    string
+	TerminalId   string
+	PostalCode   string
+	FeeType      string
 }
 
 func (c Config) Validate() error {
@@ -51,6 +54,7 @@ func (c Config) Validate() error {
 		{"DOKU_CLIENT_SECRET", c.ClientSecret},
 		{"DOKU_MERCHANT_ID", c.MerchantId},
 		{"DOKU_CHANNEL_ID", c.ChannelId},
+		{"DOKU_TERMINAL_ID", c.TerminalId},
 	} {
 		if field.value == "" {
 			missing = append(missing, field.name)
@@ -134,6 +138,13 @@ func maskCredential(value string) string {
 // DOKU wants a numeric offset (2022-10-07T14:26:50+07:00), never the "Z" a UTC host would render.
 func formatTimestamp(t time.Time) string {
 	return t.In(dokuTimeZone).Format("2006-01-02T15:04:05-07:00")
+}
+
+func formatValidityPeriod(expiredAt time.Time) string {
+	if expiredAt.IsZero() {
+		return ""
+	}
+	return formatTimestamp(expiredAt)
 }
 
 func formatAmount(amount float32) string {
@@ -233,10 +244,18 @@ type qrisAmount struct {
 	Currency string `json:"currency"`
 }
 
+type qrisAdditionalInfo struct {
+	PostalCode string `json:"postalCode,omitempty"`
+	FeeType    string `json:"feeType,omitempty"`
+}
+
 type generateQrisRequest struct {
-	PartnerReferenceNo string     `json:"partnerReferenceNo"`
-	Amount             qrisAmount `json:"amount"`
-	MerchantId         string     `json:"merchantId"`
+	PartnerReferenceNo string             `json:"partnerReferenceNo"`
+	Amount             qrisAmount         `json:"amount"`
+	MerchantId         string             `json:"merchantId"`
+	TerminalId         string             `json:"terminalId"`
+	ValidityPeriod     string             `json:"validityPeriod,omitempty"`
+	AdditionalInfo     qrisAdditionalInfo `json:"additionalInfo"`
 }
 
 type generateQrisResponse struct {
@@ -269,6 +288,12 @@ func (c *Client) GenerateQris(ctx context.Context, input domain.GenerateQrisInpu
 		PartnerReferenceNo: input.PartnerReferenceNo,
 		Amount:             qrisAmount{Value: formatAmount(input.Amount), Currency: "IDR"},
 		MerchantId:         c.config.MerchantId,
+		TerminalId:         c.config.TerminalId,
+		ValidityPeriod:     formatValidityPeriod(input.ExpiredAt),
+		AdditionalInfo: qrisAdditionalInfo{
+			PostalCode: c.config.PostalCode,
+			FeeType:    c.config.FeeType,
+		},
 	}
 
 	respBody, err := c.doSignedRequest(ctx, qrGeneratePath, reqBody)

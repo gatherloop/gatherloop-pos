@@ -64,6 +64,7 @@ func TestConfigValidate(t *testing.T) {
 		PrivateKey:   key,
 		MerchantId:   "merchant-id",
 		ChannelId:    "channel-id",
+		TerminalId:   "terminal-id",
 	}
 
 	require.NoError(t, complete.Validate())
@@ -78,6 +79,7 @@ func TestConfigValidate(t *testing.T) {
 		{"client secret", func(c *Config) { c.ClientSecret = "" }, "DOKU_CLIENT_SECRET"},
 		{"merchant id", func(c *Config) { c.MerchantId = "" }, "DOKU_MERCHANT_ID"},
 		{"channel id", func(c *Config) { c.ChannelId = "" }, "DOKU_CHANNEL_ID"},
+		{"terminal id", func(c *Config) { c.TerminalId = "" }, "DOKU_TERMINAL_ID"},
 		{"private key", func(c *Config) { c.PrivateKey = nil }, "DOKU_PRIVATE_KEY"},
 	}
 
@@ -282,6 +284,42 @@ func TestGenerateQris_SendsAmountAsTwoDecimalString(t *testing.T) {
 	assert.Equal(t, "12345.00", gotBody.Amount.Value)
 	assert.Equal(t, "IDR", gotBody.Amount.Currency)
 	assert.Equal(t, "ORD1", gotBody.PartnerReferenceNo)
+}
+
+func TestGenerateQris_SendsTerminalIdValidityPeriodAndAdditionalInfo(t *testing.T) {
+	var gotBody generateQrisRequest
+	client := stubTokenAndPath(t, qrGeneratePath, func(w http.ResponseWriter, r *http.Request) {
+		require.NoError(t, decodeJSON(r, &gotBody))
+		writeJSON(w, generateQrisResponse{ResponseCode: "2004700", PartnerReferenceNo: "ORD1", ReferenceNo: "REF1"})
+	})
+
+	_, err := client.GenerateQris(t.Context(), domain.GenerateQrisInput{
+		PartnerReferenceNo: "ORD1",
+		Amount:             10000,
+		ExpiredAt:          time.Date(2025, 11, 30, 19, 27, 15, 0, dokuTimeZone),
+	})
+
+	require.Nil(t, err)
+	assert.Equal(t, "test-terminal-id", gotBody.TerminalId)
+	assert.Equal(t, "2025-11-30T19:27:15+07:00", gotBody.ValidityPeriod)
+	assert.Equal(t, "12190", gotBody.AdditionalInfo.PostalCode)
+	assert.Equal(t, "1", gotBody.AdditionalInfo.FeeType)
+}
+
+func TestGenerateQris_AlwaysSendsAdditionalInfoObject(t *testing.T) {
+	var gotBody map[string]any
+	client := stubTokenAndPath(t, qrGeneratePath, func(w http.ResponseWriter, r *http.Request) {
+		require.NoError(t, decodeJSON(r, &gotBody))
+		writeJSON(w, generateQrisResponse{ResponseCode: "2004700", PartnerReferenceNo: "ORD1", ReferenceNo: "REF1"})
+	})
+	client.config.PostalCode = ""
+	client.config.FeeType = ""
+
+	_, err := client.GenerateQris(t.Context(), domain.GenerateQrisInput{PartnerReferenceNo: "ORD1", Amount: 10000})
+
+	require.Nil(t, err)
+	assert.Equal(t, map[string]any{}, gotBody["additionalInfo"])
+	assert.NotContains(t, gotBody, "validityPeriod")
 }
 
 func TestGenerateQris_RejectedResponseCode(t *testing.T) {

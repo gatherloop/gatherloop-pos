@@ -76,6 +76,9 @@ func TestGetEnv_DokuConfig(t *testing.T) {
 	t.Setenv("DOKU_PRIVATE_KEY", "pem")
 	t.Setenv("DOKU_MERCHANT_ID", "merchant-id")
 	t.Setenv("DOKU_CHANNEL_ID", "channel-id")
+	t.Setenv("DOKU_TERMINAL_ID", "terminal-id")
+	t.Setenv("DOKU_MERCHANT_POSTAL_CODE", "12190")
+	t.Setenv("DOKU_QRIS_FEE_TYPE", "1")
 	t.Setenv("ORDER_PAYMENT_WALLET_ID", "42")
 
 	env := utils.GetEnv()
@@ -86,6 +89,9 @@ func TestGetEnv_DokuConfig(t *testing.T) {
 	assert.Equal(t, "pem", env.DokuPrivateKey)
 	assert.Equal(t, "merchant-id", env.DokuMerchantId)
 	assert.Equal(t, "channel-id", env.DokuChannelId)
+	assert.Equal(t, "terminal-id", env.DokuTerminalId)
+	assert.Equal(t, "12190", env.DokuPostalCode)
+	assert.Equal(t, "1", env.DokuFeeType)
 	assert.Equal(t, "42", env.OrderPaymentWalletId)
 }
 
@@ -95,6 +101,7 @@ func TestGetEnv_DokuCredentialsAreTrimmedAndUnquoted(t *testing.T) {
 	t.Setenv("DOKU_CLIENT_SECRET", "  client-secret  ")
 	t.Setenv("DOKU_MERCHANT_ID", "'merchant-id'")
 	t.Setenv("DOKU_CHANNEL_ID", "channel-id\r")
+	t.Setenv("DOKU_TERMINAL_ID", ` "terminal-id" `)
 
 	env := utils.GetEnv()
 
@@ -103,4 +110,5 @@ func TestGetEnv_DokuCredentialsAreTrimmedAndUnquoted(t *testing.T) {
 	assert.Equal(t, "client-secret", env.DokuClientSecret)
 	assert.Equal(t, "merchant-id", env.DokuMerchantId)
 	assert.Equal(t, "channel-id", env.DokuChannelId)
+	assert.Equal(t, "terminal-id", env.DokuTerminalId)
 }
