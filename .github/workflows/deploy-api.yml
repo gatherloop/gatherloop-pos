@@ -101,6 +101,9 @@ jobs:
             DOKU_PRIVATE_KEY="${{ secrets.DOKU_PRIVATE_KEY }}"
             DOKU_MERCHANT_ID=${{ secrets.DOKU_MERCHANT_ID }}
             DOKU_CHANNEL_ID=${{ secrets.DOKU_CHANNEL_ID }}
+            DOKU_TERMINAL_ID=${{ secrets.DOKU_TERMINAL_ID }}
+            DOKU_MERCHANT_POSTAL_CODE=${{ secrets.DOKU_MERCHANT_POSTAL_CODE }}
+            DOKU_QRIS_FEE_TYPE=${{ secrets.DOKU_QRIS_FEE_TYPE }}
             DOKU_QRIS_EXPIRY_SECONDS=${{ secrets.DOKU_QRIS_EXPIRY_SECONDS }}
             ORDER_PAYMENT_WALLET_ID=${{ secrets.ORDER_PAYMENT_WALLET_ID }}
             APP_ENV=production

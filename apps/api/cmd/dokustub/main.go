@@ -79,12 +79,34 @@ func main() {
 
 	mux.HandleFunc("POST /snap-adapter/b2b/v1.0/qr/qr-mpm-generate", func(w http.ResponseWriter, r *http.Request) {
 		var body struct {
-			PartnerReferenceNo string     `json:"partnerReferenceNo"`
-			Amount             qrisAmount `json:"amount"`
+			PartnerReferenceNo string          `json:"partnerReferenceNo"`
+			Amount             qrisAmount      `json:"amount"`
+			MerchantId         string          `json:"merchantId"`
+			TerminalId         string          `json:"terminalId"`
+			AdditionalInfo     json.RawMessage `json:"additionalInfo"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			http.Error(w, "bad request", http.StatusBadRequest)
 			return
+		}
+
+		for _, field := range []struct {
+			name    string
+			missing bool
+		}{
+			{"partnerReferenceNo", body.PartnerReferenceNo == ""},
+			{"merchantId", body.MerchantId == ""},
+			{"terminalId", body.TerminalId == ""},
+			{"additionalInfo", len(body.AdditionalInfo) == 0},
+		} {
+			if field.missing {
+				logger.Warn("dokustub: rejected generate qris", slog.String("field", field.name))
+				writeJSON(w, http.StatusBadRequest, map[string]any{
+					"responseCode":    "4004702",
+					"responseMessage": "Invalid Mandatory Field " + field.name,
+				})
+				return
+			}
 		}
 
 		rec := &record{

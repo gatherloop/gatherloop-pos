@@ -258,7 +258,9 @@ type PaymentGatewayRepository interface {
 
 Tests are `httptest`-based and cover: token caching and refresh; a signature computed against a fixed vector; `2004700`-shaped success mapped to `QrisPayment`; `latestTransactionStatus` `"00"` → `paid`, expiry/failure codes → `expired` / `failed`, anything unknown → `pending` (never optimistically `paid`); a notification with a tampered body rejected; a notification older than 5 minutes rejected.
 
-Configuration in `utils/env.go` (all read once, all required when checkout is enabled): `DOKU_BASE_URL`, `DOKU_CLIENT_ID`, `DOKU_CLIENT_SECRET`, `DOKU_PRIVATE_KEY` (PEM), `DOKU_MERCHANT_ID`, `DOKU_CHANNEL_ID`, `DOKU_QRIS_EXPIRY_SECONDS` (default `300` — resolved question 2), `ORDER_PAYMENT_WALLET_ID`.
+Configuration in `utils/env.go` (all read once, all required when checkout is enabled): `DOKU_BASE_URL`, `DOKU_CLIENT_ID`, `DOKU_CLIENT_SECRET`, `DOKU_PRIVATE_KEY` (PEM), `DOKU_MERCHANT_ID`, `DOKU_CHANNEL_ID`, `DOKU_TERMINAL_ID`, `DOKU_QRIS_EXPIRY_SECONDS` (default `300` — resolved question 2), `ORDER_PAYMENT_WALLET_ID`, plus the optional `DOKU_MERCHANT_POSTAL_CODE` and `DOKU_QRIS_FEE_TYPE`.
+
+`qr-mpm-generate` carries `partnerReferenceNo`, `amount`, `merchantId`, **`terminalId`** (mandatory, alphanumeric 3–16), `validityPeriod` (derived from `DOKU_QRIS_EXPIRY_SECONDS`) and **`additionalInfo`** — a mandatory object whose `postalCode` and `feeType` are optional and configuration-driven, so the object is always sent even when both are unset.
 
 ### FR-4 — `customers`: the guest's name (API)
 
@@ -450,6 +452,9 @@ All customer-facing copy is Bahasa Indonesia (D15 of `prd-table-ordering.md`), m
 | `DOKU_PRIVATE_KEY` | `apps/api/.env` | PEM, newline-escaped. Asymmetric signing key. **Secret.** |
 | `DOKU_MERCHANT_ID` | `apps/api/.env` | Required by `qr-mpm-query`. |
 | `DOKU_CHANNEL_ID` | `apps/api/.env` | `CHANNEL-ID` header. |
+| `DOKU_TERMINAL_ID` | `apps/api/.env` | `terminalId` on `qr-mpm-generate`. Mandatory, alphanumeric, 3–16 characters. |
+| `DOKU_MERCHANT_POSTAL_CODE` | `apps/api/.env` | `additionalInfo.postalCode`. Optional; omitted from the body when unset. |
+| `DOKU_QRIS_FEE_TYPE` | `apps/api/.env` | `additionalInfo.feeType`. Optional; omitted when unset, so DOKU applies the Back Office default. |
 | `DOKU_QRIS_EXPIRY_SECONDS` | `apps/api/.env` | Default `300` (5 minutes, resolved question 2). Drives the QR's expiry, `payments.expired_at`, and the countdown the guest sees. |
 | `ORDER_PAYMENT_WALLET_ID` | `apps/api/.env` | The `QRIS` wallet (D15). Validated at boot. |
 

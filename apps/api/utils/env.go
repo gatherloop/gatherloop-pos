@@ -31,6 +31,9 @@ type Env struct {
 	DokuPrivateKey        string
 	DokuMerchantId        string
 	DokuChannelId         string
+	DokuTerminalId        string
+	DokuPostalCode        string
+	DokuFeeType           string
 	DokuQrisExpirySeconds int
 	OrderPaymentWalletId  string
 }
@@ -70,6 +73,9 @@ func GetEnv() Env {
 		DokuPrivateKey:        os.Getenv("DOKU_PRIVATE_KEY"),
 		DokuMerchantId:        getCredential("DOKU_MERCHANT_ID"),
 		DokuChannelId:         getCredential("DOKU_CHANNEL_ID"),
+		DokuTerminalId:        getCredential("DOKU_TERMINAL_ID"),
+		DokuPostalCode:        getCredential("DOKU_MERCHANT_POSTAL_CODE"),
+		DokuFeeType:           getCredential("DOKU_QRIS_FEE_TYPE"),
 		DokuQrisExpirySeconds: parseIntWithDefault(os.Getenv("DOKU_QRIS_EXPIRY_SECONDS"), 300),
 		OrderPaymentWalletId:  os.Getenv("ORDER_PAYMENT_WALLET_ID"),
 	}

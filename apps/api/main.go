@@ -56,6 +56,9 @@ func main() {
 		PrivateKey:   dokuPrivateKey,
 		MerchantId:   env.DokuMerchantId,
 		ChannelId:    env.DokuChannelId,
+		TerminalId:   env.DokuTerminalId,
+		PostalCode:   env.DokuPostalCode,
+		FeeType:      env.DokuFeeType,
 	}
 	if err := dokuConfig.Validate(); err != nil {
 		rootLogger.Error("invalid doku configuration", slog.Any("error", err))

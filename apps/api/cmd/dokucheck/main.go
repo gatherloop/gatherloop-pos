@@ -26,6 +26,9 @@ func main() {
 		PrivateKey:   privateKey,
 		MerchantId:   env.DokuMerchantId,
 		ChannelId:    env.DokuChannelId,
+		TerminalId:   env.DokuTerminalId,
+		PostalCode:   env.DokuPostalCode,
+		FeeType:      env.DokuFeeType,
 	}
 	if configErr := config.Validate(); configErr != nil {
 		fmt.Fprintln(os.Stderr, configErr)
@@ -36,6 +39,7 @@ func main() {
 	fmt.Printf("clientId:   %s\n", config.ClientId)
 	fmt.Printf("merchantId: %s\n", config.MerchantId)
 	fmt.Printf("channelId:  %s\n", config.ChannelId)
+	fmt.Printf("terminalId: %s\n", config.TerminalId)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
