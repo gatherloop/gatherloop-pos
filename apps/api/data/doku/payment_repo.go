@@ -28,6 +28,8 @@ const (
 	requestTimeout = 10 * time.Second
 )
 
+var dokuTimeZone = time.FixedZone("WIB", 7*60*60)
+
 type Config struct {
 	BaseURL      string
 	ClientId     string
@@ -129,8 +131,9 @@ func maskCredential(value string) string {
 	return "****" + value[len(value)-4:]
 }
 
+// DOKU wants a numeric offset (2022-10-07T14:26:50+07:00), never the "Z" a UTC host would render.
 func formatTimestamp(t time.Time) string {
-	return t.Format("2006-01-02T15:04:05Z07:00")
+	return t.In(dokuTimeZone).Format("2006-01-02T15:04:05-07:00")
 }
 
 func formatAmount(amount float32) string {

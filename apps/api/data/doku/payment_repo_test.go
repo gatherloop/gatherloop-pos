@@ -112,6 +112,25 @@ func TestFormatTimestamp_MatchesDokuFormat(t *testing.T) {
 	assert.True(t, now.Truncate(time.Second).Equal(parsed))
 }
 
+func TestFormatTimestamp_RendersNumericOffsetForAnyHostClock(t *testing.T) {
+	instant := time.Date(2022, 10, 7, 7, 26, 50, 0, time.UTC)
+
+	hosts := map[string]*time.Location{
+		"utc host":     time.UTC,
+		"jakarta host": time.FixedZone("WIB", 7*60*60),
+		"tokyo host":   time.FixedZone("JST", 9*60*60),
+	}
+
+	for name, host := range hosts {
+		t.Run(name, func(t *testing.T) {
+			formatted := formatTimestamp(instant.In(host))
+
+			assert.Equal(t, "2022-10-07T14:26:50+07:00", formatted)
+			assert.NotContains(t, formatted, "Z")
+		})
+	}
+}
+
 func TestFormatAmount(t *testing.T) {
 	assert.Equal(t, "10000.00", formatAmount(10000))
 	assert.Equal(t, "1500.50", formatAmount(1500.5))
