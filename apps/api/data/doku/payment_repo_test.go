@@ -34,14 +34,16 @@ func TestParsePrivateKeyPEM_NotAKey(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestFormatTimestamp_ParsesBackAsRFC3339Nano(t *testing.T) {
+func TestFormatTimestamp_MatchesDokuFormat(t *testing.T) {
 	now := time.Date(2021, 1, 8, 9, 57, 39, 877000000, time.FixedZone("WIB", 7*60*60))
 
 	formatted := formatTimestamp(now)
 
-	parsed, err := time.Parse(time.RFC3339Nano, formatted)
+	assert.Equal(t, "2021-01-08T09:57:39+07:00", formatted)
+
+	parsed, err := time.Parse(time.RFC3339, formatted)
 	require.NoError(t, err)
-	assert.True(t, now.Equal(parsed))
+	assert.True(t, now.Truncate(time.Second).Equal(parsed))
 }
 
 func TestFormatAmount(t *testing.T) {
