@@ -92,6 +92,12 @@ func NewClient(config Config) *Client {
 	}
 }
 
+// DOKU issues QRIS credentials for the live environment only, so qr-mpm-generate
+// answers 5004701 on api-sandbox.doku.com however valid the request is.
+func IsSandboxBaseURL(baseURL string) bool {
+	return strings.Contains(baseURL, "sandbox.doku.com")
+}
+
 func (c *Client) VerifyCredentials(ctx context.Context) *domain.Error {
 	_, err := c.fetchAccessToken(ctx)
 	return err

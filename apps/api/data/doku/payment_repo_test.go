@@ -243,6 +243,13 @@ func TestDoSignedRequest_ReportsWhyDokuRejectedTheCall(t *testing.T) {
 	assert.Contains(t, err.Message, "Internal Server Error")
 }
 
+func TestIsSandboxBaseURL(t *testing.T) {
+	assert.True(t, IsSandboxBaseURL("https://api-sandbox.doku.com"))
+	assert.True(t, IsSandboxBaseURL("https://api-sandbox.doku.com/"))
+	assert.False(t, IsSandboxBaseURL("https://api.doku.com"))
+	assert.False(t, IsSandboxBaseURL("http://127.0.0.1:8090"))
+}
+
 func TestDescribeFailure(t *testing.T) {
 	tests := []struct {
 		name     string

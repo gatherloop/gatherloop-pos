@@ -81,6 +81,9 @@ func main() {
 	if qrisErr != nil {
 		fmt.Fprintf(os.Stderr, "\ngenerate qris rejected: %s\n", qrisErr.Message)
 		fmt.Fprintln(os.Stderr, "\nThe access token above already proves the credentials, so DOKU is refusing the QRIS request itself. Check that:")
+		if doku.IsSandboxBaseURL(config.BaseURL) {
+			fmt.Fprintln(os.Stderr, "  - DOKU_BASE_URL points at the live environment: DOKU issues QRIS credentials for production only, and the sandbox answers 5004701 for every generate")
+		}
 		fmt.Fprintln(os.Stderr, "  - QRIS is activated for DOKU_MERCHANT_ID in the DOKU Back Office of this environment")
 		fmt.Fprintln(os.Stderr, "  - DOKU_TERMINAL_ID is a terminal registered under that merchant (alphanumeric, 3-16 characters)")
 		fmt.Fprintln(os.Stderr, "  - DOKU_MERCHANT_POSTAL_CODE and DOKU_QRIS_FEE_TYPE hold values DOKU accepts, or are left unset")

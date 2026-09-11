@@ -65,6 +65,10 @@ func main() {
 		panic("invalid doku configuration")
 	}
 
+	if doku.IsSandboxBaseURL(dokuConfig.BaseURL) {
+		rootLogger.Warn("doku sandbox cannot issue qris: checkout will fail until DOKU_BASE_URL points at the live environment", slog.String("baseUrl", dokuConfig.BaseURL))
+	}
+
 	paymentGatewayRepository := doku.NewPaymentGatewayRepository(dokuConfig)
 
 	router := mux.NewRouter().StrictSlash(true)
