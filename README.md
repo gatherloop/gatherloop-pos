@@ -92,6 +92,22 @@ npx nx run api-contract:generate:go # regenerate Go models
 Codegen runs automatically as a dependency of the `dev`, `build` and `serve` targets — run it
 manually only when you want to inspect the output.
 
+### Checking DOKU credentials
+
+```bash
+make -C apps/api doku-check   # asks DOKU for an access token with apps/api/.env
+```
+
+The same check ships as a release binary, so it can be run against the live credentials on the VPS
+without a Go toolchain or a build there:
+
+```bash
+cd /root/projects/gatherloop-pos/apps/api && ./dist/release/dokucheck
+```
+
+It redacts the identifiers it prints so its output is safe to paste or to leave in a CI log; pass
+`-show-credentials` to see them in full.
+
 In CI, a pull request runs the `libs/ui` and `apps/api` unit tests, and only the ones whose area it
 touches (`.github/workflows/pr-tests.yml`). The end-to-end suites are too slow for that loop, so
 they run after the merge, against a MySQL service, the real API binary and a real Next.js server

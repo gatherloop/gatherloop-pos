@@ -40,10 +40,11 @@ dev:
 build:
 	go build -o dist/api main.go
 
-## build-release: Build the three static release binaries for the VPS
+## build-release: Build the static release binaries for the VPS
 build-release:
 	mkdir -p $(RELEASE_DIR)
 	$(RELEASE_BUILD) -o $(RELEASE_DIR)/api main.go
+	$(RELEASE_BUILD) -o $(RELEASE_DIR)/dokucheck ./cmd/dokucheck
 
 ## test: Run all tests
 test:
@@ -51,4 +52,4 @@ test:
 
 ## doku-check: Ask DOKU for an access token with the configured credentials
 doku-check:
-	go run ./cmd/dokucheck
+	go run ./cmd/dokucheck -show-credentials

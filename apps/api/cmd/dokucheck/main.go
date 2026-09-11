@@ -4,12 +4,16 @@ import (
 	"apps/api/data/doku"
 	"apps/api/utils"
 	"context"
+	"flag"
 	"fmt"
 	"os"
 	"time"
 )
 
 func main() {
+	showCredentials := flag.Bool("show-credentials", false, "print credential values in full instead of redacting them")
+	flag.Parse()
+
 	_ = utils.LoadEnv()
 	env := utils.GetEnv()
 
@@ -33,9 +37,9 @@ func main() {
 	}
 
 	fmt.Printf("baseUrl:    %s\n", config.BaseURL)
-	fmt.Printf("clientId:   %s\n", config.ClientId)
-	fmt.Printf("merchantId: %s\n", config.MerchantId)
-	fmt.Printf("channelId:  %s\n", config.ChannelId)
+	fmt.Printf("clientId:   %s\n", format(config.ClientId, *showCredentials))
+	fmt.Printf("merchantId: %s\n", format(config.MerchantId, *showCredentials))
+	fmt.Printf("channelId:  %s\n", format(config.ChannelId, *showCredentials))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
@@ -50,4 +54,15 @@ func main() {
 	}
 
 	fmt.Println("\naccess token granted: credentials are valid")
+}
+
+// Redacted by default because this output can end up in a public CI log.
+func format(value string, show bool) string {
+	if show {
+		return value
+	}
+	if len(value) <= 8 {
+		return fmt.Sprintf("<redacted, %d chars>", len(value))
+	}
+	return fmt.Sprintf("%s...%s (%d chars)", value[:4], value[len(value)-4:], len(value))
 }
