@@ -14,6 +14,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -36,6 +37,34 @@ type Config struct {
 	ChannelId    string
 }
 
+func (c Config) Validate() error {
+	var missing []string
+
+	for _, field := range []struct {
+		name  string
+		value string
+	}{
+		{"DOKU_BASE_URL", c.BaseURL},
+		{"DOKU_CLIENT_ID", c.ClientId},
+		{"DOKU_CLIENT_SECRET", c.ClientSecret},
+		{"DOKU_MERCHANT_ID", c.MerchantId},
+		{"DOKU_CHANNEL_ID", c.ChannelId},
+	} {
+		if field.value == "" {
+			missing = append(missing, field.name)
+		}
+	}
+
+	if c.PrivateKey == nil {
+		missing = append(missing, "DOKU_PRIVATE_KEY")
+	}
+
+	if len(missing) > 0 {
+		return fmt.Errorf("doku: missing configuration: %s", strings.Join(missing, ", "))
+	}
+	return nil
+}
+
 type Client struct {
 	config     Config
 	httpClient *http.Client
@@ -44,6 +73,10 @@ type Client struct {
 }
 
 func NewPaymentGatewayRepository(config Config) domain.PaymentGatewayRepository {
+	return NewClient(config)
+}
+
+func NewClient(config Config) *Client {
 	return &Client{
 		config:     config,
 		httpClient: &http.Client{Timeout: requestTimeout},
@@ -52,8 +85,13 @@ func NewPaymentGatewayRepository(config Config) domain.PaymentGatewayRepository 
 	}
 }
 
+func (c *Client) VerifyCredentials(ctx context.Context) *domain.Error {
+	_, err := c.fetchAccessToken(ctx)
+	return err
+}
+
 func ParsePrivateKeyPEM(pemStr string) (*rsa.PrivateKey, error) {
-	block, _ := pem.Decode([]byte(pemStr))
+	block, _ := pem.Decode([]byte(normalizePrivateKeyPEM(pemStr)))
 	if block == nil {
 		return nil, fmt.Errorf("doku: DOKU_PRIVATE_KEY is not valid PEM")
 	}
@@ -71,6 +109,24 @@ func ParsePrivateKeyPEM(pemStr string) (*rsa.PrivateKey, error) {
 		return nil, fmt.Errorf("doku: DOKU_PRIVATE_KEY is not an RSA key")
 	}
 	return rsaKey, nil
+}
+
+// .env and systemd EnvironmentFile can both hand over the PEM still quoted and with its newlines escaped.
+func normalizePrivateKeyPEM(pemStr string) string {
+	normalized := strings.TrimSpace(pemStr)
+	normalized = strings.Trim(normalized, `"'`)
+	normalized = strings.ReplaceAll(normalized, `\n`, "\n")
+	return strings.TrimSpace(normalized)
+}
+
+func maskCredential(value string) string {
+	if value == "" {
+		return "<empty>"
+	}
+	if len(value) <= 4 {
+		return "****"
+	}
+	return "****" + value[len(value)-4:]
 }
 
 func formatTimestamp(t time.Time) string {

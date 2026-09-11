@@ -13,7 +13,7 @@ RELEASE_GOARCH ?= amd64
 RELEASE_BUILD  := CGO_ENABLED=0 GOOS=$(RELEASE_GOOS) GOARCH=$(RELEASE_GOARCH) \
                   go build -trimpath -ldflags "-s -w"
 
-.PHONY: migrate-up migrate-down migrate-create migrate-version dev build build-migrate build-seed build-release migrate seed test
+.PHONY: migrate-up migrate-down migrate-create migrate-version dev build build-migrate build-seed build-release migrate seed test doku-check
 
 ## migrate-up: Run all pending migrations (via migrate CLI)
 migrate-up:
@@ -48,3 +48,7 @@ build-release:
 ## test: Run all tests
 test:
 	go test ./...
+
+## doku-check: Ask DOKU for an access token with the configured credentials
+doku-check:
+	go run ./cmd/dokucheck

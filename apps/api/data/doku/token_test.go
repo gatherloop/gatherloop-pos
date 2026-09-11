@@ -103,6 +103,22 @@ func TestFetchAccessToken_SignsWithAsymmetricScheme(t *testing.T) {
 	assert.Equal(t, expectedSignature, gotSignature)
 }
 
+func TestFetchAccessToken_UnknownClientErrorCarriesResponseCode(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		writeJSON(w, tokenResponse{ResponseCode: "4017301", ResponseMessage: "Unauthorized. Unknown Client"})
+	}))
+	defer server.Close()
+
+	client := testClient(t, server.URL)
+
+	_, err := client.fetchAccessToken(t.Context())
+
+	require.NotNil(t, err)
+	assert.Contains(t, err.Message, "Unauthorized. Unknown Client")
+	assert.Contains(t, err.Message, "4017301")
+}
+
 func TestFetchAccessToken_RejectsNonSuccessStatus(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)

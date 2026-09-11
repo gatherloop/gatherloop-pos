@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -32,6 +33,71 @@ func TestParsePrivateKeyPEM_InvalidPEM(t *testing.T) {
 func TestParsePrivateKeyPEM_NotAKey(t *testing.T) {
 	_, err := ParsePrivateKeyPEM("-----BEGIN CERTIFICATE-----\nAAAA\n-----END CERTIFICATE-----")
 	assert.Error(t, err)
+}
+
+func TestParsePrivateKeyPEM_EscapedNewlines(t *testing.T) {
+	escaped := strings.ReplaceAll(testPrivateKeyPEM, "\n", `\n`)
+
+	key, err := ParsePrivateKeyPEM(escaped)
+
+	require.NoError(t, err)
+	assert.NotNil(t, key)
+}
+
+func TestParsePrivateKeyPEM_SurroundingQuotesAndWhitespace(t *testing.T) {
+	quoted := "  \"" + strings.ReplaceAll(testPrivateKeyPEM, "\n", `\n`) + "\"\n"
+
+	key, err := ParsePrivateKeyPEM(quoted)
+
+	require.NoError(t, err)
+	assert.NotNil(t, key)
+}
+
+func TestConfigValidate(t *testing.T) {
+	key, keyErr := ParsePrivateKeyPEM(testPrivateKeyPEM)
+	require.NoError(t, keyErr)
+
+	complete := Config{
+		BaseURL:      "https://api-sandbox.doku.com",
+		ClientId:     "client-id",
+		ClientSecret: "client-secret",
+		PrivateKey:   key,
+		MerchantId:   "merchant-id",
+		ChannelId:    "channel-id",
+	}
+
+	require.NoError(t, complete.Validate())
+
+	tests := []struct {
+		name    string
+		mutate  func(*Config)
+		missing string
+	}{
+		{"base url", func(c *Config) { c.BaseURL = "" }, "DOKU_BASE_URL"},
+		{"client id", func(c *Config) { c.ClientId = "" }, "DOKU_CLIENT_ID"},
+		{"client secret", func(c *Config) { c.ClientSecret = "" }, "DOKU_CLIENT_SECRET"},
+		{"merchant id", func(c *Config) { c.MerchantId = "" }, "DOKU_MERCHANT_ID"},
+		{"channel id", func(c *Config) { c.ChannelId = "" }, "DOKU_CHANNEL_ID"},
+		{"private key", func(c *Config) { c.PrivateKey = nil }, "DOKU_PRIVATE_KEY"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config := complete
+			tt.mutate(&config)
+
+			err := config.Validate()
+
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tt.missing)
+		})
+	}
+}
+
+func TestMaskCredential(t *testing.T) {
+	assert.Equal(t, "<empty>", maskCredential(""))
+	assert.Equal(t, "****", maskCredential("abcd"))
+	assert.Equal(t, "****6789", maskCredential("BRN-0221-123456789"))
 }
 
 func TestFormatTimestamp_MatchesDokuFormat(t *testing.T) {
