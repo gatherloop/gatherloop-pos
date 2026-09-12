@@ -1,0 +1,31 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh"
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(npx nx run ui:test:*)",
+      "Bash(npx nx run api:test:*)",
+      "Bash(npx nx run ui:storybook:*)",
+      "Bash(npx nx run api-contract:generate:go:*)",
+      "Bash(npx nx run api-contract:generate:ts:*)",
+      "Bash(npx nx affected:*)",
+      "Bash(go test:*)",
+      "Bash(go build:*)",
+      "Bash(go vet:*)",
+      "Bash(make migrate-version:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)"
+    ]
+  }
+}
