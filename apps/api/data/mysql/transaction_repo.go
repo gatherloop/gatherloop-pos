@@ -91,6 +91,16 @@ func (repo Repository) GetTransactionById(ctx context.Context, id int64) (domain
 func (repo Repository) CreateTransaction(ctx context.Context, transaction domain.Transaction) (domain.Transaction, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 
+	if transaction.CreatedAt.IsZero() {
+		transaction.CreatedAt = time.Now()
+	}
+
+	transactionNumber, err := allocateTransactionNumber(db, transaction.CreatedAt)
+	if err != nil {
+		return domain.Transaction{}, ToErrorCtx(ctx, err, "CreateTransaction")
+	}
+	transaction.TransactionNumber = transactionNumber
+
 	dbTransaction := ToTransactionDB(transaction)
 	if result := db.Session(&gorm.Session{FullSaveAssociations: true}).Table("transactions").Create(&dbTransaction); result.Error != nil {
 		return domain.Transaction{}, ToErrorCtx(ctx, result.Error, "CreateTransaction")
@@ -99,6 +109,26 @@ func (repo Repository) CreateTransaction(ctx context.Context, transaction domain
 	var created Transaction
 	fetch := db.Table("transactions").Where("id = ?", dbTransaction.Id).Preload("TransactionItems").Preload("TransactionItems.Values").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").Preload("TransactionItems.Variant.Product.Category").Preload("TransactionCoupons").Preload("TransactionCoupons.Coupon").Preload("Wallet").Preload("Cart").Preload("Cart.Table").First(&created)
 	return ToTransactionDomain(created), ToErrorCtx(ctx, fetch.Error, "CreateTransaction")
+}
+
+// D4/D6: one atomic statement per business day, on the same connection as the
+// enclosing transaction, so the returned number belongs to this create alone.
+func allocateTransactionNumber(db *gorm.DB, createdAt time.Time) (int64, error) {
+	businessDate := createdAt.Format("2006-01-02")
+
+	if result := db.Exec(
+		"INSERT INTO transaction_number_counters (transaction_date, last_number) VALUES (?, LAST_INSERT_ID(1)) ON DUPLICATE KEY UPDATE last_number = LAST_INSERT_ID(last_number + 1)",
+		businessDate,
+	); result.Error != nil {
+		return 0, result.Error
+	}
+
+	var transactionNumber int64
+	if result := db.Raw("SELECT LAST_INSERT_ID()").Scan(&transactionNumber); result.Error != nil {
+		return 0, result.Error
+	}
+
+	return transactionNumber, nil
 }
 
 func (repo Repository) UpdateTransactionById(ctx context.Context, transaction domain.Transaction, id int64) (domain.Transaction, *domain.Error) {
