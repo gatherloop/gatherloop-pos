@@ -110,9 +110,10 @@ place where point 2 could still change the design.
 
 ### Option D — A persisted per-day sequential integer allocated from a counter table ✅ **Recommended**
 
-Add `transactions.transaction_number` and `transactions.transaction_date`, allocated at insert
-time from a one-row-per-day counter table using MySQL's atomic
-`INSERT … ON DUPLICATE KEY UPDATE last_number = LAST_INSERT_ID(last_number + 1)`.
+Add a single column, `transactions.transaction_number`, allocated at insert time from a
+one-row-per-day counter table using MySQL's atomic
+`INSERT … ON DUPLICATE KEY UPDATE last_number = LAST_INSERT_ID(last_number + 1)`. The day it
+belongs to stays derived from the existing `created_at` (D6).
 
 - ✅ Short, ordered, readable, resets daily — exactly what the slip needs.
 - ✅ Immutable once assigned: a delete leaves a gap, printed slips stay correct forever.
@@ -204,12 +205,43 @@ transactions still get a number even though the customer never sees one (they ar
 label, see `docs-site/sales/order-checkout.md`), because *staff* still find them in the same POS
 list and print the same order slips for them.
 
-**D3 — The number and its business date are persisted columns, not derived at read time.**
-`transactions.transaction_number BIGINT NOT NULL DEFAULT 0` and
-`transactions.transaction_date DATE NULL`, with
-`UNIQUE KEY uq_transactions_date_number (transaction_date, transaction_number)`.
-*Alternative rejected:* Option C — a delete silently renumbers every later transaction that day
-and invalidates printed slips.
+**D3 — The number is a persisted column; the day it belongs to is not.**
+`transactions.transaction_number BIGINT NOT NULL DEFAULT 0`, with a unique index whose date half
+is a **functional key part** over the existing `created_at` rather than a second stored column:
+
+```sql
+ALTER TABLE `transactions`
+  ADD COLUMN `transaction_number` BIGINT NOT NULL DEFAULT 0 AFTER `pager_number`;
+
+-- … backfill existing rows here (Phase 2) …
+
+ALTER TABLE `transactions`
+  ADD UNIQUE KEY `uq_transactions_date_number` ((CAST(`created_at` AS DATE)), `transaction_number`);
+```
+
+The two `ALTER`s must stay separate and in that order: adding the unique index while every
+existing row still holds the default `0` would collide on the first day that has more than one
+transaction.
+
+Functional key parts are available from MySQL 8.0.13, and CI runs `mysql:8.0`
+(`.github/workflows/e2e-main.yml:61`). The expression is deterministic because `created_at` is
+`DATETIME`, not `TIMESTAMP` — a `TIMESTAMP` column would make `CAST(… AS DATE)` session-timezone
+dependent and MySQL would reject it in an index.
+
+*Alternative rejected:* Option C — deriving the **number** too. A delete silently renumbers every
+later transaction that day and invalidates printed slips. The number is an assigned identity and
+must be frozen; the date is merely the scope it was assigned within, and that scope is already
+recorded truthfully by `created_at`.
+
+*Alternative rejected (settled in review):* a stored `transaction_date DATE` column. Its only
+real advantage is freezing the day-boundary rule against a *future change* to that rule — if the
+cutoff ever moved from midnight to, say, 04:00, a derived date would retroactively reassign every
+historical 00:00–04:00 transaction to the previous day and could collide with a number already
+issued there. The shop closes before midnight, so that rule will not change (Open Question 1,
+answered), and the column would buy nothing at the cost of a second source of truth for "which
+day is this" — one the dashboard's existing `DATE_FORMAT(created_at, …)` grouping
+(`apps/api/data/mysql/transaction_repo.go:210`) would not use anyway. See **Settled in review**
+for what revisiting this would cost.
 
 **D4 — Allocation uses a counter table and MySQL's atomic `LAST_INSERT_ID()` sequence idiom.**
 
@@ -229,7 +261,7 @@ SELECT LAST_INSERT_ID();
 
 Both statements run on the same connection inside the existing `BeginTransaction` wrapper
 (`apps/api/data/mysql/base_repo.go:19`), so the returned value is this transaction's own.
-*Alternatives rejected:* `SELECT COALESCE(MAX(transaction_number),0)+1 … WHERE transaction_date = ?` —
+*Alternatives rejected:* `SELECT COALESCE(MAX(transaction_number),0)+1 … WHERE DATE(created_at) = ?` —
 two concurrent cashiers read the same `MAX` and collide unless the whole day's range is locked;
 a per-day `AUTO_INCREMENT` — MySQL has no per-partition sequence and resetting `AUTO_INCREMENT`
 nightly is a cron job that fails silently; a DB trigger — invisible to `go test` and to anyone
@@ -242,14 +274,18 @@ output-only: the use cases read it, never set it. *Alternative rejected:* alloca
 `TransactionUsecase.CreateTransaction` — the order-app and rental paths bypass that method
 entirely and would silently get `0`.
 
-**D6 — The business date is the calendar date in the API host's local timezone, computed in Go
-and persisted.** The MySQL DSN already pins `loc=Local`
-(`apps/api/data/mysql/base_repo.go:53`), so `created_at` round-trips in host-local time; the
-business date is `createdAt.Format("2006-01-02")` in that same zone, written explicitly rather
-than recomputed with `DATE(created_at)` at read time. *Alternative rejected:* UTC — a UTC+7 shop
-would roll its numbering over at 07:00, mid-morning. A configurable cutoff hour is deferred, not
-rejected: D6's explicit `transaction_date` column is exactly the shape a cutoff would need, so
-adding one later is a change to one Go function plus a backfill.
+**D6 — The business day is the calendar day of `created_at` in the API host's local timezone, and
+the boundary is midnight.** The MySQL DSN already pins `loc=Local`
+(`apps/api/data/mysql/base_repo.go:53`), so `created_at` is written and read as host-local wall
+clock. The counter table is keyed by `createdAt.Format("2006-01-02")` in that same zone, and the
+unique index's `CAST(created_at AS DATE)` agrees with it by construction — provided the
+repository writes `created_at` itself rather than letting MySQL default it, which is what makes
+Phase 3's explicit `CreatedAt` the load-bearing detail of this decision rather than a nicety.
+
+*Alternative rejected:* UTC — a UTC+7 shop would roll its numbering over at 07:00, mid-morning.
+
+*Alternative rejected:* a configurable cutoff hour, as Toast's 4:00 a.m. default. The shop closes
+before midnight (Open Question 1, answered), so midnight and the close of business never disagree.
 
 **D7 — Deleted transactions burn their number.** No compaction, no reuse. A gap in the day's
 sequence is the correct record of a voided order, and any slip already printed stays truthful.
@@ -325,7 +361,7 @@ release (see Risks).
 | # | PR | Files | Size | Acceptance |
 |---|---|---|---|---|
 | **1** | Rename `orderNumber` → `pagerNumber` | migration `000026`, 8 Go files, `api.yaml`, 33 `libs/ui` files, 4 `pos-web-e2e` files | ~90 changed lines over 47 files | `grep -rn "orderNumber\|order_number\|OrderNumber" --include=*.go --include=*.ts --include=*.tsx --include=*.yaml --include=*.sql .` (excluding `__generated__`, `node_modules`) returns only the deliberate `print.ts` mirror from D12; `npx nx affected -t test lint` green; `pos-web-e2e` transactions specs pass locally |
-| **2** | Schema: `transaction_number`, `transaction_date`, counter table, backfill | migration `000027` up/down, `apps/api/data/mysql/transaction_entity.go`, `transaction_transformer.go`, `apps/api/domain/transaction_entity.go` | ~80 L | `make migrate-up` on a seeded DB assigns every existing transaction a number starting at 1 per calendar day; the counter table matches `MAX(transaction_number)` per day; `make migrate-down` restores the old schema |
+| **2** | Schema: `transaction_number`, counter table, backfill | migration `000027` up/down, `apps/api/data/mysql/transaction_entity.go`, `transaction_transformer.go`, `apps/api/domain/transaction_entity.go` | ~70 L | `make migrate-up` on a seeded DB assigns every existing transaction a number starting at 1 per calendar day; the counter table matches `MAX(transaction_number)` per day; `make migrate-down` restores the old schema |
 | **3** | Assign the number on create | `apps/api/data/mysql/transaction_repo.go`, a repo test | ~90 L | Two transactions created on the same day get 1 and 2; one created after the date rolls over gets 1; a deleted transaction's number is not reissued; order-app and rental checkouts get numbers without touching their use cases |
 | **4** | Contract + FE data layer | `libs/api-contract/src/api.yaml`, `apps/api/presentation/restapi/transaction_transformer.go`, `libs/ui/src/domain/entities/Transaction.ts`, `domain/repositories/transaction.ts`, `domain/usecases/transactionCreate.ts`, `data/api/transaction.ts`, `data/api/transaction.transformer.ts`, `data/mock/transaction.ts`, `src/__mocks__/api-contract.ts`, usecase tests | ~140 L | `GET /transactions` and `POST /transactions` both return `transactionNumber`; `TransactionCreateUsecase` ends in `submitSuccess` carrying it; `npx nx run ui:test` green |
 | **5** | List item number badge (FR-4 / AC-1) | `views/components/base/ListItem.tsx`, `views/components/transactions/TransactionListItem.tsx` + `.stories.tsx`, `TransactionList.tsx`, `handlers/pos/TransactionListHandler.tsx`, handler test | ~120 L | The number renders as a 60×60 badge left of the customer name on web and mobile; 1-, 2-, 3- and 4-digit stories all fit without wrapping; the five existing `thumbnailSrc` list items are visually unchanged |
@@ -347,31 +383,35 @@ label, the `transactionFormSchema` key, stories and mocks; then
 e2e files. `print.ts` keeps the wire key `orderNumber` per D12 but renames its *source* to the
 renamed field. E2E runs post-merge only, so run `pos-web-e2e` locally before merging.
 
-**Phase 2 — Schema.** Migration `000027_add_transaction_number`: add the two columns and the
-unique index, create `transaction_number_counters`, backfill existing rows with
-`ROW_NUMBER() OVER (PARTITION BY DATE(created_at) ORDER BY created_at, id)` (including
-soft-deleted rows, so the unique index holds), then **seed the counter table** from
-`SELECT transaction_date, MAX(transaction_number) … GROUP BY transaction_date`. Skipping that
-seed is the one way this phase can break production: a transaction created on deploy day would
-start again at 1 and hit the unique index. The Go entities gain the fields so nothing else
-changes behaviour.
+**Phase 2 — Schema.** Migration `000027_add_transaction_number`: add the `transaction_number`
+column and the D3 functional unique index, create `transaction_number_counters`, backfill
+existing rows with `ROW_NUMBER() OVER (PARTITION BY DATE(created_at) ORDER BY created_at, id)`
+(including soft-deleted rows, so the unique index holds), then **seed the counter table** from
+`SELECT DATE(created_at), MAX(transaction_number) FROM transactions GROUP BY DATE(created_at)`.
+Skipping that seed is the one way this phase can break production: a transaction created on
+deploy day would start again at 1 and hit the unique index. Add the unique index *after* the
+backfill, or every pre-existing row's `transaction_number = 0` collides on day one. The Go
+entities gain the field so nothing else changes behaviour.
 
 **Phase 3 — Assignment.** In `Repository.CreateTransaction`, before the `Create`, derive the
-business date from the transaction's `CreatedAt`, run the D4 allocation, and set both fields on
-the row. Allocate as late as possible in the enclosing DB transaction to shorten the counter row
-lock.
+business date from the transaction's `CreatedAt`, run the D4 allocation, and set
+`transaction_number` on the row. Allocate as late as possible in the enclosing DB transaction to
+shorten the counter row lock.
 
-One non-obvious detail: only the rental path sets `CreatedAt`
-(`CheckoutRentals`, `apps/api/domain/rental_usecase.go`). The POS path
-(`ToTransaction` in `apps/api/presentation/restapi/transaction_transformer.go:155`) and the
-order-app path both leave it zero and let MySQL's `DEFAULT CURRENT_TIMESTAMP` fill `created_at`.
-If Go computed `transaction_date` from its own `time.Now()` while MySQL wrote `created_at` from
-the server clock, the two could land on **different dates** across the midnight boundary. So when
-`CreatedAt` is zero the repository sets it explicitly to `time.Now()` and derives the date from
-that same value — one instant, two consistent columns.
+**The load-bearing detail of this phase** is that the repository must write `created_at` itself.
+Only the rental path sets `CreatedAt` today (`CheckoutRentals`,
+`apps/api/domain/rental_usecase.go`); the POS path (`ToTransaction` in
+`apps/api/presentation/restapi/transaction_transformer.go:155`) and the order-app path both leave
+it zero and let MySQL's `DEFAULT CURRENT_TIMESTAMP` fill it. Since D3 derives the number's
+uniqueness scope from `CAST(created_at AS DATE)` while the counter is keyed by a date Go
+computed, the two must come from the same instant — otherwise a create at 23:59:59.9 can take
+number 1 from a counter keyed to tomorrow while landing on a row whose `created_at` says today,
+and collide with today's existing number 1. So when `CreatedAt` is zero the repository sets it to
+`time.Now()` and derives the counter key from that same value.
 
-Tests cover: sequential allocation, rollover to a new date, gap-after-delete, agreement between
-`created_at` and `transaction_date`, and all three creation paths.
+Tests cover: sequential allocation, rollover to a new day, gap-after-delete, that
+`CAST(created_at AS DATE)` matches the counter row the number came from, and all three creation
+paths.
 
 **Phase 4 — Contract and data layer.** `transactionNumber` becomes required on `Transaction`
 only (D10). `data/api/transaction.ts`'s `createTransaction` stops discarding the response and
@@ -444,10 +484,13 @@ suites; Playwright runs post-merge (`e2e-main.yml`). Phases 1, 5 and 7 all touch
 surfaces (a label, a list item's DOM, the search box). *Mitigation:* run `pos-web-e2e` locally on
 those three phases.
 
-**R6 — A host clock or timezone change shifts the day boundary.** The business date is derived
-from host-local time (D6). Moving the API host to a different `TZ` would split or merge a day's
-numbering. *Mitigation:* the persisted `transaction_date` column means historical rows are never
-retroactively renumbered; only the day of the change is affected.
+**R6 — A host clock or timezone change shifts the day boundary.** The business day is derived
+from host-local time (D6). Moving the API host to a different `TZ` changes where midnight falls
+for *new* rows. *Mitigation, and the reason this is mild:* `created_at` is a `DATETIME`, which
+stores wall-clock digits rather than an instant, so a `TZ` change does **not** re-interpret rows
+already written — `CAST(created_at AS DATE)` returns the same day for them before and after.
+Only transactions created around the moment of the change are affected, and the unique index
+would reject a genuine collision rather than let a duplicate number through.
 
 **R7 — Phase 1 touches 47 files and some occurrences are string literals.** `'Order Number'` (the
 form label and the e2e selector) and `ORDER NUMBER` (the footer label) do not fail `tsc` if
@@ -462,8 +505,10 @@ green build.
   order number — customers are found by table label
   (`docs-site/sales/order-checkout.md`). Order-app transactions still *get* a number (D2), staff
   just do not surface it to the customer.
-- **A configurable business-day cutoff hour.** Midnight for now; D6 explains why the chosen schema
-  makes this a small later change.
+- **A configurable business-day cutoff hour.** Midnight, permanently, because the shop closes
+  before it (Open Question 1, answered). Unlike the other items here this one is not merely
+  deferred — D3 deliberately trades away the cheap path to it; **Settled in review** records what
+  reversing that would cost, should the shop's hours ever change.
 - **A customer-facing "now serving" display.** The number is designed to support one, but nothing
   here builds one.
 - **Sorting the transaction list by number.** `ToSortByColumn` supports only `created_at`, and
@@ -475,9 +520,10 @@ green build.
 
 ## Open Questions
 
-1. **Does the shop ever serve past midnight?** If a 00:30 sale should belong to the previous
-   night, D6's midnight boundary is wrong and a cutoff hour should be part of Phase 2 rather than
-   deferred. *Decides:* whether Phase 2 ships one extra column-valued constant.
+1. ~~**Does the shop ever serve past midnight?**~~ **Answered: no — the shop always closes before
+   midnight.** Midnight and close of business never disagree, so the business day is the calendar
+   day and no cutoff hour is needed. This is what allows D3 to derive the day from `created_at`
+   instead of storing it; see **Settled in review**.
 2. **Is any installed `pos-mobile` build in daily use?** If yes, Phase 1 needs a preceding
    compatibility phase where the API accepts both `orderNumber` and `pagerNumber` on
    `TransactionRequest` for one release. If the mobile app is rebuilt from the monorepo alongside
@@ -519,6 +565,42 @@ green build.
 4. No search of the codebase finds `orderNumber` / `order_number` outside the single documented
    printer-compatibility mirror, and that mirror is gone once Phase 8 lands.
 5. The transaction `id` still appears nowhere on any printed document.
+
+---
+
+## Settled in review
+
+**S1 — `transaction_date` dropped; the day is derived from `created_at` (amends D3, D6; Open
+Question 1 answered).** The first draft added a stored `transaction_date DATE` column alongside
+`transaction_number`. Review asked why `created_at` would not do, and it does. Two of the three
+justifications did not survive:
+
+- *Midnight skew between Go and MySQL* — real in the first draft, but dissolved by Phase 3's
+  explicit `CreatedAt` write, which was already added for other reasons. Once one instant
+  produces both the row and the counter key, `CAST(created_at AS DATE)` **is** the business date.
+- *The unique index needs a date column* — it does not. MySQL 8.0.13+ functional key parts index
+  the expression directly, and `created_at` being `DATETIME` rather than `TIMESTAMP` makes that
+  expression deterministic and therefore indexable.
+
+The third justification was real but conditional: a stored column **freezes** the day-boundary
+rule, so a later move to a 4:00 a.m. cutoff would renumber nothing historical. With the shop
+closing before midnight, that rule will not change, and the column would have left the codebase
+with two sources of truth for "which day is this" — the new column, and the
+`DATE_FORMAT(created_at, …)` the dashboard already uses
+(`apps/api/data/mysql/transaction_repo.go:210`).
+
+**Cost of reversing this, if the shop's hours ever change:** add the `transaction_date` column,
+backfill it from `DATE(created_at)` (correct for every row issued under the midnight rule), swap
+the functional unique index for a plain one over the column, and change the one Go function that
+computes the counter key. One migration and one function — not free, but not a rewrite. The
+thing that makes it safe is that the backfill reproduces history exactly, which is only true
+while the old rule was midnight.
+
+*Also rejected in the same review:* a `DATE AS (DATE(created_at)) STORED` generated column, as a
+middle ground needing no Go code. It does not give the freeze property that is the stored
+column's whole point — altering a generated column's expression makes MySQL rebuild the table and
+recompute every existing row, which is precisely the retroactive reassignment it would be there
+to prevent.
 
 ---
 
