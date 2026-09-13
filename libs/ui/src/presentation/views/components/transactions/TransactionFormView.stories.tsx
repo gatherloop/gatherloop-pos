@@ -8,14 +8,14 @@ import { mockVariants } from '../../../../../.storybook/mocks/mockData';
 
 const defaultValues: TransactionForm = {
   name: 'Order #001',
-  orderNumber: 1,
+  pagerNumber: 1,
   transactionItems: [],
   transactionCoupons: [],
 };
 
 const filledValues: TransactionForm = {
   name: 'Order #001',
-  orderNumber: 1,
+  pagerNumber: 1,
   transactionItems: [
     {
       id: 1,

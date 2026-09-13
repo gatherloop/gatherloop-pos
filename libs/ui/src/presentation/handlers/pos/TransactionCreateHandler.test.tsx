@@ -114,7 +114,7 @@ describe('TransactionCreateHandler', () => {
 
     it('should show order number input field', async () => {
       render(<TransactionCreateHandler {...createProps()} />);
-      expect(screen.getByRole('textbox', { name: 'Order Number' })).toBeTruthy();
+      expect(screen.getByRole('textbox', { name: 'Pager Number' })).toBeTruthy();
       await act(async () => {
         await flushPromises();
       });

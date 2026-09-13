@@ -3802,7 +3802,7 @@ components:
         - createdAt
         - name
         - source
-        - orderNumber
+        - pagerNumber
         - total
         - totalIncome
         - paidAmount
@@ -3815,7 +3815,7 @@ components:
         createdAt:
           type: string
           format: date-time
-        orderNumber:
+        pagerNumber:
           type: integer
           format: int64
         name:
@@ -3854,13 +3854,13 @@ components:
       type: object
       required:
         - name
-        - orderNumber
+        - pagerNumber
         - transactionItems
         - transactionCoupons
       properties:
         name:
           type: string
-        orderNumber:
+        pagerNumber:
           type: integer
           format: int64
         transactionItems:

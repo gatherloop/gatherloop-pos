@@ -24,7 +24,7 @@ export type TransactionDetailProps = {
   name: string;
   source: TransactionSource;
   table?: PublicTable | null;
-  orderNumber: number;
+  pagerNumber: number;
   createdAt: string;
   paidAt?: string;
   walletName?: string;
@@ -43,7 +43,7 @@ export const TransactionDetail = ({
   name,
   source,
   table,
-  orderNumber,
+  pagerNumber,
   createdAt,
   paidAt,
   walletName,
@@ -99,14 +99,14 @@ export const TransactionDetail = ({
           </Card.Header>
         </Card>
 
-        {orderNumber > 0 && (
+        {pagerNumber > 0 && (
           <Card>
             <Card.Header padding="$2.5">
               <XStack gap="$2" alignItems="center">
                 <ConciergeBell size="$2" />
                 <YStack>
-                  <Paragraph size="$1">Order Number</Paragraph>
-                  <Paragraph size="$2">{orderNumber}</Paragraph>
+                  <Paragraph size="$1">Pager Number</Paragraph>
+                  <Paragraph size="$2">{pagerNumber}</Paragraph>
                 </YStack>
               </XStack>
             </Card.Header>

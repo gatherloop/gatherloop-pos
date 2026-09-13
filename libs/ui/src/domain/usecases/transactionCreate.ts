@@ -42,7 +42,7 @@ export class TransactionCreateUsecase extends Usecase<
       transactionId: null,
       values: {
         name: '',
-        orderNumber: 0,
+        pagerNumber: 0,
         transactionItems: [],
         transactionCoupons: [],
       },

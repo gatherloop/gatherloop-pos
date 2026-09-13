@@ -126,7 +126,7 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 			Name:               customer.Name,
 			Source:             TransactionSourceOrder,
 			CartId:             &cart.Id,
-			OrderNumber:        0,
+			PagerNumber:        0,
 			Total:              total,
 			TransactionItems:   transactionItems,
 			TransactionCoupons: []TransactionCoupon{},

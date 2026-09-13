@@ -93,7 +93,7 @@ func (usecase RentalUsecase) CheckoutRentals(ctx context.Context, rentalIds []in
 	transactionData := Transaction{
 		CreatedAt:   checkoutAt,
 		Name:        "",
-		OrderNumber: 0,
+		PagerNumber: 0,
 	}
 
 	err := usecase.rentalRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {

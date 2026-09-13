@@ -236,7 +236,7 @@ export interface Transaction {
 
 export interface CreateTransactionInput {
   name: string;
-  orderNumber: number;
+  pagerNumber: number;
   transactionItems: Array<{
     variantId: number;
     amount: number;

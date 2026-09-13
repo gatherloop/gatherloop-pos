@@ -68,7 +68,7 @@ const transactionCreateCtrl = {
     transactionId: null as number | null,
     values: {
       name: 'Table 1',
-      orderNumber: 1,
+      pagerNumber: 1,
       get transactionItems() {
         return transactionItemsValue;
       },

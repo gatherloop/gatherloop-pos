@@ -51,7 +51,7 @@ const buildTransaction = (
   name: 'Table 1',
   source: 'pos',
   table: null,
-  orderNumber: 1,
+  pagerNumber: 1,
   total: 30000,
   totalIncome: 30000,
   paidAt: null,
