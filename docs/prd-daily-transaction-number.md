@@ -164,6 +164,114 @@ never uses it (wallets, categories, products, variants and budgets all do). That
 number badge: a 60×60 rounded tile showing `#42` at display size, with the customer name
 remaining the `title` beside it.
 
+#### What it looks like
+
+**Today** — the number the staff member needs is nowhere, and the pager number is a footer chip
+the same size as everything else:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                                                                     ⋮   │
+│  Andi                                                                   │
+│  Rp. 87.000                                                             │
+│  ─────────────────────────────────────────────────────────────────────  │
+│  (🗓) TRANSACTION DATE   (💵) PAYMENT DATE    (👛) WALLET   (🔔) ORDER NUMBER │
+│       13/09 - 14:32           13/09 - 14:35        Cash          7      │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+**After** — the leading slot carries the number; everything else stays exactly where it is:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  ╭────────╮                                                         ⋮   │
+│  │        │  Andi                                                       │
+│  │  #42   │  Rp. 87.000                                                 │
+│  │        │                                                             │
+│  ╰────────╯                                                             │
+│  ─────────────────────────────────────────────────────────────────────  │
+│  (🗓) TRANSACTION DATE   (💵) PAYMENT DATE    (👛) WALLET   (🔔) PAGER NUMBER │
+│       13/09 - 14:32           13/09 - 14:35        Cash          7      │
+└─────────────────────────────────────────────────────────────────────────┘
+     ▲                          ▲                              ▲
+     └ new: 60×60 badge          └ unchanged                    └ relabelled (FR-7)
+```
+
+**Scanning a list** is the case that matters — this is the view a staff member holding a slip
+that says `#42` is looking at:
+
+```
+┌──────────────────────────────────────────────┐
+│ ╭──────╮                                 ⋮   │   ← unpaid (red theme)
+│ │ #44  │  Siti                               │
+│ ╰──────╯  Rp. 35.000                         │
+│ ──────────────────────────────────────────── │
+│ (🗓) 13/09 - 14:51   (🔔) PAGER NUMBER  3     │
+└──────────────────────────────────────────────┘
+┌──────────────────────────────────────────────┐
+│ ╭──────╮                                 ⋮   │   ← unpaid, from the order app
+│ │ #43  │  Budi                               │
+│ ╰──────╯  Rp. 52.000                         │
+│ ╰──────╯  ( Order )                          │
+│ ──────────────────────────────────────────── │
+│ (🗓) 13/09 - 14:47   (📍) TABLE  A1           │
+└──────────────────────────────────────────────┘
+┌──────────────────────────────────────────────┐
+│ ╭──────╮                                 ⋮   │   ← paid (gray theme)
+│ │ #42  │  Andi                               │
+│ ╰──────╯  Rp. 87.000                         │
+│ ──────────────────────────────────────────── │
+│ (🗓) 13/09 - 14:32   (👛) WALLET  Cash        │
+└──────────────────────────────────────────────┘
+```
+
+The number column reads top-to-bottom as a single scannable strip, which the name column never
+could — names vary in length, start with any letter, and repeat.
+
+**Digit ramp.** The tile is fixed at 60×60, so the type shrinks rather than the box. Four digits
+is the designed limit (Open Question 5):
+
+```
+╭────────╮   ╭────────╮   ╭────────╮   ╭────────╮
+│   #7   │   │  #42   │   │  #128  │   │ #1024  │
+╰────────╯   ╰────────╯   ╰────────╯   ╰────────╯
+   1 digit      2 digits     3 digits     4 digits
+```
+
+**Compact / mobile width.** No layout change is needed: the badge occupies the same 60×60 box the
+thumbnail already occupies in `ProductListItem` and `VariantListItem` on mobile, and the footer
+chips already `flexWrap` (`XStack gap="$3" flexWrap="wrap"` in `ListItem.tsx`), so they reflow
+under the badge as they do today.
+
+```
+┌────────────────────────────────┐
+│ ╭──────╮                   ⋮   │
+│ │ #42  │  Andi                 │
+│ ╰──────╯  Rp. 87.000           │
+│ ────────────────────────────── │
+│ (🗓) TRANSACTION DATE          │
+│      13/09 - 14:32             │
+│ (👛) WALLET   Cash             │
+└────────────────────────────────┘
+```
+
+#### Badge spec
+
+| Property | Value | Why |
+|---|---|---|
+| Size | 60×60 | Matches the `thumbnailSrc` `Image` exactly, so no sibling list item shifts |
+| Corner | `borderRadius="$5"` | Same token the thumbnail `Image` uses |
+| Background | `$color5` within the item's existing theme | `ListItem` is already themed `gray` when paid, `red` when unpaid — the badge inherits that, so it carries payment state too |
+| Text | `$color12`, `#` prefix at the same size | Contrast against `$color5` in both light and dark |
+| Font size | `$9` / `$8` / `$7` / `$6` for 1 / 2 / 3 / 4 digits | Fixed box, shrinking type |
+| Position | `leading` prop on `ListItem` | See D9 |
+
+The background and font tokens are a **starting point to tune in Storybook**, not a settled
+choice — the one thing Phase 5 must not change is the 60×60 box, because that is what keeps every
+other list item's alignment intact. The red-when-unpaid inheritance in particular is worth a look
+on a real screen: it may read as an error state rather than a queue position, in which case the
+badge should take a neutral tone and leave payment state to the card theme alone.
+
 ### FR-5 — The number appears on the transaction detail screen
 
 As a card alongside "Customer Name" and "Order Number" in `TransactionDetail.tsx`, using the same
@@ -425,8 +533,10 @@ entirely, so `src/__mocks__/api-contract.ts` may need the new field.
 the thumbnail uses, with `thumbnailSrc` left intact. A `TransactionNumberBadge` component renders
 `#{n}` on a themed tile, sizing the font down at 3 and 4 digits. `TransactionListItem` passes it
 as `leading`; the pager number stays exactly where it is, as a footer item relabelled
-`PAGER NUMBER` in Phase 1. Stories cover 1/2/3/4 digits, paid and unpaid themes, and the
-`order` source badge case.
+`PAGER NUMBER` in Phase 1. FR-4 has the mockups and the badge spec; the four existing stories in
+`TransactionListItem.stories.tsx` (`Paid`, `Unpaid`, `HighValue`, `FromOrderApp`) already cover
+the theme and source cases, so this phase adds the digit ramp — one story per 1/2/3/4 digits —
+and checks the five existing `thumbnailSrc` consumers are pixel-unchanged.
 
 **Phase 6 — Detail and print.** A `Card` in `TransactionDetail.tsx` matching its siblings; a
 `transactionNumber` field on both print payload types; `buildOrderSlipPayload` passes it through;
