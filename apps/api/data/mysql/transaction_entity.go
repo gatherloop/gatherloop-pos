@@ -42,6 +42,7 @@ type Transaction struct {
 	CartId             *int64
 	Cart               *Cart
 	PagerNumber        int64
+	TransactionNumber  int64
 	WalletId           *int64
 	Wallet             *Wallet
 	Total              float32
