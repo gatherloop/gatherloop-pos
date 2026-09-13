@@ -364,7 +364,7 @@ export const mockTransaction: Transaction = {
   name: 'Order #001',
   source: 'pos',
   table: null,
-  orderNumber: 1,
+  pagerNumber: 1,
   total: 70000,
   totalIncome: 60000,
   transactionItems: [mockTransactionItem],
@@ -382,7 +382,7 @@ export const mockTransactions: Transaction[] = [
     name: 'Budi',
     source: 'order',
     table: { id: 1, label: 'A1', floorNumber: 1 },
-    orderNumber: 0,
+    pagerNumber: 0,
     total: 40000,
     totalIncome: 35000,
     transactionItems: [

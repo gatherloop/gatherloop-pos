@@ -100,7 +100,7 @@ export const transactionList = {
 
 export const transactionForm = {
   customerNameInput: (page: Page) => page.getByLabel('Customer Name'),
-  orderNumberInput: (page: Page) => page.getByLabel('Order Number'),
+  pagerNumberInput: (page: Page) => page.getByLabel('Pager Number'),
   productSearchInput: (page: Page) =>
     page.getByPlaceholder('Search Products by Name'),
   productCard: (page: Page, name: string) =>

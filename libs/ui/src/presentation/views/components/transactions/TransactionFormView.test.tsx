@@ -8,14 +8,14 @@ import { mockVariants } from '../../../../../.storybook/mocks/mockData';
 
 const emptyValues: TransactionForm = {
   name: '',
-  orderNumber: 1,
+  pagerNumber: 1,
   transactionItems: [],
   transactionCoupons: [],
 };
 
 const filledValues: TransactionForm = {
   name: 'Order #001',
-  orderNumber: 1,
+  pagerNumber: 1,
   transactionItems: [
     {
       id: 1,
@@ -106,7 +106,7 @@ describe('TransactionFormView', () => {
         screen.queryByRole('textbox', { name: 'Customer Name' })
       ).toBeNull();
       expect(
-        screen.queryByRole('textbox', { name: 'Order Number' })
+        screen.queryByRole('textbox', { name: 'Pager Number' })
       ).toBeNull();
       expect(screen.queryByRole('button', { name: 'Submit' })).toBeNull();
       expect(screen.queryByText(/View Cart/)).toBeNull();
@@ -128,7 +128,7 @@ describe('TransactionFormView', () => {
         screen.getByRole('textbox', { name: 'Customer Name' })
       ).toBeTruthy();
       expect(
-        screen.getByRole('textbox', { name: 'Order Number' })
+        screen.getByRole('textbox', { name: 'Pager Number' })
       ).toBeTruthy();
       expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
     });

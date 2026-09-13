@@ -44,7 +44,7 @@ const buildSource = (
 ): OrderSlipSource => ({
   createdAt: '17/06/2026 10:00',
   name: 'Table 1',
-  orderNumber: 1,
+  pagerNumber: 1,
   items: items.map(({ productName, station }) => ({
     variant: buildVariant(productName, station),
     price: 10000,

@@ -9,7 +9,7 @@ const meta: Meta<typeof TransactionDetail> = {
     name: mockTransaction.name,
     source: mockTransaction.source,
     table: mockTransaction.table,
-    orderNumber: mockTransaction.orderNumber,
+    pagerNumber: mockTransaction.pagerNumber,
     createdAt: mockTransaction.createdAt,
     paidAt: mockTransaction.paidAt ?? undefined,
     walletName: mockTransaction.wallet?.name,
@@ -37,7 +37,7 @@ export const FromOrderApp: Story = {
   args: {
     source: 'order',
     table: { id: 1, label: 'A1', floorNumber: 1 },
-    orderNumber: 0,
+    pagerNumber: 0,
   },
 };
 

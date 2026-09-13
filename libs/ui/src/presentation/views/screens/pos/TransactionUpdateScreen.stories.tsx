@@ -7,7 +7,7 @@ import { mockProducts, mockTransaction } from '../../../../../.storybook/mocks/m
 
 const defaultValues: TransactionForm = {
   name: mockTransaction.name,
-  orderNumber: mockTransaction.orderNumber,
+  pagerNumber: mockTransaction.pagerNumber,
   transactionItems: [],
   transactionCoupons: [],
 };

@@ -9,7 +9,7 @@ const defaultArgs = {
   name: mockTransaction.name,
   source: mockTransaction.source,
   table: mockTransaction.table,
-  orderNumber: mockTransaction.orderNumber,
+  pagerNumber: mockTransaction.pagerNumber,
   total: mockTransaction.total,
   transactionItems: mockTransaction.transactionItems,
   transactionCoupons: mockTransaction.transactionCoupons,

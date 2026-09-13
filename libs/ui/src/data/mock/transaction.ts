@@ -34,7 +34,7 @@ const initialTransactions: Transaction[] = [
     name: 'Transaction 1',
     source: 'pos',
     table: null,
-    orderNumber: 1,
+    pagerNumber: 1,
     total: 100000,
     totalIncome: 90000,
     transactionItems: [
@@ -61,7 +61,7 @@ const initialTransactions: Transaction[] = [
     name: 'Transaction 2',
     source: 'order',
     table: { id: 1, label: 'A1', floorNumber: 1 },
-    orderNumber: 0,
+    pagerNumber: 0,
     total: 200000,
     totalIncome: 180000,
     transactionItems: [],
@@ -143,7 +143,7 @@ export class MockTransactionRepository implements TransactionRepository {
       name: formValues.name,
       source: 'pos',
       table: null,
-      orderNumber: formValues.orderNumber,
+      pagerNumber: formValues.pagerNumber,
       total: 0,
       totalIncome: 0,
       transactionItems: [],
@@ -165,7 +165,7 @@ export class MockTransactionRepository implements TransactionRepository {
     this.transactions[idx] = {
       ...this.transactions[idx],
       name: formValues.name,
-      orderNumber: formValues.orderNumber,
+      pagerNumber: formValues.pagerNumber,
     };
   }
 

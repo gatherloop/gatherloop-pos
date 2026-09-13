@@ -161,7 +161,7 @@ describe('TransactionUpdateHandler', () => {
       await act(async () => {
         await flushPromises();
       });
-      expect(screen.getByRole('textbox', { name: 'Order Number' })).toBeTruthy();
+      expect(screen.getByRole('textbox', { name: 'Pager Number' })).toBeTruthy();
     });
   });
 

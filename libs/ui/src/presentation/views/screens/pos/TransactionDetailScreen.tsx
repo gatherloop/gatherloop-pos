@@ -12,7 +12,7 @@ export type TransactionDetailScreenProps = {
   name: string;
   source: TransactionSource;
   table?: PublicTable | null;
-  orderNumber: number;
+  pagerNumber: number;
   total: number;
   transactionItems: TransactionItem[];
   transactionCoupons: TransactionCoupon[];
@@ -37,7 +37,7 @@ export const TransactionDetailScreen = (
           name={props.name}
           source={props.source}
           table={props.table}
-          orderNumber={props.orderNumber}
+          pagerNumber={props.pagerNumber}
           total={props.total}
           transactionItems={props.transactionItems}
           transactionCoupons={props.transactionCoupons}

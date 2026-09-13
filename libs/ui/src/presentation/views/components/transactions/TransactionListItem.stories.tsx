@@ -9,7 +9,7 @@ const meta: Meta<typeof TransactionListItem> = {
     name: 'Order #001',
     source: 'pos',
     table: null,
-    orderNumber: 1,
+    pagerNumber: 1,
     total: 70000,
     createdAt: '2024-01-20T10:00:00.000Z',
     paidAt: '2024-01-20T10:30:00.000Z',
@@ -38,7 +38,7 @@ export const Unpaid: Story = {
 export const HighValue: Story = {
   args: {
     name: 'Bulk Order #099',
-    orderNumber: 99,
+    pagerNumber: 99,
     total: 350000,
     walletName: 'Bank Transfer',
   },
@@ -49,7 +49,7 @@ export const FromOrderApp: Story = {
     name: 'Budi',
     source: 'order',
     table: { id: 1, label: 'A1', floorNumber: 1 },
-    orderNumber: 0,
+    pagerNumber: 0,
   },
 };
 

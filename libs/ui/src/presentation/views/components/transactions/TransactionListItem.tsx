@@ -19,7 +19,7 @@ export type TransactionListItemProps = {
   name: string;
   source: TransactionSource;
   table?: PublicTable | null;
-  orderNumber: number;
+  pagerNumber: number;
   total: number;
   createdAt: string;
   paidAt?: string;
@@ -50,7 +50,7 @@ export const TransactionListItem = ({
   name,
   source,
   table,
-  orderNumber,
+  pagerNumber,
   total,
   createdAt,
   paidAt,
@@ -139,9 +139,9 @@ export const TransactionListItem = ({
         },
         {
           icon: ConciergeBell,
-          label: 'ORDER NUMBER',
-          value: orderNumber.toString(),
-          isShown: orderNumber > 0,
+          label: 'PAGER NUMBER',
+          value: pagerNumber.toString(),
+          isShown: pagerNumber > 0,
         },
         {
           icon: MapPin,

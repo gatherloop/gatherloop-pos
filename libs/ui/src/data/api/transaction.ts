@@ -102,7 +102,7 @@ export class ApiTransactionRepository implements TransactionRepository {
     const body = toApiTransaction(formValues);
     return transactionCreate({
       name: body.name,
-      orderNumber: body.orderNumber,
+      pagerNumber: body.pagerNumber,
       transactionItems: body.transactionItems.map((item) => ({
         amount: item.amount,
         variantId: item.variantId,
