@@ -283,12 +283,16 @@ page still open in a background tab (or a bookmark from a prior session) lands
 somewhere useful rather than on a 404. `CheckoutScreen`, `CheckoutHandler`,
 `app/order/Checkout.tsx` and `CheckoutSummaryView` are deleted.
 
-### FR-7 — The checkout feature flag gates the cart CTA
+### FR-7 — The checkout feature flag is deleted
 
-`NEXT_PUBLIC_ORDER_CHECKOUT_ENABLED` moves from the checkout composition root to
-the cart's. When it is not `'true'`, the cart renders its footer CTA disabled
-with the existing copy "Checkout belum tersedia" as helper text, instead of
-routing the guest to a page that says it. No other behaviour changes.
+`NEXT_PUBLIC_ORDER_CHECKOUT_ENABLED` and everything it gates are removed, not
+moved: the `enabled` prop on `CheckoutHandler`, `CheckoutScreen`'s `disabled`
+variant and its "Checkout belum tersedia" copy, the read in
+`app/order/Checkout.tsx:39`, the entry in `apps/order-web/.env.example:23`, the
+override in `apps/order-web-e2e/playwright.config.ts:30`, and the already-dead
+`checkout.disabledTitle` selector (`apps/order-web-e2e/src/utils/selectors.ts:83`,
+referenced by no spec). The cart's CTA is unconditional whenever the cart is
+non-empty.
 
 ### FR-8 — Brand header
 
@@ -396,6 +400,29 @@ rather than pre-built.
 states.** A guest whose QR fails to resolve is exactly the guest who most needs
 to see whose app they are in. `TableResolveScreen`'s five variants all get the
 header; only the table line is conditional.
+
+**D13 — The checkout kill switch is deleted, not relocated.** `NEXT_PUBLIC_ORDER_CHECKOUT_ENABLED`
+existed to keep a half-built checkout unreachable while
+[`docs/prd-order-checkout-qris-doku.md`](./prd-order-checkout-qris-doku.md)
+landed across thirteen phases (its **D20**). That job is done: checkout has
+shipped, the flag is `true` in production, and the only thing it can still do is
+hide the cart's one action behind an env var nobody intends to flip. Keeping it
+would mean carrying the disabled copy, a second CTA state, a story and a test
+through every future change to the cart footer. **This supersedes D20 of
+`prd-order-checkout-qris-doku.md`.**
+
+*Alternative rejected:* moving the flag to the cart composition root (the
+original FR-7). It preserves a kill switch nobody has used since launch, at the
+cost of a permanent branch in the screen that most of this PRD is rewriting.
+
+*Consequence, stated plainly:* disabling guest checkout in an incident becomes a
+revert-and-deploy rather than an env flip. That is the honest trade — and the
+env-var switch was never a clean one anyway, since it left the guest on a cart
+whose only button says "not available" with no explanation and no alternative
+path. If a real kill switch is wanted later it belongs on the API
+(`POST /carts/current/checkout` returning a typed "ordering is closed" error the
+app can render), where it can also stop a payment already in flight. Out of
+scope here.
 
 ## Phased plan
 
@@ -556,17 +583,15 @@ Phase 5 — but they are testable, storybook-able and e2e-able on their own.
 
 **Frontend**
 - `libs/ui/src/presentation/handlers/order/CartHandler.tsx`: takes
-  `checkoutUsecase` and `enabled`; owns `useCheckout`; the footer CTA dispatches
-  `ASK_NAME`; renders `CustomerNameSheet` from the `askingName` state; a
-  `useEffect` on the `created` state pushes `/t/{tableCode}/status?ref={reference}`
-  (D7).
+  `checkoutUsecase`; owns `useCheckout`; the footer CTA dispatches `ASK_NAME`;
+  renders `CustomerNameSheet` from the `askingName` state; a `useEffect` on the
+  `created` state pushes `/t/{tableCode}/status?ref={reference}` (D7).
 - `libs/ui/src/presentation/views/screens/order/CartScreen.tsx`: CTA label
-  becomes `Bayar dengan QRIS · {total}`; disabled + "Checkout belum tersedia"
-  helper text when `isCheckoutEnabled` is false; new props for the name sheet
+  becomes `Bayar dengan QRIS · {total}`; new props for the name sheet
   (`nameSheet: CustomerNameSheetProps | null`) and the checkout error message.
+  No enabled/disabled branch (D13).
 - `libs/ui/src/app/order/Cart.tsx`: news up `ApiPaymentRepository` and
-  `CheckoutUsecase`, reads `NEXT_PUBLIC_ORDER_CHECKOUT_ENABLED`, accepts
-  `customerName`.
+  `CheckoutUsecase`, accepts `customerName`. Reads no env var.
 - `apps/order-web/src/pages/t/[code]/cart/index.tsx`: `getServerSideProps` adds
   `fetchCurrentName()` to its `Promise.all` (D8).
 - Delete `CheckoutScreen.tsx`, `CheckoutScreen.stories.tsx`,
@@ -575,8 +600,14 @@ Phase 5 — but they are testable, storybook-able and e2e-able on their own.
   `apps/order-web/src/pages/t/[code]/checkout.tsx`, and their barrel exports.
 - `apps/order-web/next.config.js`: permanent redirect
   `/t/:code/checkout` → `/t/:code/cart` (D9).
-- `CartScreen.stories.tsx`: checkout-enabled, checkout-disabled, name-sheet-open,
-  creating-payment, checkout-error.
+- Flag removal (D13): drop `NEXT_PUBLIC_ORDER_CHECKOUT_ENABLED` from
+  `apps/order-web/.env.example` (the variable and its four comment lines) and
+  from `apps/order-web-e2e/playwright.config.ts`'s `webServer.env`. Nothing in
+  `apps/api`, `vercel.json` or the deploy workflows reads it. The variable may
+  stay set on the running hosts; it becomes inert, and removing it there is a
+  deploy-time cleanup, not a code change.
+- `CartScreen.stories.tsx`: idle CTA, name-sheet-open, creating-payment,
+  checkout-error.
 - `CartHandler.test.tsx`: pressing the CTA opens the sheet pre-filled; submitting
   an empty name shows the validation error and creates nothing; a valid submit
   calls `MockPaymentRepository.checkout` and navigates with the returned
@@ -585,13 +616,13 @@ Phase 5 — but they are testable, storybook-able and e2e-able on their own.
 **e2e** (`apps/order-web-e2e`)
 - `src/utils/selectors.ts`: `cartScreen.checkoutButton` matches
   `/^Bayar dengan QRIS/`; the name-sheet and QR selectors move from the
-  `checkout` group to `cartScreen`/`orderStatus`; drop `checkout.summaryTitle`.
+  `checkout` group to `cartScreen`/`orderStatus`; drop `checkout.summaryTitle`
+  and `checkout.disabledTitle` (already referenced by no spec).
 - `src/checkout.spec.ts`: after opening the cart, assert the CTA, fill the name,
   wait for `POST /carts/current/checkout`, assert the URL is
   `/t/{code}/status?ref={reference}` and the QR is visible, `markPaid`, assert
   the prepared-order screen **without** a second navigation, then reload and
   re-assert. Add a case that reloads while the QR is on screen.
-- The disabled-checkout assertion moves to the cart page.
 
 **Acceptance**
 - Cart → name sheet → QR, with exactly one navigation and no order recap in
@@ -601,8 +632,10 @@ Phase 5 — but they are testable, storybook-able and e2e-able on their own.
 - A payment failure keeps the guest on the cart with a retry; retrying succeeds.
 - Paying reaches the prepared-order screen in place, on the same URL.
 - `/t/{code}/checkout` redirects to the cart.
-- With `NEXT_PUBLIC_ORDER_CHECKOUT_ENABLED` unset, the cart CTA is disabled and
-  explains why.
+- `grep -rn ORDER_CHECKOUT_ENABLED` returns only `docs/` history — no source, no
+  config, no e2e.
+- The e2e suite passes with no `NEXT_PUBLIC_ORDER_CHECKOUT_ENABLED` in
+  `playwright.config.ts`.
 
 **Estimated diff:** ~350–450 LoC, about a third of it deletions.
 
@@ -670,6 +703,13 @@ locally on this phase.
   holds the items and pressing pay again returns the *same* pending payment
   (`payment_usecase.go:85-99`), so they can recover — but the path is not
   signposted. See Open Question 1.
+- **No env-var kill switch after Phase 5 (D13).** Turning guest checkout off in
+  an incident becomes a revert of the Phase 5 PR and a redeploy, rather than
+  flipping `NEXT_PUBLIC_ORDER_CHECKOUT_ENABLED` and restarting. The window that
+  matters is minutes, not seconds — the guest-facing failure mode is a payment
+  that can't be created, which already surfaces as the cart's error-and-retry
+  state. An API-side switch is the better version of this and is named in D13 as
+  out of scope.
 - **The e2e suite runs post-merge.** Phase 5 rewrites most of `checkout.spec.ts`;
   it has to be run locally before merge or the break is found on `main`.
 
