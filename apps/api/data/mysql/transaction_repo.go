@@ -4,6 +4,7 @@ import (
 	"apps/api/domain"
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"gorm.io/gorm"
@@ -19,9 +20,7 @@ func (repo Repository) GetTransactionList(ctx context.Context, query string, sor
 	var transactionResults []Transaction
 	result := db.Table("transactions").Where("deleted_at is NULL").Preload("TransactionItems").Preload("TransactionItems.Values").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").Preload("TransactionItems.Variant.Product.Category").Preload("TransactionCoupons").Preload("TransactionCoupons.Coupon").Preload("Wallet").Preload("Cart").Preload("Cart.Table").Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
 
-	if query != "" {
-		result = result.Where("name LIKE ?", "%"+query+"%")
-	}
+	result = whereTransactionSearchQuery(result, query)
 
 	if skip > 0 {
 		result = result.Offset(skip)
@@ -56,9 +55,7 @@ func (repo Repository) GetTransactionListTotal(ctx context.Context, query string
 	var count int64
 	result := db.Table("transactions").Where("deleted_at", nil)
 
-	if query != "" {
-		result = result.Where("name LIKE ?", "%"+query+"%")
-	}
+	result = whereTransactionSearchQuery(result, query)
 
 	switch paymentStatus {
 	case domain.Paid:
@@ -78,6 +75,19 @@ func (repo Repository) GetTransactionListTotal(ctx context.Context, query string
 	result = result.Count(&count)
 
 	return count, ToErrorCtx(ctx, result.Error, "GetTransactionListTotal")
+}
+
+// Shared by GetTransactionList and GetTransactionListTotal so the page and its total agree.
+func whereTransactionSearchQuery(db *gorm.DB, query string) *gorm.DB {
+	if query == "" {
+		return db
+	}
+
+	if transactionNumber, err := strconv.ParseInt(query, 10, 64); err == nil {
+		return db.Where("name LIKE ? OR transaction_number = ?", "%"+query+"%", transactionNumber)
+	}
+
+	return db.Where("name LIKE ?", "%"+query+"%")
 }
 
 func (repo Repository) GetTransactionById(ctx context.Context, id int64) (domain.Transaction, *domain.Error) {
