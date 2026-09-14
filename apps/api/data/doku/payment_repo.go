@@ -273,6 +273,11 @@ type qrisAmount struct {
 	Currency string `json:"currency"`
 }
 
+type qrisAmountResponse struct {
+	Value    float32 `json:"value"`
+	Currency string  `json:"currency"`
+}
+
 type qrisAdditionalInfo struct {
 	PostalCode string `json:"postalCode,omitempty"`
 	FeeType    string `json:"feeType,omitempty"`
@@ -303,13 +308,13 @@ type queryQrisRequest struct {
 }
 
 type queryQrisResponse struct {
-	ResponseCode               string     `json:"responseCode"`
-	ResponseMessage            string     `json:"responseMessage"`
-	OriginalPartnerReferenceNo string     `json:"originalPartnerReferenceNo"`
-	OriginalReferenceNo        string     `json:"originalReferenceNo"`
-	LatestTransactionStatus    string     `json:"latestTransactionStatus"`
-	TransactionStatusDesc      string     `json:"transactionStatusDesc"`
-	Amount                     qrisAmount `json:"amount"`
+	ResponseCode               string             `json:"responseCode"`
+	ResponseMessage            string             `json:"responseMessage"`
+	OriginalPartnerReferenceNo string             `json:"originalPartnerReferenceNo"`
+	OriginalReferenceNo        string             `json:"originalReferenceNo"`
+	LatestTransactionStatus    string             `json:"latestTransactionStatus"`
+	TransactionStatusDesc      string             `json:"transactionStatusDesc"`
+	Amount                     qrisAmountResponse `json:"amount"`
 }
 
 func (c *Client) GenerateQris(ctx context.Context, input domain.GenerateQrisInput) (domain.QrisPayment, *domain.Error) {
@@ -374,7 +379,7 @@ func (c *Client) QueryQris(ctx context.Context, input domain.QueryQrisInput) (do
 
 	var parsed queryQrisResponse
 	if jsonErr := json.Unmarshal(respBody, &parsed); jsonErr != nil {
-		c.logger.Error("doku: failed to parse query qris response", slog.String("partnerReferenceNo", input.PartnerReferenceNo))
+		c.logger.Error("doku: failed to parse query qris response", slog.String("partnerReferenceNo", input.PartnerReferenceNo), slog.String("error", jsonErr.Error()))
 		return domain.QrisStatus{}, &domain.Error{Type: domain.InternalServerError, Message: "failed to parse DOKU query QRIS response"}
 	}
 
@@ -391,7 +396,7 @@ func (c *Client) QueryQris(ctx context.Context, input domain.QueryQrisInput) (do
 		}, nil
 	}
 
-	amount, _ := strconv.ParseFloat(parsed.Amount.Value, 32)
+	amount := parsed.Amount.Value
 	status := MapTransactionStatus(parsed.LatestTransactionStatus)
 
 	c.logger.Info("doku: queried qris",
