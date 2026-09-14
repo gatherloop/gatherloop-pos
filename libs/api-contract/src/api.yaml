@@ -3803,6 +3803,7 @@ components:
         - name
         - source
         - pagerNumber
+        - transactionNumber
         - total
         - totalIncome
         - paidAmount
@@ -3816,6 +3817,9 @@ components:
           type: string
           format: date-time
         pagerNumber:
+          type: integer
+          format: int64
+        transactionNumber:
           type: integer
           format: int64
         name:

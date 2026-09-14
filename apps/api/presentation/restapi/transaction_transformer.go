@@ -110,6 +110,7 @@ func ToApiTransaction(transaction domain.Transaction) apiContract.Transaction {
 		Source:             string(transaction.Source),
 		Table:              table,
 		PagerNumber:        transaction.PagerNumber,
+		TransactionNumber:  transaction.TransactionNumber,
 		DeletedAt:          transaction.DeletedAt,
 		CreatedAt:          transaction.CreatedAt,
 		WalletId:           transaction.WalletId,
