@@ -102,7 +102,7 @@ export const TransactionListHandler = ({
       : undefined,
     name: transaction.name,
     transactionNumber: transaction.transactionNumber,
-    orderNumber: transaction.pagerNumber,
+    pagerNumber: transaction.pagerNumber,
     items: transaction.transactionItems
       .sort((a, b) => a.productName.localeCompare(b.productName))
       .map(({ productName, values, price, amount, discountAmount, note }) => ({
@@ -175,7 +175,9 @@ export const TransactionListHandler = ({
         });
       }}
       onPrintOrderSlipMenuPress={(transaction) => {
-        const payload = buildOrderSlipPayload(buildOrderSlipSource(transaction));
+        const payload = buildOrderSlipPayload(
+          buildOrderSlipSource(transaction)
+        );
         if (payload) print(payload);
       }}
       onEmptyActionPress={() => router.push('/transactions/create')}

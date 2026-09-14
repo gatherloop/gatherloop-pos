@@ -8,8 +8,7 @@ export type TransactionPrintPayload = {
   paidAt?: string;
   name: string;
   transactionNumber: number;
-  // wire key stays `orderNumber`: the external printer service (D12) hasn't added `pagerNumber` support yet
-  orderNumber: number;
+  pagerNumber: number;
   items: {
     name: string;
     price: number;
@@ -59,8 +58,7 @@ export type OrderSlipPrintPayload = {
   paidAt?: string;
   name: string;
   transactionNumber: number;
-  // wire key stays `orderNumber`: the external printer service (D12) hasn't added `pagerNumber` support yet
-  orderNumber: number;
+  pagerNumber: number;
   items: {
     bars: OrderSlipItem[];
     kitchens: OrderSlipItem[];
@@ -130,7 +128,7 @@ export const buildOrderSlipPayload = (
       paidAt: transaction.paidAt,
       name: transaction.name,
       transactionNumber: transaction.transactionNumber,
-      orderNumber: transaction.pagerNumber,
+      pagerNumber: transaction.pagerNumber,
       items: { bars, kitchens },
     },
   };
