@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-const statusRequeryFloor = 10 * time.Second
+const statusRequeryFloor = 5 * time.Second
 
 type PaymentUsecase struct {
 	paymentRepository        PaymentRepository
