@@ -59,8 +59,28 @@ export const CartScreen = ({
   onRetryButtonPress,
   itemEdit,
 }: CartScreenProps) => {
+  const footer =
+    variant.type === 'loaded' ? (
+      <XStack
+        padding="$3"
+        backgroundColor="$background"
+        borderTopWidth={1}
+        borderTopColor="$borderColor"
+      >
+        <Button
+          theme="blue"
+          size="$5"
+          minHeight={44}
+          flex={1}
+          onPress={onCheckoutPress}
+        >
+          {`Checkout · ${formatRupiah(variant.cart.total)}`}
+        </Button>
+      </XStack>
+    ) : null;
+
   return (
-    <TableResolveScreen variant={tableVariant}>
+    <TableResolveScreen variant={tableVariant} footer={footer}>
       <YStack flex={1} gap="$3">
         {match(variant)
           .with({ type: 'loading' }, () => (
@@ -82,7 +102,7 @@ export const CartScreen = ({
             />
           ))
           .with({ type: 'loaded' }, ({ cart }) => (
-            <YStack gap="$4" paddingBottom="$6">
+            <YStack gap="$4">
               <XStack justifyContent="space-between" alignItems="center">
                 <Text fontWeight="bold" fontSize="$6">
                   Keranjang
@@ -136,27 +156,6 @@ export const CartScreen = ({
                   <Text fontWeight="bold">Total</Text>
                   <Text fontWeight="bold">{formatRupiah(cart.total)}</Text>
                 </XStack>
-              </YStack>
-
-              <YStack
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-expect-error
-                position="sticky"
-                bottom={0}
-                zIndex={11}
-                backgroundColor="$background"
-                paddingTop="$3"
-                borderTopWidth={1}
-                borderTopColor="$borderColor"
-              >
-                <Button
-                  theme="blue"
-                  size="$5"
-                  minHeight={44}
-                  onPress={onCheckoutPress}
-                >
-                  {`Checkout · ${formatRupiah(cart.total)}`}
-                </Button>
               </YStack>
             </YStack>
           ))
