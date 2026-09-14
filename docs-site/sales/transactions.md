@@ -27,6 +27,7 @@ Splitting the receipt into a **customer invoice** and a **station order slip** a
 - **Station-routed order slip** — a single combined slip whose items are grouped into **Bar** and **Kitchen** sections (by the product's category), so each station sees the full order and can tell whether the other side still owes the customer something. Items that belong to neither station (like a board-game ticket) are left off the slip entirely.
 - **Editable history** — reopen a past transaction to adjust items or attach a coupon after the fact, from the transaction list and detail screens.
 - **Find a transaction by its daily number** — every transaction gets a short number (`#42`) that resets to `1` at the start of each business day and is shown on the list, the detail screen, and both printed documents. Typing a number into the transaction search box matches it directly, on any date, alongside the existing name search — the fastest way to find the transaction behind a slip a customer or station is holding.
+- **Pager number, kept separate from the transaction number** — the **Pager Number** field (labelled "Order Number" until a recent rename) is the physical buzzer handed to a walk-in customer, not an identifier: it's optional, gets reused across the day as pagers come back, and is always `0` for order-app and rental checkouts. Use the transaction number to find a sale; use the pager number only to know which buzzer to collect.
 - **Rental-aware editing** — transactions created from a [board-game rental checkout](/sales/rentals) keep their calculated ticket price protected: editing the transaction later never silently re-prices a rental line from a catalog price.
 
 ## For engineers
@@ -35,3 +36,4 @@ Splitting the receipt into a **customer invoice** and a **station order slip** a
 - Checkout & payment logic: `TransactionCreateHandler.tsx`, the `useTransactionPayController` controller
 - Printing: `libs/ui/src/utils/print.ts` (`buildOrderSlipPayload`, invoice/order-slip/checkin-slip payloads)
 - Backend: `apps/api/domain/transaction_usecase.go`
+- Design doc: `docs/prd-daily-transaction-number.md` — why the number is a per-business-day sequence rather than the database id (D1), the counter-table allocation scheme (D4), and why the printed payload still carries the legacy `orderNumber` wire key until the external printer service ships `pagerNumber` support (D12)
