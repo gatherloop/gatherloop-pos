@@ -9,8 +9,8 @@ export type OrderLayoutProps = {
 
 const orderShellHeightStyle = `
   .order-shell-height {
-    height: 100vh;
-    height: 100dvh;
+    height: 100%;
+    height: 100svh;
   }
 `;
 
