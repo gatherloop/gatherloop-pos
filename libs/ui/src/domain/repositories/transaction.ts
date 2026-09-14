@@ -41,7 +41,7 @@ export interface TransactionRepository {
 
   createTransaction: (
     formValues: TransactionForm
-  ) => Promise<{ transactionId: number }>;
+  ) => Promise<{ transactionId: number; transactionNumber: number }>;
 
   updateTransaction: (
     formValues: TransactionForm,

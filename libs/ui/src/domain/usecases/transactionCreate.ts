@@ -7,6 +7,7 @@ type Context = {
   errorMessage: string | null;
   values: TransactionForm;
   transactionId: number | null;
+  transactionNumber: number | null;
 };
 
 export type TransactionCreateState = (
@@ -19,7 +20,7 @@ export type TransactionCreateState = (
 
 export type TransactionCreateAction =
   | { type: 'SUBMIT'; values: TransactionForm }
-  | { type: 'SUBMIT_SUCCESS'; transactionId: number }
+  | { type: 'SUBMIT_SUCCESS'; transactionId: number; transactionNumber: number }
   | { type: 'SUBMIT_ERROR'; errorMessage: string }
   | { type: 'SUBMIT_CANCEL' };
 
@@ -40,6 +41,7 @@ export class TransactionCreateUsecase extends Usecase<
       type: 'loaded',
       errorMessage: null,
       transactionId: null,
+      transactionNumber: null,
       values: {
         name: '',
         pagerNumber: 0,
@@ -78,6 +80,7 @@ export class TransactionCreateUsecase extends Usecase<
           ...state,
           type: 'submitSuccess',
           transactionId: action.transactionId,
+          transactionNumber: action.transactionNumber,
         })
       )
       .with(
@@ -106,8 +109,8 @@ export class TransactionCreateUsecase extends Usecase<
       .with({ type: 'submitting' }, ({ values }) => {
         this.repository
           .createTransaction(values)
-          .then(({ transactionId }) =>
-            dispatch({ type: 'SUBMIT_SUCCESS', transactionId })
+          .then(({ transactionId, transactionNumber }) =>
+            dispatch({ type: 'SUBMIT_SUCCESS', transactionId, transactionNumber })
           )
           .catch(() =>
             dispatch({ type: 'SUBMIT_ERROR', errorMessage: 'Submit failed' })

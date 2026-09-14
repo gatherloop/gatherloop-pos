@@ -41,6 +41,7 @@ export type Transaction = {
   source: TransactionSource;
   table: PublicTable | null;
   pagerNumber: number;
+  transactionNumber: number;
   total: number;
   totalIncome: number;
   transactionItems: TransactionItem[];

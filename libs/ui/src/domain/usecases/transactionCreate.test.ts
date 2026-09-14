@@ -23,6 +23,7 @@ describe('TransactionCreateUsecase', () => {
 
       await flushPromises();
       expect(tester.state.type).toBe('submitSuccess');
+      expect(tester.state.transactionNumber).toBe(1);
     });
   });
 

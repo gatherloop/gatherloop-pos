@@ -26,6 +26,7 @@ export function toTransaction(transaction: ApiTransaction): Transaction {
     createdAt: transaction.createdAt,
     name: transaction.name,
     pagerNumber: transaction.pagerNumber,
+    transactionNumber: transaction.transactionNumber,
     total: transaction.total,
     totalIncome: transaction.totalIncome,
     transactionItems: transaction.transactionItems.map((item) => ({
