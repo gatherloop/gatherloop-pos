@@ -1,6 +1,7 @@
 import '@tamagui/core/reset.css';
 import './global.css';
 
+import { ORDER_BRAND_NAME } from '@gatherloop-pos/ui';
 import { RootProvider } from '@gatherloop-pos/provider';
 import { AppProps } from 'next/app';
 import Head from 'next/head';
@@ -18,7 +19,11 @@ export default function App({ Component, pageProps }: AppProps) {
   return (
     <>
       <Head>
-        <title>Gatherloop Order</title>
+        <title>{ORDER_BRAND_NAME}</title>
+        <meta
+          name="description"
+          content={`Pesan menu ${ORDER_BRAND_NAME} langsung dari meja Anda.`}
+        />
         <meta
           name="viewport"
           content="width=device-width, initial-scale=1, viewport-fit=cover"

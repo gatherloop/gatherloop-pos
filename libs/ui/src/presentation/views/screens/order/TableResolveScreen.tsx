@@ -1,9 +1,10 @@
 import { ReactNode } from 'react';
 import { match } from 'ts-pattern';
-import { Text, XStack } from 'tamagui';
+import { Text } from 'tamagui';
 import { PublicTable } from '../../../../domain/entities/PublicTable';
 import { EmptyView } from '../../components/base/EmptyView';
 import { LoadingView } from '../../components/base/LoadingView';
+import { OrderBrandHeader } from '../../components/base/OrderBrandHeader';
 import { OrderLayout } from '../../components/base/OrderLayout';
 
 export type TableResolveScreenVariant =
@@ -27,12 +28,12 @@ export const TableResolveScreen = ({
   match(variant)
     .returnType<ReactNode>()
     .with({ type: 'resolving' }, () => (
-      <OrderLayout>
+      <OrderLayout header={<OrderBrandHeader />}>
         <LoadingView title="Memuat meja..." />
       </OrderLayout>
     ))
     .with({ type: 'invalidQr' }, () => (
-      <OrderLayout>
+      <OrderLayout header={<OrderBrandHeader />}>
         <EmptyView
           title="QR tidak valid"
           subtitle="Silakan pindai ulang kode QR di meja Anda."
@@ -40,7 +41,7 @@ export const TableResolveScreen = ({
       </OrderLayout>
     ))
     .with({ type: 'noQr' }, () => (
-      <OrderLayout>
+      <OrderLayout header={<OrderBrandHeader />}>
         <EmptyView
           title="Pindai QR di meja Anda"
           subtitle="Pindai kode QR di meja Anda untuk mulai memesan."
@@ -48,7 +49,7 @@ export const TableResolveScreen = ({
       </OrderLayout>
     ))
     .with({ type: 'error' }, ({ onRetryButtonPress }) => (
-      <OrderLayout>
+      <OrderLayout header={<OrderBrandHeader />}>
         <EmptyView
           title="Gagal memuat meja"
           subtitle="Terjadi kesalahan. Silakan coba lagi."
@@ -60,10 +61,9 @@ export const TableResolveScreen = ({
     .with({ type: 'resolved' }, ({ table }) => (
       <OrderLayout
         header={
-          <XStack padding="$4" backgroundColor="$color2" flexWrap="wrap">
-            <Text fontWeight="bold">{table.label}</Text>
-            <Text color="$color10"> · Lantai {table.floorNumber}</Text>
-          </XStack>
+          <OrderBrandHeader
+            tableLine={`${table.label} · Lantai ${table.floorNumber}`}
+          />
         }
         footer={footer}
       >
