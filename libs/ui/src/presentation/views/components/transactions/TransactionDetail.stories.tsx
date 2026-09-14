@@ -10,6 +10,7 @@ const meta: Meta<typeof TransactionDetail> = {
     source: mockTransaction.source,
     table: mockTransaction.table,
     pagerNumber: mockTransaction.pagerNumber,
+    transactionNumber: mockTransaction.transactionNumber,
     createdAt: mockTransaction.createdAt,
     paidAt: mockTransaction.paidAt ?? undefined,
     walletName: mockTransaction.wallet?.name,

@@ -45,6 +45,7 @@ const buildSource = (
   createdAt: '17/06/2026 10:00',
   name: 'Table 1',
   pagerNumber: 1,
+  transactionNumber: 42,
   items: items.map(({ productName, station }) => ({
     variant: buildVariant(productName, station),
     price: 10000,
@@ -109,5 +110,18 @@ describe('buildOrderSlipPayload', () => {
       amount: 1,
       note: '',
     });
+  });
+
+  it('carries the transaction number through to the order slip payload', () => {
+    const transaction = buildSource([
+      { productName: 'Beer', station: 'BAR' },
+    ]);
+
+    const payload = buildOrderSlipPayload(transaction);
+
+    expect(payload?.type).toBe('ORDER_SLIP');
+    expect(payload && payload.type === 'ORDER_SLIP' && payload.orderSlip.transactionNumber).toBe(
+      42
+    );
   });
 });

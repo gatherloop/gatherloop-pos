@@ -66,6 +66,7 @@ const transactionCreateCtrl = {
   state: {
     type: 'idle' as string,
     transactionId: null as number | null,
+    transactionNumber: 42 as number | null,
     values: {
       name: 'Table 1',
       pagerNumber: 1,
@@ -175,7 +176,10 @@ describe('TransactionCreateHandler print flow', () => {
 
     await confirmLatestPrompt('Print Invoice');
     expect(mockPrint).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'INVOICE' })
+      expect.objectContaining({
+        type: 'INVOICE',
+        transaction: expect.objectContaining({ transactionNumber: 42 }),
+      })
     );
 
     await confirmLatestPrompt('Print Order Slip');
@@ -183,6 +187,7 @@ describe('TransactionCreateHandler print flow', () => {
       expect.objectContaining({
         type: 'ORDER_SLIP',
         orderSlip: expect.objectContaining({
+          transactionNumber: 42,
           items: {
             kitchens: [expect.objectContaining({ name: 'Fried Rice - Large' })],
             bars: [expect.objectContaining({ name: 'Beer - Large' })],

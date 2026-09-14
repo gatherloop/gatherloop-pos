@@ -21,6 +21,9 @@ export const TransactionDetailHandler = ({
       source={transactionDetail.state.transaction?.source ?? 'pos'}
       table={transactionDetail.state.transaction?.table ?? null}
       pagerNumber={transactionDetail.state.transaction?.pagerNumber ?? 0}
+      transactionNumber={
+        transactionDetail.state.transaction?.transactionNumber ?? 0
+      }
       total={transactionDetail.state.transaction?.total ?? 0}
       transactionItems={
         transactionDetail.state.transaction?.transactionItems ?? []
