@@ -253,6 +253,7 @@ export const TransactionList = ({
                   source={item.source}
                   table={item.table}
                   pagerNumber={item.pagerNumber}
+                  transactionNumber={item.transactionNumber}
                   total={item.total}
                   paidAt={item.paidAt ?? undefined}
                   walletName={item.wallet?.name}

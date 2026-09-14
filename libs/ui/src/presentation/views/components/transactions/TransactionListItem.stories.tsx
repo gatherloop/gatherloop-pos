@@ -10,6 +10,7 @@ const meta: Meta<typeof TransactionListItem> = {
     source: 'pos',
     table: null,
     pagerNumber: 1,
+    transactionNumber: 42,
     total: 70000,
     createdAt: '2024-01-20T10:00:00.000Z',
     paidAt: '2024-01-20T10:30:00.000Z',
@@ -57,5 +58,29 @@ export const FromPos: Story = {
   args: {
     source: 'pos',
     table: null,
+  },
+};
+
+export const OneDigitTransactionNumber: Story = {
+  args: {
+    transactionNumber: 7,
+  },
+};
+
+export const TwoDigitTransactionNumber: Story = {
+  args: {
+    transactionNumber: 42,
+  },
+};
+
+export const ThreeDigitTransactionNumber: Story = {
+  args: {
+    transactionNumber: 128,
+  },
+};
+
+export const FourDigitTransactionNumber: Story = {
+  args: {
+    transactionNumber: 1024,
   },
 };
