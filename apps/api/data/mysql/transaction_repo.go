@@ -4,6 +4,7 @@ import (
 	"apps/api/domain"
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"gorm.io/gorm"
@@ -19,9 +20,7 @@ func (repo Repository) GetTransactionList(ctx context.Context, query string, sor
 	var transactionResults []Transaction
 	result := db.Table("transactions").Where("deleted_at is NULL").Preload("TransactionItems").Preload("TransactionItems.Values").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").Preload("TransactionItems.Variant.Product.Category").Preload("TransactionCoupons").Preload("TransactionCoupons.Coupon").Preload("Wallet").Preload("Cart").Preload("Cart.Table").Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
 
-	if query != "" {
-		result = result.Where("name LIKE ?", "%"+query+"%")
-	}
+	result = whereTransactionSearchQuery(result, query)
 
 	if skip > 0 {
 		result = result.Offset(skip)
@@ -56,9 +55,7 @@ func (repo Repository) GetTransactionListTotal(ctx context.Context, query string
 	var count int64
 	result := db.Table("transactions").Where("deleted_at", nil)
 
-	if query != "" {
-		result = result.Where("name LIKE ?", "%"+query+"%")
-	}
+	result = whereTransactionSearchQuery(result, query)
 
 	switch paymentStatus {
 	case domain.Paid:
@@ -80,6 +77,19 @@ func (repo Repository) GetTransactionListTotal(ctx context.Context, query string
 	return count, ToErrorCtx(ctx, result.Error, "GetTransactionListTotal")
 }
 
+// Shared by GetTransactionList and GetTransactionListTotal so the page and its total agree.
+func whereTransactionSearchQuery(db *gorm.DB, query string) *gorm.DB {
+	if query == "" {
+		return db
+	}
+
+	if transactionNumber, err := strconv.ParseInt(query, 10, 64); err == nil {
+		return db.Where("name LIKE ? OR transaction_number = ?", "%"+query+"%", transactionNumber)
+	}
+
+	return db.Where("name LIKE ?", "%"+query+"%")
+}
+
 func (repo Repository) GetTransactionById(ctx context.Context, id int64) (domain.Transaction, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 
@@ -91,6 +101,16 @@ func (repo Repository) GetTransactionById(ctx context.Context, id int64) (domain
 func (repo Repository) CreateTransaction(ctx context.Context, transaction domain.Transaction) (domain.Transaction, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 
+	if transaction.CreatedAt.IsZero() {
+		transaction.CreatedAt = time.Now()
+	}
+
+	transactionNumber, err := allocateTransactionNumber(db, transaction.CreatedAt)
+	if err != nil {
+		return domain.Transaction{}, ToErrorCtx(ctx, err, "CreateTransaction")
+	}
+	transaction.TransactionNumber = transactionNumber
+
 	dbTransaction := ToTransactionDB(transaction)
 	if result := db.Session(&gorm.Session{FullSaveAssociations: true}).Table("transactions").Create(&dbTransaction); result.Error != nil {
 		return domain.Transaction{}, ToErrorCtx(ctx, result.Error, "CreateTransaction")
@@ -99,6 +119,26 @@ func (repo Repository) CreateTransaction(ctx context.Context, transaction domain
 	var created Transaction
 	fetch := db.Table("transactions").Where("id = ?", dbTransaction.Id).Preload("TransactionItems").Preload("TransactionItems.Values").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").Preload("TransactionItems.Variant.Product.Category").Preload("TransactionCoupons").Preload("TransactionCoupons.Coupon").Preload("Wallet").Preload("Cart").Preload("Cart.Table").First(&created)
 	return ToTransactionDomain(created), ToErrorCtx(ctx, fetch.Error, "CreateTransaction")
+}
+
+// D4/D6: one atomic statement per business day, on the same connection as the
+// enclosing transaction, so the returned number belongs to this create alone.
+func allocateTransactionNumber(db *gorm.DB, createdAt time.Time) (int64, error) {
+	businessDate := createdAt.Format("2006-01-02")
+
+	if result := db.Exec(
+		"INSERT INTO transaction_number_counters (transaction_date, last_number) VALUES (?, LAST_INSERT_ID(1)) ON DUPLICATE KEY UPDATE last_number = LAST_INSERT_ID(last_number + 1)",
+		businessDate,
+	); result.Error != nil {
+		return 0, result.Error
+	}
+
+	var transactionNumber int64
+	if result := db.Raw("SELECT LAST_INSERT_ID()").Scan(&transactionNumber); result.Error != nil {
+		return 0, result.Error
+	}
+
+	return transactionNumber, nil
 }
 
 func (repo Repository) UpdateTransactionById(ctx context.Context, transaction domain.Transaction, id int64) (domain.Transaction, *domain.Error) {

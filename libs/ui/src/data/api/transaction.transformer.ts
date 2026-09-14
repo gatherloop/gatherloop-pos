@@ -25,7 +25,8 @@ export function toTransaction(transaction: ApiTransaction): Transaction {
     id: transaction.id,
     createdAt: transaction.createdAt,
     name: transaction.name,
-    orderNumber: transaction.orderNumber,
+    pagerNumber: transaction.pagerNumber,
+    transactionNumber: transaction.transactionNumber,
     total: transaction.total,
     totalIncome: transaction.totalIncome,
     transactionItems: transaction.transactionItems.map((item) => ({
@@ -119,7 +120,7 @@ export function toTransaction(transaction: ApiTransaction): Transaction {
 export function toApiTransaction(form: TransactionForm) {
   return {
     name: form.name,
-    orderNumber: form.orderNumber,
+    pagerNumber: form.pagerNumber,
     transactionItems: form.transactionItems.map((item) => ({
       id: item.id,
       amount: item.amount,

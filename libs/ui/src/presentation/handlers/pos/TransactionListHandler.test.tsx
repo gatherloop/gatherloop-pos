@@ -51,7 +51,8 @@ const buildTransaction = (
   name: 'Table 1',
   source: 'pos',
   table: null,
-  orderNumber: 1,
+  pagerNumber: 1,
+  transactionNumber: 1,
   total: 30000,
   totalIncome: 30000,
   paidAt: null,
@@ -349,6 +350,7 @@ describe('TransactionListHandler', () => {
         expect.objectContaining({
           type: 'ORDER_SLIP',
           orderSlip: expect.objectContaining({
+            transactionNumber: 1,
             items: {
               kitchens: [expect.objectContaining({ name: 'Product 0 - ' })],
               bars: [expect.objectContaining({ name: 'Product 1 - ' })],

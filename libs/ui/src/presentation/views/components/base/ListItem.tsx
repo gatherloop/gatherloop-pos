@@ -59,6 +59,7 @@ export type ListItemProps = {
   title: string;
   subtitle?: ReactNode;
   thumbnailSrc?: string;
+  leading?: ReactNode;
   menus?: ListItemMenu[];
   footerItems?: ListItemFooterItem[];
 } & XStackProps;
@@ -67,6 +68,7 @@ export const ListItem = ({
   title,
   subtitle,
   thumbnailSrc,
+  leading,
   menus = [],
   footerItems = [],
   ...xStackProps
@@ -85,19 +87,20 @@ export const ListItem = ({
       <YStack padding="$3" flex={1} gap="$3">
         <XStack alignItems="flex-start" justifyContent="space-between" flex={1}>
           <XStack alignItems="flex-start" gap="$3">
-            {thumbnailSrc && (
-              <Image
-                src={thumbnailSrc}
-                defaultSource={{
-                  uri: thumbnailSrc,
-                  width: 60,
-                  height: 60,
-                }}
-                width={60}
-                height={60}
-                borderRadius="$5"
-              />
-            )}
+            {leading ??
+              (thumbnailSrc && (
+                <Image
+                  src={thumbnailSrc}
+                  defaultSource={{
+                    uri: thumbnailSrc,
+                    width: 60,
+                    height: 60,
+                  }}
+                  width={60}
+                  height={60}
+                  borderRadius="$5"
+                />
+              ))}
             <YStack justifyContent="center">
               <H4 ellipse>{title}</H4>
               {subtitle &&

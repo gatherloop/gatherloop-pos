@@ -11,7 +11,7 @@ import {
 } from '@tamagui/lucide-icons';
 import { ListItem } from '../base';
 import dayjs from 'dayjs';
-import { Paragraph, XStack, XStackProps, YStack } from 'tamagui';
+import { Paragraph, SizableText, XStack, XStackProps, YStack } from 'tamagui';
 import { Platform } from 'react-native';
 import { PublicTable, TransactionSource } from '../../../../domain';
 
@@ -19,7 +19,8 @@ export type TransactionListItemProps = {
   name: string;
   source: TransactionSource;
   table?: PublicTable | null;
-  orderNumber: number;
+  pagerNumber: number;
+  transactionNumber: number;
   total: number;
   createdAt: string;
   paidAt?: string;
@@ -46,11 +47,41 @@ const OrderBadge = () => (
   </XStack>
 );
 
+const transactionNumberFontSizeByDigitCount: Record<number, string> = {
+  1: '$9',
+  2: '$8',
+  3: '$7',
+  4: '$6',
+};
+
+const TransactionNumberBadge = ({ value }: { value: number }) => {
+  const digitCount = value.toString().length;
+  const fontSize =
+    transactionNumberFontSizeByDigitCount[digitCount] ??
+    transactionNumberFontSizeByDigitCount[4];
+
+  return (
+    <YStack
+      width={60}
+      height={60}
+      borderRadius="$5"
+      backgroundColor="$color5"
+      justifyContent="center"
+      alignItems="center"
+    >
+      <SizableText color="$color12" fontSize={fontSize} fontWeight="bold">
+        #{value}
+      </SizableText>
+    </YStack>
+  );
+};
+
 export const TransactionListItem = ({
   name,
   source,
   table,
-  orderNumber,
+  pagerNumber,
+  transactionNumber,
   total,
   createdAt,
   paidAt,
@@ -66,6 +97,7 @@ export const TransactionListItem = ({
   return (
     <ListItem
       title={name}
+      leading={<TransactionNumberBadge value={transactionNumber} />}
       subtitle={
         source === 'order' ? (
           <YStack gap="$1">
@@ -139,9 +171,9 @@ export const TransactionListItem = ({
         },
         {
           icon: ConciergeBell,
-          label: 'ORDER NUMBER',
-          value: orderNumber.toString(),
-          isShown: orderNumber > 0,
+          label: 'PAGER NUMBER',
+          value: pagerNumber.toString(),
+          isShown: pagerNumber > 0,
         },
         {
           icon: MapPin,

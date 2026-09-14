@@ -7,7 +7,8 @@ export type TransactionPrintPayload = {
   createdAt: string;
   paidAt?: string;
   name: string;
-  orderNumber: number;
+  transactionNumber: number;
+  pagerNumber: number;
   items: {
     name: string;
     price: number;
@@ -56,7 +57,8 @@ export type OrderSlipPrintPayload = {
   createdAt: string;
   paidAt?: string;
   name: string;
-  orderNumber: number;
+  transactionNumber: number;
+  pagerNumber: number;
   items: {
     bars: OrderSlipItem[];
     kitchens: OrderSlipItem[];
@@ -93,7 +95,8 @@ export type OrderSlipSource = {
   createdAt: string;
   paidAt?: string;
   name: string;
-  orderNumber: number;
+  pagerNumber: number;
+  transactionNumber: number;
   items: OrderSlipSourceItem[];
 };
 
@@ -124,7 +127,8 @@ export const buildOrderSlipPayload = (
       createdAt: transaction.createdAt,
       paidAt: transaction.paidAt,
       name: transaction.name,
-      orderNumber: transaction.orderNumber,
+      transactionNumber: transaction.transactionNumber,
+      pagerNumber: transaction.pagerNumber,
       items: { bars, kitchens },
     },
   };

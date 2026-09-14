@@ -41,7 +41,8 @@ type Transaction struct {
 	Source             string
 	CartId             *int64
 	Cart               *Cart
-	OrderNumber        int64
+	PagerNumber        int64
+	TransactionNumber  int64
 	WalletId           *int64
 	Wallet             *Wallet
 	Total              float32

@@ -34,7 +34,8 @@ const initialTransactions: Transaction[] = [
     name: 'Transaction 1',
     source: 'pos',
     table: null,
-    orderNumber: 1,
+    pagerNumber: 1,
+    transactionNumber: 1,
     total: 100000,
     totalIncome: 90000,
     transactionItems: [
@@ -61,7 +62,8 @@ const initialTransactions: Transaction[] = [
     name: 'Transaction 2',
     source: 'order',
     table: { id: 1, label: 'A1', floorNumber: 1 },
-    orderNumber: 0,
+    pagerNumber: 0,
+    transactionNumber: 1,
     total: 200000,
     totalIncome: 180000,
     transactionItems: [],
@@ -83,6 +85,7 @@ export class MockTransactionRepository implements TransactionRepository {
 
   private nextId = 3;
   private shouldFail = false;
+  private transactionNumberCounters: Record<string, number> = {};
 
   setShouldFail(value: boolean) {
     this.shouldFail = value;
@@ -135,15 +138,21 @@ export class MockTransactionRepository implements TransactionRepository {
 
   async createTransaction(
     formValues: TransactionForm
-  ): Promise<{ transactionId: number }> {
+  ): Promise<{ transactionId: number; transactionNumber: number }> {
     if (this.shouldFail) throw new Error('Failed to create transaction');
+    const createdAt = new Date().toISOString();
+    const businessDate = createdAt.slice(0, 10);
+    const transactionNumber = (this.transactionNumberCounters[businessDate] ?? 0) + 1;
+    this.transactionNumberCounters[businessDate] = transactionNumber;
+    const transactionId = this.nextId++;
     this.transactions.push({
-      id: this.nextId++,
-      createdAt: new Date().toISOString(),
+      id: transactionId,
+      createdAt,
       name: formValues.name,
       source: 'pos',
       table: null,
-      orderNumber: formValues.orderNumber,
+      pagerNumber: formValues.pagerNumber,
+      transactionNumber,
       total: 0,
       totalIncome: 0,
       transactionItems: [],
@@ -152,7 +161,7 @@ export class MockTransactionRepository implements TransactionRepository {
       paidAt: null,
       paidAmount: 0,
     });
-    return { transactionId: 1 };
+    return { transactionId, transactionNumber };
   }
 
   async updateTransaction(
@@ -165,7 +174,7 @@ export class MockTransactionRepository implements TransactionRepository {
     this.transactions[idx] = {
       ...this.transactions[idx],
       name: formValues.name,
-      orderNumber: formValues.orderNumber,
+      pagerNumber: formValues.pagerNumber,
     };
   }
 
@@ -218,5 +227,6 @@ export class MockTransactionRepository implements TransactionRepository {
     this.statistics = [...initialStatistics];
     this.nextId = 3;
     this.shouldFail = false;
+    this.transactionNumberCounters = {};
   }
 }

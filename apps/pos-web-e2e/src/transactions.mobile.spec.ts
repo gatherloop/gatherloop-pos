@@ -117,7 +117,7 @@ test.describe.serial('Transaction Flow (compact / mobile layout)', () => {
     ).toBeVisible({ timeout: 10_000 });
 
     await sel.transactionForm.customerNameInput(page).fill(CUSTOMER_NAME);
-    await sel.transactionForm.orderNumberInput(page).fill('1');
+    await sel.transactionForm.pagerNumberInput(page).fill('1');
 
     await sel.transactionForm.submitButton(page).click();
 

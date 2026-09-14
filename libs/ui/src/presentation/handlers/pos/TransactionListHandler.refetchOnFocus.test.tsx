@@ -73,7 +73,7 @@ describe('TransactionListHandler refetch on focus', () => {
 
     await transactionRepository.createTransaction({
       name: 'Transaction 3',
-      orderNumber: 3,
+      pagerNumber: 3,
       transactionItems: [],
       transactionCoupons: [],
     } as never);

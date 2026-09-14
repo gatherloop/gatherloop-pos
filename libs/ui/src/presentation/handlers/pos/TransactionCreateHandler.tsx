@@ -2,7 +2,13 @@ import { useRouter } from 'solito/router';
 import { useEffect, useRef } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { useToastController } from '@tamagui/toast';
-import { useUsecase, useAuthLogout, useTransactionItemSelect, useTransactionPay, useCouponList } from '../hooks';
+import {
+  useUsecase,
+  useAuthLogout,
+  useTransactionItemSelect,
+  useTransactionPay,
+  useCouponList,
+} from '../hooks';
 import {
   AuthLogoutUsecase,
   TransactionCreateUsecase,
@@ -51,9 +57,7 @@ export const TransactionCreateHandler = ({
   const transactionItemSelect = useTransactionItemSelect(
     transactionItemSelectUsecase
   );
-  const transactionPay = useTransactionPay(
-    transactionPayUsecase
-  );
+  const transactionPay = useTransactionPay(transactionPayUsecase);
   const couponList = useCouponList(couponListUsecase);
   const authLogout = useAuthLogout(authLogoutUsecase);
 
@@ -141,22 +145,19 @@ export const TransactionCreateHandler = ({
       ({ id }) => id === transactionPay.state.walletId
     );
 
-    if (
-      transactionPay.state.type === 'payingSuccess' &&
-      selectedWallet
-    ) {
-      const transactionItems =
-        transactionCreate.state.values.transactionItems
-          .slice()
-          .sort((a, b) =>
-            a.variant.product.name.localeCompare(b.variant.product.name)
-          );
+    if (transactionPay.state.type === 'payingSuccess' && selectedWallet) {
+      const transactionItems = transactionCreate.state.values.transactionItems
+        .slice()
+        .sort((a, b) =>
+          a.variant.product.name.localeCompare(b.variant.product.name)
+        );
 
       const transaction: TransactionPrintPayload = {
         createdAt: dayjs(new Date().toISOString()).format('DD/MM/YYYY HH:mm'),
         paidAt: dayjs(new Date().toISOString()).format('DD/MM/YYYY HH:mm'),
         name: transactionCreate.state.values.name,
-        orderNumber: transactionCreate.state.values.orderNumber,
+        transactionNumber: transactionCreate.state.transactionNumber ?? 0,
+        pagerNumber: transactionCreate.state.values.pagerNumber,
         items: transactionItems.map(
           ({ variant, price, amount, discountAmount, note }) => ({
             name: `${variant.product.name} - ${variant.values
@@ -180,7 +181,11 @@ export const TransactionCreateHandler = ({
       };
 
       const orderSlipSource: OrderSlipSource = {
-        ...transaction,
+        createdAt: transaction.createdAt,
+        paidAt: transaction.paidAt,
+        name: transaction.name,
+        pagerNumber: transactionCreate.state.values.pagerNumber,
+        transactionNumber: transaction.transactionNumber,
         items: transactionItems,
       };
 
@@ -219,6 +224,7 @@ export const TransactionCreateHandler = ({
     print,
     router,
     show,
+    transactionCreate.state.transactionNumber,
     transactionCreate.state.values,
     transactionPay.state.paidAmount,
     transactionPay.state.type,
@@ -249,8 +255,7 @@ export const TransactionCreateHandler = ({
       transactionCreate.dispatch({ type: 'SUBMIT', values }),
     isSubmitDisabled: transactionCreate.state.type === 'submitting',
     isSubmitting: transactionCreate.state.type === 'submitting',
-    isSubmitSuccess:
-      transactionCreate.state.type === 'submitSuccess',
+    isSubmitSuccess: transactionCreate.state.type === 'submitSuccess',
     serverError:
       transactionCreate.state.type === 'submitError'
         ? 'Failed to submit. Please try again.'
@@ -258,8 +263,7 @@ export const TransactionCreateHandler = ({
     onLogoutPress: () => authLogout.dispatch({ type: 'LOGOUT' }),
     formRef,
     couponList: {
-      onRetryButtonPress: () =>
-        couponList.dispatch({ type: 'FETCH' }),
+      onRetryButtonPress: () => couponList.dispatch({ type: 'FETCH' }),
       variant: match(couponList.state)
         .returnType<TransactionCreateScreenProps['couponList']['variant']>()
         .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))
@@ -302,14 +306,12 @@ export const TransactionCreateHandler = ({
           type: 'SELECT_PRODUCT',
           product,
         }),
-      onSubmit: () =>
-        transactionItemSelect.dispatch({ type: 'FETCH_VARIANT' }),
+      onSubmit: () => transactionItemSelect.dispatch({ type: 'FETCH_VARIANT' }),
       onUnselectProduct: () =>
         transactionItemSelect.dispatch({ type: 'UNSELECT_PRODUCT' }),
       products: transactionItemSelect.state.products,
       searchValue: transactionItemSelect.state.query,
-      selectedOptionValues:
-        transactionItemSelect.state.selectedOptionValues,
+      selectedOptionValues: transactionItemSelect.state.selectedOptionValues,
       totalItem: transactionItemSelect.state.totalItem,
       selectedProduct: transactionItemSelect.state.selectedProduct,
       variant: match(transactionItemSelect.state)

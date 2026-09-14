@@ -20,7 +20,10 @@ export const TransactionDetailHandler = ({
       name={transactionDetail.state.transaction?.name ?? ''}
       source={transactionDetail.state.transaction?.source ?? 'pos'}
       table={transactionDetail.state.transaction?.table ?? null}
-      orderNumber={transactionDetail.state.transaction?.orderNumber ?? 0}
+      pagerNumber={transactionDetail.state.transaction?.pagerNumber ?? 0}
+      transactionNumber={
+        transactionDetail.state.transaction?.transactionNumber ?? 0
+      }
       total={transactionDetail.state.transaction?.total ?? 0}
       transactionItems={
         transactionDetail.state.transaction?.transactionItems ?? []

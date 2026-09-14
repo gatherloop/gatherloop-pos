@@ -170,7 +170,7 @@ func TestTransactionHandler_CreateTransaction(t *testing.T) {
 	}{
 		{
 			name: "success",
-			body: `{"name": "Order 1", "orderNumber": 1, "transactionItems": [{"variantId": 1, "amount": 2, "note": "", "discountAmount": 0}], "transactionCoupons": []}`,
+			body: `{"name": "Order 1", "pagerNumber": 1, "transactionItems": [{"variantId": 1, "amount": 2, "note": "", "discountAmount": 0}], "transactionCoupons": []}`,
 			setupMocks: func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository) {
 				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
@@ -188,7 +188,7 @@ func TestTransactionHandler_CreateTransaction(t *testing.T) {
 		},
 		{
 			name: "variant not found",
-			body: `{"name": "Order 1", "orderNumber": 1, "transactionItems": [{"variantId": 99, "amount": 1, "note": "", "discountAmount": 0}], "transactionCoupons": []}`,
+			body: `{"name": "Order 1", "pagerNumber": 1, "transactionItems": [{"variantId": 99, "amount": 1, "note": "", "discountAmount": 0}], "transactionCoupons": []}`,
 			setupMocks: func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository) {
 				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
@@ -225,7 +225,7 @@ func TestTransactionHandler_CreateTransaction_DefaultsToPos(t *testing.T) {
 	})
 	defer ctrl.Finish()
 
-	body := `{"name": "Order 1", "orderNumber": 1, "transactionItems": [{"variantId": 1, "amount": 2, "note": "", "discountAmount": 0}], "transactionCoupons": []}`
+	body := `{"name": "Order 1", "pagerNumber": 1, "transactionItems": [{"variantId": 1, "amount": 2, "note": "", "discountAmount": 0}], "transactionCoupons": []}`
 	req := httptest.NewRequest(http.MethodPost, "/transactions", bytes.NewBufferString(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -248,7 +248,7 @@ func TestTransactionHandler_UpdateTransactionById(t *testing.T) {
 		{
 			name:          "success",
 			transactionId: "1",
-			body:          `{"name": "Order 1", "orderNumber": 1, "transactionItems": [{"variantId": 1, "amount": 1, "note": "", "discountAmount": 0}], "transactionCoupons": []}`,
+			body:          `{"name": "Order 1", "pagerNumber": 1, "transactionItems": [{"variantId": 1, "amount": 1, "note": "", "discountAmount": 0}], "transactionCoupons": []}`,
 			setupMocks: func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository) {
 				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
@@ -269,7 +269,7 @@ func TestTransactionHandler_UpdateTransactionById(t *testing.T) {
 		{
 			name:          "cannot update paid transaction",
 			transactionId: "2",
-			body:          `{"name": "Order 1", "orderNumber": 1, "transactionItems": [], "transactionCoupons": []}`,
+			body:          `{"name": "Order 1", "pagerNumber": 1, "transactionItems": [], "transactionCoupons": []}`,
 			setupMocks: func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository) {
 				paidAt := time.Now()
 				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(

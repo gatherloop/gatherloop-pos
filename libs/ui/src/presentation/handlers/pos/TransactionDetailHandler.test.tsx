@@ -70,7 +70,17 @@ describe('TransactionDetailHandler', () => {
         await flushPromises();
       });
 
-      expect(screen.getByText('Order Number')).toBeTruthy();
+      expect(screen.getByText('Pager Number')).toBeTruthy();
+    });
+
+    it('should show the transaction number', async () => {
+      render(<TransactionDetailHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByText('Transaction Number')).toBeTruthy();
     });
 
     it('should show pre-filled data when transaction is preloaded', () => {

@@ -17,12 +17,13 @@ describe('TransactionCreateUsecase', () => {
 
       tester.dispatch({
         type: 'SUBMIT',
-        values: { name: 'Transaction 1', orderNumber: 1, transactionItems: [], transactionCoupons: [] },
+        values: { name: 'Transaction 1', pagerNumber: 1, transactionItems: [], transactionCoupons: [] },
       });
       expect(tester.state.type).toBe('submitting');
 
       await flushPromises();
       expect(tester.state.type).toBe('submitSuccess');
+      expect(tester.state.transactionNumber).toBe(1);
     });
   });
 
@@ -37,7 +38,7 @@ describe('TransactionCreateUsecase', () => {
 
       tester.dispatch({
         type: 'SUBMIT',
-        values: { name: 'Transaction 1', orderNumber: 1, transactionItems: [], transactionCoupons: [] },
+        values: { name: 'Transaction 1', pagerNumber: 1, transactionItems: [], transactionCoupons: [] },
       });
       expect(tester.state.type).toBe('submitting');
 

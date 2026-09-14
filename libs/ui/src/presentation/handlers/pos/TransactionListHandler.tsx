@@ -101,7 +101,8 @@ export const TransactionListHandler = ({
       ? dayjs(transaction.paidAt).format('DD/MM/YYYY HH:mm')
       : undefined,
     name: transaction.name,
-    orderNumber: transaction.orderNumber,
+    transactionNumber: transaction.transactionNumber,
+    pagerNumber: transaction.pagerNumber,
     items: transaction.transactionItems
       .sort((a, b) => a.productName.localeCompare(b.productName))
       .map(({ productName, values, price, amount, discountAmount, note }) => ({
@@ -123,7 +124,13 @@ export const TransactionListHandler = ({
   });
 
   const buildOrderSlipSource = (transaction: Transaction): OrderSlipSource => ({
-    ...buildPrintTransaction(transaction),
+    createdAt: dayjs(transaction.createdAt).format('DD/MM/YYYY HH:mm'),
+    paidAt: transaction.paidAt
+      ? dayjs(transaction.paidAt).format('DD/MM/YYYY HH:mm')
+      : undefined,
+    name: transaction.name,
+    pagerNumber: transaction.pagerNumber,
+    transactionNumber: transaction.transactionNumber,
     items: transaction.transactionItems,
   });
 
@@ -168,7 +175,9 @@ export const TransactionListHandler = ({
         });
       }}
       onPrintOrderSlipMenuPress={(transaction) => {
-        const payload = buildOrderSlipPayload(buildOrderSlipSource(transaction));
+        const payload = buildOrderSlipPayload(
+          buildOrderSlipSource(transaction)
+        );
         if (payload) print(payload);
       }}
       onEmptyActionPress={() => router.push('/transactions/create')}

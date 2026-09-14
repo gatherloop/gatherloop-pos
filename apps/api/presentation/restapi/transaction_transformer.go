@@ -109,7 +109,8 @@ func ToApiTransaction(transaction domain.Transaction) apiContract.Transaction {
 		Name:               transaction.Name,
 		Source:             string(transaction.Source),
 		Table:              table,
-		OrderNumber:        transaction.OrderNumber,
+		PagerNumber:        transaction.PagerNumber,
+		TransactionNumber:  transaction.TransactionNumber,
 		DeletedAt:          transaction.DeletedAt,
 		CreatedAt:          transaction.CreatedAt,
 		WalletId:           transaction.WalletId,
@@ -154,7 +155,7 @@ func ToTransaction(transactionRequest apiContract.TransactionRequest) domain.Tra
 
 	return domain.Transaction{
 		Name:               transactionRequest.Name,
-		OrderNumber:        transactionRequest.OrderNumber,
+		PagerNumber:        transactionRequest.PagerNumber,
 		TransactionItems:   transactionItems,
 		TransactionCoupons: transactionCoupons,
 	}

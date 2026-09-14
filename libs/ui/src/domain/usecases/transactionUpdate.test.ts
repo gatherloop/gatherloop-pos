@@ -21,7 +21,7 @@ describe('TransactionUpdateUsecase', () => {
 
       tester.dispatch({
         type: 'SUBMIT',
-        values: { name: 'Updated Transaction', orderNumber: 1, transactionItems: [], transactionCoupons: [] },
+        values: { name: 'Updated Transaction', pagerNumber: 1, transactionItems: [], transactionCoupons: [] },
       });
       expect(tester.state.type).toBe('submitting');
 
@@ -65,7 +65,7 @@ describe('TransactionUpdateUsecase', () => {
 
       tester.dispatch({
         type: 'SUBMIT',
-        values: { name: 'Updated Transaction', orderNumber: 1, transactionItems: [], transactionCoupons: [] },
+        values: { name: 'Updated Transaction', pagerNumber: 1, transactionItems: [], transactionCoupons: [] },
       });
       expect(tester.state.type).toBe('submitting');
 

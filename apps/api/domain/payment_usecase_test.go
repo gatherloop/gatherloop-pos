@@ -266,7 +266,7 @@ func TestPaymentUsecase_Checkout(t *testing.T) {
 		assert.NotEqual(t, stalePayment.Id, payment.Id)
 	})
 
-	t.Run("prices and snapshots each item from the current variant, and orderNumber stays 0", func(t *testing.T) {
+	t.Run("prices and snapshots each item from the current variant, and pagerNumber stays 0", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -292,7 +292,7 @@ func TestPaymentUsecase_Checkout(t *testing.T) {
 			DoAndReturn(func(_ context.Context, transaction domain.Transaction) (domain.Transaction, *domain.Error) {
 				assert.Equal(t, domain.TransactionSourceOrder, transaction.Source)
 				assert.Equal(t, int64(1), *transaction.CartId)
-				assert.Equal(t, int64(0), transaction.OrderNumber)
+				assert.Equal(t, int64(0), transaction.PagerNumber)
 				assert.Equal(t, []domain.TransactionCoupon{}, transaction.TransactionCoupons)
 				assert.Equal(t, float32(38000), transaction.Total)
 				assert.Len(t, transaction.TransactionItems, 2)

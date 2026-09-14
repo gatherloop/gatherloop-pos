@@ -99,7 +99,7 @@ test.describe.serial('Transaction Flow', () => {
 
     const unpaidTx = await api.createTransaction(request, {
       name: CUSTOMER_NAME_2,
-      orderNumber: 0,
+      pagerNumber: 0,
       transactionItems: [
         {
           variantId: testVariant.id,

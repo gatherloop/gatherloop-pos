@@ -66,7 +66,7 @@ export const TransactionCartView = ({
       <Field name="name" label="Customer Name" flex={1}>
         <InputText />
       </Field>
-      <Field name="orderNumber" label="Order Number" flex={1}>
+      <Field name="pagerNumber" label="Pager Number" flex={1}>
         <InputNumber />
       </Field>
 

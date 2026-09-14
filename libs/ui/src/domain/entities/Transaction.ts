@@ -40,7 +40,8 @@ export type Transaction = {
   name: string;
   source: TransactionSource;
   table: PublicTable | null;
-  orderNumber: number;
+  pagerNumber: number;
+  transactionNumber: number;
   total: number;
   totalIncome: number;
   transactionItems: TransactionItem[];
@@ -67,14 +68,14 @@ type TransactionItemForm = {
 
 export type TransactionForm = {
   name: string;
-  orderNumber: number;
+  pagerNumber: number;
   transactionItems: TransactionItemForm[];
   transactionCoupons: TransactionCouponForm[];
 };
 
 export const transactionFormSchema = z.object({
   name: z.string().min(1),
-  orderNumber: z.number(),
+  pagerNumber: z.number(),
   transactionItems: z
     .array(
       z.lazy(() =>
