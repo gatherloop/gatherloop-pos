@@ -247,7 +247,7 @@ test.describe.serial('Table Ordering', () => {
     });
   });
 
-  test('re-adding an item and checking out reaches the checkout summary without submitting an order', async ({
+  test('re-adding an item and opening the name sheet does not submit an order', async ({
     page,
   }) => {
     await page.goto(`t/${table.code}`);
@@ -263,15 +263,11 @@ test.describe.serial('Table Ordering', () => {
     await sel.cartBar.viewCartButton(page).click();
     await expect(sel.cartScreen.lineItemName(page, PRODUCT_NAME)).toBeVisible();
 
-    await sel.cartScreen.checkoutButton(page).click();
+    await sel.cartScreen.checkoutButton(page, formatRupiah(LARGE_PRICE)).click();
+    await expect(sel.cartScreen.nameInput(page)).toBeVisible();
 
-    await expect(page).toHaveURL(new RegExp(`/t/${table.code}/checkout$`));
-    await expect(sel.checkout.summaryTitle(page)).toBeVisible();
-    await expect(
-      sel.checkout.payButton(page, formatRupiah(LARGE_PRICE))
-    ).toBeVisible();
-
-    await page.goto(`t/${table.code}/cart`);
+    await sel.cartScreen.cancelNameButton(page).click();
+    await expect(sel.cartScreen.nameInput(page)).toBeHidden();
     await expect(sel.cartScreen.lineItemName(page, PRODUCT_NAME)).toBeVisible();
   });
 

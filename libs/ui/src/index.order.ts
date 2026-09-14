@@ -6,6 +6,5 @@ export * from './presentation/views/components/menu/MenuItemThumbnail';
 export * from './utils/currency';
 export * from './app/order/MenuList';
 export * from './app/order/Cart';
-export * from './app/order/Checkout';
 export * from './app/order/OrderStatus';
 export * from './app/order/TableScan';
