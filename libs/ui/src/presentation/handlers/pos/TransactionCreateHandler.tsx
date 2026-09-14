@@ -156,6 +156,7 @@ export const TransactionCreateHandler = ({
         createdAt: dayjs(new Date().toISOString()).format('DD/MM/YYYY HH:mm'),
         paidAt: dayjs(new Date().toISOString()).format('DD/MM/YYYY HH:mm'),
         name: transactionCreate.state.values.name,
+        transactionNumber: transactionCreate.state.transactionNumber ?? 0,
         orderNumber: transactionCreate.state.values.pagerNumber,
         items: transactionItems.map(
           ({ variant, price, amount, discountAmount, note }) => ({
@@ -184,6 +185,7 @@ export const TransactionCreateHandler = ({
         paidAt: transaction.paidAt,
         name: transaction.name,
         pagerNumber: transactionCreate.state.values.pagerNumber,
+        transactionNumber: transaction.transactionNumber,
         items: transactionItems,
       };
 
@@ -222,6 +224,7 @@ export const TransactionCreateHandler = ({
     print,
     router,
     show,
+    transactionCreate.state.transactionNumber,
     transactionCreate.state.values,
     transactionPay.state.paidAmount,
     transactionPay.state.type,

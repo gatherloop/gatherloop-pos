@@ -350,6 +350,7 @@ describe('TransactionListHandler', () => {
         expect.objectContaining({
           type: 'ORDER_SLIP',
           orderSlip: expect.objectContaining({
+            transactionNumber: 1,
             items: {
               kitchens: [expect.objectContaining({ name: 'Product 0 - ' })],
               bars: [expect.objectContaining({ name: 'Product 1 - ' })],

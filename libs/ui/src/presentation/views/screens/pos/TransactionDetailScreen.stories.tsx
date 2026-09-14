@@ -10,6 +10,7 @@ const defaultArgs = {
   source: mockTransaction.source,
   table: mockTransaction.table,
   pagerNumber: mockTransaction.pagerNumber,
+  transactionNumber: mockTransaction.transactionNumber,
   total: mockTransaction.total,
   transactionItems: mockTransaction.transactionItems,
   transactionCoupons: mockTransaction.transactionCoupons,

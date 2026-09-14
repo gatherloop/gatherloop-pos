@@ -101,6 +101,7 @@ export const TransactionListHandler = ({
       ? dayjs(transaction.paidAt).format('DD/MM/YYYY HH:mm')
       : undefined,
     name: transaction.name,
+    transactionNumber: transaction.transactionNumber,
     orderNumber: transaction.pagerNumber,
     items: transaction.transactionItems
       .sort((a, b) => a.productName.localeCompare(b.productName))
@@ -129,6 +130,7 @@ export const TransactionListHandler = ({
       : undefined,
     name: transaction.name,
     pagerNumber: transaction.pagerNumber,
+    transactionNumber: transaction.transactionNumber,
     items: transaction.transactionItems,
   });
 

@@ -38,6 +38,7 @@ export const User = NullIcon;
 export const X = NullIcon;
 export const ConciergeBell = NullIcon;
 export const DollarSign = NullIcon;
+export const Hash = NullIcon;
 export const LayoutDashboard = NullIcon;
 export const LogOut = NullIcon;
 export const Printer = NullIcon;

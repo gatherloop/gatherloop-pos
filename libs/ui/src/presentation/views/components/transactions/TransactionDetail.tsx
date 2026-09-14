@@ -5,6 +5,7 @@ import {
   Calendar,
   ConciergeBell,
   CreditCard,
+  Hash,
   MapPin,
   Tag,
   User,
@@ -25,6 +26,7 @@ export type TransactionDetailProps = {
   source: TransactionSource;
   table?: PublicTable | null;
   pagerNumber: number;
+  transactionNumber: number;
   createdAt: string;
   paidAt?: string;
   walletName?: string;
@@ -44,6 +46,7 @@ export const TransactionDetail = ({
   source,
   table,
   pagerNumber,
+  transactionNumber,
   createdAt,
   paidAt,
   walletName,
@@ -87,6 +90,18 @@ export const TransactionDetail = ({
   return (
     <YStack gap="$3">
       <XStack gap="$2" flexWrap="wrap">
+        <Card>
+          <Card.Header padding="$2.5">
+            <XStack gap="$2" alignItems="center">
+              <Hash size="$2" />
+              <YStack>
+                <Paragraph size="$1">Transaction Number</Paragraph>
+                <Paragraph size="$2">{transactionNumber}</Paragraph>
+              </YStack>
+            </XStack>
+          </Card.Header>
+        </Card>
+
         <Card>
           <Card.Header padding="$2.5">
             <XStack gap="$2" alignItems="center">
