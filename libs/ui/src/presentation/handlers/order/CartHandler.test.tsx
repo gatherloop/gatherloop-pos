@@ -93,7 +93,7 @@ describe('CartHandler', () => {
 
     await settle();
 
-    expect(screen.getByText('Meja 01')).toBeTruthy();
+    expect(screen.getByText('Meja 01 · Lantai 1')).toBeTruthy();
     expect(screen.getByText('Es Kopi Susu')).toBeTruthy();
     expect(screen.getByText('Regular')).toBeTruthy();
     expect(screen.getByText('Catatan: less sugar')).toBeTruthy();
