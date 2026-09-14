@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -159,5 +160,96 @@ func TestCreateTransaction_DefaultsCreatedAtWhenZero(t *testing.T) {
 		tx := ctx.Value("tx").(*gorm.DB)
 		lastNumber := lastCounterNumber(t, ctx, tx, created.CreatedAt.Format("2006-01-02"))
 		assert.Equal(t, created.TransactionNumber, lastNumber)
+	})
+}
+
+// Phase 7 of docs/prd-daily-transaction-number.md (FR-8/D15): a fully numeric
+// search query also matches transaction_number, on any date.
+func TestGetTransactionList_SearchByTransactionNumber(t *testing.T) {
+	db := connectTestDB(t)
+
+	withTestTransaction(t, db, func(ctx context.Context, repo domain.TransactionRepository) {
+		day := time.Date(2030, time.January, 19, 10, 0, 0, 0, time.Local)
+
+		target, err := repo.CreateTransaction(ctx, minimalTransaction(day))
+		require.Nil(t, err)
+
+		other, err := repo.CreateTransaction(ctx, minimalTransaction(day.Add(time.Hour)))
+		require.Nil(t, err)
+		require.NotEqual(t, target.TransactionNumber, other.TransactionNumber)
+
+		query := strconv.FormatInt(target.TransactionNumber, 10)
+
+		results, listErr := repo.GetTransactionList(ctx, query, domain.CreatedAt, domain.Descending, 0, 0, domain.All, nil, nil)
+		require.Nil(t, listErr)
+
+		total, totalErr := repo.GetTransactionListTotal(ctx, query, domain.All, nil, nil)
+		require.Nil(t, totalErr)
+
+		var foundIds []int64
+		for _, result := range results {
+			foundIds = append(foundIds, result.Id)
+		}
+		assert.Contains(t, foundIds, target.Id)
+		assert.NotContains(t, foundIds, other.Id)
+		assert.EqualValues(t, len(results), total)
+	})
+}
+
+func TestGetTransactionList_SearchByTransactionNumberMatchesAnyDate(t *testing.T) {
+	db := connectTestDB(t)
+
+	withTestTransaction(t, db, func(ctx context.Context, repo domain.TransactionRepository) {
+		dayOne := time.Date(2030, time.January, 20, 9, 0, 0, 0, time.Local)
+		dayTwo := time.Date(2030, time.January, 21, 9, 0, 0, 0, time.Local)
+
+		firstOfDayOne, err := repo.CreateTransaction(ctx, minimalTransaction(dayOne))
+		require.Nil(t, err)
+		firstOfDayTwo, err := repo.CreateTransaction(ctx, minimalTransaction(dayTwo))
+		require.Nil(t, err)
+		require.Equal(t, int64(1), firstOfDayOne.TransactionNumber)
+		require.Equal(t, int64(1), firstOfDayTwo.TransactionNumber)
+
+		results, listErr := repo.GetTransactionList(ctx, "1", domain.CreatedAt, domain.Descending, 0, 0, domain.All, nil, nil)
+		require.Nil(t, listErr)
+
+		var foundIds []int64
+		for _, result := range results {
+			foundIds = append(foundIds, result.Id)
+		}
+		assert.Contains(t, foundIds, firstOfDayOne.Id)
+		assert.Contains(t, foundIds, firstOfDayTwo.Id)
+	})
+}
+
+func TestGetTransactionList_SearchByNameStillWorks(t *testing.T) {
+	db := connectTestDB(t)
+
+	withTestTransaction(t, db, func(ctx context.Context, repo domain.TransactionRepository) {
+		day := time.Date(2030, time.January, 22, 10, 0, 0, 0, time.Local)
+
+		named := minimalTransaction(day)
+		named.Name = "Budi Santoso"
+		target, err := repo.CreateTransaction(ctx, named)
+		require.Nil(t, err)
+
+		other := minimalTransaction(day.Add(time.Hour))
+		other.Name = "Siti Aminah"
+		unrelated, err := repo.CreateTransaction(ctx, other)
+		require.Nil(t, err)
+
+		results, listErr := repo.GetTransactionList(ctx, "Budi", domain.CreatedAt, domain.Descending, 0, 0, domain.All, nil, nil)
+		require.Nil(t, listErr)
+
+		total, totalErr := repo.GetTransactionListTotal(ctx, "Budi", domain.All, nil, nil)
+		require.Nil(t, totalErr)
+
+		var foundIds []int64
+		for _, result := range results {
+			foundIds = append(foundIds, result.Id)
+		}
+		assert.Contains(t, foundIds, target.Id)
+		assert.NotContains(t, foundIds, unrelated.Id)
+		assert.EqualValues(t, len(results), total)
 	})
 }
