@@ -373,6 +373,7 @@ export const mockTransaction: Transaction = {
   wallet: mockWallet,
   paidAt: '2024-01-20T10:30:00.000Z',
   paidAmount: 70000,
+  completedAt: null,
 };
 
 export const mockTransactions: Transaction[] = [
@@ -412,6 +413,7 @@ export const mockTransactions: Transaction[] = [
     wallet: null,
     paidAt: null,
     paidAmount: 0,
+    completedAt: null,
   },
 ];
 

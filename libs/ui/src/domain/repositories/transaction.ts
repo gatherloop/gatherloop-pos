@@ -56,6 +56,10 @@ export interface TransactionRepository {
 
   unpayTransaction: (transactionId: number) => Promise<void>;
 
+  completeTransaction: (transactionId: number) => Promise<void>;
+
+  uncompleteTransaction: (transactionId: number) => Promise<void>;
+
   getTransactionStatisticList: (params: {
     groupBy: 'date' | 'month';
     startDate: string | null;

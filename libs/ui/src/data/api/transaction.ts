@@ -15,6 +15,8 @@ import {
   TransactionStatistics200,
   TransactionListQueryParams,
   transactionUnpayById,
+  transactionCompleteById,
+  transactionUncompleteById,
 } from '../../../../api-contract/src';
 import {
   Transaction,
@@ -82,6 +84,18 @@ export class ApiTransactionRepository implements TransactionRepository {
     transactionId
   ) => {
     return transactionUnpayById(transactionId).then();
+  };
+
+  completeTransaction: TransactionRepository['completeTransaction'] = (
+    transactionId
+  ) => {
+    return transactionCompleteById(transactionId).then();
+  };
+
+  uncompleteTransaction: TransactionRepository['uncompleteTransaction'] = (
+    transactionId
+  ) => {
+    return transactionUncompleteById(transactionId).then();
   };
 
   fetchTransactionById = (

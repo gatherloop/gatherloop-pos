@@ -114,6 +114,7 @@ export function toTransaction(transaction: ApiTransaction): Transaction {
     paidAmount: transaction.paidAmount,
     source: transaction.source,
     table: transaction.table ?? null,
+    completedAt: transaction.completedAt ?? null,
   };
 }
 
