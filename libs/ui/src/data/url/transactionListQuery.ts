@@ -1,6 +1,7 @@
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import {
   PaymentStatus,
+  TransactionFulfillmentFilter,
   TransactionListQueryRepository,
   TransactionSourceFilter,
 } from '../../domain';
@@ -89,6 +90,15 @@ export class UrlTransactionListQueryRepository
   setSource = (source: TransactionSourceFilter) => {
     setQueryParam('source', source);
   };
+
+  getFulfillment = (url?: string): TransactionFulfillmentFilter => {
+    const fulfillmentQuery = getQueryParam('fulfillment', url);
+    return fulfillmentQuery ? toFulfillment(fulfillmentQuery) ?? 'all' : 'all';
+  };
+
+  setFulfillment = (fulfillment: TransactionFulfillmentFilter) => {
+    setQueryParam('fulfillment', fulfillment);
+  };
 }
 
 const toSortBy = createStringUnionParser<'created_at'[]>(['created_at']);
@@ -102,4 +112,9 @@ const toSource = createStringUnionParser<TransactionSourceFilter[]>([
   'all',
   'pos',
   'order',
+]);
+const toFulfillment = createStringUnionParser<TransactionFulfillmentFilter[]>([
+  'all',
+  'preparing',
+  'ready',
 ]);

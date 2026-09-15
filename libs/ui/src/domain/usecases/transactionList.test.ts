@@ -39,6 +39,7 @@ describe('TransactionListUsecase', () => {
         wallets: [],
         walletId: null,
         source: transactionListQueryRepository.getSource(),
+        fulfillment: transactionListQueryRepository.getFulfillment(),
         page: transactionListQueryRepository.getPage(),
         query: transactionListQueryRepository.getSearchQuery(),
         errorMessage: null,
@@ -57,6 +58,7 @@ describe('TransactionListUsecase', () => {
         wallets: walletRepository.wallets,
         walletId: null,
         source: transactionListQueryRepository.getSource(),
+        fulfillment: transactionListQueryRepository.getFulfillment(),
         page: transactionListQueryRepository.getPage(),
         query: transactionListQueryRepository.getSearchQuery(),
         errorMessage: null,
@@ -75,6 +77,7 @@ describe('TransactionListUsecase', () => {
         wallets: walletRepository.wallets,
         walletId: null,
         source: transactionListQueryRepository.getSource(),
+        fulfillment: transactionListQueryRepository.getFulfillment(),
         page: transactionListQueryRepository.getPage(),
         query: transactionListQueryRepository.getSearchQuery(),
         errorMessage: null,
@@ -93,6 +96,7 @@ describe('TransactionListUsecase', () => {
         wallets: walletRepository.wallets,
         walletId: null,
         source: transactionListQueryRepository.getSource(),
+        fulfillment: transactionListQueryRepository.getFulfillment(),
         page: transactionListQueryRepository.getPage(),
         query: transactionListQueryRepository.getSearchQuery(),
         errorMessage: null,
@@ -111,6 +115,7 @@ describe('TransactionListUsecase', () => {
         wallets: walletRepository.wallets,
         walletId: null,
         source: transactionListQueryRepository.getSource(),
+        fulfillment: transactionListQueryRepository.getFulfillment(),
         page: 2,
         query: transactionListQueryRepository.getSearchQuery(),
         errorMessage: null,
@@ -150,6 +155,7 @@ describe('TransactionListUsecase', () => {
         wallets: [],
         walletId: null,
         source: transactionListQueryRepository.getSource(),
+        fulfillment: transactionListQueryRepository.getFulfillment(),
         page: transactionListQueryRepository.getPage(),
         query: transactionListQueryRepository.getSearchQuery(),
         errorMessage: null,
@@ -168,6 +174,7 @@ describe('TransactionListUsecase', () => {
         wallets: [],
         walletId: null,
         source: transactionListQueryRepository.getSource(),
+        fulfillment: transactionListQueryRepository.getFulfillment(),
         page: transactionListQueryRepository.getPage(),
         query: transactionListQueryRepository.getSearchQuery(),
         errorMessage: 'Failed to fetch transactions',
@@ -187,6 +194,7 @@ describe('TransactionListUsecase', () => {
         wallets: [],
         walletId: null,
         source: transactionListQueryRepository.getSource(),
+        fulfillment: transactionListQueryRepository.getFulfillment(),
         page: transactionListQueryRepository.getPage(),
         query: transactionListQueryRepository.getSearchQuery(),
         errorMessage: null,
@@ -205,6 +213,7 @@ describe('TransactionListUsecase', () => {
         wallets: walletRepository.wallets,
         walletId: null,
         source: transactionListQueryRepository.getSource(),
+        fulfillment: transactionListQueryRepository.getFulfillment(),
         page: transactionListQueryRepository.getPage(),
         query: transactionListQueryRepository.getSearchQuery(),
         errorMessage: null,
@@ -214,6 +223,65 @@ describe('TransactionListUsecase', () => {
         itemPerPage: transactionListQueryRepository.getItemPerPage(),
         fetchDebounceDelay: 0,
       });
+    });
+  });
+
+  describe('fulfillment filter', () => {
+    it('should move source to order when a non-all fulfillment is selected', async () => {
+      const repository = new MockTransactionRepository();
+      const transactionListQueryRepository =
+        new MockTransactionListQueryRepository();
+      const walletRepository = new MockWalletRepository();
+      const usecase = new TransactionListUsecase(
+        repository,
+        transactionListQueryRepository,
+        walletRepository,
+        { transactions: [], totalItem: 0, wallets: [] }
+      );
+      const transactionList = new UsecaseTester<
+        TransactionListUsecase,
+        TransactionListState,
+        TransactionListAction,
+        TransactionListParams
+      >(usecase);
+      await flushPromises();
+
+      transactionList.dispatch({
+        type: 'CHANGE_PARAMS',
+        fulfillment: 'preparing',
+      });
+
+      expect(transactionList.state.fulfillment).toBe('preparing');
+      expect(transactionList.state.source).toBe('order');
+    });
+
+    it('should leave source untouched when fulfillment is reset to all', async () => {
+      const repository = new MockTransactionRepository();
+      const transactionListQueryRepository =
+        new MockTransactionListQueryRepository();
+      const walletRepository = new MockWalletRepository();
+      const usecase = new TransactionListUsecase(
+        repository,
+        transactionListQueryRepository,
+        walletRepository,
+        { transactions: [], totalItem: 0, wallets: [] }
+      );
+      const transactionList = new UsecaseTester<
+        TransactionListUsecase,
+        TransactionListState,
+        TransactionListAction,
+        TransactionListParams
+      >(usecase);
+      await flushPromises();
+
+      transactionList.dispatch({ type: 'CHANGE_PARAMS', source: 'pos' });
+      transactionList.dispatch({
+        type: 'CHANGE_PARAMS',
+        fulfillment: 'all',
+      });
+
+      expect(transactionList.state.fulfillment).toBe('all');
+      expect(transactionList.state.source).toBe('pos');
     });
   });
 

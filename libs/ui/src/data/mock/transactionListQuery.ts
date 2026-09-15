@@ -1,4 +1,8 @@
-import { PaymentStatus, TransactionSourceFilter } from '../../domain/entities';
+import {
+  PaymentStatus,
+  TransactionFulfillmentFilter,
+  TransactionSourceFilter,
+} from '../../domain/entities';
 import { TransactionListQueryRepository } from '../../domain/repositories/transactionListQuery';
 
 export class MockTransactionListQueryRepository
@@ -12,6 +16,7 @@ export class MockTransactionListQueryRepository
   getPaymentStatus = () => 'all' as PaymentStatus;
   getWalletId = () => null as number | null;
   getSource = () => 'all' as TransactionSourceFilter;
+  getFulfillment = () => 'all' as TransactionFulfillmentFilter;
 
   setPage = (page: number) => {
     console.log(`Setting page to ${page}`);
@@ -36,5 +41,8 @@ export class MockTransactionListQueryRepository
   };
   setSource = (source: TransactionSourceFilter) => {
     console.log(`Setting source to ${source}`);
+  };
+  setFulfillment = (fulfillment: TransactionFulfillmentFilter) => {
+    console.log(`Setting fulfillment to ${fulfillment}`);
   };
 }

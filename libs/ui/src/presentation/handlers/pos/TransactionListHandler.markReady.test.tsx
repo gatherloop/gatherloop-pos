@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, within, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TransactionListHandler } from './TransactionListHandler';
 import {
@@ -55,7 +55,8 @@ describe('TransactionListHandler mark ready / mark preparing', () => {
       await flushPromises();
     });
 
-    expect(screen.getByText('Preparing')).toBeTruthy();
+    const list = within(screen.getByTestId('flat-list'));
+    expect(list.getByText('Preparing')).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: 'Mark as Ready' }));
     await user.click(screen.getByRole('button', { name: 'Yes' }));
@@ -64,8 +65,8 @@ describe('TransactionListHandler mark ready / mark preparing', () => {
       await flushPromises();
     });
 
-    expect(screen.getByText('Ready')).toBeTruthy();
-    expect(screen.queryByText('Preparing')).toBeNull();
+    expect(list.getByText('Ready')).toBeTruthy();
+    expect(list.queryByText('Preparing')).toBeNull();
   });
 
   it('does not show Mark as Ready or Mark as Preparing on a POS row', async () => {
@@ -105,7 +106,8 @@ describe('TransactionListHandler mark ready / mark preparing', () => {
       await flushPromises();
     });
 
-    expect(screen.getByText('Preparing')).toBeTruthy();
-    expect(screen.queryByText('Ready')).toBeNull();
+    const list = within(screen.getByTestId('flat-list'));
+    expect(list.getByText('Preparing')).toBeTruthy();
+    expect(list.queryByText('Ready')).toBeNull();
   });
 });

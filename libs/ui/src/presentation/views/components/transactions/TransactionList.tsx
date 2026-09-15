@@ -16,6 +16,7 @@ import { TransactionListItem } from './TransactionListItem';
 import {
   PaymentStatus,
   Transaction,
+  TransactionFulfillmentFilter,
   TransactionSourceFilter,
   Wallet,
 } from '../../../../domain';
@@ -29,6 +30,8 @@ export type TransactionListProps = {
   onPaymentStatusChange: (paymentStatus: PaymentStatus) => void;
   source: TransactionSourceFilter;
   onSourceChange: (source: TransactionSourceFilter) => void;
+  fulfillment: TransactionFulfillmentFilter;
+  onFulfillmentChange: (fulfillment: TransactionFulfillmentFilter) => void;
   variant: { type: 'loading' } | { type: 'loaded' } | { type: 'error' };
   transactions: Transaction[];
   currentPage: number;
@@ -61,6 +64,8 @@ export const TransactionList = ({
   onPaymentStatusChange,
   source,
   onSourceChange,
+  fulfillment,
+  onFulfillmentChange,
   variant,
   transactions,
   itemPerPage,
@@ -231,6 +236,42 @@ export const TransactionList = ({
                         <RadioGroup.Indicator />
                       </RadioGroup.Item>
                       <Label htmlFor="order-source">Order</Label>
+                    </XStack>
+                  </XStack>
+                </RadioGroup>
+              </YStack>
+
+              <Separator />
+
+              <YStack>
+                <Paragraph>Fulfilment</Paragraph>
+                <RadioGroup
+                  value={fulfillment}
+                  onValueChange={(value) =>
+                    onFulfillmentChange(value as TransactionFulfillmentFilter)
+                  }
+                  gap="$2"
+                >
+                  <XStack gap="$3">
+                    <XStack gap="$2" alignItems="center">
+                      <RadioGroup.Item value="all" id="all-fulfillment">
+                        <RadioGroup.Indicator />
+                      </RadioGroup.Item>
+                      <Label htmlFor="all-fulfillment">All</Label>
+                    </XStack>
+
+                    <XStack gap="$2" alignItems="center">
+                      <RadioGroup.Item value="preparing" id="preparing-fulfillment">
+                        <RadioGroup.Indicator />
+                      </RadioGroup.Item>
+                      <Label htmlFor="preparing-fulfillment">Preparing</Label>
+                    </XStack>
+
+                    <XStack gap="$2" alignItems="center">
+                      <RadioGroup.Item value="ready" id="ready-fulfillment">
+                        <RadioGroup.Indicator />
+                      </RadioGroup.Item>
+                      <Label htmlFor="ready-fulfillment">Ready</Label>
                     </XStack>
                   </XStack>
                 </RadioGroup>
