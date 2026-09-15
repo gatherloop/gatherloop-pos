@@ -224,9 +224,8 @@ jobs:
           API_BASE_URL: http://127.0.0.1:${{ env.API_PORT }}
           NEXT_PUBLIC_API_BASE_URL: http://127.0.0.1:${{ env.API_PORT }}
           NEXT_PUBLIC_ORDER_APP_BASE_URL: http://localhost:3001
-          # order-web-e2e's checkout.spec.ts and orderFulfillment.spec.ts,
-          # and pos-web-e2e's transactions.fulfillment.spec.ts (it drives
-          # the cart/checkout API directly to seed a paid order transaction).
+          # order-web-e2e's checkout.spec.ts only; harmless and unused by
+          # pos-web-e2e.
           DOKU_STUB_URL: http://127.0.0.1:${{ env.DOKUSTUB_PORT }}
         run: npx nx run ${{ matrix.project }}:e2e
 
