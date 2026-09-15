@@ -76,8 +76,19 @@ export const AwaitingPayment: Story = {
   },
 };
 
-export const Loaded: Story = {
-  args: { variant: { type: 'loaded', payment: paidPayment } },
+export const Preparing: Story = {
+  args: {
+    variant: { type: 'preparing', payment: paidPayment, isPolling: false },
+  },
+};
+
+export const Ready: Story = {
+  args: {
+    variant: {
+      type: 'ready',
+      payment: { ...paidPayment, fulfillmentStatus: 'ready' },
+    },
+  },
 };
 
 export const Expired: Story = {

@@ -54,9 +54,18 @@ export const OrderStatusHandler = ({
           }
         : { type: 'loading' }
     )
-    .with({ type: P.union('preparing', 'ready') }, (state) =>
+    .with({ type: 'preparing' }, (state) =>
       state.payment
-        ? { type: 'loaded', payment: state.payment }
+        ? {
+            type: 'preparing',
+            payment: state.payment,
+            isPolling: state.isPolling,
+          }
+        : { type: 'notFound' }
+    )
+    .with({ type: 'ready' }, (state) =>
+      state.payment
+        ? { type: 'ready', payment: state.payment }
         : { type: 'notFound' }
     )
     .exhaustive();

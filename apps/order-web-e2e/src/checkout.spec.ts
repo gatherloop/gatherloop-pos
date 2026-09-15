@@ -100,7 +100,9 @@ test.describe.serial('QRIS Checkout', () => {
     );
 
     await expect(sel.orderStatus.tableLabel(page, TABLE_LABEL)).toBeVisible();
-    await expect(sel.orderStatus.customerName(page, CUSTOMER_NAME)).toBeVisible();
+    await expect(
+      sel.orderStatus.transactionNumberBadge(page, payment.transactionNumber)
+    ).toBeVisible();
 
     await page.reload();
     await expect(sel.orderStatus.preparingTitle(page)).toBeVisible({
