@@ -55,6 +55,7 @@ const initialTransactions: Transaction[] = [
     wallet: null,
     paidAt: null,
     paidAmount: 0,
+    completedAt: null,
   },
   {
     id: 2,
@@ -71,6 +72,7 @@ const initialTransactions: Transaction[] = [
     wallet: null,
     paidAt: null,
     paidAmount: 0,
+    completedAt: null,
   },
 ];
 
@@ -160,6 +162,7 @@ export class MockTransactionRepository implements TransactionRepository {
       wallet: null,
       paidAt: null,
       paidAmount: 0,
+      completedAt: null,
     });
     return { transactionId, transactionNumber };
   }
@@ -201,6 +204,26 @@ export class MockTransactionRepository implements TransactionRepository {
       ...this.transactions[idx],
       paidAt: null,
       paidAmount: 0,
+    };
+  }
+
+  async completeTransaction(transactionId: number): Promise<void> {
+    if (this.shouldFail) throw new Error('Failed to complete transaction');
+    const idx = this.transactions.findIndex((t) => t.id === transactionId);
+    if (idx === -1) throw new Error('Transaction not found');
+    this.transactions[idx] = {
+      ...this.transactions[idx],
+      completedAt: new Date().toISOString(),
+    };
+  }
+
+  async uncompleteTransaction(transactionId: number): Promise<void> {
+    if (this.shouldFail) throw new Error('Failed to uncomplete transaction');
+    const idx = this.transactions.findIndex((t) => t.id === transactionId);
+    if (idx === -1) throw new Error('Transaction not found');
+    this.transactions[idx] = {
+      ...this.transactions[idx],
+      completedAt: null,
     };
   }
 
