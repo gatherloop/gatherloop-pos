@@ -3851,6 +3851,9 @@ components:
         paidAt:
           type: string
           format: date-time
+        completedAt:
+          type: string
+          format: date-time
         deletedAt:
           type: string
           format: date-time

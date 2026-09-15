@@ -119,6 +119,7 @@ func ToApiTransaction(transaction domain.Transaction) apiContract.Transaction {
 		TotalIncome:        transaction.TotalIncome,
 		PaidAt:             transaction.PaidAt,
 		PaidAmount:         transaction.PaidAmount,
+		CompletedAt:        transaction.CompletedAt,
 		TransactionItems:   apiTransactionItems,
 		TransactionCoupons: apiTransactionCoupons,
 	}
