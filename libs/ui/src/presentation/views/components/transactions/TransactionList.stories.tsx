@@ -1,7 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
 import { TransactionList } from './TransactionList';
-import { mockTransactions, mockWallets } from '../../../../../.storybook/mocks/mockData';
+import {
+  mockOrderTransactionReady,
+  mockTransactions,
+  mockWallets,
+} from '../../../../../.storybook/mocks/mockData';
 
 const defaultArgs = {
   searchValue: '',
@@ -90,5 +94,13 @@ export const FilteredBySource: Story = {
     source: 'order' as const,
     transactions: mockTransactions.filter((t) => t.source === 'order'),
     totalItem: 1,
+  },
+};
+
+export const FulfillmentStatuses: Story = {
+  args: {
+    variant: { type: 'loaded' },
+    transactions: [...mockTransactions, mockOrderTransactionReady],
+    totalItem: 3,
   },
 };
