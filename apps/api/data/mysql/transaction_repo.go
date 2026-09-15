@@ -14,7 +14,7 @@ func NewTransactionRepository(db *gorm.DB) domain.TransactionRepository {
 	return Repository{db: db}
 }
 
-func (repo Repository) GetTransactionList(ctx context.Context, query string, sortBy domain.SortBy, order domain.Order, skip int, limit int, paymentStatus domain.PaymentStatus, walletId *int, source *domain.TransactionSource) ([]domain.Transaction, *domain.Error) {
+func (repo Repository) GetTransactionList(ctx context.Context, query string, sortBy domain.SortBy, order domain.Order, skip int, limit int, paymentStatus domain.PaymentStatus, walletId *int, source *domain.TransactionSource, fulfillment *domain.TransactionFulfillment) ([]domain.Transaction, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 
 	var transactionResults []Transaction
@@ -45,12 +45,14 @@ func (repo Repository) GetTransactionList(ctx context.Context, query string, sor
 		result = result.Where("source = ?", string(*source))
 	}
 
+	result = whereTransactionFulfillmentQuery(result, fulfillment)
+
 	result = result.Find(&transactionResults)
 
 	return ToTransactionsListDomain(transactionResults), ToErrorCtx(ctx, result.Error, "GetTransactionList")
 }
 
-func (repo Repository) GetTransactionListTotal(ctx context.Context, query string, paymentStatus domain.PaymentStatus, walletId *int, source *domain.TransactionSource) (int64, *domain.Error) {
+func (repo Repository) GetTransactionListTotal(ctx context.Context, query string, paymentStatus domain.PaymentStatus, walletId *int, source *domain.TransactionSource, fulfillment *domain.TransactionFulfillment) (int64, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	var count int64
 	result := db.Table("transactions").Where("deleted_at", nil)
@@ -72,9 +74,28 @@ func (repo Repository) GetTransactionListTotal(ctx context.Context, query string
 		result = result.Where("source = ?", string(*source))
 	}
 
+	result = whereTransactionFulfillmentQuery(result, fulfillment)
+
 	result = result.Count(&count)
 
 	return count, ToErrorCtx(ctx, result.Error, "GetTransactionListTotal")
+}
+
+// D5/D22: a non-all fulfillment value implies source = 'order', server-side, so the
+// filter can't be used to ask the ambiguous "which POS row is unfulfilled" question.
+func whereTransactionFulfillmentQuery(db *gorm.DB, fulfillment *domain.TransactionFulfillment) *gorm.DB {
+	if fulfillment == nil {
+		return db
+	}
+
+	switch *fulfillment {
+	case domain.TransactionFulfillmentPreparing:
+		return db.Where("source = ? AND completed_at IS NULL", string(domain.TransactionSourceOrder))
+	case domain.TransactionFulfillmentReady:
+		return db.Where("source = ? AND completed_at IS NOT NULL", string(domain.TransactionSourceOrder))
+	default:
+		return db
+	}
 }
 
 // Shared by GetTransactionList and GetTransactionListTotal so the page and its total agree.
@@ -234,6 +255,18 @@ func (repo Repository) UnpayTransaction(ctx context.Context, id int64) *domain.E
 		"paid_amount":  0,
 	})
 	return ToErrorCtx(ctx, result.Error, "UnpayTransaction")
+}
+
+func (repo Repository) CompleteTransaction(ctx context.Context, completedAt time.Time, id int64) *domain.Error {
+	db := GetDbFromCtx(ctx, repo.db)
+	result := db.Table("transactions").Where("id = ?", id).Update("completed_at", completedAt)
+	return ToErrorCtx(ctx, result.Error, "CompleteTransaction")
+}
+
+func (repo Repository) UncompleteTransaction(ctx context.Context, id int64) *domain.Error {
+	db := GetDbFromCtx(ctx, repo.db)
+	result := db.Table("transactions").Where("id = ?", id).Update("completed_at", nil)
+	return ToErrorCtx(ctx, result.Error, "UncompleteTransaction")
 }
 
 func (repo Repository) GetTransactionStatistics(ctx context.Context, groupBy string, startDate *time.Time, endDate *time.Time) ([]domain.TransactionStatistic, *domain.Error) {

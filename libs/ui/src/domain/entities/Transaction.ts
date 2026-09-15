@@ -34,6 +34,10 @@ export type TransactionSource = 'pos' | 'order';
 
 export type TransactionSourceFilter = TransactionSource | 'all';
 
+export type TransactionFulfillmentStatus = 'preparing' | 'ready';
+
+export type TransactionFulfillmentFilter = TransactionFulfillmentStatus | 'all';
+
 export type Transaction = {
   id: number;
   createdAt: string;
@@ -49,6 +53,7 @@ export type Transaction = {
   wallet: Wallet | null;
   paidAt: string | null;
   paidAmount: number;
+  completedAt: string | null;
 };
 
 export type TransactionCouponForm = {

@@ -1712,6 +1712,7 @@ paths:
         - $ref: '#/components/parameters/PaymentStatus'
         - $ref: '#/components/parameters/WalletIdQuery'
         - $ref: '#/components/parameters/TransactionSource'
+        - $ref: '#/components/parameters/TransactionFulfillment'
       responses:
         '200':
           description: success response
@@ -1884,6 +1885,60 @@ paths:
                 $ref: '#/components/schemas/Error'
         '403':
           description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /transactions/{transactionId}/complete:
+    put:
+      summary: mark transaction as ready for pickup
+      operationId: transactionCompleteById
+      tags:
+        - transaction
+      parameters:
+        - $ref: '#/components/parameters/TransactionId'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /transactions/{transactionId}/uncomplete:
+    put:
+      summary: mark transaction back as preparing
+      operationId: transactionUncompleteById
+      tags:
+        - transaction
+      parameters:
+        - $ref: '#/components/parameters/TransactionId'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: not found error
           content:
             application/json:
               schema:
@@ -3851,6 +3906,9 @@ components:
         paidAt:
           type: string
           format: date-time
+        completedAt:
+          type: string
+          format: date-time
         deletedAt:
           type: string
           format: date-time
@@ -4545,6 +4603,8 @@ components:
         - customerName
         - tableLabel
         - items
+        - transactionNumber
+        - fulfillmentStatus
       properties:
         partnerReferenceNo:
           type: string
@@ -4569,6 +4629,12 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PaymentItem'
+        transactionNumber:
+          type: integer
+          format: int64
+        fulfillmentStatus:
+          type: string
+          enum: [preparing, ready]
     PaymentCheckoutRequest:
       type: object
       required:
@@ -5618,6 +5684,12 @@ components:
       schema:
         type: string
         enum: [pos, order, all]
+    TransactionFulfillment:
+      name: fulfillment
+      in: query
+      schema:
+        type: string
+        enum: [preparing, ready, all]
     SaleType:
       name: saleType
       in: query

@@ -9,6 +9,7 @@ export * from './calculations';
 export * from './expenses';
 export * from './materials';
 export * from './menu';
+export * from './orderStatus';
 export * from './products';
 export * from './variants';
 export * from './transactions';

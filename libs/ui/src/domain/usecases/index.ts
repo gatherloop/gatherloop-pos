@@ -50,6 +50,7 @@ export * from './transactionUpdate';
 export * from './transactionCreate';
 export * from './transactionPay';
 export * from './transactionUnpay';
+export * from './transactionComplete';
 export * from './transactionDetail';
 export * from './transactionStatisticList';
 export * from './calculationList';

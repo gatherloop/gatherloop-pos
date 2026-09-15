@@ -4,6 +4,7 @@ import (
 	"apps/api/domain"
 	"apps/api/presentation/restapi"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -38,6 +39,27 @@ func TestToQrisStatus_Success(t *testing.T) {
 	assert.Equal(t, "REF1", status.GatewayReferenceNo)
 	assert.Equal(t, domain.PaymentGatewayStatusPaid, status.Status)
 	assert.Equal(t, float32(25000), status.PaidAmount)
+}
+
+func TestToApiPayment_PreparingWhenNotCompleted(t *testing.T) {
+	payment := domain.Payment{PartnerReferenceNo: "ORD1", Status: domain.PaymentStatePaid}
+	transaction := domain.Transaction{TransactionNumber: 12, CompletedAt: nil}
+
+	apiPayment := restapi.ToApiPayment(payment, transaction)
+
+	assert.Equal(t, int64(12), apiPayment.TransactionNumber)
+	assert.Equal(t, "preparing", apiPayment.FulfillmentStatus)
+}
+
+func TestToApiPayment_ReadyWhenCompleted(t *testing.T) {
+	completedAt := time.Now()
+	payment := domain.Payment{PartnerReferenceNo: "ORD1", Status: domain.PaymentStatePaid}
+	transaction := domain.Transaction{TransactionNumber: 12, CompletedAt: &completedAt}
+
+	apiPayment := restapi.ToApiPayment(payment, transaction)
+
+	assert.Equal(t, int64(12), apiPayment.TransactionNumber)
+	assert.Equal(t, "ready", apiPayment.FulfillmentStatus)
 }
 
 func TestToQrisStatus_ExpiredAndFailedStatuses(t *testing.T) {

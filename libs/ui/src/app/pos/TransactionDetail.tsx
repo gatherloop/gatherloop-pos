@@ -1,6 +1,7 @@
 import { ApiAuthRepository, ApiTransactionRepository } from '../../data';
 import {
   AuthLogoutUsecase,
+  TransactionCompleteUsecase,
   TransactionDetailParams,
   TransactionDetailUsecase,
 } from '../../domain';
@@ -23,10 +24,14 @@ export function TransactionDetail({
     transactionRepository,
     transactionDetailParams
   );
+  const transactionCompleteUsecase = new TransactionCompleteUsecase(
+    transactionRepository
+  );
 
   return (
     <TransactionDetailHandler
       transactionDetailUsecase={transactionDetailUsecase}
+      transactionCompleteUsecase={transactionCompleteUsecase}
       authLogoutUsecase={authLogoutUsecase}
     />
   );

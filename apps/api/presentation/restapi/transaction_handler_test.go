@@ -41,8 +41,8 @@ func TestTransactionHandler_GetTransactionList(t *testing.T) {
 			name: "success",
 			url:  "/transactions",
 			setupMocks: func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository) {
-				txRepo.EXPECT().GetTransactionList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Transaction{{Id: 1, Source: domain.TransactionSourcePos}}, nil)
-				txRepo.EXPECT().GetTransactionListTotal(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(1), nil)
+				txRepo.EXPECT().GetTransactionList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Transaction{{Id: 1, Source: domain.TransactionSourcePos}}, nil)
+				txRepo.EXPECT().GetTransactionListTotal(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(1), nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -57,7 +57,7 @@ func TestTransactionHandler_GetTransactionList(t *testing.T) {
 			name: "repo error",
 			url:  "/transactions",
 			setupMocks: func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository) {
-				txRepo.EXPECT().GetTransactionList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
+				txRepo.EXPECT().GetTransactionList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
 			expectedStatus: http.StatusInternalServerError,
 		},
@@ -77,9 +77,9 @@ func TestTransactionHandler_GetTransactionList(t *testing.T) {
 
 func TestTransactionHandler_GetTransactionList_SerializesSource(t *testing.T) {
 	handler, ctrl := newTransactionHandler(t, func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository) {
-		txRepo.EXPECT().GetTransactionList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		txRepo.EXPECT().GetTransactionList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 			Return([]domain.Transaction{{Id: 1, Source: domain.TransactionSourcePos}}, nil)
-		txRepo.EXPECT().GetTransactionListTotal(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(1), nil)
+		txRepo.EXPECT().GetTransactionListTotal(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(1), nil)
 	})
 	defer ctrl.Finish()
 
@@ -99,9 +99,9 @@ func TestTransactionHandler_GetTransactionList_FilterBySource(t *testing.T) {
 	orderSource := domain.TransactionSourceOrder
 
 	handler, ctrl := newTransactionHandler(t, func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository) {
-		txRepo.EXPECT().GetTransactionList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), &orderSource).
+		txRepo.EXPECT().GetTransactionList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), &orderSource, nil).
 			Return([]domain.Transaction{{Id: 2, Source: domain.TransactionSourceOrder}}, nil)
-		txRepo.EXPECT().GetTransactionListTotal(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), &orderSource).Return(int64(1), nil)
+		txRepo.EXPECT().GetTransactionListTotal(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), &orderSource, nil).Return(int64(1), nil)
 	})
 	defer ctrl.Finish()
 
@@ -114,6 +114,59 @@ func TestTransactionHandler_GetTransactionList_FilterBySource(t *testing.T) {
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&response))
 	require.Len(t, response.Data, 1)
 	assert.Equal(t, "order", response.Data[0].Source)
+}
+
+func TestTransactionHandler_GetTransactionList_FilterByFulfillment(t *testing.T) {
+	tests := []struct {
+		name                string
+		url                 string
+		expectedFulfillment domain.TransactionFulfillment
+	}{
+		{
+			name:                "preparing",
+			url:                 "/transactions?fulfillment=preparing",
+			expectedFulfillment: domain.TransactionFulfillmentPreparing,
+		},
+		{
+			name:                "ready",
+			url:                 "/transactions?fulfillment=ready",
+			expectedFulfillment: domain.TransactionFulfillmentReady,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			expectedFulfillment := tt.expectedFulfillment
+
+			handler, ctrl := newTransactionHandler(t, func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository) {
+				txRepo.EXPECT().GetTransactionList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), &expectedFulfillment).
+					Return([]domain.Transaction{{Id: 2, Source: domain.TransactionSourceOrder}}, nil)
+				txRepo.EXPECT().GetTransactionListTotal(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), &expectedFulfillment).Return(int64(1), nil)
+			})
+			defer ctrl.Finish()
+
+			req := httptest.NewRequest(http.MethodGet, tt.url, nil)
+			w := httptest.NewRecorder()
+			handler.GetTransactionList(w, req)
+
+			require.Equal(t, http.StatusOK, w.Code)
+		})
+	}
+
+	t.Run("all does not filter by fulfillment", func(t *testing.T) {
+		handler, ctrl := newTransactionHandler(t, func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository) {
+			txRepo.EXPECT().GetTransactionList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), nil).
+				Return([]domain.Transaction{{Id: 1, Source: domain.TransactionSourcePos}}, nil)
+			txRepo.EXPECT().GetTransactionListTotal(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), nil).Return(int64(1), nil)
+		})
+		defer ctrl.Finish()
+
+		req := httptest.NewRequest(http.MethodGet, "/transactions?fulfillment=all", nil)
+		w := httptest.NewRecorder()
+		handler.GetTransactionList(w, req)
+
+		require.Equal(t, http.StatusOK, w.Code)
+	})
 }
 
 func TestTransactionHandler_GetTransactionById(t *testing.T) {
@@ -437,6 +490,128 @@ func TestTransactionHandler_UnpayTransaction(t *testing.T) {
 			req = mux.SetURLVars(req, map[string]string{"transactionId": tt.transactionId})
 			w := httptest.NewRecorder()
 			handler.UnpayTransaction(w, req)
+			assert.Equal(t, tt.expectedStatus, w.Code)
+		})
+	}
+}
+
+func TestTransactionHandler_CompleteTransaction(t *testing.T) {
+	tests := []struct {
+		name           string
+		transactionId  string
+		setupMocks     func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository)
+		expectedStatus int
+	}{
+		{
+			name:          "success",
+			transactionId: "1",
+			setupMocks: func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository) {
+				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(1)).Return(domain.Transaction{Id: 1, Source: domain.TransactionSourceOrder}, nil)
+				txRepo.EXPECT().CompleteTransaction(gomock.Any(), gomock.Any(), int64(1)).Return(nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:          "invalid id",
+			transactionId: "abc",
+			setupMocks: func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository) {
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:          "not found",
+			transactionId: "99",
+			setupMocks: func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository) {
+				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
+			},
+			expectedStatus: http.StatusNotFound,
+		},
+		{
+			name:          "pos transaction",
+			transactionId: "2",
+			setupMocks: func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository) {
+				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(2)).Return(domain.Transaction{Id: 2, Source: domain.TransactionSourcePos}, nil)
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:          "already completed",
+			transactionId: "3",
+			setupMocks: func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository) {
+				completedAt := time.Now()
+				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(3)).Return(domain.Transaction{Id: 3, Source: domain.TransactionSourceOrder, CompletedAt: &completedAt}, nil)
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			handler, ctrl := newTransactionHandler(t, tt.setupMocks)
+			defer ctrl.Finish()
+			req := httptest.NewRequest(http.MethodPut, "/transactions/"+tt.transactionId+"/complete", nil)
+			req = mux.SetURLVars(req, map[string]string{"transactionId": tt.transactionId})
+			w := httptest.NewRecorder()
+			handler.CompleteTransaction(w, req)
+			assert.Equal(t, tt.expectedStatus, w.Code)
+		})
+	}
+}
+
+func TestTransactionHandler_UncompleteTransaction(t *testing.T) {
+	tests := []struct {
+		name           string
+		transactionId  string
+		setupMocks     func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository)
+		expectedStatus int
+	}{
+		{
+			name:          "success",
+			transactionId: "1",
+			setupMocks: func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository) {
+				completedAt := time.Now()
+				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(1)).Return(domain.Transaction{Id: 1, Source: domain.TransactionSourceOrder, CompletedAt: &completedAt}, nil)
+				txRepo.EXPECT().UncompleteTransaction(gomock.Any(), int64(1)).Return(nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:          "invalid id",
+			transactionId: "abc",
+			setupMocks: func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository) {
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:          "not completed",
+			transactionId: "2",
+			setupMocks: func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository) {
+				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(2)).Return(domain.Transaction{Id: 2, Source: domain.TransactionSourceOrder, CompletedAt: nil}, nil)
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			handler, ctrl := newTransactionHandler(t, tt.setupMocks)
+			defer ctrl.Finish()
+			req := httptest.NewRequest(http.MethodPut, "/transactions/"+tt.transactionId+"/uncomplete", nil)
+			req = mux.SetURLVars(req, map[string]string{"transactionId": tt.transactionId})
+			w := httptest.NewRecorder()
+			handler.UncompleteTransaction(w, req)
 			assert.Equal(t, tt.expectedStatus, w.Code)
 		})
 	}

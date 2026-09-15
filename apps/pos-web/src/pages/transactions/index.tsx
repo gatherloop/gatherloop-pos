@@ -36,6 +36,7 @@ export const getServerSideProps: GetServerSideProps<
   const paymentStatus = transactionListQueryRepository.getPaymentStatus(url);
   const walletId = transactionListQueryRepository.getWalletId(url);
   const source = transactionListQueryRepository.getSource(url);
+  const fulfillment = transactionListQueryRepository.getFulfillment(url);
 
   const { totalItem, transactions } =
     await transactionRepository.fetchTransactionList(
@@ -48,6 +49,7 @@ export const getServerSideProps: GetServerSideProps<
         paymentStatus,
         walletId,
         source,
+        fulfillment,
       },
       {
         headers: { Cookie: ctx.req.headers.cookie },
@@ -71,6 +73,7 @@ export const getServerSideProps: GetServerSideProps<
         sortBy,
         walletId,
         source,
+        fulfillment,
         wallets,
       },
       transactionPayParams: {

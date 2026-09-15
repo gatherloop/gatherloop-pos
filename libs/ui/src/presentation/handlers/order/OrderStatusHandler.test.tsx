@@ -18,16 +18,32 @@ jest.mock('solito/router', () => ({
   }),
 }));
 
+// libs/ui bans a direct `next/router` import outside utils/; require() reaches the
+// same jest-mapped module (src/__mocks__/next/router.ts) without tripping that rule.
+type RouterMock = {
+  push: jest.Mock;
+  replace: jest.Mock;
+  events: {
+    on: (type: string, handler: (...args: unknown[]) => void) => void;
+    off: (type: string, handler: (...args: unknown[]) => void) => void;
+    emit: (type: string, ...args: unknown[]) => void;
+  };
+};
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const Router: RouterMock = require('next/router').default;
+
 const TABLE_CODE = '3F7H9K2M5P';
 
 const renderHandler = ({
   reference,
   paymentRepository = new MockPaymentRepository(),
   tableRepository = new MockPublicTableRepository(),
+  sessionRepository = new MockSessionRepository(),
 }: {
   reference: string;
   paymentRepository?: MockPaymentRepository;
   tableRepository?: MockPublicTableRepository;
+  sessionRepository?: MockSessionRepository;
 }) => {
   const tableResolveUsecase = new TableResolveUsecase(tableRepository, {
     code: TABLE_CODE,
@@ -38,11 +54,12 @@ const renderHandler = ({
 
   return {
     paymentRepository,
+    sessionRepository,
     ...render(
       <OrderStatusHandler
         tableResolveUsecase={tableResolveUsecase}
         orderStatusUsecase={orderStatusUsecase}
-        sessionRepository={new MockSessionRepository()}
+        sessionRepository={sessionRepository}
         tableCode={TABLE_CODE}
       />
     ),
@@ -100,13 +117,10 @@ describe('OrderStatusHandler', () => {
       });
 
       expect(
-        screen.getByText('Pesanan Anda sedang disiapkan')
+        screen.getByText(`#${paymentRepository.payment.transactionNumber}`)
       ).toBeTruthy();
       expect(
         screen.getByText(paymentRepository.payment.tableLabel)
-      ).toBeTruthy();
-      expect(
-        screen.getByText(`Atas nama ${paymentRepository.payment.customerName}`)
       ).toBeTruthy();
     } finally {
       jest.useRealTimers();
@@ -128,8 +142,79 @@ describe('OrderStatusHandler', () => {
     await settle();
 
     expect(
-      screen.getByText('Pesanan Anda sedang disiapkan')
+      screen.getByText(
+        'Pesanan Anda sedang disiapkan. Mohon tunggu di meja Anda, kami akan memberi tahu di halaman ini saat pesanan siap diambil.'
+      )
     ).toBeTruthy();
+    expect(screen.queryByText(/menit|jam|detik/)).toBeNull();
+  });
+
+  it('shows the pickup instruction when the payment is already ready', async () => {
+    const paymentRepository = new MockPaymentRepository();
+    paymentRepository.payment = {
+      ...paymentRepository.payment,
+      status: 'paid',
+      fulfillmentStatus: 'ready',
+    };
+    renderHandler({
+      reference: paymentRepository.payment.reference,
+      paymentRepository,
+    });
+
+    await settle();
+
+    expect(screen.getByText('Pesanan siap!')).toBeTruthy();
+    expect(
+      screen.getByText(
+        `Silakan ambil di kasir dengan menyebutkan nomor #${paymentRepository.payment.transactionNumber}.`
+      )
+    ).toBeTruthy();
+    expect(
+      screen.getByText(`#${paymentRepository.payment.transactionNumber}`)
+    ).toBeTruthy();
+    expect(screen.queryByText(/menit|jam|detik/)).toBeNull();
+  });
+
+  it('clears the remembered active reference once the order is ready', async () => {
+    const paymentRepository = new MockPaymentRepository();
+    paymentRepository.payment = {
+      ...paymentRepository.payment,
+      status: 'paid',
+      fulfillmentStatus: 'ready',
+    };
+    const sessionRepository = new MockSessionRepository();
+    sessionRepository.setActiveReference(paymentRepository.payment.reference);
+    renderHandler({
+      reference: paymentRepository.payment.reference,
+      paymentRepository,
+      sessionRepository,
+    });
+
+    await settle();
+
+    expect(sessionRepository.getActiveReference()).toBeNull();
+  });
+
+  it('does not clear the remembered active reference while still preparing', async () => {
+    const paymentRepository = new MockPaymentRepository();
+    paymentRepository.payment = {
+      ...paymentRepository.payment,
+      status: 'paid',
+      fulfillmentStatus: 'preparing',
+    };
+    const sessionRepository = new MockSessionRepository();
+    sessionRepository.setActiveReference(paymentRepository.payment.reference);
+    renderHandler({
+      reference: paymentRepository.payment.reference,
+      paymentRepository,
+      sessionRepository,
+    });
+
+    await settle();
+
+    expect(sessionRepository.getActiveReference()).toBe(
+      paymentRepository.payment.reference
+    );
   });
 
   it('shows the expiry screen for an expired payment', async () => {
@@ -197,7 +282,9 @@ describe('OrderStatusHandler', () => {
     });
 
     expect(
-      screen.getByText('Pesanan Anda sedang disiapkan')
+      screen.getByText(
+        'Pesanan Anda sedang disiapkan. Mohon tunggu di meja Anda, kami akan memberi tahu di halaman ini saat pesanan siap diambil.'
+      )
     ).toBeTruthy();
   });
 
@@ -231,5 +318,88 @@ describe('OrderStatusHandler', () => {
     });
 
     expect(mockPush).toHaveBeenCalledWith(`/t/${TABLE_CODE}`);
+  });
+
+  describe('leave confirmation', () => {
+    const renderPreparing = async () => {
+      const paymentRepository = new MockPaymentRepository();
+      paymentRepository.payment = {
+        ...paymentRepository.payment,
+        status: 'paid',
+      };
+      const result = renderHandler({
+        reference: paymentRepository.payment.reference,
+        paymentRepository,
+      });
+      await settle();
+      return result;
+    };
+
+    const attemptNavigation = async (url: string) => {
+      expect(() => {
+        act(() => {
+          Router.events.emit('routeChangeStart', url);
+        });
+      }).toThrow();
+
+      await act(async () => {
+        await flushPromises();
+      });
+    };
+
+    it('opens the leave-confirmation dialog on an attempted in-app navigation while preparing', async () => {
+      await renderPreparing();
+
+      await attemptNavigation('/t/other-table');
+
+      expect(screen.getByRole('button', { name: 'Tetap di sini' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Keluar' })).toBeTruthy();
+    });
+
+    it('keeps the route when "Tetap di sini" is pressed', async () => {
+      await renderPreparing();
+
+      await attemptNavigation('/t/other-table');
+
+      await act(async () => {
+        screen.getByRole('button', { name: 'Tetap di sini' }).click();
+      });
+
+      expect(Router.push).not.toHaveBeenCalled();
+      expect(screen.queryByRole('button', { name: 'Keluar' })).toBeNull();
+    });
+
+    it('allows navigation when "Keluar" is pressed', async () => {
+      await renderPreparing();
+
+      await attemptNavigation('/t/other-table');
+
+      await act(async () => {
+        screen.getByRole('button', { name: 'Keluar' }).click();
+      });
+
+      expect(Router.push).toHaveBeenCalledWith('/t/other-table');
+      expect(screen.queryByRole('button', { name: 'Keluar' })).toBeNull();
+    });
+
+    it('shows no leave-confirmation dialog once the order is ready', async () => {
+      const paymentRepository = new MockPaymentRepository();
+      paymentRepository.payment = {
+        ...paymentRepository.payment,
+        status: 'paid',
+        fulfillmentStatus: 'ready',
+      };
+      renderHandler({
+        reference: paymentRepository.payment.reference,
+        paymentRepository,
+      });
+      await settle();
+
+      act(() => {
+        Router.events.emit('routeChangeStart', '/t/other-table');
+      });
+
+      expect(screen.queryByRole('button', { name: 'Keluar' })).toBeNull();
+    });
   });
 });

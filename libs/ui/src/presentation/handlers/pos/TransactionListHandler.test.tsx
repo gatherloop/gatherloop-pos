@@ -10,6 +10,7 @@ import {
 import {
   AuthLogoutUsecase,
   Transaction,
+  TransactionCompleteUsecase,
   TransactionDeleteUsecase,
   TransactionListUsecase,
   TransactionPayUsecase,
@@ -107,6 +108,7 @@ const transactionListCtrl = {
     paymentStatus: null as never,
     walletId: null as never,
     source: null as never,
+    fulfillment: null as never,
   },
   dispatch: jest.fn(),
 };
@@ -127,6 +129,14 @@ const transactionUnpayCtrl = {
   state: { type: 'hidden' as string },
   dispatch: jest.fn(),
 };
+const transactionCompleteCtrl = {
+  state: {
+    type: 'hidden' as string,
+    transactionId: null as number | null,
+    action: null as 'complete' | 'uncomplete' | null,
+  },
+  dispatch: jest.fn(),
+};
 const authLogoutCtrl = {
   state: { type: 'idle' as string },
   dispatch: jest.fn(),
@@ -136,6 +146,10 @@ jest.mock('../hooks', () => ({
   useTransactionPay: () => ({
     state: transactionPayCtrl.state,
     dispatch: transactionPayCtrl.dispatch,
+  }),
+  useTransactionComplete: () => ({
+    state: transactionCompleteCtrl.state,
+    dispatch: transactionCompleteCtrl.dispatch,
   }),
   useAuthLogout: () => ({
     state: authLogoutCtrl.state,
@@ -179,6 +193,7 @@ const createProps = () => ({
     { wallets: [] }
   ),
   transactionUnpayUsecase: new TransactionUnpayUsecase(new MockTransactionRepository()),
+  transactionCompleteUsecase: new TransactionCompleteUsecase(new MockTransactionRepository()),
 });
 
 describe('TransactionListHandler', () => {
@@ -196,6 +211,7 @@ describe('TransactionListHandler', () => {
       paymentStatus: null,
       walletId: null,
       source: null,
+      fulfillment: null,
     };
     transactionDeleteCtrl.state = { type: 'hidden' };
     transactionPayCtrl.state = {
@@ -205,6 +221,11 @@ describe('TransactionListHandler', () => {
       transactionId: null,
     };
     transactionUnpayCtrl.state = { type: 'hidden' };
+    transactionCompleteCtrl.state = {
+      type: 'hidden',
+      transactionId: null,
+      action: null,
+    };
     authLogoutCtrl.state = { type: 'idle' };
   });
 
@@ -284,6 +305,36 @@ describe('TransactionListHandler', () => {
     });
   });
 
+  describe('complete → refetch orchestration', () => {
+    it('should dispatch FETCH to transaction list when complete succeeds', async () => {
+      transactionCompleteCtrl.state = {
+        type: 'completingSuccess',
+        transactionId: 2,
+        action: 'complete',
+      };
+
+      await act(async () => {
+        render(<TransactionListHandler {...createProps()} />);
+      });
+
+      expect(transactionListCtrl.dispatch).toHaveBeenCalledWith({ type: 'FETCH' });
+    });
+
+    it('should not dispatch FETCH when complete has not succeeded', async () => {
+      transactionCompleteCtrl.state = {
+        type: 'hidden',
+        transactionId: null,
+        action: null,
+      };
+
+      await act(async () => {
+        render(<TransactionListHandler {...createProps()} />);
+      });
+
+      expect(transactionListCtrl.dispatch).not.toHaveBeenCalledWith({ type: 'FETCH' });
+    });
+  });
+
   describe('search UX', () => {
     it('should pass isChangingParams=true when state is changingParams', async () => {
       transactionListCtrl.state = { ...transactionListCtrl.state, type: 'changingParams' };
@@ -333,6 +384,36 @@ describe('TransactionListHandler', () => {
       });
 
       expect(latestScreenProps.source).toBe('pos');
+    });
+  });
+
+  describe('fulfillment filter', () => {
+    it('should dispatch CHANGE_PARAMS with the selected fulfillment, resetting to page 1', async () => {
+      await act(async () => {
+        render(<TransactionListHandler {...createProps()} />);
+      });
+
+      latestScreenProps.onFulfillmentChange('preparing');
+
+      expect(transactionListCtrl.dispatch).toHaveBeenCalledWith({
+        type: 'CHANGE_PARAMS',
+        fulfillment: 'preparing',
+        page: 1,
+        fetchDebounceDelay: 600,
+      });
+    });
+
+    it('should pass the current fulfillment through to the screen', async () => {
+      transactionListCtrl.state = {
+        ...transactionListCtrl.state,
+        fulfillment: 'ready',
+      };
+
+      await act(async () => {
+        render(<TransactionListHandler {...createProps()} />);
+      });
+
+      expect(latestScreenProps.fulfillment).toBe('ready');
     });
   });
 

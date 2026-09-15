@@ -1,7 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
 import { TransactionList } from './TransactionList';
-import { mockTransactions, mockWallets } from '../../../../../.storybook/mocks/mockData';
+import {
+  mockOrderTransactionReady,
+  mockTransactions,
+  mockWallets,
+} from '../../../../../.storybook/mocks/mockData';
 
 const defaultArgs = {
   searchValue: '',
@@ -10,6 +14,8 @@ const defaultArgs = {
   onPaymentStatusChange: fn(),
   source: 'all' as const,
   onSourceChange: fn(),
+  fulfillment: 'all' as const,
+  onFulfillmentChange: fn(),
   transactions: mockTransactions,
   currentPage: 1,
   onPageChange: fn(),
@@ -20,6 +26,8 @@ const defaultArgs = {
   onDeleteMenuPress: fn(),
   onPayMenuPress: fn(),
   onUnpayMenuPress: fn(),
+  onCompleteMenuPress: fn(),
+  onUncompleteMenuPress: fn(),
   onPrintInvoiceMenuPress: fn(),
   onPrintOrderSlipMenuPress: fn(),
   onItemPress: fn(),
@@ -89,6 +97,26 @@ export const FilteredBySource: Story = {
     variant: { type: 'loaded' },
     source: 'order' as const,
     transactions: mockTransactions.filter((t) => t.source === 'order'),
+    totalItem: 1,
+  },
+};
+
+export const FulfillmentStatuses: Story = {
+  args: {
+    variant: { type: 'loaded' },
+    transactions: [...mockTransactions, mockOrderTransactionReady],
+    totalItem: 3,
+  },
+};
+
+export const FilteredByFulfillment: Story = {
+  args: {
+    variant: { type: 'loaded' },
+    source: 'order' as const,
+    fulfillment: 'preparing' as const,
+    transactions: [...mockTransactions, mockOrderTransactionReady].filter(
+      (t) => t.source === 'order' && t.completedAt === null
+    ),
     totalItem: 1,
   },
 };

@@ -23,6 +23,7 @@ func (handler TransactionHandler) GetTransactionList(w http.ResponseWriter, r *h
 	paymentStatus := GetPaymentStatus(r)
 	walletId := GetWalletIdQuery(r)
 	source := GetTransactionSourceQuery(r)
+	fulfillment := GetTransactionFulfillmentQuery(r)
 
 	skip, err := GetSkip(r)
 	if err != nil {
@@ -36,7 +37,7 @@ func (handler TransactionHandler) GetTransactionList(w http.ResponseWriter, r *h
 		return
 	}
 
-	transactions, total, usecaseErr := handler.usecase.GetTransactionList(ctx, query, sortBy, order, skip, limit, paymentStatus, walletId, source)
+	transactions, total, usecaseErr := handler.usecase.GetTransactionList(ctx, query, sortBy, order, skip, limit, paymentStatus, walletId, source, fulfillment)
 	if usecaseErr != nil {
 		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
@@ -161,6 +162,40 @@ func (handler TransactionHandler) UnpayTransaction(w http.ResponseWriter, r *htt
 	}
 
 	if err := handler.usecase.UnpayTransaction(ctx, id); err != nil {
+		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
+		return
+	}
+
+	WriteResponse(w, apiContract.SuccessResponse{Success: true})
+}
+
+func (handler TransactionHandler) CompleteTransaction(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	id, err := GetTransactionId(r)
+	if err != nil {
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
+		return
+	}
+
+	if err := handler.usecase.CompleteTransaction(ctx, id); err != nil {
+		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
+		return
+	}
+
+	WriteResponse(w, apiContract.SuccessResponse{Success: true})
+}
+
+func (handler TransactionHandler) UncompleteTransaction(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	id, err := GetTransactionId(r)
+	if err != nil {
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
+		return
+	}
+
+	if err := handler.usecase.UncompleteTransaction(ctx, id); err != nil {
 		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
 		return
 	}

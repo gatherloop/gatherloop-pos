@@ -1,12 +1,15 @@
-import { Card, H3, H4, Paragraph, XStack, YStack } from 'tamagui';
+import { Button, Card, H3, H4, Paragraph, XStack, YStack } from 'tamagui';
 import dayjs from 'dayjs';
 import { VariantListItem } from '../variants';
 import {
   Calendar,
+  CheckCircle,
+  ClipboardCheck,
   ConciergeBell,
   CreditCard,
   Hash,
   MapPin,
+  RotateCcw,
   Tag,
   User,
   Wallet,
@@ -29,11 +32,14 @@ export type TransactionDetailProps = {
   transactionNumber: number;
   createdAt: string;
   paidAt?: string;
+  completedAt?: string | null;
   walletName?: string;
   total: number;
   paidAmount: number;
   transactionItems: TransactionItem[];
   transactionCoupons: TransactionCoupon[];
+  onCompleteButtonPress?: () => void;
+  onUncompleteButtonPress?: () => void;
 };
 
 const sourceLabel: Record<TransactionSource, string> = {
@@ -49,11 +55,14 @@ export const TransactionDetail = ({
   transactionNumber,
   createdAt,
   paidAt,
+  completedAt,
   walletName,
   total,
   transactionItems,
   transactionCoupons,
   paidAmount,
+  onCompleteButtonPress,
+  onUncompleteButtonPress,
 }: TransactionDetailProps) => {
   function getDiscountAmount(index: number) {
     let calculatedTotal = transactionItems.reduce(
@@ -148,6 +157,27 @@ export const TransactionDetail = ({
                 <YStack>
                   <Paragraph size="$1">Table</Paragraph>
                   <Paragraph size="$2">{table.label}</Paragraph>
+                </YStack>
+              </XStack>
+            </Card.Header>
+          </Card>
+        )}
+
+        {source === 'order' && (
+          <Card>
+            <Card.Header padding="$2.5">
+              <XStack gap="$2" alignItems="center">
+                <ClipboardCheck size="$2" />
+                <YStack>
+                  <Paragraph size="$1">Fulfilment Status</Paragraph>
+                  <Paragraph size="$2">
+                    {completedAt ? 'Ready' : 'Preparing'}
+                  </Paragraph>
+                  {completedAt && (
+                    <Paragraph size="$1" color="$color10">
+                      {dayjs(completedAt).format('DD/MM/YYYY HH:mm')}
+                    </Paragraph>
+                  )}
                 </YStack>
               </XStack>
             </Card.Header>
@@ -297,6 +327,21 @@ export const TransactionDetail = ({
           )
         )}
       </YStack>
+
+      {source === 'order' &&
+        (completedAt ? (
+          <Button
+            icon={RotateCcw}
+            theme="active"
+            onPress={onUncompleteButtonPress}
+          >
+            Mark as Preparing
+          </Button>
+        ) : (
+          <Button icon={CheckCircle} theme="active" onPress={onCompleteButtonPress}>
+            Mark as Ready
+          </Button>
+        ))}
 
       {transactionCoupons.length > 0 && (
         <>

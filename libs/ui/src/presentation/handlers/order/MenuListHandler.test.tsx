@@ -36,12 +36,14 @@ const renderHandler = ({
   cartRepository = new MockCartRepository(),
   menuListQueryRepository = new MockMenuListQueryRepository(),
   menuListParams = { products: [], categories: [] } as MenuListParams,
+  sessionRepository = new MockSessionRepository(),
 }: {
   menuRepository?: MockMenuRepository;
   tableRepository?: MockPublicTableRepository;
   cartRepository?: MockCartRepository;
   menuListQueryRepository?: MockMenuListQueryRepository;
   menuListParams?: MenuListParams;
+  sessionRepository?: MockSessionRepository;
 } = {}) => {
   const tableResolveUsecase = new TableResolveUsecase(tableRepository, {
     code: TABLE_CODE,
@@ -63,6 +65,7 @@ const renderHandler = ({
     menuRepository,
     tableRepository,
     cartRepository,
+    sessionRepository,
     ...render(
       <MenuListHandler
         tableResolveUsecase={tableResolveUsecase}
@@ -70,7 +73,7 @@ const renderHandler = ({
         menuItemDetailUsecase={menuItemDetailUsecase}
         cartUsecase={cartUsecase}
         cartRepository={cartRepository}
-        sessionRepository={new MockSessionRepository()}
+        sessionRepository={sessionRepository}
         tableCode={TABLE_CODE}
       />
     ),
@@ -209,6 +212,31 @@ describe('MenuListHandler', () => {
     await settle();
 
     expect(screen.queryByText(/Lihat Keranjang/)).toBeNull();
+  });
+
+  it('shows a resume banner when an active order reference is stored, and navigates to its status page on press', async () => {
+    const user = userEvent.setup();
+    const sessionRepository = new MockSessionRepository();
+    sessionRepository.setActiveReference('REF-1');
+    renderHandler({ sessionRepository });
+
+    await settle();
+
+    expect(screen.getByText('Pesanan Anda sedang disiapkan')).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: 'Lihat Status' }));
+
+    expect(mockPush).toHaveBeenCalledWith(
+      `/t/${TABLE_CODE}/status?ref=REF-1`
+    );
+  });
+
+  it('shows no resume banner when no active order reference is stored', async () => {
+    renderHandler();
+
+    await settle();
+
+    expect(screen.queryByText('Pesanan Anda sedang disiapkan')).toBeNull();
   });
 
   describe('the item sheet', () => {

@@ -14,9 +14,12 @@ const meta: Meta<typeof TransactionListItem> = {
     total: 70000,
     createdAt: '2024-01-20T10:00:00.000Z',
     paidAt: '2024-01-20T10:30:00.000Z',
+    completedAt: null,
     walletName: 'Cash',
     onPayMenuPress: fn(),
     onUnpayMenuPress: fn(),
+    onCompleteMenuPress: fn(),
+    onUncompleteMenuPress: fn(),
     onEditMenuPress: fn(),
     onDeleteMenuPress: fn(),
     onPrintInvoiceMenuPress: fn(),
@@ -51,6 +54,7 @@ export const FromOrderApp: Story = {
     source: 'order',
     table: { id: 1, label: 'A1', floorNumber: 1 },
     pagerNumber: 0,
+    completedAt: null,
   },
 };
 
@@ -58,6 +62,16 @@ export const FromPos: Story = {
   args: {
     source: 'pos',
     table: null,
+  },
+};
+
+export const OrderReady: Story = {
+  args: {
+    name: 'Budi',
+    source: 'order',
+    table: { id: 1, label: 'A1', floorNumber: 1 },
+    pagerNumber: 0,
+    completedAt: '2024-01-20T10:45:00.000Z',
   },
 };
 

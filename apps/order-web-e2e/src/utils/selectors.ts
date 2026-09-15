@@ -69,12 +69,16 @@ export const cartItemEdit = {
 };
 
 export const orderStatus = {
-  preparingTitle: (page: Page) =>
-    page.getByText('Pesanan Anda sedang disiapkan'),
+  preparingTitle: (page: Page) => page.getByText(/^Sedang disiapkan/),
   tableLabel: (page: Page, label: string) =>
     page.getByText(label, { exact: true }).last(),
-  customerName: (page: Page, name: string) =>
-    page.getByText(`Atas nama ${name}`),
+  transactionNumberBadge: (page: Page, transactionNumber: number) =>
+    page.getByText(`#${transactionNumber}`, { exact: true }),
+  readyTitle: (page: Page) => page.getByText('Pesanan siap!'),
+  pickupInstructionText: (page: Page, transactionNumber: number) =>
+    page.getByText(
+      `Silakan ambil di kasir dengan menyebutkan nomor #${transactionNumber}.`
+    ),
   orderAgainButton: (page: Page) =>
     page.getByRole('button', { name: 'Pesan lagi' }),
   notFoundView: (page: Page) => page.getByText('Pesanan tidak ditemukan'),

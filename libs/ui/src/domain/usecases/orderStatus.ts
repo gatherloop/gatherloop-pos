@@ -3,6 +3,9 @@ import { Payment } from '../entities';
 import { PaymentNotFoundError, PaymentRepository } from '../repositories';
 import { Usecase } from './IUsecase';
 
+const AWAITING_PAYMENT_POLL_INTERVAL_MS = 3000;
+const PREPARATION_POLL_INTERVAL_MS = 10_000;
+
 type Context = {
   reference: string;
   payment: Payment | null;
@@ -14,7 +17,8 @@ export type OrderStatusState = (
   | { type: 'idle' }
   | { type: 'loading' }
   | { type: 'awaitingPayment' }
-  | { type: 'loaded' }
+  | { type: 'preparing' }
+  | { type: 'ready' }
   | { type: 'expired' }
   | { type: 'notFound' }
   | { type: 'error' }
@@ -39,10 +43,14 @@ export type OrderStatusParams = {
 
 function stateTypeForPayment(
   payment: Payment
-): 'awaitingPayment' | 'loaded' | 'expired' {
+): 'awaitingPayment' | 'preparing' | 'ready' | 'expired' {
   return match(payment.status)
     .with('pending', () => 'awaitingPayment' as const)
-    .with('paid', () => 'loaded' as const)
+    .with('paid', () =>
+      payment.fulfillmentStatus === 'ready'
+        ? ('ready' as const)
+        : ('preparing' as const)
+    )
     .with('expired', 'failed', () => 'expired' as const)
     .exhaustive();
 }
@@ -55,6 +63,7 @@ export class OrderStatusUsecase extends Usecase<
   params: OrderStatusParams;
   private repository: PaymentRepository;
   private pollTimerId: ReturnType<typeof setInterval> | null = null;
+  private pollIntervalMs: number | null = null;
 
   constructor(repository: PaymentRepository, params: OrderStatusParams) {
     super();
@@ -128,7 +137,10 @@ export class OrderStatusUsecase extends Usecase<
         [{ type: 'awaitingPayment' }, { type: 'POLL_SUCCESS' }],
         ([state, { payment }]) => ({
           ...state,
-          type: payment.status === 'paid' ? 'loaded' : 'awaitingPayment',
+          type:
+            payment.status === 'paid'
+              ? stateTypeForPayment(payment)
+              : 'awaitingPayment',
           payment,
           isPolling: false,
         })
@@ -140,6 +152,23 @@ export class OrderStatusUsecase extends Usecase<
       .with([{ type: 'awaitingPayment' }, { type: 'EXPIRE' }], ([state]) => ({
         ...state,
         type: 'expired',
+        isPolling: false,
+      }))
+      .with(
+        [{ type: 'preparing', isPolling: false }, { type: 'POLL' }],
+        ([state]) => ({ ...state, isPolling: true })
+      )
+      .with(
+        [{ type: 'preparing' }, { type: 'POLL_SUCCESS' }],
+        ([state, { payment }]) => ({
+          ...state,
+          type: payment.fulfillmentStatus === 'ready' ? 'ready' : 'preparing',
+          payment,
+          isPolling: false,
+        })
+      )
+      .with([{ type: 'preparing' }, { type: 'POLL_ERROR' }], ([state]) => ({
+        ...state,
         isPolling: false,
       }))
       .otherwise(() => state);
@@ -167,12 +196,7 @@ export class OrderStatusUsecase extends Usecase<
           });
       })
       .with({ type: 'awaitingPayment' }, (state) => {
-        if (this.pollTimerId === null) {
-          this.pollTimerId = setInterval(
-            () => dispatch({ type: 'POLL' }),
-            3000
-          );
-        }
+        this.ensurePollTimer(AWAITING_PAYMENT_POLL_INTERVAL_MS, dispatch);
 
         if (state.isPolling && state.payment) {
           this.repository
@@ -192,11 +216,43 @@ export class OrderStatusUsecase extends Usecase<
             );
         }
       })
+      .with({ type: 'preparing' }, (state) => {
+        this.ensurePollTimer(PREPARATION_POLL_INTERVAL_MS, dispatch);
+
+        if (state.isPolling && state.payment) {
+          this.repository
+            .fetchPayment(state.payment.reference)
+            .then((payment) => dispatch({ type: 'POLL_SUCCESS', payment }))
+            .catch(() =>
+              dispatch({
+                type: 'POLL_ERROR',
+                message: 'Failed to check order status',
+              })
+            );
+        }
+      })
       .otherwise(() => {
         if (this.pollTimerId !== null) {
           clearInterval(this.pollTimerId);
           this.pollTimerId = null;
+          this.pollIntervalMs = null;
         }
       });
+  }
+
+  private ensurePollTimer(
+    intervalMs: number,
+    dispatch: (action: OrderStatusAction) => void
+  ): void {
+    if (this.pollTimerId !== null && this.pollIntervalMs === intervalMs) {
+      return;
+    }
+
+    if (this.pollTimerId !== null) {
+      clearInterval(this.pollTimerId);
+    }
+
+    this.pollIntervalMs = intervalMs;
+    this.pollTimerId = setInterval(() => dispatch({ type: 'POLL' }), intervalMs);
   }
 }

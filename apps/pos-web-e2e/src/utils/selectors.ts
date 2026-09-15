@@ -85,6 +85,12 @@ export const transactionList = {
   createLink: (page: Page) => page.locator('a[href="/transactions/create"]'),
   transactionItem: (page: Page, name: string) =>
     page.locator('h4').filter({ hasText: name }).first(),
+  fulfillmentBadge: (page: Page, name: string, label: 'Preparing' | 'Ready') =>
+    page
+      .locator('h4')
+      .filter({ hasText: name })
+      .locator('../../../..')
+      .getByText(label, { exact: true }),
   searchInput: (page: Page) =>
     page.getByPlaceholder('Search Customer Name'),
   menuButton: (page: Page, name: string) =>
@@ -94,8 +100,25 @@ export const transactionList = {
       .locator('../../../..')
       .getByRole('button')
       .last(),
-  menuOption: (page: Page, label: 'Pay' | 'Unpay' | 'Edit' | 'Delete') =>
-    page.locator('[data-state="open"] li').filter({ hasText: label }).last(),
+  menuOption: (
+    page: Page,
+    label: 'Pay' | 'Unpay' | 'Mark as Ready' | 'Mark as Preparing' | 'Edit' | 'Delete'
+  ) => page.locator('[data-state="open"] li').filter({ hasText: label }).last(),
+  filterButton: (page: Page) => page.getByRole('button', { name: 'Filter' }),
+  fulfillmentFilterOption: (page: Page, label: 'Preparing' | 'Ready') =>
+    page.getByLabel(label, { exact: true }),
+};
+
+export const transactionDetail = {
+  fulfilmentStatus: (page: Page) =>
+    page
+      .locator('p')
+      .filter({ hasText: 'Fulfilment Status' })
+      .locator('xpath=following-sibling::p[1]'),
+  markReadyButton: (page: Page) =>
+    page.getByRole('button', { name: 'Mark as Ready' }),
+  markPreparingButton: (page: Page) =>
+    page.getByRole('button', { name: 'Mark as Preparing' }),
 };
 
 export const transactionForm = {

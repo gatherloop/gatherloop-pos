@@ -4,6 +4,7 @@ import { useRouter } from 'solito/router';
 import { SessionRepository } from '../../../domain/repositories/session';
 import { OrderStatusUsecase } from '../../../domain/usecases/orderStatus';
 import { TableResolveUsecase } from '../../../domain/usecases/tableResolve';
+import { useLeaveConfirmation } from '../../../utils/useLeaveConfirmation';
 import { useOrderStatus } from '../hooks/useOrderStatus';
 import { useTableResolve } from '../hooks/useTableResolve';
 import {
@@ -28,12 +29,21 @@ export const OrderStatusHandler = ({
   const tableResolve = useTableResolve(tableResolveUsecase);
   const orderStatus = useOrderStatus(orderStatusUsecase);
   const router = useRouter();
+  const leaveConfirmation = useLeaveConfirmation(
+    orderStatus.state.type === 'preparing'
+  );
 
   useEffect(() => {
     if (tableResolve.state.type === 'resolved' && tableResolve.state.code) {
       sessionRepository.setTableCode(tableResolve.state.code);
     }
   }, [tableResolve.state, sessionRepository]);
+
+  useEffect(() => {
+    if (orderStatus.state.type === 'ready') {
+      sessionRepository.clearActiveReference();
+    }
+  }, [orderStatus.state.type, sessionRepository]);
 
   const variant: OrderStatusScreenVariant = match(orderStatus.state)
     .returnType<OrderStatusScreenVariant>()
@@ -54,9 +64,18 @@ export const OrderStatusHandler = ({
           }
         : { type: 'loading' }
     )
-    .with({ type: 'loaded' }, (state) =>
+    .with({ type: 'preparing' }, (state) =>
       state.payment
-        ? { type: 'loaded', payment: state.payment }
+        ? {
+            type: 'preparing',
+            payment: state.payment,
+            isPolling: state.isPolling,
+          }
+        : { type: 'notFound' }
+    )
+    .with({ type: 'ready' }, (state) =>
+      state.payment
+        ? { type: 'ready', payment: state.payment }
         : { type: 'notFound' }
     )
     .exhaustive();
@@ -87,6 +106,12 @@ export const OrderStatusHandler = ({
       variant={variant}
       onBackToMenuPress={() => router.push(`/t/${tableCode}`)}
       onBackToCartPress={() => router.push(`/t/${tableCode}/cart`)}
+      isLeaveConfirmOpen={leaveConfirmation.isConfirmOpen}
+      leaveConfirmTransactionNumber={
+        orderStatus.state.payment?.transactionNumber ?? 0
+      }
+      onLeaveConfirm={leaveConfirmation.onLeaveConfirm}
+      onLeaveCancel={leaveConfirmation.onLeaveCancel}
     />
   );
 };

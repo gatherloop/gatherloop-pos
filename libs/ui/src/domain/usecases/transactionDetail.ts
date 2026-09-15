@@ -73,6 +73,10 @@ export class TransactionDetailUsecase extends Usecase<
         ...state,
         type: 'loading',
       }))
+      .with([{ type: 'loaded' }, { type: 'FETCH' }], ([state]) => ({
+        ...state,
+        type: 'loading',
+      }))
       .with(
         [{ type: 'loading' }, { type: 'FETCH_SUCCESS' }],
         ([state, { transaction }]) => ({

@@ -22,5 +22,7 @@ func (transactionRouter TransactionRouter) AddRouter(router *mux.Router) {
 	router.HandleFunc("/transactions/{transactionId}", CheckAuth(transactionRouter.handler.DeleteTransactionById)).Methods(http.MethodDelete)
 	router.HandleFunc("/transactions/{transactionId}/pay", CheckAuth(transactionRouter.handler.PayTransaction)).Methods(http.MethodPut, http.MethodOptions)
 	router.HandleFunc("/transactions/{transactionId}/unpay", CheckAuth(transactionRouter.handler.UnpayTransaction)).Methods(http.MethodPut, http.MethodOptions)
+	router.HandleFunc("/transactions/{transactionId}/complete", CheckAuth(transactionRouter.handler.CompleteTransaction)).Methods(http.MethodPut, http.MethodOptions)
+	router.HandleFunc("/transactions/{transactionId}/uncomplete", CheckAuth(transactionRouter.handler.UncompleteTransaction)).Methods(http.MethodPut, http.MethodOptions)
 	router.HandleFunc("/transactions", CheckAuth(transactionRouter.handler.CreateTransaction)).Methods(http.MethodPost, http.MethodOptions)
 }

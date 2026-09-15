@@ -188,3 +188,25 @@ export async function createTable(data: {
 export async function deleteTable(id: number): Promise<void> {
   return apiDelete(`/tables/${id}`);
 }
+
+export interface Transaction {
+  id: number;
+  name: string;
+  completedAt?: string | null;
+}
+
+export async function findTransactionsByQuery(
+  query: string
+): Promise<Transaction[]> {
+  return apiGet<Transaction[]>(`/transactions?query=${encodeURIComponent(query)}`);
+}
+
+export async function completeTransaction(id: number): Promise<void> {
+  const context = await getContext();
+  const response = await context.put(`/transactions/${id}/complete`);
+  if (!response.ok()) {
+    throw new Error(
+      `PUT /transactions/${id}/complete failed: ${response.status()} ${await response.text()}`
+    );
+  }
+}

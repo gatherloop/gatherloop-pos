@@ -27,5 +27,7 @@ export function toPayment(payment: ApiPayment): Payment {
     customerName: payment.customerName,
     tableLabel: payment.tableLabel,
     items: payment.items.map(toPaymentItem),
+    transactionNumber: payment.transactionNumber,
+    fulfillmentStatus: payment.fulfillmentStatus,
   };
 }

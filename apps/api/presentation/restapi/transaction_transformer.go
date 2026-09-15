@@ -57,6 +57,20 @@ func GetTransactionSourceQuery(r *http.Request) *domain.TransactionSource {
 	}
 }
 
+func GetTransactionFulfillmentQuery(r *http.Request) *domain.TransactionFulfillment {
+	fulfillmentQuery := r.URL.Query().Get("fulfillment")
+	switch fulfillmentQuery {
+	case "preparing":
+		fulfillment := domain.TransactionFulfillmentPreparing
+		return &fulfillment
+	case "ready":
+		fulfillment := domain.TransactionFulfillmentReady
+		return &fulfillment
+	default:
+		return nil
+	}
+}
+
 func ToApiTransaction(transaction domain.Transaction) apiContract.Transaction {
 	apiTransactionItems := []apiContract.TransactionItem{}
 	for _, item := range transaction.TransactionItems {
@@ -119,6 +133,7 @@ func ToApiTransaction(transaction domain.Transaction) apiContract.Transaction {
 		TotalIncome:        transaction.TotalIncome,
 		PaidAt:             transaction.PaidAt,
 		PaidAmount:         transaction.PaidAmount,
+		CompletedAt:        transaction.CompletedAt,
 		TransactionItems:   apiTransactionItems,
 		TransactionCoupons: apiTransactionCoupons,
 	}

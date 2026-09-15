@@ -21,13 +21,13 @@ func NewTransactionUsecase(transactionRepository TransactionRepository, variantR
 	}
 }
 
-func (usecase TransactionUsecase) GetTransactionList(ctx context.Context, query string, sortBy SortBy, order Order, skip int, limit int, paymentStatus PaymentStatus, walletId *int, source *TransactionSource) ([]Transaction, int64, *Error) {
-	transactions, err := usecase.transactionRepository.GetTransactionList(ctx, query, sortBy, order, skip, limit, paymentStatus, walletId, source)
+func (usecase TransactionUsecase) GetTransactionList(ctx context.Context, query string, sortBy SortBy, order Order, skip int, limit int, paymentStatus PaymentStatus, walletId *int, source *TransactionSource, fulfillment *TransactionFulfillment) ([]Transaction, int64, *Error) {
+	transactions, err := usecase.transactionRepository.GetTransactionList(ctx, query, sortBy, order, skip, limit, paymentStatus, walletId, source, fulfillment)
 	if err != nil {
 		return []Transaction{}, 0, err
 	}
 
-	total, err := usecase.transactionRepository.GetTransactionListTotal(ctx, query, paymentStatus, walletId, source)
+	total, err := usecase.transactionRepository.GetTransactionListTotal(ctx, query, paymentStatus, walletId, source, fulfillment)
 	if err != nil {
 		return []Transaction{}, 0, err
 	}
@@ -274,6 +274,52 @@ func (usecase TransactionUsecase) UnpayTransaction(ctx context.Context, id int64
 		}
 
 		return usecase.transactionRepository.UnpayTransaction(ctxWithTx, id)
+	})
+}
+
+func (usecase TransactionUsecase) CompleteTransaction(ctx context.Context, id int64) *Error {
+	return usecase.transactionRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		transaction, err := usecase.transactionRepository.GetTransactionById(ctxWithTx, id)
+		if err != nil {
+			return err
+		}
+
+		if transaction.DeletedAt != nil {
+			return &Error{Type: NotFound, Message: "transaction not found"}
+		}
+
+		if transaction.Source != TransactionSourceOrder {
+			return &Error{Type: BadRequest, Message: "only order transactions can be completed"}
+		}
+
+		if transaction.CompletedAt != nil {
+			return &Error{Type: BadRequest, Message: "transaction already completed"}
+		}
+
+		return usecase.transactionRepository.CompleteTransaction(ctxWithTx, time.Now(), id)
+	})
+}
+
+func (usecase TransactionUsecase) UncompleteTransaction(ctx context.Context, id int64) *Error {
+	return usecase.transactionRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		transaction, err := usecase.transactionRepository.GetTransactionById(ctxWithTx, id)
+		if err != nil {
+			return err
+		}
+
+		if transaction.DeletedAt != nil {
+			return &Error{Type: NotFound, Message: "transaction not found"}
+		}
+
+		if transaction.Source != TransactionSourceOrder {
+			return &Error{Type: BadRequest, Message: "only order transactions can be uncompleted"}
+		}
+
+		if transaction.CompletedAt == nil {
+			return &Error{Type: BadRequest, Message: "transaction is not completed"}
+		}
+
+		return usecase.transactionRepository.UncompleteTransaction(ctxWithTx, id)
 	})
 }
 

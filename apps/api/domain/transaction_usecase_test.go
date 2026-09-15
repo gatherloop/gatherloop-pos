@@ -42,9 +42,9 @@ func TestTransactionUsecase_GetTransactionList(t *testing.T) {
 		{
 			name: "success",
 			setupMock: func(txRepo *mock.MockTransactionRepository) {
-				txRepo.EXPECT().GetTransactionList(gomock.Any(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.All, nil, nil).
+				txRepo.EXPECT().GetTransactionList(gomock.Any(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.All, nil, nil, nil).
 					Return([]domain.Transaction{{Id: 1}, {Id: 2}}, nil)
-				txRepo.EXPECT().GetTransactionListTotal(gomock.Any(), "", domain.All, nil, nil).Return(int64(2), nil)
+				txRepo.EXPECT().GetTransactionListTotal(gomock.Any(), "", domain.All, nil, nil, nil).Return(int64(2), nil)
 			},
 			expectedLen:   2,
 			expectedTotal: 2,
@@ -52,7 +52,7 @@ func TestTransactionUsecase_GetTransactionList(t *testing.T) {
 		{
 			name: "error on GetTransactionList",
 			setupMock: func(txRepo *mock.MockTransactionRepository) {
-				txRepo.EXPECT().GetTransactionList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				txRepo.EXPECT().GetTransactionList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil, &domain.Error{Type: domain.InternalServerError})
 			},
 			expectedError: &domain.Error{Type: domain.InternalServerError},
@@ -71,7 +71,7 @@ func TestTransactionUsecase_GetTransactionList(t *testing.T) {
 			tt.setupMock(txRepo)
 
 			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo)
-			transactions, total, err := usecase.GetTransactionList(context.Background(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.All, nil, nil)
+			transactions, total, err := usecase.GetTransactionList(context.Background(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.All, nil, nil, nil)
 
 			if tt.expectedError != nil {
 				assert.NotNil(t, err)
@@ -94,16 +94,42 @@ func TestTransactionUsecase_GetTransactionList(t *testing.T) {
 		couponRepo := mock.NewMockCouponRepository(ctrl)
 		walletRepo := mock.NewMockWalletRepository(ctrl)
 
-		txRepo.EXPECT().GetTransactionList(gomock.Any(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.All, nil, &orderSource).
+		txRepo.EXPECT().GetTransactionList(gomock.Any(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.All, nil, &orderSource, nil).
 			Return([]domain.Transaction{{Id: 1, Source: domain.TransactionSourceOrder}}, nil)
-		txRepo.EXPECT().GetTransactionListTotal(gomock.Any(), "", domain.All, nil, &orderSource).Return(int64(1), nil)
+		txRepo.EXPECT().GetTransactionListTotal(gomock.Any(), "", domain.All, nil, &orderSource, nil).Return(int64(1), nil)
 
 		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo)
-		transactions, total, err := usecase.GetTransactionList(context.Background(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.All, nil, &orderSource)
+		transactions, total, err := usecase.GetTransactionList(context.Background(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.All, nil, &orderSource, nil)
 
 		assert.Nil(t, err)
 		assert.Len(t, transactions, 1)
 		assert.Equal(t, int64(1), total)
+	})
+
+	t.Run("threads the fulfillment filter to both repository calls", func(t *testing.T) {
+		for _, fulfillment := range []domain.TransactionFulfillment{domain.TransactionFulfillmentPreparing, domain.TransactionFulfillmentReady} {
+			t.Run(string(fulfillment), func(t *testing.T) {
+				ctrl := gomock.NewController(t)
+				defer ctrl.Finish()
+
+				fulfillment := fulfillment
+				txRepo := mock.NewMockTransactionRepository(ctrl)
+				variantRepo := mock.NewMockVariantRepository(ctrl)
+				couponRepo := mock.NewMockCouponRepository(ctrl)
+				walletRepo := mock.NewMockWalletRepository(ctrl)
+
+				txRepo.EXPECT().GetTransactionList(gomock.Any(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.All, nil, nil, &fulfillment).
+					Return([]domain.Transaction{{Id: 1, Source: domain.TransactionSourceOrder}}, nil)
+				txRepo.EXPECT().GetTransactionListTotal(gomock.Any(), "", domain.All, nil, nil, &fulfillment).Return(int64(1), nil)
+
+				usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo)
+				transactions, total, err := usecase.GetTransactionList(context.Background(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.All, nil, nil, &fulfillment)
+
+				assert.Nil(t, err)
+				assert.Len(t, transactions, 1)
+				assert.Equal(t, int64(1), total)
+			})
+		}
 	})
 }
 
@@ -446,6 +472,194 @@ func TestTransactionUsecase_PayTransaction(t *testing.T) {
 
 			if tt.expectedError != nil {
 				assert.NotNil(t, err)
+				assert.Equal(t, tt.expectedError.Type, err.Type)
+			} else {
+				assert.Nil(t, err)
+			}
+		})
+	}
+}
+
+func TestTransactionUsecase_CompleteTransaction(t *testing.T) {
+	now := time.Now()
+	deletedAt := now.Add(-1 * time.Hour)
+
+	tests := []struct {
+		name          string
+		id            int64
+		setupMock     func(txRepo *mock.MockTransactionRepository)
+		expectedError *domain.Error
+	}{
+		{
+			name: "success",
+			id:   1,
+			setupMock: func(txRepo *mock.MockTransactionRepository) {
+				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(1)).Return(domain.Transaction{
+					Id: 1, Source: domain.TransactionSourceOrder, CompletedAt: nil,
+				}, nil)
+				txRepo.EXPECT().CompleteTransaction(gomock.Any(), gomock.Any(), int64(1)).Return(nil)
+			},
+		},
+		{
+			name: "transaction not found",
+			id:   2,
+			setupMock: func(txRepo *mock.MockTransactionRepository) {
+				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(2)).Return(domain.Transaction{}, &domain.Error{Type: domain.NotFound})
+			},
+			expectedError: &domain.Error{Type: domain.NotFound},
+		},
+		{
+			name: "transaction is soft-deleted",
+			id:   3,
+			setupMock: func(txRepo *mock.MockTransactionRepository) {
+				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(3)).Return(domain.Transaction{
+					Id: 3, Source: domain.TransactionSourceOrder, DeletedAt: &deletedAt,
+				}, nil)
+			},
+			expectedError: &domain.Error{Type: domain.NotFound},
+		},
+		{
+			name: "transaction is a POS transaction",
+			id:   4,
+			setupMock: func(txRepo *mock.MockTransactionRepository) {
+				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(4)).Return(domain.Transaction{
+					Id: 4, Source: domain.TransactionSourcePos,
+				}, nil)
+			},
+			expectedError: &domain.Error{Type: domain.BadRequest},
+		},
+		{
+			name: "already completed",
+			id:   5,
+			setupMock: func(txRepo *mock.MockTransactionRepository) {
+				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(5)).Return(domain.Transaction{
+					Id: 5, Source: domain.TransactionSourceOrder, CompletedAt: &now,
+				}, nil)
+			},
+			expectedError: &domain.Error{Type: domain.BadRequest},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			txRepo := mock.NewMockTransactionRepository(ctrl)
+			variantRepo := mock.NewMockVariantRepository(ctrl)
+			couponRepo := mock.NewMockCouponRepository(ctrl)
+			walletRepo := mock.NewMockWalletRepository(ctrl)
+			tt.setupMock(txRepo)
+
+			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo)
+			err := usecase.CompleteTransaction(context.Background(), tt.id)
+
+			if tt.expectedError != nil {
+				require.NotNil(t, err)
+				assert.Equal(t, tt.expectedError.Type, err.Type)
+			} else {
+				assert.Nil(t, err)
+			}
+		})
+	}
+}
+
+func TestTransactionUsecase_UncompleteTransaction(t *testing.T) {
+	now := time.Now()
+	deletedAt := now.Add(-1 * time.Hour)
+
+	tests := []struct {
+		name          string
+		id            int64
+		setupMock     func(txRepo *mock.MockTransactionRepository)
+		expectedError *domain.Error
+	}{
+		{
+			name: "success",
+			id:   1,
+			setupMock: func(txRepo *mock.MockTransactionRepository) {
+				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(1)).Return(domain.Transaction{
+					Id: 1, Source: domain.TransactionSourceOrder, CompletedAt: &now,
+				}, nil)
+				txRepo.EXPECT().UncompleteTransaction(gomock.Any(), int64(1)).Return(nil)
+			},
+		},
+		{
+			name: "transaction not found",
+			id:   2,
+			setupMock: func(txRepo *mock.MockTransactionRepository) {
+				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(2)).Return(domain.Transaction{}, &domain.Error{Type: domain.NotFound})
+			},
+			expectedError: &domain.Error{Type: domain.NotFound},
+		},
+		{
+			name: "transaction is soft-deleted",
+			id:   3,
+			setupMock: func(txRepo *mock.MockTransactionRepository) {
+				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(3)).Return(domain.Transaction{
+					Id: 3, Source: domain.TransactionSourceOrder, CompletedAt: &now, DeletedAt: &deletedAt,
+				}, nil)
+			},
+			expectedError: &domain.Error{Type: domain.NotFound},
+		},
+		{
+			name: "transaction is a POS transaction",
+			id:   4,
+			setupMock: func(txRepo *mock.MockTransactionRepository) {
+				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(4)).Return(domain.Transaction{
+					Id: 4, Source: domain.TransactionSourcePos, CompletedAt: &now,
+				}, nil)
+			},
+			expectedError: &domain.Error{Type: domain.BadRequest},
+		},
+		{
+			name: "not completed yet",
+			id:   5,
+			setupMock: func(txRepo *mock.MockTransactionRepository) {
+				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(5)).Return(domain.Transaction{
+					Id: 5, Source: domain.TransactionSourceOrder, CompletedAt: nil,
+				}, nil)
+			},
+			expectedError: &domain.Error{Type: domain.BadRequest},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			txRepo := mock.NewMockTransactionRepository(ctrl)
+			variantRepo := mock.NewMockVariantRepository(ctrl)
+			couponRepo := mock.NewMockCouponRepository(ctrl)
+			walletRepo := mock.NewMockWalletRepository(ctrl)
+			tt.setupMock(txRepo)
+
+			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo)
+			err := usecase.UncompleteTransaction(context.Background(), tt.id)
+
+			if tt.expectedError != nil {
+				require.NotNil(t, err)
 				assert.Equal(t, tt.expectedError.Type, err.Type)
 			} else {
 				assert.Nil(t, err)

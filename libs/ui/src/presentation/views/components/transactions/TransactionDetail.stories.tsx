@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { fn } from '@storybook/test';
 import { TransactionDetail } from './TransactionDetail';
 import { mockTransaction } from '../../../../../.storybook/mocks/mockData';
 
@@ -13,11 +14,14 @@ const meta: Meta<typeof TransactionDetail> = {
     transactionNumber: mockTransaction.transactionNumber,
     createdAt: mockTransaction.createdAt,
     paidAt: mockTransaction.paidAt ?? undefined,
+    completedAt: mockTransaction.completedAt,
     walletName: mockTransaction.wallet?.name,
     total: mockTransaction.total,
     paidAmount: mockTransaction.paidAmount,
     transactionItems: mockTransaction.transactionItems,
     transactionCoupons: mockTransaction.transactionCoupons,
+    onCompleteButtonPress: fn(),
+    onUncompleteButtonPress: fn(),
   },
 };
 
@@ -39,6 +43,7 @@ export const FromOrderApp: Story = {
     source: 'order',
     table: { id: 1, label: 'A1', floorNumber: 1 },
     pagerNumber: 0,
+    completedAt: null,
   },
 };
 
@@ -46,6 +51,15 @@ export const FromPos: Story = {
   args: {
     source: 'pos',
     table: null,
+  },
+};
+
+export const OrderReady: Story = {
+  args: {
+    source: 'order',
+    table: { id: 1, label: 'A1', floorNumber: 1 },
+    pagerNumber: 0,
+    completedAt: '2024-01-20T10:45:00.000Z',
   },
 };
 
