@@ -1,3 +1,5 @@
+import { TransactionFulfillmentStatus } from './Transaction';
+
 export type PaymentItemOption = {
   name: string;
   value: string;
@@ -24,4 +26,6 @@ export type Payment = {
   customerName: string;
   tableLabel: string;
   items: PaymentItem[];
+  transactionNumber: number;
+  fulfillmentStatus: TransactionFulfillmentStatus;
 };

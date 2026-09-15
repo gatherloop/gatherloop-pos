@@ -54,7 +54,7 @@ export const OrderStatusHandler = ({
           }
         : { type: 'loading' }
     )
-    .with({ type: 'loaded' }, (state) =>
+    .with({ type: P.union('preparing', 'ready') }, (state) =>
       state.payment
         ? { type: 'loaded', payment: state.payment }
         : { type: 'notFound' }

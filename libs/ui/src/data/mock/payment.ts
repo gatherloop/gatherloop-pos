@@ -13,6 +13,8 @@ const initialPayment = (): Payment => ({
   paidAt: null,
   customerName: '',
   tableLabel: 'A1',
+  transactionNumber: 1,
+  fulfillmentStatus: 'preparing',
   items: [
     {
       name: 'Es Kopi Susu - Regular',
