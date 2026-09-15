@@ -100,13 +100,10 @@ describe('OrderStatusHandler', () => {
       });
 
       expect(
-        screen.getByText('Pesanan Anda sedang disiapkan')
+        screen.getByText(`#${paymentRepository.payment.transactionNumber}`)
       ).toBeTruthy();
       expect(
         screen.getByText(paymentRepository.payment.tableLabel)
-      ).toBeTruthy();
-      expect(
-        screen.getByText(`Atas nama ${paymentRepository.payment.customerName}`)
       ).toBeTruthy();
     } finally {
       jest.useRealTimers();
@@ -128,8 +125,37 @@ describe('OrderStatusHandler', () => {
     await settle();
 
     expect(
-      screen.getByText('Pesanan Anda sedang disiapkan')
+      screen.getByText(
+        'Pesanan Anda sedang disiapkan. Mohon tunggu di meja Anda, kami akan memberi tahu di halaman ini saat pesanan siap diambil.'
+      )
     ).toBeTruthy();
+    expect(screen.queryByText(/menit|jam|detik/)).toBeNull();
+  });
+
+  it('shows the pickup instruction when the payment is already ready', async () => {
+    const paymentRepository = new MockPaymentRepository();
+    paymentRepository.payment = {
+      ...paymentRepository.payment,
+      status: 'paid',
+      fulfillmentStatus: 'ready',
+    };
+    renderHandler({
+      reference: paymentRepository.payment.reference,
+      paymentRepository,
+    });
+
+    await settle();
+
+    expect(screen.getByText('Pesanan siap!')).toBeTruthy();
+    expect(
+      screen.getByText(
+        `Silakan ambil di kasir dengan menyebutkan nomor #${paymentRepository.payment.transactionNumber}.`
+      )
+    ).toBeTruthy();
+    expect(
+      screen.getByText(`#${paymentRepository.payment.transactionNumber}`)
+    ).toBeTruthy();
+    expect(screen.queryByText(/menit|jam|detik/)).toBeNull();
   });
 
   it('shows the expiry screen for an expired payment', async () => {
@@ -197,7 +223,9 @@ describe('OrderStatusHandler', () => {
     });
 
     expect(
-      screen.getByText('Pesanan Anda sedang disiapkan')
+      screen.getByText(
+        'Pesanan Anda sedang disiapkan. Mohon tunggu di meja Anda, kami akan memberi tahu di halaman ini saat pesanan siap diambil.'
+      )
     ).toBeTruthy();
   });
 
