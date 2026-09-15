@@ -9,8 +9,8 @@ export type OrderLayoutProps = {
 
 const orderShellHeightStyle = `
   .order-shell-height {
-    height: 100%;
-    height: 100svh;
+    max-height: 100vh;
+    max-height: 100dvh;
   }
 `;
 
@@ -21,29 +21,18 @@ export const OrderLayout = ({ children, header, footer }: OrderLayoutProps) => {
       <YStack
         flex={1}
         className="order-shell-height"
-        overflow="hidden"
         width="100%"
         maxWidth={480}
         marginHorizontal="auto"
         backgroundColor="$background"
+        justifyContent="space-between"
+        flexDirection="column"
       >
         {header}
-        <ScrollView flex={1} minHeight={0}>
-          <YStack
-            padding="$4"
-            gap="$3"
-            paddingBottom={footer ? '$8' : '$4'}
-          >
-            {children}
-          </YStack>
-        </ScrollView>
-        {footer ? (
-          <YStack
-            paddingBottom="env(safe-area-inset-bottom, 13px)"
-          >
-            {footer}
-          </YStack>
-        ) : null}
+        <YStack padding="$4" flex={1}>
+          {children}
+        </YStack>
+        {footer ? <YStack>{footer}</YStack> : null}
       </YStack>
     </PortalProvider>
   );
