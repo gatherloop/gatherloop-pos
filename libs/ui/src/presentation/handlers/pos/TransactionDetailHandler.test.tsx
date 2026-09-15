@@ -1,8 +1,13 @@
 import React from 'react';
 import { render, screen, act } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { TransactionDetailHandler } from './TransactionDetailHandler';
 import { MockAuthRepository, MockTransactionRepository } from '../../../data/mock';
-import { AuthLogoutUsecase, TransactionDetailUsecase } from '../../../domain';
+import {
+  AuthLogoutUsecase,
+  TransactionCompleteUsecase,
+  TransactionDetailUsecase,
+} from '../../../domain';
 import { flushPromises } from '../../../utils/testUtils';
 
 jest.mock('solito/router', () => ({
@@ -18,10 +23,11 @@ const createProps = (
     transactionId?: number;
     shouldFail?: boolean;
     preloaded?: boolean;
+    transactionRepo?: MockTransactionRepository;
   } = {}
 ) => {
   const transactionId = options.transactionId ?? 1;
-  const transactionRepo = new MockTransactionRepository();
+  const transactionRepo = options.transactionRepo ?? new MockTransactionRepository();
   if (options.shouldFail) transactionRepo.setShouldFail(true);
 
   const preloadedTransaction = options.preloaded
@@ -34,6 +40,7 @@ const createProps = (
       transactionId,
       transaction: preloadedTransaction,
     }),
+    transactionCompleteUsecase: new TransactionCompleteUsecase(transactionRepo),
   };
 };
 
@@ -103,6 +110,80 @@ describe('TransactionDetailHandler', () => {
       expect(
         screen.getByRole('heading', { name: 'Transaction Items' })
       ).toBeTruthy();
+    });
+  });
+
+  describe('mark ready / mark preparing', () => {
+    it('should show Mark as Ready for a preparing order transaction', () => {
+      render(
+        <TransactionDetailHandler
+          {...createProps({ transactionId: 2, preloaded: true })}
+        />
+      );
+
+      expect(screen.getByRole('button', { name: 'Mark as Ready' })).toBeTruthy();
+      expect(
+        screen.queryByRole('button', { name: 'Mark as Preparing' })
+      ).toBeNull();
+    });
+
+    it('should not show Mark as Ready or Mark as Preparing for a POS transaction', () => {
+      render(
+        <TransactionDetailHandler
+          {...createProps({ transactionId: 1, preloaded: true })}
+        />
+      );
+
+      expect(screen.queryByRole('button', { name: 'Mark as Ready' })).toBeNull();
+      expect(
+        screen.queryByRole('button', { name: 'Mark as Preparing' })
+      ).toBeNull();
+    });
+
+    it('should flip the fulfilment status to Ready after confirming Mark as Ready', async () => {
+      const user = userEvent.setup();
+      const transactionRepo = new MockTransactionRepository();
+      render(
+        <TransactionDetailHandler
+          {...createProps({ transactionId: 2, preloaded: true, transactionRepo })}
+        />
+      );
+
+      expect(screen.getByText('Preparing')).toBeTruthy();
+
+      await user.click(screen.getByRole('button', { name: 'Mark as Ready' }));
+      await user.click(screen.getByRole('button', { name: 'Yes' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByText('Ready')).toBeTruthy();
+      expect(
+        screen.getByRole('button', { name: 'Mark as Preparing' })
+      ).toBeTruthy();
+    });
+
+    it('should keep the fulfilment status unchanged when the repository fails', async () => {
+      const user = userEvent.setup();
+      const transactionRepo = new MockTransactionRepository();
+      render(
+        <TransactionDetailHandler
+          {...createProps({ transactionId: 2, preloaded: true, transactionRepo })}
+        />
+      );
+
+      transactionRepo.setShouldFail(true);
+
+      await user.click(screen.getByRole('button', { name: 'Mark as Ready' }));
+      await user.click(screen.getByRole('button', { name: 'Yes' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByText('Preparing')).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Mark as Ready' })).toBeTruthy();
     });
   });
 });

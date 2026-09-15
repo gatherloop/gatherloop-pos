@@ -26,6 +26,8 @@ const defaultArgs = {
   onDeleteMenuPress: fn(),
   onPayMenuPress: fn(),
   onUnpayMenuPress: fn(),
+  onCompleteMenuPress: fn(),
+  onUncompleteMenuPress: fn(),
   onPrintInvoiceMenuPress: fn(),
   onPrintOrderSlipMenuPress: fn(),
   onItemPress: fn(),

@@ -42,6 +42,23 @@ describe('TransactionDetailUsecase', () => {
     });
   });
 
+  describe('refetch from loaded', () => {
+    it('should transition loaded → loading → loaded with fresh data', async () => {
+      const repository = new MockTransactionRepository();
+      const existing = repository.transactions[0];
+      const usecase = new TransactionDetailUsecase(repository, { transactionId: 1, transaction: existing });
+      const tester = new UsecaseTester<TransactionDetailUsecase, TransactionDetailState, TransactionDetailAction, TransactionDetailParams>(usecase);
+
+      expect(tester.state.type).toBe('loaded');
+
+      tester.dispatch({ type: 'FETCH' });
+      expect(tester.state.type).toBe('loading');
+
+      await flushPromises();
+      expect(tester.state.type).toBe('loaded');
+    });
+  });
+
   it('starts in loaded state when data is preloaded', () => {
     const repository = new MockTransactionRepository();
     const existing = repository.transactions[0];

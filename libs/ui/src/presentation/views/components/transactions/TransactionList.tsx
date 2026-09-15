@@ -43,6 +43,8 @@ export type TransactionListProps = {
   onDeleteMenuPress: (transaction: Transaction) => void;
   onPayMenuPress: (transaction: Transaction) => void;
   onUnpayMenuPress: (transaction: Transaction) => void;
+  onCompleteMenuPress: (transaction: Transaction) => void;
+  onUncompleteMenuPress: (transaction: Transaction) => void;
   onPrintInvoiceMenuPress: (transaction: Transaction) => void;
   onPrintOrderSlipMenuPress: (transaction: Transaction) => void;
   onItemPress: (transaction: Transaction) => void;
@@ -76,6 +78,8 @@ export const TransactionList = ({
   onItemPress,
   onPayMenuPress,
   onUnpayMenuPress,
+  onCompleteMenuPress,
+  onUncompleteMenuPress,
   onPrintInvoiceMenuPress,
   onPrintOrderSlipMenuPress,
   wallets,
@@ -303,6 +307,8 @@ export const TransactionList = ({
                   onDeleteMenuPress={() => onDeleteMenuPress(item)}
                   onPayMenuPress={() => onPayMenuPress(item)}
                   onUnpayMenuPress={() => onUnpayMenuPress(item)}
+                  onCompleteMenuPress={() => onCompleteMenuPress(item)}
+                  onUncompleteMenuPress={() => onUncompleteMenuPress(item)}
                   onPrintInvoiceMenuPress={() => onPrintInvoiceMenuPress(item)}
                   onPrintOrderSlipMenuPress={() =>
                     onPrintOrderSlipMenuPress(item)

@@ -1,10 +1,12 @@
 import {
   Calendar,
+  CheckCircle,
   ConciergeBell,
   DollarSign,
   MapPin,
   Pencil,
   Printer,
+  RotateCcw,
   Trash,
   Wallet,
   XCircle,
@@ -28,6 +30,8 @@ export type TransactionListItemProps = {
   walletName?: string;
   onPayMenuPress: () => void;
   onUnpayMenuPress: () => void;
+  onCompleteMenuPress: () => void;
+  onUncompleteMenuPress: () => void;
   onEditMenuPress: () => void;
   onDeleteMenuPress: () => void;
   onPrintInvoiceMenuPress: () => void;
@@ -118,6 +122,8 @@ export const TransactionListItem = ({
   walletName,
   onPayMenuPress,
   onUnpayMenuPress,
+  onCompleteMenuPress,
+  onUncompleteMenuPress,
   onEditMenuPress,
   onDeleteMenuPress,
   onPrintInvoiceMenuPress,
@@ -164,6 +170,18 @@ export const TransactionListItem = ({
           icon: Printer,
           onPress: onPrintInvoiceMenuPress,
           isShown: Platform.OS === 'web',
+        },
+        {
+          title: 'Mark as Ready',
+          icon: CheckCircle,
+          onPress: onCompleteMenuPress,
+          isShown: source === 'order' && !completedAt,
+        },
+        {
+          title: 'Mark as Preparing',
+          icon: RotateCcw,
+          onPress: onUncompleteMenuPress,
+          isShown: source === 'order' && !!completedAt,
         },
         {
           title: 'Print Order Slip',
