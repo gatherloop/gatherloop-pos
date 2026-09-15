@@ -5,6 +5,7 @@ import { EmptyView } from '../../components/base/EmptyView';
 import { ErrorView } from '../../components/base/ErrorView';
 import { LoadingView } from '../../components/base/LoadingView';
 import { QrisPaymentView } from '../../components/checkout/QrisPaymentView';
+import { OrderLeaveConfirmAlert } from '../../components/orderStatus/OrderLeaveConfirmAlert';
 import { OrderPreparingView } from '../../components/orderStatus/OrderPreparingView';
 import { OrderReadyView } from '../../components/orderStatus/OrderReadyView';
 import {
@@ -30,6 +31,10 @@ export type OrderStatusScreenProps = {
   variant: OrderStatusScreenVariant;
   onBackToMenuPress: () => void;
   onBackToCartPress: () => void;
+  isLeaveConfirmOpen: boolean;
+  leaveConfirmTransactionNumber: number;
+  onLeaveConfirm: () => void;
+  onLeaveCancel: () => void;
 };
 
 export const OrderStatusScreen = ({
@@ -37,8 +42,18 @@ export const OrderStatusScreen = ({
   variant,
   onBackToMenuPress,
   onBackToCartPress,
+  isLeaveConfirmOpen,
+  leaveConfirmTransactionNumber,
+  onLeaveConfirm,
+  onLeaveCancel,
 }: OrderStatusScreenProps) => (
   <TableResolveScreen variant={tableVariant}>
+    <OrderLeaveConfirmAlert
+      isOpen={isLeaveConfirmOpen}
+      transactionNumber={leaveConfirmTransactionNumber}
+      onCancel={onLeaveCancel}
+      onConfirm={onLeaveConfirm}
+    />
     {match(variant)
       .returnType<ReactNode>()
       .with({ type: 'loading' }, () => (
