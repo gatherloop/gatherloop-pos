@@ -11,6 +11,7 @@ const orderShellHeightStyle = `
   .order-shell-height {
     height: 100%;
     height: 100svh;
+    height: 100dvh;
   }
 `;
 
@@ -38,9 +39,7 @@ export const OrderLayout = ({ children, header, footer }: OrderLayoutProps) => {
           </YStack>
         </ScrollView>
         {footer ? (
-          <YStack
-            paddingBottom="env(safe-area-inset-bottom, 13px)"
-          >
+          <YStack paddingBottom="max(13px, env(safe-area-inset-bottom))">
             {footer}
           </YStack>
         ) : null}
