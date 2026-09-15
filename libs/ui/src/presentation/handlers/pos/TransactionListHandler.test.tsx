@@ -10,6 +10,7 @@ import {
 import {
   AuthLogoutUsecase,
   Transaction,
+  TransactionCompleteUsecase,
   TransactionDeleteUsecase,
   TransactionListUsecase,
   TransactionPayUsecase,
@@ -127,6 +128,14 @@ const transactionUnpayCtrl = {
   state: { type: 'hidden' as string },
   dispatch: jest.fn(),
 };
+const transactionCompleteCtrl = {
+  state: {
+    type: 'hidden' as string,
+    transactionId: null as number | null,
+    action: null as 'complete' | 'uncomplete' | null,
+  },
+  dispatch: jest.fn(),
+};
 const authLogoutCtrl = {
   state: { type: 'idle' as string },
   dispatch: jest.fn(),
@@ -136,6 +145,10 @@ jest.mock('../hooks', () => ({
   useTransactionPay: () => ({
     state: transactionPayCtrl.state,
     dispatch: transactionPayCtrl.dispatch,
+  }),
+  useTransactionComplete: () => ({
+    state: transactionCompleteCtrl.state,
+    dispatch: transactionCompleteCtrl.dispatch,
   }),
   useAuthLogout: () => ({
     state: authLogoutCtrl.state,
@@ -179,6 +192,7 @@ const createProps = () => ({
     { wallets: [] }
   ),
   transactionUnpayUsecase: new TransactionUnpayUsecase(new MockTransactionRepository()),
+  transactionCompleteUsecase: new TransactionCompleteUsecase(new MockTransactionRepository()),
 });
 
 describe('TransactionListHandler', () => {
@@ -205,6 +219,11 @@ describe('TransactionListHandler', () => {
       transactionId: null,
     };
     transactionUnpayCtrl.state = { type: 'hidden' };
+    transactionCompleteCtrl.state = {
+      type: 'hidden',
+      transactionId: null,
+      action: null,
+    };
     authLogoutCtrl.state = { type: 'idle' };
   });
 
@@ -275,6 +294,36 @@ describe('TransactionListHandler', () => {
 
     it('should not dispatch FETCH when unpay has not succeeded', async () => {
       transactionUnpayCtrl.state = { type: 'hidden' };
+
+      await act(async () => {
+        render(<TransactionListHandler {...createProps()} />);
+      });
+
+      expect(transactionListCtrl.dispatch).not.toHaveBeenCalledWith({ type: 'FETCH' });
+    });
+  });
+
+  describe('complete → refetch orchestration', () => {
+    it('should dispatch FETCH to transaction list when complete succeeds', async () => {
+      transactionCompleteCtrl.state = {
+        type: 'completingSuccess',
+        transactionId: 2,
+        action: 'complete',
+      };
+
+      await act(async () => {
+        render(<TransactionListHandler {...createProps()} />);
+      });
+
+      expect(transactionListCtrl.dispatch).toHaveBeenCalledWith({ type: 'FETCH' });
+    });
+
+    it('should not dispatch FETCH when complete has not succeeded', async () => {
+      transactionCompleteCtrl.state = {
+        type: 'hidden',
+        transactionId: null,
+        action: null,
+      };
 
       await act(async () => {
         render(<TransactionListHandler {...createProps()} />);

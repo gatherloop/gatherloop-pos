@@ -9,6 +9,7 @@ import {
 } from '../../../data/mock';
 import {
   AuthLogoutUsecase,
+  TransactionCompleteUsecase,
   TransactionDeleteUsecase,
   TransactionListUsecase,
   TransactionPayUsecase,
@@ -53,6 +54,9 @@ const createProps = (transactionRepository: MockTransactionRepository) => ({
     { wallets: [] }
   ),
   transactionUnpayUsecase: new TransactionUnpayUsecase(transactionRepository),
+  transactionCompleteUsecase: new TransactionCompleteUsecase(
+    transactionRepository
+  ),
 });
 
 describe('TransactionListHandler refetch on focus', () => {

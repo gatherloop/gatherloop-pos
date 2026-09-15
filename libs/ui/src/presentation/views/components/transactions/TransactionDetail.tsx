@@ -1,13 +1,15 @@
-import { Card, H3, H4, Paragraph, XStack, YStack } from 'tamagui';
+import { Button, Card, H3, H4, Paragraph, XStack, YStack } from 'tamagui';
 import dayjs from 'dayjs';
 import { VariantListItem } from '../variants';
 import {
   Calendar,
+  CheckCircle,
   ClipboardCheck,
   ConciergeBell,
   CreditCard,
   Hash,
   MapPin,
+  RotateCcw,
   Tag,
   User,
   Wallet,
@@ -36,6 +38,8 @@ export type TransactionDetailProps = {
   paidAmount: number;
   transactionItems: TransactionItem[];
   transactionCoupons: TransactionCoupon[];
+  onCompleteButtonPress?: () => void;
+  onUncompleteButtonPress?: () => void;
 };
 
 const sourceLabel: Record<TransactionSource, string> = {
@@ -57,6 +61,8 @@ export const TransactionDetail = ({
   transactionItems,
   transactionCoupons,
   paidAmount,
+  onCompleteButtonPress,
+  onUncompleteButtonPress,
 }: TransactionDetailProps) => {
   function getDiscountAmount(index: number) {
     let calculatedTotal = transactionItems.reduce(
@@ -321,6 +327,21 @@ export const TransactionDetail = ({
           )
         )}
       </YStack>
+
+      {source === 'order' &&
+        (completedAt ? (
+          <Button
+            icon={RotateCcw}
+            theme="active"
+            onPress={onUncompleteButtonPress}
+          >
+            Mark as Preparing
+          </Button>
+        ) : (
+          <Button icon={CheckCircle} theme="active" onPress={onCompleteButtonPress}>
+            Mark as Ready
+          </Button>
+        ))}
 
       {transactionCoupons.length > 0 && (
         <>

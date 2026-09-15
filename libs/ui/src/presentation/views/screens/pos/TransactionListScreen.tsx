@@ -2,6 +2,7 @@ import { Button } from 'tamagui';
 import {
   Layout,
   TransactionList,
+  TransactionCompleteAlert,
   TransactionDeleteAlert,
   TransactionPaymentAlert,
   TransactionUnpayAlert,
@@ -10,6 +11,7 @@ import { Link } from 'solito/link';
 import { Plus } from '@tamagui/lucide-icons';
 import {
   Transaction,
+  TransactionCompleteActionType,
   TransactionPayForm,
   TransactionSourceFilter,
   Wallet,
@@ -21,6 +23,8 @@ export type TransactionListScreenProps = {
   onEditMenuPress: (transaction: Transaction) => void;
   onPayMenuPress: (transaction: Transaction) => void;
   onUnpayMenuPress: (transaction: Transaction) => void;
+  onCompleteMenuPress: (transaction: Transaction) => void;
+  onUncompleteMenuPress: (transaction: Transaction) => void;
   onItemPress: (transaction: Transaction) => void;
   onPrintInvoiceMenuPress: (transaction: Transaction) => void;
   onPrintOrderSlipMenuPress: (transaction: Transaction) => void;
@@ -54,6 +58,11 @@ export type TransactionListScreenProps = {
   isUnpayButtonDisabled: boolean;
   onUnpayCancel: () => void;
   onUnpayConfirm: () => void;
+  isCompleteModalOpen: boolean;
+  completeAction: TransactionCompleteActionType | null;
+  isCompleteButtonDisabled: boolean;
+  onCompleteCancel: () => void;
+  onCompleteConfirm: () => void;
   isRevalidating?: boolean;
   isChangingParams?: boolean;
   onSearchClear?: () => void;
@@ -66,6 +75,8 @@ export const TransactionListScreen = ({
   onEditMenuPress,
   onPayMenuPress,
   onUnpayMenuPress,
+  onCompleteMenuPress,
+  onUncompleteMenuPress,
   onItemPress,
   onPrintInvoiceMenuPress,
   onPrintOrderSlipMenuPress,
@@ -99,6 +110,11 @@ export const TransactionListScreen = ({
   isUnpayButtonDisabled,
   onUnpayCancel,
   onUnpayConfirm,
+  isCompleteModalOpen,
+  completeAction,
+  isCompleteButtonDisabled,
+  onCompleteCancel,
+  onCompleteConfirm,
   isRevalidating,
   isChangingParams,
   onSearchClear,
@@ -132,6 +148,8 @@ export const TransactionListScreen = ({
         onDeleteMenuPress={onDeleteMenuPress}
         onPayMenuPress={onPayMenuPress}
         onUnpayMenuPress={onUnpayMenuPress}
+        onCompleteMenuPress={onCompleteMenuPress}
+        onUncompleteMenuPress={onUncompleteMenuPress}
         onPrintInvoiceMenuPress={onPrintInvoiceMenuPress}
         onPrintOrderSlipMenuPress={onPrintOrderSlipMenuPress}
         onItemPress={onItemPress}
@@ -162,6 +180,13 @@ export const TransactionListScreen = ({
         isButtonDisabled={isUnpayButtonDisabled}
         onCancel={onUnpayCancel}
         onConfirm={onUnpayConfirm}
+      />
+      <TransactionCompleteAlert
+        isOpen={isCompleteModalOpen}
+        action={completeAction}
+        isButtonDisabled={isCompleteButtonDisabled}
+        onCancel={onCompleteCancel}
+        onConfirm={onCompleteConfirm}
       />
     </Layout>
   );

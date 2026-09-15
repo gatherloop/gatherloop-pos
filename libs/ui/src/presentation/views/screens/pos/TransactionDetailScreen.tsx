@@ -1,7 +1,12 @@
 import { ScrollView } from 'tamagui';
-import { TransactionDetail, Layout } from '../../components';
+import {
+  TransactionCompleteAlert,
+  TransactionDetail,
+  Layout,
+} from '../../components';
 import {
   PublicTable,
+  TransactionCompleteActionType,
   TransactionCoupon,
   TransactionItem,
   TransactionSource,
@@ -22,6 +27,13 @@ export type TransactionDetailScreenProps = {
   walletName?: string;
   paidAmount: number;
   onLogoutPress: () => void;
+  onCompleteButtonPress: () => void;
+  onUncompleteButtonPress: () => void;
+  isCompleteModalOpen: boolean;
+  completeAction: TransactionCompleteActionType | null;
+  isCompleteButtonDisabled: boolean;
+  onCompleteCancel: () => void;
+  onCompleteConfirm: () => void;
 };
 
 export const TransactionDetailScreen = (
@@ -48,8 +60,17 @@ export const TransactionDetailScreen = (
           completedAt={props.completedAt}
           walletName={props.walletName}
           paidAmount={props.paidAmount}
+          onCompleteButtonPress={props.onCompleteButtonPress}
+          onUncompleteButtonPress={props.onUncompleteButtonPress}
         />
       </ScrollView>
+      <TransactionCompleteAlert
+        isOpen={props.isCompleteModalOpen}
+        action={props.completeAction}
+        isButtonDisabled={props.isCompleteButtonDisabled}
+        onCancel={props.onCompleteCancel}
+        onConfirm={props.onCompleteConfirm}
+      />
     </Layout>
   );
 };
