@@ -18,6 +18,20 @@ jest.mock('solito/router', () => ({
   }),
 }));
 
+// libs/ui bans a direct `next/router` import outside utils/; require() reaches the
+// same jest-mapped module (src/__mocks__/next/router.ts) without tripping that rule.
+type RouterMock = {
+  push: jest.Mock;
+  replace: jest.Mock;
+  events: {
+    on: (type: string, handler: (...args: unknown[]) => void) => void;
+    off: (type: string, handler: (...args: unknown[]) => void) => void;
+    emit: (type: string, ...args: unknown[]) => void;
+  };
+};
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const Router: RouterMock = require('next/router').default;
+
 const TABLE_CODE = '3F7H9K2M5P';
 
 const renderHandler = ({
@@ -259,5 +273,88 @@ describe('OrderStatusHandler', () => {
     });
 
     expect(mockPush).toHaveBeenCalledWith(`/t/${TABLE_CODE}`);
+  });
+
+  describe('leave confirmation', () => {
+    const renderPreparing = async () => {
+      const paymentRepository = new MockPaymentRepository();
+      paymentRepository.payment = {
+        ...paymentRepository.payment,
+        status: 'paid',
+      };
+      const result = renderHandler({
+        reference: paymentRepository.payment.reference,
+        paymentRepository,
+      });
+      await settle();
+      return result;
+    };
+
+    const attemptNavigation = async (url: string) => {
+      expect(() => {
+        act(() => {
+          Router.events.emit('routeChangeStart', url);
+        });
+      }).toThrow();
+
+      await act(async () => {
+        await flushPromises();
+      });
+    };
+
+    it('opens the leave-confirmation dialog on an attempted in-app navigation while preparing', async () => {
+      await renderPreparing();
+
+      await attemptNavigation('/t/other-table');
+
+      expect(screen.getByRole('button', { name: 'Tetap di sini' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Keluar' })).toBeTruthy();
+    });
+
+    it('keeps the route when "Tetap di sini" is pressed', async () => {
+      await renderPreparing();
+
+      await attemptNavigation('/t/other-table');
+
+      await act(async () => {
+        screen.getByRole('button', { name: 'Tetap di sini' }).click();
+      });
+
+      expect(Router.push).not.toHaveBeenCalled();
+      expect(screen.queryByRole('button', { name: 'Keluar' })).toBeNull();
+    });
+
+    it('allows navigation when "Keluar" is pressed', async () => {
+      await renderPreparing();
+
+      await attemptNavigation('/t/other-table');
+
+      await act(async () => {
+        screen.getByRole('button', { name: 'Keluar' }).click();
+      });
+
+      expect(Router.push).toHaveBeenCalledWith('/t/other-table');
+      expect(screen.queryByRole('button', { name: 'Keluar' })).toBeNull();
+    });
+
+    it('shows no leave-confirmation dialog once the order is ready', async () => {
+      const paymentRepository = new MockPaymentRepository();
+      paymentRepository.payment = {
+        ...paymentRepository.payment,
+        status: 'paid',
+        fulfillmentStatus: 'ready',
+      };
+      renderHandler({
+        reference: paymentRepository.payment.reference,
+        paymentRepository,
+      });
+      await settle();
+
+      act(() => {
+        Router.events.emit('routeChangeStart', '/t/other-table');
+      });
+
+      expect(screen.queryByRole('button', { name: 'Keluar' })).toBeNull();
+    });
   });
 });
