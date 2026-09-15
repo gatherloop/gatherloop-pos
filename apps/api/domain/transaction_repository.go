@@ -18,5 +18,7 @@ type TransactionRepository interface {
 	UndeleteTransactionById(ctx context.Context, id int64) *Error
 	PayTransaction(ctx context.Context, walletId int64, paidAt time.Time, paidAmount float32, id int64) *Error
 	UnpayTransaction(ctx context.Context, id int64) *Error
+	CompleteTransaction(ctx context.Context, completedAt time.Time, id int64) *Error
+	UncompleteTransaction(ctx context.Context, id int64) *Error
 	GetTransactionStatistics(ctx context.Context, groupBy string, startDate *time.Time, endDate *time.Time) ([]TransactionStatistic, *Error)
 }

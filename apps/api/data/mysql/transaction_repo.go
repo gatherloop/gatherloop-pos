@@ -236,6 +236,18 @@ func (repo Repository) UnpayTransaction(ctx context.Context, id int64) *domain.E
 	return ToErrorCtx(ctx, result.Error, "UnpayTransaction")
 }
 
+func (repo Repository) CompleteTransaction(ctx context.Context, completedAt time.Time, id int64) *domain.Error {
+	db := GetDbFromCtx(ctx, repo.db)
+	result := db.Table("transactions").Where("id = ?", id).Update("completed_at", completedAt)
+	return ToErrorCtx(ctx, result.Error, "CompleteTransaction")
+}
+
+func (repo Repository) UncompleteTransaction(ctx context.Context, id int64) *domain.Error {
+	db := GetDbFromCtx(ctx, repo.db)
+	result := db.Table("transactions").Where("id = ?", id).Update("completed_at", nil)
+	return ToErrorCtx(ctx, result.Error, "UncompleteTransaction")
+}
+
 func (repo Repository) GetTransactionStatistics(ctx context.Context, groupBy string, startDate *time.Time, endDate *time.Time) ([]domain.TransactionStatistic, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 

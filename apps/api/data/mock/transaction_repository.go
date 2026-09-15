@@ -56,6 +56,20 @@ func (mr *MockTransactionRepositoryMockRecorder) BeginTransaction(ctx, callback 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BeginTransaction", reflect.TypeOf((*MockTransactionRepository)(nil).BeginTransaction), ctx, callback)
 }
 
+// CompleteTransaction mocks base method.
+func (m *MockTransactionRepository) CompleteTransaction(ctx context.Context, completedAt time.Time, id int64) *domain.Error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CompleteTransaction", ctx, completedAt, id)
+	ret0, _ := ret[0].(*domain.Error)
+	return ret0
+}
+
+// CompleteTransaction indicates an expected call of CompleteTransaction.
+func (mr *MockTransactionRepositoryMockRecorder) CompleteTransaction(ctx, completedAt, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CompleteTransaction", reflect.TypeOf((*MockTransactionRepository)(nil).CompleteTransaction), ctx, completedAt, id)
+}
+
 // CreateTransaction mocks base method.
 func (m *MockTransactionRepository) CreateTransaction(ctx context.Context, transaction domain.Transaction) (domain.Transaction, *domain.Error) {
 	m.ctrl.T.Helper()
@@ -157,6 +171,20 @@ func (m *MockTransactionRepository) PayTransaction(ctx context.Context, walletId
 func (mr *MockTransactionRepositoryMockRecorder) PayTransaction(ctx, walletId, paidAt, paidAmount, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PayTransaction", reflect.TypeOf((*MockTransactionRepository)(nil).PayTransaction), ctx, walletId, paidAt, paidAmount, id)
+}
+
+// UncompleteTransaction mocks base method.
+func (m *MockTransactionRepository) UncompleteTransaction(ctx context.Context, id int64) *domain.Error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UncompleteTransaction", ctx, id)
+	ret0, _ := ret[0].(*domain.Error)
+	return ret0
+}
+
+// UncompleteTransaction indicates an expected call of UncompleteTransaction.
+func (mr *MockTransactionRepositoryMockRecorder) UncompleteTransaction(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UncompleteTransaction", reflect.TypeOf((*MockTransactionRepository)(nil).UncompleteTransaction), ctx, id)
 }
 
 // UndeleteTransactionById mocks base method.

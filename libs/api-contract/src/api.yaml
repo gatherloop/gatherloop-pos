@@ -1888,6 +1888,60 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /transactions/{transactionId}/complete:
+    put:
+      summary: mark transaction as ready for pickup
+      operationId: transactionCompleteById
+      tags:
+        - transaction
+      parameters:
+        - $ref: '#/components/parameters/TransactionId'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /transactions/{transactionId}/uncomplete:
+    put:
+      summary: mark transaction back as preparing
+      operationId: transactionUncompleteById
+      tags:
+        - transaction
+      parameters:
+        - $ref: '#/components/parameters/TransactionId'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /transactions/statistics:
     get:
       summary: Get transactions statistics
