@@ -277,6 +277,52 @@ func (usecase TransactionUsecase) UnpayTransaction(ctx context.Context, id int64
 	})
 }
 
+func (usecase TransactionUsecase) CompleteTransaction(ctx context.Context, id int64) *Error {
+	return usecase.transactionRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		transaction, err := usecase.transactionRepository.GetTransactionById(ctxWithTx, id)
+		if err != nil {
+			return err
+		}
+
+		if transaction.DeletedAt != nil {
+			return &Error{Type: NotFound, Message: "transaction not found"}
+		}
+
+		if transaction.Source != TransactionSourceOrder {
+			return &Error{Type: BadRequest, Message: "only order transactions can be completed"}
+		}
+
+		if transaction.CompletedAt != nil {
+			return &Error{Type: BadRequest, Message: "transaction already completed"}
+		}
+
+		return usecase.transactionRepository.CompleteTransaction(ctxWithTx, time.Now(), id)
+	})
+}
+
+func (usecase TransactionUsecase) UncompleteTransaction(ctx context.Context, id int64) *Error {
+	return usecase.transactionRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		transaction, err := usecase.transactionRepository.GetTransactionById(ctxWithTx, id)
+		if err != nil {
+			return err
+		}
+
+		if transaction.DeletedAt != nil {
+			return &Error{Type: NotFound, Message: "transaction not found"}
+		}
+
+		if transaction.Source != TransactionSourceOrder {
+			return &Error{Type: BadRequest, Message: "only order transactions can be uncompleted"}
+		}
+
+		if transaction.CompletedAt == nil {
+			return &Error{Type: BadRequest, Message: "transaction is not completed"}
+		}
+
+		return usecase.transactionRepository.UncompleteTransaction(ctxWithTx, id)
+	})
+}
+
 func (usecase TransactionUsecase) GetTransactionStatistics(ctx context.Context, groupBy string, startDate *time.Time, endDate *time.Time) ([]TransactionStatistic, *Error) {
 	if startDate != nil && endDate != nil && startDate.After(*endDate) {
 		return []TransactionStatistic{}, &Error{Type: BadRequest, Message: "startDate must be on or before endDate"}
