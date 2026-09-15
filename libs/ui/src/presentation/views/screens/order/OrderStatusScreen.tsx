@@ -7,6 +7,7 @@ import { formatRupiah } from '../../../../utils/currency';
 import { EmptyView } from '../../components/base/EmptyView';
 import { ErrorView } from '../../components/base/ErrorView';
 import { LoadingView } from '../../components/base/LoadingView';
+import { QrisPaymentView } from '../../components/checkout/QrisPaymentView';
 import {
   TableResolveScreen,
   TableResolveScreenProps,
@@ -14,7 +15,13 @@ import {
 
 export type OrderStatusScreenVariant =
   | { type: 'loading' }
+  | {
+      type: 'awaitingPayment';
+      payment: Payment;
+      onCountdownElapsed: () => void;
+    }
   | { type: 'loaded'; payment: Payment }
+  | { type: 'expired' }
   | { type: 'notFound' }
   | { type: 'error'; onRetryPress: () => void };
 
@@ -22,18 +29,37 @@ export type OrderStatusScreenProps = {
   tableVariant: TableResolveScreenProps['variant'];
   variant: OrderStatusScreenVariant;
   onBackToMenuPress: () => void;
+  onBackToCartPress: () => void;
 };
 
 export const OrderStatusScreen = ({
   tableVariant,
   variant,
   onBackToMenuPress,
+  onBackToCartPress,
 }: OrderStatusScreenProps) => (
   <TableResolveScreen variant={tableVariant}>
     {match(variant)
       .returnType<ReactNode>()
       .with({ type: 'loading' }, () => (
         <LoadingView title="Memuat status pesanan..." />
+      ))
+      .with({ type: 'awaitingPayment' }, ({ payment, onCountdownElapsed }) => (
+        <QrisPaymentView
+          qrContent={payment.qrContent}
+          amount={payment.amount}
+          expiredAt={payment.expiredAt}
+          reference={payment.reference}
+          onCountdownElapsed={onCountdownElapsed}
+        />
+      ))
+      .with({ type: 'expired' }, () => (
+        <EmptyView
+          title="Waktu pembayaran habis"
+          subtitle="Keranjang Anda masih tersimpan."
+          actionLabel="Kembali ke keranjang"
+          onActionPress={onBackToCartPress}
+        />
       ))
       .with({ type: 'notFound' }, () => (
         <EmptyView

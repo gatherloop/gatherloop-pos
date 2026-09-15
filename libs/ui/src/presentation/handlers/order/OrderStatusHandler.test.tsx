@@ -61,10 +61,63 @@ describe('OrderStatusHandler', () => {
     jest.clearAllMocks();
   });
 
-  it('shows the order once it loads', async () => {
+  it('shows the QR for a pending payment', async () => {
+    const paymentRepository = new MockPaymentRepository();
+    renderHandler({
+      reference: paymentRepository.payment.reference,
+      paymentRepository,
+    });
+
+    await settle();
+
+    expect(screen.getByText('Menunggu pembayaran…')).toBeTruthy();
+  });
+
+  it('flips to the prepared-order screen when the polled payment turns paid', async () => {
+    jest.useFakeTimers();
+    try {
+      const paymentRepository = new MockPaymentRepository();
+      paymentRepository.payment = {
+        ...paymentRepository.payment,
+        customerName: 'Budi',
+      };
+      renderHandler({
+        reference: paymentRepository.payment.reference,
+        paymentRepository,
+      });
+
+      await act(async () => {
+        await jest.advanceTimersByTimeAsync(0);
+      });
+      expect(screen.getByText('Menunggu pembayaran…')).toBeTruthy();
+
+      paymentRepository.payment = {
+        ...paymentRepository.payment,
+        status: 'paid',
+      };
+      await act(async () => {
+        await jest.advanceTimersByTimeAsync(3000);
+      });
+
+      expect(
+        screen.getByText('Pesanan Anda sedang disiapkan')
+      ).toBeTruthy();
+      expect(
+        screen.getByText(paymentRepository.payment.tableLabel)
+      ).toBeTruthy();
+      expect(
+        screen.getByText(`Atas nama ${paymentRepository.payment.customerName}`)
+      ).toBeTruthy();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('shows the prepared-order screen for an already-paid payment', async () => {
     const paymentRepository = new MockPaymentRepository();
     paymentRepository.payment = {
       ...paymentRepository.payment,
+      status: 'paid',
       customerName: 'Budi',
     };
     renderHandler({
@@ -77,10 +130,28 @@ describe('OrderStatusHandler', () => {
     expect(
       screen.getByText('Pesanan Anda sedang disiapkan')
     ).toBeTruthy();
-    expect(screen.getByText(paymentRepository.payment.tableLabel)).toBeTruthy();
-    expect(
-      screen.getByText(`Atas nama ${paymentRepository.payment.customerName}`)
-    ).toBeTruthy();
+  });
+
+  it('shows the expiry screen for an expired payment', async () => {
+    const paymentRepository = new MockPaymentRepository();
+    paymentRepository.payment = {
+      ...paymentRepository.payment,
+      status: 'expired',
+    };
+    const { getByRole } = renderHandler({
+      reference: paymentRepository.payment.reference,
+      paymentRepository,
+    });
+
+    await settle();
+
+    expect(screen.getByText('Waktu pembayaran habis')).toBeTruthy();
+
+    await act(async () => {
+      getByRole('button', { name: 'Kembali ke keranjang' }).click();
+    });
+
+    expect(mockPush).toHaveBeenCalledWith(`/t/${TABLE_CODE}/cart`);
   });
 
   it('shows a not-found message for an unknown reference', async () => {
@@ -105,8 +176,12 @@ describe('OrderStatusHandler', () => {
 
   it('shows an error with retry on a transport failure', async () => {
     const paymentRepository = new MockPaymentRepository();
+    paymentRepository.payment = {
+      ...paymentRepository.payment,
+      status: 'paid',
+    };
     paymentRepository.setShouldFailFetch(true);
-    const { getByRole } = renderHandler({
+    renderHandler({
       reference: paymentRepository.payment.reference,
       paymentRepository,
     });
@@ -117,7 +192,7 @@ describe('OrderStatusHandler', () => {
 
     paymentRepository.setShouldFailFetch(false);
     await act(async () => {
-      getByRole('button', { name: 'Retry' }).click();
+      screen.getByRole('button', { name: 'Retry' }).click();
       await flushPromises();
     });
 
@@ -140,6 +215,10 @@ describe('OrderStatusHandler', () => {
 
   it('navigates back to the menu from "Pesan lagi"', async () => {
     const paymentRepository = new MockPaymentRepository();
+    paymentRepository.payment = {
+      ...paymentRepository.payment,
+      status: 'paid',
+    };
     const { getByRole } = renderHandler({
       reference: paymentRepository.payment.reference,
       paymentRepository,

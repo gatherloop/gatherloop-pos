@@ -53,7 +53,7 @@ test.describe.serial('QRIS Checkout', () => {
     }
   });
 
-  test('a guest builds a cart, pays with QRIS and lands on the prepared-order screen', async ({
+  test('a guest builds a cart, pays with QRIS and lands on the prepared-order screen, in one navigation', async ({
     page,
   }) => {
     const balanceBeforePayment = wallet.balance;
@@ -65,41 +65,40 @@ test.describe.serial('QRIS Checkout', () => {
     await sel.cartBar.viewCartButton(page).click();
     await expect(sel.cartScreen.lineItemName(page, PRODUCT_NAME)).toBeVisible();
 
-    await sel.cartScreen.checkoutButton(page).click();
-    await expect(page).toHaveURL(new RegExp(`/t/${table.code}/checkout$`));
-    await expect(sel.checkout.summaryTitle(page)).toBeVisible();
-    const payButton = sel.checkout.payButton(page, formatRupiah(PRICE));
+    const payButton = sel.cartScreen.checkoutButton(page, formatRupiah(PRICE));
     await expect(payButton).toBeVisible();
-
     await payButton.click();
-    await expect(sel.checkout.nameInput(page)).toBeVisible();
-    await sel.checkout.nameInput(page).fill(CUSTOMER_NAME);
+
+    await expect(sel.cartScreen.nameInput(page)).toBeVisible();
+    await sel.cartScreen.nameInput(page).fill(CUSTOMER_NAME);
 
     const checkoutResponsePromise = page.waitForResponse(
       (response) =>
         response.url().includes('/carts/current/checkout') &&
         response.request().method() === 'POST'
     );
-    await sel.checkout.submitNameButton(page).click();
+    await sel.cartScreen.submitNameButton(page).click();
     const checkoutResponse = await checkoutResponsePromise;
     const { data: payment } = await checkoutResponse.json();
     const partnerReferenceNo: string = payment.partnerReferenceNo;
     expect(partnerReferenceNo).toBeTruthy();
 
-    await expect(sel.checkout.saveQrButton(page)).toBeVisible();
-    await expect(sel.checkout.waitingForPaymentText(page)).toBeVisible();
-
-    await markPaid(partnerReferenceNo);
-
-    await expect(sel.checkout.paymentSuccessTitle(page)).toBeVisible({
-      timeout: 10_000,
-    });
     await expect(page).toHaveURL(
       new RegExp(`/t/${table.code}/status\\?ref=${partnerReferenceNo}$`),
       { timeout: 5_000 }
     );
+    await expect(sel.orderStatus.saveQrButton(page)).toBeVisible();
+    await expect(sel.orderStatus.waitingForPaymentText(page)).toBeVisible();
 
-    await expect(sel.orderStatus.preparingTitle(page)).toBeVisible();
+    await markPaid(partnerReferenceNo);
+
+    await expect(sel.orderStatus.preparingTitle(page)).toBeVisible({
+      timeout: 10_000,
+    });
+    await expect(page).toHaveURL(
+      new RegExp(`/t/${table.code}/status\\?ref=${partnerReferenceNo}$`)
+    );
+
     await expect(sel.orderStatus.tableLabel(page, TABLE_LABEL)).toBeVisible();
     await expect(sel.orderStatus.customerName(page, CUSTOMER_NAME)).toBeVisible();
 
@@ -111,5 +110,37 @@ test.describe.serial('QRIS Checkout', () => {
 
     const walletAfterPayment = await api.getWallet(wallet.id);
     expect(walletAfterPayment.balance).toBeGreaterThan(balanceBeforePayment);
+  });
+
+  test('reloading while the QR is on screen keeps showing the QR', async ({
+    page,
+  }) => {
+    await page.goto(`t/${table.code}`);
+    await sel.menuList.productCard(page, PRODUCT_NAME).click();
+    await sel.itemDetail.optionValueChip(page, 'Reguler').click();
+    await sel.itemDetail.addToCartButton(page).click();
+    await sel.cartBar.viewCartButton(page).click();
+    await expect(sel.cartScreen.lineItemName(page, PRODUCT_NAME)).toBeVisible();
+
+    await sel.cartScreen.checkoutButton(page, formatRupiah(PRICE)).click();
+    await sel.cartScreen.nameInput(page).fill(CUSTOMER_NAME);
+    await sel.cartScreen.submitNameButton(page).click();
+
+    await expect(sel.orderStatus.saveQrButton(page)).toBeVisible();
+    await expect(sel.orderStatus.waitingForPaymentText(page)).toBeVisible();
+    const statusUrl = page.url();
+
+    await page.reload();
+
+    await expect(page).toHaveURL(statusUrl);
+    await expect(sel.orderStatus.saveQrButton(page)).toBeVisible();
+    await expect(sel.orderStatus.waitingForPaymentText(page)).toBeVisible();
+  });
+
+  test('the retired /checkout route redirects to the cart', async ({
+    page,
+  }) => {
+    await page.goto(`t/${table.code}/checkout`);
+    await expect(page).toHaveURL(new RegExp(`/t/${table.code}/cart$`));
   });
 });

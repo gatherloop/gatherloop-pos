@@ -5,10 +5,15 @@ import { CartHandler } from './CartHandler';
 import {
   MockCartQueryRepository,
   MockCartRepository,
+  MockPaymentRepository,
   MockPublicTableRepository,
   MockSessionRepository,
 } from '../../../data/mock';
-import { CartUsecase, TableResolveUsecase } from '../../../domain';
+import {
+  CartUsecase,
+  CheckoutUsecase,
+  TableResolveUsecase,
+} from '../../../domain';
 import { flushPromises } from '../../../utils/testUtils';
 
 const mockPush = jest.fn();
@@ -23,27 +28,39 @@ jest.mock('solito/router', () => ({
 const TABLE_CODE = '3F7H9K2M5P';
 
 const renderHandler = ({
+  enabled = true,
   cartRepository = new MockCartRepository(),
+  paymentRepository = new MockPaymentRepository(),
   tableRepository = new MockPublicTableRepository(),
   cartQueryRepository = new MockCartQueryRepository(),
+  customerName = '',
 }: {
+  enabled?: boolean;
   cartRepository?: MockCartRepository;
+  paymentRepository?: MockPaymentRepository;
   tableRepository?: MockPublicTableRepository;
   cartQueryRepository?: MockCartQueryRepository;
+  customerName?: string;
 } = {}) => {
   const tableResolveUsecase = new TableResolveUsecase(tableRepository, {
     code: TABLE_CODE,
   });
   const cartUsecase = new CartUsecase(cartRepository, cartQueryRepository);
+  const checkoutUsecase = new CheckoutUsecase(paymentRepository, {
+    customerName,
+  });
 
   return {
     cartRepository,
+    paymentRepository,
     tableRepository,
     ...render(
       <CartHandler
         tableResolveUsecase={tableResolveUsecase}
         cartUsecase={cartUsecase}
+        checkoutUsecase={checkoutUsecase}
         sessionRepository={new MockSessionRepository()}
+        enabled={enabled}
         tableCode={TABLE_CODE}
       />
     ),
@@ -56,6 +73,11 @@ const settle = async () => {
     await flushPromises();
   });
 };
+
+const addItemToCart = (cartRepository: MockCartRepository) =>
+  cartRepository.addItem({ variantId: 1, amount: 1, note: '' });
+
+const payButtonName = /^Bayar dengan QRIS/;
 
 describe('CartHandler', () => {
   beforeEach(() => {
@@ -93,7 +115,7 @@ describe('CartHandler', () => {
 
     await settle();
 
-    expect(screen.getByText('Meja 01')).toBeTruthy();
+    expect(screen.getByText('Meja 01 · Lantai 1')).toBeTruthy();
     expect(screen.getByText('Es Kopi Susu')).toBeTruthy();
     expect(screen.getByText('Regular')).toBeTruthy();
     expect(screen.getByText('Catatan: less sugar')).toBeTruthy();
@@ -198,17 +220,117 @@ describe('CartHandler', () => {
     expect(mockPush).toHaveBeenCalledWith(`/t/${TABLE_CODE}`);
   });
 
-  it('navigates to checkout when the checkout button is pressed', async () => {
-    const user = userEvent.setup();
+  it('shows a disabled checkout button with a helper text when checkout is not enabled', async () => {
     const cartRepository = new MockCartRepository();
-    await cartRepository.addItem({ variantId: 1, amount: 1, note: '' });
-    renderHandler({ cartRepository });
+    await addItemToCart(cartRepository);
+    renderHandler({ cartRepository, enabled: false });
 
     await settle();
 
-    await user.click(screen.getByRole('button', { name: /^Checkout/ }));
+    expect(
+      (screen.getByRole('button', { name: payButtonName }) as HTMLButtonElement)
+        .disabled
+    ).toBe(true);
+    expect(screen.getByText('Checkout belum tersedia')).toBeTruthy();
+  });
 
-    expect(mockPush).toHaveBeenCalledWith(`/t/${TABLE_CODE}/checkout`);
+  it('opens the name sheet prefilled from the seeded customer name', async () => {
+    const user = userEvent.setup();
+    const cartRepository = new MockCartRepository();
+    await addItemToCart(cartRepository);
+    renderHandler({ cartRepository, customerName: 'Budi' });
+    await settle();
+
+    await user.click(screen.getByRole('button', { name: payButtonName }));
+
+    expect(
+      (screen.getByPlaceholderText('Nama Anda') as HTMLInputElement).value
+    ).toBe('Budi');
+  });
+
+  it('holds an empty name at the sheet with an error, creating nothing', async () => {
+    const user = userEvent.setup();
+    const cartRepository = new MockCartRepository();
+    await addItemToCart(cartRepository);
+    const paymentRepository = new MockPaymentRepository();
+    const checkoutSpy = jest.spyOn(paymentRepository, 'checkout');
+    renderHandler({ cartRepository, paymentRepository });
+    await settle();
+
+    await user.click(screen.getByRole('button', { name: payButtonName }));
+    await user.click(
+      screen.getByRole('button', { name: 'Lanjutkan ke pembayaran' })
+    );
+
+    expect(screen.getByText('Nama tidak boleh kosong')).toBeTruthy();
+    expect(screen.getByPlaceholderText('Nama Anda')).toBeTruthy();
+    expect(checkoutSpy).not.toHaveBeenCalled();
+
+    await settle();
+  });
+
+  it('cancelling the name sheet leaves the cart untouched, creating nothing', async () => {
+    const user = userEvent.setup();
+    const cartRepository = new MockCartRepository();
+    await addItemToCart(cartRepository);
+    const paymentRepository = new MockPaymentRepository();
+    const checkoutSpy = jest.spyOn(paymentRepository, 'checkout');
+    renderHandler({ cartRepository, paymentRepository });
+    await settle();
+
+    await user.click(screen.getByRole('button', { name: payButtonName }));
+    await user.click(screen.getByRole('button', { name: 'Batal' }));
+
+    expect(screen.queryByPlaceholderText('Nama Anda')).toBeNull();
+    expect(checkoutSpy).not.toHaveBeenCalled();
+    expect(screen.getByText('Es Kopi Susu')).toBeTruthy();
+  });
+
+  it('creates the payment and navigates to the status page once a valid name is submitted', async () => {
+    const user = userEvent.setup();
+    const cartRepository = new MockCartRepository();
+    await addItemToCart(cartRepository);
+    const paymentRepository = new MockPaymentRepository();
+    renderHandler({ cartRepository, paymentRepository, customerName: 'Budi' });
+    await settle();
+
+    await user.click(screen.getByRole('button', { name: payButtonName }));
+    await user.click(
+      screen.getByRole('button', { name: 'Lanjutkan ke pembayaran' })
+    );
+    await settle();
+
+    expect(mockPush).toHaveBeenCalledWith(
+      `/t/${TABLE_CODE}/status?ref=${paymentRepository.payment.reference}`
+    );
+  });
+
+  it('keeps the guest on the cart with a retry when the payment fails to create, succeeding on retry', async () => {
+    const user = userEvent.setup();
+    const cartRepository = new MockCartRepository();
+    await addItemToCart(cartRepository);
+    const paymentRepository = new MockPaymentRepository();
+    paymentRepository.setShouldFailCheckout(true);
+    renderHandler({ cartRepository, paymentRepository, customerName: 'Budi' });
+    await settle();
+
+    await user.click(screen.getByRole('button', { name: payButtonName }));
+    await user.click(
+      screen.getByRole('button', { name: 'Lanjutkan ke pembayaran' })
+    );
+    await settle();
+
+    expect(screen.getByText('Gagal membuat pembayaran')).toBeTruthy();
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(screen.getByText('Es Kopi Susu')).toBeTruthy();
+
+    paymentRepository.setShouldFailCheckout(false);
+    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    await settle();
+
+    expect(mockPush).toHaveBeenCalledWith(
+      `/t/${TABLE_CODE}/status?ref=${paymentRepository.payment.reference}`
+    );
   });
 
   it('shows a retryable error state, and recovers on retry', async () => {

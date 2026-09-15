@@ -64,6 +64,16 @@ const cart = {
 
 const table = { id: 1, label: 'Meja 1', floorNumber: 1 };
 
+const longCart = {
+  ...cart,
+  items: Array.from({ length: 15 }, (_, index) => ({
+    ...cart.items[0],
+    id: index + 1,
+  })),
+  itemCount: 30,
+  total: 540000,
+};
+
 const meta: Meta<typeof CartScreen> = {
   title: 'Screens/Order/CartScreen',
   component: CartScreen,
@@ -76,6 +86,10 @@ const meta: Meta<typeof CartScreen> = {
     errorMessage: null,
     isClearConfirmationOpen: false,
     itemEdit: null,
+    isCheckoutEnabled: true,
+    isCheckingOut: false,
+    checkoutErrorMessage: null,
+    nameSheet: null,
     onAmountChange: () => {
       // Storybook action stand-in
     },
@@ -103,6 +117,9 @@ const meta: Meta<typeof CartScreen> = {
     onCheckoutPress: () => {
       // Storybook action stand-in
     },
+    onCheckoutRetryPress: () => {
+      // Storybook action stand-in
+    },
     onRetryButtonPress: () => {
       // Storybook action stand-in
     },
@@ -122,6 +139,10 @@ export const Empty: Story = {
 
 export const Loaded: Story = {
   args: { variant: { type: 'loaded', cart } },
+};
+
+export const LongCart: Story = {
+  args: { variant: { type: 'loaded', cart: longCart } },
 };
 
 export const Mutating: Story = {
@@ -144,4 +165,45 @@ export const MutationError: Story = {
 
 export const Error: Story = {
   args: { variant: { type: 'error' } },
+};
+
+export const CheckoutDisabled: Story = {
+  args: {
+    variant: { type: 'loaded', cart },
+    isCheckoutEnabled: false,
+  },
+};
+
+export const NameSheetOpen: Story = {
+  args: {
+    variant: { type: 'loaded', cart },
+    nameSheet: {
+      isOpen: true,
+      name: 'Budi',
+      errorMessage: null,
+      onNameChange: () => {
+        // Storybook action stand-in
+      },
+      onSubmitPress: () => {
+        // Storybook action stand-in
+      },
+      onCancelPress: () => {
+        // Storybook action stand-in
+      },
+    },
+  },
+};
+
+export const CreatingPayment: Story = {
+  args: {
+    variant: { type: 'loaded', cart },
+    isCheckingOut: true,
+  },
+};
+
+export const CheckoutError: Story = {
+  args: {
+    variant: { type: 'loaded', cart },
+    checkoutErrorMessage: 'Failed to create payment',
+  },
 };

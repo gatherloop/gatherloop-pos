@@ -3,7 +3,7 @@ import { OrderStatusScreen } from './OrderStatusScreen';
 
 const table = { id: 1, label: 'Meja 1', floorNumber: 1 };
 
-const payment = {
+const paidPayment = {
   reference: 'ORD0000000000001',
   status: 'paid' as const,
   amount: 54000,
@@ -32,6 +32,12 @@ const payment = {
   ],
 };
 
+const pendingPayment = {
+  ...paidPayment,
+  status: 'pending' as const,
+  paidAt: null,
+};
+
 const meta: Meta<typeof OrderStatusScreen> = {
   title: 'Screens/Order/OrderStatusScreen',
   component: OrderStatusScreen,
@@ -41,6 +47,9 @@ const meta: Meta<typeof OrderStatusScreen> = {
   args: {
     tableVariant: { type: 'resolved', table },
     onBackToMenuPress: () => {
+      // Storybook action stand-in
+    },
+    onBackToCartPress: () => {
       // Storybook action stand-in
     },
   },
@@ -53,8 +62,24 @@ export const Loading: Story = {
   args: { variant: { type: 'loading' } },
 };
 
+export const AwaitingPayment: Story = {
+  args: {
+    variant: {
+      type: 'awaitingPayment',
+      payment: pendingPayment,
+      onCountdownElapsed: () => {
+        // Storybook action stand-in
+      },
+    },
+  },
+};
+
 export const Loaded: Story = {
-  args: { variant: { type: 'loaded', payment } },
+  args: { variant: { type: 'loaded', payment: paidPayment } },
+};
+
+export const Expired: Story = {
+  args: { variant: { type: 'expired' } },
 };
 
 export const NotFound: Story = {

@@ -42,7 +42,8 @@ export default class Document extends NextDocument {
     return (
       <Html lang="id">
         <Head>
-          <meta id="theme-color" name="theme-color" />
+          {/* #f8f8f8 matches OrderLayout header's $color2 background */}
+          <meta id="theme-color" name="theme-color" content="#f8f8f8" />
           <meta name="color-scheme" content="light" />
         </Head>
         <body>

@@ -39,10 +39,21 @@ export const OrderStatusHandler = ({
     .returnType<OrderStatusScreenVariant>()
     .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))
     .with({ type: 'notFound' }, () => ({ type: 'notFound' }))
+    .with({ type: 'expired' }, () => ({ type: 'expired' }))
     .with({ type: 'error' }, () => ({
       type: 'error',
       onRetryPress: () => orderStatus.dispatch({ type: 'FETCH' }),
     }))
+    .with({ type: 'awaitingPayment' }, (state) =>
+      state.payment
+        ? {
+            type: 'awaitingPayment',
+            payment: state.payment,
+            onCountdownElapsed: () =>
+              orderStatus.dispatch({ type: 'COUNTDOWN_ELAPSED' }),
+          }
+        : { type: 'loading' }
+    )
     .with({ type: 'loaded' }, (state) =>
       state.payment
         ? { type: 'loaded', payment: state.payment }
@@ -75,6 +86,7 @@ export const OrderStatusHandler = ({
         .exhaustive()}
       variant={variant}
       onBackToMenuPress={() => router.push(`/t/${tableCode}`)}
+      onBackToCartPress={() => router.push(`/t/${tableCode}/cart`)}
     />
   );
 };

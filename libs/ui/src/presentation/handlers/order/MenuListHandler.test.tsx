@@ -105,12 +105,22 @@ describe('MenuListHandler', () => {
     expect(screen.getByText('QR tidak valid')).toBeTruthy();
   });
 
+  it('shows the business name on every screen, including before the table resolves', async () => {
+    renderHandler();
+
+    expect(screen.getAllByText('Gatherloop Board Game Cafe')).toBeTruthy();
+
+    await settle();
+
+    expect(screen.getByText('Gatherloop Board Game Cafe')).toBeTruthy();
+  });
+
   it('shows every product grouped by category once the table and menu have loaded', async () => {
     renderHandler();
 
     await settle();
 
-    expect(screen.getByText('Meja 01')).toBeTruthy();
+    expect(screen.getByText('Meja 01 · Lantai 1')).toBeTruthy();
     expect(screen.getByText('Es Kopi Susu')).toBeTruthy();
     expect(screen.getByText('Nasi Goreng')).toBeTruthy();
     expect(screen.getAllByText('Minuman')).toHaveLength(2);

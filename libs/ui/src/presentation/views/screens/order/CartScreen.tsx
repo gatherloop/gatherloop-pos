@@ -8,6 +8,10 @@ import { ErrorView } from '../../components/base/ErrorView';
 import { LoadingView } from '../../components/base/LoadingView';
 import { CartLineItem } from '../../components/cart/CartLineItem';
 import {
+  CustomerNameSheet,
+  CustomerNameSheetProps,
+} from '../../components/checkout/CustomerNameSheet';
+import {
   CartItemEditScreen,
   CartItemEditScreenProps,
 } from './CartItemEditScreen';
@@ -36,9 +40,14 @@ export type CartScreenProps = {
   onClearCancel: () => void;
   onClearConfirmationOpenChange: (isOpen: boolean) => void;
   onAddMoreItemsPress: () => void;
-  onCheckoutPress: () => void;
   onRetryButtonPress: () => void;
   itemEdit: (CartItemEditScreenProps & { isOpen: true }) | null;
+  isCheckoutEnabled: boolean;
+  isCheckingOut: boolean;
+  checkoutErrorMessage: string | null;
+  onCheckoutPress: () => void;
+  onCheckoutRetryPress: () => void;
+  nameSheet: (CustomerNameSheetProps & { isOpen: true }) | null;
 };
 
 export const CartScreen = ({
@@ -55,12 +64,72 @@ export const CartScreen = ({
   onClearCancel,
   onClearConfirmationOpenChange,
   onAddMoreItemsPress,
-  onCheckoutPress,
   onRetryButtonPress,
   itemEdit,
+  isCheckoutEnabled,
+  isCheckingOut,
+  checkoutErrorMessage,
+  onCheckoutPress,
+  onCheckoutRetryPress,
+  nameSheet,
 }: CartScreenProps) => {
+  const footer =
+    variant.type === 'loaded' ? (
+      <YStack
+        gap="$2"
+        padding="$3"
+        backgroundColor="$background"
+        borderTopWidth={1}
+        borderTopColor="$borderColor"
+      >
+        {checkoutErrorMessage ? (
+          <YStack gap="$2" alignItems="center">
+            <Text fontWeight="bold" textAlign="center">
+              Gagal membuat pembayaran
+            </Text>
+            <Text color="$color10" textAlign="center">
+              Terjadi kesalahan. Silakan coba lagi.
+            </Text>
+            <XStack width="100%">
+              <Button
+                theme="blue"
+                size="$5"
+                minHeight={44}
+                flex={1}
+                onPress={onCheckoutRetryPress}
+              >
+                Retry
+              </Button>
+            </XStack>
+          </YStack>
+        ) : (
+          <>
+            <XStack>
+              <Button
+                theme="blue"
+                size="$5"
+                minHeight={44}
+                flex={1}
+                disabled={!isCheckoutEnabled || isCheckingOut}
+                onPress={onCheckoutPress}
+              >
+                {isCheckingOut
+                  ? 'Memproses...'
+                  : `Bayar dengan QRIS · ${formatRupiah(variant.cart.total)}`}
+              </Button>
+            </XStack>
+            {!isCheckoutEnabled ? (
+              <Text color="$color10" textAlign="center" fontSize="$2">
+                Checkout belum tersedia
+              </Text>
+            ) : null}
+          </>
+        )}
+      </YStack>
+    ) : null;
+
   return (
-    <TableResolveScreen variant={tableVariant}>
+    <TableResolveScreen variant={tableVariant} footer={footer}>
       <YStack flex={1} gap="$3">
         {match(variant)
           .with({ type: 'loading' }, () => (
@@ -82,7 +151,7 @@ export const CartScreen = ({
             />
           ))
           .with({ type: 'loaded' }, ({ cart }) => (
-            <YStack gap="$4" paddingBottom="$6">
+            <YStack gap="$4">
               <XStack justifyContent="space-between" alignItems="center">
                 <Text fontWeight="bold" fontSize="$6">
                   Keranjang
@@ -137,27 +206,6 @@ export const CartScreen = ({
                   <Text fontWeight="bold">{formatRupiah(cart.total)}</Text>
                 </XStack>
               </YStack>
-
-              <YStack
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-expect-error
-                position="sticky"
-                bottom={0}
-                zIndex={11}
-                backgroundColor="$background"
-                paddingTop="$3"
-                borderTopWidth={1}
-                borderTopColor="$borderColor"
-              >
-                <Button
-                  theme="blue"
-                  size="$5"
-                  minHeight={44}
-                  onPress={onCheckoutPress}
-                >
-                  {`Checkout · ${formatRupiah(cart.total)}`}
-                </Button>
-              </YStack>
             </YStack>
           ))
           .exhaustive()}
@@ -175,6 +223,7 @@ export const CartScreen = ({
       </YStack>
 
       {itemEdit && <CartItemEditScreen {...itemEdit} />}
+      {nameSheet && <CustomerNameSheet {...nameSheet} />}
     </TableResolveScreen>
   );
 };
