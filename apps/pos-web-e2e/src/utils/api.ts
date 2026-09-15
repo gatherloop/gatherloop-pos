@@ -1,4 +1,5 @@
 import { type APIRequestContext } from '@playwright/test';
+import { randomUUID } from 'crypto';
 
 export type CategoryStation = 'KITCHEN' | 'BAR' | 'NONE';
 
@@ -444,4 +445,81 @@ export async function deleteExpense(
   id: number
 ): Promise<void> {
   return apiDelete(request, `/api/expenses/${id}`);
+}
+
+export interface Table {
+  id: number;
+  code: string;
+  label: string;
+  createdAt: string;
+}
+
+export async function createTable(
+  request: APIRequestContext,
+  data: { label: string; floorNumber?: number }
+): Promise<Table> {
+  return apiPost<Table>(request, '/api/tables', { floorNumber: 1, ...data });
+}
+
+export async function deleteTable(
+  request: APIRequestContext,
+  id: number
+): Promise<void> {
+  return apiDelete(request, `/api/tables/${id}`);
+}
+
+export interface OrderPayment {
+  partnerReferenceNo: string;
+  transactionNumber: number;
+  fulfillmentStatus: 'preparing' | 'ready';
+}
+
+export interface CheckoutOrderTransactionInput {
+  tableCode: string;
+  variantId: number;
+  amount: number;
+  customerName: string;
+}
+
+// The staff-authenticated /api/transactions endpoint always defaults source
+// to 'pos' (TransactionRequest has no source field), so a fulfilment e2e
+// spec needs a real source='order' row — created the same way a guest does,
+// by driving the cart+checkout API directly with a throwaway session id.
+export async function checkoutOrderTransaction(
+  request: APIRequestContext,
+  data: CheckoutOrderTransactionInput
+): Promise<OrderPayment> {
+  const headers = { 'X-Session-Id': randomUUID() };
+
+  const cartTableResponse = await request.put('/api/carts/current', {
+    data: { tableCode: data.tableCode },
+    headers,
+  });
+  if (!cartTableResponse.ok()) {
+    throw new Error(
+      `PUT /api/carts/current failed: ${cartTableResponse.status()} ${await cartTableResponse.text()}`
+    );
+  }
+
+  const cartItemResponse = await request.post('/api/carts/current/items', {
+    data: { variantId: data.variantId, amount: data.amount },
+    headers,
+  });
+  if (!cartItemResponse.ok()) {
+    throw new Error(
+      `POST /api/carts/current/items failed: ${cartItemResponse.status()} ${await cartItemResponse.text()}`
+    );
+  }
+
+  const checkoutResponse = await request.post('/api/carts/current/checkout', {
+    data: { customerName: data.customerName },
+    headers,
+  });
+  if (!checkoutResponse.ok()) {
+    throw new Error(
+      `POST /api/carts/current/checkout failed: ${checkoutResponse.status()} ${await checkoutResponse.text()}`
+    );
+  }
+  const { data: payment } = await checkoutResponse.json();
+  return payment as OrderPayment;
 }

@@ -75,6 +75,10 @@ export const orderStatus = {
   transactionNumberBadge: (page: Page, transactionNumber: number) =>
     page.getByText(`#${transactionNumber}`, { exact: true }),
   readyTitle: (page: Page) => page.getByText('Pesanan siap!'),
+  pickupInstructionText: (page: Page, transactionNumber: number) =>
+    page.getByText(
+      `Silakan ambil di kasir dengan menyebutkan nomor #${transactionNumber}.`
+    ),
   orderAgainButton: (page: Page) =>
     page.getByRole('button', { name: 'Pesan lagi' }),
   notFoundView: (page: Page) => page.getByText('Pesanan tidak ditemukan'),

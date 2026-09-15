@@ -6,11 +6,17 @@
 
 Once the bank confirms payment, that same page flips in place to the order-status view — no second navigation, because it was the order-status page all along: the table label (large — it's how the order finds them, there's no pager and no order number), the guest's name, and what they paid for. A `Transaction` now exists for that order, marked paid, showing up on the POS exactly like a cashier-entered sale — badged **"Order App"** and filterable by source — with the right table attached so staff know where to carry it.
 
+That order-status page doesn't stop at "paid" — it keeps watching the order through to pickup. See [Order Fulfilment Status, After Payment](#order-fulfilment-status-after-payment) below.
+
 ## Why it matters
 
 Table ordering solved discovery and cart-building, but a guest still had to walk to the counter and pay a cashier — the actual bottleneck at peak hours was untouched. This is what makes self-ordering actually replace a trip to the till, not just make composing the order nicer.
 
 It also had to be built without ever letting a payment credential near the customer's phone. Every DOKU call — minting the QR, checking its status, receiving DOKU's payment notification — happens inside the Go API. The order app talks only to Gatherloop's own endpoints and never holds, or could leak, a gateway secret.
+
+## Order Fulfilment Status, After Payment
+
+Paying doesn't end the guest's page — it starts the part that closes the loop. The same URL that showed the QR now shows a **preparing** screen: the guest's pickup number as the largest thing on it, a pulsing ring and an animated ellipsis proving the page is live, the table, and the item list — with no elapsed timer or countdown anywhere, deliberately. A barista finishing the order marks it **Ready** from the POS (see [Transactions](/sales/transactions)), and the guest's open page flips itself to a green **ready** screen within about ten seconds, telling them to collect at the counter with their number. There's no push notification — the page gets there by polling — so a guest who closes the tab is warned first, and can always get back by re-scanning the table QR, which resumes the same order.
 
 ## Key capabilities
 
@@ -24,6 +30,9 @@ It also had to be built without ever letting a payment credential near the custo
 - **Remembers the guest's name** — asked once per session, offered again on the next order from the same phone, without ever becoming a login or an account.
 - **Origin visible on every transaction** — the POS transaction list and detail screen show a **Source** badge (`POS` / `Order App`) and the table it's headed to, with a matching filter.
 - **A wrong payment is fixed the way a wrong cashier payment always was** — no refunds, voids or partial payments exist anywhere in the POS yet, so an order-app mistake is unwound the same manual way (`Unpay` within 24 hours) as one at the till.
+- **The status page keeps polling after "paid"** — once the barista marks the order ready on the POS (see [Transactions](/sales/transactions)), the guest's already-open page flips to a pickup screen within about ten seconds, no reload needed.
+- **No elapsed time is ever shown to the guest** — the preparing screen proves it's live with motion (a pulsing ring, an animated ellipsis), never a duration or a countdown, so a longer-than-usual wait never reads as the app being stuck.
+- **Leaving mid-order is a deliberate choice, and reversible** — closing the tab or navigating away while the order is still preparing raises a confirmation, and re-scanning the table QR always returns to the same order's status page.
 
 ## For engineers
 
@@ -34,6 +43,10 @@ It also had to be built without ever letting a payment credential near the custo
 - Gateway integration, entirely server-side: `apps/api/data/doku/**` implements `PaymentGatewayRepository` (`apps/api/domain/payment_repository.go`) against DOKU's SNAP QRIS Direct API — the only layer that ever holds a DOKU credential
 - Checkout + confirmation usecases: `apps/api/domain/payment_usecase.go` (`Checkout`, `ConfirmPayment`, `GetPaymentStatus`)
 - Backend routes: `POST /carts/current/checkout`, `GET /payments/{partnerReferenceNo}`, and the unauthenticated-but-signature-verified `POST /payments/doku/notification` (`apps/api/presentation/restapi/payment_route.go`, `VerifyDokuSignature` middleware)
+- Fulfilment status is `transactions.completed_at`, a nullable timestamp read through the `Payment.fulfillmentStatus` field `ToApiPayment` derives (`apps/api/presentation/restapi/payment_transformer.go`) — the guest never reads `transactions` directly
+- `OrderStatusUsecase` (`libs/ui/src/domain/usecases/orderStatus.ts`) splits `loaded` into `preparing` (polls every 10s) and `ready` (terminal, stops polling); the two screens are `OrderPreparingView` / `OrderReadyView` (`libs/ui/src/presentation/views/components/orderStatus/`)
+- The leave-confirmation guard is `useLeaveConfirmation` (`libs/ui/src/utils/`) — the one place in `libs/ui` allowed to import `next/router`, since browser-lifecycle APIs have no Metro equivalent
+- Design doc: `docs/prd-order-fulfillment-status.md` — the barista/guest state model (`completed_at` on `transactions`, D1/D2), why no duration is ever rendered (D17), and what a future kitchen display system inherits from this design
 - Transaction origin: `source` (`pos` \| `order`) and `cart_id` on `transactions` (migration `000023`), surfaced in `libs/ui/src/presentation/views/components/transactions/{TransactionListItem,TransactionDetail}.tsx`
 - Guest identity: `customers` table keyed by session id (migration `000024`) — a display name only, no phone, email or cross-session identity
 - Design doc: `docs/prd-order-checkout-qris-doku.md` — every decision behind the above, including why the transaction is created unpaid at QR generation rather than on payment success (D4), how an abandoned checkout is disposed of (D5), and what's still explicitly out of scope (refunds, other payment methods, kitchen notifications)
