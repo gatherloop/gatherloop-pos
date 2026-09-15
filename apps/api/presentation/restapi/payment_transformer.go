@@ -65,6 +65,11 @@ func ToApiPayment(payment domain.Payment, transaction domain.Transaction) apiCon
 		tableLabel = transaction.Cart.Table.Label
 	}
 
+	fulfillmentStatus := "preparing"
+	if transaction.CompletedAt != nil {
+		fulfillmentStatus = "ready"
+	}
+
 	return apiContract.Payment{
 		PartnerReferenceNo: payment.PartnerReferenceNo,
 		Status:             string(payment.Status),
@@ -75,5 +80,7 @@ func ToApiPayment(payment domain.Payment, transaction domain.Transaction) apiCon
 		CustomerName:       transaction.Name,
 		TableLabel:         tableLabel,
 		Items:              items,
+		TransactionNumber:  transaction.TransactionNumber,
+		FulfillmentStatus:  fulfillmentStatus,
 	}
 }
