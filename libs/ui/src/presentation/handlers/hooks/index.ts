@@ -10,6 +10,7 @@ export * from './useRentalList';
 export * from './useSupplierList';
 export * from './useTableResolve';
 export * from './useTicketList';
+export * from './useTransactionComplete';
 export * from './useTransactionItemSelect';
 export * from './useTransactionPay';
 export * from './useTransactionStatisticList';

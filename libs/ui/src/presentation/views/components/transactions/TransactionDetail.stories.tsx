@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { fn } from '@storybook/test';
 import { TransactionDetail } from './TransactionDetail';
 import { mockTransaction } from '../../../../../.storybook/mocks/mockData';
 
@@ -19,6 +20,8 @@ const meta: Meta<typeof TransactionDetail> = {
     paidAmount: mockTransaction.paidAmount,
     transactionItems: mockTransaction.transactionItems,
     transactionCoupons: mockTransaction.transactionCoupons,
+    onCompleteButtonPress: fn(),
+    onUncompleteButtonPress: fn(),
   },
 };
 

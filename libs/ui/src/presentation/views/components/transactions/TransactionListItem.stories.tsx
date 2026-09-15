@@ -18,6 +18,8 @@ const meta: Meta<typeof TransactionListItem> = {
     walletName: 'Cash',
     onPayMenuPress: fn(),
     onUnpayMenuPress: fn(),
+    onCompleteMenuPress: fn(),
+    onUncompleteMenuPress: fn(),
     onEditMenuPress: fn(),
     onDeleteMenuPress: fn(),
     onPrintInvoiceMenuPress: fn(),

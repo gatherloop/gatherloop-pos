@@ -3,11 +3,17 @@ import { useCallback, useEffect } from 'react';
 import { match, P } from 'ts-pattern';
 import dayjs from 'dayjs';
 import { useToastController } from '@tamagui/toast';
-import { useUsecase, useAuthLogout, useTransactionPay } from '../hooks';
+import {
+  useUsecase,
+  useAuthLogout,
+  useTransactionComplete,
+  useTransactionPay,
+} from '../hooks';
 import { useFocusEffect } from '../../../utils';
 import {
   AuthLogoutUsecase,
   Transaction,
+  TransactionCompleteUsecase,
   TransactionDeleteUsecase,
   TransactionListUsecase,
   TransactionPayForm,
@@ -31,6 +37,7 @@ export type TransactionListHandlerProps = {
   transactionDeleteUsecase: TransactionDeleteUsecase;
   transactionPayUsecase: TransactionPayUsecase;
   transactionUnpayUsecase: TransactionUnpayUsecase;
+  transactionCompleteUsecase: TransactionCompleteUsecase;
 };
 
 export const TransactionListHandler = ({
@@ -39,12 +46,14 @@ export const TransactionListHandler = ({
   transactionDeleteUsecase,
   transactionPayUsecase,
   transactionUnpayUsecase,
+  transactionCompleteUsecase,
 }: TransactionListHandlerProps) => {
   const authLogout = useAuthLogout(authLogoutUsecase);
   const transactionList = useUsecase(transactionListUsecase);
   const transactionDelete = useUsecase(transactionDeleteUsecase);
   const transactionPay = useTransactionPay(transactionPayUsecase);
   const transactionUnpay = useUsecase(transactionUnpayUsecase);
+  const transactionComplete = useTransactionComplete(transactionCompleteUsecase);
   const router = useRouter();
   const { print } = usePrinter();
   const toast = useToastController();
@@ -92,6 +101,16 @@ export const TransactionListHandler = ({
         // Default case, do nothing
       });
   }, [transactionUnpay.state, transactionList, toast]);
+
+  useEffect(() => {
+    match(transactionComplete.state)
+      .with({ type: 'completingSuccess' }, () => {
+        transactionList.dispatch({ type: 'FETCH' });
+      })
+      .otherwise(() => {
+        // Default case, do nothing
+      });
+  }, [transactionComplete.state, transactionList]);
 
   const buildPrintTransaction = (
     transaction: Transaction
@@ -160,6 +179,20 @@ export const TransactionListHandler = ({
         transactionUnpay.dispatch({
           type: 'SHOW_CONFIRMATION',
           transactionId: transaction.id,
+        })
+      }
+      onCompleteMenuPress={(transaction) =>
+        transactionComplete.dispatch({
+          type: 'SHOW_CONFIRMATION',
+          transactionId: transaction.id,
+          action: 'complete',
+        })
+      }
+      onUncompleteMenuPress={(transaction) =>
+        transactionComplete.dispatch({
+          type: 'SHOW_CONFIRMATION',
+          transactionId: transaction.id,
+          action: 'uncomplete',
         })
       }
       onItemPress={(transaction) => {
@@ -289,6 +322,25 @@ export const TransactionListHandler = ({
         transactionUnpay.dispatch({ type: 'HIDE_CONFIRMATION' })
       }
       onUnpayConfirm={() => transactionUnpay.dispatch({ type: 'UNPAY' })}
+      isCompleteModalOpen={match(transactionComplete.state.type)
+        .with(
+          P.union(
+            'shown',
+            'completing',
+            'completingError',
+            'completingSuccess'
+          ),
+          () => true
+        )
+        .otherwise(() => false)}
+      completeAction={transactionComplete.state.action}
+      isCompleteButtonDisabled={transactionComplete.state.type === 'completing'}
+      onCompleteCancel={() =>
+        transactionComplete.dispatch({ type: 'HIDE_CONFIRMATION' })
+      }
+      onCompleteConfirm={() =>
+        transactionComplete.dispatch({ type: 'COMPLETE' })
+      }
     />
   );
 };

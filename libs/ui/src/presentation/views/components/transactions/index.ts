@@ -1,5 +1,6 @@
 export * from './TransactionCartButton';
 export * from './TransactionCartView';
+export * from './TransactionCompleteAlert';
 export * from './TransactionDeleteAlert';
 export * from './TransactionDetail';
 export * from './TransactionFormView';

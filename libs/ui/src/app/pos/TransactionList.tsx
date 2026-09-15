@@ -6,6 +6,7 @@ import {
 } from '../../data';
 import {
   AuthLogoutUsecase,
+  TransactionCompleteUsecase,
   TransactionDeleteUsecase,
   TransactionListParams,
   TransactionListUsecase,
@@ -50,6 +51,9 @@ export function TransactionList({
   const transactionUnpayUsecase = new TransactionUnpayUsecase(
     transactionRepository
   );
+  const transactionCompleteUsecase = new TransactionCompleteUsecase(
+    transactionRepository
+  );
 
   return (
     <TransactionListHandler
@@ -58,6 +62,7 @@ export function TransactionList({
       transactionDeleteUsecase={transactionDeleteUsecase}
       transactionPayUsecase={transactionPayUsecase}
       transactionUnpayUsecase={transactionUnpayUsecase}
+      transactionCompleteUsecase={transactionCompleteUsecase}
     />
   );
 }
