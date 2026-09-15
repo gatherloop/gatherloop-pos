@@ -42,9 +42,9 @@ func TestTransactionUsecase_GetTransactionList(t *testing.T) {
 		{
 			name: "success",
 			setupMock: func(txRepo *mock.MockTransactionRepository) {
-				txRepo.EXPECT().GetTransactionList(gomock.Any(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.All, nil, nil).
+				txRepo.EXPECT().GetTransactionList(gomock.Any(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.All, nil, nil, nil).
 					Return([]domain.Transaction{{Id: 1}, {Id: 2}}, nil)
-				txRepo.EXPECT().GetTransactionListTotal(gomock.Any(), "", domain.All, nil, nil).Return(int64(2), nil)
+				txRepo.EXPECT().GetTransactionListTotal(gomock.Any(), "", domain.All, nil, nil, nil).Return(int64(2), nil)
 			},
 			expectedLen:   2,
 			expectedTotal: 2,
@@ -52,7 +52,7 @@ func TestTransactionUsecase_GetTransactionList(t *testing.T) {
 		{
 			name: "error on GetTransactionList",
 			setupMock: func(txRepo *mock.MockTransactionRepository) {
-				txRepo.EXPECT().GetTransactionList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				txRepo.EXPECT().GetTransactionList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil, &domain.Error{Type: domain.InternalServerError})
 			},
 			expectedError: &domain.Error{Type: domain.InternalServerError},
@@ -71,7 +71,7 @@ func TestTransactionUsecase_GetTransactionList(t *testing.T) {
 			tt.setupMock(txRepo)
 
 			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo)
-			transactions, total, err := usecase.GetTransactionList(context.Background(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.All, nil, nil)
+			transactions, total, err := usecase.GetTransactionList(context.Background(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.All, nil, nil, nil)
 
 			if tt.expectedError != nil {
 				assert.NotNil(t, err)
@@ -94,16 +94,42 @@ func TestTransactionUsecase_GetTransactionList(t *testing.T) {
 		couponRepo := mock.NewMockCouponRepository(ctrl)
 		walletRepo := mock.NewMockWalletRepository(ctrl)
 
-		txRepo.EXPECT().GetTransactionList(gomock.Any(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.All, nil, &orderSource).
+		txRepo.EXPECT().GetTransactionList(gomock.Any(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.All, nil, &orderSource, nil).
 			Return([]domain.Transaction{{Id: 1, Source: domain.TransactionSourceOrder}}, nil)
-		txRepo.EXPECT().GetTransactionListTotal(gomock.Any(), "", domain.All, nil, &orderSource).Return(int64(1), nil)
+		txRepo.EXPECT().GetTransactionListTotal(gomock.Any(), "", domain.All, nil, &orderSource, nil).Return(int64(1), nil)
 
 		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo)
-		transactions, total, err := usecase.GetTransactionList(context.Background(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.All, nil, &orderSource)
+		transactions, total, err := usecase.GetTransactionList(context.Background(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.All, nil, &orderSource, nil)
 
 		assert.Nil(t, err)
 		assert.Len(t, transactions, 1)
 		assert.Equal(t, int64(1), total)
+	})
+
+	t.Run("threads the fulfillment filter to both repository calls", func(t *testing.T) {
+		for _, fulfillment := range []domain.TransactionFulfillment{domain.TransactionFulfillmentPreparing, domain.TransactionFulfillmentReady} {
+			t.Run(string(fulfillment), func(t *testing.T) {
+				ctrl := gomock.NewController(t)
+				defer ctrl.Finish()
+
+				fulfillment := fulfillment
+				txRepo := mock.NewMockTransactionRepository(ctrl)
+				variantRepo := mock.NewMockVariantRepository(ctrl)
+				couponRepo := mock.NewMockCouponRepository(ctrl)
+				walletRepo := mock.NewMockWalletRepository(ctrl)
+
+				txRepo.EXPECT().GetTransactionList(gomock.Any(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.All, nil, nil, &fulfillment).
+					Return([]domain.Transaction{{Id: 1, Source: domain.TransactionSourceOrder}}, nil)
+				txRepo.EXPECT().GetTransactionListTotal(gomock.Any(), "", domain.All, nil, nil, &fulfillment).Return(int64(1), nil)
+
+				usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo)
+				transactions, total, err := usecase.GetTransactionList(context.Background(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.All, nil, nil, &fulfillment)
+
+				assert.Nil(t, err)
+				assert.Len(t, transactions, 1)
+				assert.Equal(t, int64(1), total)
+			})
+		}
 	})
 }
 
