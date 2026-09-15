@@ -12,6 +12,8 @@ const paidPayment = {
   paidAt: new Date().toISOString(),
   customerName: 'Budi',
   tableLabel: 'Meja 1',
+  transactionNumber: 12,
+  fulfillmentStatus: 'preparing' as const,
   items: [
     {
       name: 'Es Kopi Susu',
