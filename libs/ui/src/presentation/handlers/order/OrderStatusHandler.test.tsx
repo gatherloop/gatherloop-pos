@@ -38,10 +38,12 @@ const renderHandler = ({
   reference,
   paymentRepository = new MockPaymentRepository(),
   tableRepository = new MockPublicTableRepository(),
+  sessionRepository = new MockSessionRepository(),
 }: {
   reference: string;
   paymentRepository?: MockPaymentRepository;
   tableRepository?: MockPublicTableRepository;
+  sessionRepository?: MockSessionRepository;
 }) => {
   const tableResolveUsecase = new TableResolveUsecase(tableRepository, {
     code: TABLE_CODE,
@@ -52,11 +54,12 @@ const renderHandler = ({
 
   return {
     paymentRepository,
+    sessionRepository,
     ...render(
       <OrderStatusHandler
         tableResolveUsecase={tableResolveUsecase}
         orderStatusUsecase={orderStatusUsecase}
-        sessionRepository={new MockSessionRepository()}
+        sessionRepository={sessionRepository}
         tableCode={TABLE_CODE}
       />
     ),
@@ -170,6 +173,48 @@ describe('OrderStatusHandler', () => {
       screen.getByText(`#${paymentRepository.payment.transactionNumber}`)
     ).toBeTruthy();
     expect(screen.queryByText(/menit|jam|detik/)).toBeNull();
+  });
+
+  it('clears the remembered active reference once the order is ready', async () => {
+    const paymentRepository = new MockPaymentRepository();
+    paymentRepository.payment = {
+      ...paymentRepository.payment,
+      status: 'paid',
+      fulfillmentStatus: 'ready',
+    };
+    const sessionRepository = new MockSessionRepository();
+    sessionRepository.setActiveReference(paymentRepository.payment.reference);
+    renderHandler({
+      reference: paymentRepository.payment.reference,
+      paymentRepository,
+      sessionRepository,
+    });
+
+    await settle();
+
+    expect(sessionRepository.getActiveReference()).toBeNull();
+  });
+
+  it('does not clear the remembered active reference while still preparing', async () => {
+    const paymentRepository = new MockPaymentRepository();
+    paymentRepository.payment = {
+      ...paymentRepository.payment,
+      status: 'paid',
+      fulfillmentStatus: 'preparing',
+    };
+    const sessionRepository = new MockSessionRepository();
+    sessionRepository.setActiveReference(paymentRepository.payment.reference);
+    renderHandler({
+      reference: paymentRepository.payment.reference,
+      paymentRepository,
+      sessionRepository,
+    });
+
+    await settle();
+
+    expect(sessionRepository.getActiveReference()).toBe(
+      paymentRepository.payment.reference
+    );
   });
 
   it('shows the expiry screen for an expired payment', async () => {

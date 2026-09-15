@@ -105,4 +105,30 @@ describe('CookieSessionRepository', () => {
       );
     });
   });
+
+  describe('active reference', () => {
+    it('returns null when no active reference has been set', () => {
+      const repository = new CookieSessionRepository('id');
+      expect(repository.getActiveReference()).toBeNull();
+    });
+
+    it('persists an active reference across instances', () => {
+      const repository = new CookieSessionRepository('id');
+      repository.setActiveReference('REF-1');
+
+      expect(repository.getActiveReference()).toBe('REF-1');
+      expect(new CookieSessionRepository('id').getActiveReference()).toBe(
+        'REF-1'
+      );
+    });
+
+    it('clears the active reference', () => {
+      const repository = new CookieSessionRepository('id');
+      repository.setActiveReference('REF-1');
+      repository.clearActiveReference();
+
+      expect(repository.getActiveReference()).toBeNull();
+      expect(new CookieSessionRepository('id').getActiveReference()).toBeNull();
+    });
+  });
 });

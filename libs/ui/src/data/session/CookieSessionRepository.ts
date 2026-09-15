@@ -1,5 +1,6 @@
 import { SessionRepository } from '../../domain/repositories/session';
 import {
+  ACTIVE_REFERENCE_STORAGE_KEY,
   SESSION_ID_COOKIE_MAX_AGE_SECONDS,
   SESSION_ID_COOKIE_NAME,
   SESSION_ID_STORAGE_KEY,
@@ -34,6 +35,14 @@ const writeLocalStorage = (key: string, value: string): void => {
   } catch {
     // Storage can be unavailable (private browsing, quota) — the cookie
     // (or, worst case, a fresh mint next load) is the fallback (D3).
+  }
+};
+
+const removeLocalStorage = (key: string): void => {
+  try {
+    window.localStorage.removeItem(key);
+  } catch {
+    // See writeLocalStorage — storage can be unavailable.
   }
 };
 
@@ -88,5 +97,18 @@ export class CookieSessionRepository implements SessionRepository {
 
   setTableCode: SessionRepository['setTableCode'] = (code) => {
     writeLocalStorage(TABLE_CODE_STORAGE_KEY, code);
+  };
+
+  getActiveReference: SessionRepository['getActiveReference'] = () =>
+    readLocalStorage(ACTIVE_REFERENCE_STORAGE_KEY);
+
+  setActiveReference: SessionRepository['setActiveReference'] = (
+    reference
+  ) => {
+    writeLocalStorage(ACTIVE_REFERENCE_STORAGE_KEY, reference);
+  };
+
+  clearActiveReference: SessionRepository['clearActiveReference'] = () => {
+    removeLocalStorage(ACTIVE_REFERENCE_STORAGE_KEY);
   };
 }

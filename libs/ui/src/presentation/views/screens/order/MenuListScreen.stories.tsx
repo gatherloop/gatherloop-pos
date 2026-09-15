@@ -67,6 +67,7 @@ const meta: Meta<typeof MenuListScreen> = {
     },
     startingPriceByProductId: { 1: 18000, 2: 25000 },
     itemDetail: null,
+    resumeBanner: null,
   },
 };
 
@@ -107,6 +108,17 @@ export const Error: Story = {
 
 export const ResolvingTable: Story = {
   args: { tableVariant: { type: 'resolving' }, variant: { type: 'loading' } },
+};
+
+export const ResumeBannerVisible: Story = {
+  args: {
+    ...Loaded.args,
+    resumeBanner: {
+      onPress: () => {
+        // Storybook action stand-in
+      },
+    },
+  },
 };
 
 export const ItemSheetOpen: Story = {

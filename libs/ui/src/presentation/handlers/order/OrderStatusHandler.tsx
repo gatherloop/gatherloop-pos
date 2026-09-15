@@ -39,6 +39,12 @@ export const OrderStatusHandler = ({
     }
   }, [tableResolve.state, sessionRepository]);
 
+  useEffect(() => {
+    if (orderStatus.state.type === 'ready') {
+      sessionRepository.clearActiveReference();
+    }
+  }, [orderStatus.state.type, sessionRepository]);
+
   const variant: OrderStatusScreenVariant = match(orderStatus.state)
     .returnType<OrderStatusScreenVariant>()
     .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))

@@ -67,10 +67,11 @@ export const CartHandler = ({
   useEffect(() => {
     if (checkout.state.type !== 'created' || !checkout.state.payment) return;
 
+    sessionRepository.setActiveReference(checkout.state.payment.reference);
     router.push(
       `/t/${tableCode}/status?ref=${checkout.state.payment.reference}`
     );
-  }, [checkout.state, router, tableCode]);
+  }, [checkout.state, router, tableCode, sessionRepository]);
 
   const mutating = isMutating(cart.state);
 
