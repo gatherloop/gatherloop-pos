@@ -121,6 +121,9 @@ export const MenuListHandler = ({
   const [validationErrorProductId, setValidationErrorProductId] = useState<
     number | null
   >(null);
+  const [activeReference] = useState(() =>
+    sessionRepository.getActiveReference()
+  );
 
   useEffect(() => {
     if (tableResolve.state.type === 'resolved' && tableResolve.state.code) {
@@ -289,6 +292,14 @@ export const MenuListHandler = ({
         menuList.dispatch({ type: 'SELECT_ITEM', productId: product.id })
       }
       startingPriceByProductId={startingPriceByProductId}
+      resumeBanner={
+        activeReference
+          ? {
+              onPress: () =>
+                router.push(`/t/${tableCode}/status?ref=${activeReference}`),
+            }
+          : null
+      }
       variant={match(menuList.state)
         .returnType<MenuListScreenProps['variant']>()
         .with({ type: P.union('idle', 'loading') }, () => ({
