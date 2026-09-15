@@ -417,6 +417,12 @@ export const mockTransactions: Transaction[] = [
   },
 ];
 
+export const mockOrderTransactionReady: Transaction = {
+  ...mockTransactions[1],
+  id: 3,
+  completedAt: '2024-01-21T09:20:00.000Z',
+};
+
 export const mockExpense: Expense = {
   id: 1,
   createdAt: '2024-01-20T10:00:00.000Z',

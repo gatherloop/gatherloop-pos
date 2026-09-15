@@ -3,6 +3,7 @@ import dayjs from 'dayjs';
 import { VariantListItem } from '../variants';
 import {
   Calendar,
+  ClipboardCheck,
   ConciergeBell,
   CreditCard,
   Hash,
@@ -29,6 +30,7 @@ export type TransactionDetailProps = {
   transactionNumber: number;
   createdAt: string;
   paidAt?: string;
+  completedAt?: string | null;
   walletName?: string;
   total: number;
   paidAmount: number;
@@ -49,6 +51,7 @@ export const TransactionDetail = ({
   transactionNumber,
   createdAt,
   paidAt,
+  completedAt,
   walletName,
   total,
   transactionItems,
@@ -148,6 +151,27 @@ export const TransactionDetail = ({
                 <YStack>
                   <Paragraph size="$1">Table</Paragraph>
                   <Paragraph size="$2">{table.label}</Paragraph>
+                </YStack>
+              </XStack>
+            </Card.Header>
+          </Card>
+        )}
+
+        {source === 'order' && (
+          <Card>
+            <Card.Header padding="$2.5">
+              <XStack gap="$2" alignItems="center">
+                <ClipboardCheck size="$2" />
+                <YStack>
+                  <Paragraph size="$1">Fulfilment Status</Paragraph>
+                  <Paragraph size="$2">
+                    {completedAt ? 'Ready' : 'Preparing'}
+                  </Paragraph>
+                  {completedAt && (
+                    <Paragraph size="$1" color="$color10">
+                      {dayjs(completedAt).format('DD/MM/YYYY HH:mm')}
+                    </Paragraph>
+                  )}
                 </YStack>
               </XStack>
             </Card.Header>

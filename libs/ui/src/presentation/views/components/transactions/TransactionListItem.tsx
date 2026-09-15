@@ -24,6 +24,7 @@ export type TransactionListItemProps = {
   total: number;
   createdAt: string;
   paidAt?: string;
+  completedAt?: string | null;
   walletName?: string;
   onPayMenuPress: () => void;
   onUnpayMenuPress: () => void;
@@ -46,6 +47,34 @@ const OrderBadge = () => (
     </Paragraph>
   </XStack>
 );
+
+const fulfillmentBadgeByStatus = {
+  preparing: {
+    backgroundColor: '$orange5',
+    color: '$orange11',
+    label: 'Preparing',
+  },
+  ready: { backgroundColor: '$green5', color: '$green11', label: 'Ready' },
+} as const;
+
+const FulfillmentBadge = ({ completedAt }: { completedAt?: string | null }) => {
+  const { backgroundColor, color, label } =
+    fulfillmentBadgeByStatus[completedAt ? 'ready' : 'preparing'];
+
+  return (
+    <XStack
+      backgroundColor={backgroundColor}
+      paddingHorizontal="$2"
+      paddingVertical="$1"
+      borderRadius="$10"
+      alignSelf="flex-start"
+    >
+      <Paragraph size="$1" color={color}>
+        {label}
+      </Paragraph>
+    </XStack>
+  );
+};
 
 const transactionNumberFontSizeByDigitCount: Record<number, string> = {
   1: '$9',
@@ -85,6 +114,7 @@ export const TransactionListItem = ({
   total,
   createdAt,
   paidAt,
+  completedAt,
   walletName,
   onPayMenuPress,
   onUnpayMenuPress,
@@ -104,7 +134,10 @@ export const TransactionListItem = ({
             <Paragraph textTransform="none" ellipse size="$6">
               Rp. {total.toLocaleString('id')}
             </Paragraph>
-            <OrderBadge />
+            <XStack gap="$2">
+              <OrderBadge />
+              <FulfillmentBadge completedAt={completedAt} />
+            </XStack>
           </YStack>
         ) : (
           `Rp. ${total.toLocaleString('id')}`

@@ -32,6 +32,7 @@ export const TransactionDetailHandler = ({
         transactionDetail.state.transaction?.transactionCoupons ?? []
       }
       paidAt={transactionDetail.state.transaction?.paidAt ?? undefined}
+      completedAt={transactionDetail.state.transaction?.completedAt ?? null}
       walletName={transactionDetail.state.transaction?.wallet?.name}
       paidAmount={transactionDetail.state.transaction?.paidAmount ?? 0}
       onLogoutPress={() => authLogout.dispatch({ type: 'LOGOUT' })}
