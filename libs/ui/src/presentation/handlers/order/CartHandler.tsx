@@ -65,8 +65,7 @@ export const CartHandler = ({
   }, [tableResolve.state, sessionRepository]);
 
   useEffect(() => {
-    if (checkout.state.type !== 'awaitingPayment' || !checkout.state.payment)
-      return;
+    if (checkout.state.type !== 'created' || !checkout.state.payment) return;
 
     router.push(
       `/t/${tableCode}/status?ref=${checkout.state.payment.reference}`

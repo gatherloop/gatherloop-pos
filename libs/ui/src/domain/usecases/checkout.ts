@@ -10,16 +10,13 @@ type Context = {
   customerName: string;
   nameErrorMessage: string | null;
   errorMessage: string | null;
-  isPolling: boolean;
 };
 
 export type CheckoutState = (
   | { type: 'idle' }
   | { type: 'askingName' }
   | { type: 'creatingPayment' }
-  | { type: 'awaitingPayment' }
-  | { type: 'paid' }
-  | { type: 'expired' }
+  | { type: 'created' }
   | { type: 'error' }
 ) &
   Context;
@@ -30,12 +27,7 @@ export type CheckoutAction =
   | { type: 'CANCEL_NAME' }
   | { type: 'SUBMIT_NAME' }
   | { type: 'CHECKOUT_SUCCESS'; payment: Payment }
-  | { type: 'CHECKOUT_ERROR'; message: string }
-  | { type: 'POLL' }
-  | { type: 'POLL_SUCCESS'; payment: Payment }
-  | { type: 'POLL_ERROR'; message: string }
-  | { type: 'COUNTDOWN_ELAPSED' }
-  | { type: 'EXPIRE' };
+  | { type: 'CHECKOUT_ERROR'; message: string };
 
 export type CheckoutParams = {
   customerName?: string;
@@ -55,7 +47,6 @@ export class CheckoutUsecase extends Usecase<
 > {
   params: CheckoutParams;
   private paymentRepository: PaymentRepository;
-  private pollTimerId: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     paymentRepository: PaymentRepository,
@@ -73,7 +64,6 @@ export class CheckoutUsecase extends Usecase<
       customerName: this.params.customerName ?? '',
       nameErrorMessage: null,
       errorMessage: null,
-      isPolling: false,
     };
   }
 
@@ -95,10 +85,7 @@ export class CheckoutUsecase extends Usecase<
         nameErrorMessage: null,
       }))
       .with(
-        [
-          { type: P.union('askingName', 'error', 'expired') },
-          { type: 'SUBMIT_NAME' },
-        ],
+        [{ type: P.union('askingName', 'error') }, { type: 'SUBMIT_NAME' }],
         ([state]) => {
           const nameErrorMessage = validateName(state.customerName);
           if (nameErrorMessage) {
@@ -117,10 +104,9 @@ export class CheckoutUsecase extends Usecase<
         [{ type: 'creatingPayment' }, { type: 'CHECKOUT_SUCCESS' }],
         ([state, { payment }]) => ({
           ...state,
-          type: 'awaitingPayment',
+          type: 'created',
           payment,
           errorMessage: null,
-          isPolling: false,
         })
       )
       .with(
@@ -131,31 +117,6 @@ export class CheckoutUsecase extends Usecase<
           errorMessage: message,
         })
       )
-      .with(
-        [
-          { type: 'awaitingPayment', isPolling: false },
-          { type: P.union('POLL', 'COUNTDOWN_ELAPSED') },
-        ],
-        ([state]) => ({ ...state, isPolling: true })
-      )
-      .with(
-        [{ type: 'awaitingPayment' }, { type: 'POLL_SUCCESS' }],
-        ([state, { payment }]) => ({
-          ...state,
-          type: payment.status === 'paid' ? 'paid' : 'awaitingPayment',
-          payment,
-          isPolling: false,
-        })
-      )
-      .with(
-        [{ type: 'awaitingPayment' }, { type: 'POLL_ERROR' }],
-        ([state]) => ({ ...state, isPolling: false })
-      )
-      .with([{ type: 'awaitingPayment' }, { type: 'EXPIRE' }], ([state]) => ({
-        ...state,
-        type: 'expired',
-        isPolling: false,
-      }))
       .otherwise(() => state);
   }
 
@@ -175,37 +136,8 @@ export class CheckoutUsecase extends Usecase<
             })
           );
       })
-      .with({ type: 'awaitingPayment' }, (state) => {
-        if (this.pollTimerId === null) {
-          this.pollTimerId = setInterval(
-            () => dispatch({ type: 'POLL' }),
-            3000
-          );
-        }
-
-        if (state.isPolling && state.payment) {
-          this.paymentRepository
-            .fetchPayment(state.payment.reference)
-            .then((payment) => {
-              if (payment.status === 'expired' || payment.status === 'failed') {
-                dispatch({ type: 'EXPIRE' });
-              } else {
-                dispatch({ type: 'POLL_SUCCESS', payment });
-              }
-            })
-            .catch(() =>
-              dispatch({
-                type: 'POLL_ERROR',
-                message: 'Failed to check payment status',
-              })
-            );
-        }
-      })
       .otherwise(() => {
-        if (this.pollTimerId !== null) {
-          clearInterval(this.pollTimerId);
-          this.pollTimerId = null;
-        }
+        // TODO: IMPLEMENT SOMETHING
       });
   }
 }

@@ -23,7 +23,7 @@ describe('CheckoutUsecase', () => {
     jest.useRealTimers();
   });
 
-  it('should transition idle → askingName → creatingPayment → awaitingPayment', async () => {
+  it('should transition idle → askingName → creatingPayment → created', async () => {
     const repository = new MockPaymentRepository();
     const checkout = createTester(repository);
 
@@ -36,7 +36,7 @@ describe('CheckoutUsecase', () => {
     expect(checkout.state.customerName).toBe('Budi');
 
     await flushMicrotasks();
-    expect(checkout.state.type).toBe('awaitingPayment');
+    expect(checkout.state.type).toBe('created');
     expect(checkout.state.payment).toEqual(repository.payment);
   });
 
@@ -101,107 +101,22 @@ describe('CheckoutUsecase', () => {
     expect(checkout.state.type).toBe('creatingPayment');
 
     await flushMicrotasks();
-    expect(checkout.state.type).toBe('awaitingPayment');
+    expect(checkout.state.type).toBe('created');
   });
 
-  describe('awaitingPayment', () => {
-    const enterAwaitingPayment = async (repository: MockPaymentRepository) => {
-      const checkout = createTester(repository, 'Budi');
-      checkout.dispatch({ type: 'ASK_NAME' });
-      checkout.dispatch({ type: 'SUBMIT_NAME' });
-      await flushMicrotasks();
-      return checkout;
-    };
-
-    it('should transition to paid on a POLL that reports paid', async () => {
-      const repository = new MockPaymentRepository();
-      const checkout = await enterAwaitingPayment(repository);
-
-      repository.payment = { ...repository.payment, status: 'paid' };
-      checkout.dispatch({ type: 'POLL' });
-      await flushMicrotasks();
-
-      expect(checkout.state.type).toBe('paid');
-      expect(checkout.state.payment?.status).toBe('paid');
-    });
-
-    it('should keep awaitingPayment on a poll error', async () => {
-      const repository = new MockPaymentRepository();
-      const checkout = await enterAwaitingPayment(repository);
-
-      repository.setShouldFailFetch(true);
-      checkout.dispatch({ type: 'POLL' });
-      expect(checkout.state.isPolling).toBe(true);
-
-      await flushMicrotasks();
-      expect(checkout.state.type).toBe('awaitingPayment');
-      expect(checkout.state.isPolling).toBe(false);
-    });
-
-    it('should transition to expired on a server status', async () => {
-      const repository = new MockPaymentRepository();
-      const checkout = await enterAwaitingPayment(repository);
-
-      repository.payment = { ...repository.payment, status: 'expired' };
-      checkout.dispatch({ type: 'POLL' });
-      await flushMicrotasks();
-
-      expect(checkout.state.type).toBe('expired');
-    });
-
-    it('should issue one final poll on COUNTDOWN_ELAPSED without expiring on its own', async () => {
-      const repository = new MockPaymentRepository();
-      const checkout = await enterAwaitingPayment(repository);
-
-      repository.payment = { ...repository.payment, status: 'expired' };
-      checkout.dispatch({ type: 'COUNTDOWN_ELAPSED' });
-
-      expect(checkout.state.type).toBe('awaitingPayment');
-      expect(checkout.state.isPolling).toBe(true);
-
-      await flushMicrotasks();
-      expect(checkout.state.type).toBe('expired');
-    });
-
-    it('should let a paid result from the final poll win over the elapsed countdown', async () => {
-      const repository = new MockPaymentRepository();
-      const checkout = await enterAwaitingPayment(repository);
-
-      repository.payment = { ...repository.payment, status: 'paid' };
-      checkout.dispatch({ type: 'COUNTDOWN_ELAPSED' });
-      await flushMicrotasks();
-
-      expect(checkout.state.type).toBe('paid');
-    });
-
-    it('should poll again automatically after 3s while awaitingPayment', async () => {
-      const repository = new MockPaymentRepository();
-      const checkout = await enterAwaitingPayment(repository);
-
-      repository.payment = { ...repository.payment, status: 'paid' };
-      await jest.advanceTimersByTimeAsync(3000);
-
-      expect(checkout.state.type).toBe('paid');
-    });
-  });
-
-  it('should skip the name prompt retrying from expired straight into creatingPayment', async () => {
+  it('should stay at created and ignore further actions once the payment exists', async () => {
     const repository = new MockPaymentRepository();
     const checkout = createTester(repository, 'Budi');
     checkout.dispatch({ type: 'ASK_NAME' });
     checkout.dispatch({ type: 'SUBMIT_NAME' });
     await flushMicrotasks();
 
-    repository.payment = { ...repository.payment, status: 'expired' };
-    checkout.dispatch({ type: 'POLL' });
-    await flushMicrotasks();
-    expect(checkout.state.type).toBe('expired');
+    expect(checkout.state.type).toBe('created');
+    const { payment } = checkout.state;
 
-    repository.payment = { ...repository.payment, status: 'pending' };
-    checkout.dispatch({ type: 'SUBMIT_NAME' });
-    expect(checkout.state.type).toBe('creatingPayment');
+    checkout.dispatch({ type: 'ASK_NAME' });
 
-    await flushMicrotasks();
-    expect(checkout.state.type).toBe('awaitingPayment');
+    expect(checkout.state.type).toBe('created');
+    expect(checkout.state.payment).toEqual(payment);
   });
 });
