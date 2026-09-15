@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Input, Spinner, Text, XStack, YStack } from 'tamagui';
+import { Input, ScrollView, Spinner, Text, XStack, YStack } from 'tamagui';
 import { match } from 'ts-pattern';
 import { Category } from '../../../../domain/entities/Category';
 import { Product } from '../../../../domain/entities/Product';
@@ -59,12 +59,9 @@ export const MenuListScreen = ({
 }: MenuListScreenProps) => {
   return (
     <TableResolveScreen variant={tableVariant} footer={footer}>
-      <YStack gap="$3" flex={1}>
+      <YStack flex={1} gap="$3">
         <YStack
           gap="$2"
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-expect-error
-          position="sticky"
           top={0}
           zIndex={11}
           backgroundColor="$background"
@@ -106,31 +103,33 @@ export const MenuListScreen = ({
             />
           ))
           .with({ type: 'loaded' }, ({ groups }) => (
-            <YStack gap="$5">
-              {groups.map(({ category, products }) => (
-                <YStack key={category.id} gap="$3">
-                  <Text fontSize="$6" fontWeight="bold">
-                    {category.name}
-                  </Text>
-                  <YStack gap="$3">
-                    {products.map((product) => (
-                      <Focusable
-                        key={product.id}
-                        onEnterPress={() => onItemPress(product)}
-                      >
-                        <MenuProductCard
-                          product={product}
-                          startingPrice={
-                            startingPriceByProductId[product.id] ?? null
-                          }
-                          onPress={() => onItemPress(product)}
-                        />
-                      </Focusable>
-                    ))}
+            <ScrollView flex={1}>
+              <YStack gap="$5">
+                {groups.map(({ category, products }) => (
+                  <YStack key={category.id} gap="$3">
+                    <Text fontSize="$6" fontWeight="bold">
+                      {category.name}
+                    </Text>
+                    <YStack gap="$3">
+                      {products.map((product) => (
+                        <Focusable
+                          key={product.id}
+                          onEnterPress={() => onItemPress(product)}
+                        >
+                          <MenuProductCard
+                            product={product}
+                            startingPrice={
+                              startingPriceByProductId[product.id] ?? null
+                            }
+                            onPress={() => onItemPress(product)}
+                          />
+                        </Focusable>
+                      ))}
+                    </YStack>
                   </YStack>
-                </YStack>
-              ))}
-            </YStack>
+                ))}
+              </YStack>
+            </ScrollView>
           ))
           .exhaustive()}
       </YStack>

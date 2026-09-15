@@ -1,4 +1,4 @@
-import { Button, Text, XStack, YStack } from 'tamagui';
+import { Button, ScrollView, Text, XStack, YStack } from 'tamagui';
 import { match } from 'ts-pattern';
 import { Cart } from '../../../../domain/entities/Cart';
 import { formatRupiah } from '../../../../utils/currency';
@@ -151,7 +151,7 @@ export const CartScreen = ({
             />
           ))
           .with({ type: 'loaded' }, ({ cart }) => (
-            <YStack gap="$4">
+            <YStack gap="$4" flex={1}>
               <XStack justifyContent="space-between" alignItems="center">
                 <Text fontWeight="bold" fontSize="$6">
                   Keranjang
@@ -169,24 +169,24 @@ export const CartScreen = ({
                 </Button>
               </XStack>
 
-              {errorMessage ? (
-                <Text color="$red10">{errorMessage}</Text>
-              ) : null}
+              {errorMessage ? <Text color="$red10">{errorMessage}</Text> : null}
 
-              <YStack gap="$4">
-                {cart.items.map((item) => (
-                  <CartLineItem
-                    key={item.id}
-                    item={item}
-                    disabled={isMutating}
-                    onAmountChange={(amount) =>
-                      onAmountChange(item.id, amount)
-                    }
-                    onRemovePress={() => onRemovePress(item.id)}
-                    onEditPress={() => onEditPress(item.id)}
-                  />
-                ))}
-              </YStack>
+              <ScrollView flex={1}>
+                <YStack gap="$4">
+                  {cart.items.map((item) => (
+                    <CartLineItem
+                      key={item.id}
+                      item={item}
+                      disabled={isMutating}
+                      onAmountChange={(amount) =>
+                        onAmountChange(item.id, amount)
+                      }
+                      onRemovePress={() => onRemovePress(item.id)}
+                      onEditPress={() => onEditPress(item.id)}
+                    />
+                  ))}
+                </YStack>
+              </ScrollView>
 
               <Button
                 variant="outlined"
