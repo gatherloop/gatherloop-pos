@@ -1712,6 +1712,7 @@ paths:
         - $ref: '#/components/parameters/PaymentStatus'
         - $ref: '#/components/parameters/WalletIdQuery'
         - $ref: '#/components/parameters/TransactionSource'
+        - $ref: '#/components/parameters/TransactionFulfillment'
       responses:
         '200':
           description: success response
@@ -5675,6 +5676,12 @@ components:
       schema:
         type: string
         enum: [pos, order, all]
+    TransactionFulfillment:
+      name: fulfillment
+      in: query
+      schema:
+        type: string
+        enum: [preparing, ready, all]
     SaleType:
       name: saleType
       in: query

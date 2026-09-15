@@ -23,6 +23,7 @@ func (handler TransactionHandler) GetTransactionList(w http.ResponseWriter, r *h
 	paymentStatus := GetPaymentStatus(r)
 	walletId := GetWalletIdQuery(r)
 	source := GetTransactionSourceQuery(r)
+	fulfillment := GetTransactionFulfillmentQuery(r)
 
 	skip, err := GetSkip(r)
 	if err != nil {
@@ -36,7 +37,7 @@ func (handler TransactionHandler) GetTransactionList(w http.ResponseWriter, r *h
 		return
 	}
 
-	transactions, total, usecaseErr := handler.usecase.GetTransactionList(ctx, query, sortBy, order, skip, limit, paymentStatus, walletId, source)
+	transactions, total, usecaseErr := handler.usecase.GetTransactionList(ctx, query, sortBy, order, skip, limit, paymentStatus, walletId, source, fulfillment)
 	if usecaseErr != nil {
 		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return

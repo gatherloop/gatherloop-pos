@@ -43,6 +43,13 @@ const (
 	TransactionSourceOrder TransactionSource = "order"
 )
 
+type TransactionFulfillment string
+
+const (
+	TransactionFulfillmentPreparing TransactionFulfillment = "preparing"
+	TransactionFulfillmentReady     TransactionFulfillment = "ready"
+)
+
 type Transaction struct {
 	Id                 int64
 	CreatedAt          time.Time
