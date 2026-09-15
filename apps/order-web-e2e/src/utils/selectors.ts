@@ -49,38 +49,23 @@ export const cartScreen = {
     page.getByRole('button', { name: 'Tambah menu lainnya' }),
   clearCartButton: (page: Page) =>
     page.getByRole('button', { name: 'Kosongkan keranjang' }),
-  checkoutButton: (page: Page) =>
-    page.getByRole('button', { name: /^Checkout/ }),
+  checkoutButton: (page: Page, formattedTotal: string) =>
+    page.getByRole('button', {
+      name: `Bayar dengan QRIS · ${formattedTotal}`,
+    }),
+  checkoutDisabledText: (page: Page) =>
+    page.getByText('Checkout belum tersedia'),
   total: (page: Page, formattedTotal: string) =>
     page.getByText(formattedTotal, { exact: true }),
-};
-
-export const cartItemEdit = {
-  saveButton: (page: Page) => page.getByRole('button', { name: 'Simpan' }),
-};
-
-export const checkout = {
-  summaryTitle: (page: Page) => page.getByText('Ringkasan Pesanan'),
-  payButton: (page: Page, formattedTotal: string) =>
-    page.getByRole('button', { name: `Bayar dengan QRIS · ${formattedTotal}` }),
-  backToCartButton: (page: Page) =>
-    page.getByRole('button', { name: 'Kembali ke keranjang' }),
 
   nameInput: (page: Page) => page.getByLabel('Nama Anda'),
   submitNameButton: (page: Page) =>
     page.getByRole('button', { name: 'Lanjutkan ke pembayaran' }),
   cancelNameButton: (page: Page) => page.getByRole('button', { name: 'Batal' }),
+};
 
-  saveQrButton: (page: Page) => page.getByRole('button', { name: 'Simpan QR' }),
-  waitingForPaymentText: (page: Page) => page.getByText('Menunggu pembayaran…'),
-
-  paymentSuccessTitle: (page: Page) => page.getByText('Pembayaran berhasil'),
-
-  expiredTitle: (page: Page) => page.getByText('Waktu pembayaran habis'),
-  retryPaymentButton: (page: Page) =>
-    page.getByRole('button', { name: 'Coba bayar lagi' }),
-
-  disabledTitle: (page: Page) => page.getByText('Checkout belum tersedia'),
+export const cartItemEdit = {
+  saveButton: (page: Page) => page.getByRole('button', { name: 'Simpan' }),
 };
 
 export const orderStatus = {
@@ -93,4 +78,11 @@ export const orderStatus = {
   orderAgainButton: (page: Page) =>
     page.getByRole('button', { name: 'Pesan lagi' }),
   notFoundView: (page: Page) => page.getByText('Pesanan tidak ditemukan'),
+
+  saveQrButton: (page: Page) => page.getByRole('button', { name: 'Simpan QR' }),
+  waitingForPaymentText: (page: Page) => page.getByText('Menunggu pembayaran…'),
+
+  expiredTitle: (page: Page) => page.getByText('Waktu pembayaran habis'),
+  backToCartButton: (page: Page) =>
+    page.getByRole('button', { name: 'Kembali ke keranjang' }),
 };

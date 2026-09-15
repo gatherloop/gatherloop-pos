@@ -32,6 +32,15 @@ const nextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      {
+        source: '/t/:code/checkout',
+        destination: '/t/:code/cart',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 const tamaguiPlugin = withTamagui({

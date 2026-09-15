@@ -1,5 +1,7 @@
 import {
+  ApiCustomerRepository,
   ApiPublicTableRepository,
+  CookieSessionRepository,
   resolveSession,
   SESSION_ID_COOKIE_NAME,
   TableNotFoundError,
@@ -16,14 +18,21 @@ export const getServerSideProps: GetServerSideProps<CartProps> = async (
   if (setCookie) ctx.res.setHeader('Set-Cookie', setCookie);
 
   const code = String(ctx.params?.code ?? '');
-  const table = await new ApiPublicTableRepository()
-    .resolveTableByCode(code)
-    .catch((error) =>
-      error instanceof TableNotFoundError ? null : undefined
-    );
+  const sessionRepository = new CookieSessionRepository(sessionId);
+
+  const [table, customerName] = await Promise.all([
+    new ApiPublicTableRepository()
+      .resolveTableByCode(code)
+      .catch((error) =>
+        error instanceof TableNotFoundError ? null : undefined
+      ),
+    new ApiCustomerRepository(sessionRepository)
+      .fetchCurrentName()
+      .catch(() => ''),
+  ]);
 
   return {
-    props: { sessionId, code, table },
+    props: { sessionId, code, table, customerName },
   };
 };
 

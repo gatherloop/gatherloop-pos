@@ -3,9 +3,12 @@ import { match, P } from 'ts-pattern';
 import { useRouter } from 'solito/router';
 import { SessionRepository } from '../../../domain/repositories/session';
 import { CartState, CartUsecase } from '../../../domain/usecases/cart';
+import { CheckoutUsecase } from '../../../domain/usecases/checkout';
 import { TableResolveUsecase } from '../../../domain/usecases/tableResolve';
 import { useCart } from '../hooks/useCart';
+import { useCheckout } from '../hooks/useCheckout';
 import { useTableResolve } from '../hooks/useTableResolve';
+import { CustomerNameSheetProps } from '../../views/components/checkout/CustomerNameSheet';
 import { CartItemEditScreenProps } from '../../views/screens/order/CartItemEditScreen';
 import { CartScreen, CartScreenProps } from '../../views/screens/order/CartScreen';
 import { TableResolveScreenProps } from '../../views/screens/order/TableResolveScreen';
@@ -13,7 +16,9 @@ import { TableResolveScreenProps } from '../../views/screens/order/TableResolveS
 export type CartHandlerProps = {
   tableResolveUsecase: TableResolveUsecase;
   cartUsecase: CartUsecase;
+  checkoutUsecase: CheckoutUsecase;
   sessionRepository: SessionRepository;
+  enabled: boolean;
   tableCode: string;
 };
 
@@ -41,11 +46,14 @@ function isMutating(state: CartState): boolean {
 export const CartHandler = ({
   tableResolveUsecase,
   cartUsecase,
+  checkoutUsecase,
   sessionRepository,
+  enabled,
   tableCode,
 }: CartHandlerProps) => {
   const tableResolve = useTableResolve(tableResolveUsecase);
   const cart = useCart(cartUsecase);
+  const checkout = useCheckout(checkoutUsecase);
   const router = useRouter();
   const [isClearConfirmationOpen, setIsClearConfirmationOpen] =
     useState(false);
@@ -55,6 +63,15 @@ export const CartHandler = ({
       sessionRepository.setTableCode(tableResolve.state.code);
     }
   }, [tableResolve.state, sessionRepository]);
+
+  useEffect(() => {
+    if (checkout.state.type !== 'awaitingPayment' || !checkout.state.payment)
+      return;
+
+    router.push(
+      `/t/${tableCode}/status?ref=${checkout.state.payment.reference}`
+    );
+  }, [checkout.state, router, tableCode]);
 
   const mutating = isMutating(cart.state);
 
@@ -99,6 +116,19 @@ export const CartHandler = ({
             cart.dispatch({ type: 'CLEAR_ITEM' });
           },
         };
+
+  const nameSheet: (CustomerNameSheetProps & { isOpen: true }) | null =
+    checkout.state.type === 'askingName'
+      ? {
+          isOpen: true,
+          name: checkout.state.customerName,
+          errorMessage: checkout.state.nameErrorMessage,
+          onNameChange: (name) =>
+            checkout.dispatch({ type: 'CHANGE_NAME', name }),
+          onSubmitPress: () => checkout.dispatch({ type: 'SUBMIT_NAME' }),
+          onCancelPress: () => checkout.dispatch({ type: 'CANCEL_NAME' }),
+        }
+      : null;
 
   return (
     <CartScreen
@@ -153,9 +183,16 @@ export const CartHandler = ({
       onClearCancel={() => setIsClearConfirmationOpen(false)}
       onClearConfirmationOpenChange={setIsClearConfirmationOpen}
       onAddMoreItemsPress={() => router.push(`/t/${tableCode}`)}
-      onCheckoutPress={() => router.push(`/t/${tableCode}/checkout`)}
       onRetryButtonPress={() => cart.dispatch({ type: 'FETCH' })}
       itemEdit={itemEdit}
+      isCheckoutEnabled={enabled}
+      isCheckingOut={checkout.state.type === 'creatingPayment'}
+      checkoutErrorMessage={
+        checkout.state.type === 'error' ? checkout.state.errorMessage : null
+      }
+      onCheckoutPress={() => checkout.dispatch({ type: 'ASK_NAME' })}
+      onCheckoutRetryPress={() => checkout.dispatch({ type: 'SUBMIT_NAME' })}
+      nameSheet={nameSheet}
     />
   );
 };

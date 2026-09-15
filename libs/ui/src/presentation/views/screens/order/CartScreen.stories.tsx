@@ -86,6 +86,10 @@ const meta: Meta<typeof CartScreen> = {
     errorMessage: null,
     isClearConfirmationOpen: false,
     itemEdit: null,
+    isCheckoutEnabled: true,
+    isCheckingOut: false,
+    checkoutErrorMessage: null,
+    nameSheet: null,
     onAmountChange: () => {
       // Storybook action stand-in
     },
@@ -111,6 +115,9 @@ const meta: Meta<typeof CartScreen> = {
       // Storybook action stand-in
     },
     onCheckoutPress: () => {
+      // Storybook action stand-in
+    },
+    onCheckoutRetryPress: () => {
       // Storybook action stand-in
     },
     onRetryButtonPress: () => {
@@ -158,4 +165,45 @@ export const MutationError: Story = {
 
 export const Error: Story = {
   args: { variant: { type: 'error' } },
+};
+
+export const CheckoutDisabled: Story = {
+  args: {
+    variant: { type: 'loaded', cart },
+    isCheckoutEnabled: false,
+  },
+};
+
+export const NameSheetOpen: Story = {
+  args: {
+    variant: { type: 'loaded', cart },
+    nameSheet: {
+      isOpen: true,
+      name: 'Budi',
+      errorMessage: null,
+      onNameChange: () => {
+        // Storybook action stand-in
+      },
+      onSubmitPress: () => {
+        // Storybook action stand-in
+      },
+      onCancelPress: () => {
+        // Storybook action stand-in
+      },
+    },
+  },
+};
+
+export const CreatingPayment: Story = {
+  args: {
+    variant: { type: 'loaded', cart },
+    isCheckingOut: true,
+  },
+};
+
+export const CheckoutError: Story = {
+  args: {
+    variant: { type: 'loaded', cart },
+    checkoutErrorMessage: 'Failed to create payment',
+  },
 };
