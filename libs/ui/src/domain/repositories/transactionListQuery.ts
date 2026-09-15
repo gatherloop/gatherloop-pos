@@ -1,4 +1,8 @@
-import { PaymentStatus, TransactionSourceFilter } from '../entities';
+import {
+  PaymentStatus,
+  TransactionFulfillmentFilter,
+  TransactionSourceFilter,
+} from '../entities';
 
 export interface TransactionListQueryRepository {
   getPage: () => number;
@@ -24,4 +28,7 @@ export interface TransactionListQueryRepository {
 
   getSource: () => TransactionSourceFilter;
   setSource: (source: TransactionSourceFilter) => void;
+
+  getFulfillment: () => TransactionFulfillmentFilter;
+  setFulfillment: (fulfillment: TransactionFulfillmentFilter) => void;
 }

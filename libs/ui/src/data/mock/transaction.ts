@@ -2,6 +2,7 @@ import {
   PaymentStatus,
   Transaction,
   TransactionForm,
+  TransactionFulfillmentFilter,
   TransactionSourceFilter,
   TransactionStatistic,
 } from '../../domain/entities';
@@ -102,6 +103,7 @@ export class MockTransactionRepository implements TransactionRepository {
     paymentStatus: PaymentStatus;
     walletId: number | null;
     source: TransactionSourceFilter;
+    fulfillment: TransactionFulfillmentFilter;
   }): { transactions: Transaction[]; totalItem: number } {
     return {
       transactions: [...this.transactions],
@@ -118,6 +120,7 @@ export class MockTransactionRepository implements TransactionRepository {
     paymentStatus: PaymentStatus;
     walletId: number | null;
     source: TransactionSourceFilter;
+    fulfillment: TransactionFulfillmentFilter;
   }): Promise<{ transactions: Transaction[]; totalItem: number }> {
     if (this.shouldFail) throw new Error('Failed to fetch transactions');
     return Promise.resolve({

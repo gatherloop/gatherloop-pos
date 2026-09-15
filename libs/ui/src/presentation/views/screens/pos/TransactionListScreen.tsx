@@ -10,6 +10,7 @@ import { Link } from 'solito/link';
 import { Plus } from '@tamagui/lucide-icons';
 import {
   Transaction,
+  TransactionFulfillmentFilter,
   TransactionPayForm,
   TransactionSourceFilter,
   Wallet,
@@ -33,6 +34,8 @@ export type TransactionListScreenProps = {
   onPaymentStatusChange: (paymentStatus: 'all' | 'paid' | 'unpaid') => void;
   source: TransactionSourceFilter;
   onSourceChange: (source: TransactionSourceFilter) => void;
+  fulfillment: TransactionFulfillmentFilter;
+  onFulfillmentChange: (fulfillment: TransactionFulfillmentFilter) => void;
   currentPage: number;
   onPageChange: (page: number) => void;
   totalItem: number;
@@ -78,6 +81,8 @@ export const TransactionListScreen = ({
   onPaymentStatusChange,
   source,
   onSourceChange,
+  fulfillment,
+  onFulfillmentChange,
   currentPage,
   onPageChange,
   totalItem,
@@ -121,6 +126,8 @@ export const TransactionListScreen = ({
         onPaymentStatusChange={onPaymentStatusChange}
         source={source}
         onSourceChange={onSourceChange}
+        fulfillment={fulfillment}
+        onFulfillmentChange={onFulfillmentChange}
         variant={variant}
         transactions={transactions}
         currentPage={currentPage}

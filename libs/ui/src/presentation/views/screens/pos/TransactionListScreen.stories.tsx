@@ -20,6 +20,8 @@ const defaultArgs = {
   onPaymentStatusChange: fn(),
   source: 'all' as const,
   onSourceChange: fn(),
+  fulfillment: 'all' as const,
+  onFulfillmentChange: fn(),
   currentPage: 1,
   onPageChange: fn(),
   totalItem: 2,

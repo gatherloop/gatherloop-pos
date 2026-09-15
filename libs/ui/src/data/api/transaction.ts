@@ -152,6 +152,7 @@ export class ApiTransactionRepository implements TransactionRepository {
     paymentStatus,
     walletId,
     source,
+    fulfillment,
   }) => {
     const params: TransactionListQueryParams = {
       query,
@@ -162,6 +163,7 @@ export class ApiTransactionRepository implements TransactionRepository {
       paymentStatus,
       walletId: walletId ?? undefined,
       source,
+      fulfillment,
     };
     const res = this.client.getQueryState<TransactionList200>(
       transactionListQueryKey(params)
@@ -185,6 +187,7 @@ export class ApiTransactionRepository implements TransactionRepository {
       paymentStatus,
       walletId,
       source,
+      fulfillment,
     }: {
       itemPerPage: number;
       orderBy: 'asc' | 'desc';
@@ -194,6 +197,7 @@ export class ApiTransactionRepository implements TransactionRepository {
       paymentStatus: 'all' | 'paid' | 'unpaid';
       walletId: number | null;
       source: 'all' | 'pos' | 'order';
+      fulfillment: 'all' | 'preparing' | 'ready';
     },
     options?: Partial<RequestConfig>
   ) => {
@@ -206,6 +210,7 @@ export class ApiTransactionRepository implements TransactionRepository {
       paymentStatus,
       walletId: walletId ?? undefined,
       source,
+      fulfillment,
     };
     return this.client
       .fetchQuery({

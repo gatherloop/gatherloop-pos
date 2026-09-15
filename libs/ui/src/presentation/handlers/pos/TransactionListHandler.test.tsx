@@ -107,6 +107,7 @@ const transactionListCtrl = {
     paymentStatus: null as never,
     walletId: null as never,
     source: null as never,
+    fulfillment: null as never,
   },
   dispatch: jest.fn(),
 };
@@ -196,6 +197,7 @@ describe('TransactionListHandler', () => {
       paymentStatus: null,
       walletId: null,
       source: null,
+      fulfillment: null,
     };
     transactionDeleteCtrl.state = { type: 'hidden' };
     transactionPayCtrl.state = {
@@ -333,6 +335,36 @@ describe('TransactionListHandler', () => {
       });
 
       expect(latestScreenProps.source).toBe('pos');
+    });
+  });
+
+  describe('fulfillment filter', () => {
+    it('should dispatch CHANGE_PARAMS with the selected fulfillment, resetting to page 1', async () => {
+      await act(async () => {
+        render(<TransactionListHandler {...createProps()} />);
+      });
+
+      latestScreenProps.onFulfillmentChange('preparing');
+
+      expect(transactionListCtrl.dispatch).toHaveBeenCalledWith({
+        type: 'CHANGE_PARAMS',
+        fulfillment: 'preparing',
+        page: 1,
+        fetchDebounceDelay: 600,
+      });
+    });
+
+    it('should pass the current fulfillment through to the screen', async () => {
+      transactionListCtrl.state = {
+        ...transactionListCtrl.state,
+        fulfillment: 'ready',
+      };
+
+      await act(async () => {
+        render(<TransactionListHandler {...createProps()} />);
+      });
+
+      expect(latestScreenProps.fulfillment).toBe('ready');
     });
   });
 

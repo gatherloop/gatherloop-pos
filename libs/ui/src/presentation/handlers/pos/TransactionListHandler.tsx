@@ -229,6 +229,15 @@ export const TransactionListHandler = ({
           fetchDebounceDelay: 600,
         })
       }
+      fulfillment={transactionList.state.fulfillment}
+      onFulfillmentChange={(fulfillment) =>
+        transactionList.dispatch({
+          type: 'CHANGE_PARAMS',
+          fulfillment,
+          page: 1,
+          fetchDebounceDelay: 600,
+        })
+      }
       currentPage={transactionList.state.page}
       onPageChange={(page: number) =>
         transactionList.dispatch({ type: 'CHANGE_PARAMS', page })

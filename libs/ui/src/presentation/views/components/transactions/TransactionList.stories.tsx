@@ -14,6 +14,8 @@ const defaultArgs = {
   onPaymentStatusChange: fn(),
   source: 'all' as const,
   onSourceChange: fn(),
+  fulfillment: 'all' as const,
+  onFulfillmentChange: fn(),
   transactions: mockTransactions,
   currentPage: 1,
   onPageChange: fn(),
@@ -102,5 +104,17 @@ export const FulfillmentStatuses: Story = {
     variant: { type: 'loaded' },
     transactions: [...mockTransactions, mockOrderTransactionReady],
     totalItem: 3,
+  },
+};
+
+export const FilteredByFulfillment: Story = {
+  args: {
+    variant: { type: 'loaded' },
+    source: 'order' as const,
+    fulfillment: 'preparing' as const,
+    transactions: [...mockTransactions, mockOrderTransactionReady].filter(
+      (t) => t.source === 'order' && t.completedAt === null
+    ),
+    totalItem: 1,
   },
 };
