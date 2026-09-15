@@ -218,9 +218,18 @@ The derived status, used in both UIs and never stored:
 | `NULL` | `preparing` | `Preparing` | `Sedang disiapkan` |
 | set | `ready` | `Ready` | `Siap diambil` |
 
-Fulfilment is **only defined for `source = 'order'`** (D2). A POS transaction is handed over
-across the counter in the same interaction that pays for it; it has no preparation window to
-track, and `completed_at` stays `NULL` on it forever without meaning "outstanding".
+Fulfilment is **only defined for `source = 'order'`** (D2). There are three ways a transaction
+gets created in this system, and only one of them ever writes this column:
+
+| Created by | `source` | `completed_at` | Why |
+| --- | --- | --- | --- |
+| **Order app checkout** — `PaymentUsecase.Checkout` (`payment_usecase.go:127`) | `order` | `NULL`, then set when the barista marks it ready | The only path this feature acts on. |
+| **POS** — `TransactionUsecase.CreateTransaction` (`transaction_usecase.go:42`) | `pos` (defaulted when blank) | **`NULL` forever** | Paid and handed across the counter in one interaction. There is no preparation window to track. |
+| **Rental checkout** — `RentalUsecase.CheckoutRentals` (`rental_usecase.go:90`) | see the note below | **`NULL` forever** | The guest already has the board game; checkout is the *end* of the interaction, so there is nothing left to prepare. |
+
+`NULL` therefore carries two different meanings depending on the row: *not yet ready* on an order
+transaction, and *not applicable* everywhere else. That overload is safe only because every read
+of the column is paired with a source guard — see D22, which is the rule that keeps it safe.
 
 ### FR-2 — Complete and uncomplete endpoints
 
@@ -243,6 +252,35 @@ Both behind `CheckAuth`, both returning `SuccessResponse`, both shaped exactly l
 balances or stock: fulfilment is orthogonal to the money, which `pay`/`unpay` already own.
 
 These two are the only writers of the column, in this PRD and under the KDS MVP (D21).
+
+#### Pre-existing: rental transactions have a blank `source`
+
+Tracing the rental path for the table above turned up a bug that predates this PRD and is live
+today. `RentalUsecase.CheckoutRentals` builds its `Transaction{}` without a `Source`
+(`rental_usecase.go:93`) and hands it to `usecase.transactionRepository.CreateTransaction`
+(`rental_usecase.go:164`) — **the repository, not the use case** — so the
+`if transaction.Source == "" { transaction.Source = TransactionSourcePos }` default at
+`transaction_usecase.go:45` never runs. `RentalUsecase` holds no `TransactionUsecase` at all. The
+MySQL transformer then writes `Source: string(domainTransaction.Source)`, i.e. `""`
+(`data/mysql/transaction_transformer.go:21`), and because no entity in `apps/api/data/mysql/`
+carries a `gorm:"default:..."` tag, GORM includes the column in the `INSERT` and the schema's
+`DEFAULT 'pos'` never applies. Every rental checkout lands with `source = ''`. No test catches it
+— all five `CheckoutRentals` cases match the transaction with `gomock.Any()`.
+
+**Its live symptom is in the POS today:** the Source filter set to `POS` runs
+`WHERE source = 'pos'` (`data/mysql/transaction_repo.go:45`) and silently omits every rental
+checkout.
+
+**This PRD is correct either way** — `''` is not `'order'`, so rentals are excluded from the
+badge, the filter and the complete endpoint exactly as intended. It is recorded here because it
+makes "every row is `pos` or `order`" false in the data, which is a trap for anyone who later
+writes the source guard as `source != 'order'` instead of `source = 'order'`.
+
+**Recommended fix, as its own PR before or alongside Phase 1** (it is not this PRD's to make, and
+bundling it would hide a behaviour change inside a schema phase): set `Source` explicitly in
+`CheckoutRentals`, and backfill with `UPDATE transactions SET source = 'pos' WHERE source = ''`.
+Confirm the row count first — `SELECT source, COUNT(*) FROM transactions GROUP BY source` — since
+the GORM behaviour above is read from the code, not observed against the database.
 
 ### FR-3 — `fulfillment` filter on the transaction list
 
@@ -424,10 +462,27 @@ obvious next operator question after this ships.
 asked for at the price of a join on `GetTransactionList`, the hottest query in the POS.
 
 **D2 — Fulfilment applies only to `source = 'order'`.**
-A POS transaction is paid and handed over in one counter interaction; giving it a preparation
-state would put every historical POS row into the barista's outstanding list. The guard lives in
-the Go use case (FR-2), not only in the UI, so a stray API call cannot create a state that means
-nothing.
+A POS transaction is paid and handed over in one counter interaction, and a rental checkout ends
+an interaction rather than starting one — the guest already has the board game. Neither has a
+preparation window, and giving them one would put every historical POS row and every rental into
+the barista's outstanding list. The guard is `Source == TransactionSourceOrder` in the Go use
+case (FR-2), not only in the UI, so a stray API call cannot create a state that means nothing.
+
+**D22 — `completed_at` is never read without a source guard.**
+The column means *not yet ready* on an order transaction and *not applicable* on every other row,
+so `WHERE completed_at IS NULL` on its own is not a question with a correct answer — it returns
+every POS sale and every rental ever recorded. Three consequences, each already specified above
+rather than left to a reader's discipline:
+
+- the `fulfillment` filter adds `source = 'order'` server-side (D5), so the contract cannot be
+  used to ask the ambiguous question;
+- `FulfillmentBadge` renders only when `source === 'order'` (FR-5), so no POS or rental row shows
+  a fulfilment state;
+- `CompleteTransaction` rejects any other source (FR-2), so no other row can acquire one.
+
+*Alternative rejected:* back-filling `completed_at = created_at` on non-order rows to make `NULL`
+mean one thing. It buys a simpler predicate by writing a timestamp that asserts a fulfilment event
+which never happened, and it would land in every prep-time statistic computed later.
 
 **D3 — `complete` is its own endpoint, not a field on `PUT /transactions/{id}`.**
 That route takes a full `TransactionRequest` and rewrites items, coupons and totals; routing a
@@ -860,7 +915,8 @@ seconds, but it is a single-venue assumption worth re-checking before running it
 | **Push notifications, WebSocket, SSE** | D16. |
 | **Prep-time estimates or countdowns** | D11. |
 | **Prep-time statistics** | `completed_at - created_at` makes them possible; nothing in this PRD reports on them. |
-| **Fulfilment for POS transactions** | D2. |
+| **Fulfilment for POS transactions and rental checkouts** | D2 — neither has a preparation window. Both keep `completed_at = NULL` permanently, meaning *not applicable* (D22). |
+| **Fixing the blank `source` on rental checkouts** | A pre-existing bug this PRD surfaced but does not depend on — see the note under FR-2. Its own PR. |
 | **Notifying the guest of `uncomplete`** | D10. |
 | **pos-mobile parity** | `libs/ui/src/app/pos/TransactionList.tsx` is shared, so the badge follows for free, but no mobile-specific work, story or test is in scope. |
 
