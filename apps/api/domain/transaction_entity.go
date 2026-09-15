@@ -60,6 +60,7 @@ type Transaction struct {
 	TransactionCoupons []TransactionCoupon
 	PaidAmount         float32
 	PaidAt             *time.Time
+	CompletedAt        *time.Time
 	DeletedAt          *time.Time
 }
 
