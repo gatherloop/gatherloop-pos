@@ -28,7 +28,7 @@ export const OrderLayout = ({ children, header, footer }: OrderLayoutProps) => {
         backgroundColor="$background"
       >
         {header}
-        <ScrollView flex={1}>
+        <ScrollView flex={1} minHeight={0}>
           <YStack
             padding="$4"
             gap="$3"
