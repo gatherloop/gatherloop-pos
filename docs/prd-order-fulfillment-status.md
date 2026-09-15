@@ -1,6 +1,6 @@
 # PRD: Order Fulfilment Status — Closing the Loop Between the Barista and the Guest
 
-**Status:** Draft for review — revised once, see below
+**Status:** Draft for review — revised twice, see below
 **Scope:** the half of the order-app flow that runs *after* payment succeeds — the barista
 marking an order ready, and the guest finding out.
 
@@ -17,6 +17,8 @@ the originals:
    reassure would have been the thing making people anxious. **D11 is superseded by D17:** the
    guest gets motion with no duration attached; elapsed time moves to the staff side, where
    it is the input to a decision rather than a source of dread.
+   *(The staff-side counter this pass introduced was itself removed in the second pass — no
+   duration is rendered anywhere. See D17 as restated.)*
 
 2. **Fulfilment is recorded per transaction item, not per transaction.** The first draft put
    `completed_at` on `transactions` alone. That does not survive contact with a KDS, because this
@@ -28,8 +30,36 @@ the originals:
    D18:** the timestamp lands on `transaction_items`, with a maintained roll-up on `transactions`
    so the POS list query stays a single indexed predicate. See
    [Designing for a future KDS](#designing-for-a-future-kds).
+   *(Reversed in the second pass — the KDS MVP has no per-station bump. See D21.)*
 
 Neither change moves the phase count or alters the guest-facing contract.
+
+## Revision note (second review pass)
+
+Three changes, all reductions, all recorded as decisions rather than edited into the originals:
+
+1. **No elapsed time anywhere — not on the guest's screen and not in the POS.** The first revision
+   took the counter off the guest's phone and moved it onto the barista's row. Review removed it
+   there too. The row already carries `TRANSACTION DATE` as a wall-clock time
+   (`TransactionListItem.tsx:157`), so a derived *"· 14m"* restates what is on screen in a form
+   that has to tick. **D17 is restated:** no duration is rendered in any surface this PRD touches.
+
+2. **The 20-minute help affordance is dropped.** It was my own addition, not a requirement, and
+   it reintroduced the clock to the guest's screen through a side door — the threshold has to be
+   picked, tuned and explained, to soften a problem the venue solves by the barista calling the
+   number out. Removed from FR-7, along with the two open questions that existed only to tune it.
+
+3. **Completion stays all-or-nothing at the transaction, even under a future KDS.** **D18 and D20
+   are superseded by D21.** I had inferred from the two printed slips that a KDS would bump per
+   station, and sized the data model for that. That inference was wrong: splitting a ticket is
+   about *routing work to two people*, not about *recording two completions*. The venue's KDS MVP
+   has one completion event for the whole order — an order is done when the kitchen and the bar
+   are both finished — so the item-grain column and the reserved `partially_ready` enum value
+   were both paying for a requirement that does not exist. `completed_at` returns to
+   `transactions` alone, and the migration goes back to one table.
+
+The net effect is a smaller PRD: one column instead of two, no roll-up helper, a two-value enum,
+and Phase 2 loses its all-items write. Phase count is unchanged.
 
 ---
 
@@ -166,38 +196,27 @@ D wins on precedent and on information content: `paid_at` and `deleted_at` alrea
 statistics) while an enum throws it away. F buys a state history nobody has asked for, at the
 cost of a join on the hottest list query in the POS. See D1.
 
-*Revised:* the **grain** of option D moved from the transaction to the transaction item after the
-first review — the choice of a timestamp over E and F is unaffected, and is what makes that move
-cheap. See D18.
+*Revised twice:* the **grain** of option D moved to the transaction item after the first review
+and back to the transaction after the second (D18, then D21). Option D itself — a timestamp over
+an enum or a side table — was never in question, and is what made both moves cheap.
 
 ---
 
 ## Proposed Solution
 
-### FR-1 — `completed_at`, on items with a roll-up on the transaction
+### FR-1 — `transactions.completed_at`
 
-Two nullable timestamps, at two grains (D18):
+One nullable timestamp on `transactions`, set when a barista marks the order ready and cleared
+when they undo that. An order is complete or it is not — there is no partial state, now or under
+the KDS MVP (D21). `Transaction.completedAt` is exposed on the API contract for every transaction
+and is `null` for all existing rows after the migration.
 
-- **`transaction_items.completed_at`** — the truth. One item, one station, one moment it was
-  finished. This is the grain the venue already works at: the kitchen slip and the bar slip are
-  disjoint sets of items from the same transaction.
-- **`transactions.completed_at`** — a roll-up maintained in the same DB transaction as any write
-  to the item timestamps: set to the latest item completion when every item is complete, cleared
-  to `NULL` the moment any item is not. Never written independently, never the thing a caller
-  updates directly.
+The derived status, used in both UIs and never stored:
 
-Both are exposed on the API contract (`TransactionItem.completedAt`, `Transaction.completedAt`)
-and are `null` for all existing rows after the migration.
-
-The derived status, read from the roll-up, used in both UIs and never stored:
-
-| `transactions.completed_at` | Fulfilment status | POS label | Order-app copy |
+| `completed_at` | Fulfilment status | POS label | Order-app copy |
 | --- | --- | --- | --- |
 | `NULL` | `preparing` | `Preparing` | `Sedang disiapkan` |
 | set | `ready` | `Ready` | `Siap diambil` |
-
-A third value, `partially_ready`, is declared in the contract enum from day one and never emitted
-until something wants it — see D20.
 
 Fulfilment is **only defined for `source = 'order'`** (D2). A POS transaction is handed over
 across the counter in the same interaction that pays for it; it has no preparation window to
@@ -213,21 +232,17 @@ PUT /transactions/{transactionId}/uncomplete
 Both behind `CheckAuth`, both returning `SuccessResponse`, both shaped exactly like the existing
 `/pay` and `/unpay` routes in `apps/api/presentation/restapi/transaction_route.go`.
 
-`CompleteTransaction` stamps **every** item of the transaction and then recomputes the roll-up,
-inside one `BeginTransaction` callback. Its guards, each returning `domain.BadRequest` so
-`ToErrorCode` maps it to a 4xx:
+`CompleteTransaction` guards, each returning `domain.BadRequest` so `ToErrorCode` maps it to a
+4xx:
 
 1. the transaction exists and is not soft-deleted (`NotFound` otherwise);
 2. `Source == TransactionSourceOrder` — completing a POS transaction is meaningless;
-3. the roll-up is `nil` — completing twice is a no-op the caller should know about.
+3. `CompletedAt == nil` — completing twice is a no-op the caller should know about.
 
-`UncompleteTransaction` mirrors it: clears every item timestamp, clears the roll-up, and requires
-the roll-up to be set. Neither touches wallets, balances or stock: fulfilment is orthogonal to
-the money, which `pay`/`unpay` already own.
+`UncompleteTransaction` mirrors it, requiring `CompletedAt != nil`. Neither touches wallets,
+balances or stock: fulfilment is orthogonal to the money, which `pay`/`unpay` already own.
 
-These two are the only writers of the item timestamps in this PRD, and they always write all
-items at once — the per-item and per-station endpoints a KDS needs are additive on top of the
-same columns and the same roll-up rule (D18).
+These two are the only writers of the column, in this PRD and under the KDS MVP (D21).
 
 ### FR-3 — `fulfillment` filter on the transaction list
 
@@ -260,10 +275,10 @@ In `TransactionListItem`, a fulfilment badge renders in the same `YStack` as the
 - `Preparing` — `$orange5` / `$orange11`, matching `OrderBadge`'s shape exactly;
 - `Ready` — `$green5` / `$green11`.
 
-A `Preparing` badge also carries the **ticket age** — `Preparing · 14m`, from `createdAt`. This is
-the same number the first draft put on the guest's screen and D17 removed from it: on the
-barista's side it is the input to *which order do I make next*, and it is what a KDS queue will
-sort and colour by (D17, D19).
+The badge is a label and nothing else — no ticket age, no timer (D17). The row already carries
+`TRANSACTION DATE` in its `footerItems`, and the list is sorted by `created_at`, so a barista
+scanning for the oldest outstanding order has both the ordering and the wall-clock time without
+anything on screen having to tick.
 
 `TransactionDetail` gains the same status as one more `Card` row in its stack, alongside the
 existing `MapPin` table row and `ConciergeBell` pager row, with the completion time when there is
@@ -301,10 +316,9 @@ Success toasts and refetches the list, exactly as `TransactionDeleteUsecase` doe
    exists today).
 4. **The waiting message** — *"Pesanan Anda sedang disiapkan. Mohon tunggu di meja Anda, kami
    akan memberi tahu di halaman ini saat pesanan siap diambil."*
-5. **A help affordance after a long wait** — past `LONG_WAIT_THRESHOLD_MS` (20 minutes, from
-   `payment.paidAt`) the message block gains *"Menunggu lebih lama dari biasanya? Tanyakan ke
-   kasir dengan nomor #12."* The threshold is read from the clock but the **duration is never
-   rendered** (D17): the guest gets a way to act, not a number to watch.
+
+The screen never reads the clock, in any branch (D17). `payment.paidAt` stays on the entity
+because the payment slice already carries it; nothing on this screen consults it.
 
 **`ready`** — unmistakably different at a glance: green, a filled check, the number still large,
 and the instruction that is the entire point — *"Pesanan siap! Silakan ambil di kasir dengan
@@ -339,39 +353,48 @@ table QR is a complete recovery path (D14).
 ## Designing for a future KDS
 
 A Kitchen Display System is not in this PRD, but it is the obvious next thing to build on top of
-it, and the review question was whether this design survives it. This section is the answer, and
-it is why FR-1 records fulfilment per item rather than per transaction.
+it, and the review question was whether this design survives it. This section is the answer.
 
-### What this venue already has
+### The shape of the KDS MVP, as confirmed in review
 
-The station split is not hypothetical and is not new. `categories.station` landed in migration
-`000015_add_category_station` with values `BAR`, `KITCHEN` and `NONE`, it is editable from the
-POS category form, and `buildOrderSlipPayload` (`libs/ui/src/utils/print.ts:103`) already uses it
-to cut one transaction into two physical slips:
+**One order, one completion event.** A guest's order is done when the kitchen *and* the bar have
+both finished everything on it; there is no state in which half the order is complete and the
+system knows about it. The KDS MVP therefore has no per-item and no per-station bump, and needs
+no fulfilment data finer than the transaction (D21).
+
+This is worth stating explicitly because the data already invites the opposite conclusion.
+`categories.station` landed in migration `000015_add_category_station` with values `BAR`,
+`KITCHEN` and `NONE`, it is editable from the POS category form, and `buildOrderSlipPayload`
+(`libs/ui/src/utils/print.ts:103`) already cuts one transaction into two physical slips:
 
 ```ts
 const toOrderSlipItems = (station: OrderSlipStation): OrderSlipItem[] =>
   transaction.items.filter(({ variant }) => variant.product.category.station === station)
 ```
 
-The item → variant → product → category → station chain is already loaded and already threaded
-into the POS transaction list. **A guest who orders a latte and a sandwich already generates two
-tickets for two people at two machines.** A KDS is, structurally, those two slips on two screens
-with a bump button instead of paper.
+So a guest ordering a latte and a sandwich already generates two tickets for two people at two
+machines — and it would be easy to read that as *two completions*. It is not. The station split
+routes **work**; it does not partition **doneness**. A KDS inherits the same two-screen routing
+and the same single bump.
 
 ### What a KDS needs, and where this design leaves it
 
-| KDS requirement | Status after this PRD |
+| KDS MVP requirement | Status after this PRD |
 | --- | --- |
-| A queue of outstanding tickets, oldest first | **Served.** `fulfillment=preparing` (FR-3) is that query, and `idx_transactions_source_completed_at` is its index. |
-| Route each item to a station | **Served, already.** `category.station`, as above. No new data. |
-| Bump one station's half of an order independently | **Possible without a migration.** Item-grain timestamps (D18) express *bar done, kitchen not*; a per-station bump is a new endpoint over existing columns. |
-| Ticket age, and colour thresholds on it | **Served.** `transactions.created_at`, surfaced on the POS badge by FR-5 (D17). |
-| Un-bump / recall | **Served.** `uncomplete` (D4), which a per-item endpoint would narrow, not replace. |
-| An intermediate "started" state | **Additive.** A second nullable timestamp, `started_at`, at whichever grain wants it. Timestamps compose; an enum column would not have (D1). |
-| A partially-ready order, visible as such | **Additive.** Derivable from the item timestamps on day one; the contract already reserves the enum value (D20). |
-| Who bumped it | **Additive, but not free** — see Deferred below. |
+| A queue of outstanding tickets, oldest first | **Served.** `fulfillment=preparing` (FR-3) is that query, `idx_transactions_source_completed_at` is its index, and `created_at` is the sort. |
+| Route each item to a station, two screens | **Served, already.** `category.station` and the `buildOrderSlipPayload` split, as above. No new data. |
+| One bump that completes the whole order | **Served.** `PUT /transactions/{id}/complete` (FR-2) is that endpoint; a KDS screen calls the same route the POS row menu does. |
+| Un-bump / recall | **Served.** `uncomplete` (D4). |
+| Ticket age on the KDS display | **Derivable.** `created_at` is on every row. A KDS is an always-on screen a metre from the person cooking, which is a different surface from both a guest's phone and a POS list — whether it shows an age is that PRD's call, not this one's (D17). |
 | An always-on display that refreshes itself | **Served by the same polling** the guest screen uses (D9, D16). |
+
+Beyond the MVP, and deliberately not designed for here:
+
+| Later, if it is ever wanted | Cost |
+| --- | --- |
+| Per-station or per-item bump | **A migration, but a safe one.** `transaction_items.completed_at`, backfilled by copying each transaction's timestamp down onto its items — every historical order was completed all at once, so the backfill is exactly true, not an approximation (D21). |
+| An intermediate "started" state | **Additive.** A second nullable timestamp, `started_at`. Timestamps compose; an enum column would not have (D1). |
+| Who bumped it | **Additive, but not free** — see below. |
 
 ### The one thing that is not free later
 
@@ -500,23 +523,51 @@ not blur that line.
 See Option C. Recorded here so the next person does not re-open it without the operational
 argument.
 
-**D17 — The guest sees motion, never a duration. Elapsed time is a staff-side number.**
-*Supersedes D11.* A counter on the guest's screen is a number that gets worse the longer it runs,
-on a wait whose length the guest cannot influence and the venue cannot reliably bound —
-preparation genuinely runs long at peak, and that is exactly when the counter is largest and the
-guest is least happy to read it. The indicator's job is to prove the page is not frozen, and that
-needs motion, not measurement: a pulsing ring, an animated ellipsis, and a dot that flashes on
-each successful poll all do it with no number attached.
+**D17 — No elapsed duration is rendered anywhere.** *Supersedes D11; restated after the second
+review pass, which removed the staff-side exception this decision originally carved out.*
 
-The same elapsed time is genuinely useful one metre away, on the barista's side, where it answers
-*which order do I make next* and is what a KDS queue sorts and colours by — so it moves there
-(FR-5) rather than being discarded. The guest's only remaining use of the clock is invisible: the
-20-minute help affordance in FR-7, which turns a long wait into an action rather than a display.
-*Alternative rejected:* a progress bar that fills over an assumed prep time — it is a countdown
-wearing a different hat, and it lies with more confidence than a counter does.
+A counter on the guest's screen is a number that gets worse the longer it runs, on a wait the
+guest cannot influence and the venue cannot reliably bound — preparation genuinely runs long at
+peak, which is exactly when the counter is largest and least welcome. The indicator's job is to
+prove the page is not frozen, and that needs motion, not measurement: a pulsing ring, an animated
+ellipsis, and a dot that flashes on each successful poll all do it with no number attached.
 
-**D18 — `completed_at` lives on `transaction_items`, with a maintained roll-up on
-`transactions`.** *Amends D1.* This venue is already two stations — `buildOrderSlipPayload` cuts
+The first revision moved the counter to the POS badge on the argument that it drives *which order
+do I make next*. It does not earn its place there either: `TransactionListItem` already renders
+`TRANSACTION DATE` as a wall-clock time in its `footerItems`, and the list is already sorted by
+`created_at`, so the barista has both the ordering and the timestamp. A derived *"· 14m"* restates
+that in a form that has to re-render every minute — a ticking element in a list, for no
+information the row does not already carry.
+
+*Alternatives rejected:* a progress bar filling over an assumed prep time (a countdown wearing a
+different hat, lying with more confidence than a counter); and a long-wait help affordance keyed
+to a threshold (dropped in the second pass — it reintroduces the clock through a side door, needs
+a number picked and tuned, and softens a problem the venue solves by calling the order number
+out).
+
+**D21 — Completion is all-or-nothing at the transaction, under the KDS MVP too.**
+*Supersedes D18 and D20.* D18 read the two-slip print as evidence that a KDS would bump per
+station and sized the schema for it. The inference was wrong: splitting a ticket routes **work**
+to two people, it does not partition **doneness**. The venue's KDS MVP has one completion event
+for the whole order — done when the kitchen and the bar are both finished — so an item-grain
+column and a reserved `partially_ready` enum value both paid for a requirement that does not
+exist. `completed_at` stays on `transactions` alone; the enum stays `preparing | ready`; the
+migration touches one table.
+
+What made D18 defensible is what makes reverting it safe: a timestamp at the transaction grain
+(D1) can be pushed down to items later by copying each transaction's value onto its rows, and
+because every order really was completed in one action, that backfill is exactly true rather than
+an approximation. The option stays open at the cost of a migration, and is priced in the KDS
+section above.
+*Alternative rejected:* keeping the item column unused "just in case" — a column nothing writes
+is a column that drifts, and the next reader has to work out whether it or the transaction is
+authoritative.
+
+**D18 — ~~`completed_at` lives on `transaction_items`, with a maintained roll-up on
+`transactions`~~. Superseded by D21** — the KDS MVP has one completion event per order, so the
+item grain paid for a requirement that does not exist. Retained below for the reasoning, which
+D21 answers directly.
+*Amends D1.* This venue is already two stations — `buildOrderSlipPayload` cuts
 every transaction into a `BAR` slip and a `KITCHEN` slip by `category.station`, and has since
 migration `000015`. A single flag on the transaction cannot say *bar done, kitchen still
 cooking*, which is the first sentence two KDS screens will need to speak. Putting the timestamp
@@ -541,13 +592,12 @@ POS, and already drives the two-slip print. This PRD neither extends nor depends
 declines to design something that would contradict it. Recorded so a KDS spec knows the routing
 question is settled and the remaining work is a per-station query and a bump endpoint.
 
-**D20 — The fulfilment enum declares `partially_ready` from day one and never emits it.**
-`preparing | partially_ready | ready` in `api.yaml`, with the API emitting only the first and
-last until something wants the middle. The frontend's `match(...).exhaustive()` handles all three
-immediately, mapping `partially_ready` onto the preparing screen. The value costs one enum entry
-and one match arm today; discovering it later means widening an enum that four exhaustive matches
-depend on, in the same PR as the feature that needs it. With item-grain timestamps (D18) the
-state is real from the first day — it simply has no UI yet.
+**D20 — ~~The fulfilment enum declares `partially_ready` from day one~~. Superseded by D21.**
+The reserved value was insurance against a partial state becoming real on day one, which it does
+only under D18's item grain. With completion all-or-nothing, a partially-ready order cannot occur
+— and an enum value the API can never emit is not cheap insurance, it is a branch every
+`match(...).exhaustive()` must handle to describe something that does not exist. The enum is
+`preparing | ready`.
 
 ---
 
@@ -558,8 +608,8 @@ acceptance check.
 
 | # | Phase | Layer | Depends on |
 | --- | --- | --- | --- |
-| 1 | `completed_at` on items and transactions | API | — |
-| 2 | Complete / uncomplete endpoints + roll-up | API | 1 |
+| 1 | `completed_at` on transactions | API | — |
+| 2 | Complete / uncomplete endpoints | API | 1 |
 | 3 | `fulfillment` list filter | API | 1 |
 | 4 | Payment response carries number + status | API | 1 |
 | 5 | Frontend transaction slice: entity, repository, use case | libs/ui | 2 |
@@ -582,41 +632,34 @@ track (6–8) and the order track (9–12) are independent of each other.
 
 ---
 
-### Phase 1 — `completed_at` on items and transactions (API)
+### Phase 1 — `completed_at` on transactions (API)
 
-Migration `000028_add_fulfillment_completed_at` (next free number; `000027_add_transaction_number`
-is the latest) adding `completed_at TIMESTAMP NULL` to **both** `transaction_items` and
-`transactions` (the latter `AFTER paid_at`), plus
+Migration `000028_add_transaction_completed_at` (next free number; `000027_add_transaction_number`
+is the latest) adding `completed_at TIMESTAMP NULL AFTER paid_at` plus
 `KEY idx_transactions_source_completed_at (source, completed_at)` — the composite index the
-Phase 3 filter needs — with a `down` that drops all three. `CompletedAt *time.Time` on
-`Transaction` and `TransactionItem` in `apps/api/domain/transaction_entity.go` and
-`apps/api/data/mysql/transaction_entity.go`, carried through
-`apps/api/data/mysql/transaction_transformer.go` and
+Phase 3 filter needs — with a `down` that drops both. `CompletedAt *time.Time` on
+`apps/api/domain/transaction_entity.go` and `apps/api/data/mysql/transaction_entity.go`, carried
+through `apps/api/data/mysql/transaction_transformer.go` and
 `apps/api/presentation/restapi/transaction_transformer.go`, and `completedAt` (optional,
-`date-time`) on both the `Transaction` and `TransactionItem` schemas in `api.yaml`. No behaviour
-change — nothing writes either column yet.
+`date-time`) on the `Transaction` schema in `api.yaml`. No behaviour change — nothing writes the
+column yet.
 
 **Acceptance:** `npx nx run api:test` green;
 `MIGRATIONS_DIR=data/mysql/migrations make migrate-up && make migrate-down` clean both ways;
-`GET /transactions` omits `completedAt` at both levels for every existing row.
+`GET /transactions` omits `completedAt` for every existing row.
 
-### Phase 2 — Complete and uncomplete endpoints, with the roll-up (API)
+### Phase 2 — Complete and uncomplete endpoints (API)
 
 `CompleteTransaction(ctx, id)` and `UncompleteTransaction(ctx, id)` on `TransactionUsecase` with
-the FR-2 guards, returning `*domain.Error`, each stamping or clearing every item and then
-recomputing the transaction roll-up inside one `BeginTransaction` callback. The roll-up rule
-lives in one exported helper on `apps/api/domain/transaction_entity.go` —
-*latest item timestamp if every item has one, else `nil`* — so the per-station bump a KDS adds
-later calls the same function rather than reimplementing the rule. Repository methods on
+the FR-2 guards, returning `*domain.Error`; `CompleteTransaction`/`UncompleteTransaction` on
 `TransactionRepository` implemented in `apps/api/data/mysql/transaction_repo.go`; mocks
 regenerated with `go generate ./...`; handler methods, the two `PUT` routes under `CheckAuth`,
 and the `api.yaml` operations with their `SuccessResponse` and 400/404 responses.
 
-**Acceptance:** a table test over the roll-up helper covering no items, some items, all items and
-the latest-timestamp pick; `transaction_usecase_test.go` covers complete, uncomplete,
-double-complete, uncomplete-when-not-complete and complete-on-a-POS-transaction (each asserting
-the `domain.Error` type) and asserts item timestamps and roll-up move together;
-`transaction_handler_test.go` covers the two routes; `npx nx run api:test` green.
+**Acceptance:** `transaction_usecase_test.go` covers complete, uncomplete, double-complete,
+uncomplete-when-not-complete and complete-on-a-POS-transaction (each asserting the
+`domain.Error` type); `transaction_handler_test.go` covers the two routes; `npx nx run api:test`
+green.
 
 ### Phase 3 — `fulfillment` list filter (API)
 
@@ -633,10 +676,10 @@ neither non-`all` value. `npx nx run api:test` green.
 
 ### Phase 4 — Payment response carries the number and status (API)
 
-`transactionNumber` and `fulfillmentStatus` added as required fields on the `Payment` schema, the
-latter with all three enum values declared and only two emitted (D20), and both derived in
-`ToApiPayment` from the `domain.Transaction` parameter it already receives.
-`payment_transformer_test.go` gains cases for a transaction with and without a roll-up.
+`transactionNumber` and `fulfillmentStatus` (`preparing | ready`) added as required fields on the
+`Payment` schema, both derived in `ToApiPayment` from the `domain.Transaction` parameter it
+already receives. `payment_transformer_test.go` gains cases for a transaction with and without
+`CompletedAt`.
 Nothing else in the payment path changes — `GetPaymentStatus` already returns the transaction.
 
 **Acceptance:** `payment_transformer_test.go` covers both statuses and asserts the number is the
@@ -644,8 +687,8 @@ daily `TransactionNumber`, not the id; `npx nx run api:test` green.
 
 ### Phase 5 — Frontend transaction slice: entity, repository, use case (libs/ui)
 
-No UI. `completedAt: string | null` on both the `Transaction` and `TransactionItem` entities, plus
-`TransactionFulfillmentStatus = 'preparing' | 'partially_ready' | 'ready'` and
+No UI. `completedAt: string | null` on the `Transaction` entity, plus
+`TransactionFulfillmentStatus = 'preparing' | 'ready'` and
 `TransactionFulfillmentFilter = TransactionFulfillmentStatus | 'all'` in
 `libs/ui/src/domain/entities/Transaction.ts`. `completeTransaction` / `uncompleteTransaction` on
 `TransactionRepository`, implemented in `data/api/transaction.ts` and `data/mock/transaction.ts`.
@@ -660,14 +703,14 @@ Barrel exports at `domain/entities`, `domain/usecases`, `data/api`, `data/mock`.
 ### Phase 6 — POS shows the fulfilment badge (read-only)
 
 `FulfillmentBadge` beside `OrderBadge` in `TransactionListItem`, rendered only for
-`source === 'order'` and carrying the ticket age while preparing (FR-5, D17), plus the status row
-in `TransactionDetail`. `completedAt` threaded from `TransactionList` → `TransactionListItem` and
-from `TransactionDetailScreen` → `TransactionDetail`. Stories added for preparing, preparing-and-old
-and ready in `TransactionListItem.stories.tsx`, `TransactionList.stories.tsx` and
+`source === 'order'` — a static label, no age and no timer (FR-5, D17) — plus the status row in
+`TransactionDetail`. `completedAt` threaded from `TransactionList` → `TransactionListItem` and
+from `TransactionDetailScreen` → `TransactionDetail`. Stories added for preparing and ready in
+`TransactionListItem.stories.tsx`, `TransactionList.stories.tsx` and
 `TransactionDetail.stories.tsx`. No action, no new use case.
 
-**Acceptance:** Storybook (`npx nx run ui:storybook`) shows an order row badged `Preparing · 14m`,
-one badged `Ready` with no age, and a POS row with neither badge; `npx nx run ui:test` green.
+**Acceptance:** Storybook (`npx nx run ui:storybook`) shows an order row badged `Preparing`, one
+badged `Ready`, and a POS row with neither badge; `npx nx run ui:test` green.
 
 ### Phase 7 — POS marks an order ready
 
@@ -716,16 +759,15 @@ unchanged.
 `OrderPreparingView` and `OrderReadyView` in
 `libs/ui/src/presentation/views/components/orderStatus/`, with stories, implementing FR-7 — the
 large transaction-number badge, the pulsing ring, the animated ellipsis and the poll-flash dot
-(no duration anywhere, D17), the table label, the item list, the message block and the 20-minute
-help affordance. `OrderStatusScreen`'s `loaded` variant is
+(no duration anywhere, D17), the table label, the item list and the message block.
+`OrderStatusScreen`'s `loaded` variant is
 replaced by `preparing` and `ready`; `OrderStatusHandler` maps the two states onto them. No
 hand-written `useMemo` / `useCallback` / `React.memo` — the React Compiler owns memoisation
 ([`docs/trd-react-compiler-adoption.md`](./trd-react-compiler-adoption.md)).
 
-**Acceptance:** stories for both views, including the past-threshold help affordance; a handler
-test asserts that a `preparing` payment renders the number and the waiting copy, that a `ready`
-payment renders the pickup instruction, and that **no elapsed duration is rendered in any state**
-(D17); `npx nx run ui:test` green.
+**Acceptance:** stories for both views; a handler test asserts that a `preparing` payment renders
+the number and the waiting copy, that a `ready` payment renders the pickup instruction, and that
+**no elapsed duration is rendered in any state** (D17); `npx nx run ui:test` green.
 
 ### Phase 11 — Leave confirmation while preparing
 
@@ -786,30 +828,23 @@ read with no gateway call. At twenty concurrent tables that is two requests per 
 of magnitude below anything `apps/api` currently strains at. Revisit only if concurrency grows
 tenfold.
 
-**Clock skew.** `payment.paidAt` is a server timestamp compared against the guest's device clock,
-and `createdAt` likewise against the POS machine's. After D17 the guest renders no duration at
-all, so skew can only mis-time the 20-minute help affordance — it appears early or late, and
-nothing looks broken. The POS badge age is the visible one, and a POS terminal's clock is
-operator-managed. Clamp both at zero.
+**A guest with no time signal cannot tell 5 minutes from 40.** The accepted cost of D17, with no
+in-app mitigation by design. The fallback is the one the venue already uses and which this
+feature does not remove: the barista calls the number out, and the number is the largest thing on
+the guest's screen precisely so that works. A guest who thinks something has gone wrong is ten
+metres from a counter.
 
-**A guest with no time signal cannot tell 5 minutes from 40.** The cost of D17, accepted
-deliberately. The 20-minute help affordance is the mitigation: the guest gets an action —
-*ask at the counter with your number* — at the point where a wait stops being normal, without
-ever being shown a number that makes the wait feel worse.
-
-**The roll-up drifts from the item timestamps.** Two representations of one fact (D18). Contained
-by there being exactly one writer — the roll-up is recomputed in the same `BeginTransaction`
-callback as any item write, by one helper, and never set directly. The roll-up helper's table
-test is the guard, and the item timestamps are the truth if they ever disagree.
+*Consequence worth noting:* because nothing renders a duration, device clock skew — `paidAt` and
+`createdAt` are server timestamps read on a guest's phone and a POS terminal — has no surface in
+this feature at all. That is a small, real benefit of D17 beyond the UX argument.
 
 **The `uncomplete` action confuses the guest.** Mitigated by D10 — `ready` is terminal, so a guest
 already told to collect never sees the screen revert. The barista's undo fixes the record, not the
 guest's page.
 
-**Migration on large tables.** `ADD COLUMN ... NULL` on `transactions` *and* `transaction_items`
-— the latter being the larger of the two — plus a composite index on a table that also carries
-`idx_transactions_source`. On this deployment's row count this is seconds, but it is a
-single-venue assumption worth re-checking before running it anywhere else.
+**Migration on a large `transactions` table.** `ADD COLUMN ... NULL` plus a composite index on a
+table that also carries `idx_transactions_source`; on this deployment's row count this is
+seconds, but it is a single-venue assumption worth re-checking before running it anywhere else.
 
 ---
 
@@ -818,10 +853,10 @@ single-venue assumption worth re-checking before running it anywhere else.
 | Not doing | Why |
 | --- | --- |
 | **Order history page for the guest** | Named in the acceptance criteria as explicitly deferred. FR-9's resume pointer is the minimum that keeps the leave dialog honest, and is what a history page would read from. |
-| **Per-item and per-station *actions*** (bump the bar's half only) | The acceptance criteria are per-transaction, and one tap meaning "all of it" is the right barista UI today. The *data* is recorded at item grain from Phase 1 (D18), so this is a later endpoint over existing columns, not a migration. |
+| **Per-item and per-station completion** (bump the bar's half only) | Not in the acceptance criteria and not in the KDS MVP either (D21) — an order is done when both stations are finished. Reachable later via a migration whose backfill is exactly true, priced in the KDS section. |
 | **A dedicated kitchen display (KDS)** | Its own PRD. This one is designed not to obstruct it — see [Designing for a future KDS](#designing-for-a-future-kds) for what it inherits and the one thing (`completed_by_user_id`) that still needs groundwork. |
-| **A `started_at` / in-progress state** | Additive later as a second timestamp (D1, D18). Nothing in the acceptance criteria distinguishes "queued" from "being made". |
-| **Showing the guest a duration, ever** | D17. |
+| **A `started_at` / in-progress state** | Additive later as a second timestamp (D1). Nothing in the acceptance criteria distinguishes "queued" from "being made". |
+| **Showing anyone an elapsed duration** | D17 — guest screen and POS alike. |
 | **Push notifications, WebSocket, SSE** | D16. |
 | **Prep-time estimates or countdowns** | D11. |
 | **Prep-time statistics** | `completed_at - created_at` makes them possible; nothing in this PRD reports on them. |
@@ -843,13 +878,9 @@ single-venue assumption worth re-checking before running it anywhere else.
    Adjacent to this feature (arrival, not completion) and not covered by the acceptance criteria.
 4. **How long should the resume pointer live?** Assumed: cleared on `ready`, otherwise expiring
    with the session cookie. A same-day cap may be better.
-5. **Is 20 minutes the right point for the guest's help affordance (FR-7)?** Picked as roughly
-   double a normal wait. It is a single constant, and the only place the guest's screen consults
-   the clock at all — worth setting from the venue's real prep times once the POS badge age
-   (FR-5) has been showing them for a week.
-6. **Should the POS badge colour shift as a ticket ages** (amber past 15 minutes, red past 25)?
-   Deliberately not specced — it is the natural companion to the badge age and the obvious thing
-   a KDS would do, but it wants the same real prep-time data as question 5.
+5. **Should a KDS display a ticket age?** Out of scope here and left open deliberately (D17, KDS
+   section). An always-on screen a metre from the person cooking is a different surface from a
+   guest's phone or a POS list, and the answer belongs to whoever specs it.
 
 ---
 
@@ -865,8 +896,9 @@ single-venue assumption worth re-checking before running it anywhere else.
 4. A guest who navigates away is warned, and can get back by re-scanning the table QR.
 5. No regression to the paid/unpaid flow: `pay`, `unpay` and their wallet-balance effects are
    untouched by every phase in this plan.
-6. A future KDS PRD can add two station screens with a per-station bump without a migration, a
-   contract break, or a change to how `fulfillment=preparing` is queried.
+6. A future KDS PRD can add two station screens over this data with no migration and no contract
+   break: `fulfillment=preparing` is its queue, `category.station` is its routing, and
+   `PUT /transactions/{id}/complete` is its bump.
 
 ---
 
