@@ -4548,6 +4548,8 @@ components:
         - customerName
         - tableLabel
         - items
+        - transactionNumber
+        - fulfillmentStatus
       properties:
         partnerReferenceNo:
           type: string
@@ -4572,6 +4574,12 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PaymentItem'
+        transactionNumber:
+          type: integer
+          format: int64
+        fulfillmentStatus:
+          type: string
+          enum: [preparing, ready]
     PaymentCheckoutRequest:
       type: object
       required:
