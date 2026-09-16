@@ -28,16 +28,18 @@ type VariantValue struct {
 }
 
 type Variant struct {
-	Id            int64
-	ProductId     int64
-	Product       Product
-	Name          string
-	Price         float32
-	Description   *string
-	Recipe        *string
-	Materials     []VariantMaterial
-	DeletedAt     *time.Time
-	CreatedAt     time.Time
-	VariantValues []VariantValue
-	PricingTiers  []PricingTier
+	Id                int64
+	ProductId         int64
+	Product           Product
+	Name              string
+	Price             float32
+	Description       *string
+	Recipe            *string
+	Materials         []VariantMaterial
+	DeletedAt         *time.Time
+	CreatedAt         time.Time
+	VariantValues     []VariantValue
+	PricingTiers      []PricingTier
+	IsAvailable       bool
+	AvailableQuantity *int
 }

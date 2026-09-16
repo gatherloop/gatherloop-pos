@@ -89,18 +89,20 @@ func ToApiVariant(variant domain.Variant) apiContract.Variant {
 	}
 
 	return apiContract.Variant{
-		Id:           variant.Id,
-		Name:         variant.Name,
-		Price:        variant.Price,
-		ProductId:    variant.ProductId,
-		Product:      ToApiProduct(variant.Product),
-		Materials:    apiMaterials,
-		DeletedAt:    variant.DeletedAt,
-		CreatedAt:    variant.CreatedAt,
-		Description:  variant.Description,
-		Recipe:       variant.Recipe,
-		Values:       apiVariantValues,
-		PricingTiers: apiPricingTiers,
+		Id:                variant.Id,
+		Name:              variant.Name,
+		Price:             variant.Price,
+		ProductId:         variant.ProductId,
+		Product:           ToApiProduct(variant.Product),
+		Materials:         apiMaterials,
+		DeletedAt:         variant.DeletedAt,
+		CreatedAt:         variant.CreatedAt,
+		Description:       variant.Description,
+		Recipe:            variant.Recipe,
+		Values:            apiVariantValues,
+		PricingTiers:      apiPricingTiers,
+		IsAvailable:       variant.IsAvailable,
+		AvailableQuantity: ToApiQuantity(variant.AvailableQuantity),
 	}
 }
 

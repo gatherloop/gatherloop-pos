@@ -3552,6 +3552,8 @@ components:
         - options
         - saleType
         - status
+        - isAvailable
+        - availabilityTracking
       properties:
         id:
           type: integer
@@ -3585,6 +3587,14 @@ components:
         createdAt:
           type: string
           format: date-time
+        isAvailable:
+          type: boolean
+        availabilityTracking:
+          type: string
+          enum: [none, product, variant]
+        availableQuantity:
+          type: integer
+          format: int64
     ProductRequest:
       type: object
       required:
@@ -3691,6 +3701,7 @@ components:
         - values
         - createdAt
         - pricingTiers
+        - isAvailable
       properties:
         id:
           type: integer
@@ -3726,6 +3737,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PricingTier'
+        isAvailable:
+          type: boolean
+        availableQuantity:
+          type: integer
+          format: int64
     VariantRequest:
       type: object
       required:
