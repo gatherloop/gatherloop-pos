@@ -12,6 +12,7 @@ export * from './material';
 export * from './materialListQuery';
 export * from './product';
 export * from './productListQuery';
+export * from './availability';
 export * from './rental';
 export * from './rentalListQuery';
 export * from './supplier';

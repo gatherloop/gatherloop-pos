@@ -4,6 +4,8 @@ export * from './material';
 export * from './material.transformer';
 export * from './product';
 export * from './product.transformer';
+export * from './availability';
+export * from './availability.transformer';
 export * from './variant';
 export * from './variant.transformer';
 export * from './category';

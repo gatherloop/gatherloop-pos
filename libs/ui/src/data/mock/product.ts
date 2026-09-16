@@ -20,6 +20,9 @@ const initialProducts: Product[] = [
       },
     ],
     createdAt: '2024-03-20T00:00:00.000Z',
+    isAvailable: true,
+    availabilityTracking: 'none',
+    isSellable: true,
   },
   {
     id: 2,
@@ -39,6 +42,9 @@ const initialProducts: Product[] = [
       },
     ],
     createdAt: '2024-03-21T00:00:00.000Z',
+    isAvailable: true,
+    availabilityTracking: 'none',
+    isSellable: true,
   },
 ];
 
@@ -105,6 +111,9 @@ export class MockProductRepository implements ProductRepository {
       status: formValues.status,
       options: [],
       createdAt: new Date().toISOString(),
+      isAvailable: true,
+      availabilityTracking: 'none',
+      isSellable: true,
     });
   }
 

@@ -3,6 +3,7 @@ export * from './variant';
 export * from './variantListQuery';
 export * from './product';
 export * from './productListQuery';
+export * from './availability';
 export * from './material';
 export * from './materialListQuery';
 export * from './category';

@@ -18,6 +18,9 @@ const esKopiSusu = {
   status: 'published' as const,
   options: [],
   createdAt: '2024-03-20T00:00:00.000Z',
+  isAvailable: true,
+  availabilityTracking: 'none' as const,
+  isSellable: true,
 };
 
 const variant = {
@@ -42,6 +45,8 @@ const variant = {
     },
   ],
   pricingTiers: [],
+  isAvailable: true,
+  isSellable: true,
 };
 
 const item = {

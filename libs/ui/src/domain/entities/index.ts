@@ -7,6 +7,7 @@ export * from './Calculation';
 export * from './Material';
 export * from './Variant';
 export * from './Product';
+export * from './Availability';
 export * from './Budget';
 export * from './Wallet';
 export * from './WalletTransfer';

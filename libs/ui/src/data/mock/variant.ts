@@ -10,6 +10,9 @@ const mockProduct = {
   status: 'published' as const,
   options: [],
   createdAt: '2024-03-20T00:00:00.000Z',
+  isAvailable: true,
+  availabilityTracking: 'none' as const,
+  isSellable: true,
 };
 
 const initialVariants: Variant[] = [
@@ -22,6 +25,8 @@ const initialVariants: Variant[] = [
     createdAt: '2024-03-20T00:00:00.000Z',
     values: [],
     pricingTiers: [],
+    isAvailable: true,
+    isSellable: true,
   },
   {
     id: 2,
@@ -32,6 +37,8 @@ const initialVariants: Variant[] = [
     createdAt: '2024-03-21T00:00:00.000Z',
     values: [],
     pricingTiers: [],
+    isAvailable: true,
+    isSellable: true,
   },
 ];
 
@@ -98,6 +105,8 @@ export class MockVariantRepository implements VariantRepository {
       createdAt: new Date().toISOString(),
       values: [],
       pricingTiers: formValues.pricingTiers,
+      isAvailable: true,
+      isSellable: true,
     });
   }
 

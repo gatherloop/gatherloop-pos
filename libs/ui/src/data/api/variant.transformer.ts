@@ -33,6 +33,11 @@ export function toVariant(variant: ApiVariant): Variant {
       imageUrl: variant.product.imageUrl,
       saleType: variant.product.saleType,
       status: variant.product.status,
+      isAvailable: variant.product.isAvailable,
+      availabilityTracking: variant.product.availabilityTracking,
+      availableQuantity: variant.product.availableQuantity,
+      isSellable: variant.product.isSellable,
+      sellableQuantity: variant.product.sellableQuantity,
     },
     values: variant.values.map((value) => ({
       id: value.id,
@@ -47,6 +52,10 @@ export function toVariant(variant: ApiVariant): Variant {
       upToMinutes,
       price,
     })),
+    isAvailable: variant.isAvailable,
+    availableQuantity: variant.availableQuantity,
+    isSellable: variant.isSellable,
+    sellableQuantity: variant.sellableQuantity,
   };
 }
 
