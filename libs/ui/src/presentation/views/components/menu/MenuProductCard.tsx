@@ -9,11 +9,27 @@ export type MenuProductCardProps = {
   onPress: () => void;
 };
 
+const HabisBadge = () => (
+  <XStack
+    backgroundColor="$red5"
+    paddingHorizontal="$2"
+    paddingVertical="$1"
+    borderRadius="$10"
+    alignSelf="flex-start"
+  >
+    <Paragraph size="$1" color="$red11">
+      Habis
+    </Paragraph>
+  </XStack>
+);
+
 export const MenuProductCard = ({
   product,
   startingPrice,
   onPress,
 }: MenuProductCardProps) => {
+  const isSellable = product.isSellable;
+
   return (
     <XStack
       gap="$3"
@@ -22,10 +38,12 @@ export const MenuProductCard = ({
       backgroundColor="$color2"
       alignItems="center"
       minHeight={44}
-      onPress={onPress}
-      cursor="pointer"
+      opacity={isSellable ? 1 : 0.5}
+      onPress={isSellable ? onPress : undefined}
+      cursor={isSellable ? 'pointer' : 'not-allowed'}
       accessibilityRole="button"
       accessibilityLabel={product.name}
+      accessibilityState={{ disabled: !isSellable }}
     >
       <MenuItemThumbnail
         imageUrl={product.imageUrl}
@@ -36,9 +54,12 @@ export const MenuProductCard = ({
       />
 
       <YStack flex={1} gap="$1">
-        <Text fontWeight="bold" numberOfLines={1}>
-          {product.name}
-        </Text>
+        <XStack alignItems="center" gap="$2">
+          <Text fontWeight="bold" numberOfLines={1} flexShrink={1}>
+            {product.name}
+          </Text>
+          {!isSellable && <HabisBadge />}
+        </XStack>
 
         {product.description ? (
           <Paragraph size="$2" color="$color10" numberOfLines={2}>

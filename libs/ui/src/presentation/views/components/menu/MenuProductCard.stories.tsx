@@ -100,3 +100,24 @@ export const WithImage: Story = {
     startingPrice: 18000,
   },
 };
+
+export const SoldOut: Story = {
+  args: {
+    product: {
+      id: 5,
+      name: 'Pancong',
+      description: 'Kue pancong isi 3 rasa',
+      category: { ...category, name: 'Makanan', station: 'KITCHEN' },
+      imageUrl: '',
+      saleType: 'purchase',
+      status: 'published',
+      options: [],
+      createdAt: '2024-03-20T00:00:00.000Z',
+      isAvailable: true,
+      availabilityTracking: 'product',
+      availableQuantity: 0,
+      isSellable: false,
+    },
+    startingPrice: 8000,
+  },
+};

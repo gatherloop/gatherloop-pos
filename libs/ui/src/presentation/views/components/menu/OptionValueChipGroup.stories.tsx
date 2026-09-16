@@ -10,6 +10,16 @@ const ukuran = {
   ],
 };
 
+const flavor = {
+  id: 2,
+  name: 'Flavor',
+  values: [
+    { id: 3, name: 'Vanilla' },
+    { id: 4, name: 'Banana' },
+    { id: 5, name: 'Hazelnut' },
+  ],
+};
+
 const meta: Meta<typeof OptionValueChipGroup> = {
   title: 'Components/Menu/OptionValueChipGroup',
   component: OptionValueChipGroup,
@@ -30,4 +40,12 @@ export const NoneSelected: Story = {
 
 export const Selected: Story = {
   args: { selectedOptionValueId: 2 },
+};
+
+export const WithSoldOutValue: Story = {
+  args: {
+    option: flavor,
+    selectedOptionValueId: null,
+    isOptionValueAvailable: { 3: false, 4: true, 5: true },
+  },
 };

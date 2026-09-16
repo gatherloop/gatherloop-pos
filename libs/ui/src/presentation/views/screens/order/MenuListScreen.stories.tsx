@@ -147,11 +147,13 @@ export const ItemSheetOpen: Story = {
         product: esKopiSusu,
         price: 18000,
         variantErrorMessage: null,
+        isVariantSellable: true,
       },
       selectedOptionValueIds: [],
       onSelectOptionValue: () => {
         // Storybook action stand-in
       },
+      optionValueAvailability: {},
       amount: 1,
       onAmountChange: () => {
         // Storybook action stand-in
