@@ -92,12 +92,14 @@ func main() {
 	checklistTemplateRepository := mysql.NewChecklistTemplateRepository(db)
 	checklistSessionRepository := mysql.NewChecklistSessionRepository(db)
 	stockCheckRepository := mysql.NewStockCheckRepository(db)
+	availabilityReservationRepository := mysql.NewAvailabilityReservationRepository(db)
 	availabilityRepository := mysql.NewAvailabilityRepository(db)
 
 	orderPaymentWalletId, _ := strconv.ParseInt(env.OrderPaymentWalletId, 10, 64)
 
+	availabilityReservation := domain.NewAvailabilityReservation(availabilityReservationRepository)
 	walletUsecase := domain.NewWalletUsecase(walletRepository)
-	transactionUsecase := domain.NewTransactionUsecase(transactionRepository, variantRepository, couponRepository, walletRepository)
+	transactionUsecase := domain.NewTransactionUsecase(transactionRepository, variantRepository, couponRepository, walletRepository, availabilityReservation)
 	variantUsecase := domain.NewVariantUsecase(variantRepository, productRepository)
 	productUsecase := domain.NewProductUsecase(productRepository, variantRepository)
 	materialUsecase := domain.NewMaterialUsecase(materialRepository, supplierRepository)

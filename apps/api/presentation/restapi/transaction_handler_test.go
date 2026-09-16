@@ -25,8 +25,16 @@ func newTransactionHandler(t *testing.T, setupMocks func(txRepo *mock.MockTransa
 	variantRepo := mock.NewMockVariantRepository(ctrl)
 	couponRepo := mock.NewMockCouponRepository(ctrl)
 	walletRepo := mock.NewMockWalletRepository(ctrl)
+	availabilityRepo := mock.NewMockAvailabilityReservationRepository(ctrl)
+	availabilityRepo.EXPECT().LockVariantById(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(ctx context.Context, id int64) (domain.Variant, *domain.Error) {
+			return domain.Variant{Id: id, IsAvailable: true, Product: domain.Product{IsAvailable: true}}, nil
+		}).AnyTimes()
+	availabilityRepo.EXPECT().LockProductById(gomock.Any(), gomock.Any()).AnyTimes().Return(domain.Product{IsAvailable: true}, nil)
+	availabilityRepo.EXPECT().UpdateVariantAvailableQuantity(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
+	availabilityRepo.EXPECT().UpdateProductAvailableQuantity(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
 	setupMocks(txRepo, variantRepo, couponRepo, walletRepo)
-	usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo)
+	usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(availabilityRepo))
 	return restapi.NewTransactionHandler(usecase), ctrl
 }
 
