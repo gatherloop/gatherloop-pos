@@ -1,4 +1,4 @@
-import { ApiProductRepository } from '@gatherloop-pos/ui';
+import { ApiProductRepository, toSerializableProps } from '@gatherloop-pos/ui';
 import {
   RentalCheckin,
   RentalCheckinProps,
@@ -42,7 +42,7 @@ export const getServerSideProps: GetServerSideProps<
   );
 
   return {
-    props: {
+    props: toSerializableProps({
       transactionItemSelectParams: {
         products,
         totalItem,
@@ -52,7 +52,7 @@ export const getServerSideProps: GetServerSideProps<
         query,
         sortBy,
       },
-    },
+    }),
   };
 };
 

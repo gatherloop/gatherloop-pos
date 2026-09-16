@@ -1,4 +1,4 @@
-import { ApiAvailabilityRepository } from '@gatherloop-pos/ui';
+import { ApiAvailabilityRepository, toSerializableProps } from '@gatherloop-pos/ui';
 import { Availability, AvailabilityProps } from '@gatherloop-pos/ui/pos';
 import { QueryClient } from '@tanstack/react-query';
 import { GetServerSideProps } from 'next';
@@ -24,9 +24,9 @@ export const getServerSideProps: GetServerSideProps<AvailabilityProps> = async (
   });
 
   return {
-    props: {
+    props: toSerializableProps({
       availabilityListParams: { products },
-    },
+    }),
   };
 };
 

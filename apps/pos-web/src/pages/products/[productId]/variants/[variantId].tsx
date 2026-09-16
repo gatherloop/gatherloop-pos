@@ -4,6 +4,7 @@ import {
   ApiMaterialRepository,
   UrlMaterialListQueryRepository,
   getUrlFromCtx,
+  toSerializableProps,
 } from '@gatherloop-pos/ui';
 import {
   VariantUpdate,
@@ -55,7 +56,7 @@ export const getServerSideProps: GetServerSideProps<
   );
 
   return {
-    props: {
+    props: toSerializableProps({
       variantUpdateParams: { variant, product, variantId, productId },
       materialListParams: {
         materials,
@@ -66,7 +67,7 @@ export const getServerSideProps: GetServerSideProps<
         query,
         sortBy,
       },
-    },
+    }),
   };
 };
 

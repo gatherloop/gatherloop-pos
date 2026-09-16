@@ -8,6 +8,7 @@ import {
   resolveSession,
   SESSION_ID_COOKIE_NAME,
   TableNotFoundError,
+  toSerializableProps,
   UrlMenuListQueryRepository,
 } from '@gatherloop-pos/ui';
 import { MenuList, MenuListProps } from '@gatherloop-pos/ui/order';
@@ -43,7 +44,7 @@ export const getServerSideProps: GetServerSideProps<MenuListProps> = async (
   ]);
 
   return {
-    props: {
+    props: toSerializableProps({
       sessionId,
       code,
       table,
@@ -55,7 +56,7 @@ export const getServerSideProps: GetServerSideProps<MenuListProps> = async (
       preparingCount: payments.filter(
         (payment) => payment.fulfillmentStatus === 'preparing'
       ).length,
-    },
+    }),
   };
 };
 
