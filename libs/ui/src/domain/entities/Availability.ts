@@ -43,13 +43,16 @@ export type AvailabilityForm = {
 const availabilityProductUpdateFormSchema = z.object({
   productId: z.number().int().positive(),
   isAvailable: z.boolean().optional(),
-  availableQuantity: z.number().int().min(0).optional(),
+  // A paid-late QRIS payment (D7) can leave this negative; the Availability screen
+  // must round-trip that value untouched, so only new input is kept non-negative,
+  // by the stepper/input's own min, not by this schema.
+  availableQuantity: z.number().int().optional(),
 }) satisfies z.ZodType<AvailabilityProductUpdate>;
 
 const availabilityVariantUpdateFormSchema = z.object({
   variantId: z.number().int().positive(),
   isAvailable: z.boolean().optional(),
-  availableQuantity: z.number().int().min(0).optional(),
+  availableQuantity: z.number().int().optional(),
 }) satisfies z.ZodType<AvailabilityVariantUpdate>;
 
 export const availabilityFormSchema = z.object({

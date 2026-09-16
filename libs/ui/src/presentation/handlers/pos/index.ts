@@ -56,3 +56,4 @@ export * from './StockCheckListHandler';
 export * from './StockCheckCreateHandler';
 export * from './StockCheckUpdateHandler';
 export * from './PurchaseListHandler';
+export * from './AvailabilityHandler';

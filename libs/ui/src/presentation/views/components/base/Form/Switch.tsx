@@ -20,6 +20,10 @@ export const Switch = ({ name, ...switchProps }: SwitchProps) => {
           {...switchProps}
           id={field.name}
           name={field.name}
+          // Switch renders a native <button>; without this it defaults to
+          // type="submit" and toggling it inside a <Form> submits early.
+          // @ts-expect-error type is a valid HTML attribute on the underlying button
+          type="button"
           checked={field.value}
           onCheckedChange={field.onChange}
         >

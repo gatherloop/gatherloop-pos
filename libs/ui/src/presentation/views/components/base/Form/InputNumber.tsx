@@ -81,6 +81,10 @@ const InputNumberField = ({
           }}
           circular
           disabled={inputProps.disabled || isNull}
+          // Button renders a native <button>; without this it defaults to
+          // type="submit" and clicking the stepper inside a <Form> submits it early.
+          // @ts-expect-error type is a valid HTML attribute on the underlying button
+          type="button"
         />
       )}
 
@@ -129,6 +133,8 @@ const InputNumberField = ({
           }}
           circular
           disabled={inputProps.disabled}
+          // @ts-expect-error type is a valid HTML attribute on the underlying button
+          type="button"
         />
       )}
     </XStack>

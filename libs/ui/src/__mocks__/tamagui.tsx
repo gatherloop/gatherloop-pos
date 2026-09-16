@@ -39,10 +39,11 @@ export const H5 = ({ children }: AnyProps) => React.createElement('h5', null, ch
 export const H6 = ({ children }: AnyProps) => React.createElement('h6', null, children);
 export const Text = ({ children }: AnyProps) => React.createElement('span', null, children);
 
-export const Button = ({ children, onPress, disabled, icon, accessibilityLabel }: AnyProps) =>
+export const Button = ({ children, onPress, disabled, icon, accessibilityLabel, type }: AnyProps) =>
   React.createElement(
     'button',
     {
+      type,
       onClick: onPress,
       disabled: disabled ?? false,
       ...(accessibilityLabel ? { 'aria-label': accessibilityLabel } : {}),
@@ -358,12 +359,13 @@ export const Accordion = Object.assign(AccordionBase, {
   HeightAnimator: AccordionHeightAnimator,
 });
 
-const SwitchBase = ({ checked, onCheckedChange, id, name, children }: AnyProps) =>
+const SwitchBase = ({ checked, onCheckedChange, id, name, type, children }: AnyProps) =>
   React.createElement(
     'button',
     {
       id,
       name,
+      type,
       role: 'switch',
       'aria-checked': checked,
       onClick: () => onCheckedChange?.(!checked),
