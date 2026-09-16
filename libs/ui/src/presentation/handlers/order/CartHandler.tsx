@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { match, P } from 'ts-pattern';
 import { useRouter } from 'solito/router';
+import { Cart } from '../../../domain/entities/Cart';
 import { SessionRepository } from '../../../domain/repositories/session';
 import { CartState, CartUsecase } from '../../../domain/usecases/cart';
 import { CheckoutUsecase } from '../../../domain/usecases/checkout';
@@ -44,6 +45,15 @@ function isMutating(state: CartState): boolean {
   );
 }
 
+function hasUnavailableItems(cart: Cart | null): boolean {
+  if (!cart) return false;
+  return cart.items.some((item) => {
+    if (!item.variant.isSellable) return true;
+    const remaining = item.variant.sellableQuantity;
+    return remaining !== undefined && item.amount > remaining;
+  });
+}
+
 export const CartHandler = ({
   tableResolveUsecase,
   cartUsecase,
@@ -71,6 +81,11 @@ export const CartHandler = ({
 
     router.push(`/orders/${checkout.state.payment.reference}`);
   }, [checkout.state, router]);
+
+  useEffect(() => {
+    if (checkout.state.type !== 'error') return;
+    cart.dispatch({ type: 'FETCH' });
+  }, [checkout.state.type, cart.dispatch]);
 
   const mutating = isMutating(cart.state);
 
@@ -186,7 +201,7 @@ export const CartHandler = ({
       onAddMoreItemsPress={() => router.push(`/t/${tableCode}`)}
       onRetryButtonPress={() => cart.dispatch({ type: 'FETCH' })}
       itemEdit={itemEdit}
-      isCheckoutEnabled={enabled}
+      isCheckoutEnabled={enabled && !hasUnavailableItems(cart.state.cart)}
       isCheckingOut={checkout.state.type === 'creatingPayment'}
       checkoutErrorMessage={
         checkout.state.type === 'error' ? checkout.state.errorMessage : null

@@ -121,3 +121,19 @@ export const LongProductName: Story = {
 export const Saving: Story = {
   args: { item, amount: item.amount, note: item.note, isSaving: true },
 };
+
+export const SoldOut: Story = {
+  args: {
+    item: { ...item, variant: { ...variant, isSellable: false } },
+    amount: item.amount,
+    note: item.note,
+  },
+};
+
+export const OverRemainingQuantity: Story = {
+  args: {
+    item: { ...item, variant: { ...variant, sellableQuantity: 1 } },
+    amount: item.amount,
+    note: item.note,
+  },
+};

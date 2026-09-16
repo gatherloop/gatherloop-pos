@@ -208,10 +208,16 @@ export class MenuItemDetailUsecase extends Usecase<
           },
           { type: 'CHANGE_AMOUNT' },
         ],
-        ([state, { amount }]) => ({
-          ...state,
-          amount: Math.max(1, amount),
-        })
+        ([state, { amount }]) => {
+          const max = state.variant?.isSellable
+            ? state.variant.sellableQuantity
+            : undefined;
+          const clamped = max !== undefined ? Math.min(amount, max) : amount;
+          return {
+            ...state,
+            amount: Math.max(1, clamped),
+          };
+        }
       )
       .with(
         [

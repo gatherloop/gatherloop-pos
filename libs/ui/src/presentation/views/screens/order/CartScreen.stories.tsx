@@ -179,6 +179,40 @@ export const CheckoutDisabled: Story = {
   },
 };
 
+export const SoldOutLine: Story = {
+  args: {
+    variant: {
+      type: 'loaded',
+      cart: {
+        ...cart,
+        items: [
+          { ...cart.items[0], variant: { ...variant, isSellable: false } },
+        ],
+      },
+    },
+    isCheckoutEnabled: false,
+  },
+};
+
+export const OverRemainingQuantityLine: Story = {
+  args: {
+    variant: {
+      type: 'loaded',
+      cart: {
+        ...cart,
+        items: [
+          {
+            ...cart.items[0],
+            amount: 5,
+            variant: { ...variant, sellableQuantity: 3 },
+          },
+        ],
+      },
+    },
+    isCheckoutEnabled: false,
+  },
+};
+
 export const NameSheetOpen: Story = {
   args: {
     variant: { type: 'loaded', cart },

@@ -86,6 +86,22 @@ export const Disabled: Story = {
   args: { item, disabled: true },
 };
 
+export const SoldOut: Story = {
+  args: {
+    item: { ...item, variant: { ...variant, isSellable: false } },
+  },
+};
+
+export const OverRemainingQuantity: Story = {
+  args: {
+    item: {
+      ...item,
+      amount: 5,
+      variant: { ...variant, sellableQuantity: 3 },
+    },
+  },
+};
+
 export const LongProductName: Story = {
   args: {
     item: {

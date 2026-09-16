@@ -1,5 +1,5 @@
 import { Pencil, Trash2 } from '@tamagui/lucide-icons';
-import { Button, Text, XStack, YStack } from 'tamagui';
+import { Button, Paragraph, Text, XStack, YStack } from 'tamagui';
 import { CartItem } from '../../../../domain/entities/Cart';
 import { formatRupiah } from '../../../../utils/currency';
 import { AmountStepper } from '../menu/AmountStepper';
@@ -13,6 +13,20 @@ export type CartLineItemProps = {
   disabled?: boolean;
 };
 
+const SoldOutBadge = () => (
+  <XStack
+    backgroundColor="$red5"
+    paddingHorizontal="$2"
+    paddingVertical="$1"
+    borderRadius="$10"
+    alignSelf="flex-start"
+  >
+    <Paragraph size="$1" color="$red11">
+      Habis
+    </Paragraph>
+  </XStack>
+);
+
 export const CartLineItem = ({
   item,
   onAmountChange,
@@ -23,6 +37,9 @@ export const CartLineItem = ({
   const optionValueNames = item.variant.values
     .map((value) => value.optionValue.name)
     .join(', ');
+
+  const isSoldOut = !item.variant.isSellable;
+  const remainingQuantity = item.variant.sellableQuantity;
 
   const hitSlop = { top: 6, bottom: 6, left: 6, right: 6 };
 
@@ -37,9 +54,12 @@ export const CartLineItem = ({
       />
 
       <YStack flex={1} gap="$1">
-        <Text fontWeight="bold" numberOfLines={1}>
-          {item.variant.product.name}
-        </Text>
+        <XStack alignItems="center" gap="$2">
+          <Text fontWeight="bold" numberOfLines={1} flexShrink={1}>
+            {item.variant.product.name}
+          </Text>
+          {isSoldOut ? <SoldOutBadge /> : null}
+        </XStack>
 
         {optionValueNames ? (
           <Text color="$color10" fontSize="$2">
@@ -62,7 +82,8 @@ export const CartLineItem = ({
           <AmountStepper
             amount={item.amount}
             onChange={onAmountChange}
-            disabled={disabled}
+            max={remainingQuantity}
+            disabled={disabled || isSoldOut}
             size="sm"
           />
           <Text fontWeight="bold">{formatRupiah(item.subtotal)}</Text>

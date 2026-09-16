@@ -43,6 +43,21 @@ describe('CartUsecase', () => {
       expect(cart.state.type).toBe('loaded');
     });
 
+    it('should refetch in place from loaded, keeping the cart on screen while revalidating', async () => {
+      const repository = new MockCartRepository();
+      await repository.addItem({ variantId: 1, amount: 1, note: '' });
+      const cart = createTester(repository, { cart: { ...repository.cart } });
+      const loadedCart = cart.state.cart;
+
+      cart.dispatch({ type: 'FETCH' });
+      expect(cart.state.type).toBe('revalidating');
+      expect(cart.state.cart).toEqual(loadedCart);
+
+      await flushPromises();
+      expect(cart.state.type).toBe('loaded');
+      expect(cart.state.cart).toEqual(repository.cart);
+    });
+
     it('should start loaded when a cart is seeded through params', () => {
       const repository = new MockCartRepository();
       const seeded: Cart = { ...repository.cart };

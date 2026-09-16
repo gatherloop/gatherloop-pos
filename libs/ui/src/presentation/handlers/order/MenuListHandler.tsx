@@ -71,6 +71,9 @@ function toItemDetailScreenVariant(
     price: state.variant?.price ?? null,
     variantErrorMessage: state.type === 'error' ? state.errorMessage : null,
     isVariantSellable: state.variant?.isSellable ?? null,
+    remainingQuantity: state.variant?.isSellable
+      ? state.variant.sellableQuantity
+      : undefined,
   };
 }
 

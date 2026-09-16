@@ -19,6 +19,7 @@ export type MenuItemDetailScreenVariant =
       price: number | null;
       variantErrorMessage: string | null;
       isVariantSellable: boolean | null;
+      remainingQuantity?: number;
     };
 
 export type MenuItemDetailScreenProps = {
@@ -84,7 +85,13 @@ export const MenuItemDetailScreen = ({
           ))
           .with(
             { type: 'ready' },
-            ({ product, price, variantErrorMessage, isVariantSellable }) => (
+            ({
+              product,
+              price,
+              variantErrorMessage,
+              isVariantSellable,
+              remainingQuantity,
+            }) => (
               <YStack flex={1}>
                 <ScrollView flex={1}>
                   <YStack gap="$4" paddingHorizontal="$4" paddingBottom="$4">
@@ -144,6 +151,7 @@ export const MenuItemDetailScreen = ({
                       <AmountStepper
                         amount={amount}
                         onChange={onAmountChange}
+                        max={remainingQuantity}
                       />
                     </XStack>
                   </YStack>
