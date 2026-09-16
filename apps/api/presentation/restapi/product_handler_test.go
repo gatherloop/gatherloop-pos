@@ -17,10 +17,11 @@ import (
 
 func TestProductHandler_GetProductList(t *testing.T) {
 	tests := []struct {
-		name           string
-		url            string
-		setupMock      func(r *mock.MockProductRepository)
-		expectedStatus int
+		name              string
+		url               string
+		setupMock         func(r *mock.MockProductRepository)
+		setupVariantsMock func(r *mock.MockVariantRepository)
+		expectedStatus    int
 	}{
 		{
 			name: "success",
@@ -28,6 +29,10 @@ func TestProductHandler_GetProductList(t *testing.T) {
 			setupMock: func(r *mock.MockProductRepository) {
 				r.EXPECT().GetProductList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Product{{Id: 1}}, nil)
 				r.EXPECT().GetProductListTotal(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(1), nil)
+			},
+			setupVariantsMock: func(r *mock.MockVariantRepository) {
+				r.EXPECT().GetVariantList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Variant{}, nil)
+				r.EXPECT().GetVariantListTotal(gomock.Any(), gomock.Any()).Return(int64(0), nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -44,6 +49,10 @@ func TestProductHandler_GetProductList(t *testing.T) {
 				draft := domain.ProductStatusDraft
 				r.EXPECT().GetProductList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), &draft).Return([]domain.Product{{Id: 1, Status: domain.ProductStatusDraft}}, nil)
 				r.EXPECT().GetProductListTotal(gomock.Any(), gomock.Any(), gomock.Any(), &draft).Return(int64(1), nil)
+			},
+			setupVariantsMock: func(r *mock.MockVariantRepository) {
+				r.EXPECT().GetVariantList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Variant{}, nil)
+				r.EXPECT().GetVariantListTotal(gomock.Any(), gomock.Any()).Return(int64(0), nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -62,8 +71,13 @@ func TestProductHandler_GetProductList(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockRepo := mock.NewMockProductRepository(ctrl)
+			mockVariantRepo := mock.NewMockVariantRepository(ctrl)
 			tt.setupMock(mockRepo)
-			handler := restapi.NewProductHandler(domain.NewProductUsecase(mockRepo))
+			if tt.setupVariantsMock != nil {
+				tt.setupVariantsMock(mockVariantRepo)
+			}
+			variantUsecase := domain.NewVariantUsecase(mockVariantRepo, mockRepo)
+			handler := restapi.NewProductHandler(domain.NewProductUsecase(mockRepo), variantUsecase)
 			req := httptest.NewRequest(http.MethodGet, tt.url, nil)
 			w := httptest.NewRecorder()
 			handler.GetProductList(w, req)
@@ -74,16 +88,21 @@ func TestProductHandler_GetProductList(t *testing.T) {
 
 func TestProductHandler_GetProductById(t *testing.T) {
 	tests := []struct {
-		name           string
-		productId      string
-		setupMock      func(r *mock.MockProductRepository)
-		expectedStatus int
+		name              string
+		productId         string
+		setupMock         func(r *mock.MockProductRepository)
+		setupVariantsMock func(r *mock.MockVariantRepository)
+		expectedStatus    int
 	}{
 		{
 			name:      "success",
 			productId: "1",
 			setupMock: func(r *mock.MockProductRepository) {
 				r.EXPECT().GetProductById(gomock.Any(), int64(1)).Return(domain.Product{Id: 1, Name: "Nasi Goreng"}, nil)
+			},
+			setupVariantsMock: func(r *mock.MockVariantRepository) {
+				r.EXPECT().GetVariantList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Variant{}, nil)
+				r.EXPECT().GetVariantListTotal(gomock.Any(), gomock.Any()).Return(int64(0), nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -108,8 +127,13 @@ func TestProductHandler_GetProductById(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockRepo := mock.NewMockProductRepository(ctrl)
+			mockVariantRepo := mock.NewMockVariantRepository(ctrl)
 			tt.setupMock(mockRepo)
-			handler := restapi.NewProductHandler(domain.NewProductUsecase(mockRepo))
+			if tt.setupVariantsMock != nil {
+				tt.setupVariantsMock(mockVariantRepo)
+			}
+			variantUsecase := domain.NewVariantUsecase(mockVariantRepo, mockRepo)
+			handler := restapi.NewProductHandler(domain.NewProductUsecase(mockRepo), variantUsecase)
 			req := httptest.NewRequest(http.MethodGet, "/products/"+tt.productId, nil)
 			req = mux.SetURLVars(req, map[string]string{"productId": tt.productId})
 			w := httptest.NewRecorder()
@@ -155,8 +179,10 @@ func TestProductHandler_CreateProduct(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockRepo := mock.NewMockProductRepository(ctrl)
+			mockVariantRepo := mock.NewMockVariantRepository(ctrl)
 			tt.setupMock(mockRepo)
-			handler := restapi.NewProductHandler(domain.NewProductUsecase(mockRepo))
+			variantUsecase := domain.NewVariantUsecase(mockVariantRepo, mockRepo)
+			handler := restapi.NewProductHandler(domain.NewProductUsecase(mockRepo), variantUsecase)
 			req := httptest.NewRequest(http.MethodPost, "/products", bytes.NewBufferString(tt.body))
 			req.Header.Set("Content-Type", "application/json")
 			w := httptest.NewRecorder()
@@ -168,11 +194,12 @@ func TestProductHandler_CreateProduct(t *testing.T) {
 
 func TestProductHandler_UpdateProductById(t *testing.T) {
 	tests := []struct {
-		name           string
-		productId      string
-		body           string
-		setupMock      func(r *mock.MockProductRepository)
-		expectedStatus int
+		name              string
+		productId         string
+		body              string
+		setupMock         func(r *mock.MockProductRepository)
+		setupVariantsMock func(r *mock.MockVariantRepository)
+		expectedStatus    int
 	}{
 		{
 			name:      "success",
@@ -182,6 +209,10 @@ func TestProductHandler_UpdateProductById(t *testing.T) {
 				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				r.EXPECT().UpdateProductById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Product{Id: 1, Name: "Mie Goreng"}, nil)
+			},
+			setupVariantsMock: func(r *mock.MockVariantRepository) {
+				r.EXPECT().GetVariantList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Variant{}, nil)
+				r.EXPECT().GetVariantListTotal(gomock.Any(), gomock.Any()).Return(int64(0), nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -210,8 +241,13 @@ func TestProductHandler_UpdateProductById(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockRepo := mock.NewMockProductRepository(ctrl)
+			mockVariantRepo := mock.NewMockVariantRepository(ctrl)
 			tt.setupMock(mockRepo)
-			handler := restapi.NewProductHandler(domain.NewProductUsecase(mockRepo))
+			if tt.setupVariantsMock != nil {
+				tt.setupVariantsMock(mockVariantRepo)
+			}
+			variantUsecase := domain.NewVariantUsecase(mockVariantRepo, mockRepo)
+			handler := restapi.NewProductHandler(domain.NewProductUsecase(mockRepo), variantUsecase)
 			req := httptest.NewRequest(http.MethodPut, "/products/"+tt.productId, bytes.NewBufferString(tt.body))
 			req.Header.Set("Content-Type", "application/json")
 			req = mux.SetURLVars(req, map[string]string{"productId": tt.productId})
@@ -258,8 +294,10 @@ func TestProductHandler_DeleteProductById(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockRepo := mock.NewMockProductRepository(ctrl)
+			mockVariantRepo := mock.NewMockVariantRepository(ctrl)
 			tt.setupMock(mockRepo)
-			handler := restapi.NewProductHandler(domain.NewProductUsecase(mockRepo))
+			variantUsecase := domain.NewVariantUsecase(mockVariantRepo, mockRepo)
+			handler := restapi.NewProductHandler(domain.NewProductUsecase(mockRepo), variantUsecase)
 			req := httptest.NewRequest(http.MethodDelete, "/products/"+tt.productId, nil)
 			req = mux.SetURLVars(req, map[string]string{"productId": tt.productId})
 			w := httptest.NewRecorder()

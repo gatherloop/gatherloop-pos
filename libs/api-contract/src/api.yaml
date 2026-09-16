@@ -3554,6 +3554,7 @@ components:
         - status
         - isAvailable
         - availabilityTracking
+        - isSellable
       properties:
         id:
           type: integer
@@ -3593,6 +3594,11 @@ components:
           type: string
           enum: [none, product, variant]
         availableQuantity:
+          type: integer
+          format: int64
+        isSellable:
+          type: boolean
+        remainingQuantity:
           type: integer
           format: int64
     ProductRequest:
@@ -3702,6 +3708,7 @@ components:
         - createdAt
         - pricingTiers
         - isAvailable
+        - isSellable
       properties:
         id:
           type: integer
@@ -3740,6 +3747,11 @@ components:
         isAvailable:
           type: boolean
         availableQuantity:
+          type: integer
+          format: int64
+        isSellable:
+          type: boolean
+        remainingQuantity:
           type: integer
           format: int64
     VariantRequest:

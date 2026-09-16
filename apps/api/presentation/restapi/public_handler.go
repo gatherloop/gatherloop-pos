@@ -2,6 +2,7 @@ package restapi
 
 import (
 	"apps/api/domain"
+	"context"
 	apiContract "libs/api-contract"
 	"net/http"
 )
@@ -20,6 +21,12 @@ func NewPublicHandler(productUsecase domain.ProductUsecase, categoryUsecase doma
 		variantUsecase:  variantUsecase,
 		tableUsecase:    tableUsecase,
 	}
+}
+
+func (handler PublicHandler) getProductVariants(ctx context.Context, productId int64) ([]domain.Variant, *domain.Error) {
+	id := int(productId)
+	variants, _, err := handler.variantUsecase.GetVariantList(ctx, "", domain.CreatedAt, domain.Ascending, 0, 0, &id, []int{})
+	return variants, err
 }
 
 func (handler PublicHandler) GetCategoryList(w http.ResponseWriter, r *http.Request) {
@@ -69,7 +76,12 @@ func (handler PublicHandler) GetProductList(w http.ResponseWriter, r *http.Reque
 
 	apiProducts := []apiContract.Product{}
 	for _, product := range products {
-		apiProducts = append(apiProducts, ToPublicApiProduct(product))
+		variants, usecaseErr := handler.getProductVariants(ctx, product.Id)
+		if usecaseErr != nil {
+			WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
+			return
+		}
+		apiProducts = append(apiProducts, ToPublicApiProduct(product, variants))
 	}
 
 	WriteResponse(w, apiContract.ProductListResponse{Data: apiProducts, Meta: apiContract.MetaPage{Total: total}})
@@ -95,7 +107,13 @@ func (handler PublicHandler) GetProductById(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	WriteResponse(w, apiContract.ProductFindByIdResponse{Data: ToPublicApiProduct(product)})
+	variants, usecaseErr := handler.getProductVariants(ctx, product.Id)
+	if usecaseErr != nil {
+		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
+		return
+	}
+
+	WriteResponse(w, apiContract.ProductFindByIdResponse{Data: ToPublicApiProduct(product, variants)})
 }
 
 func (handler PublicHandler) GetVariantList(w http.ResponseWriter, r *http.Request) {

@@ -120,7 +120,7 @@ func main() {
 	walletHandler := restapi.NewWalletHandler(walletUsecase)
 	transactionHandler := restapi.NewTransactionHandler(transactionUsecase)
 	variantHandler := restapi.NewVariantHandler(variantUsecase)
-	productHandler := restapi.NewProductHandler(productUsecase)
+	productHandler := restapi.NewProductHandler(productUsecase, variantUsecase)
 	materialHandler := restapi.NewMaterialHandler(materialUsecase)
 	supplierHandler := restapi.NewSupplierHandler(supplierUsecase)
 	expenseHandler := restapi.NewExpenseHandler(expenseUsecase)
