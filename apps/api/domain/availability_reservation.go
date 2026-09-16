@@ -35,6 +35,13 @@ func (reservation AvailabilityReservation) Release(ctx context.Context, items []
 	return reservation.adjust(ctx, items, 1, false)
 }
 
+// ForceReserve decrements availability for the given items without checking switches or shortfalls,
+// allowing the counter to go negative. Used for a QRIS payment that arrives after its reservation was
+// already released by expiry (D7): the gateway has captured the money, so the reservation must succeed.
+func (reservation AvailabilityReservation) ForceReserve(ctx context.Context, items []TransactionItem) *Error {
+	return reservation.adjust(ctx, items, -1, false)
+}
+
 type availabilityCountingLevel int
 
 const (

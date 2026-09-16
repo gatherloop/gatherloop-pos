@@ -21,30 +21,40 @@ import (
 const paymentHandlerOrderPaymentWalletId = 9
 
 type paymentHandlerMocks struct {
-	paymentRepo     *mock.MockPaymentRepository
-	gatewayRepo     *mock.MockPaymentGatewayRepository
-	customerRepo    *mock.MockCustomerRepository
-	cartRepo        *mock.MockCartRepository
-	transactionRepo *mock.MockTransactionRepository
-	variantRepo     *mock.MockVariantRepository
-	walletRepo      *mock.MockWalletRepository
+	paymentRepo      *mock.MockPaymentRepository
+	gatewayRepo      *mock.MockPaymentGatewayRepository
+	customerRepo     *mock.MockCustomerRepository
+	cartRepo         *mock.MockCartRepository
+	transactionRepo  *mock.MockTransactionRepository
+	variantRepo      *mock.MockVariantRepository
+	walletRepo       *mock.MockWalletRepository
+	availabilityRepo *mock.MockAvailabilityReservationRepository
 }
 
 func newPaymentHandlerMocks(ctrl *gomock.Controller) paymentHandlerMocks {
 	return paymentHandlerMocks{
-		paymentRepo:     mock.NewMockPaymentRepository(ctrl),
-		gatewayRepo:     mock.NewMockPaymentGatewayRepository(ctrl),
-		customerRepo:    mock.NewMockCustomerRepository(ctrl),
-		cartRepo:        mock.NewMockCartRepository(ctrl),
-		transactionRepo: mock.NewMockTransactionRepository(ctrl),
-		variantRepo:     mock.NewMockVariantRepository(ctrl),
-		walletRepo:      mock.NewMockWalletRepository(ctrl),
+		paymentRepo:      mock.NewMockPaymentRepository(ctrl),
+		gatewayRepo:      mock.NewMockPaymentGatewayRepository(ctrl),
+		customerRepo:     mock.NewMockCustomerRepository(ctrl),
+		cartRepo:         mock.NewMockCartRepository(ctrl),
+		transactionRepo:  mock.NewMockTransactionRepository(ctrl),
+		variantRepo:      mock.NewMockVariantRepository(ctrl),
+		walletRepo:       mock.NewMockWalletRepository(ctrl),
+		availabilityRepo: mock.NewMockAvailabilityReservationRepository(ctrl),
 	}
 }
 
 func (m paymentHandlerMocks) handler() restapi.PaymentHandler {
-	usecase := domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, 300, paymentHandlerOrderPaymentWalletId)
+	availabilityReservation := domain.NewAvailabilityReservation(m.availabilityRepo)
+	usecase := domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, availabilityReservation, 300, paymentHandlerOrderPaymentWalletId)
 	return restapi.NewPaymentHandler(usecase)
+}
+
+func expectAvailableHandlerVariant(m paymentHandlerMocks, variantId int64) {
+	m.availabilityRepo.EXPECT().LockVariantById(gomock.Any(), variantId).Return(domain.Variant{
+		Id: variantId, IsAvailable: true,
+		Product: domain.Product{IsAvailable: true, AvailabilityTracking: domain.AvailabilityTrackingNone},
+	}, nil)
 }
 
 func expectValidPaymentWallet(m paymentHandlerMocks) {
@@ -83,6 +93,7 @@ func TestPaymentHandler_Checkout(t *testing.T) {
 		m.variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(10)).Return(domain.Variant{
 			Id: 10, Price: 15000, Product: domain.Product{Name: "Kopi Susu"},
 		}, nil)
+		expectAvailableHandlerVariant(m, 10)
 
 		m.transactionRepo.EXPECT().CreateTransaction(gomock.Any(), gomock.Any()).
 			DoAndReturn(func(_ context.Context, transaction domain.Transaction) (domain.Transaction, *domain.Error) {
@@ -135,6 +146,7 @@ func TestPaymentHandler_Checkout(t *testing.T) {
 		}, nil)
 		m.paymentRepo.EXPECT().GetPendingPaymentByCartId(gomock.Any(), int64(1)).Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
 		m.variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(10)).Return(domain.Variant{Id: 10, Price: 15000, Product: domain.Product{Name: "Kopi Susu"}}, nil)
+		expectAvailableHandlerVariant(m, 10)
 		m.transactionRepo.EXPECT().CreateTransaction(gomock.Any(), gomock.Any()).
 			DoAndReturn(func(_ context.Context, transaction domain.Transaction) (domain.Transaction, *domain.Error) {
 				transaction.Id = 200
