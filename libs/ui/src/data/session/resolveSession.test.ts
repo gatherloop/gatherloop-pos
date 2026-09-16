@@ -10,13 +10,14 @@ const UUID_V4_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 describe('resolveSession', () => {
-  it('reuses a valid cookie value with no Set-Cookie header', () => {
+  it('reuses a valid cookie value and re-issues a Set-Cookie header for the same id', () => {
     const existing = '11111111-1111-4111-8111-111111111111';
 
     const result = resolveSession(existing);
 
     expect(result.sessionId).toBe(existing);
-    expect(result.setCookie).toBeUndefined();
+    expect(result.setCookie).toContain(`gl_session_id=${existing}`);
+    expect(result.setCookie).toContain('Max-Age=34560000');
   });
 
   it('mints a fresh session id and a Set-Cookie header when no cookie is given', () => {
