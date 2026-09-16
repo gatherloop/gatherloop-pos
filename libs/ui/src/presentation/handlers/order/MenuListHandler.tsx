@@ -13,6 +13,7 @@ import {
 } from '../../../domain/usecases/menuItemDetail';
 import { MenuListUsecase } from '../../../domain/usecases/menuList';
 import { TableResolveUsecase } from '../../../domain/usecases/tableResolve';
+import { resolveOptionValueAvailability } from '../../../utils';
 import { CartBar } from '../../views/components/cart/CartBar';
 import { useUsecase } from '../hooks/useUsecase';
 import { useCart } from '../hooks/useCart';
@@ -69,6 +70,7 @@ function toItemDetailScreenVariant(
     product: state.product,
     price: state.variant?.price ?? null,
     variantErrorMessage: state.type === 'error' ? state.errorMessage : null,
+    isVariantSellable: state.variant?.isSellable ?? null,
   };
 }
 
@@ -93,6 +95,22 @@ function getMissingOptionNames(
         )
     )
     .map((option) => option.name);
+}
+
+function computeOptionValueAvailability(
+  product: Product | null,
+  variants: Variant[],
+  selectedOptionValueIds: number[]
+): Record<number, boolean> {
+  if (!product) return {};
+  const productVariants = variants.filter(
+    (variant) => variant.product.id === product.id
+  );
+  return resolveOptionValueAvailability(
+    product,
+    productVariants,
+    selectedOptionValueIds
+  );
 }
 
 function buildValidationMessage(missingOptionNames: string[]): string | null {
@@ -210,6 +228,11 @@ export const MenuListHandler = ({
               optionId,
               optionValueId,
             }),
+          optionValueAvailability: computeOptionValueAvailability(
+            menuItemDetail.state.product,
+            menuList.state.variants,
+            menuItemDetail.state.selectedOptionValueIds
+          ),
           amount: menuItemDetail.state.amount,
           onAmountChange: (amount) =>
             menuItemDetail.dispatch({ type: 'CHANGE_AMOUNT', amount }),

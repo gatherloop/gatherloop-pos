@@ -363,6 +363,68 @@ describe('MenuListHandler', () => {
       expect(screen.queryByLabelText('Tutup')).toBeNull();
     });
 
+    it('shows a Habis badge on a sold-out product and blocks opening its item sheet', async () => {
+      const user = userEvent.setup();
+      const menuRepository = new MockMenuRepository();
+      menuRepository.products = menuRepository.products.map((product) =>
+        product.id === 1 ? { ...product, isSellable: false } : product
+      );
+      renderHandler({ menuRepository });
+      await settle();
+
+      expect(screen.getByText('Habis')).toBeTruthy();
+
+      await user.click(screen.getByText('Es Kopi Susu'));
+      await settle();
+
+      expect(screen.queryByLabelText('Tutup')).toBeNull();
+    });
+
+    it('disables a sold-out option value chip and labels it Habis', async () => {
+      const user = userEvent.setup();
+      const menuRepository = new MockMenuRepository();
+      menuRepository.variants = menuRepository.variants.map((variant) =>
+        variant.id === 2 ? { ...variant, isSellable: false } : variant
+      );
+      renderHandler({ menuRepository });
+      await settle();
+
+      await user.click(screen.getByText('Es Kopi Susu'));
+      await settle();
+
+      expect(
+        (
+          screen.getByRole('button', {
+            name: 'Large · Habis',
+          }) as HTMLButtonElement
+        ).disabled
+      ).toBe(true);
+      expect(
+        (
+          screen.getByRole('button', { name: 'Regular' }) as HTMLButtonElement
+        ).disabled
+      ).toBe(false);
+    });
+
+    it('shows Stok habis and disables add-to-cart for a sold-out resolved variant', async () => {
+      const menuRepository = new MockMenuRepository();
+      menuRepository.variants = menuRepository.variants.map((variant) =>
+        variant.id === 3 ? { ...variant, isSellable: false } : variant
+      );
+      renderHandler({ menuRepository });
+      await settle();
+
+      const user = userEvent.setup();
+      await user.click(screen.getByText('Nasi Goreng'));
+      await settle();
+
+      expect(
+        (
+          screen.getByRole('button', { name: 'Stok habis' }) as HTMLButtonElement
+        ).disabled
+      ).toBe(true);
+    });
+
     it('resets the draft when a different item is opened next', async () => {
       const user = userEvent.setup();
       renderHandler();
