@@ -5,8 +5,9 @@ import {
   mockProducts,
   mockProduct,
   mockOptionValues,
+  mockVariants,
 } from '../../../../../.storybook/mocks/mockData';
-import type { Product } from '../../../../domain';
+import type { Product, Variant } from '../../../../domain';
 
 const mockProductManyOptions: Product = {
   ...mockProduct,
@@ -75,6 +76,7 @@ const mockProductManyOptions: Product = {
 const defaultArgs = {
   products: mockProducts,
   selectedProduct: undefined,
+  selectedProductVariants: [],
   selectedOptionValues: [],
   onSelectProduct: fn(),
   onUnselectProduct: fn(),
@@ -181,5 +183,48 @@ export const CompactSelectingOptionsManyOptions: Story = {
     variant: { type: 'selectingOptions' },
     selectedProduct: mockProductManyOptions,
     selectedOptionValues: [],
+  },
+};
+
+const soldOutProduct: Product = {
+  ...mockProduct,
+  id: 4,
+  name: 'Es Kopi Susu Vanilla',
+  isSellable: false,
+};
+
+export const SoldOutProductInGrid: Story = {
+  args: {
+    variant: { type: 'loaded' },
+    products: [...mockProducts, soldOutProduct],
+  },
+};
+
+const variantsWithHotSoldOut: Variant[] = [
+  mockVariants[0],
+  { ...mockVariants[1], isSellable: false },
+];
+
+export const SelectingOptionsWithSoldOutValue: Story = {
+  args: {
+    variant: { type: 'selectingOptions' },
+    selectedProduct: mockProduct,
+    selectedProductVariants: variantsWithHotSoldOut,
+    selectedOptionValues: mockOptionValues,
+  },
+};
+
+const variantsWithCappedQuantity: Variant[] = [
+  { ...mockVariants[0], sellableQuantity: 3 },
+  mockVariants[1],
+];
+
+export const SelectingOptionsWithCappedStepper: Story = {
+  args: {
+    variant: { type: 'selectingOptions' },
+    selectedProduct: mockProduct,
+    selectedProductVariants: variantsWithCappedQuantity,
+    selectedOptionValues: mockOptionValues,
+    amount: 3,
   },
 };

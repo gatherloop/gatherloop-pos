@@ -9,7 +9,13 @@ import {
   useIsCompactLayout,
 } from '../../components';
 import { FormVariant } from '../../components/base';
-import { OptionValue, Product, RentalCheckinForm, Ticket } from '../../../../domain';
+import {
+  OptionValue,
+  Product,
+  RentalCheckinForm,
+  Ticket,
+  Variant,
+} from '../../../../domain';
 
 export type RentalCheckinScreenProps = {
   variant: FormVariant;
@@ -39,6 +45,7 @@ export type RentalCheckinScreenProps = {
     totalItem: number;
     variant: TransactionItemSelectProps['variant'];
     selectedProduct?: Product;
+    selectedProductVariants: Variant[];
   };
   serverError?: string;
 };
@@ -76,6 +83,9 @@ export const RentalCheckinScreen = (props: RentalCheckinScreenProps) => {
           totalItem={props.rentalItemSelect.totalItem}
           variant={props.rentalItemSelect.variant}
           selectedProduct={props.rentalItemSelect.selectedProduct}
+          selectedProductVariants={
+            props.rentalItemSelect.selectedProductVariants
+          }
         />
       )}
     />
