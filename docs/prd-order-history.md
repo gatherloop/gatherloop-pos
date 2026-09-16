@@ -11,12 +11,29 @@ Two changed it:
 - **History lists paid orders only.** D5's inclusion of pending-and-unexpired payments is
   superseded by **D14**: an unpaid QR's recovery path is the cart, which is never cleared while a
   payment is pending, so a pending row would be a second route to something the cart already does.
-  FR-1, FR-3, the Risks table and Success Criterion 4 follow.
+  FR-1, FR-3, the Risks table and Success Criterion 4 follow. *(D14's first draft claimed the cart
+  could drift out from under a pending payment; the second pass found it cannot — see below.)*
 - **The session is meant to last forever, and today it does not.** `resolveSession` issues
   `Set-Cookie` only when it mints a new id, so a returning guest's cookie counts down from their
   *first* visit and dies 365 days later whatever they do in between. **D15** makes the cookie
   rolling, raises it to the browser maximum, and names what "forever" can and cannot mean in a
   browser. This adds a phase, so the phase table is renumbered to nine; no decision number moved.
+
+## Revision note (second review pass)
+
+The second pass asked for a stale pending payment to be voided and a fresh QR issued for the new
+cart total, so that D14's exclusion of pending payments could not strand a guest. **That work is
+not needed and is not in this plan.** The premise — that the cart can be edited while a payment is
+awaiting — is false: `CartUsecase.ensureCartUnlocked` (`cart_usecase.go:194-206`) rejects all five
+mutation paths with `400 "cart is locked by a pending payment"` for exactly as long as
+`IsAwaitingPayment` holds, as `docs/prd-order-checkout-qris-doku.md` specced and
+`cart_handler_test.go` covers in five cases.
+
+The first pass's D14 asserted the opposite and described a data-loss bug that does not exist. That
+paragraph is corrected in place, **D16** records the rejected re-issue design and why, and the
+Risks, Out of Scope and Open Questions entries that rested on the bug are removed. The lock makes
+D14's argument stronger than it was, not weaker: an awaiting payment's amount can never go stale,
+so a pending row has nothing to tell the guest that the cart does not.
 
 ---
 
@@ -401,13 +418,15 @@ QR gets **the same QR** back by tapping Checkout again. History would be a secon
 the cart already reaches in one tap, and the price of that route is a third status pill on every
 row and a list that mixes "waiting for my coffee" with "never paid".
 
-*The hole in this, named rather than hidden:* the cart is still mutable while that payment is
-pending, and the transaction was snapshotted at checkout. A guest who abandons a QR, adds a third
-item, and checks out again gets the original payment back — original amount, original two items —
-and on payment the cart converts with the third item unpaid and unmade. That is a pre-existing bug
-(nothing in this PRD reaches it) and the reason it is worth fixing on its own is exactly that D14
-now leans on "just check out again" being the recovery path. Named in Out of Scope as a follow-up;
-Open Question 1 asks how it should behave.
+And that returned QR is always for the right amount, because **the cart is locked while a payment
+is awaiting**. `CartUsecase.ensureCartUnlocked` (`cart_usecase.go:194-206`) looks up
+`GetPendingPaymentByCartId` and returns `400 bad_request` *"cart is locked by a pending payment"*
+whenever `IsAwaitingPayment(time.Now())` holds, and every mutation path calls it —
+`UpdateCartTable` (:57), `AddCartItem` (:89), `UpdateCartItem` (:128), `RemoveCartItem` (:155) and
+`ClearCart` (:183), with five handler cases in `cart_handler_test.go` covering it. It was specced
+in `docs/prd-order-checkout-qris-doku.md` (§ "Cart lock", line 369). So the cart total cannot drift
+out from under an awaiting payment, the idempotent re-checkout can never hand back a stale amount,
+and there is no divergence for a history row to help with.
 
 *Alternative rejected:* a pending row with a `Menunggu pembayaran` pill. It is the more "complete"
 list and the less useful one — it puts a row in front of the guest whose correct action is
@@ -445,6 +464,26 @@ reconciliation, which is a bigger change than the bug deserves.
 would have no session id at all on the first request of every visit, and every order page would
 lose its server-rendered data — the thing `docs/prd-order-app-ux-round-2.md` went to some trouble
 to get.
+
+**D16 — Nothing is built to re-issue a QR when the cart changes, because the cart cannot change.**
+The second review pass asked for a stale awaiting payment to be voided and a fresh QR issued for
+the new total, so that excluding pending payments from history (D14) would not strand anyone. It
+would have been work against a bug that does not exist: `ensureCartUnlocked` already makes the
+cart immutable for exactly as long as a payment is awaiting (D14), so there is no "new total" to
+re-issue for. Recorded so the idea is not raised a third time from the same wrong premise.
+
+The lock releases when `IsAwaitingPayment` goes false — i.e. the moment the QR's own
+`expired_at` passes — and that is the intended path, not a gap: the guest's cart unlocks, the order
+page tells them *"Waktu pembayaran habis / Keranjang Anda masih tersimpan"*, they edit and check
+out again, and `Checkout` mints a genuinely new transaction and QR because the old payment no
+longer satisfies `IsAwaitingPayment`. DOKU's own `validityPeriod` is set from the same `expiredAt`
+(`doku/payment_repo.go:144`), so the abandoned QR stops being payable at the gateway at the same
+moment it stops locking the cart.
+
+*Alternative rejected:* voiding on cart mutation anyway, as belt-and-braces. Void would have to
+mean `status = 'expired'` to keep `applyQrisStatus`'s `paid_late` branch (`payment_usecase.go:216`)
+honouring a guest who pays a QR we cancelled — DOKU exposes no void call, only `GenerateQris` and
+`QueryQris` — so it would add a second, weaker copy of a guarantee the lock already gives outright.
 
 ---
 
@@ -601,7 +640,7 @@ in `npx nx run docs-site:dev`.
 | **Phase 2 changes the URL of the one page a guest may have open.** | Low | The redirect is the mitigation, and it is in the same PR. A tab already open on `/t/{code}/status` keeps polling the same API and is unaffected until its next navigation. |
 | **Removing the leave guard lets a guest close the tab and forget the order.** | Medium | This is the intended trade. The header button (Phase 6) and the badge (Phase 7) ship *before* the removal (Phase 8) precisely so the replacement exists first. The physical recovery path — quote the number at the counter — is unchanged. |
 | **The summary join drifts from `ToApiPayment`'s field semantics** (e.g. `fulfillmentStatus` derived two ways). | Medium | Derive it once: the summary transformer reads `CompletedAt != nil` from `TransactionSummary` using the same expression as `payment_transformer.go:68-71`, and `payment_transformer_test.go` asserts a summary and a full payment built from the same transaction agree. |
-| **Ordering again during a *pending* (unpaid) QRIS reuses the same cart.** The cart only converts on payment (`payment_usecase.go:261`), so a guest who abandons a QR and adds items is editing the cart that payment was quoted against — and re-checkout returns the original payment and amount, losing the added item on confirmation. | Low | Pre-existing and untouched by this PRD: leaving an unpaid QR is already unguarded today (the leave guard only fires on `preparing`). D14 makes the PRD *depend* on re-checkout being the recovery path, so the bug is named there, in Out of Scope and in Open Question 1 rather than absorbed. It needs its own PR. |
+| **A guest with an awaiting QR taps a menu item and gets a `400`.** `ensureCartUnlocked` rejects every cart mutation while a payment is awaiting (D14), and this PRD's header button makes wandering back to the menu easier. | Low | Pre-existing and unchanged in reachability — leaving an unpaid QR is already unguarded today (the leave guard only ever fired on `preparing`). `CartUsecase`'s error surfaces through the cart machine's `errorMessage`, so it is not silent. Whether the copy names the reason is a UX question for whoever next touches the menu, not this PRD. |
 | **The one SSR render after a cookie genuinely expires shows an empty history.** `getServerSideProps` cannot read `localStorage`, so it mints a new id, renders against it, and only then does the client reconcile back. | Low | Phase 3 makes it reachable only after 400 days of total absence (D15), by which point `localStorage` has usually gone too. A client-side refetch after reconciliation is the real fix and costs more than the bug. |
 | **`/orders` is a top-level route in an app whose every other route is table-scoped.** | Low | Deliberate (D4/D7): orders are session-scoped, and `/` (the table-scan screen) is already table-free. |
 
@@ -613,8 +652,8 @@ in `npx nx run docs-site:dev`.
 | --- | --- |
 | **Guest accounts / login** | Option C. Cross-device history is not in the acceptance criteria and a login wall contradicts `docs/prd-table-ordering.md`. |
 | **Pagination UI** | D11 — contract supports `skip`/`limit`; no screen affordance until a guest exists who needs one. |
-| **Pending, expired and failed orders in the list** | D14 for pending (the cart is the recovery path and re-checkout returns the same QR); D5 for the other two (their transactions are soft-deleted, so the row would be a dead end). |
-| **Voiding a stale pending payment when the cart changes under it** | The bug D14 leans against: items added after a QR is generated are lost on payment. Real, pre-existing, and its own PR — deciding between voiding the payment and freezing the cart is a product call, not a detail of this feature. Open Question 1. |
+| **Pending, expired and failed orders in the list** | D14 for pending (the cart is locked behind it and re-checkout returns the same QR); D5 for the other two (their transactions are soft-deleted, so the row would be a dead end). |
+| **Re-issuing a QR when the cart changes under a pending payment** | D16 — the cart cannot change under a pending payment; `ensureCartUnlocked` already forbids it. There is no drift to repair. |
 | **Re-order ("pesan lagi yang sama") from a history row** | A genuinely good follow-up, and a different feature: it needs cart-from-transaction on the API and a price-changed story. |
 | **Live-updating the badge** | D8. |
 | **A receipt / printable view of a past order** | The POS prints; nothing in the acceptance criteria asks the guest for one. |
@@ -631,10 +670,11 @@ The five questions this PRD opened, and how the first review pass answered them.
 than deleted, so the reasoning is not re-litigated from scratch later.
 
 1. **Should a pending (unpaid) order appear in history?** **No.** The cart is never cleared while a
-   payment is pending, and re-checkout returns the *same* QR through
-   `GetPendingPaymentByCartId`, so the guest who loses a QR already has a one-tap way back that
-   does not involve history. D5's pending clause is superseded by **D14**, and the follow-up bug
-   that answer exposes is Open Question 1 below.
+   payment is pending, *and it is locked for exactly that long*, so re-checkout returns the same QR
+   for the same amount through `GetPendingPaymentByCartId` — a one-tap way back that does not
+   involve history. D5's pending clause is superseded by **D14**. The second review pass then asked
+   for a re-issued QR to cover a drift the lock makes impossible; **D16** records why that is not
+   built.
 2. **Should the badge count `ready` orders too?** **No — `preparing` only**, as originally specced
    (FR-5, D8). The badge clears itself once the guest has been told to collect.
 3. **How long should a session last?** **Forever, as far as a browser allows** — which is not the
@@ -650,13 +690,7 @@ than deleted, so the reasoning is not re-litigated from scratch later.
 
 ## Open Questions
 
-1. **What should happen to a pending payment when the cart changes under it?** Today: nothing —
-   `Checkout` returns the original payment and amount while `IsAwaitingPayment` holds, so items
-   added after the QR was generated are converted away unpaid and unmade. D14 makes re-checkout the
-   sanctioned recovery path for a lost QR, which makes this worth closing. The two candidate
-   answers are voiding the stale payment and issuing a fresh QR for the new total, or refusing cart
-   mutations while a payment is awaiting. Its own PRD.
-2. **Should a guest's oldest history be trimmed for display?** Nothing caps it now, per answer 3
+1. **Should a guest's oldest history be trimmed for display?** Nothing caps it now, per answer 3
    above, so a regular eventually scrolls past months of coffee. `limit=20` hides this until
    pagination exists (D11); a `createdAt` cutoff is a one-line `WHERE` if it ever reads badly.
 
