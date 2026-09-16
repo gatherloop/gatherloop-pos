@@ -13,6 +13,7 @@ const defaultValues: ProductForm = {
   options: [],
   saleType: 'purchase',
   status: 'published',
+  availabilityTracking: 'none',
 };
 
 const categorySelectOptions = mockCategories.map((c) => ({ label: c.name, value: c.id }));

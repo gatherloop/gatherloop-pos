@@ -22,7 +22,7 @@ describe('ProductCreateUsecase', () => {
 
       tester.dispatch({
         type: 'SUBMIT',
-        values: { categoryId: 1, name: 'New Product', imageUrl: '', description: '', options: [], saleType: 'purchase', status: 'published' },
+        values: { categoryId: 1, name: 'New Product', imageUrl: '', description: '', options: [], saleType: 'purchase', status: 'published', availabilityTracking: 'none' },
       });
       expect(tester.state.type).toBe('submitting');
 
@@ -67,7 +67,7 @@ describe('ProductCreateUsecase', () => {
 
       tester.dispatch({
         type: 'SUBMIT',
-        values: { categoryId: 1, name: 'New Product', imageUrl: '', description: '', options: [], saleType: 'purchase', status: 'published' },
+        values: { categoryId: 1, name: 'New Product', imageUrl: '', description: '', options: [], saleType: 'purchase', status: 'published', availabilityTracking: 'none' },
       });
       expect(tester.state.type).toBe('submitting');
 
@@ -96,6 +96,34 @@ describe('ProductCreateUsecase', () => {
     expect(tester.state.values.status).toBe('published');
   });
 
+  it('defaults availabilityTracking to none for a new product', () => {
+    const productRepository = new MockProductRepository();
+    const categoryRepository = new MockCategoryRepository();
+    const usecase = new ProductCreateUsecase(productRepository, categoryRepository, {
+      categories: categoryRepository.categories,
+    });
+    const tester = new UsecaseTester<ProductCreateUsecase, ProductCreateState, ProductCreateAction, ProductCreateParams>(usecase);
+    expect(tester.state.values.availabilityTracking).toBe('none');
+  });
+
+  it('persists availabilityTracking when submitting a new product', async () => {
+    const productRepository = new MockProductRepository();
+    const categoryRepository = new MockCategoryRepository();
+    const usecase = new ProductCreateUsecase(productRepository, categoryRepository, {
+      categories: categoryRepository.categories,
+    });
+    const tester = new UsecaseTester<ProductCreateUsecase, ProductCreateState, ProductCreateAction, ProductCreateParams>(usecase);
+
+    tester.dispatch({
+      type: 'SUBMIT',
+      values: { categoryId: 1, name: 'Tracked Product', imageUrl: '', description: '', options: [], saleType: 'purchase', status: 'published', availabilityTracking: 'variant' },
+    });
+
+    await flushPromises();
+    expect(tester.state.type).toBe('submitSuccess');
+    expect(productRepository.products.at(-1)?.availabilityTracking).toBe('variant');
+  });
+
   it('persists status: draft when submitting a draft product', async () => {
     const productRepository = new MockProductRepository();
     const categoryRepository = new MockCategoryRepository();
@@ -106,7 +134,7 @@ describe('ProductCreateUsecase', () => {
 
     tester.dispatch({
       type: 'SUBMIT',
-      values: { categoryId: 1, name: 'Draft Product', imageUrl: '', description: '', options: [], saleType: 'purchase', status: 'draft' },
+      values: { categoryId: 1, name: 'Draft Product', imageUrl: '', description: '', options: [], saleType: 'purchase', status: 'draft', availabilityTracking: 'none' },
     });
 
     await flushPromises();
@@ -133,6 +161,7 @@ describe('ProductCreateUsecase', () => {
         options: [],
         saleType: 'purchase',
         status: 'published',
+        availabilityTracking: 'none',
       },
     });
 
