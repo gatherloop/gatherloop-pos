@@ -81,3 +81,15 @@ export const WithHistoryButton: Story = {
     onHistoryPress: () => undefined,
   },
 };
+
+export const WithPreparingBadge: Story = {
+  args: {
+    variant: {
+      type: 'resolved',
+      table: { id: 1, label: 'Meja 01', floorNumber: 1 },
+    },
+    children: <Paragraph>Menu akan segera hadir di sini.</Paragraph>,
+    onHistoryPress: () => undefined,
+    preparingCount: 2,
+  },
+};

@@ -216,3 +216,13 @@ export const WithHistoryButton: Story = {
     },
   },
 };
+
+export const WithPreparingBadge: Story = {
+  args: {
+    variant: { type: 'loaded', cart },
+    onHistoryPress: () => {
+      // Storybook action stand-in
+    },
+    preparingCount: 2,
+  },
+};

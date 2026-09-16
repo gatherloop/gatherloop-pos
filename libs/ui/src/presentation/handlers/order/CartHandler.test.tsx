@@ -35,6 +35,7 @@ const renderHandler = ({
   cartQueryRepository = new MockCartQueryRepository(),
   sessionRepository = new MockSessionRepository(),
   customerName = '',
+  preparingCount,
 }: {
   enabled?: boolean;
   cartRepository?: MockCartRepository;
@@ -43,6 +44,7 @@ const renderHandler = ({
   cartQueryRepository?: MockCartQueryRepository;
   sessionRepository?: MockSessionRepository;
   customerName?: string;
+  preparingCount?: number;
 } = {}) => {
   const tableResolveUsecase = new TableResolveUsecase(tableRepository, {
     code: TABLE_CODE,
@@ -65,6 +67,7 @@ const renderHandler = ({
         sessionRepository={sessionRepository}
         enabled={enabled}
         tableCode={TABLE_CODE}
+        preparingCount={preparingCount}
       />
     ),
   };
@@ -372,6 +375,22 @@ describe('CartHandler', () => {
     await user.click(screen.getByRole('button', { name: 'Pesanan Saya' }));
 
     expect(mockPush).toHaveBeenCalledWith('/orders');
+  });
+
+  it('shows the preparing count badge on the history button when provided', async () => {
+    renderHandler({ preparingCount: 3 });
+
+    await settle();
+
+    expect(screen.getByText('3')).toBeTruthy();
+  });
+
+  it('shows no badge when there are no preparing orders', async () => {
+    renderHandler({ preparingCount: 0 });
+
+    await settle();
+
+    expect(screen.queryByText('0')).toBeNull();
   });
 
   describe('the edit modal', () => {

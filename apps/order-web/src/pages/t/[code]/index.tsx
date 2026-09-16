@@ -1,7 +1,10 @@
 import {
   ApiMenuRepository,
+  ApiPaymentRepository,
   ApiPublicTableRepository,
+  CookieSessionRepository,
   getUrlFromCtx,
+  ORDER_HISTORY_LIMIT,
   resolveSession,
   SESSION_ID_COOKIE_NAME,
   TableNotFoundError,
@@ -22,8 +25,9 @@ export const getServerSideProps: GetServerSideProps<MenuListProps> = async (
   const code = String(ctx.params?.code ?? '');
   const url = getUrlFromCtx(ctx);
   const client = new QueryClient();
+  const sessionRepository = new CookieSessionRepository(sessionId);
 
-  const [table, menu] = await Promise.all([
+  const [table, menu, payments] = await Promise.all([
     new ApiPublicTableRepository()
       .resolveTableByCode(code)
       .catch((error) =>
@@ -32,6 +36,10 @@ export const getServerSideProps: GetServerSideProps<MenuListProps> = async (
     new ApiMenuRepository(client)
       .fetchMenu({ query: '' })
       .catch(() => ({ products: [], categories: [], variants: [] })),
+    new ApiPaymentRepository(sessionRepository)
+      .fetchPayments({ limit: ORDER_HISTORY_LIMIT, skip: 0 })
+      .then(({ payments }) => payments)
+      .catch(() => []),
   ]);
 
   return {
@@ -44,6 +52,9 @@ export const getServerSideProps: GetServerSideProps<MenuListProps> = async (
       variants: menu.variants,
       selectedProductId:
         new UrlMenuListQueryRepository().getSelectedProductId(url),
+      preparingCount: payments.filter(
+        (payment) => payment.fulfillmentStatus === 'preparing'
+      ).length,
     },
   };
 };
