@@ -112,7 +112,7 @@ const RadioGroupBase = ({ children, value, onValueChange }: AnyProps) =>
     { value: { value: value as string, onValueChange: onValueChange as (value: string) => void } },
     React.createElement('div', { 'data-component': 'RadioGroup' }, children)
   );
-const RadioGroupItem = ({ children, value: itemValue, id }: AnyProps) => {
+const RadioGroupItem = ({ children, value: itemValue, id, disabled }: AnyProps) => {
   const { value, onValueChange } = React.useContext(RadioGroupContext);
   return React.createElement(
     'div',
@@ -121,6 +121,7 @@ const RadioGroupItem = ({ children, value: itemValue, id }: AnyProps) => {
       type: 'radio',
       id,
       checked: value === itemValue,
+      disabled: disabled ?? false,
       onChange: () => onValueChange?.(itemValue as string),
     }),
     children

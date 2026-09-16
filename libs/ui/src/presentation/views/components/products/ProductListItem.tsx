@@ -1,6 +1,6 @@
 import { FileText, Pencil, Tag, Trash } from '@tamagui/lucide-icons';
 import { ListItem } from '../base';
-import { XStackProps } from 'tamagui';
+import { Paragraph, XStack, XStackProps, YStack } from 'tamagui';
 import { ProductStatus } from '../../../../domain';
 
 export type ProductListItemProps = {
@@ -9,9 +9,39 @@ export type ProductListItemProps = {
   status: ProductStatus;
   categoryName: string;
   imageUrl?: string;
+  isSoldOut?: boolean;
+  remainingQuantity?: number;
   onEditMenuPress?: () => void;
   onDeleteMenuPress?: () => void;
 } & XStackProps;
+
+const SoldOutBadge = () => (
+  <XStack
+    backgroundColor="$red5"
+    paddingHorizontal="$2"
+    paddingVertical="$1"
+    borderRadius="$10"
+    alignSelf="flex-start"
+  >
+    <Paragraph size="$1" color="$red11">
+      Sold out
+    </Paragraph>
+  </XStack>
+);
+
+const RemainingQuantityBadge = ({ value }: { value: number }) => (
+  <XStack
+    backgroundColor="$orange5"
+    paddingHorizontal="$2"
+    paddingVertical="$1"
+    borderRadius="$10"
+    alignSelf="flex-start"
+  >
+    <Paragraph size="$1" color="$orange11">
+      {value} left
+    </Paragraph>
+  </XStack>
+);
 
 export const ProductListItem = ({
   name,
@@ -19,6 +49,8 @@ export const ProductListItem = ({
   saleType,
   status,
   imageUrl,
+  isSoldOut,
+  remainingQuantity,
   onEditMenuPress,
   onDeleteMenuPress,
   ...xStackProps
@@ -26,7 +58,20 @@ export const ProductListItem = ({
   return (
     <ListItem
       title={name}
-      subtitle={categoryName}
+      subtitle={
+        <YStack gap="$1.5">
+          <Paragraph textTransform="none" ellipse size="$6">
+            {categoryName}
+          </Paragraph>
+          {isSoldOut ? (
+            <SoldOutBadge />
+          ) : (
+            remainingQuantity !== undefined && (
+              <RemainingQuantityBadge value={remainingQuantity} />
+            )
+          )}
+        </YStack>
+      }
       thumbnailSrc={imageUrl}
       footerItems={[
         {
@@ -55,6 +100,7 @@ export const ProductListItem = ({
         },
       ]}
       {...xStackProps}
+      opacity={isSoldOut ? 0.55 : xStackProps.opacity ?? 1}
     />
   );
 };

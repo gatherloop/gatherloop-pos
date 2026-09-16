@@ -314,6 +314,8 @@ export const TransactionCreateHandler = ({
       selectedOptionValues: transactionItemSelect.state.selectedOptionValues,
       totalItem: transactionItemSelect.state.totalItem,
       selectedProduct: transactionItemSelect.state.selectedProduct,
+      selectedProductVariants:
+        transactionItemSelect.state.selectedProductVariants,
       variant: match(transactionItemSelect.state)
         .returnType<
           TransactionCreateScreenProps['transactionItemSelect']['variant']

@@ -56,3 +56,17 @@ export const LongName: Story = {
     categoryName: 'Specialty Beverages & Artisan Coffee',
   },
 };
+
+export const SoldOut: Story = {
+  args: {
+    name: 'Es Kopi Susu Vanilla',
+    isSoldOut: true,
+  },
+};
+
+export const LowRemainingQuantity: Story = {
+  args: {
+    name: 'Pancong',
+    remainingQuantity: 2,
+  },
+};

@@ -65,6 +65,7 @@ const CreateStory = ({
         products: mockProducts,
         searchValue: '',
         selectedOptionValues: [],
+        selectedProductVariants: mockVariants,
         totalItem: mockProducts.length,
         variant: { type: 'loaded' },
       }}

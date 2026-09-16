@@ -14,6 +14,7 @@ type Status = 'draft' | 'published' | 'all';
 type Context = {
   products: Product[];
   selectedProduct?: Product;
+  selectedProductVariants: Variant[];
   selectedOptionValues: OptionValue[];
   selectedVariant?: Variant;
   amount: number;
@@ -56,6 +57,7 @@ export type TransactionItemSelectAction =
   | { type: 'REVALIDATE_FINISH'; products: Product[]; totalItem: number }
   | { type: 'SELECT_PRODUCT'; product: Product }
   | { type: 'UNSELECT_PRODUCT' }
+  | { type: 'FETCH_SELECTED_PRODUCT_VARIANTS_SUCCESS'; variants: Variant[] }
   | { type: 'UPDATE_OPTION_VALUES'; optionValues: OptionValue[] }
   | { type: 'FETCH_VARIANT' }
   | { type: 'FETCH_VARIANT_ERROR' }
@@ -85,6 +87,7 @@ export class TransactionItemSelectUsecase extends Usecase<
   productRepository: ProductRepository;
   variantRepository: VariantRepository;
   params: TransactionItemSelectParams;
+  private productVariantsFetchedForProductId: number | null = null;
 
   constructor(
     productRepository: ProductRepository,
@@ -110,6 +113,7 @@ export class TransactionItemSelectUsecase extends Usecase<
       type: this.params.products.length >= 1 ? 'loaded' : 'idle',
       products: this.params.products,
       selectedProduct: undefined,
+      selectedProductVariants: [],
       selectedOptionValues: [],
       selectedVariant: undefined,
       amount: 1,
@@ -208,6 +212,7 @@ export class TransactionItemSelectUsecase extends Usecase<
             ...state,
             type: hasOneOptions ? 'loadingVariant' : 'selectingOptions',
             selectedProduct: product,
+            selectedProductVariants: [],
             amount: 1,
             selectedOptionValues: product.options
               .filter((option) => option.values.length > 0)
@@ -221,6 +226,7 @@ export class TransactionItemSelectUsecase extends Usecase<
           ...state,
           type: 'loaded',
           selectedProduct: undefined,
+          selectedProductVariants: [],
           selectedOptionValues: [],
         })
       )
@@ -229,6 +235,16 @@ export class TransactionItemSelectUsecase extends Usecase<
         ([state, { optionValues }]) => ({
           ...state,
           selectedOptionValues: optionValues,
+        })
+      )
+      .with(
+        [
+          { type: 'selectingOptions' },
+          { type: 'FETCH_SELECTED_PRODUCT_VARIANTS_SUCCESS' },
+        ],
+        ([state, { variants }]) => ({
+          ...state,
+          selectedProductVariants: variants,
         })
       )
       .with(
@@ -267,6 +283,7 @@ export class TransactionItemSelectUsecase extends Usecase<
           ...state,
           type: 'loaded',
           selectedProduct: undefined,
+          selectedProductVariants: [],
           selectedOptionValues: [],
           selectedVariant: undefined,
         })
@@ -366,6 +383,34 @@ export class TransactionItemSelectUsecase extends Usecase<
             );
         }
       )
+      .with({ type: 'selectingOptions' }, ({ selectedProduct }) => {
+        if (
+          selectedProduct &&
+          this.productVariantsFetchedForProductId !== selectedProduct.id
+        ) {
+          this.productVariantsFetchedForProductId = selectedProduct.id;
+          this.variantRepository
+            .fetchVariantList({
+              page: 1,
+              itemPerPage: 1000,
+              orderBy: 'desc',
+              query: '',
+              sortBy: 'created_at',
+              productId: selectedProduct.id,
+              optionValueIds: [],
+            })
+            .then(({ variants }) =>
+              dispatch({
+                type: 'FETCH_SELECTED_PRODUCT_VARIANTS_SUCCESS',
+                variants,
+              })
+            )
+            .catch(() => {
+              // best-effort only — the grid falls back to no client-side
+              // disabling and FR-3's server-side check stays authoritative
+            });
+        }
+      })
       .with(
         { type: 'loadingVariant' },
         ({ selectedProduct, selectedOptionValues }) => {

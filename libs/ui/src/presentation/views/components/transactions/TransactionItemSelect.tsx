@@ -11,7 +11,7 @@ import {
   XStack,
   YStack,
 } from 'tamagui';
-import { OptionValue, Product } from '../../../../domain';
+import { OptionValue, Product, Variant } from '../../../../domain';
 import { match, P } from 'ts-pattern';
 import {
   EmptyView,
@@ -25,6 +25,7 @@ import {
 import { FlatList, useWindowDimensions } from 'react-native';
 import { ProductListItem } from '../products';
 import { Minus, Plus, X } from '@tamagui/lucide-icons';
+import { resolveOptionValueAvailability } from '../../../../utils';
 
 export type TransactionItemSelectProps = {
   variant:
@@ -37,6 +38,7 @@ export type TransactionItemSelectProps = {
     | { type: 'submited' };
   products: Product[];
   selectedProduct?: Product;
+  selectedProductVariants: Variant[];
   selectedOptionValues: OptionValue[];
   onSelectProduct: (product: Product) => void;
   onUnselectProduct: () => void;
@@ -69,6 +71,7 @@ export const TransactionItemSelect = ({
   products,
   selectedOptionValues,
   selectedProduct,
+  selectedProductVariants,
   amount,
   onAmountChange,
 }: TransactionItemSelectProps) => {
@@ -81,6 +84,36 @@ export const TransactionItemSelect = ({
     }),
     {}
   );
+
+  const optionValueAvailability =
+    selectedProduct &&
+    selectedProduct.saleType === 'purchase' &&
+    selectedProductVariants.length > 0
+      ? resolveOptionValueAvailability(
+          selectedProduct,
+          selectedProductVariants,
+          selectedOptionValues.map(({ id }) => id)
+        )
+      : {};
+
+  const selectedVariantMatch =
+    selectedProduct?.saleType === 'purchase'
+      ? selectedProductVariants.find(
+          (candidate) =>
+            candidate.values.length === selectedOptionValues.length &&
+            candidate.values.every((value) =>
+              selectedOptionValues.some(
+                (optionValue) => optionValue.id === value.optionValueId
+              )
+            )
+        )
+      : undefined;
+
+  const isSelectionSoldOut = selectedVariantMatch
+    ? !selectedVariantMatch.isSellable
+    : false;
+
+  const remainingQuantityForSelection = selectedVariantMatch?.sellableQuantity;
 
   return (
     <YStack flex={1}>
@@ -149,54 +182,93 @@ export const TransactionItemSelect = ({
                       }}
                     >
                       <XStack flexWrap="wrap" gap="$3">
-                        {option.values.map((value) => (
-                          <XStack alignItems="center" gap="$2" key={value.id}>
-                            <RadioGroup.Item
-                              value={JSON.stringify(value)}
-                              id={value.id.toString()}
-                              size={2}
-                            >
-                              <RadioGroup.Indicator />
-                            </RadioGroup.Item>
+                        {option.values.map((value) => {
+                          const isValueSoldOut =
+                            optionValueAvailability[value.id] === false;
 
-                            <Label size={2} htmlFor={value.id.toString()}>
-                              {value.name}
-                            </Label>
-                          </XStack>
-                        ))}
+                          return (
+                            <XStack
+                              alignItems="center"
+                              gap="$2"
+                              key={value.id}
+                              opacity={isValueSoldOut ? 0.5 : 1}
+                            >
+                              <RadioGroup.Item
+                                value={JSON.stringify(value)}
+                                id={value.id.toString()}
+                                size={2}
+                                disabled={isValueSoldOut}
+                              >
+                                <RadioGroup.Indicator />
+                              </RadioGroup.Item>
+
+                              <Label size={2} htmlFor={value.id.toString()}>
+                                {value.name}
+                              </Label>
+                              {isValueSoldOut && (
+                                <Paragraph size="$1" color="$red10">
+                                  Sold out
+                                </Paragraph>
+                              )}
+                            </XStack>
+                          );
+                        })}
                       </XStack>
                     </RadioGroup>
                   </YStack>
                 ))}
-                <XStack gap="$2" alignItems="center">
-                  <Button
-                    icon={Minus}
-                    variant="outlined"
-                    size="$2"
-                    onPress={() => onAmountChange(amount - 1)}
-                    circular
-                    disabled={amount === 1}
-                  />
+                {isSelectionSoldOut ? (
+                  <Paragraph color="$red10">
+                    This combination is sold out
+                  </Paragraph>
+                ) : (
+                  <XStack gap="$2" alignItems="center">
+                    <Button
+                      icon={Minus}
+                      variant="outlined"
+                      size="$2"
+                      onPress={() => onAmountChange(amount - 1)}
+                      circular
+                      disabled={amount === 1}
+                    />
 
-                  <Input
-                    onChangeText={(text: string) => {
-                      const numberValue =
-                        text.trim() === '' ? 1 : parseFloat(text);
-                      if (!isNaN(numberValue)) {
-                        onAmountChange(numberValue);
+                    <Input
+                      onChangeText={(text: string) => {
+                        const numberValue =
+                          text.trim() === '' ? 1 : parseFloat(text);
+                        if (!isNaN(numberValue)) {
+                          onAmountChange(
+                            remainingQuantityForSelection !== undefined
+                              ? Math.min(
+                                  numberValue,
+                                  remainingQuantityForSelection
+                                )
+                              : numberValue
+                          );
+                        }
+                      }}
+                      value={amount.toString()}
+                      flex={1}
+                    />
+                    <Button
+                      icon={Plus}
+                      variant="outlined"
+                      size="$2"
+                      onPress={() => onAmountChange(amount + 1)}
+                      circular
+                      disabled={
+                        remainingQuantityForSelection !== undefined &&
+                        amount >= remainingQuantityForSelection
                       }
-                    }}
-                    value={amount.toString()}
-                    flex={1}
-                  />
-                  <Button
-                    icon={Plus}
-                    variant="outlined"
-                    size="$2"
-                    onPress={() => onAmountChange(amount + 1)}
-                    circular
-                  />
-                </XStack>
+                    />
+                  </XStack>
+                )}
+                {!isSelectionSoldOut &&
+                  remainingQuantityForSelection !== undefined && (
+                    <Paragraph color="$gray10" size="$2">
+                      {remainingQuantityForSelection} left
+                    </Paragraph>
+                  )}
               </YStack>
             </ScrollView>
             <XStack gap="$3">
@@ -204,7 +276,7 @@ export const TransactionItemSelect = ({
               <Button
                 theme="blue"
                 onPress={onSubmit}
-                disabled={variant.type === 'submitting'}
+                disabled={variant.type === 'submitting' || isSelectionSoldOut}
               >
                 {variant.type === 'submitting' ? 'Submitting...' : 'Submit'}
               </Button>
@@ -266,22 +338,42 @@ export const TransactionItemSelect = ({
                           a.name.localeCompare(b.name)
                         )}
                         contentContainerStyle={{ gap: 16 }}
-                        renderItem={({ item }) => (
-                          <Focusable
-                            onEnterPress={() => onSelectProduct(item)}
-                            style={{ flex: 1 }}
-                          >
-                            <ProductListItem
-                              categoryName={item.category.name}
+                        renderItem={({ item }) => {
+                          const isSoldOut =
+                            item.saleType === 'purchase' && !item.isSellable;
+
+                          return (
+                            <Focusable
+                              onEnterPress={
+                                isSoldOut
+                                  ? undefined
+                                  : () => onSelectProduct(item)
+                              }
                               style={{ flex: 1 }}
-                              name={item.name}
-                              imageUrl={item.imageUrl}
-                              onPress={() => onSelectProduct(item)}
-                              saleType={item.saleType}
-                              status={item.status}
-                            />
-                          </Focusable>
-                        )}
+                            >
+                              <ProductListItem
+                                categoryName={item.category.name}
+                                style={{ flex: 1 }}
+                                name={item.name}
+                                imageUrl={item.imageUrl}
+                                onPress={
+                                  isSoldOut
+                                    ? undefined
+                                    : () => onSelectProduct(item)
+                                }
+                                saleType={item.saleType}
+                                status={item.status}
+                                isSoldOut={isSoldOut}
+                                remainingQuantity={
+                                  item.saleType === 'purchase' &&
+                                  item.availabilityTracking === 'product'
+                                    ? item.sellableQuantity
+                                    : undefined
+                                }
+                              />
+                            </Focusable>
+                          );
+                        }}
                         ItemSeparatorComponent={() => (
                           <YStack height="$1" style={{ flex: 1 }} />
                         )}
