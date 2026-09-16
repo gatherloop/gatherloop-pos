@@ -9,7 +9,7 @@ export type MenuProductCardProps = {
   onPress: () => void;
 };
 
-const HabisBadge = () => (
+const SoldOutBadge = () => (
   <XStack
     backgroundColor="$red5"
     paddingHorizontal="$2"
@@ -58,7 +58,7 @@ export const MenuProductCard = ({
           <Text fontWeight="bold" numberOfLines={1} flexShrink={1}>
             {product.name}
           </Text>
-          {!isSellable && <HabisBadge />}
+          {!isSellable && <SoldOutBadge />}
         </XStack>
 
         {product.description ? (
