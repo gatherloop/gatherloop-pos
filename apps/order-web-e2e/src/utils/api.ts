@@ -63,6 +63,18 @@ async function apiGet<T>(path: string): Promise<T> {
   return json.data as T;
 }
 
+async function apiPut<T>(path: string, body: unknown): Promise<T> {
+  const context = await getContext();
+  const response = await context.put(path, { data: body });
+  if (!response.ok()) {
+    throw new Error(
+      `PUT ${path} failed: ${response.status()} ${await response.text()}`
+    );
+  }
+  const json = await response.json();
+  return json.data as T;
+}
+
 async function apiDelete(path: string): Promise<void> {
   const context = await getContext();
   const response = await context.delete(path);
@@ -114,6 +126,8 @@ export interface Product {
   createdAt: string;
 }
 
+export type AvailabilityTracking = 'none' | 'product' | 'variant';
+
 export interface CreateProductInput {
   categoryId: number;
   name: string;
@@ -121,6 +135,7 @@ export interface CreateProductInput {
   imageUrl: string;
   saleType: 'purchase' | 'rental';
   status: 'draft' | 'published';
+  availabilityTracking?: AvailabilityTracking;
   options: Array<{ name: string; values: Array<{ name: string }> }>;
 }
 
@@ -209,4 +224,23 @@ export async function completeTransaction(id: number): Promise<void> {
       `PUT /transactions/${id}/complete failed: ${response.status()} ${await response.text()}`
     );
   }
+}
+
+export interface UpdateAvailabilityInput {
+  products?: Array<{
+    productId: number;
+    isAvailable?: boolean;
+    availableQuantity?: number;
+  }>;
+  variants?: Array<{
+    variantId: number;
+    isAvailable?: boolean;
+    availableQuantity?: number;
+  }>;
+}
+
+export async function updateAvailability(
+  data: UpdateAvailabilityInput
+): Promise<void> {
+  await apiPut('/availability', data);
 }

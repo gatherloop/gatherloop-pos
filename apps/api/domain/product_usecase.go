@@ -69,11 +69,30 @@ func (usecase ProductUsecase) CreateProduct(ctx context.Context, product Product
 func (usecase ProductUsecase) UpdateProductById(ctx context.Context, product Product, id int64) (Product, *Error) {
 	var updateResult Product
 	err := usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		existing, err := usecase.repository.GetProductById(ctxWithTx, id)
+		if err != nil {
+			return err
+		}
+
 		updated, err := usecase.repository.UpdateProductById(ctxWithTx, product, id)
 		if err != nil {
 			return err
 		}
 		updateResult = updated
+
+		// D2 (docs/prd-product-availability.md): a quantity entered against the old
+		// tracking level means nothing against the new one, so it is cleared rather
+		// than silently reinterpreted. The availability switches are left alone.
+		if product.AvailabilityTracking != "" && product.AvailabilityTracking != existing.AvailabilityTracking {
+			if err := usecase.repository.ClearAvailableQuantity(ctxWithTx, id); err != nil {
+				return err
+			}
+			if err := usecase.variantRepository.ClearAvailableQuantityByProductId(ctxWithTx, id); err != nil {
+				return err
+			}
+			updateResult.AvailableQuantity = nil
+		}
+
 		return nil
 	})
 

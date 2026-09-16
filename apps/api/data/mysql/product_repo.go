@@ -159,6 +159,12 @@ func (repo Repository) DeleteProductById(ctx context.Context, id int64) *domain.
 	return ToErrorCtx(ctx, result.Error, "DeleteProductById")
 }
 
+func (repo Repository) ClearAvailableQuantity(ctx context.Context, id int64) *domain.Error {
+	db := GetDbFromCtx(ctx, repo.db)
+	result := db.Table("products").Where("id = ?", id).Update("available_quantity", nil)
+	return ToErrorCtx(ctx, result.Error, "ClearAvailableQuantity")
+}
+
 func (repo Repository) DeleteUnusedOptions(ctx context.Context, productId int64, idsToKeep []int64) *domain.Error {
 	if len(idsToKeep) > 0 {
 		db := GetDbFromCtx(ctx, repo.db)

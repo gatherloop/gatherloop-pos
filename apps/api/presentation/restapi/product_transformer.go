@@ -119,15 +119,21 @@ func ToProduct(productRequest apiContract.ProductRequest) domain.Product {
 		})
 	}
 
+	var availabilityTracking domain.AvailabilityTracking
+	if productRequest.AvailabilityTracking != nil {
+		availabilityTracking = domain.AvailabilityTracking(*productRequest.AvailabilityTracking)
+	}
+
 	return domain.Product{
-		Name:        productRequest.Name,
-		CategoryId:  productRequest.CategoryId,
-		ImageUrl:    productRequest.ImageUrl,
-		Description: productRequest.Description,
-		Recipe:      productRequest.Recipe,
-		Options:     options,
-		SaleType:    domain.SaleType(productRequest.SaleType),
-		Status:      domain.ProductStatus(productRequest.Status),
+		Name:                 productRequest.Name,
+		CategoryId:           productRequest.CategoryId,
+		ImageUrl:             productRequest.ImageUrl,
+		Description:          productRequest.Description,
+		Recipe:               productRequest.Recipe,
+		Options:              options,
+		SaleType:             domain.SaleType(productRequest.SaleType),
+		Status:               domain.ProductStatus(productRequest.Status),
+		AvailabilityTracking: availabilityTracking,
 	}
 }
 

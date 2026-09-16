@@ -86,6 +86,7 @@ export default defineConfig({
           { text: 'Stock Checks', link: '/inventory/stock-checks' },
           { text: 'Purchase Lists', link: '/inventory/purchase-lists' },
           { text: 'Suppliers', link: '/inventory/suppliers' },
+          { text: 'Availability', link: '/inventory/availability' },
         ],
       },
       {

@@ -228,6 +228,8 @@ func TestProductUsecase_UpdateProductById(t *testing.T) {
 			setupMock: func(r *mock.MockProductRepository) {
 				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				r.EXPECT().GetProductById(gomock.Any(), int64(1)).
+					Return(domain.Product{Id: 1, Name: "Old Name", AvailabilityTracking: domain.AvailabilityTrackingNone}, nil)
 				r.EXPECT().UpdateProductById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Product{Id: 1, Name: "Espresso"}, nil)
 			},
 			setupVariantsMock: func(r *mock.MockVariantRepository) { expectNoVariants(r, 1) },
@@ -240,9 +242,52 @@ func TestProductUsecase_UpdateProductById(t *testing.T) {
 			setupMock: func(r *mock.MockProductRepository) {
 				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
-				r.EXPECT().UpdateProductById(gomock.Any(), gomock.Any(), int64(99)).Return(domain.Product{}, &domain.Error{Type: domain.NotFound})
+				r.EXPECT().GetProductById(gomock.Any(), int64(99)).
+					Return(domain.Product{}, &domain.Error{Type: domain.NotFound})
 			},
 			expectedError: &domain.Error{Type: domain.NotFound},
+		},
+		{
+			name: "changing availability tracking clears counters on both levels",
+			id:   1,
+			input: domain.Product{
+				Name:                 "Pancong",
+				AvailabilityTracking: domain.AvailabilityTrackingVariant,
+			},
+			setupMock: func(r *mock.MockProductRepository) {
+				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				r.EXPECT().GetProductById(gomock.Any(), int64(1)).
+					Return(domain.Product{Id: 1, Name: "Pancong", AvailabilityTracking: domain.AvailabilityTrackingProduct}, nil)
+				availableQuantity := 5
+				r.EXPECT().UpdateProductById(gomock.Any(), gomock.Any(), int64(1)).
+					Return(domain.Product{Id: 1, Name: "Pancong", AvailabilityTracking: domain.AvailabilityTrackingVariant, AvailableQuantity: &availableQuantity}, nil)
+				r.EXPECT().ClearAvailableQuantity(gomock.Any(), int64(1)).Return(nil)
+			},
+			setupVariantsMock: func(r *mock.MockVariantRepository) {
+				r.EXPECT().ClearAvailableQuantityByProductId(gomock.Any(), int64(1)).Return(nil)
+				expectNoVariants(r, 1)
+			},
+			expectedName: "Pancong",
+		},
+		{
+			name: "unchanged tracking leaves counters alone",
+			id:   1,
+			input: domain.Product{
+				Name:                 "Pancong",
+				AvailabilityTracking: domain.AvailabilityTrackingProduct,
+			},
+			setupMock: func(r *mock.MockProductRepository) {
+				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				r.EXPECT().GetProductById(gomock.Any(), int64(1)).
+					Return(domain.Product{Id: 1, Name: "Pancong", AvailabilityTracking: domain.AvailabilityTrackingProduct}, nil)
+				availableQuantity := 5
+				r.EXPECT().UpdateProductById(gomock.Any(), gomock.Any(), int64(1)).
+					Return(domain.Product{Id: 1, Name: "Pancong", AvailabilityTracking: domain.AvailabilityTrackingProduct, AvailableQuantity: &availableQuantity}, nil)
+			},
+			setupVariantsMock: func(r *mock.MockVariantRepository) { expectNoVariants(r, 1) },
+			expectedName:      "Pancong",
 		},
 	}
 
