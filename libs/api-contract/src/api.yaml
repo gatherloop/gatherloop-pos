@@ -1597,6 +1597,55 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /availability:
+    get:
+      summary: List availability for every published, purchasable product and its variants
+      operationId: availabilityList
+      tags:
+        - availability
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilityListResponse'
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Update availability for a set of products and variants
+      operationId: availabilityUpdate
+      tags:
+        - availability
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AvailabilityUpdateRequest'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilityUpdateResponse'
+        '400':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /budgets:
     get:
       summary: List all budgets
@@ -3859,6 +3908,123 @@ components:
         optionValueId:
           type: integer
           format: int64
+    AvailabilityVariant:
+      type: object
+      required:
+        - variantId
+        - variantName
+        - isAvailable
+        - isSellable
+      properties:
+        variantId:
+          type: integer
+          format: int64
+        variantName:
+          type: string
+        isAvailable:
+          type: boolean
+        availableQuantity:
+          type: integer
+          format: int64
+        isSellable:
+          type: boolean
+        sellableQuantity:
+          type: integer
+          format: int64
+    AvailabilityProduct:
+      type: object
+      required:
+        - productId
+        - productName
+        - categoryId
+        - categoryName
+        - availabilityTracking
+        - isAvailable
+        - isSellable
+        - variants
+      properties:
+        productId:
+          type: integer
+          format: int64
+        productName:
+          type: string
+        categoryId:
+          type: integer
+          format: int64
+        categoryName:
+          type: string
+        availabilityTracking:
+          type: string
+          enum: [none, product, variant]
+        isAvailable:
+          type: boolean
+        availableQuantity:
+          type: integer
+          format: int64
+        isSellable:
+          type: boolean
+        sellableQuantity:
+          type: integer
+          format: int64
+        variants:
+          type: array
+          items:
+            $ref: '#/components/schemas/AvailabilityVariant'
+    AvailabilityProductUpdateRequest:
+      type: object
+      required:
+        - productId
+      properties:
+        productId:
+          type: integer
+          format: int64
+        isAvailable:
+          type: boolean
+        availableQuantity:
+          type: integer
+          format: int64
+    AvailabilityVariantUpdateRequest:
+      type: object
+      required:
+        - variantId
+      properties:
+        variantId:
+          type: integer
+          format: int64
+        isAvailable:
+          type: boolean
+        availableQuantity:
+          type: integer
+          format: int64
+    AvailabilityUpdateRequest:
+      type: object
+      properties:
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/AvailabilityProductUpdateRequest'
+        variants:
+          type: array
+          items:
+            $ref: '#/components/schemas/AvailabilityVariantUpdateRequest'
+    AvailabilityListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AvailabilityProduct'
+    AvailabilityUpdateResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AvailabilityProduct'
     Budget:
       type: object
       required:
