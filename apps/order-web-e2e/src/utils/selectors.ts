@@ -13,6 +13,8 @@ export const menuList = {
     page.getByRole('button', { name, exact: true }),
   productCard: (page: Page, name: string) =>
     page.getByRole('button', { name, exact: true }),
+  soldOutBadge: (page: Page, name: string) =>
+    menuList.productCard(page, name).getByText('Habis', { exact: true }),
   startingPrice: (page: Page, formattedPrice: string) =>
     page.getByText(`mulai ${formattedPrice}`),
   emptyView: (page: Page) => page.getByText('Menu tidak ditemukan'),
@@ -25,8 +27,12 @@ export const itemDetail = {
     page.getByPlaceholder('Contoh: less sugar, tanpa es'),
   increaseAmountButton: (page: Page) => page.getByLabel('Tambah jumlah'),
   decreaseAmountButton: (page: Page) => page.getByLabel('Kurangi jumlah'),
+  remainingQuantityHint: (page: Page, remaining: number) =>
+    page.getByText(`Sisa ${remaining}`, { exact: true }),
   addToCartButton: (page: Page) =>
     page.getByRole('button', { name: /^Tambah ke Keranjang/ }),
+  soldOutAddToCartButton: (page: Page) =>
+    page.getByRole('button', { name: 'Stok habis' }),
   closeButton: (page: Page) => page.getByLabel('Tutup'),
 };
 
@@ -39,6 +45,11 @@ export const cartScreen = {
   emptyView: (page: Page) => page.getByText('Keranjang kosong'),
   lineItemName: (page: Page, productName: string) =>
     page.getByText(productName, { exact: true }),
+  lineItemSoldOutBadge: (page: Page, productName: string) =>
+    cartScreen
+      .lineItemName(page, productName)
+      .locator('xpath=..')
+      .getByText('Habis', { exact: true }),
   lineItemNote: (page: Page, note: string) =>
     page.getByText(`Catatan: ${note}`),
   editButton: (page: Page, productName: string) =>

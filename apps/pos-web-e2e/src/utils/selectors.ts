@@ -128,6 +128,8 @@ export const transactionForm = {
     page.getByPlaceholder('Search Products by Name'),
   productCard: (page: Page, name: string) =>
     page.locator('h4').filter({ hasText: name }).first(),
+  productTile: (page: Page, name: string) =>
+    page.locator('h4').filter({ hasText: name }).first().locator('xpath=..'),
   addCouponButton: (page: Page) =>
     page
       .locator('h4')
@@ -284,4 +286,19 @@ export const expenseForm = {
   itemUnitInput: (page: Page) => page.getByLabel('Unit').first(),
   itemPriceInput: (page: Page) => page.getByLabel('Price').first(),
   submitButton: (page: Page) => page.getByRole('button', { name: 'Submit' }),
+};
+
+export const availabilityForm = {
+  searchInput: (page: Page) => page.getByPlaceholder('Search product by name'),
+  soldOutFilterButton: (page: Page, label: 'Show only sold out' | 'Show all products') =>
+    page.getByRole('button', { name: label }),
+  row: (page: Page, rowName: string) =>
+    page.locator('label').filter({ hasText: rowName }).locator('xpath=..'),
+  switchToggle: (page: Page, rowName: string) =>
+    page.getByRole('switch', { name: rowName, exact: true }).first(),
+  quantityInput: (page: Page, rowName: string) =>
+    availabilityForm.row(page, rowName).getByRole('textbox'),
+  soldOutBadge: (page: Page, rowName: string) =>
+    availabilityForm.row(page, rowName).getByText('Sold out'),
+  saveButton: (page: Page) => page.getByRole('button', { name: 'Save' }).first(),
 };
