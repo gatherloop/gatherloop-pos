@@ -85,4 +85,5 @@ export * from './menuItemDetail';
 export * from './cart';
 export * from './checkout';
 export * from './orderStatus';
+export * from './orderHistory';
 export * from './IUsecase';

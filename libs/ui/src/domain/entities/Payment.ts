@@ -29,3 +29,16 @@ export type Payment = {
   transactionNumber: number;
   fulfillmentStatus: TransactionFulfillmentStatus;
 };
+
+export type PaymentSummary = {
+  reference: string;
+  status: QrisPaymentStatus;
+  fulfillmentStatus: TransactionFulfillmentStatus;
+  transactionNumber: number;
+  customerName: string;
+  tableLabel: string;
+  amount: number;
+  itemCount: number;
+  createdAt: string;
+  paidAt: string | null;
+};
