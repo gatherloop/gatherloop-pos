@@ -1,7 +1,9 @@
 import {
   ApiCustomerRepository,
+  ApiPaymentRepository,
   ApiPublicTableRepository,
   CookieSessionRepository,
+  ORDER_HISTORY_LIMIT,
   resolveSession,
   SESSION_ID_COOKIE_NAME,
   TableNotFoundError,
@@ -20,7 +22,7 @@ export const getServerSideProps: GetServerSideProps<CartProps> = async (
   const code = String(ctx.params?.code ?? '');
   const sessionRepository = new CookieSessionRepository(sessionId);
 
-  const [table, customerName] = await Promise.all([
+  const [table, customerName, payments] = await Promise.all([
     new ApiPublicTableRepository()
       .resolveTableByCode(code)
       .catch((error) =>
@@ -29,10 +31,22 @@ export const getServerSideProps: GetServerSideProps<CartProps> = async (
     new ApiCustomerRepository(sessionRepository)
       .fetchCurrentName()
       .catch(() => ''),
+    new ApiPaymentRepository(sessionRepository)
+      .fetchPayments({ limit: ORDER_HISTORY_LIMIT, skip: 0 })
+      .then(({ payments }) => payments)
+      .catch(() => []),
   ]);
 
   return {
-    props: { sessionId, code, table, customerName },
+    props: {
+      sessionId,
+      code,
+      table,
+      customerName,
+      preparingCount: payments.filter(
+        (payment) => payment.fulfillmentStatus === 'preparing'
+      ).length,
+    },
   };
 };
 

@@ -23,6 +23,7 @@ export type MenuListProps = {
   categories: Category[];
   variants: Variant[];
   selectedProductId: number | null;
+  preparingCount?: number;
 };
 
 export function MenuList({
@@ -33,6 +34,7 @@ export function MenuList({
   categories,
   variants,
   selectedProductId,
+  preparingCount,
 }: MenuListProps) {
   const client = new QueryClient();
   const sessionRepository = new CookieSessionRepository(sessionId);
@@ -69,6 +71,7 @@ export function MenuList({
       cartRepository={cartRepository}
       sessionRepository={sessionRepository}
       tableCode={code}
+      preparingCount={preparingCount}
     />
   );
 }

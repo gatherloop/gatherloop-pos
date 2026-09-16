@@ -130,6 +130,16 @@ export const WithHistoryButton: Story = {
   },
 };
 
+export const WithPreparingBadge: Story = {
+  args: {
+    ...Loaded.args,
+    onHistoryPress: () => {
+      // Storybook action stand-in
+    },
+    preparingCount: 2,
+  },
+};
+
 export const ItemSheetOpen: Story = {
   args: {
     ...Loaded.args,

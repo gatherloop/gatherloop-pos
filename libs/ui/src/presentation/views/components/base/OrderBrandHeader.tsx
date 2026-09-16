@@ -6,12 +6,14 @@ export type OrderBrandHeaderProps = {
   logoUri?: string;
   tableLine?: string;
   onHistoryPress?: () => void;
+  preparingCount?: number;
 };
 
 export const OrderBrandHeader = ({
   logoUri = ORDER_BRAND_LOGO_URI,
   tableLine,
   onHistoryPress,
+  preparingCount,
 }: OrderBrandHeaderProps) => {
   return (
     <XStack
@@ -34,15 +36,35 @@ export const OrderBrandHeader = ({
         ) : null}
       </YStack>
       {onHistoryPress ? (
-        <Button
-          icon={Receipt}
-          variant="outlined"
-          circular
-          width={44}
-          height={44}
-          onPress={onHistoryPress}
-          accessibilityLabel="Pesanan Saya"
-        />
+        <YStack position="relative">
+          <Button
+            icon={Receipt}
+            variant="outlined"
+            circular
+            width={44}
+            height={44}
+            onPress={onHistoryPress}
+            accessibilityLabel="Pesanan Saya"
+          />
+          {preparingCount ? (
+            <XStack
+              position="absolute"
+              top={-4}
+              right={-4}
+              minWidth={20}
+              height={20}
+              paddingHorizontal="$1"
+              borderRadius={10}
+              backgroundColor="$red10"
+              alignItems="center"
+              justifyContent="center"
+            >
+              <Text color="white" fontSize="$1" fontWeight="bold">
+                {preparingCount}
+              </Text>
+            </XStack>
+          ) : null}
+        </YStack>
       ) : null}
     </XStack>
   );

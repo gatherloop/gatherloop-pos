@@ -44,3 +44,14 @@ export const WithHistoryButton: Story = {
     },
   },
 };
+
+export const WithPreparingBadge: Story = {
+  args: {
+    logoUri: DATA_URI_LOGO,
+    tableLine: 'Meja 3 · Lantai 2',
+    onHistoryPress: () => {
+      // Storybook action stand-in
+    },
+    preparingCount: 2,
+  },
+};

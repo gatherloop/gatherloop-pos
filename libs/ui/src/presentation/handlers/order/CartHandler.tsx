@@ -20,6 +20,7 @@ export type CartHandlerProps = {
   sessionRepository: SessionRepository;
   enabled: boolean;
   tableCode: string;
+  preparingCount?: number;
 };
 
 function toScreenVariant(state: CartState): CartScreenProps['variant'] {
@@ -50,6 +51,7 @@ export const CartHandler = ({
   sessionRepository,
   enabled,
   tableCode,
+  preparingCount,
 }: CartHandlerProps) => {
   const tableResolve = useTableResolve(tableResolveUsecase);
   const cart = useCart(cartUsecase);
@@ -152,6 +154,7 @@ export const CartHandler = ({
         )
         .exhaustive()}
       onHistoryPress={() => router.push('/orders')}
+      preparingCount={preparingCount}
       variant={toScreenVariant(cart.state)}
       isMutating={mutating}
       errorMessage={cart.state.errorMessage}

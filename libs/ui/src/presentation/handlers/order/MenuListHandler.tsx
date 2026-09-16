@@ -29,6 +29,7 @@ export type MenuListHandlerProps = {
   cartRepository: CartRepository;
   sessionRepository: SessionRepository;
   tableCode: string;
+  preparingCount?: number;
 };
 
 function groupByCategory(products: Product[], categories: Category[]) {
@@ -112,6 +113,7 @@ export const MenuListHandler = ({
   cartRepository,
   sessionRepository,
   tableCode,
+  preparingCount,
 }: MenuListHandlerProps) => {
   const tableResolve = useTableResolve(tableResolveUsecase);
   const menuList = useUsecase(menuListUsecase);
@@ -300,6 +302,7 @@ export const MenuListHandler = ({
           : null
       }
       onHistoryPress={() => router.push('/orders')}
+      preparingCount={preparingCount}
       variant={match(menuList.state)
         .returnType<MenuListScreenProps['variant']>()
         .with({ type: P.union('idle', 'loading') }, () => ({
