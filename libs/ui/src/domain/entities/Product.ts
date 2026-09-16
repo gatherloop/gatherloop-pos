@@ -52,6 +52,7 @@ export type ProductForm = {
   }[];
   saleType: 'purchase' | 'rental';
   status: ProductStatus;
+  availabilityTracking: AvailabilityTracking;
 };
 
 export const productCreateFormSchema = z.object({
@@ -63,6 +64,7 @@ export const productCreateFormSchema = z.object({
   recipe: z.string(),
   imageUrl: z.string().min(1).url(),
   options: z.array(z.object({})).min(1),
+  availabilityTracking: z.string().min(1),
 });
 
 export const productUpdateFormSchema = z.object({
@@ -73,4 +75,5 @@ export const productUpdateFormSchema = z.object({
   imageUrl: z.string().min(1).url(),
   description: z.string(),
   recipe: z.string(),
+  availabilityTracking: z.string().min(1),
 });

@@ -28,7 +28,7 @@ describe('ProductUpdateUsecase', () => {
 
       tester.dispatch({
         type: 'SUBMIT',
-        values: { categoryId: 1, name: 'Updated Product', imageUrl: '', description: '', options: [], saleType: 'purchase', status: 'published' },
+        values: { categoryId: 1, name: 'Updated Product', imageUrl: '', description: '', options: [], saleType: 'purchase', status: 'published', availabilityTracking: 'none' },
       });
       expect(tester.state.type).toBe('submitting');
 
@@ -88,7 +88,7 @@ describe('ProductUpdateUsecase', () => {
 
       tester.dispatch({
         type: 'SUBMIT',
-        values: { categoryId: 1, name: 'Updated Product', imageUrl: '', description: '', options: [], saleType: 'purchase', status: 'published' },
+        values: { categoryId: 1, name: 'Updated Product', imageUrl: '', description: '', options: [], saleType: 'purchase', status: 'published', availabilityTracking: 'none' },
       });
       expect(tester.state.type).toBe('submitting');
 
@@ -137,6 +137,54 @@ describe('ProductUpdateUsecase', () => {
     expect(tester.state.values.status).toBe('draft');
   });
 
+  it('pre-fills availabilityTracking from the fetched product', () => {
+    const productRepository = new MockProductRepository();
+    const categoryRepository = new MockCategoryRepository();
+    const variantRepository = new MockVariantRepository();
+    const existing = { ...productRepository.products[0], availabilityTracking: 'variant' as const };
+    const usecase = new ProductUpdateUsecase(
+      productRepository,
+      categoryRepository,
+      variantRepository,
+      {
+        productId: 1,
+        product: existing,
+        categories: categoryRepository.categories,
+        variants: [],
+      }
+    );
+    const tester = new UsecaseTester<ProductUpdateUsecase, ProductUpdateState, ProductUpdateAction, ProductUpdateParams>(usecase);
+    expect(tester.state.values.availabilityTracking).toBe('variant');
+  });
+
+  it('persists an updated availabilityTracking', async () => {
+    const productRepository = new MockProductRepository();
+    const categoryRepository = new MockCategoryRepository();
+    const variantRepository = new MockVariantRepository();
+    const existing = productRepository.products[0];
+    const usecase = new ProductUpdateUsecase(
+      productRepository,
+      categoryRepository,
+      variantRepository,
+      {
+        productId: existing.id,
+        product: existing,
+        categories: categoryRepository.categories,
+        variants: [],
+      }
+    );
+    const tester = new UsecaseTester<ProductUpdateUsecase, ProductUpdateState, ProductUpdateAction, ProductUpdateParams>(usecase);
+
+    tester.dispatch({
+      type: 'SUBMIT',
+      values: { categoryId: 1, name: existing.name, imageUrl: existing.imageUrl, description: '', options: [], saleType: 'purchase', status: 'published', availabilityTracking: 'product' },
+    });
+
+    await flushPromises();
+    expect(tester.state.type).toBe('submitSuccess');
+    expect(productRepository.products.find((p) => p.id === existing.id)?.availabilityTracking).toBe('product');
+  });
+
   it('persists an updated status', async () => {
     const productRepository = new MockProductRepository();
     const categoryRepository = new MockCategoryRepository();
@@ -157,7 +205,7 @@ describe('ProductUpdateUsecase', () => {
 
     tester.dispatch({
       type: 'SUBMIT',
-      values: { categoryId: 1, name: existing.name, imageUrl: existing.imageUrl, description: '', options: [], saleType: 'purchase', status: 'draft' },
+      values: { categoryId: 1, name: existing.name, imageUrl: existing.imageUrl, description: '', options: [], saleType: 'purchase', status: 'draft', availabilityTracking: 'none' },
     });
 
     await flushPromises();
@@ -214,6 +262,7 @@ describe('ProductUpdateUsecase', () => {
         options: [],
         saleType: 'purchase',
         status: 'published',
+        availabilityTracking: 'none',
       },
     });
 

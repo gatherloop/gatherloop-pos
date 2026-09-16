@@ -63,6 +63,7 @@ export class ProductCreateUsecase extends Usecase<
       options: [],
       saleType: 'purchase',
       status: 'published',
+      availabilityTracking: 'none',
     };
     return this.params.categories.length > 0
       ? {

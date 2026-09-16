@@ -33,5 +33,6 @@ export function toApiProduct(form: ProductForm) {
     options: form.options,
     saleType: form.saleType,
     status: form.status,
+    availabilityTracking: form.availabilityTracking,
   };
 }

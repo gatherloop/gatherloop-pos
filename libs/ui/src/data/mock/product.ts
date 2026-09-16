@@ -112,7 +112,7 @@ export class MockProductRepository implements ProductRepository {
       options: [],
       createdAt: new Date().toISOString(),
       isAvailable: true,
-      availabilityTracking: 'none',
+      availabilityTracking: formValues.availabilityTracking,
       isSellable: true,
     });
   }
@@ -132,6 +132,7 @@ export class MockProductRepository implements ProductRepository {
       imageUrl: formValues.imageUrl,
       saleType: formValues.saleType,
       status: formValues.status,
+      availabilityTracking: formValues.availabilityTracking,
     };
   }
 

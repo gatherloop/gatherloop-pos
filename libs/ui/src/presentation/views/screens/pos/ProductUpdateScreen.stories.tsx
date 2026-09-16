@@ -14,6 +14,7 @@ const defaultValues: ProductForm = {
   options: [{ name: 'Temperature', values: [{ name: 'Iced' }, { name: 'Hot' }] }],
   saleType: 'purchase',
   status: 'published',
+  availabilityTracking: 'variant',
 };
 
 const loadingValues: ProductForm = {
@@ -25,6 +26,7 @@ const loadingValues: ProductForm = {
   options: [],
   saleType: 'purchase',
   status: 'published',
+  availabilityTracking: 'none',
 };
 
 const categorySelectOptions = mockCategories.map((c) => ({ label: c.name, value: c.id }));

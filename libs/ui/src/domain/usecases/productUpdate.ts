@@ -87,6 +87,8 @@ export class ProductUpdateUsecase extends Usecase<
         options: this.params.product?.options ?? [],
         saleType: this.params.product?.saleType ?? 'purchase',
         status: this.params.product?.status ?? 'published',
+        availabilityTracking:
+          this.params.product?.availabilityTracking ?? 'none',
       },
     };
   }
@@ -205,6 +207,7 @@ export class ProductUpdateUsecase extends Usecase<
                 options: product.options,
                 saleType: product.saleType,
                 status: product.status,
+                availabilityTracking: product.availabilityTracking,
               },
             })
           )
