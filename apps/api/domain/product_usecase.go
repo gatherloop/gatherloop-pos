@@ -20,9 +20,9 @@ func (usecase ProductUsecase) resolveAvailability(ctx context.Context, product P
 		return Product{}, err
 	}
 
-	isSellable, remaining := ResolveProductAvailability(product, variants)
+	isSellable, sellableQuantity := ResolveProductAvailability(product, variants)
 	product.IsSellable = isSellable
-	product.RemainingQuantity = remaining
+	product.SellableQuantity = sellableQuantity
 	return product, nil
 }
 

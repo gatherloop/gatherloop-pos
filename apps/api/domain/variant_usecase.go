@@ -96,14 +96,14 @@ func (usecase VariantUsecase) UpdateVariantById(ctx context.Context, variant Var
 }
 
 func resolveVariantAvailability(variant Variant, product Product) Variant {
-	isSellable, remaining := ResolveVariantAvailability(product, variant)
+	isSellable, sellableQuantity := ResolveVariantAvailability(product, variant)
 	variant.IsSellable = isSellable
-	variant.RemainingQuantity = remaining
+	variant.SellableQuantity = sellableQuantity
 
 	variant.Product = product
-	productIsSellable, productRemaining := ResolveProductAvailability(product, []Variant{variant})
+	productIsSellable, productSellableQuantity := ResolveProductAvailability(product, []Variant{variant})
 	variant.Product.IsSellable = productIsSellable
-	variant.Product.RemainingQuantity = productRemaining
+	variant.Product.SellableQuantity = productSellableQuantity
 
 	return variant
 }

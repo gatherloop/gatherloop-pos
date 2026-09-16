@@ -43,11 +43,11 @@ type Product struct {
 	AvailabilityTracking AvailabilityTracking
 	AvailableQuantity    *int
 	IsSellable           bool
-	RemainingQuantity    *int
+	SellableQuantity     *int
 }
 
-func ResolveProductAvailability(product Product, variants []Variant) (isSellable bool, remaining *int) {
-	remaining = productRemainingQuantity(product)
+func ResolveProductAvailability(product Product, variants []Variant) (isSellable bool, sellableQuantity *int) {
+	sellableQuantity = productSellableQuantity(product)
 
 	for _, variant := range variants {
 		variantIsSellable, _ := ResolveVariantAvailability(product, variant)
@@ -57,10 +57,10 @@ func ResolveProductAvailability(product Product, variants []Variant) (isSellable
 		}
 	}
 
-	return isSellable, remaining
+	return isSellable, sellableQuantity
 }
 
-func productRemainingQuantity(product Product) *int {
+func productSellableQuantity(product Product) *int {
 	if product.AvailabilityTracking == AvailabilityTrackingProduct {
 		return product.AvailableQuantity
 	}

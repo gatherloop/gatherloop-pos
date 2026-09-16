@@ -96,7 +96,7 @@ func TestPublicHandler_GetProductList_populatesAvailability(t *testing.T) {
 	assert.NoError(t, json.NewDecoder(w.Body).Decode(&resp))
 	assert.Len(t, resp.Data, 1)
 	assert.True(t, resp.Data[0].IsSellable)
-	assert.Nil(t, resp.Data[0].RemainingQuantity)
+	assert.Nil(t, resp.Data[0].SellableQuantity)
 }
 
 func TestPublicHandler_GetProductById(t *testing.T) {

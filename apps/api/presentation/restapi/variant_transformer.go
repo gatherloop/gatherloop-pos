@@ -104,7 +104,7 @@ func ToApiVariant(variant domain.Variant) apiContract.Variant {
 		IsAvailable:       variant.IsAvailable,
 		AvailableQuantity: ToApiQuantity(variant.AvailableQuantity),
 		IsSellable:        variant.IsSellable,
-		RemainingQuantity: ToApiQuantity(variant.RemainingQuantity),
+		SellableQuantity:  ToApiQuantity(variant.SellableQuantity),
 	}
 }
 

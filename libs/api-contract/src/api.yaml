@@ -3598,7 +3598,7 @@ components:
           format: int64
         isSellable:
           type: boolean
-        remainingQuantity:
+        sellableQuantity:
           type: integer
           format: int64
     ProductRequest:
@@ -3751,7 +3751,7 @@ components:
           format: int64
         isSellable:
           type: boolean
-        remainingQuantity:
+        sellableQuantity:
           type: integer
           format: int64
     VariantRequest:

@@ -112,7 +112,7 @@ func TestProductUsecase_GetProductList_resolvesAvailability(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.True(t, products[0].IsSellable)
-	assert.Nil(t, products[0].RemainingQuantity)
+	assert.Nil(t, products[0].SellableQuantity)
 }
 
 func TestProductUsecase_GetProductById(t *testing.T) {

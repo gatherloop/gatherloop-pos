@@ -85,7 +85,7 @@ func ToApiProduct(product domain.Product) apiContract.Product {
 		AvailabilityTracking: string(product.AvailabilityTracking),
 		AvailableQuantity:    ToApiQuantity(product.AvailableQuantity),
 		IsSellable:           product.IsSellable,
-		RemainingQuantity:    ToApiQuantity(product.RemainingQuantity),
+		SellableQuantity:     ToApiQuantity(product.SellableQuantity),
 	}
 }
 

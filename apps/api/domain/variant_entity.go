@@ -43,11 +43,11 @@ type Variant struct {
 	IsAvailable       bool
 	AvailableQuantity *int
 	IsSellable        bool
-	RemainingQuantity *int
+	SellableQuantity  *int
 }
 
-func ResolveVariantAvailability(product Product, variant Variant) (isSellable bool, remaining *int) {
-	remaining = variantRemainingQuantity(product, variant)
+func ResolveVariantAvailability(product Product, variant Variant) (isSellable bool, sellableQuantity *int) {
+	sellableQuantity = variantSellableQuantity(product, variant)
 
 	isSellable = product.DeletedAt == nil &&
 		variant.DeletedAt == nil &&
@@ -55,12 +55,12 @@ func ResolveVariantAvailability(product Product, variant Variant) (isSellable bo
 		product.SaleType == SaleTypePurchase &&
 		product.IsAvailable &&
 		variant.IsAvailable &&
-		(remaining == nil || *remaining > 0)
+		(sellableQuantity == nil || *sellableQuantity > 0)
 
-	return isSellable, remaining
+	return isSellable, sellableQuantity
 }
 
-func variantRemainingQuantity(product Product, variant Variant) *int {
+func variantSellableQuantity(product Product, variant Variant) *int {
 	switch product.AvailabilityTracking {
 	case AvailabilityTrackingProduct:
 		return product.AvailableQuantity

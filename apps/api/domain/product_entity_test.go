@@ -9,11 +9,11 @@ import (
 
 func TestResolveProductAvailability(t *testing.T) {
 	tests := []struct {
-		name              string
-		product           domain.Product
-		variants          []domain.Variant
-		expectedSellable  bool
-		expectedRemaining *int
+		name                     string
+		product                  domain.Product
+		variants                 []domain.Variant
+		expectedSellable         bool
+		expectedSellableQuantity *int
 	}{
 		{
 			name:    "es kopi susu — vanilla off, banana and hazelnut on",
@@ -23,8 +23,8 @@ func TestResolveProductAvailability(t *testing.T) {
 				baseAvailableVariant(),
 				baseAvailableVariant(),
 			},
-			expectedSellable:  true,
-			expectedRemaining: nil,
+			expectedSellable:         true,
+			expectedSellableQuantity: nil,
 		},
 		{
 			name: "soft cookies — choco remaining, red velvet exhausted",
@@ -37,8 +37,8 @@ func TestResolveProductAvailability(t *testing.T) {
 				func() domain.Variant { v := baseAvailableVariant(); v.AvailableQuantity = intPtr(6); return v }(),
 				func() domain.Variant { v := baseAvailableVariant(); v.AvailableQuantity = intPtr(0); return v }(),
 			},
-			expectedSellable:  true,
-			expectedRemaining: nil,
+			expectedSellable:         true,
+			expectedSellableQuantity: nil,
 		},
 		{
 			name: "soft cookies — both variants exhausted",
@@ -51,8 +51,8 @@ func TestResolveProductAvailability(t *testing.T) {
 				func() domain.Variant { v := baseAvailableVariant(); v.AvailableQuantity = intPtr(0); return v }(),
 				func() domain.Variant { v := baseAvailableVariant(); v.AvailableQuantity = intPtr(0); return v }(),
 			},
-			expectedSellable:  false,
-			expectedRemaining: nil,
+			expectedSellable:         false,
+			expectedSellableQuantity: nil,
 		},
 		{
 			name: "pancong — dough remaining, all variants on",
@@ -62,9 +62,9 @@ func TestResolveProductAvailability(t *testing.T) {
 				p.AvailableQuantity = intPtr(5)
 				return p
 			}(),
-			variants:          []domain.Variant{baseAvailableVariant(), baseAvailableVariant(), baseAvailableVariant()},
-			expectedSellable:  true,
-			expectedRemaining: intPtr(5),
+			variants:                 []domain.Variant{baseAvailableVariant(), baseAvailableVariant(), baseAvailableVariant()},
+			expectedSellable:         true,
+			expectedSellableQuantity: intPtr(5),
 		},
 		{
 			name: "pancong matcha off — choco and vanilla still sellable",
@@ -79,8 +79,8 @@ func TestResolveProductAvailability(t *testing.T) {
 				func() domain.Variant { v := baseAvailableVariant(); v.IsAvailable = false; return v }(),
 				baseAvailableVariant(),
 			},
-			expectedSellable:  true,
-			expectedRemaining: intPtr(5),
+			expectedSellable:         true,
+			expectedSellableQuantity: intPtr(5),
 		},
 		{
 			name: "pancong — dough exhausted",
@@ -90,24 +90,24 @@ func TestResolveProductAvailability(t *testing.T) {
 				p.AvailableQuantity = intPtr(0)
 				return p
 			}(),
-			variants:          []domain.Variant{baseAvailableVariant(), baseAvailableVariant(), baseAvailableVariant()},
-			expectedSellable:  false,
-			expectedRemaining: intPtr(0),
+			variants:                 []domain.Variant{baseAvailableVariant(), baseAvailableVariant(), baseAvailableVariant()},
+			expectedSellable:         false,
+			expectedSellableQuantity: intPtr(0),
 		},
 		{
-			name:              "product has no variants",
-			product:           baseAvailableProduct(),
-			variants:          []domain.Variant{},
-			expectedSellable:  false,
-			expectedRemaining: nil,
+			name:                     "product has no variants",
+			product:                  baseAvailableProduct(),
+			variants:                 []domain.Variant{},
+			expectedSellable:         false,
+			expectedSellableQuantity: nil,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			isSellable, remaining := domain.ResolveProductAvailability(tt.product, tt.variants)
+			isSellable, sellableQuantity := domain.ResolveProductAvailability(tt.product, tt.variants)
 			assert.Equal(t, tt.expectedSellable, isSellable)
-			assert.Equal(t, tt.expectedRemaining, remaining)
+			assert.Equal(t, tt.expectedSellableQuantity, sellableQuantity)
 		})
 	}
 }
