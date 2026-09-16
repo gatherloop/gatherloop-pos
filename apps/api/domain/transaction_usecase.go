@@ -161,6 +161,10 @@ func (usecase TransactionUsecase) UpdateTransactionById(ctx context.Context, tra
 			return err
 		}
 
+		if err := usecase.availabilityReservation.ApplyDelta(ctxWithTx, existingTransaction.TransactionItems, transaction.TransactionItems); err != nil {
+			return err
+		}
+
 		ut, err := usecase.transactionRepository.UpdateTransactionById(ctxWithTx, transaction, id)
 		if err != nil {
 			return err

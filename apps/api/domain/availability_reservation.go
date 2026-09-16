@@ -35,6 +35,124 @@ func (reservation AvailabilityReservation) Release(ctx context.Context, items []
 	return reservation.adjust(ctx, items, 1, false)
 }
 
+// ApplyDelta reserves or releases, per counting unit, the difference between a transaction's
+// existing item set and its incoming one — so editing an unpaid transaction adjusts availability
+// by exactly what changed instead of releasing and re-reserving the whole order. Only units whose
+// net amount increases are validated against a shortfall or a switched-off item.
+func (reservation AvailabilityReservation) ApplyDelta(ctx context.Context, oldItems []TransactionItem, newItems []TransactionItem) *Error {
+	variantsById := map[int64]Variant{}
+	productsById := map[int64]Product{}
+	namesByUnit := map[availabilityCountingUnit]string{}
+
+	load := func(items []TransactionItem, validateSwitch bool) (map[availabilityCountingUnit]float32, *Error) {
+		amountsByUnit := map[availabilityCountingUnit]float32{}
+
+		for _, item := range items {
+			if item.RentalId != nil {
+				continue
+			}
+
+			variant, ok := variantsById[item.VariantId]
+			if !ok {
+				lockedVariant, err := reservation.repository.LockVariantById(ctx, item.VariantId)
+				if err != nil {
+					return nil, err
+				}
+				variant = lockedVariant
+				variantsById[item.VariantId] = variant
+			}
+
+			product := variant.Product
+			if product.SaleType == SaleTypeRental {
+				continue
+			}
+
+			if validateSwitch && (!product.IsAvailable || !variant.IsAvailable) {
+				return nil, &Error{Type: BadRequest, Message: fmt.Sprintf("%s is sold out", availabilityItemName(product, variant))}
+			}
+
+			switch product.AvailabilityTracking {
+			case AvailabilityTrackingProduct:
+				if _, ok := productsById[product.Id]; !ok {
+					lockedProduct, err := reservation.repository.LockProductById(ctx, product.Id)
+					if err != nil {
+						return nil, err
+					}
+					productsById[product.Id] = lockedProduct
+				}
+				unit := availabilityCountingUnit{level: availabilityCountingProduct, id: product.Id}
+				amountsByUnit[unit] += item.Amount
+				namesByUnit[unit] = product.Name
+			case AvailabilityTrackingVariant:
+				unit := availabilityCountingUnit{level: availabilityCountingVariant, id: variant.Id}
+				amountsByUnit[unit] += item.Amount
+				namesByUnit[unit] = availabilityItemName(product, variant)
+			}
+		}
+
+		return amountsByUnit, nil
+	}
+
+	oldAmountsByUnit, err := load(oldItems, false)
+	if err != nil {
+		return err
+	}
+
+	newAmountsByUnit, err := load(newItems, true)
+	if err != nil {
+		return err
+	}
+
+	units := map[availabilityCountingUnit]bool{}
+	for unit := range oldAmountsByUnit {
+		units[unit] = true
+	}
+	for unit := range newAmountsByUnit {
+		units[unit] = true
+	}
+
+	for unit := range units {
+		amountDelta := newAmountsByUnit[unit] - oldAmountsByUnit[unit]
+		if amountDelta == 0 {
+			continue
+		}
+
+		quantityDelta := -int(math.Round(float64(amountDelta)))
+		validate := quantityDelta < 0
+
+		switch unit.level {
+		case availabilityCountingProduct:
+			product := productsById[unit.id]
+			current := 0
+			if product.AvailableQuantity != nil {
+				current = *product.AvailableQuantity
+			}
+			newQuantity := current + quantityDelta
+			if validate && newQuantity < 0 {
+				return &Error{Type: BadRequest, Message: fmt.Sprintf("only %d %s left", current, namesByUnit[unit])}
+			}
+			if err := reservation.repository.UpdateProductAvailableQuantity(ctx, unit.id, newQuantity); err != nil {
+				return err
+			}
+		case availabilityCountingVariant:
+			variant := variantsById[unit.id]
+			current := 0
+			if variant.AvailableQuantity != nil {
+				current = *variant.AvailableQuantity
+			}
+			newQuantity := current + quantityDelta
+			if validate && newQuantity < 0 {
+				return &Error{Type: BadRequest, Message: fmt.Sprintf("only %d %s left", current, namesByUnit[unit])}
+			}
+			if err := reservation.repository.UpdateVariantAvailableQuantity(ctx, unit.id, newQuantity); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
 type availabilityCountingLevel int
 
 const (
