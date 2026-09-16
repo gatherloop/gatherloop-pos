@@ -34,6 +34,9 @@ const esKopiSusu = {
     },
   ],
   createdAt: '2024-03-20T00:00:00.000Z',
+  isAvailable: true,
+  availabilityTracking: 'none' as const,
+  isSellable: true,
 };
 
 const esKopiSusuDenganEs = {
@@ -61,6 +64,9 @@ const nasiGoreng = {
   status: 'published' as const,
   options: [],
   createdAt: '2024-03-21T00:00:00.000Z',
+  isAvailable: true,
+  availabilityTracking: 'none' as const,
+  isSellable: true,
 };
 
 const meta: Meta<typeof MenuItemDetailScreen> = {

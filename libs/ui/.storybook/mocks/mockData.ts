@@ -139,6 +139,9 @@ export const mockProduct: Product = {
   ],
   saleType: 'purchase',
   status: 'published',
+  isAvailable: true,
+  availabilityTracking: 'none',
+  isSellable: true,
 };
 
 export const mockProducts: Product[] = [
@@ -153,6 +156,9 @@ export const mockProducts: Product[] = [
     options: [],
     saleType: 'purchase',
     status: 'published',
+    isAvailable: true,
+    availabilityTracking: 'none',
+    isSellable: true,
   },
   {
     id: 3,
@@ -164,6 +170,9 @@ export const mockProducts: Product[] = [
     options: [],
     saleType: 'rental',
     status: 'published',
+    isAvailable: true,
+    availabilityTracking: 'none',
+    isSellable: true,
   },
 ];
 
@@ -196,6 +205,8 @@ export const mockVariant: Variant = {
     { id: 2, variantId: 1, optionValueId: 4, optionValue: { id: 4, name: 'Regular' } },
   ],
   pricingTiers: [],
+  isAvailable: true,
+  isSellable: true,
 };
 
 export const mockVariants: Variant[] = [
@@ -213,6 +224,8 @@ export const mockVariants: Variant[] = [
       { id: 4, variantId: 2, optionValueId: 5, optionValue: { id: 5, name: 'Large' } },
     ],
     pricingTiers: [],
+    isAvailable: true,
+    isSellable: true,
   },
 ];
 
@@ -509,6 +522,8 @@ const mockRentalVariant: Variant = {
     { upToMinutes: 90, price: 20000 },
     { upToMinutes: 120, price: 30000 },
   ],
+  isAvailable: true,
+  isSellable: true,
 };
 
 export const mockRental: Rental = {

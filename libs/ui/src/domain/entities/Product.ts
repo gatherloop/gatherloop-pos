@@ -5,6 +5,8 @@ export type ProductSaleType = 'purchase' | 'rental';
 
 export type ProductStatus = 'draft' | 'published';
 
+export type AvailabilityTracking = 'none' | 'product' | 'variant';
+
 export type Product = {
   id: number;
   name: string;
@@ -16,6 +18,11 @@ export type Product = {
   options: Option[];
   saleType: ProductSaleType;
   status: ProductStatus;
+  isAvailable: boolean;
+  availabilityTracking: AvailabilityTracking;
+  availableQuantity?: number;
+  isSellable: boolean;
+  sellableQuantity?: number;
 };
 
 export type Option = {

@@ -23,6 +23,10 @@ export type Variant = {
   createdAt: string;
   values: VariantValue[];
   pricingTiers: PricingTier[];
+  isAvailable: boolean;
+  availableQuantity?: number;
+  isSellable: boolean;
+  sellableQuantity?: number;
 };
 
 export type VariantValue = {
