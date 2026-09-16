@@ -18,6 +18,9 @@ const esKopiSusu = {
   status: 'published' as const,
   options: [],
   createdAt: '2024-03-20T00:00:00.000Z',
+  isAvailable: true,
+  availabilityTracking: 'none' as const,
+  isSellable: true,
 };
 
 const variant = {
@@ -36,6 +39,8 @@ const variant = {
     },
   ],
   pricingTiers: [],
+  isAvailable: true,
+  isSellable: true,
 };
 
 const cart = {
@@ -170,6 +175,40 @@ export const Error: Story = {
 export const CheckoutDisabled: Story = {
   args: {
     variant: { type: 'loaded', cart },
+    isCheckoutEnabled: false,
+  },
+};
+
+export const SoldOutLine: Story = {
+  args: {
+    variant: {
+      type: 'loaded',
+      cart: {
+        ...cart,
+        items: [
+          { ...cart.items[0], variant: { ...variant, isSellable: false } },
+        ],
+      },
+    },
+    isCheckoutEnabled: false,
+  },
+};
+
+export const OverRemainingQuantityLine: Story = {
+  args: {
+    variant: {
+      type: 'loaded',
+      cart: {
+        ...cart,
+        items: [
+          {
+            ...cart.items[0],
+            amount: 5,
+            variant: { ...variant, sellableQuantity: 3 },
+          },
+        ],
+      },
+    },
     isCheckoutEnabled: false,
   },
 };

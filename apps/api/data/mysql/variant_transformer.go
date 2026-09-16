@@ -40,35 +40,39 @@ func ToPricingTierListDB(domainTiers []domain.PricingTier) []PricingTier {
 
 func ToVariantDB(domainVariant domain.Variant) Variant {
 	return Variant{
-		Id:            domainVariant.Id,
-		ProductId:     domainVariant.ProductId,
-		Name:          domainVariant.Name,
-		Price:         domainVariant.Price,
-		Description:   domainVariant.Description,
-		Recipe:        domainVariant.Recipe,
-		DeletedAt:     domainVariant.DeletedAt,
-		CreatedAt:     domainVariant.CreatedAt,
-		Product:       ToProductDB(domainVariant.Product),
-		Materials:     ToVariantMaterialListDB(domainVariant.Materials),
-		VariantValues: ToVariantValueListDB(domainVariant.VariantValues),
-		PricingTiers:  ToPricingTierListDB(domainVariant.PricingTiers),
+		Id:                domainVariant.Id,
+		ProductId:         domainVariant.ProductId,
+		Name:              domainVariant.Name,
+		Price:             domainVariant.Price,
+		Description:       domainVariant.Description,
+		Recipe:            domainVariant.Recipe,
+		DeletedAt:         domainVariant.DeletedAt,
+		CreatedAt:         domainVariant.CreatedAt,
+		Product:           ToProductDB(domainVariant.Product),
+		Materials:         ToVariantMaterialListDB(domainVariant.Materials),
+		VariantValues:     ToVariantValueListDB(domainVariant.VariantValues),
+		PricingTiers:      ToPricingTierListDB(domainVariant.PricingTiers),
+		IsAvailable:       domainVariant.IsAvailable,
+		AvailableQuantity: domainVariant.AvailableQuantity,
 	}
 }
 
 func ToVariantDomain(dbVariant Variant) domain.Variant {
 	return domain.Variant{
-		Id:            dbVariant.Id,
-		ProductId:     dbVariant.ProductId,
-		Name:          dbVariant.Name,
-		Price:         dbVariant.Price,
-		Description:   dbVariant.Description,
-		Recipe:        dbVariant.Recipe,
-		DeletedAt:     dbVariant.DeletedAt,
-		CreatedAt:     dbVariant.CreatedAt,
-		Product:       ToProductDomain(dbVariant.Product),
-		Materials:     ToVariantMaterialListDomain(dbVariant.Materials),
-		VariantValues: ToVariantValueListDomain(dbVariant.VariantValues),
-		PricingTiers:  ToPricingTierListDomain(dbVariant.PricingTiers),
+		Id:                dbVariant.Id,
+		ProductId:         dbVariant.ProductId,
+		Name:              dbVariant.Name,
+		Price:             dbVariant.Price,
+		Description:       dbVariant.Description,
+		Recipe:            dbVariant.Recipe,
+		DeletedAt:         dbVariant.DeletedAt,
+		CreatedAt:         dbVariant.CreatedAt,
+		Product:           ToProductDomain(dbVariant.Product),
+		Materials:         ToVariantMaterialListDomain(dbVariant.Materials),
+		VariantValues:     ToVariantValueListDomain(dbVariant.VariantValues),
+		PricingTiers:      ToPricingTierListDomain(dbVariant.PricingTiers),
+		IsAvailable:       dbVariant.IsAvailable,
+		AvailableQuantity: dbVariant.AvailableQuantity,
 	}
 }
 

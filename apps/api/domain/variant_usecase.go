@@ -22,6 +22,10 @@ func (usecase VariantUsecase) GetVariantList(ctx context.Context, query string, 
 		return []Variant{}, 0, err
 	}
 
+	for i, variant := range variants {
+		variants[i] = resolveVariantAvailability(variant, variant.Product)
+	}
+
 	total, err := usecase.repository.GetVariantListTotal(ctx, query)
 	if err != nil {
 		return []Variant{}, 0, err
@@ -31,7 +35,12 @@ func (usecase VariantUsecase) GetVariantList(ctx context.Context, query string, 
 }
 
 func (usecase VariantUsecase) GetVariantById(ctx context.Context, id int64) (Variant, *Error) {
-	return usecase.repository.GetVariantById(ctx, id)
+	variant, err := usecase.repository.GetVariantById(ctx, id)
+	if err != nil {
+		return Variant{}, err
+	}
+
+	return resolveVariantAvailability(variant, variant.Product), nil
 }
 
 func (usecase VariantUsecase) CreateVariant(ctx context.Context, variant Variant) (Variant, *Error) {
@@ -44,21 +53,28 @@ func (usecase VariantUsecase) CreateVariant(ctx context.Context, variant Variant
 		return Variant{}, err
 	}
 
-	return usecase.repository.CreateVariant(ctx, variant)
+	created, err := usecase.repository.CreateVariant(ctx, variant)
+	if err != nil {
+		return Variant{}, err
+	}
+
+	return resolveVariantAvailability(created, product), nil
 }
 
 func (usecase VariantUsecase) UpdateVariantById(ctx context.Context, variant Variant, id int64) (Variant, *Error) {
 	var updateResult Variant
+	var product Product
 	err := usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 		existing, err := usecase.repository.GetVariantById(ctxWithTx, id)
 		if err != nil {
 			return err
 		}
 
-		product, err := usecase.productRepository.GetProductById(ctxWithTx, existing.ProductId)
+		existingProduct, err := usecase.productRepository.GetProductById(ctxWithTx, existing.ProductId)
 		if err != nil {
 			return err
 		}
+		product = existingProduct
 
 		if err := usecase.validateVariantForSaleType(product.SaleType, &variant); err != nil {
 			return err
@@ -72,7 +88,24 @@ func (usecase VariantUsecase) UpdateVariantById(ctx context.Context, variant Var
 		updateResult = updated
 		return nil
 	})
-	return updateResult, err
+	if err != nil {
+		return Variant{}, err
+	}
+
+	return resolveVariantAvailability(updateResult, product), nil
+}
+
+func resolveVariantAvailability(variant Variant, product Product) Variant {
+	isSellable, sellableQuantity := ResolveVariantAvailability(product, variant)
+	variant.IsSellable = isSellable
+	variant.SellableQuantity = sellableQuantity
+
+	variant.Product = product
+	productIsSellable, productSellableQuantity := ResolveProductAvailability(product, []Variant{variant})
+	variant.Product.IsSellable = productIsSellable
+	variant.Product.SellableQuantity = productSellableQuantity
+
+	return variant
 }
 
 func (usecase VariantUsecase) DeleteVariantById(ctx context.Context, id int64) *Error {

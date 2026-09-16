@@ -18,6 +18,9 @@ const esKopiSusu = {
   status: 'published' as const,
   options: [],
   createdAt: '2024-03-20T00:00:00.000Z',
+  isAvailable: true,
+  availabilityTracking: 'none' as const,
+  isSellable: true,
 };
 
 const variant = {
@@ -36,6 +39,8 @@ const variant = {
     },
   ],
   pricingTiers: [],
+  isAvailable: true,
+  isSellable: true,
 };
 
 const item = {
@@ -79,6 +84,22 @@ export const NoNote: Story = {
 
 export const Disabled: Story = {
   args: { item, disabled: true },
+};
+
+export const SoldOut: Story = {
+  args: {
+    item: { ...item, variant: { ...variant, isSellable: false } },
+  },
+};
+
+export const OverRemainingQuantity: Story = {
+  args: {
+    item: {
+      ...item,
+      amount: 5,
+      variant: { ...variant, sellableQuantity: 3 },
+    },
+  },
 };
 
 export const LongProductName: Story = {

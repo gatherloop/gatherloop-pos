@@ -2,6 +2,7 @@ import {
   ApiProductRepository,
   ApiMaterialRepository,
   getUrlFromCtx,
+  toSerializableProps,
   UrlMaterialListQueryRepository,
 } from '@gatherloop-pos/ui';
 import {
@@ -50,7 +51,7 @@ export const getServerSideProps: GetServerSideProps<
   );
 
   return {
-    props: {
+    props: toSerializableProps({
       variantCreateParams: { product, productId },
       materialListParam: {
         materials,
@@ -61,7 +62,7 @@ export const getServerSideProps: GetServerSideProps<
         query,
         sortBy,
       },
-    },
+    }),
   };
 };
 

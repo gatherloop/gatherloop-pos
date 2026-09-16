@@ -1597,6 +1597,95 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /availability:
+    get:
+      summary: List availability for every published, purchasable product and its variants
+      operationId: availabilityList
+      tags:
+        - availability
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilityListResponse'
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Update availability for a set of products and variants
+      operationId: availabilityUpdate
+      tags:
+        - availability
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AvailabilityUpdateRequest'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilityUpdateResponse'
+        '400':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /availability/{level}/{id}/movements:
+    get:
+      summary: List the availability movement ledger for a product or variant counter
+      operationId: availabilityMovementList
+      tags:
+        - availability
+      parameters:
+        - name: level
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [product, variant]
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Skip'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilityMovementListResponse'
+        '400':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /budgets:
     get:
       summary: List all budgets
@@ -3552,6 +3641,9 @@ components:
         - options
         - saleType
         - status
+        - isAvailable
+        - availabilityTracking
+        - isSellable
       properties:
         id:
           type: integer
@@ -3585,6 +3677,19 @@ components:
         createdAt:
           type: string
           format: date-time
+        isAvailable:
+          type: boolean
+        availabilityTracking:
+          type: string
+          enum: [none, product, variant]
+        availableQuantity:
+          type: integer
+          format: int64
+        isSellable:
+          type: boolean
+        sellableQuantity:
+          type: integer
+          format: int64
     ProductRequest:
       type: object
       required:
@@ -3616,6 +3721,9 @@ components:
         status:
           type: string
           enum: [draft, published]
+        availabilityTracking:
+          type: string
+          enum: [none, product, variant]
     Option:
       type: object
       required:
@@ -3691,6 +3799,8 @@ components:
         - values
         - createdAt
         - pricingTiers
+        - isAvailable
+        - isSellable
       properties:
         id:
           type: integer
@@ -3726,6 +3836,16 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PricingTier'
+        isAvailable:
+          type: boolean
+        availableQuantity:
+          type: integer
+          format: int64
+        isSellable:
+          type: boolean
+        sellableQuantity:
+          type: integer
+          format: int64
     VariantRequest:
       type: object
       required:
@@ -3831,6 +3951,168 @@ components:
         optionValueId:
           type: integer
           format: int64
+    AvailabilityVariant:
+      type: object
+      required:
+        - variantId
+        - variantName
+        - isAvailable
+        - isSellable
+      properties:
+        variantId:
+          type: integer
+          format: int64
+        variantName:
+          type: string
+        isAvailable:
+          type: boolean
+        availableQuantity:
+          type: integer
+          format: int64
+        isSellable:
+          type: boolean
+        sellableQuantity:
+          type: integer
+          format: int64
+    AvailabilityProduct:
+      type: object
+      required:
+        - productId
+        - productName
+        - categoryId
+        - categoryName
+        - availabilityTracking
+        - isAvailable
+        - isSellable
+        - variants
+      properties:
+        productId:
+          type: integer
+          format: int64
+        productName:
+          type: string
+        categoryId:
+          type: integer
+          format: int64
+        categoryName:
+          type: string
+        availabilityTracking:
+          type: string
+          enum: [none, product, variant]
+        isAvailable:
+          type: boolean
+        availableQuantity:
+          type: integer
+          format: int64
+        isSellable:
+          type: boolean
+        sellableQuantity:
+          type: integer
+          format: int64
+        variants:
+          type: array
+          items:
+            $ref: '#/components/schemas/AvailabilityVariant'
+    AvailabilityProductUpdateRequest:
+      type: object
+      required:
+        - productId
+      properties:
+        productId:
+          type: integer
+          format: int64
+        isAvailable:
+          type: boolean
+        availableQuantity:
+          type: integer
+          format: int64
+    AvailabilityVariantUpdateRequest:
+      type: object
+      required:
+        - variantId
+      properties:
+        variantId:
+          type: integer
+          format: int64
+        isAvailable:
+          type: boolean
+        availableQuantity:
+          type: integer
+          format: int64
+    AvailabilityUpdateRequest:
+      type: object
+      properties:
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/AvailabilityProductUpdateRequest'
+        variants:
+          type: array
+          items:
+            $ref: '#/components/schemas/AvailabilityVariantUpdateRequest'
+    AvailabilityListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AvailabilityProduct'
+    AvailabilityUpdateResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AvailabilityProduct'
+    AvailabilityMovement:
+      type: object
+      required:
+        - id
+        - reason
+        - createdAt
+      properties:
+        id:
+          type: integer
+          format: int64
+        productId:
+          type: integer
+          format: int64
+        variantId:
+          type: integer
+          format: int64
+        delta:
+          type: integer
+          format: int64
+        resultingQuantity:
+          type: integer
+          format: int64
+        reason:
+          type: string
+          enum: [sale, sale_reversal, manual_set, manual_adjust, switched_off, switched_on]
+        transactionId:
+          type: integer
+          format: int64
+        note:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    AvailabilityMovementListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AvailabilityMovement'
+        meta:
+          $ref: '#/components/schemas/MetaPage'
     Budget:
       type: object
       required:

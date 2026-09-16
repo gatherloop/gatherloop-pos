@@ -14,4 +14,5 @@ type VariantRepository interface {
 	CreateVariant(ctx context.Context, variant Variant) (Variant, *Error)
 	UpdateVariantById(ctx context.Context, variant Variant, id int64) (Variant, *Error)
 	DeleteVariantById(ctx context.Context, id int64) *Error
+	ClearAvailableQuantityByProductId(ctx context.Context, productId int64) *Error
 }

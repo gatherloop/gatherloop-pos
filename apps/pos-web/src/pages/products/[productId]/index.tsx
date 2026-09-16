@@ -2,6 +2,7 @@ import {
   ApiProductRepository,
   ApiCategoryRepository,
   ApiVariantRepository,
+  toSerializableProps,
 } from '@gatherloop-pos/ui';
 import {
   ProductUpdate,
@@ -47,9 +48,9 @@ export const getServerSideProps: GetServerSideProps<
   );
 
   return {
-    props: {
+    props: toSerializableProps({
       productUpdateParams: { product, categories, productId, variants },
-    },
+    }),
   };
 };
 

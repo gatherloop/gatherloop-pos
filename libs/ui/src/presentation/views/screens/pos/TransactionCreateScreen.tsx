@@ -15,6 +15,7 @@ import {
   Product,
   TransactionForm,
   TransactionPayForm,
+  Variant,
   Wallet,
 } from '../../../../domain';
 import { MutableRefObject } from 'react';
@@ -47,6 +48,7 @@ export type TransactionCreateScreenProps = {
     totalItem: number;
     variant: TransactionItemSelectProps['variant'];
     selectedProduct?: Product;
+    selectedProductVariants: Variant[];
   };
   couponList: {
     onRetryButtonPress: () => void;
@@ -101,6 +103,9 @@ export const TransactionCreateScreen = (
           totalItem={props.transactionItemSelect.totalItem}
           variant={props.transactionItemSelect.variant}
           selectedProduct={props.transactionItemSelect.selectedProduct}
+          selectedProductVariants={
+            props.transactionItemSelect.selectedProductVariants
+          }
         />
       )}
       TransactionCouponList={(onItemPress) => (

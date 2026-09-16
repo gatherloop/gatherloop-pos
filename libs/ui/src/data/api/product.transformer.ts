@@ -15,6 +15,11 @@ export function toProduct(product: ApiProduct): Product {
     options: product.options,
     saleType: product.saleType,
     status: product.status,
+    isAvailable: product.isAvailable,
+    availabilityTracking: product.availabilityTracking,
+    availableQuantity: product.availableQuantity,
+    isSellable: product.isSellable,
+    sellableQuantity: product.sellableQuantity,
   };
 }
 
@@ -28,5 +33,6 @@ export function toApiProduct(form: ProductForm) {
     options: form.options,
     saleType: form.saleType,
     status: form.status,
+    availabilityTracking: form.availabilityTracking,
   };
 }

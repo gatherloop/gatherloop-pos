@@ -1,6 +1,7 @@
 import {
   ApiProductRepository,
   getUrlFromCtx,
+  toSerializableProps,
   UrlProductListQueryRepository,
 } from '@gatherloop-pos/ui';
 import {
@@ -39,7 +40,7 @@ export const getServerSideProps: GetServerSideProps<ProductListProps> = async (
   );
 
   return {
-    props: {
+    props: toSerializableProps({
       productListParams: {
         page,
         itemPerPage,
@@ -50,7 +51,7 @@ export const getServerSideProps: GetServerSideProps<ProductListProps> = async (
         sortBy,
         saleType,
       },
-    },
+    }),
   };
 };
 

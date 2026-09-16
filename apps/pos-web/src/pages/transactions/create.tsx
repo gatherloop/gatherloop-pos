@@ -2,6 +2,7 @@ import {
   ApiCouponRepository,
   ApiProductRepository,
   ApiWalletRepository,
+  toSerializableProps,
 } from '@gatherloop-pos/ui';
 import {
   TransactionCreate,
@@ -56,7 +57,7 @@ export const getServerSideProps: GetServerSideProps<
   });
 
   return {
-    props: {
+    props: toSerializableProps({
       transactionItemSelectParams: {
         products,
         totalItem,
@@ -72,7 +73,7 @@ export const getServerSideProps: GetServerSideProps<
       couponListParams: {
         coupons,
       },
-    },
+    }),
   };
 };
 

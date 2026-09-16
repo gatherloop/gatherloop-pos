@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import React from 'react';
 import { TransactionUpdateScreen } from './TransactionUpdateScreen';
 import type { TransactionForm } from '../../../../domain';
-import { mockProducts, mockTransaction } from '../../../../../.storybook/mocks/mockData';
+import { mockProducts, mockTransaction, mockVariants } from '../../../../../.storybook/mocks/mockData';
 
 const defaultValues: TransactionForm = {
   name: mockTransaction.name,
@@ -37,6 +37,7 @@ const UpdateStory = () => {
         products: mockProducts,
         searchValue: '',
         selectedOptionValues: [],
+        selectedProductVariants: mockVariants,
         totalItem: mockProducts.length,
         variant: { type: 'loaded' },
       }}

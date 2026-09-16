@@ -36,6 +36,9 @@ const initialProducts: Product[] = [
       },
     ],
     createdAt: '2024-03-20T00:00:00.000Z',
+    isAvailable: true,
+    availabilityTracking: 'none',
+    isSellable: true,
   },
   {
     id: 2,
@@ -47,6 +50,9 @@ const initialProducts: Product[] = [
     status: 'published',
     options: [],
     createdAt: '2024-03-21T00:00:00.000Z',
+    isAvailable: true,
+    availabilityTracking: 'none',
+    isSellable: true,
   },
 ];
 
@@ -67,6 +73,8 @@ const initialVariants: Variant[] = [
       },
     ],
     pricingTiers: [],
+    isAvailable: true,
+    isSellable: true,
   },
   {
     id: 2,
@@ -84,6 +92,8 @@ const initialVariants: Variant[] = [
       },
     ],
     pricingTiers: [],
+    isAvailable: true,
+    isSellable: true,
   },
   {
     id: 3,
@@ -94,6 +104,8 @@ const initialVariants: Variant[] = [
     createdAt: '2024-03-21T00:00:00.000Z',
     values: [],
     pricingTiers: [],
+    isAvailable: true,
+    isSellable: true,
   },
 ];
 

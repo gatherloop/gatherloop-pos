@@ -182,6 +182,8 @@ export const TransactionUpdateHandler = ({
           transactionItemSelect.state.selectedOptionValues,
         totalItem: transactionItemSelect.state.totalItem,
         selectedProduct: transactionItemSelect.state.selectedProduct,
+        selectedProductVariants:
+          transactionItemSelect.state.selectedProductVariants,
         variant: match(transactionItemSelect.state)
           .returnType<
             TransactionUpdateScreenProps['transactionItemSelect']['variant']

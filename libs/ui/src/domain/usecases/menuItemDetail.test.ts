@@ -190,6 +190,47 @@ describe('MenuItemDetailUsecase', () => {
     expect(menuItemDetail.state.note).toBe('less sugar');
   });
 
+  it('caps the amount at the resolved variant remaining quantity', async () => {
+    const repository = new MockMenuRepository();
+    repository.variants = repository.variants.map((variant) =>
+      variant.id === 1 ? { ...variant, sellableQuantity: 3 } : variant
+    );
+    const menuItemDetail = createTester(repository, { productId: 1 });
+
+    await flushPromises();
+    menuItemDetail.dispatch({
+      type: 'SELECT_OPTION_VALUE',
+      optionId: 1,
+      optionValueId: 1,
+    });
+    await flushPromises();
+    expect(menuItemDetail.state.variant?.sellableQuantity).toBe(3);
+
+    menuItemDetail.dispatch({ type: 'CHANGE_AMOUNT', amount: 10 });
+    expect(menuItemDetail.state.amount).toBe(3);
+  });
+
+  it('does not cap the amount for a sold-out resolved variant', async () => {
+    const repository = new MockMenuRepository();
+    repository.variants = repository.variants.map((variant) =>
+      variant.id === 1
+        ? { ...variant, isSellable: false, sellableQuantity: 0 }
+        : variant
+    );
+    const menuItemDetail = createTester(repository, { productId: 1 });
+
+    await flushPromises();
+    menuItemDetail.dispatch({
+      type: 'SELECT_OPTION_VALUE',
+      optionId: 1,
+      optionValueId: 1,
+    });
+    await flushPromises();
+
+    menuItemDetail.dispatch({ type: 'CHANGE_AMOUNT', amount: 5 });
+    expect(menuItemDetail.state.amount).toBe(5);
+  });
+
   it('should show loaded state when initial data is given', () => {
     const repository = new MockMenuRepository();
     const menuItemDetail = createTester(repository, {

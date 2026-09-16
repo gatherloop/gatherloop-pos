@@ -25,6 +25,9 @@ const product: Product = {
     },
   ],
   createdAt: '2024-03-20T00:00:00.000Z',
+  isAvailable: true,
+  availabilityTracking: 'none',
+  isSellable: true,
 };
 
 const variants: Record<number, Variant> = {
@@ -44,6 +47,8 @@ const variants: Record<number, Variant> = {
       },
     ],
     pricingTiers: [],
+    isAvailable: true,
+    isSellable: true,
   },
   2: {
     id: 2,
@@ -61,6 +66,8 @@ const variants: Record<number, Variant> = {
       },
     ],
     pricingTiers: [],
+    isAvailable: true,
+    isSellable: true,
   },
 };
 

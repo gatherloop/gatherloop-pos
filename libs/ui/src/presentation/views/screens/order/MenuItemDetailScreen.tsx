@@ -18,6 +18,8 @@ export type MenuItemDetailScreenVariant =
       product: Product;
       price: number | null;
       variantErrorMessage: string | null;
+      isVariantSellable: boolean | null;
+      remainingQuantity?: number;
     };
 
 export type MenuItemDetailScreenProps = {
@@ -26,6 +28,7 @@ export type MenuItemDetailScreenProps = {
   variant: MenuItemDetailScreenVariant;
   selectedOptionValueIds: number[];
   onSelectOptionValue: (optionId: number, optionValueId: number) => void;
+  optionValueAvailability: Record<number, boolean>;
   amount: number;
   onAmountChange: (amount: number) => void;
   note: string;
@@ -43,6 +46,7 @@ export const MenuItemDetailScreen = ({
   variant,
   selectedOptionValueIds,
   onSelectOptionValue,
+  optionValueAvailability,
   amount,
   onAmountChange,
   note,
@@ -81,7 +85,13 @@ export const MenuItemDetailScreen = ({
           ))
           .with(
             { type: 'ready' },
-            ({ product, price, variantErrorMessage }) => (
+            ({
+              product,
+              price,
+              variantErrorMessage,
+              isVariantSellable,
+              remainingQuantity,
+            }) => (
               <YStack flex={1}>
                 <ScrollView flex={1}>
                   <YStack gap="$4" paddingHorizontal="$4" paddingBottom="$4">
@@ -116,6 +126,7 @@ export const MenuItemDetailScreen = ({
                         onSelectOptionValue={(optionValueId) =>
                           onSelectOptionValue(option.id, optionValueId)
                         }
+                        isOptionValueAvailable={optionValueAvailability}
                       />
                     ))}
 
@@ -140,6 +151,7 @@ export const MenuItemDetailScreen = ({
                       <AmountStepper
                         amount={amount}
                         onChange={onAmountChange}
+                        max={remainingQuantity}
                       />
                     </XStack>
                   </YStack>
@@ -159,10 +171,13 @@ export const MenuItemDetailScreen = ({
                     theme="blue"
                     size="$5"
                     minHeight={44}
-                    disabled={ctaState === 'resolving'}
+                    disabled={
+                      ctaState === 'resolving' || isVariantSellable === false
+                    }
                     onPress={onAddToCartPress}
                   >
-                    {match({ ctaState, price })
+                    {match({ ctaState, price, isVariantSellable })
+                      .with({ isVariantSellable: false }, () => 'Stok habis')
                       .with(
                         { ctaState: 'ready', price: P.number },
                         ({ price }) =>

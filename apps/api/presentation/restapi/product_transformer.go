@@ -69,18 +69,23 @@ func ToApiProduct(product domain.Product) apiContract.Product {
 	}
 
 	return apiContract.Product{
-		Id:          product.Id,
-		Name:        product.Name,
-		CategoryId:  product.CategoryId,
-		Category:    apiContract.Category(product.Category),
-		DeletedAt:   product.DeletedAt,
-		CreatedAt:   product.CreatedAt,
-		Description: product.Description,
-		Recipe:      product.Recipe,
-		ImageUrl:    product.ImageUrl,
-		Options:     apiOptions,
-		SaleType:    string(product.SaleType),
-		Status:      string(product.Status),
+		Id:                   product.Id,
+		Name:                 product.Name,
+		CategoryId:           product.CategoryId,
+		Category:             apiContract.Category(product.Category),
+		DeletedAt:            product.DeletedAt,
+		CreatedAt:            product.CreatedAt,
+		Description:          product.Description,
+		Recipe:               product.Recipe,
+		ImageUrl:             product.ImageUrl,
+		Options:              apiOptions,
+		SaleType:             string(product.SaleType),
+		Status:               string(product.Status),
+		IsAvailable:          product.IsAvailable,
+		AvailabilityTracking: string(product.AvailabilityTracking),
+		AvailableQuantity:    ToApiQuantity(product.AvailableQuantity),
+		IsSellable:           product.IsSellable,
+		SellableQuantity:     ToApiQuantity(product.SellableQuantity),
 	}
 }
 
@@ -114,16 +119,30 @@ func ToProduct(productRequest apiContract.ProductRequest) domain.Product {
 		})
 	}
 
-	return domain.Product{
-		Name:        productRequest.Name,
-		CategoryId:  productRequest.CategoryId,
-		ImageUrl:    productRequest.ImageUrl,
-		Description: productRequest.Description,
-		Recipe:      productRequest.Recipe,
-		Options:     options,
-		SaleType:    domain.SaleType(productRequest.SaleType),
-		Status:      domain.ProductStatus(productRequest.Status),
+	var availabilityTracking domain.AvailabilityTracking
+	if productRequest.AvailabilityTracking != nil {
+		availabilityTracking = domain.AvailabilityTracking(*productRequest.AvailabilityTracking)
 	}
+
+	return domain.Product{
+		Name:                 productRequest.Name,
+		CategoryId:           productRequest.CategoryId,
+		ImageUrl:             productRequest.ImageUrl,
+		Description:          productRequest.Description,
+		Recipe:               productRequest.Recipe,
+		Options:              options,
+		SaleType:             domain.SaleType(productRequest.SaleType),
+		Status:               domain.ProductStatus(productRequest.Status),
+		AvailabilityTracking: availabilityTracking,
+	}
+}
+
+func ToApiQuantity(quantity *int) *int64 {
+	if quantity == nil {
+		return nil
+	}
+	value := int64(*quantity)
+	return &value
 }
 
 func GetSaleType(r *http.Request) *domain.SaleType {

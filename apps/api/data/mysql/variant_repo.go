@@ -197,3 +197,9 @@ func (repo Repository) DeleteVariantById(ctx context.Context, id int64) *domain.
 	result := db.Table("variants").Where("id = ?", id).Update("deleted_at", currentTime)
 	return ToErrorCtx(ctx, result.Error, "DeleteVariantById")
 }
+
+func (repo Repository) ClearAvailableQuantityByProductId(ctx context.Context, productId int64) *domain.Error {
+	db := GetDbFromCtx(ctx, repo.db)
+	result := db.Table("variants").Where("product_id = ?", productId).Update("available_quantity", nil)
+	return ToErrorCtx(ctx, result.Error, "ClearAvailableQuantityByProductId")
+}

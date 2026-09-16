@@ -1,10 +1,24 @@
 import { X } from '@tamagui/lucide-icons';
-import { Button, Text, TextArea, XStack, YStack } from 'tamagui';
+import { Button, Paragraph, Text, TextArea, XStack, YStack } from 'tamagui';
 import { CartItem } from '../../../../domain/entities/Cart';
 import { formatRupiah } from '../../../../utils/currency';
 import { Sheet } from '../../components/base/Sheet/Sheet';
 import { AmountStepper } from '../../components/menu/AmountStepper';
 import { MenuItemThumbnail } from '../../components/menu/MenuItemThumbnail';
+
+const SoldOutBadge = () => (
+  <XStack
+    backgroundColor="$red5"
+    paddingHorizontal="$2"
+    paddingVertical="$1"
+    borderRadius="$10"
+    alignSelf="flex-start"
+  >
+    <Paragraph size="$1" color="$red11">
+      Habis
+    </Paragraph>
+  </XStack>
+);
 
 export type CartItemEditScreenProps = {
   isOpen: boolean;
@@ -33,6 +47,9 @@ export const CartItemEditScreen = ({
     .map((value) => value.optionValue.name)
     .join(', ');
 
+  const isSoldOut = !item.variant.isSellable;
+  const remainingQuantity = item.variant.sellableQuantity;
+
   return (
     <Sheet isOpen={isOpen} onOpenChange={onOpenChange}>
       <YStack flex={1}>
@@ -58,9 +75,12 @@ export const CartItemEditScreen = ({
               flexShrink={0}
             />
             <YStack flex={1} gap="$1">
-              <Text fontSize="$6" fontWeight="bold" numberOfLines={1}>
-                {item.variant.product.name}
-              </Text>
+              <XStack alignItems="center" gap="$2">
+                <Text fontSize="$6" fontWeight="bold" numberOfLines={1}>
+                  {item.variant.product.name}
+                </Text>
+                {isSoldOut ? <SoldOutBadge /> : null}
+              </XStack>
               {optionValueNames ? (
                 <Text color="$color10" numberOfLines={1}>
                   {optionValueNames}
@@ -83,7 +103,12 @@ export const CartItemEditScreen = ({
 
           <XStack justifyContent="space-between" alignItems="center">
             <Text fontWeight="bold">Jumlah</Text>
-            <AmountStepper amount={amount} onChange={onAmountChange} />
+            <AmountStepper
+              amount={amount}
+              onChange={onAmountChange}
+              max={remainingQuantity}
+              disabled={isSoldOut}
+            />
           </XStack>
         </YStack>
 

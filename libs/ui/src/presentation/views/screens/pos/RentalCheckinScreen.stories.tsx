@@ -36,6 +36,7 @@ const CheckinStory = () => (
       products: mockProducts,
       searchValue: '',
       selectedOptionValues: [],
+      selectedProductVariants: [],
       totalItem: mockProducts.length,
       variant: { type: 'loaded' },
     }}

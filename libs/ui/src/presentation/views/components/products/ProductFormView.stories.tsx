@@ -22,6 +22,7 @@ const defaultValues: ProductForm = {
   options: [],
   saleType: 'purchase',
   status: 'published',
+  availabilityTracking: 'none',
 };
 
 const meta: Meta<typeof ProductFormView> = {
@@ -61,6 +62,7 @@ export const Populated: Story = {
       imageUrl: 'https://placehold.jp/120x120.png',
       saleType: 'purchase',
       status: 'published',
+      availabilityTracking: 'variant',
       options: [
         {
           name: 'Temperature',
@@ -100,8 +102,32 @@ export const LongRecipe: Story = {
       imageUrl: 'https://placehold.jp/120x120.png',
       saleType: 'purchase',
       status: 'published',
+      availabilityTracking: 'none',
       options: [],
     },
+  },
+};
+
+export const TrackedByProduct: Story = {
+  args: {
+    ...Loaded.args,
+    defaultValues: {
+      ...defaultValues,
+      name: 'Soft Cookies',
+      availabilityTracking: 'product',
+    },
+  },
+};
+
+export const TrackedByVariant: Story = {
+  args: {
+    ...Loaded.args,
+    defaultValues: {
+      ...defaultValues,
+      name: 'Es Kopi Susu',
+      availabilityTracking: 'variant',
+    },
+    variants: mockVariants,
   },
 };
 

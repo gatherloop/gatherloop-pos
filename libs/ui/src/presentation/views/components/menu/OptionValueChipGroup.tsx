@@ -6,6 +6,7 @@ export type OptionValueChipGroupProps = {
   selectedOptionValueId: number | null;
   onSelectOptionValue: (optionValueId: number) => void;
   hasError?: boolean;
+  isOptionValueAvailable?: Record<number, boolean>;
 };
 
 export const OptionValueChipGroup = ({
@@ -13,6 +14,7 @@ export const OptionValueChipGroup = ({
   selectedOptionValueId,
   onSelectOptionValue,
   hasError = false,
+  isOptionValueAvailable,
 }: OptionValueChipGroupProps) => {
   return (
     <YStack gap="$2">
@@ -20,18 +22,24 @@ export const OptionValueChipGroup = ({
         {option.name}
       </Text>
       <XStack flexWrap="wrap" gap="$2">
-        {option.values.map((value) => (
-          <Button
-            key={value.id}
-            size="$3"
-            minHeight={44}
-            borderRadius="$10"
-            theme={selectedOptionValueId === value.id ? 'blue' : undefined}
-            onPress={() => onSelectOptionValue(value.id)}
-          >
-            {value.name}
-          </Button>
-        ))}
+        {option.values.map((value) => {
+          const isAvailable = isOptionValueAvailable?.[value.id] ?? true;
+
+          return (
+            <Button
+              key={value.id}
+              size="$3"
+              minHeight={44}
+              borderRadius="$10"
+              theme={selectedOptionValueId === value.id ? 'blue' : undefined}
+              opacity={isAvailable ? 1 : 0.5}
+              disabled={!isAvailable}
+              onPress={() => onSelectOptionValue(value.id)}
+            >
+              {isAvailable ? value.name : `${value.name} · Habis`}
+            </Button>
+          );
+        })}
       </XStack>
     </YStack>
   );

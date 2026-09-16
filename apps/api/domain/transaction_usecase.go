@@ -6,18 +6,20 @@ import (
 )
 
 type TransactionUsecase struct {
-	transactionRepository TransactionRepository
-	variantRepository     VariantRepository
-	couponRepository      CouponRepository
-	walletRepository      WalletRepository
+	transactionRepository   TransactionRepository
+	variantRepository       VariantRepository
+	couponRepository        CouponRepository
+	walletRepository        WalletRepository
+	availabilityReservation AvailabilityReservation
 }
 
-func NewTransactionUsecase(transactionRepository TransactionRepository, variantRepository VariantRepository, couponRepository CouponRepository, walletRepository WalletRepository) TransactionUsecase {
+func NewTransactionUsecase(transactionRepository TransactionRepository, variantRepository VariantRepository, couponRepository CouponRepository, walletRepository WalletRepository, availabilityReservation AvailabilityReservation) TransactionUsecase {
 	return TransactionUsecase{
-		transactionRepository: transactionRepository,
-		variantRepository:     variantRepository,
-		couponRepository:      couponRepository,
-		walletRepository:      walletRepository,
+		transactionRepository:   transactionRepository,
+		variantRepository:       variantRepository,
+		couponRepository:        couponRepository,
+		walletRepository:        walletRepository,
+		availabilityReservation: availabilityReservation,
 	}
 }
 
@@ -74,6 +76,10 @@ func (usecase TransactionUsecase) CreateTransaction(ctx context.Context, transac
 		}
 
 		if err := usecase.applyTransactionCoupons(ctxWithTx, &transaction, createdTransaction.Id); err != nil {
+			return err
+		}
+
+		if err := usecase.availabilityReservation.Reserve(ctxWithTx, transaction.TransactionItems); err != nil {
 			return err
 		}
 
@@ -155,6 +161,10 @@ func (usecase TransactionUsecase) UpdateTransactionById(ctx context.Context, tra
 			return err
 		}
 
+		if err := usecase.availabilityReservation.ApplyDelta(ctxWithTx, existingTransaction.TransactionItems, transaction.TransactionItems); err != nil {
+			return err
+		}
+
 		ut, err := usecase.transactionRepository.UpdateTransactionById(ctxWithTx, transaction, id)
 		if err != nil {
 			return err
@@ -176,6 +186,10 @@ func (usecase TransactionUsecase) DeleteTransactionById(ctx context.Context, id 
 
 		if transaction.PaidAt != nil {
 			return &Error{Type: BadRequest, Message: "transaction already paid"}
+		}
+
+		if err := usecase.availabilityReservation.Release(ctxWithTx, transaction.TransactionItems); err != nil {
+			return err
 		}
 
 		return usecase.transactionRepository.DeleteTransactionById(ctxWithTx, id)

@@ -25,3 +25,11 @@ export const HigherAmount: Story = {
 export const Small: Story = {
   args: { amount: 2, size: 'sm' },
 };
+
+export const AtCap: Story = {
+  args: { amount: 3, max: 3 },
+};
+
+export const OverCap: Story = {
+  args: { amount: 5, max: 3 },
+};

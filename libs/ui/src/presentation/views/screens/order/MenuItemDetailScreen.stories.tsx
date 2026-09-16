@@ -34,6 +34,9 @@ const esKopiSusu = {
     },
   ],
   createdAt: '2024-03-20T00:00:00.000Z',
+  isAvailable: true,
+  availabilityTracking: 'none' as const,
+  isSellable: true,
 };
 
 const esKopiSusuDenganEs = {
@@ -61,6 +64,33 @@ const nasiGoreng = {
   status: 'published' as const,
   options: [],
   createdAt: '2024-03-21T00:00:00.000Z',
+  isAvailable: true,
+  availabilityTracking: 'none' as const,
+  isSellable: true,
+};
+
+const softCookies = {
+  id: 3,
+  name: 'Soft Cookies',
+  description: 'Cookies lembut isi 2 rasa',
+  category: makanan,
+  imageUrl: '',
+  saleType: 'purchase' as const,
+  status: 'published' as const,
+  options: [
+    {
+      id: 3,
+      name: 'Rasa',
+      values: [
+        { id: 5, name: 'Choco' },
+        { id: 6, name: 'Red Velvet' },
+      ],
+    },
+  ],
+  createdAt: '2024-03-22T00:00:00.000Z',
+  isAvailable: true,
+  availabilityTracking: 'variant' as const,
+  isSellable: true,
 };
 
 const meta: Meta<typeof MenuItemDetailScreen> = {
@@ -75,6 +105,7 @@ const meta: Meta<typeof MenuItemDetailScreen> = {
     onSelectOptionValue: () => {
       // Storybook action stand-in
     },
+    optionValueAvailability: {},
     amount: 1,
     onAmountChange: () => {
       // Storybook action stand-in
@@ -108,6 +139,7 @@ export const IncompleteUntouched: Story = {
       product: esKopiSusu,
       price: null,
       variantErrorMessage: null,
+      isVariantSellable: null,
     },
     ctaState: 'incomplete',
     missingOptionNames: ['Ukuran'],
@@ -121,6 +153,7 @@ export const IncompleteWithError: Story = {
       product: esKopiSusuDenganEs,
       price: null,
       variantErrorMessage: null,
+      isVariantSellable: null,
     },
     ctaState: 'incomplete',
     missingOptionNames: ['Ukuran', 'Es'],
@@ -135,9 +168,26 @@ export const Ready: Story = {
       product: esKopiSusu,
       price: 18000,
       variantErrorMessage: null,
+      isVariantSellable: true,
     },
     selectedOptionValueIds: [1],
     amount: 2,
+    ctaState: 'ready',
+  },
+};
+
+export const NearRemainingQuantity: Story = {
+  args: {
+    variant: {
+      type: 'ready',
+      product: softCookies,
+      price: 20000,
+      variantErrorMessage: null,
+      isVariantSellable: true,
+      remainingQuantity: 3,
+    },
+    selectedOptionValueIds: [5],
+    amount: 3,
     ctaState: 'ready',
   },
 };
@@ -149,6 +199,7 @@ export const NoOptions: Story = {
       product: nasiGoreng,
       price: 25000,
       variantErrorMessage: null,
+      isVariantSellable: true,
     },
     ctaState: 'ready',
   },
@@ -161,6 +212,7 @@ export const Resolving: Story = {
       product: esKopiSusu,
       price: null,
       variantErrorMessage: null,
+      isVariantSellable: null,
     },
     selectedOptionValueIds: [1],
     ctaState: 'resolving',
@@ -174,6 +226,7 @@ export const VariantError: Story = {
       product: esKopiSusu,
       price: null,
       variantErrorMessage: 'Gagal memuat varian',
+      isVariantSellable: null,
     },
     selectedOptionValueIds: [1],
     ctaState: 'incomplete',
@@ -182,4 +235,33 @@ export const VariantError: Story = {
 
 export const Error: Story = {
   args: { variant: { type: 'error' }, ctaState: 'incomplete' },
+};
+
+export const SoldOutOptionValue: Story = {
+  args: {
+    variant: {
+      type: 'ready',
+      product: softCookies,
+      price: null,
+      variantErrorMessage: null,
+      isVariantSellable: null,
+    },
+    optionValueAvailability: { 5: true, 6: false },
+    ctaState: 'incomplete',
+  },
+};
+
+export const SoldOutVariant: Story = {
+  args: {
+    variant: {
+      type: 'ready',
+      product: softCookies,
+      price: null,
+      variantErrorMessage: null,
+      isVariantSellable: false,
+    },
+    selectedOptionValueIds: [6],
+    optionValueAvailability: { 5: true, 6: false },
+    ctaState: 'ready',
+  },
 };

@@ -20,3 +20,4 @@ export * from './checklistTemplates';
 export * from './checklistSessions';
 export * from './stockChecks';
 export * from './purchaseLists';
+export * from './availability';

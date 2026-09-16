@@ -39,10 +39,11 @@ export const H5 = ({ children }: AnyProps) => React.createElement('h5', null, ch
 export const H6 = ({ children }: AnyProps) => React.createElement('h6', null, children);
 export const Text = ({ children }: AnyProps) => React.createElement('span', null, children);
 
-export const Button = ({ children, onPress, disabled, icon, accessibilityLabel }: AnyProps) =>
+export const Button = ({ children, onPress, disabled, icon, accessibilityLabel, type }: AnyProps) =>
   React.createElement(
     'button',
     {
+      type,
       onClick: onPress,
       disabled: disabled ?? false,
       ...(accessibilityLabel ? { 'aria-label': accessibilityLabel } : {}),
@@ -112,7 +113,7 @@ const RadioGroupBase = ({ children, value, onValueChange }: AnyProps) =>
     { value: { value: value as string, onValueChange: onValueChange as (value: string) => void } },
     React.createElement('div', { 'data-component': 'RadioGroup' }, children)
   );
-const RadioGroupItem = ({ children, value: itemValue, id }: AnyProps) => {
+const RadioGroupItem = ({ children, value: itemValue, id, disabled }: AnyProps) => {
   const { value, onValueChange } = React.useContext(RadioGroupContext);
   return React.createElement(
     'div',
@@ -121,6 +122,7 @@ const RadioGroupItem = ({ children, value: itemValue, id }: AnyProps) => {
       type: 'radio',
       id,
       checked: value === itemValue,
+      disabled: disabled ?? false,
       onChange: () => onValueChange?.(itemValue as string),
     }),
     children
@@ -358,12 +360,13 @@ export const Accordion = Object.assign(AccordionBase, {
   HeightAnimator: AccordionHeightAnimator,
 });
 
-const SwitchBase = ({ checked, onCheckedChange, id, name, children }: AnyProps) =>
+const SwitchBase = ({ checked, onCheckedChange, id, name, type, children }: AnyProps) =>
   React.createElement(
     'button',
     {
       id,
       name,
+      type,
       role: 'switch',
       'aria-checked': checked,
       onClick: () => onCheckedChange?.(!checked),

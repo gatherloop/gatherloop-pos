@@ -78,6 +78,11 @@ export function toTransaction(transaction: ApiTransaction): Transaction {
           imageUrl: item.variant.product.imageUrl,
           saleType: item.variant.product.saleType,
           status: item.variant.product.status,
+          isAvailable: item.variant.product.isAvailable,
+          availabilityTracking: item.variant.product.availabilityTracking,
+          availableQuantity: item.variant.product.availableQuantity,
+          isSellable: item.variant.product.isSellable,
+          sellableQuantity: item.variant.product.sellableQuantity,
         },
         values: item.variant.values.map((value) => ({
           id: value.id,
@@ -94,6 +99,10 @@ export function toTransaction(transaction: ApiTransaction): Transaction {
             upToMinutes,
           })
         ),
+        isAvailable: item.variant.isAvailable,
+        availableQuantity: item.variant.availableQuantity,
+        isSellable: item.variant.isSellable,
+        sellableQuantity: item.variant.sellableQuantity,
       },
     })),
     transactionCoupons: transaction.transactionCoupons.map((item) => ({

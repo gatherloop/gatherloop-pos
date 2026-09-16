@@ -92,13 +92,16 @@ func main() {
 	checklistTemplateRepository := mysql.NewChecklistTemplateRepository(db)
 	checklistSessionRepository := mysql.NewChecklistSessionRepository(db)
 	stockCheckRepository := mysql.NewStockCheckRepository(db)
+	availabilityReservationRepository := mysql.NewAvailabilityReservationRepository(db)
+	availabilityRepository := mysql.NewAvailabilityRepository(db)
 
 	orderPaymentWalletId, _ := strconv.ParseInt(env.OrderPaymentWalletId, 10, 64)
 
+	availabilityReservation := domain.NewAvailabilityReservation(availabilityReservationRepository)
 	walletUsecase := domain.NewWalletUsecase(walletRepository)
-	transactionUsecase := domain.NewTransactionUsecase(transactionRepository, variantRepository, couponRepository, walletRepository)
+	transactionUsecase := domain.NewTransactionUsecase(transactionRepository, variantRepository, couponRepository, walletRepository, availabilityReservation)
 	variantUsecase := domain.NewVariantUsecase(variantRepository, productRepository)
-	productUsecase := domain.NewProductUsecase(productRepository)
+	productUsecase := domain.NewProductUsecase(productRepository, variantRepository)
 	materialUsecase := domain.NewMaterialUsecase(materialRepository, supplierRepository)
 	supplierUsecase := domain.NewSupplierUsecase(supplierRepository)
 	expenseUsecase := domain.NewExpenseUsecase(expenseRepository, budgetRepository, walletRepository)
@@ -108,7 +111,7 @@ func main() {
 	tableUsecase := domain.NewTableUsecase(tableRepository)
 	cartUsecase := domain.NewCartUsecase(cartRepository, variantRepository, tableRepository, paymentRepository)
 	customerUsecase := domain.NewCustomerUsecase(customerRepository)
-	paymentUsecase := domain.NewPaymentUsecase(paymentRepository, paymentGatewayRepository, customerRepository, cartRepository, transactionRepository, variantRepository, walletRepository, env.DokuQrisExpirySeconds, orderPaymentWalletId)
+	paymentUsecase := domain.NewPaymentUsecase(paymentRepository, paymentGatewayRepository, customerRepository, cartRepository, transactionRepository, variantRepository, walletRepository, availabilityReservation, env.DokuQrisExpirySeconds, orderPaymentWalletId)
 	budgetUsecase := domain.NewBudgetUsecase(budgetRepository)
 	authUsecase := domain.NewAuthUsecase(authRepository)
 	calculationUsecase := domain.NewCalculationUsecase(calculationRepository, walletRepository)
@@ -116,6 +119,7 @@ func main() {
 	checklistTemplateUsecase := domain.NewChecklistTemplateUsecase(checklistTemplateRepository)
 	checklistSessionUsecase := domain.NewChecklistSessionUsecase(checklistSessionRepository, checklistTemplateRepository)
 	stockCheckUsecase := domain.NewStockCheckUsecase(stockCheckRepository, materialRepository)
+	availabilityUsecase := domain.NewAvailabilityUsecase(availabilityRepository, productRepository, variantRepository)
 
 	walletHandler := restapi.NewWalletHandler(walletUsecase)
 	transactionHandler := restapi.NewTransactionHandler(transactionUsecase)
@@ -138,6 +142,7 @@ func main() {
 	checklistTemplateHandler := restapi.NewChecklistTemplateHandler(checklistTemplateUsecase)
 	checklistSessionHandler := restapi.NewChecklistSessionHandler(checklistSessionUsecase)
 	stockCheckHandler := restapi.NewStockCheckHandler(stockCheckUsecase)
+	availabilityHandler := restapi.NewAvailabilityHandler(availabilityUsecase)
 	publicHandler := restapi.NewPublicHandler(productUsecase, categoryUsecase, variantUsecase, tableUsecase)
 
 	restapi.NewAuthRouter(authHandler).AddRouter(router)
@@ -161,6 +166,7 @@ func main() {
 	restapi.NewChecklistTemplateRouter(checklistTemplateHandler).AddRouter(router)
 	restapi.NewChecklistSessionRouter(checklistSessionHandler).AddRouter(router)
 	restapi.NewStockCheckRouter(stockCheckHandler).AddRouter(router)
+	restapi.NewAvailabilityRouter(availabilityHandler).AddRouter(router)
 	restapi.NewPublicRouter(publicHandler).AddRouter(router)
 
 	router.HandleFunc("/health-check", func(w http.ResponseWriter, r *http.Request) {

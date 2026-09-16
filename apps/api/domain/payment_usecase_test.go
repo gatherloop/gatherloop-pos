@@ -22,29 +22,39 @@ func withPaymentTransactionMock(r *mock.MockPaymentRepository) {
 }
 
 type paymentUsecaseMocks struct {
-	paymentRepo     *mock.MockPaymentRepository
-	gatewayRepo     *mock.MockPaymentGatewayRepository
-	customerRepo    *mock.MockCustomerRepository
-	cartRepo        *mock.MockCartRepository
-	transactionRepo *mock.MockTransactionRepository
-	variantRepo     *mock.MockVariantRepository
-	walletRepo      *mock.MockWalletRepository
+	paymentRepo      *mock.MockPaymentRepository
+	gatewayRepo      *mock.MockPaymentGatewayRepository
+	customerRepo     *mock.MockCustomerRepository
+	cartRepo         *mock.MockCartRepository
+	transactionRepo  *mock.MockTransactionRepository
+	variantRepo      *mock.MockVariantRepository
+	walletRepo       *mock.MockWalletRepository
+	availabilityRepo *mock.MockAvailabilityReservationRepository
 }
 
 func newPaymentUsecaseMocks(ctrl *gomock.Controller) paymentUsecaseMocks {
 	return paymentUsecaseMocks{
-		paymentRepo:     mock.NewMockPaymentRepository(ctrl),
-		gatewayRepo:     mock.NewMockPaymentGatewayRepository(ctrl),
-		customerRepo:    mock.NewMockCustomerRepository(ctrl),
-		cartRepo:        mock.NewMockCartRepository(ctrl),
-		transactionRepo: mock.NewMockTransactionRepository(ctrl),
-		variantRepo:     mock.NewMockVariantRepository(ctrl),
-		walletRepo:      mock.NewMockWalletRepository(ctrl),
+		paymentRepo:      mock.NewMockPaymentRepository(ctrl),
+		gatewayRepo:      mock.NewMockPaymentGatewayRepository(ctrl),
+		customerRepo:     mock.NewMockCustomerRepository(ctrl),
+		cartRepo:         mock.NewMockCartRepository(ctrl),
+		transactionRepo:  mock.NewMockTransactionRepository(ctrl),
+		variantRepo:      mock.NewMockVariantRepository(ctrl),
+		walletRepo:       mock.NewMockWalletRepository(ctrl),
+		availabilityRepo: mock.NewMockAvailabilityReservationRepository(ctrl),
 	}
 }
 
 func (m paymentUsecaseMocks) usecase() domain.PaymentUsecase {
-	return domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, checkoutQrisExpirySeconds, checkoutOrderPaymentWalletId)
+	availabilityReservation := domain.NewAvailabilityReservation(m.availabilityRepo)
+	return domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, availabilityReservation, checkoutQrisExpirySeconds, checkoutOrderPaymentWalletId)
+}
+
+func expectAvailableVariant(m paymentUsecaseMocks, variantId int64) {
+	m.availabilityRepo.EXPECT().LockVariantById(gomock.Any(), variantId).Return(domain.Variant{
+		Id: variantId, IsAvailable: true,
+		Product: domain.Product{IsAvailable: true, AvailabilityTracking: domain.AvailabilityTrackingNone},
+	}, nil)
 }
 
 func expectValidWallet(m paymentUsecaseMocks) {
@@ -239,6 +249,7 @@ func TestPaymentUsecase_Checkout(t *testing.T) {
 
 		variant := checkoutVariant(10, 15000)
 		m.variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(10)).Return(variant, nil)
+		expectAvailableVariant(m, 10)
 
 		m.transactionRepo.EXPECT().CreateTransaction(gomock.Any(), gomock.Any()).
 			DoAndReturn(func(_ context.Context, transaction domain.Transaction) (domain.Transaction, *domain.Error) {
@@ -288,6 +299,8 @@ func TestPaymentUsecase_Checkout(t *testing.T) {
 
 		m.variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(10)).Return(checkoutVariant(10, 15000), nil)
 		m.variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(11)).Return(checkoutVariant(11, 8000), nil)
+		expectAvailableVariant(m, 10)
+		expectAvailableVariant(m, 11)
 
 		m.transactionRepo.EXPECT().CreateTransaction(gomock.Any(), gomock.Any()).
 			DoAndReturn(func(_ context.Context, transaction domain.Transaction) (domain.Transaction, *domain.Error) {
@@ -340,6 +353,7 @@ func TestPaymentUsecase_Checkout(t *testing.T) {
 		m.cartRepo.EXPECT().GetActiveCartBySessionId(gomock.Any(), "session-1").Return(cart, nil)
 		m.paymentRepo.EXPECT().GetPendingPaymentByCartId(gomock.Any(), int64(1)).Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
 		m.variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(10)).Return(checkoutVariant(10, 15000), nil)
+		expectAvailableVariant(m, 10)
 
 		m.transactionRepo.EXPECT().CreateTransaction(gomock.Any(), gomock.Any()).
 			DoAndReturn(func(_ context.Context, transaction domain.Transaction) (domain.Transaction, *domain.Error) {
@@ -376,6 +390,7 @@ func TestPaymentUsecase_Checkout(t *testing.T) {
 		m.cartRepo.EXPECT().GetActiveCartBySessionId(gomock.Any(), "session-1").Return(cart, nil)
 		m.paymentRepo.EXPECT().GetPendingPaymentByCartId(gomock.Any(), int64(1)).Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
 		m.variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(10)).Return(checkoutVariant(10, 15000), nil)
+		expectAvailableVariant(m, 10)
 
 		m.transactionRepo.EXPECT().CreateTransaction(gomock.Any(), gomock.Any()).
 			DoAndReturn(func(_ context.Context, transaction domain.Transaction) (domain.Transaction, *domain.Error) {
@@ -395,6 +410,75 @@ func TestPaymentUsecase_Checkout(t *testing.T) {
 
 		assert.NotNil(t, err)
 		assert.Equal(t, domain.BadGateway, err.Type)
+	})
+
+	t.Run("reserves availability for the transaction it creates, decrementing a tracked variant", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		withPaymentTransactionMock(m.paymentRepo)
+		expectValidWallet(m)
+		expectNameUpsert(m, "session-1", "Budi")
+
+		cart := cartWithOneItem(1, 5)
+		m.cartRepo.EXPECT().GetActiveCartBySessionId(gomock.Any(), "session-1").Return(cart, nil)
+		m.paymentRepo.EXPECT().GetPendingPaymentByCartId(gomock.Any(), int64(1)).Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
+		m.variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(10)).Return(checkoutVariant(10, 15000), nil)
+
+		m.availabilityRepo.EXPECT().LockVariantById(gomock.Any(), int64(10)).Return(domain.Variant{
+			Id: 10, IsAvailable: true, AvailableQuantity: intPtr(6),
+			Product: domain.Product{IsAvailable: true, AvailabilityTracking: domain.AvailabilityTrackingVariant},
+		}, nil)
+		m.availabilityRepo.EXPECT().UpdateVariantAvailableQuantity(gomock.Any(), int64(10), 4).Return(nil)
+		m.availabilityRepo.EXPECT().CreateAvailabilityMovement(gomock.Any(), gomock.Any()).Return(nil)
+
+		m.transactionRepo.EXPECT().CreateTransaction(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(_ context.Context, transaction domain.Transaction) (domain.Transaction, *domain.Error) {
+				transaction.Id = 200
+				return transaction, nil
+			})
+		m.paymentRepo.EXPECT().CreatePayment(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(_ context.Context, payment domain.Payment) (domain.Payment, *domain.Error) {
+				payment.Id = 300
+				return payment, nil
+			})
+		m.gatewayRepo.EXPECT().GenerateQris(gomock.Any(), gomock.Any()).
+			Return(domain.QrisPayment{GatewayReferenceNo: "gw-1", QrContent: "qr-content"}, nil)
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), int64(300)).
+			DoAndReturn(func(_ context.Context, payment domain.Payment, id int64) (domain.Payment, *domain.Error) {
+				return payment, nil
+			})
+
+		_, _, err := m.usecase().Checkout(context.Background(), "session-1", "Budi")
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("a checkout is rejected when the cart's last item sold out in between, and nothing is created", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		withPaymentTransactionMock(m.paymentRepo)
+		expectValidWallet(m)
+		expectNameUpsert(m, "session-1", "Budi")
+
+		cart := cartWithOneItem(1, 5)
+		m.cartRepo.EXPECT().GetActiveCartBySessionId(gomock.Any(), "session-1").Return(cart, nil)
+		m.paymentRepo.EXPECT().GetPendingPaymentByCartId(gomock.Any(), int64(1)).Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
+		m.variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(10)).Return(checkoutVariant(10, 15000), nil)
+
+		m.availabilityRepo.EXPECT().LockVariantById(gomock.Any(), int64(10)).Return(domain.Variant{
+			Id: 10, Name: "Vanilla", IsAvailable: false,
+			Product: domain.Product{Name: "Kopi Susu", IsAvailable: true, AvailabilityTracking: domain.AvailabilityTrackingNone},
+		}, nil)
+
+		_, _, err := m.usecase().Checkout(context.Background(), "session-1", "Budi")
+
+		assert.NotNil(t, err)
+		assert.Equal(t, domain.BadRequest, err.Type)
+		assert.Equal(t, "Kopi Susu Vanilla is sold out", err.Message)
 	})
 }
 
@@ -563,6 +647,55 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 		assert.Equal(t, domain.ConfirmPaymentOutcomePaidLate, outcome)
 	})
 
+	t.Run("a paid-late payment re-reserves its items, allowed to go negative", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		withPaymentTransactionMock(m.paymentRepo)
+
+		payment := pendingPaymentFixture()
+		payment.Status = domain.PaymentStateExpired
+
+		status := domain.QrisStatus{
+			PartnerReferenceNo: payment.PartnerReferenceNo,
+			GatewayReferenceNo: "gw-late",
+			Status:             domain.PaymentGatewayStatusPaid,
+			PaidAmount:         payment.Amount,
+		}
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+
+		deletedAt := time.Now().Add(-time.Minute)
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{
+			Id: 99, Total: payment.Amount, DeletedAt: &deletedAt,
+			TransactionItems: []domain.TransactionItem{{VariantId: 10, Amount: 3}},
+		}, nil)
+		m.transactionRepo.EXPECT().UndeleteTransactionById(gomock.Any(), int64(99)).Return(nil)
+
+		m.availabilityRepo.EXPECT().LockVariantById(gomock.Any(), int64(10)).Return(domain.Variant{
+			Id: 10, IsAvailable: true, AvailableQuantity: intPtr(1),
+			Product: domain.Product{IsAvailable: true, AvailabilityTracking: domain.AvailabilityTrackingVariant},
+		}, nil)
+		m.availabilityRepo.EXPECT().UpdateVariantAvailableQuantity(gomock.Any(), int64(10), -2).Return(nil)
+		m.availabilityRepo.EXPECT().CreateAvailabilityMovement(gomock.Any(), gomock.Any()).Return(nil)
+
+		expectConfirmPaymentWalletCredit(m)
+
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), payment.Id).
+			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) {
+				return p, nil
+			})
+		m.cartRepo.EXPECT().GetCartById(gomock.Any(), payment.CartId).
+			Return(domain.Cart{Id: 1, Status: domain.CartStatusActive}, nil)
+		m.cartRepo.EXPECT().UpdateCartById(gomock.Any(), gomock.Any(), int64(1)).
+			DoAndReturn(func(_ context.Context, cart domain.Cart, id int64) (domain.Cart, *domain.Error) { return cart, nil })
+
+		_, outcome, err := m.usecase().ConfirmPayment(context.Background(), status)
+
+		assert.Nil(t, err)
+		assert.Equal(t, domain.ConfirmPaymentOutcomePaidLate, outcome)
+	})
+
 	t.Run("an expired or failed notification for a pending payment soft-deletes its transaction and leaves the cart alone", func(t *testing.T) {
 		tests := []struct {
 			gatewayStatus   domain.PaymentGatewayStatus
@@ -590,6 +723,7 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 						assert.Equal(t, tt.expectedState, p.Status)
 						return p, nil
 					})
+				m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil)
 				m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), int64(99)).Return(nil)
 
 				_, outcome, err := m.usecase().ConfirmPayment(context.Background(), status)
@@ -598,6 +732,40 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 				assert.Equal(t, tt.expectedOutcome, outcome)
 			})
 		}
+	})
+
+	t.Run("an expiry releases the transaction's items, restoring a tracked variant's counter", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		withPaymentTransactionMock(m.paymentRepo)
+
+		payment := pendingPaymentFixture()
+		status := domain.QrisStatus{PartnerReferenceNo: payment.PartnerReferenceNo, Status: domain.PaymentGatewayStatusExpired}
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), payment.Id).
+			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) {
+				return p, nil
+			})
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{
+			Id: 99, TransactionItems: []domain.TransactionItem{{VariantId: 10, Amount: 2}},
+		}, nil)
+
+		m.availabilityRepo.EXPECT().LockVariantById(gomock.Any(), int64(10)).Return(domain.Variant{
+			Id: 10, IsAvailable: true, AvailableQuantity: intPtr(4),
+			Product: domain.Product{IsAvailable: true, AvailabilityTracking: domain.AvailabilityTrackingVariant},
+		}, nil)
+		m.availabilityRepo.EXPECT().UpdateVariantAvailableQuantity(gomock.Any(), int64(10), 6).Return(nil)
+		m.availabilityRepo.EXPECT().CreateAvailabilityMovement(gomock.Any(), gomock.Any()).Return(nil)
+
+		m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), int64(99)).Return(nil)
+
+		_, outcome, err := m.usecase().ConfirmPayment(context.Background(), status)
+
+		assert.Nil(t, err)
+		assert.Equal(t, domain.ConfirmPaymentOutcomeExpired, outcome)
 	})
 
 	t.Run("a status this payment cannot transition to from its current state is ignored", func(t *testing.T) {
@@ -832,7 +1000,7 @@ func TestPaymentUsecase_GetPaymentStatus(t *testing.T) {
 				return p, nil
 			})
 		m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), int64(99)).Return(nil)
-		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil)
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil).Times(2)
 
 		result, _, err := m.usecase().GetPaymentStatus(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
 

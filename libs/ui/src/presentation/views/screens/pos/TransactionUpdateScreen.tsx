@@ -9,7 +9,12 @@ import {
   useIsCompactLayout,
 } from '../../components';
 import { FormVariant } from '../../components/base';
-import { OptionValue, Product, TransactionForm } from '../../../../domain';
+import {
+  OptionValue,
+  Product,
+  TransactionForm,
+  Variant,
+} from '../../../../domain';
 import { MutableRefObject } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 
@@ -40,6 +45,7 @@ export type TransactionUpdateScreenProps = {
     totalItem: number;
     variant: TransactionItemSelectProps['variant'];
     selectedProduct?: Product;
+    selectedProductVariants: Variant[];
   };
   couponList: {
     onRetryButtonPress: () => void;
