@@ -1,9 +1,7 @@
-import { useEffect } from 'react';
 import { match, P } from 'ts-pattern';
 import { useRouter } from 'solito/router';
 import { SessionRepository } from '../../../domain/repositories/session';
 import { OrderStatusUsecase } from '../../../domain/usecases/orderStatus';
-import { useLeaveConfirmation } from '../../../utils/useLeaveConfirmation';
 import { useOrderStatus } from '../hooks/useOrderStatus';
 import {
   OrderStatusScreen,
@@ -21,15 +19,6 @@ export const OrderStatusHandler = ({
 }: OrderStatusHandlerProps) => {
   const orderStatus = useOrderStatus(orderStatusUsecase);
   const router = useRouter();
-  const leaveConfirmation = useLeaveConfirmation(
-    orderStatus.state.type === 'preparing'
-  );
-
-  useEffect(() => {
-    if (orderStatus.state.type === 'ready') {
-      sessionRepository.clearActiveReference();
-    }
-  }, [orderStatus.state.type, sessionRepository]);
 
   const variant: OrderStatusScreenVariant = match(orderStatus.state)
     .returnType<OrderStatusScreenVariant>()
@@ -76,12 +65,6 @@ export const OrderStatusHandler = ({
       onBackToMenuPress={() => router.push(menuPath)}
       onBackToCartPress={() => router.push(cartPath)}
       onHistoryPress={() => router.push('/orders')}
-      isLeaveConfirmOpen={leaveConfirmation.isConfirmOpen}
-      leaveConfirmTransactionNumber={
-        orderStatus.state.payment?.transactionNumber ?? 0
-      }
-      onLeaveConfirm={leaveConfirmation.onLeaveConfirm}
-      onLeaveCancel={leaveConfirmation.onLeaveCancel}
     />
   );
 };

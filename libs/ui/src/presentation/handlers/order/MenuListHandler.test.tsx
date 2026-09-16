@@ -217,29 +217,6 @@ describe('MenuListHandler', () => {
     expect(screen.queryByText(/Lihat Keranjang/)).toBeNull();
   });
 
-  it('shows a resume banner when an active order reference is stored, and navigates to its status page on press', async () => {
-    const user = userEvent.setup();
-    const sessionRepository = new MockSessionRepository();
-    sessionRepository.setActiveReference('REF-1');
-    renderHandler({ sessionRepository });
-
-    await settle();
-
-    expect(screen.getByText('Pesanan Anda sedang disiapkan')).toBeTruthy();
-
-    await user.click(screen.getByRole('button', { name: 'Lihat Status' }));
-
-    expect(mockPush).toHaveBeenCalledWith('/orders/REF-1');
-  });
-
-  it('shows no resume banner when no active order reference is stored', async () => {
-    renderHandler();
-
-    await settle();
-
-    expect(screen.queryByText('Pesanan Anda sedang disiapkan')).toBeNull();
-  });
-
   it('navigates to /orders from the header history button', async () => {
     const user = userEvent.setup();
     renderHandler();
