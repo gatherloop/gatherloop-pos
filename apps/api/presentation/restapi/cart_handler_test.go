@@ -195,8 +195,8 @@ func TestCartHandler_AddCartItem(t *testing.T) {
 			setupMock: func(cr *mock.MockCartRepository, vr *mock.MockVariantRepository, pr *mock.MockPaymentRepository) {
 				withCartTransactionMock(cr)
 				vr.EXPECT().GetVariantById(gomock.Any(), int64(10)).Return(domain.Variant{
-					Id: 10, Price: 15000,
-					Product: domain.Product{Status: domain.ProductStatusPublished, SaleType: domain.SaleTypePurchase},
+					Id: 10, Price: 15000, IsAvailable: true,
+					Product: domain.Product{Status: domain.ProductStatusPublished, SaleType: domain.SaleTypePurchase, IsAvailable: true},
 				}, nil)
 				cr.EXPECT().GetActiveCartBySessionId(gomock.Any(), testSessionId).Return(domain.Cart{Id: 1, SessionId: testSessionId}, nil)
 				unlockedCart(pr, 1)
@@ -237,8 +237,8 @@ func TestCartHandler_AddCartItem(t *testing.T) {
 			setupMock: func(cr *mock.MockCartRepository, vr *mock.MockVariantRepository, pr *mock.MockPaymentRepository) {
 				withCartTransactionMock(cr)
 				vr.EXPECT().GetVariantById(gomock.Any(), int64(10)).Return(domain.Variant{
-					Id: 10, Price: 15000,
-					Product: domain.Product{Status: domain.ProductStatusPublished, SaleType: domain.SaleTypePurchase},
+					Id: 10, Price: 15000, IsAvailable: true,
+					Product: domain.Product{Status: domain.ProductStatusPublished, SaleType: domain.SaleTypePurchase, IsAvailable: true},
 				}, nil)
 				cr.EXPECT().GetActiveCartBySessionId(gomock.Any(), testSessionId).Return(domain.Cart{Id: 1, SessionId: testSessionId}, nil)
 				pr.EXPECT().GetPendingPaymentByCartId(gomock.Any(), int64(1)).Return(domain.Payment{

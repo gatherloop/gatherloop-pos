@@ -38,12 +38,32 @@ func expiredPendingCart(pr *mock.MockPaymentRepository, cartId int64) {
 
 func publishedPurchaseVariant(id int64) domain.Variant {
 	return domain.Variant{
-		Id:    id,
-		Price: 15000,
+		Id:          id,
+		Price:       15000,
+		IsAvailable: true,
 		Product: domain.Product{
-			Id:       1,
-			Status:   domain.ProductStatusPublished,
-			SaleType: domain.SaleTypePurchase,
+			Id:          1,
+			Status:      domain.ProductStatusPublished,
+			SaleType:    domain.SaleTypePurchase,
+			IsAvailable: true,
+		},
+	}
+}
+
+func trackedVariant(id int64, productId int64, tracking domain.AvailabilityTracking, productQty *int, variantQty *int) domain.Variant {
+	return domain.Variant{
+		Id:                id,
+		ProductId:         productId,
+		Price:             15000,
+		IsAvailable:       true,
+		AvailableQuantity: variantQty,
+		Product: domain.Product{
+			Id:                   productId,
+			Status:               domain.ProductStatusPublished,
+			SaleType:             domain.SaleTypePurchase,
+			IsAvailable:          true,
+			AvailabilityTracking: tracking,
+			AvailableQuantity:    productQty,
 		},
 	}
 }
@@ -379,6 +399,49 @@ func TestCartUsecase_AddCartItem(t *testing.T) {
 				cr.EXPECT().GetCartById(gomock.Any(), int64(1)).Return(domain.Cart{Id: 1, SessionId: "session-11", Items: []domain.CartItem{{Id: 102, VariantId: 10, Amount: 1}}}, nil)
 			},
 		},
+		{
+			name:      "a sold-out variant is rejected (FR-7)",
+			sessionId: "session-12",
+			variantId: 20,
+			amount:    1,
+			setupMock: func(cr *mock.MockCartRepository, vr *mock.MockVariantRepository, pr *mock.MockPaymentRepository) {
+				withCartTransaction(cr)
+				variant := trackedVariant(20, 2, domain.AvailabilityTrackingNone, nil, nil)
+				variant.IsAvailable = false
+				vr.EXPECT().GetVariantById(gomock.Any(), int64(20)).Return(variant, nil)
+			},
+			expectedError: &domain.Error{Type: domain.BadRequest},
+		},
+		{
+			name:      "requesting more than a 3-count variant is rejected",
+			sessionId: "session-13",
+			variantId: 21,
+			amount:    4,
+			setupMock: func(cr *mock.MockCartRepository, vr *mock.MockVariantRepository, pr *mock.MockPaymentRepository) {
+				withCartTransaction(cr)
+				vr.EXPECT().GetVariantById(gomock.Any(), int64(21)).Return(trackedVariant(21, 3, domain.AvailabilityTrackingVariant, nil, intPtr(3)), nil)
+				cr.EXPECT().GetActiveCartBySessionId(gomock.Any(), "session-13").Return(domain.Cart{Id: 1, SessionId: "session-13"}, nil)
+				unlockedCart(pr, 1)
+			},
+			expectedError: &domain.Error{Type: domain.BadRequest},
+		},
+		{
+			name:      "a second variant sharing a product-level counter is rejected once the total exceeds it",
+			sessionId: "session-14",
+			variantId: 31,
+			amount:    3,
+			setupMock: func(cr *mock.MockCartRepository, vr *mock.MockVariantRepository, pr *mock.MockPaymentRepository) {
+				withCartTransaction(cr)
+				vr.EXPECT().GetVariantById(gomock.Any(), int64(31)).Return(trackedVariant(31, 4, domain.AvailabilityTrackingProduct, intPtr(5), nil), nil)
+				existingVariant := trackedVariant(30, 4, domain.AvailabilityTrackingProduct, intPtr(5), nil)
+				cr.EXPECT().GetActiveCartBySessionId(gomock.Any(), "session-14").Return(domain.Cart{
+					Id: 1, SessionId: "session-14",
+					Items: []domain.CartItem{{Id: 60, VariantId: 30, Amount: 3, Variant: existingVariant}},
+				}, nil)
+				unlockedCart(pr, 1)
+			},
+			expectedError: &domain.Error{Type: domain.BadRequest},
+		},
 	}
 
 	for _, tt := range tests {
@@ -403,6 +466,42 @@ func TestCartUsecase_AddCartItem(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCartUsecase_AddCartItem_CountingUnitAcrossCalls(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	cartRepo := mock.NewMockCartRepository(ctrl)
+	variantRepo := mock.NewMockVariantRepository(ctrl)
+	tableRepo := mock.NewMockTableRepository(ctrl)
+	paymentRepo := mock.NewMockPaymentRepository(ctrl)
+	usecase := newCartUsecase(cartRepo, variantRepo, tableRepo, paymentRepo)
+
+	variant := trackedVariant(40, 5, domain.AvailabilityTrackingVariant, nil, intPtr(3))
+
+	withCartTransaction(cartRepo)
+	variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(40)).Return(variant, nil)
+	cartRepo.EXPECT().GetActiveCartBySessionId(gomock.Any(), "session-1").Return(domain.Cart{Id: 1, SessionId: "session-1"}, nil)
+	unlockedCart(paymentRepo, 1)
+	cartRepo.EXPECT().CreateCartItem(gomock.Any(), gomock.Any()).Return(domain.CartItem{Id: 200, VariantId: 40, Amount: 2, Variant: variant}, nil)
+	cartRepo.EXPECT().GetCartById(gomock.Any(), int64(1)).Return(domain.Cart{
+		Id: 1, SessionId: "session-1", Items: []domain.CartItem{{Id: 200, VariantId: 40, Amount: 2, Variant: variant}},
+	}, nil)
+
+	_, err := usecase.AddCartItem(context.Background(), "session-1", 40, 2, "")
+	assert.Nil(t, err)
+
+	withCartTransaction(cartRepo)
+	variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(40)).Return(variant, nil)
+	cartRepo.EXPECT().GetActiveCartBySessionId(gomock.Any(), "session-1").Return(domain.Cart{
+		Id: 1, SessionId: "session-1", Items: []domain.CartItem{{Id: 200, VariantId: 40, Amount: 2, Variant: variant}},
+	}, nil)
+	unlockedCart(paymentRepo, 1)
+
+	_, err = usecase.AddCartItem(context.Background(), "session-1", 40, 2, "")
+	assert.NotNil(t, err)
+	assert.Equal(t, domain.BadRequest, err.Type)
 }
 
 func TestCartUsecase_UpdateCartItem(t *testing.T) {
@@ -490,6 +589,24 @@ func TestCartUsecase_UpdateCartItem(t *testing.T) {
 				r.EXPECT().UpdateCartItemById(gomock.Any(), gomock.Any(), int64(50)).Return(domain.CartItem{Id: 50, Amount: 3}, nil)
 				r.EXPECT().GetCartById(gomock.Any(), int64(1)).Return(domain.Cart{Id: 1, Items: []domain.CartItem{{Id: 50, Amount: 3}}}, nil)
 			},
+		},
+		{
+			name:       "raising a variant-level line past what's left counting the cart's other lines is rejected (FR-7)",
+			sessionId:  "session-7",
+			cartItemId: 50,
+			amount:     3,
+			setupMock: func(r *mock.MockCartRepository, pr *mock.MockPaymentRepository) {
+				withCartTransaction(r)
+				variant := trackedVariant(41, 6, domain.AvailabilityTrackingVariant, nil, intPtr(3))
+				r.EXPECT().GetActiveCartBySessionId(gomock.Any(), "session-7").Return(domain.Cart{
+					Id: 1, Items: []domain.CartItem{
+						{Id: 50, VariantId: 41, Amount: 1, Variant: variant},
+						{Id: 51, VariantId: 41, Amount: 1, Note: "extra ice", Variant: variant},
+					},
+				}, nil)
+				unlockedCart(pr, 1)
+			},
+			expectedError: &domain.Error{Type: domain.BadRequest},
 		},
 	}
 
