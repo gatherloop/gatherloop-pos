@@ -76,11 +76,32 @@ func ToApiPayment(payment domain.Payment, transaction domain.Transaction) apiCon
 		Amount:             payment.Amount,
 		QrContent:          payment.QrContent,
 		ExpiredAt:          payment.ExpiredAt,
+		CreatedAt:          payment.CreatedAt,
 		PaidAt:             payment.PaidAt,
 		CustomerName:       transaction.Name,
 		TableLabel:         tableLabel,
 		Items:              items,
 		TransactionNumber:  transaction.TransactionNumber,
 		FulfillmentStatus:  fulfillmentStatus,
+	}
+}
+
+func ToApiPaymentSummary(summary domain.PaymentSummary) apiContract.PaymentSummary {
+	fulfillmentStatus := "preparing"
+	if summary.CompletedAt != nil {
+		fulfillmentStatus = "ready"
+	}
+
+	return apiContract.PaymentSummary{
+		PartnerReferenceNo: summary.PartnerReferenceNo,
+		Status:             string(summary.Status),
+		FulfillmentStatus:  fulfillmentStatus,
+		TransactionNumber:  summary.TransactionNumber,
+		CustomerName:       summary.CustomerName,
+		TableLabel:         summary.TableLabel,
+		Amount:             summary.Amount,
+		ItemCount:          int64(summary.ItemCount),
+		CreatedAt:          summary.CreatedAt,
+		PaidAt:             summary.PaidAt,
 	}
 }

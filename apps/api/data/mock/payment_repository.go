@@ -85,6 +85,36 @@ func (mr *MockPaymentRepositoryMockRecorder) GetPaymentByPartnerReferenceNo(ctx,
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPaymentByPartnerReferenceNo", reflect.TypeOf((*MockPaymentRepository)(nil).GetPaymentByPartnerReferenceNo), ctx, partnerReferenceNo)
 }
 
+// GetPaymentsBySessionId mocks base method.
+func (m *MockPaymentRepository) GetPaymentsBySessionId(ctx context.Context, sessionId string, skip, limit int) ([]domain.Payment, *domain.Error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPaymentsBySessionId", ctx, sessionId, skip, limit)
+	ret0, _ := ret[0].([]domain.Payment)
+	ret1, _ := ret[1].(*domain.Error)
+	return ret0, ret1
+}
+
+// GetPaymentsBySessionId indicates an expected call of GetPaymentsBySessionId.
+func (mr *MockPaymentRepositoryMockRecorder) GetPaymentsBySessionId(ctx, sessionId, skip, limit any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPaymentsBySessionId", reflect.TypeOf((*MockPaymentRepository)(nil).GetPaymentsBySessionId), ctx, sessionId, skip, limit)
+}
+
+// GetPaymentsBySessionIdTotal mocks base method.
+func (m *MockPaymentRepository) GetPaymentsBySessionIdTotal(ctx context.Context, sessionId string) (int64, *domain.Error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPaymentsBySessionIdTotal", ctx, sessionId)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(*domain.Error)
+	return ret0, ret1
+}
+
+// GetPaymentsBySessionIdTotal indicates an expected call of GetPaymentsBySessionIdTotal.
+func (mr *MockPaymentRepositoryMockRecorder) GetPaymentsBySessionIdTotal(ctx, sessionId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPaymentsBySessionIdTotal", reflect.TypeOf((*MockPaymentRepository)(nil).GetPaymentsBySessionIdTotal), ctx, sessionId)
+}
+
 // GetPendingPaymentByCartId mocks base method.
 func (m *MockPaymentRepository) GetPendingPaymentByCartId(ctx context.Context, cartId int64) (domain.Payment, *domain.Error) {
 	m.ctrl.T.Helper()

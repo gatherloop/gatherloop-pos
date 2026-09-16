@@ -21,4 +21,5 @@ type TransactionRepository interface {
 	CompleteTransaction(ctx context.Context, completedAt time.Time, id int64) *Error
 	UncompleteTransaction(ctx context.Context, id int64) *Error
 	GetTransactionStatistics(ctx context.Context, groupBy string, startDate *time.Time, endDate *time.Time) ([]TransactionStatistic, *Error)
+	GetTransactionSummariesByIds(ctx context.Context, ids []int64) ([]TransactionSummary, *Error)
 }

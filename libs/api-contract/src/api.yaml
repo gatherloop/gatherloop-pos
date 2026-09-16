@@ -348,6 +348,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /payments:
+    get:
+      summary: List the requesting session's paid orders, newest first (D14 — pending, expired and failed payments are never rows)
+      operationId: paymentList
+      tags:
+        - payment
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Skip'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentListResponse'
+        '400':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /payments/{partnerReferenceNo}:
     get:
       summary: Get a payment by its reference, re-querying DOKU when it is still pending and the last check is stale (D12, D12a). 404 unless the payment belongs to the requesting session.
@@ -4600,6 +4622,7 @@ components:
         - amount
         - qrContent
         - expiredAt
+        - createdAt
         - customerName
         - tableLabel
         - items
@@ -4616,6 +4639,9 @@ components:
         qrContent:
           type: string
         expiredAt:
+          type: string
+          format: date-time
+        createdAt:
           type: string
           format: date-time
         paidAt:
@@ -4965,6 +4991,57 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/Payment'
+    PaymentSummary:
+      type: object
+      required:
+        - partnerReferenceNo
+        - status
+        - fulfillmentStatus
+        - transactionNumber
+        - customerName
+        - tableLabel
+        - amount
+        - itemCount
+        - createdAt
+      properties:
+        partnerReferenceNo:
+          type: string
+        status:
+          type: string
+          enum: [pending, paid, expired, failed]
+        fulfillmentStatus:
+          type: string
+          enum: [preparing, ready]
+        transactionNumber:
+          type: integer
+          format: int64
+        customerName:
+          type: string
+        tableLabel:
+          type: string
+        amount:
+          type: number
+        itemCount:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        paidAt:
+          type: string
+          format: date-time
+    PaymentListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentSummary'
+        meta:
+          $ref: '#/components/schemas/MetaPage'
     CategoryListResponse:
       type: object
       required:

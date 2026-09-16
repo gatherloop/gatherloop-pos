@@ -159,6 +159,21 @@ func (mr *MockTransactionRepositoryMockRecorder) GetTransactionStatistics(ctx, g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTransactionStatistics", reflect.TypeOf((*MockTransactionRepository)(nil).GetTransactionStatistics), ctx, groupBy, startDate, endDate)
 }
 
+// GetTransactionSummariesByIds mocks base method.
+func (m *MockTransactionRepository) GetTransactionSummariesByIds(ctx context.Context, ids []int64) ([]domain.TransactionSummary, *domain.Error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTransactionSummariesByIds", ctx, ids)
+	ret0, _ := ret[0].([]domain.TransactionSummary)
+	ret1, _ := ret[1].(*domain.Error)
+	return ret0, ret1
+}
+
+// GetTransactionSummariesByIds indicates an expected call of GetTransactionSummariesByIds.
+func (mr *MockTransactionRepositoryMockRecorder) GetTransactionSummariesByIds(ctx, ids any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTransactionSummariesByIds", reflect.TypeOf((*MockTransactionRepository)(nil).GetTransactionSummariesByIds), ctx, ids)
+}
+
 // PayTransaction mocks base method.
 func (m *MockTransactionRepository) PayTransaction(ctx context.Context, walletId int64, paidAt time.Time, paidAmount float32, id int64) *domain.Error {
 	m.ctrl.T.Helper()

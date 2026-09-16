@@ -318,6 +318,58 @@ func TestPaymentHandler_GetPaymentByPartnerReferenceNo(t *testing.T) {
 	})
 }
 
+func TestPaymentHandler_GetPaymentList(t *testing.T) {
+	t.Run("returns paid orders newest first with the total from the session", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentHandlerMocks(ctrl)
+
+		transactionId1 := int64(101)
+		transactionId2 := int64(102)
+		payments := []domain.Payment{
+			{PartnerReferenceNo: "ORD2", SessionId: testSessionId, Status: domain.PaymentStatePaid, Amount: 20000, TransactionId: &transactionId2},
+			{PartnerReferenceNo: "ORD1", SessionId: testSessionId, Status: domain.PaymentStatePaid, Amount: 45000, TransactionId: &transactionId1},
+		}
+		m.paymentRepo.EXPECT().GetPaymentsBySessionId(gomock.Any(), testSessionId, 0, 0).Return(payments, nil)
+		m.paymentRepo.EXPECT().GetPaymentsBySessionIdTotal(gomock.Any(), testSessionId).Return(int64(2), nil)
+		m.transactionRepo.EXPECT().GetTransactionSummariesByIds(gomock.Any(), []int64{transactionId2, transactionId1}).
+			Return([]domain.TransactionSummary{
+				{Id: transactionId2, TransactionNumber: 2, Name: "Budi", TableLabel: "Meja 1", ItemCount: 1},
+				{Id: transactionId1, TransactionNumber: 1, Name: "Andi", TableLabel: "Meja 3", ItemCount: 3},
+			}, nil)
+
+		req := httptest.NewRequest(http.MethodGet, "/payments", nil)
+		req.Header.Set("X-Session-Id", testSessionId)
+		w := httptest.NewRecorder()
+		m.handler().GetPaymentList(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		var resp apiContract.PaymentListResponse
+		assert.NoError(t, json.NewDecoder(w.Body).Decode(&resp))
+		assert.Equal(t, int64(2), resp.Meta.Total)
+		assert.Len(t, resp.Data, 2)
+		assert.Equal(t, "ORD2", resp.Data[0].PartnerReferenceNo)
+		assert.Equal(t, "Budi", resp.Data[0].CustomerName)
+		assert.Equal(t, "ORD1", resp.Data[1].PartnerReferenceNo)
+		assert.Equal(t, "Andi", resp.Data[1].CustomerName)
+	})
+
+	t.Run("an invalid limit is a 400", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentHandlerMocks(ctrl)
+
+		req := httptest.NewRequest(http.MethodGet, "/payments?limit=not-a-number", nil)
+		req.Header.Set("X-Session-Id", testSessionId)
+		w := httptest.NewRecorder()
+		m.handler().GetPaymentList(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+}
+
 func TestPaymentGetRoute_RequiresSessionId(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -328,6 +380,22 @@ func TestPaymentGetRoute_RequiresSessionId(t *testing.T) {
 	restapi.NewPaymentRouter(m.handler()).AddRouter(router)
 
 	req := httptest.NewRequest(http.MethodGet, "/payments/ORD1234567890AB", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestPaymentListRoute_RequiresSessionId(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	m := newPaymentHandlerMocks(ctrl)
+
+	router := mux.NewRouter()
+	restapi.NewPaymentRouter(m.handler()).AddRouter(router)
+
+	req := httptest.NewRequest(http.MethodGet, "/payments", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 

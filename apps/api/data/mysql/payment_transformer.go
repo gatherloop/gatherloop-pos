@@ -29,6 +29,18 @@ func ToPaymentDB(d domain.Payment) Payment {
 	}
 }
 
+func ToPaymentsListDomain(dbPayments []Payment) []domain.Payment {
+	if dbPayments == nil {
+		return nil
+	}
+
+	domainPayments := []domain.Payment{}
+	for _, dbPayment := range dbPayments {
+		domainPayments = append(domainPayments, ToPaymentDomain(dbPayment))
+	}
+	return domainPayments
+}
+
 func ToPaymentDomain(db Payment) domain.Payment {
 	qrContent := ""
 	if db.QrContent != nil {

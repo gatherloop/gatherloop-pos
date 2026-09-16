@@ -8,6 +8,8 @@ type PaymentRepository interface {
 	BeginTransaction(ctx context.Context, callback func(ctxWithTx context.Context) *Error) *Error
 	GetPaymentByPartnerReferenceNo(ctx context.Context, partnerReferenceNo string) (Payment, *Error)
 	GetPendingPaymentByCartId(ctx context.Context, cartId int64) (Payment, *Error)
+	GetPaymentsBySessionId(ctx context.Context, sessionId string, skip int, limit int) ([]Payment, *Error)
+	GetPaymentsBySessionIdTotal(ctx context.Context, sessionId string) (int64, *Error)
 	CreatePayment(ctx context.Context, payment Payment) (Payment, *Error)
 	UpdatePaymentById(ctx context.Context, payment Payment, id int64) (Payment, *Error)
 }
