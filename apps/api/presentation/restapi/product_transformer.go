@@ -49,7 +49,7 @@ func GetProductRequest(r *http.Request) (apiContract.ProductRequest, error) {
 	return productRequest, err
 }
 
-func ToApiProduct(product domain.Product, variants []domain.Variant) apiContract.Product {
+func ToApiProduct(product domain.Product) apiContract.Product {
 	apiOptions := []apiContract.Option{}
 	for _, option := range product.Options {
 		apiValues := []apiContract.OptionValue{}
@@ -68,8 +68,6 @@ func ToApiProduct(product domain.Product, variants []domain.Variant) apiContract
 		})
 	}
 
-	isSellable, remainingQuantity := domain.ResolveProductAvailability(product, variants)
-
 	return apiContract.Product{
 		Id:                   product.Id,
 		Name:                 product.Name,
@@ -86,8 +84,8 @@ func ToApiProduct(product domain.Product, variants []domain.Variant) apiContract
 		IsAvailable:          product.IsAvailable,
 		AvailabilityTracking: string(product.AvailabilityTracking),
 		AvailableQuantity:    ToApiQuantity(product.AvailableQuantity),
-		IsSellable:           isSellable,
-		RemainingQuantity:    ToApiQuantity(remainingQuantity),
+		IsSellable:           product.IsSellable,
+		RemainingQuantity:    ToApiQuantity(product.RemainingQuantity),
 	}
 }
 

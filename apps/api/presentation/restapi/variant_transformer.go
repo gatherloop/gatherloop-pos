@@ -88,14 +88,12 @@ func ToApiVariant(variant domain.Variant) apiContract.Variant {
 		apiPricingTiers = append(apiPricingTiers, ToApiPricingTier(tier))
 	}
 
-	isSellable, remainingQuantity := domain.ResolveVariantAvailability(variant.Product, variant)
-
 	return apiContract.Variant{
 		Id:                variant.Id,
 		Name:              variant.Name,
 		Price:             variant.Price,
 		ProductId:         variant.ProductId,
-		Product:           ToApiProduct(variant.Product, []domain.Variant{variant}),
+		Product:           ToApiProduct(variant.Product),
 		Materials:         apiMaterials,
 		DeletedAt:         variant.DeletedAt,
 		CreatedAt:         variant.CreatedAt,
@@ -105,8 +103,8 @@ func ToApiVariant(variant domain.Variant) apiContract.Variant {
 		PricingTiers:      apiPricingTiers,
 		IsAvailable:       variant.IsAvailable,
 		AvailableQuantity: ToApiQuantity(variant.AvailableQuantity),
-		IsSellable:        isSellable,
-		RemainingQuantity: ToApiQuantity(remainingQuantity),
+		IsSellable:        variant.IsSellable,
+		RemainingQuantity: ToApiQuantity(variant.RemainingQuantity),
 	}
 }
 

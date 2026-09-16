@@ -2,24 +2,16 @@ package restapi
 
 import (
 	"apps/api/domain"
-	"context"
 	apiContract "libs/api-contract"
 	"net/http"
 )
 
 type ProductHandler struct {
-	usecase        domain.ProductUsecase
-	variantUsecase domain.VariantUsecase
+	usecase domain.ProductUsecase
 }
 
-func NewProductHandler(usecase domain.ProductUsecase, variantUsecase domain.VariantUsecase) ProductHandler {
-	return ProductHandler{usecase: usecase, variantUsecase: variantUsecase}
-}
-
-func (handler ProductHandler) getProductVariants(ctx context.Context, productId int64) ([]domain.Variant, *domain.Error) {
-	id := int(productId)
-	variants, _, err := handler.variantUsecase.GetVariantList(ctx, "", domain.CreatedAt, domain.Ascending, 0, 0, &id, []int{})
-	return variants, err
+func NewProductHandler(usecase domain.ProductUsecase) ProductHandler {
+	return ProductHandler{usecase: usecase}
 }
 
 func (handler ProductHandler) GetProductList(w http.ResponseWriter, r *http.Request) {
@@ -52,12 +44,7 @@ func (handler ProductHandler) GetProductList(w http.ResponseWriter, r *http.Requ
 
 	apiProducts := []apiContract.Product{}
 	for _, product := range products {
-		variants, usecaseErr := handler.getProductVariants(ctx, product.Id)
-		if usecaseErr != nil {
-			WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
-			return
-		}
-		apiProducts = append(apiProducts, ToApiProduct(product, variants))
+		apiProducts = append(apiProducts, ToApiProduct(product))
 	}
 
 	WriteResponse(w, apiContract.ProductListResponse{Data: apiProducts, Meta: apiContract.MetaPage{Total: total}})
@@ -78,13 +65,7 @@ func (handler ProductHandler) GetProductById(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	variants, usecaseErr := handler.getProductVariants(ctx, product.Id)
-	if usecaseErr != nil {
-		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
-		return
-	}
-
-	WriteResponse(w, apiContract.ProductFindByIdResponse{Data: ToApiProduct(product, variants)})
+	WriteResponse(w, apiContract.ProductFindByIdResponse{Data: ToApiProduct(product)})
 }
 
 func (handler ProductHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
@@ -103,7 +84,7 @@ func (handler ProductHandler) CreateProduct(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	WriteResponse(w, apiContract.ProductCreateResponse{Data: ToApiProduct(createdProduct, []domain.Variant{})})
+	WriteResponse(w, apiContract.ProductCreateResponse{Data: ToApiProduct(createdProduct)})
 }
 
 func (handler ProductHandler) UpdateProductById(w http.ResponseWriter, r *http.Request) {
@@ -128,13 +109,7 @@ func (handler ProductHandler) UpdateProductById(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	variants, usecaseErr := handler.getProductVariants(ctx, updatedProduct.Id)
-	if usecaseErr != nil {
-		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
-		return
-	}
-
-	WriteResponse(w, apiContract.ProductUpdateByIdResponse{Data: ToApiProduct(updatedProduct, variants)})
+	WriteResponse(w, apiContract.ProductUpdateByIdResponse{Data: ToApiProduct(updatedProduct)})
 }
 
 func (handler ProductHandler) DeleteProductById(w http.ResponseWriter, r *http.Request) {

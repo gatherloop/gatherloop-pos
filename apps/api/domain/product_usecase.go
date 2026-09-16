@@ -5,17 +5,39 @@ import (
 )
 
 type ProductUsecase struct {
-	repository ProductRepository
+	repository        ProductRepository
+	variantRepository VariantRepository
 }
 
-func NewProductUsecase(repository ProductRepository) ProductUsecase {
-	return ProductUsecase{repository: repository}
+func NewProductUsecase(repository ProductRepository, variantRepository VariantRepository) ProductUsecase {
+	return ProductUsecase{repository: repository, variantRepository: variantRepository}
+}
+
+func (usecase ProductUsecase) resolveAvailability(ctx context.Context, product Product) (Product, *Error) {
+	productId := int(product.Id)
+	variants, err := usecase.variantRepository.GetVariantList(ctx, "", CreatedAt, Ascending, 0, 0, &productId, []int{})
+	if err != nil {
+		return Product{}, err
+	}
+
+	isSellable, remaining := ResolveProductAvailability(product, variants)
+	product.IsSellable = isSellable
+	product.RemainingQuantity = remaining
+	return product, nil
 }
 
 func (usecase ProductUsecase) GetProductList(ctx context.Context, query string, sortBy SortBy, order Order, skip int, limit int, saleType *SaleType, status *ProductStatus) ([]Product, int64, *Error) {
 	products, err := usecase.repository.GetProductList(ctx, query, sortBy, order, skip, limit, saleType, status)
 	if err != nil {
 		return []Product{}, 0, err
+	}
+
+	for i, product := range products {
+		resolved, err := usecase.resolveAvailability(ctx, product)
+		if err != nil {
+			return []Product{}, 0, err
+		}
+		products[i] = resolved
 	}
 
 	total, err := usecase.repository.GetProductListTotal(ctx, query, saleType, status)
@@ -27,11 +49,21 @@ func (usecase ProductUsecase) GetProductList(ctx context.Context, query string, 
 }
 
 func (usecase ProductUsecase) GetProductById(ctx context.Context, id int64) (Product, *Error) {
-	return usecase.repository.GetProductById(ctx, id)
+	product, err := usecase.repository.GetProductById(ctx, id)
+	if err != nil {
+		return Product{}, err
+	}
+
+	return usecase.resolveAvailability(ctx, product)
 }
 
 func (usecase ProductUsecase) CreateProduct(ctx context.Context, product Product) (Product, *Error) {
-	return usecase.repository.CreateProduct(ctx, product)
+	created, err := usecase.repository.CreateProduct(ctx, product)
+	if err != nil {
+		return Product{}, err
+	}
+
+	return usecase.resolveAvailability(ctx, created)
 }
 
 func (usecase ProductUsecase) UpdateProductById(ctx context.Context, product Product, id int64) (Product, *Error) {
@@ -49,7 +81,7 @@ func (usecase ProductUsecase) UpdateProductById(ctx context.Context, product Pro
 		return Product{}, err
 	}
 
-	return updateResult, nil
+	return usecase.resolveAvailability(ctx, updateResult)
 }
 
 func (usecase ProductUsecase) DeleteProductById(ctx context.Context, id int64) *Error {

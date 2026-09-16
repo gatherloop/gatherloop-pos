@@ -5,8 +5,8 @@ import (
 	apiContract "libs/api-contract"
 )
 
-func ToPublicApiProduct(product domain.Product, variants []domain.Variant) apiContract.Product {
-	apiProduct := ToApiProduct(product, variants)
+func ToPublicApiProduct(product domain.Product) apiContract.Product {
+	apiProduct := ToApiProduct(product)
 	apiProduct.Recipe = nil
 	return apiProduct
 }

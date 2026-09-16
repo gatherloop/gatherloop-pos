@@ -42,6 +42,29 @@ type Product struct {
 	IsAvailable          bool
 	AvailabilityTracking AvailabilityTracking
 	AvailableQuantity    *int
+	IsSellable           bool
+	RemainingQuantity    *int
+}
+
+func ResolveProductAvailability(product Product, variants []Variant) (isSellable bool, remaining *int) {
+	remaining = productRemainingQuantity(product)
+
+	for _, variant := range variants {
+		variantIsSellable, _ := ResolveVariantAvailability(product, variant)
+		if variantIsSellable {
+			isSellable = true
+			break
+		}
+	}
+
+	return isSellable, remaining
+}
+
+func productRemainingQuantity(product Product) *int {
+	if product.AvailabilityTracking == AvailabilityTrackingProduct {
+		return product.AvailableQuantity
+	}
+	return nil
 }
 
 type Option struct {
