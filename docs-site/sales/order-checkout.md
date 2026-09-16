@@ -6,7 +6,7 @@
 
 Once the bank confirms payment, that same page flips in place to the order-status view — no second navigation, because it was the order-status page all along: the table label (large — it's how the order finds them, there's no pager and no order number), the guest's name, and what they paid for. A `Transaction` now exists for that order, marked paid, showing up on the POS exactly like a cashier-entered sale — badged **"Order App"** and filterable by source — with the right table attached so staff know where to carry it.
 
-That order-status page doesn't stop at "paid" — it keeps watching the order through to pickup. See [Order Fulfilment Status, After Payment](#order-fulfilment-status-after-payment) below.
+That order-status page doesn't stop at "paid" — it keeps watching the order through to pickup. See [Order Fulfilment Status, After Payment](#order-fulfilment-status-after-payment) below. And that page isn't the only way back to this order — every paid order from this session shows up in [Order History](/sales/order-history), one tap away from a header button on every order-app screen.
 
 ## Why it matters
 
@@ -16,7 +16,7 @@ It also had to be built without ever letting a payment credential near the custo
 
 ## Order Fulfilment Status, After Payment
 
-Paying doesn't end the guest's page — it starts the part that closes the loop. The same URL that showed the QR now shows a **preparing** screen: the guest's pickup number as the largest thing on it, a pulsing ring and an animated ellipsis proving the page is live, the table, and the item list — with no elapsed timer or countdown anywhere, deliberately. A barista finishing the order marks it **Ready** from the POS (see [Transactions](/sales/transactions)), and the guest's open page flips itself to a green **ready** screen within about ten seconds, telling them to collect at the counter with their number. There's no push notification — the page gets there by polling — so a guest who closes the tab is warned first, and can always get back by re-scanning the table QR, which resumes the same order.
+Paying doesn't end the guest's page — it starts the part that closes the loop. The same URL that showed the QR now shows a **preparing** screen: the guest's pickup number as the largest thing on it, a pulsing ring and an animated ellipsis proving the page is live, the table, and the item list — with no elapsed timer or countdown anywhere, deliberately. A barista finishing the order marks it **Ready** from the POS (see [Transactions](/sales/transactions)), and the guest's open page flips itself to a green **ready** screen within about ten seconds, telling them to collect at the counter with their number. There's no push notification — the page gets there by polling — and closing the tab raises no warning of any kind: the guest gets back to this same page from their [order history](/sales/order-history), one tap away on every order-app screen.
 
 ## Key capabilities
 
@@ -32,7 +32,7 @@ Paying doesn't end the guest's page — it starts the part that closes the loop.
 - **A wrong payment is fixed the way a wrong cashier payment always was** — no refunds, voids or partial payments exist anywhere in the POS yet, so an order-app mistake is unwound the same manual way (`Unpay` within 24 hours) as one at the till.
 - **The status page keeps polling after "paid"** — once the barista marks the order ready on the POS (see [Transactions](/sales/transactions)), the guest's already-open page flips to a pickup screen within about ten seconds, no reload needed.
 - **No elapsed time is ever shown to the guest** — the preparing screen proves it's live with motion (a pulsing ring, an animated ellipsis), never a duration or a countdown, so a longer-than-usual wait never reads as the app being stuck.
-- **Leaving mid-order is a deliberate choice, and reversible** — closing the tab or navigating away while the order is still preparing raises a confirmation, and re-scanning the table QR always returns to the same order's status page.
+- **Leaving mid-order raises no confirmation** — closing the tab or navigating away while the order is still preparing is free; the guest finds the order again under their [order history](/sales/order-history) header button, not a dialog telling them to stay.
 
 ## For engineers
 
@@ -45,7 +45,6 @@ Paying doesn't end the guest's page — it starts the part that closes the loop.
 - Backend routes: `POST /carts/current/checkout`, `GET /payments/{partnerReferenceNo}`, and the unauthenticated-but-signature-verified `POST /payments/doku/notification` (`apps/api/presentation/restapi/payment_route.go`, `VerifyDokuSignature` middleware)
 - Fulfilment status is `transactions.completed_at`, a nullable timestamp read through the `Payment.fulfillmentStatus` field `ToApiPayment` derives (`apps/api/presentation/restapi/payment_transformer.go`) — the guest never reads `transactions` directly
 - `OrderStatusUsecase` (`libs/ui/src/domain/usecases/orderStatus.ts`) splits `loaded` into `preparing` (polls every 10s) and `ready` (terminal, stops polling); the two screens are `OrderPreparingView` / `OrderReadyView` (`libs/ui/src/presentation/views/components/orderStatus/`)
-- The leave-confirmation guard is `useLeaveConfirmation` (`libs/ui/src/utils/`) — the one place in `libs/ui` allowed to import `next/router`, since browser-lifecycle APIs have no Metro equivalent
 - Design doc: `docs/prd-order-fulfillment-status.md` — the barista/guest state model (`completed_at` on `transactions`, D1/D2), why no duration is ever rendered (D17), and what a future kitchen display system inherits from this design
 - Transaction origin: `source` (`pos` \| `order`) and `cart_id` on `transactions` (migration `000023`), surfaced in `libs/ui/src/presentation/views/components/transactions/{TransactionListItem,TransactionDetail}.tsx`
 - Guest identity: `customers` table keyed by session id (migration `000024`) — a display name only, no phone, email or cross-session identity
