@@ -35,6 +35,7 @@ The base seeders (`apps/api/seeds/`) cover most pages out of the box, but a few 
 - **Checklists** (`operations/checklists.md`) — create a template with at least one multi-sub-item entry (`POST /checklist-templates`), start a session for it (`POST /checklist-sessions`), and check off a couple of items/sub-items (`PUT /checklist-session-items/{id}/check`, `.../checklist-session-sub-items/{id}/check`) so the screenshot shows partial, cascading progress instead of an all-or-nothing list.
 - **Dashboard** (`finance/dashboard-statistics.md`) — the seeded transactions/expenses all share one timestamp, which renders as a single dot instead of a trend line. Backfill a couple of weeks of transactions and expenses with varied `created_at` values directly in the database before capturing.
 - **Wallets** (`finance/wallets-transfers.md`) and **Calculations** (`finance/calculations.md`) — set a non-zero balance on at least the `Cash` wallet (`PUT /wallets/{id}`) and create a matching calculation (`POST /calculations`) whose denomination totals equal that balance, so the screenshot shows a real "Balanced" state.
+- **Availability** (`inventory/availability.md`) — create the three products the PRD is built around so the screenshot shows all three tracking modes at once: **Es Kopi Susu** (`availabilityTracking: none`, Vanilla variant `isAvailable: false`), **Soft Cookies** (`variant` tracking, Choco `availableQuantity: 6`, Red Velvet `availableQuantity: 3`), **Pancong** (`product` tracking, `availableQuantity: 5`, Matcha variant `isAvailable: false`). Set quantities and switches via `PUT /availability`.
 
 ## 3. Capture
 
@@ -57,6 +58,7 @@ Use Playwright against the running app (`playwright` is already a workspace depe
 | `stock-checks.png` | `/inventory/stock-checks` |
 | `purchase-list.png` | `/inventory/purchase-lists` |
 | `suppliers.png` | `/inventory/suppliers` |
+| `availability.png` | `/inventory/availability` |
 | `dashboard.png` | `/finance/dashboard-statistics` (full-page capture — there's a second "Expense Statistic" chart below the fold) |
 | `expenses.png` | `/finance/expenses` |
 | `budgets.png` | `/finance/budgets` |
