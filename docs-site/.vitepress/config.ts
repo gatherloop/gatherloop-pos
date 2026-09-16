@@ -68,6 +68,7 @@ export default defineConfig({
           { text: 'Board-game Rentals', link: '/sales/rentals' },
           { text: 'Table Ordering', link: '/sales/table-ordering' },
           { text: 'Order Checkout (QRIS)', link: '/sales/order-checkout' },
+          { text: 'Order History', link: '/sales/order-history' },
         ],
       },
       {

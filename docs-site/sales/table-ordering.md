@@ -6,7 +6,7 @@ A customer sits down, scans the QR code printed on their table, and lands on a h
 
 Each menu item shows only its short, customer-facing **description** — never the staff-only preparation recipe, which the public API never returns (see [Products](/catalog/products) for that split). Once something is in the cart, a customer can edit a line's **quantity and note** at any time before checkout, without deleting and re-adding the item; the variant itself (the size or option combination already chosen) can't be changed from that edit screen — picking a different one still means removing the line and adding the item again.
 
-This ships the **discovery-and-cart half** of the flow. The cart page's own footer button pays with QRIS directly — there's no separate checkout page recapping the same cart — and lands the guest on an order-status page that doubles as the QR page, reloadable at any point until it's paid; see [Order Checkout (QRIS)](/sales/order-checkout) for that half.
+This ships the **discovery-and-cart half** of the flow. The cart page's own footer button pays with QRIS directly — there's no separate checkout page recapping the same cart — and lands the guest on an order-status page that doubles as the QR page, reloadable at any point until it's paid; see [Order Checkout (QRIS)](/sales/order-checkout) for that half. Every order a guest has paid for from this session, across every table, is one tap away from a header button on every screen — see [Order History](/sales/order-history).
 
 ## Why it matters
 
