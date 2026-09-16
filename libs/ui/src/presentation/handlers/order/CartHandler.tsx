@@ -151,6 +151,7 @@ export const CartHandler = ({
               }
         )
         .exhaustive()}
+      onHistoryPress={() => router.push('/orders')}
       variant={toScreenVariant(cart.state)}
       isMutating={mutating}
       errorMessage={cart.state.errorMessage}

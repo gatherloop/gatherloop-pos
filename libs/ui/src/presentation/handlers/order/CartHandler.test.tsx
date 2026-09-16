@@ -363,6 +363,17 @@ describe('CartHandler', () => {
     expect(screen.getByText('Keranjang kosong')).toBeTruthy();
   });
 
+  it('navigates to /orders from the header history button', async () => {
+    const user = userEvent.setup();
+    renderHandler();
+
+    await settle();
+
+    await user.click(screen.getByRole('button', { name: 'Pesanan Saya' }));
+
+    expect(mockPush).toHaveBeenCalledWith('/orders');
+  });
+
   describe('the edit modal', () => {
     it('opens with no navigation when the edit button is pressed, seeded from the line', async () => {
       const user = userEvent.setup();

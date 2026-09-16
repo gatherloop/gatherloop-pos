@@ -28,6 +28,7 @@ export type CartScreenVariant =
 
 export type CartScreenProps = {
   tableVariant: TableResolveScreenProps['variant'];
+  onHistoryPress?: () => void;
   variant: CartScreenVariant;
   isMutating: boolean;
   errorMessage: string | null;
@@ -52,6 +53,7 @@ export type CartScreenProps = {
 
 export const CartScreen = ({
   tableVariant,
+  onHistoryPress,
   variant,
   isMutating,
   errorMessage,
@@ -129,7 +131,11 @@ export const CartScreen = ({
     ) : null;
 
   return (
-    <TableResolveScreen variant={tableVariant} footer={footer}>
+    <TableResolveScreen
+      variant={tableVariant}
+      footer={footer}
+      onHistoryPress={onHistoryPress}
+    >
       <YStack flex={1} gap="$3">
         {match(variant)
           .with({ type: 'loading' }, () => (

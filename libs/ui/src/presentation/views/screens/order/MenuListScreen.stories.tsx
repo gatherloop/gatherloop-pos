@@ -121,6 +121,15 @@ export const ResumeBannerVisible: Story = {
   },
 };
 
+export const WithHistoryButton: Story = {
+  args: {
+    ...Loaded.args,
+    onHistoryPress: () => {
+      // Storybook action stand-in
+    },
+  },
+};
+
 export const ItemSheetOpen: Story = {
   args: {
     ...Loaded.args,

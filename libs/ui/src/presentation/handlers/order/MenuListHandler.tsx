@@ -299,6 +299,7 @@ export const MenuListHandler = ({
             }
           : null
       }
+      onHistoryPress={() => router.push('/orders')}
       variant={match(menuList.state)
         .returnType<MenuListScreenProps['variant']>()
         .with({ type: P.union('idle', 'loading') }, () => ({

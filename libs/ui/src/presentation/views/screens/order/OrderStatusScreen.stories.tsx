@@ -121,3 +121,12 @@ export const Error: Story = {
     },
   },
 };
+
+export const WithHistoryButton: Story = {
+  args: {
+    variant: { type: 'preparing', payment: paidPayment, isPolling: false },
+    onHistoryPress: () => {
+      // Storybook action stand-in
+    },
+  },
+};

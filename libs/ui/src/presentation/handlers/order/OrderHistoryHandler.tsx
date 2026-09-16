@@ -45,6 +45,7 @@ export const OrderHistoryHandler = ({
         router.push(`/orders/${payment.reference}`)
       }
       onEmptyActionPress={() => router.push(menuPath)}
+      onHistoryPress={() => router.push('/orders')}
     />
   );
 };

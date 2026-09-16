@@ -59,3 +59,7 @@ export const Empty: Story = {
 export const Error: Story = {
   args: { variant: { type: 'error', onRetryPress: fn() } },
 };
+
+export const WithHistoryButton: Story = {
+  args: { variant: { type: 'loaded', payments }, onHistoryPress: fn() },
+};
