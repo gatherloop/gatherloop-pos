@@ -15,6 +15,7 @@ type PaymentUsecase struct {
 	transactionRepository    TransactionRepository
 	variantRepository        VariantRepository
 	walletRepository         WalletRepository
+	availabilityReservation  AvailabilityReservation
 	qrisExpirySeconds        int
 	orderPaymentWalletId     int64
 }
@@ -27,6 +28,7 @@ func NewPaymentUsecase(
 	transactionRepository TransactionRepository,
 	variantRepository VariantRepository,
 	walletRepository WalletRepository,
+	availabilityReservation AvailabilityReservation,
 	qrisExpirySeconds int,
 	orderPaymentWalletId int64,
 ) PaymentUsecase {
@@ -38,6 +40,7 @@ func NewPaymentUsecase(
 		transactionRepository:    transactionRepository,
 		variantRepository:        variantRepository,
 		walletRepository:         walletRepository,
+		availabilityReservation:  availabilityReservation,
 		qrisExpirySeconds:        qrisExpirySeconds,
 		orderPaymentWalletId:     orderPaymentWalletId,
 	}
@@ -120,6 +123,10 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 				ProductName:    variant.Product.Name,
 				Values:         snapshotVariantValues(variant),
 			})
+		}
+
+		if err := usecase.availabilityReservation.Reserve(ctxWithTx, transactionItems); err != nil {
+			return err
 		}
 
 		createdTransaction, err := usecase.transactionRepository.CreateTransaction(ctxWithTx, Transaction{
@@ -237,6 +244,10 @@ func (usecase PaymentUsecase) applyQrisStatus(ctxWithTx context.Context, payment
 				return payment, "", undeleteErr
 			}
 			transaction.DeletedAt = nil
+
+			if reserveErr := usecase.availabilityReservation.ForceReserve(ctxWithTx, transaction.TransactionItems); reserveErr != nil {
+				return payment, "", reserveErr
+			}
 		}
 
 		if payErr := payTransaction(ctxWithTx, transaction, usecase.transactionRepository, usecase.walletRepository, usecase.orderPaymentWalletId, payment.Amount); payErr != nil {
@@ -283,6 +294,15 @@ func (usecase PaymentUsecase) applyQrisStatus(ctxWithTx context.Context, payment
 		}
 
 		if payment.TransactionId != nil {
+			transaction, txErr := usecase.transactionRepository.GetTransactionById(ctxWithTx, *payment.TransactionId)
+			if txErr != nil {
+				return payment, "", txErr
+			}
+
+			if releaseErr := usecase.availabilityReservation.Release(ctxWithTx, transaction.TransactionItems); releaseErr != nil {
+				return payment, "", releaseErr
+			}
+
 			if deleteErr := usecase.transactionRepository.DeleteTransactionById(ctxWithTx, *payment.TransactionId); deleteErr != nil {
 				return payment, "", deleteErr
 			}
