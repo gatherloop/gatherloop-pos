@@ -43,6 +43,7 @@ const items: MenuItem[] = [
       { title: 'Materials', path: '/materials' },
       { title: 'Suppliers', path: '/suppliers' },
       { title: 'Stock Checks', path: '/stock-checks' },
+      { title: 'Availability', path: '/availability' },
     ],
   },
   {
