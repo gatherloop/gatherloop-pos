@@ -1,4 +1,4 @@
-# PRD: Product & Variant Stock Availability
+# PRD: Product & Variant Availability
 
 ## Problem Statement
 
@@ -30,15 +30,18 @@ The consequences are concrete:
 ### Root cause
 
 The catalog models what an item **is** (`Product`, `Variant`, `Option`, `OptionValue`) and what it
-**costs** (`Variant.Price`, `VariantMaterial`), but never what is **left of it**. The word "stock"
-already exists in this codebase and refers to something else entirely: `StockCheck` /
-`StockCheckItem` (`apps/api/domain/stock_check_entity.go`) count **raw materials in purchase
-units** for a weekly shopping list (`docs/prd-inventory-management.md`). That is a procurement
-tool measured in sacks of flour, snapshotted once a day at closing. It cannot answer "can I sell
-one more Pancong right now", and it must not be overloaded to try.
+**costs** (`Variant.Price`, `VariantMaterial`), but never what is **left of it**.
 
-This PRD adds the missing concept — **sellable availability** — and keeps it strictly separate
-from material inventory.
+The obvious word for the missing concept is already taken, and taken fairly. `StockCheck` /
+`StockCheckItem` (`apps/api/domain/stock_check_entity.go`) count **raw materials in purchase
+units** for a weekly shopping list (`docs/prd-inventory-management.md`) — a procurement tool
+measured in sacks of flour, snapshotted once a day at closing. It cannot answer "can I sell one
+more Pancong right now", and it must not be overloaded to try. Counting goods on shelves is what
+"stock" means, so `StockCheck` keeps the word and this feature does not borrow it at any layer
+(D15).
+
+This PRD adds the missing concept under its own name — **availability** — and keeps it strictly
+separate from material inventory.
 
 ---
 
@@ -95,8 +98,8 @@ variant level.
   endpoint is needed for the customer app.
 - ❌ A product cannot mix counted and uncounted variants — the counting level is declared once per
   product. Not needed by any case above.
-- ❌ Two nullable `stock_quantity` columns on two tables, and an audit ledger that has to point at
-  either a product or a variant.
+- ❌ Two nullable `available_quantity` columns on two tables, and an audit ledger that has to point
+  at either a product or a variant.
 
 ### Option B — A `stocks` pool table with `variants.stock_id`
 
@@ -148,18 +151,18 @@ Five new fields, no new tables (the audit ledger in FR-8 is the one exception an
 | Field | Table | Type | Default | Meaning |
 | --- | --- | --- | --- | --- |
 | `is_available` | `products` | `BOOLEAN NOT NULL` | `TRUE` | Manual kill switch for the whole product. |
-| `stock_tracking` | `products` | `ENUM('none','product','variant') NOT NULL` | `'none'` | Where the counter lives, if anywhere. |
-| `stock_quantity` | `products` | `INT NULL` | `NULL` | The counter. Meaningful only when `stock_tracking = 'product'`. |
+| `availability_tracking` | `products` | `ENUM('none','product','variant') NOT NULL` | `'none'` | Where the counter lives, if anywhere. |
+| `available_quantity` | `products` | `INT NULL` | `NULL` | The counter. Meaningful only when `availability_tracking = 'product'`. |
 | `is_available` | `variants` | `BOOLEAN NOT NULL` | `TRUE` | Manual kill switch for one variant. |
-| `stock_quantity` | `variants` | `INT NULL` | `NULL` | The counter. Meaningful only when `stock_tracking = 'variant'`. |
+| `available_quantity` | `variants` | `INT NULL` | `NULL` | The counter. Meaningful only when `availability_tracking = 'variant'`. |
 
 **Remaining quantity of a variant** (`null` means "not counted", which is never a blocker):
 
 ```
 remaining(variant) =
-  product.stock_tracking = 'none'     → null
-  product.stock_tracking = 'product'  → product.stock_quantity
-  product.stock_tracking = 'variant'  → variant.stock_quantity
+  product.availability_tracking = 'none'     → null
+  product.availability_tracking = 'product'  → product.available_quantity
+  product.availability_tracking = 'variant'  → variant.available_quantity
 ```
 
 **A variant is available when all of these hold:**
@@ -180,15 +183,15 @@ AND (remaining(variant) IS NULL OR remaining(variant) > 0)
 | Item | `products` | `variants` |
 | --- | --- | --- |
 | **Es Kopi Susu** | `tracking = none`, `is_available = true` | Vanilla `is_available = false`; Banana, Hazelnut `true` |
-| **Soft Cookies** | `tracking = variant`, `is_available = true` | Choco `stock_quantity = 6`, Red Velvet `= 3` |
-| **Pancong** | `tracking = product`, `stock_quantity = 5` | all three `is_available = true` |
-| **Pancong, matcha out** | `tracking = product`, `stock_quantity = 5` | Matcha `is_available = false`, others `true` |
+| **Soft Cookies** | `tracking = variant`, `is_available = true` | Choco `available_quantity = 6`, Red Velvet `= 3` |
+| **Pancong** | `tracking = product`, `available_quantity = 5` | all three `is_available = true` |
+| **Pancong, matcha out** | `tracking = product`, `available_quantity = 5` | Matcha `is_available = false`, others `true` |
 
 Note what case 1 means in practice: **Es Kopi Susu needs no number and no daily data entry at
 all.** The crew flips one switch when the syrup runs out and flips it back when the new bottle
 arrives — exactly how they think about it today.
 
-### When stock is decremented
+### When the count is decremented
 
 **At transaction creation, in both apps.** (D3)
 
@@ -206,7 +209,7 @@ order    cart → checkout → [transaction created + QRIS pending] → paid | e
 ```
 
 The cart is deliberately **not** a reservation (D4): an order-app cart is an anonymous,
-session-scoped row that is abandoned all the time, and holding stock against abandoned carts
+session-scoped row that is abandoned all the time, and holding quantity against abandoned carts
 would strangle the menu with no human anywhere in the loop to notice. The cart performs a
 **soft check** only (FR-7); checkout performs the authoritative one.
 
@@ -217,8 +220,8 @@ amount stepper cannot exceed it** (D9). A customer picking Soft Cookies Choco wi
 step up to 3 and no further, with a hint at the cap. This is the least-leaky way to enforce the
 limit at selection time, which is what the acceptance criteria ask for.
 
-Out-of-stock items stay on the menu, dimmed and badged (**"Habis"** in the order app, **"Out of
-stock"** in POS) — never hidden. That is the difference between this feature and the existing
+Sold-out items stay on the menu, dimmed and badged (**"Habis"** in the order app, **"Sold out"**
+in POS) — never hidden. That is the difference between this feature and the existing
 `draft` status, and it is an explicit acceptance criterion.
 
 ---
@@ -231,10 +234,10 @@ The five fields above, end to end: migration, `apps/api/domain/product_entity.go
 `variant_entity.go`, the MySQL entities and transformers, the OpenAPI schemas, and the seeder.
 Existing rows keep today's behaviour via the column defaults.
 
-`stock_tracking` is set on the **product form**; quantities and switches are set on the **Stock
-screen** (FR-4). Changing `stock_tracking` clears the counters on both levels and leaves the
-switches alone (D2) — a number entered against the old level is meaningless against the new one,
-and silently reinterpreting it is worse than asking for it again.
+`availability_tracking` is set on the **product form**; quantities and switches are set on the
+**Availability screen** (FR-4). Changing `availability_tracking` clears the counters on both levels
+and leaves the switches alone (D2) — a number entered against the old level is meaningless against
+the new one, and silently reinterpreting it is worse than asking for it again.
 
 ### FR-2 — Availability is resolved server-side and exposed on every read
 
@@ -244,17 +247,17 @@ sales surface uses carries the result:
 
 | Schema | New fields |
 | --- | --- |
-| `Variant` | `isAvailable: bool` (manual switch), `isSellable: bool` (resolved), `remainingStock: int \| null` |
-| `Product` | `isAvailable: bool` (manual switch), `stockTracking`, `isSellable: bool` (resolved — any variant sellable), `remainingStock: int \| null` |
+| `Variant` | `isAvailable: bool` (manual switch), `isSellable: bool` (resolved), `remainingQuantity: int \| null` |
+| `Product` | `isAvailable: bool` (manual switch), `availabilityTracking`, `isSellable: bool` (resolved — any variant sellable), `remainingQuantity: int \| null` |
 
 Both the authenticated (`/products`, `/variants`) and public (`/public/products`,
 `/public/variants`) responses carry them, so neither app has to re-derive the rule (D5). The
-clients still need `remainingStock` to cap the stepper, and `isAvailable` separately from
+clients still need `remainingQuantity` to cap the stepper, and `isAvailable` separately from
 `isSellable` so the POS Availability screen can show *why* something is off.
 
-No filtering is added — out-of-stock items must keep appearing in both apps.
+No filtering is added — sold-out items must keep appearing in both apps.
 
-### FR-3 — Stock is reserved at transaction creation and released on reversal
+### FR-3 — Availability is reserved at transaction creation and released on reversal
 
 Every write point, all of them already inside a `BeginTransaction` block:
 
@@ -274,7 +277,7 @@ Rules:
   of Pancong Matcha need 3 off the shared product counter; the same variant appearing on two
   lines with different notes is one variant total.
 - Untracked items (`remaining = null`) are validated for the switches only and never decremented.
-- Rejection returns `domain.BadRequest` naming the item: `"Soft Cookies Choco is out of stock"`
+- Rejection returns `domain.BadRequest` naming the item: `"Soft Cookies Choco is sold out"`
   / `"only 2 Pancong left"`. The `Error` schema carries `code` + `message` only, so clients
   **refetch and re-derive** which rows are unavailable rather than parsing the message (D8).
 - Release is guarded by the `deleted_at NULL → NOT NULL` transition inside the same DB
@@ -293,9 +296,9 @@ acceptance criterion about not opening products one by one.
 It lists **every published, purchasable product**, grouped by category, with a search box and a
 "Sold out only" filter. Each row shows:
 
-- the product switch, and the product counter when `stock_tracking = 'product'`;
-- one sub-row per variant with its switch, and its counter when `stock_tracking = 'variant'`;
-- a resolved `Out of stock` badge wherever FR-2 says the item is not sellable.
+- the product switch, and the product counter when `availability_tracking = 'product'`;
+- one sub-row per variant with its switch, and its counter when `availability_tracking = 'variant'`;
+- a resolved `Sold out` badge wherever FR-2 says the item is not sellable.
 
 Counters are edited with a stepper plus a direct numeric input (typing `5` at opening is one
 gesture, `+1` after a miscount is another). **Save sends only the rows that changed** (D10), so
@@ -310,7 +313,7 @@ crew types today's Pancong count at opening.
 
 ### FR-5 — POS blocks the sale, and offers the fix
 
-`TransactionItemSelect` dims out-of-stock products, badges them `Out of stock`, disables the
+`TransactionItemSelect` dims sold-out products, badges them `Sold out`, disables the
 option-value radio for a sold-out variant, shows `n left` on counted items, and caps the amount
 stepper at the remaining quantity. Submitting anyway (a stale grid, or a race) surfaces the
 server's message as an error toast with an **"Update availability"** action that routes to
@@ -325,14 +328,14 @@ Blocked, not overridable (D12): the POS count is the number the customer app is 
 barista who genuinely has one more cookie fixes the number — two taps — and the order app becomes
 correct at the same moment.
 
-### FR-6 — Order app shows out of stock, and caps the picker
+### FR-6 — Order app shows sold out, and caps the picker
 
 - `MenuProductCard`: when no variant is sellable — dimmed, a `Habis` badge, press disabled.
 - `MenuItemDetailScreen` / `OptionValueChipGroup`: an option value is disabled when **no sellable
   variant matches the current partial selection plus that value** — so Vanilla greys out while
   Banana and Hazelnut stay live. Disabled chips keep their label and gain a `Habis` marker; they
   are never removed, so the customer can see the item exists.
-- `AmountStepper` gains a `max` prop; the sheet passes `remainingStock` and shows `Sisa n` once
+- `AmountStepper` gains a `max` prop; the sheet passes `remainingQuantity` and shows `Sisa n` once
   the customer reaches the cap.
 - The sheet's add-to-cart button is disabled with `Stok habis` when the resolved variant is not
   sellable.
@@ -353,19 +356,23 @@ and flags affected lines (`Habis` / `Sisa n`) with the checkout button disabled 
 removes or reduces them. A checkout rejected by FR-3 refetches the cart and lands in that same
 state — one code path, not two.
 
-### FR-8 — Stock movement ledger (audit)
+### FR-8 — Availability movement ledger (audit)
 
-`stock_movements`: `product_id` / `variant_id` (exactly one set), `delta`, `resulting_quantity`,
-`reason` (`sale`, `sale_reversal`, `manual_set`, `manual_adjust`), `transaction_id`, `note`,
-`created_at`. Written in the same DB transaction as every counter change, for counted items only.
+`availability_movements`: `product_id` / `variant_id` (exactly one set), `delta`,
+`resulting_quantity`, `reason` (`sale`, `sale_reversal`, `manual_set`, `manual_adjust`,
+`switched_off`, `switched_on`), `transaction_id`, `note`, `created_at`. Written in the same DB
+transaction as every availability change — both counter deltas and switch flips (D18), with
+`delta` and `resulting_quantity` null for the latter.
 
 It is **audit-only** (D13) — the counter stays the source of truth, so no read path pays for an
-aggregation. It answers the question the crew will ask on day two: "it said 5 this morning, where
-did they go?" Surfaced as a history sheet from each Availability screen row.
+aggregation. It answers the two questions the crew will ask on day two: "it said 5 this morning,
+where did they go?" and "who turned Vanilla off, and when did it come back?" — the second being the
+only history that exists for an item with no number at all. Surfaced as a history sheet from each
+Availability screen row.
 
 ### FR-9 — Product form declares the tracking level
 
-A `Stock tracking` selector (`None` / `Shared across variants` / `Per variant`) on
+An `Availability tracking` selector (`None` / `Shared across variants` / `Per variant`) on
 `ProductCreateScreen` and `ProductUpdateScreen`, with helper text naming a real example for each.
 Quantities are **not** editable here — a link points to the Availability screen. Switching the
 value warns that existing counts will be cleared (FR-1).
@@ -379,9 +386,9 @@ value warns that existing counts will be cleared (FR-1).
   problem coexist with a product-level count (Pancong matcha). *Alternative rejected:* a single
   `mode` enum per product (`toggle | counted`) — it cannot express a switch and a count at once,
   which is the fourth case.
-- **D2 — Changing `stock_tracking` clears both counters.** A `5` entered as "5 servings of dough"
-  means nothing as "5 of each variant". *Alternative rejected:* copying the product count down to
-  each variant — it silently multiplies stock by the variant count.
+- **D2 — Changing `availability_tracking` clears both counters.** A `5` entered as "5 servings of
+  dough" means nothing as "5 of each variant". *Alternative rejected:* copying the product count
+  down to each variant — it silently multiplies the quantity by the variant count.
 - **D3 — Decrement at transaction creation.** The only moment both apps share, and the order app's
   release hook already exists. *Alternatives rejected:* at payment (POS routinely runs unpaid open
   bills, so every drink in progress would be invisible and the last cookie sells three times); at
@@ -395,9 +402,9 @@ value warns that existing counts will be cleared (FR-1).
   so the rule would exist twice and drift.
 - **D6 — `SELECT ... FOR UPDATE` on the counter row.** Correctness under two simultaneous
   checkouts, using the transaction boundary that already wraps every write point. *Alternative
-  rejected:* optimistic `UPDATE ... WHERE stock_quantity >= n` with a rowcount check — fewer locks,
+  rejected:* optimistic `UPDATE ... WHERE available_quantity >= n` with a rowcount check — fewer locks,
   but it cannot report *which* item of a multi-item order failed without a second query.
-- **D7 — A late QRIS payment always wins, even into negative stock.** `applyQrisStatus` can mark
+- **D7 — A late QRIS payment always wins, even into a negative quantity.** `applyQrisStatus` can mark
   an expired payment paid; the money has been captured by the gateway. Rejecting it there would
   leave a paid customer with no order. Negative counts are legal, and the Availability screen
   badges them in red so the crew notices.
@@ -410,7 +417,7 @@ value warns that existing counts will be cleared (FR-1).
 - **D10 — The Availability screen saves only changed rows.** Two crew members at opening are
   normal; a whole-screen PUT would make the second save undo the first.
 - **D11 — No overnight reset.** Carry-over is the physically correct default: leftover cookies are
-  real. An auto-reset to a daily target invents stock that may not exist, and an auto-reset to zero
+  real. An auto-reset to a daily target invents quantity that may not exist, and an auto-reset to zero
   turns one forgotten morning into a fully sold-out menu. Matches Toast, where an 86'd item stays
   86'd until a human says otherwise. *Revisit if* the crew reports the morning entry as a burden —
   a per-item "daily target" with a one-tap **Restore all to target** action is the additive next
@@ -420,21 +427,35 @@ value warns that existing counts will be cleared (FR-1).
   `/availability` from the error toast.
 - **D13 — The ledger is audit-only; the counter is the source of truth.** The menu read path is the
   hottest in the system and must not aggregate movements. *Alternative rejected:* event-sourced
-  stock (quantity = opening + Σ movements) — correct by construction, but every menu load pays for
+  availability (quantity = opening + Σ movements) — correct by construction, but every menu load pays for
   it and every phase gets bigger.
 - **D14 — Sellable stock is a separate concept from `StockCheck`.** Different unit (servings vs
   purchase units), different cadence (live vs daily snapshot), different consumer (the menu vs the
   shopping list). Sharing a table or a screen between them would make both worse.
-- **D15 — The operator-facing surface is called "Availability", the data keeps the word "stock".**
-  The route is `/availability`, the sidebar label is `Availability`, the API resource is
-  `/availability`, and the POS screen is the Availability screen — because that is what the screen
-  controls end to end, including the items that carry no number at all. The columns stay
-  `stock_tracking` / `stock_quantity` and the ledger stays `stock_movements`, because those are
-  literally stock. This also removes the collision with `/stock-checks`, which is a different
-  feature (D14). *Alternative rejected:* naming everything `/stock` — two adjacent routes reading
-  `stock` and `stock-checks` is exactly the confusion D14 exists to prevent.
-- **D16 — `stock_tracking` defaults to `none` for newly created products.** Counting is opt-in, as
-  it is in Square, where per-variation tracking must be switched on deliberately. Most of the menu
+- **D15 — This feature is called "availability" from the label all the way down to the column
+  names; the word "stock" belongs to `StockCheck` and is not reused here.** The route is
+  `/availability`, the sidebar label is `Availability`, the API resource is `/availability`, the
+  POS screen is the Availability screen, and the schema is `availability_tracking`,
+  `available_quantity`, `is_available`, `availability_movements`. Nothing in this feature is named
+  `stock`, at any layer. A label that says one thing while the column underneath says another is a
+  standing tax on every future reader — the operator hears "availability", the reviewer reads
+  "stock", and the two have to be reconciled by hand every time.
+
+  Both features have a legitimate claim to the word, so it goes to the one whose claim is stronger:
+  **`StockCheck` counts physical goods on shelves, which is what "stock" means.** This feature
+  counts what a menu item can still sell, which restaurant software calls availability (Toast's
+  86-ing, Square's "sold out"). *Alternative rejected:* renaming the existing Stock Check feature
+  to free the word — it would touch 4 Go files, 66 frontend files, two tables, the `/stock-checks`
+  route and the OpenAPI contract, all on a shipped feature, to take a word away from its more
+  canonical meaning and give it to the weaker claimant. *Also rejected:* renaming only Stock
+  Check's labels while leaving its schema — that just moves the label/schema divergence to the
+  other feature instead of removing it.
+
+  The word survives only in ordinary English where it is unavoidable, and even the user-visible
+  badge avoids it: POS says **`Sold out`**, the order app says **`Habis`** (D19).
+- **D16 — `availability_tracking` defaults to `none` for newly created products.** Counting is
+  opt-in, as it is in Square, where per-variation tracking must be switched on deliberately. Most
+  of the menu
   is coffee: defaulting to `variant` would put a number the crew never maintains in front of every
   new product, and a stale zero silently removes an item from sale. *Alternative rejected:*
   defaulting to `variant` so tracking is never forgotten — it trades a visible omission for an
@@ -446,6 +467,18 @@ value warns that existing counts will be cleared (FR-1).
   behave identically: always visible, always labelled. *Alternative rejected:* a "Hide sold out"
   toggle for POS only — it optimises for grid tidiness at the cost of the one interaction the grid
   exists to support.
+- **D18 — The ledger records switch flips as well as quantity deltas.** Renaming it
+  `availability_movements` (D15) made the narrower design visible as a gap: "who turned Vanilla off
+  at 14:00, and when did it come back" is the same question as "where did my five Pancong go", and
+  for Es Kopi Susu — which carries no number at all — the switch flip is the *only* event there is.
+  A quantity-only ledger would have no history whatsoever for the first of the three motivating
+  cases. `reason` therefore also covers `switched_off` and `switched_on`, with `delta` and
+  `resulting_quantity` null for those rows. This supersedes the "counted items only" wording in
+  FR-8 as first drafted.
+- **D19 — The user-visible badge is `Sold out`, not `Out of stock`.** It is what Square uses, what
+  a cafe actually says, and it keeps the word "stock" off the screen entirely, so an operator never
+  has to wonder whether this badge relates to Stock Checks. The order app already reads `Habis`,
+  which has the same property.
 
 ---
 
@@ -456,7 +489,7 @@ acceptance check.
 
 | # | Phase | Layer | Depends on |
 | --- | --- | --- | --- |
-| 1 | Availability + stock columns | API | — |
+| 1 | Availability columns on products and variants | API | — |
 | 2 | Availability resolution and exposure on reads | API | 1 |
 | 3 | Availability read + bulk update endpoints | API | 2 |
 | 4 | Reserve on POS transaction create; release on delete | API | 2 |
@@ -469,7 +502,7 @@ acceptance check.
 | 11 | POS item grid shows and enforces availability | POS | 8 |
 | 12 | Order app menu: badges and disabled chips | order | 2 |
 | 13 | Order app: capped stepper, cart and checkout errors | order | 7, 12 |
-| 14 | Stock movement ledger + history sheet | API, POS | 4, 5, 6, 9 |
+| 14 | Availability movement ledger + history sheet | API, POS | 4, 5, 6, 9 |
 | 15 | Docs site page + e2e coverage | docs, e2e | 11, 13 |
 
 Phases 4–7 are independent of each other once 2 lands. The POS track (9–11) and the order track
@@ -484,15 +517,16 @@ numbers on the Availability screen before any blocking behaviour exists.
 
 ---
 
-### Phase 1 — Availability and stock columns (API)
+### Phase 1 — Availability columns on products and variants (API)
 
-Migration `000029_add_product_variant_stock` (next free number; `000028_add_transaction_completed_at`
-is the latest) adding `is_available TINYINT(1) NOT NULL DEFAULT 1`, `stock_tracking
-ENUM('none','product','variant') NOT NULL DEFAULT 'none'` and `stock_quantity INT NULL` to
-`products`, and `is_available TINYINT(1) NOT NULL DEFAULT 1` + `stock_quantity INT NULL` to
-`variants`, with a `down` that drops all five. `IsAvailable`, `StockTracking`, `StockQuantity` on
-`apps/api/domain/product_entity.go` (with a `StockTracking` string-enum type beside `SaleType` and
-`ProductStatus`) and `IsAvailable`, `StockQuantity` on `variant_entity.go`, carried through
+Migration `000029_add_product_variant_availability` (next free number;
+`000028_add_transaction_completed_at` is the latest) adding `is_available TINYINT(1) NOT NULL
+DEFAULT 1`, `availability_tracking ENUM('none','product','variant') NOT NULL DEFAULT 'none'` and
+`available_quantity INT NULL` to `products`, and `is_available TINYINT(1) NOT NULL DEFAULT 1` +
+`available_quantity INT NULL` to `variants`, with a `down` that drops all five. `IsAvailable`,
+`AvailabilityTracking`, `AvailableQuantity` on `apps/api/domain/product_entity.go` (with an
+`AvailabilityTracking` string-enum type beside `SaleType` and `ProductStatus`) and `IsAvailable`,
+`AvailableQuantity` on `variant_entity.go`, carried through
 `apps/api/data/mysql/{product,variant}_entity.go` and their transformers, the request/response
 schemas in `api.yaml`, and the seeder. No behaviour change — nothing reads the columns yet.
 
@@ -503,15 +537,15 @@ unchanged.
 ### Phase 2 — Availability resolution and exposure (API)
 
 `ResolveVariantAvailability(product, variant) (isSellable bool, remaining *int)` and
-`ResolveProductAvailability(product, variants)` in `apps/api/domain/stock_availability.go`, pure,
-with `stock_availability_test.go` table-driving all four cases from the PRD plus the
-deleted/draft/rental combinations. `isSellable` and `remainingStock` added to the `Product` and
-`Variant` response schemas and populated in `apps/api/presentation/restapi/{product,variant}_transformer.go`
-for both the authenticated and public endpoints. Product responses need their variants — the
-transformer takes the variant list the handler already has, or fetches it where it does not.
-No filtering, no writes.
+`ResolveProductAvailability(product, variants)` in `apps/api/domain/availability.go`, pure, with
+`availability_test.go` table-driving all four cases from the PRD plus the deleted/draft/rental
+combinations. `isSellable` and `remainingQuantity` added to the `Product` and `Variant` response
+schemas and populated in `apps/api/presentation/restapi/{product,variant}_transformer.go` for both
+the authenticated and public endpoints. Product responses need their variants — the transformer
+takes the variant list the handler already has, or fetches it where it does not. No filtering, no
+writes.
 
-**Acceptance:** `stock_availability_test.go` covers every row of the four-case table and both
+**Acceptance:** `availability_test.go` covers every row of the four-case table and both
 `remaining = 0` and `remaining = null`; `GET /public/products` returns `isSellable: true` for every
 existing product; `npx nx run api:test` green.
 
@@ -520,10 +554,11 @@ existing product; `npx nx run api:test` green.
 `GET /availability` → every published, purchasable product with its category, tracking level,
 switch, counter and its variants' switches and counters, unpaginated (the catalog is small and the
 screen needs all of it). `PUT /availability` taking `{ products: [{ productId, isAvailable?,
-stockQuantity? }], variants: [{ variantId, isAvailable?, stockQuantity? }] }` — **omitted fields are
-left alone** (D10) — rejecting a `stockQuantity` for a level the product does not track, and
-rejecting a negative value. `AvailabilityUsecase` + `AvailabilityRepository` in `apps/api/domain`,
-MySQL implementation, mocks via `go generate ./...`, handler and routes under `CheckAuth`.
+availableQuantity? }], variants: [{ variantId, isAvailable?, availableQuantity? }] }` — **omitted
+fields are left alone** (D10) — rejecting a `availableQuantity` for a level the product does not
+track, and rejecting a negative value. `AvailabilityUsecase` + `AvailabilityRepository` in
+`apps/api/domain`, MySQL implementation, mocks via `go generate ./...`, handler and routes under
+`CheckAuth`.
 
 **Acceptance:** `availability_usecase_test.go` covers a partial update leaving untouched fields
 intact, a quantity against `tracking = none` (rejected), and a negative quantity (rejected);
@@ -531,7 +566,7 @@ intact, a quantity against `tracking = none` (rejected), and a negative quantity
 
 ### Phase 4 — Reserve on transaction create, release on delete (API)
 
-`ReserveStock(ctx, items)` and `ReleaseStock(ctx, items)` on a new `StockReservation` collaborator
+`Reserve(ctx, items)` and `Release(ctx, items)` on a new `AvailabilityReservation` collaborator
 of `TransactionUsecase`, summing amounts per counting unit, locking rows `FOR UPDATE`, and
 returning `domain.BadRequest` with the item name on shortfall. Called from `CreateTransaction` and
 `DeleteTransactionById` inside their existing `BeginTransaction` blocks. Untracked items are
@@ -550,7 +585,7 @@ branch re-reserves after `UndeleteTransactionById` **without a shortfall check**
 counter to go negative (D7).
 
 **Acceptance:** `payment_usecase_test.go` covers checkout decrementing, expiry restoring, a
-paid-late payment re-decrementing into negative stock and still succeeding, and a checkout rejected
+paid-late payment re-decrementing into a negative quantity and still succeeding, and a checkout rejected
 when the cart's last item sold out in between; `npx nx run api:test` green.
 
 ### Phase 6 — Delta on transaction update (API)
@@ -577,7 +612,7 @@ product-level counter; `npx nx run api:test` green.
 
 ### Phase 8 — Frontend slice: entities, repository, use cases (libs/ui)
 
-No UI. `isAvailable`, `isSellable`, `remainingStock`, `stockTracking` on
+No UI. `isAvailable`, `isSellable`, `remainingQuantity`, `availabilityTracking` on
 `libs/ui/src/domain/entities/{Product,Variant}.ts`; an `Availability` entity and
 `availabilityFormSchema`; `AvailabilityRepository` with `fetchAvailabilityList` /
 `updateAvailability`, implemented in `data/api/availability.ts` and `data/mock/availability.ts`;
@@ -595,8 +630,8 @@ Vanilla off.
 ### Phase 9 — POS Availability screen (POS)
 
 `AvailabilityScreen` + `AvailabilityHandler` + `app/pos/Availability.tsx` +
-`apps/pos-web/src/pages/availability/index.tsx`, and an `Availability` entry in the **Inventory** group of
-`Sidebar.state.tsx`. Grouped list, search, "Sold out only" filter, per-row switch and
+`apps/pos-web/src/pages/availability/index.tsx`, and an `Availability` entry in the **Inventory**
+group of `Sidebar.state.tsx`. Grouped list, search, "Sold out only" filter, per-row switch and
 stepper-plus-input, dirty-row tracking, one save. `useForm` and the zod resolver live in the form
 component, not the handler (`docs/forms.md`). Stories for loaded, empty, error, a negative count and
 a sold-out row.
@@ -607,7 +642,7 @@ ui:test` green.
 
 ### Phase 10 — Product form declares the tracking level (POS)
 
-The `Stock tracking` selector with its helper text on `ProductFormView`, threaded through
+The `Availability tracking` selector with its helper text on `ProductFormView`, threaded through
 `ProductCreateScreen` / `ProductUpdateScreen` and the product form schema, with the
 "existing counts will be cleared" confirmation on change.
 
@@ -617,7 +652,7 @@ confirmation fires only when the value actually changes; `npx nx run ui:test` gr
 ### Phase 11 — POS item grid shows and enforces availability (POS)
 
 `TransactionItemSelect` dims and badges sold-out products, disables sold-out option values, shows
-`n left`, caps the amount stepper at `remainingStock`, and renders the rejection toast with its
+`n left`, caps the amount stepper at `remainingQuantity`, and renders the rejection toast with its
 **Update availability** action routing to `/availability`. `TransactionItemSelect.test.tsx`
 extended.
 
@@ -637,7 +672,7 @@ one variant out, and a fully sold-out Pancong card; `npx nx run ui:test` green.
 
 ### Phase 13 — Order app: capped stepper, cart and checkout errors (order)
 
-`max` on `AmountStepper` with the `Sisa n` hint at the cap, wired from `remainingStock` in the item
+`max` on `AmountStepper` with the `Sisa n` hint at the cap, wired from `remainingQuantity` in the item
 sheet, in `CartLineItem` and in `CartItemEditScreen`; `CartScreen` flags affected lines and
 disables checkout; a rejected checkout refetches the cart and lands in that state.
 
@@ -645,9 +680,9 @@ disables checkout; a rejected checkout refetches the cart and lands in that stat
 a handler test asserts checkout stays disabled until the offending line is removed; `npx nx run
 ui:test` green.
 
-### Phase 14 — Stock movement ledger (API, POS)
+### Phase 14 — Availability movement ledger (API, POS)
 
-Migration `000030_create_stock_movements`, writes from every counter change in phases 3–6, a
+Migration `000030_create_availability_movements`, writes from every counter change in phases 3–6, a
 `GET /availability/{level}/{id}/movements` endpoint, and a history sheet on each Availability screen
 row.
 
@@ -659,7 +694,7 @@ row.
 
 A `docs-site/inventory/availability.md` feature page with its sidebar entry, covering the
 three real menu items as worked examples and the morning routine. A `pos-web-e2e` spec for
-set-stock → sell → sold-out, and an `order-web-e2e` spec for sold-out badge → capped stepper →
+set-availability → sell → sold-out, and an `order-web-e2e` spec for sold-out badge → capped stepper →
 blocked checkout. Note that e2e runs post-merge only
 (`.github/workflows/e2e-main.yml`), so both specs are run locally before the PR.
 
@@ -674,8 +709,8 @@ docs site builds.
 | --- | --- |
 | **The counts go stale and the crew stops trusting them.** The system's number is only as good as the morning entry. | The Availability screen is one tap from the sidebar and saves in one gesture; the ledger (phase 14) makes drift diagnosable instead of mysterious; blocking (D12) with a one-tap fix keeps corrections cheap and frequent. |
 | **A blocked POS sale in front of a waiting customer.** | The error names the item and routes straight to `/availability`. Worth watching after rollout — if this fires often, D12 is the decision to revisit, not the model. |
-| **Negative stock from paid-late QRIS (D7) confuses the crew.** | Negative counts are badged in red on the Availability screen, and the ledger shows the late payment that caused it. |
-| **Someone conflates this with `StockCheck`.** | Settled by D15: the operator never sees the word "stock" for this feature — the route is `/availability`, the sidebar label is `Availability`, and `/stock-checks` keeps its own name. The word survives only in column names, which the crew never reads. D14 is restated on the docs-site page. |
+| **A negative quantity from a paid-late QRIS (D7) confuses the crew.** | Negative counts are badged in red on the Availability screen, and the ledger shows the late payment that caused it. |
+| **Someone conflates this with `StockCheck`.** | Settled by D15: the two features share no vocabulary at any layer. Availability is `/availability`, `availability_tracking`, `available_quantity`, `availability_movements`, badge `Sold out`; Stock Check keeps `stock` throughout. D14 is restated on the docs-site page. |
 | **The order app's menu snapshot goes stale between load and checkout.** | The menu already revalidates on every fetch (`menuList.ts` `revalidating` state); the cart re-derives on load; checkout is authoritative. A customer can still be told no at checkout — that is correct, and FR-7 makes it legible. |
 | **Phase 2 changes every product and variant response shape.** | Both fields are additive and non-breaking; phase 1 lands the columns with behaviour-preserving defaults first, so a rollback of phase 2 alone is safe. |
 
@@ -698,7 +733,8 @@ docs site builds.
 ## Deferred
 
 - **Cross-product shared pools** — one "vanilla syrup" counter shared by Es Kopi Susu and Es Teh
-  Vanilla. Option B is the migration target; `stock_tracking` maps onto pools mechanically when it
+  Vanilla. Option B is the migration target; `availability_tracking` maps onto pools mechanically
+  when it
   is needed.
 - **Material-driven advisory availability** — when a material's latest `StockCheck` reads zero,
   *suggest* on the Availability screen that the variants using it be switched off, without
@@ -711,13 +747,13 @@ docs site builds.
 
 ## Settled in review
 
-The three questions this document originally left open, and how they were decided. Recorded here
-rather than silently edited away, so the reasoning survives with the answer.
+The questions this document originally left open, and how they were decided. Recorded here rather
+than silently edited away, so the reasoning survives with the answer.
 
 | Question as asked | Answer | Decision |
 | --- | --- | --- |
-| `/stock` vs `/availability` for the route and sidebar label, given `/stock-checks` already exists and means something else | **Availability** | D15 |
-| Should `stock_tracking` default to `variant` for newly created products? | **No — keep `none`** | D16 |
+| `/stock` vs `/availability` for the route and sidebar label, given `/stock-checks` already exists and means something else | **Availability** — and, on the follow-up question of whether a schema still saying `stock` under an `Availability` label would confuse people: yes, so the rename goes all the way down to the columns, and Stock Check keeps the word `stock` | D15, D19 |
+| Should `availability_tracking` default to `variant` for newly created products? | **No — keep `none`** | D16 |
 | Should the POS grid hide sold-out items behind a filter? | **No — never hide them; the cashier has to find the item to tell the customer it is unavailable** | D17 |
 
 No open questions remain. The design is ready to implement from phase 1.
