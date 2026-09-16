@@ -1,12 +1,8 @@
 import React from 'react';
 import { act, render, screen } from '@testing-library/react';
 import { OrderStatusHandler } from './OrderStatusHandler';
-import {
-  MockPaymentRepository,
-  MockPublicTableRepository,
-  MockSessionRepository,
-} from '../../../data/mock';
-import { OrderStatusUsecase, TableResolveUsecase } from '../../../domain';
+import { MockPaymentRepository, MockSessionRepository } from '../../../data/mock';
+import { OrderStatusUsecase } from '../../../domain';
 import { flushPromises } from '../../../utils/testUtils';
 
 const mockPush = jest.fn();
@@ -34,20 +30,21 @@ const Router: RouterMock = require('next/router').default;
 
 const TABLE_CODE = '3F7H9K2M5P';
 
+const createSessionRepositoryWithTableCode = () => {
+  const sessionRepository = new MockSessionRepository();
+  sessionRepository.setTableCode(TABLE_CODE);
+  return sessionRepository;
+};
+
 const renderHandler = ({
   reference,
   paymentRepository = new MockPaymentRepository(),
-  tableRepository = new MockPublicTableRepository(),
-  sessionRepository = new MockSessionRepository(),
+  sessionRepository = createSessionRepositoryWithTableCode(),
 }: {
   reference: string;
   paymentRepository?: MockPaymentRepository;
-  tableRepository?: MockPublicTableRepository;
   sessionRepository?: MockSessionRepository;
 }) => {
-  const tableResolveUsecase = new TableResolveUsecase(tableRepository, {
-    code: TABLE_CODE,
-  });
   const orderStatusUsecase = new OrderStatusUsecase(paymentRepository, {
     reference,
   });
@@ -57,10 +54,8 @@ const renderHandler = ({
     sessionRepository,
     ...render(
       <OrderStatusHandler
-        tableResolveUsecase={tableResolveUsecase}
         orderStatusUsecase={orderStatusUsecase}
         sessionRepository={sessionRepository}
-        tableCode={TABLE_CODE}
       />
     ),
   };
@@ -119,9 +114,11 @@ describe('OrderStatusHandler', () => {
       expect(
         screen.getByText(`#${paymentRepository.payment.transactionNumber}`)
       ).toBeTruthy();
+      // The order's table label now appears twice: once in the header (D4)
+      // and once in the preparing view's own table line.
       expect(
-        screen.getByText(paymentRepository.payment.tableLabel)
-      ).toBeTruthy();
+        screen.getAllByText(paymentRepository.payment.tableLabel)
+      ).toHaveLength(2);
     } finally {
       jest.useRealTimers();
     }
@@ -182,7 +179,7 @@ describe('OrderStatusHandler', () => {
       status: 'paid',
       fulfillmentStatus: 'ready',
     };
-    const sessionRepository = new MockSessionRepository();
+    const sessionRepository = createSessionRepositoryWithTableCode();
     sessionRepository.setActiveReference(paymentRepository.payment.reference);
     renderHandler({
       reference: paymentRepository.payment.reference,
@@ -202,7 +199,7 @@ describe('OrderStatusHandler', () => {
       status: 'paid',
       fulfillmentStatus: 'preparing',
     };
-    const sessionRepository = new MockSessionRepository();
+    const sessionRepository = createSessionRepositoryWithTableCode();
     sessionRepository.setActiveReference(paymentRepository.payment.reference);
     renderHandler({
       reference: paymentRepository.payment.reference,
@@ -318,6 +315,22 @@ describe('OrderStatusHandler', () => {
     });
 
     expect(mockPush).toHaveBeenCalledWith(`/t/${TABLE_CODE}`);
+  });
+
+  it('falls back to / when the session has never scanned a table', async () => {
+    const sessionRepository = new MockSessionRepository();
+    const { getByRole } = renderHandler({
+      reference: 'UNKNOWNREF',
+      sessionRepository,
+    });
+
+    await settle();
+
+    await act(async () => {
+      getByRole('button', { name: 'Kembali ke menu' }).click();
+    });
+
+    expect(mockPush).toHaveBeenCalledWith('/');
   });
 
   describe('leave confirmation', () => {

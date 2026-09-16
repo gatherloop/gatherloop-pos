@@ -226,9 +226,7 @@ describe('MenuListHandler', () => {
 
     await user.click(screen.getByRole('button', { name: 'Lihat Status' }));
 
-    expect(mockPush).toHaveBeenCalledWith(
-      `/t/${TABLE_CODE}/status?ref=REF-1`
-    );
+    expect(mockPush).toHaveBeenCalledWith('/orders/REF-1');
   });
 
   it('shows no resume banner when no active order reference is stored', async () => {

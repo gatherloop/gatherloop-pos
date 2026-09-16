@@ -310,7 +310,7 @@ describe('CartHandler', () => {
     await settle();
 
     expect(mockPush).toHaveBeenCalledWith(
-      `/t/${TABLE_CODE}/status?ref=${paymentRepository.payment.reference}`
+      `/orders/${paymentRepository.payment.reference}`
     );
     expect(sessionRepository.getActiveReference()).toBe(
       paymentRepository.payment.reference
@@ -341,7 +341,7 @@ describe('CartHandler', () => {
     await settle();
 
     expect(mockPush).toHaveBeenCalledWith(
-      `/t/${TABLE_CODE}/status?ref=${paymentRepository.payment.reference}`
+      `/orders/${paymentRepository.payment.reference}`
     );
   });
 

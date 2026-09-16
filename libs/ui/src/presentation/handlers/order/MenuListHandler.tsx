@@ -295,8 +295,7 @@ export const MenuListHandler = ({
       resumeBanner={
         activeReference
           ? {
-              onPress: () =>
-                router.push(`/t/${tableCode}/status?ref=${activeReference}`),
+              onPress: () => router.push(`/orders/${activeReference}`),
             }
           : null
       }
