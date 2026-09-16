@@ -29,6 +29,7 @@ export type MenuListHandlerProps = {
   cartRepository: CartRepository;
   sessionRepository: SessionRepository;
   tableCode: string;
+  preparingCount?: number;
 };
 
 function groupByCategory(products: Product[], categories: Category[]) {
@@ -112,6 +113,7 @@ export const MenuListHandler = ({
   cartRepository,
   sessionRepository,
   tableCode,
+  preparingCount,
 }: MenuListHandlerProps) => {
   const tableResolve = useTableResolve(tableResolveUsecase);
   const menuList = useUsecase(menuListUsecase);
@@ -121,9 +123,6 @@ export const MenuListHandler = ({
   const [validationErrorProductId, setValidationErrorProductId] = useState<
     number | null
   >(null);
-  const [activeReference] = useState(() =>
-    sessionRepository.getActiveReference()
-  );
 
   useEffect(() => {
     if (tableResolve.state.type === 'resolved' && tableResolve.state.code) {
@@ -292,14 +291,8 @@ export const MenuListHandler = ({
         menuList.dispatch({ type: 'SELECT_ITEM', productId: product.id })
       }
       startingPriceByProductId={startingPriceByProductId}
-      resumeBanner={
-        activeReference
-          ? {
-              onPress: () =>
-                router.push(`/t/${tableCode}/status?ref=${activeReference}`),
-            }
-          : null
-      }
+      onHistoryPress={() => router.push('/orders')}
+      preparingCount={preparingCount}
       variant={match(menuList.state)
         .returnType<MenuListScreenProps['variant']>()
         .with({ type: P.union('idle', 'loading') }, () => ({

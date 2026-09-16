@@ -1,8 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { OrderStatusScreen } from './OrderStatusScreen';
 
-const table = { id: 1, label: 'Meja 1', floorNumber: 1 };
-
 const paidPayment = {
   reference: 'ORD0000000000001',
   status: 'paid' as const,
@@ -47,19 +45,10 @@ const meta: Meta<typeof OrderStatusScreen> = {
     layout: 'fullscreen',
   },
   args: {
-    tableVariant: { type: 'resolved', table },
     onBackToMenuPress: () => {
       // Storybook action stand-in
     },
     onBackToCartPress: () => {
-      // Storybook action stand-in
-    },
-    isLeaveConfirmOpen: false,
-    leaveConfirmTransactionNumber: 12,
-    onLeaveConfirm: () => {
-      // Storybook action stand-in
-    },
-    onLeaveCancel: () => {
       // Storybook action stand-in
     },
   },
@@ -90,13 +79,6 @@ export const Preparing: Story = {
   },
 };
 
-export const PreparingWithLeaveConfirm: Story = {
-  args: {
-    variant: { type: 'preparing', payment: paidPayment, isPolling: false },
-    isLeaveConfirmOpen: true,
-  },
-};
-
 export const Ready: Story = {
   args: {
     variant: {
@@ -121,6 +103,15 @@ export const Error: Story = {
       onRetryPress: () => {
         // Storybook action stand-in
       },
+    },
+  },
+};
+
+export const WithHistoryButton: Story = {
+  args: {
+    variant: { type: 'preparing', payment: paidPayment, isPolling: false },
+    onHistoryPress: () => {
+      // Storybook action stand-in
     },
   },
 };

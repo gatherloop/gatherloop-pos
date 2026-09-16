@@ -35,6 +35,7 @@ const renderHandler = ({
   cartQueryRepository = new MockCartQueryRepository(),
   sessionRepository = new MockSessionRepository(),
   customerName = '',
+  preparingCount,
 }: {
   enabled?: boolean;
   cartRepository?: MockCartRepository;
@@ -43,6 +44,7 @@ const renderHandler = ({
   cartQueryRepository?: MockCartQueryRepository;
   sessionRepository?: MockSessionRepository;
   customerName?: string;
+  preparingCount?: number;
 } = {}) => {
   const tableResolveUsecase = new TableResolveUsecase(tableRepository, {
     code: TABLE_CODE,
@@ -65,6 +67,7 @@ const renderHandler = ({
         sessionRepository={sessionRepository}
         enabled={enabled}
         tableCode={TABLE_CODE}
+        preparingCount={preparingCount}
       />
     ),
   };
@@ -289,16 +292,14 @@ describe('CartHandler', () => {
     expect(screen.getByText('Es Kopi Susu')).toBeTruthy();
   });
 
-  it('creates the payment, navigates to the status page, and remembers the reference once a valid name is submitted', async () => {
+  it('creates the payment and navigates to the status page once a valid name is submitted', async () => {
     const user = userEvent.setup();
     const cartRepository = new MockCartRepository();
     await addItemToCart(cartRepository);
     const paymentRepository = new MockPaymentRepository();
-    const sessionRepository = new MockSessionRepository();
     renderHandler({
       cartRepository,
       paymentRepository,
-      sessionRepository,
       customerName: 'Budi',
     });
     await settle();
@@ -310,10 +311,7 @@ describe('CartHandler', () => {
     await settle();
 
     expect(mockPush).toHaveBeenCalledWith(
-      `/t/${TABLE_CODE}/status?ref=${paymentRepository.payment.reference}`
-    );
-    expect(sessionRepository.getActiveReference()).toBe(
-      paymentRepository.payment.reference
+      `/orders/${paymentRepository.payment.reference}`
     );
   });
 
@@ -341,7 +339,7 @@ describe('CartHandler', () => {
     await settle();
 
     expect(mockPush).toHaveBeenCalledWith(
-      `/t/${TABLE_CODE}/status?ref=${paymentRepository.payment.reference}`
+      `/orders/${paymentRepository.payment.reference}`
     );
   });
 
@@ -361,6 +359,33 @@ describe('CartHandler', () => {
     await settle();
 
     expect(screen.getByText('Keranjang kosong')).toBeTruthy();
+  });
+
+  it('navigates to /orders from the header history button', async () => {
+    const user = userEvent.setup();
+    renderHandler();
+
+    await settle();
+
+    await user.click(screen.getByRole('button', { name: 'Pesanan Saya' }));
+
+    expect(mockPush).toHaveBeenCalledWith('/orders');
+  });
+
+  it('shows the preparing count badge on the history button when provided', async () => {
+    renderHandler({ preparingCount: 3 });
+
+    await settle();
+
+    expect(screen.getByText('3')).toBeTruthy();
+  });
+
+  it('shows no badge when there are no preparing orders', async () => {
+    renderHandler({ preparingCount: 0 });
+
+    await settle();
+
+    expect(screen.queryByText('0')).toBeNull();
   });
 
   describe('the edit modal', () => {

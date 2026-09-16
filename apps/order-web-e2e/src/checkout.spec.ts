@@ -84,7 +84,7 @@ test.describe.serial('QRIS Checkout', () => {
     expect(partnerReferenceNo).toBeTruthy();
 
     await expect(page).toHaveURL(
-      new RegExp(`/t/${table.code}/status\\?ref=${partnerReferenceNo}$`),
+      new RegExp(`/orders/${partnerReferenceNo}$`),
       { timeout: 5_000 }
     );
     await expect(sel.orderStatus.saveQrButton(page)).toBeVisible();
@@ -96,7 +96,7 @@ test.describe.serial('QRIS Checkout', () => {
       timeout: 10_000,
     });
     await expect(page).toHaveURL(
-      new RegExp(`/t/${table.code}/status\\?ref=${partnerReferenceNo}$`)
+      new RegExp(`/orders/${partnerReferenceNo}$`)
     );
 
     await expect(sel.orderStatus.tableLabel(page, TABLE_LABEL)).toBeVisible();
@@ -144,5 +144,12 @@ test.describe.serial('QRIS Checkout', () => {
   }) => {
     await page.goto(`t/${table.code}/checkout`);
     await expect(page).toHaveURL(new RegExp(`/t/${table.code}/cart$`));
+  });
+
+  test('the retired /t/{code}/status?ref= route redirects to /orders/{ref}', async ({
+    page,
+  }) => {
+    await page.goto(`t/${table.code}/status?ref=SOME-REFERENCE`);
+    await expect(page).toHaveURL(/\/orders\/SOME-REFERENCE$/);
   });
 });

@@ -20,6 +20,7 @@ export type CartHandlerProps = {
   sessionRepository: SessionRepository;
   enabled: boolean;
   tableCode: string;
+  preparingCount?: number;
 };
 
 function toScreenVariant(state: CartState): CartScreenProps['variant'] {
@@ -50,6 +51,7 @@ export const CartHandler = ({
   sessionRepository,
   enabled,
   tableCode,
+  preparingCount,
 }: CartHandlerProps) => {
   const tableResolve = useTableResolve(tableResolveUsecase);
   const cart = useCart(cartUsecase);
@@ -67,11 +69,8 @@ export const CartHandler = ({
   useEffect(() => {
     if (checkout.state.type !== 'created' || !checkout.state.payment) return;
 
-    sessionRepository.setActiveReference(checkout.state.payment.reference);
-    router.push(
-      `/t/${tableCode}/status?ref=${checkout.state.payment.reference}`
-    );
-  }, [checkout.state, router, tableCode, sessionRepository]);
+    router.push(`/orders/${checkout.state.payment.reference}`);
+  }, [checkout.state, router]);
 
   const mutating = isMutating(cart.state);
 
@@ -153,6 +152,8 @@ export const CartHandler = ({
               }
         )
         .exhaustive()}
+      onHistoryPress={() => router.push('/orders')}
+      preparingCount={preparingCount}
       variant={toScreenVariant(cart.state)}
       isMutating={mutating}
       errorMessage={cart.state.errorMessage}

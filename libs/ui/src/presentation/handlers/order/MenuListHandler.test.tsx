@@ -37,6 +37,7 @@ const renderHandler = ({
   menuListQueryRepository = new MockMenuListQueryRepository(),
   menuListParams = { products: [], categories: [] } as MenuListParams,
   sessionRepository = new MockSessionRepository(),
+  preparingCount,
 }: {
   menuRepository?: MockMenuRepository;
   tableRepository?: MockPublicTableRepository;
@@ -44,6 +45,7 @@ const renderHandler = ({
   menuListQueryRepository?: MockMenuListQueryRepository;
   menuListParams?: MenuListParams;
   sessionRepository?: MockSessionRepository;
+  preparingCount?: number;
 } = {}) => {
   const tableResolveUsecase = new TableResolveUsecase(tableRepository, {
     code: TABLE_CODE,
@@ -75,6 +77,7 @@ const renderHandler = ({
         cartRepository={cartRepository}
         sessionRepository={sessionRepository}
         tableCode={TABLE_CODE}
+        preparingCount={preparingCount}
       />
     ),
   };
@@ -214,29 +217,31 @@ describe('MenuListHandler', () => {
     expect(screen.queryByText(/Lihat Keranjang/)).toBeNull();
   });
 
-  it('shows a resume banner when an active order reference is stored, and navigates to its status page on press', async () => {
+  it('navigates to /orders from the header history button', async () => {
     const user = userEvent.setup();
-    const sessionRepository = new MockSessionRepository();
-    sessionRepository.setActiveReference('REF-1');
-    renderHandler({ sessionRepository });
-
-    await settle();
-
-    expect(screen.getByText('Pesanan Anda sedang disiapkan')).toBeTruthy();
-
-    await user.click(screen.getByRole('button', { name: 'Lihat Status' }));
-
-    expect(mockPush).toHaveBeenCalledWith(
-      `/t/${TABLE_CODE}/status?ref=REF-1`
-    );
-  });
-
-  it('shows no resume banner when no active order reference is stored', async () => {
     renderHandler();
 
     await settle();
 
-    expect(screen.queryByText('Pesanan Anda sedang disiapkan')).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Pesanan Saya' }));
+
+    expect(mockPush).toHaveBeenCalledWith('/orders');
+  });
+
+  it('shows the preparing count badge on the history button when provided', async () => {
+    renderHandler({ preparingCount: 2 });
+
+    await settle();
+
+    expect(screen.getByText('2')).toBeTruthy();
+  });
+
+  it('shows no badge when there are no preparing orders', async () => {
+    renderHandler({ preparingCount: 0 });
+
+    await settle();
+
+    expect(screen.queryByText('0')).toBeNull();
   });
 
   describe('the item sheet', () => {

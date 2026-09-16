@@ -34,3 +34,24 @@ export const LongTableLabel: Story = {
     tableLine: 'Meja VIP Lantai Atas Dekat Jendela · Lantai 2',
   },
 };
+
+export const WithHistoryButton: Story = {
+  args: {
+    logoUri: DATA_URI_LOGO,
+    tableLine: 'Meja 3 · Lantai 2',
+    onHistoryPress: () => {
+      // Storybook action stand-in
+    },
+  },
+};
+
+export const WithPreparingBadge: Story = {
+  args: {
+    logoUri: DATA_URI_LOGO,
+    tableLine: 'Meja 3 · Lantai 2',
+    onHistoryPress: () => {
+      // Storybook action stand-in
+    },
+    preparingCount: 2,
+  },
+};

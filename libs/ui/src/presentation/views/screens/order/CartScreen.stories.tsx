@@ -207,3 +207,22 @@ export const CheckoutError: Story = {
     checkoutErrorMessage: 'Failed to create payment',
   },
 };
+
+export const WithHistoryButton: Story = {
+  args: {
+    variant: { type: 'loaded', cart },
+    onHistoryPress: () => {
+      // Storybook action stand-in
+    },
+  },
+};
+
+export const WithPreparingBadge: Story = {
+  args: {
+    variant: { type: 'loaded', cart },
+    onHistoryPress: () => {
+      // Storybook action stand-in
+    },
+    preparingCount: 2,
+  },
+};

@@ -299,3 +299,23 @@ func (repo Repository) GetTransactionStatistics(ctx context.Context, groupBy str
 
 	return ToTransactionStatisticsListDomain(transactionStatistics), ToErrorCtx(ctx, result.Error, "GetTransactionStatistics")
 }
+
+func (repo Repository) GetTransactionSummariesByIds(ctx context.Context, ids []int64) ([]domain.TransactionSummary, *domain.Error) {
+	if len(ids) == 0 {
+		return []domain.TransactionSummary{}, nil
+	}
+
+	db := GetDbFromCtx(ctx, repo.db)
+
+	var transactionSummaries []TransactionSummary
+	result := db.Table("transactions").
+		Select("transactions.id AS id, transactions.transaction_number AS transaction_number, transactions.name AS name, transactions.completed_at AS completed_at, tables.label AS table_label, COUNT(transaction_items.id) AS item_count").
+		Joins("LEFT JOIN carts ON carts.id = transactions.cart_id").
+		Joins("LEFT JOIN tables ON tables.id = carts.table_id").
+		Joins("LEFT JOIN transaction_items ON transaction_items.transaction_id = transactions.id").
+		Where("transactions.id IN ? AND transactions.deleted_at IS NULL", ids).
+		Group("transactions.id, transactions.transaction_number, transactions.name, transactions.completed_at, tables.label").
+		Find(&transactionSummaries)
+
+	return ToTransactionSummariesListDomain(transactionSummaries), ToErrorCtx(ctx, result.Error, "GetTransactionSummariesByIds")
+}

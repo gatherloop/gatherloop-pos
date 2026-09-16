@@ -89,4 +89,18 @@ export const orderStatus = {
   expiredTitle: (page: Page) => page.getByText('Waktu pembayaran habis'),
   backToCartButton: (page: Page) =>
     page.getByRole('button', { name: 'Kembali ke keranjang' }),
+  itemLine: (page: Page, amount: number, productName: string) =>
+    page.getByText(`${amount}x ${productName}`, { exact: true }),
+};
+
+export const orderBrandHeader = {
+  historyButton: (page: Page) =>
+    page.getByRole('button', { name: 'Pesanan Saya' }),
+};
+
+export const orderHistory = {
+  heading: (page: Page) => page.getByText('Pesanan Saya'),
+  row: (page: Page, transactionNumber: number) =>
+    page.getByRole('button', { name: `Pesanan #${transactionNumber}` }),
+  emptyView: (page: Page) => page.getByText('Belum ada pesanan'),
 };

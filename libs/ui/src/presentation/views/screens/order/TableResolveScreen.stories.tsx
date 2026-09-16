@@ -70,3 +70,26 @@ export const Error: Story = {
     variant: { type: 'error', onRetryButtonPress: () => undefined },
   },
 };
+
+export const WithHistoryButton: Story = {
+  args: {
+    variant: {
+      type: 'resolved',
+      table: { id: 1, label: 'Meja 01', floorNumber: 1 },
+    },
+    children: <Paragraph>Menu akan segera hadir di sini.</Paragraph>,
+    onHistoryPress: () => undefined,
+  },
+};
+
+export const WithPreparingBadge: Story = {
+  args: {
+    variant: {
+      type: 'resolved',
+      table: { id: 1, label: 'Meja 01', floorNumber: 1 },
+    },
+    children: <Paragraph>Menu akan segera hadir di sini.</Paragraph>,
+    onHistoryPress: () => undefined,
+    preparingCount: 2,
+  },
+};

@@ -3,6 +3,7 @@ import axios from 'axios';
 import {
   paymentCheckout,
   paymentFindByPartnerReferenceNo,
+  paymentList,
 } from '../../../../api-contract/src';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { RequestConfig } from '../../../../api-contract/src/client';
@@ -11,7 +12,7 @@ import {
   PaymentRepository,
 } from '../../domain/repositories/payment';
 import { SessionRepository } from '../../domain/repositories/session';
-import { toPayment } from './payment.transformer';
+import { toPayment, toPaymentSummary } from './payment.transformer';
 
 export class ApiPaymentRepository implements PaymentRepository {
   constructor(private readonly sessionRepository: SessionRepository) {}
@@ -30,7 +31,10 @@ export class ApiPaymentRepository implements PaymentRepository {
   };
 
   fetchPayment: PaymentRepository['fetchPayment'] = (reference) => {
-    return paymentFindByPartnerReferenceNo(reference, this.sessionRequestConfig())
+    return paymentFindByPartnerReferenceNo(
+      reference,
+      this.sessionRequestConfig()
+    )
       .then(({ data }) => toPayment(data))
       .catch((error) => {
         if (axios.isAxiosError(error) && error.response?.status === 404) {
@@ -38,5 +42,14 @@ export class ApiPaymentRepository implements PaymentRepository {
         }
         throw error;
       });
+  };
+
+  fetchPayments: PaymentRepository['fetchPayments'] = ({ limit, skip }) => {
+    return paymentList({ limit, skip }, this.sessionRequestConfig()).then(
+      ({ data, meta }) => ({
+        payments: data.map(toPaymentSummary),
+        total: meta.total,
+      })
+    );
   };
 }

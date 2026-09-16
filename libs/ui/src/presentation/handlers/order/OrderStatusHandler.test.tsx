@@ -1,12 +1,8 @@
 import React from 'react';
 import { act, render, screen } from '@testing-library/react';
 import { OrderStatusHandler } from './OrderStatusHandler';
-import {
-  MockPaymentRepository,
-  MockPublicTableRepository,
-  MockSessionRepository,
-} from '../../../data/mock';
-import { OrderStatusUsecase, TableResolveUsecase } from '../../../domain';
+import { MockPaymentRepository, MockSessionRepository } from '../../../data/mock';
+import { OrderStatusUsecase } from '../../../domain';
 import { flushPromises } from '../../../utils/testUtils';
 
 const mockPush = jest.fn();
@@ -18,36 +14,23 @@ jest.mock('solito/router', () => ({
   }),
 }));
 
-// libs/ui bans a direct `next/router` import outside utils/; require() reaches the
-// same jest-mapped module (src/__mocks__/next/router.ts) without tripping that rule.
-type RouterMock = {
-  push: jest.Mock;
-  replace: jest.Mock;
-  events: {
-    on: (type: string, handler: (...args: unknown[]) => void) => void;
-    off: (type: string, handler: (...args: unknown[]) => void) => void;
-    emit: (type: string, ...args: unknown[]) => void;
-  };
-};
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const Router: RouterMock = require('next/router').default;
-
 const TABLE_CODE = '3F7H9K2M5P';
+
+const createSessionRepositoryWithTableCode = () => {
+  const sessionRepository = new MockSessionRepository();
+  sessionRepository.setTableCode(TABLE_CODE);
+  return sessionRepository;
+};
 
 const renderHandler = ({
   reference,
   paymentRepository = new MockPaymentRepository(),
-  tableRepository = new MockPublicTableRepository(),
-  sessionRepository = new MockSessionRepository(),
+  sessionRepository = createSessionRepositoryWithTableCode(),
 }: {
   reference: string;
   paymentRepository?: MockPaymentRepository;
-  tableRepository?: MockPublicTableRepository;
   sessionRepository?: MockSessionRepository;
 }) => {
-  const tableResolveUsecase = new TableResolveUsecase(tableRepository, {
-    code: TABLE_CODE,
-  });
   const orderStatusUsecase = new OrderStatusUsecase(paymentRepository, {
     reference,
   });
@@ -57,10 +40,8 @@ const renderHandler = ({
     sessionRepository,
     ...render(
       <OrderStatusHandler
-        tableResolveUsecase={tableResolveUsecase}
         orderStatusUsecase={orderStatusUsecase}
         sessionRepository={sessionRepository}
-        tableCode={TABLE_CODE}
       />
     ),
   };
@@ -119,9 +100,11 @@ describe('OrderStatusHandler', () => {
       expect(
         screen.getByText(`#${paymentRepository.payment.transactionNumber}`)
       ).toBeTruthy();
+      // The order's table label now appears twice: once in the header (D4)
+      // and once in the preparing view's own table line.
       expect(
-        screen.getByText(paymentRepository.payment.tableLabel)
-      ).toBeTruthy();
+        screen.getAllByText(paymentRepository.payment.tableLabel)
+      ).toHaveLength(2);
     } finally {
       jest.useRealTimers();
     }
@@ -173,48 +156,6 @@ describe('OrderStatusHandler', () => {
       screen.getByText(`#${paymentRepository.payment.transactionNumber}`)
     ).toBeTruthy();
     expect(screen.queryByText(/menit|jam|detik/)).toBeNull();
-  });
-
-  it('clears the remembered active reference once the order is ready', async () => {
-    const paymentRepository = new MockPaymentRepository();
-    paymentRepository.payment = {
-      ...paymentRepository.payment,
-      status: 'paid',
-      fulfillmentStatus: 'ready',
-    };
-    const sessionRepository = new MockSessionRepository();
-    sessionRepository.setActiveReference(paymentRepository.payment.reference);
-    renderHandler({
-      reference: paymentRepository.payment.reference,
-      paymentRepository,
-      sessionRepository,
-    });
-
-    await settle();
-
-    expect(sessionRepository.getActiveReference()).toBeNull();
-  });
-
-  it('does not clear the remembered active reference while still preparing', async () => {
-    const paymentRepository = new MockPaymentRepository();
-    paymentRepository.payment = {
-      ...paymentRepository.payment,
-      status: 'paid',
-      fulfillmentStatus: 'preparing',
-    };
-    const sessionRepository = new MockSessionRepository();
-    sessionRepository.setActiveReference(paymentRepository.payment.reference);
-    renderHandler({
-      reference: paymentRepository.payment.reference,
-      paymentRepository,
-      sessionRepository,
-    });
-
-    await settle();
-
-    expect(sessionRepository.getActiveReference()).toBe(
-      paymentRepository.payment.reference
-    );
   });
 
   it('shows the expiry screen for an expired payment', async () => {
@@ -320,86 +261,31 @@ describe('OrderStatusHandler', () => {
     expect(mockPush).toHaveBeenCalledWith(`/t/${TABLE_CODE}`);
   });
 
-  describe('leave confirmation', () => {
-    const renderPreparing = async () => {
-      const paymentRepository = new MockPaymentRepository();
-      paymentRepository.payment = {
-        ...paymentRepository.payment,
-        status: 'paid',
-      };
-      const result = renderHandler({
-        reference: paymentRepository.payment.reference,
-        paymentRepository,
-      });
-      await settle();
-      return result;
-    };
-
-    const attemptNavigation = async (url: string) => {
-      expect(() => {
-        act(() => {
-          Router.events.emit('routeChangeStart', url);
-        });
-      }).toThrow();
-
-      await act(async () => {
-        await flushPromises();
-      });
-    };
-
-    it('opens the leave-confirmation dialog on an attempted in-app navigation while preparing', async () => {
-      await renderPreparing();
-
-      await attemptNavigation('/t/other-table');
-
-      expect(screen.getByRole('button', { name: 'Tetap di sini' })).toBeTruthy();
-      expect(screen.getByRole('button', { name: 'Keluar' })).toBeTruthy();
+  it('falls back to / when the session has never scanned a table', async () => {
+    const sessionRepository = new MockSessionRepository();
+    const { getByRole } = renderHandler({
+      reference: 'UNKNOWNREF',
+      sessionRepository,
     });
 
-    it('keeps the route when "Tetap di sini" is pressed', async () => {
-      await renderPreparing();
+    await settle();
 
-      await attemptNavigation('/t/other-table');
-
-      await act(async () => {
-        screen.getByRole('button', { name: 'Tetap di sini' }).click();
-      });
-
-      expect(Router.push).not.toHaveBeenCalled();
-      expect(screen.queryByRole('button', { name: 'Keluar' })).toBeNull();
+    await act(async () => {
+      getByRole('button', { name: 'Kembali ke menu' }).click();
     });
 
-    it('allows navigation when "Keluar" is pressed', async () => {
-      await renderPreparing();
+    expect(mockPush).toHaveBeenCalledWith('/');
+  });
 
-      await attemptNavigation('/t/other-table');
+  it('navigates to /orders from the header history button', async () => {
+    const { getByRole } = renderHandler({ reference: 'UNKNOWNREF' });
 
-      await act(async () => {
-        screen.getByRole('button', { name: 'Keluar' }).click();
-      });
+    await settle();
 
-      expect(Router.push).toHaveBeenCalledWith('/t/other-table');
-      expect(screen.queryByRole('button', { name: 'Keluar' })).toBeNull();
+    await act(async () => {
+      getByRole('button', { name: 'Pesanan Saya' }).click();
     });
 
-    it('shows no leave-confirmation dialog once the order is ready', async () => {
-      const paymentRepository = new MockPaymentRepository();
-      paymentRepository.payment = {
-        ...paymentRepository.payment,
-        status: 'paid',
-        fulfillmentStatus: 'ready',
-      };
-      renderHandler({
-        reference: paymentRepository.payment.reference,
-        paymentRepository,
-      });
-      await settle();
-
-      act(() => {
-        Router.events.emit('routeChangeStart', '/t/other-table');
-      });
-
-      expect(screen.queryByRole('button', { name: 'Keluar' })).toBeNull();
-    });
+    expect(mockPush).toHaveBeenCalledWith('/orders');
   });
 });

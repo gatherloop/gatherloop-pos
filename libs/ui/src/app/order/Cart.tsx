@@ -14,9 +14,16 @@ export type CartProps = {
   code: string;
   table?: PublicTable | null;
   customerName?: string;
+  preparingCount?: number;
 };
 
-export function Cart({ sessionId, code, table, customerName }: CartProps) {
+export function Cart({
+  sessionId,
+  code,
+  table,
+  customerName,
+  preparingCount,
+}: CartProps) {
   const sessionRepository = new CookieSessionRepository(sessionId);
   const publicTableRepository = new ApiPublicTableRepository();
   const cartRepository = new ApiCartRepository(sessionRepository);
@@ -41,6 +48,7 @@ export function Cart({ sessionId, code, table, customerName }: CartProps) {
       sessionRepository={sessionRepository}
       enabled={enabled}
       tableCode={code}
+      preparingCount={preparingCount}
     />
   );
 }

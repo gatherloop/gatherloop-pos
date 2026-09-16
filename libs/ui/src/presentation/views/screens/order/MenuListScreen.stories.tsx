@@ -67,7 +67,6 @@ const meta: Meta<typeof MenuListScreen> = {
     },
     startingPriceByProductId: { 1: 18000, 2: 25000 },
     itemDetail: null,
-    resumeBanner: null,
   },
 };
 
@@ -110,14 +109,22 @@ export const ResolvingTable: Story = {
   args: { tableVariant: { type: 'resolving' }, variant: { type: 'loading' } },
 };
 
-export const ResumeBannerVisible: Story = {
+export const WithHistoryButton: Story = {
   args: {
     ...Loaded.args,
-    resumeBanner: {
-      onPress: () => {
-        // Storybook action stand-in
-      },
+    onHistoryPress: () => {
+      // Storybook action stand-in
     },
+  },
+};
+
+export const WithPreparingBadge: Story = {
+  args: {
+    ...Loaded.args,
+    onHistoryPress: () => {
+      // Storybook action stand-in
+    },
+    preparingCount: 2,
   },
 };
 

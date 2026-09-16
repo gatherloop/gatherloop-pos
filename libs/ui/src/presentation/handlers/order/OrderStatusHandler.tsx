@@ -1,49 +1,24 @@
-import { useEffect } from 'react';
 import { match, P } from 'ts-pattern';
 import { useRouter } from 'solito/router';
 import { SessionRepository } from '../../../domain/repositories/session';
 import { OrderStatusUsecase } from '../../../domain/usecases/orderStatus';
-import { TableResolveUsecase } from '../../../domain/usecases/tableResolve';
-import { useLeaveConfirmation } from '../../../utils/useLeaveConfirmation';
 import { useOrderStatus } from '../hooks/useOrderStatus';
-import { useTableResolve } from '../hooks/useTableResolve';
 import {
   OrderStatusScreen,
   OrderStatusScreenVariant,
 } from '../../views/screens/order/OrderStatusScreen';
-import { TableResolveScreenProps } from '../../views/screens/order/TableResolveScreen';
 
 export type OrderStatusHandlerProps = {
-  tableResolveUsecase: TableResolveUsecase;
   orderStatusUsecase: OrderStatusUsecase;
   sessionRepository: SessionRepository;
-  tableCode: string;
 };
 
 export const OrderStatusHandler = ({
-  tableResolveUsecase,
   orderStatusUsecase,
   sessionRepository,
-  tableCode,
 }: OrderStatusHandlerProps) => {
-  const tableResolve = useTableResolve(tableResolveUsecase);
   const orderStatus = useOrderStatus(orderStatusUsecase);
   const router = useRouter();
-  const leaveConfirmation = useLeaveConfirmation(
-    orderStatus.state.type === 'preparing'
-  );
-
-  useEffect(() => {
-    if (tableResolve.state.type === 'resolved' && tableResolve.state.code) {
-      sessionRepository.setTableCode(tableResolve.state.code);
-    }
-  }, [tableResolve.state, sessionRepository]);
-
-  useEffect(() => {
-    if (orderStatus.state.type === 'ready') {
-      sessionRepository.clearActiveReference();
-    }
-  }, [orderStatus.state.type, sessionRepository]);
 
   const variant: OrderStatusScreenVariant = match(orderStatus.state)
     .returnType<OrderStatusScreenVariant>()
@@ -80,38 +55,16 @@ export const OrderStatusHandler = ({
     )
     .exhaustive();
 
+  const tableCode = sessionRepository.getTableCode();
+  const menuPath = tableCode ? `/t/${tableCode}` : '/';
+  const cartPath = tableCode ? `/t/${tableCode}/cart` : '/';
+
   return (
     <OrderStatusScreen
-      tableVariant={match(tableResolve.state)
-        .returnType<TableResolveScreenProps['variant']>()
-        .with({ type: P.union('idle', 'resolving') }, () => ({
-          type: 'resolving',
-        }))
-        .with({ type: 'noCode' }, () => ({ type: 'noQr' }))
-        .with({ type: 'notFound' }, () => ({ type: 'invalidQr' }))
-        .with({ type: 'error' }, () => ({
-          type: 'error',
-          onRetryButtonPress: () => tableResolve.dispatch({ type: 'FETCH' }),
-        }))
-        .with({ type: 'resolved' }, ({ table }) =>
-          table
-            ? { type: 'resolved', table }
-            : {
-                type: 'error',
-                onRetryButtonPress: () =>
-                  tableResolve.dispatch({ type: 'FETCH' }),
-              }
-        )
-        .exhaustive()}
       variant={variant}
-      onBackToMenuPress={() => router.push(`/t/${tableCode}`)}
-      onBackToCartPress={() => router.push(`/t/${tableCode}/cart`)}
-      isLeaveConfirmOpen={leaveConfirmation.isConfirmOpen}
-      leaveConfirmTransactionNumber={
-        orderStatus.state.payment?.transactionNumber ?? 0
-      }
-      onLeaveConfirm={leaveConfirmation.onLeaveConfirm}
-      onLeaveCancel={leaveConfirmation.onLeaveCancel}
+      onBackToMenuPress={() => router.push(menuPath)}
+      onBackToCartPress={() => router.push(cartPath)}
+      onHistoryPress={() => router.push('/orders')}
     />
   );
 };

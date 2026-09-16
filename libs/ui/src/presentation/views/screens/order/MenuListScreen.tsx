@@ -9,7 +9,6 @@ import { Focusable } from '../../components/base/Focusable';
 import { SkeletonList } from '../../components/base/SkeletonView';
 import { CategoryChipList } from '../../components/menu/CategoryChipList';
 import { MenuProductCard } from '../../components/menu/MenuProductCard';
-import { ResumeOrderBanner } from '../../components/menu/ResumeOrderBanner';
 import {
   MenuItemDetailScreen,
   MenuItemDetailScreenProps,
@@ -30,6 +29,8 @@ export type MenuListScreenVariant =
 export type MenuListScreenProps = {
   tableVariant: TableResolveScreenProps['variant'];
   footer?: ReactNode;
+  onHistoryPress?: () => void;
+  preparingCount?: number;
   searchValue: string;
   onSearchValueChange: (value: string) => void;
   isSearching?: boolean;
@@ -41,12 +42,13 @@ export type MenuListScreenProps = {
   onItemPress: (product: Product) => void;
   startingPriceByProductId: Record<number, number>;
   itemDetail: (MenuItemDetailScreenProps & { isOpen: true }) | null;
-  resumeBanner: { onPress: () => void } | null;
 };
 
 export const MenuListScreen = ({
   tableVariant,
   footer,
+  onHistoryPress,
+  preparingCount,
   searchValue,
   onSearchValueChange,
   isSearching,
@@ -58,10 +60,14 @@ export const MenuListScreen = ({
   onItemPress,
   startingPriceByProductId,
   itemDetail,
-  resumeBanner,
 }: MenuListScreenProps) => {
   return (
-    <TableResolveScreen variant={tableVariant} footer={footer}>
+    <TableResolveScreen
+      variant={tableVariant}
+      footer={footer}
+      onHistoryPress={onHistoryPress}
+      preparingCount={preparingCount}
+    >
       <YStack flex={1} gap="$3">
         <YStack
           gap="$2"
@@ -70,8 +76,6 @@ export const MenuListScreen = ({
           backgroundColor="$background"
           paddingBottom="$2"
         >
-          {resumeBanner && <ResumeOrderBanner onPress={resumeBanner.onPress} />}
-
           <XStack gap="$2" alignItems="center">
             <Input
               flex={1}
