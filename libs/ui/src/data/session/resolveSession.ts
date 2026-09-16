@@ -6,7 +6,7 @@ import {
 
 export type ResolvedSession = {
   sessionId: string;
-  setCookie?: string;
+  setCookie: string;
 };
 
 const isValidSessionId = (value: string | undefined): value is string =>
@@ -23,7 +23,7 @@ const buildSetCookie = (sessionId: string): string =>
 
 export const resolveSession = (cookieValue?: string): ResolvedSession => {
   if (isValidSessionId(cookieValue)) {
-    return { sessionId: cookieValue };
+    return { sessionId: cookieValue, setCookie: buildSetCookie(cookieValue) };
   }
 
   const sessionId = crypto.randomUUID();
