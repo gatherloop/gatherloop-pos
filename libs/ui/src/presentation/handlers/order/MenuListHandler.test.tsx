@@ -237,6 +237,17 @@ describe('MenuListHandler', () => {
     expect(screen.queryByText('Pesanan Anda sedang disiapkan')).toBeNull();
   });
 
+  it('navigates to /orders from the header history button', async () => {
+    const user = userEvent.setup();
+    renderHandler();
+
+    await settle();
+
+    await user.click(screen.getByRole('button', { name: 'Pesanan Saya' }));
+
+    expect(mockPush).toHaveBeenCalledWith('/orders');
+  });
+
   describe('the item sheet', () => {
     it('opens with no network request when a product card is pressed, and does not remount the menu', async () => {
       const user = userEvent.setup();

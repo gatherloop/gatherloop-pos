@@ -20,15 +20,17 @@ export type OrderHistoryScreenProps = {
   variant: OrderHistoryScreenVariant;
   onItemPress: (payment: PaymentSummary) => void;
   onEmptyActionPress: () => void;
+  onHistoryPress?: () => void;
 };
 
 export const OrderHistoryScreen = ({
   variant,
   onItemPress,
   onEmptyActionPress,
+  onHistoryPress,
 }: OrderHistoryScreenProps) => {
   return (
-    <OrderLayout header={<OrderBrandHeader />}>
+    <OrderLayout header={<OrderBrandHeader onHistoryPress={onHistoryPress} />}>
       <YStack flex={1} gap="$3">
         <Text fontWeight="bold" fontSize="$6">
           Pesanan Saya

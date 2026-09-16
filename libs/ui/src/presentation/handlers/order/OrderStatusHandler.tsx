@@ -75,6 +75,7 @@ export const OrderStatusHandler = ({
       variant={variant}
       onBackToMenuPress={() => router.push(menuPath)}
       onBackToCartPress={() => router.push(cartPath)}
+      onHistoryPress={() => router.push('/orders')}
       isLeaveConfirmOpen={leaveConfirmation.isConfirmOpen}
       leaveConfirmTransactionNumber={
         orderStatus.state.payment?.transactionNumber ?? 0

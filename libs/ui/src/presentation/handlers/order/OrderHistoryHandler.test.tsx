@@ -117,6 +117,19 @@ describe('OrderHistoryHandler', () => {
     expect(mockPush).toHaveBeenCalledWith('/');
   });
 
+  it('navigates to /orders from the header history button', async () => {
+    const paymentRepository = new MockPaymentRepository();
+    renderHandler({ paymentRepository });
+
+    await settle();
+
+    await act(async () => {
+      screen.getByRole('button', { name: 'Pesanan Saya' }).click();
+    });
+
+    expect(mockPush).toHaveBeenCalledWith('/orders');
+  });
+
   it('shows an error with retry on a transport failure', async () => {
     const paymentRepository = new MockPaymentRepository();
     paymentRepository.setShouldFailFetchPayments(true);

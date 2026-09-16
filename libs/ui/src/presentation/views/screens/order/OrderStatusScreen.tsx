@@ -28,6 +28,7 @@ export type OrderStatusScreenProps = {
   variant: OrderStatusScreenVariant;
   onBackToMenuPress: () => void;
   onBackToCartPress: () => void;
+  onHistoryPress?: () => void;
   isLeaveConfirmOpen: boolean;
   leaveConfirmTransactionNumber: number;
   onLeaveConfirm: () => void;
@@ -38,6 +39,7 @@ export const OrderStatusScreen = ({
   variant,
   onBackToMenuPress,
   onBackToCartPress,
+  onHistoryPress,
   isLeaveConfirmOpen,
   leaveConfirmTransactionNumber,
   onLeaveConfirm,
@@ -52,7 +54,11 @@ export const OrderStatusScreen = ({
     .otherwise(() => undefined);
 
   return (
-    <OrderLayout header={<OrderBrandHeader tableLine={tableLine} />}>
+    <OrderLayout
+      header={
+        <OrderBrandHeader tableLine={tableLine} onHistoryPress={onHistoryPress} />
+      }
+    >
       <OrderLeaveConfirmAlert
         isOpen={isLeaveConfirmOpen}
         transactionNumber={leaveConfirmTransactionNumber}

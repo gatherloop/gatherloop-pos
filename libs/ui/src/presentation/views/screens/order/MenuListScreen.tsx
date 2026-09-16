@@ -30,6 +30,7 @@ export type MenuListScreenVariant =
 export type MenuListScreenProps = {
   tableVariant: TableResolveScreenProps['variant'];
   footer?: ReactNode;
+  onHistoryPress?: () => void;
   searchValue: string;
   onSearchValueChange: (value: string) => void;
   isSearching?: boolean;
@@ -47,6 +48,7 @@ export type MenuListScreenProps = {
 export const MenuListScreen = ({
   tableVariant,
   footer,
+  onHistoryPress,
   searchValue,
   onSearchValueChange,
   isSearching,
@@ -61,7 +63,11 @@ export const MenuListScreen = ({
   resumeBanner,
 }: MenuListScreenProps) => {
   return (
-    <TableResolveScreen variant={tableVariant} footer={footer}>
+    <TableResolveScreen
+      variant={tableVariant}
+      footer={footer}
+      onHistoryPress={onHistoryPress}
+    >
       <YStack flex={1} gap="$3">
         <YStack
           gap="$2"
