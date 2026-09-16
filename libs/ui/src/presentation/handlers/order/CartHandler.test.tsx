@@ -240,6 +240,85 @@ describe('CartHandler', () => {
     expect(screen.getByText('Checkout belum tersedia')).toBeTruthy();
   });
 
+  it('disables checkout when a line is sold out, and re-enables it once the line is removed', async () => {
+    const user = userEvent.setup();
+    const cartRepository = new MockCartRepository();
+    await cartRepository.addItem({ variantId: 1, amount: 1, note: '' });
+    await cartRepository.addItem({ variantId: 2, amount: 1, note: '' });
+    cartRepository.cart = {
+      ...cartRepository.cart,
+      items: cartRepository.cart.items.map((item) =>
+        item.variantId === 2
+          ? { ...item, variant: { ...item.variant, isSellable: false } }
+          : item
+      ),
+    };
+    renderHandler({ cartRepository });
+
+    await settle();
+
+    expect(
+      (screen.getByRole('button', { name: payButtonName }) as HTMLButtonElement)
+        .disabled
+    ).toBe(true);
+
+    const removeButtons = screen.getAllByLabelText(
+      'Hapus Es Kopi Susu dari keranjang'
+    );
+    await user.click(removeButtons[1]);
+    await settle();
+
+    expect(
+      (screen.getByRole('button', { name: payButtonName }) as HTMLButtonElement)
+        .disabled
+    ).toBe(false);
+  });
+
+  it('disables checkout when a line exceeds its remaining quantity', async () => {
+    const cartRepository = new MockCartRepository();
+    await cartRepository.addItem({ variantId: 1, amount: 3, note: '' });
+    cartRepository.cart = {
+      ...cartRepository.cart,
+      items: cartRepository.cart.items.map((item) => ({
+        ...item,
+        variant: { ...item.variant, sellableQuantity: 2 },
+      })),
+    };
+    renderHandler({ cartRepository });
+
+    await settle();
+
+    expect(
+      (screen.getByRole('button', { name: payButtonName }) as HTMLButtonElement)
+        .disabled
+    ).toBe(true);
+  });
+
+  it('refetches the cart after a rejected checkout', async () => {
+    const user = userEvent.setup();
+    const cartRepository = new MockCartRepository();
+    await addItemToCart(cartRepository);
+    const fetchSpy = jest.spyOn(cartRepository, 'fetchCurrentCart');
+    const paymentRepository = new MockPaymentRepository();
+    paymentRepository.setShouldFailCheckout(true);
+    renderHandler({
+      cartRepository,
+      paymentRepository,
+      customerName: 'Budi',
+    });
+    await settle();
+
+    fetchSpy.mockClear();
+
+    await user.click(screen.getByRole('button', { name: payButtonName }));
+    await user.click(
+      screen.getByRole('button', { name: 'Lanjutkan ke pembayaran' })
+    );
+    await settle();
+
+    expect(fetchSpy).toHaveBeenCalled();
+  });
+
   it('opens the name sheet prefilled from the seeded customer name', async () => {
     const user = userEvent.setup();
     const cartRepository = new MockCartRepository();

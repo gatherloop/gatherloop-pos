@@ -26,6 +26,7 @@ export type CartState = (
   | { type: 'updating' }
   | { type: 'removing' }
   | { type: 'clearing' }
+  | { type: 'revalidating' }
 ) &
   Context;
 
@@ -114,7 +115,10 @@ export class CartUsecase extends Usecase<CartState, CartAction, CartParams> {
         ([state]) => ({ ...state, type: 'loading', errorMessage: null })
       )
       .with(
-        [{ type: 'loading' }, { type: 'FETCH_SUCCESS' }],
+        [
+          { type: P.union('loading', 'revalidating') },
+          { type: 'FETCH_SUCCESS' },
+        ],
         ([state, { cart }]) => ({
           ...state,
           type: 'loaded',
@@ -127,6 +131,20 @@ export class CartUsecase extends Usecase<CartState, CartAction, CartParams> {
         ([state, { message }]) => ({
           ...state,
           type: 'error',
+          errorMessage: message,
+        })
+      )
+      // Refetching from `loaded` keeps the existing cart on screen instead
+      // of flashing a full loading state.
+      .with([{ type: 'loaded' }, { type: 'FETCH' }], ([state]) => ({
+        ...state,
+        type: 'revalidating',
+      }))
+      .with(
+        [{ type: 'revalidating' }, { type: 'FETCH_ERROR' }],
+        ([state, { message }]) => ({
+          ...state,
+          type: 'loaded',
           errorMessage: message,
         })
       )
@@ -222,7 +240,7 @@ export class CartUsecase extends Usecase<CartState, CartAction, CartParams> {
 
     match(state)
       .with({ type: 'idle' }, () => dispatch({ type: 'FETCH' }))
-      .with({ type: 'loading' }, () =>
+      .with({ type: P.union('loading', 'revalidating') }, () =>
         this.cartRepository
           .fetchCurrentCart()
           .then((cart) => dispatch({ type: 'FETCH_SUCCESS', cart }))

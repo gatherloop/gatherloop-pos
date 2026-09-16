@@ -176,6 +176,22 @@ export const Ready: Story = {
   },
 };
 
+export const NearRemainingQuantity: Story = {
+  args: {
+    variant: {
+      type: 'ready',
+      product: softCookies,
+      price: 20000,
+      variantErrorMessage: null,
+      isVariantSellable: true,
+      remainingQuantity: 3,
+    },
+    selectedOptionValueIds: [5],
+    amount: 3,
+    ctaState: 'ready',
+  },
+};
+
 export const NoOptions: Story = {
   args: {
     variant: {
