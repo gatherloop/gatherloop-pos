@@ -18,19 +18,30 @@ const (
 	ProductStatusPublished ProductStatus = "published"
 )
 
+type AvailabilityTracking string
+
+const (
+	AvailabilityTrackingNone    AvailabilityTracking = "none"
+	AvailabilityTrackingProduct AvailabilityTracking = "product"
+	AvailabilityTrackingVariant AvailabilityTracking = "variant"
+)
+
 type Product struct {
-	Id          int64
-	CategoryId  int64
-	Name        string
-	Description *string
-	Recipe      *string
-	Category    Category
-	ImageUrl    string
-	DeletedAt   *time.Time
-	CreatedAt   time.Time
-	Options     []Option
-	SaleType    SaleType
-	Status      ProductStatus
+	Id                   int64
+	CategoryId           int64
+	Name                 string
+	Description          *string
+	Recipe               *string
+	Category             Category
+	ImageUrl             string
+	DeletedAt            *time.Time
+	CreatedAt            time.Time
+	Options              []Option
+	SaleType             SaleType
+	Status               ProductStatus
+	IsAvailable          bool
+	AvailabilityTracking AvailabilityTracking
+	AvailableQuantity    *int
 }
 
 type Option struct {
