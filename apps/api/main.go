@@ -93,6 +93,7 @@ func main() {
 	checklistSessionRepository := mysql.NewChecklistSessionRepository(db)
 	stockCheckRepository := mysql.NewStockCheckRepository(db)
 	availabilityReservationRepository := mysql.NewAvailabilityReservationRepository(db)
+	availabilityRepository := mysql.NewAvailabilityRepository(db)
 
 	orderPaymentWalletId, _ := strconv.ParseInt(env.OrderPaymentWalletId, 10, 64)
 
@@ -118,6 +119,7 @@ func main() {
 	checklistTemplateUsecase := domain.NewChecklistTemplateUsecase(checklistTemplateRepository)
 	checklistSessionUsecase := domain.NewChecklistSessionUsecase(checklistSessionRepository, checklistTemplateRepository)
 	stockCheckUsecase := domain.NewStockCheckUsecase(stockCheckRepository, materialRepository)
+	availabilityUsecase := domain.NewAvailabilityUsecase(availabilityRepository, productRepository, variantRepository)
 
 	walletHandler := restapi.NewWalletHandler(walletUsecase)
 	transactionHandler := restapi.NewTransactionHandler(transactionUsecase)
@@ -140,6 +142,7 @@ func main() {
 	checklistTemplateHandler := restapi.NewChecklistTemplateHandler(checklistTemplateUsecase)
 	checklistSessionHandler := restapi.NewChecklistSessionHandler(checklistSessionUsecase)
 	stockCheckHandler := restapi.NewStockCheckHandler(stockCheckUsecase)
+	availabilityHandler := restapi.NewAvailabilityHandler(availabilityUsecase)
 	publicHandler := restapi.NewPublicHandler(productUsecase, categoryUsecase, variantUsecase, tableUsecase)
 
 	restapi.NewAuthRouter(authHandler).AddRouter(router)
@@ -163,6 +166,7 @@ func main() {
 	restapi.NewChecklistTemplateRouter(checklistTemplateHandler).AddRouter(router)
 	restapi.NewChecklistSessionRouter(checklistSessionHandler).AddRouter(router)
 	restapi.NewStockCheckRouter(stockCheckHandler).AddRouter(router)
+	restapi.NewAvailabilityRouter(availabilityHandler).AddRouter(router)
 	restapi.NewPublicRouter(publicHandler).AddRouter(router)
 
 	router.HandleFunc("/health-check", func(w http.ResponseWriter, r *http.Request) {
