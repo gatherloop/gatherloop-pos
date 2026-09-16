@@ -35,6 +35,13 @@ func (reservation AvailabilityReservation) Release(ctx context.Context, items []
 	return reservation.adjust(ctx, items, 1, false)
 }
 
+// ForceReserve decrements availability for the given items without checking switches or shortfalls,
+// allowing the counter to go negative. Used for a QRIS payment that arrives after its reservation was
+// already released by expiry (D7): the gateway has captured the money, so the reservation must succeed.
+func (reservation AvailabilityReservation) ForceReserve(ctx context.Context, items []TransactionItem) *Error {
+	return reservation.adjust(ctx, items, -1, false)
+}
+
 // ApplyDelta reserves or releases, per counting unit, the difference between a transaction's
 // existing item set and its incoming one — so editing an unpaid transaction adjusts availability
 // by exactly what changed instead of releasing and re-reserving the whole order. Only units whose
