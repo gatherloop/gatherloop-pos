@@ -3681,6 +3681,9 @@ components:
         status:
           type: string
           enum: [draft, published]
+        availabilityTracking:
+          type: string
+          enum: [none, product, variant]
     Option:
       type: object
       required:

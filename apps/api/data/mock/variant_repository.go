@@ -55,6 +55,20 @@ func (mr *MockVariantRepositoryMockRecorder) BeginTransaction(ctx, callback any)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BeginTransaction", reflect.TypeOf((*MockVariantRepository)(nil).BeginTransaction), ctx, callback)
 }
 
+// ClearAvailableQuantityByProductId mocks base method.
+func (m *MockVariantRepository) ClearAvailableQuantityByProductId(ctx context.Context, productId int64) *domain.Error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ClearAvailableQuantityByProductId", ctx, productId)
+	ret0, _ := ret[0].(*domain.Error)
+	return ret0
+}
+
+// ClearAvailableQuantityByProductId indicates an expected call of ClearAvailableQuantityByProductId.
+func (mr *MockVariantRepositoryMockRecorder) ClearAvailableQuantityByProductId(ctx, productId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClearAvailableQuantityByProductId", reflect.TypeOf((*MockVariantRepository)(nil).ClearAvailableQuantityByProductId), ctx, productId)
+}
+
 // CreateVariant mocks base method.
 func (m *MockVariantRepository) CreateVariant(ctx context.Context, variant domain.Variant) (domain.Variant, *domain.Error) {
 	m.ctrl.T.Helper()

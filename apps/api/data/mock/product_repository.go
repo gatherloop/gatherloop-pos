@@ -55,6 +55,20 @@ func (mr *MockProductRepositoryMockRecorder) BeginTransaction(ctx, callback any)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BeginTransaction", reflect.TypeOf((*MockProductRepository)(nil).BeginTransaction), ctx, callback)
 }
 
+// ClearAvailableQuantity mocks base method.
+func (m *MockProductRepository) ClearAvailableQuantity(ctx context.Context, id int64) *domain.Error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ClearAvailableQuantity", ctx, id)
+	ret0, _ := ret[0].(*domain.Error)
+	return ret0
+}
+
+// ClearAvailableQuantity indicates an expected call of ClearAvailableQuantity.
+func (mr *MockProductRepositoryMockRecorder) ClearAvailableQuantity(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClearAvailableQuantity", reflect.TypeOf((*MockProductRepository)(nil).ClearAvailableQuantity), ctx, id)
+}
+
 // CreateProduct mocks base method.
 func (m *MockProductRepository) CreateProduct(ctx context.Context, product domain.Product) (domain.Product, *domain.Error) {
 	m.ctrl.T.Helper()

@@ -14,4 +14,5 @@ type ProductRepository interface {
 	CreateProduct(ctx context.Context, product Product) (Product, *Error)
 	UpdateProductById(ctx context.Context, product Product, id int64) (Product, *Error)
 	DeleteProductById(ctx context.Context, id int64) *Error
+	ClearAvailableQuantity(ctx context.Context, id int64) *Error
 }

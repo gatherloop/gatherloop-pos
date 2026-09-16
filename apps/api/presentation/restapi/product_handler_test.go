@@ -207,6 +207,7 @@ func TestProductHandler_UpdateProductById(t *testing.T) {
 			setupMock: func(r *mock.MockProductRepository) {
 				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				r.EXPECT().GetProductById(gomock.Any(), int64(1)).Return(domain.Product{Id: 1, Name: "Old Name"}, nil)
 				r.EXPECT().UpdateProductById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Product{Id: 1, Name: "Mie Goreng"}, nil)
 			},
 			setupVariantsMock: func(r *mock.MockVariantRepository) { expectEmptyVariantList(r, 1) },
@@ -226,7 +227,7 @@ func TestProductHandler_UpdateProductById(t *testing.T) {
 			setupMock: func(r *mock.MockProductRepository) {
 				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
-				r.EXPECT().UpdateProductById(gomock.Any(), gomock.Any(), int64(99)).Return(domain.Product{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
+				r.EXPECT().GetProductById(gomock.Any(), int64(99)).Return(domain.Product{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
 			expectedStatus: http.StatusNotFound,
 		},
