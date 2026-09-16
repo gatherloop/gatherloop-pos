@@ -42,4 +42,31 @@ type Variant struct {
 	PricingTiers      []PricingTier
 	IsAvailable       bool
 	AvailableQuantity *int
+	IsSellable        bool
+	SellableQuantity  *int
+}
+
+func ResolveVariantAvailability(product Product, variant Variant) (isSellable bool, sellableQuantity *int) {
+	sellableQuantity = variantSellableQuantity(product, variant)
+
+	isSellable = product.DeletedAt == nil &&
+		variant.DeletedAt == nil &&
+		product.Status == ProductStatusPublished &&
+		product.SaleType == SaleTypePurchase &&
+		product.IsAvailable &&
+		variant.IsAvailable &&
+		(sellableQuantity == nil || *sellableQuantity > 0)
+
+	return isSellable, sellableQuantity
+}
+
+func variantSellableQuantity(product Product, variant Variant) *int {
+	switch product.AvailabilityTracking {
+	case AvailabilityTrackingProduct:
+		return product.AvailableQuantity
+	case AvailabilityTrackingVariant:
+		return variant.AvailableQuantity
+	default:
+		return nil
+	}
 }

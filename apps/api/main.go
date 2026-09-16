@@ -98,7 +98,7 @@ func main() {
 	walletUsecase := domain.NewWalletUsecase(walletRepository)
 	transactionUsecase := domain.NewTransactionUsecase(transactionRepository, variantRepository, couponRepository, walletRepository)
 	variantUsecase := domain.NewVariantUsecase(variantRepository, productRepository)
-	productUsecase := domain.NewProductUsecase(productRepository)
+	productUsecase := domain.NewProductUsecase(productRepository, variantRepository)
 	materialUsecase := domain.NewMaterialUsecase(materialRepository, supplierRepository)
 	supplierUsecase := domain.NewSupplierUsecase(supplierRepository)
 	expenseUsecase := domain.NewExpenseUsecase(expenseRepository, budgetRepository, walletRepository)

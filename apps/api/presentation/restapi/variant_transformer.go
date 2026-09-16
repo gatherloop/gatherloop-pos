@@ -103,6 +103,8 @@ func ToApiVariant(variant domain.Variant) apiContract.Variant {
 		PricingTiers:      apiPricingTiers,
 		IsAvailable:       variant.IsAvailable,
 		AvailableQuantity: ToApiQuantity(variant.AvailableQuantity),
+		IsSellable:        variant.IsSellable,
+		SellableQuantity:  ToApiQuantity(variant.SellableQuantity),
 	}
 }
 
