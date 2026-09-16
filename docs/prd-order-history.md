@@ -1,5 +1,25 @@
 # PRD: Guest Order History
 
+## Revision note (first review pass)
+
+Five open questions were answered in review. Three confirmed the design as written and are recorded
+under [Settled in review](#settled-in-review): the badge counts `preparing` only (D8), the guest's
+name stays on the row (FR-3), and checking out while an order is preparing raises no warning.
+
+Two changed it:
+
+- **History lists paid orders only.** D5's inclusion of pending-and-unexpired payments is
+  superseded by **D14**: an unpaid QR's recovery path is the cart, which is never cleared while a
+  payment is pending, so a pending row would be a second route to something the cart already does.
+  FR-1, FR-3, the Risks table and Success Criterion 4 follow.
+- **The session is meant to last forever, and today it does not.** `resolveSession` issues
+  `Set-Cookie` only when it mints a new id, so a returning guest's cookie counts down from their
+  *first* visit and dies 365 days later whatever they do in between. **D15** makes the cookie
+  rolling, raises it to the browser maximum, and names what "forever" can and cannot mean in a
+  browser. This adds a phase, so the phase table is renumbered to nine; no decision number moved.
+
+---
+
 The order app (`apps/order-web`) can take a guest from QR scan to a paid, prepared order — but
 only one order at a time, and only as long as the guest stays on one page. This PRD builds the
 page that [`docs/prd-order-fulfillment-status.md`](./prd-order-fulfillment-status.md) explicitly
@@ -125,8 +145,9 @@ that already exists.
 - ✅ The server is the source of truth, so history survives cleared `localStorage` as long as the
   session cookie lives, and cannot drift from payment state.
 - ✅ One request paints the whole list.
-- ✅ The row target is a page that already renders every state a payment can be in — pending QR,
-  preparing, ready — so "see the items I chose" is delivered by reuse, not by a new screen.
+- ✅ The row target is a page that already renders a payment in every state it can reach — pending
+  QR, preparing, ready — so "see the items I chose" is delivered by reuse, not by a new screen.
+  (D14 later narrows which of those states a *row* can point at; the page keeps all of them.)
 - ✅ Deletes code: the leave guard, its `.native.ts` sibling, the alert component, the resume
   banner and three `SessionRepository` methods all go.
 - ❌ Requires an API phase before any of the frontend lands.
@@ -161,9 +182,9 @@ GET /payments?limit=20&skip=0        (X-Session-Id required)
 `partnerReferenceNo`, `status`, `fulfillmentStatus`, `transactionNumber`, `customerName`,
 `tableLabel`, `amount`, `itemCount`, `createdAt`, `paidAt`. Newest first.
 
-The list is filtered to orders the guest can still act on: `status = 'paid'`, or `status =
-'pending'` and not yet past `expired_at` (D5). It never includes `expired` or `failed` payments,
-whose transactions `payment_usecase.go:286` soft-deletes on confirmation.
+The list is filtered to `status = 'paid'` (D14). A payment that is pending, expired or failed is
+never a row: the first is the cart's business and the last two have had their transactions
+soft-deleted by `payment_usecase.go:286`.
 
 `createdAt` is also added to the existing `Payment` schema, so the detail screen can show the same
 timestamp as the row it was opened from.
@@ -194,7 +215,7 @@ The order page's header stops resolving the *current* table and shows the order'
 `/orders` renders one row per order, newest first. Each row shows, in the order the guest scans it:
 
 1. **The transaction number** — `#12`, the thing the barista will call out, as the row's anchor.
-2. **A status pill** — `Menunggu pembayaran` (amber) / `Sedang disiapkan` (orange) /
+2. **A status pill**, with exactly two values (D14) — `Sedang disiapkan` (orange) /
    `Siap diambil` (green).
 3. **Date and time** — `dayjs(createdAt).format('DD/MM/YYYY HH:mm')`, matching
    `TransactionDetail.tsx:194` on the POS side.
@@ -205,9 +226,9 @@ Empty state: *"Belum ada pesanan"* / *"Pesanan yang Anda buat akan muncul di sin
 back to the menu. Error state gets the standard `ErrorView` with a retry that re-dispatches
 `FETCH`.
 
-Tapping a row goes to `/orders/{reference}`, which is where the items, options, notes and subtotals
-already render for every payment state — including the QR for an order the guest never finished
-paying for.
+Tapping a row goes to `/orders/{reference}`, where the items, options, notes and subtotals already
+render. That page keeps its full range of states — an unpaid payment opened by direct URL still
+shows its QR — but no row in this list ever leads to one (D14).
 
 ### FR-4 — A history entry point in the brand header
 
@@ -247,6 +268,25 @@ remain, and the server answers the rest.
 No work is required for this and it is the point of stating it: history is keyed by `session_id`,
 and `setTableCode` writes a different key. A guest who moves from Meja 3 to Meja 7 and re-scans
 keeps one history, each row showing the table that order was placed from.
+
+### FR-9 — The session does not expire while the guest keeps using it
+
+History is only as durable as the session id that keys it, and today that id has a hard stop the
+guest cannot see or postpone. `resolveSession` returns a `Set-Cookie` header **only** when it mints
+a new id — a valid cookie is reused and never re-issued (`resolveSession.ts:25-27`, asserted by
+*"reuses a valid cookie value with no Set-Cookie header"* in `resolveSession.test.ts:13-21`). So
+`Max-Age=31536000` counts down from a guest's *first* scan and expires 365 days later no matter how
+often they come back. A regular's history dies on an anniversary.
+
+Three changes make the session last as long as a browser permits (D15):
+
+1. `resolveSession` re-issues the cookie on **every** render, not only when minting, so the window
+   rolls forward on each visit.
+2. `SESSION_ID_COOKIE_MAX_AGE_SECONDS` goes to 400 days — the ceiling RFC 6265bis defines and
+   Chrome and Firefox enforce. Asking for more does not get more.
+3. The server row is already permanent, and `localStorage` (`gl_session_id`) already survives cookie
+   loss through `CookieSessionRepository.reconcile`. Nothing about that changes; FR-9 is about
+   keeping the cookie from being the weak link.
 
 ---
 
@@ -292,11 +332,13 @@ the wrong table on an order placed at a different one. The screen takes the head
 sibling, not the label, and re-adding it would mean widening the `Payment` contract to reconstruct
 a string the guest does not need on a receipt.
 
-**D5 — Expired and failed payments are not history.** When DOKU reports expiry or failure,
+**D5 — ~~Expired and failed payments are not history, but pending ones are~~.** *Partly superseded
+by D14, which drops pending payments from the list too.* The half that survives is the reasoning
+below on expired and failed payments; the half D14 rejects is that a pending payment earns a row
+because tapping it returns the guest to a payable QR. When DOKU reports expiry or failure,
 `payment_usecase.go:286` soft-deletes the payment's transaction, and the guest's *cart is still
 active and still full* — the recovery path is the cart, not a history row. A list of dead
-references would be a list of rows that do nothing when tapped. Pending-and-unexpired payments do
-appear, because tapping one returns the guest to a QR they can still pay.
+references would be a list of rows that do nothing when tapped.
 
 *Alternative rejected:* showing everything with a `Kedaluwarsa` pill. It makes the list longer,
 more alarming and less actionable, and every one of those rows is a dead end.
@@ -346,6 +388,64 @@ the resume pointer live?") is answered by deletion: nothing device-local expires
 device-local is stored. History lives as long as `gl_session_id` — one year, or until the guest
 clears storage — and the server row lives forever.
 
+**D14 — History is paid orders only; an unpaid QR is the cart's problem, not history's.**
+*Supersedes the pending-payment half of D5.*
+
+A payment that is pending has not produced anything the guest is waiting on — no food is being
+made, no number will be called. What it has produced is a cart that is still there: the only
+`cart.Status` write in the codebase is `payment_usecase.go:261`, on the **paid** branch of
+`applyQrisStatus`, so a pending payment leaves the cart `active` and full. Nor does re-checkout
+duplicate anything — `Checkout` calls `GetPendingPaymentByCartId` and returns the existing payment
+when `IsAwaitingPayment(time.Now())` holds (`payment_usecase.go:85-99`), so a guest who lost their
+QR gets **the same QR** back by tapping Checkout again. History would be a second route to a place
+the cart already reaches in one tap, and the price of that route is a third status pill on every
+row and a list that mixes "waiting for my coffee" with "never paid".
+
+*The hole in this, named rather than hidden:* the cart is still mutable while that payment is
+pending, and the transaction was snapshotted at checkout. A guest who abandons a QR, adds a third
+item, and checks out again gets the original payment back — original amount, original two items —
+and on payment the cart converts with the third item unpaid and unmade. That is a pre-existing bug
+(nothing in this PRD reaches it) and the reason it is worth fixing on its own is exactly that D14
+now leans on "just check out again" being the recovery path. Named in Out of Scope as a follow-up;
+Open Question 1 asks how it should behave.
+
+*Alternative rejected:* a pending row with a `Menunggu pembayaran` pill. It is the more "complete"
+list and the less useful one — it puts a row in front of the guest whose correct action is
+elsewhere.
+
+**D15 — The session cookie rolls forward on every visit and is set to the browser maximum; nothing
+is "forever" at the cookie layer.** Review asked for a session that never expires. The server side
+already is: `payments.session_id` has no TTL and no cleanup job. The browser side cannot be, and
+today it is worse than it looks — `resolveSession` returns `Set-Cookie` only on the mint path
+(`resolveSession.ts:25-27`), so a returning guest's cookie is never refreshed and dies 365 days
+after their first visit regardless of use.
+
+What "forever" becomes in practice:
+
+- **Re-issue on every render.** `resolveSession` always returns a `setCookie`, and every order page
+  already writes it (`ctx.res.setHeader('Set-Cookie', setCookie)`). A guest who visits at least
+  once a year never loses the cookie. `resolveSession.test.ts:13-21`, which today asserts the
+  *absence* of the header on the reuse path, inverts.
+- **400 days, not a year, and not more.** RFC 6265bis caps cookie lifetime at 400 days and Chrome
+  and Firefox clamp anything larger, so `SESSION_ID_COOKIE_MAX_AGE_SECONDS` becomes `60 * 60 * 24 *
+  400` and a comment records why that number and not a bigger one.
+- **`localStorage` stays the backstop**, unchanged: `CookieSessionRepository.reconcile` already
+  rewrites the cookie from `gl_session_id` when the two disagree, which is what carries a session
+  across a cookie the browser dropped early — Safari caps cookies written via `document.cookie` at
+  7 days under ITP, and the server-set header is what keeps this session alive there.
+
+*The one rough edge, accepted:* `getServerSideProps` cannot read `localStorage`. On the single
+request after a cookie has genuinely expired, the server mints a new id and renders the page —
+including an empty history — against it, and only then does the client reconcile back to the stored
+id. Rolling the cookie makes that reachable only after 400 days of total absence, by which point the
+device has usually dropped `localStorage` too. Fixing it properly means a client-side refetch after
+reconciliation, which is a bigger change than the bug deserves.
+
+*Alternative rejected:* dropping the cookie and keying the session from `localStorage` alone. SSR
+would have no session id at all on the first request of every visit, and every order page would
+lose its server-rendered data — the thing `docs/prd-order-app-ux-round-2.md` went to some trouble
+to get.
+
 ---
 
 ## Phased plan
@@ -357,14 +457,17 @@ acceptance check.
 | --- | --- | --- | --- |
 | 1 | `GET /payments`, `PaymentSummary`, `createdAt` on `Payment` | API | — |
 | 2 | Orders move to `/orders/{reference}`; `/t/{code}/status` redirects | order | — |
-| 3 | Frontend payment slice: summary entity, repository, `OrderHistoryUsecase` | libs/ui | 1 |
-| 4 | Order history screen, handler and the `/orders` page | order | 2, 3 |
-| 5 | History button in the brand header | order | 4 |
-| 6 | Preparing count badge on the header button | order | 5 |
-| 7 | Delete the leave guard, the resume banner and the active reference | order | 6 |
-| 8 | Docs site page and e2e coverage | docs, e2e | 7 |
+| 3 | The session cookie rolls forward and lasts 400 days | libs/ui | — |
+| 4 | Frontend payment slice: summary entity, repository, `OrderHistoryUsecase` | libs/ui | 1 |
+| 5 | Order history screen, handler and the `/orders` page | order | 2, 4 |
+| 6 | History button in the brand header | order | 5 |
+| 7 | Preparing count badge on the header button | order | 6 |
+| 8 | Delete the leave guard, the resume banner and the active reference | order | 7 |
+| 9 | Docs site page and e2e coverage | docs, e2e | 8 |
 
-Phases 1 and 2 are independent of each other and can land in parallel.
+Phases 1, 2 and 3 are independent of each other and can land in parallel. Phase 3 is the smallest
+and blocks nothing, so it is worth landing first: every day it waits, a returning guest's session
+is counting down from a date they cannot see.
 
 > Every phase that touches `libs/api-contract/src/api.yaml` regenerates both clients
 > (`npx nx run api-contract:generate:go`, `npx nx run api-contract:generate:ts`) and adds the new
@@ -379,16 +482,15 @@ Phases 1 and 2 are independent of each other and can land in parallel.
 `/payments` `get` with the existing `Limit`/`Skip` parameter refs, and `createdAt` (`date-time`,
 required) on the existing `Payment` schema. Domain: `TransactionSummary` plus
 `GetTransactionSummariesByIds` on `TransactionRepository`, and `GetPaymentsBySessionId` /
-`GetPaymentsBySessionIdTotal` on `PaymentRepository` — the latter filtering
-`status = 'paid' OR (status = 'pending' AND expired_at > NOW())` per D5, ordered `id DESC`, hitting
-`idx_payments_session_id`. `PaymentUsecase.GetPaymentList(ctx, sessionId, skip, limit)` joins the
+`GetPaymentsBySessionIdTotal` on `PaymentRepository` — the latter filtering `status = 'paid'` per
+D14, ordered `id DESC`, hitting `idx_payments_session_id`. `PaymentUsecase.GetPaymentList(ctx, sessionId, skip, limit)` joins the
 two. Presentation: `ListPayments` handler on `payment_handler.go`, `RequireSessionId`-wrapped in
 `payment_route.go`, and `ToApiPaymentSummary` in `payment_transformer.go` next to the existing
 `ToApiPayment` (which gains `CreatedAt`). Mocks via `go generate ./...`.
 
-**Acceptance:** `payment_usecase_test.go` covers a session with a paid, a preparing, a pending and
-an expired payment, asserting the expired one is absent and another session's payments never leak;
-`npx nx run api:test` green.
+**Acceptance:** `payment_usecase_test.go` covers a session holding a preparing, a ready, a pending
+and an expired payment, asserting that only the two paid ones come back and that another session's
+payments never leak; `npx nx run api:test` green.
 
 ### Phase 2 — Orders move to `/orders/{reference}` (order)
 
@@ -405,7 +507,20 @@ URL assertions.
 **Acceptance:** checkout still lands on a working QR page, now at `/orders/{ref}`; a request to
 `/t/{code}/status?ref=X` 307s to `/orders/X`; `npx nx run ui:test` green.
 
-### Phase 3 — Frontend payment slice (libs/ui)
+### Phase 3 — The session cookie rolls forward and lasts 400 days (libs/ui)
+
+`resolveSession` returns a `setCookie` on both paths instead of only on the mint path, so every
+order page's existing `ctx.res.setHeader('Set-Cookie', setCookie)` refreshes the window.
+`SESSION_ID_COOKIE_MAX_AGE_SECONDS` becomes `60 * 60 * 24 * 400`, with a one-line comment naming
+the RFC 6265bis cap as the reason it is not larger (D15). `resolveSession.test.ts`'s *"reuses a
+valid cookie value with no Set-Cookie header"* case inverts to assert the header **is** returned and
+carries the same id; `CookieSessionRepository.test.ts` is unaffected. No API, no screen, no
+contract change.
+
+**Acceptance:** a second request carrying a valid `gl_session_id` comes back with a `Set-Cookie`
+for the same id and `Max-Age=34560000`; `npx nx run ui:test` green.
+
+### Phase 4 — Frontend payment slice (libs/ui)
 
 `PaymentSummary` on `domain/entities/Payment.ts`, `toPaymentSummary` in
 `data/api/payment.transformer.ts`, `fetchPayments` on `domain/repositories/payment.ts`,
@@ -418,7 +533,7 @@ updated; no screen renders any of it yet.
 **Acceptance:** `npx nx run ui:test` green, with the error branch covered via
 `MockPaymentRepository.setShouldFail(true)`.
 
-### Phase 4 — Order history screen and the `/orders` page (order)
+### Phase 5 — Order history screen and the `/orders` page (order)
 
 `OrderHistoryListItem` in `views/components/orderHistory/`, `OrderHistoryScreen` in
 `views/screens/order/` with `loading` / `loaded` / `empty` / `error` variants and the row content of
@@ -431,7 +546,7 @@ SSR-seeding the list. Header is `OrderBrandHeader` with no table line.
 **Acceptance:** `/orders` lists a session's orders newest-first with the five fields of FR-3, a row
 tap opens that order, and an empty session shows `Belum ada pesanan`.
 
-### Phase 5 — History button in the brand header (order)
+### Phase 6 — History button in the brand header (order)
 
 `OrderBrandHeader` gains an optional `onHistoryPress`; `TableResolveScreen`, `MenuListScreen`,
 `CartScreen`, `OrderStatusScreen` and `OrderHistoryScreen` thread it, and each handler wires
@@ -440,7 +555,7 @@ tap opens that order, and an empty session shows `Belum ada pesanan`.
 **Acceptance:** every order screen shows the button and one tap from any of them reaches `/orders`;
 the accessible name is `Pesanan Saya`.
 
-### Phase 6 — Preparing count badge (order)
+### Phase 7 — Preparing count badge (order)
 
 `OrderBrandHeader` gains an optional `preparingCount`. `MenuList` and `Cart` composition roots take
 it as a prop, and `t/[code]/index.tsx` and `t/[code]/cart/index.tsx` add `fetchPayments()` to their
@@ -450,7 +565,7 @@ existing `Promise.all`, counting `fulfillmentStatus === 'preparing'` among `paid
 **Acceptance:** a session with two preparing orders shows `2` on the menu and cart headers; the API
 call failing still renders both pages.
 
-### Phase 7 — Delete the leave guard, the banner and the active reference (order)
+### Phase 8 — Delete the leave guard, the banner and the active reference (order)
 
 Remove `utils/useLeaveConfirmation.ts` and `.native.ts`, `views/components/orderStatus/OrderLeaveConfirmAlert.tsx`,
 `views/components/menu/ResumeOrderBanner.tsx` and its `MenuListScreen` prop and `MenuListHandler`
@@ -463,7 +578,7 @@ Update `docs/handlers.md` per D10.
 no `beforeunload` prompt; `grep -r activeReference libs apps` returns nothing; `npm run lint` and
 `npm test` green.
 
-### Phase 8 — Docs site and e2e (docs, e2e)
+### Phase 9 — Docs site and e2e (docs, e2e)
 
 `docs-site/sales/order-history.md` and its sidebar entry under *Sales & Checkout* in
 `docs-site/.vitepress/config.ts`, plus a line in `docs-site/sales/table-ordering.md` and
@@ -484,9 +599,10 @@ in `npx nx run docs-site:dev`.
 | --- | --- | --- |
 | **A guest clears storage or switches browsers and loses their history.** The session cookie is the only identity. | Medium | Unchanged from today's behaviour, and strictly better than the one-slot pointer. The barista still has the order under its number in the POS; the order number is the recovery path, and the ready screen already tells the guest to quote it. Out of scope to fix properly without D-rejected guest accounts (Option C). |
 | **Phase 2 changes the URL of the one page a guest may have open.** | Low | The redirect is the mitigation, and it is in the same PR. A tab already open on `/t/{code}/status` keeps polling the same API and is unaffected until its next navigation. |
-| **Removing the leave guard lets a guest close the tab and forget the order.** | Medium | This is the intended trade. The badge (Phase 6) and the header button (Phase 5) ship *before* the removal (Phase 7) precisely so the replacement exists first. The physical recovery path — quote the number at the counter — is unchanged. |
+| **Removing the leave guard lets a guest close the tab and forget the order.** | Medium | This is the intended trade. The header button (Phase 6) and the badge (Phase 7) ship *before* the removal (Phase 8) precisely so the replacement exists first. The physical recovery path — quote the number at the counter — is unchanged. |
 | **The summary join drifts from `ToApiPayment`'s field semantics** (e.g. `fulfillmentStatus` derived two ways). | Medium | Derive it once: the summary transformer reads `CompletedAt != nil` from `TransactionSummary` using the same expression as `payment_transformer.go:68-71`, and `payment_transformer_test.go` asserts a summary and a full payment built from the same transaction agree. |
-| **Ordering again during a *pending* (unpaid) QRIS reuses the same cart.** The cart only converts on payment (`payment_usecase.go:261`), so a guest who leaves an unpaid QR and adds items is editing the cart that payment was quoted against. | Low | Pre-existing, and unchanged by this PRD — `GetPendingPaymentByCartId` already returns the existing payment rather than creating a second one. Named in Open Questions; the history row for a pending payment makes it *visible* for the first time, which is an improvement over a silent overwrite. |
+| **Ordering again during a *pending* (unpaid) QRIS reuses the same cart.** The cart only converts on payment (`payment_usecase.go:261`), so a guest who abandons a QR and adds items is editing the cart that payment was quoted against — and re-checkout returns the original payment and amount, losing the added item on confirmation. | Low | Pre-existing and untouched by this PRD: leaving an unpaid QR is already unguarded today (the leave guard only fires on `preparing`). D14 makes the PRD *depend* on re-checkout being the recovery path, so the bug is named there, in Out of Scope and in Open Question 1 rather than absorbed. It needs its own PR. |
+| **The one SSR render after a cookie genuinely expires shows an empty history.** `getServerSideProps` cannot read `localStorage`, so it mints a new id, renders against it, and only then does the client reconcile back. | Low | Phase 3 makes it reachable only after 400 days of total absence (D15), by which point `localStorage` has usually gone too. A client-side refetch after reconciliation is the real fix and costs more than the bug. |
 | **`/orders` is a top-level route in an app whose every other route is table-scoped.** | Low | Deliberate (D4/D7): orders are session-scoped, and `/` (the table-scan screen) is already table-free. |
 
 ---
@@ -497,7 +613,8 @@ in `npx nx run docs-site:dev`.
 | --- | --- |
 | **Guest accounts / login** | Option C. Cross-device history is not in the acceptance criteria and a login wall contradicts `docs/prd-table-ordering.md`. |
 | **Pagination UI** | D11 — contract supports `skip`/`limit`; no screen affordance until a guest exists who needs one. |
-| **Expired and failed orders in the list** | D5 — their transactions are soft-deleted and their cart is still full; the row would be a dead end. |
+| **Pending, expired and failed orders in the list** | D14 for pending (the cart is the recovery path and re-checkout returns the same QR); D5 for the other two (their transactions are soft-deleted, so the row would be a dead end). |
+| **Voiding a stale pending payment when the cart changes under it** | The bug D14 leans against: items added after a QR is generated are lost on payment. Real, pre-existing, and its own PR — deciding between voiding the payment and freezing the cart is a product call, not a detail of this feature. Open Question 1. |
 | **Re-order ("pesan lagi yang sama") from a history row** | A genuinely good follow-up, and a different feature: it needs cart-from-transaction on the API and a price-changed story. |
 | **Live-updating the badge** | D8. |
 | **A receipt / printable view of a past order** | The POS prints; nothing in the acceptance criteria asks the guest for one. |
@@ -508,23 +625,40 @@ in `npx nx run docs-site:dev`.
 
 ---
 
+## Settled in review
+
+The five questions this PRD opened, and how the first review pass answered them. Recorded rather
+than deleted, so the reasoning is not re-litigated from scratch later.
+
+1. **Should a pending (unpaid) order appear in history?** **No.** The cart is never cleared while a
+   payment is pending, and re-checkout returns the *same* QR through
+   `GetPendingPaymentByCartId`, so the guest who loses a QR already has a one-tap way back that
+   does not involve history. D5's pending clause is superseded by **D14**, and the follow-up bug
+   that answer exposes is Open Question 1 below.
+2. **Should the badge count `ready` orders too?** **No — `preparing` only**, as originally specced
+   (FR-5, D8). The badge clears itself once the guest has been told to collect.
+3. **How long should a session last?** **Forever, as far as a browser allows** — which is not the
+   365 days it claims today, and in practice is less, because the cookie is never re-issued on a
+   return visit. **D15** and Phase 3 fix that; the *server* row already has no TTL, so nothing
+   caps how far back history goes.
+4. **Does the venue want the guest's name on the row?** **Yes.** FR-3 keeps `customerName` on every
+   row, next to the table.
+5. **Should checking out while an order is preparing warn?** **No warning.** The badge is the
+   ambient version of that sentence, and a second order is the point of the feature.
+
+---
+
 ## Open Questions
 
-1. **Should a pending (unpaid) order really appear in history?** D5 says yes, because tapping it
-   returns the guest to a payable QR. The counter-argument is that a pending row and an
-   `active` cart describe the same intent twice. Confirm with the first guest who sees both.
-2. **Should the badge count `ready` orders too, not just `preparing`?** An order that is ready and
-   uncollected is arguably the more urgent number. Assumed `preparing` only, so the badge clears
-   itself when the guest has been told to collect; revisit if guests leave orders on the pass.
-3. **How long should a session's history be listed for?** Currently forever, bounded only by the
-   one-year cookie. A guest returning next month sees last month's coffee. A `createdAt` cutoff
-   (same business day? 7 days?) is a one-line `WHERE` when someone decides.
-4. **Does the venue want the guest's name on the row at all?** It is the name given at checkout and
-   is what the barista calls; FR-3 shows it. If names turn out to be jokes more often than names,
-   the number alone is enough.
-5. **Should checking out while an order is preparing warn at all** ("Anda punya 1 pesanan yang
-   sedang disiapkan")? Assumed no — the badge is the ambient version of that sentence, and the whole
-   point of this PRD is that a second order is legitimate.
+1. **What should happen to a pending payment when the cart changes under it?** Today: nothing —
+   `Checkout` returns the original payment and amount while `IsAwaitingPayment` holds, so items
+   added after the QR was generated are converted away unpaid and unmade. D14 makes re-checkout the
+   sanctioned recovery path for a lost QR, which makes this worth closing. The two candidate
+   answers are voiding the stale payment and issuing a fresh QR for the new total, or refusing cart
+   mutations while a payment is awaiting. Its own PRD.
+2. **Should a guest's oldest history be trimmed for display?** Nothing caps it now, per answer 3
+   above, so a regular eventually scrolls past months of coffee. `limit=20` hides this until
+   pagination exists (D11); a `createdAt` cutoff is a one-line `WHERE` if it ever reads badly.
 
 ---
 
@@ -536,12 +670,14 @@ in `npx nx run docs-site:dev`.
    menu — never on an order page — with their orders one tap away.
 3. A guest who scans a different table keeps the same history, and each row names the table its
    order was placed from.
-4. Opening a row shows the items, options, notes and total of that order, and for an unpaid one,
-   its QR.
+4. Opening a row shows the items, options, notes and total of that order. Every row in the list is
+   a paid order (D14); an unpaid payment is reachable only by its own URL.
 5. `/orders` paints from one API request, and `payment_usecase_test.go` proves one session can
    never read another's payments.
-6. `grep -rn "activeReference\|useLeaveConfirmation" libs apps` returns nothing after Phase 7, and
-   the net diff across the eight phases deletes more frontend code than the history screen adds.
+6. `grep -rn "activeReference\|useLeaveConfirmation" libs apps` returns nothing after Phase 8, and
+   the net diff across the nine phases deletes more frontend code than the history screen adds.
+7. A guest who last ordered eleven months ago, and again today, still has one session and one
+   history — and the request that served them carried a fresh `Set-Cookie` either way (D15).
 
 ---
 
@@ -555,6 +691,13 @@ in `npx nx run docs-site:dev`.
   https://pesan.app
 - MDN, `beforeunload` — why the guard's text cannot be customised and when browsers suppress it:
   https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event
+- RFC 6265bis, §4.1.2.1 — the 400-day cap on cookie lifetime that D15's number comes from:
+  https://datatracker.ietf.org/doc/html/draft-ietf-httpbis-rfc6265bis#section-4.1.2.1
+- Chrome developer notes, *Cookie expiration limited to 400 days*:
+  https://developer.chrome.com/blog/cookie-max-age-expires
+- WebKit, *Intelligent Tracking Prevention 2.1* — the 7-day cap on cookies written via
+  `document.cookie`, and why the server-set header is the one that keeps this session alive:
+  https://webkit.org/blog/8613/intelligent-tracking-prevention-2-1/
 - Nielsen Norman Group, *Confirmation dialogs*: interrupting a navigation the user chose is a cost
   paid on every exit to prevent a rare mistake:
   https://www.nngroup.com/articles/confirmation-dialog/
