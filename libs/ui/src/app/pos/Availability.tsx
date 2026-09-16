@@ -3,6 +3,7 @@ import {
   AuthLogoutUsecase,
   AvailabilityListUsecase,
   AvailabilityListParams,
+  AvailabilityMovementListUsecase,
   AvailabilityUpdateUsecase,
 } from '../../domain';
 import { AvailabilityHandler } from '../../presentation';
@@ -25,12 +26,16 @@ export function Availability({ availabilityListParams }: AvailabilityProps) {
   const availabilityUpdateUsecase = new AvailabilityUpdateUsecase(
     availabilityRepository
   );
+  const availabilityMovementListUsecase = new AvailabilityMovementListUsecase(
+    availabilityRepository
+  );
 
   return (
     <AvailabilityHandler
       authLogoutUsecase={authLogoutUsecase}
       availabilityListUsecase={availabilityListUsecase}
       availabilityUpdateUsecase={availabilityUpdateUsecase}
+      availabilityMovementListUsecase={availabilityMovementListUsecase}
     />
   );
 }

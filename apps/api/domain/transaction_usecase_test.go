@@ -23,6 +23,7 @@ func permissiveAvailabilityRepo(ctrl *gomock.Controller) *mock.MockAvailabilityR
 	availabilityRepo.EXPECT().LockProductById(gomock.Any(), gomock.Any()).AnyTimes().Return(domain.Product{IsAvailable: true}, nil)
 	availabilityRepo.EXPECT().UpdateVariantAvailableQuantity(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
 	availabilityRepo.EXPECT().UpdateProductAvailableQuantity(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
+	availabilityRepo.EXPECT().CreateAvailabilityMovement(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
 	return availabilityRepo
 }
 
@@ -256,6 +257,7 @@ func TestTransactionUsecase_CreateTransaction(t *testing.T) {
 					Product: domain.Product{IsAvailable: true, AvailabilityTracking: domain.AvailabilityTrackingVariant},
 				}, nil)
 				availabilityRepo.EXPECT().UpdateVariantAvailableQuantity(gomock.Any(), int64(1), 1).Return(nil)
+				availabilityRepo.EXPECT().CreateAvailabilityMovement(gomock.Any(), gomock.Any()).Return(nil)
 				txRepo.EXPECT().CreateTransaction(gomock.Any(), gomock.Any()).Return(domain.Transaction{Id: 3, Total: 12000}, nil)
 			},
 			expectedTotal: 12000,
@@ -425,6 +427,7 @@ func TestTransactionUsecase_DeleteTransactionById(t *testing.T) {
 					Product: domain.Product{IsAvailable: true, AvailabilityTracking: domain.AvailabilityTrackingVariant},
 				}, nil)
 				availabilityRepo.EXPECT().UpdateVariantAvailableQuantity(gomock.Any(), int64(1), 6).Return(nil)
+				availabilityRepo.EXPECT().CreateAvailabilityMovement(gomock.Any(), gomock.Any()).Return(nil)
 				txRepo.EXPECT().DeleteTransactionById(gomock.Any(), int64(3)).Return(nil)
 			},
 		},
@@ -902,6 +905,7 @@ func TestTransactionUsecase_UpdateTransactionById(t *testing.T) {
 					Product: domain.Product{Name: "Soft Cookies", IsAvailable: true, AvailabilityTracking: domain.AvailabilityTrackingVariant},
 				}, nil)
 				availabilityRepo.EXPECT().UpdateVariantAvailableQuantity(gomock.Any(), int64(1), 3).Return(nil)
+				availabilityRepo.EXPECT().CreateAvailabilityMovement(gomock.Any(), gomock.Any()).Return(nil)
 				txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(4)).Return(domain.Transaction{Id: 4}, nil)
 			},
 		},
@@ -927,6 +931,7 @@ func TestTransactionUsecase_UpdateTransactionById(t *testing.T) {
 					Product: domain.Product{Name: "Soft Cookies", IsAvailable: true, AvailabilityTracking: domain.AvailabilityTrackingVariant},
 				}, nil)
 				availabilityRepo.EXPECT().UpdateVariantAvailableQuantity(gomock.Any(), int64(1), 4).Return(nil)
+				availabilityRepo.EXPECT().CreateAvailabilityMovement(gomock.Any(), gomock.Any()).Return(nil)
 				txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(5)).Return(domain.Transaction{Id: 5}, nil)
 			},
 		},
@@ -949,6 +954,7 @@ func TestTransactionUsecase_UpdateTransactionById(t *testing.T) {
 					Product: domain.Product{Name: "Soft Cookies", IsAvailable: true, AvailabilityTracking: domain.AvailabilityTrackingVariant},
 				}, nil)
 				availabilityRepo.EXPECT().UpdateVariantAvailableQuantity(gomock.Any(), int64(1), 3).Return(nil)
+				availabilityRepo.EXPECT().CreateAvailabilityMovement(gomock.Any(), gomock.Any()).Return(nil)
 				txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(6)).Return(domain.Transaction{Id: 6}, nil)
 			},
 		},
@@ -980,6 +986,7 @@ func TestTransactionUsecase_UpdateTransactionById(t *testing.T) {
 					Product: domain.Product{Name: "Soft Cookies", IsAvailable: true, AvailabilityTracking: domain.AvailabilityTrackingVariant},
 				}, nil)
 				availabilityRepo.EXPECT().UpdateVariantAvailableQuantity(gomock.Any(), int64(2), 2).Return(nil)
+				availabilityRepo.EXPECT().CreateAvailabilityMovement(gomock.Any(), gomock.Any()).Return(nil)
 				txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(7)).Return(domain.Transaction{Id: 7}, nil)
 			},
 		},

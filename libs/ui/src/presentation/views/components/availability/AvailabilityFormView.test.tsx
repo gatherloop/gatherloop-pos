@@ -72,6 +72,7 @@ const baseProps: AvailabilityFormViewProps = {
   onSubmit: jest.fn(),
   isSubmitDisabled: false,
   isSubmitting: false,
+  onViewHistoryPress: jest.fn(),
 };
 
 describe('AvailabilityFormView', () => {
@@ -191,5 +192,25 @@ describe('AvailabilityFormView', () => {
         ...defaultValues.variants.slice(1),
       ],
     });
+  });
+
+  it('calls onViewHistoryPress with the product level, id and name', async () => {
+    const user = userEvent.setup();
+    const onViewHistoryPress = jest.fn();
+    render(<AvailabilityFormView {...baseProps} onViewHistoryPress={onViewHistoryPress} />);
+
+    await user.click(screen.getByRole('button', { name: 'View history for Pancong' }));
+
+    expect(onViewHistoryPress).toHaveBeenCalledWith('product', 3, 'Pancong');
+  });
+
+  it('calls onViewHistoryPress with the variant level, id and name', async () => {
+    const user = userEvent.setup();
+    const onViewHistoryPress = jest.fn();
+    render(<AvailabilityFormView {...baseProps} onViewHistoryPress={onViewHistoryPress} />);
+
+    await user.click(screen.getByRole('button', { name: 'View history for Vanilla' }));
+
+    expect(onViewHistoryPress).toHaveBeenCalledWith('variant', 1, 'Vanilla');
   });
 });

@@ -3,12 +3,20 @@ import { QueryClient } from '@tanstack/react-query';
 import {
   availabilityList,
   availabilityListQueryKey,
+  availabilityMovementList,
+  availabilityMovementListQueryKey,
   availabilityUpdate,
 } from '../../../../api-contract/src';
-import { AvailabilityProduct, AvailabilityRepository } from '../../domain';
+import {
+  AvailabilityLevel,
+  AvailabilityMovement,
+  AvailabilityProduct,
+  AvailabilityRepository,
+} from '../../domain';
 import { RequestConfig } from '@kubb/swagger-client/client';
 import {
   toApiAvailabilityUpdateRequest,
+  toAvailabilityMovement,
   toAvailabilityProduct,
 } from './availability.transformer';
 
@@ -34,5 +42,18 @@ export class ApiAvailabilityRepository implements AvailabilityRepository {
     return availabilityUpdate(toApiAvailabilityUpdateRequest(form)).then(
       (data) => data.data.map(toAvailabilityProduct)
     );
+  };
+
+  fetchAvailabilityMovements = (
+    level: AvailabilityLevel,
+    id: number,
+    options?: Partial<RequestConfig>
+  ): Promise<AvailabilityMovement[]> => {
+    return this.client
+      .fetchQuery({
+        queryKey: availabilityMovementListQueryKey(level, id),
+        queryFn: () => availabilityMovementList(level, id, undefined, options),
+      })
+      .then((data) => data.data.map(toAvailabilityMovement));
   };
 }

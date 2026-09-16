@@ -431,6 +431,7 @@ func TestPaymentUsecase_Checkout(t *testing.T) {
 			Product: domain.Product{IsAvailable: true, AvailabilityTracking: domain.AvailabilityTrackingVariant},
 		}, nil)
 		m.availabilityRepo.EXPECT().UpdateVariantAvailableQuantity(gomock.Any(), int64(10), 4).Return(nil)
+		m.availabilityRepo.EXPECT().CreateAvailabilityMovement(gomock.Any(), gomock.Any()).Return(nil)
 
 		m.transactionRepo.EXPECT().CreateTransaction(gomock.Any(), gomock.Any()).
 			DoAndReturn(func(_ context.Context, transaction domain.Transaction) (domain.Transaction, *domain.Error) {
@@ -676,6 +677,7 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 			Product: domain.Product{IsAvailable: true, AvailabilityTracking: domain.AvailabilityTrackingVariant},
 		}, nil)
 		m.availabilityRepo.EXPECT().UpdateVariantAvailableQuantity(gomock.Any(), int64(10), -2).Return(nil)
+		m.availabilityRepo.EXPECT().CreateAvailabilityMovement(gomock.Any(), gomock.Any()).Return(nil)
 
 		expectConfirmPaymentWalletCredit(m)
 
@@ -756,6 +758,7 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 			Product: domain.Product{IsAvailable: true, AvailabilityTracking: domain.AvailabilityTrackingVariant},
 		}, nil)
 		m.availabilityRepo.EXPECT().UpdateVariantAvailableQuantity(gomock.Any(), int64(10), 6).Return(nil)
+		m.availabilityRepo.EXPECT().CreateAvailabilityMovement(gomock.Any(), gomock.Any()).Return(nil)
 
 		m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), int64(99)).Return(nil)
 

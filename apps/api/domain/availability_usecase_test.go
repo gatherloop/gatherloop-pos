@@ -130,6 +130,7 @@ func TestAvailabilityUsecase_UpdateAvailability(t *testing.T) {
 				availabilityRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				availabilityRepo.EXPECT().UpdateVariantAvailability(gomock.Any(), int64(1), (*bool)(nil), &quantity5).Return(nil)
+				availabilityRepo.EXPECT().CreateAvailabilityMovement(gomock.Any(), gomock.Any()).Return(nil)
 				expectEmptyAvailabilityProductList(productRepo, 1)
 			},
 		},
@@ -153,4 +154,107 @@ func TestAvailabilityUsecase_UpdateAvailability(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAvailabilityUsecase_UpdateAvailability_RecordsMovements(t *testing.T) {
+	t.Run("a quantity set records a manual_set movement with the resulting quantity", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		usecase, mockAvailabilityRepo, mockProductRepo, _ := newAvailabilityUsecase(ctrl)
+
+		quantity5 := 5
+		existingQuantity := 2
+		mockProductRepo.EXPECT().GetProductById(gomock.Any(), int64(1)).
+			Return(domain.Product{Id: 1, Name: "Pancong", AvailabilityTracking: domain.AvailabilityTrackingProduct, AvailableQuantity: &existingQuantity}, nil)
+		mockAvailabilityRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+			func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+		mockAvailabilityRepo.EXPECT().UpdateProductAvailability(gomock.Any(), int64(1), (*bool)(nil), &quantity5).Return(nil)
+
+		var movement domain.AvailabilityMovement
+		mockAvailabilityRepo.EXPECT().CreateAvailabilityMovement(gomock.Any(), gomock.Any()).DoAndReturn(
+			func(ctx context.Context, m domain.AvailabilityMovement) *domain.Error {
+				movement = m
+				return nil
+			})
+		expectEmptyAvailabilityProductList(mockProductRepo, 1)
+
+		_, err := usecase.UpdateAvailability(context.Background(), []domain.AvailabilityProductUpdate{
+			{ProductId: 1, AvailableQuantity: &quantity5},
+		}, nil)
+
+		assert.Nil(t, err)
+		assert.Equal(t, domain.AvailabilityMovementReasonManualSet, movement.Reason)
+		assert.Equal(t, int64(1), *movement.ProductId)
+		assert.Equal(t, 3, *movement.Delta)
+		assert.Equal(t, 5, *movement.ResultingQuantity)
+	})
+
+	t.Run("switching a variant off records a switched_off movement with no delta", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		usecase, mockAvailabilityRepo, mockProductRepo, mockVariantRepo := newAvailabilityUsecase(ctrl)
+
+		falseValue := false
+		mockVariantRepo.EXPECT().GetVariantById(gomock.Any(), int64(1)).
+			Return(domain.Variant{Id: 1, Name: "Vanilla", IsAvailable: true, Product: domain.Product{AvailabilityTracking: domain.AvailabilityTrackingNone}}, nil)
+		mockAvailabilityRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+			func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+		mockAvailabilityRepo.EXPECT().UpdateVariantAvailability(gomock.Any(), int64(1), &falseValue, (*int)(nil)).Return(nil)
+
+		var movement domain.AvailabilityMovement
+		mockAvailabilityRepo.EXPECT().CreateAvailabilityMovement(gomock.Any(), gomock.Any()).DoAndReturn(
+			func(ctx context.Context, m domain.AvailabilityMovement) *domain.Error {
+				movement = m
+				return nil
+			})
+		expectEmptyAvailabilityProductList(mockProductRepo, 1)
+
+		_, err := usecase.UpdateAvailability(context.Background(), nil, []domain.AvailabilityVariantUpdate{
+			{VariantId: 1, IsAvailable: &falseValue},
+		})
+
+		assert.Nil(t, err)
+		assert.Equal(t, domain.AvailabilityMovementReasonSwitchedOff, movement.Reason)
+		assert.Equal(t, int64(1), *movement.VariantId)
+		assert.Nil(t, movement.Delta)
+		assert.Nil(t, movement.ResultingQuantity)
+	})
+}
+
+func TestAvailabilityUsecase_GetAvailabilityMovementList(t *testing.T) {
+	t.Run("lists movements for a variant with its total", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		usecase, mockAvailabilityRepo, _, _ := newAvailabilityUsecase(ctrl)
+
+		delta := -2
+		resulting := 4
+		mockAvailabilityRepo.EXPECT().GetAvailabilityMovementList(gomock.Any(), domain.AvailabilityMovementLevelVariant, int64(1), 0, 10).
+			Return([]domain.AvailabilityMovement{
+				{Id: 1, VariantId: int64Ptr(1), Delta: &delta, ResultingQuantity: &resulting, Reason: domain.AvailabilityMovementReasonSale},
+			}, nil)
+		mockAvailabilityRepo.EXPECT().GetAvailabilityMovementListTotal(gomock.Any(), domain.AvailabilityMovementLevelVariant, int64(1)).
+			Return(int64(1), nil)
+
+		movements, total, err := usecase.GetAvailabilityMovementList(context.Background(), domain.AvailabilityMovementLevelVariant, 1, 0, 10)
+
+		assert.Nil(t, err)
+		assert.Len(t, movements, 1)
+		assert.Equal(t, int64(1), total)
+	})
+
+	t.Run("rejects an unknown level", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		usecase, _, _, _ := newAvailabilityUsecase(ctrl)
+
+		_, _, err := usecase.GetAvailabilityMovementList(context.Background(), domain.AvailabilityMovementLevel("bogus"), 1, 0, 10)
+
+		assert.NotNil(t, err)
+		assert.Equal(t, domain.BadRequest, err.Type)
+	})
 }

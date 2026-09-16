@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
@@ -127,6 +128,65 @@ func TestAvailabilityHandler_UpdateAvailability(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPut, "/availability", bytes.NewBufferString(tt.body))
 			w := httptest.NewRecorder()
 			handler.UpdateAvailability(w, req)
+
+			assert.Equal(t, tt.expectedStatus, w.Code)
+		})
+	}
+}
+
+func TestAvailabilityHandler_GetAvailabilityMovementList(t *testing.T) {
+	tests := []struct {
+		name           string
+		vars           map[string]string
+		setupMock      func(availabilityRepo *mock.MockAvailabilityRepository)
+		expectedStatus int
+	}{
+		{
+			name: "success",
+			vars: map[string]string{"level": "variant", "id": "1"},
+			setupMock: func(availabilityRepo *mock.MockAvailabilityRepository) {
+				availabilityRepo.EXPECT().GetAvailabilityMovementList(gomock.Any(), domain.AvailabilityMovementLevelVariant, int64(1), 0, 0).
+					Return([]domain.AvailabilityMovement{{Id: 1, Reason: domain.AvailabilityMovementReasonSale}}, nil)
+				availabilityRepo.EXPECT().GetAvailabilityMovementListTotal(gomock.Any(), domain.AvailabilityMovementLevelVariant, int64(1)).
+					Return(int64(1), nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "invalid level",
+			vars:           map[string]string{"level": "bogus", "id": "1"},
+			setupMock:      func(availabilityRepo *mock.MockAvailabilityRepository) {},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "invalid id",
+			vars:           map[string]string{"level": "product", "id": "not-a-number"},
+			setupMock:      func(availabilityRepo *mock.MockAvailabilityRepository) {},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "repo error",
+			vars: map[string]string{"level": "product", "id": "1"},
+			setupMock: func(availabilityRepo *mock.MockAvailabilityRepository) {
+				availabilityRepo.EXPECT().GetAvailabilityMovementList(gomock.Any(), domain.AvailabilityMovementLevelProduct, int64(1), 0, 0).
+					Return(nil, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
+			},
+			expectedStatus: http.StatusInternalServerError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			handler, mockAvailabilityRepo, _, _ := newAvailabilityHandler(ctrl)
+			tt.setupMock(mockAvailabilityRepo)
+
+			req := httptest.NewRequest(http.MethodGet, "/availability/product/1/movements", nil)
+			req = mux.SetURLVars(req, tt.vars)
+			w := httptest.NewRecorder()
+			handler.GetAvailabilityMovementList(w, req)
 
 			assert.Equal(t, tt.expectedStatus, w.Code)
 		})

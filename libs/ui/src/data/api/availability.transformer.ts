@@ -1,9 +1,15 @@
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import {
+  AvailabilityMovement as ApiAvailabilityMovement,
   AvailabilityProduct as ApiAvailabilityProduct,
   AvailabilityVariant as ApiAvailabilityVariant,
 } from '../../../../api-contract/src';
-import { AvailabilityForm, AvailabilityProduct, AvailabilityVariant } from '../../domain';
+import {
+  AvailabilityForm,
+  AvailabilityMovement,
+  AvailabilityProduct,
+  AvailabilityVariant,
+} from '../../domain';
 
 export function toAvailabilityVariant(
   variant: ApiAvailabilityVariant
@@ -32,6 +38,22 @@ export function toAvailabilityProduct(
     isSellable: product.isSellable,
     sellableQuantity: product.sellableQuantity,
     variants: product.variants.map(toAvailabilityVariant),
+  };
+}
+
+export function toAvailabilityMovement(
+  movement: ApiAvailabilityMovement
+): AvailabilityMovement {
+  return {
+    id: movement.id,
+    productId: movement.productId,
+    variantId: movement.variantId,
+    delta: movement.delta,
+    resultingQuantity: movement.resultingQuantity,
+    reason: movement.reason,
+    transactionId: movement.transactionId,
+    note: movement.note,
+    createdAt: movement.createdAt,
   };
 }
 

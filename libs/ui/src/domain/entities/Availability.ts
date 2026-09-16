@@ -40,6 +40,28 @@ export type AvailabilityForm = {
   variants: AvailabilityVariantUpdate[];
 };
 
+export type AvailabilityLevel = 'product' | 'variant';
+
+export type AvailabilityMovementReason =
+  | 'sale'
+  | 'sale_reversal'
+  | 'manual_set'
+  | 'manual_adjust'
+  | 'switched_off'
+  | 'switched_on';
+
+export type AvailabilityMovement = {
+  id: number;
+  productId?: number;
+  variantId?: number;
+  delta?: number;
+  resultingQuantity?: number;
+  reason: AvailabilityMovementReason;
+  transactionId?: number;
+  note?: string;
+  createdAt: string;
+};
+
 const availabilityProductUpdateFormSchema = z.object({
   productId: z.number().int().positive(),
   isAvailable: z.boolean().optional(),

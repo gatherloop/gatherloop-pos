@@ -55,6 +55,50 @@ func (mr *MockAvailabilityRepositoryMockRecorder) BeginTransaction(ctx, callback
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BeginTransaction", reflect.TypeOf((*MockAvailabilityRepository)(nil).BeginTransaction), ctx, callback)
 }
 
+// CreateAvailabilityMovement mocks base method.
+func (m *MockAvailabilityRepository) CreateAvailabilityMovement(ctx context.Context, movement domain.AvailabilityMovement) *domain.Error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateAvailabilityMovement", ctx, movement)
+	ret0, _ := ret[0].(*domain.Error)
+	return ret0
+}
+
+// CreateAvailabilityMovement indicates an expected call of CreateAvailabilityMovement.
+func (mr *MockAvailabilityRepositoryMockRecorder) CreateAvailabilityMovement(ctx, movement any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateAvailabilityMovement", reflect.TypeOf((*MockAvailabilityRepository)(nil).CreateAvailabilityMovement), ctx, movement)
+}
+
+// GetAvailabilityMovementList mocks base method.
+func (m *MockAvailabilityRepository) GetAvailabilityMovementList(ctx context.Context, level domain.AvailabilityMovementLevel, id int64, skip, limit int) ([]domain.AvailabilityMovement, *domain.Error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAvailabilityMovementList", ctx, level, id, skip, limit)
+	ret0, _ := ret[0].([]domain.AvailabilityMovement)
+	ret1, _ := ret[1].(*domain.Error)
+	return ret0, ret1
+}
+
+// GetAvailabilityMovementList indicates an expected call of GetAvailabilityMovementList.
+func (mr *MockAvailabilityRepositoryMockRecorder) GetAvailabilityMovementList(ctx, level, id, skip, limit any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAvailabilityMovementList", reflect.TypeOf((*MockAvailabilityRepository)(nil).GetAvailabilityMovementList), ctx, level, id, skip, limit)
+}
+
+// GetAvailabilityMovementListTotal mocks base method.
+func (m *MockAvailabilityRepository) GetAvailabilityMovementListTotal(ctx context.Context, level domain.AvailabilityMovementLevel, id int64) (int64, *domain.Error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAvailabilityMovementListTotal", ctx, level, id)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(*domain.Error)
+	return ret0, ret1
+}
+
+// GetAvailabilityMovementListTotal indicates an expected call of GetAvailabilityMovementListTotal.
+func (mr *MockAvailabilityRepositoryMockRecorder) GetAvailabilityMovementListTotal(ctx, level, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAvailabilityMovementListTotal", reflect.TypeOf((*MockAvailabilityRepository)(nil).GetAvailabilityMovementListTotal), ctx, level, id)
+}
+
 // UpdateProductAvailability mocks base method.
 func (m *MockAvailabilityRepository) UpdateProductAvailability(ctx context.Context, productId int64, isAvailable *bool, availableQuantity *int) *domain.Error {
 	m.ctrl.T.Helper()

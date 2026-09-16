@@ -1,5 +1,12 @@
-import { AvailabilityFormView, AvailabilityFormViewProps, Layout } from '../../components';
+import {
+  AvailabilityFormView,
+  AvailabilityFormViewProps,
+  AvailabilityMovementHistorySheet,
+  AvailabilityMovementHistorySheetProps,
+  Layout,
+} from '../../components';
 import { AvailabilityForm, AvailabilityProduct } from '../../../../domain';
+import { AvailabilityViewHistoryPress } from '../../components/availability/AvailabilityVariantRow';
 
 export type AvailabilityScreenProps = {
   variant: AvailabilityFormViewProps['variant'];
@@ -10,6 +17,8 @@ export type AvailabilityScreenProps = {
   isSubmitting: boolean;
   onLogoutPress: () => void;
   serverError?: string;
+  onViewHistoryPress: AvailabilityViewHistoryPress;
+  historySheet: AvailabilityMovementHistorySheetProps;
 };
 
 export const AvailabilityScreen = (props: AvailabilityScreenProps) => {
@@ -23,7 +32,9 @@ export const AvailabilityScreen = (props: AvailabilityScreenProps) => {
         isSubmitDisabled={props.isSubmitDisabled}
         isSubmitting={props.isSubmitting}
         serverError={props.serverError}
+        onViewHistoryPress={props.onViewHistoryPress}
       />
+      <AvailabilityMovementHistorySheet {...props.historySheet} />
     </Layout>
   );
 };

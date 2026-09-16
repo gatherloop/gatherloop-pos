@@ -41,6 +41,20 @@ func (m *MockAvailabilityReservationRepository) EXPECT() *MockAvailabilityReserv
 	return m.recorder
 }
 
+// CreateAvailabilityMovement mocks base method.
+func (m *MockAvailabilityReservationRepository) CreateAvailabilityMovement(ctx context.Context, movement domain.AvailabilityMovement) *domain.Error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateAvailabilityMovement", ctx, movement)
+	ret0, _ := ret[0].(*domain.Error)
+	return ret0
+}
+
+// CreateAvailabilityMovement indicates an expected call of CreateAvailabilityMovement.
+func (mr *MockAvailabilityReservationRepositoryMockRecorder) CreateAvailabilityMovement(ctx, movement any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateAvailabilityMovement", reflect.TypeOf((*MockAvailabilityReservationRepository)(nil).CreateAvailabilityMovement), ctx, movement)
+}
+
 // LockProductById mocks base method.
 func (m *MockAvailabilityReservationRepository) LockProductById(ctx context.Context, id int64) (domain.Product, *domain.Error) {
 	m.ctrl.T.Helper()

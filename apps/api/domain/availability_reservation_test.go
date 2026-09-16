@@ -21,6 +21,7 @@ func TestAvailabilityReservation_Reserve(t *testing.T) {
 			Product: domain.Product{IsAvailable: true, AvailabilityTracking: domain.AvailabilityTrackingVariant},
 		}, nil)
 		repo.EXPECT().UpdateVariantAvailableQuantity(gomock.Any(), int64(1), 4).Return(nil)
+		repo.EXPECT().CreateAvailabilityMovement(gomock.Any(), gomock.Any()).Return(nil)
 
 		reservation := domain.NewAvailabilityReservation(repo)
 		err := reservation.Reserve(context.Background(), []domain.TransactionItem{{VariantId: 1, Amount: 2}})
@@ -39,6 +40,7 @@ func TestAvailabilityReservation_Reserve(t *testing.T) {
 		repo.EXPECT().LockVariantById(gomock.Any(), int64(2)).Return(domain.Variant{Id: 2, ProductId: 10, IsAvailable: true, Product: product}, nil)
 		repo.EXPECT().LockProductById(gomock.Any(), int64(10)).Times(1).Return(product, nil)
 		repo.EXPECT().UpdateProductAvailableQuantity(gomock.Any(), int64(10), 2).Return(nil)
+		repo.EXPECT().CreateAvailabilityMovement(gomock.Any(), gomock.Any()).Return(nil)
 
 		reservation := domain.NewAvailabilityReservation(repo)
 		err := reservation.Reserve(context.Background(), []domain.TransactionItem{
@@ -59,6 +61,7 @@ func TestAvailabilityReservation_Reserve(t *testing.T) {
 			Product: domain.Product{IsAvailable: true, AvailabilityTracking: domain.AvailabilityTrackingVariant},
 		}, nil)
 		repo.EXPECT().UpdateVariantAvailableQuantity(gomock.Any(), int64(1), 1).Return(nil)
+		repo.EXPECT().CreateAvailabilityMovement(gomock.Any(), gomock.Any()).Return(nil)
 
 		reservation := domain.NewAvailabilityReservation(repo)
 		err := reservation.Reserve(context.Background(), []domain.TransactionItem{
@@ -221,6 +224,7 @@ func TestAvailabilityReservation_Release(t *testing.T) {
 			Product: domain.Product{IsAvailable: true, AvailabilityTracking: domain.AvailabilityTrackingVariant},
 		}, nil)
 		repo.EXPECT().UpdateVariantAvailableQuantity(gomock.Any(), int64(1), 6).Return(nil)
+		repo.EXPECT().CreateAvailabilityMovement(gomock.Any(), gomock.Any()).Return(nil)
 
 		reservation := domain.NewAvailabilityReservation(repo)
 		err := reservation.Release(context.Background(), []domain.TransactionItem{{VariantId: 1, Amount: 2}})
@@ -239,6 +243,7 @@ func TestAvailabilityReservation_Release(t *testing.T) {
 		repo.EXPECT().LockVariantById(gomock.Any(), int64(2)).Return(domain.Variant{Id: 2, ProductId: 10, IsAvailable: true, Product: product}, nil)
 		repo.EXPECT().LockProductById(gomock.Any(), int64(10)).Times(1).Return(product, nil)
 		repo.EXPECT().UpdateProductAvailableQuantity(gomock.Any(), int64(10), 4).Return(nil)
+		repo.EXPECT().CreateAvailabilityMovement(gomock.Any(), gomock.Any()).Return(nil)
 
 		reservation := domain.NewAvailabilityReservation(repo)
 		err := reservation.Release(context.Background(), []domain.TransactionItem{
@@ -247,5 +252,88 @@ func TestAvailabilityReservation_Release(t *testing.T) {
 		})
 
 		assert.Nil(t, err)
+	})
+}
+
+func TestAvailabilityReservation_Movements(t *testing.T) {
+	t.Run("a sale followed by its reversal produces two movements summing to zero with correct resulting quantities", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		repo := mock.NewMockAvailabilityReservationRepository(ctrl)
+		transactionId := int64(500)
+
+		repo.EXPECT().LockVariantById(gomock.Any(), int64(1)).Return(domain.Variant{
+			Id: 1, IsAvailable: true, AvailableQuantity: intPtr(6),
+			Product: domain.Product{IsAvailable: true, AvailabilityTracking: domain.AvailabilityTrackingVariant},
+		}, nil)
+		repo.EXPECT().UpdateVariantAvailableQuantity(gomock.Any(), int64(1), 4).Return(nil)
+
+		var saleMovement, reversalMovement domain.AvailabilityMovement
+		repo.EXPECT().CreateAvailabilityMovement(gomock.Any(), gomock.Any()).DoAndReturn(
+			func(ctx context.Context, movement domain.AvailabilityMovement) *domain.Error {
+				saleMovement = movement
+				return nil
+			})
+
+		reservation := domain.NewAvailabilityReservation(repo)
+		err := reservation.Reserve(context.Background(), []domain.TransactionItem{
+			{TransactionId: transactionId, VariantId: 1, Amount: 2},
+		})
+		assert.Nil(t, err)
+
+		assert.Equal(t, domain.AvailabilityMovementReasonSale, saleMovement.Reason)
+		assert.Equal(t, int64(1), *saleMovement.VariantId)
+		assert.Equal(t, -2, *saleMovement.Delta)
+		assert.Equal(t, 4, *saleMovement.ResultingQuantity)
+		assert.Equal(t, transactionId, *saleMovement.TransactionId)
+
+		repo.EXPECT().LockVariantById(gomock.Any(), int64(1)).Return(domain.Variant{
+			Id: 1, IsAvailable: true, AvailableQuantity: intPtr(4),
+			Product: domain.Product{IsAvailable: true, AvailabilityTracking: domain.AvailabilityTrackingVariant},
+		}, nil)
+		repo.EXPECT().UpdateVariantAvailableQuantity(gomock.Any(), int64(1), 6).Return(nil)
+		repo.EXPECT().CreateAvailabilityMovement(gomock.Any(), gomock.Any()).DoAndReturn(
+			func(ctx context.Context, movement domain.AvailabilityMovement) *domain.Error {
+				reversalMovement = movement
+				return nil
+			})
+
+		err = reservation.Release(context.Background(), []domain.TransactionItem{
+			{TransactionId: transactionId, VariantId: 1, Amount: 2},
+		})
+		assert.Nil(t, err)
+
+		assert.Equal(t, domain.AvailabilityMovementReasonSaleReversal, reversalMovement.Reason)
+		assert.Equal(t, 2, *reversalMovement.Delta)
+		assert.Equal(t, 6, *reversalMovement.ResultingQuantity)
+		assert.Equal(t, 0, *saleMovement.Delta+*reversalMovement.Delta)
+	})
+
+	t.Run("ForceReserve records a sale movement, allowed to go negative", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		repo := mock.NewMockAvailabilityReservationRepository(ctrl)
+		repo.EXPECT().LockVariantById(gomock.Any(), int64(1)).Return(domain.Variant{
+			Id: 1, IsAvailable: true, AvailableQuantity: intPtr(1),
+			Product: domain.Product{IsAvailable: true, AvailabilityTracking: domain.AvailabilityTrackingVariant},
+		}, nil)
+		repo.EXPECT().UpdateVariantAvailableQuantity(gomock.Any(), int64(1), -2).Return(nil)
+
+		var movement domain.AvailabilityMovement
+		repo.EXPECT().CreateAvailabilityMovement(gomock.Any(), gomock.Any()).DoAndReturn(
+			func(ctx context.Context, m domain.AvailabilityMovement) *domain.Error {
+				movement = m
+				return nil
+			})
+
+		reservation := domain.NewAvailabilityReservation(repo)
+		err := reservation.ForceReserve(context.Background(), []domain.TransactionItem{{VariantId: 1, Amount: 3}})
+
+		assert.Nil(t, err)
+		assert.Equal(t, domain.AvailabilityMovementReasonSale, movement.Reason)
+		assert.Equal(t, -3, *movement.Delta)
+		assert.Equal(t, -2, *movement.ResultingQuantity)
 	})
 }
