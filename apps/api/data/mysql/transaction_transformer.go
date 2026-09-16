@@ -249,3 +249,26 @@ func ToTransactionStatisticsListDomain(dbTransactionStatistics []TransactionStat
 	}
 	return domainTransactionStatistics
 }
+
+func ToTransactionSummaryDomain(dbTransactionSummary TransactionSummary) domain.TransactionSummary {
+	return domain.TransactionSummary{
+		Id:                dbTransactionSummary.Id,
+		TransactionNumber: dbTransactionSummary.TransactionNumber,
+		Name:              dbTransactionSummary.Name,
+		TableLabel:        dbTransactionSummary.TableLabel,
+		ItemCount:         dbTransactionSummary.ItemCount,
+		CompletedAt:       dbTransactionSummary.CompletedAt,
+	}
+}
+
+func ToTransactionSummariesListDomain(dbTransactionSummaries []TransactionSummary) []domain.TransactionSummary {
+	if dbTransactionSummaries == nil {
+		return nil
+	}
+
+	domainTransactionSummaries := []domain.TransactionSummary{}
+	for _, dbTranSummary := range dbTransactionSummaries {
+		domainTransactionSummaries = append(domainTransactionSummaries, ToTransactionSummaryDomain(dbTranSummary))
+	}
+	return domainTransactionSummaries
+}

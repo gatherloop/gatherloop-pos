@@ -39,6 +39,34 @@ func (repo Repository) GetPendingPaymentByCartId(ctx context.Context, cartId int
 	return ToPaymentDomain(payment), ToErrorCtx(ctx, result.Error, "GetPendingPaymentByCartId")
 }
 
+func (repo Repository) GetPaymentsBySessionId(ctx context.Context, sessionId string, skip int, limit int) ([]domain.Payment, *domain.Error) {
+	db := GetDbFromCtx(ctx, repo.db)
+	query := db.Table("payments").
+		Where("session_id = ? AND status = ? AND deleted_at IS NULL", sessionId, string(domain.PaymentStatePaid)).
+		Order("id DESC")
+
+	if skip > 0 {
+		query = query.Offset(skip)
+	}
+
+	if limit > 0 {
+		query = query.Limit(limit)
+	}
+
+	var payments []Payment
+	result := query.Find(&payments)
+	return ToPaymentsListDomain(payments), ToErrorCtx(ctx, result.Error, "GetPaymentsBySessionId")
+}
+
+func (repo Repository) GetPaymentsBySessionIdTotal(ctx context.Context, sessionId string) (int64, *domain.Error) {
+	db := GetDbFromCtx(ctx, repo.db)
+	var count int64
+	result := db.Table("payments").
+		Where("session_id = ? AND status = ? AND deleted_at IS NULL", sessionId, string(domain.PaymentStatePaid)).
+		Count(&count)
+	return count, ToErrorCtx(ctx, result.Error, "GetPaymentsBySessionIdTotal")
+}
+
 func (repo Repository) CreatePayment(ctx context.Context, payment domain.Payment) (domain.Payment, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	payload := ToPaymentDB(payment)

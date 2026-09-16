@@ -334,6 +334,46 @@ func (usecase PaymentUsecase) GetPaymentStatus(ctx context.Context, sessionId st
 	return resultPayment, resultTransaction, err
 }
 
+func (usecase PaymentUsecase) GetPaymentList(ctx context.Context, sessionId string, skip int, limit int) ([]PaymentSummary, int64, *Error) {
+	payments, err := usecase.paymentRepository.GetPaymentsBySessionId(ctx, sessionId, skip, limit)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	total, err := usecase.paymentRepository.GetPaymentsBySessionIdTotal(ctx, sessionId)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	transactionIds := []int64{}
+	for _, payment := range payments {
+		if payment.TransactionId != nil {
+			transactionIds = append(transactionIds, *payment.TransactionId)
+		}
+	}
+
+	transactionSummaries, err := usecase.transactionRepository.GetTransactionSummariesByIds(ctx, transactionIds)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	transactionSummaryById := map[int64]TransactionSummary{}
+	for _, transactionSummary := range transactionSummaries {
+		transactionSummaryById[transactionSummary.Id] = transactionSummary
+	}
+
+	paymentSummaries := []PaymentSummary{}
+	for _, payment := range payments {
+		var transactionSummary TransactionSummary
+		if payment.TransactionId != nil {
+			transactionSummary = transactionSummaryById[*payment.TransactionId]
+		}
+		paymentSummaries = append(paymentSummaries, ToPaymentSummary(payment, transactionSummary))
+	}
+
+	return paymentSummaries, total, nil
+}
+
 func (usecase PaymentUsecase) refreshPendingPaymentStatus(ctxWithTx context.Context, payment Payment, now time.Time) (Payment, *Error) {
 	if payment.StatusCheckedAt != nil && now.Sub(*payment.StatusCheckedAt) < statusRequeryFloor {
 		return payment, nil

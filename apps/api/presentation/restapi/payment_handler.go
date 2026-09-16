@@ -41,6 +41,36 @@ func (handler PaymentHandler) Checkout(w http.ResponseWriter, r *http.Request) {
 	WriteResponse(w, apiContract.PaymentResponse{Data: ToApiPayment(payment, transaction)})
 }
 
+func (handler PaymentHandler) GetPaymentList(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	sessionId := GetSessionId(r)
+
+	skip, err := GetSkip(r)
+	if err != nil {
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
+		return
+	}
+
+	limit, err := GetLimit(r)
+	if err != nil {
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
+		return
+	}
+
+	paymentSummaries, total, usecaseErr := handler.usecase.GetPaymentList(ctx, sessionId, skip, limit)
+	if usecaseErr != nil {
+		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
+		return
+	}
+
+	apiPaymentSummaries := []apiContract.PaymentSummary{}
+	for _, paymentSummary := range paymentSummaries {
+		apiPaymentSummaries = append(apiPaymentSummaries, ToApiPaymentSummary(paymentSummary))
+	}
+
+	WriteResponse(w, apiContract.PaymentListResponse{Data: apiPaymentSummaries, Meta: apiContract.MetaPage{Total: total}})
+}
+
 func (handler PaymentHandler) GetPaymentByPartnerReferenceNo(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	sessionId := GetSessionId(r)

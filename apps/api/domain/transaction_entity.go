@@ -77,6 +77,15 @@ type TransactionStatistic struct {
 	TotalIncome float32
 }
 
+type TransactionSummary struct {
+	Id                int64
+	TransactionNumber int64
+	Name              string
+	TableLabel        string
+	ItemCount         int
+	CompletedAt       *time.Time
+}
+
 type PaymentStatus int
 
 const (

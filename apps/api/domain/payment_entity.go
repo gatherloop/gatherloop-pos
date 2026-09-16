@@ -91,6 +91,34 @@ func (payment Payment) IsAwaitingPayment(now time.Time) bool {
 	return payment.Status == PaymentStatePending && now.Before(payment.ExpiredAt)
 }
 
+type PaymentSummary struct {
+	PartnerReferenceNo string
+	Status             PaymentState
+	TransactionNumber  int64
+	CustomerName       string
+	TableLabel         string
+	Amount             float32
+	ItemCount          int
+	CreatedAt          time.Time
+	PaidAt             *time.Time
+	CompletedAt        *time.Time
+}
+
+func ToPaymentSummary(payment Payment, transaction TransactionSummary) PaymentSummary {
+	return PaymentSummary{
+		PartnerReferenceNo: payment.PartnerReferenceNo,
+		Status:             payment.Status,
+		TransactionNumber:  transaction.TransactionNumber,
+		CustomerName:       transaction.Name,
+		TableLabel:         transaction.TableLabel,
+		Amount:             payment.Amount,
+		ItemCount:          transaction.ItemCount,
+		CreatedAt:          payment.CreatedAt,
+		PaidAt:             payment.PaidAt,
+		CompletedAt:        transaction.CompletedAt,
+	}
+}
+
 const partnerReferenceNoRandomLength = 13
 
 func GeneratePartnerReferenceNo() (string, error) {

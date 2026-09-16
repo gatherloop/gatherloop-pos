@@ -62,6 +62,62 @@ func TestToApiPayment_ReadyWhenCompleted(t *testing.T) {
 	assert.Equal(t, "ready", apiPayment.FulfillmentStatus)
 }
 
+func TestToApiPaymentSummary_AgreesWithToApiPaymentOnFulfillmentStatus(t *testing.T) {
+	tests := []struct {
+		name        string
+		completedAt *time.Time
+	}{
+		{name: "not completed", completedAt: nil},
+		{name: "completed", completedAt: func() *time.Time { now := time.Now(); return &now }()},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			payment := domain.Payment{PartnerReferenceNo: "ORD1", Status: domain.PaymentStatePaid, Amount: 30000}
+			transaction := domain.Transaction{TransactionNumber: 12, Name: "Budi", CompletedAt: tt.completedAt}
+			summary := domain.ToPaymentSummary(payment, domain.TransactionSummary{
+				TransactionNumber: transaction.TransactionNumber,
+				Name:              transaction.Name,
+				CompletedAt:       transaction.CompletedAt,
+			})
+
+			apiPayment := restapi.ToApiPayment(payment, transaction)
+			apiPaymentSummary := restapi.ToApiPaymentSummary(summary)
+
+			assert.Equal(t, apiPayment.FulfillmentStatus, apiPaymentSummary.FulfillmentStatus)
+		})
+	}
+}
+
+func TestToApiPaymentSummary_MapsFields(t *testing.T) {
+	createdAt := time.Now().Add(-time.Hour)
+	paidAt := time.Now()
+	summary := domain.PaymentSummary{
+		PartnerReferenceNo: "ORD1",
+		Status:             domain.PaymentStatePaid,
+		TransactionNumber:  12,
+		CustomerName:       "Budi",
+		TableLabel:         "Meja 3",
+		Amount:             45000,
+		ItemCount:          3,
+		CreatedAt:          createdAt,
+		PaidAt:             &paidAt,
+	}
+
+	apiPaymentSummary := restapi.ToApiPaymentSummary(summary)
+
+	assert.Equal(t, "ORD1", apiPaymentSummary.PartnerReferenceNo)
+	assert.Equal(t, "paid", apiPaymentSummary.Status)
+	assert.Equal(t, int64(12), apiPaymentSummary.TransactionNumber)
+	assert.Equal(t, "Budi", apiPaymentSummary.CustomerName)
+	assert.Equal(t, "Meja 3", apiPaymentSummary.TableLabel)
+	assert.Equal(t, float32(45000), apiPaymentSummary.Amount)
+	assert.Equal(t, int64(3), apiPaymentSummary.ItemCount)
+	assert.Equal(t, createdAt, apiPaymentSummary.CreatedAt)
+	require.NotNil(t, apiPaymentSummary.PaidAt)
+	assert.Equal(t, paidAt, *apiPaymentSummary.PaidAt)
+}
+
 func TestToQrisStatus_ExpiredAndFailedStatuses(t *testing.T) {
 	tests := []struct {
 		code     string

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
 
@@ -617,6 +618,90 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, domain.ConfirmPaymentOutcomeIgnored, outcome)
 		assert.Equal(t, payment, result)
+	})
+}
+
+func TestPaymentUsecase_GetPaymentList(t *testing.T) {
+	t.Run("joins each payment with its transaction summary and passes through the total", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+
+		transactionId1 := int64(101)
+		transactionId2 := int64(102)
+		payments := []domain.Payment{
+			{PartnerReferenceNo: "ORD2", SessionId: "session-1", Status: domain.PaymentStatePaid, Amount: 20000, TransactionId: &transactionId2},
+			{PartnerReferenceNo: "ORD1", SessionId: "session-1", Status: domain.PaymentStatePaid, Amount: 45000, TransactionId: &transactionId1},
+		}
+		m.paymentRepo.EXPECT().GetPaymentsBySessionId(gomock.Any(), "session-1", 0, 20).Return(payments, nil)
+		m.paymentRepo.EXPECT().GetPaymentsBySessionIdTotal(gomock.Any(), "session-1").Return(int64(2), nil)
+		m.transactionRepo.EXPECT().GetTransactionSummariesByIds(gomock.Any(), []int64{transactionId2, transactionId1}).
+			Return([]domain.TransactionSummary{
+				{Id: transactionId1, TransactionNumber: 1, Name: "Andi", TableLabel: "Meja 3", ItemCount: 3},
+				{Id: transactionId2, TransactionNumber: 2, Name: "Budi", TableLabel: "Meja 1", ItemCount: 1},
+			}, nil)
+
+		summaries, total, err := m.usecase().GetPaymentList(context.Background(), "session-1", 0, 20)
+
+		assert.Nil(t, err)
+		assert.Equal(t, int64(2), total)
+		require.Len(t, summaries, 2)
+		assert.Equal(t, "ORD2", summaries[0].PartnerReferenceNo)
+		assert.Equal(t, int64(2), summaries[0].TransactionNumber)
+		assert.Equal(t, "Budi", summaries[0].CustomerName)
+		assert.Equal(t, "Meja 1", summaries[0].TableLabel)
+		assert.Equal(t, 1, summaries[0].ItemCount)
+		assert.Equal(t, "ORD1", summaries[1].PartnerReferenceNo)
+		assert.Equal(t, "Andi", summaries[1].CustomerName)
+	})
+
+	t.Run("a payment with no transaction is summarized with a zero-value transaction summary rather than crashing", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+
+		payments := []domain.Payment{{PartnerReferenceNo: "ORD1", SessionId: "session-1", Status: domain.PaymentStatePaid}}
+		m.paymentRepo.EXPECT().GetPaymentsBySessionId(gomock.Any(), "session-1", 0, 0).Return(payments, nil)
+		m.paymentRepo.EXPECT().GetPaymentsBySessionIdTotal(gomock.Any(), "session-1").Return(int64(1), nil)
+		m.transactionRepo.EXPECT().GetTransactionSummariesByIds(gomock.Any(), []int64{}).Return([]domain.TransactionSummary{}, nil)
+
+		summaries, total, err := m.usecase().GetPaymentList(context.Background(), "session-1", 0, 0)
+
+		assert.Nil(t, err)
+		assert.Equal(t, int64(1), total)
+		require.Len(t, summaries, 1)
+		assert.Equal(t, "ORD1", summaries[0].PartnerReferenceNo)
+	})
+
+	t.Run("a payment list failure is surfaced without querying transactions", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		m.paymentRepo.EXPECT().GetPaymentsBySessionId(gomock.Any(), "session-1", 0, 0).
+			Return(nil, &domain.Error{Type: domain.InternalServerError})
+
+		_, _, err := m.usecase().GetPaymentList(context.Background(), "session-1", 0, 0)
+
+		assert.NotNil(t, err)
+		assert.Equal(t, domain.InternalServerError, err.Type)
+	})
+
+	t.Run("a total-count failure is surfaced", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		m.paymentRepo.EXPECT().GetPaymentsBySessionId(gomock.Any(), "session-1", 0, 0).Return([]domain.Payment{}, nil)
+		m.paymentRepo.EXPECT().GetPaymentsBySessionIdTotal(gomock.Any(), "session-1").
+			Return(int64(0), &domain.Error{Type: domain.InternalServerError})
+
+		_, _, err := m.usecase().GetPaymentList(context.Background(), "session-1", 0, 0)
+
+		assert.NotNil(t, err)
+		assert.Equal(t, domain.InternalServerError, err.Type)
 	})
 }
 
