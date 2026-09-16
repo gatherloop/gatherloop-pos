@@ -7,7 +7,6 @@ import { LoadingView } from '../../components/base/LoadingView';
 import { OrderBrandHeader } from '../../components/base/OrderBrandHeader';
 import { OrderLayout } from '../../components/base/OrderLayout';
 import { QrisPaymentView } from '../../components/checkout/QrisPaymentView';
-import { OrderLeaveConfirmAlert } from '../../components/orderStatus/OrderLeaveConfirmAlert';
 import { OrderPreparingView } from '../../components/orderStatus/OrderPreparingView';
 import { OrderReadyView } from '../../components/orderStatus/OrderReadyView';
 
@@ -29,10 +28,6 @@ export type OrderStatusScreenProps = {
   onBackToMenuPress: () => void;
   onBackToCartPress: () => void;
   onHistoryPress?: () => void;
-  isLeaveConfirmOpen: boolean;
-  leaveConfirmTransactionNumber: number;
-  onLeaveConfirm: () => void;
-  onLeaveCancel: () => void;
 };
 
 export const OrderStatusScreen = ({
@@ -40,10 +35,6 @@ export const OrderStatusScreen = ({
   onBackToMenuPress,
   onBackToCartPress,
   onHistoryPress,
-  isLeaveConfirmOpen,
-  leaveConfirmTransactionNumber,
-  onLeaveConfirm,
-  onLeaveCancel,
 }: OrderStatusScreenProps) => {
   const tableLine = match(variant)
     .returnType<string | undefined>()
@@ -59,12 +50,6 @@ export const OrderStatusScreen = ({
         <OrderBrandHeader tableLine={tableLine} onHistoryPress={onHistoryPress} />
       }
     >
-      <OrderLeaveConfirmAlert
-        isOpen={isLeaveConfirmOpen}
-        transactionNumber={leaveConfirmTransactionNumber}
-        onCancel={onLeaveCancel}
-        onConfirm={onLeaveConfirm}
-      />
       {match(variant)
         .returnType<ReactNode>()
         .with({ type: 'loading' }, () => (

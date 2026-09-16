@@ -51,14 +51,6 @@ const meta: Meta<typeof OrderStatusScreen> = {
     onBackToCartPress: () => {
       // Storybook action stand-in
     },
-    isLeaveConfirmOpen: false,
-    leaveConfirmTransactionNumber: 12,
-    onLeaveConfirm: () => {
-      // Storybook action stand-in
-    },
-    onLeaveCancel: () => {
-      // Storybook action stand-in
-    },
   },
 };
 
@@ -84,13 +76,6 @@ export const AwaitingPayment: Story = {
 export const Preparing: Story = {
   args: {
     variant: { type: 'preparing', payment: paidPayment, isPolling: false },
-  },
-};
-
-export const PreparingWithLeaveConfirm: Story = {
-  args: {
-    variant: { type: 'preparing', payment: paidPayment, isPolling: false },
-    isLeaveConfirmOpen: true,
   },
 };
 

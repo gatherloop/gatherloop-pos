@@ -1,7 +1,6 @@
 export const SESSION_ID_COOKIE_NAME = 'gl_session_id';
 export const SESSION_ID_STORAGE_KEY = 'gl_session_id';
 export const TABLE_CODE_STORAGE_KEY = 'gl_table_code';
-export const ACTIVE_REFERENCE_STORAGE_KEY = 'gl_active_reference';
 // 400 days: the RFC 6265bis cap Chrome and Firefox enforce; asking for more gets clamped, not extended.
 export const SESSION_ID_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 400;
 

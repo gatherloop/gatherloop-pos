@@ -9,7 +9,6 @@ import { Focusable } from '../../components/base/Focusable';
 import { SkeletonList } from '../../components/base/SkeletonView';
 import { CategoryChipList } from '../../components/menu/CategoryChipList';
 import { MenuProductCard } from '../../components/menu/MenuProductCard';
-import { ResumeOrderBanner } from '../../components/menu/ResumeOrderBanner';
 import {
   MenuItemDetailScreen,
   MenuItemDetailScreenProps,
@@ -43,7 +42,6 @@ export type MenuListScreenProps = {
   onItemPress: (product: Product) => void;
   startingPriceByProductId: Record<number, number>;
   itemDetail: (MenuItemDetailScreenProps & { isOpen: true }) | null;
-  resumeBanner: { onPress: () => void } | null;
 };
 
 export const MenuListScreen = ({
@@ -62,7 +60,6 @@ export const MenuListScreen = ({
   onItemPress,
   startingPriceByProductId,
   itemDetail,
-  resumeBanner,
 }: MenuListScreenProps) => {
   return (
     <TableResolveScreen
@@ -79,8 +76,6 @@ export const MenuListScreen = ({
           backgroundColor="$background"
           paddingBottom="$2"
         >
-          {resumeBanner && <ResumeOrderBanner onPress={resumeBanner.onPress} />}
-
           <XStack gap="$2" alignItems="center">
             <Input
               flex={1}

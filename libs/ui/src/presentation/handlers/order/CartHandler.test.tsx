@@ -292,16 +292,14 @@ describe('CartHandler', () => {
     expect(screen.getByText('Es Kopi Susu')).toBeTruthy();
   });
 
-  it('creates the payment, navigates to the status page, and remembers the reference once a valid name is submitted', async () => {
+  it('creates the payment and navigates to the status page once a valid name is submitted', async () => {
     const user = userEvent.setup();
     const cartRepository = new MockCartRepository();
     await addItemToCart(cartRepository);
     const paymentRepository = new MockPaymentRepository();
-    const sessionRepository = new MockSessionRepository();
     renderHandler({
       cartRepository,
       paymentRepository,
-      sessionRepository,
       customerName: 'Budi',
     });
     await settle();
@@ -314,9 +312,6 @@ describe('CartHandler', () => {
 
     expect(mockPush).toHaveBeenCalledWith(
       `/orders/${paymentRepository.payment.reference}`
-    );
-    expect(sessionRepository.getActiveReference()).toBe(
-      paymentRepository.payment.reference
     );
   });
 

@@ -50,7 +50,8 @@ across a handler and a controller in two files.
 ## Browser-lifecycle guards live in `utils/`, not `handlers/hooks/`
 
 `beforeunload` and Next's `router.events` are browser/Next-only APIs, and `.eslintrc.json` bans
-`next`/`next/router` from every presentation folder except `libs/ui/src/utils/`. A hook like
-`useLeaveConfirmation` (`docs/prd-order-fulfillment-status.md`, D12) belongs there, with a no-op
-`.native.ts` sibling for the Metro build, and returns plain state/callbacks; the handler that
-calls it maps the result onto screen props exactly as it would for any other hook.
+`next`/`next/router` from every presentation folder except `libs/ui/src/utils/`. A hook that needs
+them — `utils/queryParam.ts`, with a `.native.ts` sibling for the Metro build — belongs there and
+returns plain state/callbacks; the handler that calls it maps the result onto screen props exactly
+as it would for any other hook. (`useLeaveConfirmation` was this rule's worked example until
+`docs/prd-order-history.md` removed it — D9/D10.)
