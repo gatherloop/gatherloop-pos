@@ -250,7 +250,7 @@ sales surface uses carries the result:
 Both the authenticated (`/products`, `/variants`) and public (`/public/products`,
 `/public/variants`) responses carry them, so neither app has to re-derive the rule (D5). The
 clients still need `remainingStock` to cap the stepper, and `isAvailable` separately from
-`isSellable` so the POS Stock screen can show *why* something is off.
+`isSellable` so the POS Availability screen can show *why* something is off.
 
 No filtering is added — out-of-stock items must keep appearing in both apps.
 
@@ -266,7 +266,7 @@ Every write point, all of them already inside a `BeginTransaction` block:
 | 4 | `TransactionUsecase.DeleteTransactionById` | Release everything the transaction holds. |
 | 5 | `applyQrisStatus`, expired/failed branch | Already calls `DeleteTransactionById` → releases via 4. |
 | 6 | `applyQrisStatus`, paid-late branch | `UndeleteTransactionById` → **re-decrement, allowed to go negative** (D7). |
-| 7 | Stock screen save (FR-4) | Set or adjust, by a human. |
+| 7 | Availability screen save (FR-4) | Set or adjust, by a human. |
 
 Rules:
 
@@ -284,9 +284,9 @@ Rules:
 Concurrency: the counter row is read `SELECT ... FOR UPDATE` inside the enclosing transaction, so
 two customers racing for the last cookie serialize and the loser gets the rejection above (D6).
 
-### FR-4 — POS Stock screen
+### FR-4 — POS Availability screen
 
-A single screen at `/stock`, reachable from the **Inventory** group in the sidebar
+A single screen at `/availability`, reachable from the **Inventory** group in the sidebar
 (`libs/ui/src/presentation/views/components/base/Sidebar/Sidebar.state.tsx`) — this is the
 acceptance criterion about not opening products one by one.
 
@@ -313,8 +313,13 @@ crew types today's Pancong count at opening.
 `TransactionItemSelect` dims out-of-stock products, badges them `Out of stock`, disables the
 option-value radio for a sold-out variant, shows `n left` on counted items, and caps the amount
 stepper at the remaining quantity. Submitting anyway (a stale grid, or a race) surfaces the
-server's message as an error toast with a **"Update stock"** action that routes to `/stock` with
-the offending product pre-searched.
+server's message as an error toast with an **"Update availability"** action that routes to
+`/availability` with the offending product pre-searched.
+
+Sold-out items are **never hidden or filtered out of the POS grid** (D17). The cashier needs to
+find the product in order to say "sorry, that one isn't available today" — an item that has
+vanished from the grid reads as a bug, and the cashier ends up searching for something the system
+has already decided does not exist.
 
 Blocked, not overridable (D12): the POS count is the number the customer app is trusting. A
 barista who genuinely has one more cookie fixes the number — two taps — and the order app becomes
@@ -356,14 +361,14 @@ state — one code path, not two.
 
 It is **audit-only** (D13) — the counter stays the source of truth, so no read path pays for an
 aggregation. It answers the question the crew will ask on day two: "it said 5 this morning, where
-did they go?" Surfaced as a history sheet from each Stock screen row.
+did they go?" Surfaced as a history sheet from each Availability screen row.
 
 ### FR-9 — Product form declares the tracking level
 
 A `Stock tracking` selector (`None` / `Shared across variants` / `Per variant`) on
 `ProductCreateScreen` and `ProductUpdateScreen`, with helper text naming a real example for each.
-Quantities are **not** editable here — a link points to the Stock screen. Switching the value
-warns that existing counts will be cleared (FR-1).
+Quantities are **not** editable here — a link points to the Availability screen. Switching the
+value warns that existing counts will be cleared (FR-1).
 
 ---
 
@@ -394,16 +399,16 @@ warns that existing counts will be cleared (FR-1).
   but it cannot report *which* item of a multi-item order failed without a second query.
 - **D7 — A late QRIS payment always wins, even into negative stock.** `applyQrisStatus` can mark
   an expired payment paid; the money has been captured by the gateway. Rejecting it there would
-  leave a paid customer with no order. Negative counts are legal, and the Stock screen badges them
-  in red so the crew notices.
+  leave a paid customer with no order. Negative counts are legal, and the Availability screen
+  badges them in red so the crew notices.
 - **D8 — Rejections are a code plus a human message; clients refetch to find the culprit.** The
   shared `Error` schema is `{code, message}` (`api.yaml`), and widening it for one feature would
   touch every endpoint. The refetch is the same code path the cart already needs (FR-7).
 - **D9 — Customers see availability, plus a capped stepper.** No count on the card, no scarcity
   theatre, no leaking production volume — but the picker cannot ask for more than exists, and the
   `Sisa n` hint appears only at the cap, where it is an explanation rather than a sales tactic.
-- **D10 — The Stock screen saves only changed rows.** Two crew members at opening are normal; a
-  whole-screen PUT would make the second save undo the first.
+- **D10 — The Availability screen saves only changed rows.** Two crew members at opening are
+  normal; a whole-screen PUT would make the second save undo the first.
 - **D11 — No overnight reset.** Carry-over is the physically correct default: leftover cookies are
   real. An auto-reset to a daily target invents stock that may not exist, and an auto-reset to zero
   turns one forgotten morning into a fully sold-out menu. Matches Toast, where an 86'd item stays
@@ -411,8 +416,8 @@ warns that existing counts will be cleared (FR-1).
   a per-item "daily target" with a one-tap **Restore all to target** action is the additive next
   step, and needs no schema change beyond one column.
 - **D12 — POS blocks rather than warns.** The POS count is what the customer app trusts; an
-  override makes the order app quietly wrong. The cost is bounded by the one-tap route to `/stock`
-  from the error toast.
+  override makes the order app quietly wrong. The cost is bounded by the one-tap route to
+  `/availability` from the error toast.
 - **D13 — The ledger is audit-only; the counter is the source of truth.** The menu read path is the
   hottest in the system and must not aggregate movements. *Alternative rejected:* event-sourced
   stock (quantity = opening + Σ movements) — correct by construction, but every menu load pays for
@@ -420,6 +425,27 @@ warns that existing counts will be cleared (FR-1).
 - **D14 — Sellable stock is a separate concept from `StockCheck`.** Different unit (servings vs
   purchase units), different cadence (live vs daily snapshot), different consumer (the menu vs the
   shopping list). Sharing a table or a screen between them would make both worse.
+- **D15 — The operator-facing surface is called "Availability", the data keeps the word "stock".**
+  The route is `/availability`, the sidebar label is `Availability`, the API resource is
+  `/availability`, and the POS screen is the Availability screen — because that is what the screen
+  controls end to end, including the items that carry no number at all. The columns stay
+  `stock_tracking` / `stock_quantity` and the ledger stays `stock_movements`, because those are
+  literally stock. This also removes the collision with `/stock-checks`, which is a different
+  feature (D14). *Alternative rejected:* naming everything `/stock` — two adjacent routes reading
+  `stock` and `stock-checks` is exactly the confusion D14 exists to prevent.
+- **D16 — `stock_tracking` defaults to `none` for newly created products.** Counting is opt-in, as
+  it is in Square, where per-variation tracking must be switched on deliberately. Most of the menu
+  is coffee: defaulting to `variant` would put a number the crew never maintains in front of every
+  new product, and a stale zero silently removes an item from sale. *Alternative rejected:*
+  defaulting to `variant` so tracking is never forgotten — it trades a visible omission for an
+  invisible wrong number.
+- **D17 — Sold-out items are never hidden from the POS grid, not even behind an opt-in filter.**
+  The cashier's job at that moment is to tell the customer the item is unavailable, which requires
+  finding it. A product missing from the grid is indistinguishable from a bug, and sends the
+  cashier hunting for it. The same reasoning already applies to the customer app, so both surfaces
+  behave identically: always visible, always labelled. *Alternative rejected:* a "Hide sold out"
+  toggle for POS only — it optimises for grid tidiness at the cost of the one interaction the grid
+  exists to support.
 
 ---
 
@@ -432,13 +458,13 @@ acceptance check.
 | --- | --- | --- | --- |
 | 1 | Availability + stock columns | API | — |
 | 2 | Availability resolution and exposure on reads | API | 1 |
-| 3 | Stock read + bulk update endpoints | API | 2 |
+| 3 | Availability read + bulk update endpoints | API | 2 |
 | 4 | Reserve on POS transaction create; release on delete | API | 2 |
 | 5 | Reserve on order checkout; release on QRIS expiry and re-apply on paid-late | API | 4 |
 | 6 | Delta on transaction update | API | 4 |
 | 7 | Cart soft-check | API | 2 |
 | 8 | Frontend slice: entities, repository, use cases | libs/ui | 3 |
-| 9 | POS Stock screen + sidebar entry | POS | 8 |
+| 9 | POS Availability screen + sidebar entry | POS | 8 |
 | 10 | Product form declares tracking level | POS | 1 |
 | 11 | POS item grid shows and enforces availability | POS | 8 |
 | 12 | Order app menu: badges and disabled chips | order | 2 |
@@ -449,7 +475,7 @@ acceptance check.
 Phases 4–7 are independent of each other once 2 lands. The POS track (9–11) and the order track
 (12–13) are independent of each other. Nothing customer-visible changes until phase 12, and
 nothing is enforced until phase 4 — so 1–3 can land early and the crew can start entering real
-numbers on the Stock screen before any blocking behaviour exists.
+numbers on the Availability screen before any blocking behaviour exists.
 
 > Every phase that touches `libs/api-contract/src/api.yaml` regenerates both clients
 > (`npx nx run api-contract:generate:go`, `npx nx run api-contract:generate:ts`) and may need the
@@ -470,9 +496,9 @@ ENUM('none','product','variant') NOT NULL DEFAULT 'none'` and `stock_quantity IN
 `apps/api/data/mysql/{product,variant}_entity.go` and their transformers, the request/response
 schemas in `api.yaml`, and the seeder. No behaviour change — nothing reads the columns yet.
 
-**Acceptance:** `npx nx run api:test` green;
-`MIGRATIONS_DIR=data/mysql/migrations make migrate-up && make migrate-down` clean both ways; an
-existing product round-trips through `PUT /products/{id}` unchanged.
+**Acceptance:** `npx nx run api:test` green; `MIGRATIONS_DIR=data/mysql/migrations make migrate-up
+&& make migrate-down` clean both ways; an existing product round-trips through `PUT /products/{id}`
+unchanged.
 
 ### Phase 2 — Availability resolution and exposure (API)
 
@@ -486,22 +512,22 @@ transformer takes the variant list the handler already has, or fetches it where 
 No filtering, no writes.
 
 **Acceptance:** `stock_availability_test.go` covers every row of the four-case table and both
-`remaining = 0` and `remaining = null`; `GET /public/products` returns `isSellable: true` for
-every existing product; `npx nx run api:test` green.
+`remaining = 0` and `remaining = null`; `GET /public/products` returns `isSellable: true` for every
+existing product; `npx nx run api:test` green.
 
-### Phase 3 — Stock read and bulk update endpoints (API)
+### Phase 3 — Availability read and bulk update endpoints (API)
 
-`GET /stocks` → every published, purchasable product with its category, tracking level, switch,
-counter and its variants' switches and counters, unpaginated (the catalog is small and the screen
-needs all of it). `PUT /stocks` taking `{ products: [{ productId, isAvailable?, stockQuantity? }],
-variants: [{ variantId, isAvailable?, stockQuantity? }] }` — **omitted fields are left alone**
-(D10) — rejecting a `stockQuantity` for a level the product does not track, and rejecting a
-negative value. `StockUsecase` + `StockRepository` in `apps/api/domain`, MySQL implementation,
-mocks via `go generate ./...`, handler and routes under `CheckAuth`.
+`GET /availability` → every published, purchasable product with its category, tracking level,
+switch, counter and its variants' switches and counters, unpaginated (the catalog is small and the
+screen needs all of it). `PUT /availability` taking `{ products: [{ productId, isAvailable?,
+stockQuantity? }], variants: [{ variantId, isAvailable?, stockQuantity? }] }` — **omitted fields are
+left alone** (D10) — rejecting a `stockQuantity` for a level the product does not track, and
+rejecting a negative value. `AvailabilityUsecase` + `AvailabilityRepository` in `apps/api/domain`,
+MySQL implementation, mocks via `go generate ./...`, handler and routes under `CheckAuth`.
 
-**Acceptance:** `stock_usecase_test.go` covers a partial update leaving untouched fields intact, a
-quantity against `tracking = none` (rejected), and a negative quantity (rejected);
-`stock_handler_test.go` covers both routes; `npx nx run api:test` green.
+**Acceptance:** `availability_usecase_test.go` covers a partial update leaving untouched fields
+intact, a quantity against `tracking = none` (rejected), and a negative quantity (rejected);
+`availability_handler_test.go` covers both routes; `npx nx run api:test` green.
 
 ### Phase 4 — Reserve on transaction create, release on delete (API)
 
@@ -513,8 +539,8 @@ validated for the switches only.
 
 **Acceptance:** `transaction_usecase_test.go` covers a per-variant shortfall, a product-level
 shortfall summed across two variants, the same variant on two lines, an untracked item (never
-decremented), a switched-off variant, and delete-then-restore returning the counter to its
-original value; `npx nx run api:test` green.
+decremented), a switched-off variant, and delete-then-restore returning the counter to its original
+value; `npx nx run api:test` green.
 
 ### Phase 5 — Reserve on order checkout, release on expiry, re-apply on paid-late (API)
 
@@ -524,8 +550,8 @@ branch re-reserves after `UndeleteTransactionById` **without a shortfall check**
 counter to go negative (D7).
 
 **Acceptance:** `payment_usecase_test.go` covers checkout decrementing, expiry restoring, a
-paid-late payment re-decrementing into negative stock and still succeeding, and a checkout
-rejected when the cart's last item sold out in between; `npx nx run api:test` green.
+paid-late payment re-decrementing into negative stock and still succeeding, and a checkout rejected
+when the cart's last item sold out in between; `npx nx run api:test` green.
 
 ### Phase 6 — Delta on transaction update (API)
 
@@ -534,10 +560,10 @@ incoming item sets and reserves or releases the difference, behind the existing 
 paid transaction" guard. Rental line items, which the method already carries over verbatim, are
 excluded from the diff.
 
-**Acceptance:** `transaction_usecase_test.go` covers increasing an amount (reserves the
-difference), decreasing it (releases), removing a line, adding a line, swapping one variant for
-another within a product-level counter (net zero), and a rejected increase leaving the counter
-untouched; `npx nx run api:test` green.
+**Acceptance:** `transaction_usecase_test.go` covers increasing an amount (reserves the difference),
+decreasing it (releases), removing a line, adding a line, swapping one variant for another within a
+product-level counter (net zero), and a rejected increase leaving the counter untouched; `npx nx run
+api:test` green.
 
 ### Phase 7 — Cart soft-check (API)
 
@@ -552,12 +578,13 @@ product-level counter; `npx nx run api:test` green.
 ### Phase 8 — Frontend slice: entities, repository, use cases (libs/ui)
 
 No UI. `isAvailable`, `isSellable`, `remainingStock`, `stockTracking` on
-`libs/ui/src/domain/entities/{Product,Variant}.ts`; a `Stock` entity and `stockFormSchema`;
-`StockRepository` with `fetchStockList` / `updateStocks`, implemented in `data/api/stock.ts` and
-`data/mock/stock.ts`; `StockListUsecase` and `StockUpdateUsecase` in `domain/usecases/`, shaped as
-`extends Usecase<State, Action, Params>` with a `getNextState` reducer and effects confined to
+`libs/ui/src/domain/entities/{Product,Variant}.ts`; an `Availability` entity and
+`availabilityFormSchema`; `AvailabilityRepository` with `fetchAvailabilityList` /
+`updateAvailability`, implemented in `data/api/availability.ts` and `data/mock/availability.ts`;
+`AvailabilityListUsecase` and `AvailabilityUpdateUsecase` in `domain/usecases/`, shaped as `extends
+Usecase<State, Action, Params>` with a `getNextState` reducer and effects confined to
 `onStateChange`, each with a `.test.ts` driving success via `UsecaseTester` + `flushPromises` and
-the error branch via `MockStockRepository.setShouldFail(true)`. A shared
+the error branch via `MockAvailabilityRepository.setShouldFail(true)`. A shared
 `resolveOptionValueAvailability(product, variants, selection)` helper in `libs/ui/src/utils/` for
 phases 11 and 12. Barrel exports everywhere.
 
@@ -565,17 +592,18 @@ phases 11 and 12. Barrel exports everywhere.
 `@gatherloop-pos/ui/pos`; the option-value helper has its own test covering Es Kopi Susu with
 Vanilla off.
 
-### Phase 9 — POS Stock screen (POS)
+### Phase 9 — POS Availability screen (POS)
 
-`StockScreen` + `StockHandler` + `app/pos/Stock.tsx` + `apps/pos-web/src/pages/stock/index.tsx`,
-and a `Stock` entry in the **Inventory** group of `Sidebar.state.tsx`. Grouped list, search,
-"Sold out only" filter, per-row switch and stepper-plus-input, dirty-row tracking, one save.
-`useForm` and the zod resolver live in the form component, not the handler (`docs/forms.md`).
-Stories for loaded, empty, error, a negative count and a sold-out row.
+`AvailabilityScreen` + `AvailabilityHandler` + `app/pos/Availability.tsx` +
+`apps/pos-web/src/pages/availability/index.tsx`, and an `Availability` entry in the **Inventory** group of
+`Sidebar.state.tsx`. Grouped list, search, "Sold out only" filter, per-row switch and
+stepper-plus-input, dirty-row tracking, one save. `useForm` and the zod resolver live in the form
+component, not the handler (`docs/forms.md`). Stories for loaded, empty, error, a negative count and
+a sold-out row.
 
-**Acceptance:** a handler test with real use cases over `MockStockRepository` asserts that editing
-two rows and saving sends exactly those two; Storybook renders all five states;
-`npx nx run ui:test` green.
+**Acceptance:** a handler test with real use cases over `MockAvailabilityRepository` asserts that
+editing two rows and saving sends exactly those two; Storybook renders all five states; `npx nx run
+ui:test` green.
 
 ### Phase 10 — Product form declares the tracking level (POS)
 
@@ -590,11 +618,12 @@ confirmation fires only when the value actually changes; `npx nx run ui:test` gr
 
 `TransactionItemSelect` dims and badges sold-out products, disables sold-out option values, shows
 `n left`, caps the amount stepper at `remainingStock`, and renders the rejection toast with its
-**Update stock** action routing to `/stock`. `TransactionItemSelect.test.tsx` extended.
+**Update availability** action routing to `/availability`. `TransactionItemSelect.test.tsx`
+extended.
 
 **Acceptance:** the existing test file gains cases asserting a sold-out product's tile is present
-but not selectable, a sold-out option radio is disabled while its siblings are not, and the
-stepper stops at the remaining quantity; `npx nx run ui:test` green.
+but not selectable, a sold-out option radio is disabled while its siblings are not, and the stepper
+stops at the remaining quantity; `npx nx run ui:test` green.
 
 ### Phase 12 — Order app menu: badges and disabled chips (order)
 
@@ -612,29 +641,30 @@ one variant out, and a fully sold-out Pancong card; `npx nx run ui:test` green.
 sheet, in `CartLineItem` and in `CartItemEditScreen`; `CartScreen` flags affected lines and
 disables checkout; a rejected checkout refetches the cart and lands in that state.
 
-**Acceptance:** `CartScreen` stories cover a line gone sold-out and a line over its remaining
-count; a handler test asserts checkout stays disabled until the offending line is removed;
-`npx nx run ui:test` green.
+**Acceptance:** `CartScreen` stories cover a line gone sold-out and a line over its remaining count;
+a handler test asserts checkout stays disabled until the offending line is removed; `npx nx run
+ui:test` green.
 
 ### Phase 14 — Stock movement ledger (API, POS)
 
 Migration `000030_create_stock_movements`, writes from every counter change in phases 3–6, a
-`GET /stocks/{level}/{id}/movements` endpoint, and a history sheet on each Stock screen row.
+`GET /availability/{level}/{id}/movements` endpoint, and a history sheet on each Availability screen
+row.
 
-**Acceptance:** a sale followed by its reversal produces two movements summing to zero with
-correct `resulting_quantity` values; the manual-set path records `manual_set`;
-`npx nx run api:test` and `npx nx run ui:test` green.
+**Acceptance:** a sale followed by its reversal produces two movements summing to zero with correct
+`resulting_quantity` values; the manual-set path records `manual_set`; `npx nx run api:test` and
+`npx nx run ui:test` green.
 
 ### Phase 15 — Docs site and e2e (docs, e2e)
 
-A `docs-site/inventory/stock-availability.md` feature page with its sidebar entry, covering the
+A `docs-site/inventory/availability.md` feature page with its sidebar entry, covering the
 three real menu items as worked examples and the morning routine. A `pos-web-e2e` spec for
 set-stock → sell → sold-out, and an `order-web-e2e` spec for sold-out badge → capped stepper →
 blocked checkout. Note that e2e runs post-merge only
 (`.github/workflows/e2e-main.yml`), so both specs are run locally before the PR.
 
-**Acceptance:** `npx nx run pos-web-e2e:e2e` and `npx nx run order-web-e2e:e2e` green locally;
-the docs site builds.
+**Acceptance:** `npx nx run pos-web-e2e:e2e` and `npx nx run order-web-e2e:e2e` green locally; the
+docs site builds.
 
 ---
 
@@ -642,10 +672,10 @@ the docs site builds.
 
 | Risk | Mitigation |
 | --- | --- |
-| **The counts go stale and the crew stops trusting them.** The system's number is only as good as the morning entry. | The Stock screen is one tap from the sidebar and saves in one gesture; the ledger (phase 14) makes drift diagnosable instead of mysterious; blocking (D12) with a one-tap fix keeps corrections cheap and frequent. |
-| **A blocked POS sale in front of a waiting customer.** | The error names the item and routes straight to `/stock`. Worth watching after rollout — if this fires often, D12 is the decision to revisit, not the model. |
-| **Negative stock from paid-late QRIS (D7) confuses the crew.** | Negative counts are badged in red on the Stock screen, and the ledger shows the late payment that caused it. |
-| **Someone conflates this with `StockCheck`.** Two features now say "stock". | Distinct routes (`/stock` vs `/stock-checks`), distinct sidebar labels, and D14 stated in the docs-site page. Worth a naming pass in review — "Availability" is the available alternative label if `/stock` proves confusing. |
+| **The counts go stale and the crew stops trusting them.** The system's number is only as good as the morning entry. | The Availability screen is one tap from the sidebar and saves in one gesture; the ledger (phase 14) makes drift diagnosable instead of mysterious; blocking (D12) with a one-tap fix keeps corrections cheap and frequent. |
+| **A blocked POS sale in front of a waiting customer.** | The error names the item and routes straight to `/availability`. Worth watching after rollout — if this fires often, D12 is the decision to revisit, not the model. |
+| **Negative stock from paid-late QRIS (D7) confuses the crew.** | Negative counts are badged in red on the Availability screen, and the ledger shows the late payment that caused it. |
+| **Someone conflates this with `StockCheck`.** | Settled by D15: the operator never sees the word "stock" for this feature — the route is `/availability`, the sidebar label is `Availability`, and `/stock-checks` keeps its own name. The word survives only in column names, which the crew never reads. D14 is restated on the docs-site page. |
 | **The order app's menu snapshot goes stale between load and checkout.** | The menu already revalidates on every fetch (`menuList.ts` `revalidating` state); the cart re-derives on load; checkout is authoritative. A customer can still be told no at checkout — that is correct, and FR-7 makes it legible. |
 | **Phase 2 changes every product and variant response shape.** | Both fields are additive and non-breaking; phase 1 lands the columns with behaviour-preserving defaults first, so a rollback of phase 2 alone is safe. |
 
@@ -671,24 +701,26 @@ the docs site builds.
   Vanilla. Option B is the migration target; `stock_tracking` maps onto pools mechanically when it
   is needed.
 - **Material-driven advisory availability** — when a material's latest `StockCheck` reads zero,
-  *suggest* on the Stock screen that the variants using it be switched off, without switching them
-  off automatically. Keeps the human in the loop while using the recipe data that already exists
-  (`VariantMaterial`).
+  *suggest* on the Availability screen that the variants using it be switched off, without
+  switching them off automatically. Keeps the human in the loop while using the recipe data that
+  already exists (`VariantMaterial`).
 - **A daily target with one-tap restore** — the additive answer if D11's morning entry proves a
   burden.
 
 ---
 
-## Open Questions
+## Settled in review
 
-1. **`/stock` vs `/availability` as the route and sidebar label**, given `/stock-checks` already
-   exists and means something else. This PRD uses `/stock`; a reviewer may reasonably prefer
-   `Availability`, which is what the screen actually controls for untracked items.
-2. **Should `stock_tracking` default to `variant` for newly created products?** This PRD keeps
-   `none` — least surprise, and matches Square, where counting is opt-in per variation.
-3. **Should the POS grid hide sold-out items behind a filter?** They are always shown today per
-   the acceptance criteria; if the grid gets noisy at the end of a busy day, a "Hide sold out"
-   toggle for POS only (never the customer app) is the smallest answer.
+The three questions this document originally left open, and how they were decided. Recorded here
+rather than silently edited away, so the reasoning survives with the answer.
+
+| Question as asked | Answer | Decision |
+| --- | --- | --- |
+| `/stock` vs `/availability` for the route and sidebar label, given `/stock-checks` already exists and means something else | **Availability** | D15 |
+| Should `stock_tracking` default to `variant` for newly created products? | **No — keep `none`** | D16 |
+| Should the POS grid hide sold-out items behind a filter? | **No — never hide them; the cashier has to find the item to tell the customer it is unavailable** | D17 |
+
+No open questions remain. The design is ready to implement from phase 1.
 
 ---
 
