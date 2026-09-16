@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"strings"
 	"time"
@@ -78,7 +79,8 @@ func (usecase CartUsecase) AddCartItem(ctx context.Context, sessionId string, va
 
 	var result Cart
 	err := usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		if err := usecase.validatePurchasableVariant(ctxWithTx, variantId); err != nil {
+		variant, err := usecase.validatePurchasableVariant(ctxWithTx, variantId)
+		if err != nil {
 			return err
 		}
 
@@ -88,6 +90,10 @@ func (usecase CartUsecase) AddCartItem(ctx context.Context, sessionId string, va
 		}
 		if lockErr := usecase.ensureCartUnlocked(ctxWithTx, cart.Id); lockErr != nil {
 			return lockErr
+		}
+
+		if capacityErr := checkCartCapacity(cart.Items, variant.Product, variant, 0, amount); capacityErr != nil {
+			return capacityErr
 		}
 
 		if existing, found := findMatchingCartItem(cart.Items, variantId, note); found {
@@ -121,12 +127,16 @@ func (usecase CartUsecase) UpdateCartItem(ctx context.Context, sessionId string,
 
 	var result Cart
 	err := usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		cart, ownedErr := usecase.getOwnedCart(ctxWithTx, sessionId, cartItemId)
+		cart, existing, ownedErr := usecase.getOwnedCart(ctxWithTx, sessionId, cartItemId)
 		if ownedErr != nil {
 			return ownedErr
 		}
 		if lockErr := usecase.ensureCartUnlocked(ctxWithTx, cart.Id); lockErr != nil {
 			return lockErr
+		}
+
+		if capacityErr := checkCartCapacity(cart.Items, existing.Variant.Product, existing.Variant, cartItemId, amount); capacityErr != nil {
+			return capacityErr
 		}
 
 		item := CartItem{Amount: amount, Note: note}
@@ -148,7 +158,7 @@ func (usecase CartUsecase) UpdateCartItem(ctx context.Context, sessionId string,
 func (usecase CartUsecase) RemoveCartItem(ctx context.Context, sessionId string, cartItemId int64) (Cart, *Error) {
 	var result Cart
 	err := usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		cart, ownedErr := usecase.getOwnedCart(ctxWithTx, sessionId, cartItemId)
+		cart, _, ownedErr := usecase.getOwnedCart(ctxWithTx, sessionId, cartItemId)
 		if ownedErr != nil {
 			return ownedErr
 		}
@@ -216,35 +226,75 @@ func (usecase CartUsecase) getOrCreateActiveCart(ctx context.Context, sessionId 
 	return usecase.repository.CreateCart(ctx, Cart{SessionId: sessionId, Status: CartStatusActive})
 }
 
-func (usecase CartUsecase) getOwnedCart(ctx context.Context, sessionId string, cartItemId int64) (Cart, *Error) {
+func (usecase CartUsecase) getOwnedCart(ctx context.Context, sessionId string, cartItemId int64) (Cart, CartItem, *Error) {
 	cart, err := usecase.repository.GetActiveCartBySessionId(ctx, sessionId)
 	if err != nil {
 		if err.Type == NotFound {
-			return Cart{}, &Error{Type: NotFound, Message: "cart item not found"}
+			return Cart{}, CartItem{}, &Error{Type: NotFound, Message: "cart item not found"}
 		}
-		return Cart{}, err
+		return Cart{}, CartItem{}, err
 	}
 
 	for _, item := range cart.Items {
 		if item.Id == cartItemId {
-			return cart, nil
+			return cart, item, nil
 		}
 	}
 
-	return Cart{}, &Error{Type: NotFound, Message: "cart item not found"}
+	return Cart{}, CartItem{}, &Error{Type: NotFound, Message: "cart item not found"}
 }
 
-func (usecase CartUsecase) validatePurchasableVariant(ctx context.Context, variantId int64) *Error {
+func (usecase CartUsecase) validatePurchasableVariant(ctx context.Context, variantId int64) (Variant, *Error) {
 	variant, err := usecase.variantRepository.GetVariantById(ctx, variantId)
 	if err != nil {
-		return err
+		return Variant{}, err
 	}
 
-	if variant.Product.DeletedAt != nil || variant.Product.Status != ProductStatusPublished || variant.Product.SaleType != SaleTypePurchase {
-		return &Error{Type: BadRequest, Message: "variant is not available for ordering"}
+	product := variant.Product
+	if product.DeletedAt != nil || product.Status != ProductStatusPublished || product.SaleType != SaleTypePurchase {
+		return Variant{}, &Error{Type: BadRequest, Message: "variant is not available for ordering"}
+	}
+
+	if isSellable, _ := ResolveVariantAvailability(product, variant); !isSellable {
+		return Variant{}, &Error{Type: BadRequest, Message: fmt.Sprintf("%s is sold out", availabilityItemName(product, variant))}
+	}
+
+	return variant, nil
+}
+
+// checkCartCapacity rejects an amount that would push the counting unit shared by product and
+// variant past what remains, counting every other line in the cart against the same unit.
+// excludeItemId skips the line being updated so its old amount isn't counted twice.
+func checkCartCapacity(items []CartItem, product Product, variant Variant, excludeItemId int64, amount float32) *Error {
+	remaining := variantSellableQuantity(product, variant)
+	if remaining == nil {
+		return nil
+	}
+
+	held := float32(0)
+	for _, item := range items {
+		if item.Id == excludeItemId || !sameAvailabilityCountingUnit(product, variant, item) {
+			continue
+		}
+		held += item.Amount
+	}
+
+	if held+amount > float32(*remaining) {
+		return &Error{Type: BadRequest, Message: fmt.Sprintf("only %d %s left", *remaining, availabilityItemName(product, variant))}
 	}
 
 	return nil
+}
+
+func sameAvailabilityCountingUnit(product Product, variant Variant, item CartItem) bool {
+	switch product.AvailabilityTracking {
+	case AvailabilityTrackingProduct:
+		return item.Variant.ProductId == product.Id
+	case AvailabilityTrackingVariant:
+		return item.VariantId == variant.Id
+	default:
+		return false
+	}
 }
 
 func validateCartItemInput(amount float32, note string) *Error {
