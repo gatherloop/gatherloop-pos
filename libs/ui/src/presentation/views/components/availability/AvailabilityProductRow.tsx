@@ -1,7 +1,8 @@
-import { Label, SizableText, XStack, YStack } from 'tamagui';
+import { Button, Label, SizableText, XStack, YStack } from 'tamagui';
+import { History } from '@tamagui/lucide-icons';
 import { InputNumber, Switch } from '../base';
 import { AvailabilityProduct } from '../../../../domain';
-import { AvailabilityVariantRow } from './AvailabilityVariantRow';
+import { AvailabilityVariantRow, AvailabilityViewHistoryPress } from './AvailabilityVariantRow';
 import { SoldOutBadge } from './SoldOutBadge';
 
 export type AvailabilityProductRowProps = {
@@ -9,6 +10,7 @@ export type AvailabilityProductRowProps = {
   productIndex: number;
   variantIndexByVariantId: Map<number, number>;
   hidden: boolean;
+  onViewHistoryPress: AvailabilityViewHistoryPress;
 };
 
 export const AvailabilityProductRow = ({
@@ -16,6 +18,7 @@ export const AvailabilityProductRow = ({
   productIndex,
   variantIndexByVariantId,
   hidden,
+  onViewHistoryPress,
 }: AvailabilityProductRowProps) => {
   const isAvailableFieldName = `products.${productIndex}.isAvailable`;
   const availableQuantityFieldName = `products.${productIndex}.availableQuantity`;
@@ -50,6 +53,16 @@ export const AvailabilityProductRow = ({
           </SizableText>
         )}
         {!product.isSellable && <SoldOutBadge label="Sold out" />}
+        <Button
+          icon={History}
+          circular
+          size="$2"
+          chromeless
+          onPress={() => onViewHistoryPress('product', product.productId, product.productName)}
+          accessibilityLabel={`View history for ${product.productName}`}
+          // @ts-expect-error type is a valid HTML attribute on the underlying button
+          type="button"
+        />
       </XStack>
 
       <YStack>
@@ -63,6 +76,7 @@ export const AvailabilityProductRow = ({
               isAvailableFieldName={`variants.${variantIndex}.isAvailable`}
               availableQuantityFieldName={`variants.${variantIndex}.availableQuantity`}
               showQuantity={product.availabilityTracking === 'variant'}
+              onViewHistoryPress={onViewHistoryPress}
             />
           );
         })}

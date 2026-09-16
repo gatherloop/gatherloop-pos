@@ -6,6 +6,7 @@ import { MockAuthRepository, MockAvailabilityRepository } from '../../../data/mo
 import {
   AuthLogoutUsecase,
   AvailabilityListUsecase,
+  AvailabilityMovementListUsecase,
   AvailabilityUpdateUsecase,
 } from '../../../domain';
 import { flushPromises } from '../../../utils/testUtils';
@@ -24,6 +25,9 @@ const createProps = () => {
         products: [],
       }),
       availabilityUpdateUsecase: new AvailabilityUpdateUsecase(availabilityRepository),
+      availabilityMovementListUsecase: new AvailabilityMovementListUsecase(
+        availabilityRepository
+      ),
     },
     availabilityRepository,
   };
@@ -114,5 +118,23 @@ describe('AvailabilityHandler', () => {
 
     expect(mockToastShow).toHaveBeenCalledWith('Update Availability Error');
     expect(screen.getByText('Failed to submit. Please try again.')).toBeTruthy();
+  });
+
+  it('opens the history sheet for a variant and shows its movements', async () => {
+    const { props } = createProps();
+    const user = userEvent.setup();
+
+    render(<AvailabilityHandler {...props} />);
+    await act(async () => {
+      await flushPromises();
+    });
+
+    await user.click(screen.getAllByRole('button', { name: 'View history for Choco' })[0]);
+    await act(async () => {
+      await flushPromises();
+    });
+
+    expect(screen.getByText('Choco history')).toBeTruthy();
+    expect(screen.getByText('Sale')).toBeTruthy();
   });
 });

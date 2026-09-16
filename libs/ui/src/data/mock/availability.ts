@@ -1,4 +1,9 @@
-import { AvailabilityForm, AvailabilityProduct } from '../../domain/entities';
+import {
+  AvailabilityForm,
+  AvailabilityLevel,
+  AvailabilityMovement,
+  AvailabilityProduct,
+} from '../../domain/entities';
 import { AvailabilityRepository } from '../../domain/repositories';
 
 const initialProducts: AvailabilityProduct[] = [
@@ -95,6 +100,32 @@ const initialProducts: AvailabilityProduct[] = [
   },
 ];
 
+const initialMovements: AvailabilityMovement[] = [
+  {
+    id: 1,
+    variantId: 4,
+    delta: -2,
+    resultingQuantity: 6,
+    reason: 'sale',
+    transactionId: 501,
+    createdAt: '2024-01-01T08:15:00.000Z',
+  },
+  {
+    id: 2,
+    variantId: 4,
+    reason: 'switched_off',
+    createdAt: '2024-01-01T07:00:00.000Z',
+  },
+  {
+    id: 3,
+    productId: 3,
+    delta: 5,
+    resultingQuantity: 5,
+    reason: 'manual_set',
+    createdAt: '2024-01-01T06:00:00.000Z',
+  },
+];
+
 function cloneProducts(products: AvailabilityProduct[]): AvailabilityProduct[] {
   return products.map((product) => ({
     ...product,
@@ -104,6 +135,7 @@ function cloneProducts(products: AvailabilityProduct[]): AvailabilityProduct[] {
 
 export class MockAvailabilityRepository implements AvailabilityRepository {
   products: AvailabilityProduct[] = cloneProducts(initialProducts);
+  movements: AvailabilityMovement[] = [...initialMovements];
 
   private shouldFail = false;
 
@@ -148,8 +180,20 @@ export class MockAvailabilityRepository implements AvailabilityRepository {
     return cloneProducts(this.products);
   }
 
+  async fetchAvailabilityMovements(
+    level: AvailabilityLevel,
+    id: number
+  ): Promise<AvailabilityMovement[]> {
+    if (this.shouldFail) throw new Error('Failed to fetch availability history');
+
+    return this.movements.filter((movement) =>
+      level === 'product' ? movement.productId === id : movement.variantId === id
+    );
+  }
+
   reset() {
     this.products = cloneProducts(initialProducts);
+    this.movements = [...initialMovements];
     this.shouldFail = false;
   }
 }

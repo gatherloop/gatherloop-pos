@@ -67,6 +67,44 @@ export const Default: Story = {
     isSubmitDisabled: false,
     isSubmitting: false,
     onLogoutPress: fn(),
+    onViewHistoryPress: fn(),
+    historySheet: {
+      isOpen: false,
+      title: '',
+      variant: 'loaded',
+      movements: [],
+      onClose: fn(),
+      onRetryPress: fn(),
+    },
+  },
+};
+
+export const HistorySheetOpen: Story = {
+  args: {
+    ...Default.args,
+    historySheet: {
+      isOpen: true,
+      title: 'Choco history',
+      variant: 'loaded',
+      movements: [
+        {
+          id: 1,
+          variantId: 4,
+          delta: -2,
+          resultingQuantity: 4,
+          reason: 'sale',
+          createdAt: '2024-01-01T08:15:00.000Z',
+        },
+        {
+          id: 2,
+          variantId: 4,
+          reason: 'switched_off',
+          createdAt: '2024-01-01T07:00:00.000Z',
+        },
+      ],
+      onClose: fn(),
+      onRetryPress: fn(),
+    },
   },
 };
 

@@ -1,13 +1,21 @@
-import { Label, SizableText, XStack } from 'tamagui';
+import { Button, Label, SizableText, XStack } from 'tamagui';
+import { History } from '@tamagui/lucide-icons';
 import { InputNumber, Switch } from '../base';
-import { AvailabilityVariant } from '../../../../domain';
+import { AvailabilityLevel, AvailabilityVariant } from '../../../../domain';
 import { SoldOutBadge } from './SoldOutBadge';
+
+export type AvailabilityViewHistoryPress = (
+  level: AvailabilityLevel,
+  id: number,
+  name: string
+) => void;
 
 export type AvailabilityVariantRowProps = {
   variant: AvailabilityVariant;
   isAvailableFieldName: string;
   availableQuantityFieldName: string;
   showQuantity: boolean;
+  onViewHistoryPress: AvailabilityViewHistoryPress;
 };
 
 export const AvailabilityVariantRow = ({
@@ -15,6 +23,7 @@ export const AvailabilityVariantRow = ({
   isAvailableFieldName,
   availableQuantityFieldName,
   showQuantity,
+  onViewHistoryPress,
 }: AvailabilityVariantRowProps) => {
   const isNegative =
     typeof variant.availableQuantity === 'number' && variant.availableQuantity < 0;
@@ -46,6 +55,16 @@ export const AvailabilityVariantRow = ({
         </SizableText>
       )}
       {!variant.isSellable && <SoldOutBadge label="Sold out" />}
+      <Button
+        icon={History}
+        circular
+        size="$2"
+        chromeless
+        onPress={() => onViewHistoryPress('variant', variant.variantId, variant.variantName)}
+        accessibilityLabel={`View history for ${variant.variantName}`}
+        // @ts-expect-error type is a valid HTML attribute on the underlying button
+        type="button"
+      />
     </XStack>
   );
 };

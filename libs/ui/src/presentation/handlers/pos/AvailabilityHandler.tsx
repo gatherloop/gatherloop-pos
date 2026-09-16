@@ -1,9 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useToastController } from '@tamagui/toast';
 import { match, P } from 'ts-pattern';
 import {
   AuthLogoutUsecase,
+  AvailabilityLevel,
   AvailabilityListUsecase,
+  AvailabilityMovementListUsecase,
   AvailabilityUpdateUsecase,
 } from '../../../domain';
 import { buildAvailabilityUpdateForm, toAvailabilityUpdateForm } from '../../../utils';
@@ -17,17 +19,36 @@ export type AvailabilityHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;
   availabilityListUsecase: AvailabilityListUsecase;
   availabilityUpdateUsecase: AvailabilityUpdateUsecase;
+  availabilityMovementListUsecase: AvailabilityMovementListUsecase;
 };
 
 export const AvailabilityHandler = ({
   authLogoutUsecase,
   availabilityListUsecase,
   availabilityUpdateUsecase,
+  availabilityMovementListUsecase,
 }: AvailabilityHandlerProps) => {
   const authLogout = useAuthLogout(authLogoutUsecase);
   const availabilityList = useUsecase(availabilityListUsecase);
   const availabilityUpdate = useUsecase(availabilityUpdateUsecase);
+  const availabilityMovementList = useUsecase(availabilityMovementListUsecase);
   const toast = useToastController();
+
+  const [historyTarget, setHistoryTarget] = useState<{
+    level: AvailabilityLevel;
+    id: number;
+    name: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (historyTarget) {
+      availabilityMovementList.dispatch({
+        type: 'FETCH',
+        level: historyTarget.level,
+        id: historyTarget.id,
+      });
+    }
+  }, [historyTarget, availabilityMovementList.dispatch]);
 
   useEffect(() => {
     if (availabilityUpdate.state.type === 'submitSuccess') {
@@ -71,6 +92,31 @@ export const AvailabilityHandler = ({
           onRetryButtonPress: () => availabilityList.dispatch({ type: 'FETCH' }),
         }))
         .exhaustive()}
+      onViewHistoryPress={(level, id, name) => setHistoryTarget({ level, id, name })}
+      historySheet={{
+        isOpen: historyTarget !== null,
+        title: historyTarget ? `${historyTarget.name} history` : '',
+        variant:
+          availabilityMovementList.state.level !== historyTarget?.level ||
+          availabilityMovementList.state.id !== historyTarget?.id
+            ? 'loading'
+            : match(availabilityMovementList.state)
+                .returnType<'loading' | 'loaded' | 'error'>()
+                .with({ type: P.union('idle', 'loading') }, () => 'loading' as const)
+                .with({ type: 'loaded' }, () => 'loaded' as const)
+                .with({ type: 'error' }, () => 'error' as const)
+                .exhaustive(),
+        movements: availabilityMovementList.state.movements,
+        errorMessage: availabilityMovementList.state.errorMessage ?? undefined,
+        onClose: () => setHistoryTarget(null),
+        onRetryPress: () =>
+          historyTarget &&
+          availabilityMovementList.dispatch({
+            type: 'FETCH',
+            level: historyTarget.level,
+            id: historyTarget.id,
+          }),
+      }}
     />
   );
 };

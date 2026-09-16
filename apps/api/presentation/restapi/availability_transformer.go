@@ -3,14 +3,32 @@ package restapi
 import (
 	"apps/api/domain"
 	"encoding/json"
+	"fmt"
 	apiContract "libs/api-contract"
 	"net/http"
+	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
 func GetAvailabilityUpdateRequest(r *http.Request) (apiContract.AvailabilityUpdateRequest, error) {
 	var availabilityUpdateRequest apiContract.AvailabilityUpdateRequest
 	err := json.NewDecoder(r.Body).Decode(&availabilityUpdateRequest)
 	return availabilityUpdateRequest, err
+}
+
+func GetAvailabilityMovementLevel(r *http.Request) (domain.AvailabilityMovementLevel, error) {
+	vars := mux.Vars(r)
+	level := domain.AvailabilityMovementLevel(vars["level"])
+	if level != domain.AvailabilityMovementLevelProduct && level != domain.AvailabilityMovementLevelVariant {
+		return "", fmt.Errorf("level must be product or variant")
+	}
+	return level, nil
+}
+
+func GetAvailabilityMovementId(r *http.Request) (int64, error) {
+	vars := mux.Vars(r)
+	return strconv.ParseInt(vars["id"], 10, 64)
 }
 
 func ToApiAvailabilityVariant(variant domain.AvailabilityVariant) apiContract.AvailabilityVariant {
@@ -42,6 +60,23 @@ func ToApiAvailabilityProduct(product domain.AvailabilityProduct) apiContract.Av
 		SellableQuantity:     ToApiQuantity(product.SellableQuantity),
 		Variants:             apiVariants,
 	}
+}
+
+func ToApiAvailabilityMovement(movement domain.AvailabilityMovement) apiContract.AvailabilityMovement {
+	apiMovement := apiContract.AvailabilityMovement{
+		Id:                movement.Id,
+		Reason:            string(movement.Reason),
+		CreatedAt:         movement.CreatedAt,
+		ProductId:         movement.ProductId,
+		VariantId:         movement.VariantId,
+		TransactionId:     movement.TransactionId,
+		Delta:             ToApiQuantity(movement.Delta),
+		ResultingQuantity: ToApiQuantity(movement.ResultingQuantity),
+	}
+	if movement.Note != "" {
+		apiMovement.Note = &movement.Note
+	}
+	return apiMovement
 }
 
 func ToDomainQuantity(quantity *int64) *int {

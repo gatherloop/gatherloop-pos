@@ -49,3 +49,4 @@ export const XCircle = NullIcon;
 export const ClipboardList = NullIcon;
 export const Coffee = NullIcon;
 export const Utensils = NullIcon;
+export const History = NullIcon;

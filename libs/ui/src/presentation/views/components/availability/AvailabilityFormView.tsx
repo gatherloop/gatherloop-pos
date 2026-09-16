@@ -14,6 +14,7 @@ import {
 } from '../base';
 import { AvailabilityForm, AvailabilityProduct, availabilityFormSchema } from '../../../../domain';
 import { AvailabilityProductRow } from './AvailabilityProductRow';
+import { AvailabilityViewHistoryPress } from './AvailabilityVariantRow';
 
 const availabilityFormResolver = zodResolver(availabilityFormSchema);
 
@@ -25,6 +26,7 @@ export type AvailabilityFormViewProps = {
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   serverError?: string;
+  onViewHistoryPress: AvailabilityViewHistoryPress;
 };
 
 export const AvailabilityFormView = (props: AvailabilityFormViewProps) => (
@@ -44,6 +46,7 @@ export const AvailabilityFormView = (props: AvailabilityFormViewProps) => (
         isSubmitDisabled={props.isSubmitDisabled}
         isSubmitting={props.isSubmitting}
         serverError={props.serverError}
+        onViewHistoryPress={props.onViewHistoryPress}
       />
     )}
   </FormView>
@@ -61,6 +64,7 @@ type AvailabilityFieldsProps = {
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   serverError?: string;
+  onViewHistoryPress: AvailabilityViewHistoryPress;
 };
 
 const AvailabilityFields = ({
@@ -69,6 +73,7 @@ const AvailabilityFields = ({
   isSubmitDisabled,
   isSubmitting,
   serverError,
+  onViewHistoryPress,
 }: AvailabilityFieldsProps) => {
   const form = useFormContext<AvailabilityForm>();
   const isCompactLayout = useIsCompactLayout();
@@ -213,6 +218,7 @@ const AvailabilityFields = ({
                         productIndex={row.productIndex}
                         variantIndexByVariantId={variantIndexByVariantId}
                         hidden={row.hidden}
+                        onViewHistoryPress={onViewHistoryPress}
                       />
                     ))}
                   </YStack>

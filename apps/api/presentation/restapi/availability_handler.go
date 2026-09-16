@@ -56,3 +56,44 @@ func (handler AvailabilityHandler) UpdateAvailability(w http.ResponseWriter, r *
 
 	WriteResponse(w, apiContract.AvailabilityUpdateResponse{Data: apiAvailabilityProducts})
 }
+
+func (handler AvailabilityHandler) GetAvailabilityMovementList(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	level, err := GetAvailabilityMovementLevel(r)
+	if err != nil {
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
+		return
+	}
+
+	id, err := GetAvailabilityMovementId(r)
+	if err != nil {
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
+		return
+	}
+
+	skip, err := GetSkip(r)
+	if err != nil {
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
+		return
+	}
+
+	limit, err := GetLimit(r)
+	if err != nil {
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
+		return
+	}
+
+	movements, total, usecaseErr := handler.usecase.GetAvailabilityMovementList(ctx, level, id, skip, limit)
+	if usecaseErr != nil {
+		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
+		return
+	}
+
+	apiMovements := []apiContract.AvailabilityMovement{}
+	for _, movement := range movements {
+		apiMovements = append(apiMovements, ToApiAvailabilityMovement(movement))
+	}
+
+	WriteResponse(w, apiContract.AvailabilityMovementListResponse{Data: apiMovements, Meta: apiContract.MetaPage{Total: total}})
+}

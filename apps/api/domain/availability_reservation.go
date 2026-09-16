@@ -13,6 +13,7 @@ type AvailabilityReservationRepository interface {
 	LockProductById(ctx context.Context, id int64) (Product, *Error)
 	UpdateVariantAvailableQuantity(ctx context.Context, id int64, quantity int) *Error
 	UpdateProductAvailableQuantity(ctx context.Context, id int64, quantity int) *Error
+	CreateAvailabilityMovement(ctx context.Context, movement AvailabilityMovement) *Error
 }
 
 type AvailabilityReservation struct {
@@ -26,20 +27,20 @@ func NewAvailabilityReservation(repository AvailabilityReservationRepository) Av
 // Reserve decrements availability for the given items, summed per counting unit, and rejects the
 // whole batch with the offending item's name on a shortfall or a switched-off item.
 func (reservation AvailabilityReservation) Reserve(ctx context.Context, items []TransactionItem) *Error {
-	return reservation.adjust(ctx, items, -1, true)
+	return reservation.adjust(ctx, items, -1, true, AvailabilityMovementReasonSale)
 }
 
 // Release restores availability previously reserved for the given items. It is never blocked by a
 // switch or a shortfall, since it only ever reverses a reservation this collaborator made earlier.
 func (reservation AvailabilityReservation) Release(ctx context.Context, items []TransactionItem) *Error {
-	return reservation.adjust(ctx, items, 1, false)
+	return reservation.adjust(ctx, items, 1, false, AvailabilityMovementReasonSaleReversal)
 }
 
 // ForceReserve decrements availability for the given items without checking switches or shortfalls,
 // allowing the counter to go negative. Used for a QRIS payment that arrives after its reservation was
 // already released by expiry (D7): the gateway has captured the money, so the reservation must succeed.
 func (reservation AvailabilityReservation) ForceReserve(ctx context.Context, items []TransactionItem) *Error {
-	return reservation.adjust(ctx, items, -1, false)
+	return reservation.adjust(ctx, items, -1, false, AvailabilityMovementReasonSale)
 }
 
 // ApplyDelta reserves or releases, per counting unit, the difference between a transaction's
@@ -118,6 +119,11 @@ func (reservation AvailabilityReservation) ApplyDelta(ctx context.Context, oldIt
 		units[unit] = true
 	}
 
+	transactionId := availabilityMovementTransactionId(newItems)
+	if transactionId == nil {
+		transactionId = availabilityMovementTransactionId(oldItems)
+	}
+
 	for unit := range units {
 		amountDelta := newAmountsByUnit[unit] - oldAmountsByUnit[unit]
 		if amountDelta == 0 {
@@ -126,6 +132,11 @@ func (reservation AvailabilityReservation) ApplyDelta(ctx context.Context, oldIt
 
 		quantityDelta := -int(math.Round(float64(amountDelta)))
 		validate := quantityDelta < 0
+
+		reason := AvailabilityMovementReasonSaleReversal
+		if quantityDelta < 0 {
+			reason = AvailabilityMovementReasonSale
+		}
 
 		switch unit.level {
 		case availabilityCountingProduct:
@@ -141,6 +152,13 @@ func (reservation AvailabilityReservation) ApplyDelta(ctx context.Context, oldIt
 			if err := reservation.repository.UpdateProductAvailableQuantity(ctx, unit.id, newQuantity); err != nil {
 				return err
 			}
+			productId := unit.id
+			if err := reservation.repository.CreateAvailabilityMovement(ctx, AvailabilityMovement{
+				ProductId: &productId, Delta: &quantityDelta, ResultingQuantity: &newQuantity,
+				Reason: reason, TransactionId: transactionId,
+			}); err != nil {
+				return err
+			}
 		case availabilityCountingVariant:
 			variant := variantsById[unit.id]
 			current := 0
@@ -152,6 +170,13 @@ func (reservation AvailabilityReservation) ApplyDelta(ctx context.Context, oldIt
 				return &Error{Type: BadRequest, Message: fmt.Sprintf("only %d %s left", current, namesByUnit[unit])}
 			}
 			if err := reservation.repository.UpdateVariantAvailableQuantity(ctx, unit.id, newQuantity); err != nil {
+				return err
+			}
+			variantId := unit.id
+			if err := reservation.repository.CreateAvailabilityMovement(ctx, AvailabilityMovement{
+				VariantId: &variantId, Delta: &quantityDelta, ResultingQuantity: &newQuantity,
+				Reason: reason, TransactionId: transactionId,
+			}); err != nil {
 				return err
 			}
 		}
@@ -172,7 +197,7 @@ type availabilityCountingUnit struct {
 	id    int64
 }
 
-func (reservation AvailabilityReservation) adjust(ctx context.Context, items []TransactionItem, sign int, validate bool) *Error {
+func (reservation AvailabilityReservation) adjust(ctx context.Context, items []TransactionItem, sign int, validate bool, reason AvailabilityMovementReason) *Error {
 	variantsById := map[int64]Variant{}
 	productsById := map[int64]Product{}
 	amountsByUnit := map[availabilityCountingUnit]float32{}
@@ -221,6 +246,8 @@ func (reservation AvailabilityReservation) adjust(ctx context.Context, items []T
 		}
 	}
 
+	transactionId := availabilityMovementTransactionId(items)
+
 	for unit, amount := range amountsByUnit {
 		delta := int(math.Round(float64(amount))) * sign
 
@@ -238,6 +265,13 @@ func (reservation AvailabilityReservation) adjust(ctx context.Context, items []T
 			if err := reservation.repository.UpdateProductAvailableQuantity(ctx, unit.id, newQuantity); err != nil {
 				return err
 			}
+			productId := unit.id
+			if err := reservation.repository.CreateAvailabilityMovement(ctx, AvailabilityMovement{
+				ProductId: &productId, Delta: &delta, ResultingQuantity: &newQuantity,
+				Reason: reason, TransactionId: transactionId,
+			}); err != nil {
+				return err
+			}
 		case availabilityCountingVariant:
 			variant := variantsById[unit.id]
 			current := 0
@@ -249,6 +283,13 @@ func (reservation AvailabilityReservation) adjust(ctx context.Context, items []T
 				return &Error{Type: BadRequest, Message: fmt.Sprintf("only %d %s left", current, namesByUnit[unit])}
 			}
 			if err := reservation.repository.UpdateVariantAvailableQuantity(ctx, unit.id, newQuantity); err != nil {
+				return err
+			}
+			variantId := unit.id
+			if err := reservation.repository.CreateAvailabilityMovement(ctx, AvailabilityMovement{
+				VariantId: &variantId, Delta: &delta, ResultingQuantity: &newQuantity,
+				Reason: reason, TransactionId: transactionId,
+			}); err != nil {
 				return err
 			}
 		}

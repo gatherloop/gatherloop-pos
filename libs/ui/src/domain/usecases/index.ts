@@ -5,6 +5,7 @@ export * from './budgetCreate';
 export * from './budgetUpdate';
 export * from './availabilityList';
 export * from './availabilityUpdate';
+export * from './availabilityMovementList';
 export * from './productList';
 export * from './productDelete';
 export * from './productUpdate';

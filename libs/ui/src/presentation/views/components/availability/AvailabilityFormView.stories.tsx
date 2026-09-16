@@ -113,6 +113,7 @@ export const Loaded: Story = {
     onSubmit: fn(),
     isSubmitDisabled: false,
     isSubmitting: false,
+    onViewHistoryPress: fn(),
   },
 };
 
