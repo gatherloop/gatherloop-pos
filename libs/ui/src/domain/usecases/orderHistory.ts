@@ -3,7 +3,7 @@ import { PaymentSummary } from '../entities';
 import { PaymentRepository } from '../repositories';
 import { Usecase } from './IUsecase';
 
-const ORDER_HISTORY_LIMIT = 20;
+export const ORDER_HISTORY_LIMIT = 20;
 
 type Context = {
   payments: PaymentSummary[];
