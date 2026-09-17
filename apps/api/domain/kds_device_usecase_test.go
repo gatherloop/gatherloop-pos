@@ -70,7 +70,7 @@ func TestKdsDeviceUsecase_RegisterKdsDevice(t *testing.T) {
 			mockRepo := mock.NewMockKdsDeviceRepository(ctrl)
 			tt.setupMock(mockRepo)
 
-			usecase := domain.NewKdsDeviceUsecase(mockRepo)
+			usecase := domain.NewKdsDeviceUsecase(mockRepo, nil, "default")
 			device, err := usecase.RegisterKdsDevice(context.Background(), tt.input)
 
 			if tt.expectedError != nil {
@@ -118,7 +118,7 @@ func TestKdsDeviceUsecase_GetKdsDeviceList(t *testing.T) {
 			mockRepo := mock.NewMockKdsDeviceRepository(ctrl)
 			tt.setupMock(mockRepo)
 
-			usecase := domain.NewKdsDeviceUsecase(mockRepo)
+			usecase := domain.NewKdsDeviceUsecase(mockRepo, nil, "default")
 			devices, err := usecase.GetKdsDeviceList(context.Background())
 
 			if tt.expectedError != nil {
@@ -164,8 +164,73 @@ func TestKdsDeviceUsecase_DeleteKdsDeviceById(t *testing.T) {
 			mockRepo := mock.NewMockKdsDeviceRepository(ctrl)
 			tt.setupMock(mockRepo)
 
-			usecase := domain.NewKdsDeviceUsecase(mockRepo)
+			usecase := domain.NewKdsDeviceUsecase(mockRepo, nil, "default")
 			err := usecase.DeleteKdsDeviceById(context.Background(), tt.id)
+
+			if tt.expectedError != nil {
+				assert.NotNil(t, err)
+				assert.Equal(t, tt.expectedError.Type, err.Type)
+			} else {
+				assert.Nil(t, err)
+			}
+		})
+	}
+}
+
+func TestKdsDeviceUsecase_SendTestNotification(t *testing.T) {
+	tests := []struct {
+		name          string
+		id            int64
+		setupMock     func(r *mock.MockKdsDeviceRepository, g *mock.MockKdsPushGatewayRepository)
+		expectedError *domain.Error
+	}{
+		{
+			name: "success",
+			id:   1,
+			setupMock: func(r *mock.MockKdsDeviceRepository, g *mock.MockKdsPushGatewayRepository) {
+				r.EXPECT().GetKdsDeviceById(gomock.Any(), int64(1)).Return(domain.KdsDevice{Id: 1, PushToken: "ExponentPushToken[abc]"}, nil)
+				g.EXPECT().Send(gomock.Any(), gomock.Any()).Return([]domain.KdsPushReceipt{{Status: domain.KdsPushReceiptStatusOk}}, nil)
+			},
+		},
+		{
+			name: "device not found",
+			id:   99,
+			setupMock: func(r *mock.MockKdsDeviceRepository, g *mock.MockKdsPushGatewayRepository) {
+				r.EXPECT().GetKdsDeviceById(gomock.Any(), int64(99)).Return(domain.KdsDevice{}, &domain.Error{Type: domain.NotFound})
+			},
+			expectedError: &domain.Error{Type: domain.NotFound},
+		},
+		{
+			name: "gateway unreachable maps to BadGateway",
+			id:   1,
+			setupMock: func(r *mock.MockKdsDeviceRepository, g *mock.MockKdsPushGatewayRepository) {
+				r.EXPECT().GetKdsDeviceById(gomock.Any(), int64(1)).Return(domain.KdsDevice{Id: 1, PushToken: "ExponentPushToken[abc]"}, nil)
+				g.EXPECT().Send(gomock.Any(), gomock.Any()).Return(nil, &domain.Error{Type: domain.BadGateway, Message: "failed to reach Expo push service"})
+			},
+			expectedError: &domain.Error{Type: domain.BadGateway},
+		},
+		{
+			name: "gateway error receipt maps to BadGateway",
+			id:   1,
+			setupMock: func(r *mock.MockKdsDeviceRepository, g *mock.MockKdsPushGatewayRepository) {
+				r.EXPECT().GetKdsDeviceById(gomock.Any(), int64(1)).Return(domain.KdsDevice{Id: 1, PushToken: "ExponentPushToken[dead]"}, nil)
+				g.EXPECT().Send(gomock.Any(), gomock.Any()).Return([]domain.KdsPushReceipt{{Status: domain.KdsPushReceiptStatusError, Message: "not a registered push notification recipient", ErrorCode: domain.KdsPushErrorCodeDeviceNotRegistered}}, nil)
+			},
+			expectedError: &domain.Error{Type: domain.BadGateway},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockRepo := mock.NewMockKdsDeviceRepository(ctrl)
+			mockGateway := mock.NewMockKdsPushGatewayRepository(ctrl)
+			tt.setupMock(mockRepo, mockGateway)
+
+			usecase := domain.NewKdsDeviceUsecase(mockRepo, mockGateway, "default")
+			err := usecase.SendTestNotification(context.Background(), tt.id)
 
 			if tt.expectedError != nil {
 				assert.NotNil(t, err)

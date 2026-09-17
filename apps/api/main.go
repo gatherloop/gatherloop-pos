@@ -2,6 +2,7 @@ package main
 
 import (
 	"apps/api/data/doku"
+	"apps/api/data/expopush"
 	"apps/api/data/mysql"
 	"apps/api/domain"
 	"apps/api/presentation/restapi"
@@ -67,6 +68,13 @@ func main() {
 
 	paymentGatewayRepository := doku.NewPaymentGatewayRepository(dokuConfig)
 
+	expoPushConfig := expopush.Config{AccessToken: env.ExpoPushAccessToken}
+	if err := expoPushConfig.Validate(); err != nil {
+		rootLogger.Warn("expo push gateway not configured; KDS notifications will fail", slog.Any("error", err))
+	}
+
+	kdsPushGatewayRepository := expopush.NewKdsPushGatewayRepository(expoPushConfig)
+
 	router := mux.NewRouter().StrictSlash(true)
 	router.Use(restapi.EnableCORS)
 	router.Use(logger.RequestLogger(rootLogger))
@@ -121,7 +129,7 @@ func main() {
 	checklistSessionUsecase := domain.NewChecklistSessionUsecase(checklistSessionRepository, checklistTemplateRepository)
 	stockCheckUsecase := domain.NewStockCheckUsecase(stockCheckRepository, materialRepository)
 	availabilityUsecase := domain.NewAvailabilityUsecase(availabilityRepository, productRepository, variantRepository)
-	kdsDeviceUsecase := domain.NewKdsDeviceUsecase(kdsDeviceRepository)
+	kdsDeviceUsecase := domain.NewKdsDeviceUsecase(kdsDeviceRepository, kdsPushGatewayRepository, env.KdsPushSound)
 
 	walletHandler := restapi.NewWalletHandler(walletUsecase)
 	transactionHandler := restapi.NewTransactionHandler(transactionUsecase)

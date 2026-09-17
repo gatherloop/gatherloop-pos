@@ -66,3 +66,25 @@ func (handler KdsDeviceHandler) DeleteKdsDeviceById(w http.ResponseWriter, r *ht
 
 	WriteResponse(w, apiContract.SuccessResponse{Success: true})
 }
+
+func (handler KdsDeviceHandler) SendTestNotification(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	id, err := GetKdsDeviceId(r)
+	if err != nil {
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: err.Error()})
+		return
+	}
+
+	if usecaseErr := handler.usecase.SendTestNotification(ctx, id); usecaseErr != nil {
+		apiError := apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message}
+		if usecaseErr.Type == domain.BadGateway {
+			WriteErrorWithStatus(ctx, w, apiError, http.StatusBadGateway)
+			return
+		}
+		WriteError(ctx, w, apiError)
+		return
+	}
+
+	WriteResponse(w, apiContract.SuccessResponse{Success: true})
+}
