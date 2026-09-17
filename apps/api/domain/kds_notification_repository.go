@@ -43,3 +43,11 @@ type KdsNotificationRepository interface {
 	MarkKdsNotificationFailed(ctx context.Context, id int64, detail string) *Error
 	MarkKdsNotificationSkipped(ctx context.Context, id int64, detail string) *Error
 }
+
+// KdsNotificationDispatcher lets payTransaction's two callers kick a dispatch sweep the instant
+// their payment commits, without making the cashier's HTTP response wait on Expo (FR-4). It is
+// implemented by KdsNotificationUsecase and injected into TransactionUsecase and PaymentUsecase
+// so the dispatch trigger is a domain concern, not something re-derived per handler.
+type KdsNotificationDispatcher interface {
+	TriggerDispatch()
+}

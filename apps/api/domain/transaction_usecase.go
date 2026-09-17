@@ -12,9 +12,10 @@ type TransactionUsecase struct {
 	walletRepository          WalletRepository
 	availabilityReservation   AvailabilityReservation
 	kdsNotificationRepository KdsNotificationRepository
+	kdsNotificationDispatcher KdsNotificationDispatcher
 }
 
-func NewTransactionUsecase(transactionRepository TransactionRepository, variantRepository VariantRepository, couponRepository CouponRepository, walletRepository WalletRepository, availabilityReservation AvailabilityReservation, kdsNotificationRepository KdsNotificationRepository) TransactionUsecase {
+func NewTransactionUsecase(transactionRepository TransactionRepository, variantRepository VariantRepository, couponRepository CouponRepository, walletRepository WalletRepository, availabilityReservation AvailabilityReservation, kdsNotificationRepository KdsNotificationRepository, kdsNotificationDispatcher KdsNotificationDispatcher) TransactionUsecase {
 	return TransactionUsecase{
 		transactionRepository:     transactionRepository,
 		variantRepository:         variantRepository,
@@ -22,6 +23,7 @@ func NewTransactionUsecase(transactionRepository TransactionRepository, variantR
 		walletRepository:          walletRepository,
 		availabilityReservation:   availabilityReservation,
 		kdsNotificationRepository: kdsNotificationRepository,
+		kdsNotificationDispatcher: kdsNotificationDispatcher,
 	}
 }
 
@@ -199,13 +201,18 @@ func (usecase TransactionUsecase) DeleteTransactionById(ctx context.Context, id 
 }
 
 func (usecase TransactionUsecase) PayTransaction(ctx context.Context, walletId int64, paidAmount float32, id int64) *Error {
-	return usecase.transactionRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+	err := usecase.transactionRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 		transaction, err := usecase.transactionRepository.GetTransactionById(ctxWithTx, id)
 		if err != nil {
 			return err
 		}
 		return payTransaction(ctxWithTx, transaction, usecase.transactionRepository, usecase.walletRepository, usecase.kdsNotificationRepository, walletId, paidAmount)
 	})
+	// FR-4: kicked after the commit so the cashier's HTTP response never waits on Expo.
+	if err == nil {
+		usecase.kdsNotificationDispatcher.TriggerDispatch()
+	}
+	return err
 }
 
 func payTransaction(ctx context.Context, transaction Transaction, transactionRepository TransactionRepository, walletRepository WalletRepository, kdsNotificationRepository KdsNotificationRepository, walletId int64, paidAmount float32) *Error {

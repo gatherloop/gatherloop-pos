@@ -17,6 +17,7 @@ type PaymentUsecase struct {
 	walletRepository          WalletRepository
 	availabilityReservation   AvailabilityReservation
 	kdsNotificationRepository KdsNotificationRepository
+	kdsNotificationDispatcher KdsNotificationDispatcher
 	qrisExpirySeconds         int
 	orderPaymentWalletId      int64
 }
@@ -31,6 +32,7 @@ func NewPaymentUsecase(
 	walletRepository WalletRepository,
 	availabilityReservation AvailabilityReservation,
 	kdsNotificationRepository KdsNotificationRepository,
+	kdsNotificationDispatcher KdsNotificationDispatcher,
 	qrisExpirySeconds int,
 	orderPaymentWalletId int64,
 ) PaymentUsecase {
@@ -44,6 +46,7 @@ func NewPaymentUsecase(
 		walletRepository:          walletRepository,
 		availabilityReservation:   availabilityReservation,
 		kdsNotificationRepository: kdsNotificationRepository,
+		kdsNotificationDispatcher: kdsNotificationDispatcher,
 		qrisExpirySeconds:         qrisExpirySeconds,
 		orderPaymentWalletId:      orderPaymentWalletId,
 	}
@@ -215,6 +218,11 @@ func (usecase PaymentUsecase) ConfirmPayment(ctx context.Context, status QrisSta
 		return nil
 	})
 
+	// FR-4: kicked after the commit — this is the DOKU webhook path into payTransaction.
+	if err == nil && (outcome == ConfirmPaymentOutcomePaid || outcome == ConfirmPaymentOutcomePaidLate) {
+		usecase.kdsNotificationDispatcher.TriggerDispatch()
+	}
+
 	return resultPayment, outcome, err
 }
 
@@ -320,6 +328,7 @@ func (usecase PaymentUsecase) applyQrisStatus(ctxWithTx context.Context, payment
 func (usecase PaymentUsecase) GetPaymentStatus(ctx context.Context, sessionId string, partnerReferenceNo string) (Payment, Transaction, *Error) {
 	var resultPayment Payment
 	var resultTransaction Transaction
+	var outcome ConfirmPaymentOutcome
 
 	err := usecase.paymentRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 		payment, err := usecase.paymentRepository.GetPaymentByPartnerReferenceNo(ctxWithTx, partnerReferenceNo)
@@ -334,11 +343,12 @@ func (usecase PaymentUsecase) GetPaymentStatus(ctx context.Context, sessionId st
 		}
 
 		if payment.Status == PaymentStatePending {
-			refreshed, refreshErr := usecase.refreshPendingPaymentStatus(ctxWithTx, payment, time.Now())
+			refreshed, refreshOutcome, refreshErr := usecase.refreshPendingPaymentStatus(ctxWithTx, payment, time.Now())
 			if refreshErr != nil {
 				return refreshErr
 			}
 			payment = refreshed
+			outcome = refreshOutcome
 		}
 
 		if payment.TransactionId == nil {
@@ -353,6 +363,12 @@ func (usecase PaymentUsecase) GetPaymentStatus(ctx context.Context, sessionId st
 		resultTransaction = transaction
 		return nil
 	})
+
+	// FR-4: kicked after the commit — this is the guest's status page re-querying DOKU and
+	// observing the payment before the webhook does (System Design Overview, "the path").
+	if err == nil && (outcome == ConfirmPaymentOutcomePaid || outcome == ConfirmPaymentOutcomePaidLate) {
+		usecase.kdsNotificationDispatcher.TriggerDispatch()
+	}
 
 	return resultPayment, resultTransaction, err
 }
@@ -397,9 +413,9 @@ func (usecase PaymentUsecase) GetPaymentList(ctx context.Context, sessionId stri
 	return paymentSummaries, total, nil
 }
 
-func (usecase PaymentUsecase) refreshPendingPaymentStatus(ctxWithTx context.Context, payment Payment, now time.Time) (Payment, *Error) {
+func (usecase PaymentUsecase) refreshPendingPaymentStatus(ctxWithTx context.Context, payment Payment, now time.Time) (Payment, ConfirmPaymentOutcome, *Error) {
 	if payment.StatusCheckedAt != nil && now.Sub(*payment.StatusCheckedAt) < statusRequeryFloor {
-		return payment, nil
+		return payment, ConfirmPaymentOutcomeIgnored, nil
 	}
 
 	gatewayStatus, gatewayErr := usecase.paymentGatewayRepository.QueryQris(ctxWithTx, QueryQrisInput{
@@ -407,7 +423,7 @@ func (usecase PaymentUsecase) refreshPendingPaymentStatus(ctxWithTx context.Cont
 		GatewayReferenceNo: payment.GatewayReferenceNo,
 	})
 	if gatewayErr != nil {
-		return payment, nil
+		return payment, ConfirmPaymentOutcomeIgnored, nil
 	}
 
 	if gatewayStatus.Status == PaymentGatewayStatusPending && !now.Before(payment.ExpiredAt) {
@@ -415,10 +431,10 @@ func (usecase PaymentUsecase) refreshPendingPaymentStatus(ctxWithTx context.Cont
 	}
 
 	if gatewayStatus.Status != PaymentGatewayStatusPending {
-		updated, _, err := usecase.applyQrisStatus(ctxWithTx, payment, gatewayStatus)
-		return updated, err
+		return usecase.applyQrisStatus(ctxWithTx, payment, gatewayStatus)
 	}
 
 	payment.StatusCheckedAt = &now
-	return usecase.paymentRepository.UpdatePaymentById(ctxWithTx, payment, payment.Id)
+	updated, err := usecase.paymentRepository.UpdatePaymentById(ctxWithTx, payment, payment.Id)
+	return updated, ConfirmPaymentOutcomeIgnored, err
 }
