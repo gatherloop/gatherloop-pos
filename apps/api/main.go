@@ -2,15 +2,22 @@ package main
 
 import (
 	"apps/api/data/doku"
+	"apps/api/data/expopush"
 	"apps/api/data/mysql"
 	"apps/api/domain"
 	"apps/api/presentation/restapi"
 	"apps/api/utils"
 	"apps/api/utils/logger"
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
+	"os/signal"
 	"strconv"
+	"sync"
+	"syscall"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -67,6 +74,13 @@ func main() {
 
 	paymentGatewayRepository := doku.NewPaymentGatewayRepository(dokuConfig)
 
+	expoPushConfig := expopush.Config{AccessToken: env.ExpoPushAccessToken}
+	if err := expoPushConfig.Validate(); err != nil {
+		rootLogger.Warn("expo push gateway not configured; KDS notifications will fail", slog.Any("error", err))
+	}
+
+	kdsPushGatewayRepository := expopush.NewKdsPushGatewayRepository(expoPushConfig)
+
 	router := mux.NewRouter().StrictSlash(true)
 	router.Use(restapi.EnableCORS)
 	router.Use(logger.RequestLogger(rootLogger))
@@ -94,12 +108,16 @@ func main() {
 	stockCheckRepository := mysql.NewStockCheckRepository(db)
 	availabilityReservationRepository := mysql.NewAvailabilityReservationRepository(db)
 	availabilityRepository := mysql.NewAvailabilityRepository(db)
+	kdsDeviceRepository := mysql.NewKdsDeviceRepository(db)
+	kdsNotificationRepository := mysql.NewKdsNotificationRepository(db)
 
 	orderPaymentWalletId, _ := strconv.ParseInt(env.OrderPaymentWalletId, 10, 64)
 
+	kdsNotificationUsecase := domain.NewKdsNotificationUsecase(kdsNotificationRepository, kdsDeviceRepository, transactionRepository, kdsPushGatewayRepository, env.KdsPushSound)
+
 	availabilityReservation := domain.NewAvailabilityReservation(availabilityReservationRepository)
 	walletUsecase := domain.NewWalletUsecase(walletRepository)
-	transactionUsecase := domain.NewTransactionUsecase(transactionRepository, variantRepository, couponRepository, walletRepository, availabilityReservation)
+	transactionUsecase := domain.NewTransactionUsecase(transactionRepository, variantRepository, couponRepository, walletRepository, availabilityReservation, kdsNotificationRepository, kdsNotificationUsecase)
 	variantUsecase := domain.NewVariantUsecase(variantRepository, productRepository)
 	productUsecase := domain.NewProductUsecase(productRepository, variantRepository)
 	materialUsecase := domain.NewMaterialUsecase(materialRepository, supplierRepository)
@@ -111,7 +129,7 @@ func main() {
 	tableUsecase := domain.NewTableUsecase(tableRepository)
 	cartUsecase := domain.NewCartUsecase(cartRepository, variantRepository, tableRepository, paymentRepository)
 	customerUsecase := domain.NewCustomerUsecase(customerRepository)
-	paymentUsecase := domain.NewPaymentUsecase(paymentRepository, paymentGatewayRepository, customerRepository, cartRepository, transactionRepository, variantRepository, walletRepository, availabilityReservation, env.DokuQrisExpirySeconds, orderPaymentWalletId)
+	paymentUsecase := domain.NewPaymentUsecase(paymentRepository, paymentGatewayRepository, customerRepository, cartRepository, transactionRepository, variantRepository, walletRepository, availabilityReservation, kdsNotificationRepository, kdsNotificationUsecase, env.DokuQrisExpirySeconds, orderPaymentWalletId)
 	budgetUsecase := domain.NewBudgetUsecase(budgetRepository)
 	authUsecase := domain.NewAuthUsecase(authRepository)
 	calculationUsecase := domain.NewCalculationUsecase(calculationRepository, walletRepository)
@@ -120,6 +138,7 @@ func main() {
 	checklistSessionUsecase := domain.NewChecklistSessionUsecase(checklistSessionRepository, checklistTemplateRepository)
 	stockCheckUsecase := domain.NewStockCheckUsecase(stockCheckRepository, materialRepository)
 	availabilityUsecase := domain.NewAvailabilityUsecase(availabilityRepository, productRepository, variantRepository)
+	kdsDeviceUsecase := domain.NewKdsDeviceUsecase(kdsDeviceRepository, kdsPushGatewayRepository, env.KdsPushSound)
 
 	walletHandler := restapi.NewWalletHandler(walletUsecase)
 	transactionHandler := restapi.NewTransactionHandler(transactionUsecase)
@@ -144,6 +163,7 @@ func main() {
 	stockCheckHandler := restapi.NewStockCheckHandler(stockCheckUsecase)
 	availabilityHandler := restapi.NewAvailabilityHandler(availabilityUsecase)
 	publicHandler := restapi.NewPublicHandler(productUsecase, categoryUsecase, variantUsecase, tableUsecase)
+	kdsDeviceHandler := restapi.NewKdsDeviceHandler(kdsDeviceUsecase)
 
 	restapi.NewAuthRouter(authHandler).AddRouter(router)
 	restapi.NewBudgetRouter(budgetHandler).AddRouter(router)
@@ -168,11 +188,59 @@ func main() {
 	restapi.NewStockCheckRouter(stockCheckHandler).AddRouter(router)
 	restapi.NewAvailabilityRouter(availabilityHandler).AddRouter(router)
 	restapi.NewPublicRouter(publicHandler).AddRouter(router)
+	restapi.NewKdsDeviceRouter(kdsDeviceHandler).AddRouter(router)
 
 	router.HandleFunc("/health-check", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("success"))
 	})
 
-	rootLogger.Info("server listening", slog.String("port", env.Port))
-	http.ListenAndServe(fmt.Sprintf(":%s", env.Port), router)
+	// FR-4: the sweeper that catches a crash, a deploy or an Expo outage — the post-commit
+	// goroutine kick in payTransaction's callers is the fast path, this is the backstop.
+	dispatchCtx, stopDispatch := context.WithCancel(context.Background())
+	var dispatchWaitGroup sync.WaitGroup
+	dispatchWaitGroup.Add(1)
+	go func() {
+		defer dispatchWaitGroup.Done()
+		runKdsDispatchSweeper(dispatchCtx, kdsNotificationUsecase, env.KdsDispatchIntervalSeconds, rootLogger)
+	}()
+
+	server := &http.Server{Addr: fmt.Sprintf(":%s", env.Port), Handler: router}
+
+	go func() {
+		rootLogger.Info("server listening", slog.String("port", env.Port))
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			rootLogger.Error("server failed", slog.Any("error", err))
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	<-quit
+
+	rootLogger.Info("server shutting down")
+
+	stopDispatch()
+	dispatchWaitGroup.Wait()
+
+	shutdownCtx, cancelShutdown := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancelShutdown()
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		rootLogger.Error("server shutdown failed", slog.Any("error", err))
+	}
+}
+
+func runKdsDispatchSweeper(ctx context.Context, usecase domain.KdsNotificationUsecase, intervalSeconds int, logger *slog.Logger) {
+	ticker := time.NewTicker(time.Duration(intervalSeconds) * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if err := usecase.DispatchPending(context.Background()); err != nil {
+				logger.Error("kds dispatch sweep failed", slog.Any("error", err))
+			}
+		}
+	}
 }

@@ -1,0 +1,184 @@
+package mysql_test
+
+import (
+	"apps/api/data/mysql"
+	"apps/api/domain"
+	"context"
+	"testing"
+	"time"
+
+	sqlmock "github.com/DATA-DOG/go-sqlmock"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	gormmysql "gorm.io/driver/mysql"
+	"gorm.io/gorm"
+)
+
+func newMockKdsNotificationRepository(t *testing.T) (domain.KdsNotificationRepository, sqlmock.Sqlmock) {
+	t.Helper()
+
+	sqlDB, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	t.Cleanup(func() { sqlDB.Close() })
+
+	gormDB, err := gorm.Open(gormmysql.New(gormmysql.Config{
+		Conn:                      sqlDB,
+		SkipInitializeWithVersion: true,
+	}), &gorm.Config{})
+	require.NoError(t, err)
+
+	return mysql.NewKdsNotificationRepository(gormDB), mock
+}
+
+func kdsBarTransaction(id int64, createdAt time.Time) domain.Transaction {
+	return domain.Transaction{
+		Id:        id,
+		CreatedAt: createdAt,
+		TransactionItems: []domain.TransactionItem{
+			{
+				Amount:      1,
+				ProductName: "Americano",
+				Variant: domain.Variant{
+					Product: domain.Product{Category: domain.Category{Station: "BAR"}},
+				},
+			},
+		},
+	}
+}
+
+// FR-3/D4: the insert is a self-referential no-op on conflict, which is what makes a duplicate
+// enqueue for the same transaction leave exactly one row rather than erroring or writing a second.
+func TestEnqueueForTransaction_DuplicateEnqueueIsIdempotentByConstruction(t *testing.T) {
+	repo, mock := newMockKdsNotificationRepository(t)
+
+	mock.ExpectBegin()
+	mock.ExpectExec("INSERT INTO `kds_notifications` \\(`transaction_id`,`status`,`attempt_count`,`detail`,`created_at`,`sent_at`\\) VALUES \\(\\?,\\?,\\?,\\?,\\?,\\?\\) ON DUPLICATE KEY UPDATE `id`=id").
+		WithArgs(int64(1), "pending", 0, nil, sqlmock.AnyArg(), nil).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+
+	err := repo.EnqueueForTransaction(context.Background(), kdsBarTransaction(1, time.Now()))
+
+	require.Nil(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestEnqueueForTransaction_SkipsEntirelyWhenShouldNotifyIsFalse(t *testing.T) {
+	repo, mock := newMockKdsNotificationRepository(t)
+
+	transaction := domain.Transaction{
+		Id: 1,
+		TransactionItems: []domain.TransactionItem{
+			{
+				Amount:      1,
+				ProductName: "Board Game Ticket",
+				Variant:     domain.Variant{Product: domain.Product{Category: domain.Category{Station: "NONE"}}},
+			},
+		},
+	}
+
+	err := repo.EnqueueForTransaction(context.Background(), transaction)
+
+	require.Nil(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+// D22: a transaction paid on a later business day is enqueued as 'skipped' rather than left
+// unwritten, so the outbox still answers what happened to this order's notification.
+func TestEnqueueForTransaction_WritesSkippedStatusForAStaleTransaction(t *testing.T) {
+	repo, mock := newMockKdsNotificationRepository(t)
+
+	mock.ExpectBegin()
+	mock.ExpectExec("INSERT INTO `kds_notifications`").
+		WithArgs(int64(1), "skipped", 0, sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+
+	err := repo.EnqueueForTransaction(context.Background(), kdsBarTransaction(1, time.Now().AddDate(0, 0, -1)))
+
+	require.Nil(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestClaimPendingKdsNotifications_FiltersByStatusAndAttemptCount(t *testing.T) {
+	repo, mock := newMockKdsNotificationRepository(t)
+
+	mock.ExpectQuery("SELECT \\* FROM `kds_notifications` WHERE status = \\? AND attempt_count < \\? ORDER BY created_at ASC LIMIT \\?").
+		WithArgs("pending", domain.KdsNotificationMaxAttempts, 50).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "transaction_id", "status", "attempt_count"}).AddRow(1, 10, "pending", 0))
+
+	notifications, err := repo.ClaimPendingKdsNotifications(context.Background(), 50)
+
+	require.Nil(t, err)
+	require.Len(t, notifications, 1)
+	assert.Equal(t, domain.KdsNotificationStatusPending, notifications[0].Status)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestMarkKdsNotificationSent_SetsStatusAndSentAt(t *testing.T) {
+	repo, mock := newMockKdsNotificationRepository(t)
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE `kds_notifications` SET `detail`=\\?,`sent_at`=\\?,`status`=\\? WHERE id = \\?").
+		WithArgs("test detail", sqlmock.AnyArg(), "sent", int64(1)).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectCommit()
+
+	err := repo.MarkKdsNotificationSent(context.Background(), 1, "test detail")
+
+	require.Nil(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestMarkKdsNotificationFailed_IncrementsAttemptCountAndStaysPendingBelowThreshold(t *testing.T) {
+	repo, mock := newMockKdsNotificationRepository(t)
+
+	mock.ExpectQuery("SELECT \\* FROM `kds_notifications` WHERE id = \\? ORDER BY `kds_notifications`.`id` LIMIT \\?").
+		WithArgs(int64(1), 1).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "attempt_count"}).AddRow(1, 3))
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE `kds_notifications` SET `attempt_count`=\\?,`detail`=\\?,`status`=\\? WHERE id = \\?").
+		WithArgs(4, "expo timeout", "pending", int64(1)).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectCommit()
+
+	err := repo.MarkKdsNotificationFailed(context.Background(), 1, "expo timeout")
+
+	require.Nil(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestMarkKdsNotificationFailed_BecomesFailedAtMaxAttempts(t *testing.T) {
+	repo, mock := newMockKdsNotificationRepository(t)
+
+	mock.ExpectQuery("SELECT \\* FROM `kds_notifications` WHERE id = \\? ORDER BY `kds_notifications`.`id` LIMIT \\?").
+		WithArgs(int64(1), 1).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "attempt_count"}).AddRow(1, domain.KdsNotificationMaxAttempts-1))
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE `kds_notifications` SET `attempt_count`=\\?,`detail`=\\?,`status`=\\? WHERE id = \\?").
+		WithArgs(domain.KdsNotificationMaxAttempts, "expo timeout", "failed", int64(1)).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectCommit()
+
+	err := repo.MarkKdsNotificationFailed(context.Background(), 1, "expo timeout")
+
+	require.Nil(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestMarkKdsNotificationSkipped_SetsStatusAndDetail(t *testing.T) {
+	repo, mock := newMockKdsNotificationRepository(t)
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE `kds_notifications` SET `detail`=\\?,`status`=\\? WHERE id = \\?").
+		WithArgs("no registered devices", "skipped", int64(1)).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectCommit()
+
+	err := repo.MarkKdsNotificationSkipped(context.Background(), 1, "no registered devices")
+
+	require.Nil(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+}

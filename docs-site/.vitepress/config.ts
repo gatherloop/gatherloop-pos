@@ -69,6 +69,7 @@ export default defineConfig({
           { text: 'Table Ordering', link: '/sales/table-ordering' },
           { text: 'Order Checkout (QRIS)', link: '/sales/order-checkout' },
           { text: 'Order History', link: '/sales/order-history' },
+          { text: 'Kitchen Display System (KDS)', link: '/sales/kds' },
         ],
       },
       {

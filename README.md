@@ -22,6 +22,7 @@ apps/
   pos-web/      Next.js admin/cashier app (Pages Router)
   order-web/    Next.js customer app — scan a table QR, order and pay by QRIS from your phone
   pos-mobile/   React Native (Expo) app for iOS/Android
+  kds-mobile/   React Native (Expo) app — a dedicated phone that buzzes when an order is paid
   *-e2e/        Playwright end-to-end tests per app
 libs/
   ui/           All shared frontend code: entities, use cases, screens, components
@@ -57,12 +58,18 @@ cp apps/api/.env.example apps/api/.env    # DB credentials, JWT secret, CORS ori
 cp apps/pos-web/.env.example apps/pos-web/.env.local
 cp apps/order-web/.env.example apps/order-web/.env.local
 cp apps/pos-mobile/.env.example apps/pos-mobile/.env
+cp apps/kds-mobile/.env.example apps/kds-mobile/.env
 ```
 
 `apps/api`'s checkout endpoint validates `ORDER_PAYMENT_WALLET_ID` on each request and returns an
 error if it is unset, unknown, deleted, or not a payment target (`docs/prd-order-checkout-qris-doku.md`,
 D15) — before trying checkout locally, create a wallet (POS → Wallets) and point `apps/api/.env` at
 its id.
+
+`apps/api/.env`'s `EXPO_PUSH_ACCESS_TOKEN`, `KDS_PUSH_SOUND` and `KDS_DISPATCH_INTERVAL_SECONDS`
+configure push delivery to `apps/kds-mobile` (`docs/prd-kds-order-notifications.md`) — the app
+still registers and boots without a real Expo token, but no notification is actually delivered
+until one is set.
 
 ### Run
 
@@ -71,6 +78,7 @@ npx nx run api:serve      # Go API, on the PORT set in apps/api/.env
 npx nx run pos-web:dev    # POS web app     → http://localhost:3000
 npx nx run order-web:dev  # customer app    → http://localhost:3000
 npx nx run pos-mobile:start # React Native dev server (then run-android / run-ios)
+npx nx run kds-mobile:start # React Native dev server (then run-android / run-ios)
 npx nx run ui:storybook   # component explorer → http://localhost:6006
 ```
 

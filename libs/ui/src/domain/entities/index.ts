@@ -25,3 +25,4 @@ export * from './PurchaseList';
 export * from './PublicTable';
 export * from './Cart';
 export * from './Payment';
+export * from './KdsDevice';

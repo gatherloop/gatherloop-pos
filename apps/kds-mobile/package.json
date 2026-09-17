@@ -1,0 +1,28 @@
+{
+  "name": "kds-mobile",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "eas-build-post-install": "cd ../../ && node tools/scripts/eas-build-post-install.mjs . apps/kds-mobile"
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "*",
+    "@react-navigation/native": "*",
+    "@react-navigation/native-stack": "*",
+    "@testing-library/jest-native": "*",
+    "@testing-library/react-native": "*",
+    "burnt": "*",
+    "expo": "*",
+    "expo-constants": "*",
+    "expo-notifications": "*",
+    "metro-config": "*",
+    "react-native": "*",
+    "react-native-config": "*",
+    "react-native-reanimated": "*",
+    "react-native-safe-area-context": "*",
+    "react-native-screens": "*",
+    "react-native-svg": "*",
+    "react-native-web": "*",
+    "solito": "*"
+  }
+}

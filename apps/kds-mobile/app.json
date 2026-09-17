@@ -1,0 +1,48 @@
+{
+  "expo": {
+    "name": "KDS",
+    "slug": "kds-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "bundleIdentifier": "com.gatherloop.kds",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.gatherloop.kds",
+      "googleServicesFile": "./google-services.json",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "notification": {
+      "iosDisplayInForeground": true
+    },
+    "plugins": [
+      "expo-notifications",
+      "./plugins/withReactNativeConfig.js"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "09f90f27-c18f-4d14-ba48-d98709bc07e4"
+      }
+    }
+  }
+}

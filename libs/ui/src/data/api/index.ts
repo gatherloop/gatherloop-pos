@@ -46,3 +46,5 @@ export * from './cart.transformer';
 export * from './payment';
 export * from './payment.transformer';
 export * from './customer';
+export * from './kdsDevice';
+export * from './kdsDevice.transformer';

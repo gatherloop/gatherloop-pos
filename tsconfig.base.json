@@ -18,8 +18,9 @@
       "@gatherloop-pos/api-contract": ["libs/api-contract/src/index.ts"],
       "@gatherloop-pos/provider": ["libs/provider/src/index.ts"],
       "@gatherloop-pos/ui": ["libs/ui/src/index.ts"],
-      "@gatherloop-pos/ui/pos": ["libs/ui/src/index.pos.ts"],
-      "@gatherloop-pos/ui/order": ["libs/ui/src/index.order.ts"]
+      "@gatherloop-pos/ui/kds": ["libs/ui/src/index.kds.ts"],
+      "@gatherloop-pos/ui/order": ["libs/ui/src/index.order.ts"],
+      "@gatherloop-pos/ui/pos": ["libs/ui/src/index.pos.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]
