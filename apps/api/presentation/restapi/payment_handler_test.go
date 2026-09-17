@@ -21,32 +21,36 @@ import (
 const paymentHandlerOrderPaymentWalletId = 9
 
 type paymentHandlerMocks struct {
-	paymentRepo      *mock.MockPaymentRepository
-	gatewayRepo      *mock.MockPaymentGatewayRepository
-	customerRepo     *mock.MockCustomerRepository
-	cartRepo         *mock.MockCartRepository
-	transactionRepo  *mock.MockTransactionRepository
-	variantRepo      *mock.MockVariantRepository
-	walletRepo       *mock.MockWalletRepository
-	availabilityRepo *mock.MockAvailabilityReservationRepository
+	paymentRepo         *mock.MockPaymentRepository
+	gatewayRepo         *mock.MockPaymentGatewayRepository
+	customerRepo        *mock.MockCustomerRepository
+	cartRepo            *mock.MockCartRepository
+	transactionRepo     *mock.MockTransactionRepository
+	variantRepo         *mock.MockVariantRepository
+	walletRepo          *mock.MockWalletRepository
+	availabilityRepo    *mock.MockAvailabilityReservationRepository
+	kdsNotificationRepo *mock.MockKdsNotificationRepository
 }
 
 func newPaymentHandlerMocks(ctrl *gomock.Controller) paymentHandlerMocks {
+	kdsNotificationRepo := mock.NewMockKdsNotificationRepository(ctrl)
+	kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	return paymentHandlerMocks{
-		paymentRepo:      mock.NewMockPaymentRepository(ctrl),
-		gatewayRepo:      mock.NewMockPaymentGatewayRepository(ctrl),
-		customerRepo:     mock.NewMockCustomerRepository(ctrl),
-		cartRepo:         mock.NewMockCartRepository(ctrl),
-		transactionRepo:  mock.NewMockTransactionRepository(ctrl),
-		variantRepo:      mock.NewMockVariantRepository(ctrl),
-		walletRepo:       mock.NewMockWalletRepository(ctrl),
-		availabilityRepo: mock.NewMockAvailabilityReservationRepository(ctrl),
+		paymentRepo:         mock.NewMockPaymentRepository(ctrl),
+		gatewayRepo:         mock.NewMockPaymentGatewayRepository(ctrl),
+		customerRepo:        mock.NewMockCustomerRepository(ctrl),
+		cartRepo:            mock.NewMockCartRepository(ctrl),
+		transactionRepo:     mock.NewMockTransactionRepository(ctrl),
+		variantRepo:         mock.NewMockVariantRepository(ctrl),
+		walletRepo:          mock.NewMockWalletRepository(ctrl),
+		availabilityRepo:    mock.NewMockAvailabilityReservationRepository(ctrl),
+		kdsNotificationRepo: kdsNotificationRepo,
 	}
 }
 
 func (m paymentHandlerMocks) handler() restapi.PaymentHandler {
 	availabilityReservation := domain.NewAvailabilityReservation(m.availabilityRepo)
-	usecase := domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, availabilityReservation, 300, paymentHandlerOrderPaymentWalletId)
+	usecase := domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, availabilityReservation, m.kdsNotificationRepo, 300, paymentHandlerOrderPaymentWalletId)
 	return restapi.NewPaymentHandler(usecase)
 }
 

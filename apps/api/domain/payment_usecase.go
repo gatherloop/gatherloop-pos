@@ -8,16 +8,17 @@ import (
 const statusRequeryFloor = 5 * time.Second
 
 type PaymentUsecase struct {
-	paymentRepository        PaymentRepository
-	paymentGatewayRepository PaymentGatewayRepository
-	customerRepository       CustomerRepository
-	cartRepository           CartRepository
-	transactionRepository    TransactionRepository
-	variantRepository        VariantRepository
-	walletRepository         WalletRepository
-	availabilityReservation  AvailabilityReservation
-	qrisExpirySeconds        int
-	orderPaymentWalletId     int64
+	paymentRepository         PaymentRepository
+	paymentGatewayRepository  PaymentGatewayRepository
+	customerRepository        CustomerRepository
+	cartRepository            CartRepository
+	transactionRepository     TransactionRepository
+	variantRepository         VariantRepository
+	walletRepository          WalletRepository
+	availabilityReservation   AvailabilityReservation
+	kdsNotificationRepository KdsNotificationRepository
+	qrisExpirySeconds         int
+	orderPaymentWalletId      int64
 }
 
 func NewPaymentUsecase(
@@ -29,20 +30,22 @@ func NewPaymentUsecase(
 	variantRepository VariantRepository,
 	walletRepository WalletRepository,
 	availabilityReservation AvailabilityReservation,
+	kdsNotificationRepository KdsNotificationRepository,
 	qrisExpirySeconds int,
 	orderPaymentWalletId int64,
 ) PaymentUsecase {
 	return PaymentUsecase{
-		paymentRepository:        paymentRepository,
-		paymentGatewayRepository: paymentGatewayRepository,
-		customerRepository:       customerRepository,
-		cartRepository:           cartRepository,
-		transactionRepository:    transactionRepository,
-		variantRepository:        variantRepository,
-		walletRepository:         walletRepository,
-		availabilityReservation:  availabilityReservation,
-		qrisExpirySeconds:        qrisExpirySeconds,
-		orderPaymentWalletId:     orderPaymentWalletId,
+		paymentRepository:         paymentRepository,
+		paymentGatewayRepository:  paymentGatewayRepository,
+		customerRepository:        customerRepository,
+		cartRepository:            cartRepository,
+		transactionRepository:     transactionRepository,
+		variantRepository:         variantRepository,
+		walletRepository:          walletRepository,
+		availabilityReservation:   availabilityReservation,
+		kdsNotificationRepository: kdsNotificationRepository,
+		qrisExpirySeconds:         qrisExpirySeconds,
+		orderPaymentWalletId:      orderPaymentWalletId,
 	}
 }
 
@@ -250,7 +253,7 @@ func (usecase PaymentUsecase) applyQrisStatus(ctxWithTx context.Context, payment
 			}
 		}
 
-		if payErr := payTransaction(ctxWithTx, transaction, usecase.transactionRepository, usecase.walletRepository, usecase.orderPaymentWalletId, payment.Amount); payErr != nil {
+		if payErr := payTransaction(ctxWithTx, transaction, usecase.transactionRepository, usecase.walletRepository, usecase.kdsNotificationRepository, usecase.orderPaymentWalletId, payment.Amount); payErr != nil {
 			return payment, "", payErr
 		}
 
