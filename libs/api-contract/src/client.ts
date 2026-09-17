@@ -6,7 +6,9 @@ import axios, { AxiosError } from 'axios';
 import Config from 'react-native-config';
 
 const browserBaseUrl =
-  process.env['NEXT_PUBLIC_API_PROXY_BASE_URL'] ?? Config['API_BASE_URL'];
+  process.env['NEXT_PUBLIC_API_PROXY_BASE_URL'] ??
+  process.env['EXPO_PUBLIC_API_BASE_URL'] ??
+  Config['API_BASE_URL'];
 
 const serverBaseUrl =
   process.env['API_INTERNAL_BASE_URL'] ??
