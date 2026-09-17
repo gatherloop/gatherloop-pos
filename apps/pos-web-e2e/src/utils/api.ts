@@ -274,6 +274,19 @@ export async function createTransaction(
   return apiPost<Transaction>(request, '/api/transactions', data);
 }
 
+export interface PayTransactionInput {
+  walletId: number;
+  paidAmount: number;
+}
+
+export async function payTransaction(
+  request: APIRequestContext,
+  id: number,
+  data: PayTransactionInput
+): Promise<void> {
+  await apiPut(request, `/api/transactions/${id}/pay`, data);
+}
+
 export async function deleteTransaction(
   request: APIRequestContext,
   id: number
