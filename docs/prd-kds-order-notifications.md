@@ -1,6 +1,6 @@
 # PRD: KDS Push Notifications — Telling the Barista and the Kitchen an Order Arrived
 
-**Status:** Draft for review — revised once, see below
+**Status:** Draft for review — revised twice, see below
 **Scope:** a new React Native (Expo) app, `apps/kds-mobile`, and the backend that pushes a
 notification to it when a transaction is paid. **Display of the order queue is explicitly not in
 this PRD** — this is the notification pipe and nothing else.
@@ -38,6 +38,31 @@ four are recorded as new decisions rather than edited into the originals.
 
 The fifth answer — no open bills — confirms D1 as written and closes question 1 with no change.
 Phase count is unchanged; phases 1, 6, 7 and 8 each gain a paragraph.
+
+## Revision note (second review pass)
+
+One change, and it is a deletion: **one paid transaction produces one notification, delivered to
+every registered device.** **D24 supersedes D20 and D21.**
+
+The first pass built per-device station subscriptions (D20) and then, one decision later, had to
+add a rule that throws them away whenever a station has no subscriber (D21). That pairing was the
+tell. D21 conceded that broadcasting to every phone is an acceptable outcome at this venue; D20
+then existed only to *prevent* that acceptable outcome, in exchange for configuration that two
+staff who swap roles mid-shift have to keep correct. A mechanism whose failure mode is "we do the
+simple thing instead" is a mechanism that should have been the simple thing.
+
+What this removes: the `kds_device_stations` table, the `station` column and its place in the
+outbox's unique key, the station checkboxes on the setup screen, `KdsStation` from the API
+contract entirely, and the whole device-resolution branch in the dispatcher.
+
+What it keeps, unchanged: the station rule. `categories.station` still decides **whether** a
+transaction notifies at all — that is the board-game exclusion (D3) and it is untouched — and it
+still labels the items in the message body, so the barista and the cook each read their own line
+off one alert. The station stopped being a routing key; it never stopped being the thing that
+sorts the work.
+
+The cost is stated in D24 and in Risks: a staff member is now buzzed for orders they are not
+making. Phase count is unchanged; phases 1, 3, 4, 5, 6 and 8 all get smaller.
 
 ---
 
@@ -268,7 +293,7 @@ with a background sweeper for retries. ← Recommended**
   If the payment rolls back, so does the intent to notify.
 - ✅ Retryable and inspectable — `SELECT * FROM kds_notifications WHERE status = 'failed'` answers
   the support question directly.
-- ✅ Idempotent by schema: `UNIQUE (transaction_id, station)` (D4).
+- ✅ Idempotent by schema: `UNIQUE (transaction_id)` (D4).
 - ✅ Testable at the use-case level over a mock repository, in the style every
   `*_usecase_test.go` in `apps/api/domain` already uses — no HTTP in the test.
 - ❌ One table, one goroutine, one ticker. The honest cost, and it is two small phases.
@@ -294,19 +319,18 @@ with a background sweeper for retries. ← Recommended**
                      ├─ wallet balance, income, paid_at      (unchanged)
                      └─ KdsNotificationUsecase.EnqueueForPaidTransaction
                             │
-                            ├─ StationsToNotify(transaction)  → []{BAR, KITCHEN}
-                            │     items whose variant.product.category.station
-                            │     is BAR or KITCHEN; empty ⇒ nothing enqueued
+                            ├─ ShouldNotify(transaction)
+                            │     any item whose variant.product.category.station
+                            │     is BAR or KITCHEN; none ⇒ nothing enqueued
                             ├─ paid on a later business day? ⇒ row written 'skipped'
-                            └─ INSERT kds_notifications (transaction_id, station)
+                            └─ INSERT kds_notifications (transaction_id)   ← one row
                      │
                   COMMIT
                      │
                      ▼
         dispatch now (goroutine)  ◄── every 15s, sweeper picks up stragglers
                      │
-                     ├─ devices subscribed to this station
-                     │     └─ none? ⇒ broadcast to every registered device (D21)
+                     ├─ one message, built once, per registered device (D24)
                      ▼
         KdsPushGatewayRepository.Send(messages)
                      │   POST https://exp.host/--/api/v2/push/send
@@ -337,42 +361,35 @@ CREATE TABLE kds_devices (
   UNIQUE KEY uq_kds_devices_push_token (push_token)
 );
 
--- a device subscribes to one or both stations (D20)
-CREATE TABLE kds_device_stations (
-  id            BIGINT AUTO_INCREMENT PRIMARY KEY,
-  kds_device_id BIGINT      NOT NULL,
-  station       VARCHAR(20) NOT NULL,         -- 'BAR' | 'KITCHEN'
-  UNIQUE KEY uq_kds_device_stations (kds_device_id, station),
-  KEY idx_kds_device_stations_station (station)
-);
-
 -- 000032_create_kds_notifications.up.sql
 CREATE TABLE kds_notifications (
-  id             BIGINT AUTO_INCREMENT PRIMARY KEY,
+  id             BIGINT      NOT NULL AUTO_INCREMENT PRIMARY KEY,
   transaction_id BIGINT      NOT NULL,
-  station        VARCHAR(20) NOT NULL,        -- 'BAR' | 'KITCHEN'
   status         VARCHAR(20) NOT NULL DEFAULT 'pending',  -- pending | sent | failed | skipped
   attempt_count  INT         NOT NULL DEFAULT 0,
   detail         TEXT        NULL,            -- last delivery error, or why it was skipped
   created_at     TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
   sent_at        TIMESTAMP   NULL,
-  UNIQUE KEY uq_kds_notifications_transaction_station (transaction_id, station),
+  UNIQUE KEY uq_kds_notifications_transaction (transaction_id),
   KEY idx_kds_notifications_status (status, created_at)
 );
 ```
+
+Two tables, and no station anywhere in either of them (D24). The station survives only inside the
+domain — as the predicate that decides whether a row is written at all, and as a label in the
+message body.
 
 `kds_notifications` stores **no copy of the message**. The dispatcher re-reads the transaction by
 id and builds the payload at send time; a paid transaction cannot be edited
 (`transaction_usecase.go:107`), so there is nothing to snapshot against.
 
-No table takes a foreign key, matching every other table in this schema; `kds_device_stations`
-rows are deleted and rewritten as a set whenever a device registers (D17, D20).
+Neither table takes a foreign key, matching every other table in this schema.
 
 ### New API surface
 
 | Method | Path | Auth | Purpose |
 | --- | --- | --- | --- |
-| `POST` | `/kds/devices` | `CheckAuth` | Register or refresh this device's push token and its station set (upsert by token) |
+| `POST` | `/kds/devices` | `CheckAuth` | Register or refresh this device's push token (upsert by token) |
 | `GET` | `/kds/devices` | `CheckAuth` | List registered devices — troubleshooting, and the KDS app's own "am I registered" check |
 | `DELETE` | `/kds/devices/{deviceId}` | `CheckAuth` | Unregister — logout, or a lost phone |
 | `POST` | `/kds/devices/{deviceId}/test-notification` | `CheckAuth` | Send a test push to one device |
@@ -382,18 +399,18 @@ Four routes in one `kds_device_route.go`, all behind `CheckAuth`
 CORS preflight. **No public routes** — a KDS is staff equipment, and nothing here is reachable by
 a guest.
 
-Contract additions in `libs/api-contract/src/api.yaml`: `KdsDevice` and `KdsDeviceRequest` (both
-carrying `stations: KdsStation[]`), `KdsStation` (`BAR | KITCHEN`), and the four operations.
-Nothing on the `Transaction` schema changes — the notification is a side effect of payment, not a field on it.
+Contract additions in `libs/api-contract/src/api.yaml`: `KdsDevice`, `KdsDeviceRequest`, and the
+four operations. **No station type crosses the API boundary at all** (D24) — a device is a name, a
+token and a platform. Nothing on the `Transaction` schema changes — the notification is a side effect of payment, not a field on it.
 
 ### New backend files
 
 | Layer | File | Contents |
 | --- | --- | --- |
-| Entity | `domain/kds_device_entity.go` | `KdsDevice` (with `Stations []KdsStation`), `KdsStation`, `KdsPlatform` |
-| Entity | `domain/kds_notification_entity.go` | `KdsNotification`, `KdsNotificationStatus`, `KdsPushMessage` |
-| Rule | `domain/kds_notification_routing.go` | `StationsToNotify(Transaction) []KdsStation` — pure, no I/O |
-| Repo iface | `domain/kds_device_repository.go` | CRUD + `GetKdsDevicesByStation` + `GetKdsDevices` (the D21 broadcast target) |
+| Entity | `domain/kds_device_entity.go` | `KdsDevice`, `KdsPlatform` |
+| Entity | `domain/kds_notification_entity.go` | `KdsNotification`, `KdsNotificationStatus`, `KdsPushMessage`, `KdsStation` |
+| Rule | `domain/kds_notification_routing.go` | `ShouldNotify(Transaction) bool` and `StationLines(Transaction) []KdsStationLine` — pure, no I/O |
+| Repo iface | `domain/kds_device_repository.go` | CRUD + `GetKdsDevices` (every registered device — the only delivery target) |
 | Repo iface | `domain/kds_notification_repository.go` | outbox CRUD, plus `KdsPushGatewayRepository` |
 | Use case | `domain/kds_device_usecase.go` | register/list/delete/test |
 | Use case | `domain/kds_notification_usecase.go` | `EnqueueForPaidTransaction`, `DispatchPending` |
@@ -437,12 +454,12 @@ mirror-image `no-restricted-imports` blocks in `libs/ui/.eslintrc.json`
 | Screen | Contents |
 | --- | --- |
 | **Login** | Username + password, the existing `AuthLoginUsecase` and JWT (D10). Identical in behaviour to the POS login, its own screen file (D12). |
-| **Device Setup** | Device name field; **two independent checkboxes, Bar and Kitchen, both checked by default** (D20); notification-permission status with a *Grant permission* action; **Register this device**; **Send test notification**; and a *Registered as "Andi's phone" · Bar, Kitchen* confirmation state. Plus **Unregister** and **Log out**. |
+| **Device Setup** | Device name field; notification-permission status with a *Grant permission* action; **Register this device**; **Send test notification**; and a *Registered as "Andi's phone"* confirmation state. Plus **Unregister** and **Log out**. |
 
-Changing the station set mid-shift — the staff member who moves from the kitchen to the bar — is
-re-opening this screen, toggling a checkbox and tapping **Register this device** again. It is
-deliberately the same action as first-time setup rather than a separate "shift mode", and D21
-means getting it wrong loses nothing.
+There is nothing to configure beyond a name (D24). A staff member moving from the kitchen to the
+bar does not touch this app, because the app has no opinion about which station they are on — the
+notification tells them what arrived and they sort it out between themselves, which is what they
+already do.
 
 After registering, the app's job is to be open (or closed — push does not care) on a phone on the
 counter. There is no queue, no ticket list and no bump button; that is the next PRD.
@@ -450,22 +467,30 @@ counter. There is no queue, no ticket list and no bump button; that is the next 
 ### The notification itself
 
 ```
-┌──────────────────────────────────────────────┐
-│  New order #12 · BAR                         │
-│  Table 4 — 2× Kopi Susu Gula Aren, 1× Americano │
-└──────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────┐
+│  New order #12 — Table 4                                   │
+│  BAR: 2× Kopi Susu Gula Aren, 1× Americano ·               │
+│  KITCHEN: 1× Sandwich                                      │
+└────────────────────────────────────────────────────────────┘
 ```
 
-- **Title:** `New order #{transactionNumber} · {STATION}` — the daily transaction number from
+One notification per paid transaction, identical on every phone (D24).
+
+- **Title:** `New order #{transactionNumber} — {table label or customer name}` — the daily
+  transaction number from
   [`docs/prd-daily-transaction-number.md`](./prd-daily-transaction-number.md), which is the number
   printed on the slip and shown on the guest's phone, and therefore the one thing every surface
   already agrees on.
-- **Body:** the customer/guest name or table label, then **only this station's items** —
-  `2× Kopi Susu Gula Aren, 1× Americano`. The kitchen's notification for the same transaction
-  lists only the kitchen's items. Truncated to four items plus `+N more`.
-- **Data payload:** `{"transactionId": 123, "transactionNumber": 12, "station": "BAR",
-  "source": "order"}` — carried so the future KDS view can deep-link to the ticket without any
-  contract change.
+- **Body:** the items, **grouped under a station label**, stations in a fixed order (`BAR`, then
+  `KITCHEN`), joined by `·`, and only stations actually present appear. This is the whole point of
+  keeping `station` after D24: the split that used to be two notifications is now two labels, and
+  each staff member reads the line that is theirs. Written as one line so it survives the collapsed
+  notification as well as the expanded one, and truncated to four items plus `+N more`.
+  A single-station order still carries its label — `BAR: 2× Kopi Susu` — because *"not mine"* is
+  information too.
+- **Data payload:** `{"transactionId": 123, "transactionNumber": 12, "stations": ["BAR",
+  "KITCHEN"], "source": "order"}` — carried so the future KDS view can deep-link to the ticket
+  without any contract change.
 - **Sound:** the message carries an explicit sound name, from `KDS_PUSH_SOUND` (default
   `default`), rather than relying on the platform default (D23).
 - **Android:** channel id `orders-v1`, importance `MAX`, sound, vibration — created by the app on
@@ -497,28 +522,28 @@ An enqueue failure fails the payment. That is deliberate and safe: the enqueue i
 `INSERT` in a transaction that is already open, with no network in it (D5). The only realistic
 failure is the database being down, in which case the payment was failing anyway.
 
-### FR-2 — The station rule decides who gets woken
+### FR-2 — The station rule decides whether anyone is woken
+
+Two pure functions in `domain/kds_notification_routing.go`, no I/O, one `_test.go`:
 
 ```go
-func StationsToNotify(transaction Transaction) []KdsStation
+func ShouldNotify(transaction Transaction) bool        // is this worth an alert at all?
+func StationLines(transaction Transaction) []KdsStationLine  // the FR-6 body, grouped
 ```
 
-Pure, in `domain/kds_notification_routing.go`, with no I/O and its own `_test.go`:
+Both read `item.Variant.Product.Category.Station` across `transaction.TransactionItems` — already
+preloaded on the entity the trigger holds (`apps/api/data/mysql/transaction_repo.go:118` preloads
+`TransactionItems.Variant.Product.Category`). `NONE`, empty and any unrecognised value are
+ignored; the remaining items group under `BAR` then `KITCHEN`, in that fixed order.
+`ShouldNotify` is exactly `len(StationLines(t)) > 0`, which is the property that keeps the
+predicate and the message from ever disagreeing.
 
-1. For each `transaction.TransactionItems`, read
-   `item.Variant.Product.Category.Station` — already preloaded on the entity the trigger holds
-   (`apps/api/data/mysql/transaction_repo.go:118` preloads
-   `TransactionItems.Variant.Product.Category`).
-2. Collect the distinct values that are `BAR` or `KITCHEN`. `NONE`, empty and any unrecognised
-   value are ignored.
-3. Return them in a stable order (`BAR`, then `KITCHEN`).
-
-| Transaction | Stations | Result |
+| Transaction | Stations present | Result |
 | --- | --- | --- |
-| 2 coffees | `[BAR]` | bar devices notified |
-| 1 coffee + 1 sandwich | `[BAR, KITCHEN]` | two notifications, each listing only its own items |
+| 2 coffees | `[BAR]` | **one** notification to every device, body `BAR: …` |
+| 1 coffee + 1 sandwich | `[BAR, KITCHEN]` | **one** notification to every device, body `BAR: … · KITCHEN: …` |
 | 1 board-game ticket | `[]` | **no notification at all** |
-| 1 board-game ticket + 1 coffee | `[BAR]` | bar notified, about the coffee only |
+| 1 board-game ticket + 1 coffee | `[BAR]` | one notification, listing the coffee only |
 | a rental checkout (`RentalUsecase.CheckoutRentals`, paid later at the register) | `[]` | **no notification** |
 
 The board-game exclusion is therefore not a special case in the code — it is what the general
@@ -528,8 +553,8 @@ printing, so notification and printing agree by construction (D2, D3).
 
 ### FR-3 — The outbox
 
-`EnqueueForTransaction` inserts one `kds_notifications` row per returned station, `status =
-'pending'`. `UNIQUE (transaction_id, station)` makes it idempotent: the insert uses
+`EnqueueForTransaction` inserts **one** `kds_notifications` row when `ShouldNotify` is true,
+`status = 'pending'` (D24). `UNIQUE (transaction_id)` makes it idempotent: the insert uses
 `INSERT … ON DUPLICATE KEY UPDATE id = id`, so a duplicate enqueue is a no-op rather than an
 error (D4).
 
@@ -553,18 +578,20 @@ Consequences worth stating plainly:
 `KdsNotificationUsecase.DispatchPending(ctx)`:
 
 1. Claim up to 50 rows with `status = 'pending'` and `attempt_count < 5`, oldest first.
-2. Group by `transaction_id`, load each transaction once, and for each row build the FR-6 message
-   for its station.
-3. Resolve the target devices for the row's station, in this order (D21):
-   1. devices subscribed to that station, not soft-deleted — the normal case;
-   2. **if there are none, every registered device** — the broadcast fallback, with `detail`
-     recording that it happened;
-   3. if there are no registered devices at all, `status = 'skipped'`, `detail = 'no registered
-     devices'`. There is nobody to tell and retrying does not create a phone.
+2. Load each row's transaction and build its FR-6 message **once** (D24).
+3. Fan that one message out to every registered device — `GetKdsDevices(ctx)`, not soft-deleted.
+   If there are none, `status = 'skipped'`, `detail = 'no registered devices'`: there is nobody to
+   tell, and retrying does not create a phone.
 4. `KdsPushGatewayRepository.Send(ctx, messages)` — one batched call.
-5. Per-token results: success → `status = 'sent'`, `sent_at = now()`. Failure → `attempt_count++`,
-   `detail` set, back to `pending`; at 5 attempts it becomes `failed` and stops.
-   `DeviceNotRegistered` soft-deletes the device (D18).
+5. Per-token results decide the row's fate. **At least one device accepted → `status = 'sent'`,
+   `sent_at = now()`**, with any per-token failures recorded in `detail`. **No device accepted →**
+   `attempt_count++`, `detail` set, back to `pending`; at 5 attempts it becomes `failed` and stops.
+   `DeviceNotRegistered` soft-deletes that device (D18).
+
+   The one-accepted-is-sent rule follows directly from D24: every phone now carries the *same*
+   message, so one delivered phone means the venue was told. Retrying because the second phone's
+   token failed would re-buzz the first phone with a duplicate of an alert somebody already acted
+   on — trading a real annoyance for a redundant one.
 
 It runs in two ways, which is the standard outbox shape: **immediately after the payment commits**
 (a goroutine, so the cashier's HTTP response is not waiting on Expo), and **every
@@ -573,26 +600,23 @@ catches a crash, a deploy, or an Expo outage.
 
 ### FR-5 — Device registration
 
-`POST /kds/devices` with `{ name, stations, pushToken, platform }`, upserting on `push_token`
-(D17): a reinstall or an Expo token rotation updates the existing row rather than accumulating
-dead ones, and `last_seen_at` is stamped on every call so a stale device is visible in the list.
-
-`stations` is a set of one or two values (D20). The use case rejects an empty array with
-`domain.BadRequest` — a device subscribed to nothing is a phone that silently receives nothing,
-which is the failure this design exists to prevent; **Unregister** is how you mean that. On
-upsert the device's `kds_device_stations` rows are replaced wholesale, so registering is also how
-a staff member moves between stations.
+`POST /kds/devices` with `{ name, pushToken, platform }`, upserting on `push_token` (D17): a
+reinstall or an Expo token rotation updates the existing row rather than accumulating dead ones,
+and `last_seen_at` is stamped on every call so a stale device is visible in the list. There is
+nothing else to send — a device is a name, a token and a platform (D24).
 
 `DELETE /kds/devices/{deviceId}` soft-deletes. The KDS app calls it on **Unregister** and on
 **Log out** — a phone that logged out must stop receiving orders.
 
 ### FR-6 — The message payload
 
-Built in `domain/kds_notification_entity.go` by a pure `BuildKdsPushMessage(transaction, station)`,
-following the shape in *System Design Overview → The notification itself*. Pure and unit-tested,
-for the same reason `buildOrderSlipPayload` is: the string is the product.
+Built in `domain/kds_notification_entity.go` by a pure
+`BuildKdsPushMessage(transaction, sound string)`, over `StationLines` (FR-2) and following the
+shape in *System Design Overview → The notification itself*. Pure and unit-tested, for the same
+reason `buildOrderSlipPayload` is: the string is the product — and after D24 it is the *only*
+place the station split is expressed to a human, which raises the stakes on getting it readable.
 
-The body names the table for `source = 'order'` (via `transaction.Cart.Table.Label`, already
+The title names the table for `source = 'order'` (via `transaction.Cart.Table.Label`, already
 preloaded) and the customer name for everything else.
 
 ### FR-7 — The KDS app
@@ -612,11 +636,9 @@ idle → checkingPermission → permissionDenied
   launch is the single most common way to get permanently denied.
 - `permissionDenied` renders instructions plus an **Open settings** action, because on both
   platforms a second request after a denial is a no-op.
-- `registered` is the resting state, showing the device name and the stations it is subscribed to,
-  and offering **Send test notification** so the person setting the phone up gets an immediate,
-  unambiguous confirmation rather than waiting for a real order.
-- **Register this device** is disabled while no station is checked, so the rejected-empty-set case
-  (FR-5) is unreachable from the UI and the server guard is a backstop rather than a workflow.
+- `registered` is the resting state, showing the device name, and offering **Send test
+  notification** so the person setting the phone up gets an immediate, unambiguous confirmation
+  rather than waiting for a real order.
 
 All device-side APIs are behind `PushTokenRepository` (D13), so the use case and its tests never
 touch `expo-notifications`.
@@ -649,13 +671,19 @@ print a slip for such a transaction. No code anywhere mentions board games, so a
 non-preparable product — merchandise, a deposit, a voucher — is silent on the day it is created
 without anyone touching this feature.
 
-**D4 — Idempotency is `UNIQUE (transaction_id, station)` in the outbox, not application logic.**
+**D4 — Idempotency is `UNIQUE (transaction_id)` in the outbox, not application logic.**
+*Narrowed by D24 — the key was `(transaction_id, station)` while a transaction produced one row
+per station. The reasoning is unchanged and the guarantee is now simply stronger.*
 The order app can observe a QRIS payment from two places (`ConfirmPayment` and
 `refreshPendingPaymentStatus` both reach `applyQrisStatus`), and the dispatcher is at-least-once
 by design. A unique key makes the duplicate impossible in the one place that cannot be bypassed.
 Its deliberate second effect: unpay-then-repay does not notify twice.
-*Alternative rejected:* a `notified_at` flag on `transactions` — one column cannot express *bar
-told, kitchen not yet*, and it puts a KDS concern on the hottest table in the POS.
+*Alternative rejected:* a `notified_at` flag on `transactions` — it puts a KDS concern on the
+hottest table in the POS, and it records only *that* a notification happened, not the attempts,
+failures and skips that make the outbox answerable when a barista says they never got it.
+*(Before D24 this decision carried a second argument — one flag cannot say "bar told, kitchen not
+yet". With one notification per transaction that argument no longer applies, and the two above
+are what the decision now rests on.)*
 
 **D5 — Enqueue inside the payment's DB transaction; never call the push gateway inside it.**
 The enqueue is a local insert with no network, so it is safe to make it atomic with the payment —
@@ -682,7 +710,9 @@ push API from the frontend" is enforced structurally: the token and the credenti
 the server.
 
 **D8 — Notifications target registered devices, not FCM topics.**
-A topic (`/topics/bar`) would remove the `kds_devices` table, but it also removes every answer to
+A single topic (`/topics/kds`) would be an exact fit for D24's fan-out and would remove the
+`kds_devices` table entirely — which is precisely why it is worth restating here rather than
+treating as settled. It also removes every answer to
 *which phones are registered, when did each last check in, and why did this one stop receiving?* —
 which is the first thing anyone asks when a barista misses an order. Topics also cannot be
 enumerated or revoked server-side, so a lost or stolen phone keeps receiving orders until someone
@@ -770,8 +800,11 @@ The notification is a server-side effect of payment. Nothing a client sends or r
 which means no regeneration risk for `apps/pos-web`, `apps/order-web` or `apps/pos-mobile`, and no
 new field for `libs/ui/src/__mocks__/api-contract.ts` on the transaction path.
 
-**D20 — A device subscribes to a *set* of stations, held in `kds_device_stations`.**
-*Replaces the single `station` column on `kds_devices` in the first draft.* The venue is two staff
+**D20 — ~~A device subscribes to a *set* of stations, held in `kds_device_stations`~~. Superseded
+by D24** — one notification per transaction, to every device, so there is nothing to subscribe to.
+Retained below for the reasoning, and because its own last paragraph is the argument D24 had to
+answer.
+*Replaced the single `station` column on `kds_devices` in the first draft.* The venue is two staff
 with a phone each: usually one on the bar and one in the kitchen, sometimes both on the bar. A
 one-station-per-device column cannot express "this phone covers both", which is the arrangement
 during every quiet period and every time one of them steps away — and a phone that covers one
@@ -785,8 +818,10 @@ every phone. Tempting at two staff, and it is what D21 falls back to — but the
 work most of the time, and a kitchen phone buzzing for every drink during a rush is how a staff
 member arrives at muting the phone, which disables the feature silently.
 
-**D21 — A station with no subscribed device broadcasts to every registered device.**
-This is the rule that makes D20 safe. Both staff on the bar means zero `KITCHEN` subscribers, and
+**D21 — ~~A station with no subscribed device broadcasts to every registered device~~. Superseded
+by D24** — broadcasting is no longer the exception, it is the rule, so the fallback has nothing
+left to fall back from. The reasoning below is the reason D24 is safe.
+This was the rule that made D20 safe. Both staff on the bar means zero `KITCHEN` subscribers, and
 the first draft would have marked that food order `sent` after telling nobody — a silent miss,
 which is strictly worse than the status quo the feature replaces, because staff would have stopped
 watching the POS by then. Broadcasting is the correct read of the situation: if nobody claims the
@@ -819,6 +854,40 @@ a `KDS_PUSH_SOUND` environment variable (default `default`) now makes the later 
 asset, one env value and a bump to `orders-v2` — no migration, no contract change, no reinstall
 instructions.
 
+**D24 — One paid transaction produces one notification, delivered to every registered device.**
+*Supersedes D20 and D21.* D20 gave each phone a station subscription; D21 then threw that
+subscription away whenever a station had no subscriber. The pair was self-undermining: D21
+established that broadcasting to every phone is an acceptable outcome here, which leaves D20
+spending a join table, a contract type, two checkboxes and a re-registration ritual purely to
+*avoid* an outcome already agreed to be acceptable. At two staff sharing two stations, the
+subscription is configuration that has to be corrected every time they swap roles, and D21 means
+getting it wrong was never punished — so it was configuration nobody would maintain, protecting
+against a cost nobody had measured.
+
+Collapsing to one notification deletes `kds_device_stations`, the `station` column and its place
+in the outbox's unique key, the station checkboxes, `KdsStation` from the API contract, and the
+dispatcher's whole device-resolution branch. It also makes the "who is covering the kitchen
+tonight" question disappear rather than be answered.
+
+**The station is not lost, it moved.** It still decides *whether* anything is sent (D3, the
+board-game exclusion, untouched) and it still groups the items in the body, so one alert carries
+both stations' work under their own labels. Two notifications became two labels.
+
+*The cost, stated plainly:* a staff member is buzzed for orders they are not making — the exact
+thing D20's last paragraph warned about, and the reason this is a decision rather than an
+obvious win. It is accepted because the venue is two people within earshot who already split the
+work by talking; because a mixed order now costs *one* push per phone instead of two, so the
+common case gets quieter, not louder; and because the failure mode it removes (a silently
+unwatched station) is unrecoverable while the one it accepts (an extra buzz) is merely annoying.
+
+*Reversible, and cheaply:* if the venue grows to genuinely separate rooms and the noise becomes
+real, per-station delivery returns as a nullable `station` on `kds_notifications` plus a
+subscription table, with historical rows left `NULL` meaning "sent to everyone" — which is exactly
+true of them, not an approximation. That is the same cost as building it now, paid only if needed.
+*Alternative rejected:* keeping the subscription table but defaulting every device to both
+stations — it is D24's behaviour with D20's machinery still in the schema, and a knob nobody turns
+is a knob that misleads the next reader into thinking somebody does.
+
 ---
 
 ## Phased plan
@@ -847,19 +916,16 @@ the one that turns the feature on.
 
 ### Phase 1 — `kds_devices` and registration endpoints (API)
 
-Migration `000031_create_kds_devices` (next free number), creating **both** `kds_devices` and
-`kds_device_stations` — one concept, one migration. `KdsDevice` (with `Stations []KdsStation`),
-`KdsStation`, `KdsPlatform` in `domain/kds_device_entity.go`; `KdsDeviceRepository` with the
-`//go:generate mockgen` directive; `KdsDeviceUsecase` with register (upsert on `push_token`,
-replacing the station rows wholesale — D17, D20), list and soft-delete, validating that every
-station is `BAR` or `KITCHEN` and that the set is non-empty, returning `*domain.Error`;
-`data/mysql/kds_device_*.go` preloading `Stations`; handler, transformer and the three routes
-under `CheckAuth`; `KdsDevice`/`KdsDeviceRequest` schemas and the three operations in `api.yaml`;
-wiring in `main.go`. Mocks regenerated with `go generate ./...`.
+Migration `000031_create_kds_devices` (next free number). `KdsDevice` and `KdsPlatform` in
+`domain/kds_device_entity.go`; `KdsDeviceRepository` with the `//go:generate mockgen` directive;
+`KdsDeviceUsecase` with register (upsert on `push_token` — D17), list and soft-delete, returning
+`*domain.Error`; `data/mysql/kds_device_*.go`; handler, transformer and the three routes under
+`CheckAuth`; `KdsDevice`/`KdsDeviceRequest` schemas and the three operations in `api.yaml`; wiring
+in `main.go`. Mocks regenerated with `go generate ./...`. No station appears anywhere in this
+phase (D24).
 
-**Acceptance:** `kds_device_usecase_test.go` covers register with one station and with both,
-re-register with the same token (one device row, station rows replaced rather than accumulated),
-an invalid station, an empty station set, and delete; `kds_device_handler_test.go` covers the
+**Acceptance:** `kds_device_usecase_test.go` covers register, re-register with the same token (one
+row, fields updated), a missing name or token, and delete; `kds_device_handler_test.go` covers the
 three routes; `MIGRATIONS_DIR=data/mysql/migrations make migrate-up && make migrate-down` is clean
 both ways; `npx nx run api:test` green.
 
@@ -880,9 +946,8 @@ real until phase 5 provides a genuine token — that is phase 5's acceptance, no
 
 ### Phase 3 — KDS domain slice (libs/ui)
 
-No UI. `KdsDevice.ts` (entity with `stations: KdsStation[]`, `KdsStation`, `KdsDeviceForm` whose
-zod schema requires at least one station — `z.array(kdsStationSchema).min(1)`);
-`KdsDeviceRepository`
+No UI. `KdsDevice.ts` (entity, `KdsDeviceForm` — a name and nothing else, D24, with its zod
+schema); `KdsDeviceRepository`
 and `PushTokenRepository` interfaces (D13); `data/api/kdsDevice.ts` + transformer;
 `data/mock/kdsDevice.ts` and `data/mock/pushToken.ts` with `setShouldFail` and a settable
 permission status; `KdsDeviceRegisterUsecase` and `KdsTestNotificationUsecase` as FSMs
@@ -902,15 +967,11 @@ permission status; `KdsDeviceRegisterUsecase` and `KdsTestNotificationUsecase` a
 gain `**/app/kds/**`, `**/screens/kds/**`, `**/handlers/kds/**`). Then `KdsLoginScreen` and
 `KdsDeviceSetupScreen` with stories, `KdsDeviceSetupHandler`, and the `app/kds/` composition roots.
 
-The setup screen's station control is two independent checkboxes, both checked by default (D20),
-with **Register this device** disabled while neither is checked.
-
 **Acceptance:** `npx nx run ui:lint` green — the real check, since it proves the new boundary is
 enforced in both directions; Storybook shows the setup screen in its idle, denied, registering and
-registered states, plus registered-as-both and registered-as-bar-only; a handler test over
-`MockKdsDeviceRepository` + `MockPushTokenRepository` asserts that granting permission then
-registering submits the checked stations, that unchecking both disables the button, and that a
-denied permission renders the settings instructions; `npx nx run ui:test` green.
+registered states; a handler test over `MockKdsDeviceRepository` + `MockPushTokenRepository`
+asserts that granting permission then registering reaches the registered state, and that a denied
+permission renders the settings instructions; `npx nx run ui:test` green.
 
 ### Phase 5 — `apps/kds-mobile` (Expo)
 
@@ -923,28 +984,29 @@ denied permission renders the settings instructions; `npx nx run ui:test` green.
 (D23).
 
 **Acceptance:** `npx nx run kds-mobile:run-android` installs; logging in, granting permission,
-registering as **Bar + Kitchen**, and tapping **Send test notification** produces a notification on
-the device with sound, from a locked screen and with the app closed; `GET /kds/devices` shows one
-row with two stations; re-registering as **Bar** only leaves one station row; **Unregister**
-removes the device; `npm run lint` and `npm test` green across the workspace.
+registering the device, and tapping **Send test notification** produces a notification on the
+device with sound, from a locked screen and with the app closed; `GET /kds/devices` shows one row;
+**Unregister** removes it; `npm run lint` and `npm test` green across the workspace.
 
 ### Phase 6 — The outbox table and the station rule (API)
 
-Migration `000032_create_kds_notifications`. `KdsNotification` and `KdsNotificationStatus`
-(`pending | sent | failed | skipped`); `StationsToNotify(Transaction) []KdsStation` in
-`domain/kds_notification_routing.go`; `IsStaleForNotification(Transaction, time.Time) bool`
-implementing the D22 business-day comparison next to it;
-`BuildKdsPushMessage(Transaction, KdsStation, sound string) KdsPushMessage` (FR-6);
+Migration `000032_create_kds_notifications`. `KdsNotification`, `KdsNotificationStatus`
+(`pending | sent | failed | skipped`) and `KdsStation`; `ShouldNotify(Transaction) bool` and
+`StationLines(Transaction) []KdsStationLine` in `domain/kds_notification_routing.go`;
+`IsStaleForNotification(Transaction, time.Time) bool` implementing the D22 business-day comparison
+next to them; `BuildKdsPushMessage(Transaction, sound string) KdsPushMessage` (FR-6);
 `KdsNotificationRepository` (enqueue, claim pending, mark sent, mark failed, mark skipped) with its
 mysql implementation and generated mock. **Nothing calls any of it yet** — this phase is the rules
 and their storage, reviewed on their own.
 
 **Acceptance:** `kds_notification_routing_test.go` covers every row of the FR-2 table, including
-the two board-game cases and an item whose category station is empty; a staleness test covers same
+the two board-game cases and an item whose category station is empty, and asserts
+`ShouldNotify(t) == (len(StationLines(t)) > 0)` across all of them; a staleness test covers same
 day, previous day, and 23:59 → 00:01 either side of the midnight boundary; a message-building test
-asserts the title carries `transactionNumber` (not the id), that the body lists only the station's
-own items, and that the sound name is the configured one; a repository test asserts a duplicate
-enqueue leaves one row; `make migrate-up`/`make migrate-down` clean; `npx nx run api:test` green.
+asserts the title carries `transactionNumber` (not the id), that a mixed transaction's body
+carries both station labels in `BAR`-then-`KITCHEN` order while a bar-only one carries just its
+own, and that the sound name is the configured one; a repository test asserts a duplicate enqueue
+leaves one row; `make migrate-up`/`make migrate-down` clean; `npx nx run api:test` green.
 
 ### Phase 7 — Enqueue on payment (API)
 
@@ -954,10 +1016,11 @@ the `EnqueueForTransaction` call inside the existing `BeginTransaction` callback
 written and nothing dispatches them yet, so the observable behaviour is a growing `pending` table.
 
 **Acceptance:** `transaction_usecase_test.go` asserts that paying a bar-only transaction enqueues
-one `BAR` row, a mixed transaction enqueues two, **a board-game-ticket-only transaction enqueues
-none**, and **a transaction created yesterday enqueues rows with `status = 'skipped'`** (D22);
-`payment_usecase_test.go` asserts the same for a QRIS confirmation and that confirming twice still
-yields one row; every existing payment test still passes; `npx nx run api:test` green.
+one row, **a mixed bar-and-kitchen transaction also enqueues exactly one** (D24), **a
+board-game-ticket-only transaction enqueues none**, and **a transaction created yesterday enqueues
+one row with `status = 'skipped'`** (D22); `payment_usecase_test.go` asserts the same for a QRIS
+confirmation and that confirming twice still yields one row; every existing payment test still
+passes; `npx nx run api:test` green.
 
 ### Phase 8 — The dispatcher (API)
 
@@ -965,21 +1028,20 @@ yields one row; every existing payment test still passes; `npx nx run api:test` 
 ticker started in `main.go` with graceful shutdown. Structured logs on every send, failure and
 device prune, using the existing `slog` setup.
 
-**Acceptance:** use-case tests over the mock gateway cover success, a retryable failure
-(`attempt_count` increments, row stays `pending`), exhaustion at five attempts (`failed`, `detail`
-set), `DeviceNotRegistered` (device soft-deleted), **a station with no subscriber (broadcast to
-every registered device, `detail` records it — D21)**, no registered devices at all (`skipped`),
-and that a `skipped` row is never picked up. End to end on staging, with two phones registered as
-*Bar only* and *Bar + Kitchen*: a guest order paid by QRIS buzzes both; a food order buzzes only
-the second; with both phones set to *Bar only*, a food order buzzes **both**; a POS sale of one
-board-game ticket buzzes nothing. `npx nx run api:test` green.
+**Acceptance:** use-case tests over the mock gateway cover success on every device, **partial
+success (one device accepts, one fails → row is `sent`, the failure recorded in `detail`)**, total
+failure (`attempt_count` increments, row stays `pending`), exhaustion at five attempts (`failed`,
+`detail` set), `DeviceNotRegistered` (that device soft-deleted), no registered devices at all
+(`skipped`), and that a `skipped` row is never picked up. End to end on staging with two phones
+registered: a guest order paid by QRIS buzzes **both**, once each; a mixed coffee-and-sandwich
+order buzzes both **once**, with both station labels in the body; a POS sale of one board-game
+ticket buzzes nothing. `npx nx run api:test` green.
 
 ### Phase 9 — Documentation and coverage
 
 A `docs-site/` page under the sales section — what the KDS app is, how to set a phone up, how the
-station on a category decides who gets notified, **how to move a phone between stations and what
-happens when nobody covers one (D21)**, and what to do when a phone stops receiving — plus its
-sidebar entry. `apps/api/.env.example` and `README.md` gain the three new variables and the
+station on a category decides **whether** an order notifies and how to read the station labels in
+the alert, and what to do when a phone stops receiving — plus its sidebar entry. `apps/api/.env.example` and `README.md` gain the three new variables and the
 `apps/kds-mobile` entry in the project-structure block. A `pos-web-e2e` spec asserting that paying
 a POS transaction whose only item is in a `NONE`-station category creates no `kds_notifications`
 row, and one for a `BAR` item that does.
@@ -1024,27 +1086,26 @@ ways to be wrong about a dependency that patches native code. Bounded by `apps/k
 two-screen app with one native dependency. Migrating `apps/pos-mobile` to Expo is a plausible
 follow-up and explicitly not proposed here.
 
-**Notification fatigue.** Every paid transaction with a preparable item buzzes a phone; at peak
-that is a lot of buzzing, and a staff member who mutes the phone to cope has disabled the feature.
-The station set (D20) is the main control — a kitchen-only phone skips the drinks — and the
-`NONE`-station filter is the other. But D21's broadcast trades *silence* for *noise* on purpose,
-so an uncovered station makes this worse exactly when the venue is least able to fix it. That is
-the right trade (a missed order costs more than an extra buzz) and it is still the risk most
-likely to need a follow-up: per-transaction batching, or a quiet mode on the KDS view, belongs
-with the view.
+**Notification fatigue — the accepted cost of D24.** Every paid transaction with a preparable item
+buzzes every phone, so a staff member working the kitchen is alerted for drinks and vice versa. A
+staff member who mutes the phone to cope has disabled the feature, silently. This is the risk most
+likely to need a follow-up, and the one to watch first after launch.
 
-**Everyone unchecks a station and then ignores the broadcast.** D21 guarantees the notification
-*arrives*; it cannot guarantee anybody acts on it. Two staff who have both set their phones to
-*Bar* are telling the system something about how they are working, and a food order arriving on
-both phones is a mild contradiction of that. Accepted: at two people standing metres apart the
-recovery is a sentence, and the alternative — dropping the order — has no recovery at all.
+Three things bound it, none of which make it go away. The `NONE`-station filter removes tickets,
+rentals and anything else not made to order. A mixed transaction is now **one** push per phone
+instead of two, so the busiest orders got quieter. And the body's station labels mean a
+glance — not a tap — is enough to tell whose order it is.
 
-**A dead token keeps a station quiet.** If a phone's token rotates and nobody re-registers, that
-device receives nothing. D21 limits the blast radius — if the other phone still covers the
-station, nothing is lost; if it does not, the station has no subscriber and every registered
-device gets the broadcast. The residual case is *every* device dead, which the dispatcher records
-as `skipped` with `detail = 'no registered devices'`. Mitigated further by `last_seen_at` in the
-device list and by the app re-registering on every launch.
+If it does become real, the escape hatches in order of cost: a quiet mode on the KDS view (that
+PRD's), per-transaction batching during a rush, and finally per-station delivery, which D24 prices
+as additive.
+
+**A dead token means that phone hears nothing.** If a phone's token rotates and nobody
+re-registers, that device receives nothing — but under D24 the other phone still gets the same
+alert, so a single dead token costs nothing at a two-phone venue. The case that matters is *every*
+device dead, which the dispatcher records as `skipped` with `detail = 'no registered devices'`
+rather than pretending to deliver. Mitigated further by `last_seen_at` in the device list and by
+the app re-registering on every launch.
 
 ---
 
@@ -1062,7 +1123,8 @@ device list and by the app re-registering on every launch.
 | **Notifying the cashier or the manager** | Only `BAR` and `KITCHEN` are stations. A `MANAGER` pseudo-station would be a different feature with a different rule. |
 | **Shipping a custom sound file** | Settled in review, 4 — wanted later, and D23 is the groundwork that keeps it a one-line change. |
 | **Sound customisation per station** | One channel, one sound. Two sounds is a setting nobody has asked for. |
-| **Scheduling which station a phone covers** (shift rosters, auto-switching) | D20's checkboxes plus D21's fallback cover a two-person venue. A roster is a feature for a staffing problem this venue does not have. |
+| **Per-station delivery** (a phone that only hears the bar) | D24 — every device gets every order, and the station is a label in the body rather than a routing key. Additive later: a nullable `station` on `kds_notifications` plus a subscription table, with historical rows left `NULL` meaning "sent to everyone", which is exactly true of them. |
+| **Scheduling which station a phone covers** (shift rosters, auto-switching) | A roster is a feature for a staffing problem this venue does not have — and after D24 there is no per-phone station to schedule. |
 | **Migrating `apps/pos-mobile` to Expo** | Out of scope and not blocking; see Risks. |
 | **Recording which staff member is on the bar** | `CheckAuth` discards JWT claims (D10) — the same groundwork `docs/prd-order-fulfillment-status.md` identifies for `completed_by_user_id`. |
 | **Web push to `apps/pos-web`** | A different transport with a different permission model, for a surface that is already staffed by someone looking at it. |
@@ -1081,10 +1143,12 @@ the reasoning behind D20–D23 keeps the question that produced it.
 
 2. **Should the bar and the kitchen share one phone?** — *"Two staff, both working kitchen and
    bar, they usually split (1 kitchen, 1 bar) but sometimes work together in bar. Each has their
-   own phone."* **Two changes.** A device subscribes to a set of stations (**D20**), and a station
-   nobody subscribes to broadcasts to every device (**D21**). The first drops the one-phone-per-
-   station assumption; the second is what makes the "both on the bar" case safe rather than
-   silent, and it is the more important of the two.
+   own phone."* Answered first with **D20** (a device subscribes to a set of stations) plus
+   **D21** (a station nobody subscribes to broadcasts to everyone), then **both superseded by
+   D24** in the second pass: one notification per transaction, to every phone, with the stations
+   as labels in the body. The answer to the question is unchanged — a phone is never tied to one
+   station — but it is now reached by removing the mechanism rather than by adding a fallback to
+   it.
 
 3. **Should a transaction paid on a later day notify?** — *"Sure, we can disable the notification
    if we paid the yesterday transaction."* **D22**: such rows are written `skipped` and never
@@ -1114,14 +1178,14 @@ the reasoning behind D20–D23 keeps the question that produced it.
    closed and the screen locked, showing the transaction number.
 2. A cashier sells one board-game ticket and nothing buzzes — with no code anywhere mentioning
    board games.
-3. A transaction with a coffee and a sandwich produces two notifications: one to the bar listing
-   the coffee, one to the kitchen listing the sandwich.
-4. **No paid order is ever unheard.** With both staff phones set to *Bar*, a food order still
-   reaches both of them (D21). There is no configuration of the two phones — short of both being
-   unregistered — that makes an order arrive silently.
-5. A staff member moving from the kitchen to the bar re-points their phone in three taps, and
-   getting it wrong costs noise, never a missed order.
-6. Setting up a new phone takes one person under two minutes: install, log in, tick the stations,
+3. A transaction with a coffee and a sandwich produces **one** notification on every phone, whose
+   body names both stations and their items — and each staff member can tell at a glance which
+   line is theirs.
+4. **No paid order is ever unheard.** There is no configuration of the phones — short of every one
+   of them being unregistered — that makes an order arrive silently, because there is no
+   configuration at all (D24).
+5. A staff member moving from the kitchen to the bar does not touch the app.
+6. Setting up a new phone takes one person under two minutes: install, log in, name the device,
    grant permission, tap **Send test notification**, see it arrive.
 7. When a barista reports a missed order, `SELECT * FROM kds_notifications WHERE transaction_id = ?`
    answers whether it was enqueued, attempted, delivered, broadcast or deliberately skipped, and
