@@ -3139,6 +3139,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /kds/devices/{kdsDeviceId}/test-notification:
+    post:
+      summary: Send a fixed test push notification to one registered KDS device
+      operationId: kdsDeviceSendTestNotification
+      tags:
+        - kds-device
+      parameters:
+        - $ref: '#/components/parameters/KdsDeviceId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '502':
+          description: the Expo push gateway rejected or failed to deliver the test notification
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 components:
   schemas:
     AuthLoginRequest:

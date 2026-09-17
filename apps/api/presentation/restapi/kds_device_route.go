@@ -18,4 +18,5 @@ func (kdsDeviceRouter KdsDeviceRouter) AddRouter(router *mux.Router) {
 	router.HandleFunc("/kds/devices", CheckAuth(kdsDeviceRouter.handler.GetKdsDeviceList)).Methods(http.MethodGet)
 	router.HandleFunc("/kds/devices", CheckAuth(kdsDeviceRouter.handler.RegisterKdsDevice)).Methods(http.MethodPost, http.MethodOptions)
 	router.HandleFunc("/kds/devices/{kdsDeviceId}", CheckAuth(kdsDeviceRouter.handler.DeleteKdsDeviceById)).Methods(http.MethodDelete, http.MethodOptions)
+	router.HandleFunc("/kds/devices/{kdsDeviceId}/test-notification", CheckAuth(kdsDeviceRouter.handler.SendTestNotification)).Methods(http.MethodPost, http.MethodOptions)
 }

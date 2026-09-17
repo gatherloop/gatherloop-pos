@@ -45,6 +45,13 @@ func (repo Repository) GetKdsDeviceList(ctx context.Context) ([]domain.KdsDevice
 	return ToKdsDevicesListDomain(devices), ToErrorCtx(ctx, result.Error, "GetKdsDeviceList")
 }
 
+func (repo Repository) GetKdsDeviceById(ctx context.Context, id int64) (domain.KdsDevice, *domain.Error) {
+	db := GetDbFromCtx(ctx, repo.db)
+	var device KdsDevice
+	result := db.Table("kds_devices").Where("id = ? AND deleted_at is NULL", id).First(&device)
+	return ToKdsDeviceDomain(device), ToErrorCtx(ctx, result.Error, "GetKdsDeviceById")
+}
+
 func (repo Repository) DeleteKdsDeviceById(ctx context.Context, id int64) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	currentTime := time.Now()

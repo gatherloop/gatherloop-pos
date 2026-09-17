@@ -55,6 +55,21 @@ func (mr *MockKdsDeviceRepositoryMockRecorder) DeleteKdsDeviceById(ctx, id any) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteKdsDeviceById", reflect.TypeOf((*MockKdsDeviceRepository)(nil).DeleteKdsDeviceById), ctx, id)
 }
 
+// GetKdsDeviceById mocks base method.
+func (m *MockKdsDeviceRepository) GetKdsDeviceById(ctx context.Context, id int64) (domain.KdsDevice, *domain.Error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetKdsDeviceById", ctx, id)
+	ret0, _ := ret[0].(domain.KdsDevice)
+	ret1, _ := ret[1].(*domain.Error)
+	return ret0, ret1
+}
+
+// GetKdsDeviceById indicates an expected call of GetKdsDeviceById.
+func (mr *MockKdsDeviceRepositoryMockRecorder) GetKdsDeviceById(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetKdsDeviceById", reflect.TypeOf((*MockKdsDeviceRepository)(nil).GetKdsDeviceById), ctx, id)
+}
+
 // GetKdsDeviceList mocks base method.
 func (m *MockKdsDeviceRepository) GetKdsDeviceList(ctx context.Context) ([]domain.KdsDevice, *domain.Error) {
 	m.ctrl.T.Helper()

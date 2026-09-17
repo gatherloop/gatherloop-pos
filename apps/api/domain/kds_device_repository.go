@@ -7,5 +7,6 @@ import "context"
 type KdsDeviceRepository interface {
 	RegisterKdsDevice(ctx context.Context, device KdsDevice) (KdsDevice, *Error)
 	GetKdsDeviceList(ctx context.Context) ([]KdsDevice, *Error)
+	GetKdsDeviceById(ctx context.Context, id int64) (KdsDevice, *Error)
 	DeleteKdsDeviceById(ctx context.Context, id int64) *Error
 }
