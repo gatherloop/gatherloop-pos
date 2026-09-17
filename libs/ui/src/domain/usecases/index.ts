@@ -90,5 +90,6 @@ export * from './checkout';
 export * from './orderStatus';
 export * from './orderHistory';
 export * from './kdsDeviceRegister';
+export * from './kdsDeviceUnregister';
 export * from './kdsTestNotification';
 export * from './IUsecase';
