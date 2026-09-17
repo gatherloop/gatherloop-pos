@@ -50,6 +50,12 @@ func publishedPurchaseVariant(id int64) domain.Variant {
 	}
 }
 
+func soldOutVariant(id int64) domain.Variant {
+	variant := publishedPurchaseVariant(id)
+	variant.IsAvailable = false
+	return variant
+}
+
 func trackedVariant(id int64, productId int64, tracking domain.AvailabilityTracking, productQty *int, variantQty *int) domain.Variant {
 	return domain.Variant{
 		Id:                id,
@@ -801,4 +807,99 @@ func TestCartUsecase_ClearCart(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCartUsecase_ResolvesItemAvailability(t *testing.T) {
+	tests := []struct {
+		name                     string
+		variant                  domain.Variant
+		expectedIsSellable       bool
+		expectedSellableQuantity *int
+	}{
+		{
+			name:               "untracked variant is sellable",
+			variant:            publishedPurchaseVariant(1),
+			expectedIsSellable: true,
+		},
+		{
+			name:                     "variant-tracked variant carries its remaining count",
+			variant:                  trackedVariant(1, 1, domain.AvailabilityTrackingVariant, nil, intPtr(3)),
+			expectedIsSellable:       true,
+			expectedSellableQuantity: intPtr(3),
+		},
+		{
+			name:                     "product-tracked variant carries the product count",
+			variant:                  trackedVariant(1, 1, domain.AvailabilityTrackingProduct, intPtr(2), nil),
+			expectedIsSellable:       true,
+			expectedSellableQuantity: intPtr(2),
+		},
+		{
+			name:                     "a variant switched off is sold out",
+			variant:                  soldOutVariant(1),
+			expectedIsSellable:       false,
+			expectedSellableQuantity: nil,
+		},
+		{
+			name:                     "a variant counted down to zero is sold out",
+			variant:                  trackedVariant(1, 1, domain.AvailabilityTrackingVariant, nil, intPtr(0)),
+			expectedIsSellable:       false,
+			expectedSellableQuantity: intPtr(0),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			cartRepo := mock.NewMockCartRepository(ctrl)
+			variantRepo := mock.NewMockVariantRepository(ctrl)
+			tableRepo := mock.NewMockTableRepository(ctrl)
+			paymentRepo := mock.NewMockPaymentRepository(ctrl)
+
+			cart := domain.Cart{
+				Id:        1,
+				SessionId: "session-1",
+				Status:    domain.CartStatusActive,
+				Items:     []domain.CartItem{{Id: 50, VariantId: tt.variant.Id, Variant: tt.variant, Amount: 1}},
+			}
+			cartRepo.EXPECT().GetActiveCartBySessionId(gomock.Any(), "session-1").Return(cart, nil)
+
+			usecase := newCartUsecase(cartRepo, variantRepo, tableRepo, paymentRepo)
+			result, err := usecase.GetCurrentCart(context.Background(), "session-1")
+
+			assert.Nil(t, err)
+			assert.Len(t, result.Items, 1)
+			assert.Equal(t, tt.expectedIsSellable, result.Items[0].Variant.IsSellable)
+			assert.Equal(t, tt.expectedSellableQuantity, result.Items[0].Variant.SellableQuantity)
+			assert.Equal(t, tt.expectedIsSellable, result.Items[0].Variant.Product.IsSellable)
+		})
+	}
+}
+
+func TestCartUsecase_RemoveCartItem_ResolvesRemainingItemAvailability(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	cartRepo := mock.NewMockCartRepository(ctrl)
+	variantRepo := mock.NewMockVariantRepository(ctrl)
+	tableRepo := mock.NewMockTableRepository(ctrl)
+	paymentRepo := mock.NewMockPaymentRepository(ctrl)
+
+	remaining := domain.CartItem{Id: 51, VariantId: 2, Variant: publishedPurchaseVariant(2), Amount: 1}
+	withCartTransaction(cartRepo)
+	cartRepo.EXPECT().GetActiveCartBySessionId(gomock.Any(), "session-1").Return(domain.Cart{
+		Id:    1,
+		Items: []domain.CartItem{{Id: 50, VariantId: 1, Variant: publishedPurchaseVariant(1), Amount: 1}, remaining},
+	}, nil)
+	unlockedCart(paymentRepo, 1)
+	cartRepo.EXPECT().DeleteCartItemById(gomock.Any(), int64(50)).Return(nil)
+	cartRepo.EXPECT().GetCartById(gomock.Any(), int64(1)).Return(domain.Cart{Id: 1, Items: []domain.CartItem{remaining}}, nil)
+
+	usecase := newCartUsecase(cartRepo, variantRepo, tableRepo, paymentRepo)
+	result, err := usecase.RemoveCartItem(context.Background(), "session-1", 50)
+
+	assert.Nil(t, err)
+	assert.Len(t, result.Items, 1)
+	assert.True(t, result.Items[0].Variant.IsSellable)
 }

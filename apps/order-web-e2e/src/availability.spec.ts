@@ -125,6 +125,27 @@ test.describe.serial('Availability (order app)', () => {
     await expect(sel.cartScreen.lineItemName(page, CAPPED_PRODUCT_NAME)).toBeVisible();
   });
 
+  test('an available cart line carries no Habis badge and allows checkout', async ({
+    page,
+  }) => {
+    await page.goto(`t/${table.code}`);
+
+    await sel.menuList.productCard(page, CAPPED_PRODUCT_NAME).click();
+    await sel.itemDetail.optionValueChip(page, VARIANT_NAME).click();
+    await sel.itemDetail.addToCartButton(page).click();
+    await sel.cartBar.viewCartButton(page).click();
+
+    await expect(
+      sel.cartScreen.lineItemName(page, CAPPED_PRODUCT_NAME)
+    ).toBeVisible();
+    await expect(
+      sel.cartScreen.lineItemSoldOutBadge(page, CAPPED_PRODUCT_NAME)
+    ).toBeHidden({ timeout: 2_000 });
+    await expect(sel.cartScreen.checkoutDisabledText(page)).toBeHidden({
+      timeout: 2_000,
+    });
+  });
+
   test('checkout is blocked once a cart line goes sold out', async ({ page }) => {
     await page.goto(`t/${table.code}`);
 

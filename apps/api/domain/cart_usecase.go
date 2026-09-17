@@ -36,7 +36,7 @@ func (usecase CartUsecase) GetCurrentCart(ctx context.Context, sessionId string)
 		}
 		return Cart{}, err
 	}
-	return cart, nil
+	return resolveCartAvailability(cart), nil
 }
 
 func (usecase CartUsecase) UpdateCartTable(ctx context.Context, sessionId string, tableCode string) (Cart, *Error) {
@@ -64,7 +64,7 @@ func (usecase CartUsecase) UpdateCartTable(ctx context.Context, sessionId string
 		if updateErr != nil {
 			return updateErr
 		}
-		result = updated
+		result = resolveCartAvailability(updated)
 		return nil
 	})
 
@@ -112,7 +112,7 @@ func (usecase CartUsecase) AddCartItem(ctx context.Context, sessionId string, va
 		if refreshErr != nil {
 			return refreshErr
 		}
-		result = refreshed
+		result = resolveCartAvailability(refreshed)
 		return nil
 	})
 
@@ -148,7 +148,7 @@ func (usecase CartUsecase) UpdateCartItem(ctx context.Context, sessionId string,
 		if refreshErr != nil {
 			return refreshErr
 		}
-		result = refreshed
+		result = resolveCartAvailability(refreshed)
 		return nil
 	})
 
@@ -174,7 +174,7 @@ func (usecase CartUsecase) RemoveCartItem(ctx context.Context, sessionId string,
 		if refreshErr != nil {
 			return refreshErr
 		}
-		result = refreshed
+		result = resolveCartAvailability(refreshed)
 		return nil
 	})
 
@@ -198,7 +198,24 @@ func (usecase CartUsecase) ClearCart(ctx context.Context, sessionId string) (Car
 		return Cart{}, clearErr
 	}
 
-	return usecase.repository.GetCartById(ctx, cart.Id)
+	cleared, clearedErr := usecase.repository.GetCartById(ctx, cart.Id)
+	if clearedErr != nil {
+		return Cart{}, clearedErr
+	}
+
+	return resolveCartAvailability(cleared), nil
+}
+
+// resolveCartAvailability fills the computed IsSellable/SellableQuantity fields, which the cart
+// repository cannot read from the database because they are derived, not stored.
+func resolveCartAvailability(cart Cart) Cart {
+	items := make([]CartItem, 0, len(cart.Items))
+	for _, item := range cart.Items {
+		item.Variant = resolveVariantAvailability(item.Variant, item.Variant.Product)
+		items = append(items, item)
+	}
+	cart.Items = items
+	return cart
 }
 
 func (usecase CartUsecase) ensureCartUnlocked(ctx context.Context, cartId int64) *Error {
