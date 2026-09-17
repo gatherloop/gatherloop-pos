@@ -761,15 +761,44 @@ is what lets `kdsDeviceRegister.test.ts` drive the whole permission FSM — incl
 branch — with `MockPushTokenRepository`, under a Jest config that stubs `react-native` wholesale
 and could not load `expo-notifications` anyway.
 
-**D14 — `apps/kds-mobile` is an Expo app, unlike `apps/pos-mobile`.**
-Required by the acceptance criteria, and correct on the merits: `apps/pos-mobile` is bare React
-Native with checked-in `android/` and `ios/` directories, and adding push there would mean
-hand-editing Gradle, `AndroidManifest.xml`, `Info.plist` and the APNs capability. Expo's config
-plugins do that from `app.json`, and EAS Build removes the "which machine can build the release"
-question for a device nobody has a Mac next to. The workspace has `expo` and `@nx/expo`'s sibling
-`@nx/react-native` already; this adds `@nx/expo`.
-*Consequence:* two mobile toolchains in one repo until `apps/pos-mobile` is migrated, which this
-PRD does not propose. See Risks.
+**D14 — `apps/kds-mobile` uses Expo's managed native config; `apps/pos-mobile` keeps its checked-in
+one.**
+*Corrected during review — an earlier draft called this "two mobile toolchains", which overstates
+it.* **`apps/pos-mobile` is already an Expo-modules app.** Its
+`android/settings.gradle:6-7` resolves `expo/package.json` and calls `useExpoModules()`, its
+`MainApplication.kt:14-15` imports `expo.modules.ApplicationLifecycleDispatcher` and
+`ReactNativeHostWrapper`, and its `ios/Podfile` calls `use_expo_modules!`. The root
+`package.json` already carries `expo ~51.0.39`, `expo-modules-core` and `expo-linear-gradient`.
+
+So this PRD does not introduce Expo to the repo. The only difference between the two apps is
+**where the native config lives**: `apps/pos-mobile` has checked-in `android/` and `ios/`
+directories, while `apps/kds-mobile` generates them from `app.json` via prebuild (CNG) and builds
+on EAS. That matters for push specifically, because `expo-notifications`' config plugin writes the
+`AndroidManifest.xml` entries, the APNs entitlement and the custom-sound assets (D23) that would
+otherwise be hand-edited into two committed native trees.
+
+Adding `expo-notifications` is therefore one more autolinked Expo module in a project that already
+autolinks them — install it with `npx expo install` so the SDK-51-compatible version is picked,
+not the latest.
+*Consequence:* see D25, which is the real constraint this creates.
+
+**D25 — The two mobile apps share one hoisted `react-native` and one `expo`, and must move
+together.**
+The repo has **no npm workspaces** (root `package.json` has no `workspaces` key) and no per-app
+lockfile: `apps/pos-mobile/package.json` lists its dependencies as `"*"` and every version is
+resolved once at the root. `package-lock.json` pins exactly one `react-native@0.74.1`, one
+`expo@51.0.39` and one `react@18.2.0`, and both apps' Metro builds resolve to those copies.
+
+Today that is a *benefit* — Expo SDK 51's default pairing is React Native 0.74, which is exactly
+what is installed, so `apps/kds-mobile` needs no version change at all and cannot drift from
+`apps/pos-mobile`.
+
+The constraint is the other direction: **a future Expo SDK bump for the KDS app is a React Native
+bump for the POS app.** SDK 52 moves to RN 0.76, and there is no way to hold `apps/pos-mobile`
+back without introducing workspaces or a second lockfile. Anyone upgrading the KDS app later is
+upgrading both, and should plan a `pos-mobile` regression pass into that work.
+*Recorded rather than solved:* adding npm workspaces to decouple them is a repo-wide change well
+outside a notification feature, and nothing in this PRD needs it.
 
 **D15 — KDS copy is English.**
 `views/screens/pos/**` is English and `views/screens/order/**` is Indonesian
@@ -845,14 +874,27 @@ a number picked and tuned, and it answers a different question — a slow dispat
 settlement. The sweeper's own retry limit (D18) already bounds that case.
 
 **D23 — The push message carries an explicit sound name, and the Android channel id is versioned.**
-A custom sound is wanted, later. Two things make "later" expensive if they are not decided now:
-an Android `NotificationChannel`'s sound is **fixed at creation** and cannot be changed
-programmatically afterwards, so a venue that has already installed the app keeps the old sound
-forever unless the app creates a *new channel id*; and the sound filename for iOS travels in the
-push payload, which means the **server** must know it. Shipping `orders-v1` as the channel id and
-a `KDS_PUSH_SOUND` environment variable (default `default`) now makes the later change a bundled
-asset, one env value and a bump to `orders-v2` — no migration, no contract change, no reinstall
-instructions.
+A custom sound is wanted, later. Three things make "later" expensive if they are not decided now.
+
+**An Android notification channel's sound is fixed at creation.** Android's own documentation is
+explicit: *"After you create a notification channel, you can't change the notification behaviors.
+The user has complete control at that point. However, you can still change a channel's name and
+description."* Importance, sound, vibration and lights are all in the frozen set. A venue that has
+already installed the app therefore keeps the original sound forever unless the app creates a
+**new channel id** — hence `orders-v1` from day one, and `orders-v2` when the sound changes.
+
+**The sound has to be set in two places to work on every Android version.** On Android 8+ the
+*channel* carries it; below 8 the *notification* carries it. The message therefore always sends
+both `channelId` and `sound`, which is also what iOS needs, since on iOS the filename travels in
+the payload and nothing else.
+
+**The file must be `.wav`.** It is the one format both platforms accept, and it is bundled through
+the `expo-notifications` config plugin's `sounds` array, which makes it available to both the
+channel definition and the message.
+
+`KDS_PUSH_SOUND` (default `default`) is therefore a `.wav` filename with no directory, and the
+later change is: add the asset to the plugin's `sounds` array, bump the channel id, set the env
+variable. No migration, no contract change, no reinstall instructions.
 
 **D24 — One paid transaction produces one notification, delivered to every registered device.**
 *Supersedes D20 and D21.* D20 gave each phone a station subscription; D21 then threw that
@@ -975,18 +1017,33 @@ permission renders the settings instructions; `npx nx run ui:test` green.
 
 ### Phase 5 — `apps/kds-mobile` (Expo)
 
+**Prerequisites that are procurement, not code, and should be started before the phase:**
+
+| Platform | Needed | Note |
+| --- | --- | --- |
+| Android | FCM V1 credentials (a Firebase project, `google-services.json`, the service-account key uploaded to EAS) | Required for any real build. Free. |
+| iOS | A **paid** Apple Developer account (~$99/yr) for the APNs key | There is no way around it; APNs credentials cannot be issued without one. |
+
+If the Apple account is not in place, **ship Android first** — nothing in this PRD is
+platform-specific, and the iOS build is additive whenever the account exists. A dev or production
+build is required either way: push is not a thing to validate in Expo Go, which uses Expo's own
+credentials on this SDK and drops the capability entirely from SDK 53.
+
 `@nx/expo` added to the workspace; `apps/kds-mobile` generated with `app.json`, `eas.json`, a
 `project.json` whose `start`/`run-android`/`run-ios` targets depend on `api-contract:generate:ts`
 (copying `apps/pos-mobile/project.json`), `.env.example` with `API_BASE_URL`, `RootProvider` from
 `@gatherloop-pos/provider`, a two-screen `@react-navigation/native-stack`, and
 `ExpoPushTokenRepository` in `libs/ui/src/data/native/` — the one file importing
 `expo-notifications` — creating the `orders-v1` Android channel at `MAX` importance on launch
-(D23).
+(D23). `expo-notifications` is installed with `npx expo install` so the SDK-51-compatible version
+is chosen; **no `react-native` or `expo` version moves** (D25).
 
 **Acceptance:** `npx nx run kds-mobile:run-android` installs; logging in, granting permission,
-registering the device, and tapping **Send test notification** produces a notification on the
-device with sound, from a locked screen and with the app closed; `GET /kds/devices` shows one row;
-**Unregister** removes it; `npm run lint` and `npm test` green across the workspace.
+registering the device, and tapping **Send test notification** produces a notification **with
+sound on a locked, backgrounded phone** — foreground-only is not a pass, see Risks;
+`GET /kds/devices` shows one row; **Unregister** removes it. **`apps/pos-mobile` still builds and
+runs** (`npx nx run pos-mobile:run-android`) — the regression this phase could plausibly cause,
+given D25's shared dependency tree. `npm run lint` and `npm test` green across the workspace.
 
 ### Phase 6 — The outbox table and the station rule (API)
 
@@ -1080,11 +1137,21 @@ Current deployment is one systemd unit on one VPS. If that changes, the claim st
 `SELECT … FOR UPDATE SKIP LOCKED` — a contained change, flagged here so it is not discovered by a
 barista getting every order twice.
 
-**Two mobile toolchains in one repo.** `apps/pos-mobile` stays bare React Native while
-`apps/kds-mobile` is Expo (D14), so there are two build paths, two sets of native config and two
-ways to be wrong about a dependency that patches native code. Bounded by `apps/kds-mobile` being a
-two-screen app with one native dependency. Migrating `apps/pos-mobile` to Expo is a plausible
-follow-up and explicitly not proposed here.
+**The two mobile apps cannot drift, so a later Expo SDK bump is a two-app change.** D25 — one
+hoisted `react-native@0.74.1` and `expo@51.0.39`, no workspaces. Nothing to do now (SDK 51's
+default pairing *is* RN 0.74, so the KDS app lands on the versions already installed), but whoever
+upgrades the KDS app to SDK 52+ is also upgrading `apps/pos-mobile` to RN 0.76+ and owes it a
+regression pass. The mitigation, if it ever bites, is npm workspaces — a repo-wide change this
+PRD does not need.
+
+**A custom sound may not play when the app is backgrounded on Android.** There are open
+`expo-notifications` reports of exactly this — custom sound working in the foreground and falling
+back to the default when the app is backgrounded or killed, which is the *only* state that matters
+for a counter phone. It does not affect this PRD's default (`default`), and D23's groundwork is
+what makes the fix cheap, but it means the custom sound must be accepted on a **locked, backgrounded
+phone** before it is called done, not in a foreground test. Phase 5's acceptance says so
+explicitly. If it proves unreliable, an always-audible alternative is a high-importance channel
+with the device's default alarm-style sound.
 
 **Notification fatigue — the accepted cost of D24.** Every paid transaction with a preparable item
 buzzes every phone, so a staff member working the kitchen is alerted for drinks and vice versa. A
@@ -1204,8 +1271,17 @@ the reasoning behind D20–D23 keeps the question that produced it.
 
 - Expo — Push Notifications overview, `expo-notifications`, and the Expo Push API including
   `DeviceNotRegistered` receipts: https://docs.expo.dev/push-notifications/overview/
-- Expo — sending notifications from a server:
+- Expo — sending notifications from a server, and the `sound` / `channelId` message fields
+  (a `.wav` filename with no directory, or `default`):
   https://docs.expo.dev/push-notifications/sending-notifications/
+- Expo — push notification setup: the FCM V1 credentials Android needs and the paid Apple
+  Developer account iOS needs: https://docs.expo.dev/push-notifications/push-notifications-setup/
+- Expo — push notifications FAQ, including the removal of Expo Go push support in SDK 53:
+  https://docs.expo.dev/push-notifications/faq/
+- Expo issue #27978 — custom push sound playing only in the foreground on Android, the reason
+  Phase 5's acceptance tests a backgrounded phone: https://github.com/expo/expo/issues/27978
+- Expo changelog — SDK 51 supports React Native 0.74 (default) and 0.75, the pairing D25 rests on:
+  https://expo.dev/changelog/2024-08-14-react-native-0.75
 - Firebase Cloud Messaging HTTP v1 API (the Option I alternative):
   https://firebase.google.com/docs/cloud-messaging/migrate-v1
 - Android — notification channels and importance levels, and the rule that a channel's settings
