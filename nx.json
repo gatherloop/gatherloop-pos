@@ -56,7 +56,23 @@
         "upgradeTargetName": "update"
       }
     },
-    "@nx-go/nx-go"
+    "@nx-go/nx-go",
+    {
+      "plugin": "@nx/expo/plugin",
+      "options": {
+        "startTargetName": "expo:start",
+        "buildTargetName": "build",
+        "prebuildTargetName": "prebuild",
+        "serveTargetName": "serve",
+        "installTargetName": "install",
+        "exportTargetName": "export",
+        "submitTargetName": "submit",
+        "runIosTargetName": "expo:run-ios",
+        "runAndroidTargetName": "expo:run-android",
+        "buildDepsTargetName": "build-deps",
+        "watchDepsTargetName": "watch-deps"
+      }
+    }
   ],
   "generators": {
     "@nx/next": {
