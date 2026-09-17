@@ -1,0 +1,40 @@
+{
+  "name": "kds-mobile",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/kds-mobile/src",
+  "projectType": "application",
+  "tags": [],
+  "// targets": "to see all targets run: nx show project kds-mobile --web",
+  "targets": {
+    "start": {
+      "command": "expo start",
+      "options": { "cwd": "apps/kds-mobile" },
+      "dependsOn": [
+        {
+          "projects": "api-contract",
+          "target": "generate:ts"
+        }
+      ]
+    },
+    "run-android": {
+      "command": "expo run:android",
+      "options": { "cwd": "apps/kds-mobile" },
+      "dependsOn": [
+        {
+          "projects": "api-contract",
+          "target": "generate:ts"
+        }
+      ]
+    },
+    "run-ios": {
+      "command": "expo run:ios",
+      "options": { "cwd": "apps/kds-mobile" },
+      "dependsOn": [
+        {
+          "projects": "api-contract",
+          "target": "generate:ts"
+        }
+      ]
+    }
+  }
+}
