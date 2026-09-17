@@ -6,20 +6,22 @@ import (
 )
 
 type TransactionUsecase struct {
-	transactionRepository   TransactionRepository
-	variantRepository       VariantRepository
-	couponRepository        CouponRepository
-	walletRepository        WalletRepository
-	availabilityReservation AvailabilityReservation
+	transactionRepository     TransactionRepository
+	variantRepository         VariantRepository
+	couponRepository          CouponRepository
+	walletRepository          WalletRepository
+	availabilityReservation   AvailabilityReservation
+	kdsNotificationRepository KdsNotificationRepository
 }
 
-func NewTransactionUsecase(transactionRepository TransactionRepository, variantRepository VariantRepository, couponRepository CouponRepository, walletRepository WalletRepository, availabilityReservation AvailabilityReservation) TransactionUsecase {
+func NewTransactionUsecase(transactionRepository TransactionRepository, variantRepository VariantRepository, couponRepository CouponRepository, walletRepository WalletRepository, availabilityReservation AvailabilityReservation, kdsNotificationRepository KdsNotificationRepository) TransactionUsecase {
 	return TransactionUsecase{
-		transactionRepository:   transactionRepository,
-		variantRepository:       variantRepository,
-		couponRepository:        couponRepository,
-		walletRepository:        walletRepository,
-		availabilityReservation: availabilityReservation,
+		transactionRepository:     transactionRepository,
+		variantRepository:         variantRepository,
+		couponRepository:          couponRepository,
+		walletRepository:          walletRepository,
+		availabilityReservation:   availabilityReservation,
+		kdsNotificationRepository: kdsNotificationRepository,
 	}
 }
 
@@ -202,11 +204,11 @@ func (usecase TransactionUsecase) PayTransaction(ctx context.Context, walletId i
 		if err != nil {
 			return err
 		}
-		return payTransaction(ctxWithTx, transaction, usecase.transactionRepository, usecase.walletRepository, walletId, paidAmount)
+		return payTransaction(ctxWithTx, transaction, usecase.transactionRepository, usecase.walletRepository, usecase.kdsNotificationRepository, walletId, paidAmount)
 	})
 }
 
-func payTransaction(ctx context.Context, transaction Transaction, transactionRepository TransactionRepository, walletRepository WalletRepository, walletId int64, paidAmount float32) *Error {
+func payTransaction(ctx context.Context, transaction Transaction, transactionRepository TransactionRepository, walletRepository WalletRepository, kdsNotificationRepository KdsNotificationRepository, walletId int64, paidAmount float32) *Error {
 	if transaction.PaidAt != nil {
 		return &Error{Type: BadRequest, Message: "transaction already paid"}
 	}
@@ -246,6 +248,11 @@ func payTransaction(ctx context.Context, transaction Transaction, transactionRep
 	totalIncome := transaction.Total - paymentCost - foodCost
 
 	if _, err := transactionRepository.UpdateTransactionById(ctx, Transaction{TotalIncome: totalIncome}, id); err != nil {
+		return err
+	}
+
+	// FR-1: enqueued after the wallet and income writes succeed, atomic with the payment (D5).
+	if err := kdsNotificationRepository.EnqueueForTransaction(ctx, transaction); err != nil {
 		return err
 	}
 
