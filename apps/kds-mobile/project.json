@@ -35,6 +35,14 @@
           "target": "generate:ts"
         }
       ]
+    },
+    "build": {
+      "dependsOn": [
+        {
+          "projects": "api-contract",
+          "target": "generate:ts"
+        }
+      ]
     }
   }
 }

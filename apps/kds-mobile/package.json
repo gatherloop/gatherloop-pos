@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "eas-build-post-install": "cd ../../ && node tools/scripts/eas-build-post-install.mjs . apps/kds-mobile"
+    "eas-build-post-install": "cd ../../ && node tools/scripts/eas-build-post-install.mjs . apps/kds-mobile && NX_DAEMON=false npx nx run api-contract:generate:ts"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "*",
@@ -12,7 +12,7 @@
     "@testing-library/jest-native": "*",
     "@testing-library/react-native": "*",
     "burnt": "*",
-    "expo": "*",
+    "expo": "~51.0.39",
     "expo-constants": "*",
     "expo-notifications": "*",
     "metro-config": "*",
