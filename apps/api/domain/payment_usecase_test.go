@@ -22,34 +22,45 @@ func withPaymentTransactionMock(r *mock.MockPaymentRepository) {
 }
 
 type paymentUsecaseMocks struct {
-	paymentRepo         *mock.MockPaymentRepository
-	gatewayRepo         *mock.MockPaymentGatewayRepository
-	customerRepo        *mock.MockCustomerRepository
-	cartRepo            *mock.MockCartRepository
-	transactionRepo     *mock.MockTransactionRepository
-	variantRepo         *mock.MockVariantRepository
-	walletRepo          *mock.MockWalletRepository
-	availabilityRepo    *mock.MockAvailabilityReservationRepository
-	kdsNotificationRepo *mock.MockKdsNotificationRepository
+	paymentRepo               *mock.MockPaymentRepository
+	gatewayRepo               *mock.MockPaymentGatewayRepository
+	customerRepo              *mock.MockCustomerRepository
+	cartRepo                  *mock.MockCartRepository
+	transactionRepo           *mock.MockTransactionRepository
+	variantRepo               *mock.MockVariantRepository
+	walletRepo                *mock.MockWalletRepository
+	availabilityRepo          *mock.MockAvailabilityReservationRepository
+	kdsNotificationRepo       *mock.MockKdsNotificationRepository
+	kdsNotificationDispatcher *mock.MockKdsNotificationDispatcher
 }
 
 func newPaymentUsecaseMocks(ctrl *gomock.Controller) paymentUsecaseMocks {
+	kdsNotificationDispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
+	kdsNotificationDispatcher.EXPECT().TriggerDispatch().AnyTimes()
+
 	return paymentUsecaseMocks{
-		paymentRepo:         mock.NewMockPaymentRepository(ctrl),
-		gatewayRepo:         mock.NewMockPaymentGatewayRepository(ctrl),
-		customerRepo:        mock.NewMockCustomerRepository(ctrl),
-		cartRepo:            mock.NewMockCartRepository(ctrl),
-		transactionRepo:     mock.NewMockTransactionRepository(ctrl),
-		variantRepo:         mock.NewMockVariantRepository(ctrl),
-		walletRepo:          mock.NewMockWalletRepository(ctrl),
-		availabilityRepo:    mock.NewMockAvailabilityReservationRepository(ctrl),
-		kdsNotificationRepo: mock.NewMockKdsNotificationRepository(ctrl),
+		paymentRepo:               mock.NewMockPaymentRepository(ctrl),
+		gatewayRepo:               mock.NewMockPaymentGatewayRepository(ctrl),
+		customerRepo:              mock.NewMockCustomerRepository(ctrl),
+		cartRepo:                  mock.NewMockCartRepository(ctrl),
+		transactionRepo:           mock.NewMockTransactionRepository(ctrl),
+		variantRepo:               mock.NewMockVariantRepository(ctrl),
+		walletRepo:                mock.NewMockWalletRepository(ctrl),
+		availabilityRepo:          mock.NewMockAvailabilityReservationRepository(ctrl),
+		kdsNotificationRepo:       mock.NewMockKdsNotificationRepository(ctrl),
+		kdsNotificationDispatcher: kdsNotificationDispatcher,
 	}
 }
 
 func (m paymentUsecaseMocks) usecase() domain.PaymentUsecase {
+	return m.usecaseWithDispatcher(m.kdsNotificationDispatcher)
+}
+
+// usecaseWithDispatcher builds the usecase over a caller-supplied dispatcher instead of the
+// permissive default, for the tests that assert on the FR-4 post-commit dispatch trigger itself.
+func (m paymentUsecaseMocks) usecaseWithDispatcher(dispatcher domain.KdsNotificationDispatcher) domain.PaymentUsecase {
 	availabilityReservation := domain.NewAvailabilityReservation(m.availabilityRepo)
-	return domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, availabilityReservation, m.kdsNotificationRepo, checkoutQrisExpirySeconds, checkoutOrderPaymentWalletId)
+	return domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, availabilityReservation, m.kdsNotificationRepo, dispatcher, checkoutQrisExpirySeconds, checkoutOrderPaymentWalletId)
 }
 
 func expectAvailableVariant(m paymentUsecaseMocks, variantId int64) {
@@ -1174,5 +1185,122 @@ func TestPaymentUsecase_GetPaymentStatus(t *testing.T) {
 
 		assert.Nil(t, err)
 		assert.Equal(t, domain.PaymentStateExpired, result.Status)
+	})
+}
+
+// FR-4: payTransaction has two callers, and this is the one reached by the DOKU webhook and by
+// the guest's own status page re-querying DOKU (System Design Overview, "the path"). Both must
+// kick the dispatcher after their commit — this is the KDS acceptance for phase 8's "a real order
+// buzzes" the mock-gateway tests in kds_notification_usecase_test.go can't reach from here.
+func TestPaymentUsecase_KdsDispatchTrigger(t *testing.T) {
+	t.Run("ConfirmPayment triggers a dispatch sweep after a payment commits", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		withPaymentTransactionMock(m.paymentRepo)
+
+		payment := pendingPaymentFixture()
+		status := domain.QrisStatus{
+			PartnerReferenceNo: payment.PartnerReferenceNo,
+			GatewayReferenceNo: "gw-new",
+			Status:             domain.PaymentGatewayStatusPaid,
+			PaidAmount:         payment.Amount,
+		}
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).
+			Return(domain.Transaction{Id: 99, Total: payment.Amount}, nil)
+		expectConfirmPaymentWalletCredit(m)
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), payment.Id).
+			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) { return p, nil })
+		m.cartRepo.EXPECT().GetCartById(gomock.Any(), payment.CartId).
+			Return(domain.Cart{Id: 1, Status: domain.CartStatusActive}, nil)
+		m.cartRepo.EXPECT().UpdateCartById(gomock.Any(), gomock.Any(), int64(1)).
+			DoAndReturn(func(_ context.Context, cart domain.Cart, id int64) (domain.Cart, *domain.Error) { return cart, nil })
+
+		dispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
+		dispatcher.EXPECT().TriggerDispatch().Times(1)
+
+		_, outcome, err := m.usecaseWithDispatcher(dispatcher).ConfirmPayment(context.Background(), status)
+
+		assert.Nil(t, err)
+		assert.Equal(t, domain.ConfirmPaymentOutcomePaid, outcome)
+	})
+
+	t.Run("ConfirmPayment does not trigger a dispatch sweep for an already-paid payment", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		withPaymentTransactionMock(m.paymentRepo)
+
+		payment := pendingPaymentFixture()
+		payment.Status = domain.PaymentStatePaid
+		paidAt := time.Now()
+		payment.PaidAt = &paidAt
+		status := domain.QrisStatus{PartnerReferenceNo: payment.PartnerReferenceNo, Status: domain.PaymentGatewayStatusPaid, PaidAmount: payment.Amount}
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+
+		dispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
+		dispatcher.EXPECT().TriggerDispatch().Times(0)
+
+		_, outcome, err := m.usecaseWithDispatcher(dispatcher).ConfirmPayment(context.Background(), status)
+
+		assert.Nil(t, err)
+		assert.Equal(t, domain.ConfirmPaymentOutcomeAlreadyPaid, outcome)
+	})
+
+	t.Run("GetPaymentStatus triggers a dispatch sweep when a DOKU requery pays the transaction", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		withPaymentTransactionMock(m.paymentRepo)
+
+		payment := pendingPaymentFixture()
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.gatewayRepo.EXPECT().QueryQris(gomock.Any(), gomock.Any()).
+			Return(domain.QrisStatus{PartnerReferenceNo: payment.PartnerReferenceNo, GatewayReferenceNo: "gw-new", Status: domain.PaymentGatewayStatusPaid, PaidAmount: payment.Amount}, nil)
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).
+			Return(domain.Transaction{Id: 99, Total: payment.Amount}, nil).Times(2)
+		expectConfirmPaymentWalletCredit(m)
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), payment.Id).
+			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) { return p, nil })
+		m.cartRepo.EXPECT().GetCartById(gomock.Any(), payment.CartId).
+			Return(domain.Cart{Id: 1, Status: domain.CartStatusActive}, nil)
+		m.cartRepo.EXPECT().UpdateCartById(gomock.Any(), gomock.Any(), int64(1)).
+			DoAndReturn(func(_ context.Context, cart domain.Cart, id int64) (domain.Cart, *domain.Error) { return cart, nil })
+
+		dispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
+		dispatcher.EXPECT().TriggerDispatch().Times(1)
+
+		result, _, err := m.usecaseWithDispatcher(dispatcher).GetPaymentStatus(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+
+		assert.Nil(t, err)
+		assert.Equal(t, domain.PaymentStatePaid, result.Status)
+	})
+
+	t.Run("GetPaymentStatus does not trigger a dispatch sweep when the payment is still pending", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		withPaymentTransactionMock(m.paymentRepo)
+
+		payment := pendingPaymentFixture()
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.gatewayRepo.EXPECT().QueryQris(gomock.Any(), gomock.Any()).
+			Return(domain.QrisStatus{PartnerReferenceNo: payment.PartnerReferenceNo, Status: domain.PaymentGatewayStatusPending}, nil)
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), payment.Id).
+			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) { return p, nil })
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil)
+
+		dispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
+		dispatcher.EXPECT().TriggerDispatch().Times(0)
+
+		result, _, err := m.usecaseWithDispatcher(dispatcher).GetPaymentStatus(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+
+		assert.Nil(t, err)
+		assert.Equal(t, domain.PaymentStatePending, result.Status)
 	})
 }
