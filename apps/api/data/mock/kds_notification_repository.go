@@ -55,3 +55,98 @@ func (mr *MockKdsPushGatewayRepositoryMockRecorder) Send(ctx, messages any) *gom
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockKdsPushGatewayRepository)(nil).Send), ctx, messages)
 }
+
+// MockKdsNotificationRepository is a mock of KdsNotificationRepository interface.
+type MockKdsNotificationRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockKdsNotificationRepositoryMockRecorder
+	isgomock struct{}
+}
+
+// MockKdsNotificationRepositoryMockRecorder is the mock recorder for MockKdsNotificationRepository.
+type MockKdsNotificationRepositoryMockRecorder struct {
+	mock *MockKdsNotificationRepository
+}
+
+// NewMockKdsNotificationRepository creates a new mock instance.
+func NewMockKdsNotificationRepository(ctrl *gomock.Controller) *MockKdsNotificationRepository {
+	mock := &MockKdsNotificationRepository{ctrl: ctrl}
+	mock.recorder = &MockKdsNotificationRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockKdsNotificationRepository) EXPECT() *MockKdsNotificationRepositoryMockRecorder {
+	return m.recorder
+}
+
+// ClaimPendingKdsNotifications mocks base method.
+func (m *MockKdsNotificationRepository) ClaimPendingKdsNotifications(ctx context.Context, limit int) ([]domain.KdsNotification, *domain.Error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ClaimPendingKdsNotifications", ctx, limit)
+	ret0, _ := ret[0].([]domain.KdsNotification)
+	ret1, _ := ret[1].(*domain.Error)
+	return ret0, ret1
+}
+
+// ClaimPendingKdsNotifications indicates an expected call of ClaimPendingKdsNotifications.
+func (mr *MockKdsNotificationRepositoryMockRecorder) ClaimPendingKdsNotifications(ctx, limit any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClaimPendingKdsNotifications", reflect.TypeOf((*MockKdsNotificationRepository)(nil).ClaimPendingKdsNotifications), ctx, limit)
+}
+
+// EnqueueForTransaction mocks base method.
+func (m *MockKdsNotificationRepository) EnqueueForTransaction(ctx context.Context, transaction domain.Transaction) *domain.Error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EnqueueForTransaction", ctx, transaction)
+	ret0, _ := ret[0].(*domain.Error)
+	return ret0
+}
+
+// EnqueueForTransaction indicates an expected call of EnqueueForTransaction.
+func (mr *MockKdsNotificationRepositoryMockRecorder) EnqueueForTransaction(ctx, transaction any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnqueueForTransaction", reflect.TypeOf((*MockKdsNotificationRepository)(nil).EnqueueForTransaction), ctx, transaction)
+}
+
+// MarkKdsNotificationFailed mocks base method.
+func (m *MockKdsNotificationRepository) MarkKdsNotificationFailed(ctx context.Context, id int64, detail string) *domain.Error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MarkKdsNotificationFailed", ctx, id, detail)
+	ret0, _ := ret[0].(*domain.Error)
+	return ret0
+}
+
+// MarkKdsNotificationFailed indicates an expected call of MarkKdsNotificationFailed.
+func (mr *MockKdsNotificationRepositoryMockRecorder) MarkKdsNotificationFailed(ctx, id, detail any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkKdsNotificationFailed", reflect.TypeOf((*MockKdsNotificationRepository)(nil).MarkKdsNotificationFailed), ctx, id, detail)
+}
+
+// MarkKdsNotificationSent mocks base method.
+func (m *MockKdsNotificationRepository) MarkKdsNotificationSent(ctx context.Context, id int64, detail string) *domain.Error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MarkKdsNotificationSent", ctx, id, detail)
+	ret0, _ := ret[0].(*domain.Error)
+	return ret0
+}
+
+// MarkKdsNotificationSent indicates an expected call of MarkKdsNotificationSent.
+func (mr *MockKdsNotificationRepositoryMockRecorder) MarkKdsNotificationSent(ctx, id, detail any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkKdsNotificationSent", reflect.TypeOf((*MockKdsNotificationRepository)(nil).MarkKdsNotificationSent), ctx, id, detail)
+}
+
+// MarkKdsNotificationSkipped mocks base method.
+func (m *MockKdsNotificationRepository) MarkKdsNotificationSkipped(ctx context.Context, id int64, detail string) *domain.Error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MarkKdsNotificationSkipped", ctx, id, detail)
+	ret0, _ := ret[0].(*domain.Error)
+	return ret0
+}
+
+// MarkKdsNotificationSkipped indicates an expected call of MarkKdsNotificationSkipped.
+func (mr *MockKdsNotificationRepositoryMockRecorder) MarkKdsNotificationSkipped(ctx, id, detail any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkKdsNotificationSkipped", reflect.TypeOf((*MockKdsNotificationRepository)(nil).MarkKdsNotificationSkipped), ctx, id, detail)
+}
