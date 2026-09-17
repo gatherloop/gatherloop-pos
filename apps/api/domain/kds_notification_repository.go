@@ -32,3 +32,14 @@ type KdsPushReceipt struct {
 type KdsPushGatewayRepository interface {
 	Send(ctx context.Context, messages []KdsPushMessage) ([]KdsPushReceipt, *Error)
 }
+
+type KdsNotificationRepository interface {
+	// EnqueueForTransaction writes one row when ShouldNotify is true (D24), 'skipped' instead of
+	// 'pending' when IsStaleForNotification is true (D22), and is a no-op on a transaction already
+	// enqueued (D4) — never an error.
+	EnqueueForTransaction(ctx context.Context, transaction Transaction) *Error
+	ClaimPendingKdsNotifications(ctx context.Context, limit int) ([]KdsNotification, *Error)
+	MarkKdsNotificationSent(ctx context.Context, id int64, detail string) *Error
+	MarkKdsNotificationFailed(ctx context.Context, id int64, detail string) *Error
+	MarkKdsNotificationSkipped(ctx context.Context, id int64, detail string) *Error
+}
