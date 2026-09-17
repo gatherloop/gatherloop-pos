@@ -6,6 +6,10 @@ export const Platform = {
   select: jest.fn((obj: Record<string, unknown>) => obj.web ?? obj.default),
 };
 
+export const Linking = {
+  openSettings: jest.fn(),
+};
+
 export const FlatList = ({
   data,
   renderItem,
