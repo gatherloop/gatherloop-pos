@@ -45,6 +45,8 @@ export default class Document extends NextDocument {
           {/* #f8f8f8 matches OrderLayout header's $color2 background */}
           <meta id="theme-color" name="theme-color" content="#f8f8f8" />
           <meta name="color-scheme" content="light" />
+          <link rel="manifest" href="/manifest.webmanifest" />
+          <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         </Head>
         <body>
           <Main />
