@@ -9,6 +9,12 @@ const meta: Meta<typeof OrderPreparingView> = {
     tableLabel: 'Meja 1',
     amount: 54000,
     isPolling: false,
+    notificationOptIn: {
+      type: 'idle',
+      onSubscribePress: () => {
+        // Storybook action stand-in
+      },
+    },
     onBackToMenuPress: () => {
       // Storybook action stand-in
     },
