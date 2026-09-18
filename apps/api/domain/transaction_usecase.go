@@ -15,9 +15,10 @@ type TransactionUsecase struct {
 	kdsNotificationDispatcher   KdsNotificationDispatcher
 	paymentRepository           PaymentRepository
 	guestNotificationRepository GuestNotificationRepository
+	guestNotificationDispatcher GuestNotificationDispatcher
 }
 
-func NewTransactionUsecase(transactionRepository TransactionRepository, variantRepository VariantRepository, couponRepository CouponRepository, walletRepository WalletRepository, availabilityReservation AvailabilityReservation, kdsNotificationRepository KdsNotificationRepository, kdsNotificationDispatcher KdsNotificationDispatcher, paymentRepository PaymentRepository, guestNotificationRepository GuestNotificationRepository) TransactionUsecase {
+func NewTransactionUsecase(transactionRepository TransactionRepository, variantRepository VariantRepository, couponRepository CouponRepository, walletRepository WalletRepository, availabilityReservation AvailabilityReservation, kdsNotificationRepository KdsNotificationRepository, kdsNotificationDispatcher KdsNotificationDispatcher, paymentRepository PaymentRepository, guestNotificationRepository GuestNotificationRepository, guestNotificationDispatcher GuestNotificationDispatcher) TransactionUsecase {
 	return TransactionUsecase{
 		transactionRepository:       transactionRepository,
 		variantRepository:           variantRepository,
@@ -28,6 +29,7 @@ func NewTransactionUsecase(transactionRepository TransactionRepository, variantR
 		kdsNotificationDispatcher:   kdsNotificationDispatcher,
 		paymentRepository:           paymentRepository,
 		guestNotificationRepository: guestNotificationRepository,
+		guestNotificationDispatcher: guestNotificationDispatcher,
 	}
 }
 
@@ -310,7 +312,7 @@ func (usecase TransactionUsecase) UnpayTransaction(ctx context.Context, id int64
 }
 
 func (usecase TransactionUsecase) CompleteTransaction(ctx context.Context, id int64) *Error {
-	return usecase.transactionRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+	err := usecase.transactionRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 		transaction, err := usecase.transactionRepository.GetTransactionById(ctxWithTx, id)
 		if err != nil {
 			return err
@@ -346,6 +348,11 @@ func (usecase TransactionUsecase) CompleteTransaction(ctx context.Context, id in
 
 		return usecase.guestNotificationRepository.EnqueueForCompletedTransaction(ctxWithTx, transaction, sessionId)
 	})
+	// FR-4/Phase 5: kicked after the commit so the barista's HTTP response never waits on a push service.
+	if err == nil {
+		usecase.guestNotificationDispatcher.TriggerDispatch()
+	}
+	return err
 }
 
 func (usecase TransactionUsecase) UncompleteTransaction(ctx context.Context, id int64) *Error {

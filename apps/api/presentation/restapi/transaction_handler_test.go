@@ -42,8 +42,10 @@ func newTransactionHandler(t *testing.T, setupMocks func(txRepo *mock.MockTransa
 	guestNotificationRepo := mock.NewMockGuestNotificationRepository(ctrl)
 	guestNotificationRepo.EXPECT().EnqueueForCompletedTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	guestNotificationRepo.EXPECT().DeleteGuestNotificationByTransactionId(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	guestNotificationDispatcher := mock.NewMockGuestNotificationDispatcher(ctrl)
+	guestNotificationDispatcher.EXPECT().TriggerDispatch().AnyTimes()
 	setupMocks(txRepo, variantRepo, couponRepo, walletRepo)
-	usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(availabilityRepo), kdsNotificationRepo, kdsNotificationDispatcher, paymentRepo, guestNotificationRepo)
+	usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(availabilityRepo), kdsNotificationRepo, kdsNotificationDispatcher, paymentRepo, guestNotificationRepo, guestNotificationDispatcher)
 	return restapi.NewTransactionHandler(usecase), ctrl
 }
 
