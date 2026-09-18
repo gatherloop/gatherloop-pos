@@ -4,10 +4,13 @@ const NullIcon: React.FC<Record<string, unknown>> = () => null;
 
 export const AlertCircle = NullIcon;
 export const ArrowLeft = NullIcon;
+export const Bell = NullIcon;
+export const BellOff = NullIcon;
 export const Box = NullIcon;
 export const Calendar = NullIcon;
 export const Check = NullIcon;
 export const CheckCircle = NullIcon;
+export const CheckCircle2 = NullIcon;
 export const ChevronDown = NullIcon;
 export const ClipboardCheck = NullIcon;
 export const ChevronLeft = NullIcon;

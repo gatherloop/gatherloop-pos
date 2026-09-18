@@ -77,6 +77,11 @@ BAR: 2× Kopi Susu Gula Aren, 1× Americano · KITCHEN: 1× Sandwich
 - **Re-register after a reinstall.** Reinstalling the app or updating the OS can rotate the
   device's push token; registering again from the setup screen replaces the old token under the
   same device rather than creating a second, dead entry.
+- **Orders arriving in a burst the moment the screen is unlocked** means the phone's battery
+  optimizer is holding them. Alerts are sent at high delivery priority precisely so a locked,
+  screen-off phone still wakes for them, but Android can still override that for an app it has put
+  under battery restrictions — set the KDS app to **Unrestricted** battery usage in the phone's app
+  settings.
 - **Log out or unregister a phone that's leaving service** — both stop it from receiving further
   orders, which matters for a lost or replaced phone.
 - **A push service outage is the fallback case this app was built to survive.** If Expo (or the
@@ -94,6 +99,8 @@ BAR: 2× Kopi Susu Gula Aren, 1× Americano · KITCHEN: 1× Sandwich
   the KDS buzzes, so the two surfaces can never disagree.
 - **Loud by design** — an Android notification channel created at maximum importance with sound
   and vibration, built to be heard over a busy room.
+- **Arrives on a locked phone** — alerts are sent at high delivery priority, so the phone wakes
+  for an order instead of holding it until someone turns the screen back on.
 - **Send test notification** — confirms a device is set up correctly without waiting for a real
   order.
 - **Unregister and log out** — either stops a phone from receiving further orders.

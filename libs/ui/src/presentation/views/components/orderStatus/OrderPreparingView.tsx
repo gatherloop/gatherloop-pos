@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Button, Paragraph, SizableText, Text, XStack, YStack } from 'tamagui';
+import { Paragraph, SizableText, Text, XStack, YStack } from 'tamagui';
 import { PaymentItem } from '../../../../domain/entities/Payment';
-import { formatRupiah } from '../../../../utils/currency';
+import { OrderItemsSummary } from './OrderItemsSummary';
+import {
+  OrderNotificationOptIn,
+  OrderNotificationOptInVariant,
+} from './OrderNotificationOptIn';
 
 const ELLIPSIS_FRAMES = ['', '.', '..', '...'];
 const ELLIPSIS_INTERVAL_MS = 500;
@@ -103,7 +107,7 @@ export type OrderPreparingViewProps = {
   items: PaymentItem[];
   amount: number;
   isPolling: boolean;
-  onBackToMenuPress: () => void;
+  notificationOptIn: OrderNotificationOptInVariant;
 };
 
 export const OrderPreparingView = ({
@@ -112,62 +116,25 @@ export const OrderPreparingView = ({
   items,
   amount,
   isPolling,
-  onBackToMenuPress,
+  notificationOptIn,
 }: OrderPreparingViewProps) => (
   <YStack flex={1} gap="$4" alignItems="center">
     <PreparingNumberBadge value={transactionNumber} />
     <PreparingHeading isPolling={isPolling} />
 
     <YStack alignItems="center" gap="$1">
-      <Text color="$color10">Meja</Text>
-      <Text fontWeight="bold" fontSize="$10" textAlign="center">
+      <Text fontWeight="bold" fontSize="$8" textAlign="center">
         {tableLabel}
       </Text>
     </YStack>
 
-    <YStack width="100%" gap="$4">
-      {items.map((item, index) => {
-        const optionValueNames = item.options
-          .map((option) => option.value)
-          .join(', ');
-
-        return (
-          <XStack
-            key={`${item.name}-${index}`}
-            justifyContent="space-between"
-            gap="$3"
-          >
-            <YStack flex={1} gap="$1">
-              <Text fontWeight="bold">{`${item.amount}x ${item.name}`}</Text>
-              {optionValueNames ? (
-                <Text color="$color10" fontSize="$2">
-                  {optionValueNames}
-                </Text>
-              ) : null}
-              {item.note ? (
-                <Text color="$color10" fontSize="$2" fontStyle="italic">
-                  Catatan: {item.note}
-                </Text>
-              ) : null}
-            </YStack>
-            <Text fontWeight="bold">{formatRupiah(item.subtotal)}</Text>
-          </XStack>
-        );
-      })}
-    </YStack>
-
-    <XStack width="100%" justifyContent="space-between">
-      <Text fontWeight="bold">Total</Text>
-      <Text fontWeight="bold">{formatRupiah(amount)}</Text>
-    </XStack>
+    <OrderItemsSummary items={items} amount={amount} />
 
     <Paragraph textAlign="center" color="$color10">
-      Pesanan Anda sedang disiapkan. Mohon tunggu di meja Anda, kami akan
-      memberi tahu di halaman ini saat pesanan siap diambil.
+      Mohon tunggu di meja Anda, kami akan memberi tahu apabila pesanan siap
+      diambil di kasir.
     </Paragraph>
 
-    <Button theme="blue" size="$5" minHeight={44} onPress={onBackToMenuPress}>
-      Pesan lagi
-    </Button>
+    <OrderNotificationOptIn variant={notificationOptIn} />
   </YStack>
 );

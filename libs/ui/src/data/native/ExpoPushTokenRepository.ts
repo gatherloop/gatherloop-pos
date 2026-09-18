@@ -9,7 +9,11 @@ import {
 
 // Android channel id is versioned because a channel's sound is immutable
 // once created — see docs/prd-kds-order-notifications.md D23.
-export const ANDROID_ORDERS_CHANNEL_ID = 'orders-v1';
+export const ANDROID_ORDERS_CHANNEL_ID = 'orders-v2';
+
+// Must match KDS_PUSH_SOUND on the API and the filename bundled via the
+// expo-notifications plugin's `sounds` array in apps/kds-mobile/app.json (D23).
+const ORDERS_CHANNEL_SOUND = 'order-alert.wav';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -38,7 +42,7 @@ export class ExpoPushTokenRepository implements PushTokenRepository {
       Notifications.setNotificationChannelAsync(ANDROID_ORDERS_CHANNEL_ID, {
         name: 'Orders',
         importance: Notifications.AndroidImportance.MAX,
-        sound: 'default',
+        sound: ORDERS_CHANNEL_SOUND,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: '#FF231F7C',
       });

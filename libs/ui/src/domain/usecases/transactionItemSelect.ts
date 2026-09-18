@@ -203,7 +203,10 @@ export class TransactionItemSelectUsecase extends Usecase<
         })
       )
       .with(
-        [{ type: 'loaded' }, { type: 'SELECT_PRODUCT' }],
+        [
+          { type: P.union('loaded', 'changingParams', 'revalidating') },
+          { type: 'SELECT_PRODUCT' },
+        ],
         ([state, { product }]) => {
           const hasOneOptions =
             product.options.length === 1 &&
@@ -271,11 +274,49 @@ export class TransactionItemSelectUsecase extends Usecase<
       )
       .with(
         [{ type: 'loadingVariant' }, { type: 'FETCH_VARIANT_SUCCESS' }],
-        ([state, { variant }]) => ({
-          ...state,
-          type: 'loadingVariantSuccess',
-          selectedVariant: variant,
-        })
+        ([state, { variant }]) => {
+          const selectedProductVariants = state.selectedProductVariants.some(
+            (candidate) => candidate.id === variant.id
+          )
+            ? state.selectedProductVariants.map((candidate) =>
+                candidate.id === variant.id ? variant : candidate
+              )
+            : [...state.selectedProductVariants, variant];
+
+          const isNowSoldOut =
+            !variant.isSellable ||
+            (variant.sellableQuantity !== undefined &&
+              variant.sellableQuantity <= 0);
+
+          if (isNowSoldOut) {
+            return {
+              ...state,
+              type: 'selectingOptions',
+              selectedProductVariants,
+            };
+          }
+
+          const cappedAmount =
+            variant.sellableQuantity !== undefined
+              ? Math.min(state.amount, variant.sellableQuantity)
+              : state.amount;
+
+          if (cappedAmount !== state.amount) {
+            return {
+              ...state,
+              type: 'selectingOptions',
+              amount: cappedAmount,
+              selectedProductVariants,
+            };
+          }
+
+          return {
+            ...state,
+            type: 'loadingVariantSuccess',
+            selectedVariant: variant,
+            selectedProductVariants,
+          };
+        }
       )
       .with(
         [{ type: 'loadingVariantSuccess' }, { type: 'RESET' }],

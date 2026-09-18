@@ -39,3 +39,5 @@ export * from './payment';
 export * from './customer';
 export * from './kdsDevice';
 export * from './pushToken';
+export * from './webPush';
+export * from './webPushSubscription';

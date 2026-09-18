@@ -29,6 +29,15 @@ func (repo Repository) GetPaymentByPartnerReferenceNo(ctx context.Context, partn
 	return ToPaymentDomain(payment), ToErrorCtx(ctx, result.Error, "GetPaymentByPartnerReferenceNo")
 }
 
+func (repo Repository) GetPaymentByTransactionId(ctx context.Context, transactionId int64) (domain.Payment, *domain.Error) {
+	db := GetDbFromCtx(ctx, repo.db)
+	var payment Payment
+	result := db.Table("payments").
+		Where("transaction_id = ? AND deleted_at IS NULL", transactionId).
+		First(&payment)
+	return ToPaymentDomain(payment), ToErrorCtx(ctx, result.Error, "GetPaymentByTransactionId")
+}
+
 func (repo Repository) GetPendingPaymentByCartId(ctx context.Context, cartId int64) (domain.Payment, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	var payment Payment

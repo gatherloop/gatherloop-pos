@@ -4,6 +4,7 @@ import (
 	"apps/api/data/doku"
 	"apps/api/data/expopush"
 	"apps/api/data/mysql"
+	"apps/api/data/webpush"
 	"apps/api/domain"
 	"apps/api/presentation/restapi"
 	"apps/api/utils"
@@ -81,6 +82,17 @@ func main() {
 
 	kdsPushGatewayRepository := expopush.NewKdsPushGatewayRepository(expoPushConfig)
 
+	webPushConfig := webpush.Config{
+		PublicKey:  env.WebPushVapidPublicKey,
+		PrivateKey: env.WebPushVapidPrivateKey,
+		Subject:    env.WebPushSubject,
+	}
+	if err := webPushConfig.Validate(); err != nil {
+		rootLogger.Warn("web push gateway not configured; guest notifications will fail", slog.Any("error", err))
+	}
+
+	webPushGatewayRepository := webpush.NewWebPushGatewayRepository(webPushConfig)
+
 	router := mux.NewRouter().StrictSlash(true)
 	router.Use(restapi.EnableCORS)
 	router.Use(logger.RequestLogger(rootLogger))
@@ -110,14 +122,17 @@ func main() {
 	availabilityRepository := mysql.NewAvailabilityRepository(db)
 	kdsDeviceRepository := mysql.NewKdsDeviceRepository(db)
 	kdsNotificationRepository := mysql.NewKdsNotificationRepository(db)
+	webPushSubscriptionRepository := mysql.NewWebPushSubscriptionRepository(db)
+	guestNotificationRepository := mysql.NewGuestNotificationRepository(db)
 
 	orderPaymentWalletId, _ := strconv.ParseInt(env.OrderPaymentWalletId, 10, 64)
 
 	kdsNotificationUsecase := domain.NewKdsNotificationUsecase(kdsNotificationRepository, kdsDeviceRepository, transactionRepository, kdsPushGatewayRepository, env.KdsPushSound)
+	guestNotificationUsecase := domain.NewGuestNotificationUsecase(guestNotificationRepository, webPushSubscriptionRepository, transactionRepository, paymentRepository, webPushGatewayRepository)
 
 	availabilityReservation := domain.NewAvailabilityReservation(availabilityReservationRepository)
 	walletUsecase := domain.NewWalletUsecase(walletRepository)
-	transactionUsecase := domain.NewTransactionUsecase(transactionRepository, variantRepository, couponRepository, walletRepository, availabilityReservation, kdsNotificationRepository, kdsNotificationUsecase)
+	transactionUsecase := domain.NewTransactionUsecase(transactionRepository, variantRepository, couponRepository, walletRepository, availabilityReservation, kdsNotificationRepository, kdsNotificationUsecase, paymentRepository, guestNotificationRepository, guestNotificationUsecase)
 	variantUsecase := domain.NewVariantUsecase(variantRepository, productRepository)
 	productUsecase := domain.NewProductUsecase(productRepository, variantRepository)
 	materialUsecase := domain.NewMaterialUsecase(materialRepository, supplierRepository)
@@ -139,6 +154,7 @@ func main() {
 	stockCheckUsecase := domain.NewStockCheckUsecase(stockCheckRepository, materialRepository)
 	availabilityUsecase := domain.NewAvailabilityUsecase(availabilityRepository, productRepository, variantRepository)
 	kdsDeviceUsecase := domain.NewKdsDeviceUsecase(kdsDeviceRepository, kdsPushGatewayRepository, env.KdsPushSound)
+	webPushSubscriptionUsecase := domain.NewWebPushSubscriptionUsecase(webPushSubscriptionRepository, env.WebPushVapidPublicKey)
 
 	walletHandler := restapi.NewWalletHandler(walletUsecase)
 	transactionHandler := restapi.NewTransactionHandler(transactionUsecase)
@@ -162,8 +178,9 @@ func main() {
 	checklistSessionHandler := restapi.NewChecklistSessionHandler(checklistSessionUsecase)
 	stockCheckHandler := restapi.NewStockCheckHandler(stockCheckUsecase)
 	availabilityHandler := restapi.NewAvailabilityHandler(availabilityUsecase)
-	publicHandler := restapi.NewPublicHandler(productUsecase, categoryUsecase, variantUsecase, tableUsecase)
+	publicHandler := restapi.NewPublicHandler(productUsecase, categoryUsecase, variantUsecase, tableUsecase, webPushSubscriptionUsecase)
 	kdsDeviceHandler := restapi.NewKdsDeviceHandler(kdsDeviceUsecase)
+	webPushSubscriptionHandler := restapi.NewWebPushSubscriptionHandler(webPushSubscriptionUsecase)
 
 	restapi.NewAuthRouter(authHandler).AddRouter(router)
 	restapi.NewBudgetRouter(budgetHandler).AddRouter(router)
@@ -189,19 +206,21 @@ func main() {
 	restapi.NewAvailabilityRouter(availabilityHandler).AddRouter(router)
 	restapi.NewPublicRouter(publicHandler).AddRouter(router)
 	restapi.NewKdsDeviceRouter(kdsDeviceHandler).AddRouter(router)
+	restapi.NewWebPushSubscriptionRouter(webPushSubscriptionHandler).AddRouter(router)
 
 	router.HandleFunc("/health-check", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("success"))
 	})
 
-	// FR-4: the sweeper that catches a crash, a deploy or an Expo outage — the post-commit
-	// goroutine kick in payTransaction's callers is the fast path, this is the backstop.
+	// FR-4/D5: the sweeper that catches a crash, a deploy or a push-service outage — the
+	// post-commit goroutine kick in payTransaction's and CompleteTransaction's callers is the
+	// fast path for each outbox, this is the backstop for both.
 	dispatchCtx, stopDispatch := context.WithCancel(context.Background())
 	var dispatchWaitGroup sync.WaitGroup
 	dispatchWaitGroup.Add(1)
 	go func() {
 		defer dispatchWaitGroup.Done()
-		runKdsDispatchSweeper(dispatchCtx, kdsNotificationUsecase, env.KdsDispatchIntervalSeconds, rootLogger)
+		runNotificationSweeper(dispatchCtx, kdsNotificationUsecase, guestNotificationUsecase, env.KdsDispatchIntervalSeconds, rootLogger)
 	}()
 
 	server := &http.Server{Addr: fmt.Sprintf(":%s", env.Port), Handler: router}
@@ -229,7 +248,10 @@ func main() {
 	}
 }
 
-func runKdsDispatchSweeper(ctx context.Context, usecase domain.KdsNotificationUsecase, intervalSeconds int, logger *slog.Logger) {
+// runNotificationSweeper drives both outboxes from one ticker (D5): two tickers at the same
+// interval would be two goroutines doing the same job, and two env variables to keep in sync for
+// no reason anyone could articulate.
+func runNotificationSweeper(ctx context.Context, kdsNotificationUsecase domain.KdsNotificationUsecase, guestNotificationUsecase domain.GuestNotificationUsecase, intervalSeconds int, logger *slog.Logger) {
 	ticker := time.NewTicker(time.Duration(intervalSeconds) * time.Second)
 	defer ticker.Stop()
 
@@ -238,8 +260,11 @@ func runKdsDispatchSweeper(ctx context.Context, usecase domain.KdsNotificationUs
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			if err := usecase.DispatchPending(context.Background()); err != nil {
+			if err := kdsNotificationUsecase.DispatchPending(context.Background()); err != nil {
 				logger.Error("kds dispatch sweep failed", slog.Any("error", err))
+			}
+			if err := guestNotificationUsecase.DispatchPending(context.Background()); err != nil {
+				logger.Error("guest notification dispatch sweep failed", slog.Any("error", err))
 			}
 		}
 	}

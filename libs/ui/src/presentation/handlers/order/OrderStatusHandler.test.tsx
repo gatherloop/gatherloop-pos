@@ -1,8 +1,16 @@
 import React from 'react';
 import { act, render, screen } from '@testing-library/react';
 import { OrderStatusHandler } from './OrderStatusHandler';
-import { MockPaymentRepository, MockSessionRepository } from '../../../data/mock';
-import { OrderStatusUsecase } from '../../../domain';
+import {
+  MockPaymentRepository,
+  MockSessionRepository,
+  MockWebPushRepository,
+  MockWebPushSubscriptionRepository,
+} from '../../../data/mock';
+import {
+  OrderNotificationSubscribeUsecase,
+  OrderStatusUsecase,
+} from '../../../domain';
 import { flushPromises } from '../../../utils/testUtils';
 
 const mockPush = jest.fn();
@@ -26,21 +34,33 @@ const renderHandler = ({
   reference,
   paymentRepository = new MockPaymentRepository(),
   sessionRepository = createSessionRepositoryWithTableCode(),
+  webPushRepository = new MockWebPushRepository(),
+  webPushSubscriptionRepository = new MockWebPushSubscriptionRepository(),
 }: {
   reference: string;
   paymentRepository?: MockPaymentRepository;
   sessionRepository?: MockSessionRepository;
+  webPushRepository?: MockWebPushRepository;
+  webPushSubscriptionRepository?: MockWebPushSubscriptionRepository;
 }) => {
   const orderStatusUsecase = new OrderStatusUsecase(paymentRepository, {
     reference,
   });
+  const orderNotificationSubscribeUsecase =
+    new OrderNotificationSubscribeUsecase(
+      webPushRepository,
+      webPushSubscriptionRepository
+    );
 
   return {
     paymentRepository,
     sessionRepository,
+    webPushRepository,
+    webPushSubscriptionRepository,
     ...render(
       <OrderStatusHandler
         orderStatusUsecase={orderStatusUsecase}
+        orderNotificationSubscribeUsecase={orderNotificationSubscribeUsecase}
         sessionRepository={sessionRepository}
       />
     ),
@@ -126,7 +146,7 @@ describe('OrderStatusHandler', () => {
 
     expect(
       screen.getByText(
-        'Pesanan Anda sedang disiapkan. Mohon tunggu di meja Anda, kami akan memberi tahu di halaman ini saat pesanan siap diambil.'
+        'Mohon tunggu di meja Anda, kami akan memberi tahu apabila pesanan siap diambil di kasir.'
       )
     ).toBeTruthy();
     expect(screen.queryByText(/menit|jam|detik/)).toBeNull();
@@ -146,16 +166,20 @@ describe('OrderStatusHandler', () => {
 
     await settle();
 
-    expect(screen.getByText('Pesanan siap!')).toBeTruthy();
+    expect(screen.getByText('Pesanan siap')).toBeTruthy();
     expect(
       screen.getByText(
-        `Silakan ambil di kasir dengan menyebutkan nomor #${paymentRepository.payment.transactionNumber}.`
+        `Silakan ambil di kasir dengan menyebutkan nomor #${paymentRepository.payment.transactionNumber}`
       )
     ).toBeTruthy();
     expect(
       screen.getByText(`#${paymentRepository.payment.transactionNumber}`)
     ).toBeTruthy();
-    expect(screen.queryByText(/menit|jam|detik/)).toBeNull();
+
+    const [firstItem] = paymentRepository.payment.items;
+    expect(
+      screen.getByText(`${firstItem.amount}x ${firstItem.name}`)
+    ).toBeTruthy();
   });
 
   it('shows the expiry screen for an expired payment', async () => {
@@ -224,7 +248,7 @@ describe('OrderStatusHandler', () => {
 
     expect(
       screen.getByText(
-        'Pesanan Anda sedang disiapkan. Mohon tunggu di meja Anda, kami akan memberi tahu di halaman ini saat pesanan siap diambil.'
+        'Mohon tunggu di meja Anda, kami akan memberi tahu apabila pesanan siap diambil di kasir.'
       )
     ).toBeTruthy();
   });
@@ -236,26 +260,6 @@ describe('OrderStatusHandler', () => {
 
     await act(async () => {
       getByRole('button', { name: 'Kembali ke menu' }).click();
-    });
-
-    expect(mockPush).toHaveBeenCalledWith(`/t/${TABLE_CODE}`);
-  });
-
-  it('navigates back to the menu from "Pesan lagi"', async () => {
-    const paymentRepository = new MockPaymentRepository();
-    paymentRepository.payment = {
-      ...paymentRepository.payment,
-      status: 'paid',
-    };
-    const { getByRole } = renderHandler({
-      reference: paymentRepository.payment.reference,
-      paymentRepository,
-    });
-
-    await settle();
-
-    await act(async () => {
-      getByRole('button', { name: 'Pesan lagi' }).click();
     });
 
     expect(mockPush).toHaveBeenCalledWith(`/t/${TABLE_CODE}`);
@@ -287,5 +291,80 @@ describe('OrderStatusHandler', () => {
     });
 
     expect(mockPush).toHaveBeenCalledWith('/orders');
+  });
+
+  describe('order notification opt-in', () => {
+    it('reaches the subscribed confirmation when the CTA is tapped with permission granted', async () => {
+      const paymentRepository = new MockPaymentRepository();
+      paymentRepository.payment = {
+        ...paymentRepository.payment,
+        status: 'paid',
+      };
+      const { getByRole } = renderHandler({
+        reference: paymentRepository.payment.reference,
+        paymentRepository,
+      });
+
+      await settle();
+
+      expect(getByRole('button', { name: 'Beri tahu saya' })).toBeTruthy();
+
+      await act(async () => {
+        getByRole('button', { name: 'Beri tahu saya' }).click();
+      });
+      await settle();
+
+      expect(
+        screen.getByText('Kami akan memberi tahu saat pesanan siap.')
+      ).toBeTruthy();
+      expect(getByRole('button', { name: 'Matikan' })).toBeTruthy();
+      expect(screen.queryByText('Beri tahu saya')).toBeNull();
+    });
+
+    it('renders the settings line when permission is denied', async () => {
+      const paymentRepository = new MockPaymentRepository();
+      paymentRepository.payment = {
+        ...paymentRepository.payment,
+        status: 'paid',
+      };
+      const webPushRepository = new MockWebPushRepository();
+      webPushRepository.setPermissionStatus('denied');
+      const { getByRole } = renderHandler({
+        reference: paymentRepository.payment.reference,
+        paymentRepository,
+        webPushRepository,
+      });
+
+      await settle();
+
+      await act(async () => {
+        getByRole('button', { name: 'Beri tahu saya' }).click();
+      });
+      await settle();
+
+      expect(screen.getByText('Notifikasi dinonaktifkan')).toBeTruthy();
+    });
+
+    it('renders no card at all for an unsupported browser', async () => {
+      const paymentRepository = new MockPaymentRepository();
+      paymentRepository.payment = {
+        ...paymentRepository.payment,
+        status: 'paid',
+      };
+      const webPushRepository = new MockWebPushRepository();
+      webPushRepository.setSupportStatus('unsupported');
+      renderHandler({
+        reference: paymentRepository.payment.reference,
+        paymentRepository,
+        webPushRepository,
+      });
+
+      await settle();
+
+      expect(screen.queryByText('Beri tahu saya')).toBeNull();
+      expect(
+        screen.queryByText('Kami akan memberi tahu saat pesanan siap.')
+      ).toBeNull();
+    });
   });
 });

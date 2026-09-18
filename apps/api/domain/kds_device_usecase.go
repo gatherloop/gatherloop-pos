@@ -3,7 +3,7 @@ package domain
 import "context"
 
 // Versioned because an Android notification channel's sound is immutable after creation (D23).
-const kdsPushChannelId = "orders-v1"
+const kdsPushChannelId = "orders-v2"
 
 type KdsDeviceUsecase struct {
 	repository  KdsDeviceRepository
@@ -42,6 +42,7 @@ func (usecase KdsDeviceUsecase) SendTestNotification(ctx context.Context, id int
 		Body:      "This is a test notification from your KDS device setup.",
 		Sound:     usecase.pushSound,
 		ChannelId: kdsPushChannelId,
+		Priority:  KdsPushPriorityHigh,
 	}
 
 	receipts, sendErr := usecase.pushGateway.Send(ctx, []KdsPushMessage{message})
