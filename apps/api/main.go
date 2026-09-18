@@ -110,6 +110,7 @@ func main() {
 	availabilityRepository := mysql.NewAvailabilityRepository(db)
 	kdsDeviceRepository := mysql.NewKdsDeviceRepository(db)
 	kdsNotificationRepository := mysql.NewKdsNotificationRepository(db)
+	webPushSubscriptionRepository := mysql.NewWebPushSubscriptionRepository(db)
 
 	orderPaymentWalletId, _ := strconv.ParseInt(env.OrderPaymentWalletId, 10, 64)
 
@@ -139,6 +140,7 @@ func main() {
 	stockCheckUsecase := domain.NewStockCheckUsecase(stockCheckRepository, materialRepository)
 	availabilityUsecase := domain.NewAvailabilityUsecase(availabilityRepository, productRepository, variantRepository)
 	kdsDeviceUsecase := domain.NewKdsDeviceUsecase(kdsDeviceRepository, kdsPushGatewayRepository, env.KdsPushSound)
+	webPushSubscriptionUsecase := domain.NewWebPushSubscriptionUsecase(webPushSubscriptionRepository, env.WebPushVapidPublicKey)
 
 	walletHandler := restapi.NewWalletHandler(walletUsecase)
 	transactionHandler := restapi.NewTransactionHandler(transactionUsecase)
@@ -162,8 +164,9 @@ func main() {
 	checklistSessionHandler := restapi.NewChecklistSessionHandler(checklistSessionUsecase)
 	stockCheckHandler := restapi.NewStockCheckHandler(stockCheckUsecase)
 	availabilityHandler := restapi.NewAvailabilityHandler(availabilityUsecase)
-	publicHandler := restapi.NewPublicHandler(productUsecase, categoryUsecase, variantUsecase, tableUsecase)
+	publicHandler := restapi.NewPublicHandler(productUsecase, categoryUsecase, variantUsecase, tableUsecase, webPushSubscriptionUsecase)
 	kdsDeviceHandler := restapi.NewKdsDeviceHandler(kdsDeviceUsecase)
+	webPushSubscriptionHandler := restapi.NewWebPushSubscriptionHandler(webPushSubscriptionUsecase)
 
 	restapi.NewAuthRouter(authHandler).AddRouter(router)
 	restapi.NewBudgetRouter(budgetHandler).AddRouter(router)
@@ -189,6 +192,7 @@ func main() {
 	restapi.NewAvailabilityRouter(availabilityHandler).AddRouter(router)
 	restapi.NewPublicRouter(publicHandler).AddRouter(router)
 	restapi.NewKdsDeviceRouter(kdsDeviceHandler).AddRouter(router)
+	restapi.NewWebPushSubscriptionRouter(webPushSubscriptionHandler).AddRouter(router)
 
 	router.HandleFunc("/health-check", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("success"))
