@@ -47,7 +47,10 @@ export const OrderStatusScreen = ({
   return (
     <OrderLayout
       header={
-        <OrderBrandHeader tableLine={tableLine} onHistoryPress={onHistoryPress} />
+        <OrderBrandHeader
+          tableLine={tableLine}
+          onHistoryPress={onHistoryPress}
+        />
       }
     >
       {match(variant)
@@ -55,15 +58,18 @@ export const OrderStatusScreen = ({
         .with({ type: 'loading' }, () => (
           <LoadingView title="Memuat status pesanan..." />
         ))
-        .with({ type: 'awaitingPayment' }, ({ payment, onCountdownElapsed }) => (
-          <QrisPaymentView
-            qrContent={payment.qrContent}
-            amount={payment.amount}
-            expiredAt={payment.expiredAt}
-            reference={payment.reference}
-            onCountdownElapsed={onCountdownElapsed}
-          />
-        ))
+        .with(
+          { type: 'awaitingPayment' },
+          ({ payment, onCountdownElapsed }) => (
+            <QrisPaymentView
+              qrContent={payment.qrContent}
+              amount={payment.amount}
+              expiredAt={payment.expiredAt}
+              reference={payment.reference}
+              onCountdownElapsed={onCountdownElapsed}
+            />
+          )
+        )
         .with({ type: 'expired' }, () => (
           <EmptyView
             title="Waktu pembayaran habis"
@@ -94,7 +100,6 @@ export const OrderStatusScreen = ({
             items={payment.items}
             amount={payment.amount}
             isPolling={isPolling}
-            onBackToMenuPress={onBackToMenuPress}
           />
         ))
         .with({ type: 'ready' }, ({ payment }) => (

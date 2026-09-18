@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import QRCode from 'react-native-qrcode-svg';
-import { Button, Image, Paragraph, Spinner, Text, XStack, YStack } from 'tamagui';
+import {
+  Button,
+  Image,
+  Paragraph,
+  Spinner,
+  Text,
+  XStack,
+  YStack,
+} from 'tamagui';
 import { formatRupiah } from '../../../../utils/currency';
 import {
   downloadQrImage,
@@ -46,9 +54,9 @@ export const QrisPaymentView = ({
   } | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(() => secondsUntil(expiredAt));
   const hasElapsed = useRef(false);
-  const [fallbackImageBase64, setFallbackImageBase64] = useState<
-    string | null
-  >(null);
+  const [fallbackImageBase64, setFallbackImageBase64] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     const timerId = setInterval(() => {
@@ -91,7 +99,7 @@ export const QrisPaymentView = ({
       </YStack>
 
       <Button minHeight={44} onPress={handleSavePress}>
-        Simpan QR
+        Download QR
       </Button>
 
       <Text fontWeight="bold" fontSize="$5">
@@ -101,8 +109,8 @@ export const QrisPaymentView = ({
       </Text>
 
       <Paragraph textAlign="center" color="$color10">
-        Simpan QR lalu buka aplikasi bank atau e-wallet Anda, dan pilih bayar
-        QRIS dari galeri. Atau pindai dengan perangkat lain.
+        Download QR lalu buka aplikasi bank atau e-wallet Anda, dan pilih bayar
+        QRIS. Atau scan dengan perangkat lain.
       </Paragraph>
 
       <XStack alignItems="center" gap="$2">

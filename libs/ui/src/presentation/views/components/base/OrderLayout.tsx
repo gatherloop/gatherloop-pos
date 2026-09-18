@@ -22,17 +22,17 @@ export const OrderLayout = ({ children, header, footer }: OrderLayoutProps) => {
         flex={1}
         className="order-shell-height"
         width="100%"
-        maxWidth={480}
         marginHorizontal="auto"
         backgroundColor="$background"
         justifyContent="space-between"
         flexDirection="column"
+        alignItems="center"
       >
-        {header}
-        <YStack padding="$4" flex={1}>
+        <YStack alignSelf="stretch">{header}</YStack>
+        <YStack padding="$4" flex={1} maxWidth={480}>
           {children}
         </YStack>
-        {footer ? <YStack>{footer}</YStack> : null}
+        {footer ? <YStack maxWidth={480}>{footer}</YStack> : null}
       </YStack>
     </PortalProvider>
   );

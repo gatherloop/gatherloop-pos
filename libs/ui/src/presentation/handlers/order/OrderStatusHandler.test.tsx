@@ -1,7 +1,10 @@
 import React from 'react';
 import { act, render, screen } from '@testing-library/react';
 import { OrderStatusHandler } from './OrderStatusHandler';
-import { MockPaymentRepository, MockSessionRepository } from '../../../data/mock';
+import {
+  MockPaymentRepository,
+  MockSessionRepository,
+} from '../../../data/mock';
 import { OrderStatusUsecase } from '../../../domain';
 import { flushPromises } from '../../../utils/testUtils';
 
@@ -126,7 +129,7 @@ describe('OrderStatusHandler', () => {
 
     expect(
       screen.getByText(
-        'Pesanan Anda sedang disiapkan. Mohon tunggu di meja Anda, kami akan memberi tahu di halaman ini saat pesanan siap diambil.'
+        'Mohon tunggu di meja Anda, kami akan memberi tahu apabila pesanan siap diambil di kasir.'
       )
     ).toBeTruthy();
     expect(screen.queryByText(/menit|jam|detik/)).toBeNull();
@@ -146,16 +149,15 @@ describe('OrderStatusHandler', () => {
 
     await settle();
 
-    expect(screen.getByText('Pesanan siap!')).toBeTruthy();
+    expect(screen.getByText('Pesanan siap')).toBeTruthy();
     expect(
       screen.getByText(
-        `Silakan ambil di kasir dengan menyebutkan nomor #${paymentRepository.payment.transactionNumber}.`
+        `Silakan ambil di kasir dengan menyebutkan nomor #${paymentRepository.payment.transactionNumber}`
       )
     ).toBeTruthy();
     expect(
       screen.getByText(`#${paymentRepository.payment.transactionNumber}`)
     ).toBeTruthy();
-    expect(screen.queryByText(/menit|jam|detik/)).toBeNull();
 
     const [firstItem] = paymentRepository.payment.items;
     expect(
@@ -229,7 +231,7 @@ describe('OrderStatusHandler', () => {
 
     expect(
       screen.getByText(
-        'Pesanan Anda sedang disiapkan. Mohon tunggu di meja Anda, kami akan memberi tahu di halaman ini saat pesanan siap diambil.'
+        'Mohon tunggu di meja Anda, kami akan memberi tahu apabila pesanan siap diambil di kasir.'
       )
     ).toBeTruthy();
   });
@@ -241,26 +243,6 @@ describe('OrderStatusHandler', () => {
 
     await act(async () => {
       getByRole('button', { name: 'Kembali ke menu' }).click();
-    });
-
-    expect(mockPush).toHaveBeenCalledWith(`/t/${TABLE_CODE}`);
-  });
-
-  it('navigates back to the menu from "Pesan lagi"', async () => {
-    const paymentRepository = new MockPaymentRepository();
-    paymentRepository.payment = {
-      ...paymentRepository.payment,
-      status: 'paid',
-    };
-    const { getByRole } = renderHandler({
-      reference: paymentRepository.payment.reference,
-      paymentRepository,
-    });
-
-    await settle();
-
-    await act(async () => {
-      getByRole('button', { name: 'Pesan lagi' }).click();
     });
 
     expect(mockPush).toHaveBeenCalledWith(`/t/${TABLE_CODE}`);

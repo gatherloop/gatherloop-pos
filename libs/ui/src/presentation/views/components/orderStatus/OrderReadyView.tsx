@@ -1,5 +1,5 @@
-import { CheckCircle } from '@tamagui/lucide-icons';
-import { SizableText, Text, YStack } from 'tamagui';
+import { CheckCircle2 } from '@tamagui/lucide-icons';
+import { SizableText, Text, XStack, YStack } from 'tamagui';
 import { PaymentItem } from '../../../../domain/entities/Payment';
 import { OrderItemsSummary } from './OrderItemsSummary';
 
@@ -46,13 +46,16 @@ export const OrderReadyView = ({
   amount,
 }: OrderReadyViewProps) => (
   <YStack flex={1} gap="$4" alignItems="center">
-    <CheckCircle size="$6" color="$green10" />
     <ReadyNumberBadge value={transactionNumber} />
-    <Text fontWeight="bold" fontSize="$6" textAlign="center">
-      Pesanan siap!
-    </Text>
+    <XStack gap="$2" alignItems="center">
+      <Text fontWeight="bold" fontSize="$6" textAlign="center">
+        Pesanan siap
+      </Text>
+      <CheckCircle2 size="$2" color="$green10" />
+    </XStack>
+
     <Text textAlign="center" color="$color10">
-      {`Silakan ambil di kasir dengan menyebutkan nomor #${transactionNumber}.`}
+      {`Silakan ambil di kasir dengan menyebutkan nomor #${transactionNumber}`}
     </Text>
     <OrderItemsSummary items={items} amount={amount} />
   </YStack>

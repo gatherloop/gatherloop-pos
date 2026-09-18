@@ -103,7 +103,6 @@ export type OrderPreparingViewProps = {
   items: PaymentItem[];
   amount: number;
   isPolling: boolean;
-  onBackToMenuPress: () => void;
 };
 
 export const OrderPreparingView = ({
@@ -112,15 +111,13 @@ export const OrderPreparingView = ({
   items,
   amount,
   isPolling,
-  onBackToMenuPress,
 }: OrderPreparingViewProps) => (
   <YStack flex={1} gap="$4" alignItems="center">
     <PreparingNumberBadge value={transactionNumber} />
     <PreparingHeading isPolling={isPolling} />
 
     <YStack alignItems="center" gap="$1">
-      <Text color="$color10">Meja</Text>
-      <Text fontWeight="bold" fontSize="$10" textAlign="center">
+      <Text fontWeight="bold" fontSize="$8" textAlign="center">
         {tableLabel}
       </Text>
     </YStack>
@@ -128,12 +125,8 @@ export const OrderPreparingView = ({
     <OrderItemsSummary items={items} amount={amount} />
 
     <Paragraph textAlign="center" color="$color10">
-      Pesanan Anda sedang disiapkan. Mohon tunggu di meja Anda, kami akan
-      memberi tahu di halaman ini saat pesanan siap diambil.
+      Mohon tunggu di meja Anda, kami akan memberi tahu apabila pesanan siap
+      diambil di kasir.
     </Paragraph>
-
-    <Button theme="blue" size="$5" minHeight={44} onPress={onBackToMenuPress}>
-      Pesan lagi
-    </Button>
   </YStack>
 );

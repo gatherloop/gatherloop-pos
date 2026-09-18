@@ -1,6 +1,9 @@
 import { Receipt } from '@tamagui/lucide-icons';
 import { Button, Image, Text, XStack, YStack } from 'tamagui';
-import { ORDER_BRAND_LOGO_URI, ORDER_BRAND_NAME } from '../../../../utils/brand';
+import {
+  ORDER_BRAND_LOGO_URI,
+  ORDER_BRAND_NAME,
+} from '../../../../utils/brand';
 
 export type OrderBrandHeaderProps = {
   logoUri?: string;
@@ -21,11 +24,12 @@ export const OrderBrandHeader = ({
       gap="$3"
       alignItems="center"
       backgroundColor="$color2"
+      justifyContent="center"
       borderBottomWidth={1}
       borderColor="$borderColor"
     >
       <Image src={logoUri} width={36} height={36} borderRadius="$3" />
-      <YStack flex={1}>
+      <YStack>
         <Text fontWeight="bold" numberOfLines={1}>
           {ORDER_BRAND_NAME}
         </Text>
@@ -41,10 +45,9 @@ export const OrderBrandHeader = ({
             icon={Receipt}
             variant="outlined"
             circular
-            width={44}
-            height={44}
             onPress={onHistoryPress}
             accessibilityLabel="Pesanan Saya"
+            size="$3"
           />
           {preparingCount ? (
             <XStack
