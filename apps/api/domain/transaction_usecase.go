@@ -6,24 +6,28 @@ import (
 )
 
 type TransactionUsecase struct {
-	transactionRepository     TransactionRepository
-	variantRepository         VariantRepository
-	couponRepository          CouponRepository
-	walletRepository          WalletRepository
-	availabilityReservation   AvailabilityReservation
-	kdsNotificationRepository KdsNotificationRepository
-	kdsNotificationDispatcher KdsNotificationDispatcher
+	transactionRepository       TransactionRepository
+	variantRepository           VariantRepository
+	couponRepository            CouponRepository
+	walletRepository            WalletRepository
+	availabilityReservation     AvailabilityReservation
+	kdsNotificationRepository   KdsNotificationRepository
+	kdsNotificationDispatcher   KdsNotificationDispatcher
+	paymentRepository           PaymentRepository
+	guestNotificationRepository GuestNotificationRepository
 }
 
-func NewTransactionUsecase(transactionRepository TransactionRepository, variantRepository VariantRepository, couponRepository CouponRepository, walletRepository WalletRepository, availabilityReservation AvailabilityReservation, kdsNotificationRepository KdsNotificationRepository, kdsNotificationDispatcher KdsNotificationDispatcher) TransactionUsecase {
+func NewTransactionUsecase(transactionRepository TransactionRepository, variantRepository VariantRepository, couponRepository CouponRepository, walletRepository WalletRepository, availabilityReservation AvailabilityReservation, kdsNotificationRepository KdsNotificationRepository, kdsNotificationDispatcher KdsNotificationDispatcher, paymentRepository PaymentRepository, guestNotificationRepository GuestNotificationRepository) TransactionUsecase {
 	return TransactionUsecase{
-		transactionRepository:     transactionRepository,
-		variantRepository:         variantRepository,
-		couponRepository:          couponRepository,
-		walletRepository:          walletRepository,
-		availabilityReservation:   availabilityReservation,
-		kdsNotificationRepository: kdsNotificationRepository,
-		kdsNotificationDispatcher: kdsNotificationDispatcher,
+		transactionRepository:       transactionRepository,
+		variantRepository:           variantRepository,
+		couponRepository:            couponRepository,
+		walletRepository:            walletRepository,
+		availabilityReservation:     availabilityReservation,
+		kdsNotificationRepository:   kdsNotificationRepository,
+		kdsNotificationDispatcher:   kdsNotificationDispatcher,
+		paymentRepository:           paymentRepository,
+		guestNotificationRepository: guestNotificationRepository,
 	}
 }
 
@@ -324,7 +328,23 @@ func (usecase TransactionUsecase) CompleteTransaction(ctx context.Context, id in
 			return &Error{Type: BadRequest, Message: "transaction already completed"}
 		}
 
-		return usecase.transactionRepository.CompleteTransaction(ctxWithTx, time.Now(), id)
+		if err := usecase.transactionRepository.CompleteTransaction(ctxWithTx, time.Now(), id); err != nil {
+			return err
+		}
+
+		// FR-2: no payment for the transaction is tolerated as a skipped notification, not a
+		// failed completion the barista already performed.
+		var sessionId *string
+		payment, paymentErr := usecase.paymentRepository.GetPaymentByTransactionId(ctxWithTx, id)
+		if paymentErr != nil {
+			if paymentErr.Type != NotFound {
+				return paymentErr
+			}
+		} else {
+			sessionId = &payment.SessionId
+		}
+
+		return usecase.guestNotificationRepository.EnqueueForCompletedTransaction(ctxWithTx, transaction, sessionId)
 	})
 }
 
@@ -347,7 +367,13 @@ func (usecase TransactionUsecase) UncompleteTransaction(ctx context.Context, id 
 			return &Error{Type: BadRequest, Message: "transaction is not completed"}
 		}
 
-		return usecase.transactionRepository.UncompleteTransaction(ctxWithTx, id)
+		if err := usecase.transactionRepository.UncompleteTransaction(ctxWithTx, id); err != nil {
+			return err
+		}
+
+		// D7: the correction removed the fact the outbox row recorded, so a re-completion must
+		// enqueue fresh rather than be suppressed by the unique key.
+		return usecase.guestNotificationRepository.DeleteGuestNotificationByTransactionId(ctxWithTx, id)
 	})
 }
 
