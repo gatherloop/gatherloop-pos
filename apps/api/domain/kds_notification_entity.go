@@ -61,6 +61,7 @@ func BuildKdsPushMessage(transaction Transaction, sound string) KdsPushMessage {
 		Body:      buildKdsNotificationBody(lines),
 		Sound:     sound,
 		ChannelId: kdsPushChannelId,
+		Priority:  KdsPushPriorityHigh,
 		Data: map[string]any{
 			"transactionId":     transaction.Id,
 			"transactionNumber": transaction.TransactionNumber,

@@ -493,6 +493,10 @@ One notification per paid transaction, identical on every phone (D24).
   without any contract change.
 - **Sound:** the message carries an explicit sound name, from `KDS_PUSH_SOUND` (default
   `default`), rather than relying on the platform default (D23).
+- **Priority:** `high`, always — the only value a KDS push is ever sent at. Expo's default
+  priority maps to FCM `normal` and APNs priority 5, which the OS holds back while the phone is
+  dozing and flushes when the screen comes back on. A locked counter phone is the *normal* state
+  for this feature, not an edge case (D26).
 - **Android:** channel id `orders-v1`, importance `MAX`, sound, vibration — created by the app on
   first launch so the alert is audible in a noisy room. The id is versioned because a channel's
   sound cannot be changed after creation (D23).
@@ -930,6 +934,36 @@ true of them, not an approximation. That is the same cost as building it now, pa
 stations — it is D24's behaviour with D20's machinery still in the schema, and a knob nobody turns
 is a knob that misleads the next reader into thinking somebody does.
 
+**D26 — Every KDS push is sent at `priority: high`, and there is no other value.**
+*Added after the first release: the first pass omitted `priority` entirely, and the bug it caused
+is the one this whole PRD exists to prevent.* With the field absent, Expo defaults to
+`priority: 'default'`, which becomes FCM `normal` on Android and `apns-priority: 5` on iOS. Both
+platforms treat that as *deliverable whenever convenient*: Android holds normal-priority messages
+for the duration of Doze, iOS batches priority-5 pushes to conserve power. The observed symptom
+was exact — a barista locking the phone got nothing, and every held order arrived at once the
+moment the screen came back on.
+
+**High priority is not a tuning knob here, it is the delivery mechanism.** Expo Push sends to FCM
+as a *data* message, which `expo-notifications`' own messaging service turns into the notification
+the barista sees. Waking the app is therefore a precondition for the notification existing at all,
+and a normal-priority data message in Doze does not wake anything. FCM documents high priority as
+the mode that wakes a sleeping device; APNs priority 10 as the mode that delivers immediately.
+
+**It is set in the domain, not in the gateway**, next to `Sound` and `ChannelId` — the message
+shape is already a domain concern (FR-6), and `BuildKdsPushMessage` is where a test can assert it.
+`KdsPushPriorityHigh` is a single exported constant with both construction sites — the dispatched
+order and the setup screen's **Send test notification** — pointing at it, because a test
+notification that behaves differently from a real one tests nothing worth knowing.
+
+*No env variable, no per-message choice.* A low-priority order notification is a contradiction:
+every message this feature sends is the one thing its recipient is waiting for. The knob would
+only ever be set wrong.
+
+*What this does not fix:* Android can still downgrade high-priority FCM for an app in the
+`restricted` App Standby bucket, and a battery optimiser can still kill the app outright. Those
+are device settings, not payload fields — see Risks, and the setup instructions in
+`docs-site/sales/kds.md`, which is why the dedicated-phone guidance exists.
+
 ---
 
 ## Phased plan
@@ -1112,8 +1146,10 @@ row, and one for a `BAR` item that does.
 ## Risks
 
 **The phone is silent, on Do Not Disturb, or its battery optimiser killed the app.** The most
-likely real-world failure, and not fully solvable in software. Mitigations: the Android `orders`
-channel is created at `MAX` importance with sound and vibration; the setup screen surfaces
+likely real-world failure, and not fully solvable in software. Mitigations: every push is sent at
+`priority: high` so the OS wakes a dozing phone instead of holding the message until the screen
+comes back on (D26); the Android `orders` channel is created at `MAX` importance with sound and
+vibration; the setup screen surfaces
 permission state explicitly; the **Send test notification** button exists so the failure is found
 at setup rather than during service. Documented in phase 9: the KDS phone is a dedicated device,
 plugged in, DND off, battery optimisation disabled for the app. iOS *critical alerts* (which

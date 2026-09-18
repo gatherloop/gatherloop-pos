@@ -78,6 +78,17 @@ func TestBuildKdsPushMessage(t *testing.T) {
 		assert.Equal(t, "orders-v1-sound", message.Sound)
 	})
 
+	t.Run("the priority is high so a locked, screen-off phone is woken", func(t *testing.T) {
+		transaction := domain.Transaction{
+			TransactionNumber: 12,
+			TransactionItems:  []domain.TransactionItem{kdsItem("BAR", 1, "Americano")},
+		}
+
+		message := domain.BuildKdsPushMessage(transaction, "default")
+
+		assert.Equal(t, domain.KdsPushPriorityHigh, message.Priority)
+	})
+
 	t.Run("the body is truncated to four items plus a +N more suffix", func(t *testing.T) {
 		transaction := domain.Transaction{
 			TransactionNumber: 12,

@@ -4,12 +4,16 @@ package domain
 
 import "context"
 
+// The only priority a KDS push is sent at — Expo's default maps to FCM normal/APNs 5, which the OS holds until the screen wakes (D26).
+const KdsPushPriorityHigh = "high"
+
 type KdsPushMessage struct {
 	To        string
 	Title     string
 	Body      string
 	Sound     string
 	ChannelId string
+	Priority  string
 	Data      map[string]any
 }
 

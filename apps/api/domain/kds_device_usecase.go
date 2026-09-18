@@ -42,6 +42,7 @@ func (usecase KdsDeviceUsecase) SendTestNotification(ctx context.Context, id int
 		Body:      "This is a test notification from your KDS device setup.",
 		Sound:     usecase.pushSound,
 		ChannelId: kdsPushChannelId,
+		Priority:  KdsPushPriorityHigh,
 	}
 
 	receipts, sendErr := usecase.pushGateway.Send(ctx, []KdsPushMessage{message})
