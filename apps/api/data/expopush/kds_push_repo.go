@@ -62,6 +62,7 @@ type pushMessageRequest struct {
 	Body      string         `json:"body,omitempty"`
 	Sound     string         `json:"sound,omitempty"`
 	ChannelId string         `json:"channelId,omitempty"`
+	Priority  string         `json:"priority,omitempty"`
 	Data      map[string]any `json:"data,omitempty"`
 }
 
@@ -87,6 +88,7 @@ func toPushMessageRequest(message domain.KdsPushMessage) pushMessageRequest {
 		Body:      message.Body,
 		Sound:     message.Sound,
 		ChannelId: message.ChannelId,
+		Priority:  message.Priority,
 		Data:      message.Data,
 	}
 }

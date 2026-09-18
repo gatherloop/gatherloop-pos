@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
 
@@ -240,4 +241,29 @@ func TestKdsDeviceUsecase_SendTestNotification(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestKdsDeviceUsecase_SendTestNotification_SendsPriorityHigh(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockRepo := mock.NewMockKdsDeviceRepository(ctrl)
+	mockGateway := mock.NewMockKdsPushGatewayRepository(ctrl)
+
+	mockRepo.EXPECT().GetKdsDeviceById(gomock.Any(), int64(1)).
+		Return(domain.KdsDevice{Id: 1, PushToken: "ExponentPushToken[abc]"}, nil)
+
+	var sent []domain.KdsPushMessage
+	mockGateway.EXPECT().Send(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(_ context.Context, messages []domain.KdsPushMessage) ([]domain.KdsPushReceipt, *domain.Error) {
+			sent = messages
+			return []domain.KdsPushReceipt{{Status: domain.KdsPushReceiptStatusOk}}, nil
+		})
+
+	usecase := domain.NewKdsDeviceUsecase(mockRepo, mockGateway, "default")
+	err := usecase.SendTestNotification(context.Background(), 1)
+
+	assert.Nil(t, err)
+	require.Len(t, sent, 1)
+	assert.Equal(t, domain.KdsPushPriorityHigh, sent[0].Priority)
 }

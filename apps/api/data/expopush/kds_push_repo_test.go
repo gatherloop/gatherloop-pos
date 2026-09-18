@@ -38,7 +38,7 @@ func TestClient_Send_SendsRequestBodyAndHeaders(t *testing.T) {
 	client := testClient(server.URL)
 
 	receipts, err := client.Send(t.Context(), []domain.KdsPushMessage{
-		{To: "ExponentPushToken[abc]", Title: "New order #12", Body: "BAR: 2x Kopi Susu", Sound: "default", ChannelId: "orders-v1", Data: map[string]any{"transactionId": float64(12)}},
+		{To: "ExponentPushToken[abc]", Title: "New order #12", Body: "BAR: 2x Kopi Susu", Sound: "default", ChannelId: "orders-v1", Priority: domain.KdsPushPriorityHigh, Data: map[string]any{"transactionId": float64(12)}},
 	})
 
 	require.Nil(t, err)
@@ -47,7 +47,31 @@ func TestClient_Send_SendsRequestBodyAndHeaders(t *testing.T) {
 
 	assert.Equal(t, "Bearer test-access-token", gotAuth)
 	assert.Equal(t, "application/json", gotContentType)
-	assert.JSONEq(t, `[{"to":"ExponentPushToken[abc]","title":"New order #12","body":"BAR: 2x Kopi Susu","sound":"default","channelId":"orders-v1","data":{"transactionId":12}}]`, gotBody)
+	assert.JSONEq(t, `[{"to":"ExponentPushToken[abc]","title":"New order #12","body":"BAR: 2x Kopi Susu","sound":"default","channelId":"orders-v1","priority":"high","data":{"transactionId":12}}]`, gotBody)
+}
+
+func TestClient_Send_SendsPriorityHighSoADozingPhoneIsWoken(t *testing.T) {
+	var gotBody string
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		gotBody = string(body)
+		writeJSON(w, sendResponse{Data: []pushReceiptResponse{{Status: "ok"}}})
+	}))
+	defer server.Close()
+
+	client := testClient(server.URL)
+
+	_, err := client.Send(t.Context(), []domain.KdsPushMessage{
+		{To: "ExponentPushToken[abc]", Priority: domain.KdsPushPriorityHigh},
+	})
+
+	require.Nil(t, err)
+
+	var payload []map[string]any
+	require.NoError(t, json.Unmarshal([]byte(gotBody), &payload))
+	require.Len(t, payload, 1)
+	assert.Equal(t, "high", payload[0]["priority"])
 }
 
 func TestClient_Send_ParsesOkReceipt(t *testing.T) {
