@@ -37,7 +37,12 @@
       "iosDisplayInForeground": true
     },
     "plugins": [
-      "expo-notifications",
+      [
+        "expo-notifications",
+        {
+          "sounds": ["./assets/sounds/order-alert.wav"]
+        }
+      ],
       "./plugins/withReactNativeConfig.js"
     ],
     "extra": {

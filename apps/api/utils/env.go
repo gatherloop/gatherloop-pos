@@ -88,7 +88,7 @@ func GetEnv() Env {
 		OrderPaymentWalletId:  os.Getenv("ORDER_PAYMENT_WALLET_ID"),
 
 		ExpoPushAccessToken:        getCredential("EXPO_PUSH_ACCESS_TOKEN"),
-		KdsPushSound:               stringWithDefault(os.Getenv("KDS_PUSH_SOUND"), "default"),
+		KdsPushSound:               stringWithDefault(os.Getenv("KDS_PUSH_SOUND"), "order-alert.wav"),
 		KdsDispatchIntervalSeconds: parseIntWithDefault(os.Getenv("KDS_DISPATCH_INTERVAL_SECONDS"), 15),
 
 		WebPushVapidPublicKey:  getCredential("WEB_PUSH_VAPID_PUBLIC_KEY"),

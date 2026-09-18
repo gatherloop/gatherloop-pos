@@ -3,7 +3,7 @@ package domain
 import "context"
 
 // Versioned because an Android notification channel's sound is immutable after creation (D23).
-const kdsPushChannelId = "orders-v1"
+const kdsPushChannelId = "orders-v2"
 
 type KdsDeviceUsecase struct {
 	repository  KdsDeviceRepository
