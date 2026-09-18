@@ -10,6 +10,7 @@ export const Box = NullIcon;
 export const Calendar = NullIcon;
 export const Check = NullIcon;
 export const CheckCircle = NullIcon;
+export const CheckCircle2 = NullIcon;
 export const ChevronDown = NullIcon;
 export const ClipboardCheck = NullIcon;
 export const ChevronLeft = NullIcon;
