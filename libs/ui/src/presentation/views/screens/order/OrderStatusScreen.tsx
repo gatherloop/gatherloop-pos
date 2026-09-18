@@ -98,7 +98,11 @@ export const OrderStatusScreen = ({
           />
         ))
         .with({ type: 'ready' }, ({ payment }) => (
-          <OrderReadyView transactionNumber={payment.transactionNumber} />
+          <OrderReadyView
+            transactionNumber={payment.transactionNumber}
+            items={payment.items}
+            amount={payment.amount}
+          />
         ))
         .exhaustive()}
     </OrderLayout>
