@@ -7,6 +7,7 @@ import { LoadingView } from '../../components/base/LoadingView';
 import { OrderBrandHeader } from '../../components/base/OrderBrandHeader';
 import { OrderLayout } from '../../components/base/OrderLayout';
 import { QrisPaymentView } from '../../components/checkout/QrisPaymentView';
+import { OrderNotificationOptInVariant } from '../../components/orderStatus/OrderNotificationOptIn';
 import { OrderPreparingView } from '../../components/orderStatus/OrderPreparingView';
 import { OrderReadyView } from '../../components/orderStatus/OrderReadyView';
 
@@ -17,7 +18,12 @@ export type OrderStatusScreenVariant =
       payment: Payment;
       onCountdownElapsed: () => void;
     }
-  | { type: 'preparing'; payment: Payment; isPolling: boolean }
+  | {
+      type: 'preparing';
+      payment: Payment;
+      isPolling: boolean;
+      notificationOptIn: OrderNotificationOptInVariant;
+    }
   | { type: 'ready'; payment: Payment }
   | { type: 'expired' }
   | { type: 'notFound' }
@@ -93,15 +99,19 @@ export const OrderStatusScreen = ({
             onRetryButtonPress={onRetryPress}
           />
         ))
-        .with({ type: 'preparing' }, ({ payment, isPolling }) => (
-          <OrderPreparingView
-            transactionNumber={payment.transactionNumber}
-            tableLabel={payment.tableLabel}
-            items={payment.items}
-            amount={payment.amount}
-            isPolling={isPolling}
-          />
-        ))
+        .with(
+          { type: 'preparing' },
+          ({ payment, isPolling, notificationOptIn }) => (
+            <OrderPreparingView
+              transactionNumber={payment.transactionNumber}
+              tableLabel={payment.tableLabel}
+              items={payment.items}
+              amount={payment.amount}
+              isPolling={isPolling}
+              notificationOptIn={notificationOptIn}
+            />
+          )
+        )
         .with({ type: 'ready' }, ({ payment }) => (
           <OrderReadyView
             transactionNumber={payment.transactionNumber}

@@ -8,6 +8,7 @@ require libs/api-contract v0.0.0-00010101000000-000000000000
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2 // indirect
+	github.com/SherClockHolmes/webpush-go v1.4.0 // indirect
 	github.com/go-sql-driver/mysql v1.7.0 // indirect
 	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
 	github.com/golang-migrate/migrate/v4 v4.19.1 // indirect
