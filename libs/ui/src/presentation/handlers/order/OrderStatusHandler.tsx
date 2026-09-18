@@ -1,8 +1,11 @@
 import { match, P } from 'ts-pattern';
 import { useRouter } from 'solito/router';
 import { SessionRepository } from '../../../domain/repositories/session';
+import { OrderNotificationSubscribeUsecase } from '../../../domain/usecases/orderNotificationSubscribe';
 import { OrderStatusUsecase } from '../../../domain/usecases/orderStatus';
+import { OrderNotificationOptInVariant } from '../../views/components/orderStatus/OrderNotificationOptIn';
 import { useOrderStatus } from '../hooks/useOrderStatus';
+import { useUsecase } from '../hooks/useUsecase';
 import {
   OrderStatusScreen,
   OrderStatusScreenVariant,
@@ -10,15 +13,46 @@ import {
 
 export type OrderStatusHandlerProps = {
   orderStatusUsecase: OrderStatusUsecase;
+  orderNotificationSubscribeUsecase: OrderNotificationSubscribeUsecase;
   sessionRepository: SessionRepository;
 };
 
 export const OrderStatusHandler = ({
   orderStatusUsecase,
+  orderNotificationSubscribeUsecase,
   sessionRepository,
 }: OrderStatusHandlerProps) => {
   const orderStatus = useOrderStatus(orderStatusUsecase);
+  const notificationSubscribe = useUsecase(orderNotificationSubscribeUsecase);
   const router = useRouter();
+
+  const notificationOptIn: OrderNotificationOptInVariant = match(
+    notificationSubscribe.state
+  )
+    .returnType<OrderNotificationOptInVariant>()
+    .with({ type: 'unsupported' }, () => ({ type: 'hidden' }))
+    .with({ type: 'needsInstall' }, () => ({ type: 'needsInstall' }))
+    .with({ type: 'idle' }, () => ({
+      type: 'idle',
+      onSubscribePress: () =>
+        notificationSubscribe.dispatch({ type: 'SUBSCRIBE' }),
+    }))
+    .with({ type: P.union('checkingPermission', 'subscribing') }, () => ({
+      type: 'subscribing',
+    }))
+    .with({ type: 'permissionDenied' }, () => ({ type: 'permissionDenied' }))
+    .with({ type: 'subscribeError' }, (state) => ({
+      type: 'subscribeError',
+      errorMessage: state.errorMessage ?? 'Failed to enable notifications',
+      onRetryPress: () => notificationSubscribe.dispatch({ type: 'RETRY' }),
+    }))
+    .with({ type: 'subscribed' }, () => ({
+      type: 'subscribed',
+      onUnsubscribePress: () =>
+        notificationSubscribe.dispatch({ type: 'UNSUBSCRIBE' }),
+    }))
+    .with({ type: 'unsubscribing' }, () => ({ type: 'unsubscribing' }))
+    .exhaustive();
 
   const variant: OrderStatusScreenVariant = match(orderStatus.state)
     .returnType<OrderStatusScreenVariant>()
@@ -45,6 +79,7 @@ export const OrderStatusHandler = ({
             type: 'preparing',
             payment: state.payment,
             isPolling: state.isPolling,
+            notificationOptIn,
           }
         : { type: 'notFound' }
     )

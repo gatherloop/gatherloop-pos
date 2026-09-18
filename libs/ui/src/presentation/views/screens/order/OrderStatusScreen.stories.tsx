@@ -75,7 +75,17 @@ export const AwaitingPayment: Story = {
 
 export const Preparing: Story = {
   args: {
-    variant: { type: 'preparing', payment: paidPayment, isPolling: false },
+    variant: {
+      type: 'preparing',
+      payment: paidPayment,
+      isPolling: false,
+      notificationOptIn: {
+        type: 'idle',
+        onSubscribePress: () => {
+          // Storybook action stand-in
+        },
+      },
+    },
   },
 };
 
@@ -109,7 +119,12 @@ export const Error: Story = {
 
 export const WithHistoryButton: Story = {
   args: {
-    variant: { type: 'preparing', payment: paidPayment, isPolling: false },
+    variant: {
+      type: 'preparing',
+      payment: paidPayment,
+      isPolling: false,
+      notificationOptIn: { type: 'hidden' },
+    },
     onHistoryPress: () => {
       // Storybook action stand-in
     },

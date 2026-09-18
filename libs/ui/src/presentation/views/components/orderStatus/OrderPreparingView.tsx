@@ -2,6 +2,10 @@ import { useEffect, useState } from 'react';
 import { Button, Paragraph, SizableText, Text, XStack, YStack } from 'tamagui';
 import { PaymentItem } from '../../../../domain/entities/Payment';
 import { OrderItemsSummary } from './OrderItemsSummary';
+import {
+  OrderNotificationOptIn,
+  OrderNotificationOptInVariant,
+} from './OrderNotificationOptIn';
 
 const ELLIPSIS_FRAMES = ['', '.', '..', '...'];
 const ELLIPSIS_INTERVAL_MS = 500;
@@ -103,6 +107,7 @@ export type OrderPreparingViewProps = {
   items: PaymentItem[];
   amount: number;
   isPolling: boolean;
+  notificationOptIn: OrderNotificationOptInVariant;
   onBackToMenuPress: () => void;
 };
 
@@ -112,6 +117,7 @@ export const OrderPreparingView = ({
   items,
   amount,
   isPolling,
+  notificationOptIn,
   onBackToMenuPress,
 }: OrderPreparingViewProps) => (
   <YStack flex={1} gap="$4" alignItems="center">
@@ -131,6 +137,8 @@ export const OrderPreparingView = ({
       Pesanan Anda sedang disiapkan. Mohon tunggu di meja Anda, kami akan
       memberi tahu di halaman ini saat pesanan siap diambil.
     </Paragraph>
+
+    <OrderNotificationOptIn variant={notificationOptIn} />
 
     <Button theme="blue" size="$5" minHeight={44} onPress={onBackToMenuPress}>
       Pesan lagi
