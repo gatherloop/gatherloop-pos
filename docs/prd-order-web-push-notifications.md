@@ -412,8 +412,9 @@ not a field on anything (D14), so `apps/pos-web`, `apps/pos-mobile` and the exis
 | Layer | File | Contents |
 | --- | --- | --- |
 | Entity | `domain/web_push_subscription_entity.go` | `WebPushSubscription` |
-| Entity | `domain/guest_notification_entity.go` | `GuestNotification`, `GuestNotificationStatus`, `WebPushMessage`, `BuildGuestPushMessage` |
-| Repo iface | `domain/web_push_subscription_repository.go` | CRUD + `GetWebPushSubscriptionsBySessionId`, plus `WebPushGatewayRepository` |
+| Entity | `domain/guest_notification_entity.go` | `GuestNotification`, `GuestNotificationStatus`, `BuildGuestPushMessage` |
+| Repo iface | `domain/web_push_subscription_repository.go` | CRUD + `GetWebPushSubscriptionsBySessionId` |
+| Repo iface | `domain/web_push_gateway_repository.go` | `WebPushMessage`, `WebPushReceipt`, `WebPushGatewayRepository` — its own file, so the transport needs nothing from the subscription slice and the two can be built in parallel (*Phase dependencies*, D17) |
 | Repo iface | `domain/guest_notification_repository.go` | outbox CRUD |
 | Use case | `domain/web_push_subscription_usecase.go` | subscribe / unsubscribe / config |
 | Use case | `domain/guest_notification_usecase.go` | `EnqueueForCompletedTransaction`, `DispatchPending`, `TriggerDispatch` |
@@ -812,6 +813,24 @@ one.
 notification title, body, opt-in card, iOS install instructions — is Indonesian. The outbox's
 `detail` strings are English, because they are operator diagnostics, like `kds_notifications.detail`.
 
+**D17 — The transport types live in their own `domain/web_push_gateway_repository.go`, not with the
+subscription or the outbox.**
+`WebPushMessage`, `WebPushReceipt` and `WebPushGatewayRepository` describe *how a push is sent* and
+have no opinion about who is subscribed or why. Putting them beside `WebPushSubscription` would
+make the gateway phase depend on the subscription phase; putting them beside `GuestNotification`
+would invert it. Either way two phases that share nothing at runtime become serial for the sake of
+a type declaration. The split is what lets phases 1 and 2 be written at the same time
+(*Phase dependencies*).
+*This is a deliberate departure from the existing convention, and the only one in this PRD.* Both
+gateway interfaces in `apps/api` today share a file with a data repository —
+`PaymentGatewayRepository` sits with `PaymentRepository` in `domain/payment_repository.go:17`, and
+`KdsPushGatewayRepository` with `KdsNotificationRepository` and `KdsPushMessage` in
+`domain/kds_notification_repository.go:36`. Neither had a reason not to: each was written in one
+phase alongside the repository it shares with. Here the two land in different PRs, so the file
+boundary is doing work the existing ones never had to do. If a reviewer prefers consistency over
+the parallelism, the cost is exact and small: phases 1 and 2 merge in order instead of together,
+and wave 1 becomes two phases rather than three.
+
 ---
 
 ## Phased plan
@@ -838,7 +857,8 @@ endpoint belonging to another session (no-op, not an error);
 
 ### Phase 2 — The Web Push gateway (API)
 
-`WebPushGatewayRepository` in `domain/web_push_subscription_repository.go`
+`WebPushGatewayRepository`, `WebPushMessage` and `WebPushReceipt` in their own
+`domain/web_push_gateway_repository.go` (D17)
 (`Send(ctx, []WebPushMessage) ([]WebPushReceipt, *Error)`), implemented in
 `data/webpush/web_push_repo.go` against `github.com/SherClockHolmes/webpush-go`, structured exactly
 like `data/expopush/kds_push_repo.go`. VAPID keys read from env; a `TTL` of 900 seconds and
@@ -960,6 +980,66 @@ preparing screen, that tapping it reaches the subscribed state, and that a `POST
 **Acceptance:** `npx nx run order-web-e2e:e2e` passes locally — CI runs Playwright post-merge only
 (`.github/workflows/e2e-main.yml`), so local is the gate; the docs page renders in
 `npx nx run docs-site:dev`.
+
+---
+
+## Phase dependencies
+
+The phases are numbered in a defensible merge order, not a required one. Three of the nine depend
+on nothing and can start on day one.
+
+A dependency is **hard** when the phase does not compile or its tests do not pass without the
+other, and **soft** when it builds and tests green on its own but its stated acceptance check or a
+clean merge wants the other first. Only hard dependencies constrain who can work in parallel; soft
+ones constrain what order the PRs land in.
+
+| # | Phase | Hard deps | Soft deps | Primary files it owns |
+| --- | --- | --- | --- | --- |
+| 1 | Subscription table, contract, endpoints (API) | — | — | `api.yaml`, migration `000033`, `domain/web_push_subscription_{entity,repository,usecase}.go`, `data/mysql/web_push_subscription_*`, `presentation/restapi/web_push_subscription_*`, `public_{route,handler}.go`, `utils/env.go` |
+| 2 | Web Push gateway (API) | — | 1 *(VAPID vars declared there)* | `domain/web_push_gateway_repository.go`, `data/webpush/web_push_repo.go` |
+| 3 | Outbox table, message rule (API) | 2 *(`WebPushMessage`)* | — | migration `000034`, `domain/guest_notification_{entity,repository}.go`, `data/mysql/guest_notification_*`, `domain/payment_repository.go` |
+| 4 | Enqueue on completion (API) | 3 | — | `domain/transaction_usecase.go` |
+| 5 | Dispatcher (API) | 1, 2, 3 | 4 *(edits the same function)* | `domain/guest_notification_usecase.go`, `main.go` sweeper |
+| 6 | Service worker, manifest, icons | — | — | `apps/order-web/public/**`, `_document.tsx`, `next.config.js` |
+| 7 | Frontend domain slice (libs/ui) | 1 *(generated TS client)* | 6 *(runtime only)* | `domain/entities/WebPushSubscription.ts`, `domain/repositories/webPush*.ts`, `domain/usecases/orderNotificationSubscribe.ts`, `data/api/webPushSubscription*`, `data/browser/**`, `data/mock/webPush*` |
+| 8 | The opt-in card (libs/ui + order-web) | 6, 7 | 5 *(end-to-end acceptance)* | `views/components/orderStatus/OrderNotificationOptIn.tsx`, `OrderPreparingView.tsx`, `OrderStatusHandler.tsx`, `app/order/OrderStatus.tsx` |
+| 9 | Documentation and coverage | 8 | — | `docs-site/sales/order-notifications.md`, `apps/order-web-e2e/**` |
+
+### What can run in parallel
+
+Six waves, not nine. With two or three people the calendar is six PRs deep, not nine:
+
+| Wave | Phases | Why they don't collide |
+| --- | --- | --- |
+| 1 | **1, 2, 6** | Three disjoint file sets: the subscription slice, the transport package, and `apps/order-web`'s static assets. No shared symbol, no shared directory. |
+| 2 | **3, 7** | 3 is Go and needs only phase 2's message type; 7 is TypeScript and needs only phase 1's regenerated client. Different languages, different halves of the repo. |
+| 3 | 4 | Alone — it edits `CompleteTransaction`. |
+| 4 | 5 | Alone — it edits `CompleteTransaction` again, and needs 1, 2 and 3. |
+| 5 | 8 | Alone — it is the integration point, and the first phase a guest can see. |
+| 6 | 9 | Alone — its e2e spec drives phase 8's card. |
+
+**The critical path is 2 → 3 → 4 → 5 → 8 → 9**, six phases long. Phases 1, 6 and 7 are off it
+entirely, which means the whole subscription-and-client track has slack: it must simply be done
+before phase 8, not before phase 5.
+
+Three notes for whoever sequences the PRs:
+
+- **`main.go` is the one file several phases touch** (1, 2, 4 and 5 each add wiring). The additions
+  are append-only constructor lines next to the existing `kds*` block, so a conflict there is
+  mechanical rather than semantic — but it is the reason two parallel phases should not both sit
+  unmerged for a week.
+- **Phases 4 and 5 both edit `CompleteTransaction`** — 4 adds the enqueue inside
+  `BeginTransaction`, 5 adds the `TriggerDispatch()` kick after the commit. That textual overlap,
+  not a compile dependency, is why 5 is listed soft-dependent on 4 and why neither is parallelised.
+- **Phase 2's soft dependency on phase 1 is one line.** Phase 1 declares all three
+  `WEB_PUSH_*` variables in `utils/env.go` because they are one credential set and belong together
+  in `.env.example`, and phase 1 needs the public half for its config endpoint. If phase 2 lands
+  first it adds the private key and subject itself, and phase 1 drops to declaring one variable.
+  Either order works; nobody is blocked.
+
+If only one person is building this, the numbered order is still the right one to merge in — it is
+a topological sort of the table above, and each phase's acceptance check is satisfiable at the
+moment it lands.
 
 ---
 
