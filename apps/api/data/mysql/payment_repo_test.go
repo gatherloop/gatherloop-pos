@@ -56,6 +56,20 @@ func TestPaymentRepository_GetPaymentsBySessionId_AppliesSkipAndLimit(t *testing
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
+func TestPaymentRepository_GetPaymentByTransactionId_FiltersToThatTransaction(t *testing.T) {
+	repo, mock := newMockPaymentRepository(t)
+
+	mock.ExpectQuery("SELECT \\* FROM `payments` WHERE transaction_id = \\? AND deleted_at IS NULL ORDER BY `payments`.`id` LIMIT \\?").
+		WithArgs(int64(42), 1).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "session_id"}).AddRow(1, "session-1"))
+
+	payment, err := repo.GetPaymentByTransactionId(context.Background(), 42)
+
+	require.Nil(t, err)
+	require.Equal(t, "session-1", payment.SessionId)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
 func TestPaymentRepository_GetPaymentsBySessionIdTotal_FiltersToPaidForThatSession(t *testing.T) {
 	repo, mock := newMockPaymentRepository(t)
 
