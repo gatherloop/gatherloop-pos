@@ -151,4 +151,94 @@ describe('TransactionItemSelectUsecase', () => {
     const tester = new UsecaseTester<TransactionItemSelectUsecase, TransactionItemSelectState, TransactionItemSelectAction, TransactionItemSelectParams>(usecase);
     expect(tester.state.type).toBe('loaded');
   });
+
+  describe('switching between products', () => {
+    it('resets amount to 1 when a different product is selected after canceling', async () => {
+      const productRepository = new MockProductRepository();
+      const variantRepository = new MockVariantRepository();
+      const usecase = new TransactionItemSelectUsecase(productRepository, variantRepository, {
+        products: productRepository.products,
+        totalItem: productRepository.products.length,
+      });
+      const tester = new UsecaseTester<TransactionItemSelectUsecase, TransactionItemSelectState, TransactionItemSelectAction, TransactionItemSelectParams>(usecase);
+
+      tester.dispatch({ type: 'SELECT_PRODUCT', product: productRepository.products[0] });
+      tester.dispatch({ type: 'CHANGE_AMOUNT', amount: 5 });
+      expect(tester.state.amount).toBe(5);
+
+      tester.dispatch({ type: 'UNSELECT_PRODUCT' });
+      tester.dispatch({ type: 'SELECT_PRODUCT', product: productRepository.products[1] });
+
+      expect(tester.state.amount).toBe(1);
+    });
+  });
+
+  describe('soft-check on submit — availability may have changed since the picker opened', () => {
+    it('clamps the amount down when the fresh variant has less stock left', async () => {
+      const productRepository = new MockProductRepository();
+      const variantRepository = new MockVariantRepository();
+      const usecase = new TransactionItemSelectUsecase(productRepository, variantRepository, {
+        products: productRepository.products,
+        totalItem: productRepository.products.length,
+      });
+      const tester = new UsecaseTester<TransactionItemSelectUsecase, TransactionItemSelectState, TransactionItemSelectAction, TransactionItemSelectParams>(usecase);
+
+      tester.dispatch({ type: 'SELECT_PRODUCT', product: productRepository.products[0] });
+      tester.dispatch({ type: 'CHANGE_AMOUNT', amount: 5 });
+
+      variantRepository.variants[0].isSellable = true;
+      variantRepository.variants[0].sellableQuantity = 2;
+
+      tester.dispatch({ type: 'FETCH_VARIANT' });
+      await flushPromises();
+
+      expect(tester.state.type).toBe('selectingOptions');
+      expect(tester.state.amount).toBe(2);
+      expect(tester.state.selectedVariant).toBeUndefined();
+    });
+
+    it('bounces back to selectingOptions instead of adding an item that just went sold out', async () => {
+      const productRepository = new MockProductRepository();
+      const variantRepository = new MockVariantRepository();
+      const usecase = new TransactionItemSelectUsecase(productRepository, variantRepository, {
+        products: productRepository.products,
+        totalItem: productRepository.products.length,
+      });
+      const tester = new UsecaseTester<TransactionItemSelectUsecase, TransactionItemSelectState, TransactionItemSelectAction, TransactionItemSelectParams>(usecase);
+
+      tester.dispatch({ type: 'SELECT_PRODUCT', product: productRepository.products[0] });
+      tester.dispatch({ type: 'CHANGE_AMOUNT', amount: 1 });
+
+      variantRepository.variants[0].sellableQuantity = undefined;
+      variantRepository.variants[0].isSellable = false;
+
+      tester.dispatch({ type: 'FETCH_VARIANT' });
+      await flushPromises();
+
+      expect(tester.state.type).toBe('selectingOptions');
+      expect(tester.state.selectedVariant).toBeUndefined();
+    });
+
+    it('proceeds to loadingVariantSuccess when the fresh variant still has enough stock', async () => {
+      const productRepository = new MockProductRepository();
+      const variantRepository = new MockVariantRepository();
+      const usecase = new TransactionItemSelectUsecase(productRepository, variantRepository, {
+        products: productRepository.products,
+        totalItem: productRepository.products.length,
+      });
+      const tester = new UsecaseTester<TransactionItemSelectUsecase, TransactionItemSelectState, TransactionItemSelectAction, TransactionItemSelectParams>(usecase);
+
+      tester.dispatch({ type: 'SELECT_PRODUCT', product: productRepository.products[0] });
+      tester.dispatch({ type: 'CHANGE_AMOUNT', amount: 2 });
+
+      variantRepository.variants[0].isSellable = true;
+      variantRepository.variants[0].sellableQuantity = 5;
+
+      tester.dispatch({ type: 'FETCH_VARIANT' });
+      await flushPromises();
+
+      expect(tester.state.type).toBe('loaded');
+      expect(tester.state.amount).toBe(2);
+    });
+  });
 });
