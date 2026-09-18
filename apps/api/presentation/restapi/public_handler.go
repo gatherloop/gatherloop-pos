@@ -7,18 +7,20 @@ import (
 )
 
 type PublicHandler struct {
-	productUsecase  domain.ProductUsecase
-	categoryUsecase domain.CategoryUsecase
-	variantUsecase  domain.VariantUsecase
-	tableUsecase    domain.TableUsecase
+	productUsecase             domain.ProductUsecase
+	categoryUsecase            domain.CategoryUsecase
+	variantUsecase             domain.VariantUsecase
+	tableUsecase               domain.TableUsecase
+	webPushSubscriptionUsecase domain.WebPushSubscriptionUsecase
 }
 
-func NewPublicHandler(productUsecase domain.ProductUsecase, categoryUsecase domain.CategoryUsecase, variantUsecase domain.VariantUsecase, tableUsecase domain.TableUsecase) PublicHandler {
+func NewPublicHandler(productUsecase domain.ProductUsecase, categoryUsecase domain.CategoryUsecase, variantUsecase domain.VariantUsecase, tableUsecase domain.TableUsecase, webPushSubscriptionUsecase domain.WebPushSubscriptionUsecase) PublicHandler {
 	return PublicHandler{
-		productUsecase:  productUsecase,
-		categoryUsecase: categoryUsecase,
-		variantUsecase:  variantUsecase,
-		tableUsecase:    tableUsecase,
+		productUsecase:             productUsecase,
+		categoryUsecase:            categoryUsecase,
+		variantUsecase:             variantUsecase,
+		tableUsecase:               tableUsecase,
+		webPushSubscriptionUsecase: webPushSubscriptionUsecase,
 	}
 }
 
@@ -158,4 +160,10 @@ func (handler PublicHandler) GetTableByCode(w http.ResponseWriter, r *http.Reque
 	}
 
 	WriteResponse(w, apiContract.PublicTableFindByCodeResponse{Data: ToApiPublicTable(table)})
+}
+
+func (handler PublicHandler) GetWebPushConfig(w http.ResponseWriter, r *http.Request) {
+	config := handler.webPushSubscriptionUsecase.GetWebPushConfig(r.Context())
+
+	WriteResponse(w, apiContract.WebPushConfigResponse{Data: ToApiWebPushConfig(config)})
 }

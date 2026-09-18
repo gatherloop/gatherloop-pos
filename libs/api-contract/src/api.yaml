@@ -166,6 +166,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /public/web-push/config:
+    get:
+      summary: Get the VAPID public key browsers need for PushManager.subscribe (unauthenticated)
+      operationId: webPushConfigFind
+      tags:
+        - public
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebPushConfigResponse'
   /carts/current:
     get:
       summary: Get the current session's active cart, with server-computed prices and totals
@@ -344,6 +357,55 @@ paths:
                 $ref: '#/components/schemas/Error'
         '502':
           description: the payment gateway failed to generate a QR; nothing was created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /web-push/subscriptions:
+    post:
+      summary: Register or refresh this browser's web push subscription for the current session (upsert by endpoint)
+      operationId: webPushSubscriptionCreate
+      tags:
+        - web-push-subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebPushSubscriptionRequest'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebPushSubscriptionResponse'
+        '400':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Unsubscribe the current session's browser from web push
+      operationId: webPushSubscriptionDelete
+      tags:
+        - web-push-subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebPushSubscriptionDeleteRequest'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: validation error
           content:
             application/json:
               schema:
@@ -4299,6 +4361,56 @@ components:
         platform:
           type: string
           enum: [ios, android]
+    WebPushConfig:
+      type: object
+      required:
+        - vapidPublicKey
+      properties:
+        vapidPublicKey:
+          type: string
+    WebPushSubscription:
+      type: object
+      required:
+        - id
+        - endpoint
+        - createdAt
+      properties:
+        id:
+          type: integer
+          format: int64
+        endpoint:
+          type: string
+        lastSeenAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+    WebPushSubscriptionRequest:
+      type: object
+      required:
+        - endpoint
+        - p256dhKey
+        - authKey
+      properties:
+        endpoint:
+          type: string
+          maxLength: 512
+        p256dhKey:
+          type: string
+        authKey:
+          type: string
+        userAgent:
+          type: string
+          maxLength: 255
+    WebPushSubscriptionDeleteRequest:
+      type: object
+      required:
+        - endpoint
+      properties:
+        endpoint:
+          type: string
+          maxLength: 512
     Transaction:
       type: object
       required:
@@ -5701,6 +5813,20 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/KdsDevice'
+    WebPushConfigResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/WebPushConfig'
+    WebPushSubscriptionResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/WebPushSubscription'
     CouponCreateResponse:
       type: object
       required:
