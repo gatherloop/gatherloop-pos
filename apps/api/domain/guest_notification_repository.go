@@ -19,3 +19,12 @@ type GuestNotificationRepository interface {
 	// rather than be suppressed by the unique key.
 	DeleteGuestNotificationByTransactionId(ctx context.Context, transactionId int64) *Error
 }
+
+// GuestNotificationDispatcher lets CompleteTransaction kick a dispatch sweep the instant its
+// completion commits, without making the barista's HTTP response wait on a push service (FR-4).
+// It is implemented by GuestNotificationUsecase and injected into TransactionUsecase so the
+// dispatch trigger is a domain concern, not something re-derived per handler — mirrors
+// KdsNotificationDispatcher.
+type GuestNotificationDispatcher interface {
+	TriggerDispatch()
+}

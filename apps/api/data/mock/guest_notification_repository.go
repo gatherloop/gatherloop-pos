@@ -125,3 +125,39 @@ func (mr *MockGuestNotificationRepositoryMockRecorder) MarkGuestNotificationSkip
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkGuestNotificationSkipped", reflect.TypeOf((*MockGuestNotificationRepository)(nil).MarkGuestNotificationSkipped), ctx, id, detail)
 }
+
+// MockGuestNotificationDispatcher is a mock of GuestNotificationDispatcher interface.
+type MockGuestNotificationDispatcher struct {
+	ctrl     *gomock.Controller
+	recorder *MockGuestNotificationDispatcherMockRecorder
+	isgomock struct{}
+}
+
+// MockGuestNotificationDispatcherMockRecorder is the mock recorder for MockGuestNotificationDispatcher.
+type MockGuestNotificationDispatcherMockRecorder struct {
+	mock *MockGuestNotificationDispatcher
+}
+
+// NewMockGuestNotificationDispatcher creates a new mock instance.
+func NewMockGuestNotificationDispatcher(ctrl *gomock.Controller) *MockGuestNotificationDispatcher {
+	mock := &MockGuestNotificationDispatcher{ctrl: ctrl}
+	mock.recorder = &MockGuestNotificationDispatcherMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockGuestNotificationDispatcher) EXPECT() *MockGuestNotificationDispatcherMockRecorder {
+	return m.recorder
+}
+
+// TriggerDispatch mocks base method.
+func (m *MockGuestNotificationDispatcher) TriggerDispatch() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "TriggerDispatch")
+}
+
+// TriggerDispatch indicates an expected call of TriggerDispatch.
+func (mr *MockGuestNotificationDispatcherMockRecorder) TriggerDispatch() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TriggerDispatch", reflect.TypeOf((*MockGuestNotificationDispatcher)(nil).TriggerDispatch))
+}
