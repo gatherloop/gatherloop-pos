@@ -6,6 +6,25 @@ const meta: Meta<typeof OrderReadyView> = {
   component: OrderReadyView,
   args: {
     transactionNumber: 12,
+    amount: 54000,
+    items: [
+      {
+        name: 'Es Kopi Susu',
+        amount: 2,
+        price: 18000,
+        subtotal: 36000,
+        note: 'less sugar',
+        options: [{ name: 'Ukuran', value: 'Regular' }],
+      },
+      {
+        name: 'Roti Bakar',
+        amount: 1,
+        price: 18000,
+        subtotal: 18000,
+        note: '',
+        options: [],
+      },
+    ],
   },
 };
 

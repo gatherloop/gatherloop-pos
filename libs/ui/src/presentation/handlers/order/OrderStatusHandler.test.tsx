@@ -156,6 +156,11 @@ describe('OrderStatusHandler', () => {
       screen.getByText(`#${paymentRepository.payment.transactionNumber}`)
     ).toBeTruthy();
     expect(screen.queryByText(/menit|jam|detik/)).toBeNull();
+
+    const [firstItem] = paymentRepository.payment.items;
+    expect(
+      screen.getByText(`${firstItem.amount}x ${firstItem.name}`)
+    ).toBeTruthy();
   });
 
   it('shows the expiry screen for an expired payment', async () => {
