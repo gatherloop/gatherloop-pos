@@ -14,9 +14,7 @@
     "updates": {
       "fallbackToCacheTimeout": 0
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "bundleIdentifier": "com.gatherloop.kds",
       "supportsTablet": true
@@ -42,7 +40,7 @@
         {
           "icon": "./assets/notification-icon.png",
           "color": "#0F2B63",
-          "sounds": ["./assets/sounds/order-alert.wav"]
+          "sounds": ["./assets/sounds/order_alert.wav"]
         }
       ],
       "./plugins/withReactNativeConfig.js"

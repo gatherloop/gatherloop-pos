@@ -13,7 +13,7 @@ export const ANDROID_ORDERS_CHANNEL_ID = 'orders-v2';
 
 // Must match KDS_PUSH_SOUND on the API and the filename bundled via the
 // expo-notifications plugin's `sounds` array in apps/kds-mobile/app.json (D23).
-const ORDERS_CHANNEL_SOUND = 'order-alert.wav';
+const ORDERS_CHANNEL_SOUND = 'order_alert.wav';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -23,9 +23,7 @@ Notifications.setNotificationHandler({
   }),
 });
 
-const toPermissionStatus = (
-  status: ExpoPermissionStatus
-): PermissionStatus => {
+const toPermissionStatus = (status: ExpoPermissionStatus): PermissionStatus => {
   switch (status) {
     case ExpoPermissionStatus.GRANTED:
       return 'granted';
