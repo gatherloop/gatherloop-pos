@@ -241,4 +241,88 @@ describe('TransactionItemSelectUsecase', () => {
       expect(tester.state.amount).toBe(2);
     });
   });
+
+  describe('rental products — product availability does not apply', () => {
+    const createRentalTester = () => {
+      const productRepository = new MockProductRepository();
+      const variantRepository = new MockVariantRepository();
+      const rentalProduct = {
+        ...productRepository.products[0],
+        saleType: 'rental' as const,
+        isSellable: false,
+      };
+      productRepository.products = [rentalProduct];
+      const usecase = new TransactionItemSelectUsecase(productRepository, variantRepository, {
+        products: [rentalProduct],
+        totalItem: 1,
+        saleType: 'rental',
+      });
+      const tester = new UsecaseTester<TransactionItemSelectUsecase, TransactionItemSelectState, TransactionItemSelectAction, TransactionItemSelectParams>(usecase);
+
+      return { rentalProduct, tester, variantRepository };
+    };
+
+    it('adds the item instead of bouncing back to the options dialog', async () => {
+      const { rentalProduct, tester, variantRepository } = createRentalTester();
+
+      tester.dispatch({ type: 'SELECT_PRODUCT', product: rentalProduct });
+      tester.dispatch({ type: 'CHANGE_AMOUNT', amount: 2 });
+
+      variantRepository.variants[0].isSellable = false;
+      variantRepository.variants[0].sellableQuantity = undefined;
+
+      tester.dispatch({ type: 'FETCH_VARIANT' });
+      await flushPromises();
+
+      expect(tester.state.type).toBe('loaded');
+      expect(tester.state.amount).toBe(2);
+    });
+
+    it('does not clamp the amount to a sellable quantity that does not apply', async () => {
+      const { rentalProduct, tester, variantRepository } = createRentalTester();
+
+      tester.dispatch({ type: 'SELECT_PRODUCT', product: rentalProduct });
+      tester.dispatch({ type: 'CHANGE_AMOUNT', amount: 3 });
+
+      variantRepository.variants[0].isSellable = false;
+      variantRepository.variants[0].sellableQuantity = 0;
+
+      tester.dispatch({ type: 'FETCH_VARIANT' });
+      await flushPromises();
+
+      expect(tester.state.type).toBe('loaded');
+      expect(tester.state.amount).toBe(3);
+    });
+  });
+
+  describe('re-selecting the same product', () => {
+    it('refetches the product variants after the previous selection was submitted', async () => {
+      const productRepository = new MockProductRepository();
+      const variantRepository = new MockVariantRepository();
+      variantRepository.variants[0].isSellable = true;
+      variantRepository.variants[0].sellableQuantity = undefined;
+      const fetchVariantListSpy = jest.spyOn(variantRepository, 'fetchVariantList');
+      const usecase = new TransactionItemSelectUsecase(productRepository, variantRepository, {
+        products: productRepository.products,
+        totalItem: productRepository.products.length,
+      });
+      const tester = new UsecaseTester<TransactionItemSelectUsecase, TransactionItemSelectState, TransactionItemSelectAction, TransactionItemSelectParams>(usecase);
+
+      tester.dispatch({ type: 'SELECT_PRODUCT', product: productRepository.products[0] });
+      await flushPromises();
+
+      tester.dispatch({ type: 'FETCH_VARIANT' });
+      await flushPromises();
+      expect(tester.state.type).toBe('loaded');
+
+      fetchVariantListSpy.mockClear();
+      tester.dispatch({ type: 'SELECT_PRODUCT', product: productRepository.products[0] });
+      await flushPromises();
+
+      expect(fetchVariantListSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ productId: productRepository.products[0].id })
+      );
+      expect(tester.state.selectedProductVariants.length).toBeGreaterThan(0);
+    });
+  });
 });
