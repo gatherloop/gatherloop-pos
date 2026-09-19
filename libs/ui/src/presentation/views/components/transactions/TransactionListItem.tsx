@@ -172,6 +172,12 @@ export const TransactionListItem = ({
           isShown: Platform.OS === 'web',
         },
         {
+          title: 'Print Order Slip',
+          icon: Printer,
+          onPress: onPrintOrderSlipMenuPress,
+          isShown: Platform.OS === 'web',
+        },
+        {
           title: 'Mark as Ready',
           icon: CheckCircle,
           onPress: onCompleteMenuPress,
@@ -182,12 +188,6 @@ export const TransactionListItem = ({
           icon: RotateCcw,
           onPress: onUncompleteMenuPress,
           isShown: source === 'order' && !!completedAt,
-        },
-        {
-          title: 'Print Order Slip',
-          icon: Printer,
-          onPress: onPrintOrderSlipMenuPress,
-          isShown: Platform.OS === 'web',
         },
         {
           title: 'Edit',
