@@ -154,8 +154,6 @@ func (usecase RentalUsecase) CheckoutRentals(ctx context.Context, rentalIds []in
 				Note:           note,
 				ProductName:    variant.Product.Name,
 			})
-
-			transactionData.Name = existingRental.Name
 		}
 
 		transactionData.Total = float32(total)
