@@ -34,8 +34,15 @@ type GuestNotification struct {
 func BuildGuestPushMessage(transaction Transaction, reference string) WebPushMessage {
 	return WebPushMessage{
 		Title: fmt.Sprintf("Pesanan #%d siap diambil!", transaction.TransactionNumber),
-		Body:  "Silahkan ambil di kasir",
+		Body:  fmt.Sprintf("%s · Silakan ambil di counter.", guestOrderSubject(transaction)),
 		Tag:   fmt.Sprintf("order-%s", reference),
 		URL:   fmt.Sprintf("/orders/%s", reference),
 	}
+}
+
+func guestOrderSubject(transaction Transaction) string {
+	if transaction.Cart != nil && transaction.Cart.Table != nil {
+		return transaction.Cart.Table.Label
+	}
+	return transaction.Name
 }

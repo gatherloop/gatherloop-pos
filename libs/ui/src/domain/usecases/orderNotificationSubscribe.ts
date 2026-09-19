@@ -9,7 +9,6 @@ type Context = {
 export type OrderNotificationSubscribeState = (
   | { type: 'unsupported' }
   | { type: 'needsInstall' }
-  | { type: 'checkingSubscription' }
   | { type: 'idle' }
   | { type: 'checkingPermission' }
   | { type: 'permissionDenied' }
@@ -22,8 +21,6 @@ export type OrderNotificationSubscribeState = (
 
 export type OrderNotificationSubscribeAction =
   | { type: 'SUBSCRIBE' }
-  | { type: 'EXISTING_SUBSCRIPTION_FOUND' }
-  | { type: 'EXISTING_SUBSCRIPTION_NOT_FOUND' }
   | { type: 'PERMISSION_GRANTED' }
   | { type: 'PERMISSION_DENIED' }
   | { type: 'SUBSCRIBE_SUCCESS' }
@@ -56,7 +53,7 @@ export class OrderNotificationSubscribeUsecase extends Usecase<
     if (supportStatus === 'needsInstall') {
       return { ...context, type: 'needsInstall' };
     }
-    return { ...context, type: 'checkingSubscription' };
+    return { ...context, type: 'idle' };
   }
 
   getNextState(
@@ -65,20 +62,6 @@ export class OrderNotificationSubscribeUsecase extends Usecase<
   ): OrderNotificationSubscribeState {
     return match([state, action])
       .returnType<OrderNotificationSubscribeState>()
-      .with(
-        [
-          { type: 'checkingSubscription' },
-          { type: 'EXISTING_SUBSCRIPTION_FOUND' },
-        ],
-        ([state]) => ({ ...state, type: 'subscribed' })
-      )
-      .with(
-        [
-          { type: 'checkingSubscription' },
-          { type: 'EXISTING_SUBSCRIPTION_NOT_FOUND' },
-        ],
-        ([state]) => ({ ...state, type: 'idle' })
-      )
       .with(
         [
           { type: P.union('idle', 'permissionDenied') },
@@ -138,18 +121,6 @@ export class OrderNotificationSubscribeUsecase extends Usecase<
     dispatch: (action: OrderNotificationSubscribeAction) => void
   ): void {
     match(state)
-      .with({ type: 'checkingSubscription' }, () => {
-        this.webPushRepository
-          .getSubscription()
-          .then((subscription) =>
-            dispatch(
-              subscription
-                ? { type: 'EXISTING_SUBSCRIPTION_FOUND' }
-                : { type: 'EXISTING_SUBSCRIPTION_NOT_FOUND' }
-            )
-          )
-          .catch(() => dispatch({ type: 'EXISTING_SUBSCRIPTION_NOT_FOUND' }));
-      })
       .with({ type: 'checkingPermission' }, () => {
         this.webPushRepository
           .requestPermission()
