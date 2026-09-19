@@ -33,7 +33,9 @@ const OptInCard = ({ children }: { children: ReactNode }) => (
   </YStack>
 );
 
-export const OrderNotificationOptIn = ({ variant }: OrderNotificationOptInProps) =>
+export const OrderNotificationOptIn = ({
+  variant,
+}: OrderNotificationOptInProps) =>
   match(variant)
     .returnType<ReactNode>()
     .with({ type: 'hidden' }, () => null)
@@ -88,7 +90,9 @@ export const OrderNotificationOptIn = ({ variant }: OrderNotificationOptInProps)
       >
         <XStack alignItems="center" gap="$2">
           <Bell size="$1" color="$green10" />
-          <Text color="$color10">Kami akan memberi tahu saat pesanan siap.</Text>
+          <Text color="$color10">
+            Kami akan memberi tahu saat pesanan siap.
+          </Text>
         </XStack>
         <Button
           size="$2"
@@ -105,13 +109,22 @@ export const OrderNotificationOptIn = ({ variant }: OrderNotificationOptInProps)
     ))
     .with({ type: 'idle' }, ({ onSubscribePress }) => (
       <OptInCard>
-        <XStack alignItems="center" gap="$2">
+        <XStack alignItems="center" justifyContent="center" gap="$2">
           <Bell size="$1.5" color="$orange10" />
-          <Text fontWeight="bold">Tidak perlu menunggu di halaman ini</Text>
+          <Text fontWeight="bold" textAlign="center">
+            Tidak perlu menunggu di halaman ini
+          </Text>
         </XStack>
-        <Paragraph color="$color10">Kami beri tahu saat pesanan siap.</Paragraph>
-        <Button theme="orange" size="$4" minHeight={44} onPress={onSubscribePress}>
-          Beri tahu saya
+        <Paragraph color="$color10" textAlign="center">
+          Nyalakan notifikasi agar kami bisa memberitahu saat pesanan siap.
+        </Paragraph>
+        <Button
+          theme="orange"
+          size="$4"
+          minHeight={44}
+          onPress={onSubscribePress}
+        >
+          Nyalakan Notifikasi
         </Button>
       </OptInCard>
     ))

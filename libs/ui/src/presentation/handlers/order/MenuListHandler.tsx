@@ -19,7 +19,10 @@ import { useUsecase } from '../hooks/useUsecase';
 import { useCart } from '../hooks/useCart';
 import { useTableResolve } from '../hooks/useTableResolve';
 import { MenuItemDetailScreenProps } from '../../views/screens/order/MenuItemDetailScreen';
-import { MenuListScreen, MenuListScreenProps } from '../../views/screens/order/MenuListScreen';
+import {
+  MenuListScreen,
+  MenuListScreenProps,
+} from '../../views/screens/order/MenuListScreen';
 import { TableResolveScreenProps } from '../../views/screens/order/TableResolveScreen';
 
 export type MenuListHandlerProps = {
@@ -205,7 +208,6 @@ export const MenuListHandler = ({
     currentCart && currentCart.itemCount > 0 ? (
       <CartBar
         itemCount={currentCart.itemCount}
-        total={currentCart.total}
         onPress={() => router.push(`/t/${tableCode}/cart`)}
       />
     ) : null;
@@ -263,8 +265,7 @@ export const MenuListHandler = ({
             });
             menuList.dispatch({ type: 'CLEAR_ITEM' });
           },
-          onRetryButtonPress: () =>
-            menuItemDetail.dispatch({ type: 'FETCH' }),
+          onRetryButtonPress: () => menuItemDetail.dispatch({ type: 'FETCH' }),
         };
 
   return (

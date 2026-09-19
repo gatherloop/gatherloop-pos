@@ -23,6 +23,10 @@ export class MockWebPushRepository implements WebPushRepository {
     this.shouldFail = value;
   }
 
+  setSubscription(value: WebPushSubscription | null) {
+    this.subscription = value;
+  }
+
   getSupportStatus(): WebPushSupportStatus {
     return this.supportStatus;
   }

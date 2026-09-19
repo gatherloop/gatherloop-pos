@@ -148,8 +148,8 @@ describe('MenuListHandler', () => {
 
     await settle();
 
-    expect(screen.getByText('mulai Rp 18.000')).toBeTruthy();
-    expect(screen.getByText('mulai Rp 25.000')).toBeTruthy();
+    expect(screen.getByText('Rp 18.000')).toBeTruthy();
+    expect(screen.getByText('Rp 25.000')).toBeTruthy();
   });
 
   it('shows an error state when the menu fetch fails, and recovers on retry', async () => {
@@ -329,9 +329,11 @@ describe('MenuListHandler', () => {
       await settle();
 
       expect(
-        (screen.getByRole('button', {
-          name: 'Tambah ke Keranjang · Rp 25.000',
-        }) as HTMLButtonElement).disabled
+        (
+          screen.getByRole('button', {
+            name: 'Tambah ke Keranjang · Rp 25.000',
+          }) as HTMLButtonElement
+        ).disabled
       ).toBe(false);
     });
 
@@ -400,9 +402,8 @@ describe('MenuListHandler', () => {
         ).disabled
       ).toBe(true);
       expect(
-        (
-          screen.getByRole('button', { name: 'Regular' }) as HTMLButtonElement
-        ).disabled
+        (screen.getByRole('button', { name: 'Regular' }) as HTMLButtonElement)
+          .disabled
       ).toBe(false);
     });
 
@@ -420,7 +421,9 @@ describe('MenuListHandler', () => {
 
       expect(
         (
-          screen.getByRole('button', { name: 'Stok habis' }) as HTMLButtonElement
+          screen.getByRole('button', {
+            name: 'Stok habis',
+          }) as HTMLButtonElement
         ).disabled
       ).toBe(true);
     });

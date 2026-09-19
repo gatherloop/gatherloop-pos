@@ -55,6 +55,13 @@ function nextOptionSelectionType(
     : 'selectingOptions';
 }
 
+function initialSelectedOptionValueIds(product: Product): number[] {
+  const [onlyOption] = product.options;
+  return product.options.length === 1 && onlyOption.values.length === 1
+    ? [onlyOption.values[0].id]
+    : [];
+}
+
 export class MenuItemDetailUsecase extends Usecase<
   MenuItemDetailState,
   MenuItemDetailAction,
@@ -70,10 +77,13 @@ export class MenuItemDetailUsecase extends Usecase<
   }
 
   getInitialState(): MenuItemDetailState {
+    const product = this.params.product ?? null;
     const context: Context = {
       productId: this.params.productId,
-      product: this.params.product ?? null,
-      selectedOptionValueIds: [],
+      product,
+      selectedOptionValueIds: product
+        ? initialSelectedOptionValueIds(product)
+        : [],
       variant: null,
       amount: 1,
       note: '',
@@ -90,7 +100,10 @@ export class MenuItemDetailUsecase extends Usecase<
 
     return {
       ...context,
-      type: nextOptionSelectionType(context.product, []),
+      type: nextOptionSelectionType(
+        context.product,
+        context.selectedOptionValueIds
+      ),
     };
   }
 
@@ -112,28 +125,37 @@ export class MenuItemDetailUsecase extends Usecase<
       // has everything the sheet needs).
       .with(
         [P._, { type: 'SELECT_PRODUCT' }],
-        ([state, { productId, product = null }]) => ({
-          ...state,
-          type: product
-            ? nextOptionSelectionType(product, [])
-            : 'loadingProduct',
-          productId,
-          product,
-          selectedOptionValueIds: [],
-          variant: null,
-          amount: 1,
-          note: '',
-          errorMessage: null,
-        })
+        ([state, { productId, product = null }]) => {
+          const selectedOptionValueIds = product
+            ? initialSelectedOptionValueIds(product)
+            : [];
+          return {
+            ...state,
+            type: product
+              ? nextOptionSelectionType(product, selectedOptionValueIds)
+              : 'loadingProduct',
+            productId,
+            product,
+            selectedOptionValueIds,
+            variant: null,
+            amount: 1,
+            note: '',
+            errorMessage: null,
+          };
+        }
       )
       .with(
         [{ type: 'loadingProduct' }, { type: 'FETCH_SUCCESS' }],
-        ([state, { product }]) => ({
-          ...state,
-          type: nextOptionSelectionType(product, []),
-          product,
-          selectedOptionValueIds: [],
-        })
+        ([state, { product }]) => {
+          const selectedOptionValueIds =
+            initialSelectedOptionValueIds(product);
+          return {
+            ...state,
+            type: nextOptionSelectionType(product, selectedOptionValueIds),
+            product,
+            selectedOptionValueIds,
+          };
+        }
       )
       .with(
         [{ type: 'loadingProduct' }, { type: 'FETCH_ERROR' }],

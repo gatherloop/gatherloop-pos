@@ -4,6 +4,7 @@ import {
   MenuItemDetailState,
   MenuItemDetailParams,
 } from './menuItemDetail';
+import { Product, Variant } from '../entities';
 import { MockMenuRepository } from '../../data/mock';
 import { UsecaseTester, flushPromises } from '../../utils/usecase';
 
@@ -17,6 +18,48 @@ const createTester = (
     MenuItemDetailAction,
     MenuItemDetailParams
   >(new MenuItemDetailUsecase(repository, params));
+
+function addSingleOptionProduct(repository: MockMenuRepository): {
+  product: Product;
+  variant: Variant;
+} {
+  const product: Product = {
+    id: 3,
+    name: 'Es Teh',
+    description: '',
+    category: repository.categories[0],
+    imageUrl: '',
+    saleType: 'purchase',
+    status: 'published',
+    options: [{ id: 2, name: 'Ukuran', values: [{ id: 3, name: 'Regular' }] }],
+    createdAt: '2024-03-20T00:00:00.000Z',
+    isAvailable: true,
+    availabilityTracking: 'none',
+    isSellable: true,
+  };
+  const variant: Variant = {
+    id: 4,
+    name: 'Es Teh - Regular',
+    price: 8000,
+    materials: [],
+    product,
+    createdAt: '2024-03-20T00:00:00.000Z',
+    values: [
+      {
+        id: 3,
+        variantId: 4,
+        optionValueId: 3,
+        optionValue: { id: 3, name: 'Regular' },
+      },
+    ],
+    pricingTiers: [],
+    isAvailable: true,
+    isSellable: true,
+  };
+  repository.products = [...repository.products, product];
+  repository.variants = [...repository.variants, variant];
+  return { product, variant };
+}
 
 describe('MenuItemDetailUsecase', () => {
   it('stays idle, with no fetch, when constructed with no productId', async () => {
@@ -289,6 +332,56 @@ describe('MenuItemDetailUsecase', () => {
       await flushPromises();
       expect(menuItemDetail.state.type).toBe('ready');
       expect(menuItemDetail.state.product).toEqual(repository.products[1]);
+    });
+  });
+
+  describe('a product with a single option that has a single value', () => {
+    it('auto-selects the only value and goes straight to resolvingVariant when the product is given upfront', async () => {
+      const repository = new MockMenuRepository();
+      const { product, variant } = addSingleOptionProduct(repository);
+      const menuItemDetail = createTester(repository, {
+        productId: product.id,
+        product,
+      });
+
+      expect(menuItemDetail.state.type).toBe('resolvingVariant');
+      expect(menuItemDetail.state.selectedOptionValueIds).toEqual([3]);
+
+      await flushPromises();
+      expect(menuItemDetail.state.type).toBe('ready');
+      expect(menuItemDetail.state.variant).toEqual(variant);
+    });
+
+    it('auto-selects the only value after fetching the product', async () => {
+      const repository = new MockMenuRepository();
+      const { product, variant } = addSingleOptionProduct(repository);
+      const menuItemDetail = createTester(repository, {
+        productId: product.id,
+      });
+
+      await flushPromises();
+      await flushPromises();
+      expect(menuItemDetail.state.type).toBe('ready');
+      expect(menuItemDetail.state.selectedOptionValueIds).toEqual([3]);
+      expect(menuItemDetail.state.variant).toEqual(variant);
+    });
+
+    it('auto-selects the only value on SELECT_PRODUCT', async () => {
+      const repository = new MockMenuRepository();
+      const { product, variant } = addSingleOptionProduct(repository);
+      const menuItemDetail = createTester(repository, { productId: null });
+
+      menuItemDetail.dispatch({
+        type: 'SELECT_PRODUCT',
+        productId: product.id,
+        product,
+      });
+      expect(menuItemDetail.state.type).toBe('resolvingVariant');
+      expect(menuItemDetail.state.selectedOptionValueIds).toEqual([3]);
+
+      await flushPromises();
+      expect(menuItemDetail.state.type).toBe('ready');
+      expect(menuItemDetail.state.variant).toEqual(variant);
     });
   });
 });
