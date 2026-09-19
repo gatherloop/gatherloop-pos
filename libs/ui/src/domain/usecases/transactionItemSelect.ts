@@ -283,10 +283,15 @@ export class TransactionItemSelectUsecase extends Usecase<
               )
             : [...state.selectedProductVariants, variant];
 
+          // rental variants are never isSellable — product availability covers purchases only
+          const isAvailabilityTracked =
+            state.selectedProduct?.saleType === 'purchase';
+
           const isNowSoldOut =
-            !variant.isSellable ||
-            (variant.sellableQuantity !== undefined &&
-              variant.sellableQuantity <= 0);
+            isAvailabilityTracked &&
+            (!variant.isSellable ||
+              (variant.sellableQuantity !== undefined &&
+                variant.sellableQuantity <= 0));
 
           if (isNowSoldOut) {
             return {
@@ -297,7 +302,7 @@ export class TransactionItemSelectUsecase extends Usecase<
           }
 
           const cappedAmount =
-            variant.sellableQuantity !== undefined
+            isAvailabilityTracked && variant.sellableQuantity !== undefined
               ? Math.min(state.amount, variant.sellableQuantity)
               : state.amount;
 
@@ -424,6 +429,9 @@ export class TransactionItemSelectUsecase extends Usecase<
             );
         }
       )
+      .with({ type: 'loaded' }, () => {
+        this.productVariantsFetchedForProductId = null;
+      })
       .with({ type: 'selectingOptions' }, ({ selectedProduct }) => {
         if (
           selectedProduct &&
