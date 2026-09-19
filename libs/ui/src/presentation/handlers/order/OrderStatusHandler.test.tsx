@@ -120,36 +120,9 @@ describe('OrderStatusHandler', () => {
       expect(
         screen.getByText(`#${paymentRepository.payment.transactionNumber}`)
       ).toBeTruthy();
-      // The order's table label now appears twice: once in the header (D4)
-      // and once in the preparing view's own table line.
-      expect(
-        screen.getAllByText(paymentRepository.payment.tableLabel)
-      ).toHaveLength(2);
     } finally {
       jest.useRealTimers();
     }
-  });
-
-  it('shows the prepared-order screen for an already-paid payment', async () => {
-    const paymentRepository = new MockPaymentRepository();
-    paymentRepository.payment = {
-      ...paymentRepository.payment,
-      status: 'paid',
-      customerName: 'Budi',
-    };
-    renderHandler({
-      reference: paymentRepository.payment.reference,
-      paymentRepository,
-    });
-
-    await settle();
-
-    expect(
-      screen.getByText(
-        'Mohon tunggu di meja Anda, kami akan memberi tahu apabila pesanan siap diambil di kasir.'
-      )
-    ).toBeTruthy();
-    expect(screen.queryByText(/menit|jam|detik/)).toBeNull();
   });
 
   it('shows the pickup instruction when the payment is already ready', async () => {
@@ -245,12 +218,6 @@ describe('OrderStatusHandler', () => {
       screen.getByRole('button', { name: 'Retry' }).click();
       await flushPromises();
     });
-
-    expect(
-      screen.getByText(
-        'Mohon tunggu di meja Anda, kami akan memberi tahu apabila pesanan siap diambil di kasir.'
-      )
-    ).toBeTruthy();
   });
 
   it('navigates back to the menu from the not-found state', async () => {
@@ -315,9 +282,8 @@ describe('OrderStatusHandler', () => {
       await settle();
 
       expect(
-        screen.getByText('Kami akan memberi tahu saat pesanan siap.')
+        screen.getByText('Kami akan memberi tahu saat pesanan siap')
       ).toBeTruthy();
-      expect(getByRole('button', { name: 'Matikan' })).toBeTruthy();
       expect(screen.queryByText('Nyalakan Notifikasi')).toBeNull();
     });
 
@@ -367,9 +333,8 @@ describe('OrderStatusHandler', () => {
       await settle();
 
       expect(
-        screen.getByText('Kami akan memberi tahu saat pesanan siap.')
+        screen.getByText('Kami akan memberi tahu saat pesanan siap')
       ).toBeTruthy();
-      expect(getByRole('button', { name: 'Matikan' })).toBeTruthy();
       expect(screen.queryByText('Nyalakan Notifikasi')).toBeNull();
     });
 

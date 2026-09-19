@@ -48,9 +48,6 @@ export const Subscribed: Story = {
   args: {
     variant: {
       type: 'subscribed',
-      onUnsubscribePress: () => {
-        // Storybook action stand-in
-      },
     },
   },
 };

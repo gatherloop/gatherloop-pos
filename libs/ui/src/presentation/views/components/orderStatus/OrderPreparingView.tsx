@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Paragraph, SizableText, Text, XStack, YStack } from 'tamagui';
+import {
+  Paragraph,
+  ScrollView,
+  SizableText,
+  Text,
+  XStack,
+  YStack,
+} from 'tamagui';
 import { PaymentItem } from '../../../../domain/entities/Payment';
 import { OrderItemsSummary } from './OrderItemsSummary';
 import {
@@ -10,14 +17,14 @@ import {
 const ELLIPSIS_FRAMES = ['', '.', '..', '...'];
 const ELLIPSIS_INTERVAL_MS = 500;
 const RING_PULSE_INTERVAL_MS = 900;
-const NUMBER_BADGE_SIZE = 140;
-const NUMBER_BADGE_RING_SIZE = 170;
+const NUMBER_BADGE_SIZE = 100;
+const NUMBER_BADGE_RING_SIZE = 120;
 
 const transactionNumberFontSizeByDigitCount: Record<number, string> = {
-  1: '$12',
-  2: '$11',
-  3: '$10',
-  4: '$9',
+  1: '$10',
+  2: '$9',
+  3: '$8',
+  4: '$7',
 };
 
 const PreparingNumberBadge = ({ value }: { value: number }) => {
@@ -103,7 +110,6 @@ const PreparingHeading = ({ isPolling }: { isPolling: boolean }) => {
 
 export type OrderPreparingViewProps = {
   transactionNumber: number;
-  tableLabel: string;
   items: PaymentItem[];
   amount: number;
   isPolling: boolean;
@@ -112,7 +118,6 @@ export type OrderPreparingViewProps = {
 
 export const OrderPreparingView = ({
   transactionNumber,
-  tableLabel,
   items,
   amount,
   isPolling,
@@ -121,20 +126,9 @@ export const OrderPreparingView = ({
   <YStack flex={1} gap="$4" alignItems="center">
     <PreparingNumberBadge value={transactionNumber} />
     <PreparingHeading isPolling={isPolling} />
-
-    <YStack alignItems="center" gap="$1">
-      <Text fontWeight="bold" fontSize="$8" textAlign="center">
-        {tableLabel}
-      </Text>
-    </YStack>
-
-    <OrderItemsSummary items={items} amount={amount} />
-
-    <Paragraph textAlign="center" color="$color10">
-      Mohon tunggu di meja Anda, kami akan memberi tahu apabila pesanan siap
-      diambil di kasir.
-    </Paragraph>
-
+    <ScrollView flex={1}>
+      <OrderItemsSummary items={items} amount={amount} />
+    </ScrollView>
     <OrderNotificationOptIn variant={notificationOptIn} />
   </YStack>
 );

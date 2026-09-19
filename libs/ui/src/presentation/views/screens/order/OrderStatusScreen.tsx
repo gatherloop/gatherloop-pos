@@ -104,7 +104,6 @@ export const OrderStatusScreen = ({
           ({ payment, isPolling, notificationOptIn }) => (
             <OrderPreparingView
               transactionNumber={payment.transactionNumber}
-              tableLabel={payment.tableLabel}
               items={payment.items}
               amount={payment.amount}
               isPolling={isPolling}

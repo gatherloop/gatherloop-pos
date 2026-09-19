@@ -6,7 +6,6 @@ const meta: Meta<typeof OrderPreparingView> = {
   component: OrderPreparingView,
   args: {
     transactionNumber: 12,
-    tableLabel: 'Meja 1',
     amount: 54000,
     isPolling: false,
     notificationOptIn: {
@@ -14,9 +13,6 @@ const meta: Meta<typeof OrderPreparingView> = {
       onSubscribePress: () => {
         // Storybook action stand-in
       },
-    },
-    onBackToMenuPress: () => {
-      // Storybook action stand-in
     },
     items: [
       {

@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Bell, BellOff } from '@tamagui/lucide-icons';
+import { Bell } from '@tamagui/lucide-icons';
 import { match, P } from 'ts-pattern';
 import { Button, Paragraph, Spinner, Text, XStack, YStack } from 'tamagui';
 
@@ -11,7 +11,7 @@ export type OrderNotificationOptInVariant =
   | { type: 'permissionDenied' }
   | { type: 'subscribing' }
   | { type: 'subscribeError'; errorMessage: string; onRetryPress: () => void }
-  | { type: 'subscribed'; onUnsubscribePress: () => void }
+  | { type: 'subscribed' }
   | { type: 'unsubscribing' };
 
 export type OrderNotificationOptInProps = {
@@ -74,48 +74,32 @@ export const OrderNotificationOptIn = ({
         <Text fontWeight="bold" color="$red10">
           {errorMessage}
         </Text>
-        <Button size="$3" onPress={onRetryPress}>
+        <Button size="$3" theme="orange" onPress={onRetryPress}>
           Coba lagi
         </Button>
       </OptInCard>
     ))
-    .with({ type: P.union('subscribed', 'unsubscribing') }, (state) => (
+    .with({ type: P.union('subscribed', 'unsubscribing') }, () => (
       <XStack
         width="100%"
-        maxWidth={420}
         alignItems="center"
         justifyContent="space-between"
         gap="$2"
         padding="$3"
       >
-        <XStack alignItems="center" gap="$2">
+        <XStack alignItems="center" gap="$2" flex={1}>
           <Bell size="$1" color="$green10" />
-          <Text color="$color10">
-            Kami akan memberi tahu saat pesanan siap.
-          </Text>
+          <Text color="$color10">Kami akan memberi tahu saat pesanan siap</Text>
         </XStack>
-        <Button
-          size="$2"
-          chromeless
-          icon={BellOff}
-          disabled={state.type === 'unsubscribing'}
-          onPress={
-            state.type === 'subscribed' ? state.onUnsubscribePress : undefined
-          }
-        >
-          Matikan
-        </Button>
       </XStack>
     ))
     .with({ type: 'idle' }, ({ onSubscribePress }) => (
       <OptInCard>
         <XStack alignItems="center" justifyContent="center" gap="$2">
           <Bell size="$1.5" color="$orange10" />
-          <Text fontWeight="bold" textAlign="center">
-            Tidak perlu menunggu di halaman ini
-          </Text>
+          <Text fontWeight="bold">Tidak perlu menunggu di halaman ini</Text>
         </XStack>
-        <Paragraph color="$color10" textAlign="center">
+        <Paragraph color="$color10">
           Nyalakan notifikasi agar kami bisa memberitahu saat pesanan siap.
         </Paragraph>
         <Button

@@ -49,8 +49,6 @@ export const OrderStatusHandler = ({
     }))
     .with({ type: 'subscribed' }, () => ({
       type: 'subscribed',
-      onUnsubscribePress: () =>
-        notificationSubscribe.dispatch({ type: 'UNSUBSCRIBE' }),
     }))
     .with({ type: 'unsubscribing' }, () => ({ type: 'unsubscribing' }))
     .exhaustive();
