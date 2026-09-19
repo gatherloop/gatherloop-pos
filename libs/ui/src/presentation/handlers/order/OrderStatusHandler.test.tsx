@@ -307,10 +307,10 @@ describe('OrderStatusHandler', () => {
 
       await settle();
 
-      expect(getByRole('button', { name: 'Beri tahu saya' })).toBeTruthy();
+      expect(getByRole('button', { name: 'Nyalakan Notifikasi' })).toBeTruthy();
 
       await act(async () => {
-        getByRole('button', { name: 'Beri tahu saya' }).click();
+        getByRole('button', { name: 'Nyalakan Notifikasi' }).click();
       });
       await settle();
 
@@ -318,7 +318,7 @@ describe('OrderStatusHandler', () => {
         screen.getByText('Kami akan memberi tahu saat pesanan siap.')
       ).toBeTruthy();
       expect(getByRole('button', { name: 'Matikan' })).toBeTruthy();
-      expect(screen.queryByText('Beri tahu saya')).toBeNull();
+      expect(screen.queryByText('Nyalakan Notifikasi')).toBeNull();
     });
 
     it('renders the settings line when permission is denied', async () => {
@@ -338,7 +338,7 @@ describe('OrderStatusHandler', () => {
       await settle();
 
       await act(async () => {
-        getByRole('button', { name: 'Beri tahu saya' }).click();
+        getByRole('button', { name: 'Nyalakan Notifikasi' }).click();
       });
       await settle();
 
@@ -361,7 +361,7 @@ describe('OrderStatusHandler', () => {
 
       await settle();
 
-      expect(screen.queryByText('Beri tahu saya')).toBeNull();
+      expect(screen.queryByText('Nyalakan Notifikasi')).toBeNull();
       expect(
         screen.queryByText('Kami akan memberi tahu saat pesanan siap.')
       ).toBeNull();
