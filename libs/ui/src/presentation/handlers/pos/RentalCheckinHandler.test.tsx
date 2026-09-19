@@ -496,4 +496,64 @@ describe('RentalCheckinHandler', () => {
       expect(screen.getByRole('heading', { name: 'Product 1' })).toBeTruthy();
     });
   });
+
+  describe('rental item selection', () => {
+    const renderWithRentalProducts = () => {
+      const productRepo = new MockProductRepository();
+      const variantRepo = new MockVariantRepository();
+
+      productRepo.products = productRepo.products.map((product) => ({
+        ...product,
+        saleType: 'rental' as const,
+        isSellable: false,
+      }));
+      variantRepo.variants = variantRepo.variants.map((variant) => ({
+        ...variant,
+        isSellable: false,
+      }));
+
+      render(
+        <RentalCheckinHandler
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          rentalCheckinUsecase={new RentalCheckinUsecase(new MockRentalRepository())}
+          transactionItemSelectUsecase={new TransactionItemSelectUsecase(
+            productRepo,
+            variantRepo,
+            { products: [], totalItem: 0, saleType: 'rental' }
+          )}
+          ticketListUsecase={new TicketListUsecase(new MockTicketRepository(), {
+            tickets: [],
+          })}
+        />
+      );
+    };
+
+    it('should close the option dialog and add the rental after submitting', async () => {
+      const user = userEvent.setup();
+      renderWithRentalProducts();
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('heading', { name: 'Product 1' }));
+      });
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getAllByRole('heading', { name: 'Product 1' })).toHaveLength(2);
+
+      await user.click(screen.getAllByRole('button', { name: 'Submit' })[0]);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getAllByRole('heading', { name: 'Product 1' })).toHaveLength(1);
+      expect(screen.getByPlaceholderText('Code')).toBeTruthy();
+    });
+  });
 });
