@@ -1,10 +1,7 @@
 import React from 'react';
 import { act, render, screen } from '@testing-library/react';
 import { OrderHistoryHandler } from './OrderHistoryHandler';
-import {
-  MockPaymentRepository,
-  MockSessionRepository,
-} from '../../../data/mock';
+import { MockPaymentRepository, MockSessionRepository } from '../../../data/mock';
 import { OrderHistoryUsecase } from '../../../domain';
 import { flushPromises } from '../../../utils/testUtils';
 
@@ -61,9 +58,13 @@ describe('OrderHistoryHandler', () => {
     await settle();
 
     const [newest, oldest] = paymentRepository.payments;
-    expect(screen.getByText(`#${newest.transactionNumber}`)).toBeTruthy();
+    expect(
+      screen.getByText(`#${newest.transactionNumber}`)
+    ).toBeTruthy();
     expect(screen.getByText('Sedang disiapkan')).toBeTruthy();
-    expect(screen.getByText(`#${oldest.transactionNumber}`)).toBeTruthy();
+    expect(
+      screen.getByText(`#${oldest.transactionNumber}`)
+    ).toBeTruthy();
     expect(screen.getByText('Siap diambil')).toBeTruthy();
   });
 
@@ -116,6 +117,19 @@ describe('OrderHistoryHandler', () => {
     expect(mockPush).toHaveBeenCalledWith('/');
   });
 
+  it('navigates to /orders from the header history button', async () => {
+    const paymentRepository = new MockPaymentRepository();
+    renderHandler({ paymentRepository });
+
+    await settle();
+
+    await act(async () => {
+      screen.getByRole('button', { name: 'Pesanan Saya' }).click();
+    });
+
+    expect(mockPush).toHaveBeenCalledWith('/orders');
+  });
+
   it('shows an error with retry on a transport failure', async () => {
     const paymentRepository = new MockPaymentRepository();
     paymentRepository.setShouldFailFetchPayments(true);
@@ -132,6 +146,8 @@ describe('OrderHistoryHandler', () => {
     });
 
     const [payment] = paymentRepository.payments;
-    expect(screen.getByText(`#${payment.transactionNumber}`)).toBeTruthy();
+    expect(
+      screen.getByText(`#${payment.transactionNumber}`)
+    ).toBeTruthy();
   });
 });

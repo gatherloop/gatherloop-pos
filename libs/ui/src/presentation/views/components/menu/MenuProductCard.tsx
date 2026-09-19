@@ -67,7 +67,11 @@ export const MenuProductCard = ({
           </Paragraph>
         ) : null}
 
-        {startingPrice !== null && <Text>{formatRupiah(startingPrice)}</Text>}
+        {startingPrice !== null && (
+          <Text color="$blue10" fontWeight="600">
+            mulai {formatRupiah(startingPrice)}
+          </Text>
+        )}
       </YStack>
     </XStack>
   );

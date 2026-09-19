@@ -44,7 +44,7 @@ export const CartLineItem = ({
   const hitSlop = { top: 6, bottom: 6, left: 6, right: 6 };
 
   return (
-    <XStack gap="$3">
+    <XStack gap="$3" alignItems="flex-start">
       <MenuItemThumbnail
         imageUrl={item.variant.product.imageUrl}
         station={item.variant.product.category.station}
@@ -86,44 +86,39 @@ export const CartLineItem = ({
             disabled={disabled || isSoldOut}
             size="sm"
           />
+          <Text fontWeight="bold">{formatRupiah(item.subtotal)}</Text>
         </XStack>
       </YStack>
 
-      <YStack gap="$2" justifyContent="space-between">
-        <XStack gap="$2">
-          <Button
-            icon={Pencil}
-            variant="outlined"
-            circular
-            size="$2"
-            width={32}
-            height={32}
-            hitSlop={hitSlop}
-            disabled={disabled}
-            onPress={onEditPress}
-            accessibilityLabel={`Ubah ${item.variant.product.name}`}
-          />
+      <XStack gap="$2">
+        <Button
+          icon={Pencil}
+          variant="outlined"
+          circular
+          size="$2"
+          width={32}
+          height={32}
+          hitSlop={hitSlop}
+          disabled={disabled}
+          onPress={onEditPress}
+          accessibilityLabel={`Ubah ${item.variant.product.name}`}
+        />
 
-          <Button
-            icon={Trash2}
-            variant="outlined"
-            theme="red"
-            color="$red8"
-            circular
-            size="$2"
-            width={32}
-            height={32}
-            hitSlop={hitSlop}
-            disabled={disabled}
-            onPress={onRemovePress}
-            accessibilityLabel={`Hapus ${item.variant.product.name} dari keranjang`}
-          />
-        </XStack>
-
-        <Text fontWeight="bold" marginBottom="$2">
-          {formatRupiah(item.subtotal)}
-        </Text>
-      </YStack>
+        <Button
+          icon={Trash2}
+          variant="outlined"
+          theme="red"
+          color="$red8"
+          circular
+          size="$2"
+          width={32}
+          height={32}
+          hitSlop={hitSlop}
+          disabled={disabled}
+          onPress={onRemovePress}
+          accessibilityLabel={`Hapus ${item.variant.product.name} dari keranjang`}
+        />
+      </XStack>
     </XStack>
   );
 };

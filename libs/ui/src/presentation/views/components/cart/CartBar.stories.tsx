@@ -15,9 +15,9 @@ export default meta;
 type Story = StoryObj<typeof CartBar>;
 
 export const Default: Story = {
-  args: { itemCount: 3 },
+  args: { itemCount: 3, total: 54000 },
 };
 
 export const SingleItem: Story = {
-  args: { itemCount: 1 },
+  args: { itemCount: 1, total: 18000 },
 };

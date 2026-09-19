@@ -26,19 +26,13 @@ export const OrderLayout = ({ children, header, footer }: OrderLayoutProps) => {
         backgroundColor="$background"
         justifyContent="space-between"
         flexDirection="column"
+        alignItems="center"
       >
-        <YStack>{header}</YStack>
-        <YStack
-          padding="$4"
-          flex={1}
-          marginHorizontal="auto"
-          $xxs={{ width: 320 }}
-          $xs={{ width: 360 }}
-          $gtXs={{ width: 480 }}
-        >
+        <YStack alignSelf="stretch">{header}</YStack>
+        <YStack padding="$4" flex={1} maxWidth={480}>
           {children}
         </YStack>
-        {footer ? <YStack>{footer}</YStack> : null}
+        {footer ? <YStack maxWidth={480}>{footer}</YStack> : null}
       </YStack>
     </PortalProvider>
   );

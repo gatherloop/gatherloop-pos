@@ -31,7 +31,6 @@ export const OrderStatusHandler = ({
   )
     .returnType<OrderNotificationOptInVariant>()
     .with({ type: 'unsupported' }, () => ({ type: 'hidden' }))
-    .with({ type: 'checkingSubscription' }, () => ({ type: 'hidden' }))
     .with({ type: 'needsInstall' }, () => ({ type: 'needsInstall' }))
     .with({ type: 'idle' }, () => ({
       type: 'idle',

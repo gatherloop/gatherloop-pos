@@ -52,23 +52,6 @@ func TestBuildKdsPushMessage(t *testing.T) {
 		assert.Equal(t, "BAR: 2× Kopi Susu Gula Aren, 1× Americano · KITCHEN: 1× Sandwich", message.Body)
 	})
 
-	t.Run("different variants of the same product are grouped into one line", func(t *testing.T) {
-		transaction := domain.Transaction{
-			TransactionNumber: 12,
-			Name:              "Budi",
-			TransactionItems: []domain.TransactionItem{
-				kdsItem("BAR", 1, "Coffee Latte"),
-				kdsItem("BAR", 1, "Coffee Latte"),
-				kdsItem("KITCHEN", 1, "Pancong"),
-				kdsItem("KITCHEN", 1, "Pancong"),
-			},
-		}
-
-		message := domain.BuildKdsPushMessage(transaction, "default")
-
-		assert.Equal(t, "BAR: 2× Coffee Latte · KITCHEN: 2× Pancong", message.Body)
-	})
-
 	t.Run("a bar-only transaction's body carries just its own label", func(t *testing.T) {
 		transaction := domain.Transaction{
 			TransactionNumber: 12,

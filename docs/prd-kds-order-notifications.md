@@ -487,9 +487,7 @@ One notification per paid transaction, identical on every phone (D24).
   each staff member reads the line that is theirs. Written as one line so it survives the collapsed
   notification as well as the expanded one, and truncated to four items plus `+N more`.
   A single-station order still carries its label — `BAR: 2× Kopi Susu` — because *"not mine"* is
-  information too. Items are grouped by product name, not by variant: an order with one iced and
-  one hot Coffee Latte reads `2× Coffee Latte`, not two separate lines, since the variant name
-  isn't shown and showing it would make the line unreadable.
+  information too.
 - **Data payload:** `{"transactionId": 123, "transactionNumber": 12, "stations": ["BAR",
   "KITCHEN"], "source": "order"}` — carried so the future KDS view can deep-link to the ticket
   without any contract change.
@@ -540,10 +538,7 @@ func StationLines(transaction Transaction) []KdsStationLine  // the FR-6 body, g
 Both read `item.Variant.Product.Category.Station` across `transaction.TransactionItems` — already
 preloaded on the entity the trigger holds (`apps/api/data/mysql/transaction_repo.go:118` preloads
 `TransactionItems.Variant.Product.Category`). `NONE`, empty and any unrecognised value are
-ignored; the remaining items group under `BAR` then `KITCHEN`, in that fixed order. Within a
-station, items are further grouped by product name and summed — two variants of the same product
-(e.g. iced/hot Coffee Latte) collapse into one `2× Coffee Latte` line instead of two, since the
-body never shows the variant name.
+ignored; the remaining items group under `BAR` then `KITCHEN`, in that fixed order.
 `ShouldNotify` is exactly `len(StationLines(t)) > 0`, which is the property that keeps the
 predicate and the message from ever disagreeing.
 

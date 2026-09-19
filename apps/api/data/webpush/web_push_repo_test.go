@@ -31,7 +31,7 @@ func testMessage(endpoint string) domain.WebPushMessage {
 		P256dhKey: "BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XbjhazAkj7I99e8QcYP7DkM",
 		AuthKey:   "tBHItJI5svbpez7KI4CCXg",
 		Title:     "Pesanan #12 siap diambil!",
-		Body:      "Silahkan ambil di kasir",
+		Body:      "Meja 4 · Silakan ambil di counter.",
 		Tag:       "order-ORD12345",
 		URL:       "/orders/ORD12345",
 	}

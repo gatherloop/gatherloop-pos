@@ -1,13 +1,5 @@
 import { X } from '@tamagui/lucide-icons';
-import {
-  Button,
-  Paragraph,
-  ScrollView,
-  Text,
-  TextArea,
-  XStack,
-  YStack,
-} from 'tamagui';
+import { Button, Paragraph, ScrollView, Text, TextArea, XStack, YStack } from 'tamagui';
 import { match, P } from 'ts-pattern';
 import { Product } from '../../../../domain/entities/Product';
 import { formatRupiah } from '../../../../utils/currency';
@@ -145,7 +137,7 @@ export const MenuItemDetailScreen = ({
                     <YStack gap="$2">
                       <Text fontWeight="bold">Catatan</Text>
                       <TextArea
-                        placeholder="Contoh: less sugar"
+                        placeholder="Contoh: less sugar, tanpa es"
                         value={note}
                         onChangeText={onNoteChange}
                         accessibilityLabel="Catatan"
@@ -160,7 +152,6 @@ export const MenuItemDetailScreen = ({
                         amount={amount}
                         onChange={onAmountChange}
                         max={remainingQuantity}
-                        size="sm"
                       />
                     </XStack>
                   </YStack>
@@ -190,14 +181,9 @@ export const MenuItemDetailScreen = ({
                       .with(
                         { ctaState: 'ready', price: P.number },
                         ({ price }) =>
-                          `Tambah ke Keranjang · ${formatRupiah(
-                            price * amount
-                          )}`
+                          `Tambah ke Keranjang · ${formatRupiah(price * amount)}`
                       )
-                      .with(
-                        { ctaState: 'resolving' },
-                        () => 'Menghitung harga...'
-                      )
+                      .with({ ctaState: 'resolving' }, () => 'Menghitung harga...')
                       .otherwise(() => 'Tambah ke Keranjang')}
                   </Button>
                 </YStack>

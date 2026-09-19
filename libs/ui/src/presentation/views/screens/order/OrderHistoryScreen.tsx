@@ -27,11 +27,12 @@ export const OrderHistoryScreen = ({
   variant,
   onItemPress,
   onEmptyActionPress,
+  onHistoryPress,
 }: OrderHistoryScreenProps) => {
   return (
-    <OrderLayout header={<OrderBrandHeader />}>
+    <OrderLayout header={<OrderBrandHeader onHistoryPress={onHistoryPress} />}>
       <YStack flex={1} gap="$3">
-        <Text fontWeight="bold" alignSelf="center" fontSize="$6">
+        <Text fontWeight="bold" fontSize="$6">
           Pesanan Saya
         </Text>
 
@@ -55,7 +56,7 @@ export const OrderHistoryScreen = ({
           ))
           .with({ type: 'loaded' }, ({ payments }) => (
             <ScrollView flex={1}>
-              <YStack gap="$3" flex={1}>
+              <YStack gap="$3">
                 {payments.map((payment) => (
                   <Focusable
                     key={payment.reference}
