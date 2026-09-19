@@ -90,6 +90,24 @@ func TestKdsNotificationRouting_FR2Table(t *testing.T) {
 	}
 }
 
+func TestStationLines_GroupsVariantsOfTheSameProduct(t *testing.T) {
+	transaction := domain.Transaction{
+		TransactionItems: []domain.TransactionItem{
+			kdsItem("BAR", 1, "Coffee Latte"),
+			kdsItem("BAR", 1, "Coffee Latte"),
+			kdsItem("KITCHEN", 1, "Pancong"),
+			kdsItem("KITCHEN", 1, "Pancong"),
+		},
+	}
+
+	lines := domain.StationLines(transaction)
+
+	assert.Equal(t, []domain.KdsStationLine{
+		{Station: domain.KdsStationBar, Items: []string{"2× Coffee Latte"}},
+		{Station: domain.KdsStationKitchen, Items: []string{"2× Pancong"}},
+	}, lines)
+}
+
 func TestIsStaleForNotification(t *testing.T) {
 	now := time.Date(2026, 3, 15, 10, 0, 0, 0, time.Local)
 

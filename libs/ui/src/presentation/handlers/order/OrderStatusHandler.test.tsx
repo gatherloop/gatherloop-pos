@@ -307,10 +307,10 @@ describe('OrderStatusHandler', () => {
 
       await settle();
 
-      expect(getByRole('button', { name: 'Beri tahu saya' })).toBeTruthy();
+      expect(getByRole('button', { name: 'Nyalakan Notifikasi' })).toBeTruthy();
 
       await act(async () => {
-        getByRole('button', { name: 'Beri tahu saya' }).click();
+        getByRole('button', { name: 'Nyalakan Notifikasi' }).click();
       });
       await settle();
 
@@ -318,7 +318,7 @@ describe('OrderStatusHandler', () => {
         screen.getByText('Kami akan memberi tahu saat pesanan siap.')
       ).toBeTruthy();
       expect(getByRole('button', { name: 'Matikan' })).toBeTruthy();
-      expect(screen.queryByText('Beri tahu saya')).toBeNull();
+      expect(screen.queryByText('Nyalakan Notifikasi')).toBeNull();
     });
 
     it('renders the settings line when permission is denied', async () => {
@@ -338,11 +338,39 @@ describe('OrderStatusHandler', () => {
       await settle();
 
       await act(async () => {
-        getByRole('button', { name: 'Beri tahu saya' }).click();
+        getByRole('button', { name: 'Nyalakan Notifikasi' }).click();
       });
       await settle();
 
       expect(screen.getByText('Notifikasi dinonaktifkan')).toBeTruthy();
+    });
+
+    it('shows the subscribed confirmation immediately when the browser already has a subscription', async () => {
+      const paymentRepository = new MockPaymentRepository();
+      paymentRepository.payment = {
+        ...paymentRepository.payment,
+        status: 'paid',
+      };
+      const webPushRepository = new MockWebPushRepository();
+      webPushRepository.setSubscription({
+        endpoint: 'https://fcm.googleapis.com/fcm/send/existing-endpoint',
+        p256dhKey: 'existing-p256dh-key',
+        authKey: 'existing-auth-key',
+        userAgent: 'existing-user-agent',
+      });
+      const { getByRole } = renderHandler({
+        reference: paymentRepository.payment.reference,
+        paymentRepository,
+        webPushRepository,
+      });
+
+      await settle();
+
+      expect(
+        screen.getByText('Kami akan memberi tahu saat pesanan siap.')
+      ).toBeTruthy();
+      expect(getByRole('button', { name: 'Matikan' })).toBeTruthy();
+      expect(screen.queryByText('Nyalakan Notifikasi')).toBeNull();
     });
 
     it('renders no card at all for an unsupported browser', async () => {
@@ -361,7 +389,7 @@ describe('OrderStatusHandler', () => {
 
       await settle();
 
-      expect(screen.queryByText('Beri tahu saya')).toBeNull();
+      expect(screen.queryByText('Nyalakan Notifikasi')).toBeNull();
       expect(
         screen.queryByText('Kami akan memberi tahu saat pesanan siap.')
       ).toBeNull();
