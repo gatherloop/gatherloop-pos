@@ -60,6 +60,71 @@ describe('OrderNotificationSubscribeUsecase', () => {
     });
   });
 
+  describe('checking for an existing subscription', () => {
+    it('should start as checkingSubscription then settle on idle when none exists', async () => {
+      const webPushRepository = new MockWebPushRepository();
+      const webPushSubscriptionRepository = new MockWebPushSubscriptionRepository();
+      const usecase = new OrderNotificationSubscribeUsecase(
+        webPushRepository,
+        webPushSubscriptionRepository
+      );
+      const tester = new UsecaseTester<
+        OrderNotificationSubscribeUsecase,
+        OrderNotificationSubscribeState,
+        OrderNotificationSubscribeAction,
+        undefined
+      >(usecase);
+
+      expect(tester.state.type).toBe('checkingSubscription');
+
+      await flushPromises();
+      expect(tester.state.type).toBe('idle');
+    });
+
+    it('should settle on subscribed when the browser already has a subscription', async () => {
+      const webPushRepository = new MockWebPushRepository();
+      webPushRepository.setSubscription({
+        endpoint: 'https://fcm.googleapis.com/fcm/send/existing-endpoint',
+        p256dhKey: 'existing-p256dh-key',
+        authKey: 'existing-auth-key',
+        userAgent: 'existing-user-agent',
+      });
+      const webPushSubscriptionRepository = new MockWebPushSubscriptionRepository();
+      const usecase = new OrderNotificationSubscribeUsecase(
+        webPushRepository,
+        webPushSubscriptionRepository
+      );
+      const tester = new UsecaseTester<
+        OrderNotificationSubscribeUsecase,
+        OrderNotificationSubscribeState,
+        OrderNotificationSubscribeAction,
+        undefined
+      >(usecase);
+
+      await flushPromises();
+      expect(tester.state.type).toBe('subscribed');
+    });
+
+    it('should settle on idle when checking the existing subscription fails', async () => {
+      const webPushRepository = new MockWebPushRepository();
+      webPushRepository.setShouldFail(true);
+      const webPushSubscriptionRepository = new MockWebPushSubscriptionRepository();
+      const usecase = new OrderNotificationSubscribeUsecase(
+        webPushRepository,
+        webPushSubscriptionRepository
+      );
+      const tester = new UsecaseTester<
+        OrderNotificationSubscribeUsecase,
+        OrderNotificationSubscribeState,
+        OrderNotificationSubscribeAction,
+        undefined
+      >(usecase);
+
+      await flushPromises();
+      expect(tester.state.type).toBe('idle');
+    });
+  });
+
   describe('permission granted flow', () => {
     it('should transition idle → checkingPermission → subscribing → subscribed', async () => {
       const webPushRepository = new MockWebPushRepository();
@@ -75,6 +140,8 @@ describe('OrderNotificationSubscribeUsecase', () => {
         undefined
       >(usecase);
 
+      expect(tester.state.type).toBe('checkingSubscription');
+      await flushPromises();
       expect(tester.state.type).toBe('idle');
 
       tester.dispatch({ type: 'SUBSCRIBE' });
@@ -105,6 +172,7 @@ describe('OrderNotificationSubscribeUsecase', () => {
         undefined
       >(usecase);
 
+      await flushPromises();
       tester.dispatch({ type: 'SUBSCRIBE' });
       expect(tester.state.type).toBe('checkingPermission');
 
@@ -127,6 +195,7 @@ describe('OrderNotificationSubscribeUsecase', () => {
         undefined
       >(usecase);
 
+      await flushPromises();
       tester.dispatch({ type: 'SUBSCRIBE' });
       await flushPromises();
       expect(tester.state.type).toBe('permissionDenied');
@@ -156,6 +225,7 @@ describe('OrderNotificationSubscribeUsecase', () => {
         undefined
       >(usecase);
 
+      await flushPromises();
       tester.dispatch({ type: 'SUBSCRIBE' });
       await flushPromises();
       expect(tester.state.type).toBe('subscribeError');
@@ -185,6 +255,7 @@ describe('OrderNotificationSubscribeUsecase', () => {
         undefined
       >(usecase);
 
+      await flushPromises();
       tester.dispatch({ type: 'SUBSCRIBE' });
       await flushPromises();
       expect(tester.state.type).toBe('subscribed');
@@ -211,6 +282,7 @@ describe('OrderNotificationSubscribeUsecase', () => {
         undefined
       >(usecase);
 
+      await flushPromises();
       tester.dispatch({ type: 'SUBSCRIBE' });
       await flushPromises();
       expect(tester.state.type).toBe('subscribed');
