@@ -30,18 +30,7 @@ func TestBuildGuestPushMessage(t *testing.T) {
 
 		message := domain.BuildGuestPushMessage(transaction, "ORD-1")
 
-		assert.Equal(t, "Meja 4 · Silakan ambil di counter.", message.Body)
-	})
-
-	t.Run("the body falls back to the customer name when there is no table", func(t *testing.T) {
-		transaction := domain.Transaction{
-			TransactionNumber: 12,
-			Name:              "Budi",
-		}
-
-		message := domain.BuildGuestPushMessage(transaction, "ORD-1")
-
-		assert.Equal(t, "Budi · Silakan ambil di counter.", message.Body)
+		assert.Equal(t, "Silahkan ambil di kasir", message.Body)
 	})
 
 	t.Run("the tag carries the payment reference so a redelivery replaces rather than stacks", func(t *testing.T) {

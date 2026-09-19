@@ -14,7 +14,7 @@ pushes a notification to the guest's browser when a staff member marks their ord
 loop on the staff side: a barista opens the transaction row menu, taps **Mark as ready**,
 `PUT /transactions/{id}/complete` sets `transactions.completed_at`
 (`apps/api/domain/transaction_usecase.go:308`), and the guest's status page flips from
-*"Sedang disiapkan"* to *"Pesanan siap diambil"*.
+_"Sedang disiapkan"_ to _"Pesanan siap diambil"_.
 
 **The guest only sees that flip if they are still looking at the page.**
 
@@ -24,7 +24,7 @@ The mechanism is short polling, and it is entirely client-side. `OrderStatusUsec
 `GET /payments/{partnerReferenceNo}` and re-deriving the state from `payment.fulfillmentStatus`.
 That timer has three properties that matter here:
 
-1. **It belongs to a page that must stay open.** The guest paid, saw *"Sedang disiapkan"*, and now
+1. **It belongs to a page that must stay open.** The guest paid, saw _"Sedang disiapkan"_, and now
    has five to fifteen minutes of nothing to do. They switch to Instagram, answer a message, or
    lock the phone. Mobile Safari and Chrome both throttle or suspend timers in a backgrounded tab,
    and a phone that has been locked for ten minutes is not polling at all.
@@ -42,7 +42,7 @@ ask, which is exactly the counter interaction self-service ordering was built to
 
 The staff side of this same gap was closed three months ago.
 [`docs/prd-kds-order-notifications.md`](./prd-kds-order-notifications.md) built a transactional
-outbox, a push gateway and a dedicated receiver app so that *the barista* is told an order arrived
+outbox, a push gateway and a dedicated receiver app so that _the barista_ is told an order arrived
 without looking at anything. The guest, at the other end of the same order, still has to watch.
 
 ### Root cause
@@ -60,8 +60,8 @@ web-native equivalent — a service worker plus the Web Push API — is the same
 different transport, and its own hard constraint on iOS (see D12).
 
 `docs/prd-kds-order-notifications.md` even names this as the thing it is not doing:
-*"**Web push to `apps/pos-web`** — a different transport with a different permission model, for a
-surface that is already staffed by someone looking at it."* The guest surface is the one where
+_"**Web push to `apps/pos-web`** — a different transport with a different permission model, for a
+surface that is already staffed by someone looking at it."_ The guest surface is the one where
 nobody is looking.
 
 ---
@@ -117,7 +117,7 @@ Four lessons the design below takes directly:
   dashboard (contrast Option E).
 - ❌ **On iOS it only works for a web app installed to the Home Screen.** The single biggest cost
   in this PRD, priced in D12 and in Risks.
-- ❌ A `201 Created` from the push service means *accepted for delivery*, not *delivered*. There are
+- ❌ A `201 Created` from the push service means _accepted for delivery_, not _delivered_. There are
   no per-message receipts the way Expo provides them (D8). The outbox records what we sent, not
   what arrived.
 
@@ -132,7 +132,7 @@ Four lessons the design below takes directly:
 - ❌ Per-message cost, a gateway vendor, a sender-ID registration, and Indonesian A2P rules — real
   procurement for an MVP.
 - ❌ It is genuinely additive rather than alternative: the right long-term answer is probably
-  *both*, push first and SMS for the guest who declined it. Nothing in this design blocks that.
+  _both_, push first and SMS for the guest who declined it. Nothing in this design blocks that.
 
 **Option C — Keep polling, but make it louder (a `Notification` from the open page, a page title
 badge, an audio element).**
@@ -146,7 +146,7 @@ badge, an audio element).**
 **Option D — WebSocket or SSE to the guest's page.**
 
 - ❌ Same failure as Option C, with more infrastructure: a socket closes when the tab is
-  backgrounded or the phone sleeps. It makes the *open-page* case faster, which was never the
+  backgrounded or the phone sleeps. It makes the _open-page_ case faster, which was never the
   problem.
 - ❌ Already rejected for this exact surface in `docs/prd-order-fulfillment-status.md` D16 and again
   in `docs/prd-kds-order-notifications.md` Option J, on the same reasoning — `apps/api` is a
@@ -162,7 +162,7 @@ badge, an audio element).**
 - ❌ FCM's JS SDK in particular means a Firebase project, `firebase-messaging-sw.js` alongside our
   own service worker, and a service account on the VPS — strictly more moving parts than signing
   our own VAPID requests.
-- ❌ `docs/prd-kds-order-notifications.md` D7 accepted an Expo hop for *staff convenience*
+- ❌ `docs/prd-kds-order-notifications.md` D7 accepted an Expo hop for _staff convenience_
   explicitly because it was not money and not guest data. Neither carve-out applies here.
 
 **Verdict: Option A**, behind a `WebPushGatewayRepository` interface so Option E remains a
@@ -209,7 +209,7 @@ The guest is anonymous. There is no account, no login and no email.
 - ✅ **`payments.session_id` already links a transaction back to the guest** — the column has been
   on the table since `000025_create_payments.up.sql`, is indexed
   (`idx_payments_session_id`), and is how `GET /payments` already scopes order history to one
-  guest. Resolving *which browser to push* is therefore a lookup the schema already supports.
+  guest. Resolving _which browser to push_ is therefore a lookup the schema already supports.
 - ✅ It is the right granularity. One guest may place several orders in an evening from one browser;
   they subscribe once and hear about all of them.
 - ✅ A session that never opted in simply has no subscription rows, which the dispatcher records as
@@ -246,7 +246,7 @@ else's network, and a push-service timeout would roll back a completion the bari
 performed and moved on from.
 
 **Option M — Fire-and-forget goroutine after commit.** ❌ Unobservable and unretryable. When a guest
-says *"I never got a notification"*, there is nothing to look at.
+says _"I never got a notification"_, there is nothing to look at.
 
 **Option N — Transactional outbox: enqueue inside the completion's transaction, dispatch after
 commit, with the existing background sweeper picking up stragglers. ← Recommended** ✅ Atomic with
@@ -301,10 +301,10 @@ extends rather than duplicates (D5).
                                         'notificationclick' → focus or open /orders/ORD…
 ```
 
-Two properties worth naming. The completion guard is *already* the routing rule — only
+Two properties worth naming. The completion guard is _already_ the routing rule — only
 `source = 'order'` transactions can be completed at all — so this feature needs no equivalent of
 the KDS PRD's `categories.station` predicate. And the guest's polling loop is untouched (D9): when
-the tab *is* open, polling is still what repaints the screen.
+the tab _is_ open, polling is still what repaints the screen.
 
 ### New tables
 
@@ -355,14 +355,14 @@ exactly as `BuildKdsPushMessage` does.
 
 ### New API surface
 
-| Method | Path | Auth | Purpose |
-| --- | --- | --- | --- |
-| `GET` | `/public/web-push/config` | none | The VAPID public key the browser needs for `applicationServerKey` (D3) |
-| `POST` | `/web-push/subscriptions` | `RequireSessionId` | Register or refresh this browser's subscription (upsert by endpoint) |
-| `DELETE` | `/web-push/subscriptions` | `RequireSessionId` | Unsubscribe — the guest turned notifications off |
+| Method   | Path                      | Auth               | Purpose                                                                |
+| -------- | ------------------------- | ------------------ | ---------------------------------------------------------------------- |
+| `GET`    | `/public/web-push/config` | none               | The VAPID public key the browser needs for `applicationServerKey` (D3) |
+| `POST`   | `/web-push/subscriptions` | `RequireSessionId` | Register or refresh this browser's subscription (upsert by endpoint)   |
+| `DELETE` | `/web-push/subscriptions` | `RequireSessionId` | Unsubscribe — the guest turned notifications off                       |
 
 Three routes. The config route joins `public_route.go` alongside `publicCategoryList` and friends,
-because a browser needs the key *before* it has done anything session-scoped. The two subscription
+because a browser needs the key _before_ it has done anything session-scoped. The two subscription
 routes get their own `web_push_subscription_route.go` wrapped in `RequireSessionId`
 (`base_middlewares.go:99`) rather than `CheckAuth` — these are guest routes, and per
 `apps/api/CLAUDE.md` a customer-facing route never has `CheckAuth` stripped from it, it is written
@@ -371,35 +371,35 @@ without it from the start. Both list `http.MethodOptions` for CORS preflight.
 Contract additions in `libs/api-contract/src/api.yaml`:
 
 ```yaml
-    WebPushConfig:
-      type: object
-      required: [vapidPublicKey]
-      properties:
-        vapidPublicKey:
-          type: string          # base64url-encoded uncompressed P-256 point
+WebPushConfig:
+  type: object
+  required: [vapidPublicKey]
+  properties:
+    vapidPublicKey:
+      type: string # base64url-encoded uncompressed P-256 point
 
-    WebPushSubscriptionRequest:
-      type: object
-      required: [endpoint, p256dhKey, authKey]
-      properties:
-        endpoint:
-          type: string
-          maxLength: 512
-        p256dhKey:
-          type: string
-        authKey:
-          type: string
-        userAgent:
-          type: string
-          maxLength: 255
+WebPushSubscriptionRequest:
+  type: object
+  required: [endpoint, p256dhKey, authKey]
+  properties:
+    endpoint:
+      type: string
+      maxLength: 512
+    p256dhKey:
+      type: string
+    authKey:
+      type: string
+    userAgent:
+      type: string
+      maxLength: 255
 
-    WebPushSubscriptionDeleteRequest:
-      type: object
-      required: [endpoint]
-      properties:
-        endpoint:
-          type: string
-          maxLength: 512
+WebPushSubscriptionDeleteRequest:
+  type: object
+  required: [endpoint]
+  properties:
+    endpoint:
+      type: string
+      maxLength: 512
 ```
 
 Operations `webPushConfigFind`, `webPushSubscriptionCreate`, `webPushSubscriptionDelete`.
@@ -409,20 +409,20 @@ not a field on anything (D14), so `apps/pos-web`, `apps/pos-mobile` and the exis
 
 ### New backend files
 
-| Layer | File | Contents |
-| --- | --- | --- |
-| Entity | `domain/web_push_subscription_entity.go` | `WebPushSubscription` |
-| Entity | `domain/guest_notification_entity.go` | `GuestNotification`, `GuestNotificationStatus`, `BuildGuestPushMessage` |
-| Repo iface | `domain/web_push_subscription_repository.go` | CRUD + `GetWebPushSubscriptionsBySessionId` |
-| Repo iface | `domain/web_push_gateway_repository.go` | `WebPushMessage`, `WebPushReceipt`, `WebPushGatewayRepository` — its own file, so the transport needs nothing from the subscription slice and the two can be built in parallel (*Phase dependencies*, D17) |
-| Repo iface | `domain/guest_notification_repository.go` | outbox CRUD |
-| Use case | `domain/web_push_subscription_usecase.go` | subscribe / unsubscribe / config |
-| Use case | `domain/guest_notification_usecase.go` | `EnqueueForCompletedTransaction`, `DispatchPending`, `TriggerDispatch` |
-| MySQL | `data/mysql/web_push_subscription_{repo,entity,transformer}.go` | |
-| MySQL | `data/mysql/guest_notification_{repo,entity,transformer}.go` | |
-| Gateway | `data/webpush/web_push_repo.go` | `webpush-go`; mirrors `data/expopush/` exactly |
-| Mock | `data/mock/{web_push_subscription,guest_notification}_repository.go` | generated by `go generate ./...` |
-| REST | `presentation/restapi/web_push_subscription_{handler,route,transformer}.go` | |
+| Layer      | File                                                                        | Contents                                                                                                                                                                                                   |
+| ---------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Entity     | `domain/web_push_subscription_entity.go`                                    | `WebPushSubscription`                                                                                                                                                                                      |
+| Entity     | `domain/guest_notification_entity.go`                                       | `GuestNotification`, `GuestNotificationStatus`, `BuildGuestPushMessage`                                                                                                                                    |
+| Repo iface | `domain/web_push_subscription_repository.go`                                | CRUD + `GetWebPushSubscriptionsBySessionId`                                                                                                                                                                |
+| Repo iface | `domain/web_push_gateway_repository.go`                                     | `WebPushMessage`, `WebPushReceipt`, `WebPushGatewayRepository` — its own file, so the transport needs nothing from the subscription slice and the two can be built in parallel (_Phase dependencies_, D17) |
+| Repo iface | `domain/guest_notification_repository.go`                                   | outbox CRUD                                                                                                                                                                                                |
+| Use case   | `domain/web_push_subscription_usecase.go`                                   | subscribe / unsubscribe / config                                                                                                                                                                           |
+| Use case   | `domain/guest_notification_usecase.go`                                      | `EnqueueForCompletedTransaction`, `DispatchPending`, `TriggerDispatch`                                                                                                                                     |
+| MySQL      | `data/mysql/web_push_subscription_{repo,entity,transformer}.go`             |                                                                                                                                                                                                            |
+| MySQL      | `data/mysql/guest_notification_{repo,entity,transformer}.go`                |                                                                                                                                                                                                            |
+| Gateway    | `data/webpush/web_push_repo.go`                                             | `webpush-go`; mirrors `data/expopush/` exactly                                                                                                                                                             |
+| Mock       | `data/mock/{web_push_subscription,guest_notification}_repository.go`        | generated by `go generate ./...`                                                                                                                                                                           |
+| REST       | `presentation/restapi/web_push_subscription_{handler,route,transformer}.go` |                                                                                                                                                                                                            |
 
 Changed: `domain/transaction_usecase.go` (`CompleteTransaction` gains the outbox dependency,
 `UncompleteTransaction` gains the delete — D7), `domain/payment_repository.go`
@@ -485,7 +485,7 @@ self.addEventListener('push', (event) => {
       body: payload.body,
       icon: '/icons/icon-192.png',
       badge: '/icons/icon-192.png',
-      tag: payload.tag,            // 'order-<reference>' — a re-push replaces, never stacks
+      tag: payload.tag, // 'order-<reference>' — a re-push replaces, never stacks
       renotify: true,
       requireInteraction: true,
       vibrate: [200, 100, 200],
@@ -494,12 +494,14 @@ self.addEventListener('push', (event) => {
   );
 });
 
-self.addEventListener('notificationclick', (event) => { /* focus an open client, else openWindow */ });
+self.addEventListener('notificationclick', (event) => {
+  /* focus an open client, else openWindow */
+});
 ```
 
 `showNotification` is called on **every** push, unconditionally — Chrome's `userVisibleOnly: true`
 contract requires it, and a push handler that stays silent gets the browser's own
-*"This site has been updated in the background"* notification instead, which is strictly worse than
+_"This site has been updated in the background"_ notification instead, which is strictly worse than
 the real one (D11).
 
 ### The notification itself
@@ -507,14 +509,14 @@ the real one (D11).
 ```
 ┌────────────────────────────────────────────────────────────┐
 │  Pesanan #12 siap diambil!                                 │
-│  Meja 4 · Silakan ambil di counter.                        │
+│  Silakan ambil di kasir                                    │
 └────────────────────────────────────────────────────────────┘
 ```
 
 - **Title:** `Pesanan #{transactionNumber} siap diambil!` — the daily transaction number from
   [`docs/prd-daily-transaction-number.md`](./prd-daily-transaction-number.md), which is already the
   largest thing on the guest's status screen and the number the barista calls out.
-- **Body:** `{table label} · Silakan ambil di counter.`, falling back to the customer name when the
+- **Body:** `Silakan ambil di kasir`, falling back to the customer name when the
   order has no table.
 - **Copy is Indonesian**, matching every other guest surface —
   `docs/prd-order-fulfillment-status.md` D15.
@@ -592,7 +594,7 @@ both outboxes (D5).
 ### FR-5 — The message payload
 
 Built by a pure `BuildGuestPushMessage(transaction Transaction, reference string) WebPushMessage` in
-`domain/guest_notification_entity.go`, following *System Design Overview → The notification itself*.
+`domain/guest_notification_entity.go`, following _System Design Overview → The notification itself_.
 Pure and unit-tested, for the same reason `BuildKdsPushMessage` is: the string is the product.
 
 ### FR-6 — Subscribing, from the guest's side
@@ -613,7 +615,7 @@ idle → unsupported                            (no PushManager, or iOS Safari i
   denial on any browser, so an unexplained prompt is a permanently lost guest (D8).
 - `unsupported` renders nothing at all — no broken button, no apology. The page keeps polling and
   the guest is none the wiser.
-- `needsInstall` renders the iOS *Share → Add to Home Screen* instructions instead of a button that
+- `needsInstall` renders the iOS _Share → Add to Home Screen_ instructions instead of a button that
   cannot work (D12).
 - `permissionDenied` renders one line explaining how to re-enable it in browser settings.
 - `subscribed` is the resting state, with a **Matikan** (turn off) action.
@@ -648,8 +650,8 @@ action. It does not appear on the `ready` view — the notification's moment has
 
 `OrderStatusUsecase`'s `PREPARATION_POLL_INTERVAL_MS` loop, the `beforeunload` confirmation
 (`docs/prd-order-fulfillment-status.md` FR-8) and the resume-active-order entry point (FR-9) all
-stay exactly as they are (D9). Push is the channel for a guest who is *away*; polling is what
-repaints a page that is *open*. A guest who has both gets the notification and finds the page
+stay exactly as they are (D9). Push is the channel for a guest who is _away_; polling is what
+repaints a page that is _open_. A guest who has both gets the notification and finds the page
 already updated when they tap it.
 
 ---
@@ -661,7 +663,7 @@ It is the only function that sets `completed_at`, and its three existing guards
 (`transaction_usecase.go:315-325`) already restrict it to first-time completion of guest orders.
 There is no second path to forget and no routing predicate to write, which is why this feature needs
 no equivalent of the KDS PRD's `categories.station` rule.
-*Alternative rejected:* also notifying on payment confirmation (Option G) — the guest is looking at
+_Alternative rejected:_ also notifying on payment confirmation (Option G) — the guest is looking at
 the screen at that moment, and an unnecessary notification is how the necessary one loses its
 permission.
 
@@ -672,7 +674,7 @@ a page that handles payment. The interface mirrors `KdsPushGatewayRepository` an
 `PaymentGatewayRepository`, so the vendor-managed alternative (Option E) stays a one-package swap.
 Implemented with `github.com/SherClockHolmes/webpush-go`, which is the de-facto Go implementation of
 RFC 8291 payload encryption and RFC 8292 signing.
-*Alternative rejected:* hand-rolling `aes128gcm` content encoding. It is ECDH + HKDF + AES-GCM
+_Alternative rejected:_ hand-rolling `aes128gcm` content encoding. It is ECDH + HKDF + AES-GCM
 against a spec with known interop traps, in the one part of this feature where a bug is invisible
 until a guest does not get a notification.
 
@@ -686,7 +688,7 @@ through a frontend build is how the two drift, and the failure is silent: subscr
 against a key the server cannot sign for, and every push returns `403` forever. One fetch at opt-in
 time removes the class of bug entirely, and makes key rotation an API restart rather than a Vercel
 redeploy.
-*Alternative rejected:* `NEXT_PUBLIC_VAPID_PUBLIC_KEY`. Cheaper by one endpoint and one round trip,
+_Alternative rejected:_ `NEXT_PUBLIC_VAPID_PUBLIC_KEY`. Cheaper by one endpoint and one round trip,
 and wrong for the reason above.
 
 **D4 — The service worker is hand-written in `apps/order-web/public/sw.js`, not generated by
@@ -697,7 +699,7 @@ server-rendered per request with a session cookie (`getServerSideProps` in every
 `apps/order-web/src/pages/**`), where a cached HTML shell would serve one guest another guest's
 order. Sixty lines with no build step is both smaller and safer than configuring a caching framework
 to cache nothing.
-*Consequence:* `/sw.js` must be served with `Cache-Control: no-cache` via `next.config.js`'s
+_Consequence:_ `/sw.js` must be served with `Cache-Control: no-cache` via `next.config.js`'s
 `headers()`. Browsers cap service-worker script caching at 24h, but a stale worker for even an hour
 is a confusing bug class, and Vercel's default for `public/` is aggressive.
 
@@ -707,16 +709,16 @@ is a confusing bug class, and Vercel's default for `public/` is aggressive.
 calls `DispatchPending` on both use cases per tick. Two tickers at the same interval would be two
 goroutines doing the same job, and two env variables to keep in sync for no reason anyone could
 articulate.
-*Consequence, inherited from `docs/prd-kds-order-notifications.md` D6:* this still assumes a single
-API instance. Two instances would both sweep; the unique key stops duplicate *rows*, not duplicate
-*sends*. Noted in Risks, unchanged.
+_Consequence, inherited from `docs/prd-kds-order-notifications.md` D6:_ this still assumes a single
+API instance. Two instances would both sweep; the unique key stops duplicate _rows_, not duplicate
+_sends_. Noted in Risks, unchanged.
 
 **D6 — The outbox row snapshots `session_id` at enqueue; it is not re-derived at dispatch.**
 The enqueue already has to read the payment to decide whether there is a guest at all (FR-2), so
 storing the result costs one column and removes a `payments` read from every sweep. It also makes
-the row answer the support question on its own: *"which browser were we trying to reach"* is a
+the row answer the support question on its own: _"which browser were we trying to reach"_ is a
 `SELECT` on one table rather than a three-way join.
-*Alternative rejected:* re-deriving at dispatch, the way `docs/prd-kds-order-notifications.md`
+_Alternative rejected:_ re-deriving at dispatch, the way `docs/prd-kds-order-notifications.md`
 resolves devices. That is right for the KDS, where the recipient set is "every registered phone" and
 genuinely changes between enqueue and dispatch. A guest's session does not change; snapshotting a
 stable fact is not the same as snapshotting a volatile one.
@@ -730,27 +732,27 @@ then **never gets the real one**, because the unique key suppresses it. Deleting
 uncomplete makes the correction complete. The cost is a guest who might receive two notifications
 for one order, which is a mild annoyance against a silent failure of the entire feature for that
 order.
-*Alternative rejected:* leaving the row and letting the poll catch up. It only helps a guest who
+_Alternative rejected:_ leaving the row and letting the poll catch up. It only helps a guest who
 still has the page open, which is the population this PRD exists to stop relying on.
 
 **D8 — Permission is requested on an explicit tap on the preparing screen, never on page load and
 never before payment.**
 Neither Chrome nor Safari shows a second permission prompt after a denial; the guest must go into
 browser settings, which they will not. So the prompt gets exactly one chance, and it should be spent
-at the moment the guest has a reason to say yes — staring at *"Sedang disiapkan"* with nothing to
+at the moment the guest has a reason to say yes — staring at _"Sedang disiapkan"_ with nothing to
 do. Chrome additionally requires a user gesture for `Notification.requestPermission()` on mobile.
-*Alternative rejected:* asking at checkout, before payment. It competes for attention with a payment
+_Alternative rejected:_ asking at checkout, before payment. It competes for attention with a payment
 the venue actually needs to complete, and it would ask guests who are about to abandon the cart.
 
 **D9 — Push is additive; the polling loop is not removed, reduced or gated on it.**
 `OrderStatusUsecase`'s 10-second interval stays exactly as written. It is the only thing that works
 for a guest on iOS Safari in a tab (D12), a guest who declined the permission, a guest on a browser
-without `PushManager`, and — crucially — a guest who *is* looking at the page, where a notification
+without `PushManager`, and — crucially — a guest who _is_ looking at the page, where a notification
 is not what should update the UI. Deleting the poll would trade a feature that works for everyone
 for one that works for some.
 
 **D10 — A `404` or `410 Gone` from the push service soft-deletes the subscription.**
-These are the Web Push protocol's definitive *"this subscription is dead"* responses — the browser
+These are the Web Push protocol's definitive _"this subscription is dead"_ responses — the browser
 was uninstalled, site data was cleared, or the push service expired it. Every other status is
 transient and retried. This mirrors `docs/prd-kds-order-notifications.md` D18's handling of Expo's
 `DeviceNotRegistered`, and it is what stops a guest-facing table from accumulating dead rows
@@ -758,9 +760,9 @@ forever, since unlike staff phones, guest browsers are never deliberately unregi
 
 **D11 — The service worker shows a notification on every push, unconditionally.**
 Chrome enforces the `userVisibleOnly: true` contract a subscription is created under: a `push`
-handler that resolves without calling `showNotification` gets the browser's own generic *"This site
-has been updated in the background"* notification, and repeated offences can revoke the
-subscription. So there is no *"suppress it if the guest already has the page open"* branch. The
+handler that resolves without calling `showNotification` gets the browser's own generic _"This site
+has been updated in the background"_ notification, and repeated offences can revoke the
+subscription. So there is no _"suppress it if the guest already has the page open"_ branch. The
 `tag` field carries the de-duplication instead: a redelivery replaces the existing notification
 rather than stacking beside it.
 
@@ -770,13 +772,13 @@ This is the largest constraint in the PRD and it is not solvable in code. On iOS
 Push has been available since 16.4 but **only to web apps launched from the Home Screen** — Safari
 in a tab has no `PushManager` at all. The app must therefore ship a
 `manifest.webmanifest` with `display: standalone` and a 192px icon, and the opt-in card must detect
-iOS-not-standalone (`navigator.standalone === false` with no `PushManager`) and render *Share →
-Tambahkan ke Layar Utama* instructions instead of a dead button.
+iOS-not-standalone (`navigator.standalone === false` with no `PushManager`) and render _Share →
+Tambahkan ke Layar Utama_ instructions instead of a dead button.
 Three things bound the damage: Android Chrome, which is the majority browser for this audience, has
 no such restriction; the install flow is one the local audience already knows from other Indonesian
 web apps; and D9 means an iOS guest who does not install anything is exactly as well served as they
 are today.
-*Alternative rejected:* Safari 18.4's Declarative Web Push, which delivers a notification from a
+_Alternative rejected:_ Safari 18.4's Declarative Web Push, which delivers a notification from a
 JSON payload with no service worker. It is Apple-only, so it is a second delivery path to build and
 maintain beside the one Android needs, and it does not lift the Home Screen requirement.
 
@@ -815,13 +817,13 @@ notification title, body, opt-in card, iOS install instructions — is Indonesia
 
 **D17 — The transport types live in their own `domain/web_push_gateway_repository.go`, not with the
 subscription or the outbox.**
-`WebPushMessage`, `WebPushReceipt` and `WebPushGatewayRepository` describe *how a push is sent* and
+`WebPushMessage`, `WebPushReceipt` and `WebPushGatewayRepository` describe _how a push is sent_ and
 have no opinion about who is subscribed or why. Putting them beside `WebPushSubscription` would
 make the gateway phase depend on the subscription phase; putting them beside `GuestNotification`
 would invert it. Either way two phases that share nothing at runtime become serial for the sake of
 a type declaration. The split is what lets phases 1 and 2 be written at the same time
-(*Phase dependencies*).
-*This is a deliberate departure from the existing convention, and the only one in this PRD.* Both
+(_Phase dependencies_).
+_This is a deliberate departure from the existing convention, and the only one in this PRD._ Both
 gateway interfaces in `apps/api` today share a file with a data repository —
 `PaymentGatewayRepository` sits with `PaymentRepository` in `domain/payment_repository.go:17`, and
 `KdsPushGatewayRepository` with `KdsNotificationRepository` and `KdsPushMessage` in
@@ -928,7 +930,7 @@ registers it.
 
 **Acceptance:** `npx nx run order-web:build` green; the dev server serves `/sw.js` with
 `Cache-Control: no-cache`; Chrome DevTools → Application shows the manifest as installable; on an
-iPhone, *Share → Add to Home Screen* produces a standalone launcher with the venue icon — the
+iPhone, _Share → Add to Home Screen_ produces a standalone launcher with the venue icon — the
 prerequisite D12 rests on, verified before anything depends on it.
 
 ### Phase 7 — Frontend domain slice (libs/ui)
@@ -993,30 +995,30 @@ other, and **soft** when it builds and tests green on its own but its stated acc
 clean merge wants the other first. Only hard dependencies constrain who can work in parallel; soft
 ones constrain what order the PRs land in.
 
-| # | Phase | Hard deps | Soft deps | Primary files it owns |
-| --- | --- | --- | --- | --- |
-| 1 | Subscription table, contract, endpoints (API) | — | — | `api.yaml`, migration `000033`, `domain/web_push_subscription_{entity,repository,usecase}.go`, `data/mysql/web_push_subscription_*`, `presentation/restapi/web_push_subscription_*`, `public_{route,handler}.go`, `utils/env.go` |
-| 2 | Web Push gateway (API) | — | 1 *(VAPID vars declared there)* | `domain/web_push_gateway_repository.go`, `data/webpush/web_push_repo.go` |
-| 3 | Outbox table, message rule (API) | 2 *(`WebPushMessage`)* | — | migration `000034`, `domain/guest_notification_{entity,repository}.go`, `data/mysql/guest_notification_*`, `domain/payment_repository.go` |
-| 4 | Enqueue on completion (API) | 3 | — | `domain/transaction_usecase.go` |
-| 5 | Dispatcher (API) | 1, 2, 3 | 4 *(edits the same function)* | `domain/guest_notification_usecase.go`, `main.go` sweeper |
-| 6 | Service worker, manifest, icons | — | — | `apps/order-web/public/**`, `_document.tsx`, `next.config.js` |
-| 7 | Frontend domain slice (libs/ui) | 1 *(generated TS client)* | 6 *(runtime only)* | `domain/entities/WebPushSubscription.ts`, `domain/repositories/webPush*.ts`, `domain/usecases/orderNotificationSubscribe.ts`, `data/api/webPushSubscription*`, `data/browser/**`, `data/mock/webPush*` |
-| 8 | The opt-in card (libs/ui + order-web) | 6, 7 | 5 *(end-to-end acceptance)* | `views/components/orderStatus/OrderNotificationOptIn.tsx`, `OrderPreparingView.tsx`, `OrderStatusHandler.tsx`, `app/order/OrderStatus.tsx` |
-| 9 | Documentation and coverage | 8 | — | `docs-site/sales/order-notifications.md`, `apps/order-web-e2e/**` |
+| #   | Phase                                         | Hard deps                 | Soft deps                       | Primary files it owns                                                                                                                                                                                                            |
+| --- | --------------------------------------------- | ------------------------- | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Subscription table, contract, endpoints (API) | —                         | —                               | `api.yaml`, migration `000033`, `domain/web_push_subscription_{entity,repository,usecase}.go`, `data/mysql/web_push_subscription_*`, `presentation/restapi/web_push_subscription_*`, `public_{route,handler}.go`, `utils/env.go` |
+| 2   | Web Push gateway (API)                        | —                         | 1 _(VAPID vars declared there)_ | `domain/web_push_gateway_repository.go`, `data/webpush/web_push_repo.go`                                                                                                                                                         |
+| 3   | Outbox table, message rule (API)              | 2 _(`WebPushMessage`)_    | —                               | migration `000034`, `domain/guest_notification_{entity,repository}.go`, `data/mysql/guest_notification_*`, `domain/payment_repository.go`                                                                                        |
+| 4   | Enqueue on completion (API)                   | 3                         | —                               | `domain/transaction_usecase.go`                                                                                                                                                                                                  |
+| 5   | Dispatcher (API)                              | 1, 2, 3                   | 4 _(edits the same function)_   | `domain/guest_notification_usecase.go`, `main.go` sweeper                                                                                                                                                                        |
+| 6   | Service worker, manifest, icons               | —                         | —                               | `apps/order-web/public/**`, `_document.tsx`, `next.config.js`                                                                                                                                                                    |
+| 7   | Frontend domain slice (libs/ui)               | 1 _(generated TS client)_ | 6 _(runtime only)_              | `domain/entities/WebPushSubscription.ts`, `domain/repositories/webPush*.ts`, `domain/usecases/orderNotificationSubscribe.ts`, `data/api/webPushSubscription*`, `data/browser/**`, `data/mock/webPush*`                           |
+| 8   | The opt-in card (libs/ui + order-web)         | 6, 7                      | 5 _(end-to-end acceptance)_     | `views/components/orderStatus/OrderNotificationOptIn.tsx`, `OrderPreparingView.tsx`, `OrderStatusHandler.tsx`, `app/order/OrderStatus.tsx`                                                                                       |
+| 9   | Documentation and coverage                    | 8                         | —                               | `docs-site/sales/order-notifications.md`, `apps/order-web-e2e/**`                                                                                                                                                                |
 
 ### What can run in parallel
 
 Six waves, not nine. With two or three people the calendar is six PRs deep, not nine:
 
-| Wave | Phases | Why they don't collide |
-| --- | --- | --- |
-| 1 | **1, 2, 6** | Three disjoint file sets: the subscription slice, the transport package, and `apps/order-web`'s static assets. No shared symbol, no shared directory. |
-| 2 | **3, 7** | 3 is Go and needs only phase 2's message type; 7 is TypeScript and needs only phase 1's regenerated client. Different languages, different halves of the repo. |
-| 3 | 4 | Alone — it edits `CompleteTransaction`. |
-| 4 | 5 | Alone — it edits `CompleteTransaction` again, and needs 1, 2 and 3. |
-| 5 | 8 | Alone — it is the integration point, and the first phase a guest can see. |
-| 6 | 9 | Alone — its e2e spec drives phase 8's card. |
+| Wave | Phases      | Why they don't collide                                                                                                                                         |
+| ---- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | **1, 2, 6** | Three disjoint file sets: the subscription slice, the transport package, and `apps/order-web`'s static assets. No shared symbol, no shared directory.          |
+| 2    | **3, 7**    | 3 is Go and needs only phase 2's message type; 7 is TypeScript and needs only phase 1's regenerated client. Different languages, different halves of the repo. |
+| 3    | 4           | Alone — it edits `CompleteTransaction`.                                                                                                                        |
+| 4    | 5           | Alone — it edits `CompleteTransaction` again, and needs 1, 2 and 3.                                                                                            |
+| 5    | 8           | Alone — it is the integration point, and the first phase a guest can see.                                                                                      |
+| 6    | 9           | Alone — its e2e spec drives phase 8's card.                                                                                                                    |
 
 **The critical path is 2 → 3 → 4 → 5 → 8 → 9**, six phases long. Phases 1, 6 and 7 are off it
 entirely, which means the whole subscription-and-client track has slack: it must simply be done
@@ -1058,7 +1060,7 @@ the number that says whether to build it.
 **A `201` from the push service is not a delivery.** Unlike Expo, which returns per-token receipts
 (`docs/prd-kds-order-notifications.md` D18 leans on them), Web Push gives the sender no delivery
 confirmation — only that the message was accepted for relay. `guest_notifications.status = 'sent'`
-therefore means *we handed it over*, not *the guest saw it*, and there is no server-side way to tell
+therefore means _we handed it over_, not _the guest saw it_, and there is no server-side way to tell
 the two apart. Stated plainly so nobody reads the outbox as proof of delivery during a support
 conversation.
 
@@ -1092,7 +1094,7 @@ long-lived credentials, backed up with the rest of the API's environment.
 `docs/prd-kds-order-notifications.md` D6 — the sweeper has no cross-process claim, so two API
 instances would each pick up the same pending rows. The unique key prevents duplicate rows, not
 duplicate sends. Current deployment is one systemd unit on one VPS. If that changes, the claim step
-in *both* outboxes needs `SELECT … FOR UPDATE SKIP LOCKED`.
+in _both_ outboxes needs `SELECT … FOR UPDATE SKIP LOCKED`.
 
 **A stale service worker serves stale push behaviour.** A browser may hold a cached `sw.js` for up
 to 24 hours, so a change to the notification's shape does not reach every guest immediately. D4's
@@ -1110,20 +1112,20 @@ every order — and the difference is that a guest opted in for exactly one even
 
 ## Out of Scope
 
-| Not doing | Why |
-| --- | --- |
-| **SMS or WhatsApp fallback** | Option B. Needs a phone number at checkout, a gateway vendor and per-message cost. The right second channel once push's coverage is measured (Risks), and nothing here blocks it. |
-| **Notifying on payment confirmed** | Option G, D1. The guest is looking at the screen at that moment. |
-| **"Your order is taking longer than usual"** | Option H. Needs a preparation-time model the system does not have. |
-| **Web push to `apps/pos-web`** | `docs/prd-kds-order-notifications.md` already declined it: a surface staffed by someone looking at it. The KDS app is the staff channel. |
-| **Safari Declarative Web Push** | D12. Apple-only, a second delivery path to maintain, and it does not lift the Home Screen requirement. |
-| **Notification actions ("Sudah diambil", "Belum siap")** | An action button needs an endpoint for the guest to confirm pickup, which is a fulfilment-model change, not a notification one. |
-| **A full offline PWA** | D4. The app is server-rendered per request with a session cookie; caching pages would serve one guest another's order. The manifest exists for the iOS install requirement, not for offline. |
-| **Retention sweep of old subscriptions** | Pruning happens on `410` (D10), which covers the real failure mode. A time-based sweep is a cron job for a table that will hold hundreds of rows, not millions. Revisit if it grows. |
-| **Per-guest notification preferences** | There is one notification. A preference screen for a single on/off toggle that already exists on the card is a settings page for nothing. |
-| **Delivery analytics / open rates** | Web Push gives the sender no receipt (Risks). Measuring this properly means client-side reporting from the service worker — a separate, and much smaller, PRD. |
-| **Reusing the outbox for both channels in one table** | A `channel` column on `kds_notifications` would merge two features with different triggers, recipients, transports and lifecycles for the sake of one shared status enum. The shape is copied; the table is not. |
-| **Recording which staff member marked the order ready** | `CheckAuth` discards JWT claims — the same limitation `docs/prd-order-fulfillment-status.md` and `docs/prd-kds-order-notifications.md` D10 both record. Unchanged here. |
+| Not doing                                                | Why                                                                                                                                                                                                              |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **SMS or WhatsApp fallback**                             | Option B. Needs a phone number at checkout, a gateway vendor and per-message cost. The right second channel once push's coverage is measured (Risks), and nothing here blocks it.                                |
+| **Notifying on payment confirmed**                       | Option G, D1. The guest is looking at the screen at that moment.                                                                                                                                                 |
+| **"Your order is taking longer than usual"**             | Option H. Needs a preparation-time model the system does not have.                                                                                                                                               |
+| **Web push to `apps/pos-web`**                           | `docs/prd-kds-order-notifications.md` already declined it: a surface staffed by someone looking at it. The KDS app is the staff channel.                                                                         |
+| **Safari Declarative Web Push**                          | D12. Apple-only, a second delivery path to maintain, and it does not lift the Home Screen requirement.                                                                                                           |
+| **Notification actions ("Sudah diambil", "Belum siap")** | An action button needs an endpoint for the guest to confirm pickup, which is a fulfilment-model change, not a notification one.                                                                                  |
+| **A full offline PWA**                                   | D4. The app is server-rendered per request with a session cookie; caching pages would serve one guest another's order. The manifest exists for the iOS install requirement, not for offline.                     |
+| **Retention sweep of old subscriptions**                 | Pruning happens on `410` (D10), which covers the real failure mode. A time-based sweep is a cron job for a table that will hold hundreds of rows, not millions. Revisit if it grows.                             |
+| **Per-guest notification preferences**                   | There is one notification. A preference screen for a single on/off toggle that already exists on the card is a settings page for nothing.                                                                        |
+| **Delivery analytics / open rates**                      | Web Push gives the sender no receipt (Risks). Measuring this properly means client-side reporting from the service worker — a separate, and much smaller, PRD.                                                   |
+| **Reusing the outbox for both channels in one table**    | A `channel` column on `kds_notifications` would merge two features with different triggers, recipients, transports and lifecycles for the sake of one shared status enum. The shape is copied; the table is not. |
+| **Recording which staff member marked the order ready**  | `CheckAuth` discards JWT claims — the same limitation `docs/prd-order-fulfillment-status.md` and `docs/prd-kds-order-notifications.md` D10 both record. Unchanged here.                                          |
 
 ---
 
@@ -1131,7 +1133,7 @@ every order — and the difference is that a guest opted in for exactly one even
 
 1. **Should the opt-in card also appear on the menu or cart screen, before checkout?** D8 says no —
    the prompt gets one chance and it should be spent while the guest is waiting. But a guest who
-   subscribes *before* paying is subscribed for every future order too, which compounds. Worth
+   subscribes _before_ paying is subscribed for every future order too, which compounds. Worth
    revisiting once phase 8's opt-in rate is visible.
 2. **What should happen to a `failed` row?** Today it stops after five attempts and sits there for a
    human to find. There is no operator surface that shows it. Is a POS screen listing failed guest
