@@ -40,6 +40,8 @@
       [
         "expo-notifications",
         {
+          "icon": "./assets/notification-icon.png",
+          "color": "#0F2B63",
           "sounds": ["./assets/sounds/order-alert.wav"]
         }
       ],
