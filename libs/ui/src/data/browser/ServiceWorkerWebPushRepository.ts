@@ -73,9 +73,8 @@ export class ServiceWorkerWebPushRepository implements WebPushRepository {
   }
 
   async subscribe(vapidPublicKey: string): Promise<WebPushSubscription> {
-    const registration = await navigator.serviceWorker.register(
-      SERVICE_WORKER_URL
-    );
+    await navigator.serviceWorker.register(SERVICE_WORKER_URL);
+    const registration = await navigator.serviceWorker.ready;
     const pushSubscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
