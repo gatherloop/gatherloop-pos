@@ -24,7 +24,9 @@ Nothing is structurally wrong. The gap is that **every step after "create the tr
 4. The KDS outbox has one trigger: `payTransaction` → `EnqueueForTransaction` (`transaction_usecase.go:268`). Nothing notifies staff about an order that exists but is *not yet paid*, and `kds_notifications` carries `UNIQUE KEY uq_kds_notifications_transaction (transaction_id)` (migration `000032`), so a second notification for the same transaction is silently swallowed by design (KDS D4).
 5. Nothing expires an abandoned payment on its own. A pending payment moves to `expired` **only** when someone reads it (`refreshPendingPaymentStatus`). A guest who closes the tab leaves an unpaid transaction and a frozen cart until the next read that never comes. QRIS gets away with this because its guest is staring at a countdown; a cash guest is walking downstairs.
 
-So this PRD is five small, surgical changes to a design that was built to take them — not a new subsystem.
+6. **Wallet payment eligibility is only half-enforced.** `docs/prd-wallet-payment-eligibility.md` FR-2 says the payment modal shows only `is_payment_target = true` wallets; `TransactionCreateHandler.tsx:354` filters, `TransactionListHandler.tsx:313` does not, and `payTransaction` never checks. QRIS never notices, because it settles through the boot-validated `ORDER_PAYMENT_WALLET_ID`. Cash settles through nothing else, which promotes a latent defect into a live one.
+
+So this PRD is five small, surgical changes to a design that was built to take them — plus one pre-existing fix (item 6) that cash would otherwise inherit. Not a new subsystem.
 
 ---
 
@@ -199,7 +201,7 @@ Contract edits in `libs/api-contract/src/api.yaml`: `PaymentCheckoutRequest.meth
 | Entity | `domain/payment_entity.go` | `PaymentMethodCash`; `ParsePaymentMethod`; `Payment.RequiresGateway() bool` |
 | Entity | `domain/kds_notification_entity.go` | `KdsNotificationKind` (`order_paid` \| `cash_pending`); `BuildKdsPushMessage` takes the kind and switches title/body (FR-7) |
 | Use case | `domain/payment_usecase.go` | `Checkout` takes a method and branches at the gateway call (FR-2); `refreshPendingPaymentStatus` skips DOKU for cash (FR-3); `expirePayment` extracted from `applyQrisStatus`; new `ExpireStalePayments` (FR-4) |
-| Use case | `domain/transaction_usecase.go` | `payTransaction` enqueues with an explicit kind; `PayTransaction` calls `settleOrderPayment` (FR-6) |
+| Use case | `domain/transaction_usecase.go` | `payTransaction` enqueues with an explicit kind, rejects an ineligible wallet (FR-13); `PayTransaction` calls `settleOrderPayment` and un-deletes per D23 (FR-6) |
 | Repo iface | `domain/payment_repository.go` | `GetExpirablePayments(ctx, now, limit)` |
 | Repo iface | `domain/kds_notification_repository.go` | `EnqueueForTransaction(ctx, transaction, kind)`; `KdsNotification.Kind` |
 | MySQL | `data/mysql/payment_repo.go` | the expirable-payments query; `GetPaymentsBySessionId` includes pending cash (D17) |
@@ -230,6 +232,8 @@ presentation/views/screens/order/
 presentation/views/components/transactions/
   TransactionListItem.tsx (+ .stories)      "Cash · awaiting payment" badge
   TransactionDetail.tsx  (+ .stories)       payment-method row
+presentation/handlers/pos/
+  TransactionListHandler.tsx (+ .test)      filter the pay modal by isPaymentTarget (FR-13, phase 0)
 presentation/handlers/order/
   CartHandler.tsx (+ .test)                 method wired through the sheet
   OrderStatusHandler.tsx (+ .test)          the new variant
@@ -392,7 +396,7 @@ On expiry the existing `expired` variant is reused, with cash-specific copy: *"W
 - `Transaction.paymentMethod` (`qris | cash | null`) on the read model (D16).
 - `TransactionListItem` renders a **"Cash · awaiting payment"** badge beside the existing `OrderBadge` when `source === 'order' && paymentMethod === 'cash' && !paidAt`, so a cashier scanning the list can tell an order waiting at the till from one that is mid-QRIS. Paid rows are visually unchanged.
 - `TransactionDetail` gains a Payment Method row.
-- No change to `TransactionPaymentAlert`, to the Pay menu item's `isShown: paidAt === undefined` gate, or to wallet selection — the cashier's flow is exactly the flow they already run (D20).
+- No change to `TransactionPaymentAlert` or to the Pay menu item's `isShown: paidAt === undefined` gate — the cashier's flow is the flow they already run (D20). The one adjustment to wallet selection is phase 0's, and it is not a cash change: the modal starts honouring the eligibility flag it was always specified to honour (FR-13).
 
 ### FR-11 — Order history shows an unpaid cash order (frontend + API)
 
@@ -411,6 +415,24 @@ All guest copy is Bahasa Indonesia; all staff copy (POS, KDS) is English, matchi
 | `NEXT_PUBLIC_ORDER_CASHIER_LOCATION` | `apps/order-web/.env.local` | `Lantai 1` | Rendered in the sheet and the instruction screen (D15) |
 
 All three land in the matching `.env.example` with comments, and in `README.md`'s setup section beside the existing DOKU and KDS notes.
+
+### FR-13 — Wallet eligibility holds on every pay surface (API + POS)
+
+Not a cash requirement in itself — a pre-existing gap that cash is the first flow to depend on. `docs/prd-wallet-payment-eligibility.md` FR-2 says the transaction payment modal shows only `is_payment_target = true` wallets. Today (D24):
+
+| Surface | State |
+|---|---|
+| `TransactionCreateHandler.tsx:354` — cashier keys a new sale | ✅ filters `isPaymentTarget` |
+| `TransactionListHandler.tsx:313` — cashier pays an existing transaction | ❌ passes `transactionPay.state.wallets` straight through |
+| `TransactionUsecase.PayTransaction` (`transaction_usecase.go:209`) | ❌ no check; `payTransaction` fetches the wallet by id and credits it |
+
+The order-app cash flow settles **only** through the two unguarded rows, so an operator who marks `Brankas` ineligible still sees it offered to a barista collecting real cash, and the API would accept it.
+
+1. `payTransaction` loads the wallet it is about to credit and returns `400 bad_request` — "wallet cannot receive transaction payments" — when `IsPaymentTarget` is false, before any balance is written. Both callers inherit it: the cashier's `PayTransaction` and the gateway's `applyQrisStatus`, where it is unreachable because `ORDER_PAYMENT_WALLET_ID` is already validated at boot (QRIS D15) — a second guard on a path that cannot fail it costs nothing and removes the need to reason about which callers are safe.
+2. `TransactionListHandler` filters its `payWalletSelectOptions` exactly as `TransactionCreateHandler` does. The filter is the affordance; the use case is the rule.
+3. **No `UnpayTransaction` guard.** Unpay reverses a credit to a wallet that was eligible when the payment was taken; refusing to reverse it because the wallet was opted out since would strand money in a wallet nobody can correct.
+
+The one behaviour change an operator can notice: a transaction previously payable into an opted-out wallet no longer is. That is the rule the flag was introduced to express, so it is a fix, not a regression — but it ships in its own PR (phase 0) rather than buried in a cash phase, so a surprised operator has one commit to point at.
 
 ---
 
@@ -437,19 +459,23 @@ All three land in the matching `.env.example` with comments, and in `README.md`'
 | **D17** | Order history includes **pending cash** payments, and continues to exclude pending QRIS. | A guest who closed the tab has no other route back to their order number. A pending QRIS row would be a link that dies within five minutes to a QR that cannot be re-displayed usefully. |
 | **D18** | One kill switch, `NEXT_PUBLIC_ORDER_CASH_PAYMENT_ENABLED`, default `false` until the last phase. | Mirrors `NEXT_PUBLIC_ORDER_CHECKOUT_ENABLED` (QRIS D20) exactly: every phase merges and deploys with no guest able to reach a half-built method. The API accepts `method: cash` from earlier phases, which is harmless — nothing sends it. |
 | **D19** | `UnpayTransaction` leaves the payment row `paid`. | Unpay exists to correct a cashier's mistake within 24 h and rewinds the *transaction's* money (wallet, income). Rewinding the payment row too would flip a guest's screen back to "pay at the cashier" for an order that is already being made. The transaction is the money record; the payment row records that a payment attempt was collected. **Accepted mismatch**, named here so nobody discovers it in a reconciliation query and treats it as a bug. |
-| **D20** | No wallet is enforced for cash — the cashier picks one in the existing alert. | The acceptance criteria say "choose wallet like current flow". `ORDER_PAYMENT_WALLET_ID` (QRIS D15) exists because *no human is present* on the DOKU path. A cashier at a till is present, and constraining them to one wallet would break the day cash is banked somewhere else. |
+| **D20** | No *specific* wallet is enforced for cash — the cashier picks one in the existing alert, from the wallets an operator has marked payment-eligible. **Phase 0 makes that eligibility rule actually hold.** | The acceptance criteria say "choose wallet like current flow". `ORDER_PAYMENT_WALLET_ID` (QRIS D15) exists because *no human is present* on the DOKU path; a cashier at a till is present, and pinning them to one wallet would break the day cash is banked somewhere else. But "the cashier chooses" was never meant to mean *any* wallet: `docs/prd-wallet-payment-eligibility.md` FR-2 already says the payment modal shows only `is_payment_target = true` wallets. That rule is currently half-implemented (D24), and cash is the first flow whose entire settlement runs through the unguarded surface — so this PRD fixes it rather than building on it. |
 | **D21** | A guest cannot cancel their own cash order in v1. | Expiry is the only exit, and it is visible as a countdown. A cancel button needs a rule for the race against a cashier who is mid-collection, which is real work for a case the 15-minute window already resolves. Deferred, not forgotten. |
 | **D22** | `qr_content` is `''` for cash, and `Payment.qrContent` stays **required** in the contract. | Making it optional would be a breaking contract change for the QRIS client to express something the `method` field already says. The frontend switches on `method`, never on the emptiness of a string. |
 | **D23** | Paying a **soft-deleted** order transaction from the POS un-deletes it and re-reserves its availability, rather than failing or paying it invisibly. | The cashier is standing in front of a guest holding money, which is exactly the situation QRIS D5 designed the un-delete path for — there for a late DOKU notification, here for a late cashier. Failing instead would force a re-key of an order the system already holds, seconds after it expired. Doing nothing (today's behaviour, since `GetTransactionById` ignores `deleted_at`) silently books revenue against a row no list will ever show. Logged at `warn` so the true frequency of the race is measurable rather than assumed — it is the leading indicator for the claim mechanism under Out of Scope. |
+| **D24** | Wallet payment eligibility is enforced **in the use case**, not only in the payment modal — `PayTransaction` rejects a wallet with `is_payment_target = false`, and the list's modal filters like the create screen's already does. | `docs/prd-wallet-payment-eligibility.md` FR-2 is currently half-shipped: `TransactionCreateHandler.tsx:354` filters, `TransactionListHandler.tsx:313` does not, and `payTransaction` (`transaction_usecase.go:224`) never checks at all — it fetches the wallet by id and credits it. So an operator who opts `Brankas` out still sees it in the modal a barista uses, and any client that omits the filter can book revenue into it. Cash makes this load-bearing: QRIS settles through the validated `ORDER_PAYMENT_WALLET_ID` and never touches this surface, while **cash settles through nothing else**. A client-side filter alone would be the third place this rule is restated and the third place it can be forgotten; the use case is where it holds for every present and future pay surface. **Rejected:** fixing only the frontend filter — cheaper, and it leaves the server accepting a wallet the product says is ineligible. |
 
 ---
 
 ## Phased plan
 
-Fourteen PRs. Each is independently mergeable, leaves `main` green and the product shippable, and nothing is reachable by a guest before phase 14 because `NEXT_PUBLIC_ORDER_CASH_PAYMENT_ENABLED` stays `false` (D18).
+Fifteen PRs: fourteen for cash, plus **phase 0**, which fixes a pre-existing gap cash would otherwise inherit (FR-13, D24). It is numbered 0 rather than 15 because it is not part of the cash feature and ships before or beside all of it — and because renumbering the other fourteen would break every cross-reference in this document.
+
+Each is independently mergeable, leaves `main` green and the product shippable, and nothing is reachable by a guest before phase 14 because `NEXT_PUBLIC_ORDER_CASH_PAYMENT_ENABLED` stays `false` (D18).
 
 | # | Phase | Side | Touches | Depends on | Wave |
 |---|---|---|---|---|---|
+| 0 | Wallet eligibility enforced on every pay surface | API + `libs/ui` | `transaction_usecase.go`, `TransactionListHandler` | — | A |
 | 1 | `method` crosses the contract | API | contract, entity, transformers | — | A |
 | 2 | Cash checkout branch | API | `payment_usecase.go`, env | 1 | B |
 | 3 | Status reads skip the gateway for cash | API | `payment_usecase.go` | 1 | B |
@@ -472,7 +498,10 @@ A dependency here means **phase B does not compile, or has nothing to test, with
 ```
   wave A                wave B                 wave C            wave D
 
-  5  kind column ─────────────────────────►  6  enqueue ───────┐
+  0  wallet eligibility ──────────────────────────────────────►┐
+     (pre-existing fix)                                        │
+                                                               │
+  5  kind column ─────────────────────────►  6  enqueue ───────┤
                                              ▲                 │
   1  method in ──┬────────►  2  cash ────────┘                 │
      the contract│            checkout                         │
@@ -497,7 +526,7 @@ A dependency here means **phase B does not compile, or has nothing to test, with
 
 | Wave | Phases | Notes |
 |---|---|---|
-| **A** | **1, 5, 7** | Three people can start on day one. 5 and 7 never touch the cash path at all — 7 ships a standing QRIS bug fix on its own, and 5 is a pure refactor plus migration. |
+| **A** | **0, 1, 5, 7** | Four people can start on day one. 0, 5 and 7 never touch the cash path at all — 0 and 7 are standing bug fixes worth shipping on their own merits, and 5 is a pure refactor plus migration. |
 | **B** | **2, 3, 4, 8, 9** | All unblocked by phase 1 alone. 9 opens the whole frontend track as soon as the TS client is regenerated. |
 | **C** | **6, 10, 11, 12, 13** | The widest wave — five PRs, no arrows between any of them. |
 | **D** | **14** | Needs every other phase merged, by definition. |
@@ -510,7 +539,15 @@ A dependency here means **phase B does not compile, or has nothing to test, with
 - **1 and 8 both edit `libs/api-contract/src/api.yaml`** and both regenerate clients — different schemas, so the conflict is mechanical, but the regenerated output is not in git (`__generated__` is gitignored), so it resolves itself.
 - **4 and 13 both edit `apps/api/data/mysql/payment_repo.go`** — different functions, trivial.
 
-**If only one person is working**, the order 1 → 2 → 5 → 6 → 3 → 4 → 7 → 9 → 10 → 11 → 8 → 12 → 13 → 14 gets a demoable end-to-end cash flow soonest: after phase 6 the backend takes a cash order and buzzes the KDS, which is enough to show the operator before any UI exists.
+**If only one person is working**, the order 0 → 1 → 2 → 5 → 6 → 3 → 4 → 7 → 9 → 10 → 11 → 8 → 12 → 13 → 14 gets a demoable end-to-end cash flow soonest: after phase 6 the backend takes a cash order and buzzes the KDS, which is enough to show the operator before any UI exists.
+
+### Phase 0 — Wallet eligibility enforced on every pay surface (API + `libs/ui`)
+
+**Depends on:** nothing — wave A, and nothing in the cash feature depends on it either. It is sequenced first because it is a money-correctness fix that cash would otherwise inherit, and because it is the only phase here that changes existing POS behaviour, so it should land where an operator can see it alone.
+**Deliver:** FR-13 — the `IsPaymentTarget` guard in `payTransaction` returning `400 bad_request`; the `isPaymentTarget` filter on `TransactionListHandler`'s `payWalletSelectOptions`, matching `TransactionCreateHandler.tsx:354`; a line in `docs/prd-wallet-payment-eligibility.md` recording that FR-2 is now enforced in the use case as well as the modal.
+**Tests:** Go — paying into an `is_payment_target = false` wallet returns `400` and writes **no** balance, no income and no `kds_notifications` row; paying into an eligible wallet is unchanged; unpay into a since-opted-out wallet still succeeds (FR-13 item 3); the QRIS path is unaffected because its wallet is validated at boot. `libs/ui` — `TransactionListHandler.test.tsx` asserts an ineligible wallet is absent from the modal's options and an eligible one present.
+**Done when:** a wallet with the flag off cannot be selected in either pay modal **and** cannot be credited by a direct API call, and `npx nx run api:test && npx nx run ui:test` are green.
+**Watch for:** this is the one phase that can surprise an operator — if a venue has been paying into an opted-out wallet by habit, that stops working. Check the wallet list's `Can receive transaction payments` column against recent transactions' wallets before deploying.
 
 ### Phase 1 — `method` crosses the contract (API)
 
@@ -622,7 +659,8 @@ A dependency here means **phase B does not compile, or has nothing to test, with
 | Guests pick cash by accident, then pay by QRIS anyway (or vice versa). | The two method rows carry explanatory subtitles, and picking wrong costs the expiry window, not money. Switching methods mid-payment is Deferred (D-note under FR-2); until then the cash path is a superset — a guest holding a QRIS reference can always pay it in cash at the till, because the cashier pays the *transaction*. |
 | The payment row and the transaction disagree after an unpay (D19). | Named and accepted in D19. Reconciliation reads `transactions`, which QRIS FR-5 already establishes as the money record; `payments` records attempts. |
 | `(transaction_id, kind)` migration on a live table. | `DEFAULT 'order_paid'` backfills correctly by construction, and no transaction can currently hold two rows, so the key swap cannot fail on existing data. The `.down.sql` is exact. Phase 5 ships alone, before anything writes a second kind. |
-| Cash takings land in the wrong wallet because the cashier picked one from habit. | Out of our hands and unchanged from the existing POS flow (D20) — an operator-training matter, not a software one. `Transaction.paymentMethod` at least makes a mis-booked order-app cash payment findable after the fact. |
+| Cash takings land in the wrong wallet because the cashier picked one from habit. | Narrowed by phase 0: the choice is now limited to wallets an operator marked payment-eligible, enforced in the use case rather than only in the modal (D24). Picking the wrong *eligible* wallet remains an operator-training matter, and `Transaction.paymentMethod` makes a mis-booked order-app payment findable after the fact. |
+| Phase 0 stops a venue paying into a wallet they had been using. | The rule it enforces is the one `docs/prd-wallet-payment-eligibility.md` already states, so any wallet it blocks was already marked ineligible by an operator — but the flag defaults to `true` and may never have been audited. Phase 0's pre-deploy check is to compare recent transactions' wallets against the flag. Recovery is one wallet edit, not a rollback. |
 
 ---
 
@@ -634,7 +672,7 @@ A dependency here means **phase B does not compile, or has nothing to test, with
 | A guest-facing "cancel my order" button | D21. Expiry is the only exit in v1. |
 | A "cashier claims this order" state that pauses the countdown | The correct answer to the top risk if it materialises, and real work (a claim, a claimant, a release, a timeout on the claim). Deferred deliberately, not overlooked. |
 | Partial payment, split bills, tips, service charge | None exist anywhere in the POS. |
-| A cash-specific wallet constraint | D20. |
+| A cash-specific wallet constraint | D20 — the cashier chooses among payment-eligible wallets, and phase 0 makes that set real. Pinning cash to one configured wallet the way DOKU is pinned is explicitly not wanted. |
 | POS-side acceptance of a cash payment from a screen other than the transaction list | The cashier's existing flow is the whole point; a dedicated "app orders awaiting cash" screen is a filter away (`source=order`, unpaid) if it is ever wanted. |
 | Card / EDC as a third method | Additive through the same `method` column and the same `RequiresGateway()` branch, and out of scope here. |
 | Changing the QRIS window or any DOKU behaviour | Untouched by this PRD except where the sweeper now also confirms abandoned QRIS payments, which is QRIS D12a applied to a case the current design misses. |
