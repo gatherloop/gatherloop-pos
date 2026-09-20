@@ -106,9 +106,8 @@ synonym half of (3).
 
 ### Option A — Widen the SQL filter to the child tables (server-side)
 
-Match each search token against `products.name`, `products.description`, the product's
-category name, its variant names, and its option values, using correlated `EXISTS`
-subqueries.
+Match each search token against `products.name`, the product's category name, its variant
+names, and its option values, using correlated `EXISTS` subqueries.
 
 - ✅ One place to change: `GetProductList` + `GetProductListTotal` in `product_repo.go`.
 - ✅ Fixes the POS product list in the same commit (both endpoints share the method).
@@ -177,8 +176,8 @@ PublicHandler.GetProductList ── ProductUsecase.GetProductList   (unchanged)
         │
         ▼
 Repository.GetProductList ── applyProductSearchFilter(db, query)   ← NEW (Phase 1/2)
-        │                     per token: name OR description OR
-        │                     EXISTS(category) OR EXISTS(variants)
+        │                     per token: name OR EXISTS(category)
+        │                     OR EXISTS(variants)
         │                     OR EXISTS(options→option_values)
         ▼
 products rows  ──►  one card per product
@@ -231,7 +230,6 @@ The SQL the helper produces, per token (existing `deleted_at`, `sale_type`, `sta
 ```sql
 AND (
       products.name LIKE ?                                    -- '%earl grey%'
-   OR products.description LIKE ?
    OR EXISTS (SELECT 1 FROM categories c
                WHERE c.id = products.category_id AND c.name LIKE ?)
    OR EXISTS (SELECT 1 FROM variants v
@@ -244,15 +242,16 @@ AND (
 )
 ```
 
-`products.description` is nullable `TEXT`; `NULL LIKE ?` yields `NULL`, which is not `TRUE`,
-so a missing description simply never matches — no `COALESCE` needed.
+Four `LIKE` placeholders per token — `products.description` was in an earlier draft and was
+dropped in review (*Settled in review*, Q1).
 
 ### Functional requirements
 
 - **FR-1** A search term matches a product if it matches any of: the product name, the
-  product description, the product's category name, any non-deleted variant name of the
-  product, or any option value name of the product. Results remain one card per product,
-  grouped by category exactly as today (`MenuListHandler.groupByCategory`).
+  product's category name, any non-deleted variant name of the product, or any option value
+  name of the product. Results remain one card per product, grouped by category exactly as
+  today (`MenuListHandler.groupByCategory`). The product description is **not** searchable
+  (D3).
 - **FR-2** A multi-word query requires **every** word to match at least one of those
   fields; different words may match different fields. "earl grey" matches the option value
   `Earl Grey`; "teh besar" matches a `Teh` whose option values include `Besar`.
@@ -291,11 +290,16 @@ so a missing description simply never matches — no `COALESCE` needed.
   order-app semantics and makes "the whole catalog fits on the client" a requirement rather
   than a coincidence.
 
-- **D3 — Searchable: `products.name`, `products.description`, `categories.name`,
-  `variants.name`, `option_values.name`. Not searchable: `products.recipe`,
-  `variants.recipe`, `variants.description`, `options.name`, material names.** Recipe is
-  internal staff content and must not be reachable from an unauthenticated endpoint.
-  `options.name` ("Ukuran") describes the *question*, not an answer a guest would type.
+- **D3 — Searchable: `products.name`, `categories.name`, `variants.name`,
+  `option_values.name`. Not searchable: every description and recipe field
+  (`products.description`, `products.recipe`, `variants.description`, `variants.recipe`),
+  `options.name`, material names.** Recipe is internal staff content and must not be
+  reachable from an unauthenticated endpoint. `options.name` ("Ukuran") describes the
+  *question*, not an answer a guest would type. `products.description` was in the first
+  draft of this decision and was removed in review — prose, not a name, is the field most
+  likely to produce results the guest cannot explain, and the whole point of this change is
+  that every result has a visible reason (FR-4). Adding it later is one `OR` line in
+  `applyProductSearchFilter` plus one branch in `matchMenuSearch`.
 
 - **D4 — One shared helper for both SQL sites.** `GetProductList` and
   `GetProductListTotal` duplicate the filter today (`product_repo.go:22-24` and `:62-64`);
@@ -403,22 +407,23 @@ pre-P1 server they simply render no hints because no option-value match ever rea
 client.
 
 **P1 — Widen the product query filter.** Add `apps/api/data/mysql/product_search.go` with
-`applyProductSearchFilter`, emitting the five-way `OR` from the *System design overview* for
+`applyProductSearchFilter`, emitting the four-way `OR` from the *System design overview* for
 the whole query string (still one token), and call it from both `GetProductList:22-24` and
 `GetProductListTotal:62-64`. Files: those two plus `product_search_test.go`.
 *Acceptance:* `npx nx run api:test` green; a dry-run test (the `newDryRunDb` helper pattern
 from `availability_columns_test.go:15-28`) asserts the statement contains all three `EXISTS`
-clauses, the variant clause carries `deleted_at`, the vars are five copies of `%earl grey%`,
-and list and total produce identical `WHERE` text. Manual check against a seeded DB:
-`GET /public/products?query=earl%20grey` returns the parent product.
+clauses, the variant clause carries `deleted_at`, the vars are four copies of `%earl grey%`,
+no clause mentions `description`, and list and total produce identical `WHERE` text. Manual
+check against a seeded DB: `GET /public/products?query=earl%20grey` returns the parent
+product, and a query matching only a product's description returns nothing (D3).
 
 **P2 — Tokenised matching.** Add `TokenizeSearchQuery` to `apps/api/domain/search_query.go`
 (lowercase-agnostic split on whitespace, drop empties, cap 8 tokens / 100 chars per D7) and
-make `applyProductSearchFilter` `AND` one five-way `OR` group per token. Files:
+make `applyProductSearchFilter` `AND` one four-way `OR` group per token. Files:
 `domain/search_query.go`, `domain/search_query_test.go`, `data/mysql/product_search.go`,
 `data/mysql/product_search_test.go`. *Acceptance:* `npx nx run api:test`; the tokenizer
 table test covers empty, whitespace-only, 9-token and 120-char inputs; the SQL test asserts
-two tokens produce two `AND`-ed groups and 10 vars.
+two tokens produce two `AND`-ed groups and 8 vars.
 
 **P3 — `matchMenuSearch` + mock parity.** Add the pure util and export it from
 `libs/ui/src/utils/index.ts`; it takes `(query, product, variants)` and returns the matched
@@ -464,10 +469,12 @@ new page is added (it is not). *Acceptance:* `npx nx run docs-site:build`.
 
 ## Risks
 
-- **R1 — Noisier results from description matching.** Searching "es" may now match
-  descriptions across the menu. Mitigation: `products.description` is one `OR` line in one
-  helper and can be dropped without touching anything else; FR-4's hint makes the reason for
-  every result visible, which is how the operator will notice if it is too loose.
+- **R1 — Category matching is now the loosest field.** With descriptions excluded (D3), the
+  widest remaining match is the category name: "minuman" returns every drink at once, which
+  reads as "search ignored my query" rather than as a category filter — and the category
+  chips above the list already do that job. Mitigation: FR-4's hint makes the reason for
+  every result visible; each field is one `OR` line in `applyProductSearchFilter`, so
+  dropping category matching after seeing real queries costs one line and one test case.
 - **R2 — The existing N+1 on availability gets more work to do.**
   `ProductUsecase.GetProductList` (`apps/api/domain/product_usecase.go:29-48`) calls
   `resolveAvailability` per returned product, and each call is a full `GetVariantList` with
@@ -522,17 +529,29 @@ new page is added (it is not). *Acceptance:* `npx nx run docs-site:build`.
 4. "teh besar" returns only products satisfying both words (FR-2).
 5. The POS product list finds the same products for the same terms (FR-7).
 6. No change to `libs/api-contract/src/api.yaml`, no migration, no new index.
-7. `npx nx affected -t test lint` green on every phase; the order-web e2e suite green
+7. A term that appears only in a product's description returns nothing (D3).
+8. `npx nx affected -t test lint` green on every phase; the order-web e2e suite green
    locally before P6 merges.
 
-## Open Questions
+## Settled in review
 
-1. **Is `products.description` in or out?** Recommended in (guests do search "gula aren"),
-   but it is the one field likely to generate complaints about noise, and it is one line to
-   remove. Decide before P1 merges.
-2. **Should the POS list get the widening in the same PR, or behind a flag first?**
-   Recommended in the same PR (D15) — a flag would mean two search semantics, which is the
-   thing this PRD is trying to remove.
-3. **Should a zero-result query fall back to a looser match** (any token instead of all
-   tokens) with a "showing results for one of your words" note, or keep the strict empty
-   state? Recommended: keep it strict now; revisit with real zero-result data.
+The three questions this document opened with are decided. Recorded here rather than
+silently edited away, because the phases and the decisions above were rewritten to match.
+
+- **Q1 — Is `products.description` searchable? → No, not for now.** D3 and FR-1 now exclude
+  every description and recipe field; the SQL is four `LIKE` placeholders per token, not
+  five, and P1's test asserts no clause mentions `description`. This makes category name the
+  loosest remaining field, which is why R1 was rewritten around it. Re-adding description
+  matching later is one `OR` line in `applyProductSearchFilter` and one branch in
+  `matchMenuSearch`.
+- **Q2 — POS widening in the same PR, or behind a flag? → Same PR.** D15 stands as written:
+  P1 changes the shared repository method, so `GET /products` and `GET /public/products`
+  change together and there is only ever one search semantics for the catalog. The P7 docs
+  line and a release note cover the cashier-visible change (R4).
+- **Q3 — Fall back to a looser match on zero results? → No, keep it strict.** FR-2's
+  all-tokens-must-match rule and FR-8's existing empty state stay as specified. The
+  any-token fallback is not deferred work with a planned phase; it is a candidate to
+  reconsider only if real zero-result queries show guests are being turned away by it, which
+  needs the search analytics listed under *Out of Scope*.
+
+No questions outstanding. P1 and P3 are ready to start.
