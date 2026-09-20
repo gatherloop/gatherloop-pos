@@ -101,6 +101,36 @@ export const WithImage: Story = {
   },
 };
 
+export const WithMatchedLabels: Story = {
+  args: {
+    product: {
+      id: 1,
+      name: 'Teh',
+      description: 'Teh khas nusantara',
+      category,
+      imageUrl: '',
+      saleType: 'purchase',
+      status: 'published',
+      options: [
+        {
+          id: 1,
+          name: 'Rasa',
+          values: [
+            { id: 1, name: 'Earl Grey' },
+            { id: 2, name: 'Jasmine' },
+          ],
+        },
+      ],
+      createdAt: '2024-03-20T00:00:00.000Z',
+      isAvailable: true,
+      availabilityTracking: 'none',
+      isSellable: true,
+    },
+    startingPrice: 10000,
+    matchedLabels: ['Earl Grey'],
+  },
+};
+
 export const SoldOut: Story = {
   args: {
     product: {

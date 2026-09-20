@@ -72,6 +72,7 @@ const meta: Meta<typeof MenuListScreen> = {
       // Storybook action stand-in
     },
     startingPriceByProductId: { 1: 18000, 2: 25000 },
+    matchedLabelsByProductId: {},
     itemDetail: null,
   },
 };
@@ -100,6 +101,18 @@ export const Searching: Story = {
     ...Loaded.args,
     searchValue: 'kopi',
     isSearching: true,
+  },
+};
+
+export const SearchedByOptionValue: Story = {
+  args: {
+    ...Loaded.args,
+    searchValue: 'earl grey',
+    variant: {
+      type: 'loaded',
+      groups: [{ category: minuman, products: [esKopiSusu] }],
+    },
+    matchedLabelsByProductId: { 1: ['Earl Grey'] },
   },
 };
 
