@@ -27,7 +27,7 @@ The draft/published split also protects the sales floor from half-finished setup
 
 - **Name, description, photo, category** — the customer-facing identity of the item. Description is a single-line plain-text field (max 160 characters, no line breaks) — it's what a table-ordering guest sees on the menu card and item detail sheet.
 - **Recipe (staff-only)** — a separate Markdown field for internal preparation steps, edited in its own "Recipe" tab on the product form. Never returned by any public API response.
-- **Options & values define variation** — a product declares options like "Size," each with values like "Small"/"Large"; variants pick one value per option to become a concrete, sellable item.
+- **Options & values define variation** — a product declares options like "Size," each with values like "Small"/"Large"; variants pick one value per option to become a concrete, sellable item. Option value names are also searchable in the [table-ordering](/sales/table-ordering) menu, which is a good reason to name them the way a guest would say them ("Earl Grey," not an internal code).
 - **Sale type: purchase vs. rental** — a structural flag that determines whether the product's variants are priced with a flat price or with duration-based [pricing tiers](/sales/rentals).
 - **Draft vs. published status** — draft products are fully editable but excluded from the checkout item picker; publishing is the one action that makes an item sellable.
 - **Variants managed inline** — the product edit screen embeds its full list of variants, so staff move between product-level details and variant-level pricing/recipes in one place.
