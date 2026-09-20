@@ -73,6 +73,7 @@ func ToApiPayment(payment domain.Payment, transaction domain.Transaction) apiCon
 	return apiContract.Payment{
 		PartnerReferenceNo: payment.PartnerReferenceNo,
 		Status:             string(payment.Status),
+		Method:             string(payment.Method),
 		Amount:             payment.Amount,
 		QrContent:          payment.QrContent,
 		ExpiredAt:          payment.ExpiredAt,
@@ -95,6 +96,7 @@ func ToApiPaymentSummary(summary domain.PaymentSummary) apiContract.PaymentSumma
 	return apiContract.PaymentSummary{
 		PartnerReferenceNo: summary.PartnerReferenceNo,
 		Status:             string(summary.Status),
+		Method:             string(summary.Method),
 		FulfillmentStatus:  fulfillmentStatus,
 		TransactionNumber:  summary.TransactionNumber,
 		CustomerName:       summary.CustomerName,

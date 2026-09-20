@@ -27,6 +27,20 @@ func (handler PaymentHandler) Checkout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var rawMethod string
+	if request.Method != nil {
+		rawMethod = *request.Method
+	}
+	method, methodErr := domain.ParsePaymentMethod(rawMethod)
+	if methodErr != nil {
+		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(methodErr.Type), Message: methodErr.Message})
+		return
+	}
+	if method == domain.PaymentMethodCash {
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: "payment method is not available yet"})
+		return
+	}
+
 	payment, transaction, usecaseErr := handler.usecase.Checkout(ctx, sessionId, request.CustomerName)
 	if usecaseErr != nil {
 		apiError := apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message}
