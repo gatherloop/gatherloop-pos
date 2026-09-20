@@ -27,7 +27,7 @@ func newSearchDryRunDb(t *testing.T) *gorm.DB {
 	return gormDB.Session(&gorm.Session{DryRun: true})
 }
 
-func TestApplyProductSearchFilter_MatchesNameCategoryVariantAndOptionValue(t *testing.T) {
+func TestApplyProductSearchFilter_MatchesNameCategoryAndOptionValue(t *testing.T) {
 	db := newSearchDryRunDb(t)
 
 	var products []Product
@@ -36,13 +36,12 @@ func TestApplyProductSearchFilter_MatchesNameCategoryVariantAndOptionValue(t *te
 	sql := stmt.SQL.String()
 	assert.Contains(t, sql, "products.name LIKE")
 	assert.Contains(t, sql, "EXISTS (SELECT 1 FROM categories")
-	assert.Contains(t, sql, "EXISTS (SELECT 1 FROM variants")
-	assert.Contains(t, sql, "v.deleted_at IS NULL")
 	assert.Contains(t, sql, "EXISTS (SELECT 1 FROM options")
 	assert.Contains(t, sql, "JOIN option_values")
+	assert.NotContains(t, sql, "FROM variants")
 	assert.NotContains(t, sql, "description")
 
-	require.Len(t, stmt.Vars, 4)
+	require.Len(t, stmt.Vars, 3)
 	for _, v := range stmt.Vars {
 		assert.Equal(t, "%grey%", v)
 	}
@@ -57,11 +56,11 @@ func TestApplyProductSearchFilter_MultipleTokensProduceAndedGroups(t *testing.T)
 	sql := stmt.SQL.String()
 	assert.Equal(t, 2, strings.Count(sql, "products.name LIKE"))
 
-	require.Len(t, stmt.Vars, 8)
-	for _, v := range stmt.Vars[:4] {
+	require.Len(t, stmt.Vars, 6)
+	for _, v := range stmt.Vars[:3] {
 		assert.Equal(t, "%teh%", v)
 	}
-	for _, v := range stmt.Vars[4:] {
+	for _, v := range stmt.Vars[3:] {
 		assert.Equal(t, "%besar%", v)
 	}
 }
@@ -73,7 +72,7 @@ func TestApplyProductSearchFilter_CapsAtEightTokens(t *testing.T) {
 	stmt := applyProductSearchFilter(db.Table("products"), "one two three four five six seven eight nine").Find(&products).Statement
 
 	assert.Equal(t, 8, strings.Count(stmt.SQL.String(), "products.name LIKE"))
-	require.Len(t, stmt.Vars, 32)
+	require.Len(t, stmt.Vars, 24)
 	assert.NotContains(t, stmt.Vars, "%nine%")
 }
 
