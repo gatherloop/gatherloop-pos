@@ -117,6 +117,60 @@ func TestTransactionHandler_GetTransactionList_SerializesSource(t *testing.T) {
 	assert.Nil(t, response.Data[0].Table)
 }
 
+// D16: a POS transaction serialises paymentMethod: null, and an order transaction
+// reports the method of its linked payment.
+func TestTransactionHandler_GetTransactionList_SerializesPaymentMethod(t *testing.T) {
+	cash := domain.PaymentMethodCash
+	qris := domain.PaymentMethodQris
+
+	tests := []struct {
+		name                  string
+		transaction           domain.Transaction
+		expectedPaymentMethod *string
+	}{
+		{
+			name:                  "a POS transaction has no linked payment",
+			transaction:           domain.Transaction{Id: 1, Source: domain.TransactionSourcePos},
+			expectedPaymentMethod: nil,
+		},
+		{
+			name:                  "a cash order transaction reports cash",
+			transaction:           domain.Transaction{Id: 2, Source: domain.TransactionSourceOrder, PaymentMethod: &cash},
+			expectedPaymentMethod: strPtr("cash"),
+		},
+		{
+			name:                  "a QRIS order transaction reports qris",
+			transaction:           domain.Transaction{Id: 3, Source: domain.TransactionSourceOrder, PaymentMethod: &qris},
+			expectedPaymentMethod: strPtr("qris"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			handler, ctrl := newTransactionHandler(t, func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository) {
+				txRepo.EXPECT().GetTransactionList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return([]domain.Transaction{tt.transaction}, nil)
+				txRepo.EXPECT().GetTransactionListTotal(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(1), nil)
+			})
+			defer ctrl.Finish()
+
+			req := httptest.NewRequest(http.MethodGet, "/transactions", nil)
+			w := httptest.NewRecorder()
+			handler.GetTransactionList(w, req)
+
+			require.Equal(t, http.StatusOK, w.Code)
+			var response apiContract.TransactionListResponse
+			require.NoError(t, json.NewDecoder(w.Body).Decode(&response))
+			require.Len(t, response.Data, 1)
+			assert.Equal(t, tt.expectedPaymentMethod, response.Data[0].PaymentMethod)
+		})
+	}
+}
+
+func strPtr(s string) *string {
+	return &s
+}
+
 func TestTransactionHandler_GetTransactionList_FilterBySource(t *testing.T) {
 	orderSource := domain.TransactionSourceOrder
 

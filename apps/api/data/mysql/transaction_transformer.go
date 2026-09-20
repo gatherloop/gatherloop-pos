@@ -50,6 +50,12 @@ func ToTransactionDomain(dbTransaction Transaction) domain.Transaction {
 		cart = &c
 	}
 
+	var paymentMethod *domain.PaymentMethod
+	if dbTransaction.PaymentMethod != nil {
+		m := domain.PaymentMethod(*dbTransaction.PaymentMethod)
+		paymentMethod = &m
+	}
+
 	return domain.Transaction{
 		Id:                 dbTransaction.Id,
 		Name:               dbTransaction.Name,
@@ -69,6 +75,7 @@ func ToTransactionDomain(dbTransaction Transaction) domain.Transaction {
 		CreatedAt:          dbTransaction.CreatedAt,
 		TransactionItems:   ToTransactionItemsListDomain(dbTransaction.TransactionItems),
 		TransactionCoupons: ToTransactionCouponsListDomain(dbTransaction.TransactionCoupons),
+		PaymentMethod:      paymentMethod,
 	}
 }
 
