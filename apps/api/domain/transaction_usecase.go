@@ -265,7 +265,7 @@ func payTransaction(ctx context.Context, transaction Transaction, transactionRep
 	}
 
 	// FR-1: enqueued after the wallet and income writes succeed, atomic with the payment (D5).
-	if err := kdsNotificationRepository.EnqueueForTransaction(ctx, transaction); err != nil {
+	if err := kdsNotificationRepository.EnqueueForTransaction(ctx, transaction, KdsNotificationKindOrderPaid); err != nil {
 		return err
 	}
 

@@ -507,7 +507,7 @@ func pendingPaymentFixture() domain.Payment {
 
 func expectConfirmPaymentWalletCredit(m paymentUsecaseMocks) {
 	expectConfirmPaymentWalletCreditWithoutKdsEnqueue(m)
-	m.kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any()).Return(nil)
+	m.kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 }
 
 // expectConfirmPaymentWalletCreditWithoutKdsEnqueue lets a test supply its own
@@ -596,8 +596,8 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 			}, nil)
 
 		expectConfirmPaymentWalletCreditWithoutKdsEnqueue(m)
-		m.kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(
-			func(_ context.Context, transaction domain.Transaction) *domain.Error {
+		m.kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).DoAndReturn(
+			func(_ context.Context, transaction domain.Transaction, _ domain.KdsNotificationKind) *domain.Error {
 				assert.True(t, domain.ShouldNotify(transaction))
 				assert.Len(t, domain.StationLines(transaction), 2)
 				return nil
@@ -641,8 +641,8 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 			}, nil)
 
 		expectConfirmPaymentWalletCreditWithoutKdsEnqueue(m)
-		m.kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
-			func(_ context.Context, transaction domain.Transaction) *domain.Error {
+		m.kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+			func(_ context.Context, transaction domain.Transaction, _ domain.KdsNotificationKind) *domain.Error {
 				assert.False(t, domain.ShouldNotify(transaction))
 				return nil
 			})

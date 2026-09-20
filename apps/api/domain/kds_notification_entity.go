@@ -19,6 +19,13 @@ const (
 // FR-4: a pending row that never gets a device to accept it stops retrying and becomes failed.
 const KdsNotificationMaxAttempts = 5
 
+type KdsNotificationKind string
+
+const (
+	KdsNotificationKindOrderPaid   KdsNotificationKind = "order_paid"
+	KdsNotificationKindCashPending KdsNotificationKind = "cash_pending"
+)
+
 type KdsStation string
 
 const (
@@ -37,6 +44,7 @@ type KdsStationLine struct {
 type KdsNotification struct {
 	Id            int64
 	TransactionId int64
+	Kind          KdsNotificationKind
 	Status        KdsNotificationStatus
 	AttemptCount  int
 	Detail        *string

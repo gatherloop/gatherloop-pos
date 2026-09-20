@@ -34,7 +34,7 @@ func newTransactionHandler(t *testing.T, setupMocks func(txRepo *mock.MockTransa
 	availabilityRepo.EXPECT().UpdateVariantAvailableQuantity(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
 	availabilityRepo.EXPECT().UpdateProductAvailableQuantity(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
 	kdsNotificationRepo := mock.NewMockKdsNotificationRepository(ctrl)
-	kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	kdsNotificationDispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
 	kdsNotificationDispatcher.EXPECT().TriggerDispatch().AnyTimes()
 	paymentRepo := mock.NewMockPaymentRepository(ctrl)

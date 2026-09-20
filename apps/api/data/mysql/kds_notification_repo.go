@@ -13,7 +13,7 @@ func NewKdsNotificationRepository(db *gorm.DB) domain.KdsNotificationRepository 
 	return Repository{db: db}
 }
 
-func (repo Repository) EnqueueForTransaction(ctx context.Context, transaction domain.Transaction) *domain.Error {
+func (repo Repository) EnqueueForTransaction(ctx context.Context, transaction domain.Transaction, kind domain.KdsNotificationKind) *domain.Error {
 	if !domain.ShouldNotify(transaction) {
 		return nil
 	}
@@ -30,15 +30,16 @@ func (repo Repository) EnqueueForTransaction(ctx context.Context, transaction do
 
 	payload := KdsNotification{
 		TransactionId: transaction.Id,
+		Kind:          string(kind),
 		Status:        string(status),
 		Detail:        detail,
 	}
 
-	// UNIQUE (transaction_id) makes a duplicate enqueue idempotent by construction (D4): the
-	// insert self-updates `id` rather than erroring or writing a second row.
+	// UNIQUE (transaction_id, kind) makes a duplicate enqueue idempotent by construction (D4/D8):
+	// the insert self-updates `id` rather than erroring or writing a second row for that kind.
 	result := db.Table("kds_notifications").
 		Clauses(clause.OnConflict{
-			Columns:   []clause.Column{{Name: "transaction_id"}},
+			Columns:   []clause.Column{{Name: "transaction_id"}, {Name: "kind"}},
 			DoUpdates: clause.Assignments(map[string]interface{}{"id": gorm.Expr("id")}),
 		}).
 		Create(&payload)
