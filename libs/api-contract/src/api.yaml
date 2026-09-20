@@ -4443,6 +4443,9 @@ components:
         source:
           type: string
           enum: [pos, order]
+        paymentMethod:
+          type: string
+          enum: [qris, cash]
         table:
           $ref: '#/components/schemas/PublicTable'
         walletId:
