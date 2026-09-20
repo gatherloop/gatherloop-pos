@@ -448,103 +448,164 @@ All three land in the matching `.env.example` with comments, and in `README.md`'
 
 Fourteen PRs. Each is independently mergeable, leaves `main` green and the product shippable, and nothing is reachable by a guest before phase 14 because `NEXT_PUBLIC_ORDER_CASH_PAYMENT_ENABLED` stays `false` (D18).
 
-| # | Phase | Side | Touches |
-|---|---|---|---|
-| 1 | `method` crosses the contract | API | contract, entity, transformers |
-| 2 | Cash checkout branch | API | `payment_usecase.go`, env |
-| 3 | Status reads skip the gateway for cash | API | `payment_usecase.go` |
-| 4 | The expiry sweeper | API | repo, use case, `main.go` |
-| 5 | `kds_notifications.kind` | API | migration `000035`, repo, entity |
-| 6 | Enqueue the cash-pending notification | API | `payment_usecase.go`, message builder |
-| 7 | Paying an order transaction settles its payment | API | `transaction_usecase.go` |
-| 8 | `Transaction.paymentMethod` | API | contract, read model |
-| 9 | Frontend payment slice | `libs/ui` | entities, repositories, `checkout.ts` |
-| 10 | The checkout sheet asks for a method | `libs/ui` | `CustomerNameSheet`, `CartHandler` |
-| 11 | The cash instruction screen | `libs/ui` | `CashPaymentView`, `orderStatus.ts`, handler |
-| 12 | POS badge and detail row | `libs/ui` | `TransactionListItem`, `TransactionDetail` |
-| 13 | Order history shows unpaid cash orders | API + `libs/ui` | `payment_repo.go`, `OrderHistoryListItem` |
-| 14 | Enable, verify, document | all | e2e, docs-site, `.env`, flag on |
+| # | Phase | Side | Touches | Depends on | Wave |
+|---|---|---|---|---|---|
+| 1 | `method` crosses the contract | API | contract, entity, transformers | — | A |
+| 2 | Cash checkout branch | API | `payment_usecase.go`, env | 1 | B |
+| 3 | Status reads skip the gateway for cash | API | `payment_usecase.go` | 1 | B |
+| 4 | The expiry sweeper | API | repo, use case, `main.go` | 1 | B |
+| 5 | `kds_notifications.kind` | API | migration `000035`, repo, entity | — | A |
+| 6 | Enqueue the cash-pending notification | API | `payment_usecase.go`, message builder | 2, 5 | C |
+| 7 | Paying an order transaction settles its payment | API | `transaction_usecase.go` | — | A |
+| 8 | `Transaction.paymentMethod` | API | contract, read model | 1 | B |
+| 9 | Frontend payment slice | `libs/ui` | entities, repositories, `checkout.ts` | 1 | B |
+| 10 | The checkout sheet asks for a method | `libs/ui` | `CustomerNameSheet`, `CartHandler` | 9 | C |
+| 11 | The cash instruction screen | `libs/ui` | `CashPaymentView`, `orderStatus.ts`, handler | 9 | C |
+| 12 | POS badge and detail row | `libs/ui` | `TransactionListItem`, `TransactionDetail` | 8 | C |
+| 13 | Order history shows unpaid cash orders | API + `libs/ui` | `payment_repo.go`, `OrderHistoryListItem` | 1, 9 | C |
+| 14 | Enable, verify, document | all | e2e, docs-site, `.env`, flag on | all | D |
+
+### Dependency graph
+
+A dependency here means **phase B does not compile, or has nothing to test, without phase A merged** — not "B reads better after A". Everything not connected by an arrow can be built at the same time by different people.
+
+```
+  wave A                wave B                 wave C            wave D
+
+  5  kind column ─────────────────────────►  6  enqueue ───────┐
+                                             ▲                 │
+  1  method in ──┬────────►  2  cash ────────┘                 │
+     the contract│            checkout                         │
+                 │                                             │
+                 ├────────►  3  cash status reads ────────────►┤
+                 │                                             │
+                 ├────────►  4  expiry sweeper ───────────────►┤
+                 │                                             ├──►  14  enable
+                 ├────────►  8  Transaction ──►  12  POS ─────►┤       verify
+                 │              .paymentMethod     badge       │       document
+                 │                                             │
+                 └────────►  9  FE payment ─┬──► 10  sheet ───►┤
+                                slice       ├──► 11  screen ──►┤
+                                            └──► 13  history ─►┤
+                                                (also needs 1) │
+                                                               │
+  7  settle payment row on POS pay ────────────────────────────┘
+     (independent — also fixes a standing QRIS bug)
+```
+
+**Waves** — everything in a wave can run concurrently:
+
+| Wave | Phases | Notes |
+|---|---|---|
+| **A** | **1, 5, 7** | Three people can start on day one. 5 and 7 never touch the cash path at all — 7 ships a standing QRIS bug fix on its own, and 5 is a pure refactor plus migration. |
+| **B** | **2, 3, 4, 8, 9** | All unblocked by phase 1 alone. 9 opens the whole frontend track as soon as the TS client is regenerated. |
+| **C** | **6, 10, 11, 12, 13** | The widest wave — five PRs, no arrows between any of them. |
+| **D** | **14** | Needs every other phase merged, by definition. |
+
+**Critical path: 1 → 2 → 6 → 14**, four phases deep. Nothing else is longer, so with three or more people the calendar length of the project is that chain plus however long phase 14's manual verification takes — the other ten phases fit inside it.
+
+**File contention is the real constraint, not the graph.** Three pairs will conflict on merge even though neither side depends on the other:
+
+- **2, 3, 4 and 6 all edit `apps/api/domain/payment_usecase.go`**, and 4 moves code out of the same function 3 edits (`expirePayment` extracted from `applyQrisStatus`). Give this file to **one owner to land in order 2 → 3 → 4**, or expect a rebase per PR. This is the single biggest reason wave B is not as parallel as the table makes it look.
+- **1 and 8 both edit `libs/api-contract/src/api.yaml`** and both regenerate clients — different schemas, so the conflict is mechanical, but the regenerated output is not in git (`__generated__` is gitignored), so it resolves itself.
+- **4 and 13 both edit `apps/api/data/mysql/payment_repo.go`** — different functions, trivial.
+
+**If only one person is working**, the order 1 → 2 → 5 → 6 → 3 → 4 → 7 → 9 → 10 → 11 → 8 → 12 → 13 → 14 gets a demoable end-to-end cash flow soonest: after phase 6 the backend takes a cash order and buzzes the KDS, which is enough to show the operator before any UI exists.
 
 ### Phase 1 — `method` crosses the contract (API)
 
+**Depends on:** nothing — wave A, start immediately.
 **Deliver:** `PaymentCheckoutRequest.method` (optional, `qris` default), `Payment.method`, `PaymentSummary.method` in `api.yaml`; `domain.PaymentMethodCash`, `ParsePaymentMethod`, `Payment.RequiresGateway()`; the handler parses and validates the field; the restapi transformer serialises it; both clients regenerated. `Checkout` still ignores the parsed method and always mints QRIS; a `cash` request returns `400 "payment method is not available yet"`.
 **Tests:** usecase tests for `ParsePaymentMethod` (each valid value, an unknown string, the empty default); handler tests for an absent `method` still creating a QRIS payment and for an unknown value returning `400`.
 **Done when:** existing checkout behaviour is unchanged, `GET /payments/{ref}` reports `"method": "qris"` for every existing row, and `cash` is rejected with a named error rather than silently accepted.
 
 ### Phase 2 — Cash checkout branch (API)
 
+**Depends on:** phase 1 (`RequiresGateway()` and the parsed method). Shares `payment_usecase.go` with phases 3, 4 and 6 — land it first of the four.
 **Deliver:** FR-2 — `Checkout` takes the method and branches on `RequiresGateway()`; `CASH_PAYMENT_EXPIRY_SECONDS` in `utils/env.go` and `.env.example`; `NewPaymentUsecase` gains the field; phase 1's rejection removed.
 **Tests:** a cash checkout creates an unpaid `order` transaction, a `pending` cash payment with empty `qr_content` and `expired_at = now + CASH_PAYMENT_EXPIRY_SECONDS`, and **never calls the mock gateway** (`EXPECT().GenerateQris().Times(0)`); a gateway failure still rolls a *QRIS* checkout back; an existing live payment is returned whatever method is asked for; empty cart and missing table still `400`.
 **Done when:** a cash `POST /carts/current/checkout` returns a payment reference with no DOKU traffic, and the resulting transaction is visible and payable in the POS.
 
 ### Phase 3 — Status reads skip the gateway for cash (API)
 
+**Depends on:** phase 1. Independent of phase 2 in code, but only verifiable end to end once 2 can mint a cash payment — until then its tests drive the mock repository directly.
 **Deliver:** FR-3 — the `RequiresGateway()` branch in `refreshPendingPaymentStatus`, with clock-only expiry for cash and the 5 s re-query floor skipped.
 **Tests:** a pending cash payment read before `expired_at` stays pending with no gateway call; read after `expired_at` expires, soft-deletes its transaction, releases its availability reservation and unfreezes its cart; a QRIS payment's behaviour is unchanged including D12a's confirming query.
 **Done when:** the guest's status endpoint works end to end for cash with the DOKU client wired to a mock that fails every call.
 
 ### Phase 4 — The expiry sweeper (API)
 
+**Depends on:** phase 1. Not blocked by 2 or 3, but it moves `expirePayment` out of the function phase 3 edits, so land it after 3.
 **Deliver:** FR-4 — `GetExpirablePayments`, `expirePayment` extracted from `applyQrisStatus`, `ExpireStalePayments`, and the job added to the renamed `runMaintenanceSweeper` in `main.go`.
 **Tests:** a batch containing a cash and a QRIS payment expires the cash one on the clock and the QRIS one only after a confirming query; a QRIS payment DOKU reports `paid` is paid, not expired (QRIS D5's late-payment path); a gateway error leaves the row for the next tick; a row already `paid` is never touched; the batch limit holds; one failing row does not abort the others.
 **Done when:** with the API running and no client polling at all, an abandoned cash checkout disappears from the POS list and unfreezes its cart within one tick of its window closing.
 
 ### Phase 5 — `kds_notifications.kind` (API)
 
+**Depends on:** nothing — wave A, and it touches no cash code at all.
 **Deliver:** migration `000035` (add `kind`, swap the unique key), `KdsNotificationKind`, `KdsNotification.Kind`, `EnqueueForTransaction(ctx, transaction, kind)` with the conflict target moved, both existing call sites passing `KdsNotificationKindOrderPaid`, regenerated mocks. **No new trigger and no message change** — a pure refactor plus schema.
 **Tests:** every existing KDS test passes with the new signature; a duplicate enqueue of the same `(transaction_id, kind)` is still a no-op; two rows for one transaction with different kinds both insert; the migration applies and rolls back cleanly against a table with existing rows.
 **Done when:** `kds_notifications` holds `kind = 'order_paid'` for every pre-existing row and the KDS behaves identically.
 
 ### Phase 6 — Enqueue the cash-pending notification (API)
 
+**Depends on:** phases 2 and 5 (a cash branch to enqueue from, and a `kind` to enqueue under).
 **Deliver:** FR-5's enqueue inside `Checkout`'s cash branch plus the post-commit `TriggerDispatch`; FR-7's kind-aware `BuildKdsPushMessage`; `data.kind` in the payload.
 **Tests:** a cash checkout writes one `cash_pending` row and a QRIS checkout writes none; the row is written even when no item routes to a station (D9); the built message carries the amount, the table label and the transaction number; `order_paid`'s title and body are byte-for-byte unchanged; a transaction with both kinds dispatches both.
 **Done when:** a cash checkout against a registered device buzzes the KDS with "Cash order #N", and paying it buzzes again with "New order #N".
 
 ### Phase 7 — Paying an order transaction settles its payment (API)
 
+**Depends on:** nothing — wave A. It is a standing bug fix on the existing QRIS path (D11, D23) and ships on its own merits whether or not cash is ever built.
 **Deliver:** FR-6 — `settleOrderPayment` called from `PayTransaction` inside its existing DB transaction, plus D23's un-delete of a soft-deleted order transaction.
 **Tests:** paying a cash order transaction flips its payment to `paid` with `paid_at` and converts its cart; paying a POS transaction with no payment row succeeds unchanged; a payment already `paid` is a no-op (the webhook-wins race); a paid amount above the total still settles and the transaction keeps the change math; paying a soft-deleted order transaction un-deletes it, re-reserves availability and settles its expired payment (D23); a soft-deleted **POS** transaction is untouched by that path; the sweeper leaves the now-paid payment alone on its next tick.
 **Done when:** the cashier presses Submit and the guest's status endpoint reports `preparing` on its next read, with the cart converted.
 
 ### Phase 8 — `Transaction.paymentMethod` (API)
 
+**Depends on:** phase 1, for the `qris | cash` enum the field reuses.
 **Deliver:** D16 — `paymentMethod` on the `Transaction` schema, resolved from the linked payment in the MySQL read model and the restapi transformer; `null` for POS transactions; regenerated clients.
 **Tests:** a POS transaction serialises `paymentMethod: null`; a cash order transaction reports `cash` before and after payment; a QRIS one reports `qris`; the transaction list query cost is unchanged in shape (one join, no N+1).
 **Done when:** `GET /transactions` distinguishes the two order-app methods without any client change.
 
 ### Phase 9 — Frontend payment slice (`libs/ui`)
 
-**Deliver:** `PaymentMethod` on the `Payment` and `PaymentSummary` entities and on `Transaction`; `PaymentRepository.checkout(customerName, method)`; the API repository, transformers and mock repository (including a cash fixture with no `qrContent`); `CheckoutUsecase` gains `method` in `Context` and a `CHANGE_METHOD` action. **No UI.**
+**Depends on:** phase 1, for the regenerated TS client. Opens the whole frontend track.
+**Deliver:** `PaymentMethod` on the `Payment` and `PaymentSummary` entities (the `Transaction.paymentMethod` entity field belongs to phase 12, so the two frontend tracks share no file); `PaymentRepository.checkout(customerName, method)`; the API repository, transformers and mock repository (including a cash fixture with no `qrContent`); `CheckoutUsecase` gains `method` in `Context` and a `CHANGE_METHOD` action. **No UI.**
 **Tests:** `checkout.test.ts` — the default method is `qris`; `CHANGE_METHOD` is accepted in `askingName` and ignored elsewhere; a cash submit calls the repository with `'cash'`; `CANCEL_NAME` resets nothing but the error; the error branch via `MockPaymentRepository.setShouldFail(true)`.
 **Done when:** the machine is green headlessly, with no React and no network.
 
 ### Phase 10 — The checkout sheet asks for a method (`libs/ui`)
 
+**Depends on:** phase 9. Parallel with 11, 12 and 13 — no shared files.
 **Deliver:** FR-8 — the method picker in `CustomerNameSheet` with its own story per selection and per flag state; `CartHandler` passing `method`, `onMethodChange` and the flag through; `app/order/Cart.tsx` reading `NEXT_PUBLIC_ORDER_CASH_PAYMENT_ENABLED` and `NEXT_PUBLIC_ORDER_CASHIER_LOCATION`.
 **Tests:** `CartHandler.test.tsx` over mock repositories — the sheet opens prefilled with the remembered name and `qris` selected; selecting cash and submitting checks out with `'cash'` and redirects to `/orders/{reference}`; with the flag off no picker renders and the sheet is today's; a rejected name keeps the sheet open having created nothing.
 **Done when:** with the flag on locally, choosing cash creates a cash payment and lands on the order page; with it off, the sheet is unchanged.
 
 ### Phase 11 — The cash instruction screen (`libs/ui`)
 
+**Depends on:** phase 9. Parallel with 10, 12 and 13 — no shared files.
 **Deliver:** FR-9 — `CashPaymentView` with stories, the `awaitingCashPayment` variant on `OrderStatusScreen`, the cash-specific `expired` copy, `orderStatus.ts`'s method-aware state mapping, `OrderStatusHandler`'s exhaustive mapping, and `app/order/OrderStatus.tsx` passing the cashier location.
 **Tests:** `orderStatus.test.ts` — a pending cash payment enters `awaitingCashPayment` and polls at 3 s; a poll returning `paid` moves to `preparing`; a poll returning `expired` moves to `expired`; `COUNTDOWN_ELAPSED` issues one final poll and never expires on its own; a poll error keeps the state. `OrderStatusHandler.test.tsx` per variant; a story per state.
 **Done when:** a cash checkout renders the transaction number, the amount, the cashier location and a live countdown, and flips to "sedang disiapkan" within one poll of a POS payment — verified on a real phone-width viewport, not only in Storybook.
 
 ### Phase 12 — POS badge and detail row (`libs/ui`)
 
-**Deliver:** FR-10 — the "Cash · awaiting payment" badge on `TransactionListItem`, the Payment Method row on `TransactionDetail`, stories for badge present and absent, mobile parity through the shared components.
+**Depends on:** phase 8, for the generated `Transaction.paymentMethod` type. Not blocked by the order-app frontend track at all.
+**Deliver:** FR-10 — `Transaction.paymentMethod` on the frontend entity and its transformer, the "Cash · awaiting payment" badge on `TransactionListItem`, the Payment Method row on `TransactionDetail`, stories for badge present and absent, mobile parity through the shared components.
 **Tests:** handler-level assertion that a paid cash order renders no awaiting badge; stories for each state.
 **Done when:** a cashier can tell, from the list alone, which order-app rows are someone walking towards them.
 
 ### Phase 13 — Order history shows unpaid cash orders (API + `libs/ui`)
 
+**Depends on:** phases 1 and 9. Its API half is independent of every other backend phase; its `payment_repo.go` edit is a different function from phase 4's.
 **Deliver:** FR-11 — the widened `GetPaymentsBySessionId` / `…Total` queries, the `method` field on `PaymentSummary` through to the entity, the "Belum dibayar" badge on `OrderHistoryListItem`, and its route to the instruction screen.
 **Tests:** repo tests for the widened filter (paid QRIS in, paid cash in, pending cash in, pending QRIS out, expired out, other sessions out); a story for the badge; a handler test for the tap-through.
 **Done when:** a guest who closes the tab mid-cash-order finds it again from `/orders` and recovers their number.
 
 ### Phase 14 — Enable, verify, document
 
+**Depends on:** every other phase — this is the only one that cannot be parallelised with anything.
 **Deliver:** an `apps/order-web-e2e` spec covering cart → cash checkout → instruction screen → (API-side payment) → preparing, and a second covering expiry; `CASH_PAYMENT_EXPIRY_SECONDS` set on the API host; `NEXT_PUBLIC_ORDER_CASH_PAYMENT_ENABLED=true` and `NEXT_PUBLIC_ORDER_CASHIER_LOCATION` set on the order-web deployment; a `docs-site/sales/order-checkout.md` update and a `docs-site/sales/kds.md` note about the second notification; `README.md`'s setup section pointed at the new variables and this PRD.
 **Done when:** a real guest orders from a table, pays cash at the counter against their transaction number, the KDS buzzes twice, the POS shows the order paid to the Cash wallet, and an abandoned order disappears on its own within the configured window.
 
