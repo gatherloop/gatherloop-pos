@@ -335,6 +335,38 @@ describe('MenuItemDetailUsecase', () => {
     });
   });
 
+  describe('preselectedOptionValueIds (D13)', () => {
+    it('preselects the value and goes straight to resolvingVariant when exactly one matched value belongs to an option', async () => {
+      const repository = new MockMenuRepository();
+      const menuItemDetail = createTester(repository, { productId: null });
+
+      menuItemDetail.dispatch({
+        type: 'SELECT_PRODUCT',
+        productId: 1,
+        product: repository.products[0],
+        preselectedOptionValueIds: [1],
+      });
+
+      expect(menuItemDetail.state.type).toBe('resolvingVariant');
+      expect(menuItemDetail.state.selectedOptionValueIds).toEqual([1]);
+    });
+
+    it('preselects nothing when two matched values belong to the same option', async () => {
+      const repository = new MockMenuRepository();
+      const menuItemDetail = createTester(repository, { productId: null });
+
+      menuItemDetail.dispatch({
+        type: 'SELECT_PRODUCT',
+        productId: 1,
+        product: repository.products[0],
+        preselectedOptionValueIds: [1, 2],
+      });
+
+      expect(menuItemDetail.state.type).toBe('selectingOptions');
+      expect(menuItemDetail.state.selectedOptionValueIds).toEqual([]);
+    });
+  });
+
   describe('a product with a single option that has a single value', () => {
     it('auto-selects the only value and goes straight to resolvingVariant when the product is given upfront', async () => {
       const repository = new MockMenuRepository();

@@ -50,6 +50,16 @@ function groupByCategory(products: Product[], categories: Category[]) {
     .filter((group) => group.products.length > 0);
 }
 
+function computePreselectedOptionValueIds(
+  query: string,
+  product: Product,
+  variants: Variant[]
+): number[] {
+  return matchMenuSearch(query, product, variants).matchedOptionValues.map(
+    (value) => value.id
+  );
+}
+
 function computeStartingPriceByProductId(
   variants: Variant[]
 ): Record<number, number> {
@@ -215,7 +225,7 @@ export const MenuListHandler = ({
   }, [tableResolve.state, cartRepository]);
 
   useEffect(() => {
-    const { selectedProductId } = menuList.state;
+    const { selectedProductId, query, variants } = menuList.state;
     if (selectedProductId !== null) {
       const product = menuList.state.products.find(
         (candidate) => candidate.id === selectedProductId
@@ -224,6 +234,9 @@ export const MenuListHandler = ({
         type: 'SELECT_PRODUCT',
         productId: selectedProductId,
         product,
+        preselectedOptionValueIds: product
+          ? computePreselectedOptionValueIds(query, product, variants)
+          : [],
       });
     }
     // `menuList.state.products` is deliberately not a dependency: this
