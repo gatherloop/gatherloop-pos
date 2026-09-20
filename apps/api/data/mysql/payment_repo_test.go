@@ -5,6 +5,7 @@ import (
 	"apps/api/domain"
 	"context"
 	"testing"
+	"time"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/require"
@@ -81,5 +82,35 @@ func TestPaymentRepository_GetPaymentsBySessionIdTotal_FiltersToPaidForThatSessi
 
 	require.Nil(t, err)
 	require.Equal(t, int64(0), total)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+// FR-4: the sweeper claims pending, non-deleted payments past their expired_at, oldest first.
+func TestPaymentRepository_GetExpirablePayments_FiltersToPendingPastExpiry(t *testing.T) {
+	repo, mock := newMockPaymentRepository(t)
+	now := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
+
+	mock.ExpectQuery("SELECT \\* FROM `payments` WHERE status = \\? AND deleted_at IS NULL AND expired_at < \\? ORDER BY id ASC LIMIT \\?").
+		WithArgs("pending", now, 50).
+		WillReturnRows(sqlmock.NewRows([]string{"id"}))
+
+	payments, err := repo.GetExpirablePayments(context.Background(), now, 50)
+
+	require.Nil(t, err)
+	require.Empty(t, payments)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestPaymentRepository_GetExpirablePayments_NoLimitFetchesEverything(t *testing.T) {
+	repo, mock := newMockPaymentRepository(t)
+	now := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
+
+	mock.ExpectQuery("SELECT \\* FROM `payments` WHERE status = \\? AND deleted_at IS NULL AND expired_at < \\? ORDER BY id ASC").
+		WithArgs("pending", now).
+		WillReturnRows(sqlmock.NewRows([]string{"id"}))
+
+	_, err := repo.GetExpirablePayments(context.Background(), now, 0)
+
+	require.Nil(t, err)
 	require.NoError(t, mock.ExpectationsWereMet())
 }

@@ -1470,3 +1470,190 @@ func TestPaymentUsecase_KdsDispatchTrigger(t *testing.T) {
 		assert.Equal(t, domain.PaymentStatePending, result.Status)
 	})
 }
+
+func TestPaymentUsecase_ExpireStalePayments(t *testing.T) {
+	t.Run("claims a bounded batch of expirable payments", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		m.paymentRepo.EXPECT().GetExpirablePayments(gomock.Any(), gomock.Any(), 50).Return(nil, nil)
+
+		err := m.usecase().ExpireStalePayments(context.Background())
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("a claim failure is surfaced without touching any payment", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		m.paymentRepo.EXPECT().GetExpirablePayments(gomock.Any(), gomock.Any(), gomock.Any()).
+			Return(nil, &domain.Error{Type: domain.InternalServerError})
+
+		err := m.usecase().ExpireStalePayments(context.Background())
+
+		assert.NotNil(t, err)
+	})
+
+	t.Run("expires a cash payment on the clock alone, without ever querying the gateway", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		payment := pendingPaymentFixture()
+		payment.Method = domain.PaymentMethodCash
+
+		m.paymentRepo.EXPECT().GetExpirablePayments(gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Payment{payment}, nil)
+		withPaymentTransactionMock(m.paymentRepo)
+
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), payment.Id).
+			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) {
+				assert.Equal(t, domain.PaymentStateExpired, p.Status)
+				return p, nil
+			})
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil)
+		m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), int64(99)).Return(nil)
+
+		err := m.usecase().ExpireStalePayments(context.Background())
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("a batch of a cash and a qris payment expires the cash one on the clock and confirms the qris one with the gateway first", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+
+		cashPayment := pendingPaymentFixture()
+		cashPayment.Id = 7
+		cashPayment.Method = domain.PaymentMethodCash
+		cashTransactionId := int64(99)
+		cashPayment.TransactionId = &cashTransactionId
+
+		qrisPayment := pendingPaymentFixture()
+		qrisPayment.Id = 8
+		qrisPayment.PartnerReferenceNo = "ORD22222222222B"
+		qrisTransactionId := int64(100)
+		qrisPayment.TransactionId = &qrisTransactionId
+
+		m.paymentRepo.EXPECT().GetExpirablePayments(gomock.Any(), gomock.Any(), gomock.Any()).
+			Return([]domain.Payment{cashPayment, qrisPayment}, nil)
+		m.paymentRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+			func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) }).Times(2)
+
+		// cash: clock alone, no gateway call.
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), cashPayment.Id).
+			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) {
+				assert.Equal(t, domain.PaymentStateExpired, p.Status)
+				return p, nil
+			})
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), cashTransactionId).Return(domain.Transaction{Id: cashTransactionId}, nil)
+		m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), cashTransactionId).Return(nil)
+
+		// qris: a confirming query first, which also reports expired.
+		m.gatewayRepo.EXPECT().QueryQris(gomock.Any(), gomock.Any()).
+			Return(domain.QrisStatus{PartnerReferenceNo: qrisPayment.PartnerReferenceNo, Status: domain.PaymentGatewayStatusExpired}, nil)
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), qrisPayment.Id).
+			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) {
+				assert.Equal(t, domain.PaymentStateExpired, p.Status)
+				return p, nil
+			})
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), qrisTransactionId).Return(domain.Transaction{Id: qrisTransactionId}, nil)
+		m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), qrisTransactionId).Return(nil)
+
+		err := m.usecase().ExpireStalePayments(context.Background())
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("a stale qris payment doku reports paid runs the late-payment path instead of expiring, and triggers a dispatch", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		payment := pendingPaymentFixture()
+
+		m.paymentRepo.EXPECT().GetExpirablePayments(gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Payment{payment}, nil)
+		withPaymentTransactionMock(m.paymentRepo)
+
+		m.gatewayRepo.EXPECT().QueryQris(gomock.Any(), gomock.Any()).
+			Return(domain.QrisStatus{PartnerReferenceNo: payment.PartnerReferenceNo, GatewayReferenceNo: "gw-late", Status: domain.PaymentGatewayStatusPaid, PaidAmount: payment.Amount}, nil)
+
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99, Total: payment.Amount}, nil)
+		expectConfirmPaymentWalletCredit(m)
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), payment.Id).
+			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) {
+				assert.Equal(t, domain.PaymentStatePaid, p.Status)
+				return p, nil
+			})
+		m.cartRepo.EXPECT().GetCartById(gomock.Any(), payment.CartId).
+			Return(domain.Cart{Id: 1, Status: domain.CartStatusActive}, nil)
+		m.cartRepo.EXPECT().UpdateCartById(gomock.Any(), gomock.Any(), int64(1)).
+			DoAndReturn(func(_ context.Context, cart domain.Cart, id int64) (domain.Cart, *domain.Error) { return cart, nil })
+
+		dispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
+		dispatcher.EXPECT().TriggerDispatch().Times(1)
+
+		err := m.usecaseWithDispatcher(dispatcher).ExpireStalePayments(context.Background())
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("a gateway error during the confirming query leaves the row untouched for the next tick", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		payment := pendingPaymentFixture()
+
+		m.paymentRepo.EXPECT().GetExpirablePayments(gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Payment{payment}, nil)
+		withPaymentTransactionMock(m.paymentRepo)
+		m.gatewayRepo.EXPECT().QueryQris(gomock.Any(), gomock.Any()).
+			Return(domain.QrisStatus{}, &domain.Error{Type: domain.BadGateway, Message: "doku unavailable"})
+
+		err := m.usecase().ExpireStalePayments(context.Background())
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("one failing row does not abort the rest of the batch", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+
+		failingPayment := pendingPaymentFixture()
+		failingPayment.Id = 7
+		failingPayment.Method = domain.PaymentMethodCash
+
+		okPayment := pendingPaymentFixture()
+		okPayment.Id = 8
+		okPayment.Method = domain.PaymentMethodCash
+		okPayment.PartnerReferenceNo = "ORD99999999999Z"
+		okTransactionId := int64(101)
+		okPayment.TransactionId = &okTransactionId
+
+		m.paymentRepo.EXPECT().GetExpirablePayments(gomock.Any(), gomock.Any(), gomock.Any()).
+			Return([]domain.Payment{failingPayment, okPayment}, nil)
+		m.paymentRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+			func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) }).Times(2)
+
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), failingPayment.Id).
+			Return(domain.Payment{}, &domain.Error{Type: domain.InternalServerError, Message: "db hiccup"})
+
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), okPayment.Id).
+			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) {
+				assert.Equal(t, domain.PaymentStateExpired, p.Status)
+				return p, nil
+			})
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), okTransactionId).Return(domain.Transaction{Id: okTransactionId}, nil)
+		m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), okTransactionId).Return(nil)
+
+		err := m.usecase().ExpireStalePayments(context.Background())
+
+		assert.Nil(t, err)
+	})
+}
