@@ -54,7 +54,7 @@ func newPaymentHandlerMocks(ctrl *gomock.Controller) paymentHandlerMocks {
 
 func (m paymentHandlerMocks) handler() restapi.PaymentHandler {
 	availabilityReservation := domain.NewAvailabilityReservation(m.availabilityRepo)
-	usecase := domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, availabilityReservation, m.kdsNotificationRepo, m.kdsNotificationDispatcher, 300, paymentHandlerOrderPaymentWalletId)
+	usecase := domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, availabilityReservation, m.kdsNotificationRepo, m.kdsNotificationDispatcher, 300, 600, paymentHandlerOrderPaymentWalletId)
 	return restapi.NewPaymentHandler(usecase)
 }
 
@@ -237,22 +237,53 @@ func TestPaymentHandler_Checkout(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
 
-	t.Run("a cash payment method is a 400 naming it not available yet", func(t *testing.T) {
+	t.Run("a cash checkout succeeds without ever calling the gateway", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
 		m := newPaymentHandlerMocks(ctrl)
+		withPaymentHandlerTransactionMock(m.paymentRepo)
+		expectValidPaymentWallet(m)
+
+		m.customerRepo.EXPECT().UpsertCustomerBySessionId(gomock.Any(), testSessionId, "Budi").
+			Return(domain.Customer{Id: 1, SessionId: testSessionId, Name: "Budi"}, nil)
+
+		tableId := int64(5)
+		m.cartRepo.EXPECT().GetActiveCartBySessionId(gomock.Any(), testSessionId).Return(domain.Cart{
+			Id: 1, TableId: &tableId, Status: domain.CartStatusActive,
+			Items: []domain.CartItem{{Id: 1, VariantId: 10, Amount: 1}},
+		}, nil)
+		m.paymentRepo.EXPECT().GetPendingPaymentByCartId(gomock.Any(), int64(1)).Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
+		m.variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(10)).Return(domain.Variant{
+			Id: 10, Price: 15000, Product: domain.Product{Name: "Kopi Susu"},
+		}, nil)
+		expectAvailableHandlerVariant(m, 10)
+
+		m.transactionRepo.EXPECT().CreateTransaction(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(_ context.Context, transaction domain.Transaction) (domain.Transaction, *domain.Error) {
+				transaction.Id = 200
+				transaction.Cart = &domain.Cart{Table: &domain.Table{Label: "Meja 1"}}
+				return transaction, nil
+			})
+		m.paymentRepo.EXPECT().CreatePayment(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(_ context.Context, payment domain.Payment) (domain.Payment, *domain.Error) {
+				payment.Id = 300
+				return payment, nil
+			})
+		m.gatewayRepo.EXPECT().GenerateQris(gomock.Any(), gomock.Any()).Times(0)
 
 		req := httptest.NewRequest(http.MethodPost, "/carts/current/checkout", checkoutRequestBodyWithMethod("Budi", "cash"))
 		req.Header.Set("X-Session-Id", testSessionId)
 		w := httptest.NewRecorder()
 		m.handler().Checkout(w, req)
 
-		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Equal(t, http.StatusOK, w.Code)
 
-		var apiErr apiContract.Error
-		assert.NoError(t, json.NewDecoder(bytes.NewBufferString(w.Body.String())).Decode(&apiErr))
-		assert.Equal(t, "payment method is not available yet", apiErr.Message)
+		var resp apiContract.PaymentResponse
+		assert.NoError(t, json.NewDecoder(bytes.NewBufferString(w.Body.String())).Decode(&resp))
+		assert.Equal(t, "", resp.Data.QrContent)
+		assert.Equal(t, "pending", resp.Data.Status)
+		assert.Equal(t, "cash", resp.Data.Method)
 	})
 }
 
