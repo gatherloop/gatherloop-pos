@@ -505,6 +505,14 @@ func pendingPaymentFixture() domain.Payment {
 	}
 }
 
+func pendingCashPaymentFixture() domain.Payment {
+	payment := pendingPaymentFixture()
+	payment.Method = domain.PaymentMethodCash
+	payment.GatewayReferenceNo = ""
+	payment.QrContent = ""
+	return payment
+}
+
 func expectConfirmPaymentWalletCredit(m paymentUsecaseMocks) {
 	expectConfirmPaymentWalletCreditWithoutKdsEnqueue(m)
 	m.kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
@@ -1167,6 +1175,88 @@ func TestPaymentUsecase_GetPaymentStatus(t *testing.T) {
 
 		assert.Nil(t, err)
 		assert.Equal(t, payment, result)
+	})
+
+	t.Run("a pending cash payment before expired_at stays pending without touching the gateway", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		withPaymentTransactionMock(m.paymentRepo)
+
+		payment := pendingCashPaymentFixture()
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), payment.Id).
+			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) {
+				assert.Equal(t, domain.PaymentStatePending, p.Status)
+				assert.NotNil(t, p.StatusCheckedAt)
+				return p, nil
+			})
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil)
+
+		result, _, err := m.usecase().GetPaymentStatus(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+
+		assert.Nil(t, err)
+		assert.Equal(t, domain.PaymentStatePending, result.Status)
+	})
+
+	t.Run("a pending cash payment checked seconds ago still expires on the clock — the requery floor is a DOKU-only device", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		withPaymentTransactionMock(m.paymentRepo)
+
+		payment := pendingCashPaymentFixture()
+		payment.ExpiredAt = time.Now().Add(-time.Minute)
+		checkedAt := time.Now().Add(-3 * time.Second)
+		payment.StatusCheckedAt = &checkedAt
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), payment.Id).
+			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) {
+				assert.Equal(t, domain.PaymentStateExpired, p.Status)
+				return p, nil
+			})
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil).Times(2)
+		m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), int64(99)).Return(nil)
+
+		result, _, err := m.usecase().GetPaymentStatus(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+
+		assert.Nil(t, err)
+		assert.Equal(t, domain.PaymentStateExpired, result.Status)
+	})
+
+	t.Run("a pending cash payment past expired_at expires on read with no gateway call, releasing availability and soft-deleting its transaction", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		withPaymentTransactionMock(m.paymentRepo)
+
+		payment := pendingCashPaymentFixture()
+		payment.ExpiredAt = time.Now().Add(-time.Minute)
+		transaction := domain.Transaction{
+			Id:               99,
+			TransactionItems: []domain.TransactionItem{{VariantId: 10, Amount: 2}},
+		}
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), payment.Id).
+			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) {
+				assert.Equal(t, domain.PaymentStateExpired, p.Status)
+				assert.NotNil(t, p.StatusCheckedAt)
+				return p, nil
+			})
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(transaction, nil).Times(2)
+		m.availabilityRepo.EXPECT().LockVariantById(gomock.Any(), int64(10)).Return(domain.Variant{
+			Id: 10, IsAvailable: true,
+			Product: domain.Product{IsAvailable: true, AvailabilityTracking: domain.AvailabilityTrackingNone},
+		}, nil)
+		m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), int64(99)).Return(nil)
+
+		result, _, err := m.usecase().GetPaymentStatus(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+
+		assert.Nil(t, err)
+		assert.Equal(t, domain.PaymentStateExpired, result.Status)
 	})
 
 	t.Run("an already-resolved payment is returned as-is without touching the gateway", func(t *testing.T) {

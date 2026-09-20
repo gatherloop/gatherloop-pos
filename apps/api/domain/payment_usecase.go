@@ -414,6 +414,10 @@ func (usecase PaymentUsecase) GetPaymentList(ctx context.Context, sessionId stri
 }
 
 func (usecase PaymentUsecase) refreshPendingPaymentStatus(ctxWithTx context.Context, payment Payment, now time.Time) (Payment, ConfirmPaymentOutcome, *Error) {
+	if !payment.RequiresGateway() {
+		return usecase.refreshPendingCashPaymentStatus(ctxWithTx, payment, now)
+	}
+
 	if payment.StatusCheckedAt != nil && now.Sub(*payment.StatusCheckedAt) < statusRequeryFloor {
 		return payment, ConfirmPaymentOutcomeIgnored, nil
 	}
@@ -437,4 +441,40 @@ func (usecase PaymentUsecase) refreshPendingPaymentStatus(ctxWithTx context.Cont
 	payment.StatusCheckedAt = &now
 	updated, err := usecase.paymentRepository.UpdatePaymentById(ctxWithTx, payment, payment.Id)
 	return updated, ConfirmPaymentOutcomeIgnored, err
+}
+
+// refreshPendingCashPaymentStatus is FR-3/D7: cash has no gateway to ask, so the server clock is
+// the whole truth. The expired branch mirrors applyQrisStatus's (payment_usecase.go:291) — phase 4
+// extracts both into a shared expirePayment.
+func (usecase PaymentUsecase) refreshPendingCashPaymentStatus(ctxWithTx context.Context, payment Payment, now time.Time) (Payment, ConfirmPaymentOutcome, *Error) {
+	if now.Before(payment.ExpiredAt) {
+		payment.StatusCheckedAt = &now
+		updated, err := usecase.paymentRepository.UpdatePaymentById(ctxWithTx, payment, payment.Id)
+		return updated, ConfirmPaymentOutcomeIgnored, err
+	}
+
+	payment.Status = PaymentStateExpired
+	payment.StatusCheckedAt = &now
+
+	updatedPayment, updateErr := usecase.paymentRepository.UpdatePaymentById(ctxWithTx, payment, payment.Id)
+	if updateErr != nil {
+		return payment, "", updateErr
+	}
+
+	if payment.TransactionId != nil {
+		transaction, txErr := usecase.transactionRepository.GetTransactionById(ctxWithTx, *payment.TransactionId)
+		if txErr != nil {
+			return payment, "", txErr
+		}
+
+		if releaseErr := usecase.availabilityReservation.Release(ctxWithTx, transaction.TransactionItems); releaseErr != nil {
+			return payment, "", releaseErr
+		}
+
+		if deleteErr := usecase.transactionRepository.DeleteTransactionById(ctxWithTx, *payment.TransactionId); deleteErr != nil {
+			return payment, "", deleteErr
+		}
+	}
+
+	return updatedPayment, ConfirmPaymentOutcomeExpired, nil
 }
