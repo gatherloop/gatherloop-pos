@@ -190,10 +190,33 @@ describe('MenuListHandler', () => {
 
     await settle();
 
-    const input = screen.getByPlaceholderText<HTMLInputElement>('Cari menu');
+    const input = screen.getByPlaceholderText<HTMLInputElement>(
+      'Cari menu atau varian'
+    );
     await user.type(input, 'kopi');
 
     expect(input.value).toBe('kopi');
+  });
+
+  it('shows a matched-value chip and hides non-matching products when searching by option value', async () => {
+    const user = userEvent.setup();
+    renderHandler();
+
+    await settle();
+
+    const input = screen.getByPlaceholderText<HTMLInputElement>(
+      'Cari menu atau varian'
+    );
+    await user.type(input, 'large');
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 650));
+    });
+    await settle();
+
+    expect(screen.getByText('Es Kopi Susu')).toBeTruthy();
+    expect(screen.getByText('Large')).toBeTruthy();
+    expect(screen.queryByText('Nasi Goreng')).toBeNull();
   });
 
   it('shows the cart bar once the cart is non-empty, and navigates to the cart route on press', async () => {
@@ -252,7 +275,9 @@ describe('MenuListHandler', () => {
       renderHandler({ menuRepository });
 
       await settle();
-      const input = screen.getByPlaceholderText<HTMLInputElement>('Cari menu');
+      const input = screen.getByPlaceholderText<HTMLInputElement>(
+        'Cari menu atau varian'
+      );
       await user.type(input, 'kopi');
 
       await user.click(screen.getByText('Es Kopi Susu'));
