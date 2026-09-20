@@ -144,7 +144,7 @@ func main() {
 	tableUsecase := domain.NewTableUsecase(tableRepository)
 	cartUsecase := domain.NewCartUsecase(cartRepository, variantRepository, tableRepository, paymentRepository)
 	customerUsecase := domain.NewCustomerUsecase(customerRepository)
-	paymentUsecase := domain.NewPaymentUsecase(paymentRepository, paymentGatewayRepository, customerRepository, cartRepository, transactionRepository, variantRepository, walletRepository, availabilityReservation, kdsNotificationRepository, kdsNotificationUsecase, env.DokuQrisExpirySeconds, orderPaymentWalletId)
+	paymentUsecase := domain.NewPaymentUsecase(paymentRepository, paymentGatewayRepository, customerRepository, cartRepository, transactionRepository, variantRepository, walletRepository, availabilityReservation, kdsNotificationRepository, kdsNotificationUsecase, env.DokuQrisExpirySeconds, env.CashPaymentExpirySeconds, orderPaymentWalletId)
 	budgetUsecase := domain.NewBudgetUsecase(budgetRepository)
 	authUsecase := domain.NewAuthUsecase(authRepository)
 	calculationUsecase := domain.NewCalculationUsecase(calculationRepository, walletRepository)
@@ -220,7 +220,7 @@ func main() {
 	dispatchWaitGroup.Add(1)
 	go func() {
 		defer dispatchWaitGroup.Done()
-		runNotificationSweeper(dispatchCtx, kdsNotificationUsecase, guestNotificationUsecase, env.KdsDispatchIntervalSeconds, rootLogger)
+		runMaintenanceSweeper(dispatchCtx, kdsNotificationUsecase, guestNotificationUsecase, paymentUsecase, env.KdsDispatchIntervalSeconds, rootLogger)
 	}()
 
 	server := &http.Server{Addr: fmt.Sprintf(":%s", env.Port), Handler: router}
@@ -248,10 +248,10 @@ func main() {
 	}
 }
 
-// runNotificationSweeper drives both outboxes from one ticker (D5): two tickers at the same
-// interval would be two goroutines doing the same job, and two env variables to keep in sync for
-// no reason anyone could articulate.
-func runNotificationSweeper(ctx context.Context, kdsNotificationUsecase domain.KdsNotificationUsecase, guestNotificationUsecase domain.GuestNotificationUsecase, intervalSeconds int, logger *slog.Logger) {
+// runMaintenanceSweeper drives both outboxes and the payment expiry sweep from one ticker (D5,
+// FR-4): three tickers at the same interval would be three goroutines doing the same job, and
+// extra env variables to keep in sync for no reason anyone could articulate.
+func runMaintenanceSweeper(ctx context.Context, kdsNotificationUsecase domain.KdsNotificationUsecase, guestNotificationUsecase domain.GuestNotificationUsecase, paymentUsecase domain.PaymentUsecase, intervalSeconds int, logger *slog.Logger) {
 	ticker := time.NewTicker(time.Duration(intervalSeconds) * time.Second)
 	defer ticker.Stop()
 
@@ -265,6 +265,9 @@ func runNotificationSweeper(ctx context.Context, kdsNotificationUsecase domain.K
 			}
 			if err := guestNotificationUsecase.DispatchPending(context.Background()); err != nil {
 				logger.Error("guest notification dispatch sweep failed", slog.Any("error", err))
+			}
+			if err := paymentUsecase.ExpireStalePayments(context.Background()); err != nil {
+				logger.Error("payment expiry sweep failed", slog.Any("error", err))
 			}
 		}
 	}

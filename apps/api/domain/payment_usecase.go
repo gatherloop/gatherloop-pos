@@ -2,10 +2,15 @@ package domain
 
 import (
 	"context"
+	"log/slog"
 	"time"
 )
 
 const statusRequeryFloor = 5 * time.Second
+
+// FR-4: a bounded batch per sweep so one tick of the sweeper cannot run unbounded, matching
+// kdsDispatchBatchSize.
+const paymentExpiryBatchSize = 50
 
 type PaymentUsecase struct {
 	paymentRepository         PaymentRepository
@@ -19,6 +24,7 @@ type PaymentUsecase struct {
 	kdsNotificationRepository KdsNotificationRepository
 	kdsNotificationDispatcher KdsNotificationDispatcher
 	qrisExpirySeconds         int
+	cashExpirySeconds         int
 	orderPaymentWalletId      int64
 }
 
@@ -34,6 +40,7 @@ func NewPaymentUsecase(
 	kdsNotificationRepository KdsNotificationRepository,
 	kdsNotificationDispatcher KdsNotificationDispatcher,
 	qrisExpirySeconds int,
+	cashExpirySeconds int,
 	orderPaymentWalletId int64,
 ) PaymentUsecase {
 	return PaymentUsecase{
@@ -48,8 +55,16 @@ func NewPaymentUsecase(
 		kdsNotificationRepository: kdsNotificationRepository,
 		kdsNotificationDispatcher: kdsNotificationDispatcher,
 		qrisExpirySeconds:         qrisExpirySeconds,
+		cashExpirySeconds:         cashExpirySeconds,
 		orderPaymentWalletId:      orderPaymentWalletId,
 	}
+}
+
+func (usecase PaymentUsecase) expirySecondsFor(method PaymentMethod) int {
+	if method == PaymentMethodCash {
+		return usecase.cashExpirySeconds
+	}
+	return usecase.qrisExpirySeconds
 }
 
 func (usecase PaymentUsecase) validateOrderPaymentWallet(ctx context.Context) *Error {
@@ -63,7 +78,7 @@ func (usecase PaymentUsecase) validateOrderPaymentWallet(ctx context.Context) *E
 	return ValidateOrderPaymentWallet(wallet)
 }
 
-func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, customerName string) (Payment, Transaction, *Error) {
+func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, customerName string, method PaymentMethod) (Payment, Transaction, *Error) {
 	var resultPayment Payment
 	var resultTransaction Transaction
 
@@ -153,20 +168,27 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 			return &Error{Type: InternalServerError, Message: "failed to generate payment reference"}
 		}
 
-		expiredAt := time.Now().Add(time.Duration(usecase.qrisExpirySeconds) * time.Second)
+		expiredAt := time.Now().Add(time.Duration(usecase.expirySecondsFor(method)) * time.Second)
 
 		createdPayment, err := usecase.paymentRepository.CreatePayment(ctxWithTx, Payment{
 			CartId:             cart.Id,
 			SessionId:          sessionId,
 			TransactionId:      &createdTransaction.Id,
 			PartnerReferenceNo: partnerReferenceNo,
-			Method:             PaymentMethodQris,
+			Method:             method,
 			Status:             PaymentStatePending,
 			Amount:             total,
 			ExpiredAt:          expiredAt,
 		})
 		if err != nil {
 			return err
+		}
+
+		resultPayment = createdPayment
+		resultTransaction = createdTransaction
+
+		if !createdPayment.RequiresGateway() {
+			return nil
 		}
 
 		qrisPayment, gatewayErr := usecase.paymentGatewayRepository.GenerateQris(ctxWithTx, GenerateQrisInput{
@@ -187,7 +209,6 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 		}
 
 		resultPayment = updatedPayment
-		resultTransaction = createdTransaction
 		return nil
 	})
 
@@ -290,39 +311,133 @@ func (usecase PaymentUsecase) applyQrisStatus(ctxWithTx context.Context, payment
 
 	if (status.Status == PaymentGatewayStatusExpired || status.Status == PaymentGatewayStatusFailed) && payment.Status == PaymentStatePending {
 		outcome := ConfirmPaymentOutcomeExpired
-		payment.Status = PaymentStateExpired
+		terminalStatus := PaymentStateExpired
 		if status.Status == PaymentGatewayStatusFailed {
-			payment.Status = PaymentStateFailed
+			terminalStatus = PaymentStateFailed
 			outcome = ConfirmPaymentOutcomeFailed
 		}
 
-		now := time.Now()
-		payment.StatusCheckedAt = &now
-
-		updatedPayment, updateErr := usecase.paymentRepository.UpdatePaymentById(ctxWithTx, payment, payment.Id)
-		if updateErr != nil {
-			return payment, "", updateErr
-		}
-
-		if payment.TransactionId != nil {
-			transaction, txErr := usecase.transactionRepository.GetTransactionById(ctxWithTx, *payment.TransactionId)
-			if txErr != nil {
-				return payment, "", txErr
-			}
-
-			if releaseErr := usecase.availabilityReservation.Release(ctxWithTx, transaction.TransactionItems); releaseErr != nil {
-				return payment, "", releaseErr
-			}
-
-			if deleteErr := usecase.transactionRepository.DeleteTransactionById(ctxWithTx, *payment.TransactionId); deleteErr != nil {
-				return payment, "", deleteErr
-			}
+		updatedPayment, finalizeErr := usecase.finalizeUncollectedPayment(ctxWithTx, payment, terminalStatus)
+		if finalizeErr != nil {
+			return payment, "", finalizeErr
 		}
 
 		return updatedPayment, outcome, nil
 	}
 
 	return payment, ConfirmPaymentOutcomeIgnored, nil
+}
+
+// finalizeUncollectedPayment is the shared tail of giving up on a payment that will never be
+// collected: the payment moves to its terminal state, its transaction's availability reservation
+// is released, and the transaction itself is soft-deleted — which is what unfreezes the cart.
+func (usecase PaymentUsecase) finalizeUncollectedPayment(ctxWithTx context.Context, payment Payment, terminalStatus PaymentState) (Payment, *Error) {
+	now := time.Now()
+	payment.Status = terminalStatus
+	payment.StatusCheckedAt = &now
+
+	updatedPayment, updateErr := usecase.paymentRepository.UpdatePaymentById(ctxWithTx, payment, payment.Id)
+	if updateErr != nil {
+		return payment, updateErr
+	}
+
+	if payment.TransactionId != nil {
+		transaction, txErr := usecase.transactionRepository.GetTransactionById(ctxWithTx, *payment.TransactionId)
+		if txErr != nil {
+			return payment, txErr
+		}
+
+		if releaseErr := usecase.availabilityReservation.Release(ctxWithTx, transaction.TransactionItems); releaseErr != nil {
+			return payment, releaseErr
+		}
+
+		if deleteErr := usecase.transactionRepository.DeleteTransactionById(ctxWithTx, *payment.TransactionId); deleteErr != nil {
+			return payment, deleteErr
+		}
+	}
+
+	return updatedPayment, nil
+}
+
+// expirePayment is FR-4's entry point for giving up on a payment on the clock alone (D7) — used
+// directly by ExpireStalePayments for cash, and by applyQrisStatus's expired branch for QRIS.
+func (usecase PaymentUsecase) expirePayment(ctxWithTx context.Context, payment Payment) (Payment, *Error) {
+	return usecase.finalizeUncollectedPayment(ctxWithTx, payment, PaymentStateExpired)
+}
+
+// ExpireStalePayments claims up to paymentExpiryBatchSize pending payments past their expired_at,
+// oldest first, and gives up on each in its own transaction so one bad row cannot poison the batch
+// (FR-4). Cash trusts the server clock alone (D7). QRIS confirms with DOKU first, because DOKU may
+// already hold money we do not know about (QRIS D12a): a paid result runs the full late-payment
+// path (D5's un-delete included), anything else expires, and a gateway error leaves the row for
+// the next tick.
+func (usecase PaymentUsecase) ExpireStalePayments(ctx context.Context) *Error {
+	now := time.Now()
+	payments, err := usecase.paymentRepository.GetExpirablePayments(ctx, now, paymentExpiryBatchSize)
+	if err != nil {
+		return err
+	}
+
+	for _, payment := range payments {
+		usecase.expireOne(ctx, payment, now)
+	}
+
+	return nil
+}
+
+func (usecase PaymentUsecase) expireOne(ctx context.Context, payment Payment, now time.Time) {
+	logger := slog.With(
+		slog.String("partnerReferenceNo", payment.PartnerReferenceNo),
+		slog.String("method", string(payment.Method)),
+	)
+	if payment.TransactionId != nil {
+		logger = logger.With(slog.Int64("transactionId", *payment.TransactionId))
+	}
+
+	outcome := ConfirmPaymentOutcomeIgnored
+
+	err := usecase.paymentRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		if !payment.RequiresGateway() {
+			if _, expireErr := usecase.expirePayment(ctxWithTx, payment); expireErr != nil {
+				return expireErr
+			}
+			outcome = ConfirmPaymentOutcomeExpired
+			return nil
+		}
+
+		gatewayStatus, gatewayErr := usecase.paymentGatewayRepository.QueryQris(ctxWithTx, QueryQrisInput{
+			PartnerReferenceNo: payment.PartnerReferenceNo,
+			GatewayReferenceNo: payment.GatewayReferenceNo,
+		})
+		if gatewayErr != nil {
+			// leave the row alone for the next tick — a gateway hiccup is not the guest's expiry.
+			return nil
+		}
+
+		if gatewayStatus.Status == PaymentGatewayStatusPending {
+			gatewayStatus.Status = PaymentGatewayStatusExpired
+		}
+
+		_, applyOutcome, applyErr := usecase.applyQrisStatus(ctxWithTx, payment, gatewayStatus)
+		if applyErr != nil {
+			return applyErr
+		}
+		outcome = applyOutcome
+		return nil
+	})
+
+	if err != nil {
+		logger.Error("failed to expire stale payment", slog.Any("error", err))
+		return
+	}
+
+	switch outcome {
+	case ConfirmPaymentOutcomeExpired, ConfirmPaymentOutcomeFailed:
+		logger.Info("expired stale payment")
+	case ConfirmPaymentOutcomePaid, ConfirmPaymentOutcomePaidLate:
+		logger.Warn("stale payment was already paid at the gateway", slog.String("outcome", string(outcome)))
+		usecase.kdsNotificationDispatcher.TriggerDispatch()
+	}
 }
 
 func (usecase PaymentUsecase) GetPaymentStatus(ctx context.Context, sessionId string, partnerReferenceNo string) (Payment, Transaction, *Error) {
@@ -414,6 +529,10 @@ func (usecase PaymentUsecase) GetPaymentList(ctx context.Context, sessionId stri
 }
 
 func (usecase PaymentUsecase) refreshPendingPaymentStatus(ctxWithTx context.Context, payment Payment, now time.Time) (Payment, ConfirmPaymentOutcome, *Error) {
+	if !payment.RequiresGateway() {
+		return usecase.refreshPendingCashPaymentStatus(ctxWithTx, payment, now)
+	}
+
 	if payment.StatusCheckedAt != nil && now.Sub(*payment.StatusCheckedAt) < statusRequeryFloor {
 		return payment, ConfirmPaymentOutcomeIgnored, nil
 	}
@@ -437,4 +556,22 @@ func (usecase PaymentUsecase) refreshPendingPaymentStatus(ctxWithTx context.Cont
 	payment.StatusCheckedAt = &now
 	updated, err := usecase.paymentRepository.UpdatePaymentById(ctxWithTx, payment, payment.Id)
 	return updated, ConfirmPaymentOutcomeIgnored, err
+}
+
+// refreshPendingCashPaymentStatus is FR-3/D7: cash has no gateway to ask, so the server clock is
+// the whole truth. Past expired_at it shares expirePayment with applyQrisStatus's expired branch
+// and the sweeper (FR-4) — one definition of what giving up on a payment does.
+func (usecase PaymentUsecase) refreshPendingCashPaymentStatus(ctxWithTx context.Context, payment Payment, now time.Time) (Payment, ConfirmPaymentOutcome, *Error) {
+	if now.Before(payment.ExpiredAt) {
+		payment.StatusCheckedAt = &now
+		updated, err := usecase.paymentRepository.UpdatePaymentById(ctxWithTx, payment, payment.Id)
+		return updated, ConfirmPaymentOutcomeIgnored, err
+	}
+
+	updatedPayment, expireErr := usecase.expirePayment(ctxWithTx, payment)
+	if expireErr != nil {
+		return payment, "", expireErr
+	}
+
+	return updatedPayment, ConfirmPaymentOutcomeExpired, nil
 }

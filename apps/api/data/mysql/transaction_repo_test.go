@@ -105,7 +105,7 @@ func TestTransactionRepository_GetTransactionList_Fulfillment(t *testing.T) {
 		{
 			name:          "all applies no fulfillment predicate",
 			fulfillment:   nil,
-			expectedQuery: "SELECT \\* FROM `transactions` WHERE deleted_at is NULL",
+			expectedQuery: "SELECT transactions\\.\\*, payments\\.method AS payment_method FROM `transactions` LEFT JOIN payments ON payments\\.transaction_id = transactions\\.id AND payments\\.deleted_at IS NULL WHERE transactions\\.deleted_at is NULL",
 			expectedArgs:  nil,
 		},
 	}
@@ -129,6 +129,21 @@ func TestTransactionRepository_GetTransactionList_Fulfillment(t *testing.T) {
 			require.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
+}
+
+// D16: the payment method is resolved through one LEFT JOIN on the existing read
+// model query, not a per-row lookup.
+func TestTransactionRepository_GetTransactionById_JoinsPaymentMethod(t *testing.T) {
+	repo, mock := newMockTransactionRepository(t)
+
+	mock.ExpectQuery("SELECT transactions\\.\\*, payments\\.method AS payment_method FROM `transactions` LEFT JOIN payments ON payments\\.transaction_id = transactions\\.id AND payments\\.deleted_at IS NULL WHERE transactions\\.id = \\?").
+		WithArgs(int64(7), 1).
+		WillReturnRows(sqlmock.NewRows([]string{"id"}))
+
+	_, err := repo.GetTransactionById(context.Background(), 7)
+
+	require.NotNil(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
 }
 
 func TestTransactionRepository_GetTransactionSummariesByIds_EmptyIdsShortCircuits(t *testing.T) {

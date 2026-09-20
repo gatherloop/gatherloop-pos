@@ -18,7 +18,11 @@ func (repo Repository) GetTransactionList(ctx context.Context, query string, sor
 	db := GetDbFromCtx(ctx, repo.db)
 
 	var transactionResults []Transaction
-	result := db.Table("transactions").Where("deleted_at is NULL").Preload("TransactionItems").Preload("TransactionItems.Values").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").Preload("TransactionItems.Variant.Product.Category").Preload("TransactionCoupons").Preload("TransactionCoupons.Coupon").Preload("Wallet").Preload("Cart").Preload("Cart.Table").Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
+	result := db.Table("transactions").
+		Select("transactions.*, payments.method AS payment_method").
+		Joins("LEFT JOIN payments ON payments.transaction_id = transactions.id AND payments.deleted_at IS NULL").
+		Where("transactions.deleted_at is NULL").
+		Preload("TransactionItems").Preload("TransactionItems.Values").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").Preload("TransactionItems.Variant.Product.Category").Preload("TransactionCoupons").Preload("TransactionCoupons.Coupon").Preload("Wallet").Preload("Cart").Preload("Cart.Table").Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
 
 	result = whereTransactionSearchQuery(result, query)
 
@@ -32,9 +36,9 @@ func (repo Repository) GetTransactionList(ctx context.Context, query string, sor
 
 	switch paymentStatus {
 	case domain.Paid:
-		result = result.Where("paid_at IS NOT NULL")
+		result = result.Where("transactions.paid_at IS NOT NULL")
 	case domain.Unpaid:
-		result = result.Where("paid_at IS NULL")
+		result = result.Where("transactions.paid_at IS NULL")
 	}
 
 	if walletId != nil {
@@ -115,7 +119,11 @@ func (repo Repository) GetTransactionById(ctx context.Context, id int64) (domain
 	db := GetDbFromCtx(ctx, repo.db)
 
 	var transaction Transaction
-	result := db.Table("transactions").Where("id = ?", id).Preload("TransactionItems").Preload("TransactionItems.Values").Preload("Wallet").Preload("Cart").Preload("Cart.Table").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.Materials").Preload("TransactionItems.Variant.Materials.Material").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").Preload("TransactionItems.Variant.Product.Category").Preload("TransactionCoupons").Preload("TransactionCoupons.Coupon").First(&transaction)
+	result := db.Table("transactions").
+		Select("transactions.*, payments.method AS payment_method").
+		Joins("LEFT JOIN payments ON payments.transaction_id = transactions.id AND payments.deleted_at IS NULL").
+		Where("transactions.id = ?", id).
+		Preload("TransactionItems").Preload("TransactionItems.Values").Preload("Wallet").Preload("Cart").Preload("Cart.Table").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.Materials").Preload("TransactionItems.Variant.Materials.Material").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").Preload("TransactionItems.Variant.Product.Category").Preload("TransactionCoupons").Preload("TransactionCoupons.Coupon").First(&transaction)
 	return ToTransactionDomain(transaction), ToErrorCtx(ctx, result.Error, "GetTransactionById")
 }
 

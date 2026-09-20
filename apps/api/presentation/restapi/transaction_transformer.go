@@ -118,11 +118,18 @@ func ToApiTransaction(transaction domain.Transaction) apiContract.Transaction {
 		table = &apiTable
 	}
 
+	var paymentMethod *string
+	if transaction.PaymentMethod != nil {
+		m := string(*transaction.PaymentMethod)
+		paymentMethod = &m
+	}
+
 	return apiContract.Transaction{
 		Id:                 transaction.Id,
 		Name:               transaction.Name,
 		Source:             string(transaction.Source),
 		Table:              table,
+		PaymentMethod:      paymentMethod,
 		PagerNumber:        transaction.PagerNumber,
 		TransactionNumber:  transaction.TransactionNumber,
 		DeletedAt:          transaction.DeletedAt,

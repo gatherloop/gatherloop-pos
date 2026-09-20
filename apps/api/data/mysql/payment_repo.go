@@ -3,6 +3,7 @@ package mysql
 import (
 	"apps/api/domain"
 	"context"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -74,6 +75,21 @@ func (repo Repository) GetPaymentsBySessionIdTotal(ctx context.Context, sessionI
 		Where("session_id = ? AND status = ? AND deleted_at IS NULL", sessionId, string(domain.PaymentStatePaid)).
 		Count(&count)
 	return count, ToErrorCtx(ctx, result.Error, "GetPaymentsBySessionIdTotal")
+}
+
+func (repo Repository) GetExpirablePayments(ctx context.Context, now time.Time, limit int) ([]domain.Payment, *domain.Error) {
+	db := GetDbFromCtx(ctx, repo.db)
+	query := db.Table("payments").
+		Where("status = ? AND deleted_at IS NULL AND expired_at < ?", string(domain.PaymentStatePending), now).
+		Order("id ASC")
+
+	if limit > 0 {
+		query = query.Limit(limit)
+	}
+
+	var payments []Payment
+	result := query.Find(&payments)
+	return ToPaymentsListDomain(payments), ToErrorCtx(ctx, result.Error, "GetExpirablePayments")
 }
 
 func (repo Repository) CreatePayment(ctx context.Context, payment domain.Payment) (domain.Payment, *domain.Error) {
