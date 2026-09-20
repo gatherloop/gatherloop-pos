@@ -19,9 +19,7 @@ func (repo Repository) GetProductList(ctx context.Context, query string, sortBy 
 	var products []Product
 	result := db.Table("products").Preload("Category").Preload("Options").Preload("Options.Values").Where("deleted_at", nil).Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
 
-	if query != "" {
-		result = result.Where("name LIKE ?", "%"+query+"%")
-	}
+	result = applyProductSearchFilter(result, query)
 
 	if saleType != nil {
 		switch *saleType {
@@ -59,9 +57,7 @@ func (repo Repository) GetProductListTotal(ctx context.Context, query string, sa
 	var count int64
 	result := db.Table("products").Where("deleted_at", nil)
 
-	if query != "" {
-		result = result.Where("name LIKE ?", "%"+query+"%")
-	}
+	result = applyProductSearchFilter(result, query)
 
 	if saleType != nil {
 		switch *saleType {
