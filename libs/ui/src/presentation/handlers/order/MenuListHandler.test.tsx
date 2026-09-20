@@ -265,6 +265,42 @@ describe('MenuListHandler', () => {
       expect(mockPush).not.toHaveBeenCalled();
     });
 
+    it('preselects the option value an unambiguous search match found, skipping straight to a resolved price', async () => {
+      const user = userEvent.setup();
+      renderHandler();
+      await settle();
+
+      const input = screen.getByPlaceholderText<HTMLInputElement>('Cari menu');
+      await user.type(input, 'regular');
+
+      await user.click(screen.getByText('Es Kopi Susu'));
+      await settle();
+
+      expect(
+        screen.getByRole('button', {
+          name: 'Tambah ke Keranjang · Rp 18.000',
+        })
+      ).toBeTruthy();
+    });
+
+    it('preselects nothing when the search match is ambiguous within an option', async () => {
+      const user = userEvent.setup();
+      renderHandler();
+      await settle();
+
+      const input = screen.getByPlaceholderText<HTMLInputElement>('Cari menu');
+      await user.type(input, 'e');
+
+      await user.click(screen.getByText('Es Kopi Susu'));
+      await settle();
+
+      await user.click(
+        screen.getByRole('button', { name: 'Tambah ke Keranjang' })
+      );
+
+      expect(screen.getByText('Pilih Ukuran dulu ya')).toBeTruthy();
+    });
+
     it('deep-links open via a seeded selectedProductId, with no click', async () => {
       renderHandler({
         menuListParams: {

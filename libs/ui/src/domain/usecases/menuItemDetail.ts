@@ -39,7 +39,12 @@ export type MenuItemDetailAction =
   // along so opening the sheet costs no network call — the fallback fetch
   // below only runs when it isn't given (e.g. a deep link racing the menu
   // fetch).
-  | { type: 'SELECT_PRODUCT'; productId: number; product?: Product };
+  | {
+      type: 'SELECT_PRODUCT';
+      productId: number;
+      product?: Product;
+      preselectedOptionValueIds?: number[];
+    };
 
 export type MenuItemDetailParams = {
   productId: number | null;
@@ -55,11 +60,26 @@ function nextOptionSelectionType(
     : 'selectingOptions';
 }
 
-function initialSelectedOptionValueIds(product: Product): number[] {
+function initialSelectedOptionValueIds(
+  product: Product,
+  preselectedOptionValueIds: number[] = []
+): number[] {
   const [onlyOption] = product.options;
-  return product.options.length === 1 && onlyOption.values.length === 1
-    ? [onlyOption.values[0].id]
-    : [];
+  const autoSelected =
+    product.options.length === 1 && onlyOption.values.length === 1
+      ? [onlyOption.values[0].id]
+      : [];
+
+  // D13: preselect a value only when it is the sole match within its own
+  // option — two matched values of the same option cancel each other out.
+  const unambiguouslyMatched = product.options.flatMap((option) => {
+    const matched = option.values.filter((value) =>
+      preselectedOptionValueIds.includes(value.id)
+    );
+    return matched.length === 1 ? [matched[0].id] : [];
+  });
+
+  return Array.from(new Set([...autoSelected, ...unambiguouslyMatched]));
 }
 
 export class MenuItemDetailUsecase extends Usecase<
@@ -111,154 +131,162 @@ export class MenuItemDetailUsecase extends Usecase<
     state: MenuItemDetailState,
     action: MenuItemDetailAction
   ): MenuItemDetailState {
-    return match([state, action])
-      .returnType<MenuItemDetailState>()
-      .with([{ type: 'error' }, { type: 'FETCH' }], ([state]) => ({
-        ...state,
-        type: 'loadingProduct',
-        errorMessage: null,
-      }))
-      // D6: selecting an item (from any state, including a previous
-      // selection's `ready`/`error`) resets the draft — a fresh product,
-      // not a continuation of whatever was open before. Given a `product`
-      // already, skip the fetch entirely (§2.4/D6: the menu payload already
-      // has everything the sheet needs).
-      .with(
-        [P._, { type: 'SELECT_PRODUCT' }],
-        ([state, { productId, product = null }]) => {
-          const selectedOptionValueIds = product
-            ? initialSelectedOptionValueIds(product)
-            : [];
-          return {
-            ...state,
-            type: product
-              ? nextOptionSelectionType(product, selectedOptionValueIds)
-              : 'loadingProduct',
-            productId,
-            product,
-            selectedOptionValueIds,
-            variant: null,
-            amount: 1,
-            note: '',
-            errorMessage: null,
-          };
-        }
-      )
-      .with(
-        [{ type: 'loadingProduct' }, { type: 'FETCH_SUCCESS' }],
-        ([state, { product }]) => {
-          const selectedOptionValueIds =
-            initialSelectedOptionValueIds(product);
-          return {
-            ...state,
-            type: nextOptionSelectionType(product, selectedOptionValueIds),
-            product,
-            selectedOptionValueIds,
-          };
-        }
-      )
-      .with(
-        [{ type: 'loadingProduct' }, { type: 'FETCH_ERROR' }],
-        ([state, { message }]) => ({
+    return (
+      match([state, action])
+        .returnType<MenuItemDetailState>()
+        .with([{ type: 'error' }, { type: 'FETCH' }], ([state]) => ({
           ...state,
-          type: 'error',
-          errorMessage: message,
-        })
-      )
-      .with(
-        [
-          {
-            type: P.union(
-              'selectingOptions',
-              'resolvingVariant',
-              'ready',
-              'error'
-            ),
-          },
-          { type: 'SELECT_OPTION_VALUE' },
-        ],
-        ([state, { optionId, optionValueId }]) => {
-          const option = state.product?.options.find(
-            (o) => o.id === optionId
-          );
-          const selectedOptionValueIds = option
-            ? [
-                ...state.selectedOptionValueIds.filter(
-                  (id) => !option.values.some((value) => value.id === id)
-                ),
-                optionValueId,
-              ]
-            : state.selectedOptionValueIds;
+          type: 'loadingProduct',
+          errorMessage: null,
+        }))
+        // D6: selecting an item (from any state, including a previous
+        // selection's `ready`/`error`) resets the draft — a fresh product,
+        // not a continuation of whatever was open before. Given a `product`
+        // already, skip the fetch entirely (§2.4/D6: the menu payload already
+        // has everything the sheet needs).
+        .with(
+          [P._, { type: 'SELECT_PRODUCT' }],
+          ([
+            state,
+            { productId, product = null, preselectedOptionValueIds = [] },
+          ]) => {
+            const selectedOptionValueIds = product
+              ? initialSelectedOptionValueIds(
+                  product,
+                  preselectedOptionValueIds
+                )
+              : [];
+            return {
+              ...state,
+              type: product
+                ? nextOptionSelectionType(product, selectedOptionValueIds)
+                : 'loadingProduct',
+              productId,
+              product,
+              selectedOptionValueIds,
+              variant: null,
+              amount: 1,
+              note: '',
+              errorMessage: null,
+            };
+          }
+        )
+        .with(
+          [{ type: 'loadingProduct' }, { type: 'FETCH_SUCCESS' }],
+          ([state, { product }]) => {
+            const selectedOptionValueIds =
+              initialSelectedOptionValueIds(product);
+            return {
+              ...state,
+              type: nextOptionSelectionType(product, selectedOptionValueIds),
+              product,
+              selectedOptionValueIds,
+            };
+          }
+        )
+        .with(
+          [{ type: 'loadingProduct' }, { type: 'FETCH_ERROR' }],
+          ([state, { message }]) => ({
+            ...state,
+            type: 'error',
+            errorMessage: message,
+          })
+        )
+        .with(
+          [
+            {
+              type: P.union(
+                'selectingOptions',
+                'resolvingVariant',
+                'ready',
+                'error'
+              ),
+            },
+            { type: 'SELECT_OPTION_VALUE' },
+          ],
+          ([state, { optionId, optionValueId }]) => {
+            const option = state.product?.options.find(
+              (o) => o.id === optionId
+            );
+            const selectedOptionValueIds = option
+              ? [
+                  ...state.selectedOptionValueIds.filter(
+                    (id) => !option.values.some((value) => value.id === id)
+                  ),
+                  optionValueId,
+                ]
+              : state.selectedOptionValueIds;
 
-          return {
+            return {
+              ...state,
+              type: nextOptionSelectionType(
+                state.product,
+                selectedOptionValueIds
+              ),
+              selectedOptionValueIds,
+              variant: null,
+              errorMessage: null,
+            };
+          }
+        )
+        .with(
+          [{ type: 'resolvingVariant' }, { type: 'RESOLVE_VARIANT_SUCCESS' }],
+          ([state, { variant }]) => ({
             ...state,
-            type: nextOptionSelectionType(
-              state.product,
-              selectedOptionValueIds
-            ),
-            selectedOptionValueIds,
-            variant: null,
-            errorMessage: null,
-          };
-        }
-      )
-      .with(
-        [{ type: 'resolvingVariant' }, { type: 'RESOLVE_VARIANT_SUCCESS' }],
-        ([state, { variant }]) => ({
-          ...state,
-          type: 'ready',
-          variant,
-        })
-      )
-      .with(
-        [{ type: 'resolvingVariant' }, { type: 'RESOLVE_VARIANT_ERROR' }],
-        ([state, { message }]) => ({
-          ...state,
-          type: 'error',
-          errorMessage: message,
-        })
-      )
-      .with(
-        [
-          {
-            type: P.union(
-              'selectingOptions',
-              'resolvingVariant',
-              'ready',
-              'error'
-            ),
-          },
-          { type: 'CHANGE_AMOUNT' },
-        ],
-        ([state, { amount }]) => {
-          const max = state.variant?.isSellable
-            ? state.variant.sellableQuantity
-            : undefined;
-          const clamped = max !== undefined ? Math.min(amount, max) : amount;
-          return {
+            type: 'ready',
+            variant,
+          })
+        )
+        .with(
+          [{ type: 'resolvingVariant' }, { type: 'RESOLVE_VARIANT_ERROR' }],
+          ([state, { message }]) => ({
             ...state,
-            amount: Math.max(1, clamped),
-          };
-        }
-      )
-      .with(
-        [
-          {
-            type: P.union(
-              'selectingOptions',
-              'resolvingVariant',
-              'ready',
-              'error'
-            ),
-          },
-          { type: 'CHANGE_NOTE' },
-        ],
-        ([state, { note }]) => ({
-          ...state,
-          note,
-        })
-      )
-      .otherwise(() => state);
+            type: 'error',
+            errorMessage: message,
+          })
+        )
+        .with(
+          [
+            {
+              type: P.union(
+                'selectingOptions',
+                'resolvingVariant',
+                'ready',
+                'error'
+              ),
+            },
+            { type: 'CHANGE_AMOUNT' },
+          ],
+          ([state, { amount }]) => {
+            const max = state.variant?.isSellable
+              ? state.variant.sellableQuantity
+              : undefined;
+            const clamped = max !== undefined ? Math.min(amount, max) : amount;
+            return {
+              ...state,
+              amount: Math.max(1, clamped),
+            };
+          }
+        )
+        .with(
+          [
+            {
+              type: P.union(
+                'selectingOptions',
+                'resolvingVariant',
+                'ready',
+                'error'
+              ),
+            },
+            { type: 'CHANGE_NOTE' },
+          ],
+          ([state, { note }]) => ({
+            ...state,
+            note,
+          })
+        )
+        .otherwise(() => state)
+    );
   }
 
   onStateChange(
