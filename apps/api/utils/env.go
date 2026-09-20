@@ -25,17 +25,18 @@ type Env struct {
 	ServiceName        string
 	CorsAllowedOrigins []string
 
-	DokuBaseURL           string
-	DokuClientId          string
-	DokuClientSecret      string
-	DokuPrivateKey        string
-	DokuMerchantId        string
-	DokuChannelId         string
-	DokuTerminalId        string
-	DokuPostalCode        string
-	DokuFeeType           string
-	DokuQrisExpirySeconds int
-	OrderPaymentWalletId  string
+	DokuBaseURL              string
+	DokuClientId             string
+	DokuClientSecret         string
+	DokuPrivateKey           string
+	DokuMerchantId           string
+	DokuChannelId            string
+	DokuTerminalId           string
+	DokuPostalCode           string
+	DokuFeeType              string
+	DokuQrisExpirySeconds    int
+	CashPaymentExpirySeconds int
+	OrderPaymentWalletId     string
 
 	ExpoPushAccessToken        string
 	KdsPushSound               string
@@ -75,17 +76,18 @@ func GetEnv() Env {
 		ServiceName:        serviceName,
 		CorsAllowedOrigins: parseCorsAllowedOrigins(os.Getenv("CORS_ALLOWED_ORIGINS")),
 
-		DokuBaseURL:           getCredential("DOKU_BASE_URL"),
-		DokuClientId:          getCredential("DOKU_CLIENT_ID"),
-		DokuClientSecret:      getCredential("DOKU_CLIENT_SECRET"),
-		DokuPrivateKey:        os.Getenv("DOKU_PRIVATE_KEY"),
-		DokuMerchantId:        getCredential("DOKU_MERCHANT_ID"),
-		DokuChannelId:         getCredential("DOKU_CHANNEL_ID"),
-		DokuTerminalId:        getCredential("DOKU_TERMINAL_ID"),
-		DokuPostalCode:        getCredential("DOKU_MERCHANT_POSTAL_CODE"),
-		DokuFeeType:           getCredential("DOKU_QRIS_FEE_TYPE"),
-		DokuQrisExpirySeconds: parseIntWithDefault(os.Getenv("DOKU_QRIS_EXPIRY_SECONDS"), 300),
-		OrderPaymentWalletId:  os.Getenv("ORDER_PAYMENT_WALLET_ID"),
+		DokuBaseURL:              getCredential("DOKU_BASE_URL"),
+		DokuClientId:             getCredential("DOKU_CLIENT_ID"),
+		DokuClientSecret:         getCredential("DOKU_CLIENT_SECRET"),
+		DokuPrivateKey:           os.Getenv("DOKU_PRIVATE_KEY"),
+		DokuMerchantId:           getCredential("DOKU_MERCHANT_ID"),
+		DokuChannelId:            getCredential("DOKU_CHANNEL_ID"),
+		DokuTerminalId:           getCredential("DOKU_TERMINAL_ID"),
+		DokuPostalCode:           getCredential("DOKU_MERCHANT_POSTAL_CODE"),
+		DokuFeeType:              getCredential("DOKU_QRIS_FEE_TYPE"),
+		DokuQrisExpirySeconds:    parseIntWithDefault(os.Getenv("DOKU_QRIS_EXPIRY_SECONDS"), 300),
+		CashPaymentExpirySeconds: parseIntWithDefault(os.Getenv("CASH_PAYMENT_EXPIRY_SECONDS"), 600),
+		OrderPaymentWalletId:     os.Getenv("ORDER_PAYMENT_WALLET_ID"),
 
 		ExpoPushAccessToken:        getCredential("EXPO_PUSH_ACCESS_TOKEN"),
 		KdsPushSound:               stringWithDefault(os.Getenv("KDS_PUSH_SOUND"), "order_alert.wav"),

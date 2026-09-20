@@ -19,6 +19,7 @@ type PaymentUsecase struct {
 	kdsNotificationRepository KdsNotificationRepository
 	kdsNotificationDispatcher KdsNotificationDispatcher
 	qrisExpirySeconds         int
+	cashExpirySeconds         int
 	orderPaymentWalletId      int64
 }
 
@@ -34,6 +35,7 @@ func NewPaymentUsecase(
 	kdsNotificationRepository KdsNotificationRepository,
 	kdsNotificationDispatcher KdsNotificationDispatcher,
 	qrisExpirySeconds int,
+	cashExpirySeconds int,
 	orderPaymentWalletId int64,
 ) PaymentUsecase {
 	return PaymentUsecase{
@@ -48,8 +50,16 @@ func NewPaymentUsecase(
 		kdsNotificationRepository: kdsNotificationRepository,
 		kdsNotificationDispatcher: kdsNotificationDispatcher,
 		qrisExpirySeconds:         qrisExpirySeconds,
+		cashExpirySeconds:         cashExpirySeconds,
 		orderPaymentWalletId:      orderPaymentWalletId,
 	}
+}
+
+func (usecase PaymentUsecase) expirySecondsFor(method PaymentMethod) int {
+	if method == PaymentMethodCash {
+		return usecase.cashExpirySeconds
+	}
+	return usecase.qrisExpirySeconds
 }
 
 func (usecase PaymentUsecase) validateOrderPaymentWallet(ctx context.Context) *Error {
@@ -63,7 +73,7 @@ func (usecase PaymentUsecase) validateOrderPaymentWallet(ctx context.Context) *E
 	return ValidateOrderPaymentWallet(wallet)
 }
 
-func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, customerName string) (Payment, Transaction, *Error) {
+func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, customerName string, method PaymentMethod) (Payment, Transaction, *Error) {
 	var resultPayment Payment
 	var resultTransaction Transaction
 
@@ -153,20 +163,27 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 			return &Error{Type: InternalServerError, Message: "failed to generate payment reference"}
 		}
 
-		expiredAt := time.Now().Add(time.Duration(usecase.qrisExpirySeconds) * time.Second)
+		expiredAt := time.Now().Add(time.Duration(usecase.expirySecondsFor(method)) * time.Second)
 
 		createdPayment, err := usecase.paymentRepository.CreatePayment(ctxWithTx, Payment{
 			CartId:             cart.Id,
 			SessionId:          sessionId,
 			TransactionId:      &createdTransaction.Id,
 			PartnerReferenceNo: partnerReferenceNo,
-			Method:             PaymentMethodQris,
+			Method:             method,
 			Status:             PaymentStatePending,
 			Amount:             total,
 			ExpiredAt:          expiredAt,
 		})
 		if err != nil {
 			return err
+		}
+
+		resultPayment = createdPayment
+		resultTransaction = createdTransaction
+
+		if !createdPayment.RequiresGateway() {
+			return nil
 		}
 
 		qrisPayment, gatewayErr := usecase.paymentGatewayRepository.GenerateQris(ctxWithTx, GenerateQrisInput{
@@ -187,7 +204,6 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 		}
 
 		resultPayment = updatedPayment
-		resultTransaction = createdTransaction
 		return nil
 	})
 
