@@ -310,10 +310,12 @@ export const TransactionListHandler = ({
           paidAmount: values.paidAmount,
         })
       }
-      payWalletSelectOptions={transactionPay.state.wallets.map((wallet) => ({
-        label: wallet.name,
-        value: wallet,
-      }))}
+      payWalletSelectOptions={transactionPay.state.wallets
+        .filter((wallet) => wallet.isPaymentTarget)
+        .map((wallet) => ({
+          label: wallet.name,
+          value: wallet,
+        }))}
       payTransactionTotal={transactionPay.state.transactionTotal}
       isPayButtonDisabled={
         transactionPay.state.type === 'paying' ||

@@ -233,6 +233,10 @@ func payTransaction(ctx context.Context, transaction Transaction, transactionRep
 		return err
 	}
 
+	if !paymentWallet.IsPaymentTarget {
+		return &Error{Type: BadRequest, Message: "wallet cannot receive transaction payments"}
+	}
+
 	paymentCost := transaction.Total * paymentWallet.PaymentCostPercentage / 100
 	newBalance := paymentWallet.Balance + transaction.Total - paymentCost
 

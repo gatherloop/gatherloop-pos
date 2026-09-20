@@ -537,6 +537,24 @@ func TestTransactionUsecase_UnpayTransaction(t *testing.T) {
 			},
 			expectedError: &domain.Error{Type: domain.BadRequest},
 		},
+		{
+			// FR-13 item 3: unpay reverses a credit the wallet legitimately received when the
+			// payment was taken — an operator opting the wallet out afterwards must not strand it.
+			name: "wallet opted out since the payment was taken can still be reversed",
+			id:   4,
+			setupMock: func(txRepo *mock.MockTransactionRepository, walletRepo *mock.MockWalletRepository) {
+				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(4)).Return(domain.Transaction{
+					Id: 4, PaidAt: &recentPaidAt, CreatedAt: recentPaidAt.Add(-30 * time.Minute),
+					Total: 50000, WalletId: &walletId,
+					TransactionItems: []domain.TransactionItem{},
+				}, nil)
+				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, Name: "Brankas", Balance: 100000, PaymentCostPercentage: 0, IsPaymentTarget: false}, nil)
+				walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
+				txRepo.EXPECT().UnpayTransaction(gomock.Any(), int64(4)).Return(nil)
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -597,7 +615,7 @@ func TestTransactionUsecase_PayTransaction(t *testing.T) {
 					Id: 1, Total: 30000, PaidAt: nil,
 				}, nil)
 				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{
-					Id: 1, Balance: 0, PaymentCostPercentage: 0,
+					Id: 1, Balance: 0, PaymentCostPercentage: 0, IsPaymentTarget: true,
 				}, nil)
 				walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
 				txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Transaction{}, nil)
@@ -646,7 +664,7 @@ func TestTransactionUsecase_PayTransaction(t *testing.T) {
 				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(3)).Return(domain.Transaction{
 					Id: 3, Total: 30000, CreatedAt: time.Now(), TransactionItems: []domain.TransactionItem{barItem},
 				}, nil)
-				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1}, nil)
+				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, IsPaymentTarget: true}, nil)
 				walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
 				txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(3)).Return(domain.Transaction{}, nil)
 				kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
@@ -671,7 +689,7 @@ func TestTransactionUsecase_PayTransaction(t *testing.T) {
 				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(4)).Return(domain.Transaction{
 					Id: 4, Total: 30000, CreatedAt: time.Now(), TransactionItems: []domain.TransactionItem{barItem, kitchenItem},
 				}, nil)
-				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1}, nil)
+				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, IsPaymentTarget: true}, nil)
 				walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
 				txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(4)).Return(domain.Transaction{}, nil)
 				kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(
@@ -696,7 +714,7 @@ func TestTransactionUsecase_PayTransaction(t *testing.T) {
 				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(5)).Return(domain.Transaction{
 					Id: 5, Total: 30000, CreatedAt: time.Now(), TransactionItems: []domain.TransactionItem{boardGameItem},
 				}, nil)
-				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1}, nil)
+				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, IsPaymentTarget: true}, nil)
 				walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
 				txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(5)).Return(domain.Transaction{}, nil)
 				kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
@@ -720,7 +738,7 @@ func TestTransactionUsecase_PayTransaction(t *testing.T) {
 				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(6)).Return(domain.Transaction{
 					Id: 6, Total: 30000, CreatedAt: time.Now().Add(-24 * time.Hour), TransactionItems: []domain.TransactionItem{barItem},
 				}, nil)
-				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1}, nil)
+				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, IsPaymentTarget: true}, nil)
 				walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
 				txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(6)).Return(domain.Transaction{}, nil)
 				kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
@@ -745,12 +763,30 @@ func TestTransactionUsecase_PayTransaction(t *testing.T) {
 				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(7)).Return(domain.Transaction{
 					Id: 7, Total: 30000, CreatedAt: time.Now(), TransactionItems: []domain.TransactionItem{barItem},
 				}, nil)
-				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1}, nil)
+				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, IsPaymentTarget: true}, nil)
 				walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
 				txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(7)).Return(domain.Transaction{}, nil)
 				kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any()).Return(&domain.Error{Type: domain.InternalServerError})
 			},
 			expectedError: &domain.Error{Type: domain.InternalServerError},
+		},
+		{
+			// FR-13/D24: a wallet an operator has opted out of receiving payments must be rejected
+			// before any balance, income or kds_notifications write — the guard sits ahead of the
+			// wallet update, so no further mock expectation is set for it.
+			name:       "wallet not eligible for payments is rejected before any write",
+			id:         8,
+			walletId:   1,
+			paidAmount: 30000,
+			setupMock: func(txRepo *mock.MockTransactionRepository, walletRepo *mock.MockWalletRepository, kdsRepo *mock.MockKdsNotificationRepository) {
+				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(8)).Return(domain.Transaction{
+					Id: 8, Total: 30000, CreatedAt: time.Now(),
+				}, nil)
+				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, Name: "Brankas", IsPaymentTarget: false}, nil)
+			},
+			expectedError: &domain.Error{Type: domain.BadRequest},
 		},
 	}
 
@@ -796,7 +832,7 @@ func TestTransactionUsecase_PayTransaction_KdsDispatchTrigger(t *testing.T) {
 		txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 			func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 		txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(1)).Return(domain.Transaction{Id: 1, Total: 30000}, nil)
-		walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1}, nil)
+		walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, IsPaymentTarget: true}, nil)
 		walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
 		txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Transaction{}, nil)
 		kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any()).Return(nil)

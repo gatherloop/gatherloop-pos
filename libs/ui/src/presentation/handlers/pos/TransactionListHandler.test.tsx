@@ -119,7 +119,7 @@ const transactionDeleteCtrl = {
 const transactionPayCtrl = {
   state: {
     type: 'hidden' as string,
-    wallets: [] as never[],
+    wallets: [] as { id: number; name: string; isPaymentTarget: boolean }[],
     transactionTotal: 0,
     transactionId: null as number | null,
   },
@@ -280,6 +280,30 @@ describe('TransactionListHandler', () => {
       });
 
       expect(transactionListCtrl.dispatch).not.toHaveBeenCalledWith({ type: 'FETCH' });
+    });
+  });
+
+  describe('pay wallet options', () => {
+    // FR-13/D24: the modal must not offer a wallet an operator has opted out of receiving
+    // payments, matching the filter TransactionCreateHandler already applies.
+    it('offers only payment-eligible wallets', async () => {
+      transactionPayCtrl.state = {
+        type: 'shown',
+        wallets: [
+          { id: 1, name: 'Cash', isPaymentTarget: true },
+          { id: 2, name: 'Brankas', isPaymentTarget: false },
+        ],
+        transactionTotal: 0,
+        transactionId: null,
+      };
+
+      await act(async () => {
+        render(<TransactionListHandler {...createProps()} />);
+      });
+
+      expect(latestScreenProps.payWalletSelectOptions).toEqual([
+        { label: 'Cash', value: { id: 1, name: 'Cash', isPaymentTarget: true } },
+      ]);
     });
   });
 
