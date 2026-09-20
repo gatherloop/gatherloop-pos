@@ -80,6 +80,11 @@ func checkoutRequestBody(customerName string) *bytes.Buffer {
 	return bytes.NewBuffer(body)
 }
 
+func checkoutRequestBodyWithMethod(customerName string, method string) *bytes.Buffer {
+	body, _ := json.Marshal(apiContract.PaymentCheckoutRequest{CustomerName: customerName, Method: &method})
+	return bytes.NewBuffer(body)
+}
+
 func TestPaymentHandler_Checkout(t *testing.T) {
 	t.Run("a successful checkout returns the payment with its QR", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
@@ -132,6 +137,7 @@ func TestPaymentHandler_Checkout(t *testing.T) {
 		assert.NoError(t, json.NewDecoder(bytes.NewBufferString(w.Body.String())).Decode(&resp))
 		assert.Equal(t, "qr-content", resp.Data.QrContent)
 		assert.Equal(t, "pending", resp.Data.Status)
+		assert.Equal(t, "qris", resp.Data.Method)
 		assert.Equal(t, "Budi", resp.Data.CustomerName)
 		assert.Equal(t, "Meja 1", resp.Data.TableLabel)
 	})
@@ -215,6 +221,38 @@ func TestPaymentHandler_Checkout(t *testing.T) {
 		m.handler().Checkout(w, req)
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
+	})
+
+	t.Run("an unknown payment method is a 400, with no wallet or cart lookup", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentHandlerMocks(ctrl)
+
+		req := httptest.NewRequest(http.MethodPost, "/carts/current/checkout", checkoutRequestBodyWithMethod("Budi", "credit_card"))
+		req.Header.Set("X-Session-Id", testSessionId)
+		w := httptest.NewRecorder()
+		m.handler().Checkout(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("a cash payment method is a 400 naming it not available yet", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentHandlerMocks(ctrl)
+
+		req := httptest.NewRequest(http.MethodPost, "/carts/current/checkout", checkoutRequestBodyWithMethod("Budi", "cash"))
+		req.Header.Set("X-Session-Id", testSessionId)
+		w := httptest.NewRecorder()
+		m.handler().Checkout(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+
+		var apiErr apiContract.Error
+		assert.NoError(t, json.NewDecoder(bytes.NewBufferString(w.Body.String())).Decode(&apiErr))
+		assert.Equal(t, "payment method is not available yet", apiErr.Message)
 	})
 }
 

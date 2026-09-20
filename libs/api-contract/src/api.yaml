@@ -5158,6 +5158,7 @@ components:
       required:
         - partnerReferenceNo
         - status
+        - method
         - amount
         - qrContent
         - expiredAt
@@ -5173,6 +5174,9 @@ components:
         status:
           type: string
           enum: [pending, paid, expired, failed]
+        method:
+          type: string
+          enum: [qris, cash]
         amount:
           type: number
         qrContent:
@@ -5208,6 +5212,9 @@ components:
         customerName:
           type: string
           maxLength: 60
+        method:
+          type: string
+          enum: [qris, cash]
     DokuNotificationRequest:
       type: object
       required:
@@ -5535,6 +5542,7 @@ components:
       required:
         - partnerReferenceNo
         - status
+        - method
         - fulfillmentStatus
         - transactionNumber
         - customerName
@@ -5548,6 +5556,9 @@ components:
         status:
           type: string
           enum: [pending, paid, expired, failed]
+        method:
+          type: string
+          enum: [qris, cash]
         fulfillmentStatus:
           type: string
           enum: [preparing, ready]

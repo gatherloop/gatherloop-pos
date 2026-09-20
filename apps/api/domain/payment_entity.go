@@ -44,7 +44,19 @@ type PaymentMethod string
 
 const (
 	PaymentMethodQris PaymentMethod = "qris"
+	PaymentMethodCash PaymentMethod = "cash"
 )
+
+func ParsePaymentMethod(method string) (PaymentMethod, *Error) {
+	switch PaymentMethod(method) {
+	case "":
+		return PaymentMethodQris, nil
+	case PaymentMethodQris, PaymentMethodCash:
+		return PaymentMethod(method), nil
+	default:
+		return "", &Error{Type: BadRequest, Message: "unknown payment method"}
+	}
+}
 
 type PaymentState string
 
@@ -91,9 +103,14 @@ func (payment Payment) IsAwaitingPayment(now time.Time) bool {
 	return payment.Status == PaymentStatePending && now.Before(payment.ExpiredAt)
 }
 
+func (payment Payment) RequiresGateway() bool {
+	return payment.Method == PaymentMethodQris
+}
+
 type PaymentSummary struct {
 	PartnerReferenceNo string
 	Status             PaymentState
+	Method             PaymentMethod
 	TransactionNumber  int64
 	CustomerName       string
 	TableLabel         string
@@ -108,6 +125,7 @@ func ToPaymentSummary(payment Payment, transaction TransactionSummary) PaymentSu
 	return PaymentSummary{
 		PartnerReferenceNo: payment.PartnerReferenceNo,
 		Status:             payment.Status,
+		Method:             payment.Method,
 		TransactionNumber:  transaction.TransactionNumber,
 		CustomerName:       transaction.Name,
 		TableLabel:         transaction.TableLabel,
