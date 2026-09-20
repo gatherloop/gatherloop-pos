@@ -24,6 +24,7 @@ type PaymentUsecase struct {
 	kdsNotificationRepository KdsNotificationRepository
 	kdsNotificationDispatcher KdsNotificationDispatcher
 	qrisExpirySeconds         int
+	cashExpirySeconds         int
 	orderPaymentWalletId      int64
 }
 
@@ -39,6 +40,7 @@ func NewPaymentUsecase(
 	kdsNotificationRepository KdsNotificationRepository,
 	kdsNotificationDispatcher KdsNotificationDispatcher,
 	qrisExpirySeconds int,
+	cashExpirySeconds int,
 	orderPaymentWalletId int64,
 ) PaymentUsecase {
 	return PaymentUsecase{
@@ -53,8 +55,16 @@ func NewPaymentUsecase(
 		kdsNotificationRepository: kdsNotificationRepository,
 		kdsNotificationDispatcher: kdsNotificationDispatcher,
 		qrisExpirySeconds:         qrisExpirySeconds,
+		cashExpirySeconds:         cashExpirySeconds,
 		orderPaymentWalletId:      orderPaymentWalletId,
 	}
+}
+
+func (usecase PaymentUsecase) expirySecondsFor(method PaymentMethod) int {
+	if method == PaymentMethodCash {
+		return usecase.cashExpirySeconds
+	}
+	return usecase.qrisExpirySeconds
 }
 
 func (usecase PaymentUsecase) validateOrderPaymentWallet(ctx context.Context) *Error {
@@ -68,7 +78,7 @@ func (usecase PaymentUsecase) validateOrderPaymentWallet(ctx context.Context) *E
 	return ValidateOrderPaymentWallet(wallet)
 }
 
-func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, customerName string) (Payment, Transaction, *Error) {
+func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, customerName string, method PaymentMethod) (Payment, Transaction, *Error) {
 	var resultPayment Payment
 	var resultTransaction Transaction
 
@@ -158,20 +168,27 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 			return &Error{Type: InternalServerError, Message: "failed to generate payment reference"}
 		}
 
-		expiredAt := time.Now().Add(time.Duration(usecase.qrisExpirySeconds) * time.Second)
+		expiredAt := time.Now().Add(time.Duration(usecase.expirySecondsFor(method)) * time.Second)
 
 		createdPayment, err := usecase.paymentRepository.CreatePayment(ctxWithTx, Payment{
 			CartId:             cart.Id,
 			SessionId:          sessionId,
 			TransactionId:      &createdTransaction.Id,
 			PartnerReferenceNo: partnerReferenceNo,
-			Method:             PaymentMethodQris,
+			Method:             method,
 			Status:             PaymentStatePending,
 			Amount:             total,
 			ExpiredAt:          expiredAt,
 		})
 		if err != nil {
 			return err
+		}
+
+		resultPayment = createdPayment
+		resultTransaction = createdTransaction
+
+		if !createdPayment.RequiresGateway() {
+			return nil
 		}
 
 		qrisPayment, gatewayErr := usecase.paymentGatewayRepository.GenerateQris(ctxWithTx, GenerateQrisInput{
@@ -192,7 +209,6 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 		}
 
 		resultPayment = updatedPayment
-		resultTransaction = createdTransaction
 		return nil
 	})
 
@@ -513,6 +529,10 @@ func (usecase PaymentUsecase) GetPaymentList(ctx context.Context, sessionId stri
 }
 
 func (usecase PaymentUsecase) refreshPendingPaymentStatus(ctxWithTx context.Context, payment Payment, now time.Time) (Payment, ConfirmPaymentOutcome, *Error) {
+	if !payment.RequiresGateway() {
+		return usecase.refreshPendingCashPaymentStatus(ctxWithTx, payment, now)
+	}
+
 	if payment.StatusCheckedAt != nil && now.Sub(*payment.StatusCheckedAt) < statusRequeryFloor {
 		return payment, ConfirmPaymentOutcomeIgnored, nil
 	}
@@ -536,4 +556,22 @@ func (usecase PaymentUsecase) refreshPendingPaymentStatus(ctxWithTx context.Cont
 	payment.StatusCheckedAt = &now
 	updated, err := usecase.paymentRepository.UpdatePaymentById(ctxWithTx, payment, payment.Id)
 	return updated, ConfirmPaymentOutcomeIgnored, err
+}
+
+// refreshPendingCashPaymentStatus is FR-3/D7: cash has no gateway to ask, so the server clock is
+// the whole truth. Past expired_at it shares expirePayment with applyQrisStatus's expired branch
+// and the sweeper (FR-4) — one definition of what giving up on a payment does.
+func (usecase PaymentUsecase) refreshPendingCashPaymentStatus(ctxWithTx context.Context, payment Payment, now time.Time) (Payment, ConfirmPaymentOutcome, *Error) {
+	if now.Before(payment.ExpiredAt) {
+		payment.StatusCheckedAt = &now
+		updated, err := usecase.paymentRepository.UpdatePaymentById(ctxWithTx, payment, payment.Id)
+		return updated, ConfirmPaymentOutcomeIgnored, err
+	}
+
+	updatedPayment, expireErr := usecase.expirePayment(ctxWithTx, payment)
+	if expireErr != nil {
+		return payment, "", expireErr
+	}
+
+	return updatedPayment, ConfirmPaymentOutcomeExpired, nil
 }
