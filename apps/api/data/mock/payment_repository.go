@@ -13,6 +13,7 @@ import (
 	domain "apps/api/domain"
 	context "context"
 	reflect "reflect"
+	time "time"
 
 	gomock "go.uber.org/mock/gomock"
 )
@@ -68,6 +69,21 @@ func (m *MockPaymentRepository) CreatePayment(ctx context.Context, payment domai
 func (mr *MockPaymentRepositoryMockRecorder) CreatePayment(ctx, payment any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePayment", reflect.TypeOf((*MockPaymentRepository)(nil).CreatePayment), ctx, payment)
+}
+
+// GetExpirablePayments mocks base method.
+func (m *MockPaymentRepository) GetExpirablePayments(ctx context.Context, now time.Time, limit int) ([]domain.Payment, *domain.Error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetExpirablePayments", ctx, now, limit)
+	ret0, _ := ret[0].([]domain.Payment)
+	ret1, _ := ret[1].(*domain.Error)
+	return ret0, ret1
+}
+
+// GetExpirablePayments indicates an expected call of GetExpirablePayments.
+func (mr *MockPaymentRepositoryMockRecorder) GetExpirablePayments(ctx, now, limit any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetExpirablePayments", reflect.TypeOf((*MockPaymentRepository)(nil).GetExpirablePayments), ctx, now, limit)
 }
 
 // GetPaymentByPartnerReferenceNo mocks base method.
