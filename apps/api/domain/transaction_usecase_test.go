@@ -619,7 +619,7 @@ func TestTransactionUsecase_PayTransaction(t *testing.T) {
 				}, nil)
 				walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
 				txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Transaction{}, nil)
-				kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any()).Return(nil)
+				kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 				txRepo.EXPECT().PayTransaction(gomock.Any(), int64(1), gomock.Any(), float32(30000), int64(1)).Return(nil)
 			},
 		},
@@ -667,8 +667,8 @@ func TestTransactionUsecase_PayTransaction(t *testing.T) {
 				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, IsPaymentTarget: true}, nil)
 				walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
 				txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(3)).Return(domain.Transaction{}, nil)
-				kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
-					func(_ context.Context, transaction domain.Transaction) *domain.Error {
+				kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+					func(_ context.Context, transaction domain.Transaction, _ domain.KdsNotificationKind) *domain.Error {
 						assert.True(t, domain.ShouldNotify(transaction))
 						assert.Len(t, domain.StationLines(transaction), 1)
 						return nil
@@ -692,8 +692,8 @@ func TestTransactionUsecase_PayTransaction(t *testing.T) {
 				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, IsPaymentTarget: true}, nil)
 				walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
 				txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(4)).Return(domain.Transaction{}, nil)
-				kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(
-					func(_ context.Context, transaction domain.Transaction) *domain.Error {
+				kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).DoAndReturn(
+					func(_ context.Context, transaction domain.Transaction, _ domain.KdsNotificationKind) *domain.Error {
 						assert.True(t, domain.ShouldNotify(transaction))
 						assert.Len(t, domain.StationLines(transaction), 2)
 						return nil
@@ -717,8 +717,8 @@ func TestTransactionUsecase_PayTransaction(t *testing.T) {
 				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, IsPaymentTarget: true}, nil)
 				walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
 				txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(5)).Return(domain.Transaction{}, nil)
-				kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
-					func(_ context.Context, transaction domain.Transaction) *domain.Error {
+				kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+					func(_ context.Context, transaction domain.Transaction, _ domain.KdsNotificationKind) *domain.Error {
 						assert.False(t, domain.ShouldNotify(transaction))
 						return nil
 					})
@@ -741,8 +741,8 @@ func TestTransactionUsecase_PayTransaction(t *testing.T) {
 				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, IsPaymentTarget: true}, nil)
 				walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
 				txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(6)).Return(domain.Transaction{}, nil)
-				kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
-					func(_ context.Context, transaction domain.Transaction) *domain.Error {
+				kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+					func(_ context.Context, transaction domain.Transaction, _ domain.KdsNotificationKind) *domain.Error {
 						assert.True(t, domain.IsStaleForNotification(transaction, time.Now()))
 						return nil
 					})
@@ -766,7 +766,7 @@ func TestTransactionUsecase_PayTransaction(t *testing.T) {
 				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, IsPaymentTarget: true}, nil)
 				walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
 				txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(7)).Return(domain.Transaction{}, nil)
-				kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any()).Return(&domain.Error{Type: domain.InternalServerError})
+				kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Return(&domain.Error{Type: domain.InternalServerError})
 			},
 			expectedError: &domain.Error{Type: domain.InternalServerError},
 		},
@@ -835,7 +835,7 @@ func TestTransactionUsecase_PayTransaction_KdsDispatchTrigger(t *testing.T) {
 		walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, IsPaymentTarget: true}, nil)
 		walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
 		txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Transaction{}, nil)
-		kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any()).Return(nil)
+		kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		txRepo.EXPECT().PayTransaction(gomock.Any(), int64(1), gomock.Any(), float32(30000), int64(1)).Return(nil)
 		dispatcher.EXPECT().TriggerDispatch().Times(1)
 

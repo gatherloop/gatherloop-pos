@@ -46,20 +46,48 @@ func kdsBarTransaction(id int64, createdAt time.Time) domain.Transaction {
 	}
 }
 
-// FR-3/D4: the insert is a self-referential no-op on conflict, which is what makes a duplicate
-// enqueue for the same transaction leave exactly one row rather than erroring or writing a second.
+// FR-3/D4/D8: the insert is a self-referential no-op on conflict, which is what makes a duplicate
+// enqueue for the same (transaction, kind) leave exactly one row rather than erroring or writing
+// a second.
 func TestEnqueueForTransaction_DuplicateEnqueueIsIdempotentByConstruction(t *testing.T) {
 	repo, mock := newMockKdsNotificationRepository(t)
 
 	mock.ExpectBegin()
-	mock.ExpectExec("INSERT INTO `kds_notifications` \\(`transaction_id`,`status`,`attempt_count`,`detail`,`created_at`,`sent_at`\\) VALUES \\(\\?,\\?,\\?,\\?,\\?,\\?\\) ON DUPLICATE KEY UPDATE `id`=id").
-		WithArgs(int64(1), "pending", 0, nil, sqlmock.AnyArg(), nil).
+	mock.ExpectExec("INSERT INTO `kds_notifications` \\(`transaction_id`,`kind`,`status`,`attempt_count`,`detail`,`created_at`,`sent_at`\\) VALUES \\(\\?,\\?,\\?,\\?,\\?,\\?,\\?\\) ON DUPLICATE KEY UPDATE `id`=id").
+		WithArgs(int64(1), "order_paid", "pending", 0, nil, sqlmock.AnyArg(), nil).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
-	err := repo.EnqueueForTransaction(context.Background(), kdsBarTransaction(1, time.Now()))
+	err := repo.EnqueueForTransaction(context.Background(), kdsBarTransaction(1, time.Now()), domain.KdsNotificationKindOrderPaid)
 
 	require.Nil(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+// D8: the unique key is (transaction_id, kind), so two different kinds for the same transaction
+// are two rows, not a conflict — this is precisely what widening the key makes possible.
+func TestEnqueueForTransaction_TwoKindsForTheSameTransactionBothInsert(t *testing.T) {
+	repo, mock := newMockKdsNotificationRepository(t)
+	transaction := kdsBarTransaction(1, time.Now())
+
+	mock.ExpectBegin()
+	mock.ExpectExec("INSERT INTO `kds_notifications` \\(`transaction_id`,`kind`,`status`,`attempt_count`,`detail`,`created_at`,`sent_at`\\) VALUES \\(\\?,\\?,\\?,\\?,\\?,\\?,\\?\\) ON DUPLICATE KEY UPDATE `id`=id").
+		WithArgs(int64(1), "cash_pending", "pending", 0, nil, sqlmock.AnyArg(), nil).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+
+	err := repo.EnqueueForTransaction(context.Background(), transaction, domain.KdsNotificationKindCashPending)
+	require.Nil(t, err)
+
+	mock.ExpectBegin()
+	mock.ExpectExec("INSERT INTO `kds_notifications` \\(`transaction_id`,`kind`,`status`,`attempt_count`,`detail`,`created_at`,`sent_at`\\) VALUES \\(\\?,\\?,\\?,\\?,\\?,\\?,\\?\\) ON DUPLICATE KEY UPDATE `id`=id").
+		WithArgs(int64(1), "order_paid", "pending", 0, nil, sqlmock.AnyArg(), nil).
+		WillReturnResult(sqlmock.NewResult(2, 1))
+	mock.ExpectCommit()
+
+	err = repo.EnqueueForTransaction(context.Background(), transaction, domain.KdsNotificationKindOrderPaid)
+	require.Nil(t, err)
+
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
@@ -77,7 +105,7 @@ func TestEnqueueForTransaction_SkipsEntirelyWhenShouldNotifyIsFalse(t *testing.T
 		},
 	}
 
-	err := repo.EnqueueForTransaction(context.Background(), transaction)
+	err := repo.EnqueueForTransaction(context.Background(), transaction, domain.KdsNotificationKindOrderPaid)
 
 	require.Nil(t, err)
 	require.NoError(t, mock.ExpectationsWereMet())
@@ -90,11 +118,11 @@ func TestEnqueueForTransaction_WritesSkippedStatusForAStaleTransaction(t *testin
 
 	mock.ExpectBegin()
 	mock.ExpectExec("INSERT INTO `kds_notifications`").
-		WithArgs(int64(1), "skipped", 0, sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
+		WithArgs(int64(1), "order_paid", "skipped", 0, sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
-	err := repo.EnqueueForTransaction(context.Background(), kdsBarTransaction(1, time.Now().AddDate(0, 0, -1)))
+	err := repo.EnqueueForTransaction(context.Background(), kdsBarTransaction(1, time.Now().AddDate(0, 0, -1)), domain.KdsNotificationKindOrderPaid)
 
 	require.Nil(t, err)
 	require.NoError(t, mock.ExpectationsWereMet())

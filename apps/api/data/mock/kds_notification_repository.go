@@ -96,17 +96,17 @@ func (mr *MockKdsNotificationRepositoryMockRecorder) ClaimPendingKdsNotification
 }
 
 // EnqueueForTransaction mocks base method.
-func (m *MockKdsNotificationRepository) EnqueueForTransaction(ctx context.Context, transaction domain.Transaction) *domain.Error {
+func (m *MockKdsNotificationRepository) EnqueueForTransaction(ctx context.Context, transaction domain.Transaction, kind domain.KdsNotificationKind) *domain.Error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "EnqueueForTransaction", ctx, transaction)
+	ret := m.ctrl.Call(m, "EnqueueForTransaction", ctx, transaction, kind)
 	ret0, _ := ret[0].(*domain.Error)
 	return ret0
 }
 
 // EnqueueForTransaction indicates an expected call of EnqueueForTransaction.
-func (mr *MockKdsNotificationRepositoryMockRecorder) EnqueueForTransaction(ctx, transaction any) *gomock.Call {
+func (mr *MockKdsNotificationRepositoryMockRecorder) EnqueueForTransaction(ctx, transaction, kind any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnqueueForTransaction", reflect.TypeOf((*MockKdsNotificationRepository)(nil).EnqueueForTransaction), ctx, transaction)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnqueueForTransaction", reflect.TypeOf((*MockKdsNotificationRepository)(nil).EnqueueForTransaction), ctx, transaction, kind)
 }
 
 // MarkKdsNotificationFailed mocks base method.

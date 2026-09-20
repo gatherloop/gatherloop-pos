@@ -35,7 +35,7 @@ type paymentHandlerMocks struct {
 
 func newPaymentHandlerMocks(ctrl *gomock.Controller) paymentHandlerMocks {
 	kdsNotificationRepo := mock.NewMockKdsNotificationRepository(ctrl)
-	kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	kdsNotificationDispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
 	kdsNotificationDispatcher.EXPECT().TriggerDispatch().AnyTimes()
 	return paymentHandlerMocks{
