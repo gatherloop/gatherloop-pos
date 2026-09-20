@@ -299,7 +299,7 @@ func TestPaymentHandler_GetPaymentByPartnerReferenceNo(t *testing.T) {
 		checkedAt := time.Now()
 		payment := domain.Payment{
 			Id: 7, CartId: 1, SessionId: testSessionId, TransactionId: &transactionId,
-			PartnerReferenceNo: "ORD1234567890AB", Status: domain.PaymentStatePending,
+			PartnerReferenceNo: "ORD1234567890AB", Method: domain.PaymentMethodQris, Status: domain.PaymentStatePending,
 			Amount: 30000, ExpiredAt: time.Now().Add(2 * time.Minute), StatusCheckedAt: &checkedAt,
 		}
 		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
@@ -370,7 +370,7 @@ func TestPaymentHandler_GetPaymentByPartnerReferenceNo(t *testing.T) {
 		transactionId := int64(99)
 		payment := domain.Payment{
 			Id: 7, CartId: 1, SessionId: testSessionId, TransactionId: &transactionId,
-			PartnerReferenceNo: "ORD1234567890AB", Status: domain.PaymentStatePending,
+			PartnerReferenceNo: "ORD1234567890AB", Method: domain.PaymentMethodQris, Status: domain.PaymentStatePending,
 			Amount: 30000, ExpiredAt: time.Now().Add(2 * time.Minute),
 		}
 		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
