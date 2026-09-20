@@ -295,7 +295,9 @@ describe('MenuListHandler', () => {
       renderHandler();
       await settle();
 
-      const input = screen.getByPlaceholderText<HTMLInputElement>('Cari menu');
+      const input = screen.getByPlaceholderText<HTMLInputElement>(
+        'Cari menu atau varian'
+      );
       await user.type(input, 'regular');
 
       await user.click(screen.getByText('Es Kopi Susu'));
@@ -313,7 +315,9 @@ describe('MenuListHandler', () => {
       renderHandler();
       await settle();
 
-      const input = screen.getByPlaceholderText<HTMLInputElement>('Cari menu');
+      const input = screen.getByPlaceholderText<HTMLInputElement>(
+        'Cari menu atau varian'
+      );
       await user.type(input, 'e');
 
       await user.click(screen.getByText('Es Kopi Susu'));
