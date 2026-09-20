@@ -36,12 +36,8 @@ func (handler PaymentHandler) Checkout(w http.ResponseWriter, r *http.Request) {
 		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(methodErr.Type), Message: methodErr.Message})
 		return
 	}
-	if method == domain.PaymentMethodCash {
-		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: "payment method is not available yet"})
-		return
-	}
 
-	payment, transaction, usecaseErr := handler.usecase.Checkout(ctx, sessionId, request.CustomerName)
+	payment, transaction, usecaseErr := handler.usecase.Checkout(ctx, sessionId, request.CustomerName, method)
 	if usecaseErr != nil {
 		apiError := apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message}
 		if usecaseErr.Type == domain.BadGateway {
