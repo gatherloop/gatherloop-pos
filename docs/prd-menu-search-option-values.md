@@ -7,6 +7,16 @@ grey", "banana", "besar" — gets an empty screen for a product that is right th
 This document widens what a search term is allowed to match, and does it without a new
 endpoint, a new query parameter, or a schema change.
 
+> **Superseded in part (2026-09-20): variant names are no longer a search surface.** The
+> shipped search matches the product name, the category name and option value names only.
+> The `variants` clause is gone from `applyProductSearchFilter`
+> (`apps/api/data/mysql/product_search.go`) and from `matchMenuSearch`
+> (`libs/ui/src/utils/matchMenuSearch.ts`), which no longer takes the variant list or
+> reports `matchedVariants`. A variant name in this data model is the product name and its
+> option values concatenated, so the clause only ever duplicated matches the other three
+> fields already produced — at the cost of a fourth `EXISTS` per token. Every mention of
+> `variants.name` below (FR-1, FR-4, D3, the SQL sketch, the phase plan) reads as history.
+
 ## Vocabulary
 
 The words matter here because three different things are searchable and the codebase
@@ -248,17 +258,17 @@ dropped in review (*Settled in review*, Q1).
 ### Functional requirements
 
 - **FR-1** A search term matches a product if it matches any of: the product name, the
-  product's category name, any non-deleted variant name of the product, or any option value
+  product's category name, ~~any non-deleted variant name of the product,~~ or any option value
   name of the product. Results remain one card per product, grouped by category exactly as
   today (`MenuListHandler.groupByCategory`). The product description is **not** searchable
-  (D3).
+  (D3). **Superseded (2026-09-20):** variant names dropped — see the note at the top.
 - **FR-2** A multi-word query requires **every** word to match at least one of those
   fields; different words may match different fields. "earl grey" matches the option value
   `Earl Grey`; "teh besar" matches a `Teh` whose option values include `Besar`.
 - **FR-3** Matching is case-insensitive and substring-based, so "grey", "GREY" and
   "rl gre" all find `Earl Grey`.
-- **FR-4** When a product appears because a variant or option value matched, its card shows
-  the matching label(s) — e.g. a chip reading `Earl Grey` under the product name — so the
+- **FR-4** When a product appears because an option value matched (variants too, until the
+  2026-09-20 note above), its card shows the matching label(s) — e.g. a chip reading `Earl Grey` under the product name — so the
   guest sees *why* the result is there. Sold-out option values (per
   `resolveOptionValueAvailability`) are shown last or omitted, never presented as
   orderable. A product that matched only on its own name shows no hint.
@@ -290,7 +300,7 @@ dropped in review (*Settled in review*, Q1).
   order-app semantics and makes "the whole catalog fits on the client" a requirement rather
   than a coincidence.
 
-- **D3 — Searchable: `products.name`, `categories.name`, `variants.name`,
+- **D3 — Searchable: `products.name`, `categories.name`, ~~`variants.name`,~~
   `option_values.name`. Not searchable: every description and recipe field
   (`products.description`, `products.recipe`, `variants.description`, `variants.recipe`),
   `options.name`, material names.** Recipe is internal staff content and must not be

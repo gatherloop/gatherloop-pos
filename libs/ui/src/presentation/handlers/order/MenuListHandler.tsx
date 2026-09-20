@@ -52,10 +52,9 @@ function groupByCategory(products: Product[], categories: Category[]) {
 
 function computePreselectedOptionValueIds(
   query: string,
-  product: Product,
-  variants: Variant[]
+  product: Product
 ): number[] {
-  return matchMenuSearch(query, product, variants).matchedOptionValues.map(
+  return matchMenuSearch(query, product).matchedOptionValues.map(
     (value) => value.id
   );
 }
@@ -77,7 +76,7 @@ function computeMatchedLabels(
   product: Product,
   variants: Variant[]
 ): string[] {
-  const searchResult = matchMenuSearch(query, product, variants);
+  const searchResult = matchMenuSearch(query, product);
   if (!searchResult.matched) return [];
 
   const productVariants = variants.filter(
@@ -89,19 +88,13 @@ function computeMatchedLabels(
     []
   );
 
-  const optionValueLabels = [...searchResult.matchedOptionValues]
+  return [...searchResult.matchedOptionValues]
     .sort(
       (a, b) =>
         Number(optionValueAvailability[b.id] ?? false) -
         Number(optionValueAvailability[a.id] ?? false)
     )
     .map((value) => value.name);
-
-  const variantLabels = [...searchResult.matchedVariants]
-    .sort((a, b) => Number(b.isSellable) - Number(a.isSellable))
-    .map((variant) => variant.name);
-
-  return [...optionValueLabels, ...variantLabels];
 }
 
 function computeMatchedLabelsByProductId(
@@ -225,7 +218,7 @@ export const MenuListHandler = ({
   }, [tableResolve.state, cartRepository]);
 
   useEffect(() => {
-    const { selectedProductId, query, variants } = menuList.state;
+    const { selectedProductId, query } = menuList.state;
     if (selectedProductId !== null) {
       const product = menuList.state.products.find(
         (candidate) => candidate.id === selectedProductId
@@ -235,7 +228,7 @@ export const MenuListHandler = ({
         productId: selectedProductId,
         product,
         preselectedOptionValueIds: product
-          ? computePreselectedOptionValueIds(query, product, variants)
+          ? computePreselectedOptionValueIds(query, product)
           : [],
       });
     }

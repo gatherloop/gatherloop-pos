@@ -1,10 +1,9 @@
-import { OptionValue, Product, Variant } from '../domain/entities';
+import { OptionValue, Product } from '../domain/entities';
 
 export type MatchMenuSearchResult = {
   matched: boolean;
   matchedProductName: boolean;
   matchedOptionValues: OptionValue[];
-  matchedVariants: Variant[];
 };
 
 function tokenize(query: string): string[] {
@@ -19,8 +18,7 @@ function tokenize(query: string): string[] {
 // product_search_test.go so a semantic drift between them shows up as a failing test.
 export function matchMenuSearch(
   query: string,
-  product: Product,
-  variants: Variant[]
+  product: Product
 ): MatchMenuSearchResult {
   const tokens = tokenize(query);
 
@@ -28,12 +26,7 @@ export function matchMenuSearch(
     matched: true,
     matchedProductName: false,
     matchedOptionValues: [],
-    matchedVariants: [],
   };
-
-  const productVariants = variants.filter(
-    (variant) => variant.product.id === product.id
-  );
 
   for (const token of tokens) {
     let tokenMatched = false;
@@ -45,15 +38,6 @@ export function matchMenuSearch(
 
     if (product.category.name.toLowerCase().includes(token)) {
       tokenMatched = true;
-    }
-
-    for (const variant of productVariants) {
-      if (variant.name.toLowerCase().includes(token)) {
-        tokenMatched = true;
-        if (!result.matchedVariants.some((v) => v.id === variant.id)) {
-          result.matchedVariants.push(variant);
-        }
-      }
     }
 
     for (const option of product.options) {

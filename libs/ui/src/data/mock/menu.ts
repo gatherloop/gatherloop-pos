@@ -124,7 +124,7 @@ export class MockMenuRepository implements MenuRepository {
   fetchMenu: MenuRepository['fetchMenu'] = async ({ query }) => {
     if (this.shouldFail) throw new Error('Failed to fetch menu');
     const products = this.products.filter(
-      (product) => matchMenuSearch(query, product, this.variants).matched
+      (product) => matchMenuSearch(query, product).matched
     );
     return {
       products: [...products],
