@@ -31,7 +31,7 @@ func TestApplyProductSearchFilter_MatchesNameCategoryVariantAndOptionValue(t *te
 	db := newSearchDryRunDb(t)
 
 	var products []Product
-	stmt := applyProductSearchFilter(db.Table("products"), "earl grey").Find(&products).Statement
+	stmt := applyProductSearchFilter(db.Table("products"), "grey").Find(&products).Statement
 
 	sql := stmt.SQL.String()
 	assert.Contains(t, sql, "products.name LIKE")
@@ -44,8 +44,37 @@ func TestApplyProductSearchFilter_MatchesNameCategoryVariantAndOptionValue(t *te
 
 	require.Len(t, stmt.Vars, 4)
 	for _, v := range stmt.Vars {
-		assert.Equal(t, "%earl grey%", v)
+		assert.Equal(t, "%grey%", v)
 	}
+}
+
+func TestApplyProductSearchFilter_MultipleTokensProduceAndedGroups(t *testing.T) {
+	db := newSearchDryRunDb(t)
+
+	var products []Product
+	stmt := applyProductSearchFilter(db.Table("products"), "teh besar").Find(&products).Statement
+
+	sql := stmt.SQL.String()
+	assert.Equal(t, 2, strings.Count(sql, "products.name LIKE"))
+
+	require.Len(t, stmt.Vars, 8)
+	for _, v := range stmt.Vars[:4] {
+		assert.Equal(t, "%teh%", v)
+	}
+	for _, v := range stmt.Vars[4:] {
+		assert.Equal(t, "%besar%", v)
+	}
+}
+
+func TestApplyProductSearchFilter_CapsAtEightTokens(t *testing.T) {
+	db := newSearchDryRunDb(t)
+
+	var products []Product
+	stmt := applyProductSearchFilter(db.Table("products"), "one two three four five six seven eight nine").Find(&products).Statement
+
+	assert.Equal(t, 8, strings.Count(stmt.SQL.String(), "products.name LIKE"))
+	require.Len(t, stmt.Vars, 32)
+	assert.NotContains(t, stmt.Vars, "%nine%")
 }
 
 func TestApplyProductSearchFilter_EmptyQueryAddsNoFilter(t *testing.T) {
