@@ -900,10 +900,10 @@ func TestTransactionUsecase_PayTransaction_SettlesOrderPayment(t *testing.T) {
 		txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(1)).Return(domain.Transaction{
 			Id: 1, Source: domain.TransactionSourceOrder, Total: 30000,
 		}, nil)
-		walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1}, nil)
+		walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, IsPaymentTarget: true}, nil)
 		walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
 		txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Transaction{}, nil)
-		kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any()).Return(nil)
+		kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		txRepo.EXPECT().PayTransaction(gomock.Any(), int64(1), gomock.Any(), float32(30000), int64(1)).Return(nil)
 
 		paymentRepo.EXPECT().GetPaymentByTransactionId(gomock.Any(), int64(1)).Return(domain.Payment{
@@ -945,10 +945,10 @@ func TestTransactionUsecase_PayTransaction_SettlesOrderPayment(t *testing.T) {
 		txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(2)).Return(domain.Transaction{
 			Id: 2, Source: domain.TransactionSourceOrder, Total: 30000,
 		}, nil)
-		walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1}, nil)
+		walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, IsPaymentTarget: true}, nil)
 		walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
 		txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(2)).Return(domain.Transaction{}, nil)
-		kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any()).Return(nil)
+		kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		txRepo.EXPECT().PayTransaction(gomock.Any(), int64(1), gomock.Any(), float32(30000), int64(2)).Return(nil)
 
 		// Status already paid: no UpdatePaymentById and no cart repository call.
@@ -979,10 +979,10 @@ func TestTransactionUsecase_PayTransaction_SettlesOrderPayment(t *testing.T) {
 		txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(3)).Return(domain.Transaction{
 			Id: 3, Source: domain.TransactionSourcePos, Total: 30000,
 		}, nil)
-		walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1}, nil)
+		walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, IsPaymentTarget: true}, nil)
 		walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
 		txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(3)).Return(domain.Transaction{}, nil)
-		kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any()).Return(nil)
+		kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		txRepo.EXPECT().PayTransaction(gomock.Any(), int64(1), gomock.Any(), float32(30000), int64(3)).Return(nil)
 
 		paymentRepo.EXPECT().GetPaymentByTransactionId(gomock.Any(), int64(3)).Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
@@ -1010,10 +1010,10 @@ func TestTransactionUsecase_PayTransaction_SettlesOrderPayment(t *testing.T) {
 		txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(4)).Return(domain.Transaction{
 			Id: 4, Source: domain.TransactionSourceOrder, Total: 25000,
 		}, nil)
-		walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1}, nil)
+		walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, IsPaymentTarget: true}, nil)
 		walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
 		txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(4)).Return(domain.Transaction{}, nil)
-		kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any()).Return(nil)
+		kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		// paidAmount (30000) exceeds the transaction total (25000) — change taken by the cashier.
 		txRepo.EXPECT().PayTransaction(gomock.Any(), int64(1), gomock.Any(), float32(30000), int64(4)).Return(nil)
 
@@ -1066,10 +1066,10 @@ func TestTransactionUsecase_PayTransaction_UndeletesSoftDeletedOrderTransaction(
 			Id: 1, Product: domain.Product{AvailabilityTracking: domain.AvailabilityTrackingNone},
 		}, nil)
 
-		walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1}, nil)
+		walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, IsPaymentTarget: true}, nil)
 		walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
 		txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Transaction{}, nil)
-		kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any()).Return(nil)
+		kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		txRepo.EXPECT().PayTransaction(gomock.Any(), int64(1), gomock.Any(), float32(30000), int64(1)).Return(nil)
 
 		paymentRepo.EXPECT().GetPaymentByTransactionId(gomock.Any(), int64(1)).Return(domain.Payment{
@@ -1107,10 +1107,10 @@ func TestTransactionUsecase_PayTransaction_UndeletesSoftDeletedOrderTransaction(
 			Id: 2, Source: domain.TransactionSourcePos, Total: 30000, DeletedAt: &deletedAt,
 		}, nil)
 		// No UndeleteTransactionById and no availability reservation calls for a POS transaction.
-		walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1}, nil)
+		walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, IsPaymentTarget: true}, nil)
 		walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
 		txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(2)).Return(domain.Transaction{}, nil)
-		kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any()).Return(nil)
+		kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		txRepo.EXPECT().PayTransaction(gomock.Any(), int64(1), gomock.Any(), float32(30000), int64(2)).Return(nil)
 
 		paymentRepo.EXPECT().GetPaymentByTransactionId(gomock.Any(), int64(2)).Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
