@@ -24,10 +24,11 @@ export class ApiPaymentRepository implements PaymentRepository {
     };
   }
 
-  checkout: PaymentRepository['checkout'] = (customerName) => {
-    return paymentCheckout({ customerName }, this.sessionRequestConfig()).then(
-      ({ data }) => toPayment(data)
-    );
+  checkout: PaymentRepository['checkout'] = (customerName, method) => {
+    return paymentCheckout(
+      { customerName, method },
+      this.sessionRequestConfig()
+    ).then(({ data }) => toPayment(data));
   };
 
   fetchPayment: PaymentRepository['fetchPayment'] = (reference) => {

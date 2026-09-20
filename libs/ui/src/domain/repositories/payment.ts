@@ -1,4 +1,4 @@
-import { Payment, PaymentSummary } from '../entities';
+import { Payment, PaymentMethod, PaymentSummary } from '../entities';
 
 export class PaymentNotFoundError extends Error {
   constructor() {
@@ -8,7 +8,7 @@ export class PaymentNotFoundError extends Error {
 }
 
 export interface PaymentRepository {
-  checkout: (customerName: string) => Promise<Payment>;
+  checkout: (customerName: string, method: PaymentMethod) => Promise<Payment>;
 
   fetchPayment: (reference: string) => Promise<Payment>;
 
