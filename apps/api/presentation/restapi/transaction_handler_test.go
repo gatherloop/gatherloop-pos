@@ -432,7 +432,7 @@ func TestTransactionHandler_PayTransaction(t *testing.T) {
 				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(1)).Return(domain.Transaction{Id: 1, PaidAt: nil, Total: 20000, TransactionItems: []domain.TransactionItem{}}, nil)
-				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, Name: "Cash", Balance: 0, PaymentCostPercentage: 0}, nil)
+				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, Name: "Cash", Balance: 0, PaymentCostPercentage: 0, IsPaymentTarget: true}, nil)
 				walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
 				txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Transaction{}, nil)
 				txRepo.EXPECT().PayTransaction(gomock.Any(), int64(1), gomock.Any(), float32(20000), int64(1)).Return(nil)

@@ -79,6 +79,8 @@ The wallet dropdown inside `TransactionPaymentAlert` shall only show wallets whe
 - The filter applies **only** to the Transaction Payment modal. Wallet transfers, expense flows, and the wallet management screen are untouched.
 - If, after filtering, **zero** wallets remain eligible, the modal shows an empty-state message ("No wallets are configured to receive payments. Configure one in Wallet Settings.") and the Pay button is disabled. This is a misconfiguration, not a normal flow — but the UI must fail loudly rather than silently disable itself.
 
+**Update (`docs/prd-order-cash-payment.md` phase 0, D24):** FR-2 was half-shipped — `TransactionCreateHandler` filtered but `TransactionListHandler`'s pay modal did not, and `TransactionUsecase.payTransaction` never checked at all, so a client that skipped the frontend filter could still credit an ineligible wallet. The rule is now enforced in both places: `TransactionListHandler`'s `payWalletSelectOptions` filters by `isPaymentTarget` exactly as `TransactionCreateHandler` does, and `payTransaction` rejects a wallet with `IsPaymentTarget = false` with `400 bad_request` before any balance, income, or `kds_notifications` write — the use case, not just the modal, is now where this rule holds for every present and future pay surface.
+
 ### FR-3: Surface the flag in Wallet management UI
 
 The flag must be editable from the wallet create/update form and visible from the wallet list, so managers can configure it without engineering help.
