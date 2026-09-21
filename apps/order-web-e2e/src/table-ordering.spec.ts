@@ -112,6 +112,25 @@ test.describe.serial('Table Ordering', () => {
     ).toBeHidden();
   });
 
+  test('searching by option value finds the product that has it', async ({
+    page,
+  }) => {
+    await page.goto(`t/${table.code}`);
+    await expect(sel.menuList.productCard(page, PRODUCT_NAME)).toBeVisible();
+
+    await sel.menuList.searchInput(page).fill('Besar');
+    await expect(sel.menuList.productCard(page, PRODUCT_NAME)).toBeVisible();
+    await expect(
+      sel.menuList.productCard(page, DECOY_PRODUCT_NAME)
+    ).toBeHidden();
+
+    await sel.menuList.searchInput(page).fill('BESAR');
+    await expect(sel.menuList.productCard(page, PRODUCT_NAME)).toBeVisible();
+    await expect(
+      sel.menuList.productCard(page, DECOY_PRODUCT_NAME)
+    ).toBeHidden();
+  });
+
   test('category chips filter the menu to that category', async ({ page }) => {
     await page.goto(`t/${table.code}`);
     await expect(sel.menuList.productCard(page, PRODUCT_NAME)).toBeVisible();

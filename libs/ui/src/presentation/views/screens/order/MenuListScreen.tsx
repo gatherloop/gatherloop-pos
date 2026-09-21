@@ -41,6 +41,7 @@ export type MenuListScreenProps = {
   onRetryButtonPress: () => void;
   onItemPress: (product: Product) => void;
   startingPriceByProductId: Record<number, number>;
+  matchedLabelsByProductId: Record<number, string[]>;
   itemDetail: (MenuItemDetailScreenProps & { isOpen: true }) | null;
 };
 
@@ -59,6 +60,7 @@ export const MenuListScreen = ({
   onRetryButtonPress,
   onItemPress,
   startingPriceByProductId,
+  matchedLabelsByProductId,
   itemDetail,
 }: MenuListScreenProps) => {
   return (
@@ -79,10 +81,10 @@ export const MenuListScreen = ({
           <XStack gap="$2" alignItems="center">
             <Input
               flex={1}
-              placeholder="Cari menu"
+              placeholder="Cari menu atau varian"
               value={searchValue}
               onChangeText={onSearchValueChange}
-              accessibilityLabel="Cari menu"
+              accessibilityLabel="Cari menu atau varian"
             />
             {isSearching && <Spinner size="small" testID="search-spinner" />}
           </XStack>
@@ -129,6 +131,9 @@ export const MenuListScreen = ({
                             product={product}
                             startingPrice={
                               startingPriceByProductId[product.id] ?? null
+                            }
+                            matchedLabels={
+                              matchedLabelsByProductId[product.id]
                             }
                             onPress={() => onItemPress(product)}
                           />

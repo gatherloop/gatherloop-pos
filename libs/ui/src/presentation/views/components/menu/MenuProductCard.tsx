@@ -6,6 +6,7 @@ import { MenuItemThumbnail } from './MenuItemThumbnail';
 export type MenuProductCardProps = {
   product: Product;
   startingPrice: number | null;
+  matchedLabels?: string[];
   onPress: () => void;
 };
 
@@ -23,9 +24,24 @@ const SoldOutBadge = () => (
   </XStack>
 );
 
+const MatchedLabelChip = ({ label }: { label: string }) => (
+  <XStack
+    backgroundColor="$blue5"
+    paddingHorizontal="$2"
+    paddingVertical="$1"
+    borderRadius="$10"
+    alignSelf="flex-start"
+  >
+    <Paragraph size="$1" color="$blue11">
+      {label}
+    </Paragraph>
+  </XStack>
+);
+
 export const MenuProductCard = ({
   product,
   startingPrice,
+  matchedLabels,
   onPress,
 }: MenuProductCardProps) => {
   const isSellable = product.isSellable;
@@ -60,6 +76,14 @@ export const MenuProductCard = ({
           </Text>
           {!isSellable && <SoldOutBadge />}
         </XStack>
+
+        {matchedLabels && matchedLabels.length > 0 && (
+          <XStack gap="$1" flexWrap="wrap">
+            {matchedLabels.map((label) => (
+              <MatchedLabelChip key={label} label={label} />
+            ))}
+          </XStack>
+        )}
 
         {product.description ? (
           <Paragraph size="$2" color="$color10" numberOfLines={2}>

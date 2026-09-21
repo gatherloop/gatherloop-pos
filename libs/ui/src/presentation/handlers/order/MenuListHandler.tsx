@@ -13,7 +13,10 @@ import {
 } from '../../../domain/usecases/menuItemDetail';
 import { MenuListUsecase } from '../../../domain/usecases/menuList';
 import { TableResolveUsecase } from '../../../domain/usecases/tableResolve';
-import { resolveOptionValueAvailability } from '../../../utils';
+import {
+  matchMenuSearch,
+  resolveOptionValueAvailability,
+} from '../../../utils';
 import { CartBar } from '../../views/components/cart/CartBar';
 import { useUsecase } from '../hooks/useUsecase';
 import { useCart } from '../hooks/useCart';
@@ -47,6 +50,15 @@ function groupByCategory(products: Product[], categories: Category[]) {
     .filter((group) => group.products.length > 0);
 }
 
+function computePreselectedOptionValueIds(
+  query: string,
+  product: Product
+): number[] {
+  return matchMenuSearch(query, product).matchedOptionValues.map(
+    (value) => value.id
+  );
+}
+
 function computeStartingPriceByProductId(
   variants: Variant[]
 ): Record<number, number> {
@@ -55,6 +67,44 @@ function computeStartingPriceByProductId(
     if (acc[productId] === undefined || variant.price < acc[productId]) {
       acc[productId] = variant.price;
     }
+    return acc;
+  }, {});
+}
+
+function computeMatchedLabels(
+  query: string,
+  product: Product,
+  variants: Variant[]
+): string[] {
+  const searchResult = matchMenuSearch(query, product);
+  if (!searchResult.matched) return [];
+
+  const productVariants = variants.filter(
+    (variant) => variant.product.id === product.id
+  );
+  const optionValueAvailability = resolveOptionValueAvailability(
+    product,
+    productVariants,
+    []
+  );
+
+  return [...searchResult.matchedOptionValues]
+    .sort(
+      (a, b) =>
+        Number(optionValueAvailability[b.id] ?? false) -
+        Number(optionValueAvailability[a.id] ?? false)
+    )
+    .map((value) => value.name);
+}
+
+function computeMatchedLabelsByProductId(
+  query: string,
+  products: Product[],
+  variants: Variant[]
+): Record<number, string[]> {
+  return products.reduce<Record<number, string[]>>((acc, product) => {
+    const labels = computeMatchedLabels(query, product, variants);
+    if (labels.length > 0) acc[product.id] = labels;
     return acc;
   }, {});
 }
@@ -168,7 +218,7 @@ export const MenuListHandler = ({
   }, [tableResolve.state, cartRepository]);
 
   useEffect(() => {
-    const { selectedProductId } = menuList.state;
+    const { selectedProductId, query } = menuList.state;
     if (selectedProductId !== null) {
       const product = menuList.state.products.find(
         (candidate) => candidate.id === selectedProductId
@@ -177,6 +227,9 @@ export const MenuListHandler = ({
         type: 'SELECT_PRODUCT',
         productId: selectedProductId,
         product,
+        preselectedOptionValueIds: product
+          ? computePreselectedOptionValueIds(query, product)
+          : [],
       });
     }
     // `menuList.state.products` is deliberately not a dependency: this
@@ -200,6 +253,12 @@ export const MenuListHandler = ({
         );
 
   const startingPriceByProductId = computeStartingPriceByProductId(
+    menuList.state.variants
+  );
+
+  const matchedLabelsByProductId = computeMatchedLabelsByProductId(
+    menuList.state.query,
+    menuList.state.products,
     menuList.state.variants
   );
 
@@ -318,6 +377,7 @@ export const MenuListHandler = ({
         menuList.dispatch({ type: 'SELECT_ITEM', productId: product.id })
       }
       startingPriceByProductId={startingPriceByProductId}
+      matchedLabelsByProductId={matchedLabelsByProductId}
       onHistoryPress={() => router.push('/orders')}
       preparingCount={preparingCount}
       variant={match(menuList.state)

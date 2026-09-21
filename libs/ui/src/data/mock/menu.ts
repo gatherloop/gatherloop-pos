@@ -1,5 +1,6 @@
 import { Category, Product, Variant } from '../../domain/entities';
 import { MenuRepository } from '../../domain/repositories/menu';
+import { matchMenuSearch } from '../../utils/matchMenuSearch';
 
 const initialCategories: Category[] = [
   {
@@ -122,11 +123,9 @@ export class MockMenuRepository implements MenuRepository {
 
   fetchMenu: MenuRepository['fetchMenu'] = async ({ query }) => {
     if (this.shouldFail) throw new Error('Failed to fetch menu');
-    const products = query
-      ? this.products.filter((product) =>
-          product.name.toLowerCase().includes(query.toLowerCase())
-        )
-      : this.products;
+    const products = this.products.filter(
+      (product) => matchMenuSearch(query, product).matched
+    );
     return {
       products: [...products],
       categories: [...this.categories],
