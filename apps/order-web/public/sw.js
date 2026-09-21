@@ -10,6 +10,8 @@ self.addEventListener('push', (event) => {
       requireInteraction: true,
       vibrate: [200, 100, 200],
       data: { url: payload.url },
+      silent: false,
+      vibarte: [200, 100, 200],
     })
   );
 });
