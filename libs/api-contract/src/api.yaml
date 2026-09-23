@@ -5118,10 +5118,14 @@ components:
       type: object
       required:
         - name
+        - whatsappNumber
       properties:
         name:
           type: string
           maxLength: 60
+        whatsappNumber:
+          type: string
+          maxLength: 16
     PaymentItemOption:
       type: object
       required:

@@ -15,15 +15,15 @@ func NewCustomerUsecase(repository CustomerRepository) CustomerUsecase {
 	return CustomerUsecase{repository: repository}
 }
 
-func (usecase CustomerUsecase) GetCurrentCustomerName(ctx context.Context, sessionId string) (string, *Error) {
+func (usecase CustomerUsecase) GetCurrentCustomer(ctx context.Context, sessionId string) (Customer, *Error) {
 	customer, err := usecase.repository.GetCustomerBySessionId(ctx, sessionId)
 	if err != nil {
 		if err.Type == NotFound {
-			return "", nil
+			return Customer{}, nil
 		}
-		return "", err
+		return Customer{}, err
 	}
-	return customer.Name, nil
+	return customer, nil
 }
 
 func (usecase CustomerUsecase) UpsertCustomerName(ctx context.Context, sessionId string, name string) (Customer, *Error) {

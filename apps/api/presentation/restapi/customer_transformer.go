@@ -1,7 +1,14 @@
 package restapi
 
-import apiContract "libs/api-contract"
+import (
+	"apps/api/domain"
+	apiContract "libs/api-contract"
+)
 
-func ToApiCustomer(name string) apiContract.Customer {
-	return apiContract.Customer{Name: name}
+func ToApiCustomer(customer domain.Customer) apiContract.Customer {
+	whatsappNumber := ""
+	if customer.WhatsappNumber != nil {
+		whatsappNumber = *customer.WhatsappNumber
+	}
+	return apiContract.Customer{Name: customer.Name, WhatsappNumber: whatsappNumber}
 }
