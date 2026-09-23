@@ -82,23 +82,24 @@ const (
 )
 
 type Payment struct {
-	Id                 int64
-	CartId             int64
-	SessionId          string
-	TransactionId      *int64
-	PartnerReferenceNo string
-	AccessKey          *string
-	GatewayReferenceNo string
-	Method             PaymentMethod
-	Status             PaymentState
-	Amount             float32
-	QrContent          string
-	ExpiredAt          time.Time
-	PaidAt             *time.Time
-	StatusCheckedAt    *time.Time
-	CreatedAt          time.Time
-	UpdatedAt          time.Time
-	DeletedAt          *time.Time
+	Id                     int64
+	CartId                 int64
+	SessionId              string
+	CustomerWhatsappNumber *string
+	TransactionId          *int64
+	PartnerReferenceNo     string
+	AccessKey              *string
+	GatewayReferenceNo     string
+	Method                 PaymentMethod
+	Status                 PaymentState
+	Amount                 float32
+	QrContent              string
+	ExpiredAt              time.Time
+	PaidAt                 *time.Time
+	StatusCheckedAt        *time.Time
+	CreatedAt              time.Time
+	UpdatedAt              time.Time
+	DeletedAt              *time.Time
 }
 
 func (payment Payment) IsAwaitingPayment(now time.Time) bool {

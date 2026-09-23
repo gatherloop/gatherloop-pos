@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/subtle"
 	"log/slog"
+	"strings"
 	"time"
 )
 
@@ -79,7 +80,7 @@ func (usecase PaymentUsecase) validateOrderPaymentWallet(ctx context.Context) *E
 	return ValidateOrderPaymentWallet(wallet)
 }
 
-func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, customerName string, method PaymentMethod) (Payment, Transaction, *Error) {
+func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, customerName string, customerWhatsappNumber string, method PaymentMethod) (Payment, Transaction, *Error) {
 	var resultPayment Payment
 	var resultTransaction Transaction
 	enqueuedCashPendingNotification := false
@@ -89,7 +90,19 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 			return err
 		}
 
-		customer, err := upsertCustomerName(ctxWithTx, usecase.customerRepository, sessionId, customerName)
+		// FR-2/D5: absent (empty) is left nil so the customer's stored number and an
+		// idempotent pending payment's snapshot stay unchanged; only a non-empty value is
+		// normalized and can 400.
+		var whatsappNumber *string
+		if trimmed := strings.TrimSpace(customerWhatsappNumber); trimmed != "" {
+			normalized, normErr := NormalizeWhatsappNumber(trimmed)
+			if normErr != nil {
+				return normErr
+			}
+			whatsappNumber = &normalized
+		}
+
+		customer, err := upsertCustomer(ctxWithTx, usecase.customerRepository, sessionId, customerName, whatsappNumber)
 		if err != nil {
 			return err
 		}
@@ -120,7 +133,16 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 			if txErr != nil {
 				return txErr
 			}
-			resultPayment = existingPayment
+
+			// FR-3: the pending payment is reused, but its snapshot moves to the number just
+			// submitted — a guest who retries checkout with a corrected number is heard.
+			existingPayment.CustomerWhatsappNumber = whatsappNumber
+			updatedPayment, updateErr := usecase.paymentRepository.UpdatePaymentById(ctxWithTx, existingPayment, existingPayment.Id)
+			if updateErr != nil {
+				return updateErr
+			}
+
+			resultPayment = updatedPayment
 			resultTransaction = transaction
 			return nil
 		}
@@ -178,15 +200,16 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 		expiredAt := time.Now().Add(time.Duration(usecase.expirySecondsFor(method)) * time.Second)
 
 		createdPayment, err := usecase.paymentRepository.CreatePayment(ctxWithTx, Payment{
-			CartId:             cart.Id,
-			SessionId:          sessionId,
-			TransactionId:      &createdTransaction.Id,
-			PartnerReferenceNo: partnerReferenceNo,
-			AccessKey:          &accessKey,
-			Method:             method,
-			Status:             PaymentStatePending,
-			Amount:             total,
-			ExpiredAt:          expiredAt,
+			CartId:                 cart.Id,
+			SessionId:              sessionId,
+			CustomerWhatsappNumber: whatsappNumber,
+			TransactionId:          &createdTransaction.Id,
+			PartnerReferenceNo:     partnerReferenceNo,
+			AccessKey:              &accessKey,
+			Method:                 method,
+			Status:                 PaymentStatePending,
+			Amount:                 total,
+			ExpiredAt:              expiredAt,
 		})
 		if err != nil {
 			return err

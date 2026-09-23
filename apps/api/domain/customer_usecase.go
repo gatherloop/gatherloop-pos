@@ -27,16 +27,16 @@ func (usecase CustomerUsecase) GetCurrentCustomer(ctx context.Context, sessionId
 }
 
 func (usecase CustomerUsecase) UpsertCustomerName(ctx context.Context, sessionId string, name string) (Customer, *Error) {
-	return upsertCustomerName(ctx, usecase.repository, sessionId, name)
+	return upsertCustomer(ctx, usecase.repository, sessionId, name, nil)
 }
 
-func upsertCustomerName(ctx context.Context, repository CustomerRepository, sessionId string, name string) (Customer, *Error) {
+func upsertCustomer(ctx context.Context, repository CustomerRepository, sessionId string, name string, whatsappNumber *string) (Customer, *Error) {
 	name = strings.TrimSpace(name)
 	if err := validateCustomerName(name); err != nil {
 		return Customer{}, err
 	}
 
-	return repository.UpsertCustomerBySessionId(ctx, sessionId, name)
+	return repository.UpsertCustomerBySessionId(ctx, sessionId, name, whatsappNumber)
 }
 
 func validateCustomerName(name string) *Error {

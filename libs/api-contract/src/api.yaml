@@ -5220,6 +5220,9 @@ components:
         customerName:
           type: string
           maxLength: 60
+        customerWhatsappNumber:
+          type: string
+          maxLength: 20
         method:
           type: string
           enum: [qris, cash]
