@@ -53,7 +53,7 @@ type Transaction struct {
 	PaidAt             *time.Time
 	CompletedAt        *time.Time
 	DeletedAt          *time.Time
-	PaymentMethod      *string
+	PaymentMethod      *string `gorm:"->"`
 }
 
 type TransactionStatistic struct {
