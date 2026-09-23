@@ -29,12 +29,12 @@ func newMockPaymentRepository(t *testing.T) (domain.PaymentRepository, sqlmock.S
 	return mysql.NewPaymentRepository(gormDB), mock
 }
 
-// D14: only paid payments for the requesting session are ever a history row.
-func TestPaymentRepository_GetPaymentsBySessionId_FiltersToPaidForThatSession(t *testing.T) {
+// FR-11: paid payments of either method, plus pending cash, for the requesting session.
+func TestPaymentRepository_GetPaymentsBySessionId_FiltersToPaidOrPendingCashForThatSession(t *testing.T) {
 	repo, mock := newMockPaymentRepository(t)
 
-	mock.ExpectQuery("SELECT \\* FROM `payments` WHERE session_id = \\? AND status = \\? AND deleted_at IS NULL ORDER BY id DESC").
-		WithArgs("session-1", "paid").
+	mock.ExpectQuery("SELECT \\* FROM `payments` WHERE session_id = \\? AND deleted_at IS NULL AND \\(status = \\? OR \\(status = \\? AND method = \\?\\)\\) ORDER BY id DESC").
+		WithArgs("session-1", "paid", "pending", "cash").
 		WillReturnRows(sqlmock.NewRows([]string{"id"}))
 
 	payments, err := repo.GetPaymentsBySessionId(context.Background(), "session-1", 0, 0)
@@ -47,8 +47,8 @@ func TestPaymentRepository_GetPaymentsBySessionId_FiltersToPaidForThatSession(t 
 func TestPaymentRepository_GetPaymentsBySessionId_AppliesSkipAndLimit(t *testing.T) {
 	repo, mock := newMockPaymentRepository(t)
 
-	mock.ExpectQuery("SELECT \\* FROM `payments` WHERE session_id = \\? AND status = \\? AND deleted_at IS NULL ORDER BY id DESC LIMIT \\? OFFSET \\?").
-		WithArgs("session-1", "paid", 20, 5).
+	mock.ExpectQuery("SELECT \\* FROM `payments` WHERE session_id = \\? AND deleted_at IS NULL AND \\(status = \\? OR \\(status = \\? AND method = \\?\\)\\) ORDER BY id DESC LIMIT \\? OFFSET \\?").
+		WithArgs("session-1", "paid", "pending", "cash", 20, 5).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}))
 
 	_, err := repo.GetPaymentsBySessionId(context.Background(), "session-1", 5, 20)
@@ -71,11 +71,11 @@ func TestPaymentRepository_GetPaymentByTransactionId_FiltersToThatTransaction(t 
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
-func TestPaymentRepository_GetPaymentsBySessionIdTotal_FiltersToPaidForThatSession(t *testing.T) {
+func TestPaymentRepository_GetPaymentsBySessionIdTotal_FiltersToPaidOrPendingCashForThatSession(t *testing.T) {
 	repo, mock := newMockPaymentRepository(t)
 
-	mock.ExpectQuery("SELECT count\\(\\*\\) FROM `payments` WHERE session_id = \\? AND status = \\? AND deleted_at IS NULL").
-		WithArgs("session-1", "paid").
+	mock.ExpectQuery("SELECT count\\(\\*\\) FROM `payments` WHERE session_id = \\? AND deleted_at IS NULL AND \\(status = \\? OR \\(status = \\? AND method = \\?\\)\\)").
+		WithArgs("session-1", "paid", "pending", "cash").
 		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
 
 	total, err := repo.GetPaymentsBySessionIdTotal(context.Background(), "session-1")

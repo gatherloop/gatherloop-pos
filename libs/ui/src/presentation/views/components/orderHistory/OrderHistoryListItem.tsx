@@ -1,5 +1,9 @@
 import dayjs from 'dayjs';
 import { Text, XStack, XStackProps, YStack } from 'tamagui';
+import {
+  PaymentMethod,
+  QrisPaymentStatus,
+} from '../../../../domain/entities/Payment';
 import { TransactionFulfillmentStatus } from '../../../../domain/entities/Transaction';
 import { formatRupiah } from '../../../../utils/currency';
 
@@ -19,31 +23,32 @@ const fulfillmentPillByStatus: Record<
   },
 };
 
-const FulfillmentPill = ({
-  fulfillmentStatus,
+const StatusPill = ({
+  backgroundColor,
+  color,
+  label,
 }: {
-  fulfillmentStatus: TransactionFulfillmentStatus;
-}) => {
-  const { backgroundColor, color, label } =
-    fulfillmentPillByStatus[fulfillmentStatus];
-
-  return (
-    <XStack
-      backgroundColor={backgroundColor}
-      paddingHorizontal="$2"
-      paddingVertical="$1"
-      borderRadius="$10"
-      alignSelf="flex-start"
-    >
-      <Text fontSize="$1" color={color}>
-        {label}
-      </Text>
-    </XStack>
-  );
-};
+  backgroundColor: string;
+  color: string;
+  label: string;
+}) => (
+  <XStack
+    backgroundColor={backgroundColor}
+    paddingHorizontal="$2"
+    paddingVertical="$1"
+    borderRadius="$10"
+    alignSelf="flex-start"
+  >
+    <Text fontSize="$1" color={color}>
+      {label}
+    </Text>
+  </XStack>
+);
 
 export type OrderHistoryListItemProps = {
   transactionNumber: number;
+  status: QrisPaymentStatus;
+  method: PaymentMethod;
   fulfillmentStatus: TransactionFulfillmentStatus;
   createdAt: string;
   tableLabel: string;
@@ -55,6 +60,8 @@ export type OrderHistoryListItemProps = {
 
 export const OrderHistoryListItem = ({
   transactionNumber,
+  status,
+  method,
   fulfillmentStatus,
   createdAt,
   tableLabel,
@@ -64,6 +71,7 @@ export const OrderHistoryListItem = ({
   onPress,
   ...xStackProps
 }: OrderHistoryListItemProps) => {
+  const isAwaitingCashPayment = method === 'cash' && status === 'pending';
   return (
     <XStack
       gap="$3"
@@ -83,7 +91,15 @@ export const OrderHistoryListItem = ({
           <Text fontWeight="bold" fontSize="$6">
             #{transactionNumber}
           </Text>
-          <FulfillmentPill fulfillmentStatus={fulfillmentStatus} />
+          {isAwaitingCashPayment ? (
+            <StatusPill
+              backgroundColor="$red5"
+              color="$red11"
+              label="Belum dibayar"
+            />
+          ) : (
+            <StatusPill {...fulfillmentPillByStatus[fulfillmentStatus]} />
+          )}
         </XStack>
         <Text color="$color10" fontSize="$2">
           {dayjs(createdAt).format('DD/MM/YYYY HH:mm')}

@@ -63,6 +63,8 @@ export const OrderHistoryScreen = ({
                   >
                     <OrderHistoryListItem
                       transactionNumber={payment.transactionNumber}
+                      status={payment.status}
+                      method={payment.method}
                       fulfillmentStatus={payment.fulfillmentStatus}
                       createdAt={payment.createdAt}
                       tableLabel={payment.tableLabel}

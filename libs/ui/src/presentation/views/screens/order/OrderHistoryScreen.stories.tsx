@@ -29,6 +29,19 @@ const payments = [
     createdAt: new Date(Date.now() - 65 * 60 * 1000).toISOString(),
     paidAt: new Date(Date.now() - 64 * 60 * 1000).toISOString(),
   },
+  {
+    reference: 'ORD0000000000003',
+    status: 'pending' as const,
+    method: 'cash' as const,
+    fulfillmentStatus: 'preparing' as const,
+    transactionNumber: 3,
+    customerName: 'Andi',
+    tableLabel: 'Meja 3',
+    amount: 27000,
+    itemCount: 2,
+    createdAt: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
+    paidAt: null,
+  },
 ];
 
 const meta: Meta<typeof OrderHistoryScreen> = {
