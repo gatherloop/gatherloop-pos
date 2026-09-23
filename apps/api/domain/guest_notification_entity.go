@@ -9,6 +9,9 @@ type GuestNotificationStatus string
 
 const (
 	GuestNotificationStatusPending GuestNotificationStatus = "pending"
+	// GuestNotificationStatusSending marks a row a dispatcher has claimed but not yet resolved
+	// (D8): the conditional pending → sending update lets exactly one dispatcher win a row.
+	GuestNotificationStatusSending GuestNotificationStatus = "sending"
 	GuestNotificationStatusSent    GuestNotificationStatus = "sent"
 	GuestNotificationStatusFailed  GuestNotificationStatus = "failed"
 	GuestNotificationStatusSkipped GuestNotificationStatus = "skipped"
@@ -23,10 +26,16 @@ type GuestNotification struct {
 	SessionId     string
 	Status        GuestNotificationStatus
 	AttemptCount  int
+	ClaimedAt     *time.Time
 	Detail        *string
 	CreatedAt     time.Time
 	SentAt        *time.Time
 }
+
+// GuestNotificationStaleSendingThreshold bounds how long a row may sit in `sending` before
+// ExpireStaleSending gives up on it (D8): a dispatcher that dies between claiming and recording
+// the outcome leaves a row that must never be resent, since "sending" means "may have sent".
+const GuestNotificationStaleSendingThreshold = 5 * time.Minute
 
 // BuildGuestPushMessage is pure and re-derived at send time (FR-5): a completed transaction
 // cannot be edited, so there is nothing to snapshot against. reference is the payment's

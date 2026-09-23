@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"time"
 )
 
 // FR-4: mirrors kdsDispatchBatchSize — a bounded batch per sweep so one dispatcher tick cannot run unbounded.
@@ -59,6 +60,13 @@ func (usecase GuestNotificationUsecase) DispatchPending(ctx context.Context) *Er
 	}
 
 	return nil
+}
+
+// ExpireStaleSending gives up on rows a dispatcher claimed but never resolved (D8): called on
+// every runMaintenanceSweeper tick alongside DispatchPending, so a claim orphaned by a crashed or
+// deployed-over process does not sit in `sending` forever.
+func (usecase GuestNotificationUsecase) ExpireStaleSending(ctx context.Context) *Error {
+	return usecase.repository.ExpireStaleSending(ctx, time.Now().Add(-GuestNotificationStaleSendingThreshold))
 }
 
 func (usecase GuestNotificationUsecase) dispatchOne(ctx context.Context, notification GuestNotification) {

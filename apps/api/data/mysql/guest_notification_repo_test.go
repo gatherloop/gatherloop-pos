@@ -5,6 +5,7 @@ import (
 	"apps/api/domain"
 	"context"
 	"testing"
+	"time"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
@@ -36,8 +37,8 @@ func TestEnqueueForCompletedTransaction_DuplicateEnqueueIsIdempotentByConstructi
 	sessionId := "session-1"
 
 	mock.ExpectBegin()
-	mock.ExpectExec("INSERT INTO `guest_notifications` \\(`transaction_id`,`session_id`,`status`,`attempt_count`,`detail`,`created_at`,`sent_at`\\) VALUES \\(\\?,\\?,\\?,\\?,\\?,\\?,\\?\\) ON DUPLICATE KEY UPDATE `id`=id").
-		WithArgs(int64(1), sessionId, "pending", 0, nil, sqlmock.AnyArg(), nil).
+	mock.ExpectExec("INSERT INTO `guest_notifications` \\(`transaction_id`,`session_id`,`status`,`attempt_count`,`claimed_at`,`detail`,`created_at`,`sent_at`\\) VALUES \\(\\?,\\?,\\?,\\?,\\?,\\?,\\?,\\?\\) ON DUPLICATE KEY UPDATE `id`=id").
+		WithArgs(int64(1), sessionId, "pending", 0, nil, nil, sqlmock.AnyArg(), nil).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
@@ -54,7 +55,7 @@ func TestEnqueueForCompletedTransaction_WritesSkippedStatusWhenThereIsNoSession(
 
 	mock.ExpectBegin()
 	mock.ExpectExec("INSERT INTO `guest_notifications`").
-		WithArgs(int64(1), "", "skipped", 0, "no payment for transaction", sqlmock.AnyArg(), nil).
+		WithArgs(int64(1), "", "skipped", 0, nil, "no payment for transaction", sqlmock.AnyArg(), nil).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
@@ -64,18 +65,94 @@ func TestEnqueueForCompletedTransaction_WritesSkippedStatusWhenThereIsNoSession(
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
-func TestClaimPendingGuestNotifications_FiltersByStatusAndAttemptCount(t *testing.T) {
+const claimSelectQuery = "SELECT guest_notifications\\.\\* FROM `guest_notifications` JOIN transactions ON transactions\\.id = guest_notifications\\.transaction_id WHERE guest_notifications\\.status = \\? AND guest_notifications\\.attempt_count < \\? AND transactions\\.completed_at IS NOT NULL ORDER BY guest_notifications\\.created_at ASC LIMIT \\?"
+
+const claimUpdateQuery = "UPDATE `guest_notifications` SET `claimed_at`=\\?,`status`=\\? WHERE id = \\? AND status = \\?"
+
+// D7/D8: the select joins on the transaction's completed_at, and each candidate is then claimed
+// by its own conditional pending → sending UPDATE.
+func TestClaimPendingGuestNotifications_ClaimsAPendingRowOfACompletedTransaction(t *testing.T) {
 	repo, mock := newMockGuestNotificationRepository(t)
 
-	mock.ExpectQuery("SELECT \\* FROM `guest_notifications` WHERE status = \\? AND attempt_count < \\? ORDER BY created_at ASC LIMIT \\?").
+	mock.ExpectQuery(claimSelectQuery).
 		WithArgs("pending", domain.GuestNotificationMaxAttempts, 50).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "transaction_id", "session_id", "status", "attempt_count"}).AddRow(1, 10, "session-1", "pending", 0))
+
+	mock.ExpectBegin()
+	mock.ExpectExec(claimUpdateQuery).
+		WithArgs(sqlmock.AnyArg(), "sending", int64(1), "pending").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectCommit()
 
 	notifications, err := repo.ClaimPendingGuestNotifications(context.Background(), 50)
 
 	require.Nil(t, err)
 	require.Len(t, notifications, 1)
-	assert.Equal(t, domain.GuestNotificationStatusPending, notifications[0].Status)
+	assert.Equal(t, domain.GuestNotificationStatusSending, notifications[0].Status)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+// D7: a row whose transaction is not completed is simply absent from the select's result set — it
+// is not claimed while the order is un-marked, and is claimed once the transaction is re-completed.
+func TestClaimPendingGuestNotifications_NotClaimedUntilTransactionIsCompleted(t *testing.T) {
+	repo, mock := newMockGuestNotificationRepository(t)
+
+	mock.ExpectQuery(claimSelectQuery).
+		WithArgs("pending", domain.GuestNotificationMaxAttempts, 50).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "transaction_id", "session_id", "status", "attempt_count"}))
+
+	notifications, err := repo.ClaimPendingGuestNotifications(context.Background(), 50)
+
+	require.Nil(t, err)
+	require.Empty(t, notifications)
+	require.NoError(t, mock.ExpectationsWereMet())
+
+	mock.ExpectQuery(claimSelectQuery).
+		WithArgs("pending", domain.GuestNotificationMaxAttempts, 50).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "transaction_id", "session_id", "status", "attempt_count"}).AddRow(1, 10, "session-1", "pending", 0))
+	mock.ExpectBegin()
+	mock.ExpectExec(claimUpdateQuery).
+		WithArgs(sqlmock.AnyArg(), "sending", int64(1), "pending").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectCommit()
+
+	notifications, err = repo.ClaimPendingGuestNotifications(context.Background(), 50)
+
+	require.Nil(t, err)
+	require.Len(t, notifications, 1)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+// D8: two dispatchers racing the same row both see it as a pending candidate, but the conditional
+// UPDATE lets only one of them change a row — the loser's claim comes back empty.
+func TestClaimPendingGuestNotifications_ConcurrentClaimsYieldOneWinner(t *testing.T) {
+	repo, mock := newMockGuestNotificationRepository(t)
+
+	mock.ExpectQuery(claimSelectQuery).
+		WithArgs("pending", domain.GuestNotificationMaxAttempts, 50).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "transaction_id", "session_id", "status", "attempt_count"}).AddRow(1, 10, "session-1", "pending", 0))
+	mock.ExpectBegin()
+	mock.ExpectExec(claimUpdateQuery).
+		WithArgs(sqlmock.AnyArg(), "sending", int64(1), "pending").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectCommit()
+
+	winner, err := repo.ClaimPendingGuestNotifications(context.Background(), 50)
+	require.Nil(t, err)
+	require.Len(t, winner, 1)
+
+	mock.ExpectQuery(claimSelectQuery).
+		WithArgs("pending", domain.GuestNotificationMaxAttempts, 50).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "transaction_id", "session_id", "status", "attempt_count"}).AddRow(1, 10, "session-1", "pending", 0))
+	mock.ExpectBegin()
+	mock.ExpectExec(claimUpdateQuery).
+		WithArgs(sqlmock.AnyArg(), "sending", int64(1), "pending").
+		WillReturnResult(sqlmock.NewResult(0, 0))
+	mock.ExpectCommit()
+
+	loser, err := repo.ClaimPendingGuestNotifications(context.Background(), 50)
+	require.Nil(t, err)
+	require.Empty(t, loser)
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
@@ -147,18 +224,19 @@ func TestMarkGuestNotificationSkipped_SetsStatusAndDetail(t *testing.T) {
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
-// D7: UncompleteTransaction deletes the row so a re-completion enqueues a fresh one instead of
-// being suppressed by the unique key on transaction_id.
-func TestDeleteGuestNotificationByTransactionId_RemovesTheRow(t *testing.T) {
+// D8/D9: a row that has been claimed but never resolved for longer than the stale threshold is
+// given up on, never resent — "sending" means "may have sent".
+func TestExpireStaleSending_MarksOldSendingRowsFailed(t *testing.T) {
 	repo, mock := newMockGuestNotificationRepository(t)
+	cutoff := time.Now().Add(-6 * time.Minute)
 
 	mock.ExpectBegin()
-	mock.ExpectExec("DELETE FROM `guest_notifications` WHERE transaction_id = \\?").
-		WithArgs(int64(1)).
+	mock.ExpectExec("UPDATE `guest_notifications` SET `detail`=\\?,`status`=\\? WHERE status = \\? AND claimed_at < \\?").
+		WithArgs("outcome unknown: dispatcher interrupted", "failed", "sending", cutoff).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectCommit()
 
-	err := repo.DeleteGuestNotificationByTransactionId(context.Background(), 1)
+	err := repo.ExpireStaleSending(context.Background(), cutoff)
 
 	require.Nil(t, err)
 	require.NoError(t, mock.ExpectationsWereMet())

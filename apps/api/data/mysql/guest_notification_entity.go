@@ -8,6 +8,7 @@ type GuestNotification struct {
 	SessionId     string
 	Status        string
 	AttemptCount  int
+	ClaimedAt     *time.Time
 	Detail        *string
 	CreatedAt     time.Time
 	SentAt        *time.Time

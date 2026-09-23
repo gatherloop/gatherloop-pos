@@ -2,7 +2,10 @@
 
 package domain
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 type GuestNotificationRepository interface {
 	// EnqueueForCompletedTransaction writes one row for a transaction that just became complete,
@@ -10,14 +13,17 @@ type GuestNotificationRepository interface {
 	// sessionId records a 'skipped' row — there was no payment to resolve a guest from — rather
 	// than failing the completion (FR-2).
 	EnqueueForCompletedTransaction(ctx context.Context, transaction Transaction, sessionId *string) *Error
+	// ClaimPendingGuestNotifications claims up to limit pending rows, oldest first, whose
+	// transaction is currently completed (D7), by an atomic conditional pending → sending update
+	// (D8) so two concurrent dispatchers cannot both claim the same row.
 	ClaimPendingGuestNotifications(ctx context.Context, limit int) ([]GuestNotification, *Error)
 	MarkGuestNotificationSent(ctx context.Context, id int64, detail string) *Error
 	MarkGuestNotificationFailed(ctx context.Context, id int64, detail string) *Error
 	MarkGuestNotificationSkipped(ctx context.Context, id int64, detail string) *Error
-	// DeleteGuestNotificationByTransactionId is called from UncompleteTransaction (D7): the
-	// correction removed the fact the row recorded, so the next completion must enqueue fresh
-	// rather than be suppressed by the unique key.
-	DeleteGuestNotificationByTransactionId(ctx context.Context, transactionId int64) *Error
+	// ExpireStaleSending moves rows that have sat in `sending` for longer than
+	// GuestNotificationStaleSendingThreshold to `failed`, never to be resent (D8/D9): the
+	// dispatcher that claimed them may have died mid-send, so "sending" means "may have sent".
+	ExpireStaleSending(ctx context.Context, now time.Time) *Error
 }
 
 // GuestNotificationDispatcher lets CompleteTransaction kick a dispatch sweep the instant its

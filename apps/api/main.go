@@ -266,6 +266,9 @@ func runMaintenanceSweeper(ctx context.Context, kdsNotificationUsecase domain.Kd
 			if err := guestNotificationUsecase.DispatchPending(context.Background()); err != nil {
 				logger.Error("guest notification dispatch sweep failed", slog.Any("error", err))
 			}
+			if err := guestNotificationUsecase.ExpireStaleSending(context.Background()); err != nil {
+				logger.Error("guest notification stale-sending sweep failed", slog.Any("error", err))
+			}
 			if err := paymentUsecase.ExpireStalePayments(context.Background()); err != nil {
 				logger.Error("payment expiry sweep failed", slog.Any("error", err))
 			}
