@@ -34,6 +34,7 @@ export class ApiPaymentRepository implements PaymentRepository {
   fetchPayment: PaymentRepository['fetchPayment'] = (reference) => {
     return paymentFindByPartnerReferenceNo(
       reference,
+      undefined,
       this.sessionRequestConfig()
     )
       .then(({ data }) => toPayment(data))

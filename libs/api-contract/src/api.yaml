@@ -434,12 +434,13 @@ paths:
                 $ref: '#/components/schemas/Error'
   /payments/{partnerReferenceNo}:
     get:
-      summary: Get a payment by its reference, re-querying DOKU when it is still pending and the last check is stale (D12, D12a). 404 unless the payment belongs to the requesting session.
+      summary: Get a payment by its reference, re-querying DOKU when it is still pending and the last check is stale (D12, D12a). 404 unless the payment belongs to the requesting session, or X-Order-Access-Key matches the payment's access key (D4).
       operationId: paymentFindByPartnerReferenceNo
       tags:
         - payment
       parameters:
         - $ref: '#/components/parameters/PartnerReferenceNo'
+        - $ref: '#/components/parameters/OrderAccessKey'
       responses:
         '200':
           description: success response
@@ -6243,6 +6244,14 @@ components:
       schema:
         type: string
       required: true
+    OrderAccessKey:
+      name: X-Order-Access-Key
+      in: header
+      description: Grants read access to a payment's status page without a matching session (D4). Sent only to the guest's own phone, in the WhatsApp order-ready link.
+      required: false
+      schema:
+        type: string
+        maxLength: 64
     RentalId:
       name: rentalId
       in: path

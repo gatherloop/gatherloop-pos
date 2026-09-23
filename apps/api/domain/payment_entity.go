@@ -2,6 +2,7 @@ package domain
 
 import (
 	"crypto/rand"
+	"encoding/base64"
 	"time"
 )
 
@@ -86,6 +87,7 @@ type Payment struct {
 	SessionId          string
 	TransactionId      *int64
 	PartnerReferenceNo string
+	AccessKey          *string
 	GatewayReferenceNo string
 	Method             PaymentMethod
 	Status             PaymentState
@@ -151,6 +153,20 @@ func GeneratePartnerReferenceNo() (string, error) {
 	}
 
 	return "ORD" + string(code), nil
+}
+
+const orderAccessKeyRandomBytes = 16
+
+// GenerateOrderAccessKey is the per-payment credential carried in the WhatsApp link's ?k=
+// query parameter (D4): it grants GetPaymentStatus read access to a payment's status page from
+// any browser, not just the session that paid.
+func GenerateOrderAccessKey() (string, error) {
+	randomBytes := make([]byte, orderAccessKeyRandomBytes)
+	if _, err := rand.Read(randomBytes); err != nil {
+		return "", err
+	}
+
+	return base64.RawURLEncoding.EncodeToString(randomBytes), nil
 }
 
 func ValidateOrderPaymentWallet(wallet Wallet) *Error {
