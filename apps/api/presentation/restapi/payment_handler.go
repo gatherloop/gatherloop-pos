@@ -86,8 +86,9 @@ func (handler PaymentHandler) GetPaymentByPartnerReferenceNo(w http.ResponseWrit
 	sessionId := GetSessionId(r)
 
 	partnerReferenceNo := GetPartnerReferenceNo(r)
+	accessKey := GetOrderAccessKey(r)
 
-	payment, transaction, usecaseErr := handler.usecase.GetPaymentStatus(ctx, sessionId, partnerReferenceNo)
+	payment, transaction, usecaseErr := handler.usecase.GetPaymentStatus(ctx, sessionId, partnerReferenceNo, accessKey)
 	if usecaseErr != nil {
 		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return

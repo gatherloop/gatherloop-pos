@@ -21,6 +21,10 @@ func GetPartnerReferenceNo(r *http.Request) string {
 	return mux.Vars(r)["partnerReferenceNo"]
 }
 
+func GetOrderAccessKey(r *http.Request) string {
+	return r.Header.Get("X-Order-Access-Key")
+}
+
 func GetDokuNotificationRequest(body []byte) (apiContract.DokuNotificationRequest, error) {
 	var request apiContract.DokuNotificationRequest
 	err := json.Unmarshal(body, &request)

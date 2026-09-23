@@ -37,6 +37,7 @@ type Env struct {
 	DokuQrisExpirySeconds    int
 	CashPaymentExpirySeconds int
 	OrderPaymentWalletId     string
+	OrderWebBaseURL          string
 
 	ExpoPushAccessToken        string
 	KdsPushSound               string
@@ -88,6 +89,7 @@ func GetEnv() Env {
 		DokuQrisExpirySeconds:    parseIntWithDefault(os.Getenv("DOKU_QRIS_EXPIRY_SECONDS"), 300),
 		CashPaymentExpirySeconds: parseIntWithDefault(os.Getenv("CASH_PAYMENT_EXPIRY_SECONDS"), 600),
 		OrderPaymentWalletId:     os.Getenv("ORDER_PAYMENT_WALLET_ID"),
+		OrderWebBaseURL:          os.Getenv("ORDER_WEB_BASE_URL"),
 
 		ExpoPushAccessToken:        getCredential("EXPO_PUSH_ACCESS_TOKEN"),
 		KdsPushSound:               stringWithDefault(os.Getenv("KDS_PUSH_SOUND"), "order_alert.wav"),

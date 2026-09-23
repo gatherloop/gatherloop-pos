@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"crypto/subtle"
 	"log/slog"
 	"time"
 )
@@ -169,6 +170,11 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 			return &Error{Type: InternalServerError, Message: "failed to generate payment reference"}
 		}
 
+		accessKey, genErr := GenerateOrderAccessKey()
+		if genErr != nil {
+			return &Error{Type: InternalServerError, Message: "failed to generate payment access key"}
+		}
+
 		expiredAt := time.Now().Add(time.Duration(usecase.expirySecondsFor(method)) * time.Second)
 
 		createdPayment, err := usecase.paymentRepository.CreatePayment(ctxWithTx, Payment{
@@ -176,6 +182,7 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 			SessionId:          sessionId,
 			TransactionId:      &createdTransaction.Id,
 			PartnerReferenceNo: partnerReferenceNo,
+			AccessKey:          &accessKey,
 			Method:             method,
 			Status:             PaymentStatePending,
 			Amount:             total,
@@ -453,7 +460,20 @@ func (usecase PaymentUsecase) expireOne(ctx context.Context, payment Payment, no
 	}
 }
 
-func (usecase PaymentUsecase) GetPaymentStatus(ctx context.Context, sessionId string, partnerReferenceNo string) (Payment, Transaction, *Error) {
+// authorizePaymentAccess is FR-9/D4: the session that paid always has access, and a payment
+// carrying an access key also grants access to whoever holds that key — the guest's own phone,
+// via the WhatsApp link, whatever browser it is opened in.
+func authorizePaymentAccess(payment Payment, sessionId string, accessKey string) bool {
+	if payment.SessionId == sessionId {
+		return true
+	}
+	if payment.AccessKey == nil || accessKey == "" {
+		return false
+	}
+	return subtle.ConstantTimeCompare([]byte(*payment.AccessKey), []byte(accessKey)) == 1
+}
+
+func (usecase PaymentUsecase) GetPaymentStatus(ctx context.Context, sessionId string, partnerReferenceNo string, accessKey string) (Payment, Transaction, *Error) {
 	var resultPayment Payment
 	var resultTransaction Transaction
 	var outcome ConfirmPaymentOutcome
@@ -466,7 +486,7 @@ func (usecase PaymentUsecase) GetPaymentStatus(ctx context.Context, sessionId st
 			}
 			return err
 		}
-		if payment.SessionId != sessionId {
+		if !authorizePaymentAccess(payment, sessionId, accessKey) {
 			return &Error{Type: NotFound, Message: "payment not found"}
 		}
 

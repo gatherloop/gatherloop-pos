@@ -8,6 +8,7 @@ type Payment struct {
 	SessionId          string
 	TransactionId      *int64
 	PartnerReferenceNo string
+	AccessKey          *string
 	GatewayReferenceNo string
 	Method             string
 	Status             string

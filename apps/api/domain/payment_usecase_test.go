@@ -1159,7 +1159,7 @@ func TestPaymentUsecase_GetPaymentStatus(t *testing.T) {
 		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), "ORDUNKNOWN000AB").
 			Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
 
-		_, _, err := m.usecase().GetPaymentStatus(context.Background(), "session-1", "ORDUNKNOWN000AB")
+		_, _, err := m.usecase().GetPaymentStatus(context.Background(), "session-1", "ORDUNKNOWN000AB", "")
 
 		assert.NotNil(t, err)
 		assert.Equal(t, domain.NotFound, err.Type)
@@ -1176,7 +1176,66 @@ func TestPaymentUsecase_GetPaymentStatus(t *testing.T) {
 		payment.SessionId = "session-owner"
 		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 
-		_, _, err := m.usecase().GetPaymentStatus(context.Background(), "session-thief", payment.PartnerReferenceNo)
+		_, _, err := m.usecase().GetPaymentStatus(context.Background(), "session-thief", payment.PartnerReferenceNo, "")
+
+		assert.NotNil(t, err)
+		assert.Equal(t, domain.NotFound, err.Type)
+	})
+
+	t.Run("a foreign session with the payment's correct access key is 200 (D4)", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		withPaymentTransactionMock(m.paymentRepo)
+
+		accessKey := "q3Vd0bX9pL2sR8tY1wZa7c"
+		payment := pendingPaymentFixture()
+		payment.SessionId = "session-owner"
+		payment.AccessKey = &accessKey
+		checkedAt := time.Now().Add(-3 * time.Second)
+		payment.StatusCheckedAt = &checkedAt
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil)
+
+		result, _, err := m.usecase().GetPaymentStatus(context.Background(), "session-thief", payment.PartnerReferenceNo, accessKey)
+
+		assert.Nil(t, err)
+		assert.Equal(t, payment, result)
+	})
+
+	t.Run("a foreign session with a wrong access key is 404", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		withPaymentTransactionMock(m.paymentRepo)
+
+		accessKey := "q3Vd0bX9pL2sR8tY1wZa7c"
+		payment := pendingPaymentFixture()
+		payment.SessionId = "session-owner"
+		payment.AccessKey = &accessKey
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+
+		_, _, err := m.usecase().GetPaymentStatus(context.Background(), "session-thief", payment.PartnerReferenceNo, "wrong-key")
+
+		assert.NotNil(t, err)
+		assert.Equal(t, domain.NotFound, err.Type)
+	})
+
+	t.Run("a legacy payment with a null access key is 404 for a foreign session even with a key supplied", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		withPaymentTransactionMock(m.paymentRepo)
+
+		payment := pendingPaymentFixture()
+		payment.SessionId = "session-owner"
+		payment.AccessKey = nil
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+
+		_, _, err := m.usecase().GetPaymentStatus(context.Background(), "session-thief", payment.PartnerReferenceNo, "any-key")
 
 		assert.NotNil(t, err)
 		assert.Equal(t, domain.NotFound, err.Type)
@@ -1195,7 +1254,7 @@ func TestPaymentUsecase_GetPaymentStatus(t *testing.T) {
 		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil)
 
-		result, _, err := m.usecase().GetPaymentStatus(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+		result, _, err := m.usecase().GetPaymentStatus(context.Background(), payment.SessionId, payment.PartnerReferenceNo, "")
 
 		assert.Nil(t, err)
 		assert.Equal(t, payment, result)
@@ -1220,7 +1279,7 @@ func TestPaymentUsecase_GetPaymentStatus(t *testing.T) {
 			})
 		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil)
 
-		result, _, err := m.usecase().GetPaymentStatus(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+		result, _, err := m.usecase().GetPaymentStatus(context.Background(), payment.SessionId, payment.PartnerReferenceNo, "")
 
 		assert.Nil(t, err)
 		assert.Equal(t, domain.PaymentStatePending, result.Status)
@@ -1251,7 +1310,7 @@ func TestPaymentUsecase_GetPaymentStatus(t *testing.T) {
 		m.cartRepo.EXPECT().UpdateCartById(gomock.Any(), gomock.Any(), int64(1)).
 			DoAndReturn(func(_ context.Context, cart domain.Cart, id int64) (domain.Cart, *domain.Error) { return cart, nil })
 
-		result, _, err := m.usecase().GetPaymentStatus(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+		result, _, err := m.usecase().GetPaymentStatus(context.Background(), payment.SessionId, payment.PartnerReferenceNo, "")
 
 		assert.Nil(t, err)
 		assert.Equal(t, domain.PaymentStatePaid, result.Status)
@@ -1278,7 +1337,7 @@ func TestPaymentUsecase_GetPaymentStatus(t *testing.T) {
 		m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), int64(99)).Return(nil)
 		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil).Times(2)
 
-		result, _, err := m.usecase().GetPaymentStatus(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+		result, _, err := m.usecase().GetPaymentStatus(context.Background(), payment.SessionId, payment.PartnerReferenceNo, "")
 
 		assert.Nil(t, err)
 		assert.Equal(t, domain.PaymentStateExpired, result.Status)
@@ -1310,7 +1369,7 @@ func TestPaymentUsecase_GetPaymentStatus(t *testing.T) {
 		m.cartRepo.EXPECT().UpdateCartById(gomock.Any(), gomock.Any(), int64(1)).
 			DoAndReturn(func(_ context.Context, cart domain.Cart, id int64) (domain.Cart, *domain.Error) { return cart, nil })
 
-		result, _, err := m.usecase().GetPaymentStatus(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+		result, _, err := m.usecase().GetPaymentStatus(context.Background(), payment.SessionId, payment.PartnerReferenceNo, "")
 
 		assert.Nil(t, err)
 		assert.Equal(t, domain.PaymentStatePaid, result.Status)
@@ -1329,7 +1388,7 @@ func TestPaymentUsecase_GetPaymentStatus(t *testing.T) {
 			Return(domain.QrisStatus{}, &domain.Error{Type: domain.InternalServerError, Message: "DOKU is unreachable"})
 		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil)
 
-		result, _, err := m.usecase().GetPaymentStatus(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+		result, _, err := m.usecase().GetPaymentStatus(context.Background(), payment.SessionId, payment.PartnerReferenceNo, "")
 
 		assert.Nil(t, err)
 		assert.Equal(t, payment, result)
@@ -1352,7 +1411,7 @@ func TestPaymentUsecase_GetPaymentStatus(t *testing.T) {
 			})
 		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil)
 
-		result, _, err := m.usecase().GetPaymentStatus(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+		result, _, err := m.usecase().GetPaymentStatus(context.Background(), payment.SessionId, payment.PartnerReferenceNo, "")
 
 		assert.Nil(t, err)
 		assert.Equal(t, domain.PaymentStatePending, result.Status)
@@ -1378,7 +1437,7 @@ func TestPaymentUsecase_GetPaymentStatus(t *testing.T) {
 		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil).Times(2)
 		m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), int64(99)).Return(nil)
 
-		result, _, err := m.usecase().GetPaymentStatus(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+		result, _, err := m.usecase().GetPaymentStatus(context.Background(), payment.SessionId, payment.PartnerReferenceNo, "")
 
 		assert.Nil(t, err)
 		assert.Equal(t, domain.PaymentStateExpired, result.Status)
@@ -1411,7 +1470,7 @@ func TestPaymentUsecase_GetPaymentStatus(t *testing.T) {
 		}, nil)
 		m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), int64(99)).Return(nil)
 
-		result, _, err := m.usecase().GetPaymentStatus(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+		result, _, err := m.usecase().GetPaymentStatus(context.Background(), payment.SessionId, payment.PartnerReferenceNo, "")
 
 		assert.Nil(t, err)
 		assert.Equal(t, domain.PaymentStateExpired, result.Status)
@@ -1429,7 +1488,7 @@ func TestPaymentUsecase_GetPaymentStatus(t *testing.T) {
 		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil)
 
-		result, _, err := m.usecase().GetPaymentStatus(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+		result, _, err := m.usecase().GetPaymentStatus(context.Background(), payment.SessionId, payment.PartnerReferenceNo, "")
 
 		assert.Nil(t, err)
 		assert.Equal(t, domain.PaymentStateExpired, result.Status)
@@ -1522,7 +1581,7 @@ func TestPaymentUsecase_KdsDispatchTrigger(t *testing.T) {
 		dispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
 		dispatcher.EXPECT().TriggerDispatch().Times(1)
 
-		result, _, err := m.usecaseWithDispatcher(dispatcher).GetPaymentStatus(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+		result, _, err := m.usecaseWithDispatcher(dispatcher).GetPaymentStatus(context.Background(), payment.SessionId, payment.PartnerReferenceNo, "")
 
 		assert.Nil(t, err)
 		assert.Equal(t, domain.PaymentStatePaid, result.Status)
@@ -1546,7 +1605,7 @@ func TestPaymentUsecase_KdsDispatchTrigger(t *testing.T) {
 		dispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
 		dispatcher.EXPECT().TriggerDispatch().Times(0)
 
-		result, _, err := m.usecaseWithDispatcher(dispatcher).GetPaymentStatus(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+		result, _, err := m.usecaseWithDispatcher(dispatcher).GetPaymentStatus(context.Background(), payment.SessionId, payment.PartnerReferenceNo, "")
 
 		assert.Nil(t, err)
 		assert.Equal(t, domain.PaymentStatePending, result.Status)
