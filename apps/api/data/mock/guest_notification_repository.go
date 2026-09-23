@@ -13,6 +13,7 @@ import (
 	domain "apps/api/domain"
 	context "context"
 	reflect "reflect"
+	time "time"
 
 	gomock "go.uber.org/mock/gomock"
 )
@@ -56,20 +57,6 @@ func (mr *MockGuestNotificationRepositoryMockRecorder) ClaimPendingGuestNotifica
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClaimPendingGuestNotifications", reflect.TypeOf((*MockGuestNotificationRepository)(nil).ClaimPendingGuestNotifications), ctx, limit)
 }
 
-// DeleteGuestNotificationByTransactionId mocks base method.
-func (m *MockGuestNotificationRepository) DeleteGuestNotificationByTransactionId(ctx context.Context, transactionId int64) *domain.Error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteGuestNotificationByTransactionId", ctx, transactionId)
-	ret0, _ := ret[0].(*domain.Error)
-	return ret0
-}
-
-// DeleteGuestNotificationByTransactionId indicates an expected call of DeleteGuestNotificationByTransactionId.
-func (mr *MockGuestNotificationRepositoryMockRecorder) DeleteGuestNotificationByTransactionId(ctx, transactionId any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteGuestNotificationByTransactionId", reflect.TypeOf((*MockGuestNotificationRepository)(nil).DeleteGuestNotificationByTransactionId), ctx, transactionId)
-}
-
 // EnqueueForCompletedTransaction mocks base method.
 func (m *MockGuestNotificationRepository) EnqueueForCompletedTransaction(ctx context.Context, transaction domain.Transaction, sessionId *string) *domain.Error {
 	m.ctrl.T.Helper()
@@ -82,6 +69,20 @@ func (m *MockGuestNotificationRepository) EnqueueForCompletedTransaction(ctx con
 func (mr *MockGuestNotificationRepositoryMockRecorder) EnqueueForCompletedTransaction(ctx, transaction, sessionId any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnqueueForCompletedTransaction", reflect.TypeOf((*MockGuestNotificationRepository)(nil).EnqueueForCompletedTransaction), ctx, transaction, sessionId)
+}
+
+// ExpireStaleSending mocks base method.
+func (m *MockGuestNotificationRepository) ExpireStaleSending(ctx context.Context, now time.Time) *domain.Error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExpireStaleSending", ctx, now)
+	ret0, _ := ret[0].(*domain.Error)
+	return ret0
+}
+
+// ExpireStaleSending indicates an expected call of ExpireStaleSending.
+func (mr *MockGuestNotificationRepositoryMockRecorder) ExpireStaleSending(ctx, now any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExpireStaleSending", reflect.TypeOf((*MockGuestNotificationRepository)(nil).ExpireStaleSending), ctx, now)
 }
 
 // MarkGuestNotificationFailed mocks base method.

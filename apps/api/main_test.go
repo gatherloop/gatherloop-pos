@@ -55,6 +55,7 @@ func TestRunMaintenanceSweeper_CallsEveryJobPerTick(t *testing.T) {
 			guestCalled <- struct{}{}
 			return nil, nil
 		}).AnyTimes()
+	guestNotificationRepo.EXPECT().ExpireStaleSending(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	paymentRepo.EXPECT().GetExpirablePayments(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
 		func(context.Context, time.Time, int) ([]domain.Payment, *domain.Error) {
 			paymentCalled <- struct{}{}

@@ -440,13 +440,11 @@ func (usecase TransactionUsecase) UncompleteTransaction(ctx context.Context, id 
 			return &Error{Type: BadRequest, Message: "transaction is not completed"}
 		}
 
-		if err := usecase.transactionRepository.UncompleteTransaction(ctxWithTx, id); err != nil {
-			return err
-		}
-
-		// D7: the correction removed the fact the outbox row recorded, so a re-completion must
-		// enqueue fresh rather than be suppressed by the unique key.
-		return usecase.guestNotificationRepository.DeleteGuestNotificationByTransactionId(ctxWithTx, id)
+		// D6: the outbox row is left in place. UNIQUE (transaction_id) makes a later
+		// re-completion's enqueue a no-op, so an order is messaged at most once, ever. The claim
+		// only picks rows whose transaction is currently completed (D7), so a row that is still
+		// pending here simply waits until the order is re-marked ready.
+		return usecase.transactionRepository.UncompleteTransaction(ctxWithTx, id)
 	})
 }
 

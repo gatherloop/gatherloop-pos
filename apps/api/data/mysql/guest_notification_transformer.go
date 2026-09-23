@@ -9,6 +9,7 @@ func ToGuestNotificationDomain(dbNotification GuestNotification) domain.GuestNot
 		SessionId:     dbNotification.SessionId,
 		Status:        domain.GuestNotificationStatus(dbNotification.Status),
 		AttemptCount:  dbNotification.AttemptCount,
+		ClaimedAt:     dbNotification.ClaimedAt,
 		Detail:        dbNotification.Detail,
 		CreatedAt:     dbNotification.CreatedAt,
 		SentAt:        dbNotification.SentAt,

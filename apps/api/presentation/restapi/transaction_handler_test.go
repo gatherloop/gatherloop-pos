@@ -43,7 +43,6 @@ func newTransactionHandler(t *testing.T, setupMocks func(txRepo *mock.MockTransa
 	paymentRepo.EXPECT().GetPaymentByTransactionId(gomock.Any(), gomock.Any()).Return(domain.Payment{SessionId: "session-1", Status: domain.PaymentStatePaid}, nil).AnyTimes()
 	guestNotificationRepo := mock.NewMockGuestNotificationRepository(ctrl)
 	guestNotificationRepo.EXPECT().EnqueueForCompletedTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-	guestNotificationRepo.EXPECT().DeleteGuestNotificationByTransactionId(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	guestNotificationDispatcher := mock.NewMockGuestNotificationDispatcher(ctrl)
 	guestNotificationDispatcher.EXPECT().TriggerDispatch().AnyTimes()
 	cartRepo := mock.NewMockCartRepository(ctrl)
