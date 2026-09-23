@@ -17,6 +17,7 @@ export type OrderStatusState = (
   | { type: 'idle' }
   | { type: 'loading' }
   | { type: 'awaitingPayment' }
+  | { type: 'awaitingCashPayment' }
   | { type: 'preparing' }
   | { type: 'ready' }
   | { type: 'expired' }
@@ -43,9 +44,13 @@ export type OrderStatusParams = {
 
 function stateTypeForPayment(
   payment: Payment
-): 'awaitingPayment' | 'preparing' | 'ready' | 'expired' {
+): 'awaitingPayment' | 'awaitingCashPayment' | 'preparing' | 'ready' | 'expired' {
   return match(payment.status)
-    .with('pending', () => 'awaitingPayment' as const)
+    .with('pending', () =>
+      payment.method === 'cash'
+        ? ('awaitingCashPayment' as const)
+        : ('awaitingPayment' as const)
+    )
     .with('paid', () =>
       payment.fulfillmentStatus === 'ready'
         ? ('ready' as const)
@@ -128,32 +133,44 @@ export class OrderStatusUsecase extends Usecase<
       )
       .with(
         [
-          { type: 'awaitingPayment', isPolling: false },
+          {
+            type: P.union('awaitingPayment', 'awaitingCashPayment'),
+            isPolling: false,
+          },
           { type: P.union('POLL', 'COUNTDOWN_ELAPSED') },
         ],
         ([state]) => ({ ...state, isPolling: true })
       )
       .with(
-        [{ type: 'awaitingPayment' }, { type: 'POLL_SUCCESS' }],
+        [
+          { type: P.union('awaitingPayment', 'awaitingCashPayment') },
+          { type: 'POLL_SUCCESS' },
+        ],
         ([state, { payment }]) => ({
           ...state,
-          type:
-            payment.status === 'paid'
-              ? stateTypeForPayment(payment)
-              : 'awaitingPayment',
+          type: payment.status === 'paid' ? stateTypeForPayment(payment) : state.type,
           payment,
           isPolling: false,
         })
       )
       .with(
-        [{ type: 'awaitingPayment' }, { type: 'POLL_ERROR' }],
+        [
+          { type: P.union('awaitingPayment', 'awaitingCashPayment') },
+          { type: 'POLL_ERROR' },
+        ],
         ([state]) => ({ ...state, isPolling: false })
       )
-      .with([{ type: 'awaitingPayment' }, { type: 'EXPIRE' }], ([state]) => ({
-        ...state,
-        type: 'expired',
-        isPolling: false,
-      }))
+      .with(
+        [
+          { type: P.union('awaitingPayment', 'awaitingCashPayment') },
+          { type: 'EXPIRE' },
+        ],
+        ([state]) => ({
+          ...state,
+          type: 'expired',
+          isPolling: false,
+        })
+      )
       .with(
         [{ type: 'preparing', isPolling: false }, { type: 'POLL' }],
         ([state]) => ({ ...state, isPolling: true })
@@ -195,7 +212,7 @@ export class OrderStatusUsecase extends Usecase<
             }
           });
       })
-      .with({ type: 'awaitingPayment' }, (state) => {
+      .with({ type: P.union('awaitingPayment', 'awaitingCashPayment') }, (state) => {
         this.ensurePollTimer(AWAITING_PAYMENT_POLL_INTERVAL_MS, dispatch);
 
         if (state.isPolling && state.payment) {

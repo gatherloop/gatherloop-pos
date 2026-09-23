@@ -29,12 +29,15 @@ export function OrderStatus({ sessionId, reference, payment }: OrderStatusProps)
     webPushRepository,
     webPushSubscriptionRepository
   );
+  const cashierLocation =
+    process.env['NEXT_PUBLIC_ORDER_CASHIER_LOCATION'] || 'Lantai 1';
 
   return (
     <OrderStatusHandler
       orderStatusUsecase={orderStatusUsecase}
       orderNotificationSubscribeUsecase={orderNotificationSubscribeUsecase}
       sessionRepository={sessionRepository}
+      cashierLocation={cashierLocation}
     />
   );
 }

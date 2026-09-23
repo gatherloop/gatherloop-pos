@@ -65,6 +65,21 @@ describe('OrderStatusUsecase', () => {
     });
   });
 
+  it('should transition idle → loading → awaitingCashPayment on a known pending cash reference', async () => {
+    const repository = new MockPaymentRepository();
+    repository.payment = { ...repository.payment, method: 'cash' };
+    const orderStatus = createTester(repository, repository.payment.reference);
+
+    await flushMicrotasks();
+    expect(orderStatus.state).toEqual({
+      type: 'awaitingCashPayment',
+      reference: repository.payment.reference,
+      payment: repository.payment,
+      errorMessage: null,
+      isPolling: false,
+    });
+  });
+
   it('should transition idle → loading → notFound on an unknown reference', async () => {
     const repository = new MockPaymentRepository();
     const orderStatus = createTester(repository, 'UNKNOWNREF');
@@ -143,6 +158,25 @@ describe('OrderStatusUsecase', () => {
 
     expect(orderStatus.state).toEqual({
       type: 'awaitingPayment',
+      reference: repository.payment.reference,
+      payment: repository.payment,
+      errorMessage: null,
+      isPolling: false,
+    });
+
+    await flushMicrotasks();
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('starts awaitingCashPayment and never fetches when seeded with a pending cash payment', async () => {
+    const repository = new MockPaymentRepository();
+    repository.payment = { ...repository.payment, method: 'cash' };
+    const fetchSpy = jest.spyOn(repository, 'fetchPayment');
+
+    const orderStatus = createSeededTester(repository, repository.payment);
+
+    expect(orderStatus.state).toEqual({
+      type: 'awaitingCashPayment',
       reference: repository.payment.reference,
       payment: repository.payment,
       errorMessage: null,
@@ -358,6 +392,82 @@ describe('OrderStatusUsecase', () => {
       repository.payment = { ...repository.payment, fulfillmentStatus: 'ready' };
       await jest.advanceTimersByTimeAsync(4000);
       expect(orderStatus.state.type).toBe('ready');
+    });
+  });
+
+  describe('awaitingCashPayment', () => {
+    const enterAwaitingCashPayment = (repository: MockPaymentRepository) => {
+      repository.payment = { ...repository.payment, method: 'cash' };
+      return createSeededTester(repository, repository.payment);
+    };
+
+    it('should transition to preparing on a POLL that reports paid but not yet ready', async () => {
+      const repository = new MockPaymentRepository();
+      const orderStatus = enterAwaitingCashPayment(repository);
+
+      repository.payment = {
+        ...repository.payment,
+        status: 'paid',
+        fulfillmentStatus: 'preparing',
+      };
+      orderStatus.dispatch({ type: 'POLL' });
+      await flushMicrotasks();
+
+      expect(orderStatus.state.type).toBe('preparing');
+      expect(orderStatus.state.payment?.status).toBe('paid');
+    });
+
+    it('should keep waiting at the till on a poll error', async () => {
+      const repository = new MockPaymentRepository();
+      const orderStatus = enterAwaitingCashPayment(repository);
+
+      repository.setShouldFailFetch(true);
+      orderStatus.dispatch({ type: 'POLL' });
+      expect(orderStatus.state.isPolling).toBe(true);
+
+      await flushMicrotasks();
+      expect(orderStatus.state.type).toBe('awaitingCashPayment');
+      expect(orderStatus.state.isPolling).toBe(false);
+      expect(orderStatus.state.payment).toEqual(repository.payment);
+    });
+
+    it('should transition to expired on a server status', async () => {
+      const repository = new MockPaymentRepository();
+      const orderStatus = enterAwaitingCashPayment(repository);
+
+      repository.payment = { ...repository.payment, status: 'expired' };
+      orderStatus.dispatch({ type: 'POLL' });
+      await flushMicrotasks();
+
+      expect(orderStatus.state.type).toBe('expired');
+    });
+
+    it('should issue one final poll on COUNTDOWN_ELAPSED without expiring on its own', async () => {
+      const repository = new MockPaymentRepository();
+      const orderStatus = enterAwaitingCashPayment(repository);
+
+      repository.payment = { ...repository.payment, status: 'expired' };
+      orderStatus.dispatch({ type: 'COUNTDOWN_ELAPSED' });
+
+      expect(orderStatus.state.type).toBe('awaitingCashPayment');
+      expect(orderStatus.state.isPolling).toBe(true);
+
+      await flushMicrotasks();
+      expect(orderStatus.state.type).toBe('expired');
+    });
+
+    it('should poll again automatically after 3s while awaiting cash payment', async () => {
+      const repository = new MockPaymentRepository();
+      const orderStatus = enterAwaitingCashPayment(repository);
+
+      repository.payment = {
+        ...repository.payment,
+        status: 'paid',
+        fulfillmentStatus: 'preparing',
+      };
+      await jest.advanceTimersByTimeAsync(3000);
+
+      expect(orderStatus.state.type).toBe('preparing');
     });
   });
 

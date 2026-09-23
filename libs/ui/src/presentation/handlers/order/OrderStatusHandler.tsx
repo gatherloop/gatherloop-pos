@@ -15,12 +15,14 @@ export type OrderStatusHandlerProps = {
   orderStatusUsecase: OrderStatusUsecase;
   orderNotificationSubscribeUsecase: OrderNotificationSubscribeUsecase;
   sessionRepository: SessionRepository;
+  cashierLocation: string;
 };
 
 export const OrderStatusHandler = ({
   orderStatusUsecase,
   orderNotificationSubscribeUsecase,
   sessionRepository,
+  cashierLocation,
 }: OrderStatusHandlerProps) => {
   const orderStatus = useOrderStatus(orderStatusUsecase);
   const notificationSubscribe = useUsecase(orderNotificationSubscribeUsecase);
@@ -57,7 +59,10 @@ export const OrderStatusHandler = ({
     .returnType<OrderStatusScreenVariant>()
     .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))
     .with({ type: 'notFound' }, () => ({ type: 'notFound' }))
-    .with({ type: 'expired' }, () => ({ type: 'expired' }))
+    .with({ type: 'expired' }, (state) => ({
+      type: 'expired',
+      method: state.payment?.method ?? null,
+    }))
     .with({ type: 'error' }, () => ({
       type: 'error',
       onRetryPress: () => orderStatus.dispatch({ type: 'FETCH' }),
@@ -67,6 +72,17 @@ export const OrderStatusHandler = ({
         ? {
             type: 'awaitingPayment',
             payment: state.payment,
+            onCountdownElapsed: () =>
+              orderStatus.dispatch({ type: 'COUNTDOWN_ELAPSED' }),
+          }
+        : { type: 'loading' }
+    )
+    .with({ type: 'awaitingCashPayment' }, (state) =>
+      state.payment
+        ? {
+            type: 'awaitingCashPayment',
+            payment: state.payment,
+            cashierLocation,
             onCountdownElapsed: () =>
               orderStatus.dispatch({ type: 'COUNTDOWN_ELAPSED' }),
           }

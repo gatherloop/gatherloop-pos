@@ -119,6 +119,13 @@ const pendingPayment = {
   paidAt: null,
 };
 
+const pendingCashPayment = {
+  ...pendingPayment,
+  method: 'cash' as const,
+  qrContent: '',
+  transactionNumber: 12,
+};
+
 const meta: Meta<typeof OrderStatusScreen> = {
   title: 'Screens/Order/OrderStatusScreen',
   component: OrderStatusScreen,
@@ -154,6 +161,19 @@ export const AwaitingPayment: Story = {
   },
 };
 
+export const AwaitingCashPayment: Story = {
+  args: {
+    variant: {
+      type: 'awaitingCashPayment',
+      payment: pendingCashPayment,
+      cashierLocation: 'Lantai 1',
+      onCountdownElapsed: () => {
+        // Storybook action stand-in
+      },
+    },
+  },
+};
+
 export const Preparing: Story = {
   args: {
     variant: {
@@ -180,7 +200,11 @@ export const Ready: Story = {
 };
 
 export const Expired: Story = {
-  args: { variant: { type: 'expired' } },
+  args: { variant: { type: 'expired', method: 'qris' } },
+};
+
+export const ExpiredCash: Story = {
+  args: { variant: { type: 'expired', method: 'cash' } },
 };
 
 export const NotFound: Story = {
