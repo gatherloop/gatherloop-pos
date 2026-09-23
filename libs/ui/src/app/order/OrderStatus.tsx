@@ -8,11 +8,20 @@ export type OrderStatusProps = {
   sessionId: string;
   reference: string;
   payment?: Payment | null;
+  accessKey?: string;
 };
 
-export function OrderStatus({ sessionId, reference, payment }: OrderStatusProps) {
+export function OrderStatus({
+  sessionId,
+  reference,
+  payment,
+  accessKey,
+}: OrderStatusProps) {
   const sessionRepository = new CookieSessionRepository(sessionId);
-  const paymentRepository = new ApiPaymentRepository(sessionRepository);
+  const paymentRepository = new ApiPaymentRepository(
+    sessionRepository,
+    accessKey
+  );
 
   const orderStatusUsecase = new OrderStatusUsecase(paymentRepository, {
     reference,

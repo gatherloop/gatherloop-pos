@@ -15,7 +15,10 @@ import { SessionRepository } from '../../domain/repositories/session';
 import { toPayment, toPaymentSummary } from './payment.transformer';
 
 export class ApiPaymentRepository implements PaymentRepository {
-  constructor(private readonly sessionRepository: SessionRepository) {}
+  constructor(
+    private readonly sessionRepository: SessionRepository,
+    private readonly accessKey?: string
+  ) {}
 
   private sessionRequestConfig(): Partial<RequestConfig> {
     return {
@@ -34,7 +37,7 @@ export class ApiPaymentRepository implements PaymentRepository {
   fetchPayment: PaymentRepository['fetchPayment'] = (reference) => {
     return paymentFindByPartnerReferenceNo(
       reference,
-      undefined,
+      this.accessKey ? { 'X-Order-Access-Key': this.accessKey } : undefined,
       this.sessionRequestConfig()
     )
       .then(({ data }) => toPayment(data))
