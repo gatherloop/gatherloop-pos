@@ -1,3 +1,5 @@
+import { Customer } from '../entities';
+
 export interface CustomerRepository {
-  fetchCurrentName: () => Promise<string>;
+  fetchCurrentCustomer: () => Promise<Customer>;
 }

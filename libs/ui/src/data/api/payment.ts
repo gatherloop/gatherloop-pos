@@ -27,9 +27,13 @@ export class ApiPaymentRepository implements PaymentRepository {
     };
   }
 
-  checkout: PaymentRepository['checkout'] = (customerName, method) => {
+  checkout: PaymentRepository['checkout'] = ({
+    customerName,
+    method,
+    whatsappNumber,
+  }) => {
     return paymentCheckout(
-      { customerName, method },
+      { customerName, method, customerWhatsappNumber: whatsappNumber },
       this.sessionRequestConfig()
     ).then(({ data }) => toPayment(data));
   };

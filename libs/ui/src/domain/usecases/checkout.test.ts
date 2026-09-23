@@ -124,7 +124,10 @@ describe('CheckoutUsecase', () => {
     checkout.dispatch({ type: 'SUBMIT_NAME' });
     await flushMicrotasks();
 
-    expect(checkoutSpy).toHaveBeenCalledWith('Budi', 'cash');
+    expect(checkoutSpy).toHaveBeenCalledWith({
+      customerName: 'Budi',
+      method: 'cash',
+    });
     expect(checkout.state.type).toBe('created');
     expect(checkout.state.payment?.method).toBe('cash');
   });

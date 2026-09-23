@@ -134,7 +134,7 @@ export class CheckoutUsecase extends Usecase<
     match(state)
       .with({ type: 'creatingPayment' }, ({ customerName, method }) => {
         this.paymentRepository
-          .checkout(customerName, method)
+          .checkout({ customerName, method })
           .then((payment) => dispatch({ type: 'CHECKOUT_SUCCESS', payment }))
           .catch(() =>
             dispatch({
