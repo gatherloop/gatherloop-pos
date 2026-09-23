@@ -35,6 +35,11 @@ tagging that already splits the printed order slip into **Bar** and **Kitchen** 
   station right once on the [Categories](/catalog/categories) screen and both surfaces agree.
 - **A sale settled the next business day doesn't notify.** A cashier closing out yesterday's tab
   this morning shouldn't buzz the bar for a "new" order that isn't one.
+- **A guest checking out with [cash at the cashier](/sales/order-checkout) buzzes every phone a
+  second time, before any money moves.** The station rule doesn't gate this one — an order of
+  nothing but a board-game ticket still needs someone at the till to collect it — so it fires
+  regardless of what's in the cart. The same transaction buzzes again, as a normal `New order`
+  alert, once the cashier actually takes the payment.
 
 ### Reading the alert
 
@@ -46,11 +51,20 @@ New order #12 — Table 4
 BAR: 2× Kopi Susu Gula Aren, 1× Americano · KITCHEN: 1× Sandwich
 ```
 
+A guest paying cash at the table order app produces a second, distinctly titled alert first,
+before the transaction is paid:
+
+```
+Cash order #12 — Table 4
+Collect Rp 45.000 at the counter · BAR: 2× Kopi Susu Gula Aren, 1× Americano
+```
+
 - The **number** is the same daily transaction number already printed on the slip and shown on
   the guest's own order-status page — whatever the staff member calls out, it's what everyone else
   is already looking at.
 - The line after it is grouped **Bar, then Kitchen** — a coffee-only order still says `BAR: …` so
-  reading "not mine" takes the same half-second as reading "mine."
+  reading "not mine" takes the same half-second as reading "mine." A `Cash order` alert leads with
+  the amount to collect instead, since nothing has to be made yet.
 
 ## Setting up a phone
 
@@ -104,6 +118,9 @@ BAR: 2× Kopi Susu Gula Aren, 1× Americano · KITCHEN: 1× Sandwich
 - **Send test notification** — confirms a device is set up correctly without waiting for a real
   order.
 - **Unregister and log out** — either stops a phone from receiving further orders.
+- **A cash order-app checkout buzzes twice** — once the instant it's created, so a barista can be
+  at an unstaffed till before the guest walks down, and once more when the cashier actually takes
+  the payment — see [Order Checkout (QRIS & Cash)](/sales/order-checkout).
 
 ## For engineers
 
@@ -118,6 +135,12 @@ BAR: 2× Kopi Susu Gula Aren, 1× Americano · KITCHEN: 1× Sandwich
   (`ShouldNotify`, `StationLines`), `apps/api/domain/kds_notification_usecase.go`
   (`EnqueueForPaidTransaction`, `DispatchPending`), tables `kds_devices` and `kds_notifications`
   (migrations `000031`/`000032`)
+- The cash-pending alert reuses this outbox rather than a second one: `kds_notifications.kind`
+  (`order_paid` \| `cash_pending`, migration `000035`) with a `(transaction_id, kind)` unique key
+  in place of the original single-column one, so the same transaction can hold one row of each
+  kind; `BuildKdsPushMessage` (`apps/api/domain/kds_notification_entity.go`) switches title and
+  body on it, and `cash_pending` skips both `ShouldNotify`'s station gate and the business-day
+  staleness check, since it's enqueued the instant the transaction exists
 - Delivery gateway: `apps/api/data/expopush/kds_push_repo.go`, calling
   `POST https://exp.host/--/api/v2/push/send`, configured by `EXPO_PUSH_ACCESS_TOKEN`,
   `KDS_PUSH_SOUND`, and `KDS_DISPATCH_INTERVAL_SECONDS` in `apps/api/.env`
@@ -129,3 +152,7 @@ BAR: 2× Kopi Susu Gula Aren, 1× Americano · KITCHEN: 1× Sandwich
   notification goes to every device instead of per-device station subscriptions (D24), and what's
   explicitly deferred to a future KDS project — the order queue, ticket ages, and the bump button
   (D16)
+- Follow-up design doc: `docs/prd-order-cash-payment.md` — the one exception to "payment is the
+  trigger": D9 on why an unpaid cash order still notifies, and D8 on the `kind` column that made a
+  second notification per transaction expressible instead of forbidden by the outbox's own
+  unique key

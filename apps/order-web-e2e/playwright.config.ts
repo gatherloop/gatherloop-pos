@@ -28,6 +28,7 @@ export default defineConfig({
       NEXT_PUBLIC_API_PROXY_BASE_URL: '/api',
       API_INTERNAL_BASE_URL: apiBaseURL,
       NEXT_PUBLIC_ORDER_CHECKOUT_ENABLED: 'true',
+      NEXT_PUBLIC_ORDER_CASH_PAYMENT_ENABLED: 'true',
     },
   },
   projects: [
