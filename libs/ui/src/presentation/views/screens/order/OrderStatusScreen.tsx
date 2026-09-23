@@ -1,11 +1,12 @@
 import { ReactNode } from 'react';
 import { match, P } from 'ts-pattern';
-import { Payment } from '../../../../domain/entities/Payment';
+import { Payment, PaymentMethod } from '../../../../domain/entities/Payment';
 import { EmptyView } from '../../components/base/EmptyView';
 import { ErrorView } from '../../components/base/ErrorView';
 import { LoadingView } from '../../components/base/LoadingView';
 import { OrderBrandHeader } from '../../components/base/OrderBrandHeader';
 import { OrderLayout } from '../../components/base/OrderLayout';
+import { CashPaymentView } from '../../components/checkout/CashPaymentView';
 import { QrisPaymentView } from '../../components/checkout/QrisPaymentView';
 import { OrderNotificationOptInVariant } from '../../components/orderStatus/OrderNotificationOptIn';
 import { OrderPreparingView } from '../../components/orderStatus/OrderPreparingView';
@@ -19,13 +20,19 @@ export type OrderStatusScreenVariant =
       onCountdownElapsed: () => void;
     }
   | {
+      type: 'awaitingCashPayment';
+      payment: Payment;
+      cashierLocation: string;
+      onCountdownElapsed: () => void;
+    }
+  | {
       type: 'preparing';
       payment: Payment;
       isPolling: boolean;
       notificationOptIn: OrderNotificationOptInVariant;
     }
   | { type: 'ready'; payment: Payment }
-  | { type: 'expired' }
+  | { type: 'expired'; method: PaymentMethod | null }
   | { type: 'notFound' }
   | { type: 'error'; onRetryPress: () => void };
 
@@ -45,7 +52,14 @@ export const OrderStatusScreen = ({
   const tableLine = match(variant)
     .returnType<string | undefined>()
     .with(
-      { type: P.union('awaitingPayment', 'preparing', 'ready') },
+      {
+        type: P.union(
+          'awaitingPayment',
+          'awaitingCashPayment',
+          'preparing',
+          'ready'
+        ),
+      },
       ({ payment }) => payment.tableLabel
     )
     .otherwise(() => undefined);
@@ -76,10 +90,28 @@ export const OrderStatusScreen = ({
             />
           )
         )
-        .with({ type: 'expired' }, () => (
+        .with(
+          { type: 'awaitingCashPayment' },
+          ({ payment, cashierLocation, onCountdownElapsed }) => (
+            <CashPaymentView
+              cashierLocation={cashierLocation}
+              transactionNumber={payment.transactionNumber}
+              reference={payment.reference}
+              amount={payment.amount}
+              expiredAt={payment.expiredAt}
+              items={payment.items}
+              onCountdownElapsed={onCountdownElapsed}
+            />
+          )
+        )
+        .with({ type: 'expired' }, ({ method }) => (
           <EmptyView
             title="Waktu pembayaran habis"
-            subtitle="Keranjang Anda masih tersimpan."
+            subtitle={
+              method === 'cash'
+                ? 'Pesanan dibatalkan karena belum dibayar. Keranjang Anda masih tersimpan.'
+                : 'Keranjang Anda masih tersimpan.'
+            }
             actionLabel="Kembali ke keranjang"
             onActionPress={onBackToCartPress}
           />
