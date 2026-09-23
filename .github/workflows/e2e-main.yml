@@ -149,15 +149,6 @@ jobs:
             cat "$RUNNER_TEMP/doku-private-key.pem"
             echo "DOKUKEYEOF"
           } >> "$GITHUB_ENV"
-      - name: Generate a throwaway VAPID keypair
-        # order-web-e2e's orderNotifications.spec.ts drives a real browser
-        # subscription, so GET /public/web-push/config needs a real keypair
-        # to serve — cmd/generatevapidkeys (phase 9) is the same command
-        # documented in apps/api/.env.example. Generated fresh per run, never
-        # a real credential, never used outside this job.
-        working-directory: apps/api
-        run: |
-          go run ./cmd/generatevapidkeys >> "$GITHUB_ENV"
 
       - name: Build the API
         run: npx nx run api:build
@@ -198,9 +189,6 @@ jobs:
           # production is a base URL, so a stub is just a third value).
           DOKU_BASE_URL: http://127.0.0.1:${{ env.DOKUSTUB_PORT }}
           DOKU_PRIVATE_KEY: ${{ env.DOKU_PRIVATE_KEY }}
-          WEB_PUSH_VAPID_PUBLIC_KEY: ${{ env.WEB_PUSH_VAPID_PUBLIC_KEY }}
-          WEB_PUSH_VAPID_PRIVATE_KEY: ${{ env.WEB_PUSH_VAPID_PRIVATE_KEY }}
-          WEB_PUSH_SUBJECT: mailto:e2e@gatherloop.test
         run: |
           nohup ./dist/apps/api > "$RUNNER_TEMP/api.log" 2>&1 &
           # Any HTTP response means the server is listening (GET on the
