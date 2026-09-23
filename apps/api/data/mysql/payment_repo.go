@@ -121,12 +121,13 @@ func (repo Repository) UpdatePaymentById(ctx context.Context, payment domain.Pay
 	payload := ToPaymentDB(payment)
 
 	if result := db.Table("payments").Where("id = ?", id).Updates(map[string]any{
-		"transaction_id":       payload.TransactionId,
-		"gateway_reference_no": payload.GatewayReferenceNo,
-		"status":               payload.Status,
-		"qr_content":           payload.QrContent,
-		"paid_at":              payload.PaidAt,
-		"status_checked_at":    payload.StatusCheckedAt,
+		"transaction_id":           payload.TransactionId,
+		"customer_whatsapp_number": payload.CustomerWhatsappNumber,
+		"gateway_reference_no":     payload.GatewayReferenceNo,
+		"status":                   payload.Status,
+		"qr_content":               payload.QrContent,
+		"paid_at":                  payload.PaidAt,
+		"status_checked_at":        payload.StatusCheckedAt,
 	}); result.Error != nil {
 		return domain.Payment{}, ToErrorCtx(ctx, result.Error, "UpdatePaymentById")
 	}

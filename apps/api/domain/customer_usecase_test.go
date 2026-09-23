@@ -91,7 +91,7 @@ func TestCustomerUsecase_UpsertCustomerName(t *testing.T) {
 			sessionId: "session-1",
 			input:     "Budi",
 			setupMock: func(r *mock.MockCustomerRepository) {
-				r.EXPECT().UpsertCustomerBySessionId(gomock.Any(), "session-1", "Budi").
+				r.EXPECT().UpsertCustomerBySessionId(gomock.Any(), "session-1", "Budi", nil).
 					Return(domain.Customer{Id: 1, SessionId: "session-1", Name: "Budi"}, nil)
 			},
 			expectedName: "Budi",
@@ -101,7 +101,7 @@ func TestCustomerUsecase_UpsertCustomerName(t *testing.T) {
 			sessionId: "session-1",
 			input:     "  Budi  ",
 			setupMock: func(r *mock.MockCustomerRepository) {
-				r.EXPECT().UpsertCustomerBySessionId(gomock.Any(), "session-1", "Budi").
+				r.EXPECT().UpsertCustomerBySessionId(gomock.Any(), "session-1", "Budi", nil).
 					Return(domain.Customer{Id: 1, SessionId: "session-1", Name: "Budi"}, nil)
 			},
 			expectedName: "Budi",
@@ -132,7 +132,7 @@ func TestCustomerUsecase_UpsertCustomerName(t *testing.T) {
 			sessionId: "session-1",
 			input:     strings.Repeat("a", 60),
 			setupMock: func(r *mock.MockCustomerRepository) {
-				r.EXPECT().UpsertCustomerBySessionId(gomock.Any(), "session-1", strings.Repeat("a", 60)).
+				r.EXPECT().UpsertCustomerBySessionId(gomock.Any(), "session-1", strings.Repeat("a", 60), nil).
 					Return(domain.Customer{Id: 1, SessionId: "session-1", Name: strings.Repeat("a", 60)}, nil)
 			},
 			expectedName: strings.Repeat("a", 60),
@@ -142,7 +142,7 @@ func TestCustomerUsecase_UpsertCustomerName(t *testing.T) {
 			sessionId: "session-1",
 			input:     strings.Repeat("é", 60),
 			setupMock: func(r *mock.MockCustomerRepository) {
-				r.EXPECT().UpsertCustomerBySessionId(gomock.Any(), "session-1", strings.Repeat("é", 60)).
+				r.EXPECT().UpsertCustomerBySessionId(gomock.Any(), "session-1", strings.Repeat("é", 60), nil).
 					Return(domain.Customer{Id: 1, SessionId: "session-1", Name: strings.Repeat("é", 60)}, nil)
 			},
 			expectedName: strings.Repeat("é", 60),
@@ -152,7 +152,7 @@ func TestCustomerUsecase_UpsertCustomerName(t *testing.T) {
 			sessionId: "session-1",
 			input:     "Budi",
 			setupMock: func(r *mock.MockCustomerRepository) {
-				r.EXPECT().UpsertCustomerBySessionId(gomock.Any(), "session-1", "Budi").
+				r.EXPECT().UpsertCustomerBySessionId(gomock.Any(), "session-1", "Budi", nil).
 					Return(domain.Customer{}, &domain.Error{Type: domain.InternalServerError})
 			},
 			expectedError: &domain.Error{Type: domain.InternalServerError},

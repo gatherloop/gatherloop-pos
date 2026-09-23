@@ -6,5 +6,5 @@ import "context"
 
 type CustomerRepository interface {
 	GetCustomerBySessionId(ctx context.Context, sessionId string) (Customer, *Error)
-	UpsertCustomerBySessionId(ctx context.Context, sessionId string, name string) (Customer, *Error)
+	UpsertCustomerBySessionId(ctx context.Context, sessionId string, name string, whatsappNumber *string) (Customer, *Error)
 }

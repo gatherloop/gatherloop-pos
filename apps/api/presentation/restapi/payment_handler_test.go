@@ -85,6 +85,11 @@ func checkoutRequestBodyWithMethod(customerName string, method string) *bytes.Bu
 	return bytes.NewBuffer(body)
 }
 
+func checkoutRequestBodyWithWhatsappNumber(customerName string, whatsappNumber string) *bytes.Buffer {
+	body, _ := json.Marshal(apiContract.PaymentCheckoutRequest{CustomerName: customerName, CustomerWhatsappNumber: &whatsappNumber})
+	return bytes.NewBuffer(body)
+}
+
 func TestPaymentHandler_Checkout(t *testing.T) {
 	t.Run("a successful checkout returns the payment with its QR", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
@@ -94,7 +99,7 @@ func TestPaymentHandler_Checkout(t *testing.T) {
 		withPaymentHandlerTransactionMock(m.paymentRepo)
 		expectValidPaymentWallet(m)
 
-		m.customerRepo.EXPECT().UpsertCustomerBySessionId(gomock.Any(), testSessionId, "Budi").
+		m.customerRepo.EXPECT().UpsertCustomerBySessionId(gomock.Any(), testSessionId, "Budi", nil).
 			Return(domain.Customer{Id: 1, SessionId: testSessionId, Name: "Budi"}, nil)
 
 		tableId := int64(5)
@@ -150,7 +155,7 @@ func TestPaymentHandler_Checkout(t *testing.T) {
 		withPaymentHandlerTransactionMock(m.paymentRepo)
 		expectValidPaymentWallet(m)
 
-		m.customerRepo.EXPECT().UpsertCustomerBySessionId(gomock.Any(), testSessionId, gomock.Any()).
+		m.customerRepo.EXPECT().UpsertCustomerBySessionId(gomock.Any(), testSessionId, gomock.Any(), nil).
 			Return(domain.Customer{Id: 1, SessionId: testSessionId, Name: "Budi"}, nil)
 
 		tableId := int64(5)
@@ -194,7 +199,7 @@ func TestPaymentHandler_Checkout(t *testing.T) {
 		withPaymentHandlerTransactionMock(m.paymentRepo)
 		expectValidPaymentWallet(m)
 
-		m.customerRepo.EXPECT().UpsertCustomerBySessionId(gomock.Any(), testSessionId, gomock.Any()).
+		m.customerRepo.EXPECT().UpsertCustomerBySessionId(gomock.Any(), testSessionId, gomock.Any(), nil).
 			Return(domain.Customer{Id: 1, SessionId: testSessionId, Name: "Budi"}, nil)
 		m.cartRepo.EXPECT().GetActiveCartBySessionId(gomock.Any(), testSessionId).Return(domain.Cart{}, &domain.Error{Type: domain.NotFound})
 
@@ -237,6 +242,26 @@ func TestPaymentHandler_Checkout(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
 
+	t.Run("an invalid customerWhatsappNumber is a 400", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentHandlerMocks(ctrl)
+		withPaymentHandlerTransactionMock(m.paymentRepo)
+		expectValidPaymentWallet(m)
+
+		req := httptest.NewRequest(http.MethodPost, "/carts/current/checkout", checkoutRequestBodyWithWhatsappNumber("Budi", "12345"))
+		req.Header.Set("X-Session-Id", testSessionId)
+		w := httptest.NewRecorder()
+		m.handler().Checkout(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+
+		var apiErr apiContract.Error
+		assert.NoError(t, json.NewDecoder(bytes.NewBufferString(w.Body.String())).Decode(&apiErr))
+		assert.Equal(t, apiContract.BAD_REQUEST, apiErr.Code)
+	})
+
 	t.Run("a cash checkout succeeds without ever calling the gateway", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
@@ -245,7 +270,7 @@ func TestPaymentHandler_Checkout(t *testing.T) {
 		withPaymentHandlerTransactionMock(m.paymentRepo)
 		expectValidPaymentWallet(m)
 
-		m.customerRepo.EXPECT().UpsertCustomerBySessionId(gomock.Any(), testSessionId, "Budi").
+		m.customerRepo.EXPECT().UpsertCustomerBySessionId(gomock.Any(), testSessionId, "Budi", nil).
 			Return(domain.Customer{Id: 1, SessionId: testSessionId, Name: "Budi"}, nil)
 
 		tableId := int64(5)
