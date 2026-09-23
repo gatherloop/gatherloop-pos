@@ -9,7 +9,7 @@ import { TableResolveUsecase } from '../../../domain/usecases/tableResolve';
 import { useCart } from '../hooks/useCart';
 import { useCheckout } from '../hooks/useCheckout';
 import { useTableResolve } from '../hooks/useTableResolve';
-import { CustomerNameSheetProps } from '../../views/components/checkout/CustomerNameSheet';
+import { CustomerDetailsSheetProps } from '../../views/components/checkout/CustomerDetailsSheet';
 import { CartItemEditScreenProps } from '../../views/screens/order/CartItemEditScreen';
 import { CartScreen, CartScreenProps } from '../../views/screens/order/CartScreen';
 import { TableResolveScreenProps } from '../../views/screens/order/TableResolveScreen';
@@ -135,16 +135,20 @@ export const CartHandler = ({
           },
         };
 
-  const nameSheet: (CustomerNameSheetProps & { isOpen: true }) | null =
-    checkout.state.type === 'askingName'
+  const detailsSheet: (CustomerDetailsSheetProps & { isOpen: true }) | null =
+    checkout.state.type === 'askingDetails'
       ? {
           isOpen: true,
           name: checkout.state.customerName,
-          errorMessage: checkout.state.nameErrorMessage,
+          nameErrorMessage: checkout.state.nameErrorMessage,
           onNameChange: (name) =>
             checkout.dispatch({ type: 'CHANGE_NAME', name }),
-          onSubmitPress: () => checkout.dispatch({ type: 'SUBMIT_NAME' }),
-          onCancelPress: () => checkout.dispatch({ type: 'CANCEL_NAME' }),
+          whatsappNumber: checkout.state.whatsappNumber,
+          whatsappNumberErrorMessage: checkout.state.whatsappNumberErrorMessage,
+          onWhatsappNumberChange: (whatsappNumber) =>
+            checkout.dispatch({ type: 'CHANGE_WHATSAPP_NUMBER', whatsappNumber }),
+          onSubmitPress: () => checkout.dispatch({ type: 'SUBMIT_DETAILS' }),
+          onCancelPress: () => checkout.dispatch({ type: 'CANCEL_DETAILS' }),
           isCashPaymentEnabled,
           method: checkout.state.method,
           onMethodChange: (method) =>
@@ -215,9 +219,9 @@ export const CartHandler = ({
       checkoutErrorMessage={
         checkout.state.type === 'error' ? checkout.state.errorMessage : null
       }
-      onCheckoutPress={() => checkout.dispatch({ type: 'ASK_NAME' })}
-      onCheckoutRetryPress={() => checkout.dispatch({ type: 'SUBMIT_NAME' })}
-      nameSheet={nameSheet}
+      onCheckoutPress={() => checkout.dispatch({ type: 'ASK_DETAILS' })}
+      onCheckoutRetryPress={() => checkout.dispatch({ type: 'SUBMIT_DETAILS' })}
+      detailsSheet={detailsSheet}
     />
   );
 };

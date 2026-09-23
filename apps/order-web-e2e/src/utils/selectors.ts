@@ -1,5 +1,7 @@
 import { type Page } from '@playwright/test';
 
+export const DEFAULT_E2E_WHATSAPP_NUMBER = '081234567890';
+
 export const tableResolve = {
   tableLabel: (page: Page, label: string) =>
     page.getByText(label, { exact: true }),
@@ -71,6 +73,15 @@ export const cartScreen = {
     page.getByText(formattedTotal, { exact: true }),
 
   nameInput: (page: Page) => page.getByLabel('Nama Anda'),
+  whatsappNumberInput: (page: Page) => page.getByLabel('Nomor WhatsApp'),
+  fillCustomerDetails: async (
+    page: Page,
+    name: string,
+    whatsappNumber: string = DEFAULT_E2E_WHATSAPP_NUMBER
+  ) => {
+    await cartScreen.nameInput(page).fill(name);
+    await cartScreen.whatsappNumberInput(page).fill(whatsappNumber);
+  },
   submitNameButton: (page: Page) =>
     page.getByRole('button', { name: 'Lanjutkan ke pembayaran' }),
   cancelNameButton: (page: Page) => page.getByRole('button', { name: 'Batal' }),

@@ -3,6 +3,7 @@ import {
   ApiPaymentRepository,
   ApiPublicTableRepository,
   CookieSessionRepository,
+  formatWhatsappNumberForInput,
   ORDER_HISTORY_LIMIT,
   resolveSession,
   SESSION_ID_COOKIE_NAME,
@@ -22,7 +23,7 @@ export const getServerSideProps: GetServerSideProps<CartProps> = async (
   const code = String(ctx.params?.code ?? '');
   const sessionRepository = new CookieSessionRepository(sessionId);
 
-  const [table, customerName, payments] = await Promise.all([
+  const [table, customer, payments] = await Promise.all([
     new ApiPublicTableRepository()
       .resolveTableByCode(code)
       .catch((error) =>
@@ -30,8 +31,7 @@ export const getServerSideProps: GetServerSideProps<CartProps> = async (
       ),
     new ApiCustomerRepository(sessionRepository)
       .fetchCurrentCustomer()
-      .then((customer) => customer.name)
-      .catch(() => ''),
+      .catch(() => ({ name: '', whatsappNumber: '' })),
     new ApiPaymentRepository(sessionRepository)
       .fetchPayments({ limit: ORDER_HISTORY_LIMIT, skip: 0 })
       .then(({ payments }) => payments)
@@ -43,7 +43,10 @@ export const getServerSideProps: GetServerSideProps<CartProps> = async (
       sessionId,
       code,
       table,
-      customerName,
+      customerName: customer.name,
+      customerWhatsappNumber: customer.whatsappNumber
+        ? formatWhatsappNumberForInput(customer.whatsappNumber)
+        : '',
       preparingCount: payments.filter(
         (payment) => payment.fulfillmentStatus === 'preparing'
       ).length,

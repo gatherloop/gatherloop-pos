@@ -1,5 +1,5 @@
 import { match, P } from 'ts-pattern';
-import { Payment, PaymentMethod } from '../entities';
+import { normalizeWhatsappNumber, Payment, PaymentMethod } from '../entities';
 import { PaymentRepository } from '../repositories';
 import { Usecase } from './IUsecase';
 
@@ -8,14 +8,16 @@ const NAME_MAX_LENGTH = 60;
 type Context = {
   payment: Payment | null;
   customerName: string;
+  whatsappNumber: string;
   method: PaymentMethod;
   nameErrorMessage: string | null;
+  whatsappNumberErrorMessage: string | null;
   errorMessage: string | null;
 };
 
 export type CheckoutState = (
   | { type: 'idle' }
-  | { type: 'askingName' }
+  | { type: 'askingDetails' }
   | { type: 'creatingPayment' }
   | { type: 'created' }
   | { type: 'error' }
@@ -23,16 +25,18 @@ export type CheckoutState = (
   Context;
 
 export type CheckoutAction =
-  | { type: 'ASK_NAME' }
+  | { type: 'ASK_DETAILS' }
   | { type: 'CHANGE_NAME'; name: string }
+  | { type: 'CHANGE_WHATSAPP_NUMBER'; whatsappNumber: string }
   | { type: 'CHANGE_METHOD'; method: PaymentMethod }
-  | { type: 'CANCEL_NAME' }
-  | { type: 'SUBMIT_NAME' }
+  | { type: 'CANCEL_DETAILS' }
+  | { type: 'SUBMIT_DETAILS' }
   | { type: 'CHECKOUT_SUCCESS'; payment: Payment }
   | { type: 'CHECKOUT_ERROR'; message: string };
 
 export type CheckoutParams = {
   customerName?: string;
+  customerWhatsappNumber?: string;
 };
 
 function validateName(name: string): string | null {
@@ -40,6 +44,21 @@ function validateName(name: string): string | null {
   if (trimmed.length === 0) return 'Nama tidak boleh kosong';
   if (trimmed.length > NAME_MAX_LENGTH) return 'Nama maksimal 60 karakter';
   return null;
+}
+
+function validateWhatsappNumber(whatsappNumber: string): {
+  errorMessage: string | null;
+  normalized: string;
+} {
+  const trimmed = whatsappNumber.trim();
+  if (trimmed.length === 0) {
+    return { errorMessage: 'Nomor WhatsApp tidak boleh kosong', normalized: trimmed };
+  }
+  const normalized = normalizeWhatsappNumber(trimmed);
+  if (normalized === null) {
+    return { errorMessage: 'Nomor WhatsApp tidak valid', normalized: trimmed };
+  }
+  return { errorMessage: null, normalized };
 }
 
 export class CheckoutUsecase extends Usecase<
@@ -64,8 +83,10 @@ export class CheckoutUsecase extends Usecase<
       type: 'idle',
       payment: null,
       customerName: this.params.customerName ?? '',
+      whatsappNumber: this.params.customerWhatsappNumber ?? '',
       method: 'qris',
       nameErrorMessage: null,
+      whatsappNumberErrorMessage: null,
       errorMessage: null,
     };
   }
@@ -73,36 +94,56 @@ export class CheckoutUsecase extends Usecase<
   getNextState(state: CheckoutState, action: CheckoutAction): CheckoutState {
     return match([state, action])
       .returnType<CheckoutState>()
-      .with([{ type: 'idle' }, { type: 'ASK_NAME' }], ([state]) => ({
+      .with([{ type: 'idle' }, { type: 'ASK_DETAILS' }], ([state]) => ({
         ...state,
-        type: 'askingName',
+        type: 'askingDetails',
         nameErrorMessage: null,
+        whatsappNumberErrorMessage: null,
       }))
       .with(
-        [{ type: 'askingName' }, { type: 'CHANGE_NAME' }],
+        [{ type: 'askingDetails' }, { type: 'CHANGE_NAME' }],
         ([state, { name }]) => ({ ...state, customerName: name })
       )
       .with(
-        [{ type: 'askingName' }, { type: 'CHANGE_METHOD' }],
+        [{ type: 'askingDetails' }, { type: 'CHANGE_WHATSAPP_NUMBER' }],
+        ([state, { whatsappNumber }]) => ({ ...state, whatsappNumber })
+      )
+      .with(
+        [{ type: 'askingDetails' }, { type: 'CHANGE_METHOD' }],
         ([state, { method }]) => ({ ...state, method })
       )
-      .with([{ type: 'askingName' }, { type: 'CANCEL_NAME' }], ([state]) => ({
-        ...state,
-        type: 'idle',
-        nameErrorMessage: null,
-      }))
       .with(
-        [{ type: P.union('askingName', 'error') }, { type: 'SUBMIT_NAME' }],
+        [{ type: 'askingDetails' }, { type: 'CANCEL_DETAILS' }],
+        ([state]) => ({
+          ...state,
+          type: 'idle',
+          nameErrorMessage: null,
+          whatsappNumberErrorMessage: null,
+        })
+      )
+      .with(
+        [
+          { type: P.union('askingDetails', 'error') },
+          { type: 'SUBMIT_DETAILS' },
+        ],
         ([state]) => {
           const nameErrorMessage = validateName(state.customerName);
-          if (nameErrorMessage) {
-            return { ...state, type: 'askingName', nameErrorMessage };
+          const whatsappNumber = validateWhatsappNumber(state.whatsappNumber);
+          if (nameErrorMessage || whatsappNumber.errorMessage) {
+            return {
+              ...state,
+              type: 'askingDetails',
+              nameErrorMessage,
+              whatsappNumberErrorMessage: whatsappNumber.errorMessage,
+            };
           }
           return {
             ...state,
             type: 'creatingPayment',
             customerName: state.customerName.trim(),
+            whatsappNumber: whatsappNumber.normalized,
             nameErrorMessage: null,
+            whatsappNumberErrorMessage: null,
             errorMessage: null,
           };
         }
@@ -132,17 +173,20 @@ export class CheckoutUsecase extends Usecase<
     dispatch: (action: CheckoutAction) => void
   ): void {
     match(state)
-      .with({ type: 'creatingPayment' }, ({ customerName, method }) => {
-        this.paymentRepository
-          .checkout({ customerName, method })
-          .then((payment) => dispatch({ type: 'CHECKOUT_SUCCESS', payment }))
-          .catch(() =>
-            dispatch({
-              type: 'CHECKOUT_ERROR',
-              message: 'Failed to create payment',
-            })
-          );
-      })
+      .with(
+        { type: 'creatingPayment' },
+        ({ customerName, whatsappNumber, method }) => {
+          this.paymentRepository
+            .checkout({ customerName, whatsappNumber, method })
+            .then((payment) => dispatch({ type: 'CHECKOUT_SUCCESS', payment }))
+            .catch(() =>
+              dispatch({
+                type: 'CHECKOUT_ERROR',
+                message: 'Failed to create payment',
+              })
+            );
+        }
+      )
       .otherwise(() => {
         // TODO: IMPLEMENT SOMETHING
       });

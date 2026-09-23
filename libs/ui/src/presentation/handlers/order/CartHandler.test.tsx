@@ -37,6 +37,7 @@ const renderHandler = ({
   cartQueryRepository = new MockCartQueryRepository(),
   sessionRepository = new MockSessionRepository(),
   customerName = '',
+  customerWhatsappNumber = '',
   preparingCount,
 }: {
   enabled?: boolean;
@@ -48,6 +49,7 @@ const renderHandler = ({
   cartQueryRepository?: MockCartQueryRepository;
   sessionRepository?: MockSessionRepository;
   customerName?: string;
+  customerWhatsappNumber?: string;
   preparingCount?: number;
 } = {}) => {
   const tableResolveUsecase = new TableResolveUsecase(tableRepository, {
@@ -56,6 +58,7 @@ const renderHandler = ({
   const cartUsecase = new CartUsecase(cartRepository, cartQueryRepository);
   const checkoutUsecase = new CheckoutUsecase(paymentRepository, {
     customerName,
+    customerWhatsappNumber,
   });
 
   return {
@@ -311,6 +314,7 @@ describe('CartHandler', () => {
       cartRepository,
       paymentRepository,
       customerName: 'Budi',
+      customerWhatsappNumber: '081234567890',
     });
     await settle();
 
@@ -325,11 +329,15 @@ describe('CartHandler', () => {
     expect(fetchSpy).toHaveBeenCalled();
   });
 
-  it('opens the name sheet prefilled from the seeded customer name', async () => {
+  it('opens the details sheet prefilled from the seeded customer name and WhatsApp number', async () => {
     const user = userEvent.setup();
     const cartRepository = new MockCartRepository();
     await addItemToCart(cartRepository);
-    renderHandler({ cartRepository, customerName: 'Budi' });
+    renderHandler({
+      cartRepository,
+      customerName: 'Budi',
+      customerWhatsappNumber: '081234567890',
+    });
     await settle();
 
     await user.click(screen.getByRole('button', { name: payButtonName }));
@@ -337,6 +345,26 @@ describe('CartHandler', () => {
     expect(
       (screen.getByPlaceholderText('Nama Anda') as HTMLInputElement).value
     ).toBe('Budi');
+    expect(
+      (screen.getByPlaceholderText('0812 3456 7890') as HTMLInputElement)
+        .value
+    ).toBe('081234567890');
+  });
+
+  it('shows the WhatsApp notification note while the details sheet is open', async () => {
+    const user = userEvent.setup();
+    const cartRepository = new MockCartRepository();
+    await addItemToCart(cartRepository);
+    renderHandler({ cartRepository });
+    await settle();
+
+    await user.click(screen.getByRole('button', { name: payButtonName }));
+
+    expect(
+      screen.getByText(
+        'Nomor ini akan kami gunakan untuk mengabari Anda lewat WhatsApp saat pesanan siap diambil.'
+      )
+    ).toBeTruthy();
   });
 
   it('holds an empty name at the sheet with an error, creating nothing', async () => {
@@ -354,13 +382,16 @@ describe('CartHandler', () => {
     );
 
     expect(screen.getByText('Nama tidak boleh kosong')).toBeTruthy();
+    expect(
+      screen.getByText('Nomor WhatsApp tidak boleh kosong')
+    ).toBeTruthy();
     expect(screen.getByPlaceholderText('Nama Anda')).toBeTruthy();
     expect(checkoutSpy).not.toHaveBeenCalled();
 
     await settle();
   });
 
-  it('cancelling the name sheet leaves the cart untouched, creating nothing', async () => {
+  it('cancelling the details sheet leaves the cart untouched, creating nothing', async () => {
     const user = userEvent.setup();
     const cartRepository = new MockCartRepository();
     await addItemToCart(cartRepository);
@@ -427,6 +458,7 @@ describe('CartHandler', () => {
       cartRepository,
       paymentRepository,
       customerName: 'Budi',
+      customerWhatsappNumber: '081234567890',
       isCashPaymentEnabled: true,
     });
     await settle();
@@ -447,6 +479,7 @@ describe('CartHandler', () => {
 
     expect(checkoutSpy).toHaveBeenCalledWith({
       customerName: 'Budi',
+      whatsappNumber: '6281234567890',
       method: 'cash',
     });
     expect(mockPush).toHaveBeenCalledWith(
@@ -454,7 +487,7 @@ describe('CartHandler', () => {
     );
   });
 
-  it('creates the payment and navigates to the status page once a valid name is submitted', async () => {
+  it('submits directly when the sheet opens prefilled with a valid name and WhatsApp number', async () => {
     const user = userEvent.setup();
     const cartRepository = new MockCartRepository();
     await addItemToCart(cartRepository);
@@ -463,6 +496,7 @@ describe('CartHandler', () => {
       cartRepository,
       paymentRepository,
       customerName: 'Budi',
+      customerWhatsappNumber: '081234567890',
     });
     await settle();
 
@@ -483,7 +517,12 @@ describe('CartHandler', () => {
     await addItemToCart(cartRepository);
     const paymentRepository = new MockPaymentRepository();
     paymentRepository.setShouldFailCheckout(true);
-    renderHandler({ cartRepository, paymentRepository, customerName: 'Budi' });
+    renderHandler({
+      cartRepository,
+      paymentRepository,
+      customerName: 'Budi',
+      customerWhatsappNumber: '081234567890',
+    });
     await settle();
 
     await user.click(screen.getByRole('button', { name: payButtonName }));

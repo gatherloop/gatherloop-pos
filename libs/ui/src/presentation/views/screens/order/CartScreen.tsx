@@ -8,9 +8,9 @@ import { ErrorView } from '../../components/base/ErrorView';
 import { LoadingView } from '../../components/base/LoadingView';
 import { CartLineItem } from '../../components/cart/CartLineItem';
 import {
-  CustomerNameSheet,
-  CustomerNameSheetProps,
-} from '../../components/checkout/CustomerNameSheet';
+  CustomerDetailsSheet,
+  CustomerDetailsSheetProps,
+} from '../../components/checkout/CustomerDetailsSheet';
 import {
   CartItemEditScreen,
   CartItemEditScreenProps,
@@ -49,7 +49,7 @@ export type CartScreenProps = {
   checkoutErrorMessage: string | null;
   onCheckoutPress: () => void;
   onCheckoutRetryPress: () => void;
-  nameSheet: (CustomerNameSheetProps & { isOpen: true }) | null;
+  detailsSheet: (CustomerDetailsSheetProps & { isOpen: true }) | null;
 };
 
 export const CartScreen = ({
@@ -75,7 +75,7 @@ export const CartScreen = ({
   checkoutErrorMessage,
   onCheckoutPress,
   onCheckoutRetryPress,
-  nameSheet,
+  detailsSheet,
 }: CartScreenProps) => {
   const footer =
     variant.type === 'loaded' ? (
@@ -232,7 +232,7 @@ export const CartScreen = ({
       </YStack>
 
       {itemEdit && <CartItemEditScreen {...itemEdit} />}
-      {nameSheet && <CustomerNameSheet {...nameSheet} />}
+      {detailsSheet && <CustomerDetailsSheet {...detailsSheet} />}
     </TableResolveScreen>
   );
 };
