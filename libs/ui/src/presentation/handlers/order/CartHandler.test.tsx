@@ -445,7 +445,10 @@ describe('CartHandler', () => {
     );
     await settle();
 
-    expect(checkoutSpy).toHaveBeenCalledWith('Budi', 'cash');
+    expect(checkoutSpy).toHaveBeenCalledWith({
+      customerName: 'Budi',
+      method: 'cash',
+    });
     expect(mockPush).toHaveBeenCalledWith(
       `/orders/${paymentRepository.payment.reference}`
     );

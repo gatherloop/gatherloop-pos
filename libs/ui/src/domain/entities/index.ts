@@ -9,6 +9,7 @@ export * from './Variant';
 export * from './Product';
 export * from './Availability';
 export * from './Budget';
+export * from './Customer';
 export * from './Wallet';
 export * from './WalletTransfer';
 export * from './Expense';

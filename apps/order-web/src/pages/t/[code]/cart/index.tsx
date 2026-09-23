@@ -29,7 +29,8 @@ export const getServerSideProps: GetServerSideProps<CartProps> = async (
         error instanceof TableNotFoundError ? null : undefined
       ),
     new ApiCustomerRepository(sessionRepository)
-      .fetchCurrentName()
+      .fetchCurrentCustomer()
+      .then((customer) => customer.name)
       .catch(() => ''),
     new ApiPaymentRepository(sessionRepository)
       .fetchPayments({ limit: ORDER_HISTORY_LIMIT, skip: 0 })
