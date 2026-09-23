@@ -40,6 +40,7 @@ export const TransactionDetailHandler = ({
       createdAt={transactionDetail.state.transaction?.createdAt ?? ''}
       name={transactionDetail.state.transaction?.name ?? ''}
       source={transactionDetail.state.transaction?.source ?? 'pos'}
+      paymentMethod={transactionDetail.state.transaction?.paymentMethod ?? null}
       table={transactionDetail.state.transaction?.table ?? null}
       pagerNumber={transactionDetail.state.transaction?.pagerNumber ?? 0}
       transactionNumber={

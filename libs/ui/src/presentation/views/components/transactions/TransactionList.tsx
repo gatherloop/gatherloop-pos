@@ -296,6 +296,7 @@ export const TransactionList = ({
                   createdAt={item.createdAt}
                   name={item.name}
                   source={item.source}
+                  paymentMethod={item.paymentMethod}
                   table={item.table}
                   pagerNumber={item.pagerNumber}
                   transactionNumber={item.transactionNumber}
