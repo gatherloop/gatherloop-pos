@@ -4,6 +4,7 @@ import { OrderStatusScreen } from './OrderStatusScreen';
 const paidPayment = {
   reference: 'ORD0000000000001',
   status: 'paid' as const,
+  method: 'qris' as const,
   amount: 54000,
   qrContent: '00020101021226610014ID.CO.QRIS.WWW',
   expiredAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),

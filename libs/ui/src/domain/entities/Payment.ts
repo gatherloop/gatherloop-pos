@@ -16,9 +16,12 @@ export type PaymentItem = {
 
 export type QrisPaymentStatus = 'pending' | 'paid' | 'expired' | 'failed';
 
+export type PaymentMethod = 'qris' | 'cash';
+
 export type Payment = {
   reference: string;
   status: QrisPaymentStatus;
+  method: PaymentMethod;
   amount: number;
   qrContent: string;
   expiredAt: string;
@@ -33,6 +36,7 @@ export type Payment = {
 export type PaymentSummary = {
   reference: string;
   status: QrisPaymentStatus;
+  method: PaymentMethod;
   fulfillmentStatus: TransactionFulfillmentStatus;
   transactionNumber: number;
   customerName: string;

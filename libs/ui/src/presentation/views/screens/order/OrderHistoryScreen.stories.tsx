@@ -6,6 +6,7 @@ const payments = [
   {
     reference: 'ORD0000000000002',
     status: 'paid' as const,
+    method: 'qris' as const,
     fulfillmentStatus: 'preparing' as const,
     transactionNumber: 2,
     customerName: 'Andi',
@@ -18,6 +19,7 @@ const payments = [
   {
     reference: 'ORD0000000000001',
     status: 'paid' as const,
+    method: 'qris' as const,
     fulfillmentStatus: 'ready' as const,
     transactionNumber: 1,
     customerName: 'Andi',

@@ -25,6 +25,7 @@ export function toPayment(payment: ApiPayment): Payment {
   return {
     reference: payment.partnerReferenceNo,
     status: payment.status,
+    method: payment.method,
     amount: payment.amount,
     qrContent: payment.qrContent,
     expiredAt: payment.expiredAt,
@@ -41,6 +42,7 @@ export function toPaymentSummary(payment: ApiPaymentSummary): PaymentSummary {
   return {
     reference: payment.partnerReferenceNo,
     status: payment.status,
+    method: payment.method,
     fulfillmentStatus: payment.fulfillmentStatus,
     transactionNumber: payment.transactionNumber,
     customerName: payment.customerName,

@@ -8,6 +8,7 @@ const initialPaymentSummaries = (): PaymentSummary[] => [
   {
     reference: 'ORD0000000000002',
     status: 'paid',
+    method: 'qris',
     fulfillmentStatus: 'preparing',
     transactionNumber: 2,
     customerName: 'Andi',
@@ -20,6 +21,7 @@ const initialPaymentSummaries = (): PaymentSummary[] => [
   {
     reference: 'ORD0000000000001',
     status: 'paid',
+    method: 'qris',
     fulfillmentStatus: 'ready',
     transactionNumber: 1,
     customerName: 'Andi',
@@ -34,6 +36,7 @@ const initialPaymentSummaries = (): PaymentSummary[] => [
 const initialPayment = (): Payment => ({
   reference: 'ORD0000000000001',
   status: 'pending',
+  method: 'qris',
   amount: 18000,
   qrContent: 'mock-qr-content',
   expiredAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
@@ -52,6 +55,15 @@ const initialPayment = (): Payment => ({
       options: [{ name: 'Ukuran', value: 'Regular' }],
     },
   ],
+});
+
+const cashPayment = (): Payment => ({
+  ...initialPayment(),
+  reference: 'ORD0000000000003',
+  method: 'cash',
+  qrContent: '',
+  expiredAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+  transactionNumber: 3,
 });
 
 export class MockPaymentRepository implements PaymentRepository {
@@ -74,9 +86,12 @@ export class MockPaymentRepository implements PaymentRepository {
     this.shouldFailFetchPayments = value;
   }
 
-  checkout: PaymentRepository['checkout'] = async (customerName) => {
+  checkout: PaymentRepository['checkout'] = async (customerName, method) => {
     if (this.shouldFailCheckout) throw new Error('Failed to create payment');
-    this.payment = { ...this.payment, customerName };
+    this.payment = {
+      ...(method === 'cash' ? cashPayment() : initialPayment()),
+      customerName,
+    };
     return { ...this.payment };
   };
 
