@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"log/slog"
 	"time"
 )
 
@@ -16,9 +17,10 @@ type TransactionUsecase struct {
 	paymentRepository           PaymentRepository
 	guestNotificationRepository GuestNotificationRepository
 	guestNotificationDispatcher GuestNotificationDispatcher
+	cartRepository              CartRepository
 }
 
-func NewTransactionUsecase(transactionRepository TransactionRepository, variantRepository VariantRepository, couponRepository CouponRepository, walletRepository WalletRepository, availabilityReservation AvailabilityReservation, kdsNotificationRepository KdsNotificationRepository, kdsNotificationDispatcher KdsNotificationDispatcher, paymentRepository PaymentRepository, guestNotificationRepository GuestNotificationRepository, guestNotificationDispatcher GuestNotificationDispatcher) TransactionUsecase {
+func NewTransactionUsecase(transactionRepository TransactionRepository, variantRepository VariantRepository, couponRepository CouponRepository, walletRepository WalletRepository, availabilityReservation AvailabilityReservation, kdsNotificationRepository KdsNotificationRepository, kdsNotificationDispatcher KdsNotificationDispatcher, paymentRepository PaymentRepository, guestNotificationRepository GuestNotificationRepository, guestNotificationDispatcher GuestNotificationDispatcher, cartRepository CartRepository) TransactionUsecase {
 	return TransactionUsecase{
 		transactionRepository:       transactionRepository,
 		variantRepository:           variantRepository,
@@ -30,6 +32,7 @@ func NewTransactionUsecase(transactionRepository TransactionRepository, variantR
 		paymentRepository:           paymentRepository,
 		guestNotificationRepository: guestNotificationRepository,
 		guestNotificationDispatcher: guestNotificationDispatcher,
+		cartRepository:              cartRepository,
 	}
 }
 
@@ -212,13 +215,72 @@ func (usecase TransactionUsecase) PayTransaction(ctx context.Context, walletId i
 		if err != nil {
 			return err
 		}
-		return payTransaction(ctxWithTx, transaction, usecase.transactionRepository, usecase.walletRepository, usecase.kdsNotificationRepository, walletId, paidAmount)
+
+		// D23: the sweeper may have soft-deleted this order transaction between the cashier's
+		// list fetch and their pressing Pay. Un-delete and re-reserve before paying it — the
+		// same late-payment path applyQrisStatus already takes for a QRIS webhook that arrives
+		// late. A soft-deleted POS transaction is untouched; nothing sweeps those.
+		if transaction.DeletedAt != nil && transaction.Source == TransactionSourceOrder {
+			slog.WarnContext(ctxWithTx, "paying a soft-deleted order transaction", slog.Int64("transactionId", transaction.Id), slog.Int64("transactionNumber", transaction.TransactionNumber))
+
+			if undeleteErr := usecase.transactionRepository.UndeleteTransactionById(ctxWithTx, transaction.Id); undeleteErr != nil {
+				return undeleteErr
+			}
+			transaction.DeletedAt = nil
+
+			if reserveErr := usecase.availabilityReservation.ForceReserve(ctxWithTx, transaction.TransactionItems); reserveErr != nil {
+				return reserveErr
+			}
+		}
+
+		if err := payTransaction(ctxWithTx, transaction, usecase.transactionRepository, usecase.walletRepository, usecase.kdsNotificationRepository, walletId, paidAmount); err != nil {
+			return err
+		}
+
+		return usecase.settleOrderPayment(ctxWithTx, transaction.Id)
 	})
 	// FR-4: kicked after the commit so the cashier's HTTP response never waits on Expo.
 	if err == nil {
 		usecase.kdsNotificationDispatcher.TriggerDispatch()
 	}
 	return err
+}
+
+// settleOrderPayment closes FR-6: the guest's payments row, and cart, never moved when a
+// staff member paid the linked order transaction by hand instead of through the gateway or
+// the guest's own cash flow. A transaction with no payment row (POS) or an already-paid one
+// (the webhook won the race) is left alone.
+func (usecase TransactionUsecase) settleOrderPayment(ctx context.Context, transactionId int64) *Error {
+	payment, err := usecase.paymentRepository.GetPaymentByTransactionId(ctx, transactionId)
+	if err != nil {
+		if err.Type == NotFound {
+			return nil
+		}
+		return err
+	}
+
+	if payment.Status == PaymentStatePaid {
+		return nil
+	}
+
+	now := time.Now()
+	payment.Status = PaymentStatePaid
+	payment.PaidAt = &now
+
+	if _, err := usecase.paymentRepository.UpdatePaymentById(ctx, payment, payment.Id); err != nil {
+		return err
+	}
+
+	cart, err := usecase.cartRepository.GetCartById(ctx, payment.CartId)
+	if err != nil {
+		return err
+	}
+	cart.Status = CartStatusConverted
+	if _, err := usecase.cartRepository.UpdateCartById(ctx, cart, cart.Id); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func payTransaction(ctx context.Context, transaction Transaction, transactionRepository TransactionRepository, walletRepository WalletRepository, kdsNotificationRepository KdsNotificationRepository, walletId int64, paidAmount float32) *Error {
@@ -231,6 +293,10 @@ func payTransaction(ctx context.Context, transaction Transaction, transactionRep
 	paymentWallet, err := walletRepository.GetWalletById(ctx, walletId)
 	if err != nil {
 		return err
+	}
+
+	if !paymentWallet.IsPaymentTarget {
+		return &Error{Type: BadRequest, Message: "wallet cannot receive transaction payments"}
 	}
 
 	paymentCost := transaction.Total * paymentWallet.PaymentCostPercentage / 100
@@ -265,7 +331,7 @@ func payTransaction(ctx context.Context, transaction Transaction, transactionRep
 	}
 
 	// FR-1: enqueued after the wallet and income writes succeed, atomic with the payment (D5).
-	if err := kdsNotificationRepository.EnqueueForTransaction(ctx, transaction); err != nil {
+	if err := kdsNotificationRepository.EnqueueForTransaction(ctx, transaction, KdsNotificationKindOrderPaid); err != nil {
 		return err
 	}
 

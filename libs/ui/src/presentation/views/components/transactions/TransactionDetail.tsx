@@ -16,6 +16,7 @@ import {
 } from '@tamagui/lucide-icons';
 import { H5 } from 'tamagui';
 import {
+  PaymentMethod,
   PublicTable,
   TransactionCoupon,
   TransactionItem,
@@ -27,6 +28,7 @@ import { roundToNearest500 } from '../../../../utils';
 export type TransactionDetailProps = {
   name: string;
   source: TransactionSource;
+  paymentMethod?: PaymentMethod | null;
   table?: PublicTable | null;
   pagerNumber: number;
   transactionNumber: number;
@@ -47,9 +49,15 @@ const sourceLabel: Record<TransactionSource, string> = {
   order: 'Order',
 };
 
+const paymentMethodLabel: Record<PaymentMethod, string> = {
+  qris: 'QRIS',
+  cash: 'Cash',
+};
+
 export const TransactionDetail = ({
   name,
   source,
+  paymentMethod,
   table,
   pagerNumber,
   transactionNumber,
@@ -148,6 +156,22 @@ export const TransactionDetail = ({
             </XStack>
           </Card.Header>
         </Card>
+
+        {paymentMethod && (
+          <Card>
+            <Card.Header padding="$2.5">
+              <XStack gap="$2" alignItems="center">
+                <CreditCard size="$2" />
+                <YStack>
+                  <Paragraph size="$1">Payment Method</Paragraph>
+                  <Paragraph size="$2">
+                    {paymentMethodLabel[paymentMethod]}
+                  </Paragraph>
+                </YStack>
+              </XStack>
+            </Card.Header>
+          </Card>
+        )}
 
         {table && (
           <Card>

@@ -89,7 +89,7 @@ func (usecase KdsNotificationUsecase) dispatchOne(ctx context.Context, notificat
 		return
 	}
 
-	message := BuildKdsPushMessage(transaction, usecase.pushSound)
+	message := BuildKdsPushMessage(transaction, notification.Kind, usecase.pushSound)
 	messages := make([]KdsPushMessage, len(devices))
 	for i, device := range devices {
 		deviceMessage := message

@@ -7,6 +7,8 @@ const meta: Meta<typeof OrderHistoryListItem> = {
   component: OrderHistoryListItem,
   args: {
     transactionNumber: 12,
+    status: 'paid',
+    method: 'qris',
     fulfillmentStatus: 'preparing',
     createdAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
     tableLabel: 'Meja 3',
@@ -24,4 +26,8 @@ export const Preparing: Story = {};
 
 export const Ready: Story = {
   args: { fulfillmentStatus: 'ready' },
+};
+
+export const AwaitingCashPayment: Story = {
+  args: { status: 'pending', method: 'cash' },
 };

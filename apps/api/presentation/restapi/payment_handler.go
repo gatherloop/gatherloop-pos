@@ -27,7 +27,17 @@ func (handler PaymentHandler) Checkout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payment, transaction, usecaseErr := handler.usecase.Checkout(ctx, sessionId, request.CustomerName)
+	var rawMethod string
+	if request.Method != nil {
+		rawMethod = *request.Method
+	}
+	method, methodErr := domain.ParsePaymentMethod(rawMethod)
+	if methodErr != nil {
+		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(methodErr.Type), Message: methodErr.Message})
+		return
+	}
+
+	payment, transaction, usecaseErr := handler.usecase.Checkout(ctx, sessionId, request.CustomerName, method)
 	if usecaseErr != nil {
 		apiError := apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message}
 		if usecaseErr.Type == domain.BadGateway {

@@ -23,6 +23,7 @@ jest.mock('solito/router', () => ({
 }));
 
 const TABLE_CODE = '3F7H9K2M5P';
+const CASHIER_LOCATION = 'Lantai 1';
 
 const createSessionRepositoryWithTableCode = () => {
   const sessionRepository = new MockSessionRepository();
@@ -36,12 +37,14 @@ const renderHandler = ({
   sessionRepository = createSessionRepositoryWithTableCode(),
   webPushRepository = new MockWebPushRepository(),
   webPushSubscriptionRepository = new MockWebPushSubscriptionRepository(),
+  cashierLocation = CASHIER_LOCATION,
 }: {
   reference: string;
   paymentRepository?: MockPaymentRepository;
   sessionRepository?: MockSessionRepository;
   webPushRepository?: MockWebPushRepository;
   webPushSubscriptionRepository?: MockWebPushSubscriptionRepository;
+  cashierLocation?: string;
 }) => {
   const orderStatusUsecase = new OrderStatusUsecase(paymentRepository, {
     reference,
@@ -62,6 +65,7 @@ const renderHandler = ({
         orderStatusUsecase={orderStatusUsecase}
         orderNotificationSubscribeUsecase={orderNotificationSubscribeUsecase}
         sessionRepository={sessionRepository}
+        cashierLocation={cashierLocation}
       />
     ),
   };
@@ -89,6 +93,86 @@ describe('OrderStatusHandler', () => {
     await settle();
 
     expect(screen.getByText('Menunggu pembayaran…')).toBeTruthy();
+  });
+
+  it('shows the cash instruction screen for a pending cash payment', async () => {
+    const paymentRepository = new MockPaymentRepository();
+    paymentRepository.payment = {
+      ...paymentRepository.payment,
+      method: 'cash',
+    };
+    renderHandler({
+      reference: paymentRepository.payment.reference,
+      paymentRepository,
+    });
+
+    await settle();
+
+    expect(
+      screen.getByText(`Bayar di kasir ${CASHIER_LOCATION}`)
+    ).toBeTruthy();
+    expect(
+      screen.getByText(`#${paymentRepository.payment.transactionNumber}`)
+    ).toBeTruthy();
+    expect(screen.getByText('Menunggu pembayaran di kasir…')).toBeTruthy();
+  });
+
+  it('flips to the prepared-order screen when a polled cash payment turns paid', async () => {
+    jest.useFakeTimers();
+    try {
+      const paymentRepository = new MockPaymentRepository();
+      paymentRepository.payment = {
+        ...paymentRepository.payment,
+        method: 'cash',
+      };
+      renderHandler({
+        reference: paymentRepository.payment.reference,
+        paymentRepository,
+      });
+
+      await act(async () => {
+        await jest.advanceTimersByTimeAsync(0);
+      });
+      expect(
+        screen.getByText(`Bayar di kasir ${CASHIER_LOCATION}`)
+      ).toBeTruthy();
+
+      paymentRepository.payment = {
+        ...paymentRepository.payment,
+        status: 'paid',
+      };
+      await act(async () => {
+        await jest.advanceTimersByTimeAsync(3000);
+      });
+
+      expect(
+        screen.getByText(`#${paymentRepository.payment.transactionNumber}`)
+      ).toBeTruthy();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('shows the cash-specific copy when an unpaid cash order expires', async () => {
+    const paymentRepository = new MockPaymentRepository();
+    paymentRepository.payment = {
+      ...paymentRepository.payment,
+      method: 'cash',
+      status: 'expired',
+    };
+    renderHandler({
+      reference: paymentRepository.payment.reference,
+      paymentRepository,
+    });
+
+    await settle();
+
+    expect(screen.getByText('Waktu pembayaran habis')).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Pesanan dibatalkan karena belum dibayar. Keranjang Anda masih tersimpan.'
+      )
+    ).toBeTruthy();
   });
 
   it('flips to the prepared-order screen when the polled payment turns paid', async () => {

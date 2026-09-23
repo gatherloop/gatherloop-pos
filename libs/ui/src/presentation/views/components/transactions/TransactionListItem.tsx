@@ -15,11 +15,12 @@ import { ListItem } from '../base';
 import dayjs from 'dayjs';
 import { Paragraph, SizableText, XStack, XStackProps, YStack } from 'tamagui';
 import { Platform } from 'react-native';
-import { PublicTable, TransactionSource } from '../../../../domain';
+import { PaymentMethod, PublicTable, TransactionSource } from '../../../../domain';
 
 export type TransactionListItemProps = {
   name: string;
   source: TransactionSource;
+  paymentMethod?: PaymentMethod | null;
   table?: PublicTable | null;
   pagerNumber: number;
   transactionNumber: number;
@@ -48,6 +49,20 @@ const OrderBadge = () => (
   >
     <Paragraph size="$1" color="$blue11">
       Order
+    </Paragraph>
+  </XStack>
+);
+
+const CashAwaitingPaymentBadge = () => (
+  <XStack
+    backgroundColor="$yellow5"
+    paddingHorizontal="$2"
+    paddingVertical="$1"
+    borderRadius="$10"
+    alignSelf="flex-start"
+  >
+    <Paragraph size="$1" color="$yellow11">
+      Cash · awaiting payment
     </Paragraph>
   </XStack>
 );
@@ -112,6 +127,7 @@ const TransactionNumberBadge = ({ value }: { value: number }) => {
 export const TransactionListItem = ({
   name,
   source,
+  paymentMethod,
   table,
   pagerNumber,
   transactionNumber,
@@ -143,6 +159,9 @@ export const TransactionListItem = ({
             <XStack gap="$2">
               <OrderBadge />
               <FulfillmentBadge completedAt={completedAt} />
+              {paymentMethod === 'cash' && paidAt === undefined && (
+                <CashAwaitingPaymentBadge />
+              )}
             </XStack>
           </YStack>
         ) : (

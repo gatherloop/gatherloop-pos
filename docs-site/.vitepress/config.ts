@@ -67,7 +67,7 @@ export default defineConfig({
           { text: 'Coupons', link: '/sales/coupons' },
           { text: 'Board-game Rentals', link: '/sales/rentals' },
           { text: 'Table Ordering', link: '/sales/table-ordering' },
-          { text: 'Order Checkout (QRIS)', link: '/sales/order-checkout' },
+          { text: 'Order Checkout (QRIS & Cash)', link: '/sales/order-checkout' },
           { text: 'Order History', link: '/sales/order-history' },
           { text: 'Kitchen Display System (KDS)', link: '/sales/kds' },
           { text: 'Guest Order-Ready Notifications', link: '/sales/order-notifications' },

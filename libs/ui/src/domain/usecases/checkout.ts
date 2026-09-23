@@ -1,5 +1,5 @@
 import { match, P } from 'ts-pattern';
-import { Payment } from '../entities';
+import { Payment, PaymentMethod } from '../entities';
 import { PaymentRepository } from '../repositories';
 import { Usecase } from './IUsecase';
 
@@ -8,6 +8,7 @@ const NAME_MAX_LENGTH = 60;
 type Context = {
   payment: Payment | null;
   customerName: string;
+  method: PaymentMethod;
   nameErrorMessage: string | null;
   errorMessage: string | null;
 };
@@ -24,6 +25,7 @@ export type CheckoutState = (
 export type CheckoutAction =
   | { type: 'ASK_NAME' }
   | { type: 'CHANGE_NAME'; name: string }
+  | { type: 'CHANGE_METHOD'; method: PaymentMethod }
   | { type: 'CANCEL_NAME' }
   | { type: 'SUBMIT_NAME' }
   | { type: 'CHECKOUT_SUCCESS'; payment: Payment }
@@ -62,6 +64,7 @@ export class CheckoutUsecase extends Usecase<
       type: 'idle',
       payment: null,
       customerName: this.params.customerName ?? '',
+      method: 'qris',
       nameErrorMessage: null,
       errorMessage: null,
     };
@@ -78,6 +81,10 @@ export class CheckoutUsecase extends Usecase<
       .with(
         [{ type: 'askingName' }, { type: 'CHANGE_NAME' }],
         ([state, { name }]) => ({ ...state, customerName: name })
+      )
+      .with(
+        [{ type: 'askingName' }, { type: 'CHANGE_METHOD' }],
+        ([state, { method }]) => ({ ...state, method })
       )
       .with([{ type: 'askingName' }, { type: 'CANCEL_NAME' }], ([state]) => ({
         ...state,
@@ -125,9 +132,9 @@ export class CheckoutUsecase extends Usecase<
     dispatch: (action: CheckoutAction) => void
   ): void {
     match(state)
-      .with({ type: 'creatingPayment' }, ({ customerName }) => {
+      .with({ type: 'creatingPayment' }, ({ customerName, method }) => {
         this.paymentRepository
-          .checkout(customerName)
+          .checkout(customerName, method)
           .then((payment) => dispatch({ type: 'CHECKOUT_SUCCESS', payment }))
           .catch(() =>
             dispatch({

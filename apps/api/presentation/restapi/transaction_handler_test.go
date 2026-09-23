@@ -34,18 +34,21 @@ func newTransactionHandler(t *testing.T, setupMocks func(txRepo *mock.MockTransa
 	availabilityRepo.EXPECT().UpdateVariantAvailableQuantity(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
 	availabilityRepo.EXPECT().UpdateProductAvailableQuantity(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
 	kdsNotificationRepo := mock.NewMockKdsNotificationRepository(ctrl)
-	kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	kdsNotificationDispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
 	kdsNotificationDispatcher.EXPECT().TriggerDispatch().AnyTimes()
 	paymentRepo := mock.NewMockPaymentRepository(ctrl)
-	paymentRepo.EXPECT().GetPaymentByTransactionId(gomock.Any(), gomock.Any()).Return(domain.Payment{SessionId: "session-1"}, nil).AnyTimes()
+	// FR-6: an already-paid payment makes settleOrderPayment a no-op for handler tests that
+	// don't care about it, so it never reaches UpdatePaymentById or the cart repository.
+	paymentRepo.EXPECT().GetPaymentByTransactionId(gomock.Any(), gomock.Any()).Return(domain.Payment{SessionId: "session-1", Status: domain.PaymentStatePaid}, nil).AnyTimes()
 	guestNotificationRepo := mock.NewMockGuestNotificationRepository(ctrl)
 	guestNotificationRepo.EXPECT().EnqueueForCompletedTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	guestNotificationRepo.EXPECT().DeleteGuestNotificationByTransactionId(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	guestNotificationDispatcher := mock.NewMockGuestNotificationDispatcher(ctrl)
 	guestNotificationDispatcher.EXPECT().TriggerDispatch().AnyTimes()
+	cartRepo := mock.NewMockCartRepository(ctrl)
 	setupMocks(txRepo, variantRepo, couponRepo, walletRepo)
-	usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(availabilityRepo), kdsNotificationRepo, kdsNotificationDispatcher, paymentRepo, guestNotificationRepo, guestNotificationDispatcher)
+	usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(availabilityRepo), kdsNotificationRepo, kdsNotificationDispatcher, paymentRepo, guestNotificationRepo, guestNotificationDispatcher, cartRepo)
 	return restapi.NewTransactionHandler(usecase), ctrl
 }
 
@@ -112,6 +115,60 @@ func TestTransactionHandler_GetTransactionList_SerializesSource(t *testing.T) {
 	require.Len(t, response.Data, 1)
 	assert.Equal(t, "pos", response.Data[0].Source)
 	assert.Nil(t, response.Data[0].Table)
+}
+
+// D16: a POS transaction serialises paymentMethod: null, and an order transaction
+// reports the method of its linked payment.
+func TestTransactionHandler_GetTransactionList_SerializesPaymentMethod(t *testing.T) {
+	cash := domain.PaymentMethodCash
+	qris := domain.PaymentMethodQris
+
+	tests := []struct {
+		name                  string
+		transaction           domain.Transaction
+		expectedPaymentMethod *string
+	}{
+		{
+			name:                  "a POS transaction has no linked payment",
+			transaction:           domain.Transaction{Id: 1, Source: domain.TransactionSourcePos},
+			expectedPaymentMethod: nil,
+		},
+		{
+			name:                  "a cash order transaction reports cash",
+			transaction:           domain.Transaction{Id: 2, Source: domain.TransactionSourceOrder, PaymentMethod: &cash},
+			expectedPaymentMethod: strPtr("cash"),
+		},
+		{
+			name:                  "a QRIS order transaction reports qris",
+			transaction:           domain.Transaction{Id: 3, Source: domain.TransactionSourceOrder, PaymentMethod: &qris},
+			expectedPaymentMethod: strPtr("qris"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			handler, ctrl := newTransactionHandler(t, func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository) {
+				txRepo.EXPECT().GetTransactionList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return([]domain.Transaction{tt.transaction}, nil)
+				txRepo.EXPECT().GetTransactionListTotal(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(1), nil)
+			})
+			defer ctrl.Finish()
+
+			req := httptest.NewRequest(http.MethodGet, "/transactions", nil)
+			w := httptest.NewRecorder()
+			handler.GetTransactionList(w, req)
+
+			require.Equal(t, http.StatusOK, w.Code)
+			var response apiContract.TransactionListResponse
+			require.NoError(t, json.NewDecoder(w.Body).Decode(&response))
+			require.Len(t, response.Data, 1)
+			assert.Equal(t, tt.expectedPaymentMethod, response.Data[0].PaymentMethod)
+		})
+	}
+}
+
+func strPtr(s string) *string {
+	return &s
 }
 
 func TestTransactionHandler_GetTransactionList_FilterBySource(t *testing.T) {
@@ -432,7 +489,7 @@ func TestTransactionHandler_PayTransaction(t *testing.T) {
 				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(1)).Return(domain.Transaction{Id: 1, PaidAt: nil, Total: 20000, TransactionItems: []domain.TransactionItem{}}, nil)
-				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, Name: "Cash", Balance: 0, PaymentCostPercentage: 0}, nil)
+				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, Name: "Cash", Balance: 0, PaymentCostPercentage: 0, IsPaymentTarget: true}, nil)
 				walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
 				txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Transaction{}, nil)
 				txRepo.EXPECT().PayTransaction(gomock.Any(), int64(1), gomock.Any(), float32(20000), int64(1)).Return(nil)

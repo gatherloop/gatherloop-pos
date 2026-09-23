@@ -226,6 +226,14 @@ export async function completeTransaction(id: number): Promise<void> {
   }
 }
 
+export async function payTransaction(
+  id: number,
+  walletId: number,
+  paidAmount: number
+): Promise<void> {
+  await apiPut(`/transactions/${id}/pay`, { walletId, paidAmount });
+}
+
 export interface UpdateAvailabilityInput {
   products?: Array<{
     productId: number;

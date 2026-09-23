@@ -22,9 +22,12 @@ func permissiveKdsNotificationDispatcher(ctrl *gomock.Controller) *mock.MockKdsN
 	return dispatcher
 }
 
+// permissivePaymentRepository returns an already-paid payment so settleOrderPayment (FR-6) is a
+// no-op for every test that doesn't care about it — it never touches UpdatePaymentById or the
+// cart repository.
 func permissivePaymentRepository(ctrl *gomock.Controller) *mock.MockPaymentRepository {
 	paymentRepo := mock.NewMockPaymentRepository(ctrl)
-	paymentRepo.EXPECT().GetPaymentByTransactionId(gomock.Any(), gomock.Any()).Return(domain.Payment{SessionId: "session-permissive"}, nil).AnyTimes()
+	paymentRepo.EXPECT().GetPaymentByTransactionId(gomock.Any(), gomock.Any()).Return(domain.Payment{SessionId: "session-permissive", Status: domain.PaymentStatePaid}, nil).AnyTimes()
 	return paymentRepo
 }
 
@@ -41,6 +44,12 @@ func permissiveGuestNotificationDispatcher(ctrl *gomock.Controller) *mock.MockGu
 	dispatcher := mock.NewMockGuestNotificationDispatcher(ctrl)
 	dispatcher.EXPECT().TriggerDispatch().AnyTimes()
 	return dispatcher
+}
+
+// permissiveCartRepository is paired with permissivePaymentRepository's already-paid payment, so
+// settleOrderPayment no-ops and never reaches the cart repository at all.
+func permissiveCartRepository(ctrl *gomock.Controller) *mock.MockCartRepository {
+	return mock.NewMockCartRepository(ctrl)
 }
 
 func permissiveAvailabilityRepo(ctrl *gomock.Controller) *mock.MockAvailabilityReservationRepository {
@@ -112,7 +121,7 @@ func TestTransactionUsecase_GetTransactionList(t *testing.T) {
 			walletRepo := mock.NewMockWalletRepository(ctrl)
 			tt.setupMock(txRepo)
 
-			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl))
+			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl), permissiveCartRepository(ctrl))
 			transactions, total, err := usecase.GetTransactionList(context.Background(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.All, nil, nil, nil)
 
 			if tt.expectedError != nil {
@@ -140,7 +149,7 @@ func TestTransactionUsecase_GetTransactionList(t *testing.T) {
 			Return([]domain.Transaction{{Id: 1, Source: domain.TransactionSourceOrder}}, nil)
 		txRepo.EXPECT().GetTransactionListTotal(gomock.Any(), "", domain.All, nil, &orderSource, nil).Return(int64(1), nil)
 
-		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl))
+		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl), permissiveCartRepository(ctrl))
 		transactions, total, err := usecase.GetTransactionList(context.Background(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.All, nil, &orderSource, nil)
 
 		assert.Nil(t, err)
@@ -164,7 +173,7 @@ func TestTransactionUsecase_GetTransactionList(t *testing.T) {
 					Return([]domain.Transaction{{Id: 1, Source: domain.TransactionSourceOrder}}, nil)
 				txRepo.EXPECT().GetTransactionListTotal(gomock.Any(), "", domain.All, nil, nil, &fulfillment).Return(int64(1), nil)
 
-				usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl))
+				usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl), permissiveCartRepository(ctrl))
 				transactions, total, err := usecase.GetTransactionList(context.Background(), "", domain.CreatedAt, domain.Ascending, 0, 10, domain.All, nil, nil, &fulfillment)
 
 				assert.Nil(t, err)
@@ -342,7 +351,7 @@ func TestTransactionUsecase_CreateTransaction(t *testing.T) {
 			availabilityRepo := mock.NewMockAvailabilityReservationRepository(ctrl)
 			tt.setupMock(txRepo, variantRepo, couponRepo, availabilityRepo)
 
-			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(availabilityRepo), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl))
+			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(availabilityRepo), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl), permissiveCartRepository(ctrl))
 			transaction, err := usecase.CreateTransaction(context.Background(), tt.input)
 
 			if tt.expectedError != nil {
@@ -392,7 +401,7 @@ func TestTransactionUsecase_CreateTransaction_DefaultsSourceToPos(t *testing.T) 
 					return tx, nil
 				})
 
-			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl))
+			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl), permissiveCartRepository(ctrl))
 			created, err := usecase.CreateTransaction(context.Background(), tt.input)
 
 			assert.Nil(t, err)
@@ -474,7 +483,7 @@ func TestTransactionUsecase_DeleteTransactionById(t *testing.T) {
 			availabilityRepo := mock.NewMockAvailabilityReservationRepository(ctrl)
 			tt.setupMock(txRepo, availabilityRepo)
 
-			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(availabilityRepo), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl))
+			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(availabilityRepo), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl), permissiveCartRepository(ctrl))
 			err := usecase.DeleteTransactionById(context.Background(), tt.id)
 
 			if tt.expectedError != nil {
@@ -537,6 +546,24 @@ func TestTransactionUsecase_UnpayTransaction(t *testing.T) {
 			},
 			expectedError: &domain.Error{Type: domain.BadRequest},
 		},
+		{
+			// FR-13 item 3: unpay reverses a credit the wallet legitimately received when the
+			// payment was taken — an operator opting the wallet out afterwards must not strand it.
+			name: "wallet opted out since the payment was taken can still be reversed",
+			id:   4,
+			setupMock: func(txRepo *mock.MockTransactionRepository, walletRepo *mock.MockWalletRepository) {
+				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(4)).Return(domain.Transaction{
+					Id: 4, PaidAt: &recentPaidAt, CreatedAt: recentPaidAt.Add(-30 * time.Minute),
+					Total: 50000, WalletId: &walletId,
+					TransactionItems: []domain.TransactionItem{},
+				}, nil)
+				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, Name: "Brankas", Balance: 100000, PaymentCostPercentage: 0, IsPaymentTarget: false}, nil)
+				walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
+				txRepo.EXPECT().UnpayTransaction(gomock.Any(), int64(4)).Return(nil)
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -550,7 +577,7 @@ func TestTransactionUsecase_UnpayTransaction(t *testing.T) {
 			walletRepo := mock.NewMockWalletRepository(ctrl)
 			tt.setupMock(txRepo, walletRepo)
 
-			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl))
+			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl), permissiveCartRepository(ctrl))
 			err := usecase.UnpayTransaction(context.Background(), tt.id)
 
 			if tt.expectedError != nil {
@@ -597,11 +624,11 @@ func TestTransactionUsecase_PayTransaction(t *testing.T) {
 					Id: 1, Total: 30000, PaidAt: nil,
 				}, nil)
 				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{
-					Id: 1, Balance: 0, PaymentCostPercentage: 0,
+					Id: 1, Balance: 0, PaymentCostPercentage: 0, IsPaymentTarget: true,
 				}, nil)
 				walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
 				txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Transaction{}, nil)
-				kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any()).Return(nil)
+				kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 				txRepo.EXPECT().PayTransaction(gomock.Any(), int64(1), gomock.Any(), float32(30000), int64(1)).Return(nil)
 			},
 		},
@@ -646,11 +673,11 @@ func TestTransactionUsecase_PayTransaction(t *testing.T) {
 				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(3)).Return(domain.Transaction{
 					Id: 3, Total: 30000, CreatedAt: time.Now(), TransactionItems: []domain.TransactionItem{barItem},
 				}, nil)
-				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1}, nil)
+				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, IsPaymentTarget: true}, nil)
 				walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
 				txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(3)).Return(domain.Transaction{}, nil)
-				kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
-					func(_ context.Context, transaction domain.Transaction) *domain.Error {
+				kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+					func(_ context.Context, transaction domain.Transaction, _ domain.KdsNotificationKind) *domain.Error {
 						assert.True(t, domain.ShouldNotify(transaction))
 						assert.Len(t, domain.StationLines(transaction), 1)
 						return nil
@@ -671,11 +698,11 @@ func TestTransactionUsecase_PayTransaction(t *testing.T) {
 				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(4)).Return(domain.Transaction{
 					Id: 4, Total: 30000, CreatedAt: time.Now(), TransactionItems: []domain.TransactionItem{barItem, kitchenItem},
 				}, nil)
-				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1}, nil)
+				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, IsPaymentTarget: true}, nil)
 				walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
 				txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(4)).Return(domain.Transaction{}, nil)
-				kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(
-					func(_ context.Context, transaction domain.Transaction) *domain.Error {
+				kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).DoAndReturn(
+					func(_ context.Context, transaction domain.Transaction, _ domain.KdsNotificationKind) *domain.Error {
 						assert.True(t, domain.ShouldNotify(transaction))
 						assert.Len(t, domain.StationLines(transaction), 2)
 						return nil
@@ -696,11 +723,11 @@ func TestTransactionUsecase_PayTransaction(t *testing.T) {
 				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(5)).Return(domain.Transaction{
 					Id: 5, Total: 30000, CreatedAt: time.Now(), TransactionItems: []domain.TransactionItem{boardGameItem},
 				}, nil)
-				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1}, nil)
+				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, IsPaymentTarget: true}, nil)
 				walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
 				txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(5)).Return(domain.Transaction{}, nil)
-				kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
-					func(_ context.Context, transaction domain.Transaction) *domain.Error {
+				kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+					func(_ context.Context, transaction domain.Transaction, _ domain.KdsNotificationKind) *domain.Error {
 						assert.False(t, domain.ShouldNotify(transaction))
 						return nil
 					})
@@ -720,11 +747,11 @@ func TestTransactionUsecase_PayTransaction(t *testing.T) {
 				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(6)).Return(domain.Transaction{
 					Id: 6, Total: 30000, CreatedAt: time.Now().Add(-24 * time.Hour), TransactionItems: []domain.TransactionItem{barItem},
 				}, nil)
-				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1}, nil)
+				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, IsPaymentTarget: true}, nil)
 				walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
 				txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(6)).Return(domain.Transaction{}, nil)
-				kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
-					func(_ context.Context, transaction domain.Transaction) *domain.Error {
+				kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+					func(_ context.Context, transaction domain.Transaction, _ domain.KdsNotificationKind) *domain.Error {
 						assert.True(t, domain.IsStaleForNotification(transaction, time.Now()))
 						return nil
 					})
@@ -745,12 +772,30 @@ func TestTransactionUsecase_PayTransaction(t *testing.T) {
 				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(7)).Return(domain.Transaction{
 					Id: 7, Total: 30000, CreatedAt: time.Now(), TransactionItems: []domain.TransactionItem{barItem},
 				}, nil)
-				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1}, nil)
+				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, IsPaymentTarget: true}, nil)
 				walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
 				txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(7)).Return(domain.Transaction{}, nil)
-				kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any()).Return(&domain.Error{Type: domain.InternalServerError})
+				kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Return(&domain.Error{Type: domain.InternalServerError})
 			},
 			expectedError: &domain.Error{Type: domain.InternalServerError},
+		},
+		{
+			// FR-13/D24: a wallet an operator has opted out of receiving payments must be rejected
+			// before any balance, income or kds_notifications write — the guard sits ahead of the
+			// wallet update, so no further mock expectation is set for it.
+			name:       "wallet not eligible for payments is rejected before any write",
+			id:         8,
+			walletId:   1,
+			paidAmount: 30000,
+			setupMock: func(txRepo *mock.MockTransactionRepository, walletRepo *mock.MockWalletRepository, kdsRepo *mock.MockKdsNotificationRepository) {
+				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(8)).Return(domain.Transaction{
+					Id: 8, Total: 30000, CreatedAt: time.Now(),
+				}, nil)
+				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, Name: "Brankas", IsPaymentTarget: false}, nil)
+			},
+			expectedError: &domain.Error{Type: domain.BadRequest},
 		},
 	}
 
@@ -766,7 +811,7 @@ func TestTransactionUsecase_PayTransaction(t *testing.T) {
 			kdsRepo := mock.NewMockKdsNotificationRepository(ctrl)
 			tt.setupMock(txRepo, walletRepo, kdsRepo)
 
-			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), kdsRepo, permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl))
+			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), kdsRepo, permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl), permissiveCartRepository(ctrl))
 			err := usecase.PayTransaction(context.Background(), tt.walletId, tt.paidAmount, tt.id)
 
 			if tt.expectedError != nil {
@@ -796,14 +841,14 @@ func TestTransactionUsecase_PayTransaction_KdsDispatchTrigger(t *testing.T) {
 		txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 			func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 		txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(1)).Return(domain.Transaction{Id: 1, Total: 30000}, nil)
-		walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1}, nil)
+		walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, IsPaymentTarget: true}, nil)
 		walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
 		txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Transaction{}, nil)
-		kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any()).Return(nil)
+		kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		txRepo.EXPECT().PayTransaction(gomock.Any(), int64(1), gomock.Any(), float32(30000), int64(1)).Return(nil)
 		dispatcher.EXPECT().TriggerDispatch().Times(1)
 
-		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), kdsRepo, dispatcher, permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl))
+		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), kdsRepo, dispatcher, permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl), permissiveCartRepository(ctrl))
 		err := usecase.PayTransaction(context.Background(), 1, 30000, 1)
 
 		assert.Nil(t, err)
@@ -826,11 +871,254 @@ func TestTransactionUsecase_PayTransaction_KdsDispatchTrigger(t *testing.T) {
 		txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(2)).Return(domain.Transaction{Id: 2, PaidAt: &now}, nil)
 		dispatcher.EXPECT().TriggerDispatch().Times(0)
 
-		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), kdsRepo, dispatcher, permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl))
+		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), kdsRepo, dispatcher, permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl), permissiveCartRepository(ctrl))
 		err := usecase.PayTransaction(context.Background(), 1, 30000, 2)
 
 		assert.NotNil(t, err)
 		assert.Equal(t, domain.BadRequest, err.Type)
+	})
+}
+
+// FR-6: PayTransaction settles the linked payments row and converts its cart — the cashier's
+// existing pay flow doubling as the cash gateway, and the fix for the same latent hole on the
+// QRIS path (a staff member paying an order transaction by hand).
+func TestTransactionUsecase_PayTransaction_SettlesOrderPayment(t *testing.T) {
+	t.Run("flips a pending order payment to paid and converts its cart", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		txRepo := mock.NewMockTransactionRepository(ctrl)
+		variantRepo := mock.NewMockVariantRepository(ctrl)
+		couponRepo := mock.NewMockCouponRepository(ctrl)
+		walletRepo := mock.NewMockWalletRepository(ctrl)
+		kdsRepo := mock.NewMockKdsNotificationRepository(ctrl)
+		paymentRepo := mock.NewMockPaymentRepository(ctrl)
+		cartRepo := mock.NewMockCartRepository(ctrl)
+
+		txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+			func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+		txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(1)).Return(domain.Transaction{
+			Id: 1, Source: domain.TransactionSourceOrder, Total: 30000,
+		}, nil)
+		walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, IsPaymentTarget: true}, nil)
+		walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
+		txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Transaction{}, nil)
+		kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), domain.KdsNotificationKindOrderPaid).Return(nil)
+		txRepo.EXPECT().PayTransaction(gomock.Any(), int64(1), gomock.Any(), float32(30000), int64(1)).Return(nil)
+
+		paymentRepo.EXPECT().GetPaymentByTransactionId(gomock.Any(), int64(1)).Return(domain.Payment{
+			Id: 5, CartId: 9, Status: domain.PaymentStatePending,
+		}, nil)
+		paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), int64(5)).DoAndReturn(
+			func(_ context.Context, payment domain.Payment, id int64) (domain.Payment, *domain.Error) {
+				assert.Equal(t, domain.PaymentStatePaid, payment.Status)
+				assert.NotNil(t, payment.PaidAt)
+				return payment, nil
+			})
+		cartRepo.EXPECT().GetCartById(gomock.Any(), int64(9)).Return(domain.Cart{Id: 9, Status: domain.CartStatusActive}, nil)
+		cartRepo.EXPECT().UpdateCartById(gomock.Any(), gomock.Any(), int64(9)).DoAndReturn(
+			func(_ context.Context, cart domain.Cart, id int64) (domain.Cart, *domain.Error) {
+				assert.Equal(t, domain.CartStatusConverted, cart.Status)
+				return cart, nil
+			})
+
+		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), kdsRepo, permissiveKdsNotificationDispatcher(ctrl), paymentRepo, permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl), cartRepo)
+		err := usecase.PayTransaction(context.Background(), 1, 30000, 1)
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("a payment already paid is a no-op (webhook-wins race)", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		txRepo := mock.NewMockTransactionRepository(ctrl)
+		variantRepo := mock.NewMockVariantRepository(ctrl)
+		couponRepo := mock.NewMockCouponRepository(ctrl)
+		walletRepo := mock.NewMockWalletRepository(ctrl)
+		kdsRepo := mock.NewMockKdsNotificationRepository(ctrl)
+		paymentRepo := mock.NewMockPaymentRepository(ctrl)
+		cartRepo := mock.NewMockCartRepository(ctrl)
+
+		txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+			func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+		txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(2)).Return(domain.Transaction{
+			Id: 2, Source: domain.TransactionSourceOrder, Total: 30000,
+		}, nil)
+		walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, IsPaymentTarget: true}, nil)
+		walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
+		txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(2)).Return(domain.Transaction{}, nil)
+		kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), domain.KdsNotificationKindOrderPaid).Return(nil)
+		txRepo.EXPECT().PayTransaction(gomock.Any(), int64(1), gomock.Any(), float32(30000), int64(2)).Return(nil)
+
+		// Status already paid: no UpdatePaymentById and no cart repository call.
+		paymentRepo.EXPECT().GetPaymentByTransactionId(gomock.Any(), int64(2)).Return(domain.Payment{
+			Id: 6, Status: domain.PaymentStatePaid,
+		}, nil)
+
+		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), kdsRepo, permissiveKdsNotificationDispatcher(ctrl), paymentRepo, permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl), cartRepo)
+		err := usecase.PayTransaction(context.Background(), 1, 30000, 2)
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("a POS transaction with no payment row succeeds unchanged", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		txRepo := mock.NewMockTransactionRepository(ctrl)
+		variantRepo := mock.NewMockVariantRepository(ctrl)
+		couponRepo := mock.NewMockCouponRepository(ctrl)
+		walletRepo := mock.NewMockWalletRepository(ctrl)
+		kdsRepo := mock.NewMockKdsNotificationRepository(ctrl)
+		paymentRepo := mock.NewMockPaymentRepository(ctrl)
+		cartRepo := mock.NewMockCartRepository(ctrl)
+
+		txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+			func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+		txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(3)).Return(domain.Transaction{
+			Id: 3, Source: domain.TransactionSourcePos, Total: 30000,
+		}, nil)
+		walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, IsPaymentTarget: true}, nil)
+		walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
+		txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(3)).Return(domain.Transaction{}, nil)
+		kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), domain.KdsNotificationKindOrderPaid).Return(nil)
+		txRepo.EXPECT().PayTransaction(gomock.Any(), int64(1), gomock.Any(), float32(30000), int64(3)).Return(nil)
+
+		paymentRepo.EXPECT().GetPaymentByTransactionId(gomock.Any(), int64(3)).Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
+
+		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), kdsRepo, permissiveKdsNotificationDispatcher(ctrl), paymentRepo, permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl), cartRepo)
+		err := usecase.PayTransaction(context.Background(), 1, 30000, 3)
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("a paid amount above the total still settles the payment at its quoted amount", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		txRepo := mock.NewMockTransactionRepository(ctrl)
+		variantRepo := mock.NewMockVariantRepository(ctrl)
+		couponRepo := mock.NewMockCouponRepository(ctrl)
+		walletRepo := mock.NewMockWalletRepository(ctrl)
+		kdsRepo := mock.NewMockKdsNotificationRepository(ctrl)
+		paymentRepo := mock.NewMockPaymentRepository(ctrl)
+		cartRepo := mock.NewMockCartRepository(ctrl)
+
+		txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+			func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+		txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(4)).Return(domain.Transaction{
+			Id: 4, Source: domain.TransactionSourceOrder, Total: 25000,
+		}, nil)
+		walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, IsPaymentTarget: true}, nil)
+		walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
+		txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(4)).Return(domain.Transaction{}, nil)
+		kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), domain.KdsNotificationKindOrderPaid).Return(nil)
+		// paidAmount (30000) exceeds the transaction total (25000) — change taken by the cashier.
+		txRepo.EXPECT().PayTransaction(gomock.Any(), int64(1), gomock.Any(), float32(30000), int64(4)).Return(nil)
+
+		paymentRepo.EXPECT().GetPaymentByTransactionId(gomock.Any(), int64(4)).Return(domain.Payment{
+			Id: 7, CartId: 11, Amount: 25000, Status: domain.PaymentStatePending,
+		}, nil)
+		paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), int64(7)).DoAndReturn(
+			func(_ context.Context, payment domain.Payment, id int64) (domain.Payment, *domain.Error) {
+				assert.Equal(t, domain.PaymentStatePaid, payment.Status)
+				assert.Equal(t, float32(25000), payment.Amount)
+				return payment, nil
+			})
+		cartRepo.EXPECT().GetCartById(gomock.Any(), int64(11)).Return(domain.Cart{Id: 11}, nil)
+		cartRepo.EXPECT().UpdateCartById(gomock.Any(), gomock.Any(), int64(11)).Return(domain.Cart{}, nil)
+
+		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), kdsRepo, permissiveKdsNotificationDispatcher(ctrl), paymentRepo, permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl), cartRepo)
+		err := usecase.PayTransaction(context.Background(), 1, 30000, 4)
+
+		assert.Nil(t, err)
+	})
+}
+
+// D23: the sweeper may soft-delete an order transaction between the cashier's list fetch and
+// their pressing Pay. PayTransaction restores it before paying instead of silently banking money
+// against an invisible transaction — the same late-payment path applyQrisStatus already takes.
+func TestTransactionUsecase_PayTransaction_UndeletesSoftDeletedOrderTransaction(t *testing.T) {
+	deletedAt := time.Now().Add(-1 * time.Minute)
+
+	t.Run("un-deletes, re-reserves availability and settles the expired payment", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		txRepo := mock.NewMockTransactionRepository(ctrl)
+		variantRepo := mock.NewMockVariantRepository(ctrl)
+		couponRepo := mock.NewMockCouponRepository(ctrl)
+		walletRepo := mock.NewMockWalletRepository(ctrl)
+		kdsRepo := mock.NewMockKdsNotificationRepository(ctrl)
+		paymentRepo := mock.NewMockPaymentRepository(ctrl)
+		cartRepo := mock.NewMockCartRepository(ctrl)
+		availabilityRepo := mock.NewMockAvailabilityReservationRepository(ctrl)
+
+		txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+			func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+		txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(1)).Return(domain.Transaction{
+			Id: 1, Source: domain.TransactionSourceOrder, Total: 30000, DeletedAt: &deletedAt,
+			TransactionItems: []domain.TransactionItem{{VariantId: 1, Amount: 1}},
+		}, nil)
+		txRepo.EXPECT().UndeleteTransactionById(gomock.Any(), int64(1)).Return(nil)
+		availabilityRepo.EXPECT().LockVariantById(gomock.Any(), int64(1)).Return(domain.Variant{
+			Id: 1, Product: domain.Product{AvailabilityTracking: domain.AvailabilityTrackingNone},
+		}, nil)
+
+		walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, IsPaymentTarget: true}, nil)
+		walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
+		txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Transaction{}, nil)
+		kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), domain.KdsNotificationKindOrderPaid).Return(nil)
+		txRepo.EXPECT().PayTransaction(gomock.Any(), int64(1), gomock.Any(), float32(30000), int64(1)).Return(nil)
+
+		paymentRepo.EXPECT().GetPaymentByTransactionId(gomock.Any(), int64(1)).Return(domain.Payment{
+			Id: 5, CartId: 9, Status: domain.PaymentStateExpired,
+		}, nil)
+		paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), int64(5)).DoAndReturn(
+			func(_ context.Context, payment domain.Payment, id int64) (domain.Payment, *domain.Error) {
+				assert.Equal(t, domain.PaymentStatePaid, payment.Status)
+				return payment, nil
+			})
+		cartRepo.EXPECT().GetCartById(gomock.Any(), int64(9)).Return(domain.Cart{Id: 9}, nil)
+		cartRepo.EXPECT().UpdateCartById(gomock.Any(), gomock.Any(), int64(9)).Return(domain.Cart{}, nil)
+
+		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(availabilityRepo), kdsRepo, permissiveKdsNotificationDispatcher(ctrl), paymentRepo, permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl), cartRepo)
+		err := usecase.PayTransaction(context.Background(), 1, 30000, 1)
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("a soft-deleted POS transaction is untouched by the undelete path", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		txRepo := mock.NewMockTransactionRepository(ctrl)
+		variantRepo := mock.NewMockVariantRepository(ctrl)
+		couponRepo := mock.NewMockCouponRepository(ctrl)
+		walletRepo := mock.NewMockWalletRepository(ctrl)
+		kdsRepo := mock.NewMockKdsNotificationRepository(ctrl)
+		paymentRepo := mock.NewMockPaymentRepository(ctrl)
+		cartRepo := mock.NewMockCartRepository(ctrl)
+
+		txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+			func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+		txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(2)).Return(domain.Transaction{
+			Id: 2, Source: domain.TransactionSourcePos, Total: 30000, DeletedAt: &deletedAt,
+		}, nil)
+		// No UndeleteTransactionById and no availability reservation calls for a POS transaction.
+		walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, IsPaymentTarget: true}, nil)
+		walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Wallet{}, nil)
+		txRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(2)).Return(domain.Transaction{}, nil)
+		kdsRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), domain.KdsNotificationKindOrderPaid).Return(nil)
+		txRepo.EXPECT().PayTransaction(gomock.Any(), int64(1), gomock.Any(), float32(30000), int64(2)).Return(nil)
+
+		paymentRepo.EXPECT().GetPaymentByTransactionId(gomock.Any(), int64(2)).Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
+
+		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), kdsRepo, permissiveKdsNotificationDispatcher(ctrl), paymentRepo, permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl), cartRepo)
+		err := usecase.PayTransaction(context.Background(), 1, 30000, 2)
+
+		assert.Nil(t, err)
 	})
 }
 
@@ -957,7 +1245,7 @@ func TestTransactionUsecase_CompleteTransaction(t *testing.T) {
 			guestNotificationRepo := mock.NewMockGuestNotificationRepository(ctrl)
 			tt.setupMock(txRepo, paymentRepo, guestNotificationRepo)
 
-			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), paymentRepo, guestNotificationRepo, permissiveGuestNotificationDispatcher(ctrl))
+			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), paymentRepo, guestNotificationRepo, permissiveGuestNotificationDispatcher(ctrl), permissiveCartRepository(ctrl))
 			err := usecase.CompleteTransaction(context.Background(), tt.id)
 
 			if tt.expectedError != nil {
@@ -993,7 +1281,7 @@ func TestTransactionUsecase_CompleteTransaction_GuestNotificationDispatchTrigger
 		txRepo.EXPECT().CompleteTransaction(gomock.Any(), gomock.Any(), int64(1)).Return(nil)
 		dispatcher.EXPECT().TriggerDispatch().Times(1)
 
-		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), paymentRepo, guestNotificationRepo, dispatcher)
+		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), paymentRepo, guestNotificationRepo, dispatcher, permissiveCartRepository(ctrl))
 		err := usecase.CompleteTransaction(context.Background(), 1)
 
 		assert.Nil(t, err)
@@ -1016,7 +1304,7 @@ func TestTransactionUsecase_CompleteTransaction_GuestNotificationDispatchTrigger
 		}, nil)
 		dispatcher.EXPECT().TriggerDispatch().Times(0)
 
-		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), dispatcher)
+		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), dispatcher, permissiveCartRepository(ctrl))
 		err := usecase.CompleteTransaction(context.Background(), 2)
 
 		assert.NotNil(t, err)
@@ -1107,7 +1395,7 @@ func TestTransactionUsecase_UncompleteTransaction(t *testing.T) {
 			guestNotificationRepo := mock.NewMockGuestNotificationRepository(ctrl)
 			tt.setupMock(txRepo, guestNotificationRepo)
 
-			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), guestNotificationRepo, permissiveGuestNotificationDispatcher(ctrl))
+			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), guestNotificationRepo, permissiveGuestNotificationDispatcher(ctrl), permissiveCartRepository(ctrl))
 			err := usecase.UncompleteTransaction(context.Background(), tt.id)
 
 			if tt.expectedError != nil {
@@ -1369,7 +1657,7 @@ func TestTransactionUsecase_UpdateTransactionById(t *testing.T) {
 			availabilityRepo := mock.NewMockAvailabilityReservationRepository(ctrl)
 			tt.setupMock(txRepo, variantRepo, couponRepo, availabilityRepo)
 
-			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(availabilityRepo), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl))
+			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(availabilityRepo), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl), permissiveCartRepository(ctrl))
 			updated, err := usecase.UpdateTransactionById(context.Background(), tt.input, tt.id)
 
 			if tt.expectedError != nil {
@@ -1400,7 +1688,7 @@ func TestTransactionUsecase_UpdateTransactionById_ItemCoupons(t *testing.T) {
 		})
 		couponRepo.EXPECT().GetCouponById(gomock.Any(), int64(50)).Return(domain.Coupon{Id: 50, Type: domain.Fixed, Amount: 15000}, nil)
 
-		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl))
+		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl), permissiveCartRepository(ctrl))
 		updated, err := usecase.UpdateTransactionById(context.Background(), domain.Transaction{
 			TransactionItems: []domain.TransactionItem{
 				{Id: 10, VariantId: 1, Amount: 1, DiscountAmount: 0, Note: "2 hour(s)"},
@@ -1440,7 +1728,7 @@ func TestTransactionUsecase_UpdateTransactionById_ItemCoupons(t *testing.T) {
 			},
 		})
 		couponRepo1.EXPECT().GetCouponById(gomock.Any(), int64(50)).Return(coupon, nil)
-		usecase1 := domain.NewTransactionUsecase(txRepo1, variantRepo1, couponRepo1, walletRepo1, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl1)), mock.NewMockKdsNotificationRepository(ctrl1), permissiveKdsNotificationDispatcher(ctrl1), permissivePaymentRepository(ctrl1), permissiveGuestNotificationRepository(ctrl1), permissiveGuestNotificationDispatcher(ctrl1))
+		usecase1 := domain.NewTransactionUsecase(txRepo1, variantRepo1, couponRepo1, walletRepo1, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl1)), mock.NewMockKdsNotificationRepository(ctrl1), permissiveKdsNotificationDispatcher(ctrl1), permissivePaymentRepository(ctrl1), permissiveGuestNotificationRepository(ctrl1), permissiveGuestNotificationDispatcher(ctrl1), permissiveCartRepository(ctrl1))
 		firstSave, err := usecase1.UpdateTransactionById(context.Background(), input, 1)
 
 		assert.Nil(t, err)
@@ -1456,7 +1744,7 @@ func TestTransactionUsecase_UpdateTransactionById_ItemCoupons(t *testing.T) {
 			},
 		})
 		couponRepo2.EXPECT().GetCouponById(gomock.Any(), int64(50)).Return(coupon, nil)
-		usecase2 := domain.NewTransactionUsecase(txRepo2, variantRepo2, couponRepo2, walletRepo2, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl2)), mock.NewMockKdsNotificationRepository(ctrl2), permissiveKdsNotificationDispatcher(ctrl2), permissivePaymentRepository(ctrl2), permissiveGuestNotificationRepository(ctrl2), permissiveGuestNotificationDispatcher(ctrl2))
+		usecase2 := domain.NewTransactionUsecase(txRepo2, variantRepo2, couponRepo2, walletRepo2, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl2)), mock.NewMockKdsNotificationRepository(ctrl2), permissiveKdsNotificationDispatcher(ctrl2), permissivePaymentRepository(ctrl2), permissiveGuestNotificationRepository(ctrl2), permissiveGuestNotificationDispatcher(ctrl2), permissiveCartRepository(ctrl2))
 		secondSave, err := usecase2.UpdateTransactionById(context.Background(), input, 1)
 
 		assert.Nil(t, err)
@@ -1477,7 +1765,7 @@ func TestTransactionUsecase_UpdateTransactionById_ItemCoupons(t *testing.T) {
 			},
 		})
 
-		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl))
+		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl), permissiveCartRepository(ctrl))
 		updated, err := usecase.UpdateTransactionById(context.Background(), domain.Transaction{
 			TransactionItems: []domain.TransactionItem{
 				{Id: 13, VariantId: 1, Amount: 1, DiscountAmount: 0, Note: "2 hour(s)"},
@@ -1506,7 +1794,7 @@ func TestTransactionUsecase_UpdateTransactionById_ItemCoupons(t *testing.T) {
 		})
 		couponRepo.EXPECT().GetCouponById(gomock.Any(), int64(51)).Return(domain.Coupon{Id: 51, Type: domain.Fixed, Amount: 30000}, nil)
 
-		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl))
+		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl), permissiveCartRepository(ctrl))
 		updated, err := usecase.UpdateTransactionById(context.Background(), domain.Transaction{
 			TransactionItems: []domain.TransactionItem{
 				{Id: 12, VariantId: 1, Amount: 1, DiscountAmount: 0, Note: "1 hour(s)"},
@@ -1530,7 +1818,7 @@ func TestTransactionUsecase_UpdateTransactionById_ItemCoupons(t *testing.T) {
 		variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(2)).Return(domain.Variant{Id: 2, Price: 30000}, nil)
 		couponRepo.EXPECT().GetCouponById(gomock.Any(), int64(52)).Return(domain.Coupon{Id: 52, Type: domain.Percentage, Amount: 40}, nil)
 
-		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(permissiveAvailabilityRepo(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl))
+		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(permissiveAvailabilityRepo(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl), permissiveCartRepository(ctrl))
 		updated, err := usecase.UpdateTransactionById(context.Background(), domain.Transaction{
 			TransactionItems: []domain.TransactionItem{
 				{Id: 30, VariantId: 2, Amount: 1, DiscountAmount: 0},
@@ -1556,7 +1844,7 @@ func TestTransactionUsecase_UpdateTransactionById_ItemCoupons(t *testing.T) {
 		variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(3)).Return(domain.Variant{Id: 3, Price: 25000}, nil)
 		couponRepo.EXPECT().GetCouponById(gomock.Any(), int64(52)).Return(domain.Coupon{Id: 52, Type: domain.Percentage, Amount: 40}, nil)
 
-		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(permissiveAvailabilityRepo(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl))
+		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(permissiveAvailabilityRepo(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl), permissiveCartRepository(ctrl))
 		updated, err := usecase.UpdateTransactionById(context.Background(), domain.Transaction{
 			TransactionItems: []domain.TransactionItem{
 				{Id: 40, VariantId: 1, Amount: 1, DiscountAmount: 0},
@@ -1586,7 +1874,7 @@ func TestTransactionUsecase_UpdateTransactionById_ItemCoupons(t *testing.T) {
 		variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(1)).Return(domain.Variant{Id: 1, Price: 20000}, nil)
 		couponRepo.EXPECT().GetCouponById(gomock.Any(), int64(60)).Return(domain.Coupon{Id: 60, Type: domain.Fixed, Amount: 5000}, nil)
 
-		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(permissiveAvailabilityRepo(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl))
+		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(permissiveAvailabilityRepo(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl), permissiveCartRepository(ctrl))
 		updated, err := usecase.UpdateTransactionById(context.Background(), domain.Transaction{
 			TransactionItems: []domain.TransactionItem{
 				{Id: 50, VariantId: 1, Amount: 1, DiscountAmount: 0},
@@ -1612,7 +1900,7 @@ func TestTransactionUsecase_UpdateTransactionById_ItemCoupons(t *testing.T) {
 		couponRepo.EXPECT().GetCouponById(gomock.Any(), int64(50)).Return(domain.Coupon{Id: 50, Type: domain.Fixed, Amount: 15000}, nil)
 		couponRepo.EXPECT().GetCouponById(gomock.Any(), int64(60)).Return(domain.Coupon{Id: 60, Type: domain.Percentage, Amount: 40}, nil)
 
-		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl))
+		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl), permissiveCartRepository(ctrl))
 		_, err := usecase.UpdateTransactionById(context.Background(), domain.Transaction{
 			TransactionItems: []domain.TransactionItem{
 				{Id: 60, VariantId: 1, Amount: 1, DiscountAmount: 0},
@@ -1635,7 +1923,7 @@ func TestTransactionUsecase_UpdateTransactionById_ItemCoupons(t *testing.T) {
 		variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(1)).Return(domain.Variant{Id: 1, Price: 30000}, nil)
 		couponRepo.EXPECT().GetCouponById(gomock.Any(), int64(50)).Return(domain.Coupon{Id: 50, Type: domain.Fixed, Amount: 15000}, nil)
 
-		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl))
+		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl), permissiveCartRepository(ctrl))
 		_, err := usecase.UpdateTransactionById(context.Background(), domain.Transaction{
 			TransactionItems: []domain.TransactionItem{
 				{Id: 70, VariantId: 1, Amount: 1, DiscountAmount: 0},
@@ -1671,7 +1959,7 @@ func TestTransactionUsecase_CreateTransaction_ItemCoupon(t *testing.T) {
 				return tx, nil
 			})
 
-		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(availabilityRepo), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl))
+		usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(availabilityRepo), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl), permissiveCartRepository(ctrl))
 		created, err := usecase.CreateTransaction(context.Background(), domain.Transaction{
 			TransactionItems: []domain.TransactionItem{
 				{Id: 1, VariantId: 1, Amount: 1, DiscountAmount: 0},
@@ -1773,7 +2061,7 @@ func TestTransactionUsecase_GetTransactionStatistics(t *testing.T) {
 				endDate = tt.endDate(t)
 			}
 
-			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl))
+			usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), permissiveGuestNotificationRepository(ctrl), permissiveGuestNotificationDispatcher(ctrl), permissiveCartRepository(ctrl))
 			result, err := usecase.GetTransactionStatistics(context.Background(), tt.groupBy, startDate, endDate)
 
 			if tt.expectedError != nil {

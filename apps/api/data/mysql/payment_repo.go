@@ -3,6 +3,7 @@ package mysql
 import (
 	"apps/api/domain"
 	"context"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -48,10 +49,23 @@ func (repo Repository) GetPendingPaymentByCartId(ctx context.Context, cartId int
 	return ToPaymentDomain(payment), ToErrorCtx(ctx, result.Error, "GetPendingPaymentByCartId")
 }
 
+// FR-11: paid payments of either method, plus pending cash so a guest who
+// closed the tab can still find their way back to the till.
+const paymentHistoryFilter = "session_id = ? AND deleted_at IS NULL AND (status = ? OR (status = ? AND method = ?))"
+
+func paymentHistoryFilterArgs(sessionId string) []any {
+	return []any{
+		sessionId,
+		string(domain.PaymentStatePaid),
+		string(domain.PaymentStatePending),
+		string(domain.PaymentMethodCash),
+	}
+}
+
 func (repo Repository) GetPaymentsBySessionId(ctx context.Context, sessionId string, skip int, limit int) ([]domain.Payment, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	query := db.Table("payments").
-		Where("session_id = ? AND status = ? AND deleted_at IS NULL", sessionId, string(domain.PaymentStatePaid)).
+		Where(paymentHistoryFilter, paymentHistoryFilterArgs(sessionId)...).
 		Order("id DESC")
 
 	if skip > 0 {
@@ -71,9 +85,24 @@ func (repo Repository) GetPaymentsBySessionIdTotal(ctx context.Context, sessionI
 	db := GetDbFromCtx(ctx, repo.db)
 	var count int64
 	result := db.Table("payments").
-		Where("session_id = ? AND status = ? AND deleted_at IS NULL", sessionId, string(domain.PaymentStatePaid)).
+		Where(paymentHistoryFilter, paymentHistoryFilterArgs(sessionId)...).
 		Count(&count)
 	return count, ToErrorCtx(ctx, result.Error, "GetPaymentsBySessionIdTotal")
+}
+
+func (repo Repository) GetExpirablePayments(ctx context.Context, now time.Time, limit int) ([]domain.Payment, *domain.Error) {
+	db := GetDbFromCtx(ctx, repo.db)
+	query := db.Table("payments").
+		Where("status = ? AND deleted_at IS NULL AND expired_at < ?", string(domain.PaymentStatePending), now).
+		Order("id ASC")
+
+	if limit > 0 {
+		query = query.Limit(limit)
+	}
+
+	var payments []Payment
+	result := query.Find(&payments)
+	return ToPaymentsListDomain(payments), ToErrorCtx(ctx, result.Error, "GetExpirablePayments")
 }
 
 func (repo Repository) CreatePayment(ctx context.Context, payment domain.Payment) (domain.Payment, *domain.Error) {

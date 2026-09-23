@@ -68,6 +68,39 @@ func TestPaymentIsAwaitingPayment(t *testing.T) {
 	}
 }
 
+func TestParsePaymentMethod(t *testing.T) {
+	testCases := []struct {
+		name           string
+		input          string
+		expectedMethod domain.PaymentMethod
+		expectError    bool
+	}{
+		{name: "qris is valid", input: "qris", expectedMethod: domain.PaymentMethodQris, expectError: false},
+		{name: "cash is valid", input: "cash", expectedMethod: domain.PaymentMethodCash, expectError: false},
+		{name: "an empty string defaults to qris", input: "", expectedMethod: domain.PaymentMethodQris, expectError: false},
+		{name: "an unknown value is rejected", input: "credit_card", expectError: true},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			method, err := domain.ParsePaymentMethod(testCase.input)
+
+			if testCase.expectError {
+				assert.NotNil(t, err)
+				assert.Equal(t, domain.BadRequest, err.Type)
+			} else {
+				assert.Nil(t, err)
+				assert.Equal(t, testCase.expectedMethod, method)
+			}
+		})
+	}
+}
+
+func TestPaymentRequiresGateway(t *testing.T) {
+	assert.True(t, domain.Payment{Method: domain.PaymentMethodQris}.RequiresGateway())
+	assert.False(t, domain.Payment{Method: domain.PaymentMethodCash}.RequiresGateway())
+}
+
 var partnerReferenceNoPattern = regexp.MustCompile(`^ORD[0-9A-HJKMNP-TV-Z]{13}$`)
 
 func TestGeneratePartnerReferenceNo(t *testing.T) {

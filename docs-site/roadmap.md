@@ -11,6 +11,7 @@ Gatherloop POS ships in small, sequential PRs, each backed by a written PRD in t
 - [RFID ticket ↔ printed-name registry](/operations/tickets) — resolves a scanned card to a human-readable ticket number at rental check-in, without ever blocking check-in.
 - [Table ordering — QR-code self-service menu and cart](/sales/table-ordering) — a customer scans a table's QR code, browses the live catalog, and builds a cart that survives a reload, no login required.
 - [Order checkout via QRIS](/sales/order-checkout) — turns a table-ordering cart into a real, paid `Transaction`: DOKU-generated QR, save-and-pay-from-gallery, a guest-facing order-status screen, and a "Order App" source badge on the resulting POS transaction.
+- [Cash payment at the cashier](/sales/order-checkout) — a second checkout method alongside QRIS: the guest picks "Bayar dengan Cash di Kasir", walks to the till showing their daily transaction number, and the cashier's existing Pay flow settles it — no separate "confirm this app order" screen, and an order nobody pays for expires on its own.
 
 **Catalog**
 - [Product draft status](/catalog/products) — research a new menu item without it showing up at checkout until it's published.

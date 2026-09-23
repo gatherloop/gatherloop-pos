@@ -3,6 +3,7 @@ import { Coupon, CouponType } from './Coupon';
 import { Variant } from './Variant';
 import { Wallet } from './Wallet';
 import { PublicTable } from './PublicTable';
+import { PaymentMethod } from './Payment';
 
 export type TransactionItemValue = {
   id: number;
@@ -43,6 +44,7 @@ export type Transaction = {
   createdAt: string;
   name: string;
   source: TransactionSource;
+  paymentMethod: PaymentMethod | null;
   table: PublicTable | null;
   pagerNumber: number;
   transactionNumber: number;

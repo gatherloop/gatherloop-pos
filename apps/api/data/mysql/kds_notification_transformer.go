@@ -6,6 +6,7 @@ func ToKdsNotificationDomain(dbNotification KdsNotification) domain.KdsNotificat
 	return domain.KdsNotification{
 		Id:            dbNotification.Id,
 		TransactionId: dbNotification.TransactionId,
+		Kind:          domain.KdsNotificationKind(dbNotification.Kind),
 		Status:        domain.KdsNotificationStatus(dbNotification.Status),
 		AttemptCount:  dbNotification.AttemptCount,
 		Detail:        dbNotification.Detail,

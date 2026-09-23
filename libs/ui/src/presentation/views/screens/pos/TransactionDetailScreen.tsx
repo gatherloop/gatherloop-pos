@@ -5,6 +5,7 @@ import {
   Layout,
 } from '../../components';
 import {
+  PaymentMethod,
   PublicTable,
   TransactionCompleteActionType,
   TransactionCoupon,
@@ -16,6 +17,7 @@ export type TransactionDetailScreenProps = {
   createdAt: string;
   name: string;
   source: TransactionSource;
+  paymentMethod?: PaymentMethod | null;
   table?: PublicTable | null;
   pagerNumber: number;
   transactionNumber: number;
@@ -50,6 +52,7 @@ export const TransactionDetailScreen = (
           createdAt={props.createdAt}
           name={props.name}
           source={props.source}
+          paymentMethod={props.paymentMethod}
           table={props.table}
           pagerNumber={props.pagerNumber}
           transactionNumber={props.transactionNumber}

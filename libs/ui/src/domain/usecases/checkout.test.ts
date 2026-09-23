@@ -70,10 +70,13 @@ describe('CheckoutUsecase', () => {
 
     checkout.dispatch({ type: 'ASK_NAME' });
     checkout.dispatch({ type: 'CHANGE_NAME', name: 'Budi' });
+    checkout.dispatch({ type: 'CHANGE_METHOD', method: 'cash' });
     checkout.dispatch({ type: 'CANCEL_NAME' });
 
     expect(checkout.state.type).toBe('idle');
     expect(checkout.state.payment).toBeNull();
+    expect(checkout.state.customerName).toBe('Budi');
+    expect(checkout.state.method).toBe('cash');
   });
 
   it('should still require an explicit submit when the name is seeded', () => {
@@ -82,6 +85,48 @@ describe('CheckoutUsecase', () => {
 
     expect(checkout.state.type).toBe('idle');
     expect(checkout.state.customerName).toBe('Budi');
+  });
+
+  it('should default the method to qris', () => {
+    const repository = new MockPaymentRepository();
+    const checkout = createTester(repository);
+
+    expect(checkout.state.method).toBe('qris');
+  });
+
+  it('should accept CHANGE_METHOD in askingName', () => {
+    const repository = new MockPaymentRepository();
+    const checkout = createTester(repository);
+
+    checkout.dispatch({ type: 'ASK_NAME' });
+    checkout.dispatch({ type: 'CHANGE_METHOD', method: 'cash' });
+
+    expect(checkout.state.method).toBe('cash');
+  });
+
+  it('should ignore CHANGE_METHOD outside askingName', () => {
+    const repository = new MockPaymentRepository();
+    const checkout = createTester(repository);
+
+    checkout.dispatch({ type: 'CHANGE_METHOD', method: 'cash' });
+
+    expect(checkout.state.type).toBe('idle');
+    expect(checkout.state.method).toBe('qris');
+  });
+
+  it('should submit a cash checkout with the selected method', async () => {
+    const repository = new MockPaymentRepository();
+    const checkoutSpy = jest.spyOn(repository, 'checkout');
+    const checkout = createTester(repository, 'Budi');
+
+    checkout.dispatch({ type: 'ASK_NAME' });
+    checkout.dispatch({ type: 'CHANGE_METHOD', method: 'cash' });
+    checkout.dispatch({ type: 'SUBMIT_NAME' });
+    await flushMicrotasks();
+
+    expect(checkoutSpy).toHaveBeenCalledWith('Budi', 'cash');
+    expect(checkout.state.type).toBe('created');
+    expect(checkout.state.payment?.method).toBe('cash');
   });
 
   it('should transition creatingPayment → error and retry', async () => {

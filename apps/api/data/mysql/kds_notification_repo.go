@@ -13,8 +13,13 @@ func NewKdsNotificationRepository(db *gorm.DB) domain.KdsNotificationRepository 
 	return Repository{db: db}
 }
 
-func (repo Repository) EnqueueForTransaction(ctx context.Context, transaction domain.Transaction) *domain.Error {
-	if !domain.ShouldNotify(transaction) {
+func (repo Repository) EnqueueForTransaction(ctx context.Context, transaction domain.Transaction, kind domain.KdsNotificationKind) *domain.Error {
+	// D9: cash_pending exists to move someone to the till, not to make a drink, so the station
+	// rule doesn't gate it — and it is enqueued the instant the transaction is created, so the
+	// business-day staleness check can never fire for it. Both rules stay order_paid-only.
+	isOrderPaid := kind == domain.KdsNotificationKindOrderPaid
+
+	if isOrderPaid && !domain.ShouldNotify(transaction) {
 		return nil
 	}
 
@@ -22,7 +27,7 @@ func (repo Repository) EnqueueForTransaction(ctx context.Context, transaction do
 
 	status := domain.KdsNotificationStatusPending
 	var detail *string
-	if domain.IsStaleForNotification(transaction, time.Now()) {
+	if isOrderPaid && domain.IsStaleForNotification(transaction, time.Now()) {
 		status = domain.KdsNotificationStatusSkipped
 		skippedDetail := "transaction was paid on a later business day"
 		detail = &skippedDetail
@@ -30,15 +35,16 @@ func (repo Repository) EnqueueForTransaction(ctx context.Context, transaction do
 
 	payload := KdsNotification{
 		TransactionId: transaction.Id,
+		Kind:          string(kind),
 		Status:        string(status),
 		Detail:        detail,
 	}
 
-	// UNIQUE (transaction_id) makes a duplicate enqueue idempotent by construction (D4): the
-	// insert self-updates `id` rather than erroring or writing a second row.
+	// UNIQUE (transaction_id, kind) makes a duplicate enqueue idempotent by construction (D4/D8):
+	// the insert self-updates `id` rather than erroring or writing a second row for that kind.
 	result := db.Table("kds_notifications").
 		Clauses(clause.OnConflict{
-			Columns:   []clause.Column{{Name: "transaction_id"}},
+			Columns:   []clause.Column{{Name: "transaction_id"}, {Name: "kind"}},
 			DoUpdates: clause.Assignments(map[string]interface{}{"id": gorm.Expr("id")}),
 		}).
 		Create(&payload)

@@ -35,7 +35,7 @@ type paymentHandlerMocks struct {
 
 func newPaymentHandlerMocks(ctrl *gomock.Controller) paymentHandlerMocks {
 	kdsNotificationRepo := mock.NewMockKdsNotificationRepository(ctrl)
-	kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	kdsNotificationDispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
 	kdsNotificationDispatcher.EXPECT().TriggerDispatch().AnyTimes()
 	return paymentHandlerMocks{
@@ -54,7 +54,7 @@ func newPaymentHandlerMocks(ctrl *gomock.Controller) paymentHandlerMocks {
 
 func (m paymentHandlerMocks) handler() restapi.PaymentHandler {
 	availabilityReservation := domain.NewAvailabilityReservation(m.availabilityRepo)
-	usecase := domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, availabilityReservation, m.kdsNotificationRepo, m.kdsNotificationDispatcher, 300, paymentHandlerOrderPaymentWalletId)
+	usecase := domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, availabilityReservation, m.kdsNotificationRepo, m.kdsNotificationDispatcher, 300, 600, paymentHandlerOrderPaymentWalletId)
 	return restapi.NewPaymentHandler(usecase)
 }
 
@@ -77,6 +77,11 @@ func withPaymentHandlerTransactionMock(r *mock.MockPaymentRepository) {
 
 func checkoutRequestBody(customerName string) *bytes.Buffer {
 	body, _ := json.Marshal(apiContract.PaymentCheckoutRequest{CustomerName: customerName})
+	return bytes.NewBuffer(body)
+}
+
+func checkoutRequestBodyWithMethod(customerName string, method string) *bytes.Buffer {
+	body, _ := json.Marshal(apiContract.PaymentCheckoutRequest{CustomerName: customerName, Method: &method})
 	return bytes.NewBuffer(body)
 }
 
@@ -132,6 +137,7 @@ func TestPaymentHandler_Checkout(t *testing.T) {
 		assert.NoError(t, json.NewDecoder(bytes.NewBufferString(w.Body.String())).Decode(&resp))
 		assert.Equal(t, "qr-content", resp.Data.QrContent)
 		assert.Equal(t, "pending", resp.Data.Status)
+		assert.Equal(t, "qris", resp.Data.Method)
 		assert.Equal(t, "Budi", resp.Data.CustomerName)
 		assert.Equal(t, "Meja 1", resp.Data.TableLabel)
 	})
@@ -216,6 +222,69 @@ func TestPaymentHandler_Checkout(t *testing.T) {
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
+
+	t.Run("an unknown payment method is a 400, with no wallet or cart lookup", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentHandlerMocks(ctrl)
+
+		req := httptest.NewRequest(http.MethodPost, "/carts/current/checkout", checkoutRequestBodyWithMethod("Budi", "credit_card"))
+		req.Header.Set("X-Session-Id", testSessionId)
+		w := httptest.NewRecorder()
+		m.handler().Checkout(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("a cash checkout succeeds without ever calling the gateway", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentHandlerMocks(ctrl)
+		withPaymentHandlerTransactionMock(m.paymentRepo)
+		expectValidPaymentWallet(m)
+
+		m.customerRepo.EXPECT().UpsertCustomerBySessionId(gomock.Any(), testSessionId, "Budi").
+			Return(domain.Customer{Id: 1, SessionId: testSessionId, Name: "Budi"}, nil)
+
+		tableId := int64(5)
+		m.cartRepo.EXPECT().GetActiveCartBySessionId(gomock.Any(), testSessionId).Return(domain.Cart{
+			Id: 1, TableId: &tableId, Status: domain.CartStatusActive,
+			Items: []domain.CartItem{{Id: 1, VariantId: 10, Amount: 1}},
+		}, nil)
+		m.paymentRepo.EXPECT().GetPendingPaymentByCartId(gomock.Any(), int64(1)).Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
+		m.variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(10)).Return(domain.Variant{
+			Id: 10, Price: 15000, Product: domain.Product{Name: "Kopi Susu"},
+		}, nil)
+		expectAvailableHandlerVariant(m, 10)
+
+		m.transactionRepo.EXPECT().CreateTransaction(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(_ context.Context, transaction domain.Transaction) (domain.Transaction, *domain.Error) {
+				transaction.Id = 200
+				transaction.Cart = &domain.Cart{Table: &domain.Table{Label: "Meja 1"}}
+				return transaction, nil
+			})
+		m.paymentRepo.EXPECT().CreatePayment(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(_ context.Context, payment domain.Payment) (domain.Payment, *domain.Error) {
+				payment.Id = 300
+				return payment, nil
+			})
+		m.gatewayRepo.EXPECT().GenerateQris(gomock.Any(), gomock.Any()).Times(0)
+
+		req := httptest.NewRequest(http.MethodPost, "/carts/current/checkout", checkoutRequestBodyWithMethod("Budi", "cash"))
+		req.Header.Set("X-Session-Id", testSessionId)
+		w := httptest.NewRecorder()
+		m.handler().Checkout(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var resp apiContract.PaymentResponse
+		assert.NoError(t, json.NewDecoder(bytes.NewBufferString(w.Body.String())).Decode(&resp))
+		assert.Equal(t, "", resp.Data.QrContent)
+		assert.Equal(t, "pending", resp.Data.Status)
+		assert.Equal(t, "cash", resp.Data.Method)
+	})
 }
 
 func TestPaymentHandler_GetPaymentByPartnerReferenceNo(t *testing.T) {
@@ -230,7 +299,7 @@ func TestPaymentHandler_GetPaymentByPartnerReferenceNo(t *testing.T) {
 		checkedAt := time.Now()
 		payment := domain.Payment{
 			Id: 7, CartId: 1, SessionId: testSessionId, TransactionId: &transactionId,
-			PartnerReferenceNo: "ORD1234567890AB", Status: domain.PaymentStatePending,
+			PartnerReferenceNo: "ORD1234567890AB", Method: domain.PaymentMethodQris, Status: domain.PaymentStatePending,
 			Amount: 30000, ExpiredAt: time.Now().Add(2 * time.Minute), StatusCheckedAt: &checkedAt,
 		}
 		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
@@ -301,7 +370,7 @@ func TestPaymentHandler_GetPaymentByPartnerReferenceNo(t *testing.T) {
 		transactionId := int64(99)
 		payment := domain.Payment{
 			Id: 7, CartId: 1, SessionId: testSessionId, TransactionId: &transactionId,
-			PartnerReferenceNo: "ORD1234567890AB", Status: domain.PaymentStatePending,
+			PartnerReferenceNo: "ORD1234567890AB", Method: domain.PaymentMethodQris, Status: domain.PaymentStatePending,
 			Amount: 30000, ExpiredAt: time.Now().Add(2 * time.Minute),
 		}
 		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)

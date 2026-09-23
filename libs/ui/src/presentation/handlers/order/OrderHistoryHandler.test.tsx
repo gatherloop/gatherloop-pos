@@ -67,6 +67,37 @@ describe('OrderHistoryHandler', () => {
     expect(screen.getByText('Siap diambil')).toBeTruthy();
   });
 
+  it('shows an unpaid cash order and routes to its instruction page', async () => {
+    const paymentRepository = new MockPaymentRepository();
+    paymentRepository.payments = [
+      {
+        reference: 'ORD0000000000003',
+        status: 'pending',
+        method: 'cash',
+        fulfillmentStatus: 'preparing',
+        transactionNumber: 3,
+        customerName: 'Andi',
+        tableLabel: 'Meja 3',
+        amount: 27000,
+        itemCount: 2,
+        createdAt: new Date().toISOString(),
+        paidAt: null,
+      },
+    ];
+    renderHandler({ paymentRepository });
+
+    await settle();
+
+    const [payment] = paymentRepository.payments;
+    expect(screen.getByText('Belum dibayar')).toBeTruthy();
+
+    await act(async () => {
+      screen.getByText(`#${payment.transactionNumber}`).click();
+    });
+
+    expect(mockPush).toHaveBeenCalledWith(`/orders/${payment.reference}`);
+  });
+
   it('opens the order page for the tapped row', async () => {
     const paymentRepository = new MockPaymentRepository();
     renderHandler({ paymentRepository });

@@ -37,8 +37,9 @@ export const itemDetail = {
 };
 
 export const cartBar = {
+  // CartBar.tsx renders "Lihat Keranjang · {n} item" — matched by prefix, like addToCartButton below.
   viewCartButton: (page: Page) =>
-    page.getByRole('button', { name: /Lihat Keranjang$/ }),
+    page.getByRole('button', { name: /^Lihat Keranjang/ }),
 };
 
 export const cartScreen = {
@@ -73,6 +74,11 @@ export const cartScreen = {
   submitNameButton: (page: Page) =>
     page.getByRole('button', { name: 'Lanjutkan ke pembayaran' }),
   cancelNameButton: (page: Page) => page.getByRole('button', { name: 'Batal' }),
+
+  cashMethodButton: (page: Page) =>
+    page.getByLabel('Bayar dengan Cash di Kasir'),
+  submitCashButton: (page: Page) =>
+    page.getByRole('button', { name: 'Pesan & bayar di kasir' }),
 };
 
 export const cartItemEdit = {
@@ -97,7 +103,16 @@ export const orderStatus = {
   saveQrButton: (page: Page) => page.getByRole('button', { name: 'Simpan QR' }),
   waitingForPaymentText: (page: Page) => page.getByText('Menunggu pembayaran…'),
 
+  cashHeading: (page: Page, cashierLocation: string) =>
+    page.getByText(`Bayar di kasir ${cashierLocation}`),
+  waitingForCashPaymentText: (page: Page) =>
+    page.getByText('Menunggu pembayaran di kasir…'),
+
   expiredTitle: (page: Page) => page.getByText('Waktu pembayaran habis'),
+  cashExpiredSubtitle: (page: Page) =>
+    page.getByText(
+      'Pesanan dibatalkan karena belum dibayar. Keranjang Anda masih tersimpan.'
+    ),
   backToCartButton: (page: Page) =>
     page.getByRole('button', { name: 'Kembali ke keranjang' }),
   itemLine: (page: Page, amount: number, productName: string) =>
