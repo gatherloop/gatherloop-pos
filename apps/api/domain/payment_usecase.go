@@ -81,6 +81,7 @@ func (usecase PaymentUsecase) validateOrderPaymentWallet(ctx context.Context) *E
 func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, customerName string, method PaymentMethod) (Payment, Transaction, *Error) {
 	var resultPayment Payment
 	var resultTransaction Transaction
+	enqueuedCashPendingNotification := false
 
 	err := usecase.paymentRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 		if err := usecase.validateOrderPaymentWallet(ctxWithTx); err != nil {
@@ -188,6 +189,12 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 		resultTransaction = createdTransaction
 
 		if !createdPayment.RequiresGateway() {
+			// FR-5: buzzes the KDS before any money moves, so a barista walks to the till
+			// rather than the guest arriving to an unstaffed one.
+			if enqueueErr := usecase.kdsNotificationRepository.EnqueueForTransaction(ctxWithTx, createdTransaction, KdsNotificationKindCashPending); enqueueErr != nil {
+				return enqueueErr
+			}
+			enqueuedCashPendingNotification = true
 			return nil
 		}
 
@@ -211,6 +218,12 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 		resultPayment = updatedPayment
 		return nil
 	})
+
+	// FR-5: kicked after the commit, exactly as PayTransaction and ConfirmPayment already do —
+	// the guest's HTTP response never waits on Expo.
+	if err == nil && enqueuedCashPendingNotification {
+		usecase.kdsNotificationDispatcher.TriggerDispatch()
+	}
 
 	return resultPayment, resultTransaction, err
 }

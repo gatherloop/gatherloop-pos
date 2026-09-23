@@ -14,7 +14,12 @@ func NewKdsNotificationRepository(db *gorm.DB) domain.KdsNotificationRepository 
 }
 
 func (repo Repository) EnqueueForTransaction(ctx context.Context, transaction domain.Transaction, kind domain.KdsNotificationKind) *domain.Error {
-	if !domain.ShouldNotify(transaction) {
+	// D9: cash_pending exists to move someone to the till, not to make a drink, so the station
+	// rule doesn't gate it — and it is enqueued the instant the transaction is created, so the
+	// business-day staleness check can never fire for it. Both rules stay order_paid-only.
+	isOrderPaid := kind == domain.KdsNotificationKindOrderPaid
+
+	if isOrderPaid && !domain.ShouldNotify(transaction) {
 		return nil
 	}
 
@@ -22,7 +27,7 @@ func (repo Repository) EnqueueForTransaction(ctx context.Context, transaction do
 
 	status := domain.KdsNotificationStatusPending
 	var detail *string
-	if domain.IsStaleForNotification(transaction, time.Now()) {
+	if isOrderPaid && domain.IsStaleForNotification(transaction, time.Now()) {
 		status = domain.KdsNotificationStatusSkipped
 		skippedDetail := "transaction was paid on a later business day"
 		detail = &skippedDetail

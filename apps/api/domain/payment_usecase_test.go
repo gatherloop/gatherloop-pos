@@ -561,6 +561,12 @@ func TestPaymentUsecase_Checkout(t *testing.T) {
 
 		m.gatewayRepo.EXPECT().GenerateQris(gomock.Any(), gomock.Any()).Times(0)
 
+		m.kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), domain.KdsNotificationKindCashPending).
+			DoAndReturn(func(_ context.Context, transaction domain.Transaction, _ domain.KdsNotificationKind) *domain.Error {
+				assert.Equal(t, int64(200), transaction.Id)
+				return nil
+			})
+
 		payment, transaction, err := m.usecase().Checkout(context.Background(), "session-1", "Budi", domain.PaymentMethodCash)
 
 		assert.Nil(t, err)
@@ -568,6 +574,82 @@ func TestPaymentUsecase_Checkout(t *testing.T) {
 		assert.Equal(t, domain.PaymentStatePending, payment.Status)
 		assert.Equal(t, "", payment.QrContent)
 		assert.Nil(t, transaction.PaidAt)
+	})
+
+	t.Run("a cash checkout triggers a kds dispatch after its commit", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		withPaymentTransactionMock(m.paymentRepo)
+		expectValidWallet(m)
+		expectNameUpsert(m, "session-1", "Budi")
+
+		cart := cartWithOneItem(1, 5)
+		m.cartRepo.EXPECT().GetActiveCartBySessionId(gomock.Any(), "session-1").Return(cart, nil)
+		m.paymentRepo.EXPECT().GetPendingPaymentByCartId(gomock.Any(), int64(1)).Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
+		m.variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(10)).Return(checkoutVariant(10, 15000), nil)
+		expectAvailableVariant(m, 10)
+
+		m.transactionRepo.EXPECT().CreateTransaction(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(_ context.Context, transaction domain.Transaction) (domain.Transaction, *domain.Error) {
+				transaction.Id = 200
+				return transaction, nil
+			})
+		m.paymentRepo.EXPECT().CreatePayment(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(_ context.Context, payment domain.Payment) (domain.Payment, *domain.Error) {
+				payment.Id = 300
+				return payment, nil
+			})
+		m.kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), domain.KdsNotificationKindCashPending).Return(nil)
+
+		dispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
+		dispatcher.EXPECT().TriggerDispatch().Times(1)
+
+		_, _, err := m.usecaseWithDispatcher(dispatcher).Checkout(context.Background(), "session-1", "Budi", domain.PaymentMethodCash)
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("a qris checkout never writes a kds notification at checkout, and never triggers a dispatch", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		withPaymentTransactionMock(m.paymentRepo)
+		expectValidWallet(m)
+		expectNameUpsert(m, "session-1", "Budi")
+
+		cart := cartWithOneItem(1, 5)
+		m.cartRepo.EXPECT().GetActiveCartBySessionId(gomock.Any(), "session-1").Return(cart, nil)
+		m.paymentRepo.EXPECT().GetPendingPaymentByCartId(gomock.Any(), int64(1)).Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
+		m.variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(10)).Return(checkoutVariant(10, 15000), nil)
+		expectAvailableVariant(m, 10)
+
+		m.transactionRepo.EXPECT().CreateTransaction(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(_ context.Context, transaction domain.Transaction) (domain.Transaction, *domain.Error) {
+				transaction.Id = 200
+				return transaction, nil
+			})
+		m.paymentRepo.EXPECT().CreatePayment(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(_ context.Context, payment domain.Payment) (domain.Payment, *domain.Error) {
+				payment.Id = 300
+				return payment, nil
+			})
+		m.gatewayRepo.EXPECT().GenerateQris(gomock.Any(), gomock.Any()).
+			Return(domain.QrisPayment{GatewayReferenceNo: "gw-1", QrContent: "qr-content"}, nil)
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), int64(300)).
+			DoAndReturn(func(_ context.Context, payment domain.Payment, id int64) (domain.Payment, *domain.Error) {
+				return payment, nil
+			})
+		m.kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+
+		dispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
+		dispatcher.EXPECT().TriggerDispatch().Times(0)
+
+		_, _, err := m.usecaseWithDispatcher(dispatcher).Checkout(context.Background(), "session-1", "Budi", domain.PaymentMethodQris)
+
+		assert.Nil(t, err)
 	})
 }
 

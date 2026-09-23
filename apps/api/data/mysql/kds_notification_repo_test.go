@@ -111,6 +111,51 @@ func TestEnqueueForTransaction_SkipsEntirelyWhenShouldNotifyIsFalse(t *testing.T
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
+// D9: cash_pending exists to move someone to the till, not to make a drink, so the station rule
+// that gates order_paid does not gate it — a board-game-only cash order still needs collecting.
+func TestEnqueueForTransaction_CashPendingBypassesTheStationRule(t *testing.T) {
+	repo, mock := newMockKdsNotificationRepository(t)
+
+	transaction := domain.Transaction{
+		Id: 1,
+		TransactionItems: []domain.TransactionItem{
+			{
+				Amount:      1,
+				ProductName: "Board Game Ticket",
+				Variant:     domain.Variant{Product: domain.Product{Category: domain.Category{Station: "NONE"}}},
+			},
+		},
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectExec("INSERT INTO `kds_notifications` \\(`transaction_id`,`kind`,`status`,`attempt_count`,`detail`,`created_at`,`sent_at`\\) VALUES \\(\\?,\\?,\\?,\\?,\\?,\\?,\\?\\) ON DUPLICATE KEY UPDATE `id`=id").
+		WithArgs(int64(1), "cash_pending", "pending", 0, nil, sqlmock.AnyArg(), nil).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+
+	err := repo.EnqueueForTransaction(context.Background(), transaction, domain.KdsNotificationKindCashPending)
+
+	require.Nil(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+// D9: a cash_pending row is written the instant the transaction is created, so the business-day
+// staleness check can never fire for it — it stays a pure order_paid concern.
+func TestEnqueueForTransaction_CashPendingBypassesTheStaleCheck(t *testing.T) {
+	repo, mock := newMockKdsNotificationRepository(t)
+
+	mock.ExpectBegin()
+	mock.ExpectExec("INSERT INTO `kds_notifications` \\(`transaction_id`,`kind`,`status`,`attempt_count`,`detail`,`created_at`,`sent_at`\\) VALUES \\(\\?,\\?,\\?,\\?,\\?,\\?,\\?\\) ON DUPLICATE KEY UPDATE `id`=id").
+		WithArgs(int64(1), "cash_pending", "pending", 0, nil, sqlmock.AnyArg(), nil).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+
+	err := repo.EnqueueForTransaction(context.Background(), kdsBarTransaction(1, time.Now().AddDate(0, 0, -1)), domain.KdsNotificationKindCashPending)
+
+	require.Nil(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
 // D22: a transaction paid on a later business day is enqueued as 'skipped' rather than left
 // unwritten, so the outbox still answers what happened to this order's notification.
 func TestEnqueueForTransaction_WritesSkippedStatusForAStaleTransaction(t *testing.T) {

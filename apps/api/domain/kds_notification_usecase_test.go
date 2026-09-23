@@ -32,7 +32,7 @@ func (m kdsNotificationUsecaseMocks) usecase() domain.KdsNotificationUsecase {
 }
 
 func kdsPendingNotification(id int64, transactionId int64) domain.KdsNotification {
-	return domain.KdsNotification{Id: id, TransactionId: transactionId, Status: domain.KdsNotificationStatusPending}
+	return domain.KdsNotification{Id: id, TransactionId: transactionId, Kind: domain.KdsNotificationKindOrderPaid, Status: domain.KdsNotificationStatusPending}
 }
 
 func kdsBarOnlyTransaction(id int64) domain.Transaction {
@@ -104,6 +104,39 @@ func TestKdsNotificationUsecase_DispatchPending(t *testing.T) {
 		err := mocks.usecase().DispatchPending(context.Background())
 
 		require.Nil(t, err)
+	})
+
+	// D10: a cash order buzzes the KDS twice — once at checkout (cash_pending), once when paid
+	// (order_paid) — and both rows for the same transaction dispatch, with distinct messages.
+	t.Run("a transaction with both a cash_pending and an order_paid row dispatches both, with kind-specific messages", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mocks := newKdsNotificationUsecaseMocks(ctrl)
+		cashPendingNotification := domain.KdsNotification{Id: 1, TransactionId: 10, Kind: domain.KdsNotificationKindCashPending, Status: domain.KdsNotificationStatusPending}
+		orderPaidNotification := domain.KdsNotification{Id: 2, TransactionId: 10, Kind: domain.KdsNotificationKindOrderPaid, Status: domain.KdsNotificationStatusPending}
+
+		mocks.repo.EXPECT().ClaimPendingKdsNotifications(gomock.Any(), 50).
+			Return([]domain.KdsNotification{cashPendingNotification, orderPaidNotification}, nil)
+		mocks.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(10)).Return(kdsBarOnlyTransaction(10), nil).Times(2)
+
+		bar := kdsDevice(1, "Bar phone", "ExponentPushToken[bar]")
+		mocks.deviceRepo.EXPECT().GetKdsDeviceList(gomock.Any()).Return([]domain.KdsDevice{bar}, nil).Times(2)
+
+		var titles []string
+		mocks.pushGateway.EXPECT().Send(gomock.Any(), gomock.Any()).Times(2).DoAndReturn(
+			func(_ context.Context, messages []domain.KdsPushMessage) ([]domain.KdsPushReceipt, *domain.Error) {
+				require.Len(t, messages, 1)
+				titles = append(titles, messages[0].Title)
+				return []domain.KdsPushReceipt{{Status: domain.KdsPushReceiptStatusOk}}, nil
+			})
+		mocks.repo.EXPECT().MarkKdsNotificationSent(gomock.Any(), int64(1), gomock.Any()).Return(nil)
+		mocks.repo.EXPECT().MarkKdsNotificationSent(gomock.Any(), int64(2), gomock.Any()).Return(nil)
+
+		err := mocks.usecase().DispatchPending(context.Background())
+
+		require.Nil(t, err)
+		assert.ElementsMatch(t, []string{"Cash order #12 — ", "New order #12 — "}, titles)
 	})
 
 	// FR-4 step 5: one device accepts, one fails — the row is still 'sent', with the failure
