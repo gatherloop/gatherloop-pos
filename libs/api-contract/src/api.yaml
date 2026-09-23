@@ -166,19 +166,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  /public/web-push/config:
-    get:
-      summary: Get the VAPID public key browsers need for PushManager.subscribe (unauthenticated)
-      operationId: webPushConfigFind
-      tags:
-        - public
-      responses:
-        '200':
-          description: success response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/WebPushConfigResponse'
   /carts/current:
     get:
       summary: Get the current session's active cart, with server-computed prices and totals
@@ -361,55 +348,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  /web-push/subscriptions:
-    post:
-      summary: Register or refresh this browser's web push subscription for the current session (upsert by endpoint)
-      operationId: webPushSubscriptionCreate
-      tags:
-        - web-push-subscription
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/WebPushSubscriptionRequest'
-      responses:
-        '200':
-          description: success response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/WebPushSubscriptionResponse'
-        '400':
-          description: validation error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-    delete:
-      summary: Unsubscribe the current session's browser from web push
-      operationId: webPushSubscriptionDelete
-      tags:
-        - web-push-subscription
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/WebPushSubscriptionDeleteRequest'
-      responses:
-        '200':
-          description: success response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SuccessResponse'
-        '400':
-          description: validation error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
   /payments:
     get:
       summary: List the requesting session's paid orders, newest first (D14 — pending, expired and failed payments are never rows)
@@ -434,12 +372,13 @@ paths:
                 $ref: '#/components/schemas/Error'
   /payments/{partnerReferenceNo}:
     get:
-      summary: Get a payment by its reference, re-querying DOKU when it is still pending and the last check is stale (D12, D12a). 404 unless the payment belongs to the requesting session.
+      summary: Get a payment by its reference, re-querying DOKU when it is still pending and the last check is stale (D12, D12a). 404 unless the payment belongs to the requesting session, or X-Order-Access-Key matches the payment's access key (D4).
       operationId: paymentFindByPartnerReferenceNo
       tags:
         - payment
       parameters:
         - $ref: '#/components/parameters/PartnerReferenceNo'
+        - $ref: '#/components/parameters/OrderAccessKey'
       responses:
         '200':
           description: success response
@@ -4361,56 +4300,6 @@ components:
         platform:
           type: string
           enum: [ios, android]
-    WebPushConfig:
-      type: object
-      required:
-        - vapidPublicKey
-      properties:
-        vapidPublicKey:
-          type: string
-    WebPushSubscription:
-      type: object
-      required:
-        - id
-        - endpoint
-        - createdAt
-      properties:
-        id:
-          type: integer
-          format: int64
-        endpoint:
-          type: string
-        lastSeenAt:
-          type: string
-          format: date-time
-        createdAt:
-          type: string
-          format: date-time
-    WebPushSubscriptionRequest:
-      type: object
-      required:
-        - endpoint
-        - p256dhKey
-        - authKey
-      properties:
-        endpoint:
-          type: string
-          maxLength: 512
-        p256dhKey:
-          type: string
-        authKey:
-          type: string
-        userAgent:
-          type: string
-          maxLength: 255
-    WebPushSubscriptionDeleteRequest:
-      type: object
-      required:
-        - endpoint
-      properties:
-        endpoint:
-          type: string
-          maxLength: 512
     Transaction:
       type: object
       required:
@@ -5118,10 +5007,14 @@ components:
       type: object
       required:
         - name
+        - whatsappNumber
       properties:
         name:
           type: string
           maxLength: 60
+        whatsappNumber:
+          type: string
+          maxLength: 16
     PaymentItemOption:
       type: object
       required:
@@ -5215,6 +5108,9 @@ components:
         customerName:
           type: string
           maxLength: 60
+        customerWhatsappNumber:
+          type: string
+          maxLength: 20
         method:
           type: string
           enum: [qris, cash]
@@ -5827,20 +5723,6 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/KdsDevice'
-    WebPushConfigResponse:
-      type: object
-      required:
-        - data
-      properties:
-        data:
-          $ref: '#/components/schemas/WebPushConfig'
-    WebPushSubscriptionResponse:
-      type: object
-      required:
-        - data
-      properties:
-        data:
-          $ref: '#/components/schemas/WebPushSubscription'
     CouponCreateResponse:
       type: object
       required:
@@ -6239,6 +6121,14 @@ components:
       schema:
         type: string
       required: true
+    OrderAccessKey:
+      name: X-Order-Access-Key
+      in: header
+      description: Grants read access to a payment's status page without a matching session (D4). Sent only to the guest's own phone, in the WhatsApp order-ready link.
+      required: false
+      schema:
+        type: string
+        maxLength: 64
     RentalId:
       name: rentalId
       in: path

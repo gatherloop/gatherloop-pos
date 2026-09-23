@@ -180,12 +180,6 @@ export const Preparing: Story = {
       type: 'preparing',
       payment: paidPayment,
       isPolling: false,
-      notificationOptIn: {
-        type: 'idle',
-        onSubscribePress: () => {
-          // Storybook action stand-in
-        },
-      },
     },
   },
 };
@@ -228,7 +222,6 @@ export const WithHistoryButton: Story = {
       type: 'preparing',
       payment: paidPayment,
       isPolling: false,
-      notificationOptIn: { type: 'hidden' },
     },
     onHistoryPress: () => {
       // Storybook action stand-in

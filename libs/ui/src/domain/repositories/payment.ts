@@ -8,7 +8,11 @@ export class PaymentNotFoundError extends Error {
 }
 
 export interface PaymentRepository {
-  checkout: (customerName: string, method: PaymentMethod) => Promise<Payment>;
+  checkout: (params: {
+    customerName: string;
+    method: PaymentMethod;
+    whatsappNumber?: string;
+  }) => Promise<Payment>;
 
   fetchPayment: (reference: string) => Promise<Payment>;
 

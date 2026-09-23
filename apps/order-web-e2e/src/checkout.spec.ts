@@ -70,7 +70,7 @@ test.describe.serial('QRIS Checkout', () => {
     await payButton.click();
 
     await expect(sel.cartScreen.nameInput(page)).toBeVisible();
-    await sel.cartScreen.nameInput(page).fill(CUSTOMER_NAME);
+    await sel.cartScreen.fillCustomerDetails(page, CUSTOMER_NAME);
 
     const checkoutResponsePromise = page.waitForResponse(
       (response) =>
@@ -125,7 +125,7 @@ test.describe.serial('QRIS Checkout', () => {
     await expect(sel.cartScreen.lineItemName(page, PRODUCT_NAME)).toBeVisible();
 
     await sel.cartScreen.checkoutButton(page, formatRupiah(PRICE)).click();
-    await sel.cartScreen.nameInput(page).fill(CUSTOMER_NAME);
+    await sel.cartScreen.fillCustomerDetails(page, CUSTOMER_NAME);
     await sel.cartScreen.submitNameButton(page).click();
 
     await expect(sel.orderStatus.saveQrButton(page)).toBeVisible();

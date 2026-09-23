@@ -29,7 +29,6 @@ func newPublicHandler(t *testing.T) (restapi.PublicHandler, *mock.MockProductRep
 		domain.NewCategoryUsecase(categoryRepo),
 		domain.NewVariantUsecase(variantRepo, productRepo),
 		domain.NewTableUsecase(tableRepo),
-		domain.NewWebPushSubscriptionUsecase(nil, "vapid-public-key"),
 	)
 
 	return handler, productRepo, categoryRepo, variantRepo, tableRepo
@@ -291,18 +290,4 @@ func TestPublicHandler_GetTableByCode(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestPublicHandler_GetWebPushConfig(t *testing.T) {
-	handler, _, _, _, _ := newPublicHandler(t)
-
-	req := httptest.NewRequest(http.MethodGet, "/public/web-push/config", nil)
-	w := httptest.NewRecorder()
-	handler.GetWebPushConfig(w, req)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-
-	var resp apiContract.WebPushConfigResponse
-	assert.NoError(t, json.NewDecoder(w.Body).Decode(&resp))
-	assert.Equal(t, "vapid-public-key", resp.Data.VapidPublicKey)
 }

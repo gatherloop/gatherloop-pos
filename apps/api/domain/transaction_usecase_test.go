@@ -33,8 +33,7 @@ func permissivePaymentRepository(ctrl *gomock.Controller) *mock.MockPaymentRepos
 
 func permissiveGuestNotificationRepository(ctrl *gomock.Controller) *mock.MockGuestNotificationRepository {
 	guestNotificationRepo := mock.NewMockGuestNotificationRepository(ctrl)
-	guestNotificationRepo.EXPECT().EnqueueForCompletedTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-	guestNotificationRepo.EXPECT().DeleteGuestNotificationByTransactionId(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	guestNotificationRepo.EXPECT().EnqueueForCompletedTransaction(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	return guestNotificationRepo
 }
 
@@ -1133,21 +1132,24 @@ func TestTransactionUsecase_CompleteTransaction(t *testing.T) {
 		expectedError *domain.Error
 	}{
 		{
-			name: "success enqueues one row carrying the payment's session_id",
+			name: "success enqueues one row carrying the payment's session_id and whatsapp number",
 			id:   1,
 			setupMock: func(txRepo *mock.MockTransactionRepository, paymentRepo *mock.MockPaymentRepository, guestNotificationRepo *mock.MockGuestNotificationRepository) {
+				whatsappNumber := "6281234567890"
 				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(1)).Return(domain.Transaction{
 					Id: 1, Source: domain.TransactionSourceOrder, CompletedAt: nil,
 				}, nil)
 				txRepo.EXPECT().CompleteTransaction(gomock.Any(), gomock.Any(), int64(1)).Return(nil)
-				paymentRepo.EXPECT().GetPaymentByTransactionId(gomock.Any(), int64(1)).Return(domain.Payment{SessionId: "guest-session-1"}, nil)
-				guestNotificationRepo.EXPECT().EnqueueForCompletedTransaction(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
-					func(ctx context.Context, transaction domain.Transaction, sessionId *string) *domain.Error {
+				paymentRepo.EXPECT().GetPaymentByTransactionId(gomock.Any(), int64(1)).Return(domain.Payment{SessionId: "guest-session-1", CustomerWhatsappNumber: &whatsappNumber}, nil)
+				guestNotificationRepo.EXPECT().EnqueueForCompletedTransaction(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, transaction domain.Transaction, sessionId *string, whatsappNumber *string) *domain.Error {
 						assert.Equal(t, int64(1), transaction.Id)
 						require.NotNil(t, sessionId)
 						assert.Equal(t, "guest-session-1", *sessionId)
+						require.NotNil(t, whatsappNumber)
+						assert.Equal(t, "6281234567890", *whatsappNumber)
 						return nil
 					})
 			},
@@ -1163,9 +1165,10 @@ func TestTransactionUsecase_CompleteTransaction(t *testing.T) {
 				}, nil)
 				txRepo.EXPECT().CompleteTransaction(gomock.Any(), gomock.Any(), int64(6)).Return(nil)
 				paymentRepo.EXPECT().GetPaymentByTransactionId(gomock.Any(), int64(6)).Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
-				guestNotificationRepo.EXPECT().EnqueueForCompletedTransaction(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
-					func(ctx context.Context, transaction domain.Transaction, sessionId *string) *domain.Error {
+				guestNotificationRepo.EXPECT().EnqueueForCompletedTransaction(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, transaction domain.Transaction, sessionId *string, whatsappNumber *string) *domain.Error {
 						assert.Nil(t, sessionId)
+						assert.Nil(t, whatsappNumber)
 						return nil
 					})
 			},
@@ -1323,7 +1326,9 @@ func TestTransactionUsecase_UncompleteTransaction(t *testing.T) {
 		expectedError *domain.Error
 	}{
 		{
-			name: "success deletes the outbox row so a re-completion enqueues fresh",
+			// D6 (inverts the old D7): the outbox row is left in place, not deleted. The unique
+			// key on transaction_id is what stops a re-completion from sending a second message.
+			name: "success leaves the outbox row untouched",
 			id:   1,
 			setupMock: func(txRepo *mock.MockTransactionRepository, guestNotificationRepo *mock.MockGuestNotificationRepository) {
 				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
@@ -1332,7 +1337,8 @@ func TestTransactionUsecase_UncompleteTransaction(t *testing.T) {
 					Id: 1, Source: domain.TransactionSourceOrder, CompletedAt: &now,
 				}, nil)
 				txRepo.EXPECT().UncompleteTransaction(gomock.Any(), int64(1)).Return(nil)
-				guestNotificationRepo.EXPECT().DeleteGuestNotificationByTransactionId(gomock.Any(), int64(1)).Return(nil)
+				// No call on guestNotificationRepo is expected at all: gomock fails the test if
+				// UncompleteTransaction reaches for it.
 			},
 		},
 		{
@@ -1406,6 +1412,92 @@ func TestTransactionUsecase_UncompleteTransaction(t *testing.T) {
 			}
 		})
 	}
+}
+
+// rowTrackingGuestNotificationRepository stands in for the UNIQUE (transaction_id) constraint a
+// real database enforces on EnqueueForCompletedTransaction (D6): it records one row per
+// transaction id no matter how many times enqueue is called for it, the same way `INSERT ...
+// ON DUPLICATE KEY UPDATE id = id` collapses a repeat enqueue into a no-op at the database layer.
+type rowTrackingGuestNotificationRepository struct {
+	enqueueCallsByTransactionId map[int64]int
+}
+
+func newRowTrackingGuestNotificationRepository() *rowTrackingGuestNotificationRepository {
+	return &rowTrackingGuestNotificationRepository{enqueueCallsByTransactionId: map[int64]int{}}
+}
+
+func (repo *rowTrackingGuestNotificationRepository) EnqueueForCompletedTransaction(ctx context.Context, transaction domain.Transaction, sessionId *string, whatsappNumber *string) *domain.Error {
+	repo.enqueueCallsByTransactionId[transaction.Id]++
+	return nil
+}
+
+func (repo *rowTrackingGuestNotificationRepository) ClaimPendingGuestNotifications(ctx context.Context, limit int) ([]domain.GuestNotification, *domain.Error) {
+	return nil, nil
+}
+
+func (repo *rowTrackingGuestNotificationRepository) MarkGuestNotificationSent(ctx context.Context, id int64, providerMessageId string) *domain.Error {
+	return nil
+}
+
+func (repo *rowTrackingGuestNotificationRepository) MarkGuestNotificationFailed(ctx context.Context, id int64, detail string) *domain.Error {
+	return nil
+}
+
+func (repo *rowTrackingGuestNotificationRepository) MarkGuestNotificationUnknownOutcome(ctx context.Context, id int64, detail string) *domain.Error {
+	return nil
+}
+
+func (repo *rowTrackingGuestNotificationRepository) MarkGuestNotificationSkipped(ctx context.Context, id int64, detail string) *domain.Error {
+	return nil
+}
+
+func (repo *rowTrackingGuestNotificationRepository) ExpireStaleSending(ctx context.Context, now time.Time) *domain.Error {
+	return nil
+}
+
+// D6 (inverts the old D7 test): complete → uncomplete → complete must leave exactly one outbox
+// row for the transaction, because UncompleteTransaction no longer deletes it and the unique key
+// swallows the second enqueue.
+func TestTransactionUsecase_CompleteUncompleteComplete_LeavesExactlyOneGuestNotificationRow(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	txRepo := mock.NewMockTransactionRepository(ctrl)
+	variantRepo := mock.NewMockVariantRepository(ctrl)
+	couponRepo := mock.NewMockCouponRepository(ctrl)
+	walletRepo := mock.NewMockWalletRepository(ctrl)
+	guestNotificationRepo := newRowTrackingGuestNotificationRepository()
+
+	completedAt := time.Now()
+	transaction := domain.Transaction{Id: 1, Source: domain.TransactionSourceOrder}
+
+	txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) }).Times(3)
+	txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(1)).Return(transaction, nil)
+	txRepo.EXPECT().CompleteTransaction(gomock.Any(), gomock.Any(), int64(1)).DoAndReturn(
+		func(ctx context.Context, at time.Time, id int64) *domain.Error {
+			transaction.CompletedAt = &completedAt
+			return nil
+		})
+
+	usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(mock.NewMockAvailabilityReservationRepository(ctrl)), mock.NewMockKdsNotificationRepository(ctrl), permissiveKdsNotificationDispatcher(ctrl), permissivePaymentRepository(ctrl), guestNotificationRepo, permissiveGuestNotificationDispatcher(ctrl), permissiveCartRepository(ctrl))
+
+	require.Nil(t, usecase.CompleteTransaction(context.Background(), 1))
+
+	txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(1)).Return(transaction, nil)
+	txRepo.EXPECT().UncompleteTransaction(gomock.Any(), int64(1)).DoAndReturn(
+		func(ctx context.Context, id int64) *domain.Error {
+			transaction.CompletedAt = nil
+			return nil
+		})
+	require.Nil(t, usecase.UncompleteTransaction(context.Background(), 1))
+
+	txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(1)).Return(transaction, nil)
+	txRepo.EXPECT().CompleteTransaction(gomock.Any(), gomock.Any(), int64(1)).Return(nil)
+	require.Nil(t, usecase.CompleteTransaction(context.Background(), 1))
+
+	assert.Len(t, guestNotificationRepo.enqueueCallsByTransactionId, 1)
+	assert.Equal(t, 2, guestNotificationRepo.enqueueCallsByTransactionId[1])
 }
 
 func TestTransactionUsecase_UpdateTransactionById(t *testing.T) {

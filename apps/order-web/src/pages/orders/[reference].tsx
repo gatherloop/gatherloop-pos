@@ -17,16 +17,22 @@ export const getServerSideProps: GetServerSideProps<OrderStatusProps> = async (
   if (setCookie) ctx.res.setHeader('Set-Cookie', setCookie);
 
   const reference = String(ctx.params?.reference ?? '');
+  const accessKey = ctx.query.k ? String(ctx.query.k) : undefined;
   const sessionRepository = new CookieSessionRepository(sessionId);
 
-  const payment = await new ApiPaymentRepository(sessionRepository)
+  const payment = await new ApiPaymentRepository(sessionRepository, accessKey)
     .fetchPayment(reference)
     .catch((error) =>
       error instanceof PaymentNotFoundError ? null : undefined
     );
 
   return {
-    props: { sessionId, reference, payment },
+    props: {
+      sessionId,
+      reference,
+      payment,
+      ...(accessKey ? { accessKey } : {}),
+    },
   };
 };
 

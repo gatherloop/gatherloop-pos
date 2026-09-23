@@ -2,35 +2,34 @@ package domain
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
-	"strings"
+	"time"
 )
 
 // FR-4: mirrors kdsDispatchBatchSize — a bounded batch per sweep so one dispatcher tick cannot run unbounded.
 const guestDispatchBatchSize = 50
 
 type GuestNotificationUsecase struct {
-	repository             GuestNotificationRepository
-	subscriptionRepository WebPushSubscriptionRepository
-	transactionRepository  TransactionRepository
-	paymentRepository      PaymentRepository
-	pushGateway            WebPushGatewayRepository
+	repository            GuestNotificationRepository
+	transactionRepository TransactionRepository
+	paymentRepository     PaymentRepository
+	whatsappGateway       WhatsAppGatewayRepository
+	orderWebBaseURL       string
 }
 
 func NewGuestNotificationUsecase(
 	repository GuestNotificationRepository,
-	subscriptionRepository WebPushSubscriptionRepository,
 	transactionRepository TransactionRepository,
 	paymentRepository PaymentRepository,
-	pushGateway WebPushGatewayRepository,
+	whatsappGateway WhatsAppGatewayRepository,
+	orderWebBaseURL string,
 ) GuestNotificationUsecase {
 	return GuestNotificationUsecase{
-		repository:             repository,
-		subscriptionRepository: subscriptionRepository,
-		transactionRepository:  transactionRepository,
-		paymentRepository:      paymentRepository,
-		pushGateway:            pushGateway,
+		repository:            repository,
+		transactionRepository: transactionRepository,
+		paymentRepository:     paymentRepository,
+		whatsappGateway:       whatsappGateway,
+		orderWebBaseURL:       orderWebBaseURL,
 	}
 }
 
@@ -45,9 +44,9 @@ func (usecase GuestNotificationUsecase) TriggerDispatch() {
 	}()
 }
 
-// DispatchPending claims up to guestDispatchBatchSize pending rows, oldest first, and delivers
-// each to every live subscription for its session (FR-4). Called immediately after a completion
-// commits and on every notification sweeper tick from main.go.
+// DispatchPending claims up to guestDispatchBatchSize pending rows, oldest first, and sends each
+// its WhatsApp message (FR-7). Called immediately after a completion commits and on every
+// notification sweeper tick from main.go.
 func (usecase GuestNotificationUsecase) DispatchPending(ctx context.Context) *Error {
 	notifications, err := usecase.repository.ClaimPendingGuestNotifications(ctx, guestDispatchBatchSize)
 	if err != nil {
@@ -61,108 +60,91 @@ func (usecase GuestNotificationUsecase) DispatchPending(ctx context.Context) *Er
 	return nil
 }
 
+// ExpireStaleSending gives up on rows a dispatcher claimed but never resolved (D8): called on
+// every runMaintenanceSweeper tick alongside DispatchPending, so a claim orphaned by a crashed or
+// deployed-over process does not sit in `sending` forever.
+func (usecase GuestNotificationUsecase) ExpireStaleSending(ctx context.Context) *Error {
+	return usecase.repository.ExpireStaleSending(ctx, time.Now().Add(-GuestNotificationStaleSendingThreshold))
+}
+
+// dispatchOne sends one claimed row's WhatsApp message and maps the outcome per FR-7/FR-8.
 func (usecase GuestNotificationUsecase) dispatchOne(ctx context.Context, notification GuestNotification) {
 	logger := slog.With(
 		slog.Int64("guestNotificationId", notification.Id),
 		slog.Int64("transactionId", notification.TransactionId),
 	)
 
+	// D16: a row enqueued before this phase shipped can still be pending with no number at
+	// cut-over. It is recorded skipped on this, its first and only claim.
+	if notification.WhatsappNumber == nil || *notification.WhatsappNumber == "" {
+		usecase.markSkipped(ctx, notification.Id, "no whatsapp number for order", logger)
+		return
+	}
+
 	transaction, err := usecase.transactionRepository.GetTransactionById(ctx, notification.TransactionId)
 	if err != nil {
-		usecase.markFailed(ctx, notification.Id, "failed to load transaction: "+err.Message, logger)
+		usecase.markRejected(ctx, notification.Id, "failed to load transaction: "+err.Message, logger)
 		return
 	}
 
 	payment, err := usecase.paymentRepository.GetPaymentByTransactionId(ctx, notification.TransactionId)
 	if err != nil {
-		usecase.markFailed(ctx, notification.Id, "failed to load payment: "+err.Message, logger)
+		usecase.markRejected(ctx, notification.Id, "failed to load payment: "+err.Message, logger)
 		return
 	}
 
-	subscriptions, err := usecase.subscriptionRepository.GetWebPushSubscriptionsBySessionId(ctx, notification.SessionId)
-	if err != nil {
-		usecase.markFailed(ctx, notification.Id, "failed to load subscriptions: "+err.Message, logger)
-		return
+	accessKey := ""
+	if payment.AccessKey != nil {
+		accessKey = *payment.AccessKey
 	}
+	orderUrl := BuildOrderStatusUrl(usecase.orderWebBaseURL, payment.PartnerReferenceNo, accessKey)
+	message := BuildGuestWhatsappMessage(transaction, payment.Method, orderUrl)
 
-	// FR-4 step 3: the guest never opted in; retrying does not create a subscription.
-	if len(subscriptions) == 0 {
-		detail := "no active subscription for session"
-		if markErr := usecase.repository.MarkGuestNotificationSkipped(ctx, notification.Id, detail); markErr != nil {
-			logger.Error("failed to mark guest notification skipped", slog.Any("error", markErr))
-		}
-		logger.Warn("guest notification skipped", slog.String("detail", detail))
-		return
-	}
-
-	message := BuildGuestPushMessage(transaction, payment.PartnerReferenceNo)
-	messages := make([]WebPushMessage, len(subscriptions))
-	for i, subscription := range subscriptions {
-		subscriptionMessage := message
-		subscriptionMessage.Endpoint = subscription.Endpoint
-		subscriptionMessage.P256dhKey = subscription.P256dhKey
-		subscriptionMessage.AuthKey = subscription.AuthKey
-		messages[i] = subscriptionMessage
-	}
-
-	receipts, sendErr := usecase.pushGateway.Send(ctx, messages)
+	result, sendErr := usecase.whatsappGateway.Send(ctx, WhatsAppMessage{To: *notification.WhatsappNumber, Body: message})
 	if sendErr != nil {
-		usecase.markFailed(ctx, notification.Id, sendErr.Message, logger)
-		logger.Error("web push gateway send failed", slog.Any("error", sendErr))
+		usecase.markUnknown(ctx, notification.Id, "outcome unknown: "+sendErr.Message, logger)
 		return
 	}
 
-	accepted := 0
-	var failureDetails []string
-	for i, receipt := range receipts {
-		if i >= len(subscriptions) {
-			break
-		}
-		subscription := subscriptions[i]
-
-		if receipt.Status == WebPushReceiptStatusOk {
-			accepted++
-			continue
-		}
-
-		failureDetails = append(failureDetails, fmt.Sprintf("%s: %s", subscription.Endpoint, receipt.Message))
-
-		// D10: the Web Push protocol's definitive "this subscription is dead" receipt, and the
-		// only signal that justifies pruning a subscription the guest granted.
-		if receipt.ErrorCode == WebPushErrorCodeGone {
-			usecase.pruneSubscription(ctx, subscription, logger)
-		}
-	}
-
-	detail := strings.Join(failureDetails, "; ")
-
-	// FR-4 step 5: at least one accepted subscription means the guest's browser was told.
-	if accepted > 0 {
-		if markErr := usecase.repository.MarkGuestNotificationSent(ctx, notification.Id, detail); markErr != nil {
+	switch result.Outcome {
+	case WhatsAppSendOutcomeAccepted:
+		if markErr := usecase.repository.MarkGuestNotificationSent(ctx, notification.Id, result.ProviderMessageId); markErr != nil {
 			logger.Error("failed to mark guest notification sent", slog.Any("error", markErr))
 		}
-		logger.Info("guest notification sent",
-			slog.Int("acceptedSubscriptions", accepted),
-			slog.Int("totalSubscriptions", len(subscriptions)),
-		)
-		return
+		logger.Info("guest whatsapp notification sent", slog.String("providerMessageId", result.ProviderMessageId))
+	case WhatsAppSendOutcomeRejected:
+		// D10: the disabled gateway's sentinel detail is a configuration fact, not a delivery
+		// failure — it is recorded skipped and never retried.
+		if result.Detail == WhatsAppGatewayNotConfiguredDetail {
+			usecase.markSkipped(ctx, notification.Id, result.Detail, logger)
+			return
+		}
+		usecase.markRejected(ctx, notification.Id, result.Detail, logger)
+	default:
+		usecase.markUnknown(ctx, notification.Id, result.Detail, logger)
 	}
-
-	usecase.markFailed(ctx, notification.Id, detail, logger)
 }
 
-func (usecase GuestNotificationUsecase) pruneSubscription(ctx context.Context, subscription WebPushSubscription, logger *slog.Logger) {
-	if err := usecase.subscriptionRepository.UnsubscribeWebPush(ctx, subscription.SessionId, subscription.Endpoint); err != nil {
-		logger.Error("failed to prune dead web push subscription",
-			slog.Int64("webPushSubscriptionId", subscription.Id), slog.Any("error", err))
-		return
+func (usecase GuestNotificationUsecase) markSkipped(ctx context.Context, id int64, detail string, logger *slog.Logger) {
+	if err := usecase.repository.MarkGuestNotificationSkipped(ctx, id, detail); err != nil {
+		logger.Error("failed to mark guest notification skipped", slog.Any("error", err))
 	}
-	logger.Info("pruned dead web push subscription", slog.Int64("webPushSubscriptionId", subscription.Id))
+	logger.Warn("guest whatsapp notification skipped", slog.String("detail", detail))
 }
 
-func (usecase GuestNotificationUsecase) markFailed(ctx context.Context, id int64, detail string, logger *slog.Logger) {
+// markRejected retries up to GuestNotificationMaxAttempts (FR-7 step 4, "rejected"): Fonnte
+// stated outright that nothing was sent, so trying again risks nothing that wasn't already lost.
+func (usecase GuestNotificationUsecase) markRejected(ctx context.Context, id int64, detail string, logger *slog.Logger) {
 	if err := usecase.repository.MarkGuestNotificationFailed(ctx, id, detail); err != nil {
 		logger.Error("failed to mark guest notification failed", slog.Any("error", err))
 	}
-	logger.Warn("guest notification delivery failed", slog.String("detail", detail))
+	logger.Warn("guest whatsapp notification rejected", slog.String("detail", detail))
+}
+
+// markUnknown never retries (D9): an ambiguous outcome may already have reached the guest's phone.
+func (usecase GuestNotificationUsecase) markUnknown(ctx context.Context, id int64, detail string, logger *slog.Logger) {
+	if err := usecase.repository.MarkGuestNotificationUnknownOutcome(ctx, id, detail); err != nil {
+		logger.Error("failed to mark guest notification failed", slog.Any("error", err))
+	}
+	logger.Warn("guest whatsapp notification outcome unknown", slog.String("detail", detail))
 }

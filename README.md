@@ -71,12 +71,6 @@ configure push delivery to `apps/kds-mobile` (`docs/prd-kds-order-notifications.
 still registers and boots without a real Expo token, but no notification is actually delivered
 until one is set.
 
-`apps/api/.env`'s `WEB_PUSH_VAPID_PUBLIC_KEY`, `WEB_PUSH_VAPID_PRIVATE_KEY` and `WEB_PUSH_SUBJECT`
-configure guest order-ready push to `apps/order-web` (`docs/prd-order-web-push-notifications.md`).
-Generate a keypair with `go run ./cmd/generatevapidkeys` (from `apps/api`) and paste its output into
-`.env` — the API boots without them, but the guest-facing opt-in card can't subscribe a browser
-until a keypair is set, since `GET /public/web-push/config` has nothing to serve.
-
 `apps/api/.env`'s `CASH_PAYMENT_EXPIRY_SECONDS` (default `600`) is the walk-and-queue window an
 order-app guest gets to pay cash at the till before the order is cancelled automatically
 (`docs/prd-order-cash-payment.md`, D5). `apps/order-web/.env.local`'s
@@ -84,6 +78,14 @@ order-app guest gets to pay cash at the till before the order is cancelled autom
 `NEXT_PUBLIC_ORDER_CHECKOUT_ENABLED` must also be `true` for the cart's pay button to be reachable
 at all; `NEXT_PUBLIC_ORDER_CASHIER_LOCATION` (default `Lantai 1`) is the till location shown to the
 guest in both the checkout sheet and the cash instruction screen.
+
+`apps/api/.env`'s `FONNTE_TOKEN`, `FONNTE_BASE_URL` and `ORDER_WEB_BASE_URL` configure the
+WhatsApp order-ready notification sent when a barista marks an order-app order ready
+(`docs/prd-order-whatsapp-notifications.md`) — leaving `FONNTE_TOKEN` or `ORDER_WEB_BASE_URL`
+empty (the default) boots the API with a disabled gateway that records every guest notification
+`skipped` rather than failing checkout or the dispatcher, which is the expected state for local
+dev, CI and the e2e stack. `go run ./cmd/fonntecheck -to 0812…` from `apps/api` sends one real
+message through a configured gateway and prints Fonnte's raw response.
 
 ### Run
 

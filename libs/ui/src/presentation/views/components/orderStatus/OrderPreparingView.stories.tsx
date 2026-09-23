@@ -8,12 +8,6 @@ const meta: Meta<typeof OrderPreparingView> = {
     transactionNumber: 12,
     amount: 54000,
     isPolling: false,
-    notificationOptIn: {
-      type: 'idle',
-      onSubscribePress: () => {
-        // Storybook action stand-in
-      },
-    },
     items: [
       {
         name: 'Es Kopi Susu',

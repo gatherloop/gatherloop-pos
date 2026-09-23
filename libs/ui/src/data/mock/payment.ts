@@ -86,7 +86,10 @@ export class MockPaymentRepository implements PaymentRepository {
     this.shouldFailFetchPayments = value;
   }
 
-  checkout: PaymentRepository['checkout'] = async (customerName, method) => {
+  checkout: PaymentRepository['checkout'] = async ({
+    customerName,
+    method,
+  }) => {
     if (this.shouldFailCheckout) throw new Error('Failed to create payment');
     this.payment = {
       ...(method === 'cash' ? cashPayment() : initialPayment()),

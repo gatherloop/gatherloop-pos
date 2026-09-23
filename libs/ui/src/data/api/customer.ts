@@ -15,9 +15,9 @@ export class ApiCustomerRepository implements CustomerRepository {
     };
   }
 
-  fetchCurrentName: CustomerRepository['fetchCurrentName'] = () => {
+  fetchCurrentCustomer: CustomerRepository['fetchCurrentCustomer'] = () => {
     return customerGetCurrent(this.sessionRequestConfig()).then(
-      ({ data }) => data.name
+      ({ data }) => data
     );
   };
 }

@@ -25,11 +25,10 @@ func TestRunMaintenanceSweeper_CallsEveryJobPerTick(t *testing.T) {
 	kdsNotificationUsecase := domain.NewKdsNotificationUsecase(kdsNotificationRepo, kdsDeviceRepo, kdsTransactionRepo, kdsPushGateway, "default")
 
 	guestNotificationRepo := mock.NewMockGuestNotificationRepository(ctrl)
-	subscriptionRepo := mock.NewMockWebPushSubscriptionRepository(ctrl)
 	guestTransactionRepo := mock.NewMockTransactionRepository(ctrl)
 	paymentRepo := mock.NewMockPaymentRepository(ctrl)
-	webPushGateway := mock.NewMockWebPushGatewayRepository(ctrl)
-	guestNotificationUsecase := domain.NewGuestNotificationUsecase(guestNotificationRepo, subscriptionRepo, guestTransactionRepo, paymentRepo, webPushGateway)
+	whatsappGateway := mock.NewMockWhatsAppGatewayRepository(ctrl)
+	guestNotificationUsecase := domain.NewGuestNotificationUsecase(guestNotificationRepo, guestTransactionRepo, paymentRepo, whatsappGateway, "https://order.example.com")
 
 	gatewayRepo := mock.NewMockPaymentGatewayRepository(ctrl)
 	customerRepo := mock.NewMockCustomerRepository(ctrl)
@@ -55,6 +54,7 @@ func TestRunMaintenanceSweeper_CallsEveryJobPerTick(t *testing.T) {
 			guestCalled <- struct{}{}
 			return nil, nil
 		}).AnyTimes()
+	guestNotificationRepo.EXPECT().ExpireStaleSending(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	paymentRepo.EXPECT().GetExpirablePayments(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
 		func(context.Context, time.Time, int) ([]domain.Payment, *domain.Error) {
 			paymentCalled <- struct{}{}

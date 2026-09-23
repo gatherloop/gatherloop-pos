@@ -70,7 +70,7 @@ export default defineConfig({
           { text: 'Order Checkout (QRIS & Cash)', link: '/sales/order-checkout' },
           { text: 'Order History', link: '/sales/order-history' },
           { text: 'Kitchen Display System (KDS)', link: '/sales/kds' },
-          { text: 'Guest Order-Ready Notifications', link: '/sales/order-notifications' },
+          { text: 'Guest WhatsApp Notifications', link: '/sales/order-notifications' },
         ],
       },
       {

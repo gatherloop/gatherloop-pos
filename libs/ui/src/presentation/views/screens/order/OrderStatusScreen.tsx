@@ -8,7 +8,6 @@ import { OrderBrandHeader } from '../../components/base/OrderBrandHeader';
 import { OrderLayout } from '../../components/base/OrderLayout';
 import { CashPaymentView } from '../../components/checkout/CashPaymentView';
 import { QrisPaymentView } from '../../components/checkout/QrisPaymentView';
-import { OrderNotificationOptInVariant } from '../../components/orderStatus/OrderNotificationOptIn';
 import { OrderPreparingView } from '../../components/orderStatus/OrderPreparingView';
 import { OrderReadyView } from '../../components/orderStatus/OrderReadyView';
 
@@ -29,7 +28,6 @@ export type OrderStatusScreenVariant =
       type: 'preparing';
       payment: Payment;
       isPolling: boolean;
-      notificationOptIn: OrderNotificationOptInVariant;
     }
   | { type: 'ready'; payment: Payment }
   | { type: 'expired'; method: PaymentMethod | null }
@@ -131,18 +129,14 @@ export const OrderStatusScreen = ({
             onRetryButtonPress={onRetryPress}
           />
         ))
-        .with(
-          { type: 'preparing' },
-          ({ payment, isPolling, notificationOptIn }) => (
-            <OrderPreparingView
-              transactionNumber={payment.transactionNumber}
-              items={payment.items}
-              amount={payment.amount}
-              isPolling={isPolling}
-              notificationOptIn={notificationOptIn}
-            />
-          )
-        )
+        .with({ type: 'preparing' }, ({ payment, isPolling }) => (
+          <OrderPreparingView
+            transactionNumber={payment.transactionNumber}
+            items={payment.items}
+            amount={payment.amount}
+            isPolling={isPolling}
+          />
+        ))
         .with({ type: 'ready' }, ({ payment }) => (
           <OrderReadyView
             transactionNumber={payment.transactionNumber}

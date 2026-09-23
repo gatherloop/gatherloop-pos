@@ -1,6 +1,8 @@
 # PRD: Guest Web Push — Telling the Customer Their Order Is Ready, Wherever They Are
 
-**Status:** Draft for review
+**Status:** Superseded by [`docs/prd-order-whatsapp-notifications.md`](./prd-order-whatsapp-notifications.md),
+which replaces guest Web Push with WhatsApp (Fonnte) and reverses D7 (see its D6). This document is
+kept as the record of what was built and why.
 **Scope:** a service worker and Web Push subscription in `apps/order-web`, and the backend that
 pushes a notification to the guest's browser when a staff member marks their order ready.
 **Marking the order ready is already built** ([`docs/prd-order-fulfillment-status.md`](./prd-order-fulfillment-status.md))

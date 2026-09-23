@@ -1,5 +1,7 @@
 import { type Page } from '@playwright/test';
 
+export const DEFAULT_E2E_WHATSAPP_NUMBER = '081234567890';
+
 export const tableResolve = {
   tableLabel: (page: Page, label: string) =>
     page.getByText(label, { exact: true }),
@@ -71,6 +73,15 @@ export const cartScreen = {
     page.getByText(formattedTotal, { exact: true }),
 
   nameInput: (page: Page) => page.getByLabel('Nama Anda'),
+  whatsappNumberInput: (page: Page) => page.getByLabel('Nomor WhatsApp'),
+  fillCustomerDetails: async (
+    page: Page,
+    name: string,
+    whatsappNumber: string = DEFAULT_E2E_WHATSAPP_NUMBER
+  ) => {
+    await cartScreen.nameInput(page).fill(name);
+    await cartScreen.whatsappNumberInput(page).fill(whatsappNumber);
+  },
   submitNameButton: (page: Page) =>
     page.getByRole('button', { name: 'Lanjutkan ke pembayaran' }),
   cancelNameButton: (page: Page) => page.getByRole('button', { name: 'Batal' }),
@@ -91,10 +102,10 @@ export const orderStatus = {
     page.getByText(label, { exact: true }).last(),
   transactionNumberBadge: (page: Page, transactionNumber: number) =>
     page.getByText(`#${transactionNumber}`, { exact: true }),
-  readyTitle: (page: Page) => page.getByText('Pesanan siap!'),
+  readyTitle: (page: Page) => page.getByText('Pesanan siap', { exact: true }),
   pickupInstructionText: (page: Page, transactionNumber: number) =>
     page.getByText(
-      `Silakan ambil di kasir dengan menyebutkan nomor #${transactionNumber}.`
+      `Silakan ambil di kasir dengan menyebutkan nomor #${transactionNumber}`
     ),
   orderAgainButton: (page: Page) =>
     page.getByRole('button', { name: 'Pesan lagi' }),
@@ -117,15 +128,6 @@ export const orderStatus = {
     page.getByRole('button', { name: 'Kembali ke keranjang' }),
   itemLine: (page: Page, amount: number, productName: string) =>
     page.getByText(`${amount}x ${productName}`, { exact: true }),
-};
-
-export const orderNotificationOptIn = {
-  subscribeButton: (page: Page) =>
-    page.getByRole('button', { name: 'Beri tahu saya' }),
-  subscribedText: (page: Page) =>
-    page.getByText('Kami akan memberi tahu saat pesanan siap.'),
-  unsubscribeButton: (page: Page) =>
-    page.getByRole('button', { name: 'Matikan' }),
 };
 
 export const orderBrandHeader = {

@@ -70,7 +70,7 @@ test.describe.serial('Cash Payment Checkout', () => {
     await sel.cartScreen.checkoutButton(page, formatRupiah(PRICE)).click();
 
     await expect(sel.cartScreen.nameInput(page)).toBeVisible();
-    await sel.cartScreen.nameInput(page).fill(CUSTOMER_NAME);
+    await sel.cartScreen.fillCustomerDetails(page, CUSTOMER_NAME);
     await sel.cartScreen.cashMethodButton(page).click();
 
     const checkoutResponsePromise = page.waitForResponse(

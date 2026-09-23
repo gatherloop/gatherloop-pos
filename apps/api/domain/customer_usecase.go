@@ -15,28 +15,28 @@ func NewCustomerUsecase(repository CustomerRepository) CustomerUsecase {
 	return CustomerUsecase{repository: repository}
 }
 
-func (usecase CustomerUsecase) GetCurrentCustomerName(ctx context.Context, sessionId string) (string, *Error) {
+func (usecase CustomerUsecase) GetCurrentCustomer(ctx context.Context, sessionId string) (Customer, *Error) {
 	customer, err := usecase.repository.GetCustomerBySessionId(ctx, sessionId)
 	if err != nil {
 		if err.Type == NotFound {
-			return "", nil
+			return Customer{}, nil
 		}
-		return "", err
+		return Customer{}, err
 	}
-	return customer.Name, nil
+	return customer, nil
 }
 
 func (usecase CustomerUsecase) UpsertCustomerName(ctx context.Context, sessionId string, name string) (Customer, *Error) {
-	return upsertCustomerName(ctx, usecase.repository, sessionId, name)
+	return upsertCustomer(ctx, usecase.repository, sessionId, name, nil)
 }
 
-func upsertCustomerName(ctx context.Context, repository CustomerRepository, sessionId string, name string) (Customer, *Error) {
+func upsertCustomer(ctx context.Context, repository CustomerRepository, sessionId string, name string, whatsappNumber *string) (Customer, *Error) {
 	name = strings.TrimSpace(name)
 	if err := validateCustomerName(name); err != nil {
 		return Customer{}, err
 	}
 
-	return repository.UpsertCustomerBySessionId(ctx, sessionId, name)
+	return repository.UpsertCustomerBySessionId(ctx, sessionId, name, whatsappNumber)
 }
 
 func validateCustomerName(name string) *Error {

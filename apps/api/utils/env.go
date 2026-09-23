@@ -37,14 +37,14 @@ type Env struct {
 	DokuQrisExpirySeconds    int
 	CashPaymentExpirySeconds int
 	OrderPaymentWalletId     string
+	OrderWebBaseURL          string
 
 	ExpoPushAccessToken        string
 	KdsPushSound               string
 	KdsDispatchIntervalSeconds int
 
-	WebPushVapidPublicKey  string
-	WebPushVapidPrivateKey string
-	WebPushSubject         string
+	FonnteToken   string
+	FonnteBaseURL string
 }
 
 func GetEnv() Env {
@@ -88,14 +88,14 @@ func GetEnv() Env {
 		DokuQrisExpirySeconds:    parseIntWithDefault(os.Getenv("DOKU_QRIS_EXPIRY_SECONDS"), 300),
 		CashPaymentExpirySeconds: parseIntWithDefault(os.Getenv("CASH_PAYMENT_EXPIRY_SECONDS"), 600),
 		OrderPaymentWalletId:     os.Getenv("ORDER_PAYMENT_WALLET_ID"),
+		OrderWebBaseURL:          os.Getenv("ORDER_WEB_BASE_URL"),
 
 		ExpoPushAccessToken:        getCredential("EXPO_PUSH_ACCESS_TOKEN"),
 		KdsPushSound:               stringWithDefault(os.Getenv("KDS_PUSH_SOUND"), "order_alert.wav"),
 		KdsDispatchIntervalSeconds: parseIntWithDefault(os.Getenv("KDS_DISPATCH_INTERVAL_SECONDS"), 15),
 
-		WebPushVapidPublicKey:  getCredential("WEB_PUSH_VAPID_PUBLIC_KEY"),
-		WebPushVapidPrivateKey: getCredential("WEB_PUSH_VAPID_PRIVATE_KEY"),
-		WebPushSubject:         getCredential("WEB_PUSH_SUBJECT"),
+		FonnteToken:   getCredential("FONNTE_TOKEN"),
+		FonnteBaseURL: getCredential("FONNTE_BASE_URL"),
 	}
 }
 

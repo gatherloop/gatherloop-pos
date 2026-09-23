@@ -85,6 +85,11 @@ func checkoutRequestBodyWithMethod(customerName string, method string) *bytes.Bu
 	return bytes.NewBuffer(body)
 }
 
+func checkoutRequestBodyWithWhatsappNumber(customerName string, whatsappNumber string) *bytes.Buffer {
+	body, _ := json.Marshal(apiContract.PaymentCheckoutRequest{CustomerName: customerName, CustomerWhatsappNumber: &whatsappNumber})
+	return bytes.NewBuffer(body)
+}
+
 func TestPaymentHandler_Checkout(t *testing.T) {
 	t.Run("a successful checkout returns the payment with its QR", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
@@ -94,7 +99,7 @@ func TestPaymentHandler_Checkout(t *testing.T) {
 		withPaymentHandlerTransactionMock(m.paymentRepo)
 		expectValidPaymentWallet(m)
 
-		m.customerRepo.EXPECT().UpsertCustomerBySessionId(gomock.Any(), testSessionId, "Budi").
+		m.customerRepo.EXPECT().UpsertCustomerBySessionId(gomock.Any(), testSessionId, "Budi", nil).
 			Return(domain.Customer{Id: 1, SessionId: testSessionId, Name: "Budi"}, nil)
 
 		tableId := int64(5)
@@ -150,7 +155,7 @@ func TestPaymentHandler_Checkout(t *testing.T) {
 		withPaymentHandlerTransactionMock(m.paymentRepo)
 		expectValidPaymentWallet(m)
 
-		m.customerRepo.EXPECT().UpsertCustomerBySessionId(gomock.Any(), testSessionId, gomock.Any()).
+		m.customerRepo.EXPECT().UpsertCustomerBySessionId(gomock.Any(), testSessionId, gomock.Any(), nil).
 			Return(domain.Customer{Id: 1, SessionId: testSessionId, Name: "Budi"}, nil)
 
 		tableId := int64(5)
@@ -194,7 +199,7 @@ func TestPaymentHandler_Checkout(t *testing.T) {
 		withPaymentHandlerTransactionMock(m.paymentRepo)
 		expectValidPaymentWallet(m)
 
-		m.customerRepo.EXPECT().UpsertCustomerBySessionId(gomock.Any(), testSessionId, gomock.Any()).
+		m.customerRepo.EXPECT().UpsertCustomerBySessionId(gomock.Any(), testSessionId, gomock.Any(), nil).
 			Return(domain.Customer{Id: 1, SessionId: testSessionId, Name: "Budi"}, nil)
 		m.cartRepo.EXPECT().GetActiveCartBySessionId(gomock.Any(), testSessionId).Return(domain.Cart{}, &domain.Error{Type: domain.NotFound})
 
@@ -237,6 +242,26 @@ func TestPaymentHandler_Checkout(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
 
+	t.Run("an invalid customerWhatsappNumber is a 400", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentHandlerMocks(ctrl)
+		withPaymentHandlerTransactionMock(m.paymentRepo)
+		expectValidPaymentWallet(m)
+
+		req := httptest.NewRequest(http.MethodPost, "/carts/current/checkout", checkoutRequestBodyWithWhatsappNumber("Budi", "12345"))
+		req.Header.Set("X-Session-Id", testSessionId)
+		w := httptest.NewRecorder()
+		m.handler().Checkout(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+
+		var apiErr apiContract.Error
+		assert.NoError(t, json.NewDecoder(bytes.NewBufferString(w.Body.String())).Decode(&apiErr))
+		assert.Equal(t, apiContract.BAD_REQUEST, apiErr.Code)
+	})
+
 	t.Run("a cash checkout succeeds without ever calling the gateway", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
@@ -245,7 +270,7 @@ func TestPaymentHandler_Checkout(t *testing.T) {
 		withPaymentHandlerTransactionMock(m.paymentRepo)
 		expectValidPaymentWallet(m)
 
-		m.customerRepo.EXPECT().UpsertCustomerBySessionId(gomock.Any(), testSessionId, "Budi").
+		m.customerRepo.EXPECT().UpsertCustomerBySessionId(gomock.Any(), testSessionId, "Budi", nil).
 			Return(domain.Customer{Id: 1, SessionId: testSessionId, Name: "Budi"}, nil)
 
 		tableId := int64(5)
@@ -334,6 +359,62 @@ func TestPaymentHandler_GetPaymentByPartnerReferenceNo(t *testing.T) {
 
 		req := httptest.NewRequest(http.MethodGet, "/payments/"+payment.PartnerReferenceNo, nil)
 		req.Header.Set("X-Session-Id", testSessionId)
+		req = mux.SetURLVars(req, map[string]string{"partnerReferenceNo": payment.PartnerReferenceNo})
+		w := httptest.NewRecorder()
+		m.handler().GetPaymentByPartnerReferenceNo(w, req)
+
+		assert.Equal(t, http.StatusNotFound, w.Code)
+	})
+
+	t.Run("a foreign session with the correct X-Order-Access-Key gets 200 (D4)", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentHandlerMocks(ctrl)
+		withPaymentHandlerTransactionMock(m.paymentRepo)
+
+		transactionId := int64(99)
+		checkedAt := time.Now()
+		accessKey := "q3Vd0bX9pL2sR8tY1wZa7c"
+		payment := domain.Payment{
+			Id: 7, CartId: 1, SessionId: "someone-elses-session", TransactionId: &transactionId,
+			PartnerReferenceNo: "ORD1234567890AB", AccessKey: &accessKey, Method: domain.PaymentMethodQris, Status: domain.PaymentStatePending,
+			Amount: 30000, ExpiredAt: time.Now().Add(2 * time.Minute), StatusCheckedAt: &checkedAt,
+		}
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), transactionId).
+			Return(domain.Transaction{Id: transactionId, Name: "Budi"}, nil)
+
+		req := httptest.NewRequest(http.MethodGet, "/payments/"+payment.PartnerReferenceNo, nil)
+		req.Header.Set("X-Session-Id", testSessionId)
+		req.Header.Set("X-Order-Access-Key", accessKey)
+		req = mux.SetURLVars(req, map[string]string{"partnerReferenceNo": payment.PartnerReferenceNo})
+		w := httptest.NewRecorder()
+		m.handler().GetPaymentByPartnerReferenceNo(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		var resp apiContract.PaymentResponse
+		assert.NoError(t, json.NewDecoder(w.Body).Decode(&resp))
+		assert.Equal(t, "Budi", resp.Data.CustomerName)
+	})
+
+	t.Run("a foreign session with a wrong X-Order-Access-Key gets 404", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentHandlerMocks(ctrl)
+		withPaymentHandlerTransactionMock(m.paymentRepo)
+
+		accessKey := "q3Vd0bX9pL2sR8tY1wZa7c"
+		payment := domain.Payment{
+			Id: 7, SessionId: "someone-elses-session", AccessKey: &accessKey,
+			PartnerReferenceNo: "ORD1234567890AB", Status: domain.PaymentStatePending,
+		}
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+
+		req := httptest.NewRequest(http.MethodGet, "/payments/"+payment.PartnerReferenceNo, nil)
+		req.Header.Set("X-Session-Id", testSessionId)
+		req.Header.Set("X-Order-Access-Key", "wrong-key")
 		req = mux.SetURLVars(req, map[string]string{"partnerReferenceNo": payment.PartnerReferenceNo})
 		w := httptest.NewRecorder()
 		m.handler().GetPaymentByPartnerReferenceNo(w, req)

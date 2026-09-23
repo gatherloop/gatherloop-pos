@@ -403,6 +403,7 @@ func (usecase TransactionUsecase) CompleteTransaction(ctx context.Context, id in
 		// FR-2: no payment for the transaction is tolerated as a skipped notification, not a
 		// failed completion the barista already performed.
 		var sessionId *string
+		var whatsappNumber *string
 		payment, paymentErr := usecase.paymentRepository.GetPaymentByTransactionId(ctxWithTx, id)
 		if paymentErr != nil {
 			if paymentErr.Type != NotFound {
@@ -410,9 +411,10 @@ func (usecase TransactionUsecase) CompleteTransaction(ctx context.Context, id in
 			}
 		} else {
 			sessionId = &payment.SessionId
+			whatsappNumber = payment.CustomerWhatsappNumber
 		}
 
-		return usecase.guestNotificationRepository.EnqueueForCompletedTransaction(ctxWithTx, transaction, sessionId)
+		return usecase.guestNotificationRepository.EnqueueForCompletedTransaction(ctxWithTx, transaction, sessionId, whatsappNumber)
 	})
 	// FR-4/Phase 5: kicked after the commit so the barista's HTTP response never waits on a push service.
 	if err == nil {
@@ -440,13 +442,11 @@ func (usecase TransactionUsecase) UncompleteTransaction(ctx context.Context, id 
 			return &Error{Type: BadRequest, Message: "transaction is not completed"}
 		}
 
-		if err := usecase.transactionRepository.UncompleteTransaction(ctxWithTx, id); err != nil {
-			return err
-		}
-
-		// D7: the correction removed the fact the outbox row recorded, so a re-completion must
-		// enqueue fresh rather than be suppressed by the unique key.
-		return usecase.guestNotificationRepository.DeleteGuestNotificationByTransactionId(ctxWithTx, id)
+		// D6: the outbox row is left in place. UNIQUE (transaction_id) makes a later
+		// re-completion's enqueue a no-op, so an order is messaged at most once, ever. The claim
+		// only picks rows whose transaction is currently completed (D7), so a row that is still
+		// pending here simply waits until the order is re-marked ready.
+		return usecase.transactionRepository.UncompleteTransaction(ctxWithTx, id)
 	})
 }
 

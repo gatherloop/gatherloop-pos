@@ -3,8 +3,8 @@ package main
 import (
 	"apps/api/data/doku"
 	"apps/api/data/expopush"
+	"apps/api/data/fonnte"
 	"apps/api/data/mysql"
-	"apps/api/data/webpush"
 	"apps/api/domain"
 	"apps/api/presentation/restapi"
 	"apps/api/utils"
@@ -82,16 +82,19 @@ func main() {
 
 	kdsPushGatewayRepository := expopush.NewKdsPushGatewayRepository(expoPushConfig)
 
-	webPushConfig := webpush.Config{
-		PublicKey:  env.WebPushVapidPublicKey,
-		PrivateKey: env.WebPushVapidPrivateKey,
-		Subject:    env.WebPushSubject,
+	// D10/D11: an unconfigured token or a missing ORDER_WEB_BASE_URL both boot a disabled
+	// gateway, which records every guest notification 'skipped' rather than failing to send.
+	fonnteConfig := fonnte.Config{Token: env.FonnteToken, BaseURL: env.FonnteBaseURL}
+	var whatsappGatewayRepository domain.WhatsAppGatewayRepository
+	if err := fonnteConfig.Validate(); err != nil {
+		rootLogger.Warn("whatsapp gateway not configured; guest notifications will be skipped", slog.Any("error", err))
+		whatsappGatewayRepository = fonnte.NewDisabledWhatsAppGateway()
+	} else if env.OrderWebBaseURL == "" {
+		rootLogger.Warn("ORDER_WEB_BASE_URL not configured; guest notifications will be skipped")
+		whatsappGatewayRepository = fonnte.NewDisabledWhatsAppGateway()
+	} else {
+		whatsappGatewayRepository = fonnte.NewWhatsAppGatewayRepository(fonnteConfig)
 	}
-	if err := webPushConfig.Validate(); err != nil {
-		rootLogger.Warn("web push gateway not configured; guest notifications will fail", slog.Any("error", err))
-	}
-
-	webPushGatewayRepository := webpush.NewWebPushGatewayRepository(webPushConfig)
 
 	router := mux.NewRouter().StrictSlash(true)
 	router.Use(restapi.EnableCORS)
@@ -122,13 +125,12 @@ func main() {
 	availabilityRepository := mysql.NewAvailabilityRepository(db)
 	kdsDeviceRepository := mysql.NewKdsDeviceRepository(db)
 	kdsNotificationRepository := mysql.NewKdsNotificationRepository(db)
-	webPushSubscriptionRepository := mysql.NewWebPushSubscriptionRepository(db)
 	guestNotificationRepository := mysql.NewGuestNotificationRepository(db)
 
 	orderPaymentWalletId, _ := strconv.ParseInt(env.OrderPaymentWalletId, 10, 64)
 
 	kdsNotificationUsecase := domain.NewKdsNotificationUsecase(kdsNotificationRepository, kdsDeviceRepository, transactionRepository, kdsPushGatewayRepository, env.KdsPushSound)
-	guestNotificationUsecase := domain.NewGuestNotificationUsecase(guestNotificationRepository, webPushSubscriptionRepository, transactionRepository, paymentRepository, webPushGatewayRepository)
+	guestNotificationUsecase := domain.NewGuestNotificationUsecase(guestNotificationRepository, transactionRepository, paymentRepository, whatsappGatewayRepository, env.OrderWebBaseURL)
 
 	availabilityReservation := domain.NewAvailabilityReservation(availabilityReservationRepository)
 	walletUsecase := domain.NewWalletUsecase(walletRepository)
@@ -154,7 +156,6 @@ func main() {
 	stockCheckUsecase := domain.NewStockCheckUsecase(stockCheckRepository, materialRepository)
 	availabilityUsecase := domain.NewAvailabilityUsecase(availabilityRepository, productRepository, variantRepository)
 	kdsDeviceUsecase := domain.NewKdsDeviceUsecase(kdsDeviceRepository, kdsPushGatewayRepository, env.KdsPushSound)
-	webPushSubscriptionUsecase := domain.NewWebPushSubscriptionUsecase(webPushSubscriptionRepository, env.WebPushVapidPublicKey)
 
 	walletHandler := restapi.NewWalletHandler(walletUsecase)
 	transactionHandler := restapi.NewTransactionHandler(transactionUsecase)
@@ -178,9 +179,8 @@ func main() {
 	checklistSessionHandler := restapi.NewChecklistSessionHandler(checklistSessionUsecase)
 	stockCheckHandler := restapi.NewStockCheckHandler(stockCheckUsecase)
 	availabilityHandler := restapi.NewAvailabilityHandler(availabilityUsecase)
-	publicHandler := restapi.NewPublicHandler(productUsecase, categoryUsecase, variantUsecase, tableUsecase, webPushSubscriptionUsecase)
+	publicHandler := restapi.NewPublicHandler(productUsecase, categoryUsecase, variantUsecase, tableUsecase)
 	kdsDeviceHandler := restapi.NewKdsDeviceHandler(kdsDeviceUsecase)
-	webPushSubscriptionHandler := restapi.NewWebPushSubscriptionHandler(webPushSubscriptionUsecase)
 
 	restapi.NewAuthRouter(authHandler).AddRouter(router)
 	restapi.NewBudgetRouter(budgetHandler).AddRouter(router)
@@ -206,7 +206,6 @@ func main() {
 	restapi.NewAvailabilityRouter(availabilityHandler).AddRouter(router)
 	restapi.NewPublicRouter(publicHandler).AddRouter(router)
 	restapi.NewKdsDeviceRouter(kdsDeviceHandler).AddRouter(router)
-	restapi.NewWebPushSubscriptionRouter(webPushSubscriptionHandler).AddRouter(router)
 
 	router.HandleFunc("/health-check", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("success"))
@@ -265,6 +264,9 @@ func runMaintenanceSweeper(ctx context.Context, kdsNotificationUsecase domain.Kd
 			}
 			if err := guestNotificationUsecase.DispatchPending(context.Background()); err != nil {
 				logger.Error("guest notification dispatch sweep failed", slog.Any("error", err))
+			}
+			if err := guestNotificationUsecase.ExpireStaleSending(context.Background()); err != nil {
+				logger.Error("guest notification stale-sending sweep failed", slog.Any("error", err))
 			}
 			if err := paymentUsecase.ExpireStalePayments(context.Background()); err != nil {
 				logger.Error("payment expiry sweep failed", slog.Any("error", err))

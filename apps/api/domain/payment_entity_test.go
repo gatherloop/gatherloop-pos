@@ -116,6 +116,21 @@ func TestGeneratePartnerReferenceNo(t *testing.T) {
 	}
 }
 
+var orderAccessKeyPattern = regexp.MustCompile(`^[A-Za-z0-9_-]{22}$`)
+
+func TestGenerateOrderAccessKey(t *testing.T) {
+	seen := map[string]bool{}
+
+	for i := 0; i < 100; i++ {
+		key, err := domain.GenerateOrderAccessKey()
+
+		assert.NoError(t, err)
+		assert.Regexp(t, orderAccessKeyPattern, key)
+		assert.False(t, seen[key], "GenerateOrderAccessKey produced a duplicate: %q", key)
+		seen[key] = true
+	}
+}
+
 func TestValidateOrderPaymentWallet(t *testing.T) {
 	deletedAt := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 

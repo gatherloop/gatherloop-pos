@@ -94,7 +94,7 @@ const meta: Meta<typeof CartScreen> = {
     isCheckoutEnabled: true,
     isCheckingOut: false,
     checkoutErrorMessage: null,
-    nameSheet: null,
+    detailsSheet: null,
     onAmountChange: () => {
       // Storybook action stand-in
     },
@@ -213,14 +213,19 @@ export const OverRemainingQuantityLine: Story = {
   },
 };
 
-export const NameSheetOpen: Story = {
+export const DetailsSheetOpen: Story = {
   args: {
     variant: { type: 'loaded', cart },
-    nameSheet: {
+    detailsSheet: {
       isOpen: true,
       name: 'Budi',
-      errorMessage: null,
+      nameErrorMessage: null,
       onNameChange: () => {
+        // Storybook action stand-in
+      },
+      whatsappNumber: '0812 3456 7890',
+      whatsappNumberErrorMessage: null,
+      onWhatsappNumberChange: () => {
         // Storybook action stand-in
       },
       onSubmitPress: () => {

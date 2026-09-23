@@ -4,14 +4,17 @@ import "apps/api/domain"
 
 func ToGuestNotificationDomain(dbNotification GuestNotification) domain.GuestNotification {
 	return domain.GuestNotification{
-		Id:            dbNotification.Id,
-		TransactionId: dbNotification.TransactionId,
-		SessionId:     dbNotification.SessionId,
-		Status:        domain.GuestNotificationStatus(dbNotification.Status),
-		AttemptCount:  dbNotification.AttemptCount,
-		Detail:        dbNotification.Detail,
-		CreatedAt:     dbNotification.CreatedAt,
-		SentAt:        dbNotification.SentAt,
+		Id:                dbNotification.Id,
+		TransactionId:     dbNotification.TransactionId,
+		SessionId:         dbNotification.SessionId,
+		WhatsappNumber:    dbNotification.WhatsappNumber,
+		Status:            domain.GuestNotificationStatus(dbNotification.Status),
+		AttemptCount:      dbNotification.AttemptCount,
+		ClaimedAt:         dbNotification.ClaimedAt,
+		Detail:            dbNotification.Detail,
+		ProviderMessageId: dbNotification.ProviderMessageId,
+		CreatedAt:         dbNotification.CreatedAt,
+		SentAt:            dbNotification.SentAt,
 	}
 }
 

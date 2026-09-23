@@ -1,17 +1,25 @@
 import React from 'react';
 import { act, render, screen } from '@testing-library/react';
 import { OrderStatusHandler } from './OrderStatusHandler';
-import {
-  MockPaymentRepository,
-  MockSessionRepository,
-  MockWebPushRepository,
-  MockWebPushSubscriptionRepository,
-} from '../../../data/mock';
-import {
-  OrderNotificationSubscribeUsecase,
-  OrderStatusUsecase,
-} from '../../../domain';
+import { MockPaymentRepository, MockSessionRepository } from '../../../data/mock';
+import { OrderStatusUsecase } from '../../../domain';
+import { PaymentRepository } from '../../../domain/repositories/payment';
 import { flushPromises } from '../../../utils/testUtils';
+
+class KeyConfiguredMockPaymentRepository extends MockPaymentRepository {
+  constructor(private readonly accessKey?: string) {
+    super();
+  }
+
+  override fetchPayment: PaymentRepository['fetchPayment'] = async (
+    reference
+  ) => {
+    if (this.accessKey !== 'the-right-key') {
+      return super.fetchPayment(reference);
+    }
+    return { ...this.payment, reference };
+  };
+}
 
 const mockPush = jest.fn();
 jest.mock('solito/router', () => ({
@@ -35,35 +43,23 @@ const renderHandler = ({
   reference,
   paymentRepository = new MockPaymentRepository(),
   sessionRepository = createSessionRepositoryWithTableCode(),
-  webPushRepository = new MockWebPushRepository(),
-  webPushSubscriptionRepository = new MockWebPushSubscriptionRepository(),
   cashierLocation = CASHIER_LOCATION,
 }: {
   reference: string;
   paymentRepository?: MockPaymentRepository;
   sessionRepository?: MockSessionRepository;
-  webPushRepository?: MockWebPushRepository;
-  webPushSubscriptionRepository?: MockWebPushSubscriptionRepository;
   cashierLocation?: string;
 }) => {
   const orderStatusUsecase = new OrderStatusUsecase(paymentRepository, {
     reference,
   });
-  const orderNotificationSubscribeUsecase =
-    new OrderNotificationSubscribeUsecase(
-      webPushRepository,
-      webPushSubscriptionRepository
-    );
 
   return {
     paymentRepository,
     sessionRepository,
-    webPushRepository,
-    webPushSubscriptionRepository,
     ...render(
       <OrderStatusHandler
         orderStatusUsecase={orderStatusUsecase}
-        orderNotificationSubscribeUsecase={orderNotificationSubscribeUsecase}
         sessionRepository={sessionRepository}
         cashierLocation={cashierLocation}
       />
@@ -281,6 +277,25 @@ describe('OrderStatusHandler', () => {
     expect(screen.getByText('Pesanan tidak ditemukan')).toBeTruthy();
   });
 
+  it('shows the ready view for a foreign-session reference when the repository is key-configured', async () => {
+    const paymentRepository = new KeyConfiguredMockPaymentRepository(
+      'the-right-key'
+    );
+    paymentRepository.payment = {
+      ...paymentRepository.payment,
+      status: 'paid',
+      fulfillmentStatus: 'ready',
+    };
+    renderHandler({
+      reference: 'SOMEONE-ELSES-REFERENCE',
+      paymentRepository,
+    });
+
+    await settle();
+
+    expect(screen.getByText('Pesanan siap')).toBeTruthy();
+  });
+
   it('shows an error with retry on a transport failure', async () => {
     const paymentRepository = new MockPaymentRepository();
     paymentRepository.payment = {
@@ -342,106 +357,5 @@ describe('OrderStatusHandler', () => {
     });
 
     expect(mockPush).toHaveBeenCalledWith('/orders');
-  });
-
-  describe('order notification opt-in', () => {
-    it('reaches the subscribed confirmation when the CTA is tapped with permission granted', async () => {
-      const paymentRepository = new MockPaymentRepository();
-      paymentRepository.payment = {
-        ...paymentRepository.payment,
-        status: 'paid',
-      };
-      const { getByRole } = renderHandler({
-        reference: paymentRepository.payment.reference,
-        paymentRepository,
-      });
-
-      await settle();
-
-      expect(getByRole('button', { name: 'Nyalakan Notifikasi' })).toBeTruthy();
-
-      await act(async () => {
-        getByRole('button', { name: 'Nyalakan Notifikasi' }).click();
-      });
-      await settle();
-
-      expect(
-        screen.getByText('Kami akan memberi tahu saat pesanan siap')
-      ).toBeTruthy();
-      expect(screen.queryByText('Nyalakan Notifikasi')).toBeNull();
-    });
-
-    it('renders the settings line when permission is denied', async () => {
-      const paymentRepository = new MockPaymentRepository();
-      paymentRepository.payment = {
-        ...paymentRepository.payment,
-        status: 'paid',
-      };
-      const webPushRepository = new MockWebPushRepository();
-      webPushRepository.setPermissionStatus('denied');
-      const { getByRole } = renderHandler({
-        reference: paymentRepository.payment.reference,
-        paymentRepository,
-        webPushRepository,
-      });
-
-      await settle();
-
-      await act(async () => {
-        getByRole('button', { name: 'Nyalakan Notifikasi' }).click();
-      });
-      await settle();
-
-      expect(screen.getByText('Notifikasi dinonaktifkan')).toBeTruthy();
-    });
-
-    it('shows the subscribed confirmation immediately when the browser already has a subscription', async () => {
-      const paymentRepository = new MockPaymentRepository();
-      paymentRepository.payment = {
-        ...paymentRepository.payment,
-        status: 'paid',
-      };
-      const webPushRepository = new MockWebPushRepository();
-      webPushRepository.setSubscription({
-        endpoint: 'https://fcm.googleapis.com/fcm/send/existing-endpoint',
-        p256dhKey: 'existing-p256dh-key',
-        authKey: 'existing-auth-key',
-        userAgent: 'existing-user-agent',
-      });
-      const { getByRole } = renderHandler({
-        reference: paymentRepository.payment.reference,
-        paymentRepository,
-        webPushRepository,
-      });
-
-      await settle();
-
-      expect(
-        screen.getByText('Kami akan memberi tahu saat pesanan siap')
-      ).toBeTruthy();
-      expect(screen.queryByText('Nyalakan Notifikasi')).toBeNull();
-    });
-
-    it('renders no card at all for an unsupported browser', async () => {
-      const paymentRepository = new MockPaymentRepository();
-      paymentRepository.payment = {
-        ...paymentRepository.payment,
-        status: 'paid',
-      };
-      const webPushRepository = new MockWebPushRepository();
-      webPushRepository.setSupportStatus('unsupported');
-      renderHandler({
-        reference: paymentRepository.payment.reference,
-        paymentRepository,
-        webPushRepository,
-      });
-
-      await settle();
-
-      expect(screen.queryByText('Nyalakan Notifikasi')).toBeNull();
-      expect(
-        screen.queryByText('Kami akan memberi tahu saat pesanan siap.')
-      ).toBeNull();
-    });
   });
 });
