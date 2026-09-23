@@ -25,11 +25,10 @@ func TestRunMaintenanceSweeper_CallsEveryJobPerTick(t *testing.T) {
 	kdsNotificationUsecase := domain.NewKdsNotificationUsecase(kdsNotificationRepo, kdsDeviceRepo, kdsTransactionRepo, kdsPushGateway, "default")
 
 	guestNotificationRepo := mock.NewMockGuestNotificationRepository(ctrl)
-	subscriptionRepo := mock.NewMockWebPushSubscriptionRepository(ctrl)
 	guestTransactionRepo := mock.NewMockTransactionRepository(ctrl)
 	paymentRepo := mock.NewMockPaymentRepository(ctrl)
-	webPushGateway := mock.NewMockWebPushGatewayRepository(ctrl)
-	guestNotificationUsecase := domain.NewGuestNotificationUsecase(guestNotificationRepo, subscriptionRepo, guestTransactionRepo, paymentRepo, webPushGateway)
+	whatsappGateway := mock.NewMockWhatsAppGatewayRepository(ctrl)
+	guestNotificationUsecase := domain.NewGuestNotificationUsecase(guestNotificationRepo, guestTransactionRepo, paymentRepo, whatsappGateway, "https://order.example.com")
 
 	gatewayRepo := mock.NewMockPaymentGatewayRepository(ctrl)
 	customerRepo := mock.NewMockCustomerRepository(ctrl)

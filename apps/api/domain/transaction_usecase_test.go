@@ -33,7 +33,7 @@ func permissivePaymentRepository(ctrl *gomock.Controller) *mock.MockPaymentRepos
 
 func permissiveGuestNotificationRepository(ctrl *gomock.Controller) *mock.MockGuestNotificationRepository {
 	guestNotificationRepo := mock.NewMockGuestNotificationRepository(ctrl)
-	guestNotificationRepo.EXPECT().EnqueueForCompletedTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	guestNotificationRepo.EXPECT().EnqueueForCompletedTransaction(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	return guestNotificationRepo
 }
 
@@ -1132,21 +1132,24 @@ func TestTransactionUsecase_CompleteTransaction(t *testing.T) {
 		expectedError *domain.Error
 	}{
 		{
-			name: "success enqueues one row carrying the payment's session_id",
+			name: "success enqueues one row carrying the payment's session_id and whatsapp number",
 			id:   1,
 			setupMock: func(txRepo *mock.MockTransactionRepository, paymentRepo *mock.MockPaymentRepository, guestNotificationRepo *mock.MockGuestNotificationRepository) {
+				whatsappNumber := "6281234567890"
 				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(1)).Return(domain.Transaction{
 					Id: 1, Source: domain.TransactionSourceOrder, CompletedAt: nil,
 				}, nil)
 				txRepo.EXPECT().CompleteTransaction(gomock.Any(), gomock.Any(), int64(1)).Return(nil)
-				paymentRepo.EXPECT().GetPaymentByTransactionId(gomock.Any(), int64(1)).Return(domain.Payment{SessionId: "guest-session-1"}, nil)
-				guestNotificationRepo.EXPECT().EnqueueForCompletedTransaction(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
-					func(ctx context.Context, transaction domain.Transaction, sessionId *string) *domain.Error {
+				paymentRepo.EXPECT().GetPaymentByTransactionId(gomock.Any(), int64(1)).Return(domain.Payment{SessionId: "guest-session-1", CustomerWhatsappNumber: &whatsappNumber}, nil)
+				guestNotificationRepo.EXPECT().EnqueueForCompletedTransaction(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, transaction domain.Transaction, sessionId *string, whatsappNumber *string) *domain.Error {
 						assert.Equal(t, int64(1), transaction.Id)
 						require.NotNil(t, sessionId)
 						assert.Equal(t, "guest-session-1", *sessionId)
+						require.NotNil(t, whatsappNumber)
+						assert.Equal(t, "6281234567890", *whatsappNumber)
 						return nil
 					})
 			},
@@ -1162,9 +1165,10 @@ func TestTransactionUsecase_CompleteTransaction(t *testing.T) {
 				}, nil)
 				txRepo.EXPECT().CompleteTransaction(gomock.Any(), gomock.Any(), int64(6)).Return(nil)
 				paymentRepo.EXPECT().GetPaymentByTransactionId(gomock.Any(), int64(6)).Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
-				guestNotificationRepo.EXPECT().EnqueueForCompletedTransaction(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
-					func(ctx context.Context, transaction domain.Transaction, sessionId *string) *domain.Error {
+				guestNotificationRepo.EXPECT().EnqueueForCompletedTransaction(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, transaction domain.Transaction, sessionId *string, whatsappNumber *string) *domain.Error {
 						assert.Nil(t, sessionId)
+						assert.Nil(t, whatsappNumber)
 						return nil
 					})
 			},
@@ -1422,7 +1426,7 @@ func newRowTrackingGuestNotificationRepository() *rowTrackingGuestNotificationRe
 	return &rowTrackingGuestNotificationRepository{enqueueCallsByTransactionId: map[int64]int{}}
 }
 
-func (repo *rowTrackingGuestNotificationRepository) EnqueueForCompletedTransaction(ctx context.Context, transaction domain.Transaction, sessionId *string) *domain.Error {
+func (repo *rowTrackingGuestNotificationRepository) EnqueueForCompletedTransaction(ctx context.Context, transaction domain.Transaction, sessionId *string, whatsappNumber *string) *domain.Error {
 	repo.enqueueCallsByTransactionId[transaction.Id]++
 	return nil
 }
@@ -1431,11 +1435,15 @@ func (repo *rowTrackingGuestNotificationRepository) ClaimPendingGuestNotificatio
 	return nil, nil
 }
 
-func (repo *rowTrackingGuestNotificationRepository) MarkGuestNotificationSent(ctx context.Context, id int64, detail string) *domain.Error {
+func (repo *rowTrackingGuestNotificationRepository) MarkGuestNotificationSent(ctx context.Context, id int64, providerMessageId string) *domain.Error {
 	return nil
 }
 
 func (repo *rowTrackingGuestNotificationRepository) MarkGuestNotificationFailed(ctx context.Context, id int64, detail string) *domain.Error {
+	return nil
+}
+
+func (repo *rowTrackingGuestNotificationRepository) MarkGuestNotificationUnknownOutcome(ctx context.Context, id int64, detail string) *domain.Error {
 	return nil
 }
 

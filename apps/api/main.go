@@ -3,8 +3,8 @@ package main
 import (
 	"apps/api/data/doku"
 	"apps/api/data/expopush"
+	"apps/api/data/fonnte"
 	"apps/api/data/mysql"
-	"apps/api/data/webpush"
 	"apps/api/domain"
 	"apps/api/presentation/restapi"
 	"apps/api/utils"
@@ -82,16 +82,19 @@ func main() {
 
 	kdsPushGatewayRepository := expopush.NewKdsPushGatewayRepository(expoPushConfig)
 
-	webPushConfig := webpush.Config{
-		PublicKey:  env.WebPushVapidPublicKey,
-		PrivateKey: env.WebPushVapidPrivateKey,
-		Subject:    env.WebPushSubject,
+	// D10/D11: an unconfigured token or a missing ORDER_WEB_BASE_URL both boot a disabled
+	// gateway, which records every guest notification 'skipped' rather than failing to send.
+	fonnteConfig := fonnte.Config{Token: env.FonnteToken, BaseURL: env.FonnteBaseURL}
+	var whatsappGatewayRepository domain.WhatsAppGatewayRepository
+	if err := fonnteConfig.Validate(); err != nil {
+		rootLogger.Warn("whatsapp gateway not configured; guest notifications will be skipped", slog.Any("error", err))
+		whatsappGatewayRepository = fonnte.NewDisabledWhatsAppGateway()
+	} else if env.OrderWebBaseURL == "" {
+		rootLogger.Warn("ORDER_WEB_BASE_URL not configured; guest notifications will be skipped")
+		whatsappGatewayRepository = fonnte.NewDisabledWhatsAppGateway()
+	} else {
+		whatsappGatewayRepository = fonnte.NewWhatsAppGatewayRepository(fonnteConfig)
 	}
-	if err := webPushConfig.Validate(); err != nil {
-		rootLogger.Warn("web push gateway not configured; guest notifications will fail", slog.Any("error", err))
-	}
-
-	webPushGatewayRepository := webpush.NewWebPushGatewayRepository(webPushConfig)
 
 	router := mux.NewRouter().StrictSlash(true)
 	router.Use(restapi.EnableCORS)
@@ -128,7 +131,7 @@ func main() {
 	orderPaymentWalletId, _ := strconv.ParseInt(env.OrderPaymentWalletId, 10, 64)
 
 	kdsNotificationUsecase := domain.NewKdsNotificationUsecase(kdsNotificationRepository, kdsDeviceRepository, transactionRepository, kdsPushGatewayRepository, env.KdsPushSound)
-	guestNotificationUsecase := domain.NewGuestNotificationUsecase(guestNotificationRepository, webPushSubscriptionRepository, transactionRepository, paymentRepository, webPushGatewayRepository)
+	guestNotificationUsecase := domain.NewGuestNotificationUsecase(guestNotificationRepository, transactionRepository, paymentRepository, whatsappGatewayRepository, env.OrderWebBaseURL)
 
 	availabilityReservation := domain.NewAvailabilityReservation(availabilityReservationRepository)
 	walletUsecase := domain.NewWalletUsecase(walletRepository)

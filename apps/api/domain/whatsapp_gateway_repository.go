@@ -23,6 +23,11 @@ type WhatsAppSendResult struct {
 	Detail            string
 }
 
+// WhatsAppGatewayNotConfiguredDetail is the sentinel a disabled gateway returns (D10): the
+// dispatcher maps it to 'skipped', not to a retry, since it names a configuration fact rather
+// than a delivery failure.
+const WhatsAppGatewayNotConfiguredDetail = "whatsapp gateway not configured"
+
 // One message, one recipient: a guest notification never has more than one (D1).
 type WhatsAppGatewayRepository interface {
 	Send(ctx context.Context, message WhatsAppMessage) (WhatsAppSendResult, *Error)

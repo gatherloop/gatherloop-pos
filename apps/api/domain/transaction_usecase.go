@@ -403,6 +403,7 @@ func (usecase TransactionUsecase) CompleteTransaction(ctx context.Context, id in
 		// FR-2: no payment for the transaction is tolerated as a skipped notification, not a
 		// failed completion the barista already performed.
 		var sessionId *string
+		var whatsappNumber *string
 		payment, paymentErr := usecase.paymentRepository.GetPaymentByTransactionId(ctxWithTx, id)
 		if paymentErr != nil {
 			if paymentErr.Type != NotFound {
@@ -410,9 +411,10 @@ func (usecase TransactionUsecase) CompleteTransaction(ctx context.Context, id in
 			}
 		} else {
 			sessionId = &payment.SessionId
+			whatsappNumber = payment.CustomerWhatsappNumber
 		}
 
-		return usecase.guestNotificationRepository.EnqueueForCompletedTransaction(ctxWithTx, transaction, sessionId)
+		return usecase.guestNotificationRepository.EnqueueForCompletedTransaction(ctxWithTx, transaction, sessionId, whatsappNumber)
 	})
 	// FR-4/Phase 5: kicked after the commit so the barista's HTTP response never waits on a push service.
 	if err == nil {

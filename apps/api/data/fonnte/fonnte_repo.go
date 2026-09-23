@@ -21,7 +21,7 @@ const (
 	defaultBaseURL         = "https://api.fonnte.com"
 	requestTimeout         = 15 * time.Second
 	maxFailureDetailLength = 512
-	disabledGatewayDetail  = "whatsapp gateway not configured"
+	disabledGatewayDetail  = domain.WhatsAppGatewayNotConfiguredDetail
 	countryCodeAlreadyNorm = "0"
 )
 

@@ -5,9 +5,9 @@ import (
 	"strings"
 )
 
-// BuildGuestWhatsappMessage is pure and re-derived at send time, mirroring BuildGuestPushMessage:
-// a completed transaction cannot be edited, so there is nothing to snapshot against. orderUrl is
-// already built by BuildOrderStatusUrl; this function only shapes the message text (FR-6).
+// BuildGuestWhatsappMessage is pure and re-derived at send time: a completed transaction cannot
+// be edited, so there is nothing to snapshot against. orderUrl is already built by
+// BuildOrderStatusUrl; this function only shapes the message text (FR-6).
 func BuildGuestWhatsappMessage(transaction Transaction, method PaymentMethod, orderUrl string) string {
 	sections := []string{
 		fmt.Sprintf("Halo *%s*, pesanan Anda sudah siap diambil! 🎉", transaction.Name),
