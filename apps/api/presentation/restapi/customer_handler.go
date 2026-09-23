@@ -18,11 +18,11 @@ func (handler CustomerHandler) GetCurrentCustomer(w http.ResponseWriter, r *http
 	ctx := r.Context()
 	sessionId := GetSessionId(r)
 
-	name, err := handler.usecase.GetCurrentCustomerName(ctx, sessionId)
+	customer, err := handler.usecase.GetCurrentCustomer(ctx, sessionId)
 	if err != nil {
 		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(err.Type), Message: err.Message})
 		return
 	}
 
-	WriteResponse(w, apiContract.CustomerResponse{Data: ToApiCustomer(name)})
+	WriteResponse(w, apiContract.CustomerResponse{Data: ToApiCustomer(customer)})
 }

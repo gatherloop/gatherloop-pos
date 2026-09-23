@@ -21,29 +21,34 @@ func newCustomerTestHandler(repo *mock.MockCustomerRepository) restapi.CustomerH
 }
 
 func TestCustomerHandler_GetCurrentCustomer(t *testing.T) {
+	whatsappNumber := "6281234567890"
+
 	tests := []struct {
-		name           string
-		setupMock      func(r *mock.MockCustomerRepository)
-		expectedStatus int
-		expectedName   string
+		name                   string
+		setupMock              func(r *mock.MockCustomerRepository)
+		expectedStatus         int
+		expectedName           string
+		expectedWhatsappNumber string
 	}{
 		{
-			name: "a session that has ordered before reads back its name",
+			name: "a session that has ordered before reads back its name and whatsapp number",
 			setupMock: func(r *mock.MockCustomerRepository) {
 				r.EXPECT().GetCustomerBySessionId(gomock.Any(), testSessionId).
-					Return(domain.Customer{Id: 1, SessionId: testSessionId, Name: "Budi"}, nil)
+					Return(domain.Customer{Id: 1, SessionId: testSessionId, Name: "Budi", WhatsappNumber: &whatsappNumber}, nil)
 			},
-			expectedStatus: http.StatusOK,
-			expectedName:   "Budi",
+			expectedStatus:         http.StatusOK,
+			expectedName:           "Budi",
+			expectedWhatsappNumber: whatsappNumber,
 		},
 		{
-			name: "a session with no name yet reads an empty name, not a 404",
+			name: "a fresh session reads an empty name and whatsapp number, not a 404",
 			setupMock: func(r *mock.MockCustomerRepository) {
 				r.EXPECT().GetCustomerBySessionId(gomock.Any(), testSessionId).
 					Return(domain.Customer{}, &domain.Error{Type: domain.NotFound})
 			},
-			expectedStatus: http.StatusOK,
-			expectedName:   "",
+			expectedStatus:         http.StatusOK,
+			expectedName:           "",
+			expectedWhatsappNumber: "",
 		},
 		{
 			name: "repo error",
@@ -75,6 +80,7 @@ func TestCustomerHandler_GetCurrentCustomer(t *testing.T) {
 				var resp apiContract.CustomerResponse
 				assert.NoError(t, json.NewDecoder(bytes.NewBufferString(w.Body.String())).Decode(&resp))
 				assert.Equal(t, tt.expectedName, resp.Data.Name)
+				assert.Equal(t, tt.expectedWhatsappNumber, resp.Data.WhatsappNumber)
 			}
 		})
 	}
