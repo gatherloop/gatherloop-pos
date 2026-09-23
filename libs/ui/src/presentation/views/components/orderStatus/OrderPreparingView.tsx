@@ -9,10 +9,6 @@ import {
 } from 'tamagui';
 import { PaymentItem } from '../../../../domain/entities/Payment';
 import { OrderItemsSummary } from './OrderItemsSummary';
-import {
-  OrderNotificationOptIn,
-  OrderNotificationOptInVariant,
-} from './OrderNotificationOptIn';
 
 const ELLIPSIS_FRAMES = ['', '.', '..', '...'];
 const ELLIPSIS_INTERVAL_MS = 500;
@@ -113,7 +109,6 @@ export type OrderPreparingViewProps = {
   items: PaymentItem[];
   amount: number;
   isPolling: boolean;
-  notificationOptIn: OrderNotificationOptInVariant;
 };
 
 export const OrderPreparingView = ({
@@ -121,7 +116,6 @@ export const OrderPreparingView = ({
   items,
   amount,
   isPolling,
-  notificationOptIn,
 }: OrderPreparingViewProps) => (
   <YStack flex={1} gap="$4" alignItems="center">
     <PreparingNumberBadge value={transactionNumber} />
@@ -129,6 +123,5 @@ export const OrderPreparingView = ({
     <ScrollView flex={1}>
       <OrderItemsSummary items={items} amount={amount} />
     </ScrollView>
-    <OrderNotificationOptIn variant={notificationOptIn} />
   </YStack>
 );

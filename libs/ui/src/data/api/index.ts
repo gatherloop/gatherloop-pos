@@ -48,5 +48,3 @@ export * from './payment.transformer';
 export * from './customer';
 export * from './kdsDevice';
 export * from './kdsDevice.transformer';
-export * from './webPushSubscription';
-export * from './webPushSubscription.transformer';
