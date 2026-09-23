@@ -71,12 +71,6 @@ configure push delivery to `apps/kds-mobile` (`docs/prd-kds-order-notifications.
 still registers and boots without a real Expo token, but no notification is actually delivered
 until one is set.
 
-`apps/api/.env`'s `WEB_PUSH_VAPID_PUBLIC_KEY`, `WEB_PUSH_VAPID_PRIVATE_KEY` and `WEB_PUSH_SUBJECT`
-configure guest order-ready push to `apps/order-web` (`docs/prd-order-web-push-notifications.md`).
-Generate a keypair with `go run ./cmd/generatevapidkeys` (from `apps/api`) and paste its output into
-`.env` — the API boots without them, but the guest-facing opt-in card can't subscribe a browser
-until a keypair is set, since `GET /public/web-push/config` has nothing to serve.
-
 `apps/api/.env`'s `CASH_PAYMENT_EXPIRY_SECONDS` (default `600`) is the walk-and-queue window an
 order-app guest gets to pay cash at the till before the order is cancelled automatically
 (`docs/prd-order-cash-payment.md`, D5). `apps/order-web/.env.local`'s
