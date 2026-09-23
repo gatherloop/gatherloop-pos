@@ -49,10 +49,23 @@ func (repo Repository) GetPendingPaymentByCartId(ctx context.Context, cartId int
 	return ToPaymentDomain(payment), ToErrorCtx(ctx, result.Error, "GetPendingPaymentByCartId")
 }
 
+// FR-11: paid payments of either method, plus pending cash so a guest who
+// closed the tab can still find their way back to the till.
+const paymentHistoryFilter = "session_id = ? AND deleted_at IS NULL AND (status = ? OR (status = ? AND method = ?))"
+
+func paymentHistoryFilterArgs(sessionId string) []any {
+	return []any{
+		sessionId,
+		string(domain.PaymentStatePaid),
+		string(domain.PaymentStatePending),
+		string(domain.PaymentMethodCash),
+	}
+}
+
 func (repo Repository) GetPaymentsBySessionId(ctx context.Context, sessionId string, skip int, limit int) ([]domain.Payment, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	query := db.Table("payments").
-		Where("session_id = ? AND status = ? AND deleted_at IS NULL", sessionId, string(domain.PaymentStatePaid)).
+		Where(paymentHistoryFilter, paymentHistoryFilterArgs(sessionId)...).
 		Order("id DESC")
 
 	if skip > 0 {
@@ -72,7 +85,7 @@ func (repo Repository) GetPaymentsBySessionIdTotal(ctx context.Context, sessionI
 	db := GetDbFromCtx(ctx, repo.db)
 	var count int64
 	result := db.Table("payments").
-		Where("session_id = ? AND status = ? AND deleted_at IS NULL", sessionId, string(domain.PaymentStatePaid)).
+		Where(paymentHistoryFilter, paymentHistoryFilterArgs(sessionId)...).
 		Count(&count)
 	return count, ToErrorCtx(ctx, result.Error, "GetPaymentsBySessionIdTotal")
 }
