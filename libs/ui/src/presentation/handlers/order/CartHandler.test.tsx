@@ -29,6 +29,8 @@ const TABLE_CODE = '3F7H9K2M5P';
 
 const renderHandler = ({
   enabled = true,
+  isCashPaymentEnabled = false,
+  cashierLocation,
   cartRepository = new MockCartRepository(),
   paymentRepository = new MockPaymentRepository(),
   tableRepository = new MockPublicTableRepository(),
@@ -38,6 +40,8 @@ const renderHandler = ({
   preparingCount,
 }: {
   enabled?: boolean;
+  isCashPaymentEnabled?: boolean;
+  cashierLocation?: string;
   cartRepository?: MockCartRepository;
   paymentRepository?: MockPaymentRepository;
   tableRepository?: MockPublicTableRepository;
@@ -66,6 +70,8 @@ const renderHandler = ({
         checkoutUsecase={checkoutUsecase}
         sessionRepository={sessionRepository}
         enabled={enabled}
+        isCashPaymentEnabled={isCashPaymentEnabled}
+        cashierLocation={cashierLocation}
         tableCode={TABLE_CODE}
         preparingCount={preparingCount}
       />
@@ -369,6 +375,80 @@ describe('CartHandler', () => {
     expect(screen.queryByPlaceholderText('Nama Anda')).toBeNull();
     expect(checkoutSpy).not.toHaveBeenCalled();
     expect(screen.getByText('Es Kopi Susu')).toBeTruthy();
+  });
+
+  it('does not render the method picker when cash payment is disabled', async () => {
+    const user = userEvent.setup();
+    const cartRepository = new MockCartRepository();
+    await addItemToCart(cartRepository);
+    renderHandler({ cartRepository, customerName: 'Budi' });
+    await settle();
+
+    await user.click(screen.getByRole('button', { name: payButtonName }));
+
+    expect(
+      screen.queryByLabelText('Bayar dengan Cash di Kasir')
+    ).toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'Lanjutkan ke pembayaran' })
+    ).toBeTruthy();
+  });
+
+  it('renders the method picker defaulted to QRIS when cash payment is enabled', async () => {
+    const user = userEvent.setup();
+    const cartRepository = new MockCartRepository();
+    await addItemToCart(cartRepository);
+    renderHandler({
+      cartRepository,
+      customerName: 'Budi',
+      isCashPaymentEnabled: true,
+      cashierLocation: 'Lantai 2',
+    });
+    await settle();
+
+    await user.click(screen.getByRole('button', { name: payButtonName }));
+
+    expect(
+      screen.getByLabelText('Bayar dengan Cash di Kasir')
+    ).toBeTruthy();
+    expect(screen.getByText('Bayar tunai di kasir Lantai 2')).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Lanjutkan ke pembayaran' })
+    ).toBeTruthy();
+  });
+
+  it('selecting cash switches the submit label and checks out with method cash', async () => {
+    const user = userEvent.setup();
+    const cartRepository = new MockCartRepository();
+    await addItemToCart(cartRepository);
+    const paymentRepository = new MockPaymentRepository();
+    const checkoutSpy = jest.spyOn(paymentRepository, 'checkout');
+    renderHandler({
+      cartRepository,
+      paymentRepository,
+      customerName: 'Budi',
+      isCashPaymentEnabled: true,
+    });
+    await settle();
+
+    await user.click(screen.getByRole('button', { name: payButtonName }));
+    await user.click(
+      screen.getByLabelText('Bayar dengan Cash di Kasir')
+    );
+
+    expect(
+      screen.getByRole('button', { name: 'Pesan & bayar di kasir' })
+    ).toBeTruthy();
+
+    await user.click(
+      screen.getByRole('button', { name: 'Pesan & bayar di kasir' })
+    );
+    await settle();
+
+    expect(checkoutSpy).toHaveBeenCalledWith('Budi', 'cash');
+    expect(mockPush).toHaveBeenCalledWith(
+      `/orders/${paymentRepository.payment.reference}`
+    );
   });
 
   it('creates the payment and navigates to the status page once a valid name is submitted', async () => {
