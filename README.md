@@ -79,6 +79,14 @@ order-app guest gets to pay cash at the till before the order is cancelled autom
 at all; `NEXT_PUBLIC_ORDER_CASHIER_LOCATION` (default `Lantai 1`) is the till location shown to the
 guest in both the checkout sheet and the cash instruction screen.
 
+`apps/api/.env`'s `FONNTE_TOKEN`, `FONNTE_BASE_URL` and `ORDER_WEB_BASE_URL` configure the
+WhatsApp order-ready notification sent when a barista marks an order-app order ready
+(`docs/prd-order-whatsapp-notifications.md`) — leaving `FONNTE_TOKEN` or `ORDER_WEB_BASE_URL`
+empty (the default) boots the API with a disabled gateway that records every guest notification
+`skipped` rather than failing checkout or the dispatcher, which is the expected state for local
+dev, CI and the e2e stack. `go run ./cmd/fonntecheck -to 0812…` from `apps/api` sends one real
+message through a configured gateway and prints Fonnte's raw response.
+
 ### Run
 
 ```bash
