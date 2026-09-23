@@ -119,15 +119,6 @@ export const orderStatus = {
     page.getByText(`${amount}x ${productName}`, { exact: true }),
 };
 
-export const orderNotificationOptIn = {
-  subscribeButton: (page: Page) =>
-    page.getByRole('button', { name: 'Beri tahu saya' }),
-  subscribedText: (page: Page) =>
-    page.getByText('Kami akan memberi tahu saat pesanan siap.'),
-  unsubscribeButton: (page: Page) =>
-    page.getByRole('button', { name: 'Matikan' }),
-};
-
 export const orderBrandHeader = {
   historyButton: (page: Page) =>
     page.getByRole('button', { name: 'Pesanan Saya' }),
