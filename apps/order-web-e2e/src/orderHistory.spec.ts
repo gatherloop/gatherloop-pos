@@ -62,7 +62,7 @@ test.describe.serial('Order History', () => {
     await expect(sel.cartScreen.lineItemName(page, PRODUCT_NAME)).toBeVisible();
 
     await sel.cartScreen.checkoutButton(page, formatRupiah(PRICE)).click();
-    await sel.cartScreen.nameInput(page).fill(CUSTOMER_NAME);
+    await sel.cartScreen.fillCustomerDetails(page, CUSTOMER_NAME);
 
     const checkoutResponsePromise = page.waitForResponse(
       (response) =>

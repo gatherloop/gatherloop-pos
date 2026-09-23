@@ -14,6 +14,7 @@ export type CartProps = {
   code: string;
   table?: PublicTable | null;
   customerName?: string;
+  customerWhatsappNumber?: string;
   preparingCount?: number;
 };
 
@@ -22,6 +23,7 @@ export function Cart({
   code,
   table,
   customerName,
+  customerWhatsappNumber,
   preparingCount,
 }: CartProps) {
   const sessionRepository = new CookieSessionRepository(sessionId);
@@ -37,6 +39,7 @@ export function Cart({
   const cartUsecase = new CartUsecase(cartRepository, cartQueryRepository);
   const checkoutUsecase = new CheckoutUsecase(paymentRepository, {
     customerName,
+    customerWhatsappNumber,
   });
   const enabled = process.env['NEXT_PUBLIC_ORDER_CHECKOUT_ENABLED'] === 'true';
   const isCashPaymentEnabled =

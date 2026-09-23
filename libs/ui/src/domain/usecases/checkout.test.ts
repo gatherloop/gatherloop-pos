@@ -9,9 +9,12 @@ import { UsecaseTester } from '../../utils/usecase';
 
 const flushMicrotasks = () => jest.advanceTimersByTimeAsync(0);
 
-const createTester = (repository: MockPaymentRepository, customerName = '') =>
+const createTester = (
+  repository: MockPaymentRepository,
+  params: CheckoutParams = {}
+) =>
   new UsecaseTester<CheckoutUsecase, CheckoutState, CheckoutAction, CheckoutParams>(
-    new CheckoutUsecase(repository, { customerName })
+    new CheckoutUsecase(repository, params)
   );
 
 describe('CheckoutUsecase', () => {
@@ -23,68 +26,156 @@ describe('CheckoutUsecase', () => {
     jest.useRealTimers();
   });
 
-  it('should transition idle → askingName → creatingPayment → created', async () => {
+  it('should transition idle → askingDetails → creatingPayment → created', async () => {
     const repository = new MockPaymentRepository();
     const checkout = createTester(repository);
 
-    checkout.dispatch({ type: 'ASK_NAME' });
-    expect(checkout.state.type).toBe('askingName');
+    checkout.dispatch({ type: 'ASK_DETAILS' });
+    expect(checkout.state.type).toBe('askingDetails');
 
     checkout.dispatch({ type: 'CHANGE_NAME', name: 'Budi' });
-    checkout.dispatch({ type: 'SUBMIT_NAME' });
+    checkout.dispatch({
+      type: 'CHANGE_WHATSAPP_NUMBER',
+      whatsappNumber: '0812-3456-7890',
+    });
+    checkout.dispatch({ type: 'SUBMIT_DETAILS' });
     expect(checkout.state.type).toBe('creatingPayment');
     expect(checkout.state.customerName).toBe('Budi');
+    expect(checkout.state.whatsappNumber).toBe('6281234567890');
 
     await flushMicrotasks();
     expect(checkout.state.type).toBe('created');
     expect(checkout.state.payment).toEqual(repository.payment);
   });
 
-  it('should hold an empty name at askingName with an error', () => {
+  it('should hold an empty name at askingDetails with an error', () => {
     const repository = new MockPaymentRepository();
     const checkout = createTester(repository);
 
-    checkout.dispatch({ type: 'ASK_NAME' });
+    checkout.dispatch({ type: 'ASK_DETAILS' });
     checkout.dispatch({ type: 'CHANGE_NAME', name: '   ' });
-    checkout.dispatch({ type: 'SUBMIT_NAME' });
+    checkout.dispatch({
+      type: 'CHANGE_WHATSAPP_NUMBER',
+      whatsappNumber: '081234567890',
+    });
+    checkout.dispatch({ type: 'SUBMIT_DETAILS' });
 
-    expect(checkout.state.type).toBe('askingName');
+    expect(checkout.state.type).toBe('askingDetails');
     expect(checkout.state.nameErrorMessage).toBe('Nama tidak boleh kosong');
   });
 
-  it('should hold an over-long name at askingName with an error', () => {
+  it('should hold an over-long name at askingDetails with an error', () => {
     const repository = new MockPaymentRepository();
     const checkout = createTester(repository);
 
-    checkout.dispatch({ type: 'ASK_NAME' });
+    checkout.dispatch({ type: 'ASK_DETAILS' });
     checkout.dispatch({ type: 'CHANGE_NAME', name: 'a'.repeat(61) });
-    checkout.dispatch({ type: 'SUBMIT_NAME' });
+    checkout.dispatch({
+      type: 'CHANGE_WHATSAPP_NUMBER',
+      whatsappNumber: '081234567890',
+    });
+    checkout.dispatch({ type: 'SUBMIT_DETAILS' });
 
-    expect(checkout.state.type).toBe('askingName');
+    expect(checkout.state.type).toBe('askingDetails');
     expect(checkout.state.nameErrorMessage).toBe('Nama maksimal 60 karakter');
   });
 
-  it('should return to idle having created nothing on CANCEL_NAME', () => {
+  it('should hold an empty WhatsApp number at askingDetails with an error', () => {
     const repository = new MockPaymentRepository();
     const checkout = createTester(repository);
 
-    checkout.dispatch({ type: 'ASK_NAME' });
+    checkout.dispatch({ type: 'ASK_DETAILS' });
     checkout.dispatch({ type: 'CHANGE_NAME', name: 'Budi' });
+    checkout.dispatch({ type: 'CHANGE_WHATSAPP_NUMBER', whatsappNumber: '   ' });
+    checkout.dispatch({ type: 'SUBMIT_DETAILS' });
+
+    expect(checkout.state.type).toBe('askingDetails');
+    expect(checkout.state.whatsappNumberErrorMessage).toBe(
+      'Nomor WhatsApp tidak boleh kosong'
+    );
+  });
+
+  it('should hold an invalid WhatsApp number at askingDetails with an error', () => {
+    const repository = new MockPaymentRepository();
+    const checkout = createTester(repository);
+
+    checkout.dispatch({ type: 'ASK_DETAILS' });
+    checkout.dispatch({ type: 'CHANGE_NAME', name: 'Budi' });
+    checkout.dispatch({ type: 'CHANGE_WHATSAPP_NUMBER', whatsappNumber: '12345' });
+    checkout.dispatch({ type: 'SUBMIT_DETAILS' });
+
+    expect(checkout.state.type).toBe('askingDetails');
+    expect(checkout.state.whatsappNumberErrorMessage).toBe(
+      'Nomor WhatsApp tidak valid'
+    );
+  });
+
+  it('should validate name and WhatsApp number together, setting only the field that is invalid', () => {
+    const repository = new MockPaymentRepository();
+    const checkout = createTester(repository);
+
+    checkout.dispatch({ type: 'ASK_DETAILS' });
+    checkout.dispatch({ type: 'CHANGE_NAME', name: 'Budi' });
+    checkout.dispatch({ type: 'CHANGE_WHATSAPP_NUMBER', whatsappNumber: '12345' });
+    checkout.dispatch({ type: 'SUBMIT_DETAILS' });
+
+    expect(checkout.state.nameErrorMessage).toBeNull();
+    expect(checkout.state.whatsappNumberErrorMessage).toBe(
+      'Nomor WhatsApp tidak valid'
+    );
+  });
+
+  it('should return to idle having created nothing on CANCEL_DETAILS', () => {
+    const repository = new MockPaymentRepository();
+    const checkout = createTester(repository);
+
+    checkout.dispatch({ type: 'ASK_DETAILS' });
+    checkout.dispatch({ type: 'CHANGE_NAME', name: 'Budi' });
+    checkout.dispatch({
+      type: 'CHANGE_WHATSAPP_NUMBER',
+      whatsappNumber: '081234567890',
+    });
     checkout.dispatch({ type: 'CHANGE_METHOD', method: 'cash' });
-    checkout.dispatch({ type: 'CANCEL_NAME' });
+    checkout.dispatch({ type: 'CANCEL_DETAILS' });
 
     expect(checkout.state.type).toBe('idle');
     expect(checkout.state.payment).toBeNull();
     expect(checkout.state.customerName).toBe('Budi');
+    expect(checkout.state.whatsappNumber).toBe('081234567890');
     expect(checkout.state.method).toBe('cash');
   });
 
-  it('should still require an explicit submit when the name is seeded', () => {
+  it('should still require an explicit submit when the name and number are seeded', () => {
     const repository = new MockPaymentRepository();
-    const checkout = createTester(repository, 'Budi');
+    const checkout = createTester(repository, {
+      customerName: 'Budi',
+      customerWhatsappNumber: '0812345678',
+    });
 
     expect(checkout.state.type).toBe('idle');
     expect(checkout.state.customerName).toBe('Budi');
+    expect(checkout.state.whatsappNumber).toBe('0812345678');
+  });
+
+  it('should reach creatingPayment with the normalized number when a prefilled sheet is submitted', async () => {
+    const repository = new MockPaymentRepository();
+    const checkoutSpy = jest.spyOn(repository, 'checkout');
+    const checkout = createTester(repository, {
+      customerName: 'Budi',
+      customerWhatsappNumber: '0812345678',
+    });
+
+    checkout.dispatch({ type: 'ASK_DETAILS' });
+    checkout.dispatch({ type: 'SUBMIT_DETAILS' });
+    expect(checkout.state.type).toBe('creatingPayment');
+    expect(checkout.state.whatsappNumber).toBe('62812345678');
+
+    await flushMicrotasks();
+    expect(checkoutSpy).toHaveBeenCalledWith({
+      customerName: 'Budi',
+      whatsappNumber: '62812345678',
+      method: 'qris',
+    });
   });
 
   it('should default the method to qris', () => {
@@ -94,17 +185,17 @@ describe('CheckoutUsecase', () => {
     expect(checkout.state.method).toBe('qris');
   });
 
-  it('should accept CHANGE_METHOD in askingName', () => {
+  it('should accept CHANGE_METHOD in askingDetails', () => {
     const repository = new MockPaymentRepository();
     const checkout = createTester(repository);
 
-    checkout.dispatch({ type: 'ASK_NAME' });
+    checkout.dispatch({ type: 'ASK_DETAILS' });
     checkout.dispatch({ type: 'CHANGE_METHOD', method: 'cash' });
 
     expect(checkout.state.method).toBe('cash');
   });
 
-  it('should ignore CHANGE_METHOD outside askingName', () => {
+  it('should ignore CHANGE_METHOD outside askingDetails', () => {
     const repository = new MockPaymentRepository();
     const checkout = createTester(repository);
 
@@ -117,15 +208,19 @@ describe('CheckoutUsecase', () => {
   it('should submit a cash checkout with the selected method', async () => {
     const repository = new MockPaymentRepository();
     const checkoutSpy = jest.spyOn(repository, 'checkout');
-    const checkout = createTester(repository, 'Budi');
+    const checkout = createTester(repository, {
+      customerName: 'Budi',
+      customerWhatsappNumber: '081234567890',
+    });
 
-    checkout.dispatch({ type: 'ASK_NAME' });
+    checkout.dispatch({ type: 'ASK_DETAILS' });
     checkout.dispatch({ type: 'CHANGE_METHOD', method: 'cash' });
-    checkout.dispatch({ type: 'SUBMIT_NAME' });
+    checkout.dispatch({ type: 'SUBMIT_DETAILS' });
     await flushMicrotasks();
 
     expect(checkoutSpy).toHaveBeenCalledWith({
       customerName: 'Budi',
+      whatsappNumber: '6281234567890',
       method: 'cash',
     });
     expect(checkout.state.type).toBe('created');
@@ -135,17 +230,20 @@ describe('CheckoutUsecase', () => {
   it('should transition creatingPayment → error and retry', async () => {
     const repository = new MockPaymentRepository();
     repository.setShouldFailCheckout(true);
-    const checkout = createTester(repository, 'Budi');
+    const checkout = createTester(repository, {
+      customerName: 'Budi',
+      customerWhatsappNumber: '081234567890',
+    });
 
-    checkout.dispatch({ type: 'ASK_NAME' });
-    checkout.dispatch({ type: 'SUBMIT_NAME' });
+    checkout.dispatch({ type: 'ASK_DETAILS' });
+    checkout.dispatch({ type: 'SUBMIT_DETAILS' });
     await flushMicrotasks();
 
     expect(checkout.state.type).toBe('error');
     expect(checkout.state.errorMessage).toBe('Failed to create payment');
 
     repository.setShouldFailCheckout(false);
-    checkout.dispatch({ type: 'SUBMIT_NAME' });
+    checkout.dispatch({ type: 'SUBMIT_DETAILS' });
     expect(checkout.state.type).toBe('creatingPayment');
 
     await flushMicrotasks();
@@ -154,15 +252,18 @@ describe('CheckoutUsecase', () => {
 
   it('should stay at created and ignore further actions once the payment exists', async () => {
     const repository = new MockPaymentRepository();
-    const checkout = createTester(repository, 'Budi');
-    checkout.dispatch({ type: 'ASK_NAME' });
-    checkout.dispatch({ type: 'SUBMIT_NAME' });
+    const checkout = createTester(repository, {
+      customerName: 'Budi',
+      customerWhatsappNumber: '081234567890',
+    });
+    checkout.dispatch({ type: 'ASK_DETAILS' });
+    checkout.dispatch({ type: 'SUBMIT_DETAILS' });
     await flushMicrotasks();
 
     expect(checkout.state.type).toBe('created');
     const { payment } = checkout.state;
 
-    checkout.dispatch({ type: 'ASK_NAME' });
+    checkout.dispatch({ type: 'ASK_DETAILS' });
 
     expect(checkout.state.type).toBe('created');
     expect(checkout.state.payment).toEqual(payment);

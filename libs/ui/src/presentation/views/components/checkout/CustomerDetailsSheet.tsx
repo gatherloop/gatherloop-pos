@@ -3,11 +3,14 @@ import { match } from 'ts-pattern';
 import { PaymentMethod } from '../../../../domain/entities/Payment';
 import { Sheet } from '../base/Sheet';
 
-export type CustomerNameSheetProps = {
+export type CustomerDetailsSheetProps = {
   isOpen: boolean;
   name: string;
-  errorMessage: string | null;
+  nameErrorMessage: string | null;
   onNameChange: (name: string) => void;
+  whatsappNumber: string;
+  whatsappNumberErrorMessage: string | null;
+  onWhatsappNumberChange: (whatsappNumber: string) => void;
   onSubmitPress: () => void;
   onCancelPress: () => void;
   isCashPaymentEnabled: boolean;
@@ -22,36 +25,59 @@ const submitLabel = (method: PaymentMethod) =>
     .with('cash', () => 'Pesan & bayar di kasir')
     .exhaustive();
 
-export const CustomerNameSheet = ({
+export const CustomerDetailsSheet = ({
   isOpen,
   name,
-  errorMessage,
+  nameErrorMessage,
   onNameChange,
+  whatsappNumber,
+  whatsappNumberErrorMessage,
+  onWhatsappNumberChange,
   onSubmitPress,
   onCancelPress,
   isCashPaymentEnabled,
   method,
   onMethodChange,
   cashierLocation,
-}: CustomerNameSheetProps) => (
+}: CustomerDetailsSheetProps) => (
   <Sheet isOpen={isOpen} onOpenChange={(open) => !open && onCancelPress()}>
     <YStack padding="$4" gap="$3">
       <Paragraph fontWeight="bold" fontSize="$6">
-        Atas nama siapa pesanan ini?
+        Data pemesan
       </Paragraph>
 
-      <Input
-        value={name}
-        placeholder="Nama Anda"
-        onChangeText={onNameChange}
-        onSubmitEditing={onSubmitPress}
-        accessibilityLabel="Nama Anda"
-        autoFocus
-      />
+      <YStack gap="$2">
+        <Input
+          value={name}
+          placeholder="Nama Anda"
+          onChangeText={onNameChange}
+          onSubmitEditing={onSubmitPress}
+          accessibilityLabel="Nama Anda"
+          autoFocus
+        />
+        {nameErrorMessage ? (
+          <Paragraph color="$red10">{nameErrorMessage}</Paragraph>
+        ) : null}
+      </YStack>
 
-      {errorMessage ? (
-        <Paragraph color="$red10">{errorMessage}</Paragraph>
-      ) : null}
+      <YStack gap="$2">
+        <Input
+          value={whatsappNumber}
+          placeholder="0812 3456 7890"
+          onChangeText={onWhatsappNumberChange}
+          onSubmitEditing={onSubmitPress}
+          accessibilityLabel="Nomor WhatsApp"
+          inputMode="tel"
+          autoComplete="tel"
+        />
+        {whatsappNumberErrorMessage ? (
+          <Paragraph color="$red10">{whatsappNumberErrorMessage}</Paragraph>
+        ) : null}
+        <Paragraph fontSize="$2" color="$color10">
+          Nomor ini akan kami gunakan untuk mengabari Anda lewat WhatsApp saat
+          pesanan siap diambil.
+        </Paragraph>
+      </YStack>
 
       {isCashPaymentEnabled ? (
         <YStack gap="$2">
