@@ -2,6 +2,7 @@ package domain
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -55,8 +56,9 @@ type KdsNotification struct {
 const kdsNotificationBodyItemLimit = 4
 
 // BuildKdsPushMessage is pure and re-derived at send time (FR-6): a paid transaction cannot be
-// edited, so there is nothing to snapshot against.
-func BuildKdsPushMessage(transaction Transaction, sound string) KdsPushMessage {
+// edited, so there is nothing to snapshot against. The kind picks the title/body pair (FR-7):
+// order_paid is unchanged, cash_pending leads with the amount to collect.
+func BuildKdsPushMessage(transaction Transaction, kind KdsNotificationKind, sound string) KdsPushMessage {
 	lines := StationLines(transaction)
 
 	stations := make([]string, len(lines))
@@ -64,9 +66,16 @@ func BuildKdsPushMessage(transaction Transaction, sound string) KdsPushMessage {
 		stations[i] = string(line.Station)
 	}
 
+	title := buildKdsNotificationTitle(transaction)
+	body := buildKdsNotificationBody(lines)
+	if kind == KdsNotificationKindCashPending {
+		title = buildCashPendingNotificationTitle(transaction)
+		body = buildCashPendingNotificationBody(transaction, lines)
+	}
+
 	return KdsPushMessage{
-		Title:     buildKdsNotificationTitle(transaction),
-		Body:      buildKdsNotificationBody(lines),
+		Title:     title,
+		Body:      body,
 		Sound:     sound,
 		ChannelId: kdsPushChannelId,
 		Priority:  KdsPushPriorityHigh,
@@ -75,12 +84,30 @@ func BuildKdsPushMessage(transaction Transaction, sound string) KdsPushMessage {
 			"transactionNumber": transaction.TransactionNumber,
 			"stations":          stations,
 			"source":            string(transaction.Source),
+			"kind":              string(kind),
 		},
 	}
 }
 
 func buildKdsNotificationTitle(transaction Transaction) string {
 	return fmt.Sprintf("New order #%d — %s", transaction.TransactionNumber, kdsOrderSubject(transaction))
+}
+
+func buildCashPendingNotificationTitle(transaction Transaction) string {
+	return fmt.Sprintf("Cash order #%d — %s", transaction.TransactionNumber, kdsOrderSubject(transaction))
+}
+
+// buildCashPendingNotificationBody leads with the amount to collect, since the point of this
+// notification is a barista walking to the till, not making a drink (D9) — a transaction with no
+// station items (a board-game ticket paid in cash) still renders the amount line alone.
+func buildCashPendingNotificationBody(transaction Transaction, lines []KdsStationLine) string {
+	amountLine := fmt.Sprintf("Collect %s at the counter", formatRupiah(transaction.Total))
+
+	stationsBody := buildKdsNotificationBody(lines)
+	if stationsBody == "" {
+		return amountLine
+	}
+	return amountLine + " · " + stationsBody
 }
 
 func kdsOrderSubject(transaction Transaction) string {
@@ -135,4 +162,26 @@ func formatKdsItemAmount(amount float32) string {
 		return strconv.FormatInt(int64(amount), 10)
 	}
 	return strconv.FormatFloat(float64(amount), 'f', 2, 32)
+}
+
+// formatRupiah mirrors libs/ui/src/utils/currency.ts's formatRupiah: whole rupiah, dot-grouped
+// thousands, no decimals — the same money format the order slip renders.
+func formatRupiah(amount float32) string {
+	rounded := int64(math.Round(float64(amount)))
+
+	sign := ""
+	if rounded < 0 {
+		sign = "-"
+		rounded = -rounded
+	}
+
+	digits := strconv.FormatInt(rounded, 10)
+	var groups []string
+	for len(digits) > 3 {
+		groups = append([]string{digits[len(digits)-3:]}, groups...)
+		digits = digits[:len(digits)-3]
+	}
+	groups = append([]string{digits}, groups...)
+
+	return sign + "Rp " + strings.Join(groups, ".")
 }

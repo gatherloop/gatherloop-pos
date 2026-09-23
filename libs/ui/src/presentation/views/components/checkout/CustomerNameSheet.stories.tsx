@@ -17,6 +17,12 @@ const meta: Meta<typeof CustomerNameSheet> = {
     onCancelPress: () => {
       // Storybook action stand-in
     },
+    isCashPaymentEnabled: false,
+    method: 'qris',
+    onMethodChange: () => {
+      // Storybook action stand-in
+    },
+    cashierLocation: 'Lantai 1',
   },
 };
 
@@ -35,4 +41,12 @@ export const WithError: Story = {
 
 export const Closed: Story = {
   args: { isOpen: false },
+};
+
+export const CashPaymentEnabledQris: Story = {
+  args: { name: 'Budi', isCashPaymentEnabled: true, method: 'qris' },
+};
+
+export const CashPaymentEnabledCash: Story = {
+  args: { name: 'Budi', isCashPaymentEnabled: true, method: 'cash' },
 };

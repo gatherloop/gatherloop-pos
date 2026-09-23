@@ -17,7 +17,7 @@ func TestBuildKdsPushMessage(t *testing.T) {
 			TransactionItems:  []domain.TransactionItem{kdsItem("BAR", 1, "Americano")},
 		}
 
-		message := domain.BuildKdsPushMessage(transaction, "default")
+		message := domain.BuildKdsPushMessage(transaction, domain.KdsNotificationKindOrderPaid, "default")
 
 		assert.Contains(t, message.Title, "#12")
 		assert.NotContains(t, message.Title, "#999")
@@ -31,7 +31,7 @@ func TestBuildKdsPushMessage(t *testing.T) {
 			TransactionItems:  []domain.TransactionItem{kdsItem("BAR", 1, "Americano")},
 		}
 
-		message := domain.BuildKdsPushMessage(transaction, "default")
+		message := domain.BuildKdsPushMessage(transaction, domain.KdsNotificationKindOrderPaid, "default")
 
 		assert.Contains(t, message.Title, "Table 4")
 	})
@@ -47,7 +47,7 @@ func TestBuildKdsPushMessage(t *testing.T) {
 			},
 		}
 
-		message := domain.BuildKdsPushMessage(transaction, "default")
+		message := domain.BuildKdsPushMessage(transaction, domain.KdsNotificationKindOrderPaid, "default")
 
 		assert.Equal(t, "BAR: 2× Kopi Susu Gula Aren, 1× Americano · KITCHEN: 1× Sandwich", message.Body)
 	})
@@ -64,7 +64,7 @@ func TestBuildKdsPushMessage(t *testing.T) {
 			},
 		}
 
-		message := domain.BuildKdsPushMessage(transaction, "default")
+		message := domain.BuildKdsPushMessage(transaction, domain.KdsNotificationKindOrderPaid, "default")
 
 		assert.Equal(t, "BAR: 2× Coffee Latte · KITCHEN: 2× Pancong", message.Body)
 	})
@@ -78,7 +78,7 @@ func TestBuildKdsPushMessage(t *testing.T) {
 			},
 		}
 
-		message := domain.BuildKdsPushMessage(transaction, "default")
+		message := domain.BuildKdsPushMessage(transaction, domain.KdsNotificationKindOrderPaid, "default")
 
 		assert.Equal(t, "BAR: 2× Kopi Susu Gula Aren", message.Body)
 		assert.NotContains(t, message.Body, "KITCHEN")
@@ -90,7 +90,7 @@ func TestBuildKdsPushMessage(t *testing.T) {
 			TransactionItems:  []domain.TransactionItem{kdsItem("BAR", 1, "Americano")},
 		}
 
-		message := domain.BuildKdsPushMessage(transaction, "orders-v1-sound")
+		message := domain.BuildKdsPushMessage(transaction, domain.KdsNotificationKindOrderPaid, "orders-v1-sound")
 
 		assert.Equal(t, "orders-v1-sound", message.Sound)
 	})
@@ -101,7 +101,7 @@ func TestBuildKdsPushMessage(t *testing.T) {
 			TransactionItems:  []domain.TransactionItem{kdsItem("BAR", 1, "Americano")},
 		}
 
-		message := domain.BuildKdsPushMessage(transaction, "default")
+		message := domain.BuildKdsPushMessage(transaction, domain.KdsNotificationKindOrderPaid, "default")
 
 		assert.Equal(t, domain.KdsPushPriorityHigh, message.Priority)
 	})
@@ -118,7 +118,7 @@ func TestBuildKdsPushMessage(t *testing.T) {
 			},
 		}
 
-		message := domain.BuildKdsPushMessage(transaction, "default")
+		message := domain.BuildKdsPushMessage(transaction, domain.KdsNotificationKindOrderPaid, "default")
 
 		assert.Equal(t, "BAR: 1× Item 1, 1× Item 2, 1× Item 3, 1× Item 4, +1 more", message.Body)
 	})
@@ -134,11 +134,79 @@ func TestBuildKdsPushMessage(t *testing.T) {
 			},
 		}
 
-		message := domain.BuildKdsPushMessage(transaction, "default")
+		message := domain.BuildKdsPushMessage(transaction, domain.KdsNotificationKindOrderPaid, "default")
 
 		assert.Equal(t, int64(999), message.Data["transactionId"])
 		assert.Equal(t, int64(12), message.Data["transactionNumber"])
 		assert.Equal(t, []string{"BAR", "KITCHEN"}, message.Data["stations"])
 		assert.Equal(t, "order", message.Data["source"])
+	})
+
+	t.Run("the data payload carries the kind", func(t *testing.T) {
+		transaction := domain.Transaction{
+			TransactionNumber: 12,
+			TransactionItems:  []domain.TransactionItem{kdsItem("BAR", 1, "Americano")},
+		}
+
+		orderPaid := domain.BuildKdsPushMessage(transaction, domain.KdsNotificationKindOrderPaid, "default")
+		cashPending := domain.BuildKdsPushMessage(transaction, domain.KdsNotificationKindCashPending, "default")
+
+		assert.Equal(t, "order_paid", orderPaid.Data["kind"])
+		assert.Equal(t, "cash_pending", cashPending.Data["kind"])
+	})
+
+	t.Run("a cash_pending title and body lead with the amount to collect, table included", func(t *testing.T) {
+		transaction := domain.Transaction{
+			TransactionNumber: 12,
+			Source:            domain.TransactionSourceOrder,
+			Cart:              &domain.Cart{Table: &domain.Table{Label: "Meja 4"}},
+			Total:             45000,
+			TransactionItems: []domain.TransactionItem{
+				kdsItem("BAR", 1, "Kopi Susu"),
+				kdsItem("BAR", 1, "Latte"),
+			},
+		}
+
+		message := domain.BuildKdsPushMessage(transaction, domain.KdsNotificationKindCashPending, "default")
+
+		assert.Equal(t, "Cash order #12 — Meja 4", message.Title)
+		assert.Equal(t, "Collect Rp 45.000 at the counter · BAR: 1× Kopi Susu, 1× Latte", message.Body)
+	})
+
+	t.Run("a cash_pending notification with no station items renders the amount line alone", func(t *testing.T) {
+		transaction := domain.Transaction{
+			TransactionNumber: 12,
+			Source:            domain.TransactionSourceOrder,
+			Cart:              &domain.Cart{Table: &domain.Table{Label: "Meja 4"}},
+			Total:             25000,
+			TransactionItems: []domain.TransactionItem{
+				{
+					Amount:      1,
+					ProductName: "Board Game Ticket",
+					Variant:     domain.Variant{Product: domain.Product{Category: domain.Category{Station: "NONE"}}},
+				},
+			},
+		}
+
+		message := domain.BuildKdsPushMessage(transaction, domain.KdsNotificationKindCashPending, "default")
+
+		assert.Equal(t, "Collect Rp 25.000 at the counter", message.Body)
+	})
+
+	t.Run("order_paid's title and body are byte-for-byte unchanged by the kind switch", func(t *testing.T) {
+		transaction := domain.Transaction{
+			TransactionNumber: 12,
+			Source:            domain.TransactionSourceOrder,
+			Cart:              &domain.Cart{Table: &domain.Table{Label: "Meja 4"}},
+			Total:             45000,
+			TransactionItems: []domain.TransactionItem{
+				kdsItem("BAR", 1, "Kopi Susu"),
+			},
+		}
+
+		message := domain.BuildKdsPushMessage(transaction, domain.KdsNotificationKindOrderPaid, "default")
+
+		assert.Equal(t, "New order #12 — Meja 4", message.Title)
+		assert.Equal(t, "BAR: 1× Kopi Susu", message.Body)
 	})
 }

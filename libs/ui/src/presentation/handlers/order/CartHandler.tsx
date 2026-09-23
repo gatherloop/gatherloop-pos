@@ -20,6 +20,8 @@ export type CartHandlerProps = {
   checkoutUsecase: CheckoutUsecase;
   sessionRepository: SessionRepository;
   enabled: boolean;
+  isCashPaymentEnabled?: boolean;
+  cashierLocation?: string;
   tableCode: string;
   preparingCount?: number;
 };
@@ -60,6 +62,8 @@ export const CartHandler = ({
   checkoutUsecase,
   sessionRepository,
   enabled,
+  isCashPaymentEnabled = false,
+  cashierLocation = 'Lantai 1',
   tableCode,
   preparingCount,
 }: CartHandlerProps) => {
@@ -141,6 +145,11 @@ export const CartHandler = ({
             checkout.dispatch({ type: 'CHANGE_NAME', name }),
           onSubmitPress: () => checkout.dispatch({ type: 'SUBMIT_NAME' }),
           onCancelPress: () => checkout.dispatch({ type: 'CANCEL_NAME' }),
+          isCashPaymentEnabled,
+          method: checkout.state.method,
+          onMethodChange: (method) =>
+            checkout.dispatch({ type: 'CHANGE_METHOD', method }),
+          cashierLocation,
         }
       : null;
 
