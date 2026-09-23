@@ -9,6 +9,7 @@ const meta: Meta<typeof TransactionDetail> = {
   args: {
     name: mockTransaction.name,
     source: mockTransaction.source,
+    paymentMethod: mockTransaction.paymentMethod,
     table: mockTransaction.table,
     pagerNumber: mockTransaction.pagerNumber,
     transactionNumber: mockTransaction.transactionNumber,
@@ -41,15 +42,30 @@ export const Unpaid: Story = {
 export const FromOrderApp: Story = {
   args: {
     source: 'order',
+    paymentMethod: 'qris',
     table: { id: 1, label: 'A1', floorNumber: 1 },
     pagerNumber: 0,
     completedAt: null,
   },
 };
 
+export const CashAwaitingPayment: Story = {
+  args: {
+    source: 'order',
+    paymentMethod: 'cash',
+    table: { id: 1, label: 'A1', floorNumber: 1 },
+    pagerNumber: 0,
+    completedAt: null,
+    paidAt: undefined,
+    walletName: undefined,
+    paidAmount: 0,
+  },
+};
+
 export const FromPos: Story = {
   args: {
     source: 'pos',
+    paymentMethod: null,
     table: null,
   },
 };

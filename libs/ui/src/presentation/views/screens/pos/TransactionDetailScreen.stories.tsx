@@ -8,6 +8,7 @@ const defaultArgs = {
   createdAt: mockTransaction.createdAt,
   name: mockTransaction.name,
   source: mockTransaction.source,
+  paymentMethod: mockTransaction.paymentMethod,
   table: mockTransaction.table,
   pagerNumber: mockTransaction.pagerNumber,
   transactionNumber: mockTransaction.transactionNumber,

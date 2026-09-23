@@ -51,6 +51,7 @@ const buildTransaction = (
   createdAt: '2024-01-01T00:00:00.000Z',
   name: 'Table 1',
   source: 'pos',
+  paymentMethod: null,
   table: null,
   pagerNumber: 1,
   transactionNumber: 1,

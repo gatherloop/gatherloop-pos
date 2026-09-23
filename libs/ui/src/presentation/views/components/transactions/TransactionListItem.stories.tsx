@@ -58,6 +58,30 @@ export const FromOrderApp: Story = {
   },
 };
 
+export const CashAwaitingPayment: Story = {
+  args: {
+    name: 'Budi',
+    source: 'order',
+    paymentMethod: 'cash',
+    table: { id: 1, label: 'A1', floorNumber: 1 },
+    pagerNumber: 0,
+    completedAt: null,
+    paidAt: undefined,
+    walletName: undefined,
+  },
+};
+
+export const CashPaid: Story = {
+  args: {
+    name: 'Budi',
+    source: 'order',
+    paymentMethod: 'cash',
+    table: { id: 1, label: 'A1', floorNumber: 1 },
+    pagerNumber: 0,
+    completedAt: null,
+  },
+};
+
 export const FromPos: Story = {
   args: {
     source: 'pos',

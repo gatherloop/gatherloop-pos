@@ -122,6 +122,7 @@ export function toTransaction(transaction: ApiTransaction): Transaction {
     wallet: transaction.wallet ? toWallet(transaction.wallet) : null,
     paidAmount: transaction.paidAmount,
     source: transaction.source,
+    paymentMethod: transaction.paymentMethod ?? null,
     table: transaction.table ?? null,
     completedAt: transaction.completedAt ?? null,
   };
