@@ -39,6 +39,10 @@ export function Cart({
     customerName,
   });
   const enabled = process.env['NEXT_PUBLIC_ORDER_CHECKOUT_ENABLED'] === 'true';
+  const isCashPaymentEnabled =
+    process.env['NEXT_PUBLIC_ORDER_CASH_PAYMENT_ENABLED'] === 'true';
+  const cashierLocation =
+    process.env['NEXT_PUBLIC_ORDER_CASHIER_LOCATION'] || 'Lantai 1';
 
   return (
     <CartHandler
@@ -47,6 +51,8 @@ export function Cart({
       checkoutUsecase={checkoutUsecase}
       sessionRepository={sessionRepository}
       enabled={enabled}
+      isCashPaymentEnabled={isCashPaymentEnabled}
+      cashierLocation={cashierLocation}
       tableCode={code}
       preparingCount={preparingCount}
     />

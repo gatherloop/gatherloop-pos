@@ -229,6 +229,12 @@ export const NameSheetOpen: Story = {
       onCancelPress: () => {
         // Storybook action stand-in
       },
+      isCashPaymentEnabled: false,
+      method: 'qris',
+      onMethodChange: () => {
+        // Storybook action stand-in
+      },
+      cashierLocation: 'Lantai 1',
     },
   },
 };
