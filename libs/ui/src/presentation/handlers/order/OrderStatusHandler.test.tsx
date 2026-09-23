@@ -3,7 +3,23 @@ import { act, render, screen } from '@testing-library/react';
 import { OrderStatusHandler } from './OrderStatusHandler';
 import { MockPaymentRepository, MockSessionRepository } from '../../../data/mock';
 import { OrderStatusUsecase } from '../../../domain';
+import { PaymentRepository } from '../../../domain/repositories/payment';
 import { flushPromises } from '../../../utils/testUtils';
+
+class KeyConfiguredMockPaymentRepository extends MockPaymentRepository {
+  constructor(private readonly accessKey?: string) {
+    super();
+  }
+
+  override fetchPayment: PaymentRepository['fetchPayment'] = async (
+    reference
+  ) => {
+    if (this.accessKey !== 'the-right-key') {
+      return super.fetchPayment(reference);
+    }
+    return { ...this.payment, reference };
+  };
+}
 
 const mockPush = jest.fn();
 jest.mock('solito/router', () => ({
@@ -259,6 +275,25 @@ describe('OrderStatusHandler', () => {
     await settle();
 
     expect(screen.getByText('Pesanan tidak ditemukan')).toBeTruthy();
+  });
+
+  it('shows the ready view for a foreign-session reference when the repository is key-configured', async () => {
+    const paymentRepository = new KeyConfiguredMockPaymentRepository(
+      'the-right-key'
+    );
+    paymentRepository.payment = {
+      ...paymentRepository.payment,
+      status: 'paid',
+      fulfillmentStatus: 'ready',
+    };
+    renderHandler({
+      reference: 'SOMEONE-ELSES-REFERENCE',
+      paymentRepository,
+    });
+
+    await settle();
+
+    expect(screen.getByText('Pesanan siap')).toBeTruthy();
   });
 
   it('shows an error with retry on a transport failure', async () => {
