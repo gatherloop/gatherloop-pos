@@ -58,17 +58,17 @@ func (mr *MockGuestNotificationRepositoryMockRecorder) ClaimPendingGuestNotifica
 }
 
 // EnqueueForCompletedTransaction mocks base method.
-func (m *MockGuestNotificationRepository) EnqueueForCompletedTransaction(ctx context.Context, transaction domain.Transaction, sessionId *string) *domain.Error {
+func (m *MockGuestNotificationRepository) EnqueueForCompletedTransaction(ctx context.Context, transaction domain.Transaction, sessionId, whatsappNumber *string) *domain.Error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "EnqueueForCompletedTransaction", ctx, transaction, sessionId)
+	ret := m.ctrl.Call(m, "EnqueueForCompletedTransaction", ctx, transaction, sessionId, whatsappNumber)
 	ret0, _ := ret[0].(*domain.Error)
 	return ret0
 }
 
 // EnqueueForCompletedTransaction indicates an expected call of EnqueueForCompletedTransaction.
-func (mr *MockGuestNotificationRepositoryMockRecorder) EnqueueForCompletedTransaction(ctx, transaction, sessionId any) *gomock.Call {
+func (mr *MockGuestNotificationRepositoryMockRecorder) EnqueueForCompletedTransaction(ctx, transaction, sessionId, whatsappNumber any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnqueueForCompletedTransaction", reflect.TypeOf((*MockGuestNotificationRepository)(nil).EnqueueForCompletedTransaction), ctx, transaction, sessionId)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnqueueForCompletedTransaction", reflect.TypeOf((*MockGuestNotificationRepository)(nil).EnqueueForCompletedTransaction), ctx, transaction, sessionId, whatsappNumber)
 }
 
 // ExpireStaleSending mocks base method.
@@ -100,17 +100,17 @@ func (mr *MockGuestNotificationRepositoryMockRecorder) MarkGuestNotificationFail
 }
 
 // MarkGuestNotificationSent mocks base method.
-func (m *MockGuestNotificationRepository) MarkGuestNotificationSent(ctx context.Context, id int64, detail string) *domain.Error {
+func (m *MockGuestNotificationRepository) MarkGuestNotificationSent(ctx context.Context, id int64, providerMessageId string) *domain.Error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "MarkGuestNotificationSent", ctx, id, detail)
+	ret := m.ctrl.Call(m, "MarkGuestNotificationSent", ctx, id, providerMessageId)
 	ret0, _ := ret[0].(*domain.Error)
 	return ret0
 }
 
 // MarkGuestNotificationSent indicates an expected call of MarkGuestNotificationSent.
-func (mr *MockGuestNotificationRepositoryMockRecorder) MarkGuestNotificationSent(ctx, id, detail any) *gomock.Call {
+func (mr *MockGuestNotificationRepositoryMockRecorder) MarkGuestNotificationSent(ctx, id, providerMessageId any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkGuestNotificationSent", reflect.TypeOf((*MockGuestNotificationRepository)(nil).MarkGuestNotificationSent), ctx, id, detail)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkGuestNotificationSent", reflect.TypeOf((*MockGuestNotificationRepository)(nil).MarkGuestNotificationSent), ctx, id, providerMessageId)
 }
 
 // MarkGuestNotificationSkipped mocks base method.
@@ -125,6 +125,20 @@ func (m *MockGuestNotificationRepository) MarkGuestNotificationSkipped(ctx conte
 func (mr *MockGuestNotificationRepositoryMockRecorder) MarkGuestNotificationSkipped(ctx, id, detail any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkGuestNotificationSkipped", reflect.TypeOf((*MockGuestNotificationRepository)(nil).MarkGuestNotificationSkipped), ctx, id, detail)
+}
+
+// MarkGuestNotificationUnknownOutcome mocks base method.
+func (m *MockGuestNotificationRepository) MarkGuestNotificationUnknownOutcome(ctx context.Context, id int64, detail string) *domain.Error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MarkGuestNotificationUnknownOutcome", ctx, id, detail)
+	ret0, _ := ret[0].(*domain.Error)
+	return ret0
+}
+
+// MarkGuestNotificationUnknownOutcome indicates an expected call of MarkGuestNotificationUnknownOutcome.
+func (mr *MockGuestNotificationRepositoryMockRecorder) MarkGuestNotificationUnknownOutcome(ctx, id, detail any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkGuestNotificationUnknownOutcome", reflect.TypeOf((*MockGuestNotificationRepository)(nil).MarkGuestNotificationUnknownOutcome), ctx, id, detail)
 }
 
 // MockGuestNotificationDispatcher is a mock of GuestNotificationDispatcher interface.

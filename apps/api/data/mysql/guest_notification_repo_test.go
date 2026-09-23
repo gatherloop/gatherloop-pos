@@ -35,14 +35,15 @@ func newMockGuestNotificationRepository(t *testing.T) (domain.GuestNotificationR
 func TestEnqueueForCompletedTransaction_DuplicateEnqueueIsIdempotentByConstruction(t *testing.T) {
 	repo, mock := newMockGuestNotificationRepository(t)
 	sessionId := "session-1"
+	whatsappNumber := "6281234567890"
 
 	mock.ExpectBegin()
-	mock.ExpectExec("INSERT INTO `guest_notifications` \\(`transaction_id`,`session_id`,`status`,`attempt_count`,`claimed_at`,`detail`,`created_at`,`sent_at`\\) VALUES \\(\\?,\\?,\\?,\\?,\\?,\\?,\\?,\\?\\) ON DUPLICATE KEY UPDATE `id`=id").
-		WithArgs(int64(1), sessionId, "pending", 0, nil, nil, sqlmock.AnyArg(), nil).
+	mock.ExpectExec("INSERT INTO `guest_notifications` \\(`transaction_id`,`session_id`,`whatsapp_number`,`status`,`attempt_count`,`claimed_at`,`detail`,`provider_message_id`,`created_at`,`sent_at`\\) VALUES \\(\\?,\\?,\\?,\\?,\\?,\\?,\\?,\\?,\\?,\\?\\) ON DUPLICATE KEY UPDATE `id`=id").
+		WithArgs(int64(1), sessionId, whatsappNumber, "pending", 0, nil, nil, nil, sqlmock.AnyArg(), nil).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
-	err := repo.EnqueueForCompletedTransaction(context.Background(), domain.Transaction{Id: 1}, &sessionId)
+	err := repo.EnqueueForCompletedTransaction(context.Background(), domain.Transaction{Id: 1}, &sessionId, &whatsappNumber)
 
 	require.Nil(t, err)
 	require.NoError(t, mock.ExpectationsWereMet())
@@ -55,11 +56,29 @@ func TestEnqueueForCompletedTransaction_WritesSkippedStatusWhenThereIsNoSession(
 
 	mock.ExpectBegin()
 	mock.ExpectExec("INSERT INTO `guest_notifications`").
-		WithArgs(int64(1), "", "skipped", 0, nil, "no payment for transaction", sqlmock.AnyArg(), nil).
+		WithArgs(int64(1), "", nil, "skipped", 0, nil, "no payment for transaction", nil, sqlmock.AnyArg(), nil).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
-	err := repo.EnqueueForCompletedTransaction(context.Background(), domain.Transaction{Id: 1}, nil)
+	err := repo.EnqueueForCompletedTransaction(context.Background(), domain.Transaction{Id: 1}, nil, nil)
+
+	require.Nil(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+// FR-5: a session with no whatsapp number is recorded skipped too — there is nobody to message —
+// rather than left pending forever.
+func TestEnqueueForCompletedTransaction_WritesSkippedStatusWhenThereIsNoWhatsappNumber(t *testing.T) {
+	repo, mock := newMockGuestNotificationRepository(t)
+	sessionId := "session-1"
+
+	mock.ExpectBegin()
+	mock.ExpectExec("INSERT INTO `guest_notifications`").
+		WithArgs(int64(1), sessionId, nil, "skipped", 0, nil, "no whatsapp number for order", nil, sqlmock.AnyArg(), nil).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+
+	err := repo.EnqueueForCompletedTransaction(context.Background(), domain.Transaction{Id: 1}, &sessionId, nil)
 
 	require.Nil(t, err)
 	require.NoError(t, mock.ExpectationsWereMet())
@@ -76,7 +95,7 @@ func TestClaimPendingGuestNotifications_ClaimsAPendingRowOfACompletedTransaction
 
 	mock.ExpectQuery(claimSelectQuery).
 		WithArgs("pending", domain.GuestNotificationMaxAttempts, 50).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "transaction_id", "session_id", "status", "attempt_count"}).AddRow(1, 10, "session-1", "pending", 0))
+		WillReturnRows(sqlmock.NewRows([]string{"id", "transaction_id", "session_id", "whatsapp_number", "status", "attempt_count"}).AddRow(1, 10, "session-1", "6281234567890", "pending", 0))
 
 	mock.ExpectBegin()
 	mock.ExpectExec(claimUpdateQuery).
@@ -89,6 +108,8 @@ func TestClaimPendingGuestNotifications_ClaimsAPendingRowOfACompletedTransaction
 	require.Nil(t, err)
 	require.Len(t, notifications, 1)
 	assert.Equal(t, domain.GuestNotificationStatusSending, notifications[0].Status)
+	require.NotNil(t, notifications[0].WhatsappNumber)
+	assert.Equal(t, "6281234567890", *notifications[0].WhatsappNumber)
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
@@ -99,7 +120,7 @@ func TestClaimPendingGuestNotifications_NotClaimedUntilTransactionIsCompleted(t 
 
 	mock.ExpectQuery(claimSelectQuery).
 		WithArgs("pending", domain.GuestNotificationMaxAttempts, 50).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "transaction_id", "session_id", "status", "attempt_count"}))
+		WillReturnRows(sqlmock.NewRows([]string{"id", "transaction_id", "session_id", "whatsapp_number", "status", "attempt_count"}))
 
 	notifications, err := repo.ClaimPendingGuestNotifications(context.Background(), 50)
 
@@ -109,7 +130,7 @@ func TestClaimPendingGuestNotifications_NotClaimedUntilTransactionIsCompleted(t 
 
 	mock.ExpectQuery(claimSelectQuery).
 		WithArgs("pending", domain.GuestNotificationMaxAttempts, 50).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "transaction_id", "session_id", "status", "attempt_count"}).AddRow(1, 10, "session-1", "pending", 0))
+		WillReturnRows(sqlmock.NewRows([]string{"id", "transaction_id", "session_id", "whatsapp_number", "status", "attempt_count"}).AddRow(1, 10, "session-1", "6281234567890", "pending", 0))
 	mock.ExpectBegin()
 	mock.ExpectExec(claimUpdateQuery).
 		WithArgs(sqlmock.AnyArg(), "sending", int64(1), "pending").
@@ -130,7 +151,7 @@ func TestClaimPendingGuestNotifications_ConcurrentClaimsYieldOneWinner(t *testin
 
 	mock.ExpectQuery(claimSelectQuery).
 		WithArgs("pending", domain.GuestNotificationMaxAttempts, 50).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "transaction_id", "session_id", "status", "attempt_count"}).AddRow(1, 10, "session-1", "pending", 0))
+		WillReturnRows(sqlmock.NewRows([]string{"id", "transaction_id", "session_id", "whatsapp_number", "status", "attempt_count"}).AddRow(1, 10, "session-1", "6281234567890", "pending", 0))
 	mock.ExpectBegin()
 	mock.ExpectExec(claimUpdateQuery).
 		WithArgs(sqlmock.AnyArg(), "sending", int64(1), "pending").
@@ -143,7 +164,7 @@ func TestClaimPendingGuestNotifications_ConcurrentClaimsYieldOneWinner(t *testin
 
 	mock.ExpectQuery(claimSelectQuery).
 		WithArgs("pending", domain.GuestNotificationMaxAttempts, 50).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "transaction_id", "session_id", "status", "attempt_count"}).AddRow(1, 10, "session-1", "pending", 0))
+		WillReturnRows(sqlmock.NewRows([]string{"id", "transaction_id", "session_id", "whatsapp_number", "status", "attempt_count"}).AddRow(1, 10, "session-1", "6281234567890", "pending", 0))
 	mock.ExpectBegin()
 	mock.ExpectExec(claimUpdateQuery).
 		WithArgs(sqlmock.AnyArg(), "sending", int64(1), "pending").
@@ -156,16 +177,17 @@ func TestClaimPendingGuestNotifications_ConcurrentClaimsYieldOneWinner(t *testin
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
-func TestMarkGuestNotificationSent_SetsStatusAndSentAt(t *testing.T) {
+// FR-7 step 4 "accepted": the row is recorded sent with Fonnte's provider message id, and sent_at set.
+func TestMarkGuestNotificationSent_SetsStatusProviderMessageIdAndSentAt(t *testing.T) {
 	repo, mock := newMockGuestNotificationRepository(t)
 
 	mock.ExpectBegin()
-	mock.ExpectExec("UPDATE `guest_notifications` SET `detail`=\\?,`sent_at`=\\?,`status`=\\? WHERE id = \\?").
-		WithArgs("test detail", sqlmock.AnyArg(), "sent", int64(1)).
+	mock.ExpectExec("UPDATE `guest_notifications` SET `provider_message_id`=\\?,`sent_at`=\\?,`status`=\\? WHERE id = \\?").
+		WithArgs("abc123", sqlmock.AnyArg(), "sent", int64(1)).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectCommit()
 
-	err := repo.MarkGuestNotificationSent(context.Background(), 1, "test detail")
+	err := repo.MarkGuestNotificationSent(context.Background(), 1, "abc123")
 
 	require.Nil(t, err)
 	require.NoError(t, mock.ExpectationsWereMet())
@@ -180,11 +202,11 @@ func TestMarkGuestNotificationFailed_IncrementsAttemptCountAndStaysPendingBelowT
 
 	mock.ExpectBegin()
 	mock.ExpectExec("UPDATE `guest_notifications` SET `attempt_count`=\\?,`detail`=\\?,`status`=\\? WHERE id = \\?").
-		WithArgs(4, "push timeout", "pending", int64(1)).
+		WithArgs(4, "device not connected", "pending", int64(1)).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectCommit()
 
-	err := repo.MarkGuestNotificationFailed(context.Background(), 1, "push timeout")
+	err := repo.MarkGuestNotificationFailed(context.Background(), 1, "device not connected")
 
 	require.Nil(t, err)
 	require.NoError(t, mock.ExpectationsWereMet())
@@ -199,11 +221,28 @@ func TestMarkGuestNotificationFailed_BecomesFailedAtMaxAttempts(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectExec("UPDATE `guest_notifications` SET `attempt_count`=\\?,`detail`=\\?,`status`=\\? WHERE id = \\?").
-		WithArgs(domain.GuestNotificationMaxAttempts, "push timeout", "failed", int64(1)).
+		WithArgs(domain.GuestNotificationMaxAttempts, "device not connected", "failed", int64(1)).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectCommit()
 
-	err := repo.MarkGuestNotificationFailed(context.Background(), 1, "push timeout")
+	err := repo.MarkGuestNotificationFailed(context.Background(), 1, "device not connected")
+
+	require.Nil(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+// D9: an ambiguous outcome goes straight to 'failed' with no attempt_count change, never back to
+// 'pending' — it must never be re-claimed.
+func TestMarkGuestNotificationUnknownOutcome_SetsFailedWithoutTouchingAttemptCount(t *testing.T) {
+	repo, mock := newMockGuestNotificationRepository(t)
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE `guest_notifications` SET `detail`=\\?,`status`=\\? WHERE id = \\?").
+		WithArgs("outcome unknown: request timed out", "failed", int64(1)).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectCommit()
+
+	err := repo.MarkGuestNotificationUnknownOutcome(context.Background(), 1, "outcome unknown: request timed out")
 
 	require.Nil(t, err)
 	require.NoError(t, mock.ExpectationsWereMet())
@@ -214,11 +253,11 @@ func TestMarkGuestNotificationSkipped_SetsStatusAndDetail(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectExec("UPDATE `guest_notifications` SET `detail`=\\?,`status`=\\? WHERE id = \\?").
-		WithArgs("no active subscription for session", "skipped", int64(1)).
+		WithArgs("no whatsapp number for order", "skipped", int64(1)).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectCommit()
 
-	err := repo.MarkGuestNotificationSkipped(context.Background(), 1, "no active subscription for session")
+	err := repo.MarkGuestNotificationSkipped(context.Background(), 1, "no whatsapp number for order")
 
 	require.Nil(t, err)
 	require.NoError(t, mock.ExpectationsWereMet())

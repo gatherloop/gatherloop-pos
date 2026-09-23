@@ -13,25 +13,35 @@ func NewGuestNotificationRepository(db *gorm.DB) domain.GuestNotificationReposit
 	return Repository{db: db}
 }
 
-func (repo Repository) EnqueueForCompletedTransaction(ctx context.Context, transaction domain.Transaction, sessionId *string) *domain.Error {
+func (repo Repository) EnqueueForCompletedTransaction(ctx context.Context, transaction domain.Transaction, sessionId *string, whatsappNumber *string) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 
 	status := domain.GuestNotificationStatusPending
 	var detail *string
 	sessionIdValue := ""
-	if sessionId == nil {
+	var whatsappNumberValue *string
+
+	switch {
+	case sessionId == nil:
 		status = domain.GuestNotificationStatusSkipped
 		noPaymentDetail := "no payment for transaction"
 		detail = &noPaymentDetail
-	} else {
+	case whatsappNumber == nil || *whatsappNumber == "":
 		sessionIdValue = *sessionId
+		status = domain.GuestNotificationStatusSkipped
+		noNumberDetail := "no whatsapp number for order"
+		detail = &noNumberDetail
+	default:
+		sessionIdValue = *sessionId
+		whatsappNumberValue = whatsappNumber
 	}
 
 	payload := GuestNotification{
-		TransactionId: transaction.Id,
-		SessionId:     sessionIdValue,
-		Status:        string(status),
-		Detail:        detail,
+		TransactionId:  transaction.Id,
+		SessionId:      sessionIdValue,
+		WhatsappNumber: whatsappNumberValue,
+		Status:         string(status),
+		Detail:         detail,
 	}
 
 	// UNIQUE (transaction_id) makes a duplicate enqueue idempotent by construction: the insert
@@ -88,13 +98,13 @@ func (repo Repository) ClaimPendingGuestNotifications(ctx context.Context, limit
 	return ToGuestNotificationsListDomain(claimed), nil
 }
 
-func (repo Repository) MarkGuestNotificationSent(ctx context.Context, id int64, detail string) *domain.Error {
+func (repo Repository) MarkGuestNotificationSent(ctx context.Context, id int64, providerMessageId string) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	now := time.Now()
 	result := db.Table("guest_notifications").Where("id = ?", id).Updates(map[string]interface{}{
-		"status":  string(domain.GuestNotificationStatusSent),
-		"detail":  detail,
-		"sent_at": now,
+		"status":              string(domain.GuestNotificationStatusSent),
+		"provider_message_id": providerMessageId,
+		"sent_at":             now,
 	})
 	return ToErrorCtx(ctx, result.Error, "MarkGuestNotificationSent")
 }
@@ -119,6 +129,18 @@ func (repo Repository) MarkGuestNotificationFailed(ctx context.Context, id int64
 		"detail":        detail,
 	})
 	return ToErrorCtx(ctx, result.Error, "MarkGuestNotificationFailed")
+}
+
+// MarkGuestNotificationUnknownOutcome moves a row straight to 'failed' with no attempt_count
+// change (D9): an ambiguous outcome may already have reached the guest, so it never goes back to
+// 'pending' and is never re-claimed.
+func (repo Repository) MarkGuestNotificationUnknownOutcome(ctx context.Context, id int64, detail string) *domain.Error {
+	db := GetDbFromCtx(ctx, repo.db)
+	result := db.Table("guest_notifications").Where("id = ?", id).Updates(map[string]interface{}{
+		"status": string(domain.GuestNotificationStatusFailed),
+		"detail": detail,
+	})
+	return ToErrorCtx(ctx, result.Error, "MarkGuestNotificationUnknownOutcome")
 }
 
 func (repo Repository) MarkGuestNotificationSkipped(ctx context.Context, id int64, detail string) *domain.Error {
