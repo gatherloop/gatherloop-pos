@@ -43,10 +43,6 @@ type Env struct {
 	KdsPushSound               string
 	KdsDispatchIntervalSeconds int
 
-	WebPushVapidPublicKey  string
-	WebPushVapidPrivateKey string
-	WebPushSubject         string
-
 	FonnteToken   string
 	FonnteBaseURL string
 }
@@ -97,10 +93,6 @@ func GetEnv() Env {
 		ExpoPushAccessToken:        getCredential("EXPO_PUSH_ACCESS_TOKEN"),
 		KdsPushSound:               stringWithDefault(os.Getenv("KDS_PUSH_SOUND"), "order_alert.wav"),
 		KdsDispatchIntervalSeconds: parseIntWithDefault(os.Getenv("KDS_DISPATCH_INTERVAL_SECONDS"), 15),
-
-		WebPushVapidPublicKey:  getCredential("WEB_PUSH_VAPID_PUBLIC_KEY"),
-		WebPushVapidPrivateKey: getCredential("WEB_PUSH_VAPID_PRIVATE_KEY"),
-		WebPushSubject:         getCredential("WEB_PUSH_SUBJECT"),
 
 		FonnteToken:   getCredential("FONNTE_TOKEN"),
 		FonnteBaseURL: getCredential("FONNTE_BASE_URL"),

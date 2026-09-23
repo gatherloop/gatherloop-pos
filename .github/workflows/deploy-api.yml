@@ -110,9 +110,6 @@ jobs:
             EXPO_PUSH_ACCESS_TOKEN=${{ secrets.EXPO_PUSH_ACCESS_TOKEN }}
             KDS_PUSH_SOUND=default
             KDS_DISPATCH_INTERVAL_SECONDS=15
-            WEB_PUSH_VAPID_PUBLIC_KEY=${{ secrets.WEB_PUSH_VAPID_PUBLIC_KEY }}
-            WEB_PUSH_VAPID_PRIVATE_KEY=${{ secrets.WEB_PUSH_VAPID_PRIVATE_KEY }}
-            WEB_PUSH_SUBJECT=${{ secrets.WEB_PUSH_SUBJECT }}
             APP_ENV=production
             ENV_EOF
             sudo cp apps/api/gatherloop-pos-api.service /etc/systemd/system/
