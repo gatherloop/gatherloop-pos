@@ -475,9 +475,9 @@ Halo *Andi*, pesanan Anda sudah siap diambil! 🎉
 *Pembayaran:* QRIS
 
 *Pesanan:*
-• 2x Es Kopi Susu (Gula: Less, Es: Normal)
-  _Catatan: tanpa sedotan_
-• 1x Croissant
+2x Coffee Latte - Hot - Vanilla
+_Catatan: tanpa sedotan_
+1x Croissant
 
 Tunjukkan halaman ini ke kasir untuk mengambil pesanan:
 https://order.gatherloop.id/orders/ORD7K2M9QX4B1HZT?k=q3Vd0bX9pL2sR8tY1wZa7c
@@ -552,9 +552,13 @@ once.
 ### FR-6 — The message rule
 
 `BuildGuestWhatsappMessage(transaction, method, orderUrl)` is pure and tested against exact
-strings, like `BuildKdsPushMessage`. Items list `amount`x `productName`, the option values in
-parentheses as `OptionName: OptionValueName` pairs, and an italic `Catatan:` line when the note is
-not empty. Whole-number amounts print without decimals. The table label comes from
+strings, like `BuildKdsPushMessage`. Each item is one line,
+`{amount}x {ProductName} - {OptionValue1} - {OptionValue2} - …` (e.g.
+`2x Coffee Latte - Hot - Vanilla`). The line has no bullet, and the option names (`OptionName`) are
+left out: only each `TransactionItemValue.OptionValueName` appears, in the order the values are
+stored on the item. An item without options is just `{amount}x {ProductName}`. An italic
+`_Catatan: …_` line follows the item when its note is not empty. Whole-number amounts print without
+decimals. The table label comes from
 `transaction.Cart.Table.Label`, which is where `ToApiPayment` reads it
 (`presentation/restapi/payment_transformer.go:65`). The URL comes from
 `BuildOrderStatusUrl(ORDER_WEB_BASE_URL, reference, accessKey)`.
@@ -829,7 +833,8 @@ Fonnte's response shape is only loosely documented (Risks). `npx nx run api:test
 
 `domain/guest_whatsapp_message.go` `BuildGuestWhatsappMessage` (FR-6, _The message_). This phase
 is pure code with no wiring.
-**Acceptance:** exact-string tests for QRIS vs cash, items with and without options and notes,
+**Acceptance:** exact-string tests for QRIS vs cash, items with and without options and notes
+(asserting the `2x Coffee Latte - Hot - Vanilla` line format),
 fractional vs whole amounts, and an order with a single item. A test asserts the daily
 `TransactionNumber` is used, not `Id`. `npx nx run api:test` green.
 
