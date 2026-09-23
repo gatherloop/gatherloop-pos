@@ -46,6 +46,9 @@ type Env struct {
 	WebPushVapidPublicKey  string
 	WebPushVapidPrivateKey string
 	WebPushSubject         string
+
+	FonnteToken   string
+	FonnteBaseURL string
 }
 
 func GetEnv() Env {
@@ -98,6 +101,9 @@ func GetEnv() Env {
 		WebPushVapidPublicKey:  getCredential("WEB_PUSH_VAPID_PUBLIC_KEY"),
 		WebPushVapidPrivateKey: getCredential("WEB_PUSH_VAPID_PRIVATE_KEY"),
 		WebPushSubject:         getCredential("WEB_PUSH_SUBJECT"),
+
+		FonnteToken:   getCredential("FONNTE_TOKEN"),
+		FonnteBaseURL: getCredential("FONNTE_BASE_URL"),
 	}
 }
 
