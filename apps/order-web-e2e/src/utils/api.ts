@@ -226,6 +226,16 @@ export async function completeTransaction(id: number): Promise<void> {
   }
 }
 
+export async function uncompleteTransaction(id: number): Promise<void> {
+  const context = await getContext();
+  const response = await context.put(`/transactions/${id}/uncomplete`);
+  if (!response.ok()) {
+    throw new Error(
+      `PUT /transactions/${id}/uncomplete failed: ${response.status()} ${await response.text()}`
+    );
+  }
+}
+
 export async function payTransaction(
   id: number,
   walletId: number,

@@ -102,10 +102,10 @@ export const orderStatus = {
     page.getByText(label, { exact: true }).last(),
   transactionNumberBadge: (page: Page, transactionNumber: number) =>
     page.getByText(`#${transactionNumber}`, { exact: true }),
-  readyTitle: (page: Page) => page.getByText('Pesanan siap!'),
+  readyTitle: (page: Page) => page.getByText('Pesanan siap', { exact: true }),
   pickupInstructionText: (page: Page, transactionNumber: number) =>
     page.getByText(
-      `Silakan ambil di kasir dengan menyebutkan nomor #${transactionNumber}.`
+      `Silakan ambil di kasir dengan menyebutkan nomor #${transactionNumber}`
     ),
   orderAgainButton: (page: Page) =>
     page.getByRole('button', { name: 'Pesan lagi' }),
