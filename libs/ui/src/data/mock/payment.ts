@@ -45,6 +45,8 @@ const initialPayment = (): Payment => ({
   tableLabel: 'A1',
   transactionNumber: 1,
   fulfillmentStatus: 'preparing',
+  canCancel: true,
+  cancelReason: null,
   items: [
     {
       name: 'Es Kopi Susu - Regular',
@@ -73,6 +75,7 @@ export class MockPaymentRepository implements PaymentRepository {
   private shouldFailCheckout = false;
   private shouldFailFetch = false;
   private shouldFailFetchPayments = false;
+  private shouldFailCancel = false;
 
   setShouldFailCheckout(value: boolean) {
     this.shouldFailCheckout = value;
@@ -84,6 +87,10 @@ export class MockPaymentRepository implements PaymentRepository {
 
   setShouldFailFetchPayments(value: boolean) {
     this.shouldFailFetchPayments = value;
+  }
+
+  setShouldFailCancel(value: boolean) {
+    this.shouldFailCancel = value;
   }
 
   checkout: PaymentRepository['checkout'] = async ({
@@ -115,11 +122,26 @@ export class MockPaymentRepository implements PaymentRepository {
     };
   };
 
+  cancelPayment: PaymentRepository['cancelPayment'] = async (reference) => {
+    if (this.shouldFailCancel) throw new Error('Failed to cancel payment');
+    if (reference !== this.payment.reference) throw new PaymentNotFoundError();
+    if (this.payment.status === 'pending') {
+      this.payment = {
+        ...this.payment,
+        status: 'cancelled',
+        cancelReason: 'guest',
+        canCancel: false,
+      };
+    }
+    return { ...this.payment };
+  };
+
   reset() {
     this.payment = initialPayment();
     this.payments = initialPaymentSummaries();
     this.shouldFailCheckout = false;
     this.shouldFailFetch = false;
     this.shouldFailFetchPayments = false;
+    this.shouldFailCancel = false;
   }
 }
