@@ -323,7 +323,7 @@ Contract edits in `libs/api-contract/src/api.yaml`:
 | Use case | `domain/transaction_usecase.go` | `PayTransaction` refuses a guest-cancelled order transaction (D8); `settleOrderPayment` supersedes like D7 |
 | Use case | `domain/kds_notification_entity.go` | `KdsNotificationKindCashCancelled` + message builder (phase 8) |
 | MySQL | `data/mysql/payment_{entity,transformer,repo}.go` | columns, `FOR UPDATE` reads (`clause.Locking{Strength: "UPDATE"}`) |
-| DOKU | `data/doku/qris.go` | `CancelQris` (phase 9) |
+| DOKU | `data/doku/payment_repo.go` | `CancelQris` (phase 9) |
 | Mock | `data/mock/payment_repository.go` | regenerated via `go generate ./...` |
 | REST | `presentation/restapi/payment_{handler,route,transformer}.go` | `Cancel` handler + route; `canCancel` / `cancelReason` serialisation |
 | Config | `utils/env.go`, `.env.example`, `main.go` | `ORDER_PAYMENT_CANCEL_ENABLED` (D11), threaded into `NewPaymentUsecase` and `NewCartUsecase` |
@@ -429,7 +429,7 @@ Tests: a late paid webhook on a cancelled QRIS payment pays it, and it supersede
 
 ### FR-6: Cancel the QR at DOKU (API, optional)
 
-`PaymentGatewayRepository.CancelQris(ctx, CancelQrisInput{PartnerReferenceNo, GatewayReferenceNo}) *Error`. `data/doku/qris.go` implements SNAP `qr-mpm-cancel` with the existing symmetric signing. Every path, header, field and response code must be confirmed against the DOKU dashboard for our merchant, and the PR must cite the page. A DOKU response meaning "already paid" is mapped to a sentinel error, and `CancelPayment` answers it by re-querying and paying. Any other error is logged and ignored (D5). The e2e DOKU stub (`apps/order-web-e2e/src/utils/dokuStub.ts`) gains the endpoint.
+`PaymentGatewayRepository.CancelQris(ctx, CancelQrisInput{PartnerReferenceNo, GatewayReferenceNo}) *Error`. `data/doku/payment_repo.go` implements SNAP `qr-mpm-cancel` with the existing symmetric signing. Every path, header, field and response code must be confirmed against the DOKU dashboard for our merchant, and the PR must cite the page. A DOKU response meaning "already paid" is mapped to a sentinel error, and `CancelPayment` answers it by re-querying and paying. Any other error is logged and ignored (D5). The e2e DOKU stub (`apps/order-web-e2e/src/utils/dokuStub.ts`) gains the endpoint.
 
 ### FR-7: KDS `cash_cancelled` (API)
 
@@ -575,7 +575,7 @@ Fourteen PRs (v1's ten plus 11–14 from v2). Each merges to `main` green and sh
 | 13 | **v2** The locked cart is visible | `libs/ui` | `cart.ts` (D23), `PendingPaymentBar`, `PendingPaymentNotice`, `MenuItemDetailScreen`, `CartScreen`, `CartItemEditScreen`, `MenuListHandler`, `CartHandler` | 11 | B |
 | 7 | Back button opens the confirmation | `libs/ui` | `OrderStatusHandler` (+ test) | 3, 6 | C |
 | 8 | KDS `cash_cancelled` | API | `kds_notification_entity.go`, `payment_usecase.go` | 4 (+5 for the supersede call site) | C |
-| 9 | Cancel the QR at DOKU *(optional)* | API | `payment_repository.go`, `data/doku/qris.go`, `payment_usecase.go`, e2e DOKU stub | 4 | C |
+| 9 | Cancel the QR at DOKU *(optional)* | API | `payment_repository.go`, `data/doku/payment_repo.go`, `payment_usecase.go`, e2e DOKU stub | 4 | C |
 | 14 | **v2** Cancel from the menu and the cart | `libs/ui` | `MenuListHandler`, `CartHandler`, notice actions | 6, 13 | C |
 | 10 | E2E, docs, enable | all | `cancelPayment.spec.ts`, docs-site, prod env | 4, 5, 7, 12, 14 (+8, +9 if in scope) | D |
 
@@ -776,4 +776,5 @@ An arrow means "does not compile, or has nothing to test, without". Anything not
 
 1. **v2: the lock stays, and becomes visible** (review on [gatherloop/gatherloop-pos#598](https://github.com/gatherloop/gatherloop-pos/pull/598)). The reviewer asked what happens when a guest closes the tab on the countdown: the cart would be locked with no visible way back, since pending QRIS isn't in history. They proposed clearing the cart at checkout and dropping the lock. Agreed instead: keep the lock (one cart = one order, items never leave), and add D18–D23. The proposal is recorded as Alternatives §4 Option B.
 2. **v2: adding from the menu while locked** (same review). Asked: "what happens if the guest opens an item and adds it to the cart?" Answer: the sheet explains the pending payment instead of failing, and offers "Lanjutkan pembayaran" or "Batalkan & tambah item" (D21, D22). The pre-existing silent failure is fixed by D23.
+3. **Phase 9: `qr-mpm-cancel` confirmed, under a different name.** DOKU's own integration guide (`developers.doku.com/accept-payments/direct-api/snap/integration-guide/qris#id-6.-cancel-qris`) documents "Cancel QRIS (QR Expire)" as part of the standard QRIS SNAP integration — not a separately gated merchant feature the Back Office has to enable, unlike refunds (Alternatives §2's open question). The operation is `qr-expire` (`POST /snap-adapter/b2b/v1.0/qr/qr-mpm-generate`'s sibling, request: `partnerReferenceNo`, `referenceNo`, `merchantId`, optional `reason`; response: `responseCode`, `responseMessage`, `partnerReferenceNo`, `referenceNo`, `expiredDate`), not `qr-mpm-cancel` as D5/FR-6 assumed before confirmation. It ships as `PaymentGatewayRepository.CancelQris`, called best-effort from `CancelPayment` right after `QueryQris` confirms the payment isn't already paid. The documented response carries no distinct "already paid" code, so — unlike QueryQris's D4 handling — every `CancelQris` failure (rejected response or transport error) is logged at `warn` and ignored; D5's "best-effort, nothing depends on it" already covers that case, since a stale QR that later gets paid is D7's supersede path, not this endpoint's problem.
 3. **v2: the cancel dialog moved out of `OrderStatusUsecase`** into `PaymentCancelUsecase` (D20, superseding D12), because three screens now use it.

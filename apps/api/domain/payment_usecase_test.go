@@ -1432,6 +1432,35 @@ func TestPaymentUsecase_CancelPayment(t *testing.T) {
 		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 		m.gatewayRepo.EXPECT().QueryQris(gomock.Any(), domain.QueryQrisInput{PartnerReferenceNo: payment.PartnerReferenceNo, GatewayReferenceNo: payment.GatewayReferenceNo}).
 			Return(domain.QrisStatus{PartnerReferenceNo: payment.PartnerReferenceNo, Status: domain.PaymentGatewayStatusPending}, nil)
+		m.gatewayRepo.EXPECT().CancelQris(gomock.Any(), domain.CancelQrisInput{PartnerReferenceNo: payment.PartnerReferenceNo, GatewayReferenceNo: payment.GatewayReferenceNo}).
+			Return(nil)
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), payment.Id).
+			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) {
+				assert.Equal(t, domain.PaymentStateCancelled, p.Status)
+				return p, nil
+			})
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil).Times(2)
+		m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), int64(99)).Return(nil)
+
+		result, _, err := m.usecaseWithCancelEnabled().CancelPayment(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+
+		assert.Nil(t, err)
+		assert.Equal(t, domain.PaymentStateCancelled, result.Status)
+	})
+
+	t.Run("a doku cancel-at-DOKU failure is logged and the local cancel proceeds anyway (D5, phase 9)", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		withPaymentTransactionMock(m.paymentRepo)
+
+		payment := pendingPaymentFixture()
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.gatewayRepo.EXPECT().QueryQris(gomock.Any(), gomock.Any()).
+			Return(domain.QrisStatus{PartnerReferenceNo: payment.PartnerReferenceNo, Status: domain.PaymentGatewayStatusPending}, nil)
+		m.gatewayRepo.EXPECT().CancelQris(gomock.Any(), gomock.Any()).
+			Return(&domain.Error{Type: domain.InternalServerError, Message: "DOKU rejected the QRIS cancel request"})
 		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), payment.Id).
 			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) {
 				assert.Equal(t, domain.PaymentStateCancelled, p.Status)
@@ -1493,6 +1522,8 @@ func TestPaymentUsecase_CancelPayment(t *testing.T) {
 		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 		m.gatewayRepo.EXPECT().QueryQris(gomock.Any(), gomock.Any()).
 			Return(domain.QrisStatus{}, &domain.Error{Type: domain.BadGateway, Message: "doku is unreachable"})
+		m.gatewayRepo.EXPECT().CancelQris(gomock.Any(), gomock.Any()).
+			Return(&domain.Error{Type: domain.InternalServerError, Message: "failed to reach DOKU"})
 		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), payment.Id).
 			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) {
 				assert.Equal(t, domain.PaymentStateCancelled, p.Status)
