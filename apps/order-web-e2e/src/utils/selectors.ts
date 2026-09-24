@@ -130,6 +130,9 @@ export const cartScreen = {
     page.getByLabel('Bayar dengan Cash di Kasir'),
   submitCashButton: (page: Page) =>
     page.getByRole('button', { name: 'Pesan & bayar di kasir' }),
+
+  dineInButton: (page: Page) => page.getByLabel('Makan di sini'),
+  takeawayButton: (page: Page) => page.getByLabel('Bawa pulang'),
 };
 
 export const cartItemEdit = {

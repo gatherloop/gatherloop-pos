@@ -4,6 +4,7 @@ import { TransactionListItem, TransactionListItemProps } from './TransactionList
 const defaultProps: TransactionListItemProps = {
   name: 'Budi',
   source: 'order',
+  diningOption: 'dine_in',
   paymentMethod: 'cash',
   table: { id: 1, label: 'A1', floorNumber: 1 },
   pagerNumber: 0,
@@ -78,5 +79,45 @@ describe('TransactionListItem', () => {
     );
 
     expect(screen.getByText('Edit')).toBeTruthy();
+  });
+
+  it('shows the takeaway badge for a takeaway pos transaction', () => {
+    render(
+      <TransactionListItem
+        {...defaultProps}
+        source="pos"
+        diningOption="takeaway"
+        paymentMethod={null}
+        table={null}
+      />
+    );
+
+    expect(screen.getByText('Takeaway')).toBeTruthy();
+  });
+
+  it('shows the takeaway badge for a takeaway order-app transaction', () => {
+    render(<TransactionListItem {...defaultProps} diningOption="takeaway" />);
+
+    expect(screen.getByText('Takeaway')).toBeTruthy();
+  });
+
+  it('does not show the takeaway badge for a dine-in pos transaction', () => {
+    render(
+      <TransactionListItem
+        {...defaultProps}
+        source="pos"
+        diningOption="dine_in"
+        paymentMethod={null}
+        table={null}
+      />
+    );
+
+    expect(screen.queryByText('Takeaway')).toBeNull();
+  });
+
+  it('does not show the takeaway badge for a dine-in order-app transaction', () => {
+    render(<TransactionListItem {...defaultProps} diningOption="dine_in" />);
+
+    expect(screen.queryByText('Takeaway')).toBeNull();
   });
 });

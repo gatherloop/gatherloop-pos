@@ -10,6 +10,7 @@ const meta: Meta<typeof OrderHistoryListItem> = {
     status: 'paid',
     method: 'qris',
     fulfillmentStatus: 'preparing',
+    diningOption: 'dine_in',
     createdAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
     tableLabel: 'Meja 3',
     customerName: 'Andi',
@@ -34,4 +35,8 @@ export const AwaitingCashPayment: Story = {
 
 export const AwaitingQrisPayment: Story = {
   args: { status: 'pending', method: 'qris' },
+};
+
+export const Takeaway: Story = {
+  args: { diningOption: 'takeaway' },
 };

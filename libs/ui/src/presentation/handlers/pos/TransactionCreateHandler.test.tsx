@@ -127,6 +127,21 @@ describe('TransactionCreateHandler', () => {
         await flushPromises();
       });
     });
+
+    it('should show the dining option control with Dine In selected by default (PRD FR-2)', async () => {
+      render(<TransactionCreateHandler {...createProps()} />);
+
+      expect(
+        screen.getByRole('radio', { name: 'Dine In' }).getAttribute('aria-checked')
+      ).toBe('true');
+      expect(
+        screen.getByRole('radio', { name: 'Takeaway' }).getAttribute('aria-checked')
+      ).toBe('false');
+
+      await act(async () => {
+        await flushPromises();
+      });
+    });
   });
 
   describe('form validation', () => {
@@ -261,6 +276,54 @@ describe('TransactionCreateHandler', () => {
       ).toBeTruthy();
       expect(screen.getByRole('button', { name: 'Close Cart' })).toBeTruthy();
       expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
+    });
+
+    it('persists takeaway when the cashier switches from the default Dine In (PRD FR-2)', async () => {
+      const user = userEvent.setup();
+      const transactionRepo = new MockTransactionRepository();
+
+      render(
+        <TransactionCreateHandler
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          transactionCreateUsecase={new TransactionCreateUsecase(transactionRepo)}
+          transactionItemSelectUsecase={new TransactionItemSelectUsecase(
+            new MockProductRepository(),
+            new MockVariantRepository(),
+            { products: [], totalItem: 0 }
+          )}
+          transactionPayUsecase={new TransactionPayUsecase(
+            transactionRepo,
+            new MockWalletRepository(),
+            { wallets: [] }
+          )}
+          couponListUsecase={new CouponListUsecase(new MockCouponRepository(), {
+            coupons: [],
+          })}
+        />
+      );
+      await act(async () => {
+        await flushPromises();
+      });
+
+      await addItemToCart(user);
+
+      await user.click(screen.getByText(/View Cart/));
+      await user.type(
+        screen.getByRole('textbox', { name: 'Customer Name' }),
+        'Takeaway Guest'
+      );
+      await user.click(screen.getByRole('radio', { name: 'Takeaway' }));
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+        await flushPromises();
+      });
+
+      const created = transactionRepo.transactions.find(
+        (t) => t.name === 'Takeaway Guest'
+      );
+      expect(created?.diningOption).toBe('takeaway');
     });
 
     it('closes the cart sheet and opens the payment alert after a successful submit', async () => {

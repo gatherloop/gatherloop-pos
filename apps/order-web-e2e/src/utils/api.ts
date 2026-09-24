@@ -208,6 +208,7 @@ export interface Transaction {
   id: number;
   name: string;
   completedAt?: string | null;
+  diningOption: 'dine_in' | 'takeaway';
 }
 
 export async function findTransactionsByQuery(

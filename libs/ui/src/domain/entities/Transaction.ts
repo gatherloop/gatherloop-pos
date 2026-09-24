@@ -35,6 +35,8 @@ export type TransactionSource = 'pos' | 'order';
 
 export type TransactionSourceFilter = TransactionSource | 'all';
 
+export type TransactionDiningOption = 'dine_in' | 'takeaway';
+
 export type TransactionFulfillmentStatus = 'preparing' | 'ready';
 
 export type TransactionFulfillmentFilter = TransactionFulfillmentStatus | 'all';
@@ -44,6 +46,7 @@ export type Transaction = {
   createdAt: string;
   name: string;
   source: TransactionSource;
+  diningOption: TransactionDiningOption;
   paymentMethod: PaymentMethod | null;
   table: PublicTable | null;
   pagerNumber: number;
@@ -76,6 +79,7 @@ type TransactionItemForm = {
 export type TransactionForm = {
   name: string;
   pagerNumber: number;
+  diningOption: TransactionDiningOption;
   transactionItems: TransactionItemForm[];
   transactionCoupons: TransactionCouponForm[];
 };
@@ -83,6 +87,7 @@ export type TransactionForm = {
 export const transactionFormSchema = z.object({
   name: z.string().min(1),
   pagerNumber: z.number(),
+  diningOption: z.enum(['dine_in', 'takeaway']),
   transactionItems: z
     .array(
       z.lazy(() =>

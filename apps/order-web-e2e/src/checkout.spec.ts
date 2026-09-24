@@ -114,6 +114,45 @@ test.describe.serial('QRIS Checkout', () => {
     expect(walletAfterPayment.balance).toBeGreaterThan(balanceBeforePayment);
   });
 
+  test('choosing Bawa pulang at checkout creates a takeaway transaction, keeping its table', async ({
+    page,
+  }) => {
+    const customerName = `${CUSTOMER_NAME} Takeaway`;
+
+    await page.goto(`t/${table.code}`);
+    await sel.menuList.productCard(page, PRODUCT_NAME).click();
+    await sel.itemDetail.optionValueChip(page, 'Reguler').click();
+    await sel.itemDetail.addToCartButton(page).click();
+    await sel.cartBar.viewCartButton(page).click();
+    await expect(sel.cartScreen.lineItemName(page, PRODUCT_NAME)).toBeVisible();
+
+    await sel.cartScreen.checkoutButton(page, formatRupiah(PRICE)).click();
+    await sel.cartScreen.fillCustomerDetails(page, customerName);
+
+    await expect(sel.cartScreen.dineInButton(page)).toBeVisible();
+    await sel.cartScreen.takeawayButton(page).click();
+
+    const checkoutResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url().includes('/carts/current/checkout') &&
+        response.request().method() === 'POST'
+    );
+    await sel.cartScreen.submitNameButton(page).click();
+    const checkoutResponse = await checkoutResponsePromise;
+    const { data: payment } = await checkoutResponse.json();
+    const partnerReferenceNo: string = payment.partnerReferenceNo;
+    expect(partnerReferenceNo).toBeTruthy();
+
+    await expect(page).toHaveURL(
+      new RegExp(`/orders/${partnerReferenceNo}$`),
+      { timeout: 5_000 }
+    );
+    await expect(sel.orderStatus.tableLabel(page, TABLE_LABEL)).toBeVisible();
+
+    const [transaction] = await api.findTransactionsByQuery(customerName);
+    expect(transaction.diningOption).toBe('takeaway');
+  });
+
   test('reloading while the QR is on screen keeps showing the QR', async ({
     page,
   }) => {

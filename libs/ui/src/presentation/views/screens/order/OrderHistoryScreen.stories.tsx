@@ -15,6 +15,7 @@ const payments = [
     itemCount: 3,
     createdAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
     paidAt: new Date(Date.now() - 4 * 60 * 1000).toISOString(),
+    diningOption: 'dine_in' as const,
   },
   {
     reference: 'ORD0000000000001',
@@ -28,6 +29,7 @@ const payments = [
     itemCount: 1,
     createdAt: new Date(Date.now() - 65 * 60 * 1000).toISOString(),
     paidAt: new Date(Date.now() - 64 * 60 * 1000).toISOString(),
+    diningOption: 'dine_in' as const,
   },
   {
     reference: 'ORD0000000000003',
@@ -41,6 +43,7 @@ const payments = [
     itemCount: 2,
     createdAt: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
     paidAt: null,
+    diningOption: 'dine_in' as const,
   },
 ];
 

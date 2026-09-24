@@ -21,12 +21,31 @@ describe('TransactionUpdateUsecase', () => {
 
       tester.dispatch({
         type: 'SUBMIT',
-        values: { name: 'Updated Transaction', pagerNumber: 1, transactionItems: [], transactionCoupons: [] },
+        values: { name: 'Updated Transaction', pagerNumber: 1, diningOption: 'takeaway', transactionItems: [], transactionCoupons: [] },
       });
       expect(tester.state.type).toBe('submitting');
 
       await flushPromises();
       expect(tester.state.type).toBe('submitSuccess');
+    });
+  });
+
+  describe('diningOption', () => {
+    it('defaults empty initial values to dine_in when no transaction is preloaded', () => {
+      const repository = new MockTransactionRepository();
+      const usecase = new TransactionUpdateUsecase(repository, { transactionId: 1, transaction: null });
+      const tester = new UsecaseTester<TransactionUpdateUsecase, TransactionUpdateState, TransactionUpdateAction, TransactionUpdateParams>(usecase);
+
+      expect(tester.state.values.diningOption).toBe('dine_in');
+    });
+
+    it('prefills from the fetched transaction', () => {
+      const repository = new MockTransactionRepository();
+      const existing = { ...repository.transactions[0], diningOption: 'takeaway' as const };
+      const usecase = new TransactionUpdateUsecase(repository, { transactionId: existing.id, transaction: existing });
+      const tester = new UsecaseTester<TransactionUpdateUsecase, TransactionUpdateState, TransactionUpdateAction, TransactionUpdateParams>(usecase);
+
+      expect(tester.state.values.diningOption).toBe('takeaway');
     });
   });
 
@@ -65,7 +84,7 @@ describe('TransactionUpdateUsecase', () => {
 
       tester.dispatch({
         type: 'SUBMIT',
-        values: { name: 'Updated Transaction', pagerNumber: 1, transactionItems: [], transactionCoupons: [] },
+        values: { name: 'Updated Transaction', pagerNumber: 1, diningOption: 'dine_in', transactionItems: [], transactionCoupons: [] },
       });
       expect(tester.state.type).toBe('submitting');
 

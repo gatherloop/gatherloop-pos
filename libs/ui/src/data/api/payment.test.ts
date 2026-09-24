@@ -107,6 +107,27 @@ describe('ApiPaymentRepository', () => {
         customerName: 'Andi',
         method: 'qris',
         customerWhatsappNumber: undefined,
+        diningOption: undefined,
+      },
+      expect.anything()
+    );
+  });
+
+  it('checks out with the dining option when given', async () => {
+    const repository = new ApiPaymentRepository(mockSessionRepository);
+
+    await repository.checkout({
+      customerName: 'Andi',
+      method: 'qris',
+      diningOption: 'takeaway',
+    });
+
+    expect(paymentCheckout).toHaveBeenCalledWith(
+      {
+        customerName: 'Andi',
+        method: 'qris',
+        customerWhatsappNumber: undefined,
+        diningOption: 'takeaway',
       },
       expect.anything()
     );

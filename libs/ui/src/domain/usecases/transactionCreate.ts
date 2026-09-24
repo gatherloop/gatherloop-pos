@@ -45,6 +45,7 @@ export class TransactionCreateUsecase extends Usecase<
       values: {
         name: '',
         pagerNumber: 0,
+        diningOption: 'dine_in',
         transactionItems: [],
         transactionCoupons: [],
       },

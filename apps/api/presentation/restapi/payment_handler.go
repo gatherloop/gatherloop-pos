@@ -42,7 +42,12 @@ func (handler PaymentHandler) Checkout(w http.ResponseWriter, r *http.Request) {
 		customerWhatsappNumber = *request.CustomerWhatsappNumber
 	}
 
-	payment, transaction, usecaseErr := handler.usecase.Checkout(ctx, sessionId, request.CustomerName, customerWhatsappNumber, method)
+	var diningOption domain.DiningOption
+	if request.DiningOption != nil {
+		diningOption = domain.DiningOption(*request.DiningOption)
+	}
+
+	payment, transaction, usecaseErr := handler.usecase.Checkout(ctx, sessionId, request.CustomerName, customerWhatsappNumber, method, diningOption)
 	if usecaseErr != nil {
 		apiError := apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message}
 		if usecaseErr.Type == domain.BadGateway {

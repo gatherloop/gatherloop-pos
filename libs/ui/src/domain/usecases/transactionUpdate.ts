@@ -18,6 +18,7 @@ function toFormValues(transaction: Transaction): TransactionForm {
   return {
     name: transaction.name,
     pagerNumber: transaction.pagerNumber,
+    diningOption: transaction.diningOption,
     transactionItems: transaction.transactionItems.map((item) => {
       const itemCoupon = itemCouponsByItemId.get(item.id);
       return {
@@ -92,6 +93,7 @@ export class TransactionUpdateUsecase extends Usecase<
         : {
             name: '',
             pagerNumber: 0,
+            diningOption: 'dine_in',
             transactionItems: [],
             transactionCoupons: [],
           },

@@ -163,6 +163,60 @@ describe('TransactionUpdateHandler', () => {
       });
       expect(screen.getByRole('textbox', { name: 'Pager Number' })).toBeTruthy();
     });
+
+    it('should prefill the dining option control from the fetched transaction (PRD FR-2)', async () => {
+      render(<TransactionUpdateHandler {...createProps({ preloaded: true })} />);
+
+      expect(
+        screen.getByRole('radio', { name: 'Dine In' }).getAttribute('aria-checked')
+      ).toBe('true');
+      expect(
+        screen.getByRole('radio', { name: 'Takeaway' }).getAttribute('aria-checked')
+      ).toBe('false');
+
+      await act(async () => {
+        await flushPromises();
+      });
+    });
+  });
+
+  describe('dining option (PRD FR-2)', () => {
+    it('persists takeaway when the cashier switches away from the prefilled value', async () => {
+      const user = userEvent.setup();
+      const transactionRepo = new MockTransactionRepository();
+      const preloadedTransaction = transactionRepo.transactions[0];
+
+      render(
+        <TransactionUpdateHandler
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          transactionUpdateUsecase={new TransactionUpdateUsecase(transactionRepo, {
+            transactionId: preloadedTransaction.id,
+            transaction: preloadedTransaction,
+          })}
+          transactionItemSelectUsecase={new TransactionItemSelectUsecase(
+            new MockProductRepository(),
+            new MockVariantRepository(),
+            { products: [], totalItem: 0 }
+          )}
+          couponListUsecase={new CouponListUsecase(
+            new MockCouponRepository(),
+            { coupons: [] }
+          )}
+        />
+      );
+
+      await user.click(screen.getByRole('radio', { name: 'Takeaway' }));
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      const updated = transactionRepo.transactions.find(
+        (t) => t.id === preloadedTransaction.id
+      );
+      expect(updated?.diningOption).toBe('takeaway');
+    });
   });
 
   describe('navigation', () => {

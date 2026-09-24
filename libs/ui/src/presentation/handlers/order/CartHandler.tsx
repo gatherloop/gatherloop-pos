@@ -227,6 +227,9 @@ export const CartHandler = ({
           method: checkout.state.method,
           onMethodChange: (method) =>
             checkout.dispatch({ type: 'CHANGE_METHOD', method }),
+          diningOption: checkout.state.diningOption,
+          onDiningOptionChange: (diningOption) =>
+            checkout.dispatch({ type: 'CHANGE_DINING_OPTION', diningOption }),
           cashierLocation,
         }
       : null;

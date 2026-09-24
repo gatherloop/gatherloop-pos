@@ -4327,6 +4327,9 @@ components:
         platform:
           type: string
           enum: [ios, android]
+    DiningOption:
+      type: string
+      enum: [dine_in, takeaway]
     Transaction:
       type: object
       required:
@@ -4334,6 +4337,7 @@ components:
         - createdAt
         - name
         - source
+        - diningOption
         - pagerNumber
         - transactionNumber
         - total
@@ -4359,6 +4363,8 @@ components:
         source:
           type: string
           enum: [pos, order]
+        diningOption:
+          $ref: '#/components/schemas/DiningOption'
         paymentMethod:
           type: string
           enum: [qris, cash]
@@ -4405,6 +4411,8 @@ components:
         pagerNumber:
           type: integer
           format: int64
+        diningOption:
+          $ref: '#/components/schemas/DiningOption'
         transactionItems:
           type: array
           items:
@@ -5170,6 +5178,8 @@ components:
         method:
           type: string
           enum: [qris, cash]
+        diningOption:
+          $ref: '#/components/schemas/DiningOption'
     DokuNotificationRequest:
       type: object
       required:
@@ -5505,6 +5515,7 @@ components:
         - amount
         - itemCount
         - createdAt
+        - diningOption
       properties:
         partnerReferenceNo:
           type: string
@@ -5535,6 +5546,8 @@ components:
         paidAt:
           type: string
           format: date-time
+        diningOption:
+          $ref: '#/components/schemas/DiningOption'
     PaymentListResponse:
       type: object
       required:

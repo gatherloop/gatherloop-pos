@@ -7,6 +7,7 @@ import {
   Pencil,
   Printer,
   RotateCcw,
+  ShoppingBag,
   Trash,
   Wallet,
   XCircle,
@@ -15,11 +16,17 @@ import { ListItem } from '../base';
 import dayjs from 'dayjs';
 import { Paragraph, SizableText, XStack, XStackProps, YStack } from 'tamagui';
 import { Platform } from 'react-native';
-import { PaymentMethod, PublicTable, TransactionSource } from '../../../../domain';
+import {
+  PaymentMethod,
+  PublicTable,
+  TransactionDiningOption,
+  TransactionSource,
+} from '../../../../domain';
 
 export type TransactionListItemProps = {
   name: string;
   source: TransactionSource;
+  diningOption: TransactionDiningOption;
   paymentMethod?: PaymentMethod | null;
   table?: PublicTable | null;
   pagerNumber: number;
@@ -63,6 +70,23 @@ const CashAwaitingPaymentBadge = () => (
   >
     <Paragraph size="$1" color="$yellow11">
       Cash · awaiting payment
+    </Paragraph>
+  </XStack>
+);
+
+const TakeawayBadge = () => (
+  <XStack
+    backgroundColor="$purple5"
+    paddingHorizontal="$2"
+    paddingVertical="$1"
+    borderRadius="$10"
+    alignSelf="flex-start"
+    alignItems="center"
+    gap="$1"
+  >
+    <ShoppingBag size={12} color="$purple11" />
+    <Paragraph size="$1" color="$purple11">
+      Takeaway
     </Paragraph>
   </XStack>
 );
@@ -127,6 +151,7 @@ const TransactionNumberBadge = ({ value }: { value: number }) => {
 export const TransactionListItem = ({
   name,
   source,
+  diningOption,
   paymentMethod,
   table,
   pagerNumber,
@@ -151,17 +176,22 @@ export const TransactionListItem = ({
       title={name}
       leading={<TransactionNumberBadge value={transactionNumber} />}
       subtitle={
-        source === 'order' ? (
+        source === 'order' || diningOption === 'takeaway' ? (
           <YStack gap="$1">
             <Paragraph textTransform="none" ellipse size="$6">
               Rp. {total.toLocaleString('id')}
             </Paragraph>
-            <XStack gap="$2">
-              <OrderBadge />
-              <FulfillmentBadge completedAt={completedAt} />
-              {paymentMethod === 'cash' && paidAt === undefined && (
-                <CashAwaitingPaymentBadge />
+            <XStack gap="$2" flexWrap="wrap">
+              {source === 'order' && (
+                <>
+                  <OrderBadge />
+                  <FulfillmentBadge completedAt={completedAt} />
+                  {paymentMethod === 'cash' && paidAt === undefined && (
+                    <CashAwaitingPaymentBadge />
+                  )}
+                </>
               )}
+              {diningOption === 'takeaway' && <TakeawayBadge />}
             </XStack>
           </YStack>
         ) : (

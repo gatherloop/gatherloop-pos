@@ -423,6 +423,48 @@ describe('CartHandler', () => {
     expect(screen.getByText('Es Kopi Susu')).toBeTruthy();
   });
 
+  it('shows the dining option picker defaulted to Makan di sini, with or without cash enabled', async () => {
+    const user = userEvent.setup();
+    const cartRepository = new MockCartRepository();
+    await addItemToCart(cartRepository);
+    renderHandler({ cartRepository, customerName: 'Budi' });
+    await settle();
+
+    await user.click(screen.getByRole('button', { name: payButtonName }));
+
+    expect(screen.getByLabelText('Makan di sini')).toBeTruthy();
+    expect(screen.getByLabelText('Bawa pulang')).toBeTruthy();
+  });
+
+  it('checks out with the takeaway dining option once Bawa pulang is selected', async () => {
+    const user = userEvent.setup();
+    const cartRepository = new MockCartRepository();
+    await addItemToCart(cartRepository);
+    const paymentRepository = new MockPaymentRepository();
+    const checkoutSpy = jest.spyOn(paymentRepository, 'checkout');
+    renderHandler({
+      cartRepository,
+      paymentRepository,
+      customerName: 'Budi',
+      customerWhatsappNumber: '081234567890',
+    });
+    await settle();
+
+    await user.click(screen.getByRole('button', { name: payButtonName }));
+    await user.click(screen.getByLabelText('Bawa pulang'));
+    await user.click(
+      screen.getByRole('button', { name: 'Lanjutkan ke pembayaran' })
+    );
+    await settle();
+
+    expect(checkoutSpy).toHaveBeenCalledWith({
+      customerName: 'Budi',
+      whatsappNumber: '6281234567890',
+      method: 'qris',
+      diningOption: 'takeaway',
+    });
+  });
+
   it('does not render the method picker when cash payment is disabled', async () => {
     const user = userEvent.setup();
     const cartRepository = new MockCartRepository();
@@ -496,6 +538,7 @@ describe('CartHandler', () => {
       customerName: 'Budi',
       whatsappNumber: '6281234567890',
       method: 'cash',
+      diningOption: 'dine_in',
     });
     expect(mockPush).toHaveBeenCalledWith(
       `/orders/${paymentRepository.payment.reference}`

@@ -124,6 +124,8 @@ export const transactionDetail = {
 export const transactionForm = {
   customerNameInput: (page: Page) => page.getByLabel('Customer Name'),
   pagerNumberInput: (page: Page) => page.getByLabel('Pager Number'),
+  diningOptionSegment: (page: Page, label: 'Dine In' | 'Takeaway') =>
+    page.getByRole('radio', { name: label }),
   productSearchInput: (page: Page) =>
     page.getByPlaceholder('Search Products by Name'),
   productCard: (page: Page, name: string) =>

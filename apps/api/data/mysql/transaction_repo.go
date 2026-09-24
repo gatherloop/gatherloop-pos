@@ -134,6 +134,11 @@ func (repo Repository) CreateTransaction(ctx context.Context, transaction domain
 		transaction.CreatedAt = time.Now()
 	}
 
+	// D5: the one repository method every creation path funnels through, so none can forget.
+	if transaction.DiningOption == "" {
+		transaction.DiningOption = domain.DiningOptionDineIn
+	}
+
 	transactionNumber, err := allocateTransactionNumber(db, transaction.CreatedAt)
 	if err != nil {
 		return domain.Transaction{}, ToErrorCtx(ctx, err, "CreateTransaction")
@@ -248,6 +253,14 @@ func (repo Repository) UndeleteTransactionById(ctx context.Context, id int64) *d
 	return ToErrorCtx(ctx, result.Error, "UndeleteTransactionById")
 }
 
+// UpdateTransactionDiningOptionById is D8's narrow write for the order-checkout reuse branch:
+// one column, not the general UpdateTransactionById's item/coupon re-diff.
+func (repo Repository) UpdateTransactionDiningOptionById(ctx context.Context, id int64, diningOption domain.DiningOption) *domain.Error {
+	db := GetDbFromCtx(ctx, repo.db)
+	result := db.Table("transactions").Where("id = ?", id).Update("dining_option", string(diningOption))
+	return ToErrorCtx(ctx, result.Error, "UpdateTransactionDiningOptionById")
+}
+
 func (repo Repository) PayTransaction(ctx context.Context, walletId int64, paidAt time.Time, paidAmount float32, id int64) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	result := db.Table("transactions").Where("id = ?", id).Updates(Transaction{WalletId: &walletId, PaidAt: &paidAt, PaidAmount: paidAmount})
@@ -317,12 +330,12 @@ func (repo Repository) GetTransactionSummariesByIds(ctx context.Context, ids []i
 
 	var transactionSummaries []TransactionSummary
 	result := db.Table("transactions").
-		Select("transactions.id AS id, transactions.transaction_number AS transaction_number, transactions.name AS name, transactions.completed_at AS completed_at, tables.label AS table_label, COUNT(transaction_items.id) AS item_count").
+		Select("transactions.id AS id, transactions.transaction_number AS transaction_number, transactions.name AS name, transactions.completed_at AS completed_at, tables.label AS table_label, COUNT(transaction_items.id) AS item_count, transactions.dining_option AS dining_option").
 		Joins("LEFT JOIN carts ON carts.id = transactions.cart_id").
 		Joins("LEFT JOIN tables ON tables.id = carts.table_id").
 		Joins("LEFT JOIN transaction_items ON transaction_items.transaction_id = transactions.id").
 		Where("transactions.id IN ? AND transactions.deleted_at IS NULL", ids).
-		Group("transactions.id, transactions.transaction_number, transactions.name, transactions.completed_at, tables.label").
+		Group("transactions.id, transactions.transaction_number, transactions.name, transactions.completed_at, tables.label, transactions.dining_option").
 		Find(&transactionSummaries)
 
 	return ToTransactionSummariesListDomain(transactionSummaries), ToErrorCtx(ctx, result.Error, "GetTransactionSummariesByIds")

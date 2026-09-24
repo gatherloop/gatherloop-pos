@@ -63,6 +63,9 @@ renders isn't new data, only a new way of looking at data that already existed.
   (locked for exactly as long as that payment is payable) is still the faster way back while
   they're actively looking at the cart, but a guest who closed the tab and comes back later finds
   it here too, whichever table's QR they scan next.
+- **A Bawa pulang pill on takeaway orders** — a row for an order placed as **Bawa pulang** at
+  checkout shows a purple pill of that name next to its number, beside the usual payment/fulfilment
+  status pill; a dine-in row is unchanged.
 
 ## For engineers
 
@@ -104,3 +107,5 @@ renders isn't new data, only a new way of looking at data that already existed.
   days rather than made to last forever (D15)
 - Depends on [Order Checkout (QRIS)](/sales/order-checkout) for the payment and order-status model,
   and [Table Ordering](/sales/table-ordering) for the session and cart this feature reads from
+- Dining option pill: `OrderHistoryListItem.tsx`, sourced from `PaymentSummary.diningOption`
+  through `GetTransactionSummariesByIds` — see `docs/prd-dine-in-takeaway.md`
