@@ -15,6 +15,7 @@ const paymentFindByPartnerReferenceNo = jest.fn().mockResolvedValue({
     items: [],
     transactionNumber: 1,
     fulfillmentStatus: 'preparing',
+    canCancel: false,
   },
 });
 
@@ -32,6 +33,26 @@ const paymentCheckout = jest.fn().mockResolvedValue({
     items: [],
     transactionNumber: 1,
     fulfillmentStatus: 'preparing',
+    canCancel: false,
+  },
+});
+
+const paymentCancel = jest.fn().mockResolvedValue({
+  data: {
+    partnerReferenceNo: 'ORD1',
+    status: 'cancelled',
+    method: 'qris',
+    amount: 10000,
+    qrContent: 'qr-content',
+    expiredAt: null,
+    paidAt: null,
+    customerName: 'Andi',
+    tableLabel: 'Meja 4',
+    items: [],
+    transactionNumber: 1,
+    fulfillmentStatus: 'preparing',
+    canCancel: false,
+    cancelReason: 'guest',
   },
 });
 
@@ -40,6 +61,7 @@ jest.mock('../../../../api-contract/src', () => ({
   paymentFindByPartnerReferenceNo: (...args: unknown[]) =>
     paymentFindByPartnerReferenceNo(...args),
   paymentCheckout: (...args: unknown[]) => paymentCheckout(...args),
+  paymentCancel: (...args: unknown[]) => paymentCancel(...args),
   paymentList: jest.fn(),
 }));
 
@@ -53,6 +75,7 @@ describe('ApiPaymentRepository', () => {
   beforeEach(() => {
     paymentFindByPartnerReferenceNo.mockClear();
     paymentCheckout.mockClear();
+    paymentCancel.mockClear();
   });
 
   it('checks out with the WhatsApp number when given', async () => {
@@ -113,6 +136,39 @@ describe('ApiPaymentRepository', () => {
       'ORD1',
       { 'X-Order-Access-Key': 'q3Vd0bX9pL2sR8tY1wZa7c' },
       expect.anything()
+    );
+  });
+
+  it('maps canCancel and cancelReason onto the payment', async () => {
+    const repository = new ApiPaymentRepository(mockSessionRepository);
+
+    const payment = await repository.cancelPayment('ORD1');
+
+    expect(payment.canCancel).toBe(false);
+    expect(payment.cancelReason).toBe('guest');
+  });
+
+  it('defaults cancelReason to null when the API omits it', async () => {
+    const repository = new ApiPaymentRepository(mockSessionRepository);
+
+    const payment = await repository.fetchPayment('ORD1');
+
+    expect(payment.cancelReason).toBeNull();
+  });
+
+  it('posts to paymentCancel with the session id, never the access key', async () => {
+    const repository = new ApiPaymentRepository(
+      mockSessionRepository,
+      'q3Vd0bX9pL2sR8tY1wZa7c'
+    );
+
+    await repository.cancelPayment('ORD1');
+
+    expect(paymentCancel).toHaveBeenCalledWith(
+      'ORD1',
+      expect.objectContaining({
+        headers: { 'X-Session-Id': 'session-1' },
+      })
     );
   });
 });

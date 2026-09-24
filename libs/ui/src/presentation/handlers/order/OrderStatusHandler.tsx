@@ -22,6 +22,10 @@ export const OrderStatusHandler = ({
   const orderStatus = useOrderStatus(orderStatusUsecase);
   const router = useRouter();
 
+  const tableCode = sessionRepository.getTableCode();
+  const menuPath = tableCode ? `/t/${tableCode}` : '/';
+  const cartPath = tableCode ? `/t/${tableCode}/cart` : '/';
+
   const variant: OrderStatusScreenVariant = match(orderStatus.state)
     .returnType<OrderStatusScreenVariant>()
     .with({ type: P.union('idle', 'loading') }, () => ({ type: 'loading' }))
@@ -69,11 +73,16 @@ export const OrderStatusHandler = ({
         ? { type: 'ready', payment: state.payment }
         : { type: 'notFound' }
     )
+    .with({ type: 'cancelled' }, (state) => {
+      const cancelReason = state.payment?.cancelReason ?? 'guest';
+      return {
+        type: 'cancelled',
+        cancelReason,
+        onActionPress: () =>
+          router.push(cancelReason === 'superseded' ? '/orders' : cartPath),
+      };
+    })
     .exhaustive();
-
-  const tableCode = sessionRepository.getTableCode();
-  const menuPath = tableCode ? `/t/${tableCode}` : '/';
-  const cartPath = tableCode ? `/t/${tableCode}/cart` : '/';
 
   return (
     <OrderStatusScreen

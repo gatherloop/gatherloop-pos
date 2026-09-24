@@ -252,6 +252,48 @@ describe('OrderStatusUsecase', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
+  it('should transition idle → loading → cancelled on a known cancelled reference', async () => {
+    const repository = new MockPaymentRepository();
+    repository.payment = {
+      ...repository.payment,
+      status: 'cancelled',
+      cancelReason: 'guest',
+    };
+    const orderStatus = createTester(repository, repository.payment.reference);
+
+    await flushMicrotasks();
+    expect(orderStatus.state).toEqual({
+      type: 'cancelled',
+      reference: repository.payment.reference,
+      payment: repository.payment,
+      errorMessage: null,
+      isPolling: false,
+    });
+  });
+
+  it('starts cancelled and never fetches when seeded with a cancelled payment', async () => {
+    const repository = new MockPaymentRepository();
+    repository.payment = {
+      ...repository.payment,
+      status: 'cancelled',
+      cancelReason: 'superseded',
+    };
+    const fetchSpy = jest.spyOn(repository, 'fetchPayment');
+
+    const orderStatus = createSeededTester(repository, repository.payment);
+
+    expect(orderStatus.state).toEqual({
+      type: 'cancelled',
+      reference: repository.payment.reference,
+      payment: repository.payment,
+      errorMessage: null,
+      isPolling: false,
+    });
+
+    await flushMicrotasks();
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
   it('starts notFound and never fetches when seeded with a null payment', async () => {
     const repository = new MockPaymentRepository();
     const fetchSpy = jest.spyOn(repository, 'fetchPayment');

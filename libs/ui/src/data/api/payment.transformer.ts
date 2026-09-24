@@ -35,6 +35,8 @@ export function toPayment(payment: ApiPayment): Payment {
     items: payment.items.map(toPaymentItem),
     transactionNumber: payment.transactionNumber,
     fulfillmentStatus: payment.fulfillmentStatus,
+    canCancel: payment.canCancel,
+    cancelReason: payment.cancelReason ?? null,
   };
 }
 

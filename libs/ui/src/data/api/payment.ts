@@ -1,6 +1,7 @@
 import axios from 'axios';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import {
+  paymentCancel,
   paymentCheckout,
   paymentFindByPartnerReferenceNo,
   paymentList,
@@ -59,6 +60,12 @@ export class ApiPaymentRepository implements PaymentRepository {
         payments: data.map(toPaymentSummary),
         total: meta.total,
       })
+    );
+  };
+
+  cancelPayment: PaymentRepository['cancelPayment'] = (reference) => {
+    return paymentCancel(reference, this.sessionRequestConfig()).then(
+      ({ data }) => toPayment(data)
     );
   };
 }

@@ -392,6 +392,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /payments/{partnerReferenceNo}/cancel:
+    post:
+      summary: Cancel the requesting session's own pending payment (idempotent; the response is the payment's resulting state)
+      operationId: paymentCancel
+      tags:
+        - payment
+      parameters:
+        - $ref: '#/components/parameters/PartnerReferenceNo'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '400':
+          description: payment cancellation is not available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: unknown reference, or not this session's payment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /payments/doku/notification:
     post:
       summary: DOKU's inbound QRIS payment notification (D19). Unauthenticated but signature-verified (D13) — the generated client for this route is never imported, because DOKU calls it, not the order app.
@@ -5064,12 +5091,13 @@ components:
         - items
         - transactionNumber
         - fulfillmentStatus
+        - canCancel
       properties:
         partnerReferenceNo:
           type: string
         status:
           type: string
-          enum: [pending, paid, expired, failed]
+          enum: [pending, paid, expired, failed, cancelled]
         method:
           type: string
           enum: [qris, cash]
@@ -5100,6 +5128,11 @@ components:
         fulfillmentStatus:
           type: string
           enum: [preparing, ready]
+        canCancel:
+          type: boolean
+        cancelReason:
+          type: string
+          enum: [guest, superseded]
     PaymentCheckoutRequest:
       type: object
       required:
@@ -5454,7 +5487,7 @@ components:
           type: string
         status:
           type: string
-          enum: [pending, paid, expired, failed]
+          enum: [pending, paid, expired, failed, cancelled]
         method:
           type: string
           enum: [qris, cash]
