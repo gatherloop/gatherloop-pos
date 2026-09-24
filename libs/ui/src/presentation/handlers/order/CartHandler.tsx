@@ -92,6 +92,13 @@ export const CartHandler = ({
   }, [checkout.state.type, cart.dispatch]);
 
   const mutating = isMutating(cart.state);
+  const pendingPayment = cart.state.cart?.pendingPayment ?? null;
+  const lockedNotice = pendingPayment
+    ? {
+        onContinuePress: () =>
+          router.push(`/orders/${pendingPayment.partnerReferenceNo}`),
+      }
+    : null;
 
   const selectedItem =
     cart.state.selectedItemId !== null
@@ -133,6 +140,7 @@ export const CartHandler = ({
             });
             cart.dispatch({ type: 'CLEAR_ITEM' });
           },
+          lockedNotice,
         };
 
   const detailsSheet: (CustomerDetailsSheetProps & { isOpen: true }) | null =
@@ -184,7 +192,7 @@ export const CartHandler = ({
       preparingCount={preparingCount}
       variant={toScreenVariant(cart.state)}
       isMutating={mutating}
-      errorMessage={cart.state.errorMessage}
+      errorMessage={!pendingPayment ? cart.state.errorMessage : null}
       isClearConfirmationOpen={isClearConfirmationOpen}
       onAmountChange={(cartItemId, amount) => {
         const item = cart.state.cart?.items.find(
@@ -222,6 +230,7 @@ export const CartHandler = ({
       onCheckoutPress={() => checkout.dispatch({ type: 'ASK_DETAILS' })}
       onCheckoutRetryPress={() => checkout.dispatch({ type: 'SUBMIT_DETAILS' })}
       detailsSheet={detailsSheet}
+      lockedNotice={lockedNotice}
     />
   );
 };

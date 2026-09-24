@@ -31,6 +31,7 @@ export type MenuListScreenProps = {
   footer?: ReactNode;
   onHistoryPress?: () => void;
   preparingCount?: number;
+  cartErrorMessage?: string | null;
   searchValue: string;
   onSearchValueChange: (value: string) => void;
   isSearching?: boolean;
@@ -50,6 +51,7 @@ export const MenuListScreen = ({
   footer,
   onHistoryPress,
   preparingCount,
+  cartErrorMessage,
   searchValue,
   onSearchValueChange,
   isSearching,
@@ -97,6 +99,10 @@ export const MenuListScreen = ({
             />
           )}
         </YStack>
+
+        {cartErrorMessage ? (
+          <Text color="$red10">{cartErrorMessage}</Text>
+        ) : null}
 
         {match(variant)
           .with({ type: 'loading' }, () => <SkeletonList />)

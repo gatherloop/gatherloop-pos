@@ -18,6 +18,7 @@ import {
   resolveOptionValueAvailability,
 } from '../../../utils';
 import { CartBar } from '../../views/components/cart/CartBar';
+import { PendingPaymentBar } from '../../views/components/cart/PendingPaymentBar';
 import { useUsecase } from '../hooks/useUsecase';
 import { useCart } from '../hooks/useCart';
 import { useTableResolve } from '../hooks/useTableResolve';
@@ -263,13 +264,24 @@ export const MenuListHandler = ({
   );
 
   const currentCart = cart.state.cart;
-  const footer =
-    currentCart && currentCart.itemCount > 0 ? (
-      <CartBar
-        itemCount={currentCart.itemCount}
-        onPress={() => router.push(`/t/${tableCode}/cart`)}
-      />
-    ) : null;
+  const pendingPayment = currentCart?.pendingPayment ?? null;
+
+  const footer = pendingPayment ? (
+    <PendingPaymentBar
+      method={pendingPayment.method}
+      amount={pendingPayment.amount}
+      expiredAt={pendingPayment.expiredAt}
+      onContinuePress={() =>
+        router.push(`/orders/${pendingPayment.partnerReferenceNo}`)
+      }
+      onCountdownElapsed={() => cart.dispatch({ type: 'FETCH' })}
+    />
+  ) : currentCart && currentCart.itemCount > 0 ? (
+    <CartBar
+      itemCount={currentCart.itemCount}
+      onPress={() => router.push(`/t/${tableCode}/cart`)}
+    />
+  ) : null;
 
   const missingOptionNames = getMissingOptionNames(
     menuItemDetail.state.product,
@@ -325,6 +337,12 @@ export const MenuListHandler = ({
             menuList.dispatch({ type: 'CLEAR_ITEM' });
           },
           onRetryButtonPress: () => menuItemDetail.dispatch({ type: 'FETCH' }),
+          lockedNotice: pendingPayment
+            ? {
+                onContinuePress: () =>
+                  router.push(`/orders/${pendingPayment.partnerReferenceNo}`),
+              }
+            : null,
         };
 
   return (
@@ -380,6 +398,11 @@ export const MenuListHandler = ({
       matchedLabelsByProductId={matchedLabelsByProductId}
       onHistoryPress={() => router.push('/orders')}
       preparingCount={preparingCount}
+      cartErrorMessage={
+        !pendingPayment && cart.state.errorMessage
+          ? cart.state.errorMessage
+          : null
+      }
       variant={match(menuList.state)
         .returnType<MenuListScreenProps['variant']>()
         .with({ type: P.union('idle', 'loading') }, () => ({

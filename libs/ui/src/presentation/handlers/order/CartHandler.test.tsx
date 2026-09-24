@@ -12,6 +12,7 @@ import {
 import {
   CartUsecase,
   CheckoutUsecase,
+  PendingPayment,
   TableResolveUsecase,
 } from '../../../domain';
 import { flushPromises } from '../../../utils/testUtils';
@@ -93,6 +94,14 @@ const addItemToCart = (cartRepository: MockCartRepository) =>
   cartRepository.addItem({ variantId: 1, amount: 1, note: '' });
 
 const payButtonName = /^Bayar dengan QRIS/;
+
+const pendingQrisPayment: PendingPayment = {
+  partnerReferenceNo: 'ORDER-1',
+  method: 'qris',
+  amount: 45000,
+  expiredAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+  canCancel: true,
+};
 
 describe('CartHandler', () => {
   beforeEach(() => {
@@ -589,6 +598,44 @@ describe('CartHandler', () => {
     expect(screen.queryByText('0')).toBeNull();
   });
 
+  it('shows the cart read-only with a continue banner when locked by a pending payment', async () => {
+    const cartRepository = new MockCartRepository();
+    await cartRepository.addItem({ variantId: 1, amount: 1, note: '' });
+    cartRepository.setPendingPayment(pendingQrisPayment);
+    renderHandler({ cartRepository });
+
+    await settle();
+
+    expect(
+      screen.queryByRole('button', { name: 'Kosongkan keranjang' })
+    ).toBeNull();
+    expect(screen.queryByLabelText('Ubah Es Kopi Susu')).toBeNull();
+    expect(
+      screen.queryByLabelText('Hapus Es Kopi Susu dari keranjang')
+    ).toBeNull();
+    expect(screen.queryByRole('button', { name: payButtonName })).toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'Lanjutkan pembayaran' })
+    ).toBeTruthy();
+    expect(screen.getByText('Es Kopi Susu')).toBeTruthy();
+  });
+
+  it('navigates to the countdown page from the locked banner', async () => {
+    const user = userEvent.setup();
+    const cartRepository = new MockCartRepository();
+    await cartRepository.addItem({ variantId: 1, amount: 1, note: '' });
+    cartRepository.setPendingPayment(pendingQrisPayment);
+    renderHandler({ cartRepository });
+
+    await settle();
+
+    await user.click(
+      screen.getByRole('button', { name: 'Lanjutkan pembayaran' })
+    );
+
+    expect(mockPush).toHaveBeenCalledWith('/orders/ORDER-1');
+  });
+
   describe('the edit modal', () => {
     it('opens with no navigation when the edit button is pressed, seeded from the line', async () => {
       const user = userEvent.setup();
@@ -689,6 +736,30 @@ describe('CartHandler', () => {
       await settle();
 
       expect(screen.getAllByText('Es Kopi Susu')).toHaveLength(2);
+    });
+
+    it('shows the pending-payment notice instead of Save when the edit sheet is reached by deep link while locked', async () => {
+      const cartRepository = new MockCartRepository();
+      await cartRepository.addItem({
+        variantId: 1,
+        amount: 1,
+        note: '',
+      });
+      const [seededItem] = cartRepository.cart.items;
+      cartRepository.setPendingPayment(pendingQrisPayment);
+      const cartQueryRepository = new MockCartQueryRepository();
+      jest
+        .spyOn(cartQueryRepository, 'getSelectedItemId')
+        .mockReturnValue(seededItem.id);
+
+      renderHandler({ cartRepository, cartQueryRepository });
+
+      await settle();
+
+      expect(screen.queryByRole('button', { name: 'Simpan' })).toBeNull();
+      expect(
+        screen.getAllByRole('button', { name: 'Lanjutkan pembayaran' })
+      ).toHaveLength(2);
     });
 
     it('falls back to the cart with no modal for an unknown item id', async () => {

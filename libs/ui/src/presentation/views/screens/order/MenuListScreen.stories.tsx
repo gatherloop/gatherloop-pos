@@ -184,6 +184,14 @@ export const ItemSheetOpen: Story = {
       onRetryButtonPress: () => {
         // Storybook action stand-in
       },
+      lockedNotice: null,
     },
+  },
+};
+
+export const CartWriteFailed: Story = {
+  args: {
+    ...Loaded.args,
+    cartErrorMessage: 'Gagal memperbarui keranjang. Silakan coba lagi.',
   },
 };

@@ -15,6 +15,7 @@ import {
   MenuItemDetailUsecase,
   MenuListParams,
   MenuListUsecase,
+  PendingPayment,
   TableResolveUsecase,
 } from '../../../domain';
 import { flushPromises } from '../../../utils/testUtils';
@@ -29,6 +30,14 @@ jest.mock('solito/router', () => ({
 }));
 
 const TABLE_CODE = '3F7H9K2M5P';
+
+const pendingQrisPayment: PendingPayment = {
+  partnerReferenceNo: 'ORDER-1',
+  method: 'qris',
+  amount: 45000,
+  expiredAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+  canCancel: true,
+};
 
 const renderHandler = ({
   menuRepository = new MockMenuRepository(),
@@ -238,6 +247,51 @@ describe('MenuListHandler', () => {
     await settle();
 
     expect(screen.queryByText(/Lihat Keranjang/)).toBeNull();
+  });
+
+  it('shows the pending-payment bar instead of the cart bar while the cart is locked, continuing to the countdown on press', async () => {
+    const user = userEvent.setup();
+    const cartRepository = new MockCartRepository();
+    await cartRepository.addItem({ variantId: 1, amount: 2, note: '' });
+    cartRepository.setPendingPayment(pendingQrisPayment);
+    renderHandler({ cartRepository });
+
+    await settle();
+
+    expect(
+      screen.getByText(/Menunggu pembayaran QRIS · Rp 45.000/)
+    ).toBeTruthy();
+    expect(screen.queryByText(/Lihat Keranjang/)).toBeNull();
+
+    await user.click(
+      screen.getByRole('button', { name: 'Lanjutkan pembayaran' })
+    );
+
+    expect(mockPush).toHaveBeenCalledWith('/orders/ORDER-1');
+  });
+
+  it('shows a red banner when a cart write fails for a reason other than a pending-payment lock (D23)', async () => {
+    const user = userEvent.setup();
+    const cartRepository = new MockCartRepository();
+    renderHandler({ cartRepository });
+    await settle();
+
+    await user.click(screen.getByText('Es Kopi Susu'));
+    await settle();
+    await user.click(screen.getByRole('button', { name: 'Regular' }));
+    await settle();
+
+    jest
+      .spyOn(cartRepository, 'addItem')
+      .mockRejectedValueOnce(new Error('Failed to add item'));
+    await user.click(
+      screen.getByRole('button', { name: 'Tambah ke Keranjang · Rp 18.000' })
+    );
+    await settle();
+
+    expect(
+      screen.getByText('Gagal memperbarui keranjang. Silakan coba lagi.')
+    ).toBeTruthy();
   });
 
   it('navigates to /orders from the header history button', async () => {
@@ -491,6 +545,39 @@ describe('MenuListHandler', () => {
           }) as HTMLButtonElement
         ).disabled
       ).toBe(true);
+    });
+
+    it('shows the pending-payment notice instead of the add-to-cart button while locked, still allowing browsing', async () => {
+      const user = userEvent.setup();
+      const cartRepository = new MockCartRepository();
+      cartRepository.setPendingPayment(pendingQrisPayment);
+      renderHandler({ cartRepository });
+      await settle();
+
+      await user.click(screen.getByText('Es Kopi Susu'));
+      await settle();
+
+      expect(
+        screen.getByText(/pembayaran yang belum selesai/)
+      ).toBeTruthy();
+      expect(
+        screen.queryByRole('button', { name: /Tambah ke Keranjang/ })
+      ).toBeNull();
+
+      await user.click(screen.getByRole('button', { name: 'Regular' }));
+      await settle();
+
+      expect(
+        screen.queryByRole('button', { name: /Tambah ke Keranjang/ })
+      ).toBeNull();
+
+      const continueButtons = screen.getAllByRole('button', {
+        name: 'Lanjutkan pembayaran',
+      });
+      expect(continueButtons).toHaveLength(2);
+      await user.click(continueButtons[0]);
+
+      expect(mockPush).toHaveBeenCalledWith('/orders/ORDER-1');
     });
 
     it('resets the draft when a different item is opened next', async () => {
