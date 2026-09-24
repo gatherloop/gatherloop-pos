@@ -39,6 +39,7 @@ const initialTransactions: Transaction[] = [
     createdAt: '2024-03-20T00:00:00.000Z',
     name: 'Transaction 1',
     source: 'pos',
+    diningOption: 'dine_in',
     paymentMethod: null,
     table: null,
     pagerNumber: 1,
@@ -69,6 +70,7 @@ const initialTransactions: Transaction[] = [
     createdAt: '2024-03-21T00:00:00.000Z',
     name: 'Transaction 2',
     source: 'order',
+    diningOption: 'dine_in',
     paymentMethod: 'cash',
     table: { id: 1, label: 'A1', floorNumber: 1 },
     pagerNumber: 0,
@@ -162,6 +164,7 @@ export class MockTransactionRepository implements TransactionRepository {
       createdAt,
       name: formValues.name,
       source: 'pos',
+      diningOption: formValues.diningOption,
       paymentMethod: null,
       table: null,
       pagerNumber: formValues.pagerNumber,
@@ -189,6 +192,7 @@ export class MockTransactionRepository implements TransactionRepository {
       ...this.transactions[idx],
       name: formValues.name,
       pagerNumber: formValues.pagerNumber,
+      diningOption: formValues.diningOption,
     };
   }
 

@@ -122,6 +122,7 @@ export function toTransaction(transaction: ApiTransaction): Transaction {
     wallet: transaction.wallet ? toWallet(transaction.wallet) : null,
     paidAmount: transaction.paidAmount,
     source: transaction.source,
+    diningOption: transaction.diningOption,
     paymentMethod: transaction.paymentMethod ?? null,
     table: transaction.table ?? null,
     completedAt: transaction.completedAt ?? null,
@@ -132,6 +133,7 @@ export function toApiTransaction(form: TransactionForm) {
   return {
     name: form.name,
     pagerNumber: form.pagerNumber,
+    diningOption: form.diningOption,
     transactionItems: form.transactionItems.map((item) => ({
       id: item.id,
       amount: item.amount,
