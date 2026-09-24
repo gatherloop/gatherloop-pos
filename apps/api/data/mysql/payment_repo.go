@@ -70,16 +70,16 @@ func (repo Repository) GetPendingPaymentByCartId(ctx context.Context, cartId int
 	return ToPaymentDomain(payment), ToErrorCtx(ctx, result.Error, "GetPendingPaymentByCartId")
 }
 
-// FR-11: paid payments of either method, plus pending cash so a guest who
-// closed the tab can still find their way back to the till.
-const paymentHistoryFilter = "session_id = ? AND deleted_at IS NULL AND (status = ? OR (status = ? AND method = ?))"
+// FR-14 (docs/prd-order-payment-cancellation.md, D19): paid payments of either
+// method, plus pending payments of either method, so a guest who closed the
+// tab can still find their way back to a payment that's still waiting.
+const paymentHistoryFilter = "session_id = ? AND deleted_at IS NULL AND status IN (?, ?)"
 
 func paymentHistoryFilterArgs(sessionId string) []any {
 	return []any{
 		sessionId,
 		string(domain.PaymentStatePaid),
 		string(domain.PaymentStatePending),
-		string(domain.PaymentMethodCash),
 	}
 }
 
