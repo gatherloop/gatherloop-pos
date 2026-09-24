@@ -28,6 +28,7 @@ type PaymentUsecase struct {
 	qrisExpirySeconds         int
 	cashExpirySeconds         int
 	orderPaymentWalletId      int64
+	orderPaymentCancelEnabled bool
 }
 
 func NewPaymentUsecase(
@@ -44,6 +45,7 @@ func NewPaymentUsecase(
 	qrisExpirySeconds int,
 	cashExpirySeconds int,
 	orderPaymentWalletId int64,
+	orderPaymentCancelEnabled bool,
 ) PaymentUsecase {
 	return PaymentUsecase{
 		paymentRepository:         paymentRepository,
@@ -59,6 +61,7 @@ func NewPaymentUsecase(
 		qrisExpirySeconds:         qrisExpirySeconds,
 		cashExpirySeconds:         cashExpirySeconds,
 		orderPaymentWalletId:      orderPaymentWalletId,
+		orderPaymentCancelEnabled: orderPaymentCancelEnabled,
 	}
 }
 
@@ -263,7 +266,9 @@ func (usecase PaymentUsecase) ConfirmPayment(ctx context.Context, status QrisSta
 	var outcome ConfirmPaymentOutcome
 
 	err := usecase.paymentRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		payment, err := usecase.paymentRepository.GetPaymentByPartnerReferenceNo(ctxWithTx, status.PartnerReferenceNo)
+		// D6: locks the row so a concurrent guest cancel or cashier settle serialises against this
+		// webhook instead of racing it to a terminal state.
+		payment, err := usecase.paymentRepository.GetPaymentByPartnerReferenceNoForUpdate(ctxWithTx, status.PartnerReferenceNo)
 		if err != nil {
 			if err.Type == NotFound {
 				outcome = ConfirmPaymentOutcomeUnknownReference
@@ -295,7 +300,10 @@ func (usecase PaymentUsecase) applyQrisStatus(ctxWithTx context.Context, payment
 		return payment, ConfirmPaymentOutcomeAlreadyPaid, nil
 	}
 
-	if status.Status == PaymentGatewayStatusPaid && (payment.Status == PaymentStatePending || payment.Status == PaymentStateExpired) {
+	// D7: a payment the guest cancelled, or that already expired, can still be paid late from a
+	// saved QR. Both take the same un-delete + force-reserve route as a plain expired payment.
+	payable := payment.Status == PaymentStatePending || payment.Status == PaymentStateExpired || payment.Status == PaymentStateCancelled
+	if status.Status == PaymentGatewayStatusPaid && payable {
 		if status.PaidAmount != payment.Amount {
 			return payment, ConfirmPaymentOutcomeAmountMismatch, nil
 		}
@@ -305,7 +313,7 @@ func (usecase PaymentUsecase) applyQrisStatus(ctxWithTx context.Context, payment
 		}
 
 		outcome := ConfirmPaymentOutcomePaid
-		if payment.Status == PaymentStateExpired {
+		if payment.Status == PaymentStateExpired || payment.Status == PaymentStateCancelled {
 			outcome = ConfirmPaymentOutcomePaidLate
 		}
 
@@ -349,6 +357,13 @@ func (usecase PaymentUsecase) applyQrisStatus(ctxWithTx context.Context, payment
 			return payment, "", updateCartErr
 		}
 
+		// D7: the guest may have checked out again on this cart while the first payment sat
+		// cancelled or expired — finalise that newer attempt so the cart never ends up with two
+		// paid orders.
+		if supersedeErr := supersedeLivePayments(ctxWithTx, payment.CartId, payment.Id, usecase.paymentRepository, usecase.transactionRepository, usecase.availabilityReservation, usecase.kdsNotificationRepository); supersedeErr != nil {
+			return payment, "", supersedeErr
+		}
+
 		return updatedPayment, outcome, nil
 	}
 
@@ -360,7 +375,7 @@ func (usecase PaymentUsecase) applyQrisStatus(ctxWithTx context.Context, payment
 			outcome = ConfirmPaymentOutcomeFailed
 		}
 
-		updatedPayment, finalizeErr := usecase.finalizeUncollectedPayment(ctxWithTx, payment, terminalStatus)
+		updatedPayment, finalizeErr := finalizeUncollectedPayment(ctxWithTx, payment, terminalStatus, nil, usecase.paymentRepository, usecase.transactionRepository, usecase.availabilityReservation, usecase.kdsNotificationRepository)
 		if finalizeErr != nil {
 			return payment, "", finalizeErr
 		}
@@ -374,38 +389,97 @@ func (usecase PaymentUsecase) applyQrisStatus(ctxWithTx context.Context, payment
 // finalizeUncollectedPayment is the shared tail of giving up on a payment that will never be
 // collected: the payment moves to its terminal state, its transaction's availability reservation
 // is released, and the transaction itself is soft-deleted — which is what unfreezes the cart.
-func (usecase PaymentUsecase) finalizeUncollectedPayment(ctxWithTx context.Context, payment Payment, terminalStatus PaymentState) (Payment, *Error) {
+// reason is non-nil only when terminalStatus is PaymentStateCancelled (D9); it is a free function,
+// not a PaymentUsecase method, so TransactionUsecase's settleOrderPayment can share it too. A cash
+// payment that lands in cancelled — whether the guest's own cancel or a supersede (D7) — also gets
+// the KDS retraction (D16/FR-7).
+func finalizeUncollectedPayment(ctxWithTx context.Context, payment Payment, terminalStatus PaymentState, reason *PaymentCancelReason, paymentRepository PaymentRepository, transactionRepository TransactionRepository, availabilityReservation AvailabilityReservation, kdsNotificationRepository KdsNotificationRepository) (Payment, *Error) {
 	now := time.Now()
 	payment.Status = terminalStatus
 	payment.StatusCheckedAt = &now
+	if terminalStatus == PaymentStateCancelled {
+		payment.CancelledAt = &now
+		payment.CancelReason = reason
+	}
 
-	updatedPayment, updateErr := usecase.paymentRepository.UpdatePaymentById(ctxWithTx, payment, payment.Id)
+	updatedPayment, updateErr := paymentRepository.UpdatePaymentById(ctxWithTx, payment, payment.Id)
 	if updateErr != nil {
 		return payment, updateErr
 	}
 
 	if payment.TransactionId != nil {
-		transaction, txErr := usecase.transactionRepository.GetTransactionById(ctxWithTx, *payment.TransactionId)
+		transaction, txErr := transactionRepository.GetTransactionById(ctxWithTx, *payment.TransactionId)
 		if txErr != nil {
 			return payment, txErr
 		}
 
-		if releaseErr := usecase.availabilityReservation.Release(ctxWithTx, transaction.TransactionItems); releaseErr != nil {
+		if releaseErr := availabilityReservation.Release(ctxWithTx, transaction.TransactionItems); releaseErr != nil {
 			return payment, releaseErr
 		}
 
-		if deleteErr := usecase.transactionRepository.DeleteTransactionById(ctxWithTx, *payment.TransactionId); deleteErr != nil {
+		if deleteErr := transactionRepository.DeleteTransactionById(ctxWithTx, *payment.TransactionId); deleteErr != nil {
 			return payment, deleteErr
+		}
+
+		if terminalStatus == PaymentStateCancelled && payment.Method == PaymentMethodCash {
+			if enqueueErr := enqueueCashCancelledNotification(ctxWithTx, transaction, kdsNotificationRepository); enqueueErr != nil {
+				return payment, enqueueErr
+			}
 		}
 	}
 
 	return updatedPayment, nil
 }
 
+// enqueueCashCancelledNotification is FR-7: a cash order retracted before it ever sent
+// cash_pending (the transaction was deleted before Checkout's enqueue landed, in a scenario this
+// codebase does not currently produce) has nothing to retract, so it is skipped rather than
+// buzzing a KDS device that was never told to expect it.
+func enqueueCashCancelledNotification(ctxWithTx context.Context, transaction Transaction, kdsNotificationRepository KdsNotificationRepository) *Error {
+	hasCashPending, err := kdsNotificationRepository.HasNotificationForTransaction(ctxWithTx, transaction.Id, KdsNotificationKindCashPending)
+	if err != nil {
+		return err
+	}
+	if !hasCashPending {
+		return nil
+	}
+
+	return kdsNotificationRepository.EnqueueForTransaction(ctxWithTx, transaction, KdsNotificationKindCashCancelled)
+}
+
+// supersedeLivePayments is D7's guard against a stale-but-still-pending payment surviving next to
+// one that was just paid late: a cart becomes exactly one paid order, so its current pending
+// payment — if there is one, and it isn't the payment just paid — is finalised as
+// cancelled/superseded instead of staying collectable.
+func supersedeLivePayments(ctxWithTx context.Context, cartId int64, exceptPaymentId int64, paymentRepository PaymentRepository, transactionRepository TransactionRepository, availabilityReservation AvailabilityReservation, kdsNotificationRepository KdsNotificationRepository) *Error {
+	pending, err := paymentRepository.GetPendingPaymentByCartId(ctxWithTx, cartId)
+	if err != nil {
+		if err.Type == NotFound {
+			return nil
+		}
+		return err
+	}
+	if pending.Id == exceptPaymentId {
+		return nil
+	}
+
+	slog.WarnContext(ctxWithTx, "superseding a pending payment paid late by another payment on the same cart",
+		slog.String("partnerReferenceNo", pending.PartnerReferenceNo),
+		slog.Int64("cartId", cartId),
+	)
+
+	reason := PaymentCancelReasonSuperseded
+	if _, finalizeErr := finalizeUncollectedPayment(ctxWithTx, pending, PaymentStateCancelled, &reason, paymentRepository, transactionRepository, availabilityReservation, kdsNotificationRepository); finalizeErr != nil {
+		return finalizeErr
+	}
+
+	return nil
+}
+
 // expirePayment is FR-4's entry point for giving up on a payment on the clock alone (D7) — used
 // directly by ExpireStalePayments for cash, and by applyQrisStatus's expired branch for QRIS.
 func (usecase PaymentUsecase) expirePayment(ctxWithTx context.Context, payment Payment) (Payment, *Error) {
-	return usecase.finalizeUncollectedPayment(ctxWithTx, payment, PaymentStateExpired)
+	return finalizeUncollectedPayment(ctxWithTx, payment, PaymentStateExpired, nil, usecase.paymentRepository, usecase.transactionRepository, usecase.availabilityReservation, usecase.kdsNotificationRepository)
 }
 
 // ExpireStalePayments claims up to paymentExpiryBatchSize pending payments past their expired_at,
@@ -440,6 +514,18 @@ func (usecase PaymentUsecase) expireOne(ctx context.Context, payment Payment, no
 	outcome := ConfirmPaymentOutcomeIgnored
 
 	err := usecase.paymentRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		// D6: the batch read above is a stale snapshot by the time this per-payment transaction
+		// opens — a guest may have cancelled it, or another tick may already have expired it.
+		// Re-read under lock and stand down if it has already left pending.
+		locked, lockErr := usecase.paymentRepository.GetPaymentByPartnerReferenceNoForUpdate(ctxWithTx, payment.PartnerReferenceNo)
+		if lockErr != nil {
+			return lockErr
+		}
+		if locked.Status != PaymentStatePending {
+			return nil
+		}
+		payment = locked
+
 		if !payment.RequiresGateway() {
 			if _, expireErr := usecase.expirePayment(ctxWithTx, payment); expireErr != nil {
 				return expireErr
@@ -481,6 +567,110 @@ func (usecase PaymentUsecase) expireOne(ctx context.Context, payment Payment, no
 		logger.Warn("stale payment was already paid at the gateway", slog.String("outcome", string(outcome)))
 		usecase.kdsNotificationDispatcher.TriggerDispatch()
 	}
+}
+
+// CancelPayment is the guest's own entry point into finalizeUncollectedPayment (FR-3). Unlike
+// GetPaymentStatus, an access key never authorises it (D3) — only the session that checked out.
+// The response is always the payment's resulting state, never an error for a payment that had
+// already left pending: paid, expired and failed are all returned as-is (D3).
+func (usecase PaymentUsecase) CancelPayment(ctx context.Context, sessionId string, partnerReferenceNo string) (Payment, Transaction, *Error) {
+	if !usecase.orderPaymentCancelEnabled {
+		return Payment{}, Transaction{}, &Error{Type: BadRequest, Message: "payment cancellation is not available"}
+	}
+
+	var resultPayment Payment
+	var resultTransaction Transaction
+	outcome := ConfirmPaymentOutcomeIgnored
+	cancelledCash := false
+
+	err := usecase.paymentRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		payment, err := usecase.paymentRepository.GetPaymentByPartnerReferenceNoForUpdate(ctxWithTx, partnerReferenceNo)
+		if err != nil {
+			if err.Type == NotFound {
+				return &Error{Type: NotFound, Message: "payment not found"}
+			}
+			return err
+		}
+		if payment.SessionId != sessionId {
+			return &Error{Type: NotFound, Message: "payment not found"}
+		}
+
+		if payment.Status != PaymentStatePending {
+			resultPayment = payment
+			return usecase.loadPaymentTransaction(ctxWithTx, payment, &resultTransaction)
+		}
+
+		if payment.RequiresGateway() {
+			gatewayStatus, gatewayErr := usecase.paymentGatewayRepository.QueryQris(ctxWithTx, QueryQrisInput{
+				PartnerReferenceNo: payment.PartnerReferenceNo,
+				GatewayReferenceNo: payment.GatewayReferenceNo,
+			})
+			if gatewayErr != nil {
+				slog.WarnContext(ctxWithTx, "cancel: doku query failed, proceeding with the cancel",
+					slog.String("partnerReferenceNo", partnerReferenceNo),
+					slog.Any("error", gatewayErr),
+				)
+			} else if gatewayStatus.Status == PaymentGatewayStatusPaid {
+				updatedPayment, applyOutcome, applyErr := usecase.applyQrisStatus(ctxWithTx, payment, gatewayStatus)
+				if applyErr != nil {
+					return applyErr
+				}
+				outcome = applyOutcome
+				resultPayment = updatedPayment
+				return usecase.loadPaymentTransaction(ctxWithTx, updatedPayment, &resultTransaction)
+			}
+
+			// Best-effort: cancelling the QR at DOKU (D5, phase 9) shrinks D7's late-payment window,
+			// but nothing here depends on it succeeding.
+			if cancelErr := usecase.paymentGatewayRepository.CancelQris(ctxWithTx, CancelQrisInput{
+				PartnerReferenceNo: payment.PartnerReferenceNo,
+				GatewayReferenceNo: payment.GatewayReferenceNo,
+			}); cancelErr != nil {
+				slog.WarnContext(ctxWithTx, "cancel: doku qr cancel failed, proceeding with the local cancel",
+					slog.String("partnerReferenceNo", partnerReferenceNo),
+					slog.Any("error", cancelErr),
+				)
+			}
+		}
+
+		reason := PaymentCancelReasonGuest
+		updatedPayment, finalizeErr := finalizeUncollectedPayment(ctxWithTx, payment, PaymentStateCancelled, &reason, usecase.paymentRepository, usecase.transactionRepository, usecase.availabilityReservation, usecase.kdsNotificationRepository)
+		if finalizeErr != nil {
+			return finalizeErr
+		}
+
+		cancelledCash = payment.Method == PaymentMethodCash
+		resultPayment = updatedPayment
+		return usecase.loadPaymentTransaction(ctxWithTx, updatedPayment, &resultTransaction)
+	})
+
+	// FR-4: a cancel that discovers the payment was already paid at DOKU (D4) triggers the KDS
+	// exactly as ConfirmPayment and GetPaymentStatus do. FR-7: so does a cash cancel that may have
+	// just enqueued cash_cancelled — the guest's HTTP response must not wait on Expo either way.
+	if err == nil && (outcome == ConfirmPaymentOutcomePaid || outcome == ConfirmPaymentOutcomePaidLate || cancelledCash) {
+		usecase.kdsNotificationDispatcher.TriggerDispatch()
+	}
+
+	return resultPayment, resultTransaction, err
+}
+
+func (usecase PaymentUsecase) loadPaymentTransaction(ctxWithTx context.Context, payment Payment, out *Transaction) *Error {
+	if payment.TransactionId == nil {
+		return &Error{Type: InternalServerError, Message: "payment has no transaction"}
+	}
+	transaction, txErr := usecase.transactionRepository.GetTransactionById(ctxWithTx, *payment.TransactionId)
+	if txErr != nil {
+		return txErr
+	}
+	*out = transaction
+	return nil
+}
+
+// CanCancel is D10's eligibility rule as the API computes it: the flag, and the payment's own
+// eligibility for this requester. The transformer calls it for every payment response, so a
+// payment read through GET or through Cancel itself always carries the same answer.
+func (usecase PaymentUsecase) CanCancel(payment Payment, sessionId string) bool {
+	return usecase.orderPaymentCancelEnabled && payment.CanBeCancelledBy(sessionId, time.Now())
 }
 
 // authorizePaymentAccess is FR-9/D4: the session that paid always has access, and a payment

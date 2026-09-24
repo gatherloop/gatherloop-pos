@@ -252,6 +252,48 @@ describe('OrderStatusUsecase', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
+  it('should transition idle → loading → cancelled on a known cancelled reference', async () => {
+    const repository = new MockPaymentRepository();
+    repository.payment = {
+      ...repository.payment,
+      status: 'cancelled',
+      cancelReason: 'guest',
+    };
+    const orderStatus = createTester(repository, repository.payment.reference);
+
+    await flushMicrotasks();
+    expect(orderStatus.state).toEqual({
+      type: 'cancelled',
+      reference: repository.payment.reference,
+      payment: repository.payment,
+      errorMessage: null,
+      isPolling: false,
+    });
+  });
+
+  it('starts cancelled and never fetches when seeded with a cancelled payment', async () => {
+    const repository = new MockPaymentRepository();
+    repository.payment = {
+      ...repository.payment,
+      status: 'cancelled',
+      cancelReason: 'superseded',
+    };
+    const fetchSpy = jest.spyOn(repository, 'fetchPayment');
+
+    const orderStatus = createSeededTester(repository, repository.payment);
+
+    expect(orderStatus.state).toEqual({
+      type: 'cancelled',
+      reference: repository.payment.reference,
+      payment: repository.payment,
+      errorMessage: null,
+      isPolling: false,
+    });
+
+    await flushMicrotasks();
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
   it('starts notFound and never fetches when seeded with a null payment', async () => {
     const repository = new MockPaymentRepository();
     const fetchSpy = jest.spyOn(repository, 'fetchPayment');
@@ -273,6 +315,33 @@ describe('OrderStatusUsecase', () => {
   describe('awaitingPayment', () => {
     const enterAwaitingPayment = (repository: MockPaymentRepository) =>
       createSeededTester(repository, repository.payment);
+
+    it('should transition to preparing on a FETCH issued after a guest cancel comes back paid', async () => {
+      const repository = new MockPaymentRepository();
+      const orderStatus = enterAwaitingPayment(repository);
+
+      repository.payment = {
+        ...repository.payment,
+        status: 'paid',
+        fulfillmentStatus: 'preparing',
+      };
+      orderStatus.dispatch({ type: 'FETCH' });
+      expect(orderStatus.state.type).toBe('loading');
+
+      await flushMicrotasks();
+      expect(orderStatus.state.type).toBe('preparing');
+    });
+
+    it('should transition to expired on a FETCH issued after a guest cancel comes back expired', async () => {
+      const repository = new MockPaymentRepository();
+      const orderStatus = enterAwaitingPayment(repository);
+
+      repository.payment = { ...repository.payment, status: 'expired' };
+      orderStatus.dispatch({ type: 'FETCH' });
+      await flushMicrotasks();
+
+      expect(orderStatus.state.type).toBe('expired');
+    });
 
     it('should transition to preparing on a POLL that reports paid but not yet ready', async () => {
       const repository = new MockPaymentRepository();

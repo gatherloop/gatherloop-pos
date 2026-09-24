@@ -21,6 +21,7 @@ export type OrderStatusState = (
   | { type: 'preparing' }
   | { type: 'ready' }
   | { type: 'expired' }
+  | { type: 'cancelled' }
   | { type: 'notFound' }
   | { type: 'error' }
 ) &
@@ -44,7 +45,13 @@ export type OrderStatusParams = {
 
 function stateTypeForPayment(
   payment: Payment
-): 'awaitingPayment' | 'awaitingCashPayment' | 'preparing' | 'ready' | 'expired' {
+):
+  | 'awaitingPayment'
+  | 'awaitingCashPayment'
+  | 'preparing'
+  | 'ready'
+  | 'expired'
+  | 'cancelled' {
   return match(payment.status)
     .with('pending', () =>
       payment.method === 'cash'
@@ -57,6 +64,7 @@ function stateTypeForPayment(
         : ('preparing' as const)
     )
     .with('expired', 'failed', () => 'expired' as const)
+    .with('cancelled', () => 'cancelled' as const)
     .exhaustive();
 }
 
@@ -106,6 +114,8 @@ export class OrderStatusUsecase extends Usecase<
       .with(
         [{ type: 'idle' }, { type: 'FETCH' }],
         [{ type: 'error' }, { type: 'FETCH' }],
+        [{ type: 'awaitingPayment' }, { type: 'FETCH' }],
+        [{ type: 'awaitingCashPayment' }, { type: 'FETCH' }],
         ([state]) => ({ ...state, type: 'loading', errorMessage: null })
       )
       .with(

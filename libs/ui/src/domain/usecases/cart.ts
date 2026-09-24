@@ -203,6 +203,9 @@ export class CartUsecase extends Usecase<CartState, CartAction, CartParams> {
           pendingMutation: null,
         })
       )
+      // A failed mutation refetches rather than reverting to `previousCart`
+      // (D23): a stale local snapshot can't explain *why* the write failed,
+      // but the refetched cart can, e.g. a lock created from another tab.
       .with(
         [
           { type: P.union('adding', 'updating', 'removing', 'clearing') },
@@ -210,8 +213,7 @@ export class CartUsecase extends Usecase<CartState, CartAction, CartParams> {
         ],
         ([state, { message }]) => ({
           ...state,
-          type: 'loaded',
-          cart: state.previousCart,
+          type: 'revalidating',
           previousCart: null,
           pendingMutation: null,
           errorMessage: message,
@@ -269,7 +271,7 @@ export class CartUsecase extends Usecase<CartState, CartAction, CartParams> {
             .catch(() =>
               dispatch({
                 type: 'MUTATE_ERROR',
-                message: 'Failed to update cart',
+                message: 'Gagal memperbarui keranjang. Silakan coba lagi.',
               })
             );
         }

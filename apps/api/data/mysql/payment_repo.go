@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 func NewPaymentRepository(db *gorm.DB) domain.PaymentRepository {
@@ -39,6 +40,26 @@ func (repo Repository) GetPaymentByTransactionId(ctx context.Context, transactio
 	return ToPaymentDomain(payment), ToErrorCtx(ctx, result.Error, "GetPaymentByTransactionId")
 }
 
+func (repo Repository) GetPaymentByPartnerReferenceNoForUpdate(ctx context.Context, partnerReferenceNo string) (domain.Payment, *domain.Error) {
+	db := GetDbFromCtx(ctx, repo.db)
+	var payment Payment
+	result := db.Table("payments").
+		Clauses(clause.Locking{Strength: "UPDATE"}).
+		Where("partner_reference_no = ? AND deleted_at IS NULL", partnerReferenceNo).
+		First(&payment)
+	return ToPaymentDomain(payment), ToErrorCtx(ctx, result.Error, "GetPaymentByPartnerReferenceNoForUpdate")
+}
+
+func (repo Repository) GetPaymentByTransactionIdForUpdate(ctx context.Context, transactionId int64) (domain.Payment, *domain.Error) {
+	db := GetDbFromCtx(ctx, repo.db)
+	var payment Payment
+	result := db.Table("payments").
+		Clauses(clause.Locking{Strength: "UPDATE"}).
+		Where("transaction_id = ? AND deleted_at IS NULL", transactionId).
+		First(&payment)
+	return ToPaymentDomain(payment), ToErrorCtx(ctx, result.Error, "GetPaymentByTransactionIdForUpdate")
+}
+
 func (repo Repository) GetPendingPaymentByCartId(ctx context.Context, cartId int64) (domain.Payment, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	var payment Payment
@@ -49,16 +70,16 @@ func (repo Repository) GetPendingPaymentByCartId(ctx context.Context, cartId int
 	return ToPaymentDomain(payment), ToErrorCtx(ctx, result.Error, "GetPendingPaymentByCartId")
 }
 
-// FR-11: paid payments of either method, plus pending cash so a guest who
-// closed the tab can still find their way back to the till.
-const paymentHistoryFilter = "session_id = ? AND deleted_at IS NULL AND (status = ? OR (status = ? AND method = ?))"
+// FR-14 (docs/prd-order-payment-cancellation.md, D19): paid payments of either
+// method, plus pending payments of either method, so a guest who closed the
+// tab can still find their way back to a payment that's still waiting.
+const paymentHistoryFilter = "session_id = ? AND deleted_at IS NULL AND status IN (?, ?)"
 
 func paymentHistoryFilterArgs(sessionId string) []any {
 	return []any{
 		sessionId,
 		string(domain.PaymentStatePaid),
 		string(domain.PaymentStatePending),
-		string(domain.PaymentMethodCash),
 	}
 }
 

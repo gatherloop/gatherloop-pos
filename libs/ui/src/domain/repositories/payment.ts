@@ -20,4 +20,6 @@ export interface PaymentRepository {
     limit: number;
     skip: number;
   }) => Promise<{ payments: PaymentSummary[]; total: number }>;
+
+  cancelPayment: (reference: string) => Promise<Payment>;
 }

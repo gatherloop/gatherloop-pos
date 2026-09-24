@@ -41,10 +41,15 @@ type KdsNotificationRepository interface {
 	// EnqueueForTransaction writes one row per (transaction, kind), and is a no-op on a
 	// transaction already enqueued for that kind (D4/D8) — never an error. For order_paid, it
 	// writes only when ShouldNotify is true (D24), 'skipped' instead of 'pending' when
-	// IsStaleForNotification is true (D22). cash_pending bypasses both checks (D9): it exists to
-	// move someone to the till, not to make a drink, and is enqueued the instant the transaction
-	// is created, so staleness can never apply to it.
+	// IsStaleForNotification is true (D22). cash_pending and cash_cancelled bypass both checks
+	// (D9): cash_pending exists to move someone to the till, not to make a drink, and is enqueued
+	// the instant the transaction is created, so staleness can never apply to it; cash_cancelled
+	// retracts that instruction (D16).
 	EnqueueForTransaction(ctx context.Context, transaction Transaction, kind KdsNotificationKind) *Error
+	// HasNotificationForTransaction reports whether a (transaction, kind) row already exists.
+	// FR-7 uses it to skip cash_cancelled when the transaction never got a cash_pending push in
+	// the first place, so there is nothing to retract.
+	HasNotificationForTransaction(ctx context.Context, transactionId int64, kind KdsNotificationKind) (bool, *Error)
 	ClaimPendingKdsNotifications(ctx context.Context, limit int) ([]KdsNotification, *Error)
 	MarkKdsNotificationSent(ctx context.Context, id int64, detail string) *Error
 	MarkKdsNotificationFailed(ctx context.Context, id int64, detail string) *Error

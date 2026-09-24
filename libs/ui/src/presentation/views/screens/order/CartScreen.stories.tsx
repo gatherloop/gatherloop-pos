@@ -65,6 +65,7 @@ const cart = {
   itemCount: 2,
   total: 36000,
   createdAt: '2024-03-20T00:00:00.000Z',
+  pendingPayment: null,
 };
 
 const table = { id: 1, label: 'Meja 1', floorNumber: 1 };
@@ -95,6 +96,18 @@ const meta: Meta<typeof CartScreen> = {
     isCheckingOut: false,
     checkoutErrorMessage: null,
     detailsSheet: null,
+    lockedNotice: null,
+    cancelConfirmation: {
+      isOpen: false,
+      method: 'qris',
+      isCancelling: false,
+      onConfirm: () => {
+        // Storybook action stand-in
+      },
+      onDismiss: () => {
+        // Storybook action stand-in
+      },
+    },
     onAmountChange: () => {
       // Storybook action stand-in
     },
@@ -274,5 +287,39 @@ export const WithPreparingBadge: Story = {
       // Storybook action stand-in
     },
     preparingCount: 2,
+  },
+};
+
+export const LockedByPendingPayment: Story = {
+  args: {
+    variant: { type: 'loaded', cart },
+    lockedNotice: {
+      onContinuePress: () => {
+        // Storybook action stand-in
+      },
+      cancelAction: {
+        label: 'Batalkan pembayaran',
+        onPress: () => {
+          // Storybook action stand-in
+        },
+      },
+    },
+  },
+};
+
+export const ConfirmingCancel: Story = {
+  args: {
+    ...LockedByPendingPayment.args,
+    cancelConfirmation: {
+      isOpen: true,
+      method: 'qris',
+      isCancelling: false,
+      onConfirm: () => {
+        // Storybook action stand-in
+      },
+      onDismiss: () => {
+        // Storybook action stand-in
+      },
+    },
   },
 };

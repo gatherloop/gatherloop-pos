@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -46,6 +47,14 @@ func (s *store) get(partnerReferenceNo string) (*record, bool) {
 type qrisAmount struct {
 	Value    string `json:"value"`
 	Currency string `json:"currency"`
+}
+
+// qr-mpm-query's amount.value is a JSON number, unlike qr-mpm-generate's and
+// the webhook notification's string (data/doku/payment_repo.go's
+// queryQrisResponse, fixed to match DOKU's sandbox response).
+type qrisAmountResponse struct {
+	Value    float64 `json:"value"`
+	Currency string  `json:"currency"`
 }
 
 func main() {
@@ -148,6 +157,7 @@ func main() {
 		if rec.paid {
 			status = "00"
 		}
+		amountValue, _ := strconv.ParseFloat(rec.amountValue, 64)
 
 		writeJSON(w, http.StatusOK, map[string]any{
 			"responseCode":               "2005500",
@@ -156,7 +166,36 @@ func main() {
 			"originalReferenceNo":        rec.referenceNo,
 			"latestTransactionStatus":    status,
 			"transactionStatusDesc":      "stub",
-			"amount":                     qrisAmount{Value: rec.amountValue, Currency: "IDR"},
+			"amount":                     qrisAmountResponse{Value: amountValue, Currency: "IDR"},
+		})
+	})
+
+	mux.HandleFunc("POST /snap-adapter/b2b/v1.0/qr/qr-expire", func(w http.ResponseWriter, r *http.Request) {
+		var body struct {
+			PartnerReferenceNo string `json:"partnerReferenceNo"`
+			ReferenceNo        string `json:"referenceNo"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			http.Error(w, "bad request", http.StatusBadRequest)
+			return
+		}
+
+		rec, ok := s.get(body.PartnerReferenceNo)
+		if !ok {
+			writeJSON(w, http.StatusOK, map[string]any{
+				"responseCode":    "4045701",
+				"responseMessage": "Transaction Not Found",
+			})
+			return
+		}
+
+		logger.Info("dokustub: cancelled qris", slog.String("partnerReferenceNo", rec.partnerReferenceNo))
+		writeJSON(w, http.StatusOK, map[string]any{
+			"responseCode":       "2004700",
+			"responseMessage":    "Successful",
+			"partnerReferenceNo": rec.partnerReferenceNo,
+			"referenceNo":        rec.referenceNo,
+			"expiredDate":        time.Now().Format(time.RFC3339),
 		})
 	})
 

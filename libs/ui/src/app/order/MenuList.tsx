@@ -1,6 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 import { ApiCartRepository } from '../../data/api/cart';
 import { ApiMenuRepository } from '../../data/api/menu';
+import { ApiPaymentRepository } from '../../data/api/payment';
 import { ApiPublicTableRepository } from '../../data/api/publicTable';
 import { CookieSessionRepository } from '../../data/session/CookieSessionRepository';
 import { UrlCartQueryRepository } from '../../data/url/cartQuery';
@@ -41,6 +42,7 @@ export function MenuList({
   const menuRepository = new ApiMenuRepository(client);
   const publicTableRepository = new ApiPublicTableRepository();
   const cartRepository = new ApiCartRepository(sessionRepository);
+  const paymentRepository = new ApiPaymentRepository(sessionRepository);
   const menuListQueryRepository = new UrlMenuListQueryRepository();
 
   const tableResolveUsecase = new TableResolveUsecase(publicTableRepository, {
@@ -69,6 +71,7 @@ export function MenuList({
       menuItemDetailUsecase={menuItemDetailUsecase}
       cartUsecase={cartUsecase}
       cartRepository={cartRepository}
+      paymentRepository={paymentRepository}
       sessionRepository={sessionRepository}
       tableCode={code}
       preparingCount={preparingCount}

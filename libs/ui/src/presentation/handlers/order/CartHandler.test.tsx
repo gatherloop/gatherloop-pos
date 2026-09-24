@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, within, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CartHandler } from './CartHandler';
 import {
@@ -12,6 +12,7 @@ import {
 import {
   CartUsecase,
   CheckoutUsecase,
+  PendingPayment,
   TableResolveUsecase,
 } from '../../../domain';
 import { flushPromises } from '../../../utils/testUtils';
@@ -71,6 +72,7 @@ const renderHandler = ({
         tableResolveUsecase={tableResolveUsecase}
         cartUsecase={cartUsecase}
         checkoutUsecase={checkoutUsecase}
+        paymentRepository={paymentRepository}
         sessionRepository={sessionRepository}
         enabled={enabled}
         isCashPaymentEnabled={isCashPaymentEnabled}
@@ -89,10 +91,23 @@ const settle = async () => {
   });
 };
 
+const getCancelDialog = () =>
+  within(
+    document.querySelector('[data-component="AlertDialog"]') as HTMLElement
+  );
+
 const addItemToCart = (cartRepository: MockCartRepository) =>
   cartRepository.addItem({ variantId: 1, amount: 1, note: '' });
 
 const payButtonName = /^Bayar dengan QRIS/;
+
+const pendingQrisPayment: PendingPayment = {
+  partnerReferenceNo: 'ORDER-1',
+  method: 'qris',
+  amount: 45000,
+  expiredAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+  canCancel: true,
+};
 
 describe('CartHandler', () => {
   beforeEach(() => {
@@ -589,6 +604,147 @@ describe('CartHandler', () => {
     expect(screen.queryByText('0')).toBeNull();
   });
 
+  it('shows the cart read-only with a continue banner when locked by a pending payment', async () => {
+    const cartRepository = new MockCartRepository();
+    await cartRepository.addItem({ variantId: 1, amount: 1, note: '' });
+    cartRepository.setPendingPayment(pendingQrisPayment);
+    renderHandler({ cartRepository });
+
+    await settle();
+
+    expect(
+      screen.queryByRole('button', { name: 'Kosongkan keranjang' })
+    ).toBeNull();
+    expect(screen.queryByLabelText('Ubah Es Kopi Susu')).toBeNull();
+    expect(
+      screen.queryByLabelText('Hapus Es Kopi Susu dari keranjang')
+    ).toBeNull();
+    expect(screen.queryByRole('button', { name: payButtonName })).toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'Lanjutkan pembayaran' })
+    ).toBeTruthy();
+    expect(screen.getByText('Es Kopi Susu')).toBeTruthy();
+  });
+
+  it('navigates to the countdown page from the locked banner', async () => {
+    const user = userEvent.setup();
+    const cartRepository = new MockCartRepository();
+    await cartRepository.addItem({ variantId: 1, amount: 1, note: '' });
+    cartRepository.setPendingPayment(pendingQrisPayment);
+    renderHandler({ cartRepository });
+
+    await settle();
+
+    await user.click(
+      screen.getByRole('button', { name: 'Lanjutkan pembayaran' })
+    );
+
+    expect(mockPush).toHaveBeenCalledWith('/orders/ORDER-1');
+  });
+
+  describe('cancelling from the banner (D22)', () => {
+    const seedPendingPayment = (paymentRepository: MockPaymentRepository) => {
+      paymentRepository.payment = {
+        ...paymentRepository.payment,
+        reference: pendingQrisPayment.partnerReferenceNo,
+        method: 'qris',
+        status: 'pending',
+        canCancel: true,
+      };
+    };
+
+    it('cancels the pending payment, making the cart editable with Checkout back', async () => {
+      const user = userEvent.setup();
+      const cartRepository = new MockCartRepository();
+      await cartRepository.addItem({ variantId: 1, amount: 1, note: '' });
+      cartRepository.setPendingPayment(pendingQrisPayment);
+      const paymentRepository = new MockPaymentRepository();
+      seedPendingPayment(paymentRepository);
+      jest
+        .spyOn(paymentRepository, 'cancelPayment')
+        .mockImplementation(async () => {
+          cartRepository.setPendingPayment(null);
+          return {
+            ...paymentRepository.payment,
+            status: 'cancelled',
+            cancelReason: 'guest',
+            canCancel: false,
+          };
+        });
+      renderHandler({ cartRepository, paymentRepository });
+      await settle();
+
+      await user.click(
+        screen.getByRole('button', { name: 'Batalkan pembayaran' })
+      );
+      const dialog = getCancelDialog();
+      await user.click(dialog.getByRole('button', { name: 'Ya, batalkan' }));
+      await settle();
+      await settle();
+
+      expect(
+        screen.getByRole('button', { name: 'Kosongkan keranjang' })
+      ).toBeTruthy();
+      expect(
+        screen.getByRole('button', { name: payButtonName })
+      ).toBeTruthy();
+      expect(screen.getByText('Es Kopi Susu')).toBeTruthy();
+    });
+
+    it('routes to the countdown without unlocking the cart when the cancel answer is already paid', async () => {
+      const user = userEvent.setup();
+      const cartRepository = new MockCartRepository();
+      await cartRepository.addItem({ variantId: 1, amount: 1, note: '' });
+      cartRepository.setPendingPayment(pendingQrisPayment);
+      const paymentRepository = new MockPaymentRepository();
+      seedPendingPayment(paymentRepository);
+      jest.spyOn(paymentRepository, 'cancelPayment').mockResolvedValue({
+        ...paymentRepository.payment,
+        status: 'paid',
+        canCancel: false,
+      });
+      renderHandler({ cartRepository, paymentRepository });
+      await settle();
+
+      await user.click(
+        screen.getByRole('button', { name: 'Batalkan pembayaran' })
+      );
+      const dialog = getCancelDialog();
+      await user.click(dialog.getByRole('button', { name: 'Ya, batalkan' }));
+      await settle();
+
+      expect(mockPush).toHaveBeenCalledWith(
+        `/orders/${pendingQrisPayment.partnerReferenceNo}`
+      );
+    });
+
+    it('dismissing the confirmation leaves the cart locked', async () => {
+      const user = userEvent.setup();
+      const cartRepository = new MockCartRepository();
+      await cartRepository.addItem({ variantId: 1, amount: 1, note: '' });
+      cartRepository.setPendingPayment(pendingQrisPayment);
+      const paymentRepository = new MockPaymentRepository();
+      seedPendingPayment(paymentRepository);
+      const cancelSpy = jest.spyOn(paymentRepository, 'cancelPayment');
+      renderHandler({ cartRepository, paymentRepository });
+      await settle();
+
+      await user.click(
+        screen.getByRole('button', { name: 'Batalkan pembayaran' })
+      );
+      const dialog = getCancelDialog();
+      await user.click(
+        dialog.getByRole('button', { name: 'Lanjutkan pembayaran' })
+      );
+      await settle();
+
+      expect(cancelSpy).not.toHaveBeenCalled();
+      expect(
+        screen.queryByRole('button', { name: 'Kosongkan keranjang' })
+      ).toBeNull();
+    });
+  });
+
   describe('the edit modal', () => {
     it('opens with no navigation when the edit button is pressed, seeded from the line', async () => {
       const user = userEvent.setup();
@@ -689,6 +845,75 @@ describe('CartHandler', () => {
       await settle();
 
       expect(screen.getAllByText('Es Kopi Susu')).toHaveLength(2);
+    });
+
+    it('shows the pending-payment notice instead of Save when the edit sheet is reached by deep link while locked', async () => {
+      const cartRepository = new MockCartRepository();
+      await cartRepository.addItem({
+        variantId: 1,
+        amount: 1,
+        note: '',
+      });
+      const [seededItem] = cartRepository.cart.items;
+      cartRepository.setPendingPayment(pendingQrisPayment);
+      const cartQueryRepository = new MockCartQueryRepository();
+      jest
+        .spyOn(cartQueryRepository, 'getSelectedItemId')
+        .mockReturnValue(seededItem.id);
+
+      renderHandler({ cartRepository, cartQueryRepository });
+
+      await settle();
+
+      expect(screen.queryByRole('button', { name: 'Simpan' })).toBeNull();
+      expect(
+        screen.getAllByRole('button', { name: 'Lanjutkan pembayaran' })
+      ).toHaveLength(2);
+    });
+
+    it('cancels the pending payment from the edit sheet notice, unlocking the cart', async () => {
+      const user = userEvent.setup();
+      const cartRepository = new MockCartRepository();
+      await cartRepository.addItem({ variantId: 1, amount: 1, note: '' });
+      const [seededItem] = cartRepository.cart.items;
+      cartRepository.setPendingPayment(pendingQrisPayment);
+      const cartQueryRepository = new MockCartQueryRepository();
+      jest
+        .spyOn(cartQueryRepository, 'getSelectedItemId')
+        .mockReturnValue(seededItem.id);
+      const paymentRepository = new MockPaymentRepository();
+      paymentRepository.payment = {
+        ...paymentRepository.payment,
+        reference: pendingQrisPayment.partnerReferenceNo,
+        method: 'qris',
+        status: 'pending',
+        canCancel: true,
+      };
+      jest
+        .spyOn(paymentRepository, 'cancelPayment')
+        .mockImplementation(async () => {
+          cartRepository.setPendingPayment(null);
+          return {
+            ...paymentRepository.payment,
+            status: 'cancelled',
+            cancelReason: 'guest',
+            canCancel: false,
+          };
+        });
+
+      renderHandler({ cartRepository, cartQueryRepository, paymentRepository });
+      await settle();
+
+      const [cancelButton] = screen.getAllByRole('button', {
+        name: 'Batalkan pembayaran',
+      });
+      await user.click(cancelButton);
+      const dialog = getCancelDialog();
+      await user.click(dialog.getByRole('button', { name: 'Ya, batalkan' }));
+      await settle();
+      await settle();
+
+      expect(screen.getByRole('button', { name: 'Simpan' })).toBeTruthy();
     });
 
     it('falls back to the cart with no modal for an unknown item id', async () => {

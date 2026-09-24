@@ -17,6 +17,8 @@ type Payment struct {
 	QrContent              *string
 	ExpiredAt              time.Time
 	PaidAt                 *time.Time
+	CancelledAt            *time.Time
+	CancelReason           *string
 	StatusCheckedAt        *time.Time
 	CreatedAt              time.Time
 	UpdatedAt              time.Time

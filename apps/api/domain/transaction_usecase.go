@@ -216,6 +216,20 @@ func (usecase TransactionUsecase) PayTransaction(ctx context.Context, walletId i
 			return err
 		}
 
+		// D6/D8: lock the linked payment row, if any, before deciding whether this transaction
+		// may still be paid. A POS transaction has no linked payment (NotFound, fall through
+		// unguarded); an order transaction whose payment the guest already cancelled must never
+		// be resurrected by a cashier working from a stale list. The same locked row is reused
+		// below, in settleOrderPayment, rather than read a second time.
+		linkedPayment, paymentErr := usecase.paymentRepository.GetPaymentByTransactionIdForUpdate(ctxWithTx, id)
+		hasLinkedPayment := paymentErr == nil
+		if paymentErr != nil && paymentErr.Type != NotFound {
+			return paymentErr
+		}
+		if hasLinkedPayment && linkedPayment.Status == PaymentStateCancelled {
+			return &Error{Type: BadRequest, Message: "order was cancelled by the guest"}
+		}
+
 		// D23: the sweeper may have soft-deleted this order transaction between the cashier's
 		// list fetch and their pressing Pay. Un-delete and re-reserve before paying it — the
 		// same late-payment path applyQrisStatus already takes for a QRIS webhook that arrives
@@ -237,7 +251,10 @@ func (usecase TransactionUsecase) PayTransaction(ctx context.Context, walletId i
 			return err
 		}
 
-		return usecase.settleOrderPayment(ctxWithTx, transaction.Id)
+		if !hasLinkedPayment {
+			return nil
+		}
+		return usecase.settleOrderPayment(ctxWithTx, linkedPayment)
 	})
 	// FR-4: kicked after the commit so the cashier's HTTP response never waits on Expo.
 	if err == nil {
@@ -248,17 +265,10 @@ func (usecase TransactionUsecase) PayTransaction(ctx context.Context, walletId i
 
 // settleOrderPayment closes FR-6: the guest's payments row, and cart, never moved when a
 // staff member paid the linked order transaction by hand instead of through the gateway or
-// the guest's own cash flow. A transaction with no payment row (POS) or an already-paid one
-// (the webhook won the race) is left alone.
-func (usecase TransactionUsecase) settleOrderPayment(ctx context.Context, transactionId int64) *Error {
-	payment, err := usecase.paymentRepository.GetPaymentByTransactionId(ctx, transactionId)
-	if err != nil {
-		if err.Type == NotFound {
-			return nil
-		}
-		return err
-	}
-
+// the guest's own cash flow. payment is the row PayTransaction already locked with
+// GetPaymentByTransactionIdForUpdate (D6); an already-paid one (the webhook won the race) is
+// left alone.
+func (usecase TransactionUsecase) settleOrderPayment(ctx context.Context, payment Payment) *Error {
 	if payment.Status == PaymentStatePaid {
 		return nil
 	}
@@ -280,7 +290,10 @@ func (usecase TransactionUsecase) settleOrderPayment(ctx context.Context, transa
 		return err
 	}
 
-	return nil
+	// D7/D8: the guest may have checked out again on this cart before the cashier settled this
+	// (expired) order transaction by hand — finalise that newer attempt too, the same as a late
+	// QRIS webhook does, so the cart never ends up with two paid orders.
+	return supersedeLivePayments(ctx, payment.CartId, payment.Id, usecase.paymentRepository, usecase.transactionRepository, usecase.availabilityReservation, usecase.kdsNotificationRepository)
 }
 
 func payTransaction(ctx context.Context, transaction Transaction, transactionRepository TransactionRepository, walletRepository WalletRepository, kdsNotificationRepository KdsNotificationRepository, walletId int64, paidAmount float32) *Error {

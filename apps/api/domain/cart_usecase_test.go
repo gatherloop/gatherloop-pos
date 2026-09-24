@@ -76,31 +76,58 @@ func trackedVariant(id int64, productId int64, tracking domain.AvailabilityTrack
 
 func TestCartUsecase_GetCurrentCart(t *testing.T) {
 	tests := []struct {
-		name             string
-		sessionId        string
-		setupMock        func(r *mock.MockCartRepository)
-		expectedId       int64
-		expectedItemsLen int
-		expectedError    *domain.Error
+		name                   string
+		sessionId              string
+		setupMock              func(r *mock.MockCartRepository, pr *mock.MockPaymentRepository)
+		expectedId             int64
+		expectedItemsLen       int
+		expectedPendingPayment bool
+		expectedError          *domain.Error
 	}{
 		{
-			name:      "returns existing active cart",
+			name:      "returns existing active cart with no pending payment (FR-13)",
 			sessionId: "session-1",
-			setupMock: func(r *mock.MockCartRepository) {
+			setupMock: func(r *mock.MockCartRepository, pr *mock.MockPaymentRepository) {
 				r.EXPECT().GetActiveCartBySessionId(gomock.Any(), "session-1").Return(domain.Cart{
 					Id:        1,
 					SessionId: "session-1",
 					Status:    domain.CartStatusActive,
 					Items:     []domain.CartItem{{Id: 1, VariantId: 1, Amount: 2}},
 				}, nil)
+				unlockedCart(pr, 1)
 			},
 			expectedId:       1,
 			expectedItemsLen: 1,
 		},
 		{
+			name:      "a pending unexpired payment rides along as pendingPayment (FR-13)",
+			sessionId: "session-locked",
+			setupMock: func(r *mock.MockCartRepository, pr *mock.MockPaymentRepository) {
+				r.EXPECT().GetActiveCartBySessionId(gomock.Any(), "session-locked").Return(domain.Cart{
+					Id: 2, SessionId: "session-locked", Status: domain.CartStatusActive,
+				}, nil)
+				lockedCart(pr, 2)
+			},
+			expectedId:             2,
+			expectedItemsLen:       0,
+			expectedPendingPayment: true,
+		},
+		{
+			name:      "an expired pending payment does not ride along",
+			sessionId: "session-expired",
+			setupMock: func(r *mock.MockCartRepository, pr *mock.MockPaymentRepository) {
+				r.EXPECT().GetActiveCartBySessionId(gomock.Any(), "session-expired").Return(domain.Cart{
+					Id: 3, SessionId: "session-expired", Status: domain.CartStatusActive,
+				}, nil)
+				expiredPendingCart(pr, 3)
+			},
+			expectedId:       3,
+			expectedItemsLen: 0,
+		},
+		{
 			name:      "no cart yet returns empty cart, never 404",
 			sessionId: "session-2",
-			setupMock: func(r *mock.MockCartRepository) {
+			setupMock: func(r *mock.MockCartRepository, pr *mock.MockPaymentRepository) {
 				r.EXPECT().GetActiveCartBySessionId(gomock.Any(), "session-2").Return(domain.Cart{}, &domain.Error{Type: domain.NotFound})
 			},
 			expectedId:       0,
@@ -109,7 +136,7 @@ func TestCartUsecase_GetCurrentCart(t *testing.T) {
 		{
 			name:      "repository error",
 			sessionId: "session-3",
-			setupMock: func(r *mock.MockCartRepository) {
+			setupMock: func(r *mock.MockCartRepository, pr *mock.MockPaymentRepository) {
 				r.EXPECT().GetActiveCartBySessionId(gomock.Any(), "session-3").Return(domain.Cart{}, &domain.Error{Type: domain.InternalServerError})
 			},
 			expectedError: &domain.Error{Type: domain.InternalServerError},
@@ -125,7 +152,7 @@ func TestCartUsecase_GetCurrentCart(t *testing.T) {
 			variantRepo := mock.NewMockVariantRepository(ctrl)
 			tableRepo := mock.NewMockTableRepository(ctrl)
 			paymentRepo := mock.NewMockPaymentRepository(ctrl)
-			tt.setupMock(cartRepo)
+			tt.setupMock(cartRepo, paymentRepo)
 
 			usecase := newCartUsecase(cartRepo, variantRepo, tableRepo, paymentRepo)
 			cart, err := usecase.GetCurrentCart(context.Background(), tt.sessionId)
@@ -138,6 +165,11 @@ func TestCartUsecase_GetCurrentCart(t *testing.T) {
 				assert.Equal(t, tt.expectedId, cart.Id)
 				assert.Len(t, cart.Items, tt.expectedItemsLen)
 				assert.NotNil(t, cart.Items)
+				if tt.expectedPendingPayment {
+					assert.NotNil(t, cart.PendingPayment)
+				} else {
+					assert.Nil(t, cart.PendingPayment)
+				}
 			}
 		})
 	}
@@ -864,6 +896,7 @@ func TestCartUsecase_ResolvesItemAvailability(t *testing.T) {
 				Items:     []domain.CartItem{{Id: 50, VariantId: tt.variant.Id, Variant: tt.variant, Amount: 1}},
 			}
 			cartRepo.EXPECT().GetActiveCartBySessionId(gomock.Any(), "session-1").Return(cart, nil)
+			unlockedCart(paymentRepo, 1)
 
 			usecase := newCartUsecase(cartRepo, variantRepo, tableRepo, paymentRepo)
 			result, err := usecase.GetCurrentCart(context.Background(), "session-1")

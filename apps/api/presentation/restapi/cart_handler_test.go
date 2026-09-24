@@ -26,7 +26,11 @@ func withCartTransactionMock(r *mock.MockCartRepository) {
 }
 
 func newCartTestHandler(cartRepo *mock.MockCartRepository, variantRepo *mock.MockVariantRepository, tableRepo *mock.MockTableRepository, paymentRepo *mock.MockPaymentRepository) restapi.CartHandler {
-	return restapi.NewCartHandler(domain.NewCartUsecase(cartRepo, variantRepo, tableRepo, paymentRepo))
+	return newCartTestHandlerWithCancelFlag(cartRepo, variantRepo, tableRepo, paymentRepo, false)
+}
+
+func newCartTestHandlerWithCancelFlag(cartRepo *mock.MockCartRepository, variantRepo *mock.MockVariantRepository, tableRepo *mock.MockTableRepository, paymentRepo *mock.MockPaymentRepository, orderPaymentCancelEnabled bool) restapi.CartHandler {
+	return restapi.NewCartHandler(domain.NewCartUsecase(cartRepo, variantRepo, tableRepo, paymentRepo), orderPaymentCancelEnabled)
 }
 
 func unlockedCart(pr *mock.MockPaymentRepository, cartId int64) {
@@ -36,24 +40,31 @@ func unlockedCart(pr *mock.MockPaymentRepository, cartId int64) {
 func TestCartHandler_GetCurrentCart(t *testing.T) {
 	tests := []struct {
 		name           string
-		setupMock      func(r *mock.MockCartRepository)
+		setupMock      func(r *mock.MockCartRepository, pr *mock.MockPaymentRepository)
 		expectedStatus int
 		assertBody     func(t *testing.T, body string)
 	}{
 		{
 			name: "success",
-			setupMock: func(r *mock.MockCartRepository) {
+			setupMock: func(r *mock.MockCartRepository, pr *mock.MockPaymentRepository) {
 				r.EXPECT().GetActiveCartBySessionId(gomock.Any(), testSessionId).Return(domain.Cart{Id: 1, SessionId: testSessionId}, nil)
+				unlockedCart(pr, 1)
 			},
 			expectedStatus: http.StatusOK,
+			assertBody: func(t *testing.T, body string) {
+				var resp apiContract.CartResponse
+				assert.NoError(t, json.NewDecoder(bytes.NewBufferString(body)).Decode(&resp))
+				assert.Nil(t, resp.Data.PendingPayment)
+			},
 		},
 		{
 			name: "embedded table carries its floor number",
-			setupMock: func(r *mock.MockCartRepository) {
+			setupMock: func(r *mock.MockCartRepository, pr *mock.MockPaymentRepository) {
 				r.EXPECT().GetActiveCartBySessionId(gomock.Any(), testSessionId).Return(domain.Cart{
 					Id: 1, SessionId: testSessionId,
 					Table: &domain.Table{Id: 5, Label: "Meja 1", FloorNumber: 2},
 				}, nil)
+				unlockedCart(pr, 1)
 			},
 			expectedStatus: http.StatusOK,
 			assertBody: func(t *testing.T, body string) {
@@ -64,15 +75,36 @@ func TestCartHandler_GetCurrentCart(t *testing.T) {
 			},
 		},
 		{
+			name: "a pending unexpired payment rides along as pendingPayment (FR-13)",
+			setupMock: func(r *mock.MockCartRepository, pr *mock.MockPaymentRepository) {
+				r.EXPECT().GetActiveCartBySessionId(gomock.Any(), testSessionId).Return(domain.Cart{Id: 1, SessionId: testSessionId}, nil)
+				pr.EXPECT().GetPendingPaymentByCartId(gomock.Any(), int64(1)).Return(domain.Payment{
+					Id: 900, CartId: 1, PartnerReferenceNo: "ORD1234567890AB", Method: domain.PaymentMethodQris,
+					Amount: 45000, Status: domain.PaymentStatePending, ExpiredAt: time.Now().Add(5 * time.Minute),
+				}, nil)
+			},
+			expectedStatus: http.StatusOK,
+			assertBody: func(t *testing.T, body string) {
+				var resp apiContract.CartResponse
+				assert.NoError(t, json.NewDecoder(bytes.NewBufferString(body)).Decode(&resp))
+				if assert.NotNil(t, resp.Data.PendingPayment) {
+					assert.Equal(t, "ORD1234567890AB", resp.Data.PendingPayment.PartnerReferenceNo)
+					assert.Equal(t, "qris", resp.Data.PendingPayment.Method)
+					assert.Equal(t, float32(45000), resp.Data.PendingPayment.Amount)
+					assert.False(t, resp.Data.PendingPayment.CanCancel)
+				}
+			},
+		},
+		{
 			name: "no cart yet still returns 200 with an empty cart",
-			setupMock: func(r *mock.MockCartRepository) {
+			setupMock: func(r *mock.MockCartRepository, pr *mock.MockPaymentRepository) {
 				r.EXPECT().GetActiveCartBySessionId(gomock.Any(), testSessionId).Return(domain.Cart{}, &domain.Error{Type: domain.NotFound})
 			},
 			expectedStatus: http.StatusOK,
 		},
 		{
 			name: "repo error",
-			setupMock: func(r *mock.MockCartRepository) {
+			setupMock: func(r *mock.MockCartRepository, pr *mock.MockPaymentRepository) {
 				r.EXPECT().GetActiveCartBySessionId(gomock.Any(), testSessionId).Return(domain.Cart{}, &domain.Error{Type: domain.InternalServerError})
 			},
 			expectedStatus: http.StatusInternalServerError,
@@ -88,7 +120,7 @@ func TestCartHandler_GetCurrentCart(t *testing.T) {
 			variantRepo := mock.NewMockVariantRepository(ctrl)
 			tableRepo := mock.NewMockTableRepository(ctrl)
 			paymentRepo := mock.NewMockPaymentRepository(ctrl)
-			tt.setupMock(cartRepo)
+			tt.setupMock(cartRepo, paymentRepo)
 
 			handler := newCartTestHandler(cartRepo, variantRepo, tableRepo, paymentRepo)
 			req := httptest.NewRequest(http.MethodGet, "/carts/current", nil)
@@ -101,6 +133,34 @@ func TestCartHandler_GetCurrentCart(t *testing.T) {
 				tt.assertBody(t, w.Body.String())
 			}
 		})
+	}
+}
+
+func TestCartHandler_GetCurrentCart_PendingPaymentCanCancelFollowsTheFlag(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	cartRepo := mock.NewMockCartRepository(ctrl)
+	variantRepo := mock.NewMockVariantRepository(ctrl)
+	tableRepo := mock.NewMockTableRepository(ctrl)
+	paymentRepo := mock.NewMockPaymentRepository(ctrl)
+
+	cartRepo.EXPECT().GetActiveCartBySessionId(gomock.Any(), testSessionId).Return(domain.Cart{Id: 1, SessionId: testSessionId}, nil)
+	paymentRepo.EXPECT().GetPendingPaymentByCartId(gomock.Any(), int64(1)).Return(domain.Payment{
+		Id: 900, CartId: 1, PartnerReferenceNo: "ORD1234567890AB", Method: domain.PaymentMethodQris,
+		Amount: 45000, Status: domain.PaymentStatePending, ExpiredAt: time.Now().Add(5 * time.Minute),
+	}, nil)
+
+	handler := newCartTestHandlerWithCancelFlag(cartRepo, variantRepo, tableRepo, paymentRepo, true)
+	req := httptest.NewRequest(http.MethodGet, "/carts/current", nil)
+	req.Header.Set("X-Session-Id", testSessionId)
+	w := httptest.NewRecorder()
+	handler.GetCurrentCart(w, req)
+
+	var resp apiContract.CartResponse
+	assert.NoError(t, json.NewDecoder(w.Body).Decode(&resp))
+	if assert.NotNil(t, resp.Data.PendingPayment) {
+		assert.True(t, resp.Data.PendingPayment.CanCancel)
 	}
 }
 

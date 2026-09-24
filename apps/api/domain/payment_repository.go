@@ -11,6 +11,11 @@ type PaymentRepository interface {
 	BeginTransaction(ctx context.Context, callback func(ctxWithTx context.Context) *Error) *Error
 	GetPaymentByPartnerReferenceNo(ctx context.Context, partnerReferenceNo string) (Payment, *Error)
 	GetPaymentByTransactionId(ctx context.Context, transactionId int64) (Payment, *Error)
+	// GetPaymentByPartnerReferenceNoForUpdate and GetPaymentByTransactionIdForUpdate lock the
+	// payment row (SELECT ... FOR UPDATE) so cancel, confirm, expire and settle serialise on it
+	// instead of racing each other to a terminal state (D6).
+	GetPaymentByPartnerReferenceNoForUpdate(ctx context.Context, partnerReferenceNo string) (Payment, *Error)
+	GetPaymentByTransactionIdForUpdate(ctx context.Context, transactionId int64) (Payment, *Error)
 	GetPendingPaymentByCartId(ctx context.Context, cartId int64) (Payment, *Error)
 	GetPaymentsBySessionId(ctx context.Context, sessionId string, skip int, limit int) ([]Payment, *Error)
 	GetPaymentsBySessionIdTotal(ctx context.Context, sessionId string) (int64, *Error)
@@ -24,4 +29,7 @@ type PaymentRepository interface {
 type PaymentGatewayRepository interface {
 	GenerateQris(ctx context.Context, input GenerateQrisInput) (QrisPayment, *Error)
 	QueryQris(ctx context.Context, input QueryQrisInput) (QrisStatus, *Error)
+	// CancelQris asks DOKU to invalidate a QR ahead of its own expiry (phase 9, D5). It is
+	// best-effort: CancelPayment logs a failure here and proceeds with the local cancel regardless.
+	CancelQris(ctx context.Context, input CancelQrisInput) *Error
 }

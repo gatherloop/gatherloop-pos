@@ -53,7 +53,7 @@ func (handler PaymentHandler) Checkout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, apiContract.PaymentResponse{Data: ToApiPayment(payment, transaction)})
+	WriteResponse(w, apiContract.PaymentResponse{Data: ToApiPayment(payment, transaction, handler.usecase.CanCancel(payment, sessionId))})
 }
 
 func (handler PaymentHandler) GetPaymentList(w http.ResponseWriter, r *http.Request) {
@@ -99,7 +99,21 @@ func (handler PaymentHandler) GetPaymentByPartnerReferenceNo(w http.ResponseWrit
 		return
 	}
 
-	WriteResponse(w, apiContract.PaymentResponse{Data: ToApiPayment(payment, transaction)})
+	WriteResponse(w, apiContract.PaymentResponse{Data: ToApiPayment(payment, transaction, handler.usecase.CanCancel(payment, sessionId))})
+}
+
+func (handler PaymentHandler) Cancel(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	sessionId := GetSessionId(r)
+	partnerReferenceNo := GetPartnerReferenceNo(r)
+
+	payment, transaction, usecaseErr := handler.usecase.CancelPayment(ctx, sessionId, partnerReferenceNo)
+	if usecaseErr != nil {
+		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
+		return
+	}
+
+	WriteResponse(w, apiContract.PaymentResponse{Data: ToApiPayment(payment, transaction, handler.usecase.CanCancel(payment, sessionId))})
 }
 
 func (handler PaymentHandler) Notification(w http.ResponseWriter, r *http.Request) {

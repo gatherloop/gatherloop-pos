@@ -1,15 +1,29 @@
 import { ReactNode } from 'react';
 import { match, P } from 'ts-pattern';
-import { Payment, PaymentMethod } from '../../../../domain/entities/Payment';
+import { Button, Text, YStack } from 'tamagui';
+import {
+  Payment,
+  PaymentCancelReason,
+  PaymentMethod,
+} from '../../../../domain/entities/Payment';
 import { EmptyView } from '../../components/base/EmptyView';
 import { ErrorView } from '../../components/base/ErrorView';
 import { LoadingView } from '../../components/base/LoadingView';
 import { OrderBrandHeader } from '../../components/base/OrderBrandHeader';
 import { OrderLayout } from '../../components/base/OrderLayout';
 import { CashPaymentView } from '../../components/checkout/CashPaymentView';
+import { PaymentCancelAlert } from '../../components/checkout/PaymentCancelAlert';
 import { QrisPaymentView } from '../../components/checkout/QrisPaymentView';
 import { OrderPreparingView } from '../../components/orderStatus/OrderPreparingView';
 import { OrderReadyView } from '../../components/orderStatus/OrderReadyView';
+
+export type OrderStatusCancelConfirmation = {
+  isOpen: boolean;
+  method: PaymentMethod;
+  isCancelling: boolean;
+  onConfirm: () => void;
+  onDismiss: () => void;
+};
 
 export type OrderStatusScreenVariant =
   | { type: 'loading' }
@@ -17,12 +31,20 @@ export type OrderStatusScreenVariant =
       type: 'awaitingPayment';
       payment: Payment;
       onCountdownElapsed: () => void;
+      canCancel: boolean;
+      onCancelPress: () => void;
+      cancelConfirmation: OrderStatusCancelConfirmation;
+      cancelErrorMessage: string | null;
     }
   | {
       type: 'awaitingCashPayment';
       payment: Payment;
       cashierLocation: string;
       onCountdownElapsed: () => void;
+      canCancel: boolean;
+      onCancelPress: () => void;
+      cancelConfirmation: OrderStatusCancelConfirmation;
+      cancelErrorMessage: string | null;
     }
   | {
       type: 'preparing';
@@ -31,6 +53,11 @@ export type OrderStatusScreenVariant =
     }
   | { type: 'ready'; payment: Payment }
   | { type: 'expired'; method: PaymentMethod | null }
+  | {
+      type: 'cancelled';
+      cancelReason: PaymentCancelReason;
+      onActionPress: () => void;
+    }
   | { type: 'notFound' }
   | { type: 'error'; onRetryPress: () => void };
 
@@ -78,28 +105,61 @@ export const OrderStatusScreen = ({
         ))
         .with(
           { type: 'awaitingPayment' },
-          ({ payment, onCountdownElapsed }) => (
-            <QrisPaymentView
-              qrContent={payment.qrContent}
-              amount={payment.amount}
-              expiredAt={payment.expiredAt}
-              reference={payment.reference}
-              onCountdownElapsed={onCountdownElapsed}
-            />
+          ({
+            payment,
+            onCountdownElapsed,
+            canCancel,
+            onCancelPress,
+            cancelConfirmation,
+            cancelErrorMessage,
+          }) => (
+            <>
+              <QrisPaymentView
+                qrContent={payment.qrContent}
+                amount={payment.amount}
+                expiredAt={payment.expiredAt}
+                reference={payment.reference}
+                onCountdownElapsed={onCountdownElapsed}
+              />
+              {canCancel && (
+                <CancelPaymentSection
+                  onCancelPress={onCancelPress}
+                  errorMessage={cancelErrorMessage}
+                />
+              )}
+              <PaymentCancelAlert {...cancelConfirmation} />
+            </>
           )
         )
         .with(
           { type: 'awaitingCashPayment' },
-          ({ payment, cashierLocation, onCountdownElapsed }) => (
-            <CashPaymentView
-              cashierLocation={cashierLocation}
-              transactionNumber={payment.transactionNumber}
-              reference={payment.reference}
-              amount={payment.amount}
-              expiredAt={payment.expiredAt}
-              items={payment.items}
-              onCountdownElapsed={onCountdownElapsed}
-            />
+          ({
+            payment,
+            cashierLocation,
+            onCountdownElapsed,
+            canCancel,
+            onCancelPress,
+            cancelConfirmation,
+            cancelErrorMessage,
+          }) => (
+            <>
+              <CashPaymentView
+                cashierLocation={cashierLocation}
+                transactionNumber={payment.transactionNumber}
+                reference={payment.reference}
+                amount={payment.amount}
+                expiredAt={payment.expiredAt}
+                items={payment.items}
+                onCountdownElapsed={onCountdownElapsed}
+              />
+              {canCancel && (
+                <CancelPaymentSection
+                  onCancelPress={onCancelPress}
+                  errorMessage={cancelErrorMessage}
+                />
+              )}
+              <PaymentCancelAlert {...cancelConfirmation} />
+            </>
           )
         )
         .with({ type: 'expired' }, ({ method }) => (
@@ -112,6 +172,22 @@ export const OrderStatusScreen = ({
             }
             actionLabel="Kembali ke keranjang"
             onActionPress={onBackToCartPress}
+          />
+        ))
+        .with({ type: 'cancelled' }, ({ cancelReason, onActionPress }) => (
+          <EmptyView
+            title="Pembayaran dibatalkan"
+            subtitle={
+              cancelReason === 'superseded'
+                ? 'Pesanan ini sudah dibayar lewat pembayaran sebelumnya.'
+                : 'Keranjang Anda masih tersimpan.'
+            }
+            actionLabel={
+              cancelReason === 'superseded'
+                ? 'Lihat riwayat pesanan'
+                : 'Kembali ke keranjang'
+            }
+            onActionPress={onActionPress}
           />
         ))
         .with({ type: 'notFound' }, () => (
@@ -148,3 +224,30 @@ export const OrderStatusScreen = ({
     </OrderLayout>
   );
 };
+
+type CancelPaymentSectionProps = {
+  onCancelPress: () => void;
+  errorMessage: string | null;
+};
+
+const CancelPaymentSection = ({
+  onCancelPress,
+  errorMessage,
+}: CancelPaymentSectionProps) => (
+  <YStack alignItems="center" gap="$2" paddingTop="$2">
+    <Button
+      size="$2"
+      chromeless
+      theme="red"
+      color="$red10"
+      onPress={onCancelPress}
+    >
+      Batalkan pembayaran
+    </Button>
+    {errorMessage ? (
+      <Text color="$red10" fontSize="$2" textAlign="center">
+        {errorMessage}
+      </Text>
+    ) : null}
+  </YStack>
+);

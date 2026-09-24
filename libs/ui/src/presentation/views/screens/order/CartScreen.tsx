@@ -8,9 +8,17 @@ import { ErrorView } from '../../components/base/ErrorView';
 import { LoadingView } from '../../components/base/LoadingView';
 import { CartLineItem } from '../../components/cart/CartLineItem';
 import {
+  PendingPaymentNotice,
+  PendingPaymentNoticeProps,
+} from '../../components/cart/PendingPaymentNotice';
+import {
   CustomerDetailsSheet,
   CustomerDetailsSheetProps,
 } from '../../components/checkout/CustomerDetailsSheet';
+import {
+  PaymentCancelAlert,
+  PaymentCancelAlertProps,
+} from '../../components/checkout/PaymentCancelAlert';
 import {
   CartItemEditScreen,
   CartItemEditScreenProps,
@@ -50,6 +58,8 @@ export type CartScreenProps = {
   onCheckoutPress: () => void;
   onCheckoutRetryPress: () => void;
   detailsSheet: (CustomerDetailsSheetProps & { isOpen: true }) | null;
+  lockedNotice: PendingPaymentNoticeProps | null;
+  cancelConfirmation: PaymentCancelAlertProps;
 };
 
 export const CartScreen = ({
@@ -76,6 +86,8 @@ export const CartScreen = ({
   onCheckoutPress,
   onCheckoutRetryPress,
   detailsSheet,
+  lockedNotice,
+  cancelConfirmation,
 }: CartScreenProps) => {
   const footer =
     variant.type === 'loaded' ? (
@@ -86,7 +98,9 @@ export const CartScreen = ({
         borderTopWidth={1}
         borderTopColor="$borderColor"
       >
-        {checkoutErrorMessage ? (
+        {lockedNotice ? (
+          <PendingPaymentNotice {...lockedNotice} />
+        ) : checkoutErrorMessage ? (
           <YStack gap="$2" alignItems="center">
             <Text fontWeight="bold" textAlign="center">
               Gagal membuat pembayaran
@@ -165,20 +179,24 @@ export const CartScreen = ({
                 <Text fontWeight="bold" fontSize="$6">
                   Keranjang
                 </Text>
-                <Button
-                  size="$2"
-                  chromeless
-                  theme="red"
-                  color="$red10"
-                  disabled={isMutating}
-                  onPress={onClearPress}
-                  accessibilityLabel="Kosongkan keranjang"
-                >
-                  Kosongkan
-                </Button>
+                {lockedNotice ? null : (
+                  <Button
+                    size="$2"
+                    chromeless
+                    theme="red"
+                    color="$red10"
+                    disabled={isMutating}
+                    onPress={onClearPress}
+                    accessibilityLabel="Kosongkan keranjang"
+                  >
+                    Kosongkan
+                  </Button>
+                )}
               </XStack>
 
-              {errorMessage ? <Text color="$red10">{errorMessage}</Text> : null}
+              {!lockedNotice && errorMessage ? (
+                <Text color="$red10">{errorMessage}</Text>
+              ) : null}
 
               <ScrollView flex={1}>
                 <YStack gap="$4">
@@ -187,6 +205,7 @@ export const CartScreen = ({
                       key={item.id}
                       item={item}
                       disabled={isMutating}
+                      readOnly={lockedNotice !== null}
                       onAmountChange={(amount) =>
                         onAmountChange(item.id, amount)
                       }
@@ -229,6 +248,7 @@ export const CartScreen = ({
           onConfirm={onClearConfirm}
           onCancel={onClearCancel}
         />
+        <PaymentCancelAlert {...cancelConfirmation} />
       </YStack>
 
       {itemEdit && <CartItemEditScreen {...itemEdit} />}

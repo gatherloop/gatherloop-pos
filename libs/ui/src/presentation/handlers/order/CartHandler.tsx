@@ -1,13 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { match, P } from 'ts-pattern';
 import { useRouter } from 'solito/router';
 import { Cart } from '../../../domain/entities/Cart';
+import { PaymentRepository } from '../../../domain/repositories/payment';
 import { SessionRepository } from '../../../domain/repositories/session';
 import { CartState, CartUsecase } from '../../../domain/usecases/cart';
 import { CheckoutUsecase } from '../../../domain/usecases/checkout';
+import { PaymentCancelUsecase } from '../../../domain/usecases/paymentCancel';
 import { TableResolveUsecase } from '../../../domain/usecases/tableResolve';
 import { useCart } from '../hooks/useCart';
 import { useCheckout } from '../hooks/useCheckout';
+import { usePaymentCancel } from '../hooks/usePaymentCancel';
 import { useTableResolve } from '../hooks/useTableResolve';
 import { CustomerDetailsSheetProps } from '../../views/components/checkout/CustomerDetailsSheet';
 import { CartItemEditScreenProps } from '../../views/screens/order/CartItemEditScreen';
@@ -18,6 +21,7 @@ export type CartHandlerProps = {
   tableResolveUsecase: TableResolveUsecase;
   cartUsecase: CartUsecase;
   checkoutUsecase: CheckoutUsecase;
+  paymentRepository: PaymentRepository;
   sessionRepository: SessionRepository;
   enabled: boolean;
   isCashPaymentEnabled?: boolean;
@@ -60,6 +64,7 @@ export const CartHandler = ({
   tableResolveUsecase,
   cartUsecase,
   checkoutUsecase,
+  paymentRepository,
   sessionRepository,
   enabled,
   isCashPaymentEnabled = false,
@@ -92,6 +97,74 @@ export const CartHandler = ({
   }, [checkout.state.type, cart.dispatch]);
 
   const mutating = isMutating(cart.state);
+  const pendingPayment = cart.state.cart?.pendingPayment ?? null;
+
+  const [paymentCancelUsecase, setPaymentCancelUsecase] = useState(
+    () =>
+      new PaymentCancelUsecase(paymentRepository, {
+        reference: pendingPayment?.partnerReferenceNo ?? '',
+        method: pendingPayment?.method ?? 'qris',
+      })
+  );
+
+  if (
+    pendingPayment &&
+    (pendingPayment.partnerReferenceNo !==
+      paymentCancelUsecase.params.reference ||
+      pendingPayment.method !== paymentCancelUsecase.params.method)
+  ) {
+    setPaymentCancelUsecase(
+      new PaymentCancelUsecase(paymentRepository, {
+        reference: pendingPayment.partnerReferenceNo,
+        method: pendingPayment.method,
+      })
+    );
+  }
+
+  const paymentCancel = usePaymentCancel(paymentCancelUsecase);
+  const handledCancelResultRef = useRef<
+    typeof paymentCancel.state.result
+  >(null);
+
+  useEffect(() => {
+    if (
+      paymentCancel.state.type !== 'settled' ||
+      !paymentCancel.state.result ||
+      handledCancelResultRef.current === paymentCancel.state.result
+    ) {
+      return;
+    }
+    handledCancelResultRef.current = paymentCancel.state.result;
+
+    if (paymentCancel.state.result.status === 'paid') {
+      router.push(`/orders/${paymentCancel.state.result.reference}`);
+    } else {
+      cart.dispatch({ type: 'FETCH' });
+    }
+  }, [paymentCancel.state, router, cart.dispatch]);
+
+  const cancelConfirmation = {
+    isOpen:
+      paymentCancel.state.type === 'confirming' ||
+      paymentCancel.state.type === 'cancelling',
+    method: paymentCancel.state.method,
+    isCancelling: paymentCancel.state.type === 'cancelling',
+    onConfirm: () => paymentCancel.dispatch({ type: 'CONFIRM' }),
+    onDismiss: () => paymentCancel.dispatch({ type: 'DISMISS' }),
+  };
+
+  const lockedNotice = pendingPayment
+    ? {
+        onContinuePress: () =>
+          router.push(`/orders/${pendingPayment.partnerReferenceNo}`),
+        cancelAction: pendingPayment.canCancel
+          ? {
+              label: 'Batalkan pembayaran',
+              onPress: () => paymentCancel.dispatch({ type: 'REQUEST' }),
+            }
+          : null,
+      }
+    : null;
 
   const selectedItem =
     cart.state.selectedItemId !== null
@@ -133,6 +206,7 @@ export const CartHandler = ({
             });
             cart.dispatch({ type: 'CLEAR_ITEM' });
           },
+          lockedNotice,
         };
 
   const detailsSheet: (CustomerDetailsSheetProps & { isOpen: true }) | null =
@@ -184,7 +258,7 @@ export const CartHandler = ({
       preparingCount={preparingCount}
       variant={toScreenVariant(cart.state)}
       isMutating={mutating}
-      errorMessage={cart.state.errorMessage}
+      errorMessage={!pendingPayment ? cart.state.errorMessage : null}
       isClearConfirmationOpen={isClearConfirmationOpen}
       onAmountChange={(cartItemId, amount) => {
         const item = cart.state.cart?.items.find(
@@ -222,6 +296,8 @@ export const CartHandler = ({
       onCheckoutPress={() => checkout.dispatch({ type: 'ASK_DETAILS' })}
       onCheckoutRetryPress={() => checkout.dispatch({ type: 'SUBMIT_DETAILS' })}
       detailsSheet={detailsSheet}
+      lockedNotice={lockedNotice}
+      cancelConfirmation={cancelConfirmation}
     />
   );
 };

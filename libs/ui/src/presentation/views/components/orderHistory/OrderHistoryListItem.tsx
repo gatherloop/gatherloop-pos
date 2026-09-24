@@ -23,6 +23,11 @@ const fulfillmentPillByStatus: Record<
   },
 };
 
+const pendingPaymentLabelByMethod: Record<PaymentMethod, string> = {
+  cash: 'Belum dibayar',
+  qris: 'Menunggu pembayaran QRIS',
+};
+
 const StatusPill = ({
   backgroundColor,
   color,
@@ -71,7 +76,7 @@ export const OrderHistoryListItem = ({
   onPress,
   ...xStackProps
 }: OrderHistoryListItemProps) => {
-  const isAwaitingCashPayment = method === 'cash' && status === 'pending';
+  const isAwaitingPayment = status === 'pending';
   return (
     <XStack
       gap="$3"
@@ -91,11 +96,11 @@ export const OrderHistoryListItem = ({
           <Text fontWeight="bold" fontSize="$6">
             #{transactionNumber}
           </Text>
-          {isAwaitingCashPayment ? (
+          {isAwaitingPayment ? (
             <StatusPill
               backgroundColor="$red5"
               color="$red11"
-              label="Belum dibayar"
+              label={pendingPaymentLabelByMethod[method]}
             />
           ) : (
             <StatusPill {...fulfillmentPillByStatus[fulfillmentStatus]} />

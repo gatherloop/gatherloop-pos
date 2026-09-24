@@ -79,6 +79,7 @@ const meta: Meta<typeof CartItemEditScreen> = {
       // Storybook action stand-in
     },
     isSaving: false,
+    lockedNotice: null,
   },
 };
 
@@ -135,5 +136,24 @@ export const OverRemainingQuantity: Story = {
     item: { ...item, variant: { ...variant, sellableQuantity: 1 } },
     amount: item.amount,
     note: item.note,
+  },
+};
+
+export const LockedByPendingPayment: Story = {
+  args: {
+    item,
+    amount: item.amount,
+    note: item.note,
+    lockedNotice: {
+      onContinuePress: () => {
+        // Storybook action stand-in
+      },
+      cancelAction: {
+        label: 'Batalkan pembayaran',
+        onPress: () => {
+          // Storybook action stand-in
+        },
+      },
+    },
   },
 };

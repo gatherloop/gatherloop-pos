@@ -89,6 +89,7 @@ export * from './cart';
 export * from './checkout';
 export * from './orderStatus';
 export * from './orderHistory';
+export * from './paymentCancel';
 export * from './kdsDeviceRegister';
 export * from './kdsDeviceUnregister';
 export * from './kdsTestNotification';

@@ -1,4 +1,4 @@
-import { AlertDialog, Button, ScrollView, XStack, YStack } from 'tamagui';
+import { AlertDialog, Button, ScrollView, Spinner, XStack, YStack } from 'tamagui';
 import { useWindowDimensions } from 'react-native';
 import { useIsCompactLayout } from '../useIsCompactLayout';
 
@@ -8,6 +8,7 @@ export type ConfirmationAlertProps = {
   confirmText?: string;
   cancelText?: string;
   isOpen: boolean;
+  isConfirming?: boolean;
   onCancel?: () => void;
   onConfirm?: () => void;
   onOpenChange: (isOpen: boolean) => void;
@@ -19,6 +20,7 @@ export const ConfirmationAlert = ({
   title,
   description,
   isOpen,
+  isConfirming = false,
   onCancel,
   onConfirm,
   confirmText = 'Yes',
@@ -78,11 +80,19 @@ export const ConfirmationAlert = ({
             )}
 
             <XStack gap="$3" justifyContent="flex-end">
-              <AlertDialog.Cancel asChild>
-                <Button onPress={onCancel}>{cancelText}</Button>
+              {/* accessibilityLabel here, not on the Button: DialogClose's own default ("Dialog Close") otherwise wins on both. */}
+              <AlertDialog.Cancel asChild accessibilityLabel={cancelText}>
+                <Button onPress={onCancel} disabled={isConfirming}>
+                  {cancelText}
+                </Button>
               </AlertDialog.Cancel>
-              <AlertDialog.Action asChild>
-                <Button theme="active" onPress={onConfirm}>
+              <AlertDialog.Action asChild accessibilityLabel={confirmText}>
+                <Button
+                  theme="active"
+                  onPress={onConfirm}
+                  disabled={isConfirming}
+                  icon={isConfirming ? <Spinner /> : undefined}
+                >
                   {confirmText}
                 </Button>
               </AlertDialog.Action>

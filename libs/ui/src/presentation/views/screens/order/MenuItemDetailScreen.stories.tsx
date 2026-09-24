@@ -122,6 +122,7 @@ const meta: Meta<typeof MenuItemDetailScreen> = {
     onRetryButtonPress: () => {
       // Storybook action stand-in
     },
+    lockedNotice: null,
   },
 };
 
@@ -263,5 +264,31 @@ export const SoldOutVariant: Story = {
     selectedOptionValueIds: [6],
     optionValueAvailability: { 5: true, 6: false },
     ctaState: 'ready',
+  },
+};
+
+export const LockedByPendingPayment: Story = {
+  args: {
+    variant: {
+      type: 'ready',
+      product: esKopiSusu,
+      price: 18000,
+      variantErrorMessage: null,
+      isVariantSellable: true,
+    },
+    selectedOptionValueIds: [1],
+    amount: 2,
+    ctaState: 'ready',
+    lockedNotice: {
+      onContinuePress: () => {
+        // Storybook action stand-in
+      },
+      cancelAction: {
+        label: 'Batalkan & tambah item',
+        onPress: () => {
+          // Storybook action stand-in
+        },
+      },
+    },
   },
 };

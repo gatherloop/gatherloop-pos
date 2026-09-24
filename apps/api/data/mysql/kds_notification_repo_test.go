@@ -173,6 +173,36 @@ func TestEnqueueForTransaction_WritesSkippedStatusForAStaleTransaction(t *testin
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
+// FR-7: HasNotificationForTransaction is what lets a cash cancel decide whether there is a
+// cash_pending row to retract before enqueueing cash_cancelled.
+func TestHasNotificationForTransaction_TrueWhenARowExists(t *testing.T) {
+	repo, mock := newMockKdsNotificationRepository(t)
+
+	mock.ExpectQuery("SELECT count\\(\\*\\) FROM `kds_notifications` WHERE transaction_id = \\? AND kind = \\?").
+		WithArgs(int64(1), "cash_pending").
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
+
+	has, err := repo.HasNotificationForTransaction(context.Background(), 1, domain.KdsNotificationKindCashPending)
+
+	require.Nil(t, err)
+	assert.True(t, has)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestHasNotificationForTransaction_FalseWhenNoRowExists(t *testing.T) {
+	repo, mock := newMockKdsNotificationRepository(t)
+
+	mock.ExpectQuery("SELECT count\\(\\*\\) FROM `kds_notifications` WHERE transaction_id = \\? AND kind = \\?").
+		WithArgs(int64(1), "cash_pending").
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
+
+	has, err := repo.HasNotificationForTransaction(context.Background(), 1, domain.KdsNotificationKindCashPending)
+
+	require.Nil(t, err)
+	assert.False(t, has)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
 func TestClaimPendingKdsNotifications_FiltersByStatusAndAttemptCount(t *testing.T) {
 	repo, mock := newMockKdsNotificationRepository(t)
 
