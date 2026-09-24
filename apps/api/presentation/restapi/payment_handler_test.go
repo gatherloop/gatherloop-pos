@@ -15,6 +15,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
 
@@ -53,8 +54,12 @@ func newPaymentHandlerMocks(ctrl *gomock.Controller) paymentHandlerMocks {
 }
 
 func (m paymentHandlerMocks) handler() restapi.PaymentHandler {
+	return m.handlerWithCancelEnabled(false)
+}
+
+func (m paymentHandlerMocks) handlerWithCancelEnabled(orderPaymentCancelEnabled bool) restapi.PaymentHandler {
 	availabilityReservation := domain.NewAvailabilityReservation(m.availabilityRepo)
-	usecase := domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, availabilityReservation, m.kdsNotificationRepo, m.kdsNotificationDispatcher, 300, 600, paymentHandlerOrderPaymentWalletId)
+	usecase := domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, availabilityReservation, m.kdsNotificationRepo, m.kdsNotificationDispatcher, 300, 600, paymentHandlerOrderPaymentWalletId, orderPaymentCancelEnabled)
 	return restapi.NewPaymentHandler(usecase)
 }
 
@@ -486,6 +491,311 @@ func TestPaymentHandler_GetPaymentByPartnerReferenceNo(t *testing.T) {
 		assert.NoError(t, json.NewDecoder(w.Body).Decode(&resp))
 		assert.Equal(t, "paid", resp.Data.Status)
 	})
+}
+
+func TestPaymentHandler_GetPaymentByPartnerReferenceNo_CanCancel(t *testing.T) {
+	t.Run("true for the owning session when the flag is on", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentHandlerMocks(ctrl)
+		withPaymentHandlerTransactionMock(m.paymentRepo)
+
+		transactionId := int64(99)
+		checkedAt := time.Now()
+		payment := domain.Payment{
+			Id: 7, CartId: 1, SessionId: testSessionId, TransactionId: &transactionId,
+			PartnerReferenceNo: "ORD1234567890AB", Method: domain.PaymentMethodQris, Status: domain.PaymentStatePending,
+			Amount: 30000, ExpiredAt: time.Now().Add(2 * time.Minute), StatusCheckedAt: &checkedAt,
+		}
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), transactionId).Return(domain.Transaction{Id: transactionId}, nil)
+
+		req := httptest.NewRequest(http.MethodGet, "/payments/"+payment.PartnerReferenceNo, nil)
+		req.Header.Set("X-Session-Id", testSessionId)
+		req = mux.SetURLVars(req, map[string]string{"partnerReferenceNo": payment.PartnerReferenceNo})
+		w := httptest.NewRecorder()
+		m.handlerWithCancelEnabled(true).GetPaymentByPartnerReferenceNo(w, req)
+
+		var resp apiContract.PaymentResponse
+		assert.NoError(t, json.NewDecoder(w.Body).Decode(&resp))
+		assert.True(t, resp.Data.CanCancel)
+	})
+
+	t.Run("false for an access-key reader even when the flag is on", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentHandlerMocks(ctrl)
+		withPaymentHandlerTransactionMock(m.paymentRepo)
+
+		transactionId := int64(99)
+		checkedAt := time.Now()
+		accessKey := "q3Vd0bX9pL2sR8tY1wZa7c"
+		payment := domain.Payment{
+			Id: 7, CartId: 1, SessionId: "someone-elses-session", TransactionId: &transactionId,
+			PartnerReferenceNo: "ORD1234567890AB", AccessKey: &accessKey, Method: domain.PaymentMethodQris, Status: domain.PaymentStatePending,
+			Amount: 30000, ExpiredAt: time.Now().Add(2 * time.Minute), StatusCheckedAt: &checkedAt,
+		}
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), transactionId).Return(domain.Transaction{Id: transactionId}, nil)
+
+		req := httptest.NewRequest(http.MethodGet, "/payments/"+payment.PartnerReferenceNo, nil)
+		req.Header.Set("X-Session-Id", testSessionId)
+		req.Header.Set("X-Order-Access-Key", accessKey)
+		req = mux.SetURLVars(req, map[string]string{"partnerReferenceNo": payment.PartnerReferenceNo})
+		w := httptest.NewRecorder()
+		m.handlerWithCancelEnabled(true).GetPaymentByPartnerReferenceNo(w, req)
+
+		var resp apiContract.PaymentResponse
+		assert.NoError(t, json.NewDecoder(w.Body).Decode(&resp))
+		assert.False(t, resp.Data.CanCancel)
+	})
+}
+
+func cancelPendingPaymentFixture() domain.Payment {
+	transactionId := int64(99)
+	return domain.Payment{
+		Id: 7, CartId: 1, SessionId: testSessionId, TransactionId: &transactionId,
+		PartnerReferenceNo: "ORD1234567890AB", GatewayReferenceNo: "gw-old",
+		Method: domain.PaymentMethodQris, Status: domain.PaymentStatePending,
+		Amount: 30000, ExpiredAt: time.Now().Add(2 * time.Minute),
+	}
+}
+
+func TestPaymentHandler_Cancel(t *testing.T) {
+	t.Run("the flag off is a 400, with no repository access at all", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentHandlerMocks(ctrl)
+
+		req := httptest.NewRequest(http.MethodPost, "/payments/ORD1234567890AB/cancel", nil)
+		req.Header.Set("X-Session-Id", testSessionId)
+		req = mux.SetURLVars(req, map[string]string{"partnerReferenceNo": "ORD1234567890AB"})
+		w := httptest.NewRecorder()
+		m.handler().Cancel(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("an unknown reference is 404", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentHandlerMocks(ctrl)
+		withPaymentHandlerTransactionMock(m.paymentRepo)
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), "ORDUNKNOWN000AB").
+			Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
+
+		req := httptest.NewRequest(http.MethodPost, "/payments/ORDUNKNOWN000AB/cancel", nil)
+		req.Header.Set("X-Session-Id", testSessionId)
+		req = mux.SetURLVars(req, map[string]string{"partnerReferenceNo": "ORDUNKNOWN000AB"})
+		w := httptest.NewRecorder()
+		m.handlerWithCancelEnabled(true).Cancel(w, req)
+
+		assert.Equal(t, http.StatusNotFound, w.Code)
+	})
+
+	t.Run("a payment belonging to a different session is 404, even with the correct access key", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentHandlerMocks(ctrl)
+		withPaymentHandlerTransactionMock(m.paymentRepo)
+
+		accessKey := "q3Vd0bX9pL2sR8tY1wZa7c"
+		payment := cancelPendingPaymentFixture()
+		payment.SessionId = "someone-elses-session"
+		payment.AccessKey = &accessKey
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+
+		req := httptest.NewRequest(http.MethodPost, "/payments/"+payment.PartnerReferenceNo+"/cancel", nil)
+		req.Header.Set("X-Session-Id", testSessionId)
+		req.Header.Set("X-Order-Access-Key", accessKey)
+		req = mux.SetURLVars(req, map[string]string{"partnerReferenceNo": payment.PartnerReferenceNo})
+		w := httptest.NewRecorder()
+		m.handlerWithCancelEnabled(true).Cancel(w, req)
+
+		assert.Equal(t, http.StatusNotFound, w.Code)
+	})
+
+	t.Run("cancels a pending cash payment and unfreezes its cart", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentHandlerMocks(ctrl)
+		withPaymentHandlerTransactionMock(m.paymentRepo)
+
+		payment := cancelPendingPaymentFixture()
+		payment.Method = domain.PaymentMethodCash
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), payment.Id).
+			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) {
+				assert.Equal(t, domain.PaymentStateCancelled, p.Status)
+				require.NotNil(t, p.CancelReason)
+				assert.Equal(t, domain.PaymentCancelReasonGuest, *p.CancelReason)
+				return p, nil
+			})
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil).Times(2)
+		m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), int64(99)).Return(nil)
+
+		req := httptest.NewRequest(http.MethodPost, "/payments/"+payment.PartnerReferenceNo+"/cancel", nil)
+		req.Header.Set("X-Session-Id", testSessionId)
+		req = mux.SetURLVars(req, map[string]string{"partnerReferenceNo": payment.PartnerReferenceNo})
+		w := httptest.NewRecorder()
+		m.handlerWithCancelEnabled(true).Cancel(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		var resp apiContract.PaymentResponse
+		assert.NoError(t, json.NewDecoder(w.Body).Decode(&resp))
+		assert.Equal(t, "cancelled", resp.Data.Status)
+	})
+
+	t.Run("a qris cancel confirms with doku first, and cancels once doku reports it is still pending", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentHandlerMocks(ctrl)
+		withPaymentHandlerTransactionMock(m.paymentRepo)
+
+		payment := cancelPendingPaymentFixture()
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.gatewayRepo.EXPECT().QueryQris(gomock.Any(), domain.QueryQrisInput{PartnerReferenceNo: payment.PartnerReferenceNo, GatewayReferenceNo: payment.GatewayReferenceNo}).
+			Return(domain.QrisStatus{PartnerReferenceNo: payment.PartnerReferenceNo, Status: domain.PaymentGatewayStatusPending}, nil)
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), payment.Id).
+			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) {
+				assert.Equal(t, domain.PaymentStateCancelled, p.Status)
+				return p, nil
+			})
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil).Times(2)
+		m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), int64(99)).Return(nil)
+
+		req := httptest.NewRequest(http.MethodPost, "/payments/"+payment.PartnerReferenceNo+"/cancel", nil)
+		req.Header.Set("X-Session-Id", testSessionId)
+		req = mux.SetURLVars(req, map[string]string{"partnerReferenceNo": payment.PartnerReferenceNo})
+		w := httptest.NewRecorder()
+		m.handlerWithCancelEnabled(true).Cancel(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		var resp apiContract.PaymentResponse
+		assert.NoError(t, json.NewDecoder(w.Body).Decode(&resp))
+		assert.Equal(t, "cancelled", resp.Data.Status)
+	})
+
+	t.Run("a qris cancel that finds doku already paid pays instead of cancelling (D4)", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentHandlerMocks(ctrl)
+		withPaymentHandlerTransactionMock(m.paymentRepo)
+
+		payment := cancelPendingPaymentFixture()
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.gatewayRepo.EXPECT().QueryQris(gomock.Any(), gomock.Any()).
+			Return(domain.QrisStatus{PartnerReferenceNo: payment.PartnerReferenceNo, GatewayReferenceNo: "gw-new", Status: domain.PaymentGatewayStatusPaid, PaidAmount: payment.Amount}, nil)
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).
+			Return(domain.Transaction{Id: 99, Total: payment.Amount}, nil).Times(2)
+		m.walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(paymentHandlerOrderPaymentWalletId)).
+			Return(domain.Wallet{Id: paymentHandlerOrderPaymentWalletId, Name: "QRIS", IsPaymentTarget: true}, nil)
+		m.walletRepo.EXPECT().UpdateWalletById(gomock.Any(), gomock.Any(), int64(paymentHandlerOrderPaymentWalletId)).
+			Return(domain.Wallet{}, nil)
+		m.transactionRepo.EXPECT().UpdateTransactionById(gomock.Any(), gomock.Any(), int64(99)).
+			Return(domain.Transaction{}, nil)
+		m.transactionRepo.EXPECT().PayTransaction(gomock.Any(), int64(paymentHandlerOrderPaymentWalletId), gomock.Any(), payment.Amount, int64(99)).
+			Return(nil)
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), payment.Id).
+			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) {
+				assert.Equal(t, domain.PaymentStatePaid, p.Status)
+				return p, nil
+			})
+		m.cartRepo.EXPECT().GetCartById(gomock.Any(), payment.CartId).
+			Return(domain.Cart{Id: 1, Status: domain.CartStatusActive}, nil)
+		m.cartRepo.EXPECT().UpdateCartById(gomock.Any(), gomock.Any(), int64(1)).
+			DoAndReturn(func(_ context.Context, cart domain.Cart, id int64) (domain.Cart, *domain.Error) { return cart, nil })
+
+		req := httptest.NewRequest(http.MethodPost, "/payments/"+payment.PartnerReferenceNo+"/cancel", nil)
+		req.Header.Set("X-Session-Id", testSessionId)
+		req = mux.SetURLVars(req, map[string]string{"partnerReferenceNo": payment.PartnerReferenceNo})
+		w := httptest.NewRecorder()
+		m.handlerWithCancelEnabled(true).Cancel(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		var resp apiContract.PaymentResponse
+		assert.NoError(t, json.NewDecoder(w.Body).Decode(&resp))
+		assert.Equal(t, "paid", resp.Data.Status)
+	})
+
+	t.Run("a doku query error does not block the cancel", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentHandlerMocks(ctrl)
+		withPaymentHandlerTransactionMock(m.paymentRepo)
+
+		payment := cancelPendingPaymentFixture()
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.gatewayRepo.EXPECT().QueryQris(gomock.Any(), gomock.Any()).
+			Return(domain.QrisStatus{}, &domain.Error{Type: domain.BadGateway, Message: "doku is unreachable"})
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), payment.Id).
+			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) {
+				assert.Equal(t, domain.PaymentStateCancelled, p.Status)
+				return p, nil
+			})
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil).Times(2)
+		m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), int64(99)).Return(nil)
+
+		req := httptest.NewRequest(http.MethodPost, "/payments/"+payment.PartnerReferenceNo+"/cancel", nil)
+		req.Header.Set("X-Session-Id", testSessionId)
+		req = mux.SetURLVars(req, map[string]string{"partnerReferenceNo": payment.PartnerReferenceNo})
+		w := httptest.NewRecorder()
+		m.handlerWithCancelEnabled(true).Cancel(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		var resp apiContract.PaymentResponse
+		assert.NoError(t, json.NewDecoder(w.Body).Decode(&resp))
+		assert.Equal(t, "cancelled", resp.Data.Status)
+	})
+
+	t.Run("a payment already outside pending is returned unchanged (D3, idempotent)", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentHandlerMocks(ctrl)
+		withPaymentHandlerTransactionMock(m.paymentRepo)
+
+		payment := cancelPendingPaymentFixture()
+		payment.Status = domain.PaymentStateExpired
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil)
+
+		req := httptest.NewRequest(http.MethodPost, "/payments/"+payment.PartnerReferenceNo+"/cancel", nil)
+		req.Header.Set("X-Session-Id", testSessionId)
+		req = mux.SetURLVars(req, map[string]string{"partnerReferenceNo": payment.PartnerReferenceNo})
+		w := httptest.NewRecorder()
+		m.handlerWithCancelEnabled(true).Cancel(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		var resp apiContract.PaymentResponse
+		assert.NoError(t, json.NewDecoder(w.Body).Decode(&resp))
+		assert.Equal(t, "expired", resp.Data.Status)
+	})
+}
+
+func TestPaymentCancelRoute_RequiresSessionId(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	m := newPaymentHandlerMocks(ctrl)
+
+	router := mux.NewRouter()
+	restapi.NewPaymentRouter(m.handlerWithCancelEnabled(true)).AddRouter(router)
+
+	req := httptest.NewRequest(http.MethodPost, "/payments/ORD1234567890AB/cancel", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestPaymentHandler_GetPaymentList(t *testing.T) {

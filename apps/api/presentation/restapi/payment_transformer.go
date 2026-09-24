@@ -43,7 +43,7 @@ func ToQrisStatus(request apiContract.DokuNotificationRequest) domain.QrisStatus
 	}
 }
 
-func ToApiPayment(payment domain.Payment, transaction domain.Transaction) apiContract.Payment {
+func ToApiPayment(payment domain.Payment, transaction domain.Transaction, canCancel bool) apiContract.Payment {
 	items := []apiContract.PaymentItem{}
 	for _, item := range transaction.TransactionItems {
 		options := []apiContract.PaymentItemOption{}
@@ -74,6 +74,12 @@ func ToApiPayment(payment domain.Payment, transaction domain.Transaction) apiCon
 		fulfillmentStatus = "ready"
 	}
 
+	var cancelReason *string
+	if payment.CancelReason != nil {
+		reason := string(*payment.CancelReason)
+		cancelReason = &reason
+	}
+
 	return apiContract.Payment{
 		PartnerReferenceNo: payment.PartnerReferenceNo,
 		Status:             string(payment.Status),
@@ -88,6 +94,8 @@ func ToApiPayment(payment domain.Payment, transaction domain.Transaction) apiCon
 		Items:              items,
 		TransactionNumber:  transaction.TransactionNumber,
 		FulfillmentStatus:  fulfillmentStatus,
+		CanCancel:          canCancel,
+		CancelReason:       cancelReason,
 	}
 }
 

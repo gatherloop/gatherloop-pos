@@ -45,7 +45,7 @@ func TestToApiPayment_PreparingWhenNotCompleted(t *testing.T) {
 	payment := domain.Payment{PartnerReferenceNo: "ORD1", Status: domain.PaymentStatePaid}
 	transaction := domain.Transaction{TransactionNumber: 12, CompletedAt: nil}
 
-	apiPayment := restapi.ToApiPayment(payment, transaction)
+	apiPayment := restapi.ToApiPayment(payment, transaction, false)
 
 	assert.Equal(t, int64(12), apiPayment.TransactionNumber)
 	assert.Equal(t, "preparing", apiPayment.FulfillmentStatus)
@@ -56,10 +56,40 @@ func TestToApiPayment_ReadyWhenCompleted(t *testing.T) {
 	payment := domain.Payment{PartnerReferenceNo: "ORD1", Status: domain.PaymentStatePaid}
 	transaction := domain.Transaction{TransactionNumber: 12, CompletedAt: &completedAt}
 
-	apiPayment := restapi.ToApiPayment(payment, transaction)
+	apiPayment := restapi.ToApiPayment(payment, transaction, false)
 
 	assert.Equal(t, int64(12), apiPayment.TransactionNumber)
 	assert.Equal(t, "ready", apiPayment.FulfillmentStatus)
+}
+
+func TestToApiPayment_CanCancelIsCarriedAsGiven(t *testing.T) {
+	payment := domain.Payment{PartnerReferenceNo: "ORD1", Status: domain.PaymentStatePending}
+	transaction := domain.Transaction{TransactionNumber: 12}
+
+	assert.True(t, restapi.ToApiPayment(payment, transaction, true).CanCancel)
+	assert.False(t, restapi.ToApiPayment(payment, transaction, false).CanCancel)
+}
+
+func TestToApiPayment_CancelReason(t *testing.T) {
+	transaction := domain.Transaction{TransactionNumber: 12}
+
+	t.Run("nil when the payment was never cancelled", func(t *testing.T) {
+		payment := domain.Payment{PartnerReferenceNo: "ORD1", Status: domain.PaymentStatePending}
+
+		apiPayment := restapi.ToApiPayment(payment, transaction, false)
+
+		assert.Nil(t, apiPayment.CancelReason)
+	})
+
+	t.Run("carries the reason when cancelled", func(t *testing.T) {
+		reason := domain.PaymentCancelReasonGuest
+		payment := domain.Payment{PartnerReferenceNo: "ORD1", Status: domain.PaymentStateCancelled, CancelReason: &reason}
+
+		apiPayment := restapi.ToApiPayment(payment, transaction, false)
+
+		require.NotNil(t, apiPayment.CancelReason)
+		assert.Equal(t, "guest", *apiPayment.CancelReason)
+	})
 }
 
 func TestToApiPaymentSummary_AgreesWithToApiPaymentOnFulfillmentStatus(t *testing.T) {
@@ -81,7 +111,7 @@ func TestToApiPaymentSummary_AgreesWithToApiPaymentOnFulfillmentStatus(t *testin
 				CompletedAt:       transaction.CompletedAt,
 			})
 
-			apiPayment := restapi.ToApiPayment(payment, transaction)
+			apiPayment := restapi.ToApiPayment(payment, transaction, false)
 			apiPaymentSummary := restapi.ToApiPaymentSummary(summary)
 
 			assert.Equal(t, apiPayment.FulfillmentStatus, apiPaymentSummary.FulfillmentStatus)

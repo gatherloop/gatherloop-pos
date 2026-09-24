@@ -26,7 +26,11 @@ func withCartTransactionMock(r *mock.MockCartRepository) {
 }
 
 func newCartTestHandler(cartRepo *mock.MockCartRepository, variantRepo *mock.MockVariantRepository, tableRepo *mock.MockTableRepository, paymentRepo *mock.MockPaymentRepository) restapi.CartHandler {
-	return restapi.NewCartHandler(domain.NewCartUsecase(cartRepo, variantRepo, tableRepo, paymentRepo))
+	return newCartTestHandlerWithCancelFlag(cartRepo, variantRepo, tableRepo, paymentRepo, false)
+}
+
+func newCartTestHandlerWithCancelFlag(cartRepo *mock.MockCartRepository, variantRepo *mock.MockVariantRepository, tableRepo *mock.MockTableRepository, paymentRepo *mock.MockPaymentRepository, orderPaymentCancelEnabled bool) restapi.CartHandler {
+	return restapi.NewCartHandler(domain.NewCartUsecase(cartRepo, variantRepo, tableRepo, paymentRepo), orderPaymentCancelEnabled)
 }
 
 func unlockedCart(pr *mock.MockPaymentRepository, cartId int64) {
@@ -129,6 +133,34 @@ func TestCartHandler_GetCurrentCart(t *testing.T) {
 				tt.assertBody(t, w.Body.String())
 			}
 		})
+	}
+}
+
+func TestCartHandler_GetCurrentCart_PendingPaymentCanCancelFollowsTheFlag(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	cartRepo := mock.NewMockCartRepository(ctrl)
+	variantRepo := mock.NewMockVariantRepository(ctrl)
+	tableRepo := mock.NewMockTableRepository(ctrl)
+	paymentRepo := mock.NewMockPaymentRepository(ctrl)
+
+	cartRepo.EXPECT().GetActiveCartBySessionId(gomock.Any(), testSessionId).Return(domain.Cart{Id: 1, SessionId: testSessionId}, nil)
+	paymentRepo.EXPECT().GetPendingPaymentByCartId(gomock.Any(), int64(1)).Return(domain.Payment{
+		Id: 900, CartId: 1, PartnerReferenceNo: "ORD1234567890AB", Method: domain.PaymentMethodQris,
+		Amount: 45000, Status: domain.PaymentStatePending, ExpiredAt: time.Now().Add(5 * time.Minute),
+	}, nil)
+
+	handler := newCartTestHandlerWithCancelFlag(cartRepo, variantRepo, tableRepo, paymentRepo, true)
+	req := httptest.NewRequest(http.MethodGet, "/carts/current", nil)
+	req.Header.Set("X-Session-Id", testSessionId)
+	w := httptest.NewRecorder()
+	handler.GetCurrentCart(w, req)
+
+	var resp apiContract.CartResponse
+	assert.NoError(t, json.NewDecoder(w.Body).Decode(&resp))
+	if assert.NotNil(t, resp.Data.PendingPayment) {
+		assert.True(t, resp.Data.PendingPayment.CanCancel)
 	}
 }
 
