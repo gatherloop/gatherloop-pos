@@ -118,4 +118,34 @@ describe('PaymentCancelUsecase', () => {
     paymentCancel.dispatch({ type: 'CONFIRM' });
     expect(paymentCancel.state.type).toBe('idle');
   });
+
+  it('should adopt a corrected reference and method on SYNC_PARAMS while idle', () => {
+    const repository = new MockPaymentRepository();
+    const paymentCancel = createTester(repository);
+
+    paymentCancel.dispatch({
+      type: 'SYNC_PARAMS',
+      reference: 'ORDNEWREF00000000',
+      method: 'cash',
+    });
+
+    expect(paymentCancel.state.type).toBe('idle');
+    expect(paymentCancel.state.reference).toBe('ORDNEWREF00000000');
+    expect(paymentCancel.state.method).toBe('cash');
+  });
+
+  it('should ignore SYNC_PARAMS outside idle', () => {
+    const repository = new MockPaymentRepository();
+    const paymentCancel = createTester(repository);
+
+    paymentCancel.dispatch({ type: 'REQUEST' });
+    paymentCancel.dispatch({
+      type: 'SYNC_PARAMS',
+      reference: 'ORDNEWREF00000000',
+      method: 'cash',
+    });
+
+    expect(paymentCancel.state.type).toBe('confirming');
+    expect(paymentCancel.state.reference).toBe(repository.payment.reference);
+  });
 });

@@ -80,12 +80,13 @@ export const ConfirmationAlert = ({
             )}
 
             <XStack gap="$3" justifyContent="flex-end">
-              <AlertDialog.Cancel asChild>
+              {/* accessibilityLabel here, not on the Button: DialogClose's own default ("Dialog Close") otherwise wins on both. */}
+              <AlertDialog.Cancel asChild accessibilityLabel={cancelText}>
                 <Button onPress={onCancel} disabled={isConfirming}>
                   {cancelText}
                 </Button>
               </AlertDialog.Cancel>
-              <AlertDialog.Action asChild>
+              <AlertDialog.Action asChild accessibilityLabel={confirmText}>
                 <Button
                   theme="active"
                   onPress={onConfirm}

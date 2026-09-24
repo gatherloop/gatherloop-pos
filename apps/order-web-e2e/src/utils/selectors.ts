@@ -44,6 +44,43 @@ export const cartBar = {
     page.getByRole('button', { name: /^Lihat Keranjang/ }),
 };
 
+// PendingPaymentBar.tsx (menu footer) and PendingPaymentNotice.tsx (item sheet,
+// cart, cart-item edit) — the locked-cart surfaces from
+// docs/prd-order-payment-cancellation.md D18/D21.
+export const pendingPayment = {
+  bar: (page: Page, methodLabel: 'QRIS' | 'tunai') =>
+    page.getByText(`Menunggu pembayaran ${methodLabel}`),
+  noticeText: (page: Page) =>
+    page.getByText(
+      'Anda masih punya pembayaran yang belum selesai. Selesaikan atau batalkan dulu untuk mengubah pesanan.'
+    ),
+  // Shared label across the bar and every notice — only ever one instance
+  // visible per screen except while the cancel dialog (which reuses the same
+  // copy for its own dismiss button) is open; scope to paymentCancelDialog
+  // for that button instead of this one.
+  continueButton: (page: Page) =>
+    page.getByRole('button', { name: 'Lanjutkan pembayaran' }),
+  cancelAndAddButton: (page: Page) =>
+    page.getByRole('button', { name: 'Batalkan & tambah item' }),
+  cancelButton: (page: Page) =>
+    page.getByRole('button', { name: 'Batalkan pembayaran' }),
+};
+
+// PaymentCancelAlert.tsx, built on the base ConfirmationAlert — shared by the
+// status page, the menu's item sheet and the cart (D20). Scoped to the
+// `alertdialog` role so its "Lanjutkan pembayaran" button never collides with
+// PendingPaymentBar's / PendingPaymentNotice's own button of the same name.
+export const paymentCancelDialog = {
+  container: (page: Page) => page.getByRole('alertdialog'),
+  title: (page: Page) => page.getByText('Batalkan pembayaran?'),
+  confirmButton: (page: Page) =>
+    paymentCancelDialog.container(page).getByRole('button', { name: 'Ya, batalkan' }),
+  dismissButton: (page: Page) =>
+    paymentCancelDialog
+      .container(page)
+      .getByRole('button', { name: 'Lanjutkan pembayaran' }),
+};
+
 export const cartScreen = {
   emptyView: (page: Page) => page.getByText('Keranjang kosong'),
   lineItemName: (page: Page, productName: string) =>
@@ -71,6 +108,9 @@ export const cartScreen = {
     page.getByText('Checkout belum tersedia'),
   total: (page: Page, formattedTotal: string) =>
     page.getByText(formattedTotal, { exact: true }),
+  // CartLineItem.tsx's own inline AmountStepper — saves immediately, no
+  // separate edit sheet needed. Only unambiguous with a single cart line.
+  increaseAmountButton: (page: Page) => page.getByLabel('Tambah jumlah'),
 
   nameInput: (page: Page) => page.getByLabel('Nama Anda'),
   whatsappNumberInput: (page: Page) => page.getByLabel('Nomor WhatsApp'),
@@ -111,7 +151,9 @@ export const orderStatus = {
     page.getByRole('button', { name: 'Pesan lagi' }),
   notFoundView: (page: Page) => page.getByText('Pesanan tidak ditemukan'),
 
-  saveQrButton: (page: Page) => page.getByRole('button', { name: 'Simpan QR' }),
+  // QrisPaymentView.tsx renamed this button's copy from "Simpan QR" to
+  // "Download QR" (#549); the selector name is kept, matching its purpose.
+  saveQrButton: (page: Page) => page.getByRole('button', { name: 'Download QR' }),
   waitingForPaymentText: (page: Page) => page.getByText('Menunggu pembayaran…'),
 
   cashHeading: (page: Page, cashierLocation: string) =>
@@ -128,6 +170,12 @@ export const orderStatus = {
     page.getByRole('button', { name: 'Kembali ke keranjang' }),
   itemLine: (page: Page, amount: number, productName: string) =>
     page.getByText(`${amount}x ${productName}`, { exact: true }),
+
+  // The awaiting variants' cancel button (OrderStatusScreen.tsx's
+  // CancelPaymentSection) — opens paymentCancelDialog above.
+  cancelPaymentButton: (page: Page) =>
+    page.getByRole('button', { name: 'Batalkan pembayaran' }),
+  cancelledTitle: (page: Page) => page.getByText('Pembayaran dibatalkan'),
 };
 
 export const orderBrandHeader = {
@@ -140,4 +188,6 @@ export const orderHistory = {
   row: (page: Page, transactionNumber: number) =>
     page.getByRole('button', { name: `Pesanan #${transactionNumber}` }),
   emptyView: (page: Page) => page.getByText('Belum ada pesanan'),
+  // OrderHistoryListItem.tsx's pendingPaymentLabelByMethod (D19).
+  pendingQrisLabel: (page: Page) => page.getByText('Menunggu pembayaran QRIS'),
 };
