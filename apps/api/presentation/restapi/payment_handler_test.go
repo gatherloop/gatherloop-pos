@@ -479,6 +479,8 @@ func TestPaymentHandler_GetPaymentByPartnerReferenceNo(t *testing.T) {
 			Return(domain.Cart{Id: 1, Status: domain.CartStatusActive}, nil)
 		m.cartRepo.EXPECT().UpdateCartById(gomock.Any(), gomock.Any(), int64(1)).
 			DoAndReturn(func(_ context.Context, cart domain.Cart, id int64) (domain.Cart, *domain.Error) { return cart, nil })
+		// D7: no other pending payment on the same cart to supersede.
+		m.paymentRepo.EXPECT().GetPendingPaymentByCartId(gomock.Any(), int64(1)).Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
 
 		req := httptest.NewRequest(http.MethodGet, "/payments/"+payment.PartnerReferenceNo, nil)
 		req.Header.Set("X-Session-Id", testSessionId)
@@ -713,6 +715,8 @@ func TestPaymentHandler_Cancel(t *testing.T) {
 			Return(domain.Cart{Id: 1, Status: domain.CartStatusActive}, nil)
 		m.cartRepo.EXPECT().UpdateCartById(gomock.Any(), gomock.Any(), int64(1)).
 			DoAndReturn(func(_ context.Context, cart domain.Cart, id int64) (domain.Cart, *domain.Error) { return cart, nil })
+		m.paymentRepo.EXPECT().GetPendingPaymentByCartId(gomock.Any(), payment.CartId).
+			Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
 
 		req := httptest.NewRequest(http.MethodPost, "/payments/"+payment.PartnerReferenceNo+"/cancel", nil)
 		req.Header.Set("X-Session-Id", testSessionId)
@@ -942,7 +946,7 @@ func TestPaymentHandler_Notification(t *testing.T) {
 		}
 		notificationBody := dokuNotificationBody(payment.PartnerReferenceNo, "gw-1", "00", "30000.00")
 
-		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), transactionId).
 			Return(domain.Transaction{Id: transactionId, Total: payment.Amount}, nil)
 		m.walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(paymentHandlerOrderPaymentWalletId)).
@@ -962,6 +966,8 @@ func TestPaymentHandler_Notification(t *testing.T) {
 				assert.Equal(t, domain.CartStatusConverted, cart.Status)
 				return cart, nil
 			})
+		// D7: no other pending payment on the same cart to supersede.
+		m.paymentRepo.EXPECT().GetPendingPaymentByCartId(gomock.Any(), int64(1)).Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
 
 		req := httptest.NewRequest(http.MethodPost, "/payments/doku/notification", bytes.NewReader(notificationBody))
 		w := httptest.NewRecorder()
@@ -981,7 +987,7 @@ func TestPaymentHandler_Notification(t *testing.T) {
 		withPaymentHandlerTransactionMock(m.paymentRepo)
 
 		notificationBody := dokuNotificationBody("ORD1234567890AB", "gw-1", "00", "30000.00")
-		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), "ORD1234567890AB").
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), "ORD1234567890AB").
 			Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
 
 		req := httptest.NewRequest(http.MethodPost, "/payments/doku/notification", bytes.NewReader(notificationBody))
@@ -1003,7 +1009,7 @@ func TestPaymentHandler_Notification(t *testing.T) {
 			Status: domain.PaymentStatePaid, Amount: 30000,
 		}
 		notificationBody := dokuNotificationBody(payment.PartnerReferenceNo, "gw-1", "00", "30000.00")
-		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 
 		req := httptest.NewRequest(http.MethodPost, "/payments/doku/notification", bytes.NewReader(notificationBody))
 		w := httptest.NewRecorder()
@@ -1024,7 +1030,7 @@ func TestPaymentHandler_Notification(t *testing.T) {
 			Status: domain.PaymentStatePending, Amount: 30000,
 		}
 		notificationBody := dokuNotificationBody(payment.PartnerReferenceNo, "gw-1", "00", "10000.00")
-		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 
 		req := httptest.NewRequest(http.MethodPost, "/payments/doku/notification", bytes.NewReader(notificationBody))
 		w := httptest.NewRecorder()

@@ -39,8 +39,10 @@ func newTransactionHandler(t *testing.T, setupMocks func(txRepo *mock.MockTransa
 	kdsNotificationDispatcher.EXPECT().TriggerDispatch().AnyTimes()
 	paymentRepo := mock.NewMockPaymentRepository(ctrl)
 	// FR-6: an already-paid payment makes settleOrderPayment a no-op for handler tests that
-	// don't care about it, so it never reaches UpdatePaymentById or the cart repository.
+	// don't care about it, so it never reaches UpdatePaymentById or the cart repository. It also
+	// never trips the D8 cancelled-order guard, since the payment is paid.
 	paymentRepo.EXPECT().GetPaymentByTransactionId(gomock.Any(), gomock.Any()).Return(domain.Payment{SessionId: "session-1", Status: domain.PaymentStatePaid}, nil).AnyTimes()
+	paymentRepo.EXPECT().GetPaymentByTransactionIdForUpdate(gomock.Any(), gomock.Any()).Return(domain.Payment{SessionId: "session-1", Status: domain.PaymentStatePaid}, nil).AnyTimes()
 	guestNotificationRepo := mock.NewMockGuestNotificationRepository(ctrl)
 	guestNotificationRepo.EXPECT().EnqueueForCompletedTransaction(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	guestNotificationDispatcher := mock.NewMockGuestNotificationDispatcher(ctrl)
