@@ -619,6 +619,18 @@ func (usecase PaymentUsecase) CancelPayment(ctx context.Context, sessionId strin
 				resultPayment = updatedPayment
 				return usecase.loadPaymentTransaction(ctxWithTx, updatedPayment, &resultTransaction)
 			}
+
+			// Best-effort: cancelling the QR at DOKU (D5, phase 9) shrinks D7's late-payment window,
+			// but nothing here depends on it succeeding.
+			if cancelErr := usecase.paymentGatewayRepository.CancelQris(ctxWithTx, CancelQrisInput{
+				PartnerReferenceNo: payment.PartnerReferenceNo,
+				GatewayReferenceNo: payment.GatewayReferenceNo,
+			}); cancelErr != nil {
+				slog.WarnContext(ctxWithTx, "cancel: doku qr cancel failed, proceeding with the local cancel",
+					slog.String("partnerReferenceNo", partnerReferenceNo),
+					slog.Any("error", cancelErr),
+				)
+			}
 		}
 
 		reason := PaymentCancelReasonGuest

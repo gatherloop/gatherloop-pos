@@ -666,6 +666,8 @@ func TestPaymentHandler_Cancel(t *testing.T) {
 		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 		m.gatewayRepo.EXPECT().QueryQris(gomock.Any(), domain.QueryQrisInput{PartnerReferenceNo: payment.PartnerReferenceNo, GatewayReferenceNo: payment.GatewayReferenceNo}).
 			Return(domain.QrisStatus{PartnerReferenceNo: payment.PartnerReferenceNo, Status: domain.PaymentGatewayStatusPending}, nil)
+		m.gatewayRepo.EXPECT().CancelQris(gomock.Any(), domain.CancelQrisInput{PartnerReferenceNo: payment.PartnerReferenceNo, GatewayReferenceNo: payment.GatewayReferenceNo}).
+			Return(nil)
 		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), payment.Id).
 			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) {
 				assert.Equal(t, domain.PaymentStateCancelled, p.Status)
@@ -742,6 +744,8 @@ func TestPaymentHandler_Cancel(t *testing.T) {
 		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 		m.gatewayRepo.EXPECT().QueryQris(gomock.Any(), gomock.Any()).
 			Return(domain.QrisStatus{}, &domain.Error{Type: domain.BadGateway, Message: "doku is unreachable"})
+		m.gatewayRepo.EXPECT().CancelQris(gomock.Any(), gomock.Any()).
+			Return(&domain.Error{Type: domain.InternalServerError, Message: "failed to reach DOKU"})
 		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), payment.Id).
 			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) {
 				assert.Equal(t, domain.PaymentStateCancelled, p.Status)

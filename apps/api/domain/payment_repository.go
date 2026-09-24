@@ -29,4 +29,7 @@ type PaymentRepository interface {
 type PaymentGatewayRepository interface {
 	GenerateQris(ctx context.Context, input GenerateQrisInput) (QrisPayment, *Error)
 	QueryQris(ctx context.Context, input QueryQrisInput) (QrisStatus, *Error)
+	// CancelQris asks DOKU to invalidate a QR ahead of its own expiry (phase 9, D5). It is
+	// best-effort: CancelPayment logs a failure here and proceeds with the local cancel regardless.
+	CancelQris(ctx context.Context, input CancelQrisInput) *Error
 }

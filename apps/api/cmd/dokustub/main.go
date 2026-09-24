@@ -160,6 +160,35 @@ func main() {
 		})
 	})
 
+	mux.HandleFunc("POST /snap-adapter/b2b/v1.0/qr/qr-expire", func(w http.ResponseWriter, r *http.Request) {
+		var body struct {
+			PartnerReferenceNo string `json:"partnerReferenceNo"`
+			ReferenceNo        string `json:"referenceNo"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			http.Error(w, "bad request", http.StatusBadRequest)
+			return
+		}
+
+		rec, ok := s.get(body.PartnerReferenceNo)
+		if !ok {
+			writeJSON(w, http.StatusOK, map[string]any{
+				"responseCode":    "4045701",
+				"responseMessage": "Transaction Not Found",
+			})
+			return
+		}
+
+		logger.Info("dokustub: cancelled qris", slog.String("partnerReferenceNo", rec.partnerReferenceNo))
+		writeJSON(w, http.StatusOK, map[string]any{
+			"responseCode":       "2004700",
+			"responseMessage":    "Successful",
+			"partnerReferenceNo": rec.partnerReferenceNo,
+			"referenceNo":        rec.referenceNo,
+			"expiredDate":        time.Now().Format(time.RFC3339),
+		})
+	})
+
 	mux.HandleFunc("POST /_stub/pay", func(w http.ResponseWriter, r *http.Request) {
 		var body struct {
 			PartnerReferenceNo string `json:"partnerReferenceNo"`

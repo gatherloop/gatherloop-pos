@@ -41,6 +41,11 @@ type QrisStatus struct {
 	RawStatusCode      string
 }
 
+type CancelQrisInput struct {
+	PartnerReferenceNo string
+	GatewayReferenceNo string
+}
+
 type PaymentMethod string
 
 const (

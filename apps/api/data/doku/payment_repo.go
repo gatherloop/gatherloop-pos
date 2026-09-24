@@ -22,6 +22,10 @@ const (
 	tokenPath      = "/authorization/v1/access-token/b2b"
 	qrGeneratePath = "/snap-adapter/b2b/v1.0/qr/qr-mpm-generate"
 	qrQueryPath    = "/snap-adapter/b2b/v1.0/qr/qr-mpm-query"
+	// qrCancelPath is DOKU's "Cancel QRIS (QR Expire)" operation (qr-expire): it invalidates a
+	// generated QR by moving its expiry to now. Confirmed against
+	// https://developers.doku.com/accept-payments/direct-api/snap/integration-guide/qris#id-6.-cancel-qris.
+	qrCancelPath = "/snap-adapter/b2b/v1.0/qr/qr-expire"
 
 	qrisServiceCode = "47"
 
@@ -411,6 +415,57 @@ func (c *Client) QueryQris(ctx context.Context, input domain.QueryQrisInput) (do
 		PaidAmount:         float32(amount),
 		RawStatusCode:      parsed.LatestTransactionStatus,
 	}, nil
+}
+
+type cancelQrisRequest struct {
+	PartnerReferenceNo string `json:"partnerReferenceNo"`
+	ReferenceNo        string `json:"referenceNo"`
+	MerchantId         string `json:"merchantId"`
+	Reason             string `json:"reason,omitempty"`
+}
+
+type cancelQrisResponse struct {
+	ResponseCode       string `json:"responseCode"`
+	ResponseMessage    string `json:"responseMessage"`
+	PartnerReferenceNo string `json:"partnerReferenceNo"`
+	ReferenceNo        string `json:"referenceNo"`
+	ExpiredDate        string `json:"expiredDate"`
+}
+
+func (c *Client) CancelQris(ctx context.Context, input domain.CancelQrisInput) *domain.Error {
+	reqBody := cancelQrisRequest{
+		PartnerReferenceNo: input.PartnerReferenceNo,
+		ReferenceNo:        input.GatewayReferenceNo,
+		MerchantId:         c.config.MerchantId,
+		Reason:             "guest cancelled the order",
+	}
+
+	respBody, err := c.doSignedRequest(ctx, qrCancelPath, reqBody)
+	if err != nil {
+		c.logger.Warn("doku: cancel qris failed", slog.String("partnerReferenceNo", input.PartnerReferenceNo), slog.String("error", err.Message))
+		return err
+	}
+
+	var parsed cancelQrisResponse
+	if jsonErr := json.Unmarshal(respBody, &parsed); jsonErr != nil {
+		c.logger.Warn("doku: failed to parse cancel qris response", slog.String("partnerReferenceNo", input.PartnerReferenceNo), slog.String("error", jsonErr.Error()))
+		return &domain.Error{Type: domain.InternalServerError, Message: "failed to parse DOKU cancel QRIS response"}
+	}
+
+	if !isSuccessResponseCode(parsed.ResponseCode) {
+		c.logger.Warn("doku: cancel qris rejected",
+			slog.String("partnerReferenceNo", input.PartnerReferenceNo),
+			slog.String("responseCode", parsed.ResponseCode),
+		)
+		return &domain.Error{Type: domain.InternalServerError, Message: fmt.Sprintf("DOKU rejected the QRIS cancel request: %s", strings.TrimSpace(parsed.ResponseCode+" "+parsed.ResponseMessage))}
+	}
+
+	c.logger.Info("doku: cancelled qris",
+		slog.String("partnerReferenceNo", input.PartnerReferenceNo),
+		slog.String("referenceNo", parsed.ReferenceNo),
+	)
+
+	return nil
 }
 
 func generateExternalId() string {
