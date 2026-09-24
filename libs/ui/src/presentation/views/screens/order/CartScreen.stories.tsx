@@ -65,6 +65,7 @@ const cart = {
   itemCount: 2,
   total: 36000,
   createdAt: '2024-03-20T00:00:00.000Z',
+  pendingPayment: null,
 };
 
 const table = { id: 1, label: 'Meja 1', floorNumber: 1 };

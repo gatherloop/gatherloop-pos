@@ -73,15 +73,35 @@ func ToApiCart(cart domain.Cart) apiContract.Cart {
 		table = &apiTable
 	}
 
+	var pendingPayment *apiContract.PendingPayment
+	if cart.PendingPayment != nil {
+		apiPendingPayment := ToApiPendingPayment(*cart.PendingPayment)
+		pendingPayment = &apiPendingPayment
+	}
+
 	return apiContract.Cart{
-		Id:        cart.Id,
-		SessionId: cart.SessionId,
-		TableId:   cart.TableId,
-		Table:     table,
-		Status:    string(cart.Status),
-		Items:     apiItems,
-		ItemCount: itemCount,
-		Total:     total,
-		CreatedAt: cart.CreatedAt,
+		Id:             cart.Id,
+		SessionId:      cart.SessionId,
+		TableId:        cart.TableId,
+		Table:          table,
+		Status:         string(cart.Status),
+		Items:          apiItems,
+		ItemCount:      itemCount,
+		Total:          total,
+		CreatedAt:      cart.CreatedAt,
+		PendingPayment: pendingPayment,
+	}
+}
+
+// ToApiPendingPayment's canCancel is hard-coded false until ORDER_PAYMENT_CANCEL_ENABLED exists
+// (phase 4/11 file-contention note in the PRD): the flag wiring lands with whichever of the two
+// phases merges second.
+func ToApiPendingPayment(payment domain.Payment) apiContract.PendingPayment {
+	return apiContract.PendingPayment{
+		PartnerReferenceNo: payment.PartnerReferenceNo,
+		Method:             string(payment.Method),
+		Amount:             payment.Amount,
+		ExpiredAt:          payment.ExpiredAt,
+		CanCancel:          false,
 	}
 }
