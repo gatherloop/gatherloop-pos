@@ -193,6 +193,24 @@ func TestBuildKdsPushMessage(t *testing.T) {
 		assert.Equal(t, "Collect Rp 25.000 at the counter", message.Body)
 	})
 
+	t.Run("a cash_cancelled title and body retract the till trip, table included", func(t *testing.T) {
+		transaction := domain.Transaction{
+			TransactionNumber: 12,
+			Source:            domain.TransactionSourceOrder,
+			Cart:              &domain.Cart{Table: &domain.Table{Label: "Meja 4"}},
+			Total:             45000,
+			TransactionItems: []domain.TransactionItem{
+				kdsItem("BAR", 1, "Kopi Susu"),
+			},
+		}
+
+		message := domain.BuildKdsPushMessage(transaction, domain.KdsNotificationKindCashCancelled, "default")
+
+		assert.Equal(t, "Cash order #12 cancelled — Meja 4", message.Title)
+		assert.Equal(t, "Guest cancelled. Don't wait at the till.", message.Body)
+		assert.Equal(t, "cash_cancelled", message.Data["kind"])
+	})
+
 	t.Run("order_paid's title and body are byte-for-byte unchanged by the kind switch", func(t *testing.T) {
 		transaction := domain.Transaction{
 			TransactionNumber: 12,

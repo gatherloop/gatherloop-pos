@@ -293,7 +293,7 @@ func (usecase TransactionUsecase) settleOrderPayment(ctx context.Context, paymen
 	// D7/D8: the guest may have checked out again on this cart before the cashier settled this
 	// (expired) order transaction by hand — finalise that newer attempt too, the same as a late
 	// QRIS webhook does, so the cart never ends up with two paid orders.
-	return supersedeLivePayments(ctx, payment.CartId, payment.Id, usecase.paymentRepository, usecase.transactionRepository, usecase.availabilityReservation)
+	return supersedeLivePayments(ctx, payment.CartId, payment.Id, usecase.paymentRepository, usecase.transactionRepository, usecase.availabilityReservation, usecase.kdsNotificationRepository)
 }
 
 func payTransaction(ctx context.Context, transaction Transaction, transactionRepository TransactionRepository, walletRepository WalletRepository, kdsNotificationRepository KdsNotificationRepository, walletId int64, paidAmount float32) *Error {

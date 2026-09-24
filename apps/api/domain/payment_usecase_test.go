@@ -1199,6 +1199,9 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), newerCashTransactionId).
 			Return(domain.Transaction{Id: newerCashTransactionId}, nil)
 		m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), newerCashTransactionId).Return(nil)
+		// FR-7/D16: the superseded payment is cash, so it also gets the KDS retraction.
+		m.kdsNotificationRepo.EXPECT().HasNotificationForTransaction(gomock.Any(), newerCashTransactionId, domain.KdsNotificationKindCashPending).Return(true, nil)
+		m.kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), domain.KdsNotificationKindCashCancelled).Return(nil)
 
 		_, outcome, err := m.usecase().ConfirmPayment(context.Background(), status)
 
@@ -1413,12 +1416,86 @@ func TestPaymentUsecase_CancelPayment(t *testing.T) {
 			})
 		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil).Times(2)
 		m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), int64(99)).Return(nil)
+		m.kdsNotificationRepo.EXPECT().HasNotificationForTransaction(gomock.Any(), int64(99), domain.KdsNotificationKindCashPending).Return(true, nil)
+		m.kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), domain.KdsNotificationKindCashCancelled).Return(nil)
 
 		result, transaction, err := m.usecaseWithCancelEnabled().CancelPayment(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
 
 		assert.Nil(t, err)
 		assert.Equal(t, domain.PaymentStateCancelled, result.Status)
 		assert.Equal(t, int64(99), transaction.Id)
+	})
+
+	t.Run("a cancelled cash payment enqueues cash_cancelled and triggers the dispatcher (FR-7)", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		withPaymentTransactionMock(m.paymentRepo)
+		dispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
+		dispatcher.EXPECT().TriggerDispatch().Times(1)
+
+		payment := pendingCashPaymentFixture()
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), payment.Id).
+			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) { return p, nil })
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil).Times(2)
+		m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), int64(99)).Return(nil)
+		m.kdsNotificationRepo.EXPECT().HasNotificationForTransaction(gomock.Any(), int64(99), domain.KdsNotificationKindCashPending).Return(true, nil)
+		m.kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), domain.KdsNotificationKindCashCancelled).
+			DoAndReturn(func(_ context.Context, transaction domain.Transaction, kind domain.KdsNotificationKind) *domain.Error {
+				assert.Equal(t, int64(99), transaction.Id)
+				return nil
+			})
+
+		_, _, err := m.usecaseWithDispatcherAndCancelEnabled(dispatcher, true).CancelPayment(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("a cash cancel with no cash_pending row enqueues nothing (FR-7)", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		withPaymentTransactionMock(m.paymentRepo)
+
+		payment := pendingCashPaymentFixture()
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), payment.Id).
+			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) { return p, nil })
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil).Times(2)
+		m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), int64(99)).Return(nil)
+		m.kdsNotificationRepo.EXPECT().HasNotificationForTransaction(gomock.Any(), int64(99), domain.KdsNotificationKindCashPending).Return(false, nil)
+		m.kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+
+		_, _, err := m.usecaseWithCancelEnabled().CancelPayment(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("a cancelled qris payment enqueues no cash_cancelled (FR-7)", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		withPaymentTransactionMock(m.paymentRepo)
+
+		payment := pendingPaymentFixture()
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.gatewayRepo.EXPECT().QueryQris(gomock.Any(), gomock.Any()).
+			Return(domain.QrisStatus{PartnerReferenceNo: payment.PartnerReferenceNo, Status: domain.PaymentGatewayStatusPending}, nil)
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), payment.Id).
+			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) { return p, nil })
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil).Times(2)
+		m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), int64(99)).Return(nil)
+		m.kdsNotificationRepo.EXPECT().HasNotificationForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+		m.kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+
+		result, _, err := m.usecaseWithCancelEnabled().CancelPayment(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+
+		assert.Nil(t, err)
+		assert.Equal(t, domain.PaymentStateCancelled, result.Status)
 	})
 
 	t.Run("a pending qris payment doku still reports pending is cancelled after the query", func(t *testing.T) {
@@ -1548,6 +1625,8 @@ func TestPaymentUsecase_CancelPayment(t *testing.T) {
 			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) { return p, nil })
 		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil).Times(2)
 		m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), int64(99)).Return(nil)
+		m.kdsNotificationRepo.EXPECT().HasNotificationForTransaction(gomock.Any(), int64(99), domain.KdsNotificationKindCashPending).Return(true, nil)
+		m.kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), domain.KdsNotificationKindCashCancelled).Return(nil)
 		m.cartRepo.EXPECT().GetCartById(gomock.Any(), gomock.Any()).Times(0)
 		m.cartRepo.EXPECT().UpdateCartById(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 
