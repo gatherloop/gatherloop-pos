@@ -68,6 +68,62 @@ func TestPaymentIsAwaitingPayment(t *testing.T) {
 	}
 }
 
+func TestPaymentCanBeCancelledBy(t *testing.T) {
+	now := time.Date(2026, 9, 10, 12, 0, 0, 0, time.UTC)
+
+	testCases := []struct {
+		name      string
+		status    domain.PaymentState
+		sessionId string
+		expected  bool
+	}{
+		{
+			name:      "owner and pending",
+			status:    domain.PaymentStatePending,
+			sessionId: "session-1",
+			expected:  true,
+		},
+		{
+			name:      "foreign session",
+			status:    domain.PaymentStatePending,
+			sessionId: "session-2",
+			expected:  false,
+		},
+		{
+			name:      "paid",
+			status:    domain.PaymentStatePaid,
+			sessionId: "session-1",
+			expected:  false,
+		},
+		{
+			name:      "expired",
+			status:    domain.PaymentStateExpired,
+			sessionId: "session-1",
+			expected:  false,
+		},
+		{
+			name:      "failed",
+			status:    domain.PaymentStateFailed,
+			sessionId: "session-1",
+			expected:  false,
+		},
+		{
+			name:      "cancelled",
+			status:    domain.PaymentStateCancelled,
+			sessionId: "session-1",
+			expected:  false,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			payment := domain.Payment{Status: testCase.status, SessionId: "session-1"}
+
+			assert.Equal(t, testCase.expected, payment.CanBeCancelledBy(testCase.sessionId, now))
+		})
+	}
+}
+
 func TestParsePaymentMethod(t *testing.T) {
 	testCases := []struct {
 		name           string
