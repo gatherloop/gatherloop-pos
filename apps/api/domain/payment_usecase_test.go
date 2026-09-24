@@ -820,6 +820,12 @@ func pendingCashPaymentFixture() domain.Payment {
 	return payment
 }
 
+// expectNoSupersede satisfies D7's supersedeLivePayments check for a test where the cart has no
+// other pending payment to finalise as cancelled/superseded.
+func expectNoSupersede(m paymentUsecaseMocks, cartId int64) {
+	m.paymentRepo.EXPECT().GetPendingPaymentByCartId(gomock.Any(), cartId).Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
+}
+
 func expectConfirmPaymentWalletCredit(m paymentUsecaseMocks) {
 	expectConfirmPaymentWalletCreditWithoutKdsEnqueue(m)
 	m.kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
@@ -854,7 +860,7 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 			PaidAmount:         payment.Amount,
 			RawStatusCode:      "00",
 		}
-		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 
 		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).
 			Return(domain.Transaction{Id: 99, Total: payment.Amount}, nil)
@@ -878,6 +884,8 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 				return cart, nil
 			})
 
+		expectNoSupersede(m, 1)
+
 		updatedPayment, outcome, err := m.usecase().ConfirmPayment(context.Background(), status)
 
 		assert.Nil(t, err)
@@ -899,7 +907,7 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 			Status:             domain.PaymentGatewayStatusPaid,
 			PaidAmount:         payment.Amount,
 		}
-		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 
 		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).
 			Return(domain.Transaction{
@@ -924,6 +932,7 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 			Return(domain.Cart{Id: 1, Status: domain.CartStatusActive}, nil)
 		m.cartRepo.EXPECT().UpdateCartById(gomock.Any(), gomock.Any(), int64(1)).
 			DoAndReturn(func(_ context.Context, cart domain.Cart, id int64) (domain.Cart, *domain.Error) { return cart, nil })
+		expectNoSupersede(m, 1)
 
 		_, outcome, err := m.usecase().ConfirmPayment(context.Background(), status)
 
@@ -945,7 +954,7 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 			Status:             domain.PaymentGatewayStatusPaid,
 			PaidAmount:         payment.Amount,
 		}
-		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 
 		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).
 			Return(domain.Transaction{
@@ -968,6 +977,7 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 			Return(domain.Cart{Id: 1, Status: domain.CartStatusActive}, nil)
 		m.cartRepo.EXPECT().UpdateCartById(gomock.Any(), gomock.Any(), int64(1)).
 			DoAndReturn(func(_ context.Context, cart domain.Cart, id int64) (domain.Cart, *domain.Error) { return cart, nil })
+		expectNoSupersede(m, 1)
 
 		_, outcome, err := m.usecase().ConfirmPayment(context.Background(), status)
 
@@ -988,7 +998,7 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 		payment.PaidAt = &paidAt
 
 		status := domain.QrisStatus{PartnerReferenceNo: payment.PartnerReferenceNo, Status: domain.PaymentGatewayStatusPaid, PaidAmount: payment.Amount}
-		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 
 		result, outcome, err := m.usecase().ConfirmPayment(context.Background(), status)
 
@@ -1005,7 +1015,7 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 		withPaymentTransactionMock(m.paymentRepo)
 
 		status := domain.QrisStatus{PartnerReferenceNo: "ORDUNKNOWN000AB", Status: domain.PaymentGatewayStatusPaid, PaidAmount: 30000}
-		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), "ORDUNKNOWN000AB").
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), "ORDUNKNOWN000AB").
 			Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
 
 		_, outcome, err := m.usecase().ConfirmPayment(context.Background(), status)
@@ -1023,7 +1033,7 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 
 		payment := pendingPaymentFixture()
 		status := domain.QrisStatus{PartnerReferenceNo: payment.PartnerReferenceNo, Status: domain.PaymentGatewayStatusPaid, PaidAmount: 10000}
-		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 
 		result, outcome, err := m.usecase().ConfirmPayment(context.Background(), status)
 
@@ -1048,7 +1058,7 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 			Status:             domain.PaymentGatewayStatusPaid,
 			PaidAmount:         payment.Amount,
 		}
-		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 
 		deletedAt := time.Now().Add(-time.Minute)
 		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).
@@ -1065,6 +1075,120 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 			Return(domain.Cart{Id: 1, Status: domain.CartStatusActive}, nil)
 		m.cartRepo.EXPECT().UpdateCartById(gomock.Any(), gomock.Any(), int64(1)).
 			DoAndReturn(func(_ context.Context, cart domain.Cart, id int64) (domain.Cart, *domain.Error) { return cart, nil })
+		expectNoSupersede(m, 1)
+
+		_, outcome, err := m.usecase().ConfirmPayment(context.Background(), status)
+
+		assert.Nil(t, err)
+		assert.Equal(t, domain.ConfirmPaymentOutcomePaidLate, outcome)
+	})
+
+	// FR-5/D7: a payment the guest cancelled can still be paid late from a saved QR, exactly like
+	// an expired one — the guest's cancel must never orphan money DOKU actually received.
+	t.Run("a cancelled-then-paid payment un-deletes the transaction and pays it", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		withPaymentTransactionMock(m.paymentRepo)
+
+		payment := pendingPaymentFixture()
+		payment.Status = domain.PaymentStateCancelled
+		cancelledAt := time.Now().Add(-time.Minute)
+		payment.CancelledAt = &cancelledAt
+		guestReason := domain.PaymentCancelReasonGuest
+		payment.CancelReason = &guestReason
+
+		status := domain.QrisStatus{
+			PartnerReferenceNo: payment.PartnerReferenceNo,
+			GatewayReferenceNo: "gw-late",
+			Status:             domain.PaymentGatewayStatusPaid,
+			PaidAmount:         payment.Amount,
+		}
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+
+		deletedAt := time.Now().Add(-time.Minute)
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).
+			Return(domain.Transaction{Id: 99, Total: payment.Amount, DeletedAt: &deletedAt}, nil)
+		m.transactionRepo.EXPECT().UndeleteTransactionById(gomock.Any(), int64(99)).Return(nil)
+
+		expectConfirmPaymentWalletCredit(m)
+
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), payment.Id).
+			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) {
+				assert.Equal(t, domain.PaymentStatePaid, p.Status)
+				return p, nil
+			})
+		m.cartRepo.EXPECT().GetCartById(gomock.Any(), payment.CartId).
+			Return(domain.Cart{Id: 1, Status: domain.CartStatusActive}, nil)
+		m.cartRepo.EXPECT().UpdateCartById(gomock.Any(), gomock.Any(), int64(1)).
+			DoAndReturn(func(_ context.Context, cart domain.Cart, id int64) (domain.Cart, *domain.Error) { return cart, nil })
+		expectNoSupersede(m, 1)
+
+		_, outcome, err := m.usecase().ConfirmPayment(context.Background(), status)
+
+		assert.Nil(t, err)
+		assert.Equal(t, domain.ConfirmPaymentOutcomePaidLate, outcome)
+	})
+
+	// FR-5/D7: the guest may have checked out again on the same cart before the late webhook
+	// arrived. That newer pending payment must be finalised as cancelled/superseded so the cart
+	// never ends up with two paid orders.
+	t.Run("a paid-late payment on a cart with a newer pending payment supersedes it", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		withPaymentTransactionMock(m.paymentRepo)
+
+		payment := pendingPaymentFixture()
+		payment.Status = domain.PaymentStateExpired
+
+		status := domain.QrisStatus{
+			PartnerReferenceNo: payment.PartnerReferenceNo,
+			GatewayReferenceNo: "gw-late",
+			Status:             domain.PaymentGatewayStatusPaid,
+			PaidAmount:         payment.Amount,
+		}
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+
+		deletedAt := time.Now().Add(-time.Minute)
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).
+			Return(domain.Transaction{Id: 99, Total: payment.Amount, DeletedAt: &deletedAt}, nil)
+		m.transactionRepo.EXPECT().UndeleteTransactionById(gomock.Any(), int64(99)).Return(nil)
+
+		expectConfirmPaymentWalletCredit(m)
+
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), payment.Id).
+			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) {
+				assert.Equal(t, domain.PaymentStatePaid, p.Status)
+				return p, nil
+			})
+		m.cartRepo.EXPECT().GetCartById(gomock.Any(), payment.CartId).
+			Return(domain.Cart{Id: 1, Status: domain.CartStatusActive}, nil)
+		m.cartRepo.EXPECT().UpdateCartById(gomock.Any(), gomock.Any(), int64(1)).
+			DoAndReturn(func(_ context.Context, cart domain.Cart, id int64) (domain.Cart, *domain.Error) { return cart, nil })
+
+		newerCashTransactionId := int64(200)
+		newerCashPayment := domain.Payment{
+			Id: 42, CartId: 1, Method: domain.PaymentMethodCash, Status: domain.PaymentStatePending,
+			TransactionId: &newerCashTransactionId, PartnerReferenceNo: "ORD99999999999Z",
+			ExpiredAt: time.Now().Add(5 * time.Minute),
+		}
+		m.paymentRepo.EXPECT().GetPendingPaymentByCartId(gomock.Any(), int64(1)).Return(newerCashPayment, nil)
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), newerCashPayment.Id).
+			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) {
+				assert.Equal(t, domain.PaymentStateCancelled, p.Status)
+				assert.NotNil(t, p.CancelledAt)
+				require.NotNil(t, p.CancelReason)
+				assert.Equal(t, domain.PaymentCancelReasonSuperseded, *p.CancelReason)
+				return p, nil
+			})
+		// No TransactionItems on the superseded transaction, so Release (AvailabilityReservation)
+		// makes no repository calls — nothing to mock there.
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), newerCashTransactionId).
+			Return(domain.Transaction{Id: newerCashTransactionId}, nil)
+		m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), newerCashTransactionId).Return(nil)
 
 		_, outcome, err := m.usecase().ConfirmPayment(context.Background(), status)
 
@@ -1088,7 +1212,7 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 			Status:             domain.PaymentGatewayStatusPaid,
 			PaidAmount:         payment.Amount,
 		}
-		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 
 		deletedAt := time.Now().Add(-time.Minute)
 		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{
@@ -1114,6 +1238,7 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 			Return(domain.Cart{Id: 1, Status: domain.CartStatusActive}, nil)
 		m.cartRepo.EXPECT().UpdateCartById(gomock.Any(), gomock.Any(), int64(1)).
 			DoAndReturn(func(_ context.Context, cart domain.Cart, id int64) (domain.Cart, *domain.Error) { return cart, nil })
+		expectNoSupersede(m, 1)
 
 		_, outcome, err := m.usecase().ConfirmPayment(context.Background(), status)
 
@@ -1141,7 +1266,7 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 
 				payment := pendingPaymentFixture()
 				status := domain.QrisStatus{PartnerReferenceNo: payment.PartnerReferenceNo, Status: tt.gatewayStatus}
-				m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+				m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 
 				m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), payment.Id).
 					DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) {
@@ -1168,7 +1293,7 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 
 		payment := pendingPaymentFixture()
 		status := domain.QrisStatus{PartnerReferenceNo: payment.PartnerReferenceNo, Status: domain.PaymentGatewayStatusExpired}
-		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 
 		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), payment.Id).
 			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) {
@@ -1204,7 +1329,7 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 		payment.Status = domain.PaymentStateFailed
 
 		status := domain.QrisStatus{PartnerReferenceNo: payment.PartnerReferenceNo, Status: domain.PaymentGatewayStatusPaid, PaidAmount: payment.Amount}
-		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 
 		result, outcome, err := m.usecase().ConfirmPayment(context.Background(), status)
 
@@ -1458,6 +1583,7 @@ func TestPaymentUsecase_GetPaymentStatus(t *testing.T) {
 			Return(domain.Cart{Id: 1, Status: domain.CartStatusActive}, nil)
 		m.cartRepo.EXPECT().UpdateCartById(gomock.Any(), gomock.Any(), int64(1)).
 			DoAndReturn(func(_ context.Context, cart domain.Cart, id int64) (domain.Cart, *domain.Error) { return cart, nil })
+		expectNoSupersede(m, 1)
 
 		result, _, err := m.usecase().GetPaymentStatus(context.Background(), payment.SessionId, payment.PartnerReferenceNo, "")
 
@@ -1517,6 +1643,7 @@ func TestPaymentUsecase_GetPaymentStatus(t *testing.T) {
 			Return(domain.Cart{Id: 1, Status: domain.CartStatusActive}, nil)
 		m.cartRepo.EXPECT().UpdateCartById(gomock.Any(), gomock.Any(), int64(1)).
 			DoAndReturn(func(_ context.Context, cart domain.Cart, id int64) (domain.Cart, *domain.Error) { return cart, nil })
+		expectNoSupersede(m, 1)
 
 		result, _, err := m.usecase().GetPaymentStatus(context.Background(), payment.SessionId, payment.PartnerReferenceNo, "")
 
@@ -1663,7 +1790,7 @@ func TestPaymentUsecase_KdsDispatchTrigger(t *testing.T) {
 			Status:             domain.PaymentGatewayStatusPaid,
 			PaidAmount:         payment.Amount,
 		}
-		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).
 			Return(domain.Transaction{Id: 99, Total: payment.Amount}, nil)
 		expectConfirmPaymentWalletCredit(m)
@@ -1673,6 +1800,7 @@ func TestPaymentUsecase_KdsDispatchTrigger(t *testing.T) {
 			Return(domain.Cart{Id: 1, Status: domain.CartStatusActive}, nil)
 		m.cartRepo.EXPECT().UpdateCartById(gomock.Any(), gomock.Any(), int64(1)).
 			DoAndReturn(func(_ context.Context, cart domain.Cart, id int64) (domain.Cart, *domain.Error) { return cart, nil })
+		expectNoSupersede(m, 1)
 
 		dispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
 		dispatcher.EXPECT().TriggerDispatch().Times(1)
@@ -1695,7 +1823,7 @@ func TestPaymentUsecase_KdsDispatchTrigger(t *testing.T) {
 		paidAt := time.Now()
 		payment.PaidAt = &paidAt
 		status := domain.QrisStatus{PartnerReferenceNo: payment.PartnerReferenceNo, Status: domain.PaymentGatewayStatusPaid, PaidAmount: payment.Amount}
-		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 
 		dispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
 		dispatcher.EXPECT().TriggerDispatch().Times(0)
@@ -1726,6 +1854,7 @@ func TestPaymentUsecase_KdsDispatchTrigger(t *testing.T) {
 			Return(domain.Cart{Id: 1, Status: domain.CartStatusActive}, nil)
 		m.cartRepo.EXPECT().UpdateCartById(gomock.Any(), gomock.Any(), int64(1)).
 			DoAndReturn(func(_ context.Context, cart domain.Cart, id int64) (domain.Cart, *domain.Error) { return cart, nil })
+		expectNoSupersede(m, 1)
 
 		dispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
 		dispatcher.EXPECT().TriggerDispatch().Times(1)
@@ -1797,6 +1926,8 @@ func TestPaymentUsecase_ExpireStalePayments(t *testing.T) {
 
 		m.paymentRepo.EXPECT().GetExpirablePayments(gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Payment{payment}, nil)
 		withPaymentTransactionMock(m.paymentRepo)
+		// D6: expireOne re-reads the row under lock before deciding.
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 
 		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), payment.Id).
 			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) {
@@ -1805,6 +1936,27 @@ func TestPaymentUsecase_ExpireStalePayments(t *testing.T) {
 			})
 		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil)
 		m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), int64(99)).Return(nil)
+
+		err := m.usecase().ExpireStalePayments(context.Background())
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("a stale payment already handled since the batch read is left alone", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		payment := pendingPaymentFixture()
+		payment.Method = domain.PaymentMethodCash
+
+		m.paymentRepo.EXPECT().GetExpirablePayments(gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Payment{payment}, nil)
+		withPaymentTransactionMock(m.paymentRepo)
+		// D6: a guest cancelled it (or another tick already expired it) between the sweep's batch
+		// read and this per-payment transaction — the lock read sees that and stands down.
+		locked := payment
+		locked.Status = domain.PaymentStateCancelled
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(locked, nil)
 
 		err := m.usecase().ExpireStalePayments(context.Background())
 
@@ -1833,6 +1985,10 @@ func TestPaymentUsecase_ExpireStalePayments(t *testing.T) {
 			Return([]domain.Payment{cashPayment, qrisPayment}, nil)
 		m.paymentRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 			func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) }).Times(2)
+
+		// D6: expireOne re-reads each row under lock before deciding.
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), cashPayment.PartnerReferenceNo).Return(cashPayment, nil)
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), qrisPayment.PartnerReferenceNo).Return(qrisPayment, nil)
 
 		// cash: clock alone, no gateway call.
 		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), cashPayment.Id).
@@ -1868,6 +2024,7 @@ func TestPaymentUsecase_ExpireStalePayments(t *testing.T) {
 
 		m.paymentRepo.EXPECT().GetExpirablePayments(gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Payment{payment}, nil)
 		withPaymentTransactionMock(m.paymentRepo)
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 
 		m.gatewayRepo.EXPECT().QueryQris(gomock.Any(), gomock.Any()).
 			Return(domain.QrisStatus{PartnerReferenceNo: payment.PartnerReferenceNo, GatewayReferenceNo: "gw-late", Status: domain.PaymentGatewayStatusPaid, PaidAmount: payment.Amount}, nil)
@@ -1883,6 +2040,7 @@ func TestPaymentUsecase_ExpireStalePayments(t *testing.T) {
 			Return(domain.Cart{Id: 1, Status: domain.CartStatusActive}, nil)
 		m.cartRepo.EXPECT().UpdateCartById(gomock.Any(), gomock.Any(), int64(1)).
 			DoAndReturn(func(_ context.Context, cart domain.Cart, id int64) (domain.Cart, *domain.Error) { return cart, nil })
+		expectNoSupersede(m, 1)
 
 		dispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
 		dispatcher.EXPECT().TriggerDispatch().Times(1)
@@ -1901,6 +2059,7 @@ func TestPaymentUsecase_ExpireStalePayments(t *testing.T) {
 
 		m.paymentRepo.EXPECT().GetExpirablePayments(gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Payment{payment}, nil)
 		withPaymentTransactionMock(m.paymentRepo)
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 		m.gatewayRepo.EXPECT().QueryQris(gomock.Any(), gomock.Any()).
 			Return(domain.QrisStatus{}, &domain.Error{Type: domain.BadGateway, Message: "doku unavailable"})
 
@@ -1930,6 +2089,8 @@ func TestPaymentUsecase_ExpireStalePayments(t *testing.T) {
 			Return([]domain.Payment{failingPayment, okPayment}, nil)
 		m.paymentRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 			func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) }).Times(2)
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), failingPayment.PartnerReferenceNo).Return(failingPayment, nil)
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), okPayment.PartnerReferenceNo).Return(okPayment, nil)
 
 		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), failingPayment.Id).
 			Return(domain.Payment{}, &domain.Error{Type: domain.InternalServerError, Message: "db hiccup"})
