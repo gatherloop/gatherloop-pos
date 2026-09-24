@@ -23,6 +23,8 @@ export type QrisPaymentStatus =
 
 export type PaymentMethod = 'qris' | 'cash';
 
+export type PaymentDiningOption = 'dine_in' | 'takeaway';
+
 export type PaymentCancelReason = 'guest' | 'superseded';
 
 export type Payment = {
@@ -54,4 +56,5 @@ export type PaymentSummary = {
   itemCount: number;
   createdAt: string;
   paidAt: string | null;
+  diningOption: PaymentDiningOption;
 };

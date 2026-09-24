@@ -1,5 +1,10 @@
 import { match, P } from 'ts-pattern';
-import { normalizeWhatsappNumber, Payment, PaymentMethod } from '../entities';
+import {
+  normalizeWhatsappNumber,
+  Payment,
+  PaymentDiningOption,
+  PaymentMethod,
+} from '../entities';
 import { PaymentRepository } from '../repositories';
 import { Usecase } from './IUsecase';
 
@@ -10,6 +15,7 @@ type Context = {
   customerName: string;
   whatsappNumber: string;
   method: PaymentMethod;
+  diningOption: PaymentDiningOption;
   nameErrorMessage: string | null;
   whatsappNumberErrorMessage: string | null;
   errorMessage: string | null;
@@ -29,6 +35,7 @@ export type CheckoutAction =
   | { type: 'CHANGE_NAME'; name: string }
   | { type: 'CHANGE_WHATSAPP_NUMBER'; whatsappNumber: string }
   | { type: 'CHANGE_METHOD'; method: PaymentMethod }
+  | { type: 'CHANGE_DINING_OPTION'; diningOption: PaymentDiningOption }
   | { type: 'CANCEL_DETAILS' }
   | { type: 'SUBMIT_DETAILS' }
   | { type: 'CHECKOUT_SUCCESS'; payment: Payment }
@@ -85,6 +92,7 @@ export class CheckoutUsecase extends Usecase<
       customerName: this.params.customerName ?? '',
       whatsappNumber: this.params.customerWhatsappNumber ?? '',
       method: 'qris',
+      diningOption: 'dine_in',
       nameErrorMessage: null,
       whatsappNumberErrorMessage: null,
       errorMessage: null,
@@ -111,6 +119,10 @@ export class CheckoutUsecase extends Usecase<
       .with(
         [{ type: 'askingDetails' }, { type: 'CHANGE_METHOD' }],
         ([state, { method }]) => ({ ...state, method })
+      )
+      .with(
+        [{ type: 'askingDetails' }, { type: 'CHANGE_DINING_OPTION' }],
+        ([state, { diningOption }]) => ({ ...state, diningOption })
       )
       .with(
         [{ type: 'askingDetails' }, { type: 'CANCEL_DETAILS' }],
@@ -175,9 +187,9 @@ export class CheckoutUsecase extends Usecase<
     match(state)
       .with(
         { type: 'creatingPayment' },
-        ({ customerName, whatsappNumber, method }) => {
+        ({ customerName, whatsappNumber, method, diningOption }) => {
           this.paymentRepository
-            .checkout({ customerName, whatsappNumber, method })
+            .checkout({ customerName, whatsappNumber, method, diningOption })
             .then((payment) => dispatch({ type: 'CHECKOUT_SUCCESS', payment }))
             .catch(() =>
               dispatch({

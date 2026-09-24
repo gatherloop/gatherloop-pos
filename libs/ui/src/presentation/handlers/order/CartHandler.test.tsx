@@ -496,6 +496,7 @@ describe('CartHandler', () => {
       customerName: 'Budi',
       whatsappNumber: '6281234567890',
       method: 'cash',
+      diningOption: 'dine_in',
     });
     expect(mockPush).toHaveBeenCalledWith(
       `/orders/${paymentRepository.payment.reference}`
