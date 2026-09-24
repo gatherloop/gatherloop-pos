@@ -57,6 +57,10 @@ func (usecase TransactionUsecase) GetTransactionById(ctx context.Context, id int
 func (usecase TransactionUsecase) CreateTransaction(ctx context.Context, transaction Transaction) (Transaction, *Error) {
 	var createdTransaction Transaction
 
+	if !transaction.DiningOption.IsValid() {
+		return Transaction{}, &Error{Type: BadRequest, Message: "invalid dining option"}
+	}
+
 	if transaction.Source == "" {
 		transaction.Source = TransactionSourcePos
 	}
@@ -110,6 +114,10 @@ func (usecase TransactionUsecase) CreateTransaction(ctx context.Context, transac
 
 func (usecase TransactionUsecase) UpdateTransactionById(ctx context.Context, transaction Transaction, id int64) (Transaction, *Error) {
 	var updatedTransaction Transaction
+
+	if !transaction.DiningOption.IsValid() {
+		return Transaction{}, &Error{Type: BadRequest, Message: "invalid dining option"}
+	}
 
 	err := usecase.transactionRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 		existingTransaction, err := usecase.transactionRepository.GetTransactionById(ctxWithTx, id)
