@@ -62,10 +62,18 @@ func ParsePaymentMethod(method string) (PaymentMethod, *Error) {
 type PaymentState string
 
 const (
-	PaymentStatePending PaymentState = "pending"
-	PaymentStatePaid    PaymentState = "paid"
-	PaymentStateExpired PaymentState = "expired"
-	PaymentStateFailed  PaymentState = "failed"
+	PaymentStatePending   PaymentState = "pending"
+	PaymentStatePaid      PaymentState = "paid"
+	PaymentStateExpired   PaymentState = "expired"
+	PaymentStateFailed    PaymentState = "failed"
+	PaymentStateCancelled PaymentState = "cancelled"
+)
+
+type PaymentCancelReason string
+
+const (
+	PaymentCancelReasonGuest      PaymentCancelReason = "guest"
+	PaymentCancelReasonSuperseded PaymentCancelReason = "superseded"
 )
 
 type ConfirmPaymentOutcome string
@@ -96,6 +104,8 @@ type Payment struct {
 	QrContent              string
 	ExpiredAt              time.Time
 	PaidAt                 *time.Time
+	CancelledAt            *time.Time
+	CancelReason           *PaymentCancelReason
 	StatusCheckedAt        *time.Time
 	CreatedAt              time.Time
 	UpdatedAt              time.Time
@@ -104,6 +114,12 @@ type Payment struct {
 
 func (payment Payment) IsAwaitingPayment(now time.Time) bool {
 	return payment.Status == PaymentStatePending && now.Before(payment.ExpiredAt)
+}
+
+// CanBeCancelledBy reports only the payment's own eligibility (pending, owned by sessionId);
+// the feature flag is applied by the use case, not here (D10).
+func (payment Payment) CanBeCancelledBy(sessionId string, now time.Time) bool {
+	return payment.Status == PaymentStatePending && payment.SessionId == sessionId
 }
 
 func (payment Payment) RequiresGateway() bool {

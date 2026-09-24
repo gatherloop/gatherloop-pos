@@ -21,7 +21,9 @@ const events = {
 const Router = {
   replace: jest.fn(),
   push: jest.fn(),
+  beforePopState: jest.fn(),
   pathname: '/',
+  asPath: '/',
   query: {},
   events,
 };

@@ -9,6 +9,12 @@ func ToPaymentDB(d domain.Payment) Payment {
 		qrContent = &content
 	}
 
+	var cancelReason *string
+	if d.CancelReason != nil {
+		reason := string(*d.CancelReason)
+		cancelReason = &reason
+	}
+
 	return Payment{
 		Id:                     d.Id,
 		CartId:                 d.CartId,
@@ -24,6 +30,8 @@ func ToPaymentDB(d domain.Payment) Payment {
 		QrContent:              qrContent,
 		ExpiredAt:              d.ExpiredAt,
 		PaidAt:                 d.PaidAt,
+		CancelledAt:            d.CancelledAt,
+		CancelReason:           cancelReason,
 		StatusCheckedAt:        d.StatusCheckedAt,
 		CreatedAt:              d.CreatedAt,
 		UpdatedAt:              d.UpdatedAt,
@@ -49,6 +57,12 @@ func ToPaymentDomain(db Payment) domain.Payment {
 		qrContent = *db.QrContent
 	}
 
+	var cancelReason *domain.PaymentCancelReason
+	if db.CancelReason != nil {
+		reason := domain.PaymentCancelReason(*db.CancelReason)
+		cancelReason = &reason
+	}
+
 	return domain.Payment{
 		Id:                     db.Id,
 		CartId:                 db.CartId,
@@ -64,6 +78,8 @@ func ToPaymentDomain(db Payment) domain.Payment {
 		QrContent:              qrContent,
 		ExpiredAt:              db.ExpiredAt,
 		PaidAt:                 db.PaidAt,
+		CancelledAt:            db.CancelledAt,
+		CancelReason:           cancelReason,
 		StatusCheckedAt:        db.StatusCheckedAt,
 		CreatedAt:              db.CreatedAt,
 		UpdatedAt:              db.UpdatedAt,

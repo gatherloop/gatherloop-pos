@@ -1,5 +1,6 @@
 import { Variant } from './Variant';
 import { PublicTable } from './PublicTable';
+import { PaymentMethod } from './Payment';
 
 export type CartItem = {
   id: number;
@@ -15,6 +16,14 @@ export type CartItem = {
 
 export type CartStatus = 'active' | 'converted' | 'abandoned';
 
+export type PendingPayment = {
+  partnerReferenceNo: string;
+  method: PaymentMethod;
+  amount: number;
+  expiredAt: string;
+  canCancel: boolean;
+};
+
 export type Cart = {
   id: number;
   sessionId: string;
@@ -25,4 +34,5 @@ export type Cart = {
   itemCount: number;
   total: number;
   createdAt: string;
+  pendingPayment: PendingPayment | null;
 };

@@ -101,6 +101,21 @@ func (mr *MockPaymentRepositoryMockRecorder) GetPaymentByPartnerReferenceNo(ctx,
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPaymentByPartnerReferenceNo", reflect.TypeOf((*MockPaymentRepository)(nil).GetPaymentByPartnerReferenceNo), ctx, partnerReferenceNo)
 }
 
+// GetPaymentByPartnerReferenceNoForUpdate mocks base method.
+func (m *MockPaymentRepository) GetPaymentByPartnerReferenceNoForUpdate(ctx context.Context, partnerReferenceNo string) (domain.Payment, *domain.Error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPaymentByPartnerReferenceNoForUpdate", ctx, partnerReferenceNo)
+	ret0, _ := ret[0].(domain.Payment)
+	ret1, _ := ret[1].(*domain.Error)
+	return ret0, ret1
+}
+
+// GetPaymentByPartnerReferenceNoForUpdate indicates an expected call of GetPaymentByPartnerReferenceNoForUpdate.
+func (mr *MockPaymentRepositoryMockRecorder) GetPaymentByPartnerReferenceNoForUpdate(ctx, partnerReferenceNo any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPaymentByPartnerReferenceNoForUpdate", reflect.TypeOf((*MockPaymentRepository)(nil).GetPaymentByPartnerReferenceNoForUpdate), ctx, partnerReferenceNo)
+}
+
 // GetPaymentByTransactionId mocks base method.
 func (m *MockPaymentRepository) GetPaymentByTransactionId(ctx context.Context, transactionId int64) (domain.Payment, *domain.Error) {
 	m.ctrl.T.Helper()
@@ -114,6 +129,21 @@ func (m *MockPaymentRepository) GetPaymentByTransactionId(ctx context.Context, t
 func (mr *MockPaymentRepositoryMockRecorder) GetPaymentByTransactionId(ctx, transactionId any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPaymentByTransactionId", reflect.TypeOf((*MockPaymentRepository)(nil).GetPaymentByTransactionId), ctx, transactionId)
+}
+
+// GetPaymentByTransactionIdForUpdate mocks base method.
+func (m *MockPaymentRepository) GetPaymentByTransactionIdForUpdate(ctx context.Context, transactionId int64) (domain.Payment, *domain.Error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPaymentByTransactionIdForUpdate", ctx, transactionId)
+	ret0, _ := ret[0].(domain.Payment)
+	ret1, _ := ret[1].(*domain.Error)
+	return ret0, ret1
+}
+
+// GetPaymentByTransactionIdForUpdate indicates an expected call of GetPaymentByTransactionIdForUpdate.
+func (mr *MockPaymentRepositoryMockRecorder) GetPaymentByTransactionIdForUpdate(ctx, transactionId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPaymentByTransactionIdForUpdate", reflect.TypeOf((*MockPaymentRepository)(nil).GetPaymentByTransactionIdForUpdate), ctx, transactionId)
 }
 
 // GetPaymentsBySessionId mocks base method.

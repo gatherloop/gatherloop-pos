@@ -1,6 +1,10 @@
 import { ReactNode } from 'react';
 import { match, P } from 'ts-pattern';
-import { Payment, PaymentMethod } from '../../../../domain/entities/Payment';
+import {
+  Payment,
+  PaymentCancelReason,
+  PaymentMethod,
+} from '../../../../domain/entities/Payment';
 import { EmptyView } from '../../components/base/EmptyView';
 import { ErrorView } from '../../components/base/ErrorView';
 import { LoadingView } from '../../components/base/LoadingView';
@@ -31,6 +35,11 @@ export type OrderStatusScreenVariant =
     }
   | { type: 'ready'; payment: Payment }
   | { type: 'expired'; method: PaymentMethod | null }
+  | {
+      type: 'cancelled';
+      cancelReason: PaymentCancelReason;
+      onActionPress: () => void;
+    }
   | { type: 'notFound' }
   | { type: 'error'; onRetryPress: () => void };
 
@@ -112,6 +121,22 @@ export const OrderStatusScreen = ({
             }
             actionLabel="Kembali ke keranjang"
             onActionPress={onBackToCartPress}
+          />
+        ))
+        .with({ type: 'cancelled' }, ({ cancelReason, onActionPress }) => (
+          <EmptyView
+            title="Pembayaran dibatalkan"
+            subtitle={
+              cancelReason === 'superseded'
+                ? 'Pesanan ini sudah dibayar lewat pembayaran sebelumnya.'
+                : 'Keranjang Anda masih tersimpan.'
+            }
+            actionLabel={
+              cancelReason === 'superseded'
+                ? 'Lihat riwayat pesanan'
+                : 'Kembali ke keranjang'
+            }
+            onActionPress={onActionPress}
           />
         ))
         .with({ type: 'notFound' }, () => (

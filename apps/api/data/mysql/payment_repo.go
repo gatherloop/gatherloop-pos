@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 func NewPaymentRepository(db *gorm.DB) domain.PaymentRepository {
@@ -37,6 +38,26 @@ func (repo Repository) GetPaymentByTransactionId(ctx context.Context, transactio
 		Where("transaction_id = ? AND deleted_at IS NULL", transactionId).
 		First(&payment)
 	return ToPaymentDomain(payment), ToErrorCtx(ctx, result.Error, "GetPaymentByTransactionId")
+}
+
+func (repo Repository) GetPaymentByPartnerReferenceNoForUpdate(ctx context.Context, partnerReferenceNo string) (domain.Payment, *domain.Error) {
+	db := GetDbFromCtx(ctx, repo.db)
+	var payment Payment
+	result := db.Table("payments").
+		Clauses(clause.Locking{Strength: "UPDATE"}).
+		Where("partner_reference_no = ? AND deleted_at IS NULL", partnerReferenceNo).
+		First(&payment)
+	return ToPaymentDomain(payment), ToErrorCtx(ctx, result.Error, "GetPaymentByPartnerReferenceNoForUpdate")
+}
+
+func (repo Repository) GetPaymentByTransactionIdForUpdate(ctx context.Context, transactionId int64) (domain.Payment, *domain.Error) {
+	db := GetDbFromCtx(ctx, repo.db)
+	var payment Payment
+	result := db.Table("payments").
+		Clauses(clause.Locking{Strength: "UPDATE"}).
+		Where("transaction_id = ? AND deleted_at IS NULL", transactionId).
+		First(&payment)
+	return ToPaymentDomain(payment), ToErrorCtx(ctx, result.Error, "GetPaymentByTransactionIdForUpdate")
 }
 
 func (repo Repository) GetPendingPaymentByCartId(ctx context.Context, cartId int64) (domain.Payment, *domain.Error) {

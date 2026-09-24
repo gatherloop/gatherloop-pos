@@ -71,6 +71,36 @@ func TestPaymentRepository_GetPaymentByTransactionId_FiltersToThatTransaction(t 
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
+// D6: cancel, confirm, expire and settle all read the payment row with FOR UPDATE so they
+// serialize on it instead of racing each other to a terminal state.
+func TestPaymentRepository_GetPaymentByPartnerReferenceNoForUpdate_LocksForUpdate(t *testing.T) {
+	repo, mock := newMockPaymentRepository(t)
+
+	mock.ExpectQuery("SELECT \\* FROM `payments` WHERE partner_reference_no = \\? AND deleted_at IS NULL ORDER BY `payments`.`id` LIMIT \\? FOR UPDATE").
+		WithArgs("ORD0123456789ABC", 1).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "session_id"}).AddRow(1, "session-1"))
+
+	payment, err := repo.GetPaymentByPartnerReferenceNoForUpdate(context.Background(), "ORD0123456789ABC")
+
+	require.Nil(t, err)
+	require.Equal(t, "session-1", payment.SessionId)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestPaymentRepository_GetPaymentByTransactionIdForUpdate_LocksForUpdate(t *testing.T) {
+	repo, mock := newMockPaymentRepository(t)
+
+	mock.ExpectQuery("SELECT \\* FROM `payments` WHERE transaction_id = \\? AND deleted_at IS NULL ORDER BY `payments`.`id` LIMIT \\? FOR UPDATE").
+		WithArgs(int64(42), 1).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "session_id"}).AddRow(1, "session-1"))
+
+	payment, err := repo.GetPaymentByTransactionIdForUpdate(context.Background(), 42)
+
+	require.Nil(t, err)
+	require.Equal(t, "session-1", payment.SessionId)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
 func TestPaymentRepository_GetPaymentsBySessionIdTotal_FiltersToPaidOrPendingForThatSession(t *testing.T) {
 	repo, mock := newMockPaymentRepository(t)
 

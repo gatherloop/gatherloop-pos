@@ -257,6 +257,57 @@ describe('OrderStatusHandler', () => {
     expect(mockPush).toHaveBeenCalledWith(`/t/${TABLE_CODE}/cart`);
   });
 
+  it('shows the cancelled view and returns to the cart for a guest cancel', async () => {
+    const paymentRepository = new MockPaymentRepository();
+    paymentRepository.payment = {
+      ...paymentRepository.payment,
+      status: 'cancelled',
+      cancelReason: 'guest',
+    };
+    const { getByRole } = renderHandler({
+      reference: paymentRepository.payment.reference,
+      paymentRepository,
+    });
+
+    await settle();
+
+    expect(screen.getByText('Pembayaran dibatalkan')).toBeTruthy();
+    expect(screen.getByText('Keranjang Anda masih tersimpan.')).toBeTruthy();
+
+    await act(async () => {
+      getByRole('button', { name: 'Kembali ke keranjang' }).click();
+    });
+
+    expect(mockPush).toHaveBeenCalledWith(`/t/${TABLE_CODE}/cart`);
+  });
+
+  it('shows the cancelled view and links to history for a superseded cancel', async () => {
+    const paymentRepository = new MockPaymentRepository();
+    paymentRepository.payment = {
+      ...paymentRepository.payment,
+      status: 'cancelled',
+      cancelReason: 'superseded',
+    };
+    const { getByRole } = renderHandler({
+      reference: paymentRepository.payment.reference,
+      paymentRepository,
+    });
+
+    await settle();
+
+    expect(
+      screen.getByText(
+        'Pesanan ini sudah dibayar lewat pembayaran sebelumnya.'
+      )
+    ).toBeTruthy();
+
+    await act(async () => {
+      getByRole('button', { name: 'Lihat riwayat pesanan' }).click();
+    });
+
+    expect(mockPush).toHaveBeenCalledWith('/orders');
+  });
+
   it('shows a not-found message for an unknown reference', async () => {
     renderHandler({ reference: 'UNKNOWNREF' });
 

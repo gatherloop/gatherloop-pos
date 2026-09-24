@@ -14,9 +14,16 @@ export type PaymentItem = {
   options: PaymentItemOption[];
 };
 
-export type QrisPaymentStatus = 'pending' | 'paid' | 'expired' | 'failed';
+export type QrisPaymentStatus =
+  | 'pending'
+  | 'paid'
+  | 'expired'
+  | 'failed'
+  | 'cancelled';
 
 export type PaymentMethod = 'qris' | 'cash';
+
+export type PaymentCancelReason = 'guest' | 'superseded';
 
 export type Payment = {
   reference: string;
@@ -31,6 +38,8 @@ export type Payment = {
   items: PaymentItem[];
   transactionNumber: number;
   fulfillmentStatus: TransactionFulfillmentStatus;
+  canCancel: boolean;
+  cancelReason: PaymentCancelReason | null;
 };
 
 export type PaymentSummary = {

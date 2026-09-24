@@ -2,8 +2,9 @@
 import {
   Cart as ApiCart,
   CartItem as ApiCartItem,
+  PendingPayment as ApiPendingPayment,
 } from '../../../../api-contract/src';
-import { Cart, CartItem } from '../../domain/entities/Cart';
+import { Cart, CartItem, PendingPayment } from '../../domain/entities/Cart';
 import { toVariant } from './variant.transformer';
 
 export function toCartItem(item: ApiCartItem): CartItem {
@@ -20,6 +21,18 @@ export function toCartItem(item: ApiCartItem): CartItem {
   };
 }
 
+export function toPendingPayment(
+  pendingPayment: ApiPendingPayment
+): PendingPayment {
+  return {
+    partnerReferenceNo: pendingPayment.partnerReferenceNo,
+    method: pendingPayment.method,
+    amount: pendingPayment.amount,
+    expiredAt: pendingPayment.expiredAt,
+    canCancel: pendingPayment.canCancel,
+  };
+}
+
 export function toCart(cart: ApiCart): Cart {
   return {
     id: cart.id,
@@ -31,5 +44,8 @@ export function toCart(cart: ApiCart): Cart {
     itemCount: cart.itemCount,
     total: cart.total,
     createdAt: cart.createdAt,
+    pendingPayment: cart.pendingPayment
+      ? toPendingPayment(cart.pendingPayment)
+      : null,
   };
 }

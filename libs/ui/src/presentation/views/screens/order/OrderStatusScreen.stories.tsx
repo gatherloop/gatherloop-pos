@@ -13,6 +13,8 @@ const paidPayment = {
   tableLabel: 'Meja 1',
   transactionNumber: 12,
   fulfillmentStatus: 'preparing' as const,
+  canCancel: false,
+  cancelReason: null,
   items: [
     {
       name: 'Es Kopi Susu',
@@ -117,6 +119,7 @@ const pendingPayment = {
   ...paidPayment,
   status: 'pending' as const,
   paidAt: null,
+  canCancel: true,
 };
 
 const pendingCashPayment = {
@@ -199,6 +202,30 @@ export const Expired: Story = {
 
 export const ExpiredCash: Story = {
   args: { variant: { type: 'expired', method: 'cash' } },
+};
+
+export const Cancelled: Story = {
+  args: {
+    variant: {
+      type: 'cancelled',
+      cancelReason: 'guest',
+      onActionPress: () => {
+        // Storybook action stand-in
+      },
+    },
+  },
+};
+
+export const CancelledSuperseded: Story = {
+  args: {
+    variant: {
+      type: 'cancelled',
+      cancelReason: 'superseded',
+      onActionPress: () => {
+        // Storybook action stand-in
+      },
+    },
+  },
 };
 
 export const NotFound: Story = {
