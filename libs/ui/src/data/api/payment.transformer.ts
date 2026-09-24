@@ -53,5 +53,6 @@ export function toPaymentSummary(payment: ApiPaymentSummary): PaymentSummary {
     itemCount: payment.itemCount,
     createdAt: payment.createdAt,
     paidAt: payment.paidAt ?? null,
+    diningOption: payment.diningOption,
   };
 }

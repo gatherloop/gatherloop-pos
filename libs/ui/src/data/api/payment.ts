@@ -32,9 +32,15 @@ export class ApiPaymentRepository implements PaymentRepository {
     customerName,
     method,
     whatsappNumber,
+    diningOption,
   }) => {
     return paymentCheckout(
-      { customerName, method, customerWhatsappNumber: whatsappNumber },
+      {
+        customerName,
+        method,
+        customerWhatsappNumber: whatsappNumber,
+        diningOption,
+      },
       this.sessionRequestConfig()
     ).then(({ data }) => toPayment(data));
   };

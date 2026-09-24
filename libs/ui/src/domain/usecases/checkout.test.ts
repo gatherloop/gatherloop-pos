@@ -175,6 +175,7 @@ describe('CheckoutUsecase', () => {
       customerName: 'Budi',
       whatsappNumber: '62812345678',
       method: 'qris',
+      diningOption: 'dine_in',
     });
   });
 
@@ -205,6 +206,71 @@ describe('CheckoutUsecase', () => {
     expect(checkout.state.method).toBe('qris');
   });
 
+  it('should default diningOption to dine_in', () => {
+    const repository = new MockPaymentRepository();
+    const checkout = createTester(repository);
+
+    expect(checkout.state.diningOption).toBe('dine_in');
+  });
+
+  it('should accept CHANGE_DINING_OPTION in askingDetails', () => {
+    const repository = new MockPaymentRepository();
+    const checkout = createTester(repository);
+
+    checkout.dispatch({ type: 'ASK_DETAILS' });
+    checkout.dispatch({ type: 'CHANGE_DINING_OPTION', diningOption: 'takeaway' });
+
+    expect(checkout.state.diningOption).toBe('takeaway');
+  });
+
+  it('should ignore CHANGE_DINING_OPTION outside askingDetails', () => {
+    const repository = new MockPaymentRepository();
+    const checkout = createTester(repository);
+
+    checkout.dispatch({ type: 'CHANGE_DINING_OPTION', diningOption: 'takeaway' });
+
+    expect(checkout.state.type).toBe('idle');
+    expect(checkout.state.diningOption).toBe('dine_in');
+  });
+
+  it('should keep diningOption when CANCEL_DETAILS returns to idle, and again on ASK_DETAILS', () => {
+    const repository = new MockPaymentRepository();
+    const checkout = createTester(repository);
+
+    checkout.dispatch({ type: 'ASK_DETAILS' });
+    checkout.dispatch({ type: 'CHANGE_DINING_OPTION', diningOption: 'takeaway' });
+    checkout.dispatch({ type: 'CANCEL_DETAILS' });
+
+    expect(checkout.state.type).toBe('idle');
+    expect(checkout.state.diningOption).toBe('takeaway');
+
+    checkout.dispatch({ type: 'ASK_DETAILS' });
+
+    expect(checkout.state.type).toBe('askingDetails');
+    expect(checkout.state.diningOption).toBe('takeaway');
+  });
+
+  it('should submit a takeaway checkout with the selected dining option', async () => {
+    const repository = new MockPaymentRepository();
+    const checkoutSpy = jest.spyOn(repository, 'checkout');
+    const checkout = createTester(repository, {
+      customerName: 'Budi',
+      customerWhatsappNumber: '081234567890',
+    });
+
+    checkout.dispatch({ type: 'ASK_DETAILS' });
+    checkout.dispatch({ type: 'CHANGE_DINING_OPTION', diningOption: 'takeaway' });
+    checkout.dispatch({ type: 'SUBMIT_DETAILS' });
+    await flushMicrotasks();
+
+    expect(checkoutSpy).toHaveBeenCalledWith({
+      customerName: 'Budi',
+      whatsappNumber: '6281234567890',
+      method: 'qris',
+      diningOption: 'takeaway',
+    });
+  });
+
   it('should submit a cash checkout with the selected method', async () => {
     const repository = new MockPaymentRepository();
     const checkoutSpy = jest.spyOn(repository, 'checkout');
@@ -222,6 +288,7 @@ describe('CheckoutUsecase', () => {
       customerName: 'Budi',
       whatsappNumber: '6281234567890',
       method: 'cash',
+      diningOption: 'dine_in',
     });
     expect(checkout.state.type).toBe('created');
     expect(checkout.state.payment?.method).toBe('cash');
