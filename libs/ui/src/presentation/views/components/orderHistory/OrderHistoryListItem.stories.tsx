@@ -31,3 +31,7 @@ export const Ready: Story = {
 export const AwaitingCashPayment: Story = {
   args: { status: 'pending', method: 'cash' },
 };
+
+export const AwaitingQrisPayment: Story = {
+  args: { status: 'pending', method: 'qris' },
+};

@@ -406,7 +406,11 @@ device-local is stored. History lives as long as `gl_session_id` — one year, o
 clears storage — and the server row lives forever.
 
 **D14 — History is paid orders only; an unpaid QR is the cart's problem, not history's.**
-*Supersedes the pending-payment half of D5.*
+*Supersedes the pending-payment half of D5. Narrowed since: Cash D17
+(`docs/prd-order-cash-payment.md`) added pending cash so a guest who closed the tab could still
+find the till. `docs/prd-order-payment-cancellation.md`'s D19 widens that further to pending
+**QRIS** too, now that a guest can cancel a stuck payment instead of being stranded by it — read
+D19 for the current filter, not "paid orders only" below.*
 
 A payment that is pending has not produced anything the guest is waiting on — no food is being
 made, no number will be called. What it has produced is a cart that is still there: the only
