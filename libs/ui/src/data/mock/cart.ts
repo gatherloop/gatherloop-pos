@@ -1,4 +1,11 @@
-import { Cart, CartItem, PublicTable, Product, Variant } from '../../domain/entities';
+import {
+  Cart,
+  CartItem,
+  PendingPayment,
+  PublicTable,
+  Product,
+  Variant,
+} from '../../domain/entities';
 import { CartRepository } from '../../domain/repositories/cart';
 
 const product: Product = {
@@ -89,6 +96,7 @@ const initialCart = (): Cart => ({
   itemCount: 0,
   total: 0,
   createdAt: '2024-03-20T00:00:00.000Z',
+  pendingPayment: null,
 });
 
 export class MockCartRepository implements CartRepository {
@@ -101,6 +109,16 @@ export class MockCartRepository implements CartRepository {
     this.shouldFail = value;
   }
 
+  setPendingPayment(pendingPayment: PendingPayment | null) {
+    this.cart = { ...this.cart, pendingPayment };
+  }
+
+  private ensureUnlocked() {
+    if (this.cart.pendingPayment) {
+      throw new Error('cart is locked by a pending payment');
+    }
+  }
+
   fetchCurrentCart: CartRepository['fetchCurrentCart'] = async () => {
     if (this.shouldFail) throw new Error('Failed to fetch cart');
     return { ...this.cart };
@@ -108,6 +126,7 @@ export class MockCartRepository implements CartRepository {
 
   updateTable: CartRepository['updateTable'] = async () => {
     if (this.shouldFail) throw new Error('Failed to update table');
+    this.ensureUnlocked();
     const table: PublicTable = { id: 1, label: 'Meja 1', floorNumber: 1 };
     this.cart = { ...this.cart, tableId: table.id, table };
     return { ...this.cart };
@@ -119,6 +138,7 @@ export class MockCartRepository implements CartRepository {
     note,
   }) => {
     if (this.shouldFail) throw new Error('Failed to add item');
+    this.ensureUnlocked();
     const variant = variants[variantId];
     if (!variant) throw new Error('Variant not found');
 
@@ -162,6 +182,7 @@ export class MockCartRepository implements CartRepository {
     note,
   }) => {
     if (this.shouldFail) throw new Error('Failed to update item');
+    this.ensureUnlocked();
     const items = this.cart.items.map((item) =>
       item.id === cartItemId
         ? { ...item, amount, note, subtotal: item.price * amount }
@@ -173,6 +194,7 @@ export class MockCartRepository implements CartRepository {
 
   removeItem: CartRepository['removeItem'] = async (cartItemId) => {
     if (this.shouldFail) throw new Error('Failed to remove item');
+    this.ensureUnlocked();
     const items = this.cart.items.filter((item) => item.id !== cartItemId);
     this.cart = recompute({ ...this.cart, items });
     return { ...this.cart };
@@ -180,6 +202,7 @@ export class MockCartRepository implements CartRepository {
 
   clearCart: CartRepository['clearCart'] = async () => {
     if (this.shouldFail) throw new Error('Failed to clear cart');
+    this.ensureUnlocked();
     this.cart = recompute({ ...this.cart, items: [] });
     return { ...this.cart };
   };

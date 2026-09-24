@@ -5003,6 +5003,29 @@ components:
         createdAt:
           type: string
           format: date-time
+        pendingPayment:
+          $ref: '#/components/schemas/PendingPayment'
+    PendingPayment:
+      type: object
+      required:
+        - partnerReferenceNo
+        - method
+        - amount
+        - expiredAt
+        - canCancel
+      properties:
+        partnerReferenceNo:
+          type: string
+        method:
+          type: string
+          enum: [qris, cash]
+        amount:
+          type: number
+        expiredAt:
+          type: string
+          format: date-time
+        canCancel:
+          type: boolean
     Customer:
       type: object
       required:

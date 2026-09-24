@@ -23,13 +23,14 @@ type CartItem struct {
 }
 
 type Cart struct {
-	Id        int64
-	SessionId string
-	TableId   *int64
-	Table     *Table
-	Status    CartStatus
-	Items     []CartItem
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt *time.Time
+	Id             int64
+	SessionId      string
+	TableId        *int64
+	Table          *Table
+	Status         CartStatus
+	Items          []CartItem
+	PendingPayment *Payment
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	DeletedAt      *time.Time
 }

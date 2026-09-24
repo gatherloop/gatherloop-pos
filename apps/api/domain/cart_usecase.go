@@ -36,7 +36,7 @@ func (usecase CartUsecase) GetCurrentCart(ctx context.Context, sessionId string)
 		}
 		return Cart{}, err
 	}
-	return resolveCartAvailability(cart), nil
+	return usecase.attachPendingPayment(ctx, resolveCartAvailability(cart))
 }
 
 func (usecase CartUsecase) UpdateCartTable(ctx context.Context, sessionId string, tableCode string) (Cart, *Error) {
@@ -218,18 +218,40 @@ func resolveCartAvailability(cart Cart) Cart {
 	return cart
 }
 
-func (usecase CartUsecase) ensureCartUnlocked(ctx context.Context, cartId int64) *Error {
+// findAwaitingPayment is the single definition of "locked": both ensureCartUnlocked (which
+// rejects a write) and attachPendingPayment (which explains the lock on the cart response) read
+// it, so the two can never disagree (D18).
+func (usecase CartUsecase) findAwaitingPayment(ctx context.Context, cartId int64) (Payment, bool, *Error) {
 	payment, err := usecase.paymentRepository.GetPendingPaymentByCartId(ctx, cartId)
 	if err != nil {
 		if err.Type == NotFound {
-			return nil
+			return Payment{}, false, nil
 		}
+		return Payment{}, false, err
+	}
+	return payment, payment.IsAwaitingPayment(time.Now()), nil
+}
+
+func (usecase CartUsecase) ensureCartUnlocked(ctx context.Context, cartId int64) *Error {
+	_, awaiting, err := usecase.findAwaitingPayment(ctx, cartId)
+	if err != nil {
 		return err
 	}
-	if payment.IsAwaitingPayment(time.Now()) {
+	if awaiting {
 		return &Error{Type: BadRequest, Message: "cart is locked by a pending payment"}
 	}
 	return nil
+}
+
+func (usecase CartUsecase) attachPendingPayment(ctx context.Context, cart Cart) (Cart, *Error) {
+	payment, awaiting, err := usecase.findAwaitingPayment(ctx, cart.Id)
+	if err != nil {
+		return Cart{}, err
+	}
+	if awaiting {
+		cart.PendingPayment = &payment
+	}
+	return cart, nil
 }
 
 func (usecase CartUsecase) getOrCreateActiveCart(ctx context.Context, sessionId string) (Cart, *Error) {
