@@ -283,6 +283,12 @@ export const LockedByPendingPayment: Story = {
       onContinuePress: () => {
         // Storybook action stand-in
       },
+      cancelAction: {
+        label: 'Batalkan & tambah item',
+        onPress: () => {
+          // Storybook action stand-in
+        },
+      },
     },
   },
 };

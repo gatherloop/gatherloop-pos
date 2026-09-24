@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, within, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MenuListHandler } from './MenuListHandler';
 import {
@@ -7,6 +7,7 @@ import {
   MockCartRepository,
   MockMenuListQueryRepository,
   MockMenuRepository,
+  MockPaymentRepository,
   MockPublicTableRepository,
   MockSessionRepository,
 } from '../../../data/mock';
@@ -43,6 +44,7 @@ const renderHandler = ({
   menuRepository = new MockMenuRepository(),
   tableRepository = new MockPublicTableRepository(),
   cartRepository = new MockCartRepository(),
+  paymentRepository = new MockPaymentRepository(),
   menuListQueryRepository = new MockMenuListQueryRepository(),
   menuListParams = { products: [], categories: [] } as MenuListParams,
   sessionRepository = new MockSessionRepository(),
@@ -51,6 +53,7 @@ const renderHandler = ({
   menuRepository?: MockMenuRepository;
   tableRepository?: MockPublicTableRepository;
   cartRepository?: MockCartRepository;
+  paymentRepository?: MockPaymentRepository;
   menuListQueryRepository?: MockMenuListQueryRepository;
   menuListParams?: MenuListParams;
   sessionRepository?: MockSessionRepository;
@@ -76,6 +79,7 @@ const renderHandler = ({
     menuRepository,
     tableRepository,
     cartRepository,
+    paymentRepository,
     sessionRepository,
     ...render(
       <MenuListHandler
@@ -84,6 +88,7 @@ const renderHandler = ({
         menuItemDetailUsecase={menuItemDetailUsecase}
         cartUsecase={cartUsecase}
         cartRepository={cartRepository}
+        paymentRepository={paymentRepository}
         sessionRepository={sessionRepository}
         tableCode={TABLE_CODE}
         preparingCount={preparingCount}
@@ -98,6 +103,11 @@ const settle = async () => {
     await flushPromises();
   });
 };
+
+const getCancelDialog = () =>
+  within(
+    document.querySelector('[data-component="AlertDialog"]') as HTMLElement
+  );
 
 describe('MenuListHandler', () => {
   beforeEach(() => {
@@ -594,6 +604,121 @@ describe('MenuListHandler', () => {
 
       expect(screen.getAllByText('Nasi Goreng')).toHaveLength(2);
       expect(screen.queryByText('Regular')).toBeNull();
+    });
+
+    describe('cancelling from the notice (D22)', () => {
+      const seedPendingPayment = (paymentRepository: MockPaymentRepository) => {
+        paymentRepository.payment = {
+          ...paymentRepository.payment,
+          reference: pendingQrisPayment.partnerReferenceNo,
+          method: 'qris',
+          status: 'pending',
+          canCancel: true,
+        };
+      };
+
+      it('cancels the pending payment and adds the selected item to the existing cart, closing the sheet', async () => {
+        const user = userEvent.setup();
+        const cartRepository = new MockCartRepository();
+        await cartRepository.addItem({ variantId: 2, amount: 1, note: '' });
+        cartRepository.setPendingPayment(pendingQrisPayment);
+        const paymentRepository = new MockPaymentRepository();
+        seedPendingPayment(paymentRepository);
+        jest
+          .spyOn(paymentRepository, 'cancelPayment')
+          .mockImplementation(async () => {
+            cartRepository.setPendingPayment(null);
+            return {
+              ...paymentRepository.payment,
+              status: 'cancelled',
+              cancelReason: 'guest',
+              canCancel: false,
+            };
+          });
+        renderHandler({ cartRepository, paymentRepository });
+        await settle();
+
+        await user.click(screen.getByText('Es Kopi Susu'));
+        await settle();
+        await user.click(screen.getByRole('button', { name: 'Regular' }));
+        await settle();
+
+        await user.click(
+          screen.getByRole('button', { name: 'Batalkan & tambah item' })
+        );
+        const dialog = getCancelDialog();
+        await user.click(dialog.getByRole('button', { name: 'Ya, batalkan' }));
+        await settle();
+        await settle();
+
+        expect(screen.queryByLabelText('Tutup')).toBeNull();
+        expect(
+          cartRepository.cart.items.map((item) => item.variantId).sort()
+        ).toEqual([1, 2]);
+      });
+
+      it('routes to the countdown without adding anything when the cancel answer is already paid', async () => {
+        const user = userEvent.setup();
+        const cartRepository = new MockCartRepository();
+        cartRepository.setPendingPayment(pendingQrisPayment);
+        const paymentRepository = new MockPaymentRepository();
+        seedPendingPayment(paymentRepository);
+        jest.spyOn(paymentRepository, 'cancelPayment').mockResolvedValue({
+          ...paymentRepository.payment,
+          status: 'paid',
+          canCancel: false,
+        });
+        renderHandler({ cartRepository, paymentRepository });
+        await settle();
+
+        await user.click(screen.getByText('Es Kopi Susu'));
+        await settle();
+        await user.click(screen.getByRole('button', { name: 'Regular' }));
+        await settle();
+
+        await user.click(
+          screen.getByRole('button', { name: 'Batalkan & tambah item' })
+        );
+        const dialog = getCancelDialog();
+        await user.click(dialog.getByRole('button', { name: 'Ya, batalkan' }));
+        await settle();
+
+        expect(mockPush).toHaveBeenCalledWith(
+          `/orders/${pendingQrisPayment.partnerReferenceNo}`
+        );
+        expect(cartRepository.cart.items).toHaveLength(0);
+      });
+
+      it('dismissing the confirmation leaves the sheet open and still locked', async () => {
+        const user = userEvent.setup();
+        const cartRepository = new MockCartRepository();
+        cartRepository.setPendingPayment(pendingQrisPayment);
+        const paymentRepository = new MockPaymentRepository();
+        seedPendingPayment(paymentRepository);
+        const cancelSpy = jest.spyOn(paymentRepository, 'cancelPayment');
+        renderHandler({ cartRepository, paymentRepository });
+        await settle();
+
+        await user.click(screen.getByText('Es Kopi Susu'));
+        await settle();
+
+        await user.click(
+          screen.getByRole('button', { name: 'Batalkan & tambah item' })
+        );
+        const dialog = getCancelDialog();
+        expect(dialog.getByText('Batalkan pembayaran?')).toBeTruthy();
+
+        await user.click(
+          dialog.getByRole('button', { name: 'Lanjutkan pembayaran' })
+        );
+        await settle();
+
+        expect(cancelSpy).not.toHaveBeenCalled();
+        expect(screen.getByLabelText('Tutup')).toBeTruthy();
+        expect(
+          screen.getByText(/pembayaran yang belum selesai/)
+        ).toBeTruthy();
+      });
     });
   });
 });

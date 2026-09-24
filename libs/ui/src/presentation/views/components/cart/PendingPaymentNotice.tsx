@@ -1,11 +1,18 @@
 import { Button, Text, YStack } from 'tamagui';
 
+export type PendingPaymentNoticeCancelAction = {
+  label: string;
+  onPress: () => void;
+};
+
 export type PendingPaymentNoticeProps = {
   onContinuePress: () => void;
+  cancelAction: PendingPaymentNoticeCancelAction | null;
 };
 
 export const PendingPaymentNotice = ({
   onContinuePress,
+  cancelAction,
 }: PendingPaymentNoticeProps) => {
   return (
     <YStack
@@ -28,6 +35,17 @@ export const PendingPaymentNotice = ({
       >
         Lanjutkan pembayaran
       </Button>
+      {cancelAction ? (
+        <Button
+          size="$2"
+          chromeless
+          theme="red"
+          color="$red10"
+          onPress={cancelAction.onPress}
+        >
+          {cancelAction.label}
+        </Button>
+      ) : null}
     </YStack>
   );
 };

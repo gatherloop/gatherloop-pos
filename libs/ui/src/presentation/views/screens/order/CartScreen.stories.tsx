@@ -97,6 +97,17 @@ const meta: Meta<typeof CartScreen> = {
     checkoutErrorMessage: null,
     detailsSheet: null,
     lockedNotice: null,
+    cancelConfirmation: {
+      isOpen: false,
+      method: 'qris',
+      isCancelling: false,
+      onConfirm: () => {
+        // Storybook action stand-in
+      },
+      onDismiss: () => {
+        // Storybook action stand-in
+      },
+    },
     onAmountChange: () => {
       // Storybook action stand-in
     },
@@ -284,6 +295,29 @@ export const LockedByPendingPayment: Story = {
     variant: { type: 'loaded', cart },
     lockedNotice: {
       onContinuePress: () => {
+        // Storybook action stand-in
+      },
+      cancelAction: {
+        label: 'Batalkan pembayaran',
+        onPress: () => {
+          // Storybook action stand-in
+        },
+      },
+    },
+  },
+};
+
+export const ConfirmingCancel: Story = {
+  args: {
+    ...LockedByPendingPayment.args,
+    cancelConfirmation: {
+      isOpen: true,
+      method: 'qris',
+      isCancelling: false,
+      onConfirm: () => {
+        // Storybook action stand-in
+      },
+      onDismiss: () => {
         // Storybook action stand-in
       },
     },
