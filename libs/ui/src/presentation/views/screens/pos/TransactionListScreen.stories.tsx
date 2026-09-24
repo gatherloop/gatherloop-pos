@@ -13,6 +13,8 @@ const defaultArgs = {
   onPrintInvoiceMenuPress: fn(),
   onPrintOrderSlipMenuPress: fn(),
   onRetryButtonPress: fn(),
+  onRefreshPress: fn(),
+  isRefreshButtonDisabled: false,
   transactions: mockTransactions,
   searchValue: '',
   onSearchValueChange: fn(),
@@ -59,7 +61,20 @@ export const Loaded: Story = {
 };
 
 export const Loading: Story = {
-  args: { ...defaultArgs, variant: { type: 'loading' } },
+  args: {
+    ...defaultArgs,
+    variant: { type: 'loading' },
+    isRefreshButtonDisabled: true,
+  },
+};
+
+export const Refreshing: Story = {
+  args: {
+    ...defaultArgs,
+    variant: { type: 'loaded' },
+    isRevalidating: true,
+    isRefreshButtonDisabled: true,
+  },
 };
 
 export const Error: Story = {

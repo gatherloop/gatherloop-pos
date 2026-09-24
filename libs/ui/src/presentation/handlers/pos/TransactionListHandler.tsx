@@ -215,6 +215,13 @@ export const TransactionListHandler = ({
       }}
       onEmptyActionPress={() => router.push('/transactions/create')}
       onRetryButtonPress={() => transactionList.dispatch({ type: 'FETCH' })}
+      onRefreshPress={() => transactionList.dispatch({ type: 'FETCH' })}
+      isRefreshButtonDisabled={match(transactionList.state.type)
+        .with(
+          P.union('idle', 'loading', 'revalidating', 'changingParams'),
+          () => true
+        )
+        .otherwise(() => false)}
       isRevalidating={transactionList.state.type === 'revalidating'}
       isChangingParams={transactionList.state.type === 'changingParams'}
       variant={match(transactionList.state)

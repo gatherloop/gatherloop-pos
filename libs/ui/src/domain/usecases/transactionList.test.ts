@@ -285,6 +285,70 @@ describe('TransactionListUsecase', () => {
     });
   });
 
+  describe('refresh', () => {
+    it('should refetch the current page with every active filter and surface new transactions', async () => {
+      const repository = new MockTransactionRepository();
+      const usecase = new TransactionListUsecase(
+        repository,
+        new MockTransactionListQueryRepository(),
+        new MockWalletRepository(),
+        {
+          transactions: [],
+          totalItem: 0,
+          wallets: [],
+          page: 2,
+          query: 'Budi',
+          paymentStatus: 'unpaid',
+          walletId: 1,
+          source: 'order',
+          fulfillment: 'preparing',
+          sortBy: 'created_at',
+          orderBy: 'desc',
+          itemPerPage: 20,
+        }
+      );
+      const transactionList = new UsecaseTester<
+        TransactionListUsecase,
+        TransactionListState,
+        TransactionListAction,
+        TransactionListParams
+      >(usecase);
+      await flushPromises();
+
+      const fetchTransactionList = jest.spyOn(
+        repository,
+        'fetchTransactionList'
+      );
+      await repository.createTransaction({
+        name: 'Order App Transaction',
+        pagerNumber: 0,
+        transactionItems: [],
+        transactionCoupons: [],
+      } as never);
+
+      transactionList.dispatch({ type: 'FETCH' });
+      expect(transactionList.state.type).toBe('revalidating');
+
+      await flushPromises();
+      expect(fetchTransactionList).toHaveBeenCalledWith({
+        page: 2,
+        query: 'Budi',
+        paymentStatus: 'unpaid',
+        walletId: 1,
+        source: 'order',
+        fulfillment: 'preparing',
+        sortBy: 'created_at',
+        orderBy: 'desc',
+        itemPerPage: 20,
+      });
+      expect(transactionList.state.type).toBe('loaded');
+      expect(transactionList.state.transactions).toEqual(
+        repository.transactions
+      );
+      expect(transactionList.state.page).toBe(2);
+    });
+  });
+
   it('should show loaded state when initial data is given', async () => {
     const transactionRepository = new MockTransactionRepository();
     const transactionListQueryRepository =
