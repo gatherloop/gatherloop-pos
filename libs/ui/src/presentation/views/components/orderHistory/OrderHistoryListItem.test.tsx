@@ -9,6 +9,7 @@ const defaultProps: OrderHistoryListItemProps = {
   status: 'paid',
   method: 'qris',
   fulfillmentStatus: 'preparing',
+  diningOption: 'dine_in',
   createdAt: '2024-01-20T10:00:00.000Z',
   tableLabel: 'Meja 3',
   customerName: 'Andi',
@@ -44,5 +45,23 @@ describe('OrderHistoryListItem', () => {
     screen.getByText('#12').click();
 
     expect(defaultProps.onPress).toHaveBeenCalled();
+  });
+
+  it('shows the Bawa pulang pill and accessible name for a takeaway order', () => {
+    render(<OrderHistoryListItem {...defaultProps} diningOption="takeaway" />);
+
+    expect(screen.getByText('Bawa pulang')).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Pesanan #12 · Bawa pulang' })
+    ).toBeTruthy();
+  });
+
+  it('shows no pill and the plain accessible name for a dine-in order', () => {
+    render(<OrderHistoryListItem {...defaultProps} diningOption="dine_in" />);
+
+    expect(screen.queryByText('Bawa pulang')).toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'Pesanan #12' })
+    ).toBeTruthy();
   });
 });

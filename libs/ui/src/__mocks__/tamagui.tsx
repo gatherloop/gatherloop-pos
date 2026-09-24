@@ -7,7 +7,14 @@ type AnyProps = {
 };
 
 const makeComponent = (name: string) => {
-  const Component = ({ children, onPress, testID, id, accessibilityRole }: AnyProps) =>
+  const Component = ({
+    children,
+    onPress,
+    testID,
+    id,
+    accessibilityRole,
+    accessibilityLabel,
+  }: AnyProps) =>
     React.createElement(
       'div',
       {
@@ -16,6 +23,7 @@ const makeComponent = (name: string) => {
         ...(testID ? { 'data-testid': testID } : {}),
         ...(id ? { id } : {}),
         ...(accessibilityRole ? { role: accessibilityRole } : {}),
+        ...(accessibilityLabel ? { 'aria-label': accessibilityLabel } : {}),
       },
       children
     );

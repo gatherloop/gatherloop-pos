@@ -66,6 +66,7 @@ export const OrderHistoryScreen = ({
                       status={payment.status}
                       method={payment.method}
                       fulfillmentStatus={payment.fulfillmentStatus}
+                      diningOption={payment.diningOption}
                       createdAt={payment.createdAt}
                       tableLabel={payment.tableLabel}
                       customerName={payment.customerName}

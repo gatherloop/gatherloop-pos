@@ -1,6 +1,7 @@
 import dayjs from 'dayjs';
 import { Text, XStack, XStackProps, YStack } from 'tamagui';
 import {
+  PaymentDiningOption,
   PaymentMethod,
   QrisPaymentStatus,
 } from '../../../../domain/entities/Payment';
@@ -55,6 +56,7 @@ export type OrderHistoryListItemProps = {
   status: QrisPaymentStatus;
   method: PaymentMethod;
   fulfillmentStatus: TransactionFulfillmentStatus;
+  diningOption: PaymentDiningOption;
   createdAt: string;
   tableLabel: string;
   customerName: string;
@@ -68,6 +70,7 @@ export const OrderHistoryListItem = ({
   status,
   method,
   fulfillmentStatus,
+  diningOption,
   createdAt,
   tableLabel,
   customerName,
@@ -77,6 +80,7 @@ export const OrderHistoryListItem = ({
   ...xStackProps
 }: OrderHistoryListItemProps) => {
   const isAwaitingPayment = status === 'pending';
+  const isTakeaway = diningOption === 'takeaway';
   return (
     <XStack
       gap="$3"
@@ -88,14 +92,25 @@ export const OrderHistoryListItem = ({
       onPress={onPress}
       cursor="pointer"
       accessibilityRole="button"
-      accessibilityLabel={`Pesanan #${transactionNumber}`}
+      accessibilityLabel={`Pesanan #${transactionNumber}${
+        isTakeaway ? ' · Bawa pulang' : ''
+      }`}
       {...xStackProps}
     >
       <YStack flex={1} gap="$1">
         <XStack justifyContent="space-between" alignItems="center" gap="$2">
-          <Text fontWeight="bold" fontSize="$6">
-            #{transactionNumber}
-          </Text>
+          <XStack alignItems="center" gap="$2">
+            <Text fontWeight="bold" fontSize="$6">
+              #{transactionNumber}
+            </Text>
+            {isTakeaway && (
+              <StatusPill
+                backgroundColor="$purple5"
+                color="$purple11"
+                label="Bawa pulang"
+              />
+            )}
+          </XStack>
           {isAwaitingPayment ? (
             <StatusPill
               backgroundColor="$red5"
