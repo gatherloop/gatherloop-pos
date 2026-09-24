@@ -50,11 +50,29 @@ const (
 	TransactionFulfillmentReady     TransactionFulfillment = "ready"
 )
 
+type DiningOption string
+
+const (
+	DiningOptionDineIn   DiningOption = "dine_in"
+	DiningOptionTakeaway DiningOption = "takeaway"
+)
+
+// D9: "" is valid — it means "default" on create and "unchanged" on update.
+func (o DiningOption) IsValid() bool {
+	switch o {
+	case "", DiningOptionDineIn, DiningOptionTakeaway:
+		return true
+	default:
+		return false
+	}
+}
+
 type Transaction struct {
 	Id                 int64
 	CreatedAt          time.Time
 	Name               string
 	Source             TransactionSource
+	DiningOption       DiningOption
 	CartId             *int64
 	Cart               *Cart
 	PagerNumber        int64
@@ -85,6 +103,7 @@ type TransactionSummary struct {
 	TableLabel        string
 	ItemCount         int
 	CompletedAt       *time.Time
+	DiningOption      DiningOption
 }
 
 type PaymentStatus int

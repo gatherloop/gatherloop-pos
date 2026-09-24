@@ -134,6 +134,11 @@ func (repo Repository) CreateTransaction(ctx context.Context, transaction domain
 		transaction.CreatedAt = time.Now()
 	}
 
+	// D5: the one repository method every creation path funnels through, so none can forget.
+	if transaction.DiningOption == "" {
+		transaction.DiningOption = domain.DiningOptionDineIn
+	}
+
 	transactionNumber, err := allocateTransactionNumber(db, transaction.CreatedAt)
 	if err != nil {
 		return domain.Transaction{}, ToErrorCtx(ctx, err, "CreateTransaction")
@@ -317,12 +322,12 @@ func (repo Repository) GetTransactionSummariesByIds(ctx context.Context, ids []i
 
 	var transactionSummaries []TransactionSummary
 	result := db.Table("transactions").
-		Select("transactions.id AS id, transactions.transaction_number AS transaction_number, transactions.name AS name, transactions.completed_at AS completed_at, tables.label AS table_label, COUNT(transaction_items.id) AS item_count").
+		Select("transactions.id AS id, transactions.transaction_number AS transaction_number, transactions.name AS name, transactions.completed_at AS completed_at, tables.label AS table_label, COUNT(transaction_items.id) AS item_count, transactions.dining_option AS dining_option").
 		Joins("LEFT JOIN carts ON carts.id = transactions.cart_id").
 		Joins("LEFT JOIN tables ON tables.id = carts.table_id").
 		Joins("LEFT JOIN transaction_items ON transaction_items.transaction_id = transactions.id").
 		Where("transactions.id IN ? AND transactions.deleted_at IS NULL", ids).
-		Group("transactions.id, transactions.transaction_number, transactions.name, transactions.completed_at, tables.label").
+		Group("transactions.id, transactions.transaction_number, transactions.name, transactions.completed_at, tables.label, transactions.dining_option").
 		Find(&transactionSummaries)
 
 	return ToTransactionSummariesListDomain(transactionSummaries), ToErrorCtx(ctx, result.Error, "GetTransactionSummariesByIds")
