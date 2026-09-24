@@ -4327,6 +4327,9 @@ components:
         platform:
           type: string
           enum: [ios, android]
+    DiningOption:
+      type: string
+      enum: [dine_in, takeaway]
     Transaction:
       type: object
       required:

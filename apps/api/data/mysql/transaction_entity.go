@@ -39,6 +39,7 @@ type Transaction struct {
 	CreatedAt          time.Time
 	Name               string
 	Source             string
+	DiningOption       string
 	CartId             *int64
 	Cart               *Cart
 	PagerNumber        int64
@@ -69,4 +70,5 @@ type TransactionSummary struct {
 	TableLabel        string
 	ItemCount         int
 	CompletedAt       *time.Time
+	DiningOption      string
 }

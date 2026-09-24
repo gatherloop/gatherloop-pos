@@ -19,6 +19,7 @@ func ToTransactionDB(domainTransaction domain.Transaction) Transaction {
 		Id:                 domainTransaction.Id,
 		Name:               domainTransaction.Name,
 		Source:             string(domainTransaction.Source),
+		DiningOption:       string(domainTransaction.DiningOption),
 		CartId:             domainTransaction.CartId,
 		Cart:               cart,
 		PagerNumber:        domainTransaction.PagerNumber,
@@ -60,6 +61,7 @@ func ToTransactionDomain(dbTransaction Transaction) domain.Transaction {
 		Id:                 dbTransaction.Id,
 		Name:               dbTransaction.Name,
 		Source:             domain.TransactionSource(dbTransaction.Source),
+		DiningOption:       domain.DiningOption(dbTransaction.DiningOption),
 		CartId:             dbTransaction.CartId,
 		Cart:               cart,
 		PagerNumber:        dbTransaction.PagerNumber,
@@ -265,6 +267,7 @@ func ToTransactionSummaryDomain(dbTransactionSummary TransactionSummary) domain.
 		TableLabel:        dbTransactionSummary.TableLabel,
 		ItemCount:         dbTransactionSummary.ItemCount,
 		CompletedAt:       dbTransactionSummary.CompletedAt,
+		DiningOption:      domain.DiningOption(dbTransactionSummary.DiningOption),
 	}
 }
 
