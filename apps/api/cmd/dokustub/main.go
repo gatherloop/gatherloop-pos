@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -46,6 +47,14 @@ func (s *store) get(partnerReferenceNo string) (*record, bool) {
 type qrisAmount struct {
 	Value    string `json:"value"`
 	Currency string `json:"currency"`
+}
+
+// qr-mpm-query's amount.value is a JSON number, unlike qr-mpm-generate's and
+// the webhook notification's string (data/doku/payment_repo.go's
+// queryQrisResponse, fixed to match DOKU's sandbox response).
+type qrisAmountResponse struct {
+	Value    float64 `json:"value"`
+	Currency string  `json:"currency"`
 }
 
 func main() {
@@ -148,6 +157,7 @@ func main() {
 		if rec.paid {
 			status = "00"
 		}
+		amountValue, _ := strconv.ParseFloat(rec.amountValue, 64)
 
 		writeJSON(w, http.StatusOK, map[string]any{
 			"responseCode":               "2005500",
@@ -156,7 +166,7 @@ func main() {
 			"originalReferenceNo":        rec.referenceNo,
 			"latestTransactionStatus":    status,
 			"transactionStatusDesc":      "stub",
-			"amount":                     qrisAmount{Value: rec.amountValue, Currency: "IDR"},
+			"amount":                     qrisAmountResponse{Value: amountValue, Currency: "IDR"},
 		})
 	})
 

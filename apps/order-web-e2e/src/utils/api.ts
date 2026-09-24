@@ -244,6 +244,21 @@ export async function payTransaction(
   await apiPut(`/transactions/${id}/pay`, { walletId, paidAmount });
 }
 
+// Unlike payTransaction, this doesn't throw on a non-2xx response — for
+// asserting the D8 guard (cashier pays a guest-cancelled order) returns 400
+// rather than merely failing.
+export async function payTransactionRaw(
+  id: number,
+  walletId: number,
+  paidAmount: number
+): Promise<number> {
+  const context = await getContext();
+  const response = await context.put(`/transactions/${id}/pay`, {
+    data: { walletId, paidAmount },
+  });
+  return response.status();
+}
+
 export interface UpdateAvailabilityInput {
   products?: Array<{
     productId: number;

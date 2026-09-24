@@ -26,7 +26,11 @@ export type PaymentCancelAction =
   | { type: 'DISMISS' }
   | { type: 'CONFIRM' }
   | { type: 'CANCEL_SUCCESS'; payment: Payment }
-  | { type: 'CANCEL_ERROR'; message: string };
+  | { type: 'CANCEL_ERROR'; message: string }
+  // useReducer only reads getInitialState() once, so a handler that
+  // reconstructs this usecase after its params become known (see
+  // usePaymentCancel) needs a way to correct the already-mounted state.
+  | { type: 'SYNC_PARAMS'; reference: string; method: PaymentMethod };
 
 export type PaymentCancelParams = {
   reference: string;
@@ -90,6 +94,10 @@ export class PaymentCancelUsecase extends Usecase<
           type: 'error',
           errorMessage: message,
         })
+      )
+      .with(
+        [{ type: 'idle' }, { type: 'SYNC_PARAMS' }],
+        ([state, { reference, method }]) => ({ ...state, reference, method })
       )
       .otherwise(() => state);
   }
