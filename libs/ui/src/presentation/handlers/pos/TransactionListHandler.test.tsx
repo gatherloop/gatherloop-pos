@@ -442,6 +442,30 @@ describe('TransactionListHandler', () => {
     });
   });
 
+  describe('item navigation', () => {
+    it.each`
+      source     | paidAt                        | expectedPath
+      ${'pos'}   | ${null}                       | ${'/transactions/1'}
+      ${'pos'}   | ${'2024-01-01T01:00:00.000Z'} | ${'/transactions/1/detail'}
+      ${'order'} | ${null}                       | ${'/transactions/1/detail'}
+      ${'order'} | ${'2024-01-01T01:00:00.000Z'} | ${'/transactions/1/detail'}
+    `(
+      'opens $expectedPath for a $source transaction with paidAt=$paidAt',
+      async ({ source, paidAt, expectedPath }) => {
+        await act(async () => {
+          render(<TransactionListHandler {...createProps()} />);
+        });
+
+        const transaction = { ...buildTransaction([]), source, paidAt };
+        latestScreenProps.onItemPress(transaction);
+        latestScreenProps.onEditMenuPress(transaction);
+
+        expect(mockRouterPush).toHaveBeenNthCalledWith(1, expectedPath);
+        expect(mockRouterPush).toHaveBeenNthCalledWith(2, expectedPath);
+      }
+    );
+  });
+
   describe('print order slip menu', () => {
     it('prints a single order slip grouped by station when pressed', async () => {
       await act(async () => {
