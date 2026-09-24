@@ -56,7 +56,7 @@ func ToApiCartItem(item domain.CartItem) apiContract.CartItem {
 	}
 }
 
-func ToApiCart(cart domain.Cart) apiContract.Cart {
+func ToApiCart(cart domain.Cart, orderPaymentCancelEnabled bool) apiContract.Cart {
 	apiItems := []apiContract.CartItem{}
 	var total float32
 	var itemCount int32
@@ -75,7 +75,7 @@ func ToApiCart(cart domain.Cart) apiContract.Cart {
 
 	var pendingPayment *apiContract.PendingPayment
 	if cart.PendingPayment != nil {
-		apiPendingPayment := ToApiPendingPayment(*cart.PendingPayment)
+		apiPendingPayment := ToApiPendingPayment(*cart.PendingPayment, orderPaymentCancelEnabled)
 		pendingPayment = &apiPendingPayment
 	}
 
@@ -93,15 +93,14 @@ func ToApiCart(cart domain.Cart) apiContract.Cart {
 	}
 }
 
-// ToApiPendingPayment's canCancel is hard-coded false until ORDER_PAYMENT_CANCEL_ENABLED exists
-// (phase 4/11 file-contention note in the PRD): the flag wiring lands with whichever of the two
-// phases merges second.
-func ToApiPendingPayment(payment domain.Payment) apiContract.PendingPayment {
+// ToApiPendingPayment's canCancel is the flag alone (FR-13): every cart request is its own
+// session's cart, so the ownership half of D10 always holds.
+func ToApiPendingPayment(payment domain.Payment, orderPaymentCancelEnabled bool) apiContract.PendingPayment {
 	return apiContract.PendingPayment{
 		PartnerReferenceNo: payment.PartnerReferenceNo,
 		Method:             string(payment.Method),
 		Amount:             payment.Amount,
 		ExpiredAt:          payment.ExpiredAt,
-		CanCancel:          false,
+		CanCancel:          orderPaymentCancelEnabled,
 	}
 }

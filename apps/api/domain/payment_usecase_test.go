@@ -60,8 +60,18 @@ func (m paymentUsecaseMocks) usecase() domain.PaymentUsecase {
 // usecaseWithDispatcher builds the usecase over a caller-supplied dispatcher instead of the
 // permissive default, for the tests that assert on the FR-4 post-commit dispatch trigger itself.
 func (m paymentUsecaseMocks) usecaseWithDispatcher(dispatcher domain.KdsNotificationDispatcher) domain.PaymentUsecase {
+	return m.usecaseWithDispatcherAndCancelEnabled(dispatcher, false)
+}
+
+// usecaseWithCancelEnabled builds the usecase with ORDER_PAYMENT_CANCEL_ENABLED on, for
+// CancelPayment's and CanCancel's own tests (D11).
+func (m paymentUsecaseMocks) usecaseWithCancelEnabled() domain.PaymentUsecase {
+	return m.usecaseWithDispatcherAndCancelEnabled(m.kdsNotificationDispatcher, true)
+}
+
+func (m paymentUsecaseMocks) usecaseWithDispatcherAndCancelEnabled(dispatcher domain.KdsNotificationDispatcher, orderPaymentCancelEnabled bool) domain.PaymentUsecase {
 	availabilityReservation := domain.NewAvailabilityReservation(m.availabilityRepo)
-	return domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, availabilityReservation, m.kdsNotificationRepo, dispatcher, checkoutQrisExpirySeconds, checkoutCashExpirySeconds, checkoutOrderPaymentWalletId)
+	return domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, availabilityReservation, m.kdsNotificationRepo, dispatcher, checkoutQrisExpirySeconds, checkoutCashExpirySeconds, checkoutOrderPaymentWalletId, orderPaymentCancelEnabled)
 }
 
 func expectAvailableVariant(m paymentUsecaseMocks, variantId int64) {
@@ -1336,6 +1346,257 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, domain.ConfirmPaymentOutcomeIgnored, outcome)
 		assert.Equal(t, payment, result)
+	})
+}
+
+func TestPaymentUsecase_CancelPayment(t *testing.T) {
+	t.Run("the flag off is a 400 before any repository access", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+
+		_, _, err := m.usecase().CancelPayment(context.Background(), "session-1", "ORD1234567890AB")
+
+		require.NotNil(t, err)
+		assert.Equal(t, domain.BadRequest, err.Type)
+	})
+
+	t.Run("an unknown reference is 404", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		withPaymentTransactionMock(m.paymentRepo)
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), "ORDUNKNOWN000AB").
+			Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
+
+		_, _, err := m.usecaseWithCancelEnabled().CancelPayment(context.Background(), "session-1", "ORDUNKNOWN000AB")
+
+		require.NotNil(t, err)
+		assert.Equal(t, domain.NotFound, err.Type)
+	})
+
+	t.Run("a payment belonging to a different session is 404, and the access key is never consulted (D3)", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		withPaymentTransactionMock(m.paymentRepo)
+
+		payment := pendingPaymentFixture()
+		payment.SessionId = "session-owner"
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+
+		_, _, err := m.usecaseWithCancelEnabled().CancelPayment(context.Background(), "session-thief", payment.PartnerReferenceNo)
+
+		require.NotNil(t, err)
+		assert.Equal(t, domain.NotFound, err.Type)
+	})
+
+	t.Run("a pending cash payment is cancelled, its reservation released and its transaction soft-deleted", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		withPaymentTransactionMock(m.paymentRepo)
+
+		payment := pendingCashPaymentFixture()
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), payment.Id).
+			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) {
+				assert.Equal(t, domain.PaymentStateCancelled, p.Status)
+				require.NotNil(t, p.CancelledAt)
+				require.NotNil(t, p.CancelReason)
+				assert.Equal(t, domain.PaymentCancelReasonGuest, *p.CancelReason)
+				return p, nil
+			})
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil).Times(2)
+		m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), int64(99)).Return(nil)
+
+		result, transaction, err := m.usecaseWithCancelEnabled().CancelPayment(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+
+		assert.Nil(t, err)
+		assert.Equal(t, domain.PaymentStateCancelled, result.Status)
+		assert.Equal(t, int64(99), transaction.Id)
+	})
+
+	t.Run("a pending qris payment doku still reports pending is cancelled after the query", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		withPaymentTransactionMock(m.paymentRepo)
+
+		payment := pendingPaymentFixture()
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.gatewayRepo.EXPECT().QueryQris(gomock.Any(), domain.QueryQrisInput{PartnerReferenceNo: payment.PartnerReferenceNo, GatewayReferenceNo: payment.GatewayReferenceNo}).
+			Return(domain.QrisStatus{PartnerReferenceNo: payment.PartnerReferenceNo, Status: domain.PaymentGatewayStatusPending}, nil)
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), payment.Id).
+			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) {
+				assert.Equal(t, domain.PaymentStateCancelled, p.Status)
+				return p, nil
+			})
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil).Times(2)
+		m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), int64(99)).Return(nil)
+
+		result, _, err := m.usecaseWithCancelEnabled().CancelPayment(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+
+		assert.Nil(t, err)
+		assert.Equal(t, domain.PaymentStateCancelled, result.Status)
+	})
+
+	t.Run("a qris payment doku reports paid is paid instead of cancelled, and the cart is converted (D4)", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		withPaymentTransactionMock(m.paymentRepo)
+
+		payment := pendingPaymentFixture()
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.gatewayRepo.EXPECT().QueryQris(gomock.Any(), gomock.Any()).
+			Return(domain.QrisStatus{PartnerReferenceNo: payment.PartnerReferenceNo, GatewayReferenceNo: "gw-new", Status: domain.PaymentGatewayStatusPaid, PaidAmount: payment.Amount}, nil)
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).
+			Return(domain.Transaction{Id: 99, Total: payment.Amount}, nil).Times(2)
+		expectConfirmPaymentWalletCredit(m)
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), payment.Id).
+			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) {
+				assert.Equal(t, domain.PaymentStatePaid, p.Status)
+				assert.Nil(t, p.CancelReason)
+				return p, nil
+			})
+		m.cartRepo.EXPECT().GetCartById(gomock.Any(), payment.CartId).
+			Return(domain.Cart{Id: 1, Status: domain.CartStatusActive}, nil)
+		m.cartRepo.EXPECT().UpdateCartById(gomock.Any(), gomock.Any(), int64(1)).
+			DoAndReturn(func(_ context.Context, cart domain.Cart, id int64) (domain.Cart, *domain.Error) {
+				assert.Equal(t, domain.CartStatusConverted, cart.Status)
+				return cart, nil
+			})
+		m.paymentRepo.EXPECT().GetPendingPaymentByCartId(gomock.Any(), payment.CartId).
+			Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
+
+		result, _, err := m.usecaseWithCancelEnabled().CancelPayment(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+
+		assert.Nil(t, err)
+		assert.Equal(t, domain.PaymentStatePaid, result.Status)
+	})
+
+	t.Run("a doku query error is logged and the cancel proceeds anyway (D4)", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		withPaymentTransactionMock(m.paymentRepo)
+
+		payment := pendingPaymentFixture()
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.gatewayRepo.EXPECT().QueryQris(gomock.Any(), gomock.Any()).
+			Return(domain.QrisStatus{}, &domain.Error{Type: domain.BadGateway, Message: "doku is unreachable"})
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), payment.Id).
+			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) {
+				assert.Equal(t, domain.PaymentStateCancelled, p.Status)
+				return p, nil
+			})
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil).Times(2)
+		m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), int64(99)).Return(nil)
+
+		result, _, err := m.usecaseWithCancelEnabled().CancelPayment(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+
+		assert.Nil(t, err)
+		assert.Equal(t, domain.PaymentStateCancelled, result.Status)
+	})
+
+	for _, tt := range []struct {
+		name   string
+		status domain.PaymentState
+	}{
+		{"an already-paid payment", domain.PaymentStatePaid},
+		{"an already-expired payment", domain.PaymentStateExpired},
+		{"an already-failed payment", domain.PaymentStateFailed},
+		{"an already-cancelled payment", domain.PaymentStateCancelled},
+	} {
+		t.Run(tt.name+" is returned unchanged (D3, idempotent)", func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			m := newPaymentUsecaseMocks(ctrl)
+			withPaymentTransactionMock(m.paymentRepo)
+
+			payment := pendingPaymentFixture()
+			payment.Status = tt.status
+			m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+			m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil)
+
+			result, _, err := m.usecaseWithCancelEnabled().CancelPayment(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+
+			assert.Nil(t, err)
+			assert.Equal(t, payment, result)
+		})
+	}
+
+	t.Run("the cart row is never touched by a cancel (D2)", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		withPaymentTransactionMock(m.paymentRepo)
+
+		payment := pendingCashPaymentFixture()
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), payment.Id).
+			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) { return p, nil })
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil).Times(2)
+		m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), int64(99)).Return(nil)
+		m.cartRepo.EXPECT().GetCartById(gomock.Any(), gomock.Any()).Times(0)
+		m.cartRepo.EXPECT().UpdateCartById(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+
+		_, _, err := m.usecaseWithCancelEnabled().CancelPayment(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+
+		assert.Nil(t, err)
+	})
+}
+
+func TestPaymentUsecase_CanCancel(t *testing.T) {
+	t.Run("false when the flag is off even for the owner of a pending payment", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		payment := pendingPaymentFixture()
+
+		assert.False(t, m.usecase().CanCancel(payment, payment.SessionId))
+	})
+
+	t.Run("true for the owner of a pending payment when the flag is on", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		payment := pendingPaymentFixture()
+
+		assert.True(t, m.usecaseWithCancelEnabled().CanCancel(payment, payment.SessionId))
+	})
+
+	t.Run("false for a foreign session even when the flag is on", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		payment := pendingPaymentFixture()
+
+		assert.False(t, m.usecaseWithCancelEnabled().CanCancel(payment, "someone-elses-session"))
+	})
+
+	t.Run("false for a payment that already left pending, even for the owner with the flag on", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		payment := pendingPaymentFixture()
+		payment.Status = domain.PaymentStatePaid
+
+		assert.False(t, m.usecaseWithCancelEnabled().CanCancel(payment, payment.SessionId))
 	})
 }
 
