@@ -83,7 +83,7 @@ func (usecase PaymentUsecase) validateOrderPaymentWallet(ctx context.Context) *E
 	return ValidateOrderPaymentWallet(wallet)
 }
 
-func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, customerName string, customerWhatsappNumber string, method PaymentMethod) (Payment, Transaction, *Error) {
+func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, customerName string, customerWhatsappNumber string, method PaymentMethod, diningOption DiningOption) (Payment, Transaction, *Error) {
 	var resultPayment Payment
 	var resultTransaction Transaction
 	enqueuedCashPendingNotification := false
@@ -91,6 +91,10 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 	err := usecase.paymentRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 		if err := usecase.validateOrderPaymentWallet(ctxWithTx); err != nil {
 			return err
+		}
+
+		if !diningOption.IsValid() {
+			return &Error{Type: BadRequest, Message: "invalid dining option"}
 		}
 
 		// FR-2/D5: absent (empty) is left nil so the customer's stored number and an
@@ -145,6 +149,16 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 				return updateErr
 			}
 
+			// D8: a guest who backs out and switches dining option must be heard the same way as
+			// FR-3's WhatsApp number — but only a non-empty, changed value writes, so a retry from
+			// an old client that never sends the field can't clobber an earlier takeaway choice.
+			if diningOption != "" && diningOption != transaction.DiningOption {
+				if updateErr := usecase.transactionRepository.UpdateTransactionDiningOptionById(ctxWithTx, transaction.Id, diningOption); updateErr != nil {
+					return updateErr
+				}
+				transaction.DiningOption = diningOption
+			}
+
 			resultPayment = updatedPayment
 			resultTransaction = transaction
 			return nil
@@ -180,6 +194,7 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 		createdTransaction, err := usecase.transactionRepository.CreateTransaction(ctxWithTx, Transaction{
 			Name:               customer.Name,
 			Source:             TransactionSourceOrder,
+			DiningOption:       diningOption,
 			CartId:             &cart.Id,
 			PagerNumber:        0,
 			Total:              total,

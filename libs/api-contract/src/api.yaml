@@ -5173,6 +5173,8 @@ components:
         method:
           type: string
           enum: [qris, cash]
+        diningOption:
+          $ref: '#/components/schemas/DiningOption'
     DokuNotificationRequest:
       type: object
       required:
@@ -5508,6 +5510,7 @@ components:
         - amount
         - itemCount
         - createdAt
+        - diningOption
       properties:
         partnerReferenceNo:
           type: string
@@ -5538,6 +5541,8 @@ components:
         paidAt:
           type: string
           format: date-time
+        diningOption:
+          $ref: '#/components/schemas/DiningOption'
     PaymentListResponse:
       type: object
       required:

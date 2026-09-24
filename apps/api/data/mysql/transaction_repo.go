@@ -253,6 +253,14 @@ func (repo Repository) UndeleteTransactionById(ctx context.Context, id int64) *d
 	return ToErrorCtx(ctx, result.Error, "UndeleteTransactionById")
 }
 
+// UpdateTransactionDiningOptionById is D8's narrow write for the order-checkout reuse branch:
+// one column, not the general UpdateTransactionById's item/coupon re-diff.
+func (repo Repository) UpdateTransactionDiningOptionById(ctx context.Context, id int64, diningOption domain.DiningOption) *domain.Error {
+	db := GetDbFromCtx(ctx, repo.db)
+	result := db.Table("transactions").Where("id = ?", id).Update("dining_option", string(diningOption))
+	return ToErrorCtx(ctx, result.Error, "UpdateTransactionDiningOptionById")
+}
+
 func (repo Repository) PayTransaction(ctx context.Context, walletId int64, paidAt time.Time, paidAmount float32, id int64) *domain.Error {
 	db := GetDbFromCtx(ctx, repo.db)
 	result := db.Table("transactions").Where("id = ?", id).Updates(Transaction{WalletId: &walletId, PaidAt: &paidAt, PaidAmount: paidAmount})

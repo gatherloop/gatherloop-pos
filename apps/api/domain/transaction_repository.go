@@ -16,6 +16,7 @@ type TransactionRepository interface {
 	UpdateTransactionById(ctx context.Context, transaction Transaction, id int64) (Transaction, *Error)
 	DeleteTransactionById(ctx context.Context, id int64) *Error
 	UndeleteTransactionById(ctx context.Context, id int64) *Error
+	UpdateTransactionDiningOptionById(ctx context.Context, id int64, diningOption DiningOption) *Error
 	PayTransaction(ctx context.Context, walletId int64, paidAt time.Time, paidAmount float32, id int64) *Error
 	UnpayTransaction(ctx context.Context, id int64) *Error
 	CompleteTransaction(ctx context.Context, completedAt time.Time, id int64) *Error

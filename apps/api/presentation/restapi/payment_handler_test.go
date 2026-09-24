@@ -96,6 +96,11 @@ func checkoutRequestBodyWithWhatsappNumber(customerName string, whatsappNumber s
 	return bytes.NewBuffer(body)
 }
 
+func checkoutRequestBodyWithDiningOption(customerName string, diningOption apiContract.DiningOption) *bytes.Buffer {
+	body, _ := json.Marshal(apiContract.PaymentCheckoutRequest{CustomerName: customerName, DiningOption: &diningOption})
+	return bytes.NewBuffer(body)
+}
+
 func TestPaymentHandler_Checkout(t *testing.T) {
 	t.Run("a successful checkout returns the payment with its QR", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
@@ -315,6 +320,76 @@ func TestPaymentHandler_Checkout(t *testing.T) {
 		assert.Equal(t, "", resp.Data.QrContent)
 		assert.Equal(t, "pending", resp.Data.Status)
 		assert.Equal(t, "cash", resp.Data.Method)
+	})
+
+	t.Run("a takeaway checkout creates a takeaway transaction", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentHandlerMocks(ctrl)
+		withPaymentHandlerTransactionMock(m.paymentRepo)
+		expectValidPaymentWallet(m)
+
+		m.customerRepo.EXPECT().UpsertCustomerBySessionId(gomock.Any(), testSessionId, "Budi", nil).
+			Return(domain.Customer{Id: 1, SessionId: testSessionId, Name: "Budi"}, nil)
+
+		tableId := int64(5)
+		m.cartRepo.EXPECT().GetActiveCartBySessionId(gomock.Any(), testSessionId).Return(domain.Cart{
+			Id: 1, TableId: &tableId, Status: domain.CartStatusActive,
+			Items: []domain.CartItem{{Id: 1, VariantId: 10, Amount: 1}},
+		}, nil)
+		m.paymentRepo.EXPECT().GetPendingPaymentByCartId(gomock.Any(), int64(1)).Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
+		m.variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(10)).Return(domain.Variant{
+			Id: 10, Price: 15000, Product: domain.Product{Name: "Kopi Susu"},
+		}, nil)
+		expectAvailableHandlerVariant(m, 10)
+
+		m.transactionRepo.EXPECT().CreateTransaction(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(_ context.Context, transaction domain.Transaction) (domain.Transaction, *domain.Error) {
+				assert.Equal(t, domain.DiningOptionTakeaway, transaction.DiningOption)
+				transaction.Id = 200
+				transaction.Cart = &domain.Cart{Table: &domain.Table{Label: "Meja 1"}}
+				return transaction, nil
+			})
+		m.paymentRepo.EXPECT().CreatePayment(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(_ context.Context, payment domain.Payment) (domain.Payment, *domain.Error) {
+				payment.Id = 300
+				return payment, nil
+			})
+		m.gatewayRepo.EXPECT().GenerateQris(gomock.Any(), gomock.Any()).
+			Return(domain.QrisPayment{GatewayReferenceNo: "gw-1", QrContent: "qr-content"}, nil)
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), int64(300)).
+			DoAndReturn(func(_ context.Context, payment domain.Payment, id int64) (domain.Payment, *domain.Error) {
+				return payment, nil
+			})
+
+		req := httptest.NewRequest(http.MethodPost, "/carts/current/checkout", checkoutRequestBodyWithDiningOption("Budi", apiContract.TAKEAWAY))
+		req.Header.Set("X-Session-Id", testSessionId)
+		w := httptest.NewRecorder()
+		m.handler().Checkout(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+	})
+
+	// The generated PaymentCheckoutRequest.DiningOption field decodes through the
+	// contract's DiningOption type, which rejects an unknown value before the handler
+	// ever reaches the domain's own D9 validation.
+	t.Run("an invalid diningOption is a 400", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentHandlerMocks(ctrl)
+
+		req := httptest.NewRequest(http.MethodPost, "/carts/current/checkout", checkoutRequestBodyWithDiningOption("Budi", "delivery"))
+		req.Header.Set("X-Session-Id", testSessionId)
+		w := httptest.NewRecorder()
+		m.handler().Checkout(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+
+		var apiErr apiContract.Error
+		assert.NoError(t, json.NewDecoder(bytes.NewBufferString(w.Body.String())).Decode(&apiErr))
+		assert.Equal(t, apiContract.BAD_REQUEST, apiErr.Code)
 	})
 }
 
@@ -824,8 +899,8 @@ func TestPaymentHandler_GetPaymentList(t *testing.T) {
 		m.paymentRepo.EXPECT().GetPaymentsBySessionIdTotal(gomock.Any(), testSessionId).Return(int64(2), nil)
 		m.transactionRepo.EXPECT().GetTransactionSummariesByIds(gomock.Any(), []int64{transactionId2, transactionId1}).
 			Return([]domain.TransactionSummary{
-				{Id: transactionId2, TransactionNumber: 2, Name: "Budi", TableLabel: "Meja 1", ItemCount: 1},
-				{Id: transactionId1, TransactionNumber: 1, Name: "Andi", TableLabel: "Meja 3", ItemCount: 3},
+				{Id: transactionId2, TransactionNumber: 2, Name: "Budi", TableLabel: "Meja 1", ItemCount: 1, DiningOption: domain.DiningOptionTakeaway},
+				{Id: transactionId1, TransactionNumber: 1, Name: "Andi", TableLabel: "Meja 3", ItemCount: 3, DiningOption: domain.DiningOptionDineIn},
 			}, nil)
 
 		req := httptest.NewRequest(http.MethodGet, "/payments", nil)
@@ -840,8 +915,10 @@ func TestPaymentHandler_GetPaymentList(t *testing.T) {
 		assert.Len(t, resp.Data, 2)
 		assert.Equal(t, "ORD2", resp.Data[0].PartnerReferenceNo)
 		assert.Equal(t, "Budi", resp.Data[0].CustomerName)
+		assert.Equal(t, apiContract.TAKEAWAY, resp.Data[0].DiningOption)
 		assert.Equal(t, "ORD1", resp.Data[1].PartnerReferenceNo)
 		assert.Equal(t, "Andi", resp.Data[1].CustomerName)
+		assert.Equal(t, apiContract.DINE_IN, resp.Data[1].DiningOption)
 	})
 
 	t.Run("an invalid limit is a 400", func(t *testing.T) {

@@ -143,6 +143,7 @@ type PaymentSummary struct {
 	CreatedAt          time.Time
 	PaidAt             *time.Time
 	CompletedAt        *time.Time
+	DiningOption       DiningOption
 }
 
 func ToPaymentSummary(payment Payment, transaction TransactionSummary) PaymentSummary {
@@ -158,6 +159,7 @@ func ToPaymentSummary(payment Payment, transaction TransactionSummary) PaymentSu
 		CreatedAt:          payment.CreatedAt,
 		PaidAt:             payment.PaidAt,
 		CompletedAt:        transaction.CompletedAt,
+		DiningOption:       transaction.DiningOption,
 	}
 }
 
