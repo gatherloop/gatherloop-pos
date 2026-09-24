@@ -8,6 +8,7 @@ const meta: Meta<typeof PendingPaymentNotice> = {
     onContinuePress: () => {
       // Storybook action stand-in
     },
+    cancelAction: null,
   },
 };
 
@@ -15,3 +16,14 @@ export default meta;
 type Story = StoryObj<typeof PendingPaymentNotice>;
 
 export const Default: Story = {};
+
+export const WithCancelAction: Story = {
+  args: {
+    cancelAction: {
+      label: 'Batalkan pembayaran',
+      onPress: () => {
+        // Storybook action stand-in
+      },
+    },
+  },
+};

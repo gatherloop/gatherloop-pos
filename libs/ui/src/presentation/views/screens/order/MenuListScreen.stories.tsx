@@ -74,6 +74,17 @@ const meta: Meta<typeof MenuListScreen> = {
     startingPriceByProductId: { 1: 18000, 2: 25000 },
     matchedLabelsByProductId: {},
     itemDetail: null,
+    cancelConfirmation: {
+      isOpen: false,
+      method: 'qris',
+      isCancelling: false,
+      onConfirm: () => {
+        // Storybook action stand-in
+      },
+      onDismiss: () => {
+        // Storybook action stand-in
+      },
+    },
   },
 };
 
@@ -147,44 +158,83 @@ export const WithPreparingBadge: Story = {
   },
 };
 
+const itemSheetOpenItemDetail = {
+  isOpen: true as const,
+  onOpenChange: () => {
+    // Storybook action stand-in
+  },
+  variant: {
+    type: 'ready' as const,
+    product: esKopiSusu,
+    price: 18000,
+    variantErrorMessage: null,
+    isVariantSellable: true,
+  },
+  selectedOptionValueIds: [],
+  onSelectOptionValue: () => {
+    // Storybook action stand-in
+  },
+  optionValueAvailability: {},
+  amount: 1,
+  onAmountChange: () => {
+    // Storybook action stand-in
+  },
+  note: '',
+  onNoteChange: () => {
+    // Storybook action stand-in
+  },
+  ctaState: 'incomplete' as const,
+  missingOptionNames: [],
+  validationMessage: null,
+  onAddToCartPress: () => {
+    // Storybook action stand-in
+  },
+  onRetryButtonPress: () => {
+    // Storybook action stand-in
+  },
+  lockedNotice: null,
+};
+
 export const ItemSheetOpen: Story = {
   args: {
     ...Loaded.args,
+    itemDetail: itemSheetOpenItemDetail,
+  },
+};
+
+export const ItemSheetLockedWithCancelOption: Story = {
+  args: {
+    ...ItemSheetOpen.args,
     itemDetail: {
+      ...itemSheetOpenItemDetail,
+      lockedNotice: {
+        onContinuePress: () => {
+          // Storybook action stand-in
+        },
+        cancelAction: {
+          label: 'Batalkan & tambah item',
+          onPress: () => {
+            // Storybook action stand-in
+          },
+        },
+      },
+    },
+  },
+};
+
+export const ConfirmingCancelAndAdd: Story = {
+  args: {
+    ...ItemSheetLockedWithCancelOption.args,
+    cancelConfirmation: {
       isOpen: true,
-      onOpenChange: () => {
+      method: 'qris',
+      isCancelling: false,
+      onConfirm: () => {
         // Storybook action stand-in
       },
-      variant: {
-        type: 'ready',
-        product: esKopiSusu,
-        price: 18000,
-        variantErrorMessage: null,
-        isVariantSellable: true,
-      },
-      selectedOptionValueIds: [],
-      onSelectOptionValue: () => {
+      onDismiss: () => {
         // Storybook action stand-in
       },
-      optionValueAvailability: {},
-      amount: 1,
-      onAmountChange: () => {
-        // Storybook action stand-in
-      },
-      note: '',
-      onNoteChange: () => {
-        // Storybook action stand-in
-      },
-      ctaState: 'incomplete',
-      missingOptionNames: [],
-      validationMessage: null,
-      onAddToCartPress: () => {
-        // Storybook action stand-in
-      },
-      onRetryButtonPress: () => {
-        // Storybook action stand-in
-      },
-      lockedNotice: null,
     },
   },
 };

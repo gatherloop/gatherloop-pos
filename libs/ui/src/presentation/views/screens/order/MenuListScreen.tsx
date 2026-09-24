@@ -7,6 +7,10 @@ import { EmptyView } from '../../components/base/EmptyView';
 import { ErrorView } from '../../components/base/ErrorView';
 import { Focusable } from '../../components/base/Focusable';
 import { SkeletonList } from '../../components/base/SkeletonView';
+import {
+  PaymentCancelAlert,
+  PaymentCancelAlertProps,
+} from '../../components/checkout/PaymentCancelAlert';
 import { CategoryChipList } from '../../components/menu/CategoryChipList';
 import { MenuProductCard } from '../../components/menu/MenuProductCard';
 import {
@@ -44,6 +48,7 @@ export type MenuListScreenProps = {
   startingPriceByProductId: Record<number, number>;
   matchedLabelsByProductId: Record<number, string[]>;
   itemDetail: (MenuItemDetailScreenProps & { isOpen: true }) | null;
+  cancelConfirmation: PaymentCancelAlertProps;
 };
 
 export const MenuListScreen = ({
@@ -64,6 +69,7 @@ export const MenuListScreen = ({
   startingPriceByProductId,
   matchedLabelsByProductId,
   itemDetail,
+  cancelConfirmation,
 }: MenuListScreenProps) => {
   return (
     <TableResolveScreen
@@ -155,6 +161,7 @@ export const MenuListScreen = ({
       </YStack>
 
       {itemDetail && <MenuItemDetailScreen {...itemDetail} />}
+      <PaymentCancelAlert {...cancelConfirmation} />
     </TableResolveScreen>
   );
 };

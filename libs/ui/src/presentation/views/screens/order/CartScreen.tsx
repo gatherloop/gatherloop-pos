@@ -16,6 +16,10 @@ import {
   CustomerDetailsSheetProps,
 } from '../../components/checkout/CustomerDetailsSheet';
 import {
+  PaymentCancelAlert,
+  PaymentCancelAlertProps,
+} from '../../components/checkout/PaymentCancelAlert';
+import {
   CartItemEditScreen,
   CartItemEditScreenProps,
 } from './CartItemEditScreen';
@@ -55,6 +59,7 @@ export type CartScreenProps = {
   onCheckoutRetryPress: () => void;
   detailsSheet: (CustomerDetailsSheetProps & { isOpen: true }) | null;
   lockedNotice: PendingPaymentNoticeProps | null;
+  cancelConfirmation: PaymentCancelAlertProps;
 };
 
 export const CartScreen = ({
@@ -82,6 +87,7 @@ export const CartScreen = ({
   onCheckoutRetryPress,
   detailsSheet,
   lockedNotice,
+  cancelConfirmation,
 }: CartScreenProps) => {
   const footer =
     variant.type === 'loaded' ? (
@@ -242,6 +248,7 @@ export const CartScreen = ({
           onConfirm={onClearConfirm}
           onCancel={onClearCancel}
         />
+        <PaymentCancelAlert {...cancelConfirmation} />
       </YStack>
 
       {itemEdit && <CartItemEditScreen {...itemEdit} />}

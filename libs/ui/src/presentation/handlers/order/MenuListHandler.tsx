@@ -5,6 +5,7 @@ import { Category } from '../../../domain/entities/Category';
 import { Product } from '../../../domain/entities/Product';
 import { Variant } from '../../../domain/entities/Variant';
 import { CartRepository } from '../../../domain/repositories/cart';
+import { PaymentRepository } from '../../../domain/repositories/payment';
 import { SessionRepository } from '../../../domain/repositories/session';
 import { CartUsecase } from '../../../domain/usecases/cart';
 import {
@@ -12,6 +13,7 @@ import {
   MenuItemDetailUsecase,
 } from '../../../domain/usecases/menuItemDetail';
 import { MenuListUsecase } from '../../../domain/usecases/menuList';
+import { PaymentCancelUsecase } from '../../../domain/usecases/paymentCancel';
 import { TableResolveUsecase } from '../../../domain/usecases/tableResolve';
 import {
   matchMenuSearch,
@@ -21,6 +23,7 @@ import { CartBar } from '../../views/components/cart/CartBar';
 import { PendingPaymentBar } from '../../views/components/cart/PendingPaymentBar';
 import { useUsecase } from '../hooks/useUsecase';
 import { useCart } from '../hooks/useCart';
+import { usePaymentCancel } from '../hooks/usePaymentCancel';
 import { useTableResolve } from '../hooks/useTableResolve';
 import { MenuItemDetailScreenProps } from '../../views/screens/order/MenuItemDetailScreen';
 import {
@@ -35,6 +38,7 @@ export type MenuListHandlerProps = {
   menuItemDetailUsecase: MenuItemDetailUsecase;
   cartUsecase: CartUsecase;
   cartRepository: CartRepository;
+  paymentRepository: PaymentRepository;
   sessionRepository: SessionRepository;
   tableCode: string;
   preparingCount?: number;
@@ -186,6 +190,7 @@ export const MenuListHandler = ({
   menuItemDetailUsecase,
   cartUsecase,
   cartRepository,
+  paymentRepository,
   sessionRepository,
   tableCode,
   preparingCount,
@@ -198,6 +203,68 @@ export const MenuListHandler = ({
   const [validationErrorProductId, setValidationErrorProductId] = useState<
     number | null
   >(null);
+
+  const currentCart = cart.state.cart;
+  const pendingPayment = currentCart?.pendingPayment ?? null;
+
+  const [paymentCancelUsecase, setPaymentCancelUsecase] = useState(
+    () =>
+      new PaymentCancelUsecase(paymentRepository, {
+        reference: pendingPayment?.partnerReferenceNo ?? '',
+        method: pendingPayment?.method ?? 'qris',
+      })
+  );
+
+  if (
+    pendingPayment &&
+    (pendingPayment.partnerReferenceNo !==
+      paymentCancelUsecase.params.reference ||
+      pendingPayment.method !== paymentCancelUsecase.params.method)
+  ) {
+    setPaymentCancelUsecase(
+      new PaymentCancelUsecase(paymentRepository, {
+        reference: pendingPayment.partnerReferenceNo,
+        method: pendingPayment.method,
+      })
+    );
+  }
+
+  const paymentCancel = usePaymentCancel(paymentCancelUsecase);
+  const handledCancelResultRef = useRef<
+    typeof paymentCancel.state.result
+  >(null);
+  const isAddAfterCancelPendingRef = useRef(false);
+
+  useEffect(() => {
+    if (
+      paymentCancel.state.type !== 'settled' ||
+      !paymentCancel.state.result ||
+      handledCancelResultRef.current === paymentCancel.state.result
+    ) {
+      return;
+    }
+    handledCancelResultRef.current = paymentCancel.state.result;
+
+    if (paymentCancel.state.result.status === 'paid') {
+      router.push(`/orders/${paymentCancel.state.result.reference}`);
+    } else {
+      isAddAfterCancelPendingRef.current = true;
+      cart.dispatch({ type: 'FETCH' });
+    }
+  }, [paymentCancel.state, router, cart.dispatch]);
+
+  useEffect(() => {
+    if (!isAddAfterCancelPendingRef.current || cart.state.type !== 'loaded') {
+      return;
+    }
+
+    isAddAfterCancelPendingRef.current = false;
+    const { variant, amount, note } = menuItemDetail.state;
+    if (variant) {
+      cart.dispatch({ type: 'ADD_ITEM', variantId: variant.id, amount, note });
+    }
+    menuList.dispatch({ type: 'CLEAR_ITEM' });
+  }, [cart.state.type, cart.dispatch, menuItemDetail.state, menuList.dispatch]);
 
   useEffect(() => {
     if (tableResolve.state.type === 'resolved' && tableResolve.state.code) {
@@ -262,9 +329,6 @@ export const MenuListHandler = ({
     menuList.state.products,
     menuList.state.variants
   );
-
-  const currentCart = cart.state.cart;
-  const pendingPayment = currentCart?.pendingPayment ?? null;
 
   const footer = pendingPayment ? (
     <PendingPaymentBar
@@ -341,9 +405,26 @@ export const MenuListHandler = ({
             ? {
                 onContinuePress: () =>
                   router.push(`/orders/${pendingPayment.partnerReferenceNo}`),
+                cancelAction: pendingPayment.canCancel
+                  ? {
+                      label: 'Batalkan & tambah item',
+                      onPress: () =>
+                        paymentCancel.dispatch({ type: 'REQUEST' }),
+                    }
+                  : null,
               }
             : null,
         };
+
+  const cancelConfirmation = {
+    isOpen:
+      paymentCancel.state.type === 'confirming' ||
+      paymentCancel.state.type === 'cancelling',
+    method: paymentCancel.state.method,
+    isCancelling: paymentCancel.state.type === 'cancelling',
+    onConfirm: () => paymentCancel.dispatch({ type: 'CONFIRM' }),
+    onDismiss: () => paymentCancel.dispatch({ type: 'DISMISS' }),
+  };
 
   return (
     <MenuListScreen
@@ -418,6 +499,7 @@ export const MenuListHandler = ({
         .with({ type: 'error' }, () => ({ type: 'error' }))
         .exhaustive()}
       itemDetail={itemDetail}
+      cancelConfirmation={cancelConfirmation}
     />
   );
 };

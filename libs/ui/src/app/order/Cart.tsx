@@ -53,6 +53,7 @@ export function Cart({
       cartUsecase={cartUsecase}
       checkoutUsecase={checkoutUsecase}
       sessionRepository={sessionRepository}
+      paymentRepository={paymentRepository}
       enabled={enabled}
       isCashPaymentEnabled={isCashPaymentEnabled}
       cashierLocation={cashierLocation}
