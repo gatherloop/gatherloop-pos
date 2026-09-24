@@ -241,6 +241,15 @@ func TestTransactionUsecase_CreateTransaction(t *testing.T) {
 			expectedError: &domain.Error{Type: domain.NotFound},
 		},
 		{
+			name: "rejects an invalid dining option",
+			input: domain.Transaction{
+				DiningOption: "delivery",
+			},
+			setupMock: func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, availabilityRepo *mock.MockAvailabilityReservationRepository) {
+			},
+			expectedError: &domain.Error{Type: domain.BadRequest},
+		},
+		{
 			name: "rejects a per-variant shortfall",
 			input: domain.Transaction{
 				TransactionItems: []domain.TransactionItem{
@@ -1881,6 +1890,16 @@ func TestTransactionUsecase_UpdateTransactionById(t *testing.T) {
 					Id: 1, Name: "Choco", IsAvailable: true, AvailableQuantity: intPtr(2),
 					Product: domain.Product{Name: "Soft Cookies", IsAvailable: true, AvailabilityTracking: domain.AvailabilityTrackingVariant},
 				}, nil)
+			},
+			expectedError: &domain.Error{Type: domain.BadRequest},
+		},
+		{
+			name: "rejects an invalid dining option",
+			id:   8,
+			input: domain.Transaction{
+				DiningOption: "delivery",
+			},
+			setupMock: func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, availabilityRepo *mock.MockAvailabilityReservationRepository) {
 			},
 			expectedError: &domain.Error{Type: domain.BadRequest},
 		},

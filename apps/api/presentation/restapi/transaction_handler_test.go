@@ -101,7 +101,7 @@ func TestTransactionHandler_GetTransactionList(t *testing.T) {
 func TestTransactionHandler_GetTransactionList_SerializesSource(t *testing.T) {
 	handler, ctrl := newTransactionHandler(t, func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository) {
 		txRepo.EXPECT().GetTransactionList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-			Return([]domain.Transaction{{Id: 1, Source: domain.TransactionSourcePos}}, nil)
+			Return([]domain.Transaction{{Id: 1, Source: domain.TransactionSourcePos, DiningOption: domain.DiningOptionDineIn}}, nil)
 		txRepo.EXPECT().GetTransactionListTotal(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(1), nil)
 	})
 	defer ctrl.Finish()
@@ -131,17 +131,17 @@ func TestTransactionHandler_GetTransactionList_SerializesPaymentMethod(t *testin
 	}{
 		{
 			name:                  "a POS transaction has no linked payment",
-			transaction:           domain.Transaction{Id: 1, Source: domain.TransactionSourcePos},
+			transaction:           domain.Transaction{Id: 1, Source: domain.TransactionSourcePos, DiningOption: domain.DiningOptionDineIn},
 			expectedPaymentMethod: nil,
 		},
 		{
 			name:                  "a cash order transaction reports cash",
-			transaction:           domain.Transaction{Id: 2, Source: domain.TransactionSourceOrder, PaymentMethod: &cash},
+			transaction:           domain.Transaction{Id: 2, Source: domain.TransactionSourceOrder, DiningOption: domain.DiningOptionDineIn, PaymentMethod: &cash},
 			expectedPaymentMethod: strPtr("cash"),
 		},
 		{
 			name:                  "a QRIS order transaction reports qris",
-			transaction:           domain.Transaction{Id: 3, Source: domain.TransactionSourceOrder, PaymentMethod: &qris},
+			transaction:           domain.Transaction{Id: 3, Source: domain.TransactionSourceOrder, DiningOption: domain.DiningOptionDineIn, PaymentMethod: &qris},
 			expectedPaymentMethod: strPtr("qris"),
 		},
 	}
@@ -177,7 +177,7 @@ func TestTransactionHandler_GetTransactionList_FilterBySource(t *testing.T) {
 
 	handler, ctrl := newTransactionHandler(t, func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository) {
 		txRepo.EXPECT().GetTransactionList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), &orderSource, nil).
-			Return([]domain.Transaction{{Id: 2, Source: domain.TransactionSourceOrder}}, nil)
+			Return([]domain.Transaction{{Id: 2, Source: domain.TransactionSourceOrder, DiningOption: domain.DiningOptionDineIn}}, nil)
 		txRepo.EXPECT().GetTransactionListTotal(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), &orderSource, nil).Return(int64(1), nil)
 	})
 	defer ctrl.Finish()
@@ -326,6 +326,13 @@ func TestTransactionHandler_CreateTransaction(t *testing.T) {
 			},
 			expectedStatus: http.StatusNotFound,
 		},
+		{
+			name: "invalid dining option",
+			body: `{"name": "Order 1", "pagerNumber": 1, "diningOption": "delivery", "transactionItems": [], "transactionCoupons": []}`,
+			setupMocks: func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository) {
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
 	}
 
 	for _, tt := range tests {
@@ -350,6 +357,7 @@ func TestTransactionHandler_CreateTransaction_DefaultsToPos(t *testing.T) {
 			func(ctx context.Context, tx domain.Transaction) (domain.Transaction, *domain.Error) {
 				assert.Equal(t, domain.TransactionSourcePos, tx.Source)
 				tx.Id = 1
+				tx.DiningOption = domain.DiningOptionDineIn
 				return tx, nil
 			})
 	})
@@ -365,6 +373,60 @@ func TestTransactionHandler_CreateTransaction_DefaultsToPos(t *testing.T) {
 	var response apiContract.TransactionCreateResponse
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&response))
 	assert.Equal(t, "pos", response.Data.Source)
+}
+
+// FR-1/D5: the transformer maps an omitted request field to the domain zero value; the
+// repository (mocked here as a passthrough) is what actually applies the dine_in default.
+func TestTransactionHandler_CreateTransaction_DiningOptionRoundTrips(t *testing.T) {
+	tests := []struct {
+		name                 string
+		body                 string
+		expectedDiningOption domain.DiningOption
+	}{
+		{
+			name:                 "omitted defaults to empty, left for the repository to default",
+			body:                 `{"name": "Order 1", "pagerNumber": 1, "transactionItems": [], "transactionCoupons": []}`,
+			expectedDiningOption: "",
+		},
+		{
+			name:                 "takeaway is passed through",
+			body:                 `{"name": "Order 1", "pagerNumber": 1, "diningOption": "takeaway", "transactionItems": [], "transactionCoupons": []}`,
+			expectedDiningOption: domain.DiningOptionTakeaway,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			handler, ctrl := newTransactionHandler(t, func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, walletRepo *mock.MockWalletRepository) {
+				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				txRepo.EXPECT().CreateTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, tx domain.Transaction) (domain.Transaction, *domain.Error) {
+						assert.Equal(t, tt.expectedDiningOption, tx.DiningOption)
+						tx.Id = 1
+						if tx.DiningOption == "" {
+							tx.DiningOption = domain.DiningOptionDineIn
+						}
+						return tx, nil
+					})
+			})
+			defer ctrl.Finish()
+
+			req := httptest.NewRequest(http.MethodPost, "/transactions", bytes.NewBufferString(tt.body))
+			req.Header.Set("Content-Type", "application/json")
+			w := httptest.NewRecorder()
+			handler.CreateTransaction(w, req)
+
+			require.Equal(t, http.StatusOK, w.Code)
+			var response apiContract.TransactionCreateResponse
+			require.NoError(t, json.NewDecoder(w.Body).Decode(&response))
+			if tt.expectedDiningOption == "" {
+				assert.Equal(t, "dine_in", string(response.Data.DiningOption))
+			} else {
+				assert.Equal(t, string(tt.expectedDiningOption), string(response.Data.DiningOption))
+			}
+		})
+	}
 }
 
 func TestTransactionHandler_UpdateTransactionById(t *testing.T) {

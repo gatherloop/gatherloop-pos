@@ -4337,6 +4337,7 @@ components:
         - createdAt
         - name
         - source
+        - diningOption
         - pagerNumber
         - transactionNumber
         - total
@@ -4362,6 +4363,8 @@ components:
         source:
           type: string
           enum: [pos, order]
+        diningOption:
+          $ref: '#/components/schemas/DiningOption'
         paymentMethod:
           type: string
           enum: [qris, cash]
@@ -4408,6 +4411,8 @@ components:
         pagerNumber:
           type: integer
           format: int64
+        diningOption:
+          $ref: '#/components/schemas/DiningOption'
         transactionItems:
           type: array
           items:

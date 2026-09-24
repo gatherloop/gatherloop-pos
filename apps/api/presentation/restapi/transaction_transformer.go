@@ -128,6 +128,7 @@ func ToApiTransaction(transaction domain.Transaction) apiContract.Transaction {
 		Id:                 transaction.Id,
 		Name:               transaction.Name,
 		Source:             string(transaction.Source),
+		DiningOption:       apiContract.DiningOption(transaction.DiningOption),
 		Table:              table,
 		PaymentMethod:      paymentMethod,
 		PagerNumber:        transaction.PagerNumber,
@@ -175,9 +176,15 @@ func ToTransaction(transactionRequest apiContract.TransactionRequest) domain.Tra
 		})
 	}
 
+	var diningOption domain.DiningOption
+	if transactionRequest.DiningOption != nil {
+		diningOption = domain.DiningOption(*transactionRequest.DiningOption)
+	}
+
 	return domain.Transaction{
 		Name:               transactionRequest.Name,
 		PagerNumber:        transactionRequest.PagerNumber,
+		DiningOption:       diningOption,
 		TransactionItems:   transactionItems,
 		TransactionCoupons: transactionCoupons,
 	}
