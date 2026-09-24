@@ -114,6 +114,8 @@ export class OrderStatusUsecase extends Usecase<
       .with(
         [{ type: 'idle' }, { type: 'FETCH' }],
         [{ type: 'error' }, { type: 'FETCH' }],
+        [{ type: 'awaitingPayment' }, { type: 'FETCH' }],
+        [{ type: 'awaitingCashPayment' }, { type: 'FETCH' }],
         ([state]) => ({ ...state, type: 'loading', errorMessage: null })
       )
       .with(

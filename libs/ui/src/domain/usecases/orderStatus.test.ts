@@ -316,6 +316,33 @@ describe('OrderStatusUsecase', () => {
     const enterAwaitingPayment = (repository: MockPaymentRepository) =>
       createSeededTester(repository, repository.payment);
 
+    it('should transition to preparing on a FETCH issued after a guest cancel comes back paid', async () => {
+      const repository = new MockPaymentRepository();
+      const orderStatus = enterAwaitingPayment(repository);
+
+      repository.payment = {
+        ...repository.payment,
+        status: 'paid',
+        fulfillmentStatus: 'preparing',
+      };
+      orderStatus.dispatch({ type: 'FETCH' });
+      expect(orderStatus.state.type).toBe('loading');
+
+      await flushMicrotasks();
+      expect(orderStatus.state.type).toBe('preparing');
+    });
+
+    it('should transition to expired on a FETCH issued after a guest cancel comes back expired', async () => {
+      const repository = new MockPaymentRepository();
+      const orderStatus = enterAwaitingPayment(repository);
+
+      repository.payment = { ...repository.payment, status: 'expired' };
+      orderStatus.dispatch({ type: 'FETCH' });
+      await flushMicrotasks();
+
+      expect(orderStatus.state.type).toBe('expired');
+    });
+
     it('should transition to preparing on a POLL that reports paid but not yet ready', async () => {
       const repository = new MockPaymentRepository();
       const orderStatus = enterAwaitingPayment(repository);

@@ -64,6 +64,29 @@ describe('ConfirmationAlert', () => {
     expect(onCancel).toHaveBeenCalled();
   });
 
+  it('disables both buttons while isConfirming', () => {
+    render(
+      <ConfirmationAlert
+        title="Print Checkin Slip"
+        description="Do you want to print checkin slip ?"
+        isOpen
+        isConfirming
+        onOpenChange={jest.fn()}
+        onConfirm={jest.fn()}
+        onCancel={jest.fn()}
+      />
+    );
+
+    expect(
+      (screen.getByRole('button', { name: 'Yes' }) as HTMLButtonElement)
+        .disabled
+    ).toBe(true);
+    expect(
+      (screen.getByRole('button', { name: 'No' }) as HTMLButtonElement)
+        .disabled
+    ).toBe(true);
+  });
+
   describe('compact layout (media.sm true)', () => {
     beforeEach(() => {
       (useMedia as jest.Mock).mockReturnValue({ sm: true });

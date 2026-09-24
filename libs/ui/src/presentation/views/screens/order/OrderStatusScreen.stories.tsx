@@ -152,6 +152,18 @@ export const Loading: Story = {
   args: { variant: { type: 'loading' } },
 };
 
+const noopCancelConfirmation = {
+  isOpen: false,
+  method: 'qris' as const,
+  isCancelling: false,
+  onConfirm: () => {
+    // Storybook action stand-in
+  },
+  onDismiss: () => {
+    // Storybook action stand-in
+  },
+};
+
 export const AwaitingPayment: Story = {
   args: {
     variant: {
@@ -160,6 +172,93 @@ export const AwaitingPayment: Story = {
       onCountdownElapsed: () => {
         // Storybook action stand-in
       },
+      canCancel: true,
+      onCancelPress: () => {
+        // Storybook action stand-in
+      },
+      cancelConfirmation: noopCancelConfirmation,
+      cancelErrorMessage: null,
+    },
+  },
+};
+
+export const AwaitingPaymentCancelDisabled: Story = {
+  args: {
+    variant: {
+      type: 'awaitingPayment',
+      payment: pendingPayment,
+      onCountdownElapsed: () => {
+        // Storybook action stand-in
+      },
+      canCancel: false,
+      onCancelPress: () => {
+        // Storybook action stand-in
+      },
+      cancelConfirmation: noopCancelConfirmation,
+      cancelErrorMessage: null,
+    },
+  },
+};
+
+export const AwaitingPaymentConfirmingCancel: Story = {
+  args: {
+    variant: {
+      type: 'awaitingPayment',
+      payment: pendingPayment,
+      onCountdownElapsed: () => {
+        // Storybook action stand-in
+      },
+      canCancel: true,
+      onCancelPress: () => {
+        // Storybook action stand-in
+      },
+      cancelConfirmation: {
+        ...noopCancelConfirmation,
+        isOpen: true,
+        method: 'qris',
+      },
+      cancelErrorMessage: null,
+    },
+  },
+};
+
+export const AwaitingPaymentCancelling: Story = {
+  args: {
+    variant: {
+      type: 'awaitingPayment',
+      payment: pendingPayment,
+      onCountdownElapsed: () => {
+        // Storybook action stand-in
+      },
+      canCancel: true,
+      onCancelPress: () => {
+        // Storybook action stand-in
+      },
+      cancelConfirmation: {
+        ...noopCancelConfirmation,
+        isOpen: true,
+        isCancelling: true,
+        method: 'qris',
+      },
+      cancelErrorMessage: null,
+    },
+  },
+};
+
+export const AwaitingPaymentCancelError: Story = {
+  args: {
+    variant: {
+      type: 'awaitingPayment',
+      payment: pendingPayment,
+      onCountdownElapsed: () => {
+        // Storybook action stand-in
+      },
+      canCancel: true,
+      onCancelPress: () => {
+        // Storybook action stand-in
+      },
+      cancelConfirmation: noopCancelConfirmation,
+      cancelErrorMessage: 'Gagal membatalkan pembayaran. Silakan coba lagi.',
     },
   },
 };
@@ -173,6 +272,35 @@ export const AwaitingCashPayment: Story = {
       onCountdownElapsed: () => {
         // Storybook action stand-in
       },
+      canCancel: true,
+      onCancelPress: () => {
+        // Storybook action stand-in
+      },
+      cancelConfirmation: noopCancelConfirmation,
+      cancelErrorMessage: null,
+    },
+  },
+};
+
+export const AwaitingCashPaymentConfirmingCancel: Story = {
+  args: {
+    variant: {
+      type: 'awaitingCashPayment',
+      payment: pendingCashPayment,
+      cashierLocation: 'Lantai 1',
+      onCountdownElapsed: () => {
+        // Storybook action stand-in
+      },
+      canCancel: true,
+      onCancelPress: () => {
+        // Storybook action stand-in
+      },
+      cancelConfirmation: {
+        ...noopCancelConfirmation,
+        isOpen: true,
+        method: 'cash',
+      },
+      cancelErrorMessage: null,
     },
   },
 };
