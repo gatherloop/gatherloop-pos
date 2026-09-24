@@ -214,6 +214,23 @@ func TestTransactionRepository_UpdateTransactionById_DiningOption(t *testing.T) 
 	}
 }
 
+// D8: the order-checkout reuse branch's narrow write — one column, not the general
+// UpdateTransactionById's item/coupon re-diff.
+func TestTransactionRepository_UpdateTransactionDiningOptionById(t *testing.T) {
+	repo, mock := newMockTransactionRepository(t)
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE `transactions` SET `dining_option`=\\? WHERE id = \\?").
+		WithArgs("takeaway", int64(5)).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectCommit()
+
+	err := repo.UpdateTransactionDiningOptionById(context.Background(), 5, domain.DiningOptionTakeaway)
+
+	require.Nil(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
 func TestTransactionRepository_GetTransactionSummariesByIds_EmptyIdsShortCircuits(t *testing.T) {
 	repo, mock := newMockTransactionRepository(t)
 

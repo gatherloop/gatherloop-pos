@@ -244,3 +244,17 @@ func (mr *MockTransactionRepositoryMockRecorder) UpdateTransactionById(ctx, tran
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateTransactionById", reflect.TypeOf((*MockTransactionRepository)(nil).UpdateTransactionById), ctx, transaction, id)
 }
+
+// UpdateTransactionDiningOptionById mocks base method.
+func (m *MockTransactionRepository) UpdateTransactionDiningOptionById(ctx context.Context, id int64, diningOption domain.DiningOption) *domain.Error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateTransactionDiningOptionById", ctx, id, diningOption)
+	ret0, _ := ret[0].(*domain.Error)
+	return ret0
+}
+
+// UpdateTransactionDiningOptionById indicates an expected call of UpdateTransactionDiningOptionById.
+func (mr *MockTransactionRepositoryMockRecorder) UpdateTransactionDiningOptionById(ctx, id, diningOption any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateTransactionDiningOptionById", reflect.TypeOf((*MockTransactionRepository)(nil).UpdateTransactionDiningOptionById), ctx, id, diningOption)
+}

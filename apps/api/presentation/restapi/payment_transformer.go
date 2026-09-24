@@ -117,5 +117,6 @@ func ToApiPaymentSummary(summary domain.PaymentSummary) apiContract.PaymentSumma
 		ItemCount:          int64(summary.ItemCount),
 		CreatedAt:          summary.CreatedAt,
 		PaidAt:             summary.PaidAt,
+		DiningOption:       apiContract.DiningOption(summary.DiningOption),
 	}
 }
