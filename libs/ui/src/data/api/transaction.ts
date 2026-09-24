@@ -117,6 +117,7 @@ export class ApiTransactionRepository implements TransactionRepository {
     return transactionCreate({
       name: body.name,
       pagerNumber: body.pagerNumber,
+      diningOption: body.diningOption,
       transactionItems: body.transactionItems.map((item) => ({
         amount: item.amount,
         variantId: item.variantId,
