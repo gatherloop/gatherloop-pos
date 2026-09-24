@@ -121,6 +121,10 @@ func (usecase TransactionUsecase) UpdateTransactionById(ctx context.Context, tra
 			return &Error{Type: BadRequest, Message: "cannot update paid transaction"}
 		}
 
+		if existingTransaction.Source == TransactionSourceOrder {
+			return &Error{Type: BadRequest, Message: "cannot update transaction created from order app"}
+		}
+
 		existingItemsById := map[int64]TransactionItem{}
 		for _, existingItem := range existingTransaction.TransactionItems {
 			existingItemsById[existingItem.Id] = existingItem

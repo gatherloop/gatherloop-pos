@@ -212,7 +212,7 @@ export const TransactionListItem = ({
           title: 'Edit',
           icon: Pencil,
           onPress: onEditMenuPress,
-          isShown: paidAt === undefined,
+          isShown: paidAt === undefined && source !== 'order',
         },
         {
           title: 'Delete',

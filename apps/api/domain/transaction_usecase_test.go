@@ -1720,6 +1720,20 @@ func TestTransactionUsecase_UpdateTransactionById(t *testing.T) {
 			expectedError: &domain.Error{Type: domain.BadRequest},
 		},
 		{
+			name: "cannot update unpaid transaction created from order app",
+			id:   8,
+			input: domain.Transaction{
+				TransactionItems:   []domain.TransactionItem{{VariantId: 1, Amount: 2}},
+				TransactionCoupons: []domain.TransactionCoupon{},
+			},
+			setupMock: func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, availabilityRepo *mock.MockAvailabilityReservationRepository) {
+				txRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				txRepo.EXPECT().GetTransactionById(gomock.Any(), int64(8)).Return(domain.Transaction{Id: 8, PaidAt: nil, Source: domain.TransactionSourceOrder}, nil)
+			},
+			expectedError: &domain.Error{Type: domain.BadRequest},
+		},
+		{
 			name: "transaction not found",
 			id:   99,
 			setupMock: func(txRepo *mock.MockTransactionRepository, variantRepo *mock.MockVariantRepository, couponRepo *mock.MockCouponRepository, availabilityRepo *mock.MockAvailabilityReservationRepository) {
