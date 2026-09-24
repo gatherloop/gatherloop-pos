@@ -1,4 +1,4 @@
-import { Button } from 'tamagui';
+import { Button, XStack } from 'tamagui';
 import {
   Layout,
   TransactionList,
@@ -8,7 +8,7 @@ import {
   TransactionUnpayAlert,
 } from '../../components';
 import { Link } from 'solito/link';
-import { Plus } from '@tamagui/lucide-icons';
+import { Plus, RefreshCw } from '@tamagui/lucide-icons';
 import {
   Transaction,
   TransactionCompleteActionType,
@@ -30,6 +30,8 @@ export type TransactionListScreenProps = {
   onPrintInvoiceMenuPress: (transaction: Transaction) => void;
   onPrintOrderSlipMenuPress: (transaction: Transaction) => void;
   onRetryButtonPress: () => void;
+  onRefreshPress: () => void;
+  isRefreshButtonDisabled: boolean;
   variant: { type: 'loading' } | { type: 'loaded' } | { type: 'error' };
   transactions: Transaction[];
   searchValue: string;
@@ -84,6 +86,8 @@ export const TransactionListScreen = ({
   onPrintInvoiceMenuPress,
   onPrintOrderSlipMenuPress,
   onRetryButtonPress,
+  onRefreshPress,
+  isRefreshButtonDisabled,
   variant,
   transactions,
   searchValue,
@@ -130,9 +134,19 @@ export const TransactionListScreen = ({
       onLogoutPress={onLogoutPress}
       title="Transactions"
       rightActionItem={
-        <Link href="/transactions/create">
-          <Button size="$3" icon={Plus} variant="outlined" disabled />
-        </Link>
+        <XStack gap="$2">
+          <Button
+            size="$3"
+            icon={RefreshCw}
+            variant="outlined"
+            onPress={onRefreshPress}
+            disabled={isRefreshButtonDisabled}
+            accessibilityLabel="Refresh transactions"
+          />
+          <Link href="/transactions/create">
+            <Button size="$3" icon={Plus} variant="outlined" disabled />
+          </Link>
+        </XStack>
       }
     >
       <TransactionList
