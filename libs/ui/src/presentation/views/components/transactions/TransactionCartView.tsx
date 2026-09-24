@@ -4,6 +4,7 @@ import {
   FormErrorBanner,
   InputNumber,
   InputText,
+  SegmentedControl,
   Sheet,
   useIsCompactLayout,
 } from '../base';
@@ -68,6 +69,14 @@ export const TransactionCartView = ({
       </Field>
       <Field name="pagerNumber" label="Pager Number" flex={1}>
         <InputNumber />
+      </Field>
+      <Field name="diningOption" label="Dining Option" flex={1}>
+        <SegmentedControl
+          items={[
+            { label: 'Dine In', value: 'dine_in' },
+            { label: 'Takeaway', value: 'takeaway' },
+          ]}
+        />
       </Field>
 
       <YStack>

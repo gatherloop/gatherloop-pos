@@ -8,6 +8,7 @@ export * from './FormView';
 export * from './InputNumber';
 export * from './InputText';
 export * from './Select';
+export * from './SegmentedControl';
 export * from './Textarea';
 export * from './MarkdownEditor';
 export * from './Switch';
