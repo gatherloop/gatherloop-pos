@@ -1,6 +1,9 @@
-import { Button, Input, Paragraph, YStack } from 'tamagui';
+import { Button, Input, Paragraph, XStack, YStack } from 'tamagui';
 import { match } from 'ts-pattern';
-import { PaymentMethod } from '../../../../domain/entities/Payment';
+import {
+  PaymentDiningOption,
+  PaymentMethod,
+} from '../../../../domain/entities/Payment';
 import { Sheet } from '../base/Sheet';
 
 export type CustomerDetailsSheetProps = {
@@ -16,8 +19,16 @@ export type CustomerDetailsSheetProps = {
   isCashPaymentEnabled: boolean;
   method: PaymentMethod;
   onMethodChange: (method: PaymentMethod) => void;
+  diningOption: PaymentDiningOption;
+  onDiningOptionChange: (diningOption: PaymentDiningOption) => void;
   cashierLocation: string;
 };
+
+const diningOptionLabel = (diningOption: PaymentDiningOption) =>
+  match(diningOption)
+    .with('dine_in', () => 'Makan di sini')
+    .with('takeaway', () => 'Bawa pulang')
+    .exhaustive();
 
 const submitLabel = (method: PaymentMethod) =>
   match(method)
@@ -38,6 +49,8 @@ export const CustomerDetailsSheet = ({
   isCashPaymentEnabled,
   method,
   onMethodChange,
+  diningOption,
+  onDiningOptionChange,
   cashierLocation,
 }: CustomerDetailsSheetProps) => (
   <Sheet isOpen={isOpen} onOpenChange={(open) => !open && onCancelPress()}>
@@ -77,6 +90,27 @@ export const CustomerDetailsSheet = ({
           Nomor ini akan kami gunakan untuk mengabari Anda lewat WhatsApp saat
           pesanan siap diambil.
         </Paragraph>
+      </YStack>
+
+      <YStack gap="$2">
+        <Paragraph fontWeight="bold">
+          Makan di sini atau bawa pulang?
+        </Paragraph>
+        <XStack gap="$2">
+          {(['dine_in', 'takeaway'] as const).map((option) => (
+            <Button
+              key={option}
+              flex={1}
+              theme={diningOption === option ? 'blue' : undefined}
+              variant={diningOption === option ? undefined : 'outlined'}
+              minHeight={44}
+              accessibilityLabel={diningOptionLabel(option)}
+              onPress={() => onDiningOptionChange(option)}
+            >
+              {diningOptionLabel(option)}
+            </Button>
+          ))}
+        </XStack>
       </YStack>
 
       {isCashPaymentEnabled ? (
