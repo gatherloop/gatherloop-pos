@@ -13,6 +13,7 @@ import {
 const emptyValues: TransactionForm = {
   name: '',
   pagerNumber: 1,
+  diningOption: 'dine_in',
   transactionItems: [],
   transactionCoupons: [],
 };
@@ -20,6 +21,7 @@ const emptyValues: TransactionForm = {
 const filledValues: TransactionForm = {
   name: 'Order #001',
   pagerNumber: 1,
+  diningOption: 'dine_in',
   transactionItems: [
     {
       id: 1,
@@ -109,6 +111,14 @@ export const WithServerError: Story = {
     <TransactionCartStory
       defaultValues={emptyValues}
       serverError="Failed to submit. Please try again."
+    />
+  ),
+};
+
+export const TakeawaySelected: Story = {
+  render: () => (
+    <TransactionCartStory
+      defaultValues={{ ...emptyValues, diningOption: 'takeaway' }}
     />
   ),
 };

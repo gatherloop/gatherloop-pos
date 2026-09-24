@@ -119,6 +119,13 @@ test.describe.serial('Transaction Flow (compact / mobile layout)', () => {
     await sel.transactionForm.customerNameInput(page).fill(CUSTOMER_NAME);
     await sel.transactionForm.pagerNumberInput(page).fill('1');
 
+    await expect(
+      sel.transactionForm.diningOptionSegment(page, 'Dine In')
+    ).toBeVisible({ timeout: 10_000 });
+    await expect(
+      sel.transactionForm.diningOptionSegment(page, 'Dine In')
+    ).toHaveAttribute('aria-checked', 'true');
+
     await sel.transactionForm.submitButton(page).click();
 
     await expect(page.getByText('Pay Transaction')).toBeVisible({

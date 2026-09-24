@@ -7,13 +7,15 @@ type AnyProps = {
 };
 
 const makeComponent = (name: string) => {
-  const Component = ({ children, onPress, testID }: AnyProps) =>
+  const Component = ({ children, onPress, testID, id, accessibilityRole }: AnyProps) =>
     React.createElement(
       'div',
       {
         'data-component': name,
         ...(onPress ? { onClick: onPress } : {}),
         ...(testID ? { 'data-testid': testID } : {}),
+        ...(id ? { id } : {}),
+        ...(accessibilityRole ? { role: accessibilityRole } : {}),
       },
       children
     );
@@ -39,7 +41,16 @@ export const H5 = ({ children }: AnyProps) => React.createElement('h5', null, ch
 export const H6 = ({ children }: AnyProps) => React.createElement('h6', null, children);
 export const Text = ({ children }: AnyProps) => React.createElement('span', null, children);
 
-export const Button = ({ children, onPress, disabled, icon, accessibilityLabel, type }: AnyProps) =>
+export const Button = ({
+  children,
+  onPress,
+  disabled,
+  icon,
+  accessibilityLabel,
+  accessibilityRole,
+  accessibilityState,
+  type,
+}: AnyProps) =>
   React.createElement(
     'button',
     {
@@ -47,6 +58,12 @@ export const Button = ({ children, onPress, disabled, icon, accessibilityLabel, 
       onClick: onPress,
       disabled: disabled ?? false,
       ...(accessibilityLabel ? { 'aria-label': accessibilityLabel } : {}),
+      ...(accessibilityRole ? { role: accessibilityRole } : {}),
+      ...(accessibilityState &&
+      typeof accessibilityState === 'object' &&
+      'checked' in (accessibilityState as Record<string, unknown>)
+        ? { 'aria-checked': (accessibilityState as { checked?: boolean }).checked }
+        : {}),
     },
     icon ?? null,
     children
