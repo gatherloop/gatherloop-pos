@@ -7,6 +7,7 @@ export * from './useCheckout';
 export * from './useCouponList';
 export * from './useMaterialList';
 export * from './useOrderStatus';
+export * from './usePaymentCancel';
 export * from './useRentalList';
 export * from './useSupplierList';
 export * from './useTableResolve';

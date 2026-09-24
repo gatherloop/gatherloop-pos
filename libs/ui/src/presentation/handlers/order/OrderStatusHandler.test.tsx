@@ -22,10 +22,11 @@ class KeyConfiguredMockPaymentRepository extends MockPaymentRepository {
 }
 
 const mockPush = jest.fn();
+const mockReplace = jest.fn();
 jest.mock('solito/router', () => ({
   useRouter: () => ({
     push: mockPush,
-    replace: jest.fn(),
+    replace: mockReplace,
     back: jest.fn(),
   }),
 }));
@@ -60,6 +61,7 @@ const renderHandler = ({
     ...render(
       <OrderStatusHandler
         orderStatusUsecase={orderStatusUsecase}
+        paymentRepository={paymentRepository}
         sessionRepository={sessionRepository}
         cashierLocation={cashierLocation}
       />
@@ -408,5 +410,151 @@ describe('OrderStatusHandler', () => {
     });
 
     expect(mockPush).toHaveBeenCalledWith('/orders');
+  });
+
+  describe('cancelling a pending payment', () => {
+    it('hides the cancel button when the payment cannot be cancelled', async () => {
+      const paymentRepository = new MockPaymentRepository();
+      paymentRepository.payment = {
+        ...paymentRepository.payment,
+        canCancel: false,
+      };
+      renderHandler({
+        reference: paymentRepository.payment.reference,
+        paymentRepository,
+      });
+
+      await settle();
+
+      expect(
+        screen.queryByRole('button', { name: 'Batalkan pembayaran' })
+      ).toBeNull();
+    });
+
+    it('opens the confirmation dialog when Batalkan pembayaran is pressed', async () => {
+      const paymentRepository = new MockPaymentRepository();
+      const { getByRole } = renderHandler({
+        reference: paymentRepository.payment.reference,
+        paymentRepository,
+      });
+
+      await settle();
+
+      await act(async () => {
+        getByRole('button', { name: 'Batalkan pembayaran' }).click();
+      });
+
+      expect(screen.getByText('Batalkan pembayaran?')).toBeTruthy();
+      expect(getByRole('button', { name: 'Ya, batalkan' })).toBeTruthy();
+    });
+
+    it('closes the dialog when Lanjutkan pembayaran is pressed', async () => {
+      const paymentRepository = new MockPaymentRepository();
+      const { getByRole } = renderHandler({
+        reference: paymentRepository.payment.reference,
+        paymentRepository,
+      });
+
+      await settle();
+
+      await act(async () => {
+        getByRole('button', { name: 'Batalkan pembayaran' }).click();
+      });
+      expect(screen.getByText('Batalkan pembayaran?')).toBeTruthy();
+
+      await act(async () => {
+        getByRole('button', { name: 'Lanjutkan pembayaran' }).click();
+      });
+
+      expect(screen.queryByText('Batalkan pembayaran?')).toBeNull();
+    });
+
+    it('cancels the payment and returns to the cart on Ya, batalkan', async () => {
+      const paymentRepository = new MockPaymentRepository();
+      const { getByRole } = renderHandler({
+        reference: paymentRepository.payment.reference,
+        paymentRepository,
+      });
+
+      await settle();
+
+      await act(async () => {
+        getByRole('button', { name: 'Batalkan pembayaran' }).click();
+      });
+      await act(async () => {
+        getByRole('button', { name: 'Ya, batalkan' }).click();
+      });
+      await settle();
+
+      expect(mockReplace).toHaveBeenCalledWith(`/t/${TABLE_CODE}/cart`);
+    });
+
+    it('shows the preparing view without navigating when the cancel is answered with paid', async () => {
+      class PaidOnCancelMockPaymentRepository extends MockPaymentRepository {
+        override cancelPayment: PaymentRepository['cancelPayment'] = async (
+          reference
+        ) => {
+          this.payment = {
+            ...this.payment,
+            status: 'paid',
+            fulfillmentStatus: 'preparing',
+          };
+          return { ...this.payment, reference };
+        };
+      }
+
+      const paymentRepository = new PaidOnCancelMockPaymentRepository();
+      const { getByRole } = renderHandler({
+        reference: paymentRepository.payment.reference,
+        paymentRepository,
+      });
+
+      await settle();
+
+      await act(async () => {
+        getByRole('button', { name: 'Batalkan pembayaran' }).click();
+      });
+      await act(async () => {
+        getByRole('button', { name: 'Ya, batalkan' }).click();
+      });
+      await settle();
+
+      expect(mockReplace).not.toHaveBeenCalled();
+      expect(
+        screen.getByText(`#${paymentRepository.payment.transactionNumber}`)
+      ).toBeTruthy();
+    });
+
+    it('closes the dialog when a poll reports paid while it is open', async () => {
+      jest.useFakeTimers();
+      try {
+        const paymentRepository = new MockPaymentRepository();
+        const { getByRole } = renderHandler({
+          reference: paymentRepository.payment.reference,
+          paymentRepository,
+        });
+
+        await act(async () => {
+          await jest.advanceTimersByTimeAsync(0);
+        });
+
+        await act(async () => {
+          getByRole('button', { name: 'Batalkan pembayaran' }).click();
+        });
+        expect(screen.getByText('Batalkan pembayaran?')).toBeTruthy();
+
+        paymentRepository.payment = {
+          ...paymentRepository.payment,
+          status: 'paid',
+        };
+        await act(async () => {
+          await jest.advanceTimersByTimeAsync(3000);
+        });
+
+        expect(screen.queryByText('Batalkan pembayaran?')).toBeNull();
+      } finally {
+        jest.useRealTimers();
+      }
+    });
   });
 });

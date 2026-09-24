@@ -33,6 +33,7 @@ export function OrderStatus({
   return (
     <OrderStatusHandler
       orderStatusUsecase={orderStatusUsecase}
+      paymentRepository={paymentRepository}
       sessionRepository={sessionRepository}
       cashierLocation={cashierLocation}
     />
