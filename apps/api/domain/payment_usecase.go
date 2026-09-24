@@ -360,7 +360,7 @@ func (usecase PaymentUsecase) applyQrisStatus(ctxWithTx context.Context, payment
 		// D7: the guest may have checked out again on this cart while the first payment sat
 		// cancelled or expired — finalise that newer attempt so the cart never ends up with two
 		// paid orders.
-		if supersedeErr := supersedeLivePayments(ctxWithTx, payment.CartId, payment.Id, usecase.paymentRepository, usecase.transactionRepository, usecase.availabilityReservation); supersedeErr != nil {
+		if supersedeErr := supersedeLivePayments(ctxWithTx, payment.CartId, payment.Id, usecase.paymentRepository, usecase.transactionRepository, usecase.availabilityReservation, usecase.kdsNotificationRepository); supersedeErr != nil {
 			return payment, "", supersedeErr
 		}
 
@@ -375,7 +375,7 @@ func (usecase PaymentUsecase) applyQrisStatus(ctxWithTx context.Context, payment
 			outcome = ConfirmPaymentOutcomeFailed
 		}
 
-		updatedPayment, finalizeErr := finalizeUncollectedPayment(ctxWithTx, payment, terminalStatus, nil, usecase.paymentRepository, usecase.transactionRepository, usecase.availabilityReservation)
+		updatedPayment, finalizeErr := finalizeUncollectedPayment(ctxWithTx, payment, terminalStatus, nil, usecase.paymentRepository, usecase.transactionRepository, usecase.availabilityReservation, usecase.kdsNotificationRepository)
 		if finalizeErr != nil {
 			return payment, "", finalizeErr
 		}
@@ -390,8 +390,10 @@ func (usecase PaymentUsecase) applyQrisStatus(ctxWithTx context.Context, payment
 // collected: the payment moves to its terminal state, its transaction's availability reservation
 // is released, and the transaction itself is soft-deleted — which is what unfreezes the cart.
 // reason is non-nil only when terminalStatus is PaymentStateCancelled (D9); it is a free function,
-// not a PaymentUsecase method, so TransactionUsecase's settleOrderPayment can share it too.
-func finalizeUncollectedPayment(ctxWithTx context.Context, payment Payment, terminalStatus PaymentState, reason *PaymentCancelReason, paymentRepository PaymentRepository, transactionRepository TransactionRepository, availabilityReservation AvailabilityReservation) (Payment, *Error) {
+// not a PaymentUsecase method, so TransactionUsecase's settleOrderPayment can share it too. A cash
+// payment that lands in cancelled — whether the guest's own cancel or a supersede (D7) — also gets
+// the KDS retraction (D16/FR-7).
+func finalizeUncollectedPayment(ctxWithTx context.Context, payment Payment, terminalStatus PaymentState, reason *PaymentCancelReason, paymentRepository PaymentRepository, transactionRepository TransactionRepository, availabilityReservation AvailabilityReservation, kdsNotificationRepository KdsNotificationRepository) (Payment, *Error) {
 	now := time.Now()
 	payment.Status = terminalStatus
 	payment.StatusCheckedAt = &now
@@ -418,16 +420,38 @@ func finalizeUncollectedPayment(ctxWithTx context.Context, payment Payment, term
 		if deleteErr := transactionRepository.DeleteTransactionById(ctxWithTx, *payment.TransactionId); deleteErr != nil {
 			return payment, deleteErr
 		}
+
+		if terminalStatus == PaymentStateCancelled && payment.Method == PaymentMethodCash {
+			if enqueueErr := enqueueCashCancelledNotification(ctxWithTx, transaction, kdsNotificationRepository); enqueueErr != nil {
+				return payment, enqueueErr
+			}
+		}
 	}
 
 	return updatedPayment, nil
+}
+
+// enqueueCashCancelledNotification is FR-7: a cash order retracted before it ever sent
+// cash_pending (the transaction was deleted before Checkout's enqueue landed, in a scenario this
+// codebase does not currently produce) has nothing to retract, so it is skipped rather than
+// buzzing a KDS device that was never told to expect it.
+func enqueueCashCancelledNotification(ctxWithTx context.Context, transaction Transaction, kdsNotificationRepository KdsNotificationRepository) *Error {
+	hasCashPending, err := kdsNotificationRepository.HasNotificationForTransaction(ctxWithTx, transaction.Id, KdsNotificationKindCashPending)
+	if err != nil {
+		return err
+	}
+	if !hasCashPending {
+		return nil
+	}
+
+	return kdsNotificationRepository.EnqueueForTransaction(ctxWithTx, transaction, KdsNotificationKindCashCancelled)
 }
 
 // supersedeLivePayments is D7's guard against a stale-but-still-pending payment surviving next to
 // one that was just paid late: a cart becomes exactly one paid order, so its current pending
 // payment — if there is one, and it isn't the payment just paid — is finalised as
 // cancelled/superseded instead of staying collectable.
-func supersedeLivePayments(ctxWithTx context.Context, cartId int64, exceptPaymentId int64, paymentRepository PaymentRepository, transactionRepository TransactionRepository, availabilityReservation AvailabilityReservation) *Error {
+func supersedeLivePayments(ctxWithTx context.Context, cartId int64, exceptPaymentId int64, paymentRepository PaymentRepository, transactionRepository TransactionRepository, availabilityReservation AvailabilityReservation, kdsNotificationRepository KdsNotificationRepository) *Error {
 	pending, err := paymentRepository.GetPendingPaymentByCartId(ctxWithTx, cartId)
 	if err != nil {
 		if err.Type == NotFound {
@@ -445,7 +469,7 @@ func supersedeLivePayments(ctxWithTx context.Context, cartId int64, exceptPaymen
 	)
 
 	reason := PaymentCancelReasonSuperseded
-	if _, finalizeErr := finalizeUncollectedPayment(ctxWithTx, pending, PaymentStateCancelled, &reason, paymentRepository, transactionRepository, availabilityReservation); finalizeErr != nil {
+	if _, finalizeErr := finalizeUncollectedPayment(ctxWithTx, pending, PaymentStateCancelled, &reason, paymentRepository, transactionRepository, availabilityReservation, kdsNotificationRepository); finalizeErr != nil {
 		return finalizeErr
 	}
 
@@ -455,7 +479,7 @@ func supersedeLivePayments(ctxWithTx context.Context, cartId int64, exceptPaymen
 // expirePayment is FR-4's entry point for giving up on a payment on the clock alone (D7) — used
 // directly by ExpireStalePayments for cash, and by applyQrisStatus's expired branch for QRIS.
 func (usecase PaymentUsecase) expirePayment(ctxWithTx context.Context, payment Payment) (Payment, *Error) {
-	return finalizeUncollectedPayment(ctxWithTx, payment, PaymentStateExpired, nil, usecase.paymentRepository, usecase.transactionRepository, usecase.availabilityReservation)
+	return finalizeUncollectedPayment(ctxWithTx, payment, PaymentStateExpired, nil, usecase.paymentRepository, usecase.transactionRepository, usecase.availabilityReservation, usecase.kdsNotificationRepository)
 }
 
 // ExpireStalePayments claims up to paymentExpiryBatchSize pending payments past their expired_at,
@@ -557,6 +581,7 @@ func (usecase PaymentUsecase) CancelPayment(ctx context.Context, sessionId strin
 	var resultPayment Payment
 	var resultTransaction Transaction
 	outcome := ConfirmPaymentOutcomeIgnored
+	cancelledCash := false
 
 	err := usecase.paymentRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 		payment, err := usecase.paymentRepository.GetPaymentByPartnerReferenceNoForUpdate(ctxWithTx, partnerReferenceNo)
@@ -597,18 +622,20 @@ func (usecase PaymentUsecase) CancelPayment(ctx context.Context, sessionId strin
 		}
 
 		reason := PaymentCancelReasonGuest
-		updatedPayment, finalizeErr := finalizeUncollectedPayment(ctxWithTx, payment, PaymentStateCancelled, &reason, usecase.paymentRepository, usecase.transactionRepository, usecase.availabilityReservation)
+		updatedPayment, finalizeErr := finalizeUncollectedPayment(ctxWithTx, payment, PaymentStateCancelled, &reason, usecase.paymentRepository, usecase.transactionRepository, usecase.availabilityReservation, usecase.kdsNotificationRepository)
 		if finalizeErr != nil {
 			return finalizeErr
 		}
 
+		cancelledCash = payment.Method == PaymentMethodCash
 		resultPayment = updatedPayment
 		return usecase.loadPaymentTransaction(ctxWithTx, updatedPayment, &resultTransaction)
 	})
 
 	// FR-4: a cancel that discovers the payment was already paid at DOKU (D4) triggers the KDS
-	// exactly as ConfirmPayment and GetPaymentStatus do.
-	if err == nil && (outcome == ConfirmPaymentOutcomePaid || outcome == ConfirmPaymentOutcomePaidLate) {
+	// exactly as ConfirmPayment and GetPaymentStatus do. FR-7: so does a cash cancel that may have
+	// just enqueued cash_cancelled — the guest's HTTP response must not wait on Expo either way.
+	if err == nil && (outcome == ConfirmPaymentOutcomePaid || outcome == ConfirmPaymentOutcomePaidLate || cancelledCash) {
 		usecase.kdsNotificationDispatcher.TriggerDispatch()
 	}
 

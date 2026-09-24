@@ -51,6 +51,15 @@ func (repo Repository) EnqueueForTransaction(ctx context.Context, transaction do
 	return ToErrorCtx(ctx, result.Error, "EnqueueForTransaction")
 }
 
+func (repo Repository) HasNotificationForTransaction(ctx context.Context, transactionId int64, kind domain.KdsNotificationKind) (bool, *domain.Error) {
+	db := GetDbFromCtx(ctx, repo.db)
+	var count int64
+	result := db.Table("kds_notifications").
+		Where("transaction_id = ? AND kind = ?", transactionId, string(kind)).
+		Count(&count)
+	return count > 0, ToErrorCtx(ctx, result.Error, "HasNotificationForTransaction")
+}
+
 func (repo Repository) ClaimPendingKdsNotifications(ctx context.Context, limit int) ([]domain.KdsNotification, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	var notifications []KdsNotification

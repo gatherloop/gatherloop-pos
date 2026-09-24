@@ -23,8 +23,9 @@ const KdsNotificationMaxAttempts = 5
 type KdsNotificationKind string
 
 const (
-	KdsNotificationKindOrderPaid   KdsNotificationKind = "order_paid"
-	KdsNotificationKindCashPending KdsNotificationKind = "cash_pending"
+	KdsNotificationKindOrderPaid     KdsNotificationKind = "order_paid"
+	KdsNotificationKindCashPending   KdsNotificationKind = "cash_pending"
+	KdsNotificationKindCashCancelled KdsNotificationKind = "cash_cancelled"
 )
 
 type KdsStation string
@@ -57,7 +58,8 @@ const kdsNotificationBodyItemLimit = 4
 
 // BuildKdsPushMessage is pure and re-derived at send time (FR-6): a paid transaction cannot be
 // edited, so there is nothing to snapshot against. The kind picks the title/body pair (FR-7):
-// order_paid is unchanged, cash_pending leads with the amount to collect.
+// order_paid is unchanged, cash_pending leads with the amount to collect, cash_cancelled retracts
+// it.
 func BuildKdsPushMessage(transaction Transaction, kind KdsNotificationKind, sound string) KdsPushMessage {
 	lines := StationLines(transaction)
 
@@ -68,9 +70,13 @@ func BuildKdsPushMessage(transaction Transaction, kind KdsNotificationKind, soun
 
 	title := buildKdsNotificationTitle(transaction)
 	body := buildKdsNotificationBody(lines)
-	if kind == KdsNotificationKindCashPending {
+	switch kind {
+	case KdsNotificationKindCashPending:
 		title = buildCashPendingNotificationTitle(transaction)
 		body = buildCashPendingNotificationBody(transaction, lines)
+	case KdsNotificationKindCashCancelled:
+		title = buildCashCancelledNotificationTitle(transaction)
+		body = cashCancelledNotificationBody
 	}
 
 	return KdsPushMessage{
@@ -109,6 +115,14 @@ func buildCashPendingNotificationBody(transaction Transaction, lines []KdsStatio
 	}
 	return amountLine + " · " + stationsBody
 }
+
+func buildCashCancelledNotificationTitle(transaction Transaction) string {
+	return fmt.Sprintf("Cash order #%d cancelled — %s", transaction.TransactionNumber, kdsOrderSubject(transaction))
+}
+
+// cashCancelledNotificationBody is a fixed retraction, not a description of items (D16): its only
+// job is telling a barista who may already be walking to the till to stand down.
+const cashCancelledNotificationBody = "Guest cancelled. Don't wait at the till."
 
 func kdsOrderSubject(transaction Transaction) string {
 	if transaction.Source == TransactionSourceOrder && transaction.Cart != nil && transaction.Cart.Table != nil {
