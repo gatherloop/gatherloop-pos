@@ -5,6 +5,7 @@ import { PaymentRepository } from '../../../domain/repositories/payment';
 import { SessionRepository } from '../../../domain/repositories/session';
 import { OrderStatusUsecase } from '../../../domain/usecases/orderStatus';
 import { PaymentCancelUsecase } from '../../../domain/usecases/paymentCancel';
+import { useBackNavigationGuard } from '../hooks/useBackNavigationGuard';
 import { useOrderStatus } from '../hooks/useOrderStatus';
 import { usePaymentCancel } from '../hooks/usePaymentCancel';
 import {
@@ -66,15 +67,20 @@ export const OrderStatusHandler = ({
     }
   }, [paymentCancel.state, router, cartPath, orderStatus.dispatch]);
 
-  useEffect(() => {
-    const isAwaiting =
-      orderStatus.state.type === 'awaitingPayment' ||
-      orderStatus.state.type === 'awaitingCashPayment';
+  const isAwaitingPayment =
+    orderStatus.state.type === 'awaitingPayment' ||
+    orderStatus.state.type === 'awaitingCashPayment';
 
-    if (!isAwaiting && paymentCancel.state.type === 'confirming') {
+  useEffect(() => {
+    if (!isAwaitingPayment && paymentCancel.state.type === 'confirming') {
       paymentCancel.dispatch({ type: 'DISMISS' });
     }
-  }, [orderStatus.state.type, paymentCancel.state.type, paymentCancel.dispatch]);
+  }, [isAwaitingPayment, paymentCancel.state.type, paymentCancel.dispatch]);
+
+  useBackNavigationGuard(
+    isAwaitingPayment && (payment?.canCancel ?? false),
+    () => paymentCancel.dispatch({ type: 'REQUEST' })
+  );
 
   const cancelConfirmation: OrderStatusCancelConfirmation = {
     isOpen:
@@ -87,7 +93,9 @@ export const OrderStatusHandler = ({
   };
 
   const cancelErrorMessage =
-    paymentCancel.state.type === 'error' ? paymentCancel.state.errorMessage : null;
+    paymentCancel.state.type === 'error'
+      ? paymentCancel.state.errorMessage
+      : null;
 
   const variant: OrderStatusScreenVariant = match(orderStatus.state)
     .returnType<OrderStatusScreenVariant>()
