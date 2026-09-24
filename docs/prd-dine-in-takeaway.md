@@ -338,6 +338,14 @@ and a second meaning on the same channel would be unreadable.
 `GetTransactionSummariesByIds` gains `transactions.dining_option` in its `SELECT`/`GROUP BY`;
 `TransactionSummary` → `ToPaymentSummary` → `ToApiPaymentSummary` carry it through. No new query.
 
+**D14 — Dining option and table are independent.** *(Added in review, S4.)* A takeaway order
+placed from a table keeps its table: `Checkout` still requires `cart.TableId`, the transaction
+still links to the cart and its table, the POS list still shows the `TABLE` footer item next to
+the Takeaway badge, and the order history still shows `tableLabel · customerName` next to the
+Bawa pulang pill — exactly as FR-4 and FR-5's mockups draw it. No code path clears or hides the
+table based on the dining option. *Alternative rejected:* dropping the table for takeaway — the
+table is how staff find a guest who waits for their food, and a takeaway guest waits too.
+
 ---
 
 ## Phased plan
@@ -389,7 +397,7 @@ with two people, each takes one track after P1.
 | **5** | POS form selector (FR-2) | new `base/Form/SegmentedControl.tsx` + `.stories.tsx` + `.test.tsx`, `base/Form/index.ts`; `views/components/transactions/TransactionCartView.tsx` + stories; `TransactionCreateHandler` / `TransactionUpdateHandler` tests; `apps/pos-web-e2e/src/utils/selectors.ts`, `transactions.spec.ts` | ~170 L | The form shows **Dining Option** with Dine In selected on create; choosing Takeaway and saving persists `takeaway`; editing prefills it; handler tests assert on the radio/segment role; `pos-web-e2e` transactions spec passes locally |
 | **6** | POS list badge (FR-4) | `views/components/transactions/TransactionListItem.tsx` + `.stories.tsx` + `.test.tsx`; `TransactionList.tsx` (pass-through) | ~90 L | A takeaway row shows a purple **Takeaway** badge for both POS and order-app sources; a dine-in row renders exactly as before; new stories `TakeawayPos`, `TakeawayFromOrderApp`; three badges wrap at compact width |
 | **7** | Order FE data + checkout FSM | `libs/ui/src/domain/entities/Payment.ts` (`PaymentSummary.diningOption`); `domain/repositories/payment.ts` (`checkout` param); `domain/usecases/checkout.ts` (`Context.diningOption` = `dine_in`, `CHANGE_DINING_OPTION`, passed in `onStateChange`) + `checkout.test.ts`; `data/api/payment.ts`, `payment.transformer.ts`, `payment.test.ts`; `data/mock/payment.ts` | ~110 L | `UsecaseTester` shows `diningOption` starting `dine_in`, changing only in `askingDetails`, surviving `CANCEL_DETAILS` → `ASK_DETAILS`, and reaching `repository.checkout`; `npx nx run ui:test` green. No visible change |
-| **8** | Order checkout sheet (FR-3) | `views/components/checkout/CustomerDetailsSheet.tsx` + stories; `handlers/order/CartHandler.tsx` + `CartHandler.test.tsx`; `apps/order-web-e2e/src/utils/selectors.ts`, `checkout.spec.ts` | ~110 L | The sheet shows Makan di sini (selected) / Bawa pulang with or without cash enabled; choosing Bawa pulang and paying creates a takeaway transaction visible as such in the POS list; `order-web-e2e` checkout spec passes locally |
+| **8** | Order checkout sheet (FR-3) | `views/components/checkout/CustomerDetailsSheet.tsx` + stories; `handlers/order/CartHandler.tsx` + `CartHandler.test.tsx`; `apps/order-web-e2e/src/utils/selectors.ts`, `checkout.spec.ts` | ~110 L | The sheet shows Makan di sini (selected) / Bawa pulang with or without cash enabled; choosing Bawa pulang and paying creates a takeaway transaction visible as such in the POS list, still showing its table (D14); `order-web-e2e` checkout spec passes locally |
 | **9** | Order history pill (FR-5) | `views/components/orderHistory/OrderHistoryListItem.tsx` + `.stories.tsx` + `.test.tsx`; `views/screens/order/OrderHistoryScreen.tsx` (pass-through) | ~60 L | A takeaway order shows the purple **Bawa pulang** pill beside its number and an accessible name ending `· Bawa pulang`; dine-in rows unchanged; `order-web-e2e` `orderHistory.spec.ts` still passes |
 | **10** | docs-site | `docs-site/sales/transactions.md`, `order-checkout.md`, `order-history.md` | ~40 L | Each page describes the dining option where the operator or guest meets it; `docs-site` builds |
 
@@ -466,8 +474,8 @@ keeps it working.
 **R1 — A cashier forgets to switch to Takeaway.** Defaulting (D4) makes the wrong value silent.
 *Mitigation:* the control sits in the header of the form next to Customer Name, not below the
 items, and the list badge makes a takeaway order conspicuous — and its absence noticeable to the
-barista who was told "to go". If this proves common, the cheap follow-up is Toast's "force a
-choice" mode (Open Question 3), not a different data model.
+barista who was told "to go". Forcing an explicit choice was considered and ruled out in review
+(S3): Dine In stays preselected.
 
 **R2 — Historical transactions all read `dine_in`.** The backfill cannot know past takeaway orders.
 *Mitigation:* none needed for the acceptance criteria; state it in the docs-site pages so nobody
@@ -496,9 +504,9 @@ Phase 6 and a story for the four-badge case.
 
 - **Printed documents and KDS.** The order slip / invoice payloads (`libs/ui/src/utils/print.ts`)
   and KDS push notifications do not carry the dining option. The kitchen is exactly who needs
-  "package, don't plate" most, so this is the first follow-up — see Open Question 1. It is out of
-  this PRD because the printer service is outside this repository
-  (`docs/prd-daily-transaction-number.md`, R1).
+  "package, don't plate" most, so this is the natural first follow-up, but it is deferred by
+  decision, not oversight (S1). When it is picked up, the printer service being outside this
+  repository (`docs/prd-daily-transaction-number.md`, R1) is the gating dependency.
 - **Transaction detail screen** (`TransactionDetail.tsx`) and the order status screen. Not in the
   acceptance criteria; a small follow-up card if wanted.
 - **Filtering or reporting by dining option** in the POS list or dashboard. No index is added until
@@ -510,17 +518,16 @@ Phase 6 and a story for the four-badge case.
 
 ## Open Questions
 
-1. **Should the order slip and KDS notification say TAKEAWAY?** Recommended yes, as a follow-up
-   phase: add `diningOption` to `OrderSlipPrintPayload`, gated on the external printer service
-   rendering it. *Decides:* whether an eleventh phase is scheduled now.
-2. **Copy for the order app.** "Makan di sini / Bawa pulang" is proposed; "Dine in / Take away" is
-   also widely understood in Indonesian cafés. *Decides:* only Phase 8/9 strings and e2e selectors.
-3. **Should the POS force an explicit choice?** Proposed no (D4). Revisit after two weeks if
-   misrecorded takeaway orders are reported.
-4. **Can a takeaway order still carry a table?** Order-app checkout requires a table
-   (`cart.TableId == nil` → 400 in `Checkout`). A guest who waits at a table and takes the food home
-   is a real case, so the proposal keeps the table and shows both. *Decides:* nothing unless the
-   answer is "takeaway guests should not need a table", which would be its own PRD.
+All four were answered in review; see **Settled in review** for how each answer lands in the
+design.
+
+1. ~~**Should the order slip and KDS notification say TAKEAWAY?**~~ **Answered: not yet.** No
+   eleventh phase; printing and KDS stay out of scope (S1).
+2. ~~**Copy for the order app.**~~ **Answered: "Makan di sini / Bawa pulang".** (S2)
+3. ~~**Should the POS force an explicit choice?**~~ **Answered: no — Dine In is preselected.**
+   D4 stands as written (S3).
+4. ~~**Can a takeaway order still carry a table?**~~ **Answered: yes.** An order placed from a
+   table keeps its table whatever its dining option (D14, S4).
 
 ---
 
@@ -546,6 +553,28 @@ Phase 6 and a story for the four-badge case.
    guest's order history; no dine-in transaction shows either.
 4. Editing a takeaway transaction from any client — including one that doesn't know the field —
    never silently turns it into dine-in.
+
+---
+
+## Settled in review
+
+**S1 — Printed documents and KDS stay out of scope (Open Question 1: "not yet").** No change to
+`OrderSlipPrintPayload`, `TransactionPrintPayload` or KDS notification text. The phased plan stays
+at ten phases. Nothing in Phases 1–10 blocks adding it later: the value is on every `Transaction`
+the print and KDS paths already load.
+
+**S2 — Order-app copy is "Makan di sini / Bawa pulang" (Open Question 2).** Confirms D3 and FR-3/
+FR-5 as written: the checkout sheet heading "Makan di sini atau bawa pulang?", button labels and
+`accessibilityLabel`s `Makan di sini` / `Bawa pulang`, and the order-history pill `Bawa pulang`.
+POS copy stays English (Dine In / Takeaway).
+
+**S3 — Dine In is preselected; no forced choice (Open Question 3).** Confirms D4. Both surfaces
+open with the default already selected — Dine In on the POS form, Makan di sini on the checkout
+sheet — and neither blocks submission on an untouched control.
+
+**S4 — A takeaway order placed from a table keeps its table (Open Question 4).** Recorded as D14.
+No phase changes: the mockups in FR-4 and FR-5 already show the table beside the takeaway
+indicator, and the Phase 8 acceptance check now asserts it end to end.
 
 ---
 
