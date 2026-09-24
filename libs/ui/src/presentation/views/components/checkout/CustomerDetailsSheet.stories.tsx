@@ -27,6 +27,10 @@ const meta: Meta<typeof CustomerDetailsSheet> = {
     onMethodChange: () => {
       // Storybook action stand-in
     },
+    diningOption: 'dine_in',
+    onDiningOptionChange: () => {
+      // Storybook action stand-in
+    },
     cashierLocation: 'Lantai 1',
   },
 };
@@ -71,5 +75,13 @@ export const CashPaymentEnabledCash: Story = {
     whatsappNumber: '0812 3456 7890',
     isCashPaymentEnabled: true,
     method: 'cash',
+  },
+};
+
+export const TakeawaySelected: Story = {
+  args: {
+    name: 'Budi',
+    whatsappNumber: '0812 3456 7890',
+    diningOption: 'takeaway',
   },
 };

@@ -5,6 +5,7 @@ import * as sel from './utils/selectors';
 const TS = Date.now();
 const CUSTOMER_NAME = `E2E Customer ${TS}`;
 const CUSTOMER_NAME_2 = `E2E CustomerB ${TS}`;
+const CUSTOMER_NAME_TAKEAWAY = `E2E CustomerC ${TS}`;
 const PRODUCT_NAME = `E2E TxProduct ${TS}`;
 const CATEGORY_NAME = `E2E TxCategory ${TS}`;
 const COUPON_CODE = `E2ETXC${TS}`.slice(0, 20);
@@ -59,6 +60,7 @@ test.describe.serial('Transaction Flow', () => {
 
   let createdTransactionId: number | undefined;
   let unpaidTransactionId: number | undefined;
+  let takeawayTransactionId: number | undefined;
 
   test.beforeAll(async ({ request }) => {
     testCategory = await api.createCategory(request, { name: CATEGORY_NAME });
@@ -121,6 +123,11 @@ test.describe.serial('Transaction Flow', () => {
     }
     if (unpaidTransactionId !== undefined) {
       await api.deleteTransaction(request, unpaidTransactionId).catch(() => {
+        // Ignore
+      });
+    }
+    if (takeawayTransactionId !== undefined) {
+      await api.deleteTransaction(request, takeawayTransactionId).catch(() => {
         // Ignore
       });
     }
@@ -242,6 +249,73 @@ test.describe.serial('Transaction Flow', () => {
     await expect(page.getByText(PRODUCT_NAME)).toBeVisible({
       timeout: 10_000,
     });
+  });
+
+  test('should default to Dine In and persist Takeaway through create and edit (PRD FR-2)', async ({
+    page,
+  }) => {
+    await openFormAndAddProduct(page, PRODUCT_NAME);
+
+    await sel.transactionForm.customerNameInput(page).fill(CUSTOMER_NAME_TAKEAWAY);
+
+    await expect(
+      sel.transactionForm.diningOptionSegment(page, 'Dine In')
+    ).toHaveAttribute('aria-checked', 'true');
+    await expect(
+      sel.transactionForm.diningOptionSegment(page, 'Takeaway')
+    ).toHaveAttribute('aria-checked', 'false');
+
+    await sel.transactionForm.diningOptionSegment(page, 'Takeaway').click();
+
+    await expect(
+      sel.transactionForm.diningOptionSegment(page, 'Takeaway')
+    ).toHaveAttribute('aria-checked', 'true');
+    await expect(
+      sel.transactionForm.diningOptionSegment(page, 'Dine In')
+    ).toHaveAttribute('aria-checked', 'false');
+
+    await sel.transactionForm.submitButton(page).click();
+
+    await expect(page.getByText('Pay Transaction')).toBeVisible({
+      timeout: 15_000,
+    });
+
+    await sel.transactionPayDialog.walletSelect(page).click();
+    await page.locator('span[data-disable-theme]').filter({ hasText: WALLET_NAME }).click();
+
+    await sel.transactionPayDialog.submitButton(page).click();
+
+    const printInvoiceDialog = sel.transactionPrintDialog.printInvoiceDialog(page);
+    await expect(printInvoiceDialog).toBeVisible({ timeout: 10_000 });
+    await sel.transactionPrintDialog.clickNo(printInvoiceDialog);
+
+    const printOrderSlipDialog = sel.transactionPrintDialog.printOrderSlipDialog(page);
+    await expect(printOrderSlipDialog).toBeVisible({ timeout: 5_000 });
+    await sel.transactionPrintDialog.clickNo(printOrderSlipDialog);
+
+    await page.waitForURL('/transactions', { timeout: 15_000 });
+
+    await sel.transactionList.searchInput(page).fill(CUSTOMER_NAME_TAKEAWAY);
+    await expect(
+      sel.transactionList.transactionItem(page, CUSTOMER_NAME_TAKEAWAY)
+    ).toBeVisible({ timeout: 15_000 });
+
+    await sel.transactionList.transactionItem(page, CUSTOMER_NAME_TAKEAWAY).click();
+    await page.waitForURL(/\/transactions\/\d+\/detail$/, { timeout: 15_000 });
+
+    const detailMatch = page.url().match(/\/transactions\/(\d+)\/detail$/);
+    if (detailMatch) {
+      takeawayTransactionId = parseInt(detailMatch[1]);
+    }
+
+    await page.goto(`/transactions/${takeawayTransactionId}`);
+
+    await expect(
+      sel.transactionForm.diningOptionSegment(page, 'Takeaway')
+    ).toBeVisible({ timeout: 15_000 });
+    await expect(
+      sel.transactionForm.diningOptionSegment(page, 'Takeaway')
+    ).toHaveAttribute('aria-checked', 'true');
   });
 
   test('should mark an unpaid transaction as paid', async ({ page }) => {

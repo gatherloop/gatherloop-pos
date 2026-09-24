@@ -34,6 +34,7 @@ export const Phone = NullIcon;
 export const Plus = NullIcon;
 export const QrCode = NullIcon;
 export const Separator = NullIcon;
+export const ShoppingBag = NullIcon;
 export const ShoppingCart = NullIcon;
 export const Tag = NullIcon;
 export const Trash = NullIcon;
