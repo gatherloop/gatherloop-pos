@@ -8,6 +8,7 @@ const meta: Meta<typeof TransactionListItem> = {
   args: {
     name: 'Order #001',
     source: 'pos',
+    diningOption: 'dine_in',
     table: null,
     pagerNumber: 1,
     transactionNumber: 42,
@@ -86,6 +87,40 @@ export const FromPos: Story = {
   args: {
     source: 'pos',
     table: null,
+  },
+};
+
+export const TakeawayPos: Story = {
+  args: {
+    name: 'Siti',
+    source: 'pos',
+    diningOption: 'takeaway',
+    table: null,
+  },
+};
+
+export const TakeawayFromOrderApp: Story = {
+  args: {
+    name: 'Budi',
+    source: 'order',
+    diningOption: 'takeaway',
+    table: { id: 1, label: 'A1', floorNumber: 1 },
+    pagerNumber: 0,
+    completedAt: null,
+  },
+};
+
+export const TakeawayCashAwaitingPayment: Story = {
+  args: {
+    name: 'Budi',
+    source: 'order',
+    diningOption: 'takeaway',
+    paymentMethod: 'cash',
+    table: { id: 1, label: 'A1', floorNumber: 1 },
+    pagerNumber: 0,
+    completedAt: null,
+    paidAt: undefined,
+    walletName: undefined,
   },
 };
 
