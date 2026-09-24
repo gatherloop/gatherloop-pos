@@ -62,6 +62,25 @@ describe('TransactionListItem', () => {
     expect(screen.queryByText('Cash · awaiting payment')).toBeNull();
   });
 
+  it('hides the edit menu for an unpaid order transaction', () => {
+    render(<TransactionListItem {...defaultProps} />);
+
+    expect(screen.queryByText('Edit')).toBeNull();
+  });
+
+  it('shows the edit menu for an unpaid pos transaction', () => {
+    render(
+      <TransactionListItem
+        {...defaultProps}
+        source="pos"
+        paymentMethod={null}
+        table={null}
+      />
+    );
+
+    expect(screen.getByText('Edit')).toBeTruthy();
+  });
+
   it('shows the takeaway badge for a takeaway pos transaction', () => {
     render(
       <TransactionListItem

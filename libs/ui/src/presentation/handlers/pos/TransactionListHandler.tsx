@@ -31,6 +31,11 @@ import {
   TransactionListScreenProps,
 } from '../../views/screens/pos/TransactionListScreen';
 
+const getTransactionPath = (transaction: Transaction) =>
+  transaction.paidAt || transaction.source === 'order'
+    ? `/transactions/${transaction.id}/detail`
+    : `/transactions/${transaction.id}`;
+
 export type TransactionListHandlerProps = {
   authLogoutUsecase: AuthLogoutUsecase;
   transactionListUsecase: TransactionListUsecase;
@@ -162,12 +167,9 @@ export const TransactionListHandler = ({
           transactionId: transaction.id,
         })
       }
-      onEditMenuPress={(transaction) => {
-        const targetPath = transaction.paidAt
-          ? `/transactions/${transaction.id}/detail`
-          : `/transactions/${transaction.id}`;
-        router.push(targetPath);
-      }}
+      onEditMenuPress={(transaction) =>
+        router.push(getTransactionPath(transaction))
+      }
       onPayMenuPress={(transaction) =>
         transactionPay.dispatch({
           type: 'SHOW_CONFIRMATION',
@@ -195,12 +197,9 @@ export const TransactionListHandler = ({
           action: 'uncomplete',
         })
       }
-      onItemPress={(transaction) => {
-        const targetPath = transaction.paidAt
-          ? `/transactions/${transaction.id}/detail`
-          : `/transactions/${transaction.id}`;
-        router.push(targetPath);
-      }}
+      onItemPress={(transaction) =>
+        router.push(getTransactionPath(transaction))
+      }
       onPrintInvoiceMenuPress={(transaction) => {
         print({
           type: 'INVOICE',
