@@ -1,9 +1,11 @@
 # PRD: Order App — Guest Cancels a Pending Payment
 
-**Status:** Draft for review — open questions listed at the end
+**Status:** Draft v2 for review — revised after review on [gatherloop/gatherloop-pos#598](https://github.com/gatherloop/gatherloop-pos/pull/598) (see the Revision note and [Settled in review](#settled-in-review)); open questions listed near the end
 **Scope:** letting a guest on the order app's payment-countdown page (`/orders/{reference}`, QRIS and cash) cancel their pending payment, with a confirmation, including when they press the browser/Android back button — so the cart unlocks with its items intact and they can check out again, with a different method if they want.
 **Extends, does not supersede:** `docs/prd-order-checkout-qris-doku.md` (cited as *QRIS D<n>*), `docs/prd-order-cash-payment.md` (*Cash D<n>*), `docs/prd-order-history.md` (*History D<n>*), `docs/prd-order-whatsapp-notifications.md` (*WA D<n>*).
-**Supersedes:** Cash D21 ("A guest cannot cancel their own cash order in v1") — that decision deferred cancel until someone wrote the rule for the race against a cashier who is mid-collection. D8 below is that rule.
+**Supersedes:** Cash D21 ("A guest cannot cancel their own cash order in v1") — that decision deferred cancel until someone wrote the rule for the race against a cashier who is mid-collection. D8 below is that rule. Also History D14 and Cash D17, in part: a pending **QRIS** payment becomes an order-history row too (D19).
+
+> **Revision note (v2).** v1 made cancel reachable only from the countdown page and its Back button. Review raised the case v1 left open: the guest **closes the tab**, comes back through the table QR, and finds a cart they can't change. Nothing tells them why. Adding an item from the menu fails **silently**. A pending QRIS payment isn't in order history. v2 keeps the cart lock but makes it **visible and actionable wherever the guest can hit it**: the cart response carries the pending payment (D18); the menu bar, the item sheet, the cart page and cart-item edit each say a payment is waiting and offer "continue" or "cancel" (D21); the item sheet's "cancel and add" finishes the guest's intent in one step (D22); failed cart writes refetch instead of silently reverting (D23); and order history lists pending QRIS (D19). The reviewer's alternative, *clear the cart at checkout and drop the lock*, is recorded as Alternatives §4 Option B with why it was not taken. The cancel dialog moves out of `OrderStatusUsecase` into a shared `PaymentCancelUsecase`, because three screens now need it. D12 is superseded by D20, and D13's mechanism changes accordingly. Phases 11–14 are new, and phases 6 and 10 are rescoped. Details in [Settled in review](#settled-in-review).
 
 ---
 
@@ -16,6 +18,14 @@ A guest who changes their mind is stuck. The usual reason is the payment method:
 1. Back lands on `/t/{code}/cart`. The items are there because the server cart is still `active`, but every edit fails with `400 "cart is locked by a pending payment"` (`CartUsecase.ensureCartUnlocked`, `apps/api/domain/cart_usecase.go:221`).
 2. Tapping Checkout again, even with the other method picked in `CustomerDetailsSheet`, returns **the same pending payment**. `PaymentUsecase.Checkout` is idempotent per QRIS D11 (`payment_usecase.go:124-148`): while a pending, unexpired payment exists on the cart it returns that payment and ignores the new `method`. The guest gets sent back to the countdown they tried to leave.
 3. So the guest ends up waiting for the timer, walking to the counter, or leaving.
+
+It gets worse when the guest **leaves the countdown page altogether**: they close the tab, the phone kills the browser, or they scan the table QR again later. Refreshing is harmless, because `/orders/{reference}` re-reads the payment when it renders. Coming back through the table QR is not:
+
+4. **The menu fails silently.** "Tambah ke keranjang" closes the item sheet immediately and dispatches `ADD_ITEM`. The API rejects it with the lock `400`. `CartUsecase` (`libs/ui/src/domain/usecases/cart.ts`, the `MUTATE_ERROR` branch) reverts to the previous cart and stores `"Failed to update cart"` in `errorMessage`. `MenuListHandler` never renders that field. The item simply isn't there, and nothing says why.
+5. **The cart page gives no reason either.** Items are listed, edits fail, and Checkout returns the old payment whatever method was picked (point 2).
+6. **Order history doesn't list it** if it's QRIS. `GET /payments` returns paid payments and pending *cash* only (`payment_repo.go:54`, History D14, Cash D17).
+
+The lock is correct, and it releases on its own within 5 or 10 minutes (the sweeper, Cash D6). But it is **invisible**. The guest can't see that a payment is waiting, can't get back to it except by accident, and can't release it early.
 
 ### Root cause
 
@@ -30,6 +40,7 @@ The machinery for "give up on this payment" already exists as `finalizeUncollect
 - **Late money.** A QRIS QR is still payable at DOKU after we cancel it locally, since the guest has a saved PNG (QRIS D23). Today's late-payment path (QRIS D5, `paid_late`) un-deletes and pays. It does **not** notice that the cart may already carry a *second*, newer live payment. With expiry that race is rare. A cancel button makes "cancel QRIS, re-checkout with cash" the normal path, so the gap has to be closed (D7). It also exists today for `expired`.
 - **The cashier race.** Cash D23 lets a cashier pay a soft-deleted *expired* order transaction, which is correct when a guest is standing at the till with money. It is wrong when the guest *deliberately cancelled* and may have re-ordered (D8).
 - **The back button.** Nothing in `libs/ui` intercepts history navigation today (no `beforePopState`, `popstate` or `beforeunload` anywhere in `libs/ui/src` or `apps/order-web/src`).
+- **Nothing outside the countdown page knows a payment is pending.** The lock is enforced only server-side, in `ensureCartUnlocked`. `GET /carts/current` doesn't mention it, so no screen that reads the cart can explain it.
 
 ### Goals
 
@@ -38,7 +49,8 @@ The machinery for "give up on this payment" already exists as `finalizeUncollect
 3. The guest can check out again straight away, with either method. That creates a fresh payment and transaction.
 4. Pressing Back (browser, Android hardware back, iOS swipe-back) while a payment is pending opens **the same confirmation**, instead of silently leaving the guest on a locked cart.
 5. No money is lost or double-counted. A guest who has already paid, or pays at the last second, ends up with a paid order, never a cancelled one.
-6. Each phase ships as one small PR, and the phases are arranged for parallel work.
+6. **A locked cart is never a dead end.** On the menu, the item sheet, the cart page, cart-item edit, and order history, the guest can see that a payment is waiting and can continue it or cancel it. No cart write fails without the screen explaining why.
+7. Each phase ships as one small PR, and the phases are arranged for parallel work.
 
 ### Non-Goals
 
@@ -46,10 +58,11 @@ The machinery for "give up on this payment" already exists as `finalizeUncollect
 |---|---|
 | Refunds | Cancel applies to **unpaid** payments only. Once DOKU or a cashier has the money, cancel returns the paid payment and the guest sees "preparing" (D3). Refunds stay a staff action outside the app (QRIS non-goals). |
 | Cancelling a **paid** order / an order in preparation | A different feature with kitchen and wallet consequences. `UnpayTransaction` stays staff-only. |
-| Intercepting tab close, reload, or Back when the status page is the first entry in the tab's history (opened from WhatsApp, a bookmark, or order history in a new tab) | Browsers do not allow a custom dialog there. `beforeunload` can only show the browser's generic prompt, and it also fires on reload. These cases keep today's behaviour: the payment stays pending and the sweeper expires it (Cash D6). |
+| Intercepting tab close, reload, or Back when the status page is the first entry in the tab's history (opened from WhatsApp, a bookmark, or order history in a new tab) | Browsers do not allow a custom dialog there. `beforeunload` can only show the browser's generic prompt, and it also fires on reload. The payment stays pending. v2 makes that recoverable instead of intercepting it: the next menu or cart visit shows it and offers to continue or cancel (D21), order history lists it (D19), and the sweeper still expires it (Cash D6). |
 | Letting staff cancel a guest's pending payment from the POS | The POS can already delete an unpaid transaction. Settling that payment row is a separate gap, recorded under Out of Scope. |
 | Preselecting "the other" method when the guest re-opens the checkout sheet | Open question 2. v1 reopens the sheet exactly as it opens today. |
 | A toast on the cart after cancelling | The order app has no toast surface: no order handler uses a toast controller. Returning to an editable cart with its items is the confirmation. Open question 3. |
+| Several unpaid orders at once for one guest | A cart becomes exactly one order, and the lock is what enforces that (Alternatives §4). A guest who wants a second order while one is unpaid finishes or cancels the first. |
 
 ---
 
@@ -111,6 +124,27 @@ Hosted checkouts (payment-gateway pages, marketplace apps) nearly always pair a 
 **Option D: do nothing and rely on the cart page.**
 - ❌ This fails acceptance criterion 5. It also leaves the guest exactly where the Problem Statement starts: a locked cart.
 
+### 4. What happens to the cart while a payment is pending *(added in v2)*
+
+**Option A: keep the lock, and make it visible and actionable everywhere the guest can hit it. (Recommended)**
+- ✅ The invariant that makes money safe stays: **a cart becomes exactly one order.** A guest can't leave a QRIS payment pending, re-order the same drinks with cash, and later pay the saved QR. That would be two paid orders, a refund, and a double batch at the bar.
+- ✅ Acceptance criterion 3 ("items come back, not blank") holds by construction: the items never left (D2). Expiry keeps its "Keranjang Anda masih tersimpan" promise for free.
+- ✅ The fix for the invisible lock is presentation. The cart response gains the pending payment (D18), and each surface renders it (D21). No lifecycle changes.
+- ❌ A guest who genuinely wants a *second*, separate order while one is unpaid must finish or cancel the first. That's accepted (Non-Goals).
+
+**Option B: clear the cart at checkout, drop the lock, allow several pending payments per session.** *(Raised in review.)*
+- ✅ It's a simple mental model: every checkout is a standalone order, and pending orders sit in history like paid ones.
+- ✅ The guest can start a new order at any time.
+- ❌ **It contradicts acceptance criterion 3.** A cancel would have to *rebuild* the cart from `transaction_items`. That needs merge rules for items the guest added since, and some rebuilt items may no longer be available.
+- ❌ **Expiry regresses.** Today an expired QRIS payment leaves the guest with a full cart and one tap to retry. Under B, expiry either needs the same rebuild or throws the order away.
+- ❌ **It enables accidental double orders.** Nothing stops "QRIS pending, re-order with cash, then pay the saved PNG". The supersede rule (D7) can't apply, because the two orders no longer share a cart.
+- ❌ Every pending payment holds its own availability reservation and, for cash, sends its own `cash_pending` push to the KDS. A guest who re-orders twice holds stock three times and buzzes the barista three times.
+- ❌ It's a larger rework than the feature: `Checkout`'s idempotency (QRIS D11), the freeze (QRIS D10), cart conversion and the expired-state copy all change.
+
+**Option C: keep the lock, but let a cart write silently cancel the pending payment.**
+- ✅ Zero new UI.
+- ❌ It cancels a QRIS payment that may have just gone through (D4 would catch it, but the guest never asked). It also cancels a cash order while the guest is standing at the till. Cancelling must always be a confirmed choice (D22).
+
 ---
 
 ## System Design Overview
@@ -138,10 +172,10 @@ Hosted checkouts (payment-gateway pages, marketplace apps) nearly always pair a 
  Guest on /orders/{ref}  (awaitingPayment | awaitingCashPayment, canCancel = true)
       │  taps "Batalkan pembayaran"  ─── or ───  presses Back (D14 guard)
       ▼
-  OrderStatusUsecase: REQUEST_CANCEL → confirmation open        (polling continues, D13)
+  PaymentCancelUsecase: REQUEST → confirming (dialog open)      (order-status polling continues, D13)
       │  "Ya, batalkan"
       ▼
-  CONFIRM_CANCEL → cancelling ── POST /payments/{ref}/cancel ──────────────────────┐
+  CONFIRM → cancelling ── POST /payments/{ref}/cancel ─────────────────────────────┐
                                                                                    ▼
                                            PaymentUsecase.CancelPayment  (one DB transaction)
                                              ├─ SELECT payment … FOR UPDATE        (D6)
@@ -159,7 +193,7 @@ Hosted checkouts (payment-gateway pages, marketplace apps) nearly always pair a 
                                              ├─ cash: enqueue KDS 'cash_cancelled' (phase 8, D16)
                                              └─ cart: untouched — status 'active', items intact (D2)
                                                                                    │
-  CANCEL_SUCCESS(payment) ◄────────────────────────────────────────────────────────┘
+  settled(result) ◄────────────────────────────────────────────────────────────────┘
       ├─ payment.status = cancelled → router.replace('/t/{code}/cart')              (D15)
       ├─ payment.status = paid      → preparing ("Pembayaran Anda sudah diterima")
       └─ payment.status = expired   → expired view (unchanged "Kembali ke keranjang")
@@ -167,6 +201,37 @@ Hosted checkouts (payment-gateway pages, marketplace apps) nearly always pair a 
   On /t/{code}/cart: GET /carts/current → same items; ensureCartUnlocked finds no
   *pending* payment → edits allowed; Checkout → GetPendingPaymentByCartId finds none →
   brand-new transaction + payment, any method (unchanged Checkout code).
+```
+
+### The guest who left the countdown page *(v2)*
+
+```
+ Guest closes the tab while a payment is pending, later scans the table QR again
+      │
+      ▼
+  /t/{code}  (menu)          GET /carts/current → { items…, pendingPayment: {ref, method, amount, expiredAt, canCancel} }
+      │
+      ├─ bottom bar:  "⏳ Menunggu pembayaran QRIS · Rp 45.000 · 04:12   [Lanjutkan pembayaran]"   (D21)
+      │                     └─► /orders/{ref}  (countdown + "Batalkan pembayaran")
+      │
+      ├─ opens an item, picks options → CTA replaced by:                                   (D21, D22)
+      │     "Anda masih punya pembayaran yang belum selesai…"
+      │     [Lanjutkan pembayaran]   [Batalkan & tambah item]
+      │                                   │  PaymentCancelAlert → POST /payments/{ref}/cancel
+      │                                   ├─ cancelled / expired → cart refetch → ADD_ITEM (from the sheet's own state)
+      │                                   │                         → cart = old items + new item, normal CartBar returns
+      │                                   └─ paid → no add → /orders/{ref} ("Pembayaran sudah diterima")
+      │
+      ├─ /t/{code}/cart → items listed read-only; banner replaces Checkout:                 (D21)
+      │     [Lanjutkan pembayaran]   [Batalkan pembayaran]
+      │
+      ├─ /orders (history) → the pending row, QRIS or cash → "Lanjutkan pembayaran"         (D19)
+      │
+      └─ a write races a lock created after the page loaded (another tab):                  (D23)
+            400 → CartUsecase refetches instead of reverting → surfaces switch to the locked state
+
+  Countdown on the bar reaches 0 → refetch cart; the server decides (sweeper / IsAwaitingPayment),
+  pendingPayment becomes null → normal bar, writes allowed.
 ```
 
 ### Changed tables
@@ -197,7 +262,8 @@ ALTER TABLE payments
 | `POST` | `/payments/{partnerReferenceNo}/cancel` | `RequireSessionId`, **owner session only** (an `X-Order-Access-Key` never authorises it, D3) | **New.** No body. Returns `PaymentResponse` with the payment's resulting status (`cancelled`, or `paid`/`expired`/`failed` if it had already left `pending`). `404` for an unknown or foreign reference. `400` while `ORDER_PAYMENT_CANCEL_ENABLED` is off (D11). |
 | `GET` | `/payments/{partnerReferenceNo}` | unchanged | Response gains `canCancel` and `cancelReason`; `status` may be `cancelled`. |
 | `POST` | `/carts/current/checkout` | unchanged | **No change.** After a cancel there is no pending payment, so it creates a new one with whatever `method` is sent. |
-| `GET` | `/payments` | unchanged | **No change.** Its filter (`paid`, or pending cash, `payment_repo.go:54`) already excludes `cancelled`, consistent with History D14. |
+| `GET` | `/carts/current` (and every cart write, which returns the cart) | unchanged | `Cart` gains `pendingPayment: PendingPayment \| null`, set only while the lock is in force (`IsAwaitingPayment`, D18). |
+| `GET` | `/payments` | unchanged | Filter widens from "paid, or pending cash" (`payment_repo.go:54`) to "paid, or pending (any method)" (D19). `cancelled` stays excluded, consistent with History D14. |
 | `PUT` | `/transactions/{transactionId}/pay` (POS) | unchanged (`CheckAuth`) | New `400` when the order transaction's payment was cancelled by the guest (D8). |
 
 Contract edits in `libs/api-contract/src/api.yaml`:
@@ -225,7 +291,24 @@ Contract edits in `libs/api-contract/src/api.yaml`:
         cancelReason:                                           # new, present only when cancelled
           type: string
           enum: [guest, superseded]
+
+    Cart:
+      properties:
+        pendingPayment:                                         # new (v2, D18); absent/null when unlocked
+          $ref: '#/components/schemas/PendingPayment'
+
+    PendingPayment:                                             # new (v2)
+      type: object
+      required: [partnerReferenceNo, method, amount, expiredAt, canCancel]
+      properties:
+        partnerReferenceNo: { type: string }
+        method:             { type: string, enum: [qris, cash] }
+        amount:             { type: number }
+        expiredAt:          { type: string, format: date-time }
+        canCancel:          { type: boolean }                   # same rule as Payment.canCancel (D10)
 ```
+
+`pendingPayment` is optional, so an older order-app build ignores it.
 
 `PaymentSummary.status` gains `cancelled` too, for enum symmetry, even though `GET /payments` never returns such a row. Both clients are regenerated. `canCancel` is **required** but Go's zero value is `false`, so the regenerated Go model compiles and serialises `false` before any backend logic sets it. That is what lets the contract phase merge first.
 
@@ -243,7 +326,11 @@ Contract edits in `libs/api-contract/src/api.yaml`:
 | DOKU | `data/doku/qris.go` | `CancelQris` (phase 9) |
 | Mock | `data/mock/payment_repository.go` | regenerated via `go generate ./...` |
 | REST | `presentation/restapi/payment_{handler,route,transformer}.go` | `Cancel` handler + route; `canCancel` / `cancelReason` serialisation |
-| Config | `utils/env.go`, `.env.example`, `main.go` | `ORDER_PAYMENT_CANCEL_ENABLED` (D11), threaded into `NewPaymentUsecase` |
+| Config | `utils/env.go`, `.env.example`, `main.go` | `ORDER_PAYMENT_CANCEL_ENABLED` (D11), threaded into `NewPaymentUsecase` and `NewCartUsecase` |
+| Entity | `domain/cart_entity.go` | `Cart.PendingPayment *Payment` (v2, D18) |
+| Use case | `domain/cart_usecase.go` | `GetCurrentCart` and every write attach the awaiting payment. `ensureCartUnlocked`'s lookup is reused, so there's one definition of "locked" (v2) |
+| REST | `presentation/restapi/cart_transformer.go` | serialise `pendingPayment`, with `canCancel` = flag (the requester is always the cart's owner) (v2) |
+| MySQL | `data/mysql/payment_repo.go` | `paymentHistoryFilter` → `status = paid OR status = pending` (v2, D19) |
 
 ### Changed frontend slice (`libs/ui`, order app)
 
@@ -252,14 +339,23 @@ Contract edits in `libs/api-contract/src/api.yaml`:
 | Entity | `domain/entities/Payment.ts` | `QrisPaymentStatus` += `'cancelled'`; `Payment.canCancel: boolean`; `Payment.cancelReason: 'guest' \| 'superseded' \| null` |
 | Repository port | `domain/repositories/payment.ts` | `cancelPayment(reference): Promise<Payment>` |
 | Data | `data/api/payment.ts`, `payment.transformer.ts`, `data/mock/payment.ts`, `src/__mocks__/api-contract.ts` | `paymentCancel` call + mapping; mock honours `setShouldFail` |
-| Use case | `domain/usecases/orderStatus.ts` (+ test) | states `cancelling`, `cancelled`; context `isCancelConfirmationOpen`, `didCancel`; actions `REQUEST_CANCEL`, `DISMISS_CANCEL`, `CONFIRM_CANCEL`, `CANCEL_SUCCESS`, `CANCEL_ERROR` (FR-9) |
+| Use case | `domain/usecases/orderStatus.ts` (+ test) | read-only `cancelled` state only (FR-2). The cancel dialog is **not** here any more (D20) |
+| Use case | `domain/usecases/paymentCancel.ts` (+ test) | **new (v2).** `PaymentCancelUsecase`: `idle → confirming → cancelling → settled \| error`, shared by three handlers (FR-8, D20) |
+| Hook | `presentation/handlers/hooks/usePaymentCancel.ts` | **new (v2).** Promoted to `hooks/` because ≥ 2 handlers use it (`docs/handlers.md`) |
 | Component | `presentation/views/components/checkout/PaymentCancelAlert.tsx` (+ story) | method-aware confirmation on the base `ConfirmationAlert` |
+| Component | `presentation/views/components/cart/PendingPaymentBar.tsx` (+ story) | **new (v2).** Replaces `CartBar` on the menu while locked: method, amount, countdown, "Lanjutkan pembayaran" (D21) |
+| Component | `presentation/views/components/cart/PendingPaymentNotice.tsx` (+ story) | **new (v2).** The "payment is waiting" block with "Lanjutkan pembayaran" plus a configurable cancel action. Used by the item sheet, the cart page and cart-item edit (D21) |
 | Screen | `presentation/views/screens/order/OrderStatusScreen.tsx` (+ stories) | cancel button under both awaiting variants; `cancelled` variant |
-| Handler | `presentation/handlers/order/OrderStatusHandler.tsx` (+ test) | maps new states; `router.replace(cartPath)` after a guest cancel; arms the back guard |
+| Screen | `MenuItemDetailScreen`, `CartScreen`, `CartItemEditScreen` (+ stories) | **v2.** A `locked` prop swaps the add/checkout/save CTA for `PendingPaymentNotice`. Cart line items render read-only |
+| Component | `presentation/views/components/orderHistory/OrderHistoryListItem.tsx` (+ story) | **v2.** Pending QRIS row ("Menunggu pembayaran QRIS"), beside the existing pending-cash row (D19) |
+| Entity / data | `domain/entities/Cart.ts`, `data/api/cart.transformer.ts`, `data/mock/cart.ts` | **v2.** `Cart.pendingPayment: PendingPayment \| null` (D18). The mock gets a `setPendingPayment` helper for tests |
+| Use case | `domain/usecases/cart.ts` (+ test) | **v2.** `MUTATE_ERROR` → `revalidating` (refetch) instead of reverting to `previousCart` (D23) |
+| Handler | `presentation/handlers/order/OrderStatusHandler.tsx` (+ test) | maps new states; wires `usePaymentCancel`; `router.replace(cartPath)` after a guest cancel; arms the back guard |
+| Handler | `MenuListHandler.tsx`, `CartHandler.tsx` (+ tests) | **v2.** Read `cart.pendingPayment`; render the bar, notice and banner; wire `usePaymentCancel`; "cancel and add" (D22) |
 | Util | `utils/backNavigationGuard.ts` (+ `.native.ts` no-op, + test) | `installBackNavigationGuard(onBackAttempt): () => void` around `Router.beforePopState` (D14) |
 | Hook | `presentation/handlers/hooks/useBackNavigationGuard.ts` | `useEffect` wrapper: arm while `enabled`, disarm on cleanup |
 
-Untouched: `CartHandler`, `CartScreen`, `CheckoutUsecase`, `CustomerDetailsSheet`, `apps/order-web/**` pages (the `/orders/[reference]` page already feeds `OrderStatus` everything it needs).
+Untouched: `CheckoutUsecase`, `CustomerDetailsSheet`, `apps/order-web/**` pages (the `/orders/[reference]`, `/t/[code]` and cart pages already feed their composition roots everything they need, because `pendingPayment` rides on the cart the handlers already fetch).
 
 ---
 
@@ -278,12 +374,18 @@ Untouched: `CartHandler`, `CartScreen`, `CheckoutUsecase`, `CustomerDetailsSheet
 | **D9** | Two nullable columns, `payments.cancelled_at` and `payments.cancel_reason` (`guest` \| `superseded`). | `updated_at` is overwritten by any later write, including D7's late-pay path, so it cannot answer "when was this cancelled". The reason drives the guest copy: "Anda membatalkan pembayaran" vs "Pesanan ini sudah dibayar lewat pembayaran sebelumnya". It also feeds the success metrics. **Rejected:** a `payment_events` audit table, which is a general audit log for one field. **Rejected:** no columns, which loses the reason. |
 | **D10** | The API computes **`canCancel`**: `status = pending` and the requester is the owning session and the feature flag is on. The client shows the button and arms the back guard only on `canCancel`. | Eligibility is a server fact: ownership, the flag, and the pending state (which can flip under a poll). A client-side re-derivation would be a second copy of the rule. It also makes the frontend safe to ship before the backend. An older API sends `false`, so no button appears. |
 | **D11** | Kill switch **`ORDER_PAYMENT_CANCEL_ENABLED`** (API env, default `false`). Off: `canCancel` is always `false` and the endpoint returns `400 "payment cancellation is not available"`. It is flipped on in phase 10. | This mirrors QRIS D20 and Cash D18. Every phase can merge and deploy with no guest able to cancel before the D6–D8 guards are all in. It is an API flag rather than a `NEXT_PUBLIC_` one because D10 already routes the decision through the server. One flag gates both the button and the endpoint, so they cannot disagree. |
-| **D12** | The confirmation's open/closed state lives **in `OrderStatusUsecase`** (`isCancelConfirmationOpen`), not in handler `useState`. | Two triggers (button and Back) open it, and the machine must close it itself when a poll reports `paid` (D13). `CartHandler`'s `isClearConfirmationOpen` `useState` works there because nothing asynchronous can invalidate a "clear cart?" prompt. Here something can. |
-| **D13** | **Paid wins over an open dialog.** Polling continues while the confirmation is open. `POLL_SUCCESS` with `paid` closes it and moves to `preparing`. `COUNTDOWN_ELAPSED` still issues the final poll (QRIS D12a), and an `EXPIRE` closes the dialog. | A guest must never be able to confirm a cancel against a screen that is already stale. Even if they do, D3 and D4 make the server return `paid`, so the worst case is one extra round trip. |
-| **D14** | Back is intercepted by a web-only helper, `utils/backNavigationGuard.ts`, around `Router.beforePopState`. It is armed **only while `canCancel`** and the state is awaiting. A pop is swallowed (`return false`), the current URL is re-pushed, and `REQUEST_CANCEL` is dispatched. `.native.ts` is a no-op. | Alternatives §3. The guard is a *handler* effect: it is router behaviour, which `docs/handlers.md` assigns to the handler, reached through a hook so the handler stays declarative. It disarms on every other state, so a paid or expired page has a normal Back. |
+| **D12** | ~~The confirmation's open/closed state lives in `OrderStatusUsecase`.~~ **Superseded by D20 (v2).** It still lives in a use case rather than handler `useState`, for the reason given here, but in a shared one. | Two triggers (button and Back) open it, and something asynchronous must be able to close it (D13). `CartHandler`'s `isClearConfirmationOpen` `useState` works there because nothing can invalidate a "clear cart?" prompt. Here something can. |
+| **D13** | **Paid wins over an open dialog.** Polling continues while the confirmation is open. When `OrderStatusUsecase` leaves the awaiting states (a poll reports `paid`, or `EXPIRE`), the handler dispatches `DISMISS` to `PaymentCancelUsecase` *(mechanism revised in v2, per D20)*. `COUNTDOWN_ELAPSED` still issues the final poll (QRIS D12a). | A guest must never be able to confirm a cancel against a screen that is already stale. Even if they do, D3 and D4 make the server return `paid`, so the worst case is one extra round trip. |
+| **D14** | Back is intercepted by a web-only helper, `utils/backNavigationGuard.ts`, around `Router.beforePopState`. It is armed **only while `canCancel`** and the state is awaiting. A pop is swallowed (`return false`), the current URL is re-pushed, and `REQUEST` is dispatched to `PaymentCancelUsecase` (D20). `.native.ts` is a no-op. | Alternatives §3. The guard is a *handler* effect: it is router behaviour, which `docs/handlers.md` assigns to the handler, reached through a hook so the handler stays declarative. It disarms on every other state, so a paid or expired page has a normal Back. |
 | **D15** | After a guest-confirmed cancel the handler calls **`router.replace('/t/{code}/cart')`**. The status page for a cancelled payment (reached by reload or by an old link) renders a `cancelled` variant with "Kembali ke keranjang". | `replace`, not `push`, so Back from the cart does not return to a dead countdown. The cart page remounts, so `CartUsecase` refetches and `CheckoutUsecase` starts at `idle` with the SSR-prefilled name and WhatsApp number. The guest is one tap from the method sheet. |
 | **D16** | A cancelled **cash** order sends the KDS a **`cash_cancelled`** push ("Cash order #12 cancelled — Meja 4") through the existing outbox. It bypasses the station rule, as Cash D9's `cash_pending` does. | The `cash_pending` push (Cash D10) may already have sent a barista to the till. Leaving them waiting for a guest who has left is the staff-side equivalent of the guest's locked cart. QRIS cancels send nothing, because nothing was sent when the QR was minted. |
-| **D17** | Cancelled payments are **not** order-history rows, and cancelled transactions are **invisible** on the POS list (soft-deleted, same as `expired`). | This is consistent with History D14: only paid orders and pending cash are rows. A cancelled attempt is not an order. Staff reporting on cancels reads `payments` (D9). |
+| **D17** | Cancelled payments are **not** order-history rows, and cancelled transactions are **invisible** on the POS list (soft-deleted, same as `expired`). | This is consistent with History D14: only paid orders and pending payments are rows (pending QRIS since D19). A cancelled attempt is not an order. Staff reporting on cancels reads `payments` (D9). |
+| **D18** *(v2)* | The cart **carries its lock**. `Cart.pendingPayment` holds `{ partnerReferenceNo, method, amount, expiredAt, canCancel }`, set when and only when `ensureCartUnlocked` would refuse a write (`IsAwaitingPayment(now)`), on `GET /carts/current` and on every write response. | Every surface that can hit the lock already reads the cart: the menu for its `CartBar`, the cart page, cart-item edit. Putting the lock *on the cart* means no new request, no extra SSR call, and one server-side definition of "locked" shared by the rule and its explanation. **Rejected:** a separate `GET /payments/current` that each page also fetches. It's a second round trip, and a second place for "locked" to be computed and drift. |
+| **D19** *(v2)* | Order history lists **pending payments of both methods**. The row reads "Menunggu pembayaran" and links to the countdown. This widens History D14 and Cash D17, which excluded pending QRIS. | Cash D17 kept pending QRIS out because the row "would be a link that dies within five minutes". That is still true, but now the sweeper removes it within one tick of expiring, and the countdown page offers cancel. So the row is a live way back, not a dead link. It is the recovery path the reviewer asked for, for a guest whose tab is gone. |
+| **D20** *(v2)* | The cancel dialog and request are their own finite-state machine, **`PaymentCancelUsecase`** (`idle → confirming → cancelling → settled \| error`, params `{ reference, method }`), reached through a shared `usePaymentCancel` hook. `OrderStatusUsecase` keeps only the read-only `cancelled` state. Supersedes D12. | Three handlers now cancel: `OrderStatusHandler`, `MenuListHandler` and `CartHandler`. Copying the dialog states into `OrderStatusUsecase`, `CartUsecase` and the menu machines would triplicate one flow. Each handler bridges the result into its own machine with an effect, as `CartHandler` already bridges checkout errors into a cart refetch (`CartHandler.tsx:89-92`). |
+| **D21** *(v2)* | **The lock is shown wherever a write could hit it**, always offering "Lanjutkan pembayaran", and also "Batalkan" when `canCancel`. On the menu, `PendingPaymentBar` replaces `CartBar`. In the item sheet, the notice replaces "Tambah ke keranjang", but browsing and option-picking still work. On the cart page, line items are read-only and a banner replaces Checkout. In cart-item edit, the notice replaces Save. | Goal 6. The guest learns about the pending payment where they're trying to act, and every notice has a way forward. Browsing stays open because looking at the menu costs nothing and is often why the guest came back. The bar's countdown makes the lock's natural end visible. |
+| **D22** *(v2)* | The item sheet's cancel action is **"Batalkan & tambah item"**: one confirmation, then the add. On `cancelled` or `expired` the handler refetches the cart and dispatches `ADD_ITEM` from `MenuItemDetailUsecase`'s current variant, amount and note (the sheet stays open until then). On `paid` nothing is added and the guest goes to `/orders/{ref}`. | The guest opened the sheet to add a drink, so the flow should end with the drink in the cart, not at a cancel button somewhere else. The intent needs no new storage because it already lives in the sheet's own machine. Adding after a `paid` result would silently start a second order, so it doesn't. |
+| **D23** *(v2)* | **No cart write fails silently.** `CartUsecase`'s `MUTATE_ERROR` goes to `revalidating` (refetch) instead of reverting to `previousCart`. It keeps `errorMessage`, and `MenuListHandler` and `CartHandler` render it. A lock-caused `400` therefore arrives with a fresh cart whose `pendingPayment` switches the screen to D21's locked state. | This is the backstop for a lock the page didn't know about, for example one created from another tab after the menu loaded. It needs no new error code: the refetched cart says *why*. Refetching on any write error is also simply more correct than trusting a snapshot the server just disagreed with. |
 
 ---
 
@@ -315,7 +417,7 @@ The `api.yaml` edits above, then both clients regenerated. In `libs/ui`: the ent
 
 ### FR-4: Endpoint, `canCancel`, flag (API)
 
-`PaymentHandler.Cancel` → `CancelPayment` → the existing `ToApiPayment` transformer, which now sets `canCancel = flag && payment.CanBeCancelledBy(requestSessionId, now)` and `cancelReason`. `GET /payments/{ref}` goes through the same transformer, so the field is correct on every read. Route: `router.HandleFunc("/payments/{partnerReferenceNo}/cancel", RequireSessionId(handler.Cancel)).Methods(http.MethodPost, http.MethodOptions)` in `payment_route.go`. `ORDER_PAYMENT_CANCEL_ENABLED` goes in `utils/env.go` and `.env.example` (empty = `false`) and is threaded through `NewPaymentUsecase`. Handler tests: a `200` for each resulting status, `404`, `400` with the flag off, and `canCancel` `true` for the owner but `false` for an access-key reader.
+`PaymentHandler.Cancel` → `CancelPayment` → the existing `ToApiPayment` transformer, which now sets `canCancel = flag && payment.CanBeCancelledBy(requestSessionId, now)` and `cancelReason`. `GET /payments/{ref}` goes through the same transformer, so the field is correct on every read. Route: `router.HandleFunc("/payments/{partnerReferenceNo}/cancel", RequireSessionId(handler.Cancel)).Methods(http.MethodPost, http.MethodOptions)` in `payment_route.go`. `ORDER_PAYMENT_CANCEL_ENABLED` goes in `utils/env.go` and `.env.example` (empty = `false`) and is threaded through `NewPaymentUsecase` and `NewCartUsecase`. The latter feeds `pendingPayment.canCancel` (FR-13); if phase 11 hasn't merged yet, whichever of 4 and 11 lands second wires it. Handler tests: a `200` for each resulting status, `404`, `400` with the flag off, and `canCancel` `true` for the owner but `false` for an access-key reader.
 
 ### FR-5: Late-payment supersede, cashier guard, locks (API)
 
@@ -333,41 +435,47 @@ Tests: a late paid webhook on a cancelled QRIS payment pays it, and it supersede
 
 `KdsNotificationKindCashCancelled = "cash_cancelled"`. `BuildKdsPushMessage` gets a third title/body pair: "Cash order #12 cancelled — Meja 4" / "Guest cancelled. Don't wait at the till." It is enqueued in `CancelPayment` (cash only) and in the supersede helper when the superseded payment is cash. It is dispatched after commit via `TriggerDispatch`, and it bypasses `ShouldNotify` like `cash_pending` (Cash D9). If the transaction has no `cash_pending` row, skip it: nothing was announced, so there is nothing to retract.
 
-### FR-8: Order-status machine (frontend)
+### FR-8: `PaymentCancelUsecase` (frontend) *(rewritten in v2, D20)*
 
-Additions to `OrderStatusUsecase`:
+`domain/usecases/paymentCancel.ts`. It is one machine per pending payment, shared by the status page, the menu and the cart:
 
 ```ts
 type Context = {
-  /* existing */
-  isCancelConfirmationOpen: boolean;
-  didCancel: boolean;            // true only after this tab's own confirmed cancel → handler navigates
+  reference: string;
+  method: PaymentMethod;
+  result: Payment | null;        // the server's answer (D3): cancelled | paid | expired | failed
+  errorMessage: string | null;
 };
 
-type OrderStatusState = ( /* existing */ | { type: 'cancelling' } | { type: 'cancelled' } ) & Context;
+export type PaymentCancelState = (
+  | { type: 'idle' }
+  | { type: 'confirming' }       // PaymentCancelAlert open
+  | { type: 'cancelling' }       // POST /payments/{ref}/cancel in flight
+  | { type: 'settled' }          // result holds the resulting payment; the handler routes on result.status
+  | { type: 'error' }            // dialog closed, errorMessage set; REQUEST reopens
+) & Context;
 
-type OrderStatusAction = /* existing */
-  | { type: 'REQUEST_CANCEL' }                    // button or Back; only from awaiting* with payment.canCancel
-  | { type: 'DISMISS_CANCEL' }
-  | { type: 'CONFIRM_CANCEL' }                    // awaiting* + dialog open → cancelling
-  | { type: 'CANCEL_SUCCESS'; payment: Payment }  // routes by payment.status (cancelled | paid | expired | failed)
-  | { type: 'CANCEL_ERROR'; message: string };    // back to the awaiting state it came from, dialog closed, errorMessage set
+export type PaymentCancelAction =
+  | { type: 'REQUEST' }          // button, Back guard, banner, or "Batalkan & tambah item"
+  | { type: 'DISMISS' }          // "Lanjutkan pembayaran", or the handler closing it (D13)
+  | { type: 'CONFIRM' }
+  | { type: 'CANCEL_SUCCESS'; payment: Payment }
+  | { type: 'CANCEL_ERROR'; message: string };
 ```
 
-- `cancelling` stops the poll timer (it falls into `otherwise`). `onStateChange` calls `cancelPayment`.
-- `CANCEL_SUCCESS` goes to `cancelled` with `didCancel: true` when the status is `cancelled`. `paid` goes to `stateTypeForPayment(payment)`, and `expired`/`failed` go to `expired`.
-- `CANCEL_ERROR` needs to know which awaiting state to return to. It is derived from `payment.method`, as `stateTypeForPayment` already does.
-- In awaiting states, `POLL_SUCCESS` with `paid` and `EXPIRE` also reset `isCancelConfirmationOpen` (D13).
+The params are `{ reference, method }`. A handler whose pending payment can change (the menu and cart, after a refetch) constructs the use case from the current `pendingPayment`. `onStateChange` calls `PaymentRepository.cancelPayment` in `cancelling`. `usePaymentCancel` lives in `presentation/handlers/hooks/`, because three handlers use it.
 
-`orderStatus.test.ts` (`UsecaseTester` + `MockPaymentRepository`) covers: request → dismiss → still awaiting and still polling; request → confirm → `cancelled` with `didCancel`; `REQUEST_CANCEL` ignored when `canCancel` is false; a server answer of `paid` → `preparing`; an answer of `expired` → `expired`; an error → back to the awaiting state with the message; a poll reporting `paid` while the dialog is open → `preparing` and the dialog closed; a seeded `cancelled` payment → `cancelled` with `didCancel: false`.
+`OrderStatusUsecase` gains **only** the read-only `cancelled` state (FR-2). After a settled cancel, `OrderStatusHandler` bridges with an effect: `cancelled` → `router.replace(cartPath)`, `paid` → `orderStatus.dispatch({ type: 'FETCH' })` (to show preparing), and `expired`/`failed` → `FETCH` (to show the expired view). When `orderStatus` leaves the awaiting states while the dialog is open, the handler dispatches `DISMISS` (D13).
+
+`paymentCancel.test.ts` (`UsecaseTester` + `MockPaymentRepository`) covers: request → dismiss → idle with no request made; request → confirm → `settled` with a `cancelled` result; a server answer of `paid`, then of `expired`, each carried in `result`; an error → `error` with the message, then request → `confirming` again; `CONFIRM` ignored outside `confirming`.
 
 ### FR-9: Status-page UI (frontend)
 
 - `OrderStatusScreen` awaiting variants gain `canCancel`, `onCancelPress`, `cancelConfirmation: { isOpen, method, isCancelling, onConfirm, onDismiss }` and `cancelErrorMessage`. A secondary (ghost) **"Batalkan pembayaran"** button sits below the payment view, after "Simpan QR" and the countdown, so it is never the first thing under the thumb. It is rendered only when `canCancel`.
-- `PaymentCancelAlert` builds on the base `ConfirmationAlert` (`components/base/ConfirmationAlert`, already used by `CartScreen`'s clear-cart prompt), with copy chosen by method (FR-12). The confirm button shows a spinner while `cancelling`.
-- `OrderStatusHandler` maps the new states exhaustively. On `cancelled && didCancel` it calls `router.replace(cartPath)`. It arms the back guard with `enabled = payment.canCancel && state ∈ awaiting*`.
+- `PaymentCancelAlert` builds on the base `ConfirmationAlert` (`components/base/ConfirmationAlert`, already used by `CartScreen`'s clear-cart prompt), with copy chosen by method (FR-12). The confirm button shows a spinner while `cancelling`. It is shared by all three screens.
+- `OrderStatusHandler` maps the new states exhaustively, wires `usePaymentCancel` as FR-8 describes, and arms the back guard with `enabled = payment.canCancel && state ∈ awaiting*`.
 - Stories: each awaiting variant with and without `canCancel`, dialog open for QRIS and for cash, cancelling, error, and `cancelled` for both reasons.
-- `OrderStatusHandler.test.tsx` (real use case, mock repository, accessible roles): the button is hidden when `canCancel` is false; clicking it opens the dialog; "Lanjutkan pembayaran" closes it; "Ya, batalkan" → `router.replace('/t/{code}/cart')`; a cancel answered with `paid` shows the preparing view and does not navigate.
+- `OrderStatusHandler.test.tsx` (real use cases, mock repository, accessible roles): the button is hidden when `canCancel` is false; clicking it opens the dialog; "Lanjutkan pembayaran" closes it; "Ya, batalkan" → `router.replace('/t/{code}/cart')`; a cancel answered with `paid` shows the preparing view and does not navigate; a poll reporting `paid` while the dialog is open closes it.
 
 ### FR-10: Back-button guard (frontend)
 
@@ -389,6 +497,9 @@ Tests: `backNavigationGuard.test.ts` against the Jest `next/router` stub (the re
 2. Cash: checkout → Back → the dialog appears → dismiss → still on the countdown → Back → confirm → cart.
 3. Paid-before-cancel: stub DOKU as paid → cancel → preparing view, not the cart.
 4. POS: pay a cancelled cash order through the API → 400.
+5. *(v2)* Left the page: QRIS checkout → open a fresh page on `/t/{code}` → the pending-payment bar is visible → open an item → the notice replaces "Tambah ke keranjang" → "Batalkan & tambah item" → confirm → the cart holds the original items **plus** the new one.
+6. *(v2)* Cart banner: cash checkout → `/t/{code}/cart` → line items read-only, banner shown → "Lanjutkan pembayaran" → countdown for the same reference.
+7. *(v2)* History: QRIS checkout → `/orders` lists it as pending → tap → countdown.
 
 Docs: a docs-site page or section for the order payment flow, per the `docs-site-page` skill. `ORDER_PAYMENT_CANCEL_ENABLED=true` goes in the production environment file.
 
@@ -399,72 +510,122 @@ Docs: a docs-site page or section for the order payment flow, per the `docs-site
 | Button | **Batalkan pembayaran** |
 | Dialog title | **Batalkan pembayaran?** |
 | Dialog body: QRIS | "Jika Anda **sudah membayar**, jangan batalkan — tunggu beberapa saat hingga pembayaran terkonfirmasi. Jika dibatalkan, QR ini tidak berlaku lagi dan pesanan kembali ke keranjang. Anda bisa memilih metode pembayaran lain." |
-| Dialog body: cash | "Pesanan #{n} akan dibatalkan dan kasir tidak lagi menunggu pembayaran Anda. Isi keranjang tetap tersimpan, dan Anda bisa memilih metode pembayaran lain." |
+| Dialog body: cash | "Pesanan Anda akan dibatalkan dan kasir tidak lagi menunggu pembayaran Anda. Isi keranjang tetap tersimpan, dan Anda bisa memilih metode pembayaran lain." *(v2: no `#{n}`, because the menu and cart only have `pendingPayment`, which carries no transaction number)* |
 | Dialog actions | **Ya, batalkan** (destructive) · **Lanjutkan pembayaran** |
 | Cancel failed | "Gagal membatalkan pembayaran. Silakan coba lagi." |
 | `cancelled` / `guest` | "Pembayaran dibatalkan" · "Keranjang Anda masih tersimpan." · **Kembali ke keranjang** |
 | `cancelled` / `superseded` | "Pembayaran dibatalkan" · "Pesanan ini sudah dibayar lewat pembayaran sebelumnya." · **Lihat riwayat pesanan** |
 | Cancel answered `paid` | Preparing view (unchanged) |
 | POS pay error | "This order was cancelled by the guest." |
+| *(v2)* Menu bar | "⏳ Menunggu pembayaran {QRIS \| tunai} · {Rp amount} · {mm:ss}" · **Lanjutkan pembayaran** |
+| *(v2)* Notice (item sheet, cart, item edit) | "Anda masih punya pembayaran yang belum selesai. Selesaikan atau batalkan dulu untuk mengubah pesanan." |
+| *(v2)* Notice actions | **Lanjutkan pembayaran** · item sheet: **Batalkan & tambah item** · cart and item edit: **Batalkan pembayaran** |
+| *(v2)* "Cancel and add" answered `paid` | Goes to the countdown page, which shows the preparing view; nothing is added |
+| *(v2)* Cart write failed for another reason (D23) | "Gagal memperbarui keranjang. Silakan coba lagi." |
+| *(v2)* History row, pending QRIS | "Menunggu pembayaran QRIS" · tap → countdown |
+
+### FR-13: The cart carries its lock (API + contract + `libs/ui` data) *(v2, D18)*
+
+- `domain.Cart.PendingPayment *Payment`. `CartUsecase` gets a private `attachPendingPayment(ctx, cart)`, built on the same `GetPendingPaymentByCartId` + `IsAwaitingPayment(now)` pair `ensureCartUnlocked` uses. Both call one helper, `findAwaitingPayment`, so "locked" and "shown as locked" can't disagree. It runs on `GetCurrentCart` and at the end of every write, so the returned cart is always current.
+- `cart_transformer.go` serialises `pendingPayment` with `canCancel = ORDER_PAYMENT_CANCEL_ENABLED`. Every cart request is its own session's cart, so the ownership half of D10 always holds.
+- Contract: `Cart.pendingPayment` (optional) and the `PendingPayment` schema. Both clients are regenerated.
+- `libs/ui`: `Cart.pendingPayment: PendingPayment | null`, `cart.transformer.ts`, and `MockCartRepository.setPendingPayment(p | null)`. When it is set, the mock's writes reject the way the API does, so handler tests can drive D23.
+
+**Tests:** `cart_usecase_test.go`: no payment → `nil`; pending and unexpired → set; pending but past `expired_at` → `nil` (and a write succeeds, as today); cancelled/expired/paid → `nil`. `cart_handler_test.go`: the JSON shape, and `canCancel` following the flag. `cart.transformer` test in `libs/ui`.
+
+### FR-14: Pending QRIS in order history (API + `libs/ui`) *(v2, D19)*
+
+`paymentHistoryFilter` (`payment_repo.go:54`) becomes `session_id = ? AND deleted_at IS NULL AND status IN ('paid','pending')`. `OrderHistoryListItem` generalises its `isAwaitingCashPayment` branch (`OrderHistoryListItem.tsx:74`) to any pending method, with per-method copy (FR-12). A pending row links to `/orders/{reference}`, exactly as the cash row already does. **Tests:** repository test for the filter; stories and a list-item test for pending QRIS.
+
+### FR-15: The locked cart is visible (`libs/ui`) *(v2, D21, D23)*
+
+- **`CartUsecase` (D23):** `MUTATE_ERROR` goes to `revalidating` (refetch) and keeps `errorMessage`. It does not revert to `previousCart`. The handlers render `errorMessage` whenever the refetched cart is *not* locked. A locked cart is its own explanation.
+- **Menu (`MenuListHandler`):** if `cart.pendingPayment` is set, render `PendingPaymentBar` instead of `CartBar`. Its countdown reaching zero dispatches a cart `FETCH`, and the server decides whether the lock is gone. "Lanjutkan pembayaran" → `router.push('/orders/{ref}')`. `MenuItemDetailScreen` gets `lockedNotice: PendingPaymentNoticeProps | null`. When it is non-null, the notice replaces the add CTA, while options, amount and note stay interactive.
+- **Cart (`CartHandler`):** if locked, `CartScreen` gets `lockedNotice`. Line items render without edit/remove affordances, the clear-cart action is hidden, and the notice replaces Checkout. `CartItemEditScreen` gets the same `lockedNotice` in place of Save. (Tapping a line normally opens edit; it is disabled while locked, but a deep link through `CartQueryRepository`'s selected item could still open it.)
+- In this phase the notices offer **only** "Lanjutkan pembayaran". The cancel actions arrive in phase 14.
+
+**Tests:** `cart.test.ts`: a failed write refetches and adopts the server cart. `MenuListHandler.test.tsx`: the locked bar replaces `CartBar`; the item sheet shows the notice and no add button; the continue action routes to `/orders/{ref}`; an add rejected by a lock created after load switches the sheet to the notice. `CartHandler.test.tsx`: line items are read-only and the banner replaces Checkout.
+
+### FR-16: Cancel from the menu and the cart (`libs/ui`) *(v2, D22)*
+
+- `MenuListHandler` and `CartHandler` wire `usePaymentCancel` from `cart.pendingPayment`, and render `PaymentCancelAlert`. The notice's cancel action appears only when `pendingPayment.canCancel`.
+- **Item sheet: "Batalkan & tambah item"** → `REQUEST`. On `settled`:
+  - `cancelled` or `expired`: cart `FETCH`, then `ADD_ITEM` with `menuItemDetail.state`'s variant, amount and note, then `CLEAR_ITEM`. This is the same dispatch `onAddToCartPress` makes today. The sheet stays open until then.
+  - `paid`: `router.push('/orders/{ref}')`.
+- **Cart banner and item edit: "Batalkan pembayaran"** → `REQUEST`. On `settled` with `cancelled`/`expired`, cart `FETCH`, and the page becomes editable in place. With `paid`, route to the countdown.
+
+**Tests:** `MenuListHandler.test.tsx`: cancel-and-add ends with the old items plus the new one in `MockCartRepository`; a `paid` answer adds nothing and routes; dismissing leaves the sheet open and locked. `CartHandler.test.tsx`: cancel from the banner makes the items editable and Checkout reappear.
 
 ---
 
 ## Phased plan
 
-Ten PRs. Each merges to `main` green and shippable. **No guest can cancel before phase 10**, because `ORDER_PAYMENT_CANCEL_ENABLED` is off (D11) and `canCancel` is therefore `false` (D10).
+Fourteen PRs (v1's ten plus 11–14 from v2). Each merges to `main` green and shippable. **No guest can cancel before phase 10**, because `ORDER_PAYMENT_CANCEL_ENABLED` is off (D11) and `canCancel` is therefore `false` everywhere (D10). Three v2 phases are guest-visible improvements that are useful even without cancel, so they ship as soon as they merge: 12 (pending QRIS in history), 13 (the locked cart explains itself and offers "continue"), and D23's end to silent write failures (in 13).
 
 | # | Phase | Side | Touches | Depends on | Wave |
 |---|---|---|---|---|---|
 | 1 | Schema and domain state | API | migration `000041`, `payment_entity.go`, `payment_repository.go`, mysql payment files, mock | — | A |
 | 2 | Contract + read-only `cancelled` state | contract + `libs/ui` | `api.yaml`, `Payment.ts`, payment repo/transformer/mock, `orderStatus.ts`, `OrderStatusScreen` | — | A |
 | 3 | Back-navigation guard utility | `libs/ui/utils` | `backNavigationGuard{,.native}.ts`, test, hook | — | A |
+| 11 | **v2** The cart carries its lock | API + contract + `libs/ui` data | `cart_entity.go`, `cart_usecase.go`, `cart_transformer.go`, `api.yaml`, `Cart.ts`, `cart.transformer.ts`, cart mock | — | A |
+| 12 | **v2** Pending QRIS in order history | API + `libs/ui` | `payment_repo.go`, `OrderHistoryListItem` | — | A |
 | 4 | `CancelPayment` + endpoint + flag | API | `payment_usecase.go`, `payment_{handler,route,transformer}.go`, env | 1, 2 | B |
 | 5 | Late-payment supersede, cashier guard, locks | API | `payment_usecase.go` (`applyQrisStatus`, `expireOne`), `transaction_usecase.go` | 1 | B |
-| 6 | Status-page cancel flow | `libs/ui` | `orderStatus.ts`, `PaymentCancelAlert`, `OrderStatusScreen`, `OrderStatusHandler` | 2 | B |
+| 6 | Cancel machine + status-page cancel flow *(rescoped in v2)* | `libs/ui` | `paymentCancel.ts`, `usePaymentCancel`, `PaymentCancelAlert`, `OrderStatusScreen`, `OrderStatusHandler` | 2 | B |
+| 13 | **v2** The locked cart is visible | `libs/ui` | `cart.ts` (D23), `PendingPaymentBar`, `PendingPaymentNotice`, `MenuItemDetailScreen`, `CartScreen`, `CartItemEditScreen`, `MenuListHandler`, `CartHandler` | 11 | B |
 | 7 | Back button opens the confirmation | `libs/ui` | `OrderStatusHandler` (+ test) | 3, 6 | C |
 | 8 | KDS `cash_cancelled` | API | `kds_notification_entity.go`, `payment_usecase.go` | 4 (+5 for the supersede call site) | C |
 | 9 | Cancel the QR at DOKU *(optional)* | API | `payment_repository.go`, `data/doku/qris.go`, `payment_usecase.go`, e2e DOKU stub | 4 | C |
-| 10 | E2E, docs, enable | all | `cancelPayment.spec.ts`, docs-site, prod env | 4, 5, 7 (+8, +9 if in scope) | D |
+| 14 | **v2** Cancel from the menu and the cart | `libs/ui` | `MenuListHandler`, `CartHandler`, notice actions | 6, 13 | C |
+| 10 | E2E, docs, enable | all | `cancelPayment.spec.ts`, docs-site, prod env | 4, 5, 7, 12, 14 (+8, +9 if in scope) | D |
 
 ### Dependency graph
 
 An arrow means "does not compile, or has nothing to test, without". Anything not connected can be built at the same time by different people.
 
 ```
-  wave A                     wave B                          wave C                 wave D
+  wave A                     wave B                          wave C                     wave D
 
-  1  schema + domain ──┬──►  4  CancelPayment ──────────┬──► 8  KDS cash_cancelled ─┐
-     (API)             │        + endpoint + flag       │        (API)             │
-                       │        (API)       ▲           └──► 9  DOKU qr-mpm-cancel ┤
-                       │                    │                    (API, optional)   │
-                       └──►  5  supersede + cashier ─────────────(8 also uses 5)───┤
-                                guard + locks (API)                                ├──► 10 e2e
-                                            │                                      │       docs
-  2  contract + read- ──────────────────────┘                                      │       enable
-     only `cancelled`  ──►  6  status-page cancel ──────►  7  Back → confirm ──────┤
-     (contract + ui)           flow (ui)                    (ui)       ▲           │
-                                                                       │           │
-  3  back-guard util (ui) ─────────────────────────────────────────────┘           │
+  1  schema + domain ──┬──►  4  CancelPayment ─────────┬──►  8  KDS cash_cancelled ──┐
+     (API)             │        + endpoint + flag      │        (API)               │
+                       │        (API)     ▲            └──►  9  DOKU qr-mpm-cancel ─┤
+                       │                  │                     (API, optional)     │
+                       └──►  5  supersede + cashier ───────────(8 also uses 5)──────┤
+                                guard + locks (API)                                 │
+                                          │                                         │
+  2  contract + read- ────────────────────┘                                         │
+     only `cancelled`  ──►  6  cancel machine + ───┬───►  7  Back → confirm ────────┤
+     (contract + ui)           status-page flow    │         (ui)    ▲              ├──► 10 e2e
+                               (ui)                │                 │              │       docs
+  3  back-guard util (ui) ─────────────────────────┼─────────────────┘              │       enable
+                                                   │                                │
+  11 cart carries ─────►  13 locked cart is ───────┴───►  14 cancel from menu ──────┤
+     its lock               visible (ui)                     and cart (ui)          │
+     (API+contract+ui)                                                              │
+                                                                                    │
+  12 pending QRIS in order history (API + ui) ──────────────────────────────────────┘
 ```
 
 **Waves** (everything in a wave can run concurrently):
 
 | Wave | Phases | Notes |
 |---|---|---|
-| **A** | **1, 2, 3** | Three people on day one: one Go, one contract + frontend, one frontend util. None touches another's files. |
-| **B** | **4, 5, 6** | 4 needs 1 and 2 (the generated `paymentCancel` model). 5 needs only 1. 6 needs only 2, because it runs against `MockPaymentRepository` and ships invisibly behind `canCancel = false`. |
-| **C** | **7, 8, 9** | 9 is optional. Drop it and v1 still meets every acceptance criterion (D5). |
+| **A** | **1, 2, 3, 11, 12** | Five independent starts. 11 and 12 need none of the cancel machinery. 12 ships a guest-visible improvement on its own. |
+| **B** | **4, 5, 6, 13** | 4 needs 1 and 2 (the generated `paymentCancel` model). 5 needs only 1. 6 needs only 2, because it runs against `MockPaymentRepository` behind `canCancel = false`. 13 needs only 11. |
+| **C** | **7, 8, 9, 14** | 14 joins the two frontend tracks: the cancel machine (6) and the locked-cart surfaces (13). 9 is optional (D5). |
 | **D** | **10** | Needs every phase that is in scope. |
 
-**Critical paths**, both four deep: **2 → 6 → 7 → 10** (frontend) and **1 → 4 → 8 → 10** (backend). With two or three people the calendar length is one of those chains plus phase 10's device check.
+**Critical paths**, all four deep: **2 → 6 → 14 → 10**, **11 → 13 → 14 → 10**, **2 → 6 → 7 → 10**, and **1 → 4 → 8 → 10**. v2 added width, not depth. With three or four people the calendar length is still four PRs plus phase 10's device check.
 
 **File contention**, the real constraint beyond the graph:
 
 - **4, 5, 8 and 9 all edit `apps/api/domain/payment_usecase.go`.** 4 adds `CancelPayment`, 5 edits `applyQrisStatus`/`expireOne`, and 8/9 insert one call each into `CancelPayment`. They touch different functions, so conflicts are mechanical, but give the file one owner to land them in order 4 → 5 → 8 → 9.
-- **6 and 7 both edit `OrderStatusHandler.tsx`** (and its test). They are already sequential in the graph.
-- **2 and 6 both edit `orderStatus.ts` and `OrderStatusScreen.tsx`.** They are sequential.
+- **2 and 11 both edit `libs/api-contract/src/api.yaml`** (different schemas) and both regenerate clients. Generated output is gitignored, so this resolves itself.
+- **4 and 11 both touch the flag wiring** (`main.go`, `NewCartUsecase`). Whichever lands second wires `pendingPayment.canCancel` to the flag (FR-4).
+- **13 and 14 both edit `MenuListHandler.tsx` and `CartHandler.tsx`** (and their tests). They are sequential in the graph.
+- **6 and 7 both edit `OrderStatusHandler.tsx`**, and **2 and 6 both edit `orderStatus.ts`/`OrderStatusScreen.tsx`.** Both pairs are sequential.
 
-**One person alone:** 1 → 2 → 4 → 5 → 6 → 3 → 7 → 8 → 10 (→ 9 later) gives a demoable backend cancel after 4 (via `curl`) and a clickable flow after 6 with the flag on locally.
+**One person alone:** 11 → 13 → 12 → 1 → 2 → 4 → 5 → 6 → 14 → 3 → 7 → 8 → 10 (→ 9 later). This ships the review's concern first: after 13 and 12, a guest who left the countdown page can always find their way back, before any cancel code exists.
 
 ### Phase 1: Schema and domain state (API)
 
@@ -502,17 +663,17 @@ An arrow means "does not compile, or has nothing to test, without". Anything not
 **Done when:** `npx nx run api:test` is green. This phase is also worth shipping for its `expired` fix alone.
 **Watch for:** `FOR UPDATE` inside transactions that also call DOKU holds the row lock for the duration of an HTTP call (10 s client timeout). This is acceptable because the lock is a single payment row that nothing else contends for at volume. Say so in the PR.
 
-### Phase 6: Status-page cancel flow (`libs/ui`)
+### Phase 6: Cancel machine + status-page cancel flow (`libs/ui`) *(rescoped in v2)*
 
 **Depends on:** 2.
-**Deliver:** FR-8 and FR-9 (except arming the back guard). `PaymentCancelAlert` + story.
+**Deliver:** FR-8 (`PaymentCancelUsecase`, `usePaymentCancel` in `handlers/hooks/`) and FR-9 (except arming the back guard). `PaymentCancelAlert` + story. The status page is the machine's first consumer, so it doesn't land as dead code. Phase 14 adds the other two.
 **Tests:** FR-8's and FR-9's lists.
 **Done when:** Storybook shows every new variant, and the handler test drives button → confirm → `router.replace` against `MockPaymentRepository`. In production nothing changes, because `canCancel` is `false`.
 
 ### Phase 7: Back button opens the confirmation (`libs/ui`)
 
 **Depends on:** 3, 6.
-**Deliver:** `OrderStatusHandler` calls `useBackNavigationGuard(canCancel && awaiting, () => dispatch({ type: 'REQUEST_CANCEL' }))`.
+**Deliver:** `OrderStatusHandler` calls `useBackNavigationGuard(canCancel && awaiting, () => paymentCancel.dispatch({ type: 'REQUEST' }))`.
 **Tests:** a handler test in which a simulated `beforePopState` callback opens the dialog while awaiting, and is not registered in `preparing`/`expired`/`cancelled`.
 **Done when:** with the flag on locally, Back from a pending order on desktop Chrome opens the dialog and the URL stays on `/orders/{ref}`. After a confirmed cancel, Back from the cart does **not** land on the cancelled countdown.
 
@@ -532,9 +693,37 @@ An arrow means "does not compile, or has nothing to test, without". Anything not
 
 ### Phase 10: E2E, docs, enable
 
-**Depends on:** 4, 5, 7 (plus 8 and 9 if in scope).
+**Depends on:** 4, 5, 7, 12, 14 (plus 8 and 9 if in scope).
 **Deliver:** FR-11. Flip `ORDER_PAYMENT_CANCEL_ENABLED=true` in production after the e2e suite passes locally (the e2e workflow runs post-merge only, so it must be run before merging), plus the manual device check: Android Chrome hardware back and iOS Safari swipe-back, for both methods.
-**Done when:** all four e2e scenarios pass, a real-device cancel → re-checkout with the other method works end to end, and the docs-site page is live.
+**Done when:** all seven e2e scenarios pass, a real-device cancel → re-checkout with the other method works end to end, the close-tab → rescan → "Batalkan & tambah item" flow works on a real phone, and the docs-site page is live.
+
+### Phase 11: The cart carries its lock (API + contract + `libs/ui` data) *(v2)*
+
+**Depends on:** nothing.
+**Deliver:** FR-13. `canCancel` is always `false` until phase 4 (or whichever of the two lands second) wires the flag.
+**Tests:** FR-13's list.
+**Done when:** with a pending payment on the local API, `GET /carts/current` returns `pendingPayment` with the right reference and `expiredAt`, and returns `null` once it expires, or once it is paid or cancelled. `npx nx run api:test` and `ui:test` are green.
+
+### Phase 12: Pending QRIS in order history (API + `libs/ui`) *(v2)*
+
+**Depends on:** nothing.
+**Deliver:** FR-14. Update the one-line summary of History D14 in `docs/prd-order-history.md` to point at D19 here, so the older document doesn't mislead.
+**Tests:** FR-14's list.
+**Done when:** a pending QRIS order appears in `/orders` with "Menunggu pembayaran QRIS", opens its countdown, and disappears from the list within one sweeper tick of expiring. **Guest-visible on merge.**
+
+### Phase 13: The locked cart is visible (`libs/ui`) *(v2)*
+
+**Depends on:** 11.
+**Deliver:** FR-15: the D23 refetch, `PendingPaymentBar` and `PendingPaymentNotice` (+ stories), and the `lockedNotice` props on `MenuItemDetailScreen`, `CartScreen` and `CartItemEditScreen` (+ stories), with "Lanjutkan pembayaran" only.
+**Tests:** FR-15's list.
+**Done when:** with a pending payment, the menu shows the bar, the item sheet shows the notice instead of the add button, the cart is read-only with the banner, and no cart write fails without a message. **Guest-visible on merge.** It needs no flag, because it only explains a lock that already exists and links to a page that already exists.
+
+### Phase 14: Cancel from the menu and the cart (`libs/ui`) *(v2)*
+
+**Depends on:** 6, 13.
+**Deliver:** FR-16.
+**Tests:** FR-16's list.
+**Done when:** with the flag on locally, "Batalkan & tambah item" from the menu ends on a cart holding the old items plus the new one, and "Batalkan pembayaran" from the cart banner leaves an editable cart with Checkout back. With the flag off, neither cancel action renders.
 
 ---
 
@@ -545,7 +734,10 @@ An arrow means "does not compile, or has nothing to test, without". Anything not
 | A guest pays the saved QRIS PNG *after* cancelling | D4 closes the "already paid" race. D7 makes a late payment produce the right single order and retires any duplicate. Phase 9 closes the window at DOKU where supported. |
 | A cashier pays a stale cancelled order | D8 (400) plus D16 (the KDS hears the cancel). |
 | Deploy skew: the API emits `cancelled` before the order app understands it | Only a guest's own confirmed cancel produces `cancelled`, the button appears only on `canCancel`, and that stays `false` until phase 10 flips the flag, by which time phase 2 has long been deployed to Vercel. The same holds for `superseded`, which needs a cancel to exist first. |
-| The back guard misbehaves on iOS Safari's swipe-back (the gesture animates to the previous page before `popstate`) | Phase 10's manual device check. If the swipe cannot be contained, the fallback is acceptable: the guest reaches the cart, the cart is still locked (today's behaviour), and the countdown page and its cancel button remain one tap away via order history. Record the outcome in Settled in review. |
+| The back guard misbehaves on iOS Safari's swipe-back (the gesture animates to the previous page before `popstate`) | Phase 10's manual device check. If the swipe cannot be contained, the fallback is now good (v2): the guest reaches the cart, the banner says a payment is waiting, and it offers "Lanjutkan" or "Batalkan" right there (D21). Record the outcome in Settled in review. |
+| *(v2)* A guest reads the bar or notice as an error and abandons | Copy is phrased as a state ("Menunggu pembayaran"), not a failure, and always carries a forward action. Success criterion 5 measures resumes and cancels from these surfaces. |
+| *(v2)* The bar's countdown and the server disagree (phone clock skew) | The bar never unlocks on its own clock. Reaching zero triggers a cart refetch, and the server decides (same stance as QRIS D12a). At worst the bar shows 00:00 for one request. |
+| *(v2)* D23's refetch-on-error hides a genuine failure behind a successful refetch | `errorMessage` is kept and rendered whenever the refetched cart isn't locked, so a non-lock failure still says "Gagal memperbarui keranjang". |
 | `CartHandler` re-mounting with a stale `checkout` in `created` would bounce the guest back to the cancelled order (`CartHandler.tsx:83-87`) | `router.replace` remounts the page, so the use case is newly constructed at `idle`. Phase 7's "Back from cart" check and phase 10's e2e scenario 1 assert it. |
 | Abuse: rapid checkout/cancel loops mint DOKU QRs and burn daily transaction numbers | Transaction-number gaps already occur on every expiry (Cash D4 accepted this). DOKU QR minting has no per-QR fee on our plan *(to confirm, open question 4)*. Rate limiting is out of scope until observed; the `cancel_reason = 'guest'` count per session makes it observable. |
 | Row lock held across a DOKU call (D6) | A single payment row, one guest. Documented in phase 5. |
@@ -554,7 +746,8 @@ An arrow means "does not compile, or has nothing to test, without". Anything not
 
 - Staff cancelling a guest's pending payment from the POS. Deleting the unpaid transaction there today leaves its payment `pending` until the sweeper runs. That is worth a follow-up that routes POS delete through `finalizeUncollectedPayment`, but it is a staff-side change.
 - Cancelling or refunding a paid order.
-- A cart-page toast or banner after cancelling.
+- A cart-page toast after cancelling. (The *pending-payment* banner is in scope since v2. What's out of scope is a "you cancelled" confirmation.)
+- Several concurrent unpaid orders per guest (Alternatives §4 Option B).
 - Rate limiting checkout/cancel.
 
 ## Open Questions
@@ -566,7 +759,7 @@ An arrow means "does not compile, or has nothing to test, without". Anything not
 
 ## Rollout Notes
 
-1. Phases 1–9 merge and deploy in any dependency-respecting order with the flag off. Guests see no change. Phase 5 changes behaviour only on the (pre-existing) expired-late-payment race.
+1. Phases 1–9 and 11–14 merge and deploy in any dependency-respecting order with the flag off. Guests see no cancel anywhere. Phase 5 changes behaviour only on the (pre-existing) expired-late-payment race. **Phases 12 and 13 are guest-visible on merge**, deliberately: pending QRIS in history, and a locked cart that explains itself and links back to its payment. Both help today, cancel or not.
 2. Run `make migrate-up` on the API host before deploying the phase 1 binary.
 3. Phase 10: run the e2e suite locally, do the device check, set `ORDER_PAYMENT_CANCEL_ENABLED=true` in the API's systemd `EnvironmentFile`, and restart. Kill switch: set it back to `false`. Payments already `cancelled` stay cancelled and correct.
 
@@ -576,3 +769,11 @@ An arrow means "does not compile, or has nothing to test, without". Anything not
 2. **Zero double settlement:** `SELECT cart_id FROM payments WHERE status = 'paid' GROUP BY cart_id HAVING COUNT(*) > 1` returns no rows created after phase 5.
 3. **No false cancels:** no `cancelled` payment later receives a DOKU paid notification without a `superseded` or `paid_late` log line. Monitor the `warn` logs from D4 and D7.
 4. **Cashier guard exercised, not tripped over:** the rate of the D8 `400` is watched. A steady non-zero rate means staff are acting on a stale list and phase 8's KDS push needs to be more prominent.
+5. *(v2)* **Locked carts get resolved, not abandoned:** of payments that were pending while the guest loaded the menu or cart (logged when `pendingPayment` is served), the share that end `paid` or guest-`cancelled` rather than `expired`. Measured before and after phase 13. It should rise.
+6. *(v2)* **No silent cart failures:** zero cart-write errors not followed by a refetch. Asserted by phase 13's tests, since there is no runtime signal for "nothing happened".
+
+## Settled in review
+
+1. **v2: the lock stays, and becomes visible** (review on [gatherloop/gatherloop-pos#598](https://github.com/gatherloop/gatherloop-pos/pull/598)). The reviewer asked what happens when a guest closes the tab on the countdown: the cart would be locked with no visible way back, since pending QRIS isn't in history. They proposed clearing the cart at checkout and dropping the lock. Agreed instead: keep the lock (one cart = one order, items never leave), and add D18–D23. The proposal is recorded as Alternatives §4 Option B.
+2. **v2: adding from the menu while locked** (same review). Asked: "what happens if the guest opens an item and adds it to the cart?" Answer: the sheet explains the pending payment instead of failing, and offers "Lanjutkan pembayaran" or "Batalkan & tambah item" (D21, D22). The pre-existing silent failure is fixed by D23.
+3. **v2: the cancel dialog moved out of `OrderStatusUsecase`** into `PaymentCancelUsecase` (D20, superseding D12), because three screens now use it.
