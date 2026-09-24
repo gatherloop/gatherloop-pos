@@ -93,12 +93,14 @@ describe('CartUsecase', () => {
       expect(cart.state.cart?.total).toBe(36000);
     });
 
-    it('should restore the previous cart on MUTATE_ERROR', async () => {
+    it('should refetch, not revert, on MUTATE_ERROR, keeping the error message (D23)', async () => {
       const repository = new MockCartRepository();
       const cart = createTester(repository, { cart: { ...repository.cart } });
       const initialCart = cart.state.cart;
 
-      repository.setShouldFail(true);
+      jest
+        .spyOn(repository, 'addItem')
+        .mockRejectedValueOnce(new Error('Failed to add item'));
       cart.dispatch({ type: 'ADD_ITEM', variantId: 1, amount: 1, note: '' });
       expect(cart.state.type).toBe('adding');
 
@@ -106,7 +108,9 @@ describe('CartUsecase', () => {
       expect(cart.state.type).toBe('loaded');
       expect(cart.state.cart).toEqual(initialCart);
       expect(cart.state.previousCart).toBeNull();
-      expect(cart.state.errorMessage).toBe('Failed to update cart');
+      expect(cart.state.errorMessage).toBe(
+        'Gagal memperbarui keranjang. Silakan coba lagi.'
+      );
     });
   });
 
@@ -143,12 +147,14 @@ describe('CartUsecase', () => {
       expect(cart.state.cart).toEqual(repository.cart);
     });
 
-    it('should restore the previous cart on MUTATE_ERROR', async () => {
+    it('should refetch, not revert, on MUTATE_ERROR, keeping the error message (D23)', async () => {
       const { repository, cart } = await seedTesterWithOneItem();
       const [seededItem] = repository.cart.items;
       const cartBeforeUpdate = cart.state.cart;
 
-      repository.setShouldFail(true);
+      jest
+        .spyOn(repository, 'updateItem')
+        .mockRejectedValueOnce(new Error('Failed to update item'));
       cart.dispatch({
         type: 'UPDATE_ITEM',
         cartItemId: seededItem.id,
@@ -161,7 +167,28 @@ describe('CartUsecase', () => {
       expect(cart.state.type).toBe('loaded');
       expect(cart.state.cart).toEqual(cartBeforeUpdate);
       expect(cart.state.previousCart).toBeNull();
-      expect(cart.state.errorMessage).toBe('Failed to update cart');
+      expect(cart.state.errorMessage).toBe(
+        'Gagal memperbarui keranjang. Silakan coba lagi.'
+      );
+    });
+
+    it('refetches the cart rather than reverting locally on MUTATE_ERROR (D23)', async () => {
+      const { repository, cart } = await seedTesterWithOneItem();
+      const [seededItem] = repository.cart.items;
+      const fetchSpy = jest.spyOn(repository, 'fetchCurrentCart');
+
+      jest
+        .spyOn(repository, 'updateItem')
+        .mockRejectedValueOnce(new Error('Failed to update item'));
+      cart.dispatch({
+        type: 'UPDATE_ITEM',
+        cartItemId: seededItem.id,
+        amount: 5,
+        note: '',
+      });
+
+      await flushPromises();
+      expect(fetchSpy).toHaveBeenCalled();
     });
   });
 
@@ -183,14 +210,16 @@ describe('CartUsecase', () => {
       expect(cart.state.previousCart).toBeNull();
     });
 
-    it('should restore the previous cart on MUTATE_ERROR', async () => {
+    it('should refetch, not revert, on MUTATE_ERROR, keeping the error message (D23)', async () => {
       const repository = new MockCartRepository();
       await repository.addItem({ variantId: 1, amount: 1, note: '' });
       const cart = createTester(repository, { cart: { ...repository.cart } });
       const [seededItem] = repository.cart.items;
       const cartBeforeRemove = cart.state.cart;
 
-      repository.setShouldFail(true);
+      jest
+        .spyOn(repository, 'removeItem')
+        .mockRejectedValueOnce(new Error('Failed to remove item'));
       cart.dispatch({ type: 'REMOVE_ITEM', cartItemId: seededItem.id });
       expect(cart.state.cart?.items).toHaveLength(0);
 
@@ -198,7 +227,9 @@ describe('CartUsecase', () => {
       expect(cart.state.type).toBe('loaded');
       expect(cart.state.cart).toEqual(cartBeforeRemove);
       expect(cart.state.cart?.items).toHaveLength(1);
-      expect(cart.state.errorMessage).toBe('Failed to update cart');
+      expect(cart.state.errorMessage).toBe(
+        'Gagal memperbarui keranjang. Silakan coba lagi.'
+      );
     });
   });
 

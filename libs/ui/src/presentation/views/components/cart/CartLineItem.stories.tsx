@@ -92,6 +92,10 @@ export const SoldOut: Story = {
   },
 };
 
+export const ReadOnly: Story = {
+  args: { item, readOnly: true },
+};
+
 export const OverRemainingQuantity: Story = {
   args: {
     item: {

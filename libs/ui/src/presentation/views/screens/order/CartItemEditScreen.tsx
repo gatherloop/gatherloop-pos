@@ -3,6 +3,10 @@ import { Button, Paragraph, Text, TextArea, XStack, YStack } from 'tamagui';
 import { CartItem } from '../../../../domain/entities/Cart';
 import { formatRupiah } from '../../../../utils/currency';
 import { Sheet } from '../../components/base/Sheet/Sheet';
+import {
+  PendingPaymentNotice,
+  PendingPaymentNoticeProps,
+} from '../../components/cart/PendingPaymentNotice';
 import { AmountStepper } from '../../components/menu/AmountStepper';
 import { MenuItemThumbnail } from '../../components/menu/MenuItemThumbnail';
 
@@ -30,6 +34,7 @@ export type CartItemEditScreenProps = {
   onNoteChange: (note: string) => void;
   isSaving: boolean;
   onSavePress: () => void;
+  lockedNotice: PendingPaymentNoticeProps | null;
 };
 
 export const CartItemEditScreen = ({
@@ -42,6 +47,7 @@ export const CartItemEditScreen = ({
   onNoteChange,
   isSaving,
   onSavePress,
+  lockedNotice,
 }: CartItemEditScreenProps) => {
   const optionValueNames = item.variant.values
     .map((value) => value.optionValue.name)
@@ -49,6 +55,7 @@ export const CartItemEditScreen = ({
 
   const isSoldOut = !item.variant.isSellable;
   const remainingQuantity = item.variant.sellableQuantity;
+  const isLocked = lockedNotice !== null;
 
   return (
     <Sheet isOpen={isOpen} onOpenChange={onOpenChange}>
@@ -98,6 +105,7 @@ export const CartItemEditScreen = ({
               accessibilityLabel="Catatan"
               minHeight={80}
               maxLength={255}
+              disabled={isLocked}
             />
           </YStack>
 
@@ -107,7 +115,7 @@ export const CartItemEditScreen = ({
               amount={amount}
               onChange={onAmountChange}
               max={remainingQuantity}
-              disabled={isSoldOut}
+              disabled={isSoldOut || isLocked}
             />
           </XStack>
         </YStack>
@@ -119,19 +127,27 @@ export const CartItemEditScreen = ({
           borderTopColor="$borderColor"
           backgroundColor="$background"
         >
-          <XStack justifyContent="space-between">
-            <Text fontWeight="bold">Total</Text>
-            <Text fontWeight="bold">{formatRupiah(item.price * amount)}</Text>
-          </XStack>
-          <Button
-            theme="blue"
-            size="$5"
-            minHeight={44}
-            disabled={isSaving}
-            onPress={onSavePress}
-          >
-            Simpan
-          </Button>
+          {lockedNotice ? (
+            <PendingPaymentNotice {...lockedNotice} />
+          ) : (
+            <>
+              <XStack justifyContent="space-between">
+                <Text fontWeight="bold">Total</Text>
+                <Text fontWeight="bold">
+                  {formatRupiah(item.price * amount)}
+                </Text>
+              </XStack>
+              <Button
+                theme="blue"
+                size="$5"
+                minHeight={44}
+                disabled={isSaving}
+                onPress={onSavePress}
+              >
+                Simpan
+              </Button>
+            </>
+          )}
         </YStack>
       </YStack>
     </Sheet>

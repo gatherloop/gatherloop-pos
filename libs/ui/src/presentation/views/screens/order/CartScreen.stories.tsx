@@ -96,6 +96,7 @@ const meta: Meta<typeof CartScreen> = {
     isCheckingOut: false,
     checkoutErrorMessage: null,
     detailsSheet: null,
+    lockedNotice: null,
     onAmountChange: () => {
       // Storybook action stand-in
     },
@@ -275,5 +276,16 @@ export const WithPreparingBadge: Story = {
       // Storybook action stand-in
     },
     preparingCount: 2,
+  },
+};
+
+export const LockedByPendingPayment: Story = {
+  args: {
+    variant: { type: 'loaded', cart },
+    lockedNotice: {
+      onContinuePress: () => {
+        // Storybook action stand-in
+      },
+    },
   },
 };

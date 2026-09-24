@@ -14,6 +14,10 @@ import { formatRupiah } from '../../../../utils/currency';
 import { ErrorView } from '../../components/base/ErrorView';
 import { LoadingView } from '../../components/base/LoadingView';
 import { Sheet } from '../../components/base/Sheet/Sheet';
+import {
+  PendingPaymentNotice,
+  PendingPaymentNoticeProps,
+} from '../../components/cart/PendingPaymentNotice';
 import { AmountStepper } from '../../components/menu/AmountStepper';
 import { MenuItemThumbnail } from '../../components/menu/MenuItemThumbnail';
 import { OptionValueChipGroup } from '../../components/menu/OptionValueChipGroup';
@@ -46,6 +50,7 @@ export type MenuItemDetailScreenProps = {
   validationMessage: string | null;
   onAddToCartPress: () => void;
   onRetryButtonPress: () => void;
+  lockedNotice: PendingPaymentNoticeProps | null;
 };
 
 export const MenuItemDetailScreen = ({
@@ -64,6 +69,7 @@ export const MenuItemDetailScreen = ({
   validationMessage,
   onAddToCartPress,
   onRetryButtonPress,
+  lockedNotice,
 }: MenuItemDetailScreenProps) => {
   return (
     <Sheet isOpen={isOpen} onOpenChange={onOpenChange}>
@@ -173,33 +179,43 @@ export const MenuItemDetailScreen = ({
                   borderTopColor="$borderColor"
                   backgroundColor="$background"
                 >
-                  {validationMessage ? (
-                    <Text color="$red10">{validationMessage}</Text>
-                  ) : null}
-                  <Button
-                    theme="blue"
-                    size="$5"
-                    minHeight={44}
-                    disabled={
-                      ctaState === 'resolving' || isVariantSellable === false
-                    }
-                    onPress={onAddToCartPress}
-                  >
-                    {match({ ctaState, price, isVariantSellable })
-                      .with({ isVariantSellable: false }, () => 'Stok habis')
-                      .with(
-                        { ctaState: 'ready', price: P.number },
-                        ({ price }) =>
-                          `Tambah ke Keranjang · ${formatRupiah(
-                            price * amount
-                          )}`
-                      )
-                      .with(
-                        { ctaState: 'resolving' },
-                        () => 'Menghitung harga...'
-                      )
-                      .otherwise(() => 'Tambah ke Keranjang')}
-                  </Button>
+                  {lockedNotice ? (
+                    <PendingPaymentNotice {...lockedNotice} />
+                  ) : (
+                    <>
+                      {validationMessage ? (
+                        <Text color="$red10">{validationMessage}</Text>
+                      ) : null}
+                      <Button
+                        theme="blue"
+                        size="$5"
+                        minHeight={44}
+                        disabled={
+                          ctaState === 'resolving' ||
+                          isVariantSellable === false
+                        }
+                        onPress={onAddToCartPress}
+                      >
+                        {match({ ctaState, price, isVariantSellable })
+                          .with(
+                            { isVariantSellable: false },
+                            () => 'Stok habis'
+                          )
+                          .with(
+                            { ctaState: 'ready', price: P.number },
+                            ({ price }) =>
+                              `Tambah ke Keranjang · ${formatRupiah(
+                                price * amount
+                              )}`
+                          )
+                          .with(
+                            { ctaState: 'resolving' },
+                            () => 'Menghitung harga...'
+                          )
+                          .otherwise(() => 'Tambah ke Keranjang')}
+                      </Button>
+                    </>
+                  )}
                 </YStack>
               </YStack>
             )

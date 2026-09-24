@@ -11,6 +11,7 @@ export type CartLineItemProps = {
   onRemovePress: () => void;
   onEditPress: () => void;
   disabled?: boolean;
+  readOnly?: boolean;
 };
 
 const SoldOutBadge = () => (
@@ -33,6 +34,7 @@ export const CartLineItem = ({
   onRemovePress,
   onEditPress,
   disabled = false,
+  readOnly = false,
 }: CartLineItemProps) => {
   const optionValueNames = item.variant.values
     .map((value) => value.optionValue.name)
@@ -79,46 +81,54 @@ export const CartLineItem = ({
           marginTop="$2"
           gap="$2"
         >
-          <AmountStepper
-            amount={item.amount}
-            onChange={onAmountChange}
-            max={remainingQuantity}
-            disabled={disabled || isSoldOut}
-            size="sm"
-          />
+          {readOnly ? (
+            <Text fontSize="$5" fontWeight="bold">
+              {`${item.amount}x`}
+            </Text>
+          ) : (
+            <AmountStepper
+              amount={item.amount}
+              onChange={onAmountChange}
+              max={remainingQuantity}
+              disabled={disabled || isSoldOut}
+              size="sm"
+            />
+          )}
         </XStack>
       </YStack>
 
       <YStack gap="$2" justifyContent="space-between">
-        <XStack gap="$2">
-          <Button
-            icon={Pencil}
-            variant="outlined"
-            circular
-            size="$2"
-            width={32}
-            height={32}
-            hitSlop={hitSlop}
-            disabled={disabled}
-            onPress={onEditPress}
-            accessibilityLabel={`Ubah ${item.variant.product.name}`}
-          />
+        {readOnly ? null : (
+          <XStack gap="$2">
+            <Button
+              icon={Pencil}
+              variant="outlined"
+              circular
+              size="$2"
+              width={32}
+              height={32}
+              hitSlop={hitSlop}
+              disabled={disabled}
+              onPress={onEditPress}
+              accessibilityLabel={`Ubah ${item.variant.product.name}`}
+            />
 
-          <Button
-            icon={Trash2}
-            variant="outlined"
-            theme="red"
-            color="$red8"
-            circular
-            size="$2"
-            width={32}
-            height={32}
-            hitSlop={hitSlop}
-            disabled={disabled}
-            onPress={onRemovePress}
-            accessibilityLabel={`Hapus ${item.variant.product.name} dari keranjang`}
-          />
-        </XStack>
+            <Button
+              icon={Trash2}
+              variant="outlined"
+              theme="red"
+              color="$red8"
+              circular
+              size="$2"
+              width={32}
+              height={32}
+              hitSlop={hitSlop}
+              disabled={disabled}
+              onPress={onRemovePress}
+              accessibilityLabel={`Hapus ${item.variant.product.name} dari keranjang`}
+            />
+          </XStack>
+        )}
 
         <Text fontWeight="bold" marginBottom="$2">
           {formatRupiah(item.subtotal)}
