@@ -1,5 +1,5 @@
 import { CheckCircle2 } from '@tamagui/lucide-icons';
-import { SizableText, Text, XStack, YStack } from 'tamagui';
+import { ScrollView, SizableText, Text, XStack, YStack } from 'tamagui';
 import { PaymentItem } from '../../../../domain/entities/Payment';
 import { OrderItemsSummary } from './OrderItemsSummary';
 
@@ -55,8 +55,10 @@ export const OrderReadyView = ({
     </XStack>
 
     <Text textAlign="center" color="$color10">
-      {`Silakan ambil di kasir dengan menyebutkan nomor #${transactionNumber}`}
+      Silakan ambil di kasir
     </Text>
-    <OrderItemsSummary items={items} amount={amount} />
+    <ScrollView flex={1}>
+      <OrderItemsSummary items={items} amount={amount} />
+    </ScrollView>
   </YStack>
 );

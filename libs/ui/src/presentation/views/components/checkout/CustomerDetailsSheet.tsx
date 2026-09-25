@@ -5,6 +5,7 @@ import {
   PaymentMethod,
 } from '../../../../domain/entities/Payment';
 import { Sheet } from '../base/Sheet';
+import { QrCode, Wallet } from '@tamagui/lucide-icons';
 
 export type CustomerDetailsSheetProps = {
   isOpen: boolean;
@@ -32,8 +33,8 @@ const diningOptionLabel = (diningOption: PaymentDiningOption) =>
 
 const submitLabel = (method: PaymentMethod) =>
   match(method)
-    .with('qris', () => 'Lanjutkan ke pembayaran')
-    .with('cash', () => 'Pesan & bayar di kasir')
+    .with('qris', () => 'Lanjutkan Pembayaran')
+    .with('cash', () => 'Bayar di kasir')
     .exhaustive();
 
 export const CustomerDetailsSheet = ({
@@ -51,7 +52,6 @@ export const CustomerDetailsSheet = ({
   onMethodChange,
   diningOption,
   onDiningOptionChange,
-  cashierLocation,
 }: CustomerDetailsSheetProps) => (
   <Sheet isOpen={isOpen} onOpenChange={(open) => !open && onCancelPress()}>
     <YStack padding="$4" gap="$3">
@@ -87,15 +87,13 @@ export const CustomerDetailsSheet = ({
           <Paragraph color="$red10">{whatsappNumberErrorMessage}</Paragraph>
         ) : null}
         <Paragraph fontSize="$2" color="$color10">
-          Nomor ini akan kami gunakan untuk mengabari Anda lewat WhatsApp saat
-          pesanan siap diambil.
+          Nomor ini akan digunakan untuk mengabari Anda apabila pesanan siap
+          diambil.
         </Paragraph>
       </YStack>
 
       <YStack gap="$2">
-        <Paragraph fontWeight="bold">
-          Makan di sini atau bawa pulang?
-        </Paragraph>
+        <Paragraph fontWeight="bold">Makan di sini atau bawa pulang?</Paragraph>
         <XStack gap="$2">
           {(['dine_in', 'takeaway'] as const).map((option) => (
             <Button
@@ -115,40 +113,57 @@ export const CustomerDetailsSheet = ({
 
       {isCashPaymentEnabled ? (
         <YStack gap="$2">
-          <Button
-            theme={method === 'qris' ? 'blue' : undefined}
-            variant={method === 'qris' ? undefined : 'outlined'}
-            minHeight={44}
-            height="auto"
-            paddingVertical="$3"
-            justifyContent="flex-start"
-            accessibilityLabel="Bayar dengan QRIS"
-            onPress={() => onMethodChange('qris')}
-          >
-            <YStack alignItems="flex-start" gap="$1">
-              <Paragraph fontWeight="bold">Bayar dengan QRIS</Paragraph>
-              <Paragraph fontSize="$2" color="$color10">
-                Scan atau simpan QR, bayar dari aplikasi bank atau e-wallet
-              </Paragraph>
-            </YStack>
-          </Button>
-          <Button
-            theme={method === 'cash' ? 'blue' : undefined}
-            variant={method === 'cash' ? undefined : 'outlined'}
-            minHeight={44}
-            height="auto"
-            paddingVertical="$3"
-            justifyContent="flex-start"
-            accessibilityLabel="Bayar dengan Cash di Kasir"
-            onPress={() => onMethodChange('cash')}
-          >
-            <YStack alignItems="flex-start" gap="$1">
-              <Paragraph fontWeight="bold">Bayar dengan Cash di Kasir</Paragraph>
-              <Paragraph fontSize="$2" color="$color10">
-                Bayar tunai di kasir {cashierLocation}
-              </Paragraph>
-            </YStack>
-          </Button>
+          <Paragraph fontWeight="bold">Metode Pembayaran</Paragraph>
+          <XStack gap="$2">
+            <Button
+              theme={method === 'qris' ? 'blue' : undefined}
+              variant={method === 'qris' ? undefined : 'outlined'}
+              minHeight={44}
+              height="auto"
+              paddingVertical="$3"
+              justifyContent="flex-start"
+              accessibilityLabel="Bayar dengan QRIS"
+              onPress={() => onMethodChange('qris')}
+              scaleIcon={1}
+              flex={1}
+            >
+              <YStack alignItems="flex-start">
+                <XStack gap="$2" alignItems="center">
+                  <QrCode size="$1" />
+                  <Paragraph fontWeight="bold">QRIS</Paragraph>
+                </XStack>
+                <Paragraph fontSize="$2" color="$color10">
+                  Bayar lewat e-wallet
+                </Paragraph>
+              </YStack>
+            </Button>
+            <Button
+              theme={method === 'cash' ? 'blue' : undefined}
+              variant={method === 'cash' ? undefined : 'outlined'}
+              minHeight={44}
+              height="auto"
+              paddingVertical="$3"
+              justifyContent="flex-start"
+              accessibilityLabel="Bayar dengan Cash di Kasir"
+              onPress={() => onMethodChange('cash')}
+              flex={1}
+            >
+              <YStack alignItems="flex-start" gap="$1">
+                <XStack gap="$2" alignItems="center">
+                  <Wallet size="$1" />
+                  <Paragraph fontWeight="bold">Cash</Paragraph>
+                </XStack>
+                <Paragraph
+                  fontSize="$2"
+                  color="$color10"
+                  flex={1}
+                  textWrap="wrap"
+                >
+                  Bayar tunai di kasir
+                </Paragraph>
+              </YStack>
+            </Button>
+          </XStack>
         </YStack>
       ) : null}
 

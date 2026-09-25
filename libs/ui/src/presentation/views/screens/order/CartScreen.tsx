@@ -131,9 +131,7 @@ export const CartScreen = ({
                 disabled={!isCheckoutEnabled || isCheckingOut}
                 onPress={onCheckoutPress}
               >
-                {isCheckingOut
-                  ? 'Memproses...'
-                  : `Bayar dengan QRIS · ${formatRupiah(variant.cart.total)}`}
+                {isCheckingOut ? 'Memproses...' : `Bayar`}
               </Button>
             </XStack>
             {!isCheckoutEnabled ? (
@@ -224,16 +222,10 @@ export const CartScreen = ({
                 Tambah menu lainnya
               </Button>
 
-              <YStack gap="$1">
-                <XStack justifyContent="space-between">
-                  <Text>Jumlah item</Text>
-                  <Text>{cart.itemCount}</Text>
-                </XStack>
-                <XStack justifyContent="space-between">
-                  <Text fontWeight="bold">Total</Text>
-                  <Text fontWeight="bold">{formatRupiah(cart.total)}</Text>
-                </XStack>
-              </YStack>
+              <XStack justifyContent="space-between">
+                <Text fontWeight="bold">Total</Text>
+                <Text fontWeight="bold">{formatRupiah(cart.total)}</Text>
+              </XStack>
             </YStack>
           ))
           .exhaustive()}

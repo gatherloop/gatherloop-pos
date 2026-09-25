@@ -146,10 +146,8 @@ export const OrderStatusScreen = ({
               <CashPaymentView
                 cashierLocation={cashierLocation}
                 transactionNumber={payment.transactionNumber}
-                reference={payment.reference}
                 amount={payment.amount}
                 expiredAt={payment.expiredAt}
-                items={payment.items}
                 onCountdownElapsed={onCountdownElapsed}
               />
               {canCancel && (

@@ -247,7 +247,7 @@ export const DetailsSheetOpen: Story = {
       onCancelPress: () => {
         // Storybook action stand-in
       },
-      isCashPaymentEnabled: false,
+      isCashPaymentEnabled: true,
       method: 'qris',
       onMethodChange: () => {
         // Storybook action stand-in
