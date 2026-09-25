@@ -25,7 +25,7 @@ export type QrisPaymentViewProps = {
   onCountdownElapsed: () => void;
 };
 
-const QR_SIZE = 260;
+const QR_SIZE = 220;
 
 function secondsUntil(expiredAt: string): number {
   return Math.max(
@@ -84,8 +84,14 @@ export const QrisPaymentView = ({
 
   return (
     <YStack flex={1} alignItems="center" gap="$4" paddingVertical="$4">
-      <Text fontWeight="bold" fontSize="$9">
+      <Text fontWeight="bold" fontSize="$8">
         {formatRupiah(amount)}
+      </Text>
+
+      <Text fontWeight="bold" fontSize="$5" textAlign="center">
+        {secondsLeft > 0
+          ? `Selesaikan pembayaran dalam ${formatCountdown(secondsLeft)}`
+          : 'Memeriksa status pembayaran...'}
       </Text>
 
       <YStack backgroundColor="white" padding="$3" borderRadius="$4">
@@ -102,21 +108,10 @@ export const QrisPaymentView = ({
         Download QR
       </Button>
 
-      <Text fontWeight="bold" fontSize="$5">
-        {secondsLeft > 0
-          ? `Selesaikan pembayaran dalam ${formatCountdown(secondsLeft)}`
-          : 'Memeriksa status pembayaran...'}
-      </Text>
-
       <Paragraph textAlign="center" color="$color10">
-        Download QR lalu buka aplikasi bank atau e-wallet Anda, dan pilih bayar
-        QRIS. Atau scan dengan perangkat lain.
+        Download QR dan buka di aplikasi e-wallet Anda. Atau scan QR menggunakan
+        perangkat lain.
       </Paragraph>
-
-      <XStack alignItems="center" gap="$2">
-        <Spinner size="small" />
-        <Text color="$color10">Menunggu pembayaran…</Text>
-      </XStack>
 
       <Sheet
         isOpen={fallbackImageBase64 !== null}

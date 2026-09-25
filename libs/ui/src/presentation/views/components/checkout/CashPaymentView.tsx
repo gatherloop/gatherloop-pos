@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { Paragraph, ScrollView, SizableText, Spinner, Text, XStack, YStack } from 'tamagui';
+import {
+  Paragraph,
+  ScrollView,
+  SizableText,
+  Spinner,
+  Text,
+  XStack,
+  YStack,
+} from 'tamagui';
 import { PaymentItem } from '../../../../domain/entities/Payment';
 import { formatRupiah } from '../../../../utils/currency';
 import { OrderItemsSummary } from '../orderStatus/OrderItemsSummary';
@@ -7,14 +15,12 @@ import { OrderItemsSummary } from '../orderStatus/OrderItemsSummary';
 export type CashPaymentViewProps = {
   cashierLocation: string;
   transactionNumber: number;
-  reference: string;
   amount: number;
   expiredAt: string;
-  items: PaymentItem[];
   onCountdownElapsed: () => void;
 };
 
-const NUMBER_BADGE_SIZE = 200;
+const NUMBER_BADGE_SIZE = 120;
 
 function secondsUntil(expiredAt: string): number {
   return Math.max(
@@ -34,10 +40,8 @@ function formatCountdown(totalSeconds: number): string {
 export const CashPaymentView = ({
   cashierLocation,
   transactionNumber,
-  reference,
   amount,
   expiredAt,
-  items,
   onCountdownElapsed,
 }: CashPaymentViewProps) => {
   const [secondsLeft, setSecondsLeft] = useState(() => secondsUntil(expiredAt));
@@ -59,8 +63,17 @@ export const CashPaymentView = ({
 
   return (
     <YStack flex={1} alignItems="center" gap="$4" paddingVertical="$4">
-      <Text fontWeight="bold" fontSize="$6" textAlign="center">
+      <Text fontWeight="bold" fontSize="$8">
+        {formatRupiah(amount)}
+      </Text>
+      <Text fontSize="$6" textAlign="center">
         {`Bayar di kasir ${cashierLocation}`}
+      </Text>
+
+      <Text fontWeight="bold" textAlign="center" fontSize="$5">
+        {secondsLeft > 0
+          ? `Selesaikan pembayaran dalam ${formatCountdown(secondsLeft)}`
+          : 'Memeriksa status pembayaran...'}
       </Text>
 
       <YStack
@@ -76,33 +89,10 @@ export const CashPaymentView = ({
         </SizableText>
       </YStack>
 
-      <Text fontWeight="bold" fontSize="$9">
-        {formatRupiah(amount)}
-      </Text>
-
-      <Text color="$color10" fontSize="$2">
-        {reference}
-      </Text>
-
-      <ScrollView flex={1} width="100%">
-        <OrderItemsSummary items={items} amount={amount} />
-      </ScrollView>
-
-      <Text fontWeight="bold" fontSize="$5">
-        {secondsLeft > 0
-          ? `Selesaikan pembayaran dalam ${formatCountdown(secondsLeft)}`
-          : 'Memeriksa status pembayaran...'}
-      </Text>
-
       <Paragraph textAlign="center" color="$color10">
         Tunjukkan nomor pesanan ini ke kasir. Pesanan akan dibatalkan otomatis
         jika belum dibayar.
       </Paragraph>
-
-      <XStack alignItems="center" gap="$2">
-        <Spinner size="small" />
-        <Text color="$color10">Menunggu pembayaran di kasir…</Text>
-      </XStack>
     </YStack>
   );
 };

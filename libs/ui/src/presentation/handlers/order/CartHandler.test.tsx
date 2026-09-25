@@ -99,7 +99,7 @@ const getCancelDialog = () =>
 const addItemToCart = (cartRepository: MockCartRepository) =>
   cartRepository.addItem({ variantId: 1, amount: 1, note: '' });
 
-const payButtonName = /^Bayar dengan QRIS/;
+const payButtonName = /^Bayar/;
 
 const pendingQrisPayment: PendingPayment = {
   partnerReferenceNo: 'ORDER-1',
@@ -140,7 +140,11 @@ describe('CartHandler', () => {
 
   it('lists cart lines once items exist, with option, note and subtotal', async () => {
     const cartRepository = new MockCartRepository();
-    await cartRepository.addItem({ variantId: 1, amount: 2, note: 'less sugar' });
+    await cartRepository.addItem({
+      variantId: 1,
+      amount: 2,
+      note: 'less sugar',
+    });
     renderHandler({ cartRepository });
 
     await settle();
@@ -361,8 +365,7 @@ describe('CartHandler', () => {
       (screen.getByPlaceholderText('Nama Anda') as HTMLInputElement).value
     ).toBe('Budi');
     expect(
-      (screen.getByPlaceholderText('0812 3456 7890') as HTMLInputElement)
-        .value
+      (screen.getByPlaceholderText('0812 3456 7890') as HTMLInputElement).value
     ).toBe('081234567890');
   });
 
@@ -397,9 +400,7 @@ describe('CartHandler', () => {
     );
 
     expect(screen.getByText('Nama tidak boleh kosong')).toBeTruthy();
-    expect(
-      screen.getByText('Nomor WhatsApp tidak boleh kosong')
-    ).toBeTruthy();
+    expect(screen.getByText('Nomor WhatsApp tidak boleh kosong')).toBeTruthy();
     expect(screen.getByPlaceholderText('Nama Anda')).toBeTruthy();
     expect(checkoutSpy).not.toHaveBeenCalled();
 
@@ -474,9 +475,7 @@ describe('CartHandler', () => {
 
     await user.click(screen.getByRole('button', { name: payButtonName }));
 
-    expect(
-      screen.queryByLabelText('Bayar dengan Cash di Kasir')
-    ).toBeNull();
+    expect(screen.queryByLabelText('Bayar dengan Cash di Kasir')).toBeNull();
     expect(
       screen.getByRole('button', { name: 'Lanjutkan ke pembayaran' })
     ).toBeTruthy();
@@ -496,9 +495,7 @@ describe('CartHandler', () => {
 
     await user.click(screen.getByRole('button', { name: payButtonName }));
 
-    expect(
-      screen.getByLabelText('Bayar dengan Cash di Kasir')
-    ).toBeTruthy();
+    expect(screen.getByLabelText('Bayar dengan Cash di Kasir')).toBeTruthy();
     expect(screen.getByText('Bayar tunai di kasir Lantai 2')).toBeTruthy();
     expect(
       screen.getByRole('button', { name: 'Lanjutkan ke pembayaran' })
@@ -521,9 +518,7 @@ describe('CartHandler', () => {
     await settle();
 
     await user.click(screen.getByRole('button', { name: payButtonName }));
-    await user.click(
-      screen.getByLabelText('Bayar dengan Cash di Kasir')
-    );
+    await user.click(screen.getByLabelText('Bayar dengan Cash di Kasir'));
 
     expect(
       screen.getByRole('button', { name: 'Pesan & bayar di kasir' })
@@ -663,9 +658,7 @@ describe('CartHandler', () => {
       screen.queryByLabelText('Hapus Es Kopi Susu dari keranjang')
     ).toBeNull();
     expect(screen.queryByRole('button', { name: payButtonName })).toBeNull();
-    expect(
-      screen.getByRole('button', { name: 'Lanjutkan pembayaran' })
-    ).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Tidak' })).toBeTruthy();
     expect(screen.getByText('Es Kopi Susu')).toBeTruthy();
   });
 
@@ -678,9 +671,7 @@ describe('CartHandler', () => {
 
     await settle();
 
-    await user.click(
-      screen.getByRole('button', { name: 'Lanjutkan pembayaran' })
-    );
+    await user.click(screen.getByRole('button', { name: 'Tidak' }));
 
     expect(mockPush).toHaveBeenCalledWith('/orders/ORDER-1');
   });
@@ -721,16 +712,14 @@ describe('CartHandler', () => {
         screen.getByRole('button', { name: 'Batalkan pembayaran' })
       );
       const dialog = getCancelDialog();
-      await user.click(dialog.getByRole('button', { name: 'Ya, batalkan' }));
+      await user.click(dialog.getByRole('button', { name: 'Ya' }));
       await settle();
       await settle();
 
       expect(
         screen.getByRole('button', { name: 'Kosongkan keranjang' })
       ).toBeTruthy();
-      expect(
-        screen.getByRole('button', { name: payButtonName })
-      ).toBeTruthy();
+      expect(screen.getByRole('button', { name: payButtonName })).toBeTruthy();
       expect(screen.getByText('Es Kopi Susu')).toBeTruthy();
     });
 
@@ -753,7 +742,7 @@ describe('CartHandler', () => {
         screen.getByRole('button', { name: 'Batalkan pembayaran' })
       );
       const dialog = getCancelDialog();
-      await user.click(dialog.getByRole('button', { name: 'Ya, batalkan' }));
+      await user.click(dialog.getByRole('button', { name: 'Ya' }));
       await settle();
 
       expect(mockPush).toHaveBeenCalledWith(
@@ -776,9 +765,7 @@ describe('CartHandler', () => {
         screen.getByRole('button', { name: 'Batalkan pembayaran' })
       );
       const dialog = getCancelDialog();
-      await user.click(
-        dialog.getByRole('button', { name: 'Lanjutkan pembayaran' })
-      );
+      await user.click(dialog.getByRole('button', { name: 'Tidak' }));
       await settle();
 
       expect(cancelSpy).not.toHaveBeenCalled();
@@ -806,9 +793,11 @@ describe('CartHandler', () => {
       expect(mockPush).not.toHaveBeenCalled();
       expect(screen.getAllByText('Es Kopi Susu')).toHaveLength(2);
       expect(
-        (screen.getByPlaceholderText(
-          'Contoh: less sugar, tanpa es'
-        ) as HTMLTextAreaElement).value
+        (
+          screen.getByPlaceholderText(
+            'Contoh: less sugar, tanpa es'
+          ) as HTMLTextAreaElement
+        ).value
       ).toBe('less sugar');
       expect(screen.getAllByLabelText('Tambah jumlah')).toHaveLength(2);
     });
@@ -909,9 +898,7 @@ describe('CartHandler', () => {
       await settle();
 
       expect(screen.queryByRole('button', { name: 'Simpan' })).toBeNull();
-      expect(
-        screen.getAllByRole('button', { name: 'Lanjutkan pembayaran' })
-      ).toHaveLength(2);
+      expect(screen.getAllByRole('button', { name: 'Tidak' })).toHaveLength(2);
     });
 
     it('cancels the pending payment from the edit sheet notice, unlocking the cart', async () => {
@@ -952,7 +939,7 @@ describe('CartHandler', () => {
       });
       await user.click(cancelButton);
       const dialog = getCancelDialog();
-      await user.click(dialog.getByRole('button', { name: 'Ya, batalkan' }));
+      await user.click(dialog.getByRole('button', { name: 'Ya' }));
       await settle();
       await settle();
 
@@ -963,9 +950,7 @@ describe('CartHandler', () => {
       const cartRepository = new MockCartRepository();
       await cartRepository.addItem({ variantId: 1, amount: 1, note: '' });
       const cartQueryRepository = new MockCartQueryRepository();
-      jest
-        .spyOn(cartQueryRepository, 'getSelectedItemId')
-        .mockReturnValue(999);
+      jest.spyOn(cartQueryRepository, 'getSelectedItemId').mockReturnValue(999);
 
       renderHandler({ cartRepository, cartQueryRepository });
 

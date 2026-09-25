@@ -195,7 +195,6 @@ describe('OrderStatusHandler', () => {
       await act(async () => {
         await jest.advanceTimersByTimeAsync(0);
       });
-      expect(screen.getByText('Menunggu pembayaran…')).toBeTruthy();
 
       paymentRepository.payment = {
         ...paymentRepository.payment,
@@ -228,11 +227,7 @@ describe('OrderStatusHandler', () => {
     await settle();
 
     expect(screen.getByText('Pesanan siap')).toBeTruthy();
-    expect(
-      screen.getByText(
-        `Silakan ambil di kasir dengan menyebutkan nomor #${paymentRepository.payment.transactionNumber}`
-      )
-    ).toBeTruthy();
+    expect(screen.getByText(`Silakan ambil di kasir`)).toBeTruthy();
     expect(
       screen.getByText(`#${paymentRepository.payment.transactionNumber}`)
     ).toBeTruthy();
@@ -449,10 +444,10 @@ describe('OrderStatusHandler', () => {
       });
 
       expect(screen.getByText('Batalkan pembayaran?')).toBeTruthy();
-      expect(getByRole('button', { name: 'Ya, batalkan' })).toBeTruthy();
+      expect(getByRole('button', { name: 'Ya' })).toBeTruthy();
     });
 
-    it('closes the dialog when Lanjutkan pembayaran is pressed', async () => {
+    it('closes the dialog when Tidak is pressed', async () => {
       const paymentRepository = new MockPaymentRepository();
       const { getByRole } = renderHandler({
         reference: paymentRepository.payment.reference,
@@ -467,13 +462,13 @@ describe('OrderStatusHandler', () => {
       expect(screen.getByText('Batalkan pembayaran?')).toBeTruthy();
 
       await act(async () => {
-        getByRole('button', { name: 'Lanjutkan pembayaran' }).click();
+        getByRole('button', { name: 'Tidak' }).click();
       });
 
       expect(screen.queryByText('Batalkan pembayaran?')).toBeNull();
     });
 
-    it('cancels the payment and returns to the cart on Ya, batalkan', async () => {
+    it('cancels the payment and returns to the cart on Ya', async () => {
       const paymentRepository = new MockPaymentRepository();
       const { getByRole } = renderHandler({
         reference: paymentRepository.payment.reference,
@@ -486,7 +481,7 @@ describe('OrderStatusHandler', () => {
         getByRole('button', { name: 'Batalkan pembayaran' }).click();
       });
       await act(async () => {
-        getByRole('button', { name: 'Ya, batalkan' }).click();
+        getByRole('button', { name: 'Ya' }).click();
       });
       await settle();
 
@@ -519,7 +514,7 @@ describe('OrderStatusHandler', () => {
         getByRole('button', { name: 'Batalkan pembayaran' }).click();
       });
       await act(async () => {
-        getByRole('button', { name: 'Ya, batalkan' }).click();
+        getByRole('button', { name: 'Ya' }).click();
       });
       await settle();
 

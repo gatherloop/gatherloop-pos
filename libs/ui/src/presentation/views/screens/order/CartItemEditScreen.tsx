@@ -1,5 +1,13 @@
 import { X } from '@tamagui/lucide-icons';
-import { Button, Paragraph, Text, TextArea, XStack, YStack } from 'tamagui';
+import {
+  Button,
+  Paragraph,
+  ScrollView,
+  Text,
+  TextArea,
+  XStack,
+  YStack,
+} from 'tamagui';
 import { CartItem } from '../../../../domain/entities/Cart';
 import { formatRupiah } from '../../../../utils/currency';
 import { Sheet } from '../../components/base/Sheet/Sheet';
@@ -72,53 +80,56 @@ export const CartItemEditScreen = ({
           />
         </XStack>
 
-        <YStack flex={1} gap="$4" paddingHorizontal="$4" paddingBottom="$4">
-          <XStack gap="$3" alignItems="center">
-            <MenuItemThumbnail
-              imageUrl={item.variant.product.imageUrl}
-              station={item.variant.product.category.station}
-              width={64}
-              height={64}
-              flexShrink={0}
-            />
-            <YStack flex={1} gap="$1">
-              <XStack alignItems="center" gap="$2">
-                <Text fontSize="$6" fontWeight="bold" numberOfLines={1}>
-                  {item.variant.product.name}
-                </Text>
-                {isSoldOut ? <SoldOutBadge /> : null}
-              </XStack>
-              {optionValueNames ? (
-                <Text color="$color10" numberOfLines={1}>
-                  {optionValueNames}
-                </Text>
-              ) : null}
+        <ScrollView>
+          <YStack flex={1} gap="$4" paddingHorizontal="$4" paddingBottom="$4">
+            <XStack gap="$3" alignItems="center">
+              <MenuItemThumbnail
+                imageUrl={item.variant.product.imageUrl}
+                station={item.variant.product.category.station}
+                width={64}
+                height={64}
+                flexShrink={0}
+              />
+              <YStack flex={1} gap="$1">
+                <XStack alignItems="center" gap="$2">
+                  <Text fontSize="$6" fontWeight="bold" numberOfLines={1}>
+                    {item.variant.product.name}
+                  </Text>
+                  {isSoldOut ? <SoldOutBadge /> : null}
+                </XStack>
+                {optionValueNames ? (
+                  <Text color="$color10" numberOfLines={1}>
+                    {optionValueNames}
+                  </Text>
+                ) : null}
+              </YStack>
+            </XStack>
+
+            <YStack gap="$2">
+              <Text fontWeight="bold">Catatan</Text>
+              <TextArea
+                placeholder="Contoh: less sugar, tanpa es"
+                value={note}
+                onChangeText={onNoteChange}
+                accessibilityLabel="Catatan"
+                minHeight={80}
+                maxLength={255}
+                disabled={isLocked}
+              />
             </YStack>
-          </XStack>
 
-          <YStack gap="$2">
-            <Text fontWeight="bold">Catatan</Text>
-            <TextArea
-              placeholder="Contoh: less sugar, tanpa es"
-              value={note}
-              onChangeText={onNoteChange}
-              accessibilityLabel="Catatan"
-              minHeight={80}
-              maxLength={255}
-              disabled={isLocked}
-            />
+            <XStack justifyContent="space-between" alignItems="center">
+              <Text fontWeight="bold">Jumlah</Text>
+              <AmountStepper
+                amount={amount}
+                onChange={onAmountChange}
+                max={remainingQuantity}
+                disabled={isSoldOut || isLocked}
+                size="sm"
+              />
+            </XStack>
           </YStack>
-
-          <XStack justifyContent="space-between" alignItems="center">
-            <Text fontWeight="bold">Jumlah</Text>
-            <AmountStepper
-              amount={amount}
-              onChange={onAmountChange}
-              max={remainingQuantity}
-              disabled={isSoldOut || isLocked}
-            />
-          </XStack>
-        </YStack>
+        </ScrollView>
 
         <YStack
           padding="$4"
