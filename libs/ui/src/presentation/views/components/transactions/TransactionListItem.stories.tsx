@@ -83,6 +83,30 @@ export const CashPaid: Story = {
   },
 };
 
+export const QrisAwaitingPayment: Story = {
+  args: {
+    name: 'Budi',
+    source: 'order',
+    paymentMethod: 'qris',
+    table: { id: 1, label: 'A1', floorNumber: 1 },
+    pagerNumber: 0,
+    completedAt: null,
+    paidAt: undefined,
+    walletName: undefined,
+  },
+};
+
+export const QrisPaid: Story = {
+  args: {
+    name: 'Budi',
+    source: 'order',
+    paymentMethod: 'qris',
+    table: { id: 1, label: 'A1', floorNumber: 1 },
+    pagerNumber: 0,
+    completedAt: null,
+  },
+};
+
 export const FromPos: Story = {
   args: {
     source: 'pos',
@@ -116,6 +140,20 @@ export const TakeawayCashAwaitingPayment: Story = {
     source: 'order',
     diningOption: 'takeaway',
     paymentMethod: 'cash',
+    table: { id: 1, label: 'A1', floorNumber: 1 },
+    pagerNumber: 0,
+    completedAt: null,
+    paidAt: undefined,
+    walletName: undefined,
+  },
+};
+
+export const TakeawayQrisAwaitingPayment: Story = {
+  args: {
+    name: 'Budi',
+    source: 'order',
+    diningOption: 'takeaway',
+    paymentMethod: 'qris',
     table: { id: 1, label: 'A1', floorNumber: 1 },
     pagerNumber: 0,
     completedAt: null,

@@ -74,6 +74,20 @@ const CashAwaitingPaymentBadge = () => (
   </XStack>
 );
 
+const QrisAwaitingPaymentBadge = () => (
+  <XStack
+    backgroundColor="$cyan5"
+    paddingHorizontal="$2"
+    paddingVertical="$1"
+    borderRadius="$10"
+    alignSelf="flex-start"
+  >
+    <Paragraph size="$1" color="$cyan11">
+      QRIS · awaiting payment
+    </Paragraph>
+  </XStack>
+);
+
 const TakeawayBadge = () => (
   <XStack
     backgroundColor="$purple5"
@@ -188,6 +202,9 @@ export const TransactionListItem = ({
                   <FulfillmentBadge completedAt={completedAt} />
                   {paymentMethod === 'cash' && paidAt === undefined && (
                     <CashAwaitingPaymentBadge />
+                  )}
+                  {paymentMethod === 'qris' && paidAt === undefined && (
+                    <QrisAwaitingPaymentBadge />
                   )}
                 </>
               )}
