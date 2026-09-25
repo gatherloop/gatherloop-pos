@@ -98,7 +98,7 @@ describe('OrderStatusHandler', () => {
 
     await settle();
 
-    expect(screen.getByText('Menunggu pembayaran…')).toBeTruthy();
+    expect(screen.getByText('Rp 18.000')).toBeTruthy();
   });
 
   it('shows the cash instruction screen for a pending cash payment', async () => {
@@ -118,7 +118,6 @@ describe('OrderStatusHandler', () => {
     expect(
       screen.getByText(`#${paymentRepository.payment.transactionNumber}`)
     ).toBeTruthy();
-    expect(screen.getByText('Menunggu pembayaran di kasir…')).toBeTruthy();
   });
 
   it('flips to the prepared-order screen when a polled cash payment turns paid', async () => {

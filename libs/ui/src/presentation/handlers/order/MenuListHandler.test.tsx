@@ -647,7 +647,7 @@ describe('MenuListHandler', () => {
           screen.getByRole('button', { name: 'Batalkan & tambah item' })
         );
         const dialog = getCancelDialog();
-        await user.click(dialog.getByRole('button', { name: 'Ya, batalkan' }));
+        await user.click(dialog.getByRole('button', { name: 'Ya' }));
         await settle();
         await settle();
 
@@ -680,7 +680,7 @@ describe('MenuListHandler', () => {
           screen.getByRole('button', { name: 'Batalkan & tambah item' })
         );
         const dialog = getCancelDialog();
-        await user.click(dialog.getByRole('button', { name: 'Ya, batalkan' }));
+        await user.click(dialog.getByRole('button', { name: 'Ya' }));
         await settle();
 
         expect(mockPush).toHaveBeenCalledWith(
@@ -708,9 +708,7 @@ describe('MenuListHandler', () => {
         const dialog = getCancelDialog();
         expect(dialog.getByText('Batalkan pembayaran?')).toBeTruthy();
 
-        await user.click(
-          dialog.getByRole('button', { name: 'Lanjutkan pembayaran' })
-        );
+        await user.click(dialog.getByRole('button', { name: 'Tidak' }));
         await settle();
 
         expect(cancelSpy).not.toHaveBeenCalled();
