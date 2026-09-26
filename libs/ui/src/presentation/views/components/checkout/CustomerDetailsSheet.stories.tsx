@@ -22,7 +22,7 @@ const meta: Meta<typeof CustomerDetailsSheet> = {
     onCancelPress: () => {
       // Storybook action stand-in
     },
-    isCashPaymentEnabled: false,
+    enabledMethods: ['qris'],
     method: 'qris',
     onMethodChange: () => {
       // Storybook action stand-in
@@ -32,6 +32,13 @@ const meta: Meta<typeof CustomerDetailsSheet> = {
       // Storybook action stand-in
     },
     cashierLocation: 'Lantai 1',
+    verificationPhoto: null,
+    onCapturePhoto: () => {
+      // Storybook action stand-in
+    },
+    onRetakePhoto: () => {
+      // Storybook action stand-in
+    },
     isSubmitting: false,
   },
 };
@@ -65,7 +72,7 @@ export const CashPaymentEnabledQris: Story = {
   args: {
     name: 'Budi',
     whatsappNumber: '0812 3456 7890',
-    isCashPaymentEnabled: true,
+    enabledMethods: ['qris', 'cash'],
     method: 'qris',
   },
 };
@@ -74,8 +81,37 @@ export const CashPaymentEnabledCash: Story = {
   args: {
     name: 'Budi',
     whatsappNumber: '0812 3456 7890',
-    isCashPaymentEnabled: true,
+    enabledMethods: ['qris', 'cash'],
     method: 'cash',
+  },
+};
+
+export const CodPaymentEnabled: Story = {
+  args: {
+    name: 'Budi',
+    whatsappNumber: '0812 3456 7890',
+    enabledMethods: ['qris', 'cod'],
+    method: 'qris',
+  },
+};
+
+export const CodSelectedAwaitingPhoto: Story = {
+  args: {
+    name: 'Budi',
+    whatsappNumber: '0812 3456 7890',
+    enabledMethods: ['qris', 'cod'],
+    method: 'cod',
+  },
+};
+
+export const CodSelectedWithPhoto: Story = {
+  args: {
+    name: 'Budi',
+    whatsappNumber: '0812 3456 7890',
+    enabledMethods: ['qris', 'cod'],
+    method: 'cod',
+    verificationPhoto:
+      '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgICAgMCAgIDAwMDBAYEBAQEBAgGBgUGCQgKCgkICQkKDA8MCgsOCwkJDRENDg8QEBEQCgwSExIQEw8QEBD/2wBDAQMDAwQDBAgEBAgQCwkLEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBD/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAf/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=',
   },
 };
 
