@@ -114,6 +114,7 @@ jobs:
             KDS_DISPATCH_INTERVAL_SECONDS=15
             FONNTE_BASE_URL=${{ secrets.FONNTE_BASE_URL }}
             FONNTE_TOKEN=${{ secrets.FONNTE_TOKEN }}
+            WHATSAPP_NUMBER_VALIDATION_ENABLED=${{ secrets.WHATSAPP_NUMBER_VALIDATION_ENABLED }}
             APP_ENV=production
             ENV_EOF
             sudo cp apps/api/gatherloop-pos-api.service /etc/systemd/system/
