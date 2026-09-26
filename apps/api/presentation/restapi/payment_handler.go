@@ -47,10 +47,10 @@ func (handler PaymentHandler) Checkout(w http.ResponseWriter, r *http.Request) {
 		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: "verificationPhoto is only allowed for cod checkout"})
 		return
 	}
-	if method == domain.PaymentMethodCod {
-		// Checkout branch (FR-2) lands in a later phase; cod is contract-only for now.
-		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: "payment method is not available yet"})
-		return
+
+	var verificationPhoto string
+	if request.VerificationPhoto != nil {
+		verificationPhoto = *request.VerificationPhoto
 	}
 
 	var customerWhatsappNumber string
@@ -63,7 +63,7 @@ func (handler PaymentHandler) Checkout(w http.ResponseWriter, r *http.Request) {
 		diningOption = domain.DiningOption(*request.DiningOption)
 	}
 
-	payment, transaction, usecaseErr := handler.usecase.Checkout(ctx, sessionId, request.CustomerName, customerWhatsappNumber, method, diningOption)
+	payment, transaction, usecaseErr := handler.usecase.Checkout(ctx, sessionId, request.CustomerName, customerWhatsappNumber, method, diningOption, verificationPhoto)
 	if usecaseErr != nil {
 		apiError := apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message, Reason: ToErrorReason(usecaseErr.Reason)}
 		if usecaseErr.Type == domain.BadGateway {
