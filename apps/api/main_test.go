@@ -40,7 +40,7 @@ func TestRunMaintenanceSweeper_CallsEveryJobPerTick(t *testing.T) {
 	kdsNotificationDispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
 	availabilityReservation := domain.NewAvailabilityReservation(availabilityRepo)
 	paymentVerificationRepo := mock.NewMockPaymentVerificationRepository(ctrl)
-	paymentUsecase := domain.NewPaymentUsecase(paymentRepo, gatewayRepo, customerRepo, cartRepo, paymentTransactionRepo, variantRepo, walletRepo, availabilityReservation, kdsNotificationRepo, kdsNotificationDispatcher, domain.NoopWhatsappNumberVerifier{}, paymentVerificationRepo, 300, 600, 1, false)
+	paymentUsecase := domain.NewPaymentUsecase(paymentRepo, gatewayRepo, customerRepo, cartRepo, paymentTransactionRepo, variantRepo, walletRepo, availabilityReservation, kdsNotificationRepo, kdsNotificationDispatcher, domain.NoopWhatsappNumberVerifier{}, paymentVerificationRepo, 300, 600, 900, 1, false, false)
 
 	kdsCalled := make(chan struct{}, 1)
 	guestCalled := make(chan struct{}, 1)

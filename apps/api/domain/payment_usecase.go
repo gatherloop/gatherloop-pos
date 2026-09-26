@@ -3,6 +3,7 @@ package domain
 import (
 	"context"
 	"crypto/subtle"
+	"encoding/base64"
 	"log/slog"
 	"strings"
 	"time"
@@ -34,8 +35,10 @@ type PaymentUsecase struct {
 	paymentVerificationRepository PaymentVerificationRepository
 	qrisExpirySeconds             int
 	cashExpirySeconds             int
+	codVerificationExpirySeconds  int
 	orderPaymentWalletId          int64
 	orderPaymentCancelEnabled     bool
+	orderCodPaymentEnabled        bool
 }
 
 func NewPaymentUsecase(
@@ -53,8 +56,10 @@ func NewPaymentUsecase(
 	paymentVerificationRepository PaymentVerificationRepository,
 	qrisExpirySeconds int,
 	cashExpirySeconds int,
+	codVerificationExpirySeconds int,
 	orderPaymentWalletId int64,
 	orderPaymentCancelEnabled bool,
+	orderCodPaymentEnabled bool,
 ) PaymentUsecase {
 	return PaymentUsecase{
 		paymentRepository:             paymentRepository,
@@ -71,16 +76,22 @@ func NewPaymentUsecase(
 		paymentVerificationRepository: paymentVerificationRepository,
 		qrisExpirySeconds:             qrisExpirySeconds,
 		cashExpirySeconds:             cashExpirySeconds,
+		codVerificationExpirySeconds:  codVerificationExpirySeconds,
 		orderPaymentWalletId:          orderPaymentWalletId,
 		orderPaymentCancelEnabled:     orderPaymentCancelEnabled,
+		orderCodPaymentEnabled:        orderCodPaymentEnabled,
 	}
 }
 
 func (usecase PaymentUsecase) expirySecondsFor(method PaymentMethod) int {
-	if method == PaymentMethodCash {
+	switch method {
+	case PaymentMethodCash:
 		return usecase.cashExpirySeconds
+	case PaymentMethodCod:
+		return usecase.codVerificationExpirySeconds
+	default:
+		return usecase.qrisExpirySeconds
 	}
-	return usecase.qrisExpirySeconds
 }
 
 func (usecase PaymentUsecase) validateOrderPaymentWallet(ctx context.Context) *Error {
@@ -94,10 +105,34 @@ func (usecase PaymentUsecase) validateOrderPaymentWallet(ctx context.Context) *E
 	return ValidateOrderPaymentWallet(wallet)
 }
 
-func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, customerName string, customerWhatsappNumber string, method PaymentMethod, diningOption DiningOption) (Payment, Transaction, *Error) {
+func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, customerName string, customerWhatsappNumber string, method PaymentMethod, diningOption DiningOption, verificationPhoto string) (Payment, Transaction, *Error) {
 	var resultPayment Payment
 	var resultTransaction Transaction
-	enqueuedCashPendingNotification := false
+	enqueuedNonGatewayNotification := false
+
+	// FR-2: the gate and the photo decode/sniff are pure and local — they run before
+	// BeginTransaction and before the WhatsApp check below, so a disabled trial or a bad photo
+	// never holds a row lock or reaches Fonnte.
+	var verificationPhotoBytes []byte
+	var verificationPhotoContentType string
+	if method == PaymentMethodCod {
+		if !usecase.orderCodPaymentEnabled {
+			return Payment{}, Transaction{}, &Error{Type: BadRequest, Message: "payment method is not available"}
+		}
+
+		decoded, decodeErr := base64.StdEncoding.DecodeString(verificationPhoto)
+		if decodeErr != nil {
+			return Payment{}, Transaction{}, &Error{Type: BadRequest, Message: "verification photo must be valid base64"}
+		}
+
+		contentType, validateErr := ValidateVerificationPhoto(decoded)
+		if validateErr != nil {
+			return Payment{}, Transaction{}, validateErr
+		}
+
+		verificationPhotoBytes = decoded
+		verificationPhotoContentType = contentType
+	}
 
 	// FR-2/D5: absent (empty) is left nil so the customer's stored number and an idempotent
 	// pending payment's snapshot stay unchanged; only a non-empty value is normalized and
@@ -232,6 +267,15 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 
 		expiredAt := time.Now().Add(time.Duration(usecase.expirySecondsFor(method)) * time.Second)
 
+		// D2: verification is the presence axis, orthogonal to status — a cod payment starts
+		// pending + awaiting, exactly like every other axis pairing this domain snapshots at
+		// creation.
+		var verificationStatus *PaymentVerificationStatus
+		if method == PaymentMethodCod {
+			awaiting := PaymentVerificationStatusAwaiting
+			verificationStatus = &awaiting
+		}
+
 		createdPayment, err := usecase.paymentRepository.CreatePayment(ctxWithTx, Payment{
 			CartId:                 cart.Id,
 			SessionId:              sessionId,
@@ -243,6 +287,7 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 			Status:                 PaymentStatePending,
 			Amount:                 total,
 			ExpiredAt:              expiredAt,
+			VerificationStatus:     verificationStatus,
 		})
 		if err != nil {
 			return err
@@ -251,13 +296,30 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 		resultPayment = createdPayment
 		resultTransaction = createdTransaction
 
+		if method == PaymentMethodCod {
+			// FR-3: the photo row is created in the same transaction as the payment, keeping D5's
+			// invariant true from the instant the payment exists.
+			if createErr := usecase.paymentVerificationRepository.Create(ctxWithTx, PaymentVerificationPhoto{
+				PaymentId:   createdPayment.Id,
+				ContentType: verificationPhotoContentType,
+				ByteSize:    len(verificationPhotoBytes),
+				Data:        verificationPhotoBytes,
+			}); createErr != nil {
+				return createErr
+			}
+		}
+
 		if !createdPayment.RequiresGateway() {
-			// FR-5: buzzes the KDS before any money moves, so a barista walks to the till
-			// rather than the guest arriving to an unstaffed one.
-			if enqueueErr := usecase.kdsNotificationRepository.EnqueueForTransaction(ctxWithTx, createdTransaction, KdsNotificationKindCashPending); enqueueErr != nil {
+			// FR-5/FR-9: buzzes the KDS before any money moves, so a barista walks to the till (cash)
+			// or looks at the photo (cod) rather than the guest arriving to nothing happening.
+			kind := KdsNotificationKindCashPending
+			if method == PaymentMethodCod {
+				kind = KdsNotificationKindCodVerification
+			}
+			if enqueueErr := usecase.kdsNotificationRepository.EnqueueForTransaction(ctxWithTx, createdTransaction, kind); enqueueErr != nil {
 				return enqueueErr
 			}
-			enqueuedCashPendingNotification = true
+			enqueuedNonGatewayNotification = true
 			return nil
 		}
 
@@ -284,7 +346,7 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 
 	// FR-5: kicked after the commit, exactly as PayTransaction and ConfirmPayment already do —
 	// the guest's HTTP response never waits on Expo.
-	if err == nil && enqueuedCashPendingNotification {
+	if err == nil && enqueuedNonGatewayNotification {
 		usecase.kdsNotificationDispatcher.TriggerDispatch()
 	}
 
