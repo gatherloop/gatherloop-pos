@@ -7,32 +7,34 @@ import (
 )
 
 type TransactionUsecase struct {
-	transactionRepository       TransactionRepository
-	variantRepository           VariantRepository
-	couponRepository            CouponRepository
-	walletRepository            WalletRepository
-	availabilityReservation     AvailabilityReservation
-	kdsNotificationRepository   KdsNotificationRepository
-	kdsNotificationDispatcher   KdsNotificationDispatcher
-	paymentRepository           PaymentRepository
-	guestNotificationRepository GuestNotificationRepository
-	guestNotificationDispatcher GuestNotificationDispatcher
-	cartRepository              CartRepository
+	transactionRepository         TransactionRepository
+	variantRepository             VariantRepository
+	couponRepository              CouponRepository
+	walletRepository              WalletRepository
+	availabilityReservation       AvailabilityReservation
+	kdsNotificationRepository     KdsNotificationRepository
+	kdsNotificationDispatcher     KdsNotificationDispatcher
+	paymentRepository             PaymentRepository
+	guestNotificationRepository   GuestNotificationRepository
+	guestNotificationDispatcher   GuestNotificationDispatcher
+	cartRepository                CartRepository
+	paymentVerificationRepository PaymentVerificationRepository
 }
 
-func NewTransactionUsecase(transactionRepository TransactionRepository, variantRepository VariantRepository, couponRepository CouponRepository, walletRepository WalletRepository, availabilityReservation AvailabilityReservation, kdsNotificationRepository KdsNotificationRepository, kdsNotificationDispatcher KdsNotificationDispatcher, paymentRepository PaymentRepository, guestNotificationRepository GuestNotificationRepository, guestNotificationDispatcher GuestNotificationDispatcher, cartRepository CartRepository) TransactionUsecase {
+func NewTransactionUsecase(transactionRepository TransactionRepository, variantRepository VariantRepository, couponRepository CouponRepository, walletRepository WalletRepository, availabilityReservation AvailabilityReservation, kdsNotificationRepository KdsNotificationRepository, kdsNotificationDispatcher KdsNotificationDispatcher, paymentRepository PaymentRepository, guestNotificationRepository GuestNotificationRepository, guestNotificationDispatcher GuestNotificationDispatcher, cartRepository CartRepository, paymentVerificationRepository PaymentVerificationRepository) TransactionUsecase {
 	return TransactionUsecase{
-		transactionRepository:       transactionRepository,
-		variantRepository:           variantRepository,
-		couponRepository:            couponRepository,
-		walletRepository:            walletRepository,
-		availabilityReservation:     availabilityReservation,
-		kdsNotificationRepository:   kdsNotificationRepository,
-		kdsNotificationDispatcher:   kdsNotificationDispatcher,
-		paymentRepository:           paymentRepository,
-		guestNotificationRepository: guestNotificationRepository,
-		guestNotificationDispatcher: guestNotificationDispatcher,
-		cartRepository:              cartRepository,
+		transactionRepository:         transactionRepository,
+		variantRepository:             variantRepository,
+		couponRepository:              couponRepository,
+		walletRepository:              walletRepository,
+		availabilityReservation:       availabilityReservation,
+		kdsNotificationRepository:     kdsNotificationRepository,
+		kdsNotificationDispatcher:     kdsNotificationDispatcher,
+		paymentRepository:             paymentRepository,
+		guestNotificationRepository:   guestNotificationRepository,
+		guestNotificationDispatcher:   guestNotificationDispatcher,
+		cartRepository:                cartRepository,
+		paymentVerificationRepository: paymentVerificationRepository,
 	}
 }
 
@@ -241,6 +243,11 @@ func (usecase TransactionUsecase) PayTransaction(ctx context.Context, walletId i
 		if hasLinkedPayment && linkedPayment.Status == PaymentStateCancelled {
 			return &Error{Type: BadRequest, Message: "order was cancelled by the guest"}
 		}
+		// FR-5/D9: nothing should be paid for before a barista has confirmed the guest is in the
+		// café — approval is what starts the bar making it.
+		if hasLinkedPayment && linkedPayment.IsAwaitingCodVerification() {
+			return &Error{Type: BadRequest, Message: "verify the order before taking payment"}
+		}
 
 		// D23: the sweeper may have soft-deleted this order transaction between the cashier's
 		// list fetch and their pressing Pay. Un-delete and re-reserve before paying it — the
@@ -305,7 +312,7 @@ func (usecase TransactionUsecase) settleOrderPayment(ctx context.Context, paymen
 	// D7/D8: the guest may have checked out again on this cart before the cashier settled this
 	// (expired) order transaction by hand — finalise that newer attempt too, the same as a late
 	// QRIS webhook does, so the cart never ends up with two paid orders.
-	return supersedeLivePayments(ctx, payment.CartId, payment.Id, usecase.paymentRepository, usecase.transactionRepository, usecase.availabilityReservation, usecase.kdsNotificationRepository)
+	return supersedeLivePayments(ctx, payment.CartId, payment.Id, usecase.paymentRepository, usecase.transactionRepository, usecase.availabilityReservation, usecase.kdsNotificationRepository, usecase.paymentVerificationRepository)
 }
 
 func payTransaction(ctx context.Context, transaction Transaction, transactionRepository TransactionRepository, walletRepository WalletRepository, kdsNotificationRepository KdsNotificationRepository, walletId int64, paidAmount float32) *Error {
@@ -421,12 +428,9 @@ func (usecase TransactionUsecase) CompleteTransaction(ctx context.Context, id in
 			return &Error{Type: BadRequest, Message: "transaction already completed"}
 		}
 
-		if err := usecase.transactionRepository.CompleteTransaction(ctxWithTx, time.Now(), id); err != nil {
-			return err
-		}
-
 		// FR-2: no payment for the transaction is tolerated as a skipped notification, not a
-		// failed completion the barista already performed.
+		// failed completion the barista already performed. FR-5/D9: an awaiting COD payment
+		// refuses the completion outright — nothing should be made before a barista approves it.
 		var sessionId *string
 		var whatsappNumber *string
 		payment, paymentErr := usecase.paymentRepository.GetPaymentByTransactionId(ctxWithTx, id)
@@ -435,8 +439,15 @@ func (usecase TransactionUsecase) CompleteTransaction(ctx context.Context, id in
 				return paymentErr
 			}
 		} else {
+			if payment.IsAwaitingCodVerification() {
+				return &Error{Type: BadRequest, Message: "verify the order before marking it ready"}
+			}
 			sessionId = &payment.SessionId
 			whatsappNumber = payment.CustomerWhatsappNumber
+		}
+
+		if err := usecase.transactionRepository.CompleteTransaction(ctxWithTx, time.Now(), id); err != nil {
+			return err
 		}
 
 		return usecase.guestNotificationRepository.EnqueueForCompletedTransaction(ctxWithTx, transaction, sessionId, whatsappNumber)

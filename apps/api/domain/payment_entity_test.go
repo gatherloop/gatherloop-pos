@@ -70,12 +70,15 @@ func TestPaymentIsAwaitingPayment(t *testing.T) {
 
 func TestPaymentCanBeCancelledBy(t *testing.T) {
 	now := time.Date(2026, 9, 10, 12, 0, 0, 0, time.UTC)
+	awaiting := domain.PaymentVerificationStatusAwaiting
+	approved := domain.PaymentVerificationStatusApproved
 
 	testCases := []struct {
-		name      string
-		status    domain.PaymentState
-		sessionId string
-		expected  bool
+		name               string
+		status             domain.PaymentState
+		sessionId          string
+		verificationStatus *domain.PaymentVerificationStatus
+		expected           bool
 	}{
 		{
 			name:      "owner and pending",
@@ -113,15 +116,72 @@ func TestPaymentCanBeCancelledBy(t *testing.T) {
 			sessionId: "session-1",
 			expected:  false,
 		},
+		{
+			name:               "pending COD still awaiting verification",
+			status:             domain.PaymentStatePending,
+			sessionId:          "session-1",
+			verificationStatus: &awaiting,
+			expected:           true,
+		},
+		{
+			// FR-5/D10: the bar has started making an approved COD order — the guest may no
+			// longer back out, even though the money is still pending.
+			name:               "pending COD already approved",
+			status:             domain.PaymentStatePending,
+			sessionId:          "session-1",
+			verificationStatus: &approved,
+			expected:           false,
+		},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			payment := domain.Payment{Status: testCase.status, SessionId: "session-1"}
+			payment := domain.Payment{Status: testCase.status, SessionId: "session-1", VerificationStatus: testCase.verificationStatus}
 
 			assert.Equal(t, testCase.expected, payment.CanBeCancelledBy(testCase.sessionId, now))
 		})
 	}
+}
+
+func TestPaymentIsExpirable(t *testing.T) {
+	awaiting := domain.PaymentVerificationStatusAwaiting
+	approved := domain.PaymentVerificationStatusApproved
+
+	testCases := []struct {
+		name               string
+		status             domain.PaymentState
+		verificationStatus *domain.PaymentVerificationStatus
+		expected           bool
+	}{
+		{name: "pending, no verification (qris/cash)", status: domain.PaymentStatePending, expected: true},
+		{name: "pending COD awaiting", status: domain.PaymentStatePending, verificationStatus: &awaiting, expected: true},
+		{
+			// FR-5: this is the single predicate the sweeper and the guest's own poll ask —
+			// an approved COD order is being made and must never expire.
+			name: "pending COD approved", status: domain.PaymentStatePending, verificationStatus: &approved, expected: false,
+		},
+		{name: "paid", status: domain.PaymentStatePaid, expected: false},
+		{name: "expired", status: domain.PaymentStateExpired, expected: false},
+		{name: "cancelled", status: domain.PaymentStateCancelled, expected: false},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			payment := domain.Payment{Status: testCase.status, VerificationStatus: testCase.verificationStatus}
+
+			assert.Equal(t, testCase.expected, payment.IsExpirable())
+		})
+	}
+}
+
+func TestPaymentIsAwaitingCodVerification(t *testing.T) {
+	awaiting := domain.PaymentVerificationStatusAwaiting
+	approved := domain.PaymentVerificationStatusApproved
+
+	assert.True(t, domain.Payment{Method: domain.PaymentMethodCod, VerificationStatus: &awaiting}.IsAwaitingCodVerification())
+	assert.False(t, domain.Payment{Method: domain.PaymentMethodCod, VerificationStatus: &approved}.IsAwaitingCodVerification())
+	assert.False(t, domain.Payment{Method: domain.PaymentMethodCod, VerificationStatus: nil}.IsAwaitingCodVerification())
+	assert.False(t, domain.Payment{Method: domain.PaymentMethodQris}.IsAwaitingCodVerification())
 }
 
 func TestParsePaymentMethod(t *testing.T) {

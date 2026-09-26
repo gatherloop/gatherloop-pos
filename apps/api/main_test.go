@@ -45,6 +45,7 @@ func TestRunMaintenanceSweeper_CallsEveryJobPerTick(t *testing.T) {
 	kdsCalled := make(chan struct{}, 1)
 	guestCalled := make(chan struct{}, 1)
 	paymentCalled := make(chan struct{}, 1)
+	orphanPhotosCalled := make(chan struct{}, 1)
 	kdsNotificationRepo.EXPECT().ClaimPendingKdsNotifications(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(context.Context, int) ([]domain.KdsNotification, *domain.Error) {
 			kdsCalled <- struct{}{}
@@ -61,6 +62,11 @@ func TestRunMaintenanceSweeper_CallsEveryJobPerTick(t *testing.T) {
 			paymentCalled <- struct{}{}
 			return nil, nil
 		}).AnyTimes()
+	paymentVerificationRepo.EXPECT().DeleteOrphaned(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(context.Context, int) (int64, *domain.Error) {
+			orphanPhotosCalled <- struct{}{}
+			return 0, nil
+		}).AnyTimes()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -71,7 +77,7 @@ func TestRunMaintenanceSweeper_CallsEveryJobPerTick(t *testing.T) {
 	}()
 
 	timeout := time.After(5 * time.Second)
-	for _, called := range []chan struct{}{kdsCalled, guestCalled, paymentCalled} {
+	for _, called := range []chan struct{}{kdsCalled, guestCalled, paymentCalled, orphanPhotosCalled} {
 		select {
 		case <-called:
 		case <-timeout:
