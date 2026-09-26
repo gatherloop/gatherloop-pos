@@ -62,6 +62,44 @@ describe('TransactionListItem', () => {
     expect(screen.queryByText('Cash · awaiting payment')).toBeNull();
   });
 
+  it('shows the qris awaiting payment badge for an unpaid qris order', () => {
+    render(<TransactionListItem {...defaultProps} paymentMethod="qris" />);
+
+    expect(screen.getByText('QRIS · awaiting payment')).toBeTruthy();
+  });
+
+  it('does not show the qris badge once a qris order is paid', () => {
+    render(
+      <TransactionListItem
+        {...defaultProps}
+        paymentMethod="qris"
+        paidAt="2024-01-20T10:30:00.000Z"
+        walletName="QRIS"
+      />
+    );
+
+    expect(screen.queryByText('QRIS · awaiting payment')).toBeNull();
+  });
+
+  it('does not show the qris badge for a cash order', () => {
+    render(<TransactionListItem {...defaultProps} paymentMethod="cash" />);
+
+    expect(screen.queryByText('QRIS · awaiting payment')).toBeNull();
+  });
+
+  it('does not show the qris badge for a pos transaction', () => {
+    render(
+      <TransactionListItem
+        {...defaultProps}
+        source="pos"
+        paymentMethod={null}
+        table={null}
+      />
+    );
+
+    expect(screen.queryByText('QRIS · awaiting payment')).toBeNull();
+  });
+
   it('hides the edit menu for an unpaid order transaction', () => {
     render(<TransactionListItem {...defaultProps} />);
 
