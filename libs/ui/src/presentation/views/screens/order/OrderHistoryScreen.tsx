@@ -20,7 +20,6 @@ export type OrderHistoryScreenProps = {
   variant: OrderHistoryScreenVariant;
   onItemPress: (payment: PaymentSummary) => void;
   onEmptyActionPress: () => void;
-  onHistoryPress?: () => void;
 };
 
 export const OrderHistoryScreen = ({

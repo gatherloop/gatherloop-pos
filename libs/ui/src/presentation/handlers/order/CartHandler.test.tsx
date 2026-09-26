@@ -520,13 +520,9 @@ describe('CartHandler', () => {
     await user.click(screen.getByRole('button', { name: payButtonName }));
     await user.click(screen.getByLabelText('Bayar dengan Cash di Kasir'));
 
-    expect(
-      screen.getByRole('button', { name: 'Bayar di kasir' })
-    ).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Bayar di kasir' })).toBeTruthy();
 
-    await user.click(
-      screen.getByRole('button', { name: 'Bayar di kasir' })
-    );
+    await user.click(screen.getByRole('button', { name: 'Bayar di kasir' }));
     await settle();
 
     expect(checkoutSpy).toHaveBeenCalledWith({
@@ -613,25 +609,6 @@ describe('CartHandler', () => {
     await settle();
 
     expect(screen.getByText('Keranjang kosong')).toBeTruthy();
-  });
-
-  it('navigates to /orders from the header history button', async () => {
-    const user = userEvent.setup();
-    renderHandler();
-
-    await settle();
-
-    await user.click(screen.getByRole('button', { name: 'Pesanan Saya' }));
-
-    expect(mockPush).toHaveBeenCalledWith('/orders');
-  });
-
-  it('shows the preparing count badge on the history button when provided', async () => {
-    renderHandler({ preparingCount: 3 });
-
-    await settle();
-
-    expect(screen.getByText('3')).toBeTruthy();
   });
 
   it('shows no badge when there are no preparing orders', async () => {

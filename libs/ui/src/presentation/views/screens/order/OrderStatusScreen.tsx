@@ -90,14 +90,7 @@ export const OrderStatusScreen = ({
     .otherwise(() => undefined);
 
   return (
-    <OrderLayout
-      header={
-        <OrderBrandHeader
-          tableLine={tableLine}
-          onHistoryPress={onHistoryPress}
-        />
-      }
-    >
+    <OrderLayout header={<OrderBrandHeader tableLine={tableLine} />}>
       {match(variant)
         .returnType<ReactNode>()
         .with({ type: 'loading' }, () => (

@@ -14,7 +14,10 @@ import { usePaymentCancel } from '../hooks/usePaymentCancel';
 import { useTableResolve } from '../hooks/useTableResolve';
 import { CustomerDetailsSheetProps } from '../../views/components/checkout/CustomerDetailsSheet';
 import { CartItemEditScreenProps } from '../../views/screens/order/CartItemEditScreen';
-import { CartScreen, CartScreenProps } from '../../views/screens/order/CartScreen';
+import {
+  CartScreen,
+  CartScreenProps,
+} from '../../views/screens/order/CartScreen';
 import { TableResolveScreenProps } from '../../views/screens/order/TableResolveScreen';
 
 export type CartHandlerProps = {
@@ -76,8 +79,7 @@ export const CartHandler = ({
   const cart = useCart(cartUsecase);
   const checkout = useCheckout(checkoutUsecase);
   const router = useRouter();
-  const [isClearConfirmationOpen, setIsClearConfirmationOpen] =
-    useState(false);
+  const [isClearConfirmationOpen, setIsClearConfirmationOpen] = useState(false);
 
   useEffect(() => {
     if (tableResolve.state.type === 'resolved' && tableResolve.state.code) {
@@ -122,9 +124,8 @@ export const CartHandler = ({
   }
 
   const paymentCancel = usePaymentCancel(paymentCancelUsecase);
-  const handledCancelResultRef = useRef<
-    typeof paymentCancel.state.result
-  >(null);
+  const handledCancelResultRef =
+    useRef<typeof paymentCancel.state.result>(null);
 
   useEffect(() => {
     if (
@@ -220,7 +221,10 @@ export const CartHandler = ({
           whatsappNumber: checkout.state.whatsappNumber,
           whatsappNumberErrorMessage: checkout.state.whatsappNumberErrorMessage,
           onWhatsappNumberChange: (whatsappNumber) =>
-            checkout.dispatch({ type: 'CHANGE_WHATSAPP_NUMBER', whatsappNumber }),
+            checkout.dispatch({
+              type: 'CHANGE_WHATSAPP_NUMBER',
+              whatsappNumber,
+            }),
           onSubmitPress: () => checkout.dispatch({ type: 'SUBMIT_DETAILS' }),
           onCancelPress: () => checkout.dispatch({ type: 'CANCEL_DETAILS' }),
           isCashPaymentEnabled,
@@ -257,7 +261,6 @@ export const CartHandler = ({
               }
         )
         .exhaustive()}
-      onHistoryPress={() => router.push('/orders')}
       preparingCount={preparingCount}
       variant={toScreenVariant(cart.state)}
       isMutating={mutating}

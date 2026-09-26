@@ -398,18 +398,6 @@ describe('OrderStatusHandler', () => {
     expect(mockPush).toHaveBeenCalledWith('/');
   });
 
-  it('navigates to /orders from the header history button', async () => {
-    const { getByRole } = renderHandler({ reference: 'UNKNOWNREF' });
-
-    await settle();
-
-    await act(async () => {
-      getByRole('button', { name: 'Pesanan Saya' }).click();
-    });
-
-    expect(mockPush).toHaveBeenCalledWith('/orders');
-  });
-
   describe('cancelling a pending payment', () => {
     it('hides the cancel button when the payment cannot be cancelled', async () => {
       const paymentRepository = new MockPaymentRepository();
