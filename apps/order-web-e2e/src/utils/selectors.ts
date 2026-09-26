@@ -125,6 +125,12 @@ export const cartScreen = {
   submitNameButton: (page: Page) =>
     page.getByRole('button', { name: 'Lanjutkan ke pembayaran' }),
   cancelNameButton: (page: Page) => page.getByRole('button', { name: 'Batal' }),
+  // CustomerDetailsSheet.tsx's layer-2 rejection copy
+  // (docs/prd-order-whatsapp-number-validation.md FR-6).
+  whatsappNumberNotRegisteredError: (page: Page) =>
+    page.getByText(
+      'Nomor WhatsApp tidak terdaftar di WhatsApp. Mohon periksa kembali.'
+    ),
 
   cashMethodButton: (page: Page) =>
     page.getByLabel('Bayar dengan Cash di Kasir'),

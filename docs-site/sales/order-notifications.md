@@ -19,6 +19,30 @@ Tapping the link opens the order's status page — the same green "ready" screen
 have seen if they'd kept the tab open — in **any** browser, on any phone, without a login, a
 session cookie, or the order app still being installed or open anywhere.
 
+## Nomor WhatsApp diperiksa
+
+A message can only reach a number that actually has WhatsApp, so checkout checks that before an
+order is created, not after. When a guest taps **Lanjutkan Pembayaran** in **Data pemesan**:
+
+1. **The browser checks the format.** A number that's too short, or isn't a number at all, is
+   rejected immediately under the field — no request is sent.
+2. **The server checks the format again, then checks WhatsApp itself.** A well-formed number is
+   sent to the WhatsApp gateway to confirm it actually has an account. If it doesn't, the sheet
+   stays open, the submit button stops spinning, and the guest sees a red message under the field
+   — the same **Data pemesan** sheet, never a generic error on the cart screen.
+3. **A confirmed number is remembered.** Once a number is confirmed to have WhatsApp, every later
+   order from that same number — from any guest, any table, any session — skips the check
+   entirely. The check only ever runs again for a number nobody has confirmed before.
+
+If the WhatsApp gateway itself is unreachable (down, disconnected, timed out), checkout is never
+blocked by it — the order goes through as if the check had passed, and the gap only shows up later
+as a failed ready-notification, the same as it would without this check at all. A guest is only
+ever stopped by a **definite** "this number has no WhatsApp" answer.
+
+This check has its own kill switch, independent of the notification gateway above: turning it off
+does not stop **Ready** messages from sending, and turning off the gateway does not disable this
+check (it just means every check fails open, same as a gateway outage would).
+
 ## Why it matters
 
 The guest's status page only helps a guest who's still looking at it. A guest who locks their
@@ -124,9 +148,26 @@ quota or device-connection problems, in that order.
 - Delivery gateway: `apps/api/data/fonnte/fonnte_repo.go`, configured with `FONNTE_TOKEN` /
   `FONNTE_BASE_URL` / `ORDER_WEB_BASE_URL` in `apps/api/.env` — leaving `FONNTE_TOKEN` or
   `ORDER_WEB_BASE_URL` empty boots a disabled gateway that records every notification `skipped`
-  (the normal state in local dev, CI and the e2e stack). `go run ./cmd/fonntecheck -to 0812…` from
-  `apps/api` sends one real test message and prints Fonnte's raw response.
+  (the normal state in local dev; the e2e stack instead points these at `cmd/fonntestub`, a stand-in
+  gateway started only for `.github/workflows/e2e-main.yml`). `go run ./cmd/fonntecheck -to 0812…`
+  from `apps/api` sends one real test message and prints Fonnte's raw response.
+- Number-has-WhatsApp check (before checkout creates an order): `WhatsappNumberVerifier` /
+  `WhatsappNumberVerificationUsecase` (`apps/api/domain/whatsapp_number_verification_usecase.go`),
+  called from `PaymentUsecase.Checkout` (`apps/api/domain/payment_usecase.go`); confirmed numbers are
+  cached in the `whatsapp_number_verifications` table (migration `000043`) so the same number is
+  never sent to the gateway twice; `WHATSAPP_NUMBER_VALIDATION_ENABLED` is its kill switch, separate
+  from the delivery gateway's own configuration above; `go run ./cmd/fonntecheck -validate -to 0812…`
+  checks one real number the same way. Frontend: `WhatsappNumberRejectedError`
+  (`libs/ui/src/domain/repositories/payment.ts`), routed through `CheckoutUsecase`'s
+  `WHATSAPP_NUMBER_REJECTED` action (`libs/ui/src/domain/usecases/checkout.ts`) back onto the
+  **Data pemesan** field.
+- e2e coverage for the check: `apps/order-web-e2e/src/whatsappNumberValidation.spec.ts`, against
+  `apps/api/cmd/fonntestub` — a stub that reports any number ending in `0000` as having no WhatsApp
+  account and everything else as registered, with a `/_stub/calls` counter the spec uses to prove a
+  confirmed number is never re-checked.
 - Design doc: `docs/prd-order-whatsapp-notifications.md` — why the number is normalized on the
   server rather than trusted from the browser (D2), why re-marking an order never resends (D6),
   why an ambiguous send is never retried (D9), and why an unconfigured gateway records `skipped`
-  instead of failing anything (D10)
+  instead of failing anything (D10). `docs/prd-order-whatsapp-number-validation.md` — why the
+  has-WhatsApp check runs inside checkout rather than a separate endpoint (D1), why only confirmed
+  numbers are cached (D2/D4), and why the check fails open rather than blocking a sale (D3).

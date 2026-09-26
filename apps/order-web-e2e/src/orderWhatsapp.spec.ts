@@ -65,7 +65,7 @@ test.describe.serial('WhatsApp order-ready notification', () => {
     }
   });
 
-  test('the number is normalized, prefilled on the next order, and the outbox row is skipped without a configured gateway', async ({
+  test('the number is normalized, prefilled on the next order, and the outbox row is sent through the Fonnte stub', async ({
     page,
   }) => {
     await page.goto(`t/${table.code}`);
@@ -123,6 +123,11 @@ test.describe.serial('WhatsApp order-ready notification', () => {
 
     // guest_notifications.status only settles once TriggerDispatch's
     // goroutine runs — see FR-7 in docs/prd-order-whatsapp-notifications.md.
+    // Phase 8 of docs/prd-order-whatsapp-number-validation.md points
+    // FONNTE_BASE_URL at cmd/fonntestub for the whole e2e run (needed so
+    // whatsappNumberValidation.spec.ts's ValidateNumber calls actually reach
+    // something), so the gateway here is no longer the disabled stand-in —
+    // the stub's own /send accepts, same as a real linked device would.
     await expect
       .poll(
         async () =>
@@ -130,12 +135,12 @@ test.describe.serial('WhatsApp order-ready notification', () => {
             ?.status,
         { timeout: 15_000 }
       )
-      .toBe('skipped');
+      .toBe('sent');
 
     let rows = await db.getGuestNotificationsForTransaction(transactionId);
     expect(rows).toHaveLength(1);
     expect(rows[0].whatsappNumber).toBe(NORMALIZED_WHATSAPP_NUMBER);
-    expect(rows[0].detail).toBe('whatsapp gateway not configured');
+    expect(rows[0].detail).toBeNull();
 
     // D6: un-marking and re-marking the same order never enqueues a second
     // message — the UNIQUE(transaction_id) insert is a no-op.
