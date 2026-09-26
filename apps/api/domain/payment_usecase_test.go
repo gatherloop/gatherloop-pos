@@ -2047,7 +2047,7 @@ func TestPaymentUsecase_GetPaymentStatus(t *testing.T) {
 		assert.Equal(t, domain.NotFound, err.Type)
 	})
 
-	t.Run("a payment checked less than a second ago does not re-query DOKU", func(t *testing.T) {
+	t.Run("a payment checked less than the requery floor ago does not re-query DOKU", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 

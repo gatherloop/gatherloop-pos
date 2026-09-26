@@ -13,10 +13,11 @@ import (
 
 func main() {
 	to := flag.String("to", "", "WhatsApp number to send a test message to, e.g. 0812xxxxxxx")
+	validate := flag.Bool("validate", false, "check whether -to has a WhatsApp account instead of sending a message")
 	flag.Parse()
 
 	if *to == "" {
-		fmt.Fprintln(os.Stderr, "usage: fonntecheck -to <whatsapp number>")
+		fmt.Fprintln(os.Stderr, "usage: fonntecheck -to <whatsapp number> [-validate]")
 		os.Exit(1)
 	}
 
@@ -36,13 +37,41 @@ func main() {
 
 	client := fonnte.NewClient(config)
 
+	if *validate {
+		runValidate(client, *to)
+		return
+	}
+	runSend(client, *to)
+}
+
+func runValidate(client *fonnte.Client, to string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	fmt.Printf("\nvalidating %s...\n", to)
+
+	result, validateErr := client.ValidateNumber(ctx, to)
+	if validateErr != nil {
+		fmt.Fprintf(os.Stderr, "\nvalidate failed: %s\n", validateErr.Message)
+		os.Exit(1)
+	}
+
+	fmt.Printf("\nstatus:  %s\n", result.Status)
+	fmt.Printf("detail:  %s\n", result.Detail)
+
+	if result.Status != domain.WhatsAppNumberStatusRegistered {
+		os.Exit(1)
+	}
+}
+
+func runSend(client *fonnte.Client, to string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	fmt.Printf("\nsending a test message to %s...\n", *to)
+	fmt.Printf("\nsending a test message to %s...\n", to)
 
 	result, sendErr := client.Send(ctx, domain.WhatsAppMessage{
-		To:   *to,
+		To:   to,
 		Body: "Test message from gatherloop-pos fonntecheck.",
 	})
 	if sendErr != nil {

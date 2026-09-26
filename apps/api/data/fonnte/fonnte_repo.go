@@ -18,6 +18,7 @@ import (
 
 const (
 	sendPath               = "/send"
+	validatePath           = "/validate"
 	defaultBaseURL         = "https://api.fonnte.com"
 	requestTimeout         = 15 * time.Second
 	maxFailureDetailLength = 512
@@ -71,11 +72,22 @@ func (disabledClient) Send(_ context.Context, _ domain.WhatsAppMessage) (domain.
 	return domain.WhatsAppSendResult{Outcome: domain.WhatsAppSendOutcomeRejected, Detail: disabledGatewayDetail}, nil
 }
 
+func (disabledClient) ValidateNumber(_ context.Context, _ string) (domain.WhatsAppNumberValidationResult, *domain.Error) {
+	return domain.WhatsAppNumberValidationResult{Status: domain.WhatsAppNumberStatusUnknown, Detail: disabledGatewayDetail}, nil
+}
+
 type fonnteSendResponse struct {
 	Status bool     `json:"status"`
 	Reason string   `json:"reason,omitempty"`
 	Id     []string `json:"id,omitempty"`
 	Quota  any      `json:"quota,omitempty"`
+}
+
+type fonnteValidateResponse struct {
+	Status        bool     `json:"status"`
+	Reason        string   `json:"reason,omitempty"`
+	Registered    []string `json:"registered,omitempty"`
+	NotRegistered []string `json:"not_registered,omitempty"`
 }
 
 func describeFailure(body []byte) string {
@@ -96,6 +108,13 @@ func unknownOutcome(detail string) domain.WhatsAppSendResult {
 	}
 }
 
+func unknownValidationOutcome(detail string) domain.WhatsAppNumberValidationResult {
+	return domain.WhatsAppNumberValidationResult{
+		Status: domain.WhatsAppNumberStatusUnknown,
+		Detail: fmt.Sprintf("outcome unknown: %s", detail),
+	}
+}
+
 // A dial error means no byte of the request was written; anything else may have reached Fonnte (FR-8).
 func isDialError(err error) bool {
 	var opErr *net.OpError
@@ -109,15 +128,11 @@ func (c *Client) mapRequestError(err error) domain.WhatsAppSendResult {
 	return unknownOutcome(err.Error())
 }
 
-func (c *Client) buildRequestBody(message domain.WhatsAppMessage) (*bytes.Buffer, string, error) {
+func (c *Client) buildMultipartBody(fields map[string]string) (*bytes.Buffer, string, error) {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 
-	for field, value := range map[string]string{
-		"target":      message.To,
-		"message":     message.Body,
-		"countryCode": countryCodeAlreadyNorm,
-	} {
+	for field, value := range fields {
 		if err := writer.WriteField(field, value); err != nil {
 			return nil, "", err
 		}
@@ -128,6 +143,14 @@ func (c *Client) buildRequestBody(message domain.WhatsAppMessage) (*bytes.Buffer
 	}
 
 	return body, writer.FormDataContentType(), nil
+}
+
+func (c *Client) buildRequestBody(message domain.WhatsAppMessage) (*bytes.Buffer, string, error) {
+	return c.buildMultipartBody(map[string]string{
+		"target":      message.To,
+		"message":     message.Body,
+		"countryCode": countryCodeAlreadyNorm,
+	})
 }
 
 func (c *Client) Send(ctx context.Context, message domain.WhatsAppMessage) (domain.WhatsAppSendResult, *domain.Error) {
@@ -182,4 +205,60 @@ func (c *Client) Send(ctx context.Context, message domain.WhatsAppMessage) (doma
 		c.logger.Info("fonnte: message accepted", slog.Any("quota", parsed.Quota))
 	}
 	return domain.WhatsAppSendResult{Outcome: domain.WhatsAppSendOutcomeAccepted, ProviderMessageId: providerMessageId}, nil
+}
+
+func (c *Client) ValidateNumber(ctx context.Context, number string) (domain.WhatsAppNumberValidationResult, *domain.Error) {
+	body, contentType, buildErr := c.buildMultipartBody(map[string]string{
+		"target":      number,
+		"countryCode": countryCodeAlreadyNorm,
+	})
+	if buildErr != nil {
+		c.logger.Error("fonnte: failed to build validate request body", slog.String("error", buildErr.Error()))
+		return unknownValidationOutcome(buildErr.Error()), nil
+	}
+
+	req, reqErr := http.NewRequestWithContext(ctx, http.MethodPost, c.config.BaseURL+validatePath, body)
+	if reqErr != nil {
+		return unknownValidationOutcome(reqErr.Error()), nil
+	}
+	req.Header.Set("Authorization", c.config.Token)
+	req.Header.Set("Content-Type", contentType)
+
+	resp, doErr := c.httpClient.Do(req)
+	if doErr != nil {
+		return unknownValidationOutcome(doErr.Error()), nil
+	}
+	defer resp.Body.Close()
+
+	respBody, readErr := io.ReadAll(resp.Body)
+	if readErr != nil {
+		return unknownValidationOutcome(readErr.Error()), nil
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		detail := describeFailure(respBody)
+		c.logger.Warn("fonnte: validate request rejected", slog.Int("status", resp.StatusCode), slog.String("response", detail))
+		return unknownValidationOutcome(detail), nil
+	}
+
+	var parsed fonnteValidateResponse
+	if err := json.Unmarshal(respBody, &parsed); err != nil {
+		return unknownValidationOutcome(fmt.Sprintf("body does not parse: %s", describeFailure(respBody))), nil
+	}
+
+	if !parsed.Status {
+		reason := parsed.Reason
+		if reason == "" {
+			reason = describeFailure(respBody)
+		}
+		return unknownValidationOutcome(reason), nil
+	}
+
+	if len(parsed.NotRegistered) > 0 {
+		return domain.WhatsAppNumberValidationResult{Status: domain.WhatsAppNumberStatusNotRegistered}, nil
+	}
+	if len(parsed.Registered) > 0 {
+		return domain.WhatsAppNumberValidationResult{Status: domain.WhatsAppNumberStatusRegistered}, nil
+	}
+	return unknownValidationOutcome(fmt.Sprintf("number missing from both lists: %s", describeFailure(respBody))), nil
 }
