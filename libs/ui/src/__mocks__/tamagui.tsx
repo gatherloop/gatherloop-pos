@@ -87,6 +87,8 @@ export const Input = React.forwardRef(
       onFocus,
       id,
       inputMode,
+      disabled,
+      accessibilityLabel,
     }: AnyProps,
     ref
   ) =>
@@ -96,6 +98,8 @@ export const Input = React.forwardRef(
       value,
       placeholder,
       inputMode,
+      disabled: disabled ?? false,
+      ...(accessibilityLabel ? { 'aria-label': accessibilityLabel } : {}),
       onChange: (e: { target: { value: string } }) => onChangeText?.(e.target.value),
       onFocus,
       onKeyDown: (e: { key: string; preventDefault: () => void }) => {

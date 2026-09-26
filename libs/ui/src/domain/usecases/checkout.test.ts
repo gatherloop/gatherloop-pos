@@ -6,6 +6,7 @@ import {
 } from './checkout';
 import { MockPaymentRepository } from '../../data/mock';
 import { UsecaseTester } from '../../utils/usecase';
+import { WhatsappNumberRejectedError } from '../repositories';
 
 const flushMicrotasks = () => jest.advanceTimersByTimeAsync(0);
 
@@ -41,7 +42,7 @@ describe('CheckoutUsecase', () => {
     checkout.dispatch({ type: 'SUBMIT_DETAILS' });
     expect(checkout.state.type).toBe('creatingPayment');
     expect(checkout.state.customerName).toBe('Budi');
-    expect(checkout.state.whatsappNumber).toBe('6281234567890');
+    expect(checkout.state.whatsappNumber).toBe('0812-3456-7890');
 
     await flushMicrotasks();
     expect(checkout.state.type).toBe('created');
@@ -106,7 +107,7 @@ describe('CheckoutUsecase', () => {
 
     expect(checkout.state.type).toBe('askingDetails');
     expect(checkout.state.whatsappNumberErrorMessage).toBe(
-      'Nomor WhatsApp tidak valid'
+      'Nomor WhatsApp tidak valid. Mohon periksa kembali.'
     );
   });
 
@@ -121,7 +122,7 @@ describe('CheckoutUsecase', () => {
 
     expect(checkout.state.nameErrorMessage).toBeNull();
     expect(checkout.state.whatsappNumberErrorMessage).toBe(
-      'Nomor WhatsApp tidak valid'
+      'Nomor WhatsApp tidak valid. Mohon periksa kembali.'
     );
   });
 
@@ -157,7 +158,7 @@ describe('CheckoutUsecase', () => {
     expect(checkout.state.whatsappNumber).toBe('0812345678');
   });
 
-  it('should reach creatingPayment with the normalized number when a prefilled sheet is submitted', async () => {
+  it('should reach creatingPayment keeping the raw number as typed, and submit the normalized number', async () => {
     const repository = new MockPaymentRepository();
     const checkoutSpy = jest.spyOn(repository, 'checkout');
     const checkout = createTester(repository, {
@@ -168,7 +169,7 @@ describe('CheckoutUsecase', () => {
     checkout.dispatch({ type: 'ASK_DETAILS' });
     checkout.dispatch({ type: 'SUBMIT_DETAILS' });
     expect(checkout.state.type).toBe('creatingPayment');
-    expect(checkout.state.whatsappNumber).toBe('62812345678');
+    expect(checkout.state.whatsappNumber).toBe('0812345678');
 
     await flushMicrotasks();
     expect(checkoutSpy).toHaveBeenCalledWith({
@@ -315,6 +316,69 @@ describe('CheckoutUsecase', () => {
 
     await flushMicrotasks();
     expect(checkout.state.type).toBe('created');
+  });
+
+  it('should return to askingDetails with the not-registered message and the raw number intact, creating nothing', async () => {
+    const repository = new MockPaymentRepository();
+    repository.setRejectedWhatsappNumbers(['6281234567890']);
+    const checkout = createTester(repository, {
+      customerName: 'Budi',
+      customerWhatsappNumber: '081234567890',
+    });
+
+    checkout.dispatch({ type: 'ASK_DETAILS' });
+    checkout.dispatch({ type: 'SUBMIT_DETAILS' });
+    expect(checkout.state.type).toBe('creatingPayment');
+
+    await flushMicrotasks();
+
+    expect(checkout.state.type).toBe('askingDetails');
+    expect(checkout.state.whatsappNumber).toBe('081234567890');
+    expect(checkout.state.whatsappNumberErrorMessage).toBe(
+      'Nomor WhatsApp tidak terdaftar di WhatsApp. Mohon periksa kembali.'
+    );
+    expect(checkout.state.payment).toBeNull();
+  });
+
+  it('should return to askingDetails with the invalid-format message when the server rejects the number as invalid', async () => {
+    const repository = new MockPaymentRepository();
+    jest
+      .spyOn(repository, 'checkout')
+      .mockRejectedValue(new WhatsappNumberRejectedError('invalid'));
+    const checkout = createTester(repository, {
+      customerName: 'Budi',
+      customerWhatsappNumber: '081234567890',
+    });
+
+    checkout.dispatch({ type: 'ASK_DETAILS' });
+    checkout.dispatch({ type: 'SUBMIT_DETAILS' });
+    await flushMicrotasks();
+
+    expect(checkout.state.type).toBe('askingDetails');
+    expect(checkout.state.whatsappNumberErrorMessage).toBe(
+      'Nomor WhatsApp tidak valid. Mohon periksa kembali.'
+    );
+  });
+
+  it('should clear the WhatsApp number error as soon as the field changes', async () => {
+    const repository = new MockPaymentRepository();
+    repository.setRejectedWhatsappNumbers(['6281234567890']);
+    const checkout = createTester(repository, {
+      customerName: 'Budi',
+      customerWhatsappNumber: '081234567890',
+    });
+
+    checkout.dispatch({ type: 'ASK_DETAILS' });
+    checkout.dispatch({ type: 'SUBMIT_DETAILS' });
+    await flushMicrotasks();
+    expect(checkout.state.whatsappNumberErrorMessage).not.toBeNull();
+
+    checkout.dispatch({
+      type: 'CHANGE_WHATSAPP_NUMBER',
+      whatsappNumber: '081234567899',
+    });
+
+    expect(checkout.state.whatsappNumberErrorMessage).toBeNull();
   });
 
   it('should stay at created and ignore further actions once the payment exists', async () => {

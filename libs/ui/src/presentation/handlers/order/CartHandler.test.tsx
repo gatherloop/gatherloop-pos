@@ -12,6 +12,7 @@ import {
 import {
   CartUsecase,
   CheckoutUsecase,
+  Payment,
   PendingPayment,
   TableResolveUsecase,
 } from '../../../domain';
@@ -558,6 +559,83 @@ describe('CartHandler', () => {
     expect(mockPush).toHaveBeenCalledWith(
       `/orders/${paymentRepository.payment.reference}`
     );
+  });
+
+  it('keeps the sheet open with a spinner and disabled inputs while creatingPayment, leaving the cart Bayar button unchanged', async () => {
+    const user = userEvent.setup();
+    const cartRepository = new MockCartRepository();
+    await addItemToCart(cartRepository);
+    const paymentRepository = new MockPaymentRepository();
+    let resolveCheckout: (payment: Payment) => void = () => undefined;
+    jest
+      .spyOn(paymentRepository, 'checkout')
+      .mockImplementation(
+        () => new Promise((resolve) => (resolveCheckout = resolve))
+      );
+    renderHandler({
+      cartRepository,
+      paymentRepository,
+      customerName: 'Budi',
+      customerWhatsappNumber: '081234567890',
+    });
+    await settle();
+
+    await user.click(screen.getByRole('button', { name: payButtonName }));
+    await user.click(
+      screen.getByRole('button', { name: 'Lanjutkan Pembayaran' })
+    );
+
+    expect(screen.getByRole('button', { name: /Memproses/ })).toBeTruthy();
+    expect(
+      (screen.getByPlaceholderText('Nama Anda') as HTMLInputElement).disabled
+    ).toBe(true);
+    expect(
+      (screen.getByRole('button', { name: 'Batal' }) as HTMLButtonElement)
+        .disabled
+    ).toBe(true);
+    expect(screen.getByRole('button', { name: 'Bayar' })).toBeTruthy();
+
+    resolveCheckout({ ...paymentRepository.payment });
+    await settle();
+
+    expect(mockPush).toHaveBeenCalledWith(
+      `/orders/${paymentRepository.payment.reference}`
+    );
+  });
+
+  it('returns to the sheet with the not-registered error, keeping the guest input, when the WhatsApp number is rejected', async () => {
+    const user = userEvent.setup();
+    const cartRepository = new MockCartRepository();
+    await addItemToCart(cartRepository);
+    const paymentRepository = new MockPaymentRepository();
+    paymentRepository.setRejectedWhatsappNumbers(['6281234567890']);
+    renderHandler({
+      cartRepository,
+      paymentRepository,
+      customerName: 'Budi',
+      customerWhatsappNumber: '081234567890',
+    });
+    await settle();
+
+    await user.click(screen.getByRole('button', { name: payButtonName }));
+    await user.click(
+      screen.getByRole('button', { name: 'Lanjutkan Pembayaran' })
+    );
+    await settle();
+
+    expect(
+      screen.getByText(
+        'Nomor WhatsApp tidak terdaftar di WhatsApp. Mohon periksa kembali.'
+      )
+    ).toBeTruthy();
+    expect(
+      (screen.getByPlaceholderText('0812 3456 7890') as HTMLInputElement)
+        .value
+    ).toBe('081234567890');
+    expect(
+      (screen.getByPlaceholderText('Nama Anda') as HTMLInputElement).disabled
+    ).toBe(false);
+    expect(mockPush).not.toHaveBeenCalled();
   });
 
   it('keeps the guest on the cart with a retry when the payment fails to create, succeeding on retry', async () => {
