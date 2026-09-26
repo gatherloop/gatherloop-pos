@@ -13,6 +13,7 @@ import {
   TransactionPayParams,
   TransactionPayUsecase,
   TransactionUnpayUsecase,
+  TransactionVerificationUsecase,
 } from '../../domain';
 import { TransactionListHandler } from '../../presentation';
 import { QueryClient } from '@tanstack/react-query';
@@ -54,6 +55,9 @@ export function TransactionList({
   const transactionCompleteUsecase = new TransactionCompleteUsecase(
     transactionRepository
   );
+  const transactionVerificationUsecase = new TransactionVerificationUsecase(
+    transactionRepository
+  );
 
   return (
     <TransactionListHandler
@@ -63,6 +67,7 @@ export function TransactionList({
       transactionPayUsecase={transactionPayUsecase}
       transactionUnpayUsecase={transactionUnpayUsecase}
       transactionCompleteUsecase={transactionCompleteUsecase}
+      transactionVerificationUsecase={transactionVerificationUsecase}
     />
   );
 }

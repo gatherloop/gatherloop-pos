@@ -6,6 +6,8 @@ import {
   TransactionDeleteAlert,
   TransactionPaymentAlert,
   TransactionUnpayAlert,
+  TransactionVerificationSheet,
+  TransactionVerificationSheetVariant,
 } from '../../components';
 import { Link } from 'solito/link';
 import { Plus, RefreshCw } from '@tamagui/lucide-icons';
@@ -29,6 +31,7 @@ export type TransactionListScreenProps = {
   onItemPress: (transaction: Transaction) => void;
   onPrintInvoiceMenuPress: (transaction: Transaction) => void;
   onPrintOrderSlipMenuPress: (transaction: Transaction) => void;
+  onVerifyMenuPress: (transaction: Transaction) => void;
   onRetryButtonPress: () => void;
   onRefreshPress: () => void;
   isRefreshButtonDisabled: boolean;
@@ -68,6 +71,17 @@ export type TransactionListScreenProps = {
   isCompleteButtonDisabled: boolean;
   onCompleteCancel: () => void;
   onCompleteConfirm: () => void;
+  isVerificationSheetOpen: boolean;
+  verificationVariant: TransactionVerificationSheetVariant;
+  verifyingTransaction: Transaction | null;
+  verificationPhoto: string | null;
+  verificationCapturedAt: string | null;
+  verificationErrorMessage?: string | null;
+  onVerificationClose: () => void;
+  onVerificationApprove: () => void;
+  onVerificationRejectPress: () => void;
+  onVerificationRejectCancel: () => void;
+  onVerificationRejectConfirm: () => void;
   isRevalidating?: boolean;
   isChangingParams?: boolean;
   onSearchClear?: () => void;
@@ -85,6 +99,7 @@ export const TransactionListScreen = ({
   onItemPress,
   onPrintInvoiceMenuPress,
   onPrintOrderSlipMenuPress,
+  onVerifyMenuPress,
   onRetryButtonPress,
   onRefreshPress,
   isRefreshButtonDisabled,
@@ -124,6 +139,17 @@ export const TransactionListScreen = ({
   isCompleteButtonDisabled,
   onCompleteCancel,
   onCompleteConfirm,
+  isVerificationSheetOpen,
+  verificationVariant,
+  verifyingTransaction,
+  verificationPhoto,
+  verificationCapturedAt,
+  verificationErrorMessage,
+  onVerificationClose,
+  onVerificationApprove,
+  onVerificationRejectPress,
+  onVerificationRejectCancel,
+  onVerificationRejectConfirm,
   isRevalidating,
   isChangingParams,
   onSearchClear,
@@ -173,6 +199,7 @@ export const TransactionListScreen = ({
         onUncompleteMenuPress={onUncompleteMenuPress}
         onPrintInvoiceMenuPress={onPrintInvoiceMenuPress}
         onPrintOrderSlipMenuPress={onPrintOrderSlipMenuPress}
+        onVerifyMenuPress={onVerifyMenuPress}
         onItemPress={onItemPress}
         wallets={wallets}
         walletId={walletId}
@@ -208,6 +235,19 @@ export const TransactionListScreen = ({
         isButtonDisabled={isCompleteButtonDisabled}
         onCancel={onCompleteCancel}
         onConfirm={onCompleteConfirm}
+      />
+      <TransactionVerificationSheet
+        isOpen={isVerificationSheetOpen}
+        variant={verificationVariant}
+        transaction={verifyingTransaction}
+        photo={verificationPhoto}
+        capturedAt={verificationCapturedAt}
+        errorMessage={verificationErrorMessage}
+        onClose={onVerificationClose}
+        onApprovePress={onVerificationApprove}
+        onRejectPress={onVerificationRejectPress}
+        onRejectCancel={onVerificationRejectCancel}
+        onRejectConfirm={onVerificationRejectConfirm}
       />
     </Layout>
   );
