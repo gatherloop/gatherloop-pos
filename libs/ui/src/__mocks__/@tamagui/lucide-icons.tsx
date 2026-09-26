@@ -8,6 +8,7 @@ export const Bell = NullIcon;
 export const BellOff = NullIcon;
 export const Box = NullIcon;
 export const Calendar = NullIcon;
+export const Camera = NullIcon;
 export const Check = NullIcon;
 export const CheckCircle = NullIcon;
 export const CheckCircle2 = NullIcon;
