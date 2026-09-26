@@ -2,6 +2,7 @@ import { Payment, PaymentSummary } from '../../domain/entities';
 import {
   PaymentNotFoundError,
   PaymentRepository,
+  WhatsappNumberRejectedError,
 } from '../../domain/repositories/payment';
 
 const initialPaymentSummaries = (): PaymentSummary[] => [
@@ -78,9 +79,14 @@ export class MockPaymentRepository implements PaymentRepository {
   private shouldFailFetch = false;
   private shouldFailFetchPayments = false;
   private shouldFailCancel = false;
+  private rejectedWhatsappNumbers: string[] = [];
 
   setShouldFailCheckout(value: boolean) {
     this.shouldFailCheckout = value;
+  }
+
+  setRejectedWhatsappNumbers(numbers: string[]) {
+    this.rejectedWhatsappNumbers = numbers;
   }
 
   setShouldFailFetch(value: boolean) {
@@ -98,8 +104,15 @@ export class MockPaymentRepository implements PaymentRepository {
   checkout: PaymentRepository['checkout'] = async ({
     customerName,
     method,
+    whatsappNumber,
   }) => {
     if (this.shouldFailCheckout) throw new Error('Failed to create payment');
+    if (
+      whatsappNumber &&
+      this.rejectedWhatsappNumbers.includes(whatsappNumber)
+    ) {
+      throw new WhatsappNumberRejectedError('not_registered');
+    }
     this.payment = {
       ...(method === 'cash' ? cashPayment() : initialPayment()),
       customerName,
@@ -145,5 +158,6 @@ export class MockPaymentRepository implements PaymentRepository {
     this.shouldFailFetch = false;
     this.shouldFailFetchPayments = false;
     this.shouldFailCancel = false;
+    this.rejectedWhatsappNumbers = [];
   }
 }
