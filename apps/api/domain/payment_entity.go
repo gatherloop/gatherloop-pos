@@ -135,14 +135,32 @@ func (payment Payment) IsAwaitingPayment(now time.Time) bool {
 	return payment.Status == PaymentStatePending && now.Before(payment.ExpiredAt)
 }
 
-// CanBeCancelledBy reports only the payment's own eligibility (pending, owned by sessionId);
-// the feature flag is applied by the use case, not here (D10).
+// CanBeCancelledBy reports only the payment's own eligibility (pending, owned by sessionId, and
+// not an approved COD order the bar has already started making); the feature flag is applied by
+// the use case, not here (D10).
 func (payment Payment) CanBeCancelledBy(sessionId string, now time.Time) bool {
-	return payment.Status == PaymentStatePending && payment.SessionId == sessionId
+	return payment.Status == PaymentStatePending && payment.SessionId == sessionId && !payment.isVerificationApproved()
 }
 
 func (payment Payment) RequiresGateway() bool {
 	return payment.Method == PaymentMethodQris
+}
+
+// IsExpirable is FR-5's single predicate for whether the sweeper or a guest's own status poll may
+// give up on this payment: an approved COD order is being made and must never expire, even past
+// its own expired_at.
+func (payment Payment) IsExpirable() bool {
+	return payment.Status == PaymentStatePending && !payment.isVerificationApproved()
+}
+
+// IsAwaitingCodVerification is FR-5's guard for PayTransaction and CompleteTransaction: nothing
+// should be paid for or marked ready before a barista has confirmed the guest is in the café.
+func (payment Payment) IsAwaitingCodVerification() bool {
+	return payment.VerificationStatus != nil && *payment.VerificationStatus == PaymentVerificationStatusAwaiting
+}
+
+func (payment Payment) isVerificationApproved() bool {
+	return payment.VerificationStatus != nil && *payment.VerificationStatus == PaymentVerificationStatusApproved
 }
 
 type PaymentSummary struct {

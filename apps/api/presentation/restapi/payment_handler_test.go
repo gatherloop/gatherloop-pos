@@ -46,6 +46,8 @@ func newPaymentHandlerMocks(ctrl *gomock.Controller) paymentHandlerMocks {
 	kdsNotificationRepo.EXPECT().HasNotificationForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil).AnyTimes()
 	kdsNotificationDispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
 	kdsNotificationDispatcher.EXPECT().TriggerDispatch().AnyTimes()
+	paymentVerificationRepo := mock.NewMockPaymentVerificationRepository(ctrl)
+	paymentVerificationRepo.EXPECT().DeleteByPaymentId(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	return paymentHandlerMocks{
 		paymentRepo:               mock.NewMockPaymentRepository(ctrl),
 		gatewayRepo:               mock.NewMockPaymentGatewayRepository(ctrl),
@@ -57,7 +59,7 @@ func newPaymentHandlerMocks(ctrl *gomock.Controller) paymentHandlerMocks {
 		availabilityRepo:          mock.NewMockAvailabilityReservationRepository(ctrl),
 		kdsNotificationRepo:       kdsNotificationRepo,
 		kdsNotificationDispatcher: kdsNotificationDispatcher,
-		paymentVerificationRepo:   mock.NewMockPaymentVerificationRepository(ctrl),
+		paymentVerificationRepo:   paymentVerificationRepo,
 	}
 }
 

@@ -156,8 +156,8 @@ func (usecase PaymentVerificationUsecase) Approve(ctx context.Context, transacti
 
 // Reject is FR-4: the barista could not confirm the guest is in the café.
 // finalizeUncollectedPayment already moves the payment to cancelled/rejected, releases
-// availability and soft-deletes the transaction (D7); the photo delete here is FR-6's promise for
-// this one exit, ahead of phase 6 wiring it into finalizeUncollectedPayment for every other exit.
+// availability, soft-deletes the transaction (D7) and deletes the photo (FR-6/D5) — every exit
+// from "cod, pending, awaiting" shares that one function.
 func (usecase PaymentVerificationUsecase) Reject(ctx context.Context, transactionId int64) *Error {
 	return usecase.paymentRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 		payment, resolveErr := usecase.resolveAwaitingCodPayment(ctxWithTx, transactionId)
@@ -169,11 +169,7 @@ func (usecase PaymentVerificationUsecase) Reject(ctx context.Context, transactio
 		payment.VerifiedAt = &now
 
 		reason := PaymentCancelReasonRejected
-		updatedPayment, finalizeErr := finalizeUncollectedPayment(ctxWithTx, payment, PaymentStateCancelled, &reason, usecase.paymentRepository, usecase.transactionRepository, usecase.availabilityReservation, usecase.kdsNotificationRepository)
-		if finalizeErr != nil {
-			return finalizeErr
-		}
-
-		return usecase.paymentVerificationRepository.DeleteByPaymentId(ctxWithTx, updatedPayment.Id)
+		_, finalizeErr := finalizeUncollectedPayment(ctxWithTx, payment, PaymentStateCancelled, &reason, usecase.paymentRepository, usecase.transactionRepository, usecase.availabilityReservation, usecase.kdsNotificationRepository, usecase.paymentVerificationRepository)
+		return finalizeErr
 	})
 }

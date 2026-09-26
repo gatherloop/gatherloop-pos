@@ -56,6 +56,11 @@ func newPaymentUsecaseMocks(ctrl *gomock.Controller) paymentUsecaseMocks {
 	whatsappNumberVerifier := mock.NewMockWhatsappNumberVerifier(ctrl)
 	whatsappNumberVerifier.EXPECT().EnsureRegistered(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
+	// FR-6: finalizeUncollectedPayment's unconditional photo delete is a no-op for every test
+	// that isn't about the photo store itself; tests that care replace this expectation.
+	paymentVerificationRepo := mock.NewMockPaymentVerificationRepository(ctrl)
+	paymentVerificationRepo.EXPECT().DeleteByPaymentId(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
 	return paymentUsecaseMocks{
 		paymentRepo:               mock.NewMockPaymentRepository(ctrl),
 		gatewayRepo:               mock.NewMockPaymentGatewayRepository(ctrl),
@@ -68,7 +73,7 @@ func newPaymentUsecaseMocks(ctrl *gomock.Controller) paymentUsecaseMocks {
 		kdsNotificationRepo:       mock.NewMockKdsNotificationRepository(ctrl),
 		kdsNotificationDispatcher: kdsNotificationDispatcher,
 		whatsappNumberVerifier:    whatsappNumberVerifier,
-		paymentVerificationRepo:   mock.NewMockPaymentVerificationRepository(ctrl),
+		paymentVerificationRepo:   paymentVerificationRepo,
 	}
 }
 
@@ -108,6 +113,14 @@ func (m paymentUsecaseMocks) usecaseWithDispatcherCancelAndCodEnabled(dispatcher
 func (m paymentUsecaseMocks) usecaseWithVerifier(verifier domain.WhatsappNumberVerifier) domain.PaymentUsecase {
 	availabilityReservation := domain.NewAvailabilityReservation(m.availabilityRepo)
 	return domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, availabilityReservation, m.kdsNotificationRepo, m.kdsNotificationDispatcher, verifier, m.paymentVerificationRepo, checkoutQrisExpirySeconds, checkoutCashExpirySeconds, checkoutCodVerificationExpirySeconds, checkoutOrderPaymentWalletId, false, false)
+}
+
+// usecaseWithCancelEnabledAndPaymentVerificationRepo builds the usecase over a caller-supplied
+// verification repository instead of the permissive default, for the tests that assert on
+// DeleteByPaymentId's own call pattern (FR-6/D5).
+func (m paymentUsecaseMocks) usecaseWithCancelEnabledAndPaymentVerificationRepo(paymentVerificationRepo domain.PaymentVerificationRepository) domain.PaymentUsecase {
+	availabilityReservation := domain.NewAvailabilityReservation(m.availabilityRepo)
+	return domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, availabilityReservation, m.kdsNotificationRepo, m.kdsNotificationDispatcher, m.whatsappNumberVerifier, paymentVerificationRepo, checkoutQrisExpirySeconds, checkoutCashExpirySeconds, checkoutCodVerificationExpirySeconds, checkoutOrderPaymentWalletId, true, false)
 }
 
 func expectAvailableVariant(m paymentUsecaseMocks, variantId int64) {
@@ -1862,6 +1875,52 @@ func TestPaymentUsecase_CancelPayment(t *testing.T) {
 		assert.Equal(t, domain.NotFound, err.Type)
 	})
 
+	t.Run("FR-5/D10: an approved COD payment refuses the guest's own cancel, with no writes", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		withPaymentTransactionMock(m.paymentRepo)
+
+		payment := pendingPaymentFixture()
+		payment.Method = domain.PaymentMethodCod
+		approved := domain.PaymentVerificationStatusApproved
+		payment.VerificationStatus = &approved
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		// No UpdatePaymentById, gateway call, or transaction write past the guard.
+
+		_, _, err := m.usecaseWithCancelEnabled().CancelPayment(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+
+		require.NotNil(t, err)
+		assert.Equal(t, domain.BadRequest, err.Type)
+	})
+
+	t.Run("FR-6/D5: cancelling an awaiting COD payment deletes its verification photo", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		withPaymentTransactionMock(m.paymentRepo)
+
+		paymentVerificationRepo := mock.NewMockPaymentVerificationRepository(ctrl)
+
+		payment := pendingPaymentFixture()
+		payment.Method = domain.PaymentMethodCod
+		awaiting := domain.PaymentVerificationStatusAwaiting
+		payment.VerificationStatus = &awaiting
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), payment.Id).
+			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) { return p, nil })
+		paymentVerificationRepo.EXPECT().DeleteByPaymentId(gomock.Any(), payment.Id).Return(nil).Times(1)
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil).Times(2)
+		m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), int64(99)).Return(nil)
+
+		_, _, err := m.usecaseWithCancelEnabledAndPaymentVerificationRepo(paymentVerificationRepo).
+			CancelPayment(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+
+		assert.Nil(t, err)
+	})
+
 	t.Run("a pending cash payment is cancelled, its reservation released and its transaction soft-deleted", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
@@ -2592,6 +2651,32 @@ func TestPaymentUsecase_GetPaymentStatus(t *testing.T) {
 		assert.Equal(t, domain.PaymentStateExpired, result.Status)
 	})
 
+	t.Run("FR-5: an approved COD payment past expired_at survives a guest's own status poll unchanged", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		withPaymentTransactionMock(m.paymentRepo)
+
+		payment := pendingCashPaymentFixture()
+		payment.Method = domain.PaymentMethodCod
+		payment.ExpiredAt = time.Now().Add(-time.Minute)
+		approved := domain.PaymentVerificationStatusApproved
+		payment.VerificationStatus = &approved
+
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil)
+		// No UpdatePaymentById, no availability release, no transaction delete: IsExpirable() is
+		// false, so refreshPendingCashPaymentStatus returns the payment exactly as read.
+
+		result, _, err := m.usecase().GetPaymentStatus(context.Background(), payment.SessionId, payment.PartnerReferenceNo, "")
+
+		assert.Nil(t, err)
+		assert.Equal(t, domain.PaymentStatePending, result.Status)
+		require.NotNil(t, result.VerificationStatus)
+		assert.Equal(t, domain.PaymentVerificationStatusApproved, *result.VerificationStatus)
+	})
+
 	t.Run("an already-resolved payment is returned as-is without touching the gateway", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
@@ -2803,6 +2888,60 @@ func TestPaymentUsecase_ExpireStalePayments(t *testing.T) {
 		assert.Nil(t, err)
 	})
 
+	t.Run("FR-5: a COD payment approved since the batch read is left alone, not expired", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		payment := pendingPaymentFixture()
+		payment.Method = domain.PaymentMethodCod
+		awaiting := domain.PaymentVerificationStatusAwaiting
+		payment.VerificationStatus = &awaiting
+
+		m.paymentRepo.EXPECT().GetExpirablePayments(gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Payment{payment}, nil)
+		withPaymentTransactionMock(m.paymentRepo)
+		// A barista approved it between the sweep's batch read and this per-payment transaction;
+		// the lock read sees that and IsExpirable() stands the sweeper down.
+		approved := domain.PaymentVerificationStatusApproved
+		locked := payment
+		locked.VerificationStatus = &approved
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(locked, nil)
+		// No UpdatePaymentById, no transaction delete, no photo delete past this point.
+
+		err := m.usecase().ExpireStalePayments(context.Background())
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("FR-6/D5: an awaiting COD payment expires on the clock and loses its photo", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		paymentVerificationRepo := mock.NewMockPaymentVerificationRepository(ctrl)
+
+		payment := pendingPaymentFixture()
+		payment.Method = domain.PaymentMethodCod
+		awaiting := domain.PaymentVerificationStatusAwaiting
+		payment.VerificationStatus = &awaiting
+
+		m.paymentRepo.EXPECT().GetExpirablePayments(gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Payment{payment}, nil)
+		withPaymentTransactionMock(m.paymentRepo)
+		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), payment.Id).
+			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) {
+				assert.Equal(t, domain.PaymentStateExpired, p.Status)
+				return p, nil
+			})
+		paymentVerificationRepo.EXPECT().DeleteByPaymentId(gomock.Any(), payment.Id).Return(nil).Times(1)
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil)
+		m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), int64(99)).Return(nil)
+
+		err := m.usecaseWithCancelEnabledAndPaymentVerificationRepo(paymentVerificationRepo).ExpireStalePayments(context.Background())
+
+		assert.Nil(t, err)
+	})
+
 	t.Run("a batch of a cash and a qris payment expires the cash one on the clock and confirms the qris one with the gateway first", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
@@ -2946,5 +3085,50 @@ func TestPaymentUsecase_ExpireStalePayments(t *testing.T) {
 		err := m.usecase().ExpireStalePayments(context.Background())
 
 		assert.Nil(t, err)
+	})
+}
+
+// FR-6/D5: the backstop should always delete zero rows — every terminal path already deletes its
+// own photo — so this only proves the wiring: the sweeper's bound is threaded through, and a
+// non-zero count is not treated as an error (it is logged at warn as an invariant violation).
+func TestPaymentUsecase_DeleteOrphanedVerificationPhotos(t *testing.T) {
+	t.Run("passes the sweeper's bound through and succeeds when nothing is orphaned", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		paymentVerificationRepo := mock.NewMockPaymentVerificationRepository(ctrl)
+		paymentVerificationRepo.EXPECT().DeleteOrphaned(gomock.Any(), 50).Return(int64(0), nil)
+
+		err := m.usecaseWithCancelEnabledAndPaymentVerificationRepo(paymentVerificationRepo).DeleteOrphanedVerificationPhotos(context.Background())
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("a non-zero count is not an error", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		paymentVerificationRepo := mock.NewMockPaymentVerificationRepository(ctrl)
+		paymentVerificationRepo.EXPECT().DeleteOrphaned(gomock.Any(), gomock.Any()).Return(int64(3), nil)
+
+		err := m.usecaseWithCancelEnabledAndPaymentVerificationRepo(paymentVerificationRepo).DeleteOrphanedVerificationPhotos(context.Background())
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("a repository failure is surfaced", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		paymentVerificationRepo := mock.NewMockPaymentVerificationRepository(ctrl)
+		paymentVerificationRepo.EXPECT().DeleteOrphaned(gomock.Any(), gomock.Any()).
+			Return(int64(0), &domain.Error{Type: domain.InternalServerError})
+
+		err := m.usecaseWithCancelEnabledAndPaymentVerificationRepo(paymentVerificationRepo).DeleteOrphanedVerificationPhotos(context.Background())
+
+		assert.NotNil(t, err)
 	})
 }

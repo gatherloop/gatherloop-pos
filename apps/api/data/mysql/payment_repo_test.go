@@ -120,8 +120,8 @@ func TestPaymentRepository_GetExpirablePayments_FiltersToPendingPastExpiry(t *te
 	repo, mock := newMockPaymentRepository(t)
 	now := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
 
-	mock.ExpectQuery("SELECT \\* FROM `payments` WHERE status = \\? AND deleted_at IS NULL AND expired_at < \\? ORDER BY id ASC LIMIT \\?").
-		WithArgs("pending", now, 50).
+	mock.ExpectQuery("SELECT \\* FROM `payments` WHERE status = \\? AND deleted_at IS NULL AND expired_at < \\? AND \\(verification_status IS NULL OR verification_status <> \\?\\) ORDER BY id ASC LIMIT \\?").
+		WithArgs("pending", now, "approved", 50).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}))
 
 	payments, err := repo.GetExpirablePayments(context.Background(), now, 50)
@@ -135,8 +135,8 @@ func TestPaymentRepository_GetExpirablePayments_NoLimitFetchesEverything(t *test
 	repo, mock := newMockPaymentRepository(t)
 	now := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
 
-	mock.ExpectQuery("SELECT \\* FROM `payments` WHERE status = \\? AND deleted_at IS NULL AND expired_at < \\? ORDER BY id ASC").
-		WithArgs("pending", now).
+	mock.ExpectQuery("SELECT \\* FROM `payments` WHERE status = \\? AND deleted_at IS NULL AND expired_at < \\? AND \\(verification_status IS NULL OR verification_status <> \\?\\) ORDER BY id ASC").
+		WithArgs("pending", now, "approved").
 		WillReturnRows(sqlmock.NewRows([]string{"id"}))
 
 	_, err := repo.GetExpirablePayments(context.Background(), now, 0)
