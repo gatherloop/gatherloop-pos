@@ -51,18 +51,29 @@ type PaymentMethod string
 const (
 	PaymentMethodQris PaymentMethod = "qris"
 	PaymentMethodCash PaymentMethod = "cash"
+	PaymentMethodCod  PaymentMethod = "cod"
 )
 
 func ParsePaymentMethod(method string) (PaymentMethod, *Error) {
 	switch PaymentMethod(method) {
 	case "":
 		return PaymentMethodQris, nil
-	case PaymentMethodQris, PaymentMethodCash:
+	case PaymentMethodQris, PaymentMethodCash, PaymentMethodCod:
 		return PaymentMethod(method), nil
 	default:
 		return "", &Error{Type: BadRequest, Message: "unknown payment method"}
 	}
 }
+
+// PaymentVerificationStatus is the presence axis (D2): whether a barista has confirmed the guest
+// is in the café, independent of payments.status (has the money been collected). It is nil for
+// every method but cod.
+type PaymentVerificationStatus string
+
+const (
+	PaymentVerificationStatusAwaiting PaymentVerificationStatus = "awaiting"
+	PaymentVerificationStatusApproved PaymentVerificationStatus = "approved"
+)
 
 type PaymentState string
 
@@ -79,6 +90,7 @@ type PaymentCancelReason string
 const (
 	PaymentCancelReasonGuest      PaymentCancelReason = "guest"
 	PaymentCancelReasonSuperseded PaymentCancelReason = "superseded"
+	PaymentCancelReasonRejected   PaymentCancelReason = "rejected"
 )
 
 type ConfirmPaymentOutcome string
@@ -111,6 +123,8 @@ type Payment struct {
 	PaidAt                 *time.Time
 	CancelledAt            *time.Time
 	CancelReason           *PaymentCancelReason
+	VerificationStatus     *PaymentVerificationStatus
+	VerifiedAt             *time.Time
 	StatusCheckedAt        *time.Time
 	CreatedAt              time.Time
 	UpdatedAt              time.Time
@@ -135,6 +149,7 @@ type PaymentSummary struct {
 	PartnerReferenceNo string
 	Status             PaymentState
 	Method             PaymentMethod
+	VerificationStatus *PaymentVerificationStatus
 	TransactionNumber  int64
 	CustomerName       string
 	TableLabel         string
@@ -151,6 +166,7 @@ func ToPaymentSummary(payment Payment, transaction TransactionSummary) PaymentSu
 		PartnerReferenceNo: payment.PartnerReferenceNo,
 		Status:             payment.Status,
 		Method:             payment.Method,
+		VerificationStatus: payment.VerificationStatus,
 		TransactionNumber:  transaction.TransactionNumber,
 		CustomerName:       transaction.Name,
 		TableLabel:         transaction.TableLabel,

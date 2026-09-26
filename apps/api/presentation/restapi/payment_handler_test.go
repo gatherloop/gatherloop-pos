@@ -253,6 +253,58 @@ func TestPaymentHandler_Checkout(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
 
+	t.Run("cod without a verificationPhoto is a 400, with no wallet or cart lookup", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentHandlerMocks(ctrl)
+
+		req := httptest.NewRequest(http.MethodPost, "/carts/current/checkout", checkoutRequestBodyWithMethod("Budi", "cod"))
+		req.Header.Set("X-Session-Id", testSessionId)
+		w := httptest.NewRecorder()
+		m.handler().Checkout(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("qris with a verificationPhoto is a 400, with no wallet or cart lookup", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentHandlerMocks(ctrl)
+
+		method := "qris"
+		photo := "ZmFrZS1qcGVn"
+		body, _ := json.Marshal(apiContract.PaymentCheckoutRequest{CustomerName: "Budi", Method: &method, VerificationPhoto: &photo})
+		req := httptest.NewRequest(http.MethodPost, "/carts/current/checkout", bytes.NewBuffer(body))
+		req.Header.Set("X-Session-Id", testSessionId)
+		w := httptest.NewRecorder()
+		m.handler().Checkout(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("cod with a verificationPhoto is a 400 'not available yet' — phase 1 is vocabulary only", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentHandlerMocks(ctrl)
+
+		method := "cod"
+		photo := "ZmFrZS1qcGVn"
+		body, _ := json.Marshal(apiContract.PaymentCheckoutRequest{CustomerName: "Budi", Method: &method, VerificationPhoto: &photo})
+		req := httptest.NewRequest(http.MethodPost, "/carts/current/checkout", bytes.NewBuffer(body))
+		req.Header.Set("X-Session-Id", testSessionId)
+		w := httptest.NewRecorder()
+		m.handler().Checkout(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+
+		var apiErr apiContract.Error
+		assert.NoError(t, json.NewDecoder(bytes.NewBufferString(w.Body.String())).Decode(&apiErr))
+		assert.Equal(t, "payment method is not available yet", apiErr.Message)
+	})
+
 	t.Run("an invalid customerWhatsappNumber is a 400", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()

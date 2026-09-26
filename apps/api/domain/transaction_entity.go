@@ -68,26 +68,27 @@ func (o DiningOption) IsValid() bool {
 }
 
 type Transaction struct {
-	Id                 int64
-	CreatedAt          time.Time
-	Name               string
-	Source             TransactionSource
-	DiningOption       DiningOption
-	CartId             *int64
-	Cart               *Cart
-	PagerNumber        int64
-	TransactionNumber  int64
-	WalletId           *int64
-	Wallet             *Wallet
-	Total              float32
-	TotalIncome        float32
-	TransactionItems   []TransactionItem
-	TransactionCoupons []TransactionCoupon
-	PaidAmount         float32
-	PaidAt             *time.Time
-	CompletedAt        *time.Time
-	DeletedAt          *time.Time
-	PaymentMethod      *PaymentMethod
+	Id                        int64
+	CreatedAt                 time.Time
+	Name                      string
+	Source                    TransactionSource
+	DiningOption              DiningOption
+	CartId                    *int64
+	Cart                      *Cart
+	PagerNumber               int64
+	TransactionNumber         int64
+	WalletId                  *int64
+	Wallet                    *Wallet
+	Total                     float32
+	TotalIncome               float32
+	TransactionItems          []TransactionItem
+	TransactionCoupons        []TransactionCoupon
+	PaidAmount                float32
+	PaidAt                    *time.Time
+	CompletedAt               *time.Time
+	DeletedAt                 *time.Time
+	PaymentMethod             *PaymentMethod
+	PaymentVerificationStatus *PaymentVerificationStatus
 }
 
 type TransactionStatistic struct {
