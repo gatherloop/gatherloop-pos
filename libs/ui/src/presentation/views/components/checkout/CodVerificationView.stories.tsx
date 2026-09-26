@@ -1,13 +1,16 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { OrderPreparingView } from './OrderPreparingView';
+import { CodVerificationView } from './CodVerificationView';
 
-const meta: Meta<typeof OrderPreparingView> = {
-  title: 'Components/OrderStatus/OrderPreparingView',
-  component: OrderPreparingView,
+const meta: Meta<typeof CodVerificationView> = {
+  title: 'Components/Checkout/CodVerificationView',
+  component: CodVerificationView,
   args: {
     transactionNumber: 12,
-    amount: 54000,
-    isPolling: false,
+    amount: 45000,
+    expiredAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+    onCountdownElapsed: () => {
+      // Storybook action stand-in
+    },
     items: [
       {
         name: 'Es Kopi Susu',
@@ -30,18 +33,10 @@ const meta: Meta<typeof OrderPreparingView> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof OrderPreparingView>;
+type Story = StoryObj<typeof CodVerificationView>;
 
 export const Default: Story = {};
 
-export const Polling: Story = {
-  args: { isPolling: true },
-};
-
-export const LargeNumber: Story = {
-  args: { transactionNumber: 1234 },
-};
-
-export const PayAtPickup: Story = {
-  args: { payAtPickupAmount: 54000 },
+export const AboutToExpire: Story = {
+  args: { expiredAt: new Date(Date.now() + 30 * 1000).toISOString() },
 };

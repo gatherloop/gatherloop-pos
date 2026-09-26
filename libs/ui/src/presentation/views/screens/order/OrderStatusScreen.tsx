@@ -12,6 +12,7 @@ import { LoadingView } from '../../components/base/LoadingView';
 import { OrderBrandHeader } from '../../components/base/OrderBrandHeader';
 import { OrderLayout } from '../../components/base/OrderLayout';
 import { CashPaymentView } from '../../components/checkout/CashPaymentView';
+import { CodVerificationView } from '../../components/checkout/CodVerificationView';
 import { PaymentCancelAlert } from '../../components/checkout/PaymentCancelAlert';
 import { QrisPaymentView } from '../../components/checkout/QrisPaymentView';
 import { OrderPreparingView } from '../../components/orderStatus/OrderPreparingView';
@@ -47,11 +48,21 @@ export type OrderStatusScreenVariant =
       cancelErrorMessage: string | null;
     }
   | {
+      type: 'awaitingVerification';
+      payment: Payment;
+      onCountdownElapsed: () => void;
+      canCancel: boolean;
+      onCancelPress: () => void;
+      cancelConfirmation: OrderStatusCancelConfirmation;
+      cancelErrorMessage: string | null;
+    }
+  | {
       type: 'preparing';
       payment: Payment;
       isPolling: boolean;
+      payAtPickupAmount: number | null;
     }
-  | { type: 'ready'; payment: Payment }
+  | { type: 'ready'; payment: Payment; payAtPickupAmount: number | null }
   | { type: 'expired'; method: PaymentMethod | null }
   | {
       type: 'cancelled';
@@ -81,6 +92,7 @@ export const OrderStatusScreen = ({
         type: P.union(
           'awaitingPayment',
           'awaitingCashPayment',
+          'awaitingVerification',
           'preparing',
           'ready'
         ),
@@ -153,6 +165,34 @@ export const OrderStatusScreen = ({
             </>
           )
         )
+        .with(
+          { type: 'awaitingVerification' },
+          ({
+            payment,
+            onCountdownElapsed,
+            canCancel,
+            onCancelPress,
+            cancelConfirmation,
+            cancelErrorMessage,
+          }) => (
+            <>
+              <CodVerificationView
+                transactionNumber={payment.transactionNumber}
+                items={payment.items}
+                amount={payment.amount}
+                expiredAt={payment.expiredAt}
+                onCountdownElapsed={onCountdownElapsed}
+              />
+              {canCancel && (
+                <CancelPaymentSection
+                  onCancelPress={onCancelPress}
+                  errorMessage={cancelErrorMessage}
+                />
+              )}
+              <PaymentCancelAlert {...cancelConfirmation} />
+            </>
+          )
+        )
         .with({ type: 'expired' }, ({ method }) => (
           <EmptyView
             title="Waktu pembayaran habis"
@@ -167,12 +207,23 @@ export const OrderStatusScreen = ({
         ))
         .with({ type: 'cancelled' }, ({ cancelReason, onActionPress }) => (
           <EmptyView
-            title="Pembayaran dibatalkan"
-            subtitle={
-              cancelReason === 'superseded'
-                ? 'Pesanan ini sudah dibayar lewat pembayaran sebelumnya.'
-                : 'Keranjang Anda masih tersimpan.'
+            title={
+              cancelReason === 'rejected'
+                ? 'Pesanan ditolak'
+                : 'Pembayaran dibatalkan'
             }
+            subtitle={match(cancelReason)
+              .with(
+                'superseded',
+                () => 'Pesanan ini sudah dibayar lewat pembayaran sebelumnya.'
+              )
+              .with(
+                'rejected',
+                () =>
+                  'Barista tidak dapat memastikan Anda berada di kafe. Silakan pesan ulang dengan QRIS atau hubungi kasir.'
+              )
+              .with('guest', () => 'Keranjang Anda masih tersimpan.')
+              .exhaustive()}
             actionLabel={
               cancelReason === 'superseded'
                 ? 'Lihat riwayat pesanan'
@@ -196,19 +247,21 @@ export const OrderStatusScreen = ({
             onRetryButtonPress={onRetryPress}
           />
         ))
-        .with({ type: 'preparing' }, ({ payment, isPolling }) => (
+        .with({ type: 'preparing' }, ({ payment, isPolling, payAtPickupAmount }) => (
           <OrderPreparingView
             transactionNumber={payment.transactionNumber}
             items={payment.items}
             amount={payment.amount}
             isPolling={isPolling}
+            payAtPickupAmount={payAtPickupAmount}
           />
         ))
-        .with({ type: 'ready' }, ({ payment }) => (
+        .with({ type: 'ready' }, ({ payment, payAtPickupAmount }) => (
           <OrderReadyView
             transactionNumber={payment.transactionNumber}
             items={payment.items}
             amount={payment.amount}
+            payAtPickupAmount={payAtPickupAmount}
           />
         ))
         .exhaustive()}

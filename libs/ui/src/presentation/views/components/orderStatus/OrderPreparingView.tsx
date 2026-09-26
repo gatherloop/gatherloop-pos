@@ -9,6 +9,7 @@ import {
 } from 'tamagui';
 import { PaymentItem } from '../../../../domain/entities/Payment';
 import { OrderItemsSummary } from './OrderItemsSummary';
+import { PayAtPickupBanner } from './PayAtPickupBanner';
 
 const ELLIPSIS_FRAMES = ['', '.', '..', '...'];
 const ELLIPSIS_INTERVAL_MS = 500;
@@ -109,6 +110,7 @@ export type OrderPreparingViewProps = {
   items: PaymentItem[];
   amount: number;
   isPolling: boolean;
+  payAtPickupAmount?: number | null;
 };
 
 export const OrderPreparingView = ({
@@ -116,10 +118,14 @@ export const OrderPreparingView = ({
   items,
   amount,
   isPolling,
+  payAtPickupAmount,
 }: OrderPreparingViewProps) => (
   <YStack flex={1} gap="$4" alignItems="center">
     <PreparingNumberBadge value={transactionNumber} />
     <PreparingHeading isPolling={isPolling} />
+    {payAtPickupAmount != null && (
+      <PayAtPickupBanner amount={payAtPickupAmount} />
+    )}
     <ScrollView flex={1}>
       <OrderItemsSummary items={items} amount={amount} />
     </ScrollView>
