@@ -3,6 +3,7 @@ import { ApiPaymentRepository } from '../../data/api/payment';
 import { ApiPublicTableRepository } from '../../data/api/publicTable';
 import { CookieSessionRepository } from '../../data/session/CookieSessionRepository';
 import { UrlCartQueryRepository } from '../../data/url/cartQuery';
+import { PaymentMethod } from '../../domain/entities/Payment';
 import { PublicTable } from '../../domain/entities/PublicTable';
 import { CartUsecase } from '../../domain/usecases/cart';
 import { CheckoutUsecase } from '../../domain/usecases/checkout';
@@ -44,6 +45,13 @@ export function Cart({
   const enabled = process.env['NEXT_PUBLIC_ORDER_CHECKOUT_ENABLED'] === 'true';
   const isCashPaymentEnabled =
     process.env['NEXT_PUBLIC_ORDER_CASH_PAYMENT_ENABLED'] === 'true';
+  const isCodPaymentEnabled =
+    process.env['NEXT_PUBLIC_ORDER_COD_PAYMENT_ENABLED'] === 'true';
+  const enabledMethods: PaymentMethod[] = [
+    'qris',
+    ...(isCashPaymentEnabled ? (['cash'] as const) : []),
+    ...(isCodPaymentEnabled ? (['cod'] as const) : []),
+  ];
   const cashierLocation =
     process.env['NEXT_PUBLIC_ORDER_CASHIER_LOCATION'] || 'Lantai 1';
 
@@ -55,7 +63,7 @@ export function Cart({
       sessionRepository={sessionRepository}
       paymentRepository={paymentRepository}
       enabled={enabled}
-      isCashPaymentEnabled={isCashPaymentEnabled}
+      enabledMethods={enabledMethods}
       cashierLocation={cashierLocation}
       tableCode={code}
       preparingCount={preparingCount}
