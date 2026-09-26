@@ -33,11 +33,18 @@ type paymentUsecaseMocks struct {
 	availabilityRepo          *mock.MockAvailabilityReservationRepository
 	kdsNotificationRepo       *mock.MockKdsNotificationRepository
 	kdsNotificationDispatcher *mock.MockKdsNotificationDispatcher
+	whatsappNumberVerifier    *mock.MockWhatsappNumberVerifier
 }
 
 func newPaymentUsecaseMocks(ctrl *gomock.Controller) paymentUsecaseMocks {
 	kdsNotificationDispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
 	kdsNotificationDispatcher.EXPECT().TriggerDispatch().AnyTimes()
+
+	// A permissive default (never rejects, whatever number it is asked about) so every existing
+	// test that isn't about the verifier itself keeps behaving exactly as it did before this
+	// dependency was added; tests that care replace this expectation.
+	whatsappNumberVerifier := mock.NewMockWhatsappNumberVerifier(ctrl)
+	whatsappNumberVerifier.EXPECT().EnsureRegistered(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 	return paymentUsecaseMocks{
 		paymentRepo:               mock.NewMockPaymentRepository(ctrl),
@@ -50,6 +57,7 @@ func newPaymentUsecaseMocks(ctrl *gomock.Controller) paymentUsecaseMocks {
 		availabilityRepo:          mock.NewMockAvailabilityReservationRepository(ctrl),
 		kdsNotificationRepo:       mock.NewMockKdsNotificationRepository(ctrl),
 		kdsNotificationDispatcher: kdsNotificationDispatcher,
+		whatsappNumberVerifier:    whatsappNumberVerifier,
 	}
 }
 
@@ -71,7 +79,14 @@ func (m paymentUsecaseMocks) usecaseWithCancelEnabled() domain.PaymentUsecase {
 
 func (m paymentUsecaseMocks) usecaseWithDispatcherAndCancelEnabled(dispatcher domain.KdsNotificationDispatcher, orderPaymentCancelEnabled bool) domain.PaymentUsecase {
 	availabilityReservation := domain.NewAvailabilityReservation(m.availabilityRepo)
-	return domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, availabilityReservation, m.kdsNotificationRepo, dispatcher, checkoutQrisExpirySeconds, checkoutCashExpirySeconds, checkoutOrderPaymentWalletId, orderPaymentCancelEnabled)
+	return domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, availabilityReservation, m.kdsNotificationRepo, dispatcher, m.whatsappNumberVerifier, checkoutQrisExpirySeconds, checkoutCashExpirySeconds, checkoutOrderPaymentWalletId, orderPaymentCancelEnabled)
+}
+
+// usecaseWithVerifier builds the usecase over a caller-supplied verifier instead of the
+// permissive default, for the tests that assert on EnsureRegistered's own call pattern.
+func (m paymentUsecaseMocks) usecaseWithVerifier(verifier domain.WhatsappNumberVerifier) domain.PaymentUsecase {
+	availabilityReservation := domain.NewAvailabilityReservation(m.availabilityRepo)
+	return domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, availabilityReservation, m.kdsNotificationRepo, m.kdsNotificationDispatcher, verifier, checkoutQrisExpirySeconds, checkoutCashExpirySeconds, checkoutOrderPaymentWalletId, false)
 }
 
 func expectAvailableVariant(m paymentUsecaseMocks, variantId int64) {
@@ -159,14 +174,112 @@ func TestPaymentUsecase_Checkout(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
+		// D5: format validation runs before BeginTransaction, so the wallet is never checked and
+		// no transaction is ever opened for a bad number.
 		m := newPaymentUsecaseMocks(ctrl)
-		withPaymentTransactionMock(m.paymentRepo)
-		expectValidWallet(m)
 
 		_, _, err := m.usecase().Checkout(context.Background(), "session-1", "Budi", "12345", domain.PaymentMethodQris, "")
 
 		assert.NotNil(t, err)
 		assert.Equal(t, domain.BadRequest, err.Type)
+	})
+
+	t.Run("a WhatsApp number Fonnte says has no account is a 400 and nothing is written", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		// D5: the verifier call also runs before BeginTransaction, for the same reason.
+		m := newPaymentUsecaseMocks(ctrl)
+		verifier := mock.NewMockWhatsappNumberVerifier(ctrl)
+		verifier.EXPECT().EnsureRegistered(gomock.Any(), "6281234567890").
+			Return(&domain.Error{Type: domain.BadRequest, Reason: domain.ErrorReasonWhatsappNumberNotRegistered, Message: "customerWhatsappNumber is not registered on WhatsApp"})
+
+		_, _, err := m.usecaseWithVerifier(verifier).Checkout(context.Background(), "session-1", "Budi", "0812-3456-7890", domain.PaymentMethodQris, "")
+
+		assert.NotNil(t, err)
+		assert.Equal(t, domain.BadRequest, err.Type)
+		assert.Equal(t, domain.ErrorReasonWhatsappNumberNotRegistered, err.Reason)
+	})
+
+	t.Run("an absent customerWhatsappNumber never calls the verifier", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		withPaymentTransactionMock(m.paymentRepo)
+		expectValidWallet(m)
+		expectNameUpsert(m, "session-1", "Budi")
+		verifier := mock.NewMockWhatsappNumberVerifier(ctrl)
+		verifier.EXPECT().EnsureRegistered(gomock.Any(), gomock.Any()).Times(0)
+
+		cart := cartWithOneItem(1, 5)
+		m.cartRepo.EXPECT().GetActiveCartBySessionId(gomock.Any(), "session-1").Return(cart, nil)
+		m.paymentRepo.EXPECT().GetPendingPaymentByCartId(gomock.Any(), int64(1)).Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
+		m.variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(10)).Return(checkoutVariant(10, 15000), nil)
+		expectAvailableVariant(m, 10)
+
+		m.transactionRepo.EXPECT().CreateTransaction(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(_ context.Context, transaction domain.Transaction) (domain.Transaction, *domain.Error) {
+				transaction.Id = 200
+				return transaction, nil
+			})
+		m.paymentRepo.EXPECT().CreatePayment(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(_ context.Context, payment domain.Payment) (domain.Payment, *domain.Error) {
+				payment.Id = 300
+				return payment, nil
+			})
+		m.gatewayRepo.EXPECT().GenerateQris(gomock.Any(), gomock.Any()).
+			Return(domain.QrisPayment{GatewayReferenceNo: "gw-1", QrContent: "qr-content"}, nil)
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), int64(300)).
+			DoAndReturn(func(_ context.Context, payment domain.Payment, id int64) (domain.Payment, *domain.Error) {
+				return payment, nil
+			})
+
+		_, _, err := m.usecaseWithVerifier(verifier).Checkout(context.Background(), "session-1", "Budi", "", domain.PaymentMethodQris, "")
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("the idempotent pending-payment path is verified too, not skipped because a payment already exists", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentUsecaseMocks(ctrl)
+		withPaymentTransactionMock(m.paymentRepo)
+		expectValidWallet(m)
+
+		verifier := mock.NewMockWhatsappNumberVerifier(ctrl)
+		verifier.EXPECT().EnsureRegistered(gomock.Any(), "6282222222222").Times(1).Return(nil)
+
+		m.customerRepo.EXPECT().UpsertCustomerBySessionId(gomock.Any(), "session-1", "Budi Santoso", gomock.Not(gomock.Nil())).
+			DoAndReturn(func(_ context.Context, sessionId, name string, whatsappNumber *string) (domain.Customer, *domain.Error) {
+				return domain.Customer{Id: 1, SessionId: sessionId, Name: name, WhatsappNumber: whatsappNumber}, nil
+			})
+
+		cart := cartWithOneItem(1, 5)
+		m.cartRepo.EXPECT().GetActiveCartBySessionId(gomock.Any(), "session-1").Return(cart, nil)
+
+		transactionId := int64(99)
+		oldNumber := "6281111111111"
+		existingPayment := domain.Payment{
+			Id: 7, CartId: 1, SessionId: "session-1", TransactionId: &transactionId,
+			CustomerWhatsappNumber: &oldNumber,
+			PartnerReferenceNo:     "ORD1234567890AB", Status: domain.PaymentStatePending,
+			Amount: 30000, ExpiredAt: time.Now().Add(2 * time.Minute), QrContent: "existing-qr",
+		}
+		m.paymentRepo.EXPECT().GetPendingPaymentByCartId(gomock.Any(), int64(1)).Return(existingPayment, nil)
+
+		existingTransaction := domain.Transaction{Id: transactionId, Name: "Budi", Source: domain.TransactionSourceOrder}
+		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), transactionId).Return(existingTransaction, nil)
+
+		m.paymentRepo.EXPECT().UpdatePaymentById(gomock.Any(), gomock.Any(), int64(7)).
+			DoAndReturn(func(_ context.Context, payment domain.Payment, id int64) (domain.Payment, *domain.Error) {
+				return payment, nil
+			})
+
+		_, _, err := m.usecaseWithVerifier(verifier).Checkout(context.Background(), "session-1", "Budi Santoso", "0822-2222-2222", domain.PaymentMethodQris, "")
+
+		assert.Nil(t, err)
 	})
 
 	t.Run("a valid customerWhatsappNumber is normalized and snapshotted onto both the customer and the payment", func(t *testing.T) {

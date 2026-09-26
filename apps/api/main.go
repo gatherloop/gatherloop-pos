@@ -96,6 +96,13 @@ func main() {
 		whatsappGatewayRepository = fonnte.NewWhatsAppGatewayRepository(fonnteConfig)
 	}
 
+	// D8: the kill switch. A no-op verifier reproduces exactly today's checkout behaviour, so
+	// operations can turn the check off with a restart, without a code revert.
+	var whatsappNumberVerifier domain.WhatsappNumberVerifier = domain.NoopWhatsappNumberVerifier{}
+	if env.WhatsappNumberValidationEnabled {
+		whatsappNumberVerifier = domain.NewWhatsappNumberVerificationUsecase(mysql.NewWhatsappNumberVerificationRepository(db), whatsappGatewayRepository)
+	}
+
 	router := mux.NewRouter().StrictSlash(true)
 	router.Use(restapi.EnableCORS)
 	router.Use(logger.RequestLogger(rootLogger))
@@ -146,7 +153,7 @@ func main() {
 	tableUsecase := domain.NewTableUsecase(tableRepository)
 	cartUsecase := domain.NewCartUsecase(cartRepository, variantRepository, tableRepository, paymentRepository)
 	customerUsecase := domain.NewCustomerUsecase(customerRepository)
-	paymentUsecase := domain.NewPaymentUsecase(paymentRepository, paymentGatewayRepository, customerRepository, cartRepository, transactionRepository, variantRepository, walletRepository, availabilityReservation, kdsNotificationRepository, kdsNotificationUsecase, env.DokuQrisExpirySeconds, env.CashPaymentExpirySeconds, orderPaymentWalletId, env.OrderPaymentCancelEnabled)
+	paymentUsecase := domain.NewPaymentUsecase(paymentRepository, paymentGatewayRepository, customerRepository, cartRepository, transactionRepository, variantRepository, walletRepository, availabilityReservation, kdsNotificationRepository, kdsNotificationUsecase, whatsappNumberVerifier, env.DokuQrisExpirySeconds, env.CashPaymentExpirySeconds, orderPaymentWalletId, env.OrderPaymentCancelEnabled)
 	budgetUsecase := domain.NewBudgetUsecase(budgetRepository)
 	authUsecase := domain.NewAuthUsecase(authRepository)
 	calculationUsecase := domain.NewCalculationUsecase(calculationRepository, walletRepository)

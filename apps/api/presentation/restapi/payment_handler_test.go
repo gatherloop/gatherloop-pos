@@ -60,7 +60,7 @@ func (m paymentHandlerMocks) handler() restapi.PaymentHandler {
 
 func (m paymentHandlerMocks) handlerWithCancelEnabled(orderPaymentCancelEnabled bool) restapi.PaymentHandler {
 	availabilityReservation := domain.NewAvailabilityReservation(m.availabilityRepo)
-	usecase := domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, availabilityReservation, m.kdsNotificationRepo, m.kdsNotificationDispatcher, 300, 600, paymentHandlerOrderPaymentWalletId, orderPaymentCancelEnabled)
+	usecase := domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, availabilityReservation, m.kdsNotificationRepo, m.kdsNotificationDispatcher, domain.NoopWhatsappNumberVerifier{}, 300, 600, paymentHandlerOrderPaymentWalletId, orderPaymentCancelEnabled)
 	return restapi.NewPaymentHandler(usecase)
 }
 
@@ -258,8 +258,6 @@ func TestPaymentHandler_Checkout(t *testing.T) {
 		defer ctrl.Finish()
 
 		m := newPaymentHandlerMocks(ctrl)
-		withPaymentHandlerTransactionMock(m.paymentRepo)
-		expectValidPaymentWallet(m)
 
 		req := httptest.NewRequest(http.MethodPost, "/carts/current/checkout", checkoutRequestBodyWithWhatsappNumber("Budi", "08abc"))
 		req.Header.Set("X-Session-Id", testSessionId)
