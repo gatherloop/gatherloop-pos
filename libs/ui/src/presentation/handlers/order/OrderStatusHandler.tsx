@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { match, P } from 'ts-pattern';
 import { useRouter } from 'solito/router';
+import { Payment } from '../../../domain/entities/Payment';
 import { PaymentRepository } from '../../../domain/repositories/payment';
 import { SessionRepository } from '../../../domain/repositories/session';
 import { OrderStatusUsecase } from '../../../domain/usecases/orderStatus';
@@ -13,6 +14,12 @@ import {
   OrderStatusScreen,
   OrderStatusScreenVariant,
 } from '../../views/screens/order/OrderStatusScreen';
+
+function payAtPickupAmount(payment: Payment): number | null {
+  return payment.method === 'cod' && payment.status === 'pending'
+    ? payment.amount
+    : null;
+}
 
 export type OrderStatusHandlerProps = {
   orderStatusUsecase: OrderStatusUsecase;
@@ -124,22 +131,34 @@ export const OrderStatusHandler = ({
           }
         : { type: 'loading' }
     )
-    .with(
-      { type: P.union('awaitingCashPayment', 'awaitingVerification') },
-      (state) =>
-        state.payment
-          ? {
-              type: 'awaitingCashPayment',
-              payment: state.payment,
-              cashierLocation,
-              onCountdownElapsed: () =>
-                orderStatus.dispatch({ type: 'COUNTDOWN_ELAPSED' }),
-              canCancel: state.payment.canCancel,
-              onCancelPress: () => paymentCancel.dispatch({ type: 'REQUEST' }),
-              cancelConfirmation,
-              cancelErrorMessage,
-            }
-          : { type: 'loading' }
+    .with({ type: 'awaitingCashPayment' }, (state) =>
+      state.payment
+        ? {
+            type: 'awaitingCashPayment',
+            payment: state.payment,
+            cashierLocation,
+            onCountdownElapsed: () =>
+              orderStatus.dispatch({ type: 'COUNTDOWN_ELAPSED' }),
+            canCancel: state.payment.canCancel,
+            onCancelPress: () => paymentCancel.dispatch({ type: 'REQUEST' }),
+            cancelConfirmation,
+            cancelErrorMessage,
+          }
+        : { type: 'loading' }
+    )
+    .with({ type: 'awaitingVerification' }, (state) =>
+      state.payment
+        ? {
+            type: 'awaitingVerification',
+            payment: state.payment,
+            onCountdownElapsed: () =>
+              orderStatus.dispatch({ type: 'COUNTDOWN_ELAPSED' }),
+            canCancel: state.payment.canCancel,
+            onCancelPress: () => paymentCancel.dispatch({ type: 'REQUEST' }),
+            cancelConfirmation,
+            cancelErrorMessage,
+          }
+        : { type: 'loading' }
     )
     .with({ type: 'preparing' }, (state) =>
       state.payment
@@ -147,12 +166,17 @@ export const OrderStatusHandler = ({
             type: 'preparing',
             payment: state.payment,
             isPolling: state.isPolling,
+            payAtPickupAmount: payAtPickupAmount(state.payment),
           }
         : { type: 'notFound' }
     )
     .with({ type: 'ready' }, (state) =>
       state.payment
-        ? { type: 'ready', payment: state.payment }
+        ? {
+            type: 'ready',
+            payment: state.payment,
+            payAtPickupAmount: payAtPickupAmount(state.payment),
+          }
         : { type: 'notFound' }
     )
     .with({ type: 'cancelled' }, (state) => {

@@ -130,6 +130,21 @@ const pendingCashPayment = {
   transactionNumber: 12,
 };
 
+const awaitingVerificationPayment = {
+  ...pendingPayment,
+  method: 'cod' as const,
+  qrContent: '',
+  verificationStatus: 'awaiting' as const,
+  expiredAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+};
+
+const approvedUnpaidCodPayment = {
+  ...pendingPayment,
+  method: 'cod' as const,
+  qrContent: '',
+  verificationStatus: 'approved' as const,
+};
+
 const meta: Meta<typeof OrderStatusScreen> = {
   title: 'Screens/Order/OrderStatusScreen',
   component: OrderStatusScreen,
@@ -306,12 +321,42 @@ export const AwaitingCashPaymentConfirmingCancel: Story = {
   },
 };
 
+export const AwaitingVerification: Story = {
+  args: {
+    variant: {
+      type: 'awaitingVerification',
+      payment: awaitingVerificationPayment,
+      onCountdownElapsed: () => {
+        // Storybook action stand-in
+      },
+      canCancel: true,
+      onCancelPress: () => {
+        // Storybook action stand-in
+      },
+      cancelConfirmation: noopCancelConfirmation,
+      cancelErrorMessage: null,
+    },
+  },
+};
+
 export const Preparing: Story = {
   args: {
     variant: {
       type: 'preparing',
       payment: paidPayment,
       isPolling: false,
+      payAtPickupAmount: null,
+    },
+  },
+};
+
+export const PreparingCodUnpaid: Story = {
+  args: {
+    variant: {
+      type: 'preparing',
+      payment: approvedUnpaidCodPayment,
+      isPolling: false,
+      payAtPickupAmount: approvedUnpaidCodPayment.amount,
     },
   },
 };
@@ -321,6 +366,17 @@ export const Ready: Story = {
     variant: {
       type: 'ready',
       payment: { ...paidPayment, fulfillmentStatus: 'ready' },
+      payAtPickupAmount: null,
+    },
+  },
+};
+
+export const ReadyCodUnpaid: Story = {
+  args: {
+    variant: {
+      type: 'ready',
+      payment: { ...approvedUnpaidCodPayment, fulfillmentStatus: 'ready' },
+      payAtPickupAmount: approvedUnpaidCodPayment.amount,
     },
   },
 };
@@ -357,6 +413,18 @@ export const CancelledSuperseded: Story = {
   },
 };
 
+export const CancelledRejected: Story = {
+  args: {
+    variant: {
+      type: 'cancelled',
+      cancelReason: 'rejected',
+      onActionPress: () => {
+        // Storybook action stand-in
+      },
+    },
+  },
+};
+
 export const NotFound: Story = {
   args: { variant: { type: 'notFound' } },
 };
@@ -378,6 +446,7 @@ export const WithHistoryButton: Story = {
       type: 'preparing',
       payment: paidPayment,
       isPolling: false,
+      payAtPickupAmount: null,
     },
     onHistoryPress: () => {
       // Storybook action stand-in
