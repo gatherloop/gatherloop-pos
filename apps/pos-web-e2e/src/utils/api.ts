@@ -510,6 +510,10 @@ export interface CheckoutOrderTransactionInput {
   variantId: number;
   amount: number;
   customerName: string;
+  // COD checkout (docs/prd-order-cod-payment.md FR-2) — both required
+  // together, exactly like the real order app's request.
+  method?: 'qris' | 'cash' | 'cod';
+  verificationPhoto?: string;
 }
 
 // The staff-authenticated /api/transactions endpoint always defaults source
@@ -543,7 +547,11 @@ export async function checkoutOrderTransaction(
   }
 
   const checkoutResponse = await request.post('/api/carts/current/checkout', {
-    data: { customerName: data.customerName },
+    data: {
+      customerName: data.customerName,
+      method: data.method,
+      verificationPhoto: data.verificationPhoto,
+    },
     headers,
   });
   if (!checkoutResponse.ok()) {

@@ -137,8 +137,26 @@ export const cartScreen = {
   submitCashButton: (page: Page) =>
     page.getByRole('button', { name: 'Pesan & bayar di kasir' }),
 
+  // CustomerDetailsSheet.tsx's `cod` methodOptions entry — selected by its
+  // accessibilityLabel, since the visible label is shared with `cash`.
+  codMethodButton: (page: Page) => page.getByLabel('Bayar dengan COD'),
+  submitCodButton: (page: Page) =>
+    page.getByRole('button', { name: 'Pesan dengan COD' }),
+  codPhotoMissingButton: (page: Page) =>
+    page.getByRole('button', { name: 'Ambil foto dulu' }),
+
   dineInButton: (page: Page) => page.getByLabel('Makan di sini'),
   takeawayButton: (page: Page) => page.getByLabel('Bawa pulang'),
+};
+
+// CameraCapture/index.tsx (FR-7) — driven with a fake `getUserMedia` device
+// (see playwright.config.ts's chromium launchOptions), never a file input.
+export const cameraCapture = {
+  shutterButton: (page: Page) =>
+    page.getByRole('button', { name: 'Ambil foto' }),
+  useThisPhotoButton: (page: Page) =>
+    page.getByRole('button', { name: 'Pakai foto ini' }),
+  retakeButton: (page: Page) => page.getByRole('button', { name: 'Ulangi' }),
 };
 
 export const cartItemEdit = {
@@ -169,6 +187,16 @@ export const orderStatus = {
     page.getByText(`Bayar di kasir ${cashierLocation}`),
   waitingForCashPaymentText: (page: Page) =>
     page.getByText('Menunggu pembayaran di kasir…'),
+
+  // CodVerificationView.tsx (FR-13) — the `awaitingVerification` variant.
+  codVerificationHeading: (page: Page) =>
+    page.getByText('Menunggu konfirmasi barista…'),
+  // PayAtPickupBanner.tsx, shown on `preparing`/`ready` for an approved,
+  // still-unpaid COD order.
+  payAtPickupBanner: (page: Page, formattedAmount: string) =>
+    page.getByText(
+      `Bayar ${formattedAmount} di kasir saat mengambil pesanan`
+    ),
 
   expiredTitle: (page: Page) => page.getByText('Waktu pembayaran habis'),
   cashExpiredSubtitle: (page: Page) =>

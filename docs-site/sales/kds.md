@@ -40,6 +40,14 @@ tagging that already splits the printed order slip into **Bar** and **Kitchen** 
   nothing but a board-game ticket still needs someone at the till to collect it — so it fires
   regardless of what's in the cart. The same transaction buzzes again, as a normal `New order`
   alert, once the cashier actually takes the payment.
+- **A guest checking out with [COD](/sales/order-checkout#cash-on-delivery-cod) buzzes every phone
+  with a distinct "verify this" alert the instant the order is placed** — not once it's paid, and
+  not the normal `New order` alert, since nothing should be made until a barista has confirmed the
+  guest from the photo (see [Verifying a COD Order](/sales/transactions#verifying-a-cod-order)).
+  The station rule and the business-day staleness check are both bypassed, the same as the cash
+  alert above, because this is a request for a human decision, not a preparation signal. The
+  ordinary `New order` alert follows once the barista approves it — with an extra line naming what
+  to collect, since the money still hasn't moved.
 
 ### Reading the alert
 
@@ -59,12 +67,30 @@ Cash order #12 — Table 4
 Collect Rp 45.000 at the counter · BAR: 2× Kopi Susu Gula Aren, 1× Americano
 ```
 
+A guest checking out with COD produces a different alert still, aimed at the barista rather than
+the bar — there's nothing to make yet, only a photo to look at:
+
+```
+Verify COD order #12 — Meja 4
+Check the photo in the POS · Rp 45.000
+```
+
+Once the barista approves it, the normal `New order` alert follows, with one extra line for a
+still-unpaid COD order:
+
+```
+New order #12 — Meja 4
+BAR: 2× Kopi Susu Gula Aren, 1× Americano
+COD — collect Rp 45.000 at pickup
+```
+
 - The **number** is the same daily transaction number already printed on the slip and shown on
   the guest's own order-status page — whatever the staff member calls out, it's what everyone else
   is already looking at.
 - The line after it is grouped **Bar, then Kitchen** — a coffee-only order still says `BAR: …` so
-  reading "not mine" takes the same half-second as reading "mine." A `Cash order` alert leads with
-  the amount to collect instead, since nothing has to be made yet.
+  reading "not mine" takes the same half-second as reading "mine." A `Cash order` or `Verify COD
+  order` alert leads with the amount to collect (or check) instead, since nothing has to be made
+  yet.
 
 ## Setting up a phone
 
@@ -120,7 +146,11 @@ Collect Rp 45.000 at the counter · BAR: 2× Kopi Susu Gula Aren, 1× Americano
 - **Unregister and log out** — either stops a phone from receiving further orders.
 - **A cash order-app checkout buzzes twice** — once the instant it's created, so a barista can be
   at an unstaffed till before the guest walks down, and once more when the cashier actually takes
-  the payment — see [Order Checkout (QRIS & Cash)](/sales/order-checkout).
+  the payment — see [Order Checkout (QRIS, Cash & COD)](/sales/order-checkout).
+- **A COD checkout buzzes with a distinct "verify this" alert, not the normal `New order` one** —
+  nothing is made until a barista confirms the guest from their checkout photo; the ordinary
+  `New order` alert follows once they approve it, carrying an extra line for the still-unpaid
+  amount.
 
 ## For engineers
 
@@ -156,3 +186,12 @@ Collect Rp 45.000 at the counter · BAR: 2× Kopi Susu Gula Aren, 1× Americano
   trigger": D9 on why an unpaid cash order still notifies, and D8 on the `kind` column that made a
   second notification per transaction expressible instead of forbidden by the outbox's own
   unique key
+- COD reuses the same outbox and the same `order_paid` kind rather than adding a `cod_approved`
+  one: a new kind for approval would make `payTransaction` also send `order_paid`, buzzing the bar
+  twice for one order; a fourth `kds_notifications.kind` value, `cod_verification`, is enqueued the
+  instant a COD checkout completes (bypassing `ShouldNotify`'s station gate and the staleness
+  check, same as `cash_pending`), and `BuildKdsPushMessage` (`apps/api/domain/kds_notification_entity.go`)
+  adds the `COD — collect Rp X at pickup` line to `order_paid` for a transaction that is COD and
+  still unpaid
+- Follow-up design doc: `docs/prd-order-cod-payment.md` — FR-9 on what the KDS hears, and D6 on
+  why approval reuses `order_paid` instead of a new kind
