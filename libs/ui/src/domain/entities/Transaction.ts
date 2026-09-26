@@ -41,6 +41,8 @@ export type TransactionFulfillmentStatus = 'preparing' | 'ready';
 
 export type TransactionFulfillmentFilter = TransactionFulfillmentStatus | 'all';
 
+export type TransactionPaymentVerificationStatus = 'awaiting' | 'approved';
+
 export type Transaction = {
   id: number;
   createdAt: string;
@@ -48,6 +50,7 @@ export type Transaction = {
   source: TransactionSource;
   diningOption: TransactionDiningOption;
   paymentMethod: PaymentMethod | null;
+  paymentVerificationStatus: TransactionPaymentVerificationStatus | null;
   table: PublicTable | null;
   pagerNumber: number;
   transactionNumber: number;
@@ -59,6 +62,11 @@ export type Transaction = {
   paidAt: string | null;
   paidAmount: number;
   completedAt: string | null;
+};
+
+export type TransactionVerification = {
+  photo: string;
+  capturedAt: string;
 };
 
 export type TransactionCouponForm = {

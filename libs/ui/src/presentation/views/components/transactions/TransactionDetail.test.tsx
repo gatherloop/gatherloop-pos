@@ -5,6 +5,7 @@ const defaultProps: TransactionDetailProps = {
   name: 'Budi',
   source: 'order',
   paymentMethod: 'cash',
+  paymentVerificationStatus: null,
   table: { id: 1, label: 'A1', floorNumber: 1 },
   pagerNumber: 0,
   transactionNumber: 12,
