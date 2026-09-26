@@ -14,12 +14,7 @@ import {
 } from '../../../../domain/entities/Payment';
 import { Sheet } from '../base/Sheet';
 import { CameraCapture } from '../base/CameraCapture';
-import {
-  ClipboardCheck,
-  QrCode,
-  RotateCcw,
-  Wallet,
-} from '@tamagui/lucide-icons';
+import { QrCode, RotateCcw, Wallet } from '@tamagui/lucide-icons';
 
 export type CustomerDetailsSheetProps = {
   isOpen: boolean;
@@ -65,11 +60,10 @@ const methodOptions: Record<
     description: 'Bayar tunai di kasir',
   },
   cod: {
-    icon: ClipboardCheck,
+    icon: Wallet,
     accessibilityLabel: 'Bayar dengan COD',
-    label: 'COD — Bayar saat ambil',
-    description:
-      'Pesanan dibuat setelah dikonfirmasi barista, bayar tunai di kasir saat mengambil',
+    label: 'Cash',
+    description: 'Bayar tunai di kasir saat mengambil pesanan',
   },
 };
 
