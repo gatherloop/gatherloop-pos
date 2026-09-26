@@ -52,7 +52,6 @@ export type CartScreenProps = {
   onRetryButtonPress: () => void;
   itemEdit: (CartItemEditScreenProps & { isOpen: true }) | null;
   isCheckoutEnabled: boolean;
-  isCheckingOut: boolean;
   checkoutErrorMessage: string | null;
   onCheckoutPress: () => void;
   onCheckoutRetryPress: () => void;
@@ -79,7 +78,6 @@ export const CartScreen = ({
   onRetryButtonPress,
   itemEdit,
   isCheckoutEnabled,
-  isCheckingOut,
   checkoutErrorMessage,
   onCheckoutPress,
   onCheckoutRetryPress,
@@ -126,10 +124,10 @@ export const CartScreen = ({
                 size="$5"
                 minHeight={44}
                 flex={1}
-                disabled={!isCheckoutEnabled || isCheckingOut}
+                disabled={!isCheckoutEnabled}
                 onPress={onCheckoutPress}
               >
-                {isCheckingOut ? 'Memproses...' : `Bayar`}
+                Bayar
               </Button>
             </XStack>
             {!isCheckoutEnabled ? (
