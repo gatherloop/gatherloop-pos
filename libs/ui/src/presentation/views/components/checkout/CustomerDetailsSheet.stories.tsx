@@ -32,6 +32,7 @@ const meta: Meta<typeof CustomerDetailsSheet> = {
       // Storybook action stand-in
     },
     cashierLocation: 'Lantai 1',
+    isSubmitting: false,
   },
 };
 
@@ -83,5 +84,22 @@ export const TakeawaySelected: Story = {
     name: 'Budi',
     whatsappNumber: '0812 3456 7890',
     diningOption: 'takeaway',
+  },
+};
+
+export const Submitting: Story = {
+  args: {
+    name: 'Budi',
+    whatsappNumber: '0812 3456 7890',
+    isSubmitting: true,
+  },
+};
+
+export const WhatsappNotRegistered: Story = {
+  args: {
+    name: 'Budi',
+    whatsappNumber: '0812 3456 7809',
+    whatsappNumberErrorMessage:
+      'Nomor WhatsApp tidak terdaftar di WhatsApp. Mohon periksa kembali.',
   },
 };
