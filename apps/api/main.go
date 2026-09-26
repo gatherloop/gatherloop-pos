@@ -133,6 +133,7 @@ func main() {
 	kdsDeviceRepository := mysql.NewKdsDeviceRepository(db)
 	kdsNotificationRepository := mysql.NewKdsNotificationRepository(db)
 	guestNotificationRepository := mysql.NewGuestNotificationRepository(db)
+	paymentVerificationRepository := mysql.NewPaymentVerificationRepository(db)
 
 	orderPaymentWalletId, _ := strconv.ParseInt(env.OrderPaymentWalletId, 10, 64)
 
@@ -154,6 +155,7 @@ func main() {
 	cartUsecase := domain.NewCartUsecase(cartRepository, variantRepository, tableRepository, paymentRepository)
 	customerUsecase := domain.NewCustomerUsecase(customerRepository)
 	paymentUsecase := domain.NewPaymentUsecase(paymentRepository, paymentGatewayRepository, customerRepository, cartRepository, transactionRepository, variantRepository, walletRepository, availabilityReservation, kdsNotificationRepository, kdsNotificationUsecase, whatsappNumberVerifier, env.DokuQrisExpirySeconds, env.CashPaymentExpirySeconds, orderPaymentWalletId, env.OrderPaymentCancelEnabled)
+	paymentVerificationUsecase := domain.NewPaymentVerificationUsecase(paymentRepository, paymentVerificationRepository, transactionRepository, cartRepository, availabilityReservation, kdsNotificationRepository, kdsNotificationUsecase)
 	budgetUsecase := domain.NewBudgetUsecase(budgetRepository)
 	authUsecase := domain.NewAuthUsecase(authRepository)
 	calculationUsecase := domain.NewCalculationUsecase(calculationRepository, walletRepository)
@@ -178,6 +180,7 @@ func main() {
 	cartHandler := restapi.NewCartHandler(cartUsecase, env.OrderPaymentCancelEnabled)
 	customerHandler := restapi.NewCustomerHandler(customerUsecase)
 	paymentHandler := restapi.NewPaymentHandler(paymentUsecase)
+	paymentVerificationHandler := restapi.NewPaymentVerificationHandler(paymentVerificationUsecase)
 	budgetHandler := restapi.NewBudgetHandler(budgetUsecase)
 	authHandler := restapi.NewAuthHandler(authUsecase)
 	calculationHandler := restapi.NewCalculationHandler(calculationUsecase)
@@ -198,6 +201,7 @@ func main() {
 	restapi.NewCartRouter(cartHandler).AddRouter(router)
 	restapi.NewCustomerRouter(customerHandler).AddRouter(router)
 	restapi.NewPaymentRouter(paymentHandler).AddRouter(router)
+	restapi.NewPaymentVerificationRouter(paymentVerificationHandler).AddRouter(router)
 	restapi.NewExpenseRouter(expenseHandler).AddRouter(router)
 	restapi.NewMaterialRouter(materialHandler).AddRouter(router)
 	restapi.NewSupplierRouter(supplierHandler).AddRouter(router)
