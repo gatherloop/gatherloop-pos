@@ -55,3 +55,18 @@ func (mr *MockWhatsAppGatewayRepositoryMockRecorder) Send(ctx, message any) *gom
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockWhatsAppGatewayRepository)(nil).Send), ctx, message)
 }
+
+// ValidateNumber mocks base method.
+func (m *MockWhatsAppGatewayRepository) ValidateNumber(ctx context.Context, number string) (domain.WhatsAppNumberValidationResult, *domain.Error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ValidateNumber", ctx, number)
+	ret0, _ := ret[0].(domain.WhatsAppNumberValidationResult)
+	ret1, _ := ret[1].(*domain.Error)
+	return ret0, ret1
+}
+
+// ValidateNumber indicates an expected call of ValidateNumber.
+func (mr *MockWhatsAppGatewayRepositoryMockRecorder) ValidateNumber(ctx, number any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateNumber", reflect.TypeOf((*MockWhatsAppGatewayRepository)(nil).ValidateNumber), ctx, number)
+}

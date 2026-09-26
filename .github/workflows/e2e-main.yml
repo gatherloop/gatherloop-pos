@@ -42,6 +42,15 @@ env:
   # boots, so it is seeded with this fixed id before the API starts rather
   # than created through the API afterwards.
   ORDER_PAYMENT_WALLET_ID: '1'
+  # Phase 8 in docs/prd-order-whatsapp-number-validation.md: order-web-e2e's
+  # whatsappNumberValidation.spec.ts runs the checkout WhatsApp-number check
+  # against apps/api/cmd/fonntestub, a stand-in for Fonnte's /validate and
+  # /send, never the real gateway. FONNTE_TOKEN is not a real Fonnte
+  # credential — the stub never checks it — it only has to be non-empty so
+  # the API doesn't boot a disabled gateway (D10/D11 of
+  # docs/prd-order-whatsapp-notifications.md).
+  FONNTESTUB_PORT: '8091'
+  FONNTE_TOKEN: e2e-fonnte-token
 
 jobs:
   e2e:
@@ -175,7 +184,25 @@ jobs:
           echo "DOKU stub failed to start within 30s:"
           cat "$RUNNER_TEMP/dokustub.log"
           exit 1
+      - name: Build the Fonnte stub gateway
+        # apps/api/cmd/fonntestub (phase 8) — not an Nx target, it exists
+        # only for order-web-e2e's whatsappNumberValidation.spec.ts.
+        working-directory: apps/api
+        run: go build -o "$RUNNER_TEMP/fonntestub" ./cmd/fonntestub
 
+      - name: Start the Fonnte stub gateway
+        run: |
+          nohup "$RUNNER_TEMP/fonntestub" > "$RUNNER_TEMP/fonntestub.log" 2>&1 &
+          for _ in $(seq 1 30); do
+            if curl -s -o /dev/null "http://127.0.0.1:${FONNTESTUB_PORT}/_stub/health"; then
+              echo "Fonnte stub is listening on ${FONNTESTUB_PORT}"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Fonnte stub failed to start within 30s:"
+          cat "$RUNNER_TEMP/fonntestub.log"
+          exit 1
       - name: Start the API
         env:
           PORT: ${{ env.API_PORT }}
@@ -189,6 +216,15 @@ jobs:
           # production is a base URL, so a stub is just a third value).
           DOKU_BASE_URL: http://127.0.0.1:${{ env.DOKUSTUB_PORT }}
           DOKU_PRIVATE_KEY: ${{ env.DOKU_PRIVATE_KEY }}
+          # Phase 8: points the WhatsApp gateway at the Fonnte stub started
+          # above, and turns the number-validation check on. ORDER_WEB_BASE_URL
+          # matches order-web-e2e's own BASE_URL below — an empty value here
+          # would boot a disabled gateway regardless of FONNTE_TOKEN (D11 of
+          # docs/prd-order-whatsapp-notifications.md), which would make every
+          # ValidateNumber call fail open and never reject anything.
+          FONNTE_BASE_URL: http://127.0.0.1:${{ env.FONNTESTUB_PORT }}
+          WHATSAPP_NUMBER_VALIDATION_ENABLED: 'true'
+          ORDER_WEB_BASE_URL: http://localhost:3000
         run: |
           nohup ./dist/apps/api > "$RUNNER_TEMP/api.log" 2>&1 &
           # Any HTTP response means the server is listening (GET on the
@@ -228,6 +264,9 @@ jobs:
           # and pos-web-e2e's transactions.fulfillment.spec.ts (it drives
           # the cart/checkout API directly to seed a paid order transaction).
           DOKU_STUB_URL: http://127.0.0.1:${{ env.DOKUSTUB_PORT }}
+          # order-web-e2e's whatsappNumberValidation.spec.ts asserts against
+          # the stub's own /_stub/calls counter, not against the API.
+          FONNTE_STUB_URL: http://127.0.0.1:${{ env.FONNTESTUB_PORT }}
         run: npx nx run ${{ matrix.project }}:e2e
 
       - name: Upload Playwright report
@@ -236,6 +275,14 @@ jobs:
         with:
           name: playwright-report-${{ matrix.project }}
           path: dist/.playwright/apps/${{ matrix.project }}
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Upload Fonnte stub log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fonntestub-log-${{ matrix.project }}
+          path: ${{ runner.temp }}/fonntestub.log
           retention-days: 7
           if-no-files-found: ignore
 

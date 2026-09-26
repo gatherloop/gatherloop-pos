@@ -93,7 +93,6 @@ const meta: Meta<typeof CartScreen> = {
     isClearConfirmationOpen: false,
     itemEdit: null,
     isCheckoutEnabled: true,
-    isCheckingOut: false,
     checkoutErrorMessage: null,
     detailsSheet: null,
     lockedNotice: null,
@@ -257,10 +256,39 @@ export const DetailsSheetOpen: Story = {
   },
 };
 
-export const CreatingPayment: Story = {
+export const DetailsSheetSubmitting: Story = {
   args: {
     variant: { type: 'loaded', cart },
-    isCheckingOut: true,
+    detailsSheet: {
+      isOpen: true,
+      name: 'Budi',
+      nameErrorMessage: null,
+      onNameChange: () => {
+        // Storybook action stand-in
+      },
+      whatsappNumber: '0812 3456 7890',
+      whatsappNumberErrorMessage: null,
+      onWhatsappNumberChange: () => {
+        // Storybook action stand-in
+      },
+      onSubmitPress: () => {
+        // Storybook action stand-in
+      },
+      onCancelPress: () => {
+        // Storybook action stand-in
+      },
+      isCashPaymentEnabled: true,
+      method: 'qris',
+      onMethodChange: () => {
+        // Storybook action stand-in
+      },
+      diningOption: 'dine_in',
+      onDiningOptionChange: () => {
+        // Storybook action stand-in
+      },
+      cashierLocation: 'Lantai 1',
+      isSubmitting: true,
+    },
   },
 };
 

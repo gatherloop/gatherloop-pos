@@ -210,8 +210,12 @@ export const CartHandler = ({
           lockedNotice,
         };
 
+  const isSubmittingDetails =
+    checkout.state.type === 'creatingPayment' ||
+    checkout.state.type === 'created';
+
   const detailsSheet: (CustomerDetailsSheetProps & { isOpen: true }) | null =
-    checkout.state.type === 'askingDetails'
+    checkout.state.type === 'askingDetails' || isSubmittingDetails
       ? {
           isOpen: true,
           name: checkout.state.customerName,
@@ -235,6 +239,7 @@ export const CartHandler = ({
           onDiningOptionChange: (diningOption) =>
             checkout.dispatch({ type: 'CHANGE_DINING_OPTION', diningOption }),
           cashierLocation,
+          isSubmitting: isSubmittingDetails,
         }
       : null;
 
@@ -295,7 +300,6 @@ export const CartHandler = ({
       onRetryButtonPress={() => cart.dispatch({ type: 'FETCH' })}
       itemEdit={itemEdit}
       isCheckoutEnabled={enabled && !hasUnavailableItems(cart.state.cart)}
-      isCheckingOut={checkout.state.type === 'creatingPayment'}
       checkoutErrorMessage={
         checkout.state.type === 'error' ? checkout.state.errorMessage : null
       }

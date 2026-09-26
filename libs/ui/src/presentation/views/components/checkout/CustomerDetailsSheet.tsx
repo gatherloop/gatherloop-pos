@@ -1,4 +1,4 @@
-import { Button, Input, Paragraph, XStack, YStack } from 'tamagui';
+import { Button, Input, Paragraph, Spinner, XStack, YStack } from 'tamagui';
 import { match } from 'ts-pattern';
 import {
   PaymentDiningOption,
@@ -23,6 +23,7 @@ export type CustomerDetailsSheetProps = {
   diningOption: PaymentDiningOption;
   onDiningOptionChange: (diningOption: PaymentDiningOption) => void;
   cashierLocation: string;
+  isSubmitting: boolean;
 };
 
 const diningOptionLabel = (diningOption: PaymentDiningOption) =>
@@ -52,8 +53,12 @@ export const CustomerDetailsSheet = ({
   onMethodChange,
   diningOption,
   onDiningOptionChange,
+  isSubmitting,
 }: CustomerDetailsSheetProps) => (
-  <Sheet isOpen={isOpen} onOpenChange={(open) => !open && onCancelPress()}>
+  <Sheet
+    isOpen={isOpen}
+    onOpenChange={(open) => !open && !isSubmitting && onCancelPress()}
+  >
     <YStack padding="$4" gap="$3">
       <Paragraph fontWeight="bold" fontSize="$6">
         Data pemesan
@@ -67,6 +72,7 @@ export const CustomerDetailsSheet = ({
           onSubmitEditing={onSubmitPress}
           accessibilityLabel="Nama Anda"
           autoFocus
+          disabled={isSubmitting}
         />
         {nameErrorMessage ? (
           <Paragraph color="$red10">{nameErrorMessage}</Paragraph>
@@ -82,6 +88,7 @@ export const CustomerDetailsSheet = ({
           accessibilityLabel="Nomor WhatsApp"
           inputMode="tel"
           autoComplete="tel"
+          disabled={isSubmitting}
         />
         {whatsappNumberErrorMessage ? (
           <Paragraph color="$red10">{whatsappNumberErrorMessage}</Paragraph>
@@ -104,6 +111,7 @@ export const CustomerDetailsSheet = ({
               minHeight={44}
               accessibilityLabel={diningOptionLabel(option)}
               onPress={() => onDiningOptionChange(option)}
+              disabled={isSubmitting}
             >
               {diningOptionLabel(option)}
             </Button>
@@ -126,6 +134,7 @@ export const CustomerDetailsSheet = ({
               onPress={() => onMethodChange('qris')}
               scaleIcon={1}
               flex={1}
+              disabled={isSubmitting}
             >
               <YStack alignItems="flex-start">
                 <XStack gap="$2" alignItems="center">
@@ -147,6 +156,7 @@ export const CustomerDetailsSheet = ({
               accessibilityLabel="Bayar dengan Cash di Kasir"
               onPress={() => onMethodChange('cash')}
               flex={1}
+              disabled={isSubmitting}
             >
               <YStack alignItems="flex-start" gap="$1">
                 <XStack gap="$2" alignItems="center">
@@ -168,10 +178,22 @@ export const CustomerDetailsSheet = ({
       ) : null}
 
       <YStack gap="$2">
-        <Button theme="blue" size="$5" minHeight={44} onPress={onSubmitPress}>
-          {submitLabel(method)}
+        <Button
+          theme="blue"
+          size="$5"
+          minHeight={44}
+          onPress={onSubmitPress}
+          disabled={isSubmitting}
+          icon={isSubmitting ? <Spinner /> : undefined}
+        >
+          {isSubmitting ? 'Memproses…' : submitLabel(method)}
         </Button>
-        <Button variant="outlined" minHeight={44} onPress={onCancelPress}>
+        <Button
+          variant="outlined"
+          minHeight={44}
+          onPress={onCancelPress}
+          disabled={isSubmitting}
+        >
           Batal
         </Button>
       </YStack>

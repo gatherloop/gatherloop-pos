@@ -23,7 +23,16 @@ const (
 	BadGateway
 )
 
+type ErrorReason int
+
+const (
+	ErrorReasonNone ErrorReason = iota
+	ErrorReasonWhatsappNumberInvalid
+	ErrorReasonWhatsappNumberNotRegistered
+)
+
 type Error struct {
 	Type    ErrorType
 	Message string
+	Reason  ErrorReason
 }

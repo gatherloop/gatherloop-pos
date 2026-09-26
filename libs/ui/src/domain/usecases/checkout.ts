@@ -5,7 +5,11 @@ import {
   PaymentDiningOption,
   PaymentMethod,
 } from '../entities';
-import { PaymentRepository } from '../repositories';
+import {
+  PaymentRepository,
+  WhatsappNumberRejectedError,
+  WhatsappNumberRejectionReason,
+} from '../repositories';
 import { Usecase } from './IUsecase';
 
 const NAME_MAX_LENGTH = 60;
@@ -39,7 +43,11 @@ export type CheckoutAction =
   | { type: 'CANCEL_DETAILS' }
   | { type: 'SUBMIT_DETAILS' }
   | { type: 'CHECKOUT_SUCCESS'; payment: Payment }
-  | { type: 'CHECKOUT_ERROR'; message: string };
+  | { type: 'CHECKOUT_ERROR'; message: string }
+  | {
+      type: 'WHATSAPP_NUMBER_REJECTED';
+      reason: WhatsappNumberRejectionReason;
+    };
 
 export type CheckoutParams = {
   customerName?: string;
@@ -53,6 +61,22 @@ function validateName(name: string): string | null {
   return null;
 }
 
+function whatsappNumberRejectionMessage(
+  reason: WhatsappNumberRejectionReason
+): string {
+  return match(reason)
+    .with(
+      'invalid',
+      () => 'Nomor WhatsApp tidak valid. Mohon periksa kembali.'
+    )
+    .with(
+      'not_registered',
+      () =>
+        'Nomor WhatsApp tidak terdaftar di WhatsApp. Mohon periksa kembali.'
+    )
+    .exhaustive();
+}
+
 function validateWhatsappNumber(whatsappNumber: string): {
   errorMessage: string | null;
   normalized: string;
@@ -63,7 +87,7 @@ function validateWhatsappNumber(whatsappNumber: string): {
   }
   const normalized = normalizeWhatsappNumber(trimmed);
   if (normalized === null) {
-    return { errorMessage: 'Nomor WhatsApp tidak valid', normalized: trimmed };
+    return { errorMessage: whatsappNumberRejectionMessage('invalid'), normalized: trimmed };
   }
   return { errorMessage: null, normalized };
 }
@@ -114,7 +138,11 @@ export class CheckoutUsecase extends Usecase<
       )
       .with(
         [{ type: 'askingDetails' }, { type: 'CHANGE_WHATSAPP_NUMBER' }],
-        ([state, { whatsappNumber }]) => ({ ...state, whatsappNumber })
+        ([state, { whatsappNumber }]) => ({
+          ...state,
+          whatsappNumber,
+          whatsappNumberErrorMessage: null,
+        })
       )
       .with(
         [{ type: 'askingDetails' }, { type: 'CHANGE_METHOD' }],
@@ -153,7 +181,6 @@ export class CheckoutUsecase extends Usecase<
             ...state,
             type: 'creatingPayment',
             customerName: state.customerName.trim(),
-            whatsappNumber: whatsappNumber.normalized,
             nameErrorMessage: null,
             whatsappNumberErrorMessage: null,
             errorMessage: null,
@@ -177,6 +204,14 @@ export class CheckoutUsecase extends Usecase<
           errorMessage: message,
         })
       )
+      .with(
+        [{ type: 'creatingPayment' }, { type: 'WHATSAPP_NUMBER_REJECTED' }],
+        ([state, { reason }]) => ({
+          ...state,
+          type: 'askingDetails',
+          whatsappNumberErrorMessage: whatsappNumberRejectionMessage(reason),
+        })
+      )
       .otherwise(() => state);
   }
 
@@ -188,19 +223,30 @@ export class CheckoutUsecase extends Usecase<
       .with(
         { type: 'creatingPayment' },
         ({ customerName, whatsappNumber, method, diningOption }) => {
+          const normalizedWhatsappNumber =
+            normalizeWhatsappNumber(whatsappNumber.trim()) ??
+            whatsappNumber.trim();
           this.paymentRepository
-            .checkout({ customerName, whatsappNumber, method, diningOption })
+            .checkout({
+              customerName,
+              whatsappNumber: normalizedWhatsappNumber,
+              method,
+              diningOption,
+            })
             .then((payment) => dispatch({ type: 'CHECKOUT_SUCCESS', payment }))
-            .catch(() =>
-              dispatch({
-                type: 'CHECKOUT_ERROR',
-                message: 'Failed to create payment',
-              })
+            .catch((error) =>
+              error instanceof WhatsappNumberRejectedError
+                ? dispatch({
+                    type: 'WHATSAPP_NUMBER_REJECTED',
+                    reason: error.reason,
+                  })
+                : dispatch({
+                    type: 'CHECKOUT_ERROR',
+                    message: 'Failed to create payment',
+                  })
             );
         }
       )
-      .otherwise(() => {
-        // TODO: IMPLEMENT SOMETHING
-      });
+      .otherwise(() => undefined);
   }
 }

@@ -28,7 +28,21 @@ type WhatsAppSendResult struct {
 // than a delivery failure.
 const WhatsAppGatewayNotConfiguredDetail = "whatsapp gateway not configured"
 
+type WhatsAppNumberStatus string
+
+const (
+	WhatsAppNumberStatusRegistered    WhatsAppNumberStatus = "registered"
+	WhatsAppNumberStatusNotRegistered WhatsAppNumberStatus = "not_registered"
+	WhatsAppNumberStatusUnknown       WhatsAppNumberStatus = "unknown"
+)
+
+type WhatsAppNumberValidationResult struct {
+	Status WhatsAppNumberStatus
+	Detail string
+}
+
 // One message, one recipient: a guest notification never has more than one (D1).
 type WhatsAppGatewayRepository interface {
 	Send(ctx context.Context, message WhatsAppMessage) (WhatsAppSendResult, *Error)
+	ValidateNumber(ctx context.Context, number string) (WhatsAppNumberValidationResult, *Error)
 }

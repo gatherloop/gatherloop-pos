@@ -25,6 +25,7 @@ type PaymentUsecase struct {
 	availabilityReservation   AvailabilityReservation
 	kdsNotificationRepository KdsNotificationRepository
 	kdsNotificationDispatcher KdsNotificationDispatcher
+	whatsappNumberVerifier    WhatsappNumberVerifier
 	qrisExpirySeconds         int
 	cashExpirySeconds         int
 	orderPaymentWalletId      int64
@@ -42,6 +43,7 @@ func NewPaymentUsecase(
 	availabilityReservation AvailabilityReservation,
 	kdsNotificationRepository KdsNotificationRepository,
 	kdsNotificationDispatcher KdsNotificationDispatcher,
+	whatsappNumberVerifier WhatsappNumberVerifier,
 	qrisExpirySeconds int,
 	cashExpirySeconds int,
 	orderPaymentWalletId int64,
@@ -58,6 +60,7 @@ func NewPaymentUsecase(
 		availabilityReservation:   availabilityReservation,
 		kdsNotificationRepository: kdsNotificationRepository,
 		kdsNotificationDispatcher: kdsNotificationDispatcher,
+		whatsappNumberVerifier:    whatsappNumberVerifier,
 		qrisExpirySeconds:         qrisExpirySeconds,
 		cashExpirySeconds:         cashExpirySeconds,
 		orderPaymentWalletId:      orderPaymentWalletId,
@@ -88,6 +91,22 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 	var resultTransaction Transaction
 	enqueuedCashPendingNotification := false
 
+	// FR-2/D5: absent (empty) is left nil so the customer's stored number and an idempotent
+	// pending payment's snapshot stay unchanged; only a non-empty value is normalized and
+	// verified. Both run before BeginTransaction, never inside it (D5): a Fonnte round trip
+	// must never hold the checkout's row locks.
+	var whatsappNumber *string
+	if trimmed := strings.TrimSpace(customerWhatsappNumber); trimmed != "" {
+		normalized, normErr := NormalizeWhatsappNumber(trimmed)
+		if normErr != nil {
+			return Payment{}, Transaction{}, normErr
+		}
+		if verifyErr := usecase.whatsappNumberVerifier.EnsureRegistered(ctx, normalized); verifyErr != nil {
+			return Payment{}, Transaction{}, verifyErr
+		}
+		whatsappNumber = &normalized
+	}
+
 	err := usecase.paymentRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 		if err := usecase.validateOrderPaymentWallet(ctxWithTx); err != nil {
 			return err
@@ -95,18 +114,6 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 
 		if !diningOption.IsValid() {
 			return &Error{Type: BadRequest, Message: "invalid dining option"}
-		}
-
-		// FR-2/D5: absent (empty) is left nil so the customer's stored number and an
-		// idempotent pending payment's snapshot stay unchanged; only a non-empty value is
-		// normalized and can 400.
-		var whatsappNumber *string
-		if trimmed := strings.TrimSpace(customerWhatsappNumber); trimmed != "" {
-			normalized, normErr := NormalizeWhatsappNumber(trimmed)
-			if normErr != nil {
-				return normErr
-			}
-			whatsappNumber = &normalized
 		}
 
 		customer, err := upsertCustomer(ctxWithTx, usecase.customerRepository, sessionId, customerName, whatsappNumber)

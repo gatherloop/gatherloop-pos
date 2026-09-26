@@ -42,6 +42,7 @@ func TestNormalizeWhatsappNumber(t *testing.T) {
 			if tt.expectsErr {
 				assert.NotNil(t, err)
 				assert.Equal(t, domain.BadRequest, err.Type)
+				assert.Equal(t, domain.ErrorReasonWhatsappNumberInvalid, err.Reason)
 			} else {
 				assert.Nil(t, err)
 				assert.Equal(t, tt.expected, normalized)

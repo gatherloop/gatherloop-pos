@@ -337,7 +337,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaymentResponse'
         '400':
-          description: validation error
+          description: >
+            validation error. `reason` is set when the guest's WhatsApp number is the problem, so
+            the order app can show the error under that field.
           content:
             application/json:
               schema:
@@ -5246,6 +5248,8 @@ components:
           $ref: '#/components/schemas/ErrorCode'
         message:
           type: string
+        reason:
+          $ref: '#/components/schemas/ErrorReason'
     ErrorCode:
       type: string
       enum:
@@ -5253,6 +5257,11 @@ components:
         - bad_request
         - not_found
         - unauthorized
+    ErrorReason:
+      type: string
+      enum:
+        - whatsapp_number_invalid
+        - whatsapp_number_not_registered
     SuccessResponse:
       type: object
       required:

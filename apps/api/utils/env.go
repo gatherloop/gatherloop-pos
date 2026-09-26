@@ -46,6 +46,8 @@ type Env struct {
 
 	FonnteToken   string
 	FonnteBaseURL string
+
+	WhatsappNumberValidationEnabled bool
 }
 
 func GetEnv() Env {
@@ -98,6 +100,8 @@ func GetEnv() Env {
 
 		FonnteToken:   getCredential("FONNTE_TOKEN"),
 		FonnteBaseURL: getCredential("FONNTE_BASE_URL"),
+
+		WhatsappNumberValidationEnabled: parseBoolWithDefault(os.Getenv("WHATSAPP_NUMBER_VALIDATION_ENABLED"), false),
 	}
 }
 
