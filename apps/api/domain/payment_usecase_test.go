@@ -1999,7 +1999,7 @@ func TestPaymentUsecase_GetPaymentStatus(t *testing.T) {
 		payment := pendingPaymentFixture()
 		payment.SessionId = "session-owner"
 		payment.AccessKey = &accessKey
-		checkedAt := time.Now().Add(-3 * time.Second)
+		checkedAt := time.Now().Add(-500 * time.Millisecond)
 		payment.StatusCheckedAt = &checkedAt
 		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil)
@@ -2047,7 +2047,7 @@ func TestPaymentUsecase_GetPaymentStatus(t *testing.T) {
 		assert.Equal(t, domain.NotFound, err.Type)
 	})
 
-	t.Run("a payment checked less than 10s ago does not re-query DOKU", func(t *testing.T) {
+	t.Run("a payment checked less than a second ago does not re-query DOKU", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -2055,7 +2055,7 @@ func TestPaymentUsecase_GetPaymentStatus(t *testing.T) {
 		withPaymentTransactionMock(m.paymentRepo)
 
 		payment := pendingPaymentFixture()
-		checkedAt := time.Now().Add(-3 * time.Second)
+		checkedAt := time.Now().Add(-500 * time.Millisecond)
 		payment.StatusCheckedAt = &checkedAt
 		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil)
