@@ -158,7 +158,10 @@ export class OrderStatusUsecase extends Usecase<
         ],
         ([state, { payment }]) => ({
           ...state,
-          type: payment.status === 'paid' ? stateTypeForPayment(payment) : state.type,
+          type:
+            payment.status === 'paid'
+              ? stateTypeForPayment(payment)
+              : state.type,
           payment,
           isPolling: false,
         })
@@ -222,27 +225,33 @@ export class OrderStatusUsecase extends Usecase<
             }
           });
       })
-      .with({ type: P.union('awaitingPayment', 'awaitingCashPayment') }, (state) => {
-        this.ensurePollTimer(AWAITING_PAYMENT_POLL_INTERVAL_MS, dispatch);
+      .with(
+        { type: P.union('awaitingPayment', 'awaitingCashPayment') },
+        (state) => {
+          this.ensurePollTimer(AWAITING_PAYMENT_POLL_INTERVAL_MS, dispatch);
 
-        if (state.isPolling && state.payment) {
-          this.repository
-            .fetchPayment(state.payment.reference)
-            .then((payment) => {
-              if (payment.status === 'expired' || payment.status === 'failed') {
-                dispatch({ type: 'EXPIRE' });
-              } else {
-                dispatch({ type: 'POLL_SUCCESS', payment });
-              }
-            })
-            .catch(() =>
-              dispatch({
-                type: 'POLL_ERROR',
-                message: 'Failed to check payment status',
+          if (state.isPolling && state.payment) {
+            this.repository
+              .fetchPayment(state.payment.reference)
+              .then((payment) => {
+                if (
+                  payment.status === 'expired' ||
+                  payment.status === 'failed'
+                ) {
+                  dispatch({ type: 'EXPIRE' });
+                } else {
+                  dispatch({ type: 'POLL_SUCCESS', payment });
+                }
               })
-            );
+              .catch(() =>
+                dispatch({
+                  type: 'POLL_ERROR',
+                  message: 'Failed to check payment status',
+                })
+              );
+          }
         }
-      })
+      )
       .with({ type: 'preparing' }, (state) => {
         this.ensurePollTimer(PREPARATION_POLL_INTERVAL_MS, dispatch);
 
@@ -280,6 +289,9 @@ export class OrderStatusUsecase extends Usecase<
     }
 
     this.pollIntervalMs = intervalMs;
-    this.pollTimerId = setInterval(() => dispatch({ type: 'POLL' }), intervalMs);
+    this.pollTimerId = setInterval(
+      () => dispatch({ type: 'POLL' }),
+      intervalMs
+    );
   }
 }

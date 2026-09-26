@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-const statusRequeryFloor = 5 * time.Second
+const statusRequeryFloor = 1 * time.Second
 
 // FR-4: a bounded batch per sweep so one tick of the sweeper cannot run unbounded, matching
 // kdsDispatchBatchSize.
