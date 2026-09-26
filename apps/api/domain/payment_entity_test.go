@@ -133,6 +133,7 @@ func TestParsePaymentMethod(t *testing.T) {
 	}{
 		{name: "qris is valid", input: "qris", expectedMethod: domain.PaymentMethodQris, expectError: false},
 		{name: "cash is valid", input: "cash", expectedMethod: domain.PaymentMethodCash, expectError: false},
+		{name: "cod is valid", input: "cod", expectedMethod: domain.PaymentMethodCod, expectError: false},
 		{name: "an empty string defaults to qris", input: "", expectedMethod: domain.PaymentMethodQris, expectError: false},
 		{name: "an unknown value is rejected", input: "credit_card", expectError: true},
 	}
@@ -155,6 +156,7 @@ func TestParsePaymentMethod(t *testing.T) {
 func TestPaymentRequiresGateway(t *testing.T) {
 	assert.True(t, domain.Payment{Method: domain.PaymentMethodQris}.RequiresGateway())
 	assert.False(t, domain.Payment{Method: domain.PaymentMethodCash}.RequiresGateway())
+	assert.False(t, domain.Payment{Method: domain.PaymentMethodCod}.RequiresGateway())
 }
 
 var partnerReferenceNoPattern = regexp.MustCompile(`^ORD[0-9A-HJKMNP-TV-Z]{13}$`)

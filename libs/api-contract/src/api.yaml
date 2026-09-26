@@ -2084,6 +2084,81 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /transactions/{transactionId}/verification:
+    get:
+      summary: Get the COD verification photo for a transaction's payment (D14, staff-only). 404 once there is no linked COD payment or the photo is already gone (decided).
+      operationId: getTransactionVerification
+      tags:
+        - transaction
+      parameters:
+        - $ref: '#/components/parameters/TransactionId'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionVerificationResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /transactions/{transactionId}/verification/approve:
+    put:
+      summary: Approve a COD order's presence verification (FR-4) — the bar may start making it.
+      operationId: approveTransactionVerification
+      tags:
+        - transaction
+      parameters:
+        - $ref: '#/components/parameters/TransactionId'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: validation error — not a COD payment, or already decided/cancelled/paid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /transactions/{transactionId}/verification/reject:
+    put:
+      summary: Reject a COD order's presence verification (FR-4) — the transaction is cancelled.
+      operationId: rejectTransactionVerification
+      tags:
+        - transaction
+      parameters:
+        - $ref: '#/components/parameters/TransactionId'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: validation error — not a COD payment, or already decided/cancelled/paid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /transactions/statistics:
     get:
       summary: Get transactions statistics
@@ -4369,7 +4444,10 @@ components:
           $ref: '#/components/schemas/DiningOption'
         paymentMethod:
           type: string
-          enum: [qris, cash]
+          enum: [qris, cash, cod]
+        paymentVerificationStatus:
+          type: string
+          enum: [awaiting, approved]
         table:
           $ref: '#/components/schemas/PublicTable'
         walletId:
@@ -4560,6 +4638,25 @@ components:
           format: int64
         paidAmount:
           type: number
+    TransactionVerification:
+      type: object
+      required:
+        - photo
+        - capturedAt
+      properties:
+        photo:
+          type: string
+          description: a data URL, e.g. "data:image/jpeg;base64,…" (D14 — staff-only, never in a guest or list response)
+        capturedAt:
+          type: string
+          format: date-time
+    TransactionVerificationResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/TransactionVerification'
     TransactionStatistic:
       type: object
       required:
@@ -5133,7 +5230,7 @@ components:
           enum: [pending, paid, expired, failed, cancelled]
         method:
           type: string
-          enum: [qris, cash]
+          enum: [qris, cash, cod]
         amount:
           type: number
         qrContent:
@@ -5165,7 +5262,10 @@ components:
           type: boolean
         cancelReason:
           type: string
-          enum: [guest, superseded]
+          enum: [guest, superseded, rejected]
+        verificationStatus:
+          type: string
+          enum: [awaiting, approved]
     PaymentCheckoutRequest:
       type: object
       required:
@@ -5179,9 +5279,14 @@ components:
           maxLength: 20
         method:
           type: string
-          enum: [qris, cash]
+          enum: [qris, cash, cod]
         diningOption:
           $ref: '#/components/schemas/DiningOption'
+        verificationPhoto:
+          type: string
+          description: >
+            base64-encoded JPEG or WebP photo (no data-URL prefix), required iff method = cod
+            (FR-1). Captured live via getUserMedia — never picked from a gallery.
     DokuNotificationRequest:
       type: object
       required:
@@ -5533,7 +5638,7 @@ components:
           enum: [pending, paid, expired, failed, cancelled]
         method:
           type: string
-          enum: [qris, cash]
+          enum: [qris, cash, cod]
         fulfillmentStatus:
           type: string
           enum: [preparing, ready]
@@ -5557,6 +5662,9 @@ components:
           format: date-time
         diningOption:
           $ref: '#/components/schemas/DiningOption'
+        verificationStatus:
+          type: string
+          enum: [awaiting, approved]
     PaymentListResponse:
       type: object
       required:

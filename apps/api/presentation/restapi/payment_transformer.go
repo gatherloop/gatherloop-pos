@@ -80,6 +80,12 @@ func ToApiPayment(payment domain.Payment, transaction domain.Transaction, canCan
 		cancelReason = &reason
 	}
 
+	var verificationStatus *string
+	if payment.VerificationStatus != nil {
+		status := string(*payment.VerificationStatus)
+		verificationStatus = &status
+	}
+
 	return apiContract.Payment{
 		PartnerReferenceNo: payment.PartnerReferenceNo,
 		Status:             string(payment.Status),
@@ -96,6 +102,7 @@ func ToApiPayment(payment domain.Payment, transaction domain.Transaction, canCan
 		FulfillmentStatus:  fulfillmentStatus,
 		CanCancel:          canCancel,
 		CancelReason:       cancelReason,
+		VerificationStatus: verificationStatus,
 	}
 }
 
@@ -103,6 +110,12 @@ func ToApiPaymentSummary(summary domain.PaymentSummary) apiContract.PaymentSumma
 	fulfillmentStatus := "preparing"
 	if summary.CompletedAt != nil {
 		fulfillmentStatus = "ready"
+	}
+
+	var verificationStatus *string
+	if summary.VerificationStatus != nil {
+		status := string(*summary.VerificationStatus)
+		verificationStatus = &status
 	}
 
 	return apiContract.PaymentSummary{
@@ -118,5 +131,6 @@ func ToApiPaymentSummary(summary domain.PaymentSummary) apiContract.PaymentSumma
 		CreatedAt:          summary.CreatedAt,
 		PaidAt:             summary.PaidAt,
 		DiningOption:       apiContract.DiningOption(summary.DiningOption),
+		VerificationStatus: verificationStatus,
 	}
 }

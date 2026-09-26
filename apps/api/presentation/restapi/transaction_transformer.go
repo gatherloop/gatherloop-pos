@@ -124,26 +124,33 @@ func ToApiTransaction(transaction domain.Transaction) apiContract.Transaction {
 		paymentMethod = &m
 	}
 
+	var paymentVerificationStatus *string
+	if transaction.PaymentVerificationStatus != nil {
+		s := string(*transaction.PaymentVerificationStatus)
+		paymentVerificationStatus = &s
+	}
+
 	return apiContract.Transaction{
-		Id:                 transaction.Id,
-		Name:               transaction.Name,
-		Source:             string(transaction.Source),
-		DiningOption:       apiContract.DiningOption(transaction.DiningOption),
-		Table:              table,
-		PaymentMethod:      paymentMethod,
-		PagerNumber:        transaction.PagerNumber,
-		TransactionNumber:  transaction.TransactionNumber,
-		DeletedAt:          transaction.DeletedAt,
-		CreatedAt:          transaction.CreatedAt,
-		WalletId:           transaction.WalletId,
-		Wallet:             (*apiContract.Wallet)(transaction.Wallet),
-		Total:              transaction.Total,
-		TotalIncome:        transaction.TotalIncome,
-		PaidAt:             transaction.PaidAt,
-		PaidAmount:         transaction.PaidAmount,
-		CompletedAt:        transaction.CompletedAt,
-		TransactionItems:   apiTransactionItems,
-		TransactionCoupons: apiTransactionCoupons,
+		Id:                        transaction.Id,
+		Name:                      transaction.Name,
+		Source:                    string(transaction.Source),
+		DiningOption:              apiContract.DiningOption(transaction.DiningOption),
+		Table:                     table,
+		PaymentMethod:             paymentMethod,
+		PaymentVerificationStatus: paymentVerificationStatus,
+		PagerNumber:               transaction.PagerNumber,
+		TransactionNumber:         transaction.TransactionNumber,
+		DeletedAt:                 transaction.DeletedAt,
+		CreatedAt:                 transaction.CreatedAt,
+		WalletId:                  transaction.WalletId,
+		Wallet:                    (*apiContract.Wallet)(transaction.Wallet),
+		Total:                     transaction.Total,
+		TotalIncome:               transaction.TotalIncome,
+		PaidAt:                    transaction.PaidAt,
+		PaidAmount:                transaction.PaidAmount,
+		CompletedAt:               transaction.CompletedAt,
+		TransactionItems:          apiTransactionItems,
+		TransactionCoupons:        apiTransactionCoupons,
 	}
 }
 

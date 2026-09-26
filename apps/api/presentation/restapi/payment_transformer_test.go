@@ -92,6 +92,52 @@ func TestToApiPayment_CancelReason(t *testing.T) {
 	})
 }
 
+func TestToApiPayment_VerificationStatus(t *testing.T) {
+	transaction := domain.Transaction{TransactionNumber: 12}
+
+	t.Run("nil for qris and cash", func(t *testing.T) {
+		for _, method := range []domain.PaymentMethod{domain.PaymentMethodQris, domain.PaymentMethodCash} {
+			payment := domain.Payment{PartnerReferenceNo: "ORD1", Status: domain.PaymentStatePending, Method: method}
+
+			apiPayment := restapi.ToApiPayment(payment, transaction, false)
+
+			assert.Nil(t, apiPayment.VerificationStatus)
+		}
+	})
+
+	t.Run("carries the status for a cod payment awaiting verification", func(t *testing.T) {
+		status := domain.PaymentVerificationStatusAwaiting
+		payment := domain.Payment{PartnerReferenceNo: "ORD1", Status: domain.PaymentStatePending, Method: domain.PaymentMethodCod, VerificationStatus: &status}
+
+		apiPayment := restapi.ToApiPayment(payment, transaction, false)
+
+		require.NotNil(t, apiPayment.VerificationStatus)
+		assert.Equal(t, "awaiting", *apiPayment.VerificationStatus)
+	})
+}
+
+func TestToApiPaymentSummary_VerificationStatus(t *testing.T) {
+	t.Run("nil for qris and cash", func(t *testing.T) {
+		for _, method := range []domain.PaymentMethod{domain.PaymentMethodQris, domain.PaymentMethodCash} {
+			summary := domain.PaymentSummary{PartnerReferenceNo: "ORD1", Status: domain.PaymentStatePending, Method: method}
+
+			apiPaymentSummary := restapi.ToApiPaymentSummary(summary)
+
+			assert.Nil(t, apiPaymentSummary.VerificationStatus)
+		}
+	})
+
+	t.Run("carries the status for a cod payment approved for pickup", func(t *testing.T) {
+		status := domain.PaymentVerificationStatusApproved
+		summary := domain.PaymentSummary{PartnerReferenceNo: "ORD1", Status: domain.PaymentStatePending, Method: domain.PaymentMethodCod, VerificationStatus: &status}
+
+		apiPaymentSummary := restapi.ToApiPaymentSummary(summary)
+
+		require.NotNil(t, apiPaymentSummary.VerificationStatus)
+		assert.Equal(t, "approved", *apiPaymentSummary.VerificationStatus)
+	})
+}
+
 func TestToApiPaymentSummary_AgreesWithToApiPaymentOnFulfillmentStatus(t *testing.T) {
 	tests := []struct {
 		name        string
