@@ -52,6 +52,7 @@ const buildTransaction = (
   name: 'Table 1',
   source: 'pos',
   paymentMethod: null,
+  paymentVerificationStatus: null,
   table: null,
   pagerNumber: 1,
   transactionNumber: 1,

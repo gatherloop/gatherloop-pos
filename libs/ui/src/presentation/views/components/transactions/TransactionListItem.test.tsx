@@ -6,6 +6,7 @@ const defaultProps: TransactionListItemProps = {
   source: 'order',
   diningOption: 'dine_in',
   paymentMethod: 'cash',
+  paymentVerificationStatus: null,
   table: { id: 1, label: 'A1', floorNumber: 1 },
   pagerNumber: 0,
   transactionNumber: 12,

@@ -2,11 +2,13 @@
 import {
   Transaction as ApiTransaction,
   TransactionStatistic as ApiTransactionStatistic,
+  TransactionVerification as ApiTransactionVerification,
 } from '../../../../api-contract/src';
 import {
   Transaction,
   TransactionForm,
   TransactionStatistic,
+  TransactionVerification,
 } from '../../domain';
 import { toWallet } from './wallet.transformer';
 
@@ -124,8 +126,18 @@ export function toTransaction(transaction: ApiTransaction): Transaction {
     source: transaction.source,
     diningOption: transaction.diningOption,
     paymentMethod: transaction.paymentMethod ?? null,
+    paymentVerificationStatus: transaction.paymentVerificationStatus ?? null,
     table: transaction.table ?? null,
     completedAt: transaction.completedAt ?? null,
+  };
+}
+
+export function toTransactionVerification(
+  verification: ApiTransactionVerification
+): TransactionVerification {
+  return {
+    photo: verification.photo,
+    capturedAt: verification.capturedAt,
   };
 }
 
