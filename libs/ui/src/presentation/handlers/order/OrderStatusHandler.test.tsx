@@ -7,6 +7,7 @@ import {
 } from '../../../data/mock';
 import { OrderStatusUsecase } from '../../../domain';
 import { PaymentRepository } from '../../../domain/repositories/payment';
+import { formatRupiah } from '../../../utils/currency';
 import { flushPromises } from '../../../utils/testUtils';
 
 class KeyConfiguredMockPaymentRepository extends MockPaymentRepository {
@@ -396,6 +397,110 @@ describe('OrderStatusHandler', () => {
     });
 
     expect(mockPush).toHaveBeenCalledWith('/');
+  });
+
+  describe('COD verification', () => {
+    it('shows the awaiting-verification screen and the cancel button for a pending COD order', async () => {
+      const paymentRepository = new MockPaymentRepository();
+      paymentRepository.payment = {
+        ...paymentRepository.payment,
+        method: 'cod',
+        verificationStatus: 'awaiting',
+      };
+      renderHandler({
+        reference: paymentRepository.payment.reference,
+        paymentRepository,
+      });
+
+      await settle();
+
+      expect(screen.getByText('Menunggu konfirmasi barista…')).toBeTruthy();
+      expect(
+        screen.getByText(`#${paymentRepository.payment.transactionNumber}`)
+      ).toBeTruthy();
+      expect(
+        screen.getByRole('button', { name: 'Batalkan pembayaran' })
+      ).toBeTruthy();
+    });
+
+    it('shows the pay-at-pickup banner once approved but unpaid, and hides it once paid', async () => {
+      jest.useFakeTimers();
+      try {
+        const paymentRepository = new MockPaymentRepository();
+        paymentRepository.payment = {
+          ...paymentRepository.payment,
+          method: 'cod',
+          verificationStatus: 'awaiting',
+        };
+        renderHandler({
+          reference: paymentRepository.payment.reference,
+          paymentRepository,
+        });
+
+        await act(async () => {
+          await jest.advanceTimersByTimeAsync(0);
+        });
+        expect(screen.getByText('Menunggu konfirmasi barista…')).toBeTruthy();
+
+        paymentRepository.payment = {
+          ...paymentRepository.payment,
+          verificationStatus: 'approved',
+          fulfillmentStatus: 'preparing',
+        };
+        await act(async () => {
+          await jest.advanceTimersByTimeAsync(3000);
+        });
+
+        const bannerText = `Bayar ${formatRupiah(
+          paymentRepository.payment.amount
+        )} di kasir saat mengambil pesanan`;
+        expect(screen.getByText(bannerText)).toBeTruthy();
+        expect(
+          screen.queryByRole('button', { name: 'Batalkan pembayaran' })
+        ).toBeNull();
+
+        paymentRepository.payment = {
+          ...paymentRepository.payment,
+          status: 'paid',
+        };
+        await act(async () => {
+          await jest.advanceTimersByTimeAsync(10_000);
+        });
+
+        expect(screen.queryByText(bannerText)).toBeNull();
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it('shows the rejected copy and returns to the cart for a rejected COD order', async () => {
+      const paymentRepository = new MockPaymentRepository();
+      paymentRepository.payment = {
+        ...paymentRepository.payment,
+        method: 'cod',
+        status: 'cancelled',
+        cancelReason: 'rejected',
+      };
+      const { getByRole } = renderHandler({
+        reference: paymentRepository.payment.reference,
+        paymentRepository,
+      });
+
+      await settle();
+
+      expect(screen.getByText('Pesanan ditolak')).toBeTruthy();
+      expect(
+        screen.getByText(
+          'Barista tidak dapat memastikan Anda berada di kafe. Silakan pesan ulang dengan QRIS atau hubungi kasir.'
+        )
+      ).toBeTruthy();
+
+      await act(async () => {
+        getByRole('button', { name: 'Kembali ke keranjang' }).click();
+      });
+
+      expect(mockPush).toHaveBeenCalledWith(`/t/${TABLE_CODE}/cart`);
+    });
   });
 
   describe('cancelling a pending payment', () => {
