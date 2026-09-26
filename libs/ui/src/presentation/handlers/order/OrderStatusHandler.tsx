@@ -69,7 +69,8 @@ export const OrderStatusHandler = ({
 
   const isAwaitingPayment =
     orderStatus.state.type === 'awaitingPayment' ||
-    orderStatus.state.type === 'awaitingCashPayment';
+    orderStatus.state.type === 'awaitingCashPayment' ||
+    orderStatus.state.type === 'awaitingVerification';
 
   useEffect(() => {
     if (!isAwaitingPayment && paymentCancel.state.type === 'confirming') {
@@ -123,20 +124,22 @@ export const OrderStatusHandler = ({
           }
         : { type: 'loading' }
     )
-    .with({ type: 'awaitingCashPayment' }, (state) =>
-      state.payment
-        ? {
-            type: 'awaitingCashPayment',
-            payment: state.payment,
-            cashierLocation,
-            onCountdownElapsed: () =>
-              orderStatus.dispatch({ type: 'COUNTDOWN_ELAPSED' }),
-            canCancel: state.payment.canCancel,
-            onCancelPress: () => paymentCancel.dispatch({ type: 'REQUEST' }),
-            cancelConfirmation,
-            cancelErrorMessage,
-          }
-        : { type: 'loading' }
+    .with(
+      { type: P.union('awaitingCashPayment', 'awaitingVerification') },
+      (state) =>
+        state.payment
+          ? {
+              type: 'awaitingCashPayment',
+              payment: state.payment,
+              cashierLocation,
+              onCountdownElapsed: () =>
+                orderStatus.dispatch({ type: 'COUNTDOWN_ELAPSED' }),
+              canCancel: state.payment.canCancel,
+              onCancelPress: () => paymentCancel.dispatch({ type: 'REQUEST' }),
+              cancelConfirmation,
+              cancelErrorMessage,
+            }
+          : { type: 'loading' }
     )
     .with({ type: 'preparing' }, (state) =>
       state.payment

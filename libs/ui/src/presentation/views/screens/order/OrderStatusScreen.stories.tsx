@@ -15,6 +15,7 @@ const paidPayment = {
   fulfillmentStatus: 'preparing' as const,
   canCancel: false,
   cancelReason: null,
+  verificationStatus: null,
   items: [
     {
       name: 'Es Kopi Susu',

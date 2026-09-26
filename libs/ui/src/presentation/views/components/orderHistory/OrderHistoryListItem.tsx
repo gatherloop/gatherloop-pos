@@ -27,6 +27,7 @@ const fulfillmentPillByStatus: Record<
 const pendingPaymentLabelByMethod: Record<PaymentMethod, string> = {
   cash: 'Belum dibayar',
   qris: 'Menunggu pembayaran QRIS',
+  cod: 'Menunggu konfirmasi barista',
 };
 
 const StatusPill = ({

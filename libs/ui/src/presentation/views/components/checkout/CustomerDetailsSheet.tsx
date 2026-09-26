@@ -36,6 +36,7 @@ const submitLabel = (method: PaymentMethod) =>
   match(method)
     .with('qris', () => 'Lanjutkan Pembayaran')
     .with('cash', () => 'Bayar di kasir')
+    .with('cod', () => 'Pesan dengan COD')
     .exhaustive();
 
 export const CustomerDetailsSheet = ({
