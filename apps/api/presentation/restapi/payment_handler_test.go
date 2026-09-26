@@ -261,7 +261,7 @@ func TestPaymentHandler_Checkout(t *testing.T) {
 		withPaymentHandlerTransactionMock(m.paymentRepo)
 		expectValidPaymentWallet(m)
 
-		req := httptest.NewRequest(http.MethodPost, "/carts/current/checkout", checkoutRequestBodyWithWhatsappNumber("Budi", "12345"))
+		req := httptest.NewRequest(http.MethodPost, "/carts/current/checkout", checkoutRequestBodyWithWhatsappNumber("Budi", "08abc"))
 		req.Header.Set("X-Session-Id", testSessionId)
 		w := httptest.NewRecorder()
 		m.handler().Checkout(w, req)
@@ -271,6 +271,26 @@ func TestPaymentHandler_Checkout(t *testing.T) {
 		var apiErr apiContract.Error
 		assert.NoError(t, json.NewDecoder(bytes.NewBufferString(w.Body.String())).Decode(&apiErr))
 		assert.Equal(t, apiContract.BAD_REQUEST, apiErr.Code)
+		require.True(t, apiErr.HasReason())
+		assert.Equal(t, apiContract.INVALID, apiErr.GetReason())
+	})
+
+	t.Run("every other 400 body stays byte-identical: no reason key", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentHandlerMocks(ctrl)
+
+		req := httptest.NewRequest(http.MethodPost, "/carts/current/checkout", checkoutRequestBodyWithMethod("Budi", "credit_card"))
+		req.Header.Set("X-Session-Id", testSessionId)
+		w := httptest.NewRecorder()
+		m.handler().Checkout(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+
+		var rawBody map[string]any
+		assert.NoError(t, json.NewDecoder(bytes.NewBufferString(w.Body.String())).Decode(&rawBody))
+		assert.NotContains(t, rawBody, "reason")
 	})
 
 	t.Run("a cash checkout succeeds without ever calling the gateway", func(t *testing.T) {

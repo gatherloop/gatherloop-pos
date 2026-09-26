@@ -75,6 +75,17 @@ func ToErrorCode(errorType domain.ErrorType) apiContract.ErrorCode {
 	}
 }
 
+func ToErrorReason(reason domain.ErrorReason) *apiContract.ErrorReason {
+	switch reason {
+	case domain.ErrorReasonWhatsappNumberInvalid:
+		return apiContract.INVALID.Ptr()
+	case domain.ErrorReasonWhatsappNumberNotRegistered:
+		return apiContract.NOT_REGISTERED.Ptr()
+	default:
+		return nil
+	}
+}
+
 func GetDomain(r *http.Request) string {
 	host := r.Host
 	domain := strings.TrimPrefix(host, "https://")
