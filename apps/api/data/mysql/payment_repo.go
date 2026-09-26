@@ -113,8 +113,10 @@ func (repo Repository) GetPaymentsBySessionIdTotal(ctx context.Context, sessionI
 
 func (repo Repository) GetExpirablePayments(ctx context.Context, now time.Time, limit int) ([]domain.Payment, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
+	// FR-5: an approved COD payment is never expirable — the bar has started making it.
 	query := db.Table("payments").
-		Where("status = ? AND deleted_at IS NULL AND expired_at < ?", string(domain.PaymentStatePending), now).
+		Where("status = ? AND deleted_at IS NULL AND expired_at < ? AND (verification_status IS NULL OR verification_status <> ?)",
+			string(domain.PaymentStatePending), now, string(domain.PaymentVerificationStatusApproved)).
 		Order("id ASC")
 
 	if limit > 0 {
@@ -148,6 +150,8 @@ func (repo Repository) UpdatePaymentById(ctx context.Context, payment domain.Pay
 		"status":                   payload.Status,
 		"qr_content":               payload.QrContent,
 		"paid_at":                  payload.PaidAt,
+		"verification_status":      payload.VerificationStatus,
+		"verified_at":              payload.VerifiedAt,
 		"status_checked_at":        payload.StatusCheckedAt,
 	}); result.Error != nil {
 		return domain.Payment{}, ToErrorCtx(ctx, result.Error, "UpdatePaymentById")

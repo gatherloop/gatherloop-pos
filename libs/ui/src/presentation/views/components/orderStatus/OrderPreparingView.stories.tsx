@@ -41,3 +41,7 @@ export const Polling: Story = {
 export const LargeNumber: Story = {
   args: { transactionNumber: 1234 },
 };
+
+export const PayAtPickup: Story = {
+  args: { payAtPickupAmount: 54000 },
+};

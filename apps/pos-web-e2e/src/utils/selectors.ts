@@ -102,11 +102,48 @@ export const transactionList = {
       .last(),
   menuOption: (
     page: Page,
-    label: 'Pay' | 'Unpay' | 'Mark as Ready' | 'Mark as Preparing' | 'Edit' | 'Delete'
+    label:
+      | 'Verify'
+      | 'Pay'
+      | 'Unpay'
+      | 'Mark as Ready'
+      | 'Mark as Preparing'
+      | 'Edit'
+      | 'Delete'
   ) => page.locator('[data-state="open"] li').filter({ hasText: label }).last(),
   filterButton: (page: Page) => page.getByRole('button', { name: 'Filter' }),
   fulfillmentFilterOption: (page: Page, label: 'Preparing' | 'Ready') =>
     page.getByLabel(label, { exact: true }),
+  // TransactionListItem.tsx (docs/prd-order-cod-payment.md FR-12).
+  needsConfirmationBadge: (page: Page, name: string) =>
+    page
+      .locator('h4')
+      .filter({ hasText: name })
+      .locator('../../../..')
+      .getByText('Needs confirmation', { exact: true }),
+  codUnpaidBadge: (page: Page, name: string) =>
+    page
+      .locator('h4')
+      .filter({ hasText: name })
+      .locator('../../../..')
+      .getByText('COD · unpaid', { exact: true }),
+};
+
+// TransactionVerificationSheet.tsx (docs/prd-order-cod-payment.md FR-12) —
+// unmountChildrenWhenHidden on the base Sheet keeps these unambiguous while
+// the sheet is closed.
+export const transactionVerificationSheet = {
+  photo: (page: Page) => page.getByRole('img'),
+  approveButton: (page: Page) => page.getByRole('button', { name: 'Approve' }),
+  rejectButton: (page: Page) => page.getByRole('button', { name: 'Reject' }),
+  closeButton: (page: Page) => page.getByRole('button', { name: 'Close' }),
+  confirmRejectText: (page: Page, transactionNumber: number) =>
+    page.getByText(
+      `Reject order #${transactionNumber}? The guest's order will be cancelled.`
+    ),
+  cancelRejectButton: (page: Page) => page.getByRole('button', { name: 'Cancel' }),
+  goneText: (page: Page) =>
+    page.getByText('Photo no longer available'),
 };
 
 export const transactionDetail = {

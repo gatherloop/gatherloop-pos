@@ -15,6 +15,7 @@ import {
   TransactionListUsecase,
   TransactionPayUsecase,
   TransactionUnpayUsecase,
+  TransactionVerificationUsecase,
 } from '../../../domain';
 import { flushPromises } from '../../../utils/testUtils';
 
@@ -42,6 +43,9 @@ const createProps = (transactionRepo: MockTransactionRepository) => ({
   ),
   transactionUnpayUsecase: new TransactionUnpayUsecase(transactionRepo),
   transactionCompleteUsecase: new TransactionCompleteUsecase(transactionRepo),
+  transactionVerificationUsecase: new TransactionVerificationUsecase(
+    transactionRepo
+  ),
 });
 
 describe('TransactionListHandler mark ready / mark preparing', () => {

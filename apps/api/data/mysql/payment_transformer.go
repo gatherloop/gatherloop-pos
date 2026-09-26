@@ -15,6 +15,12 @@ func ToPaymentDB(d domain.Payment) Payment {
 		cancelReason = &reason
 	}
 
+	var verificationStatus *string
+	if d.VerificationStatus != nil {
+		status := string(*d.VerificationStatus)
+		verificationStatus = &status
+	}
+
 	return Payment{
 		Id:                     d.Id,
 		CartId:                 d.CartId,
@@ -32,6 +38,8 @@ func ToPaymentDB(d domain.Payment) Payment {
 		PaidAt:                 d.PaidAt,
 		CancelledAt:            d.CancelledAt,
 		CancelReason:           cancelReason,
+		VerificationStatus:     verificationStatus,
+		VerifiedAt:             d.VerifiedAt,
 		StatusCheckedAt:        d.StatusCheckedAt,
 		CreatedAt:              d.CreatedAt,
 		UpdatedAt:              d.UpdatedAt,
@@ -63,6 +71,12 @@ func ToPaymentDomain(db Payment) domain.Payment {
 		cancelReason = &reason
 	}
 
+	var verificationStatus *domain.PaymentVerificationStatus
+	if db.VerificationStatus != nil {
+		status := domain.PaymentVerificationStatus(*db.VerificationStatus)
+		verificationStatus = &status
+	}
+
 	return domain.Payment{
 		Id:                     db.Id,
 		CartId:                 db.CartId,
@@ -80,6 +94,8 @@ func ToPaymentDomain(db Payment) domain.Payment {
 		PaidAt:                 db.PaidAt,
 		CancelledAt:            db.CancelledAt,
 		CancelReason:           cancelReason,
+		VerificationStatus:     verificationStatus,
+		VerifiedAt:             db.VerifiedAt,
 		StatusCheckedAt:        db.StatusCheckedAt,
 		CreatedAt:              db.CreatedAt,
 		UpdatedAt:              db.UpdatedAt,

@@ -35,6 +35,7 @@ export class ApiPaymentRepository implements PaymentRepository {
     method,
     whatsappNumber,
     diningOption,
+    verificationPhoto,
   }) => {
     return paymentCheckout(
       {
@@ -42,6 +43,7 @@ export class ApiPaymentRepository implements PaymentRepository {
         method,
         customerWhatsappNumber: whatsappNumber,
         diningOption,
+        verificationPhoto,
       },
       this.sessionRequestConfig()
     )

@@ -33,7 +33,7 @@ func TestBuildGuestWhatsappMessage(t *testing.T) {
 
 		message := domain.BuildGuestWhatsappMessage(
 			transaction,
-			domain.PaymentMethodQris,
+			domain.Payment{Method: domain.PaymentMethodQris},
 			"https://order.gatherloop.id/orders/ORD7K2M9QX4B1HZT?k=q3Vd0bX9pL2sR8tY1wZa7c",
 		)
 
@@ -63,7 +63,7 @@ func TestBuildGuestWhatsappMessage(t *testing.T) {
 			Name:              "Andi",
 		}
 
-		message := domain.BuildGuestWhatsappMessage(transaction, domain.PaymentMethodQris, "https://order.example/o")
+		message := domain.BuildGuestWhatsappMessage(transaction, domain.Payment{Method: domain.PaymentMethodQris}, "https://order.example/o")
 
 		assert.Contains(t, message, "#12")
 		assert.NotContains(t, message, "#999")
@@ -72,7 +72,7 @@ func TestBuildGuestWhatsappMessage(t *testing.T) {
 	t.Run("cash renders as Tunai", func(t *testing.T) {
 		transaction := domain.Transaction{TransactionNumber: 1, Name: "Budi"}
 
-		message := domain.BuildGuestWhatsappMessage(transaction, domain.PaymentMethodCash, "https://order.example/o")
+		message := domain.BuildGuestWhatsappMessage(transaction, domain.Payment{Method: domain.PaymentMethodCash}, "https://order.example/o")
 
 		assert.Contains(t, message, "*Pembayaran:* Tunai")
 	})
@@ -80,9 +80,43 @@ func TestBuildGuestWhatsappMessage(t *testing.T) {
 	t.Run("qris renders as QRIS", func(t *testing.T) {
 		transaction := domain.Transaction{TransactionNumber: 1, Name: "Budi"}
 
-		message := domain.BuildGuestWhatsappMessage(transaction, domain.PaymentMethodQris, "https://order.example/o")
+		message := domain.BuildGuestWhatsappMessage(transaction, domain.Payment{Method: domain.PaymentMethodQris}, "https://order.example/o")
 
 		assert.Contains(t, message, "*Pembayaran:* QRIS")
+	})
+
+	t.Run("an unpaid COD order shows the COD label and a pay-at-pickup line with the total", func(t *testing.T) {
+		transaction := domain.Transaction{TransactionNumber: 12, Name: "Andi", Total: 45000}
+
+		message := domain.BuildGuestWhatsappMessage(
+			transaction,
+			domain.Payment{Method: domain.PaymentMethodCod, Status: domain.PaymentStatePending},
+			"https://order.example/o",
+		)
+
+		assert.Contains(t, message, "*Pembayaran:* COD — bayar di kasir")
+		assert.Contains(t, message, "Siapkan pembayaran *Rp 45.000* saat mengambil pesanan di kasir.")
+	})
+
+	t.Run("a paid COD order has no pay-at-pickup line", func(t *testing.T) {
+		transaction := domain.Transaction{TransactionNumber: 12, Name: "Andi", Total: 45000}
+
+		message := domain.BuildGuestWhatsappMessage(
+			transaction,
+			domain.Payment{Method: domain.PaymentMethodCod, Status: domain.PaymentStatePaid},
+			"https://order.example/o",
+		)
+
+		assert.Contains(t, message, "*Pembayaran:* COD")
+		assert.NotContains(t, message, "Siapkan pembayaran")
+	})
+
+	t.Run("a non-COD order has no pay-at-pickup line", func(t *testing.T) {
+		transaction := domain.Transaction{TransactionNumber: 1, Name: "Budi", Total: 45000}
+
+		message := domain.BuildGuestWhatsappMessage(transaction, domain.Payment{Method: domain.PaymentMethodQris}, "https://order.example/o")
+
+		assert.NotContains(t, message, "Siapkan pembayaran")
 	})
 
 	t.Run("an item without options has no trailing dash segment", func(t *testing.T) {
@@ -94,7 +128,7 @@ func TestBuildGuestWhatsappMessage(t *testing.T) {
 			},
 		}
 
-		message := domain.BuildGuestWhatsappMessage(transaction, domain.PaymentMethodQris, "https://order.example/o")
+		message := domain.BuildGuestWhatsappMessage(transaction, domain.Payment{Method: domain.PaymentMethodQris}, "https://order.example/o")
 
 		assert.Contains(t, message, "1x Croissant")
 	})
@@ -108,7 +142,7 @@ func TestBuildGuestWhatsappMessage(t *testing.T) {
 			},
 		}
 
-		message := domain.BuildGuestWhatsappMessage(transaction, domain.PaymentMethodQris, "https://order.example/o")
+		message := domain.BuildGuestWhatsappMessage(transaction, domain.Payment{Method: domain.PaymentMethodQris}, "https://order.example/o")
 
 		assert.NotContains(t, message, "Catatan")
 	})
@@ -122,7 +156,7 @@ func TestBuildGuestWhatsappMessage(t *testing.T) {
 			},
 		}
 
-		message := domain.BuildGuestWhatsappMessage(transaction, domain.PaymentMethodQris, "https://order.example/o")
+		message := domain.BuildGuestWhatsappMessage(transaction, domain.Payment{Method: domain.PaymentMethodQris}, "https://order.example/o")
 
 		assert.Contains(t, message, "3x Croissant")
 	})
@@ -136,7 +170,7 @@ func TestBuildGuestWhatsappMessage(t *testing.T) {
 			},
 		}
 
-		message := domain.BuildGuestWhatsappMessage(transaction, domain.PaymentMethodQris, "https://order.example/o")
+		message := domain.BuildGuestWhatsappMessage(transaction, domain.Payment{Method: domain.PaymentMethodQris}, "https://order.example/o")
 
 		assert.Contains(t, message, "1.50x Kopi Susu (kg)")
 	})
@@ -150,7 +184,7 @@ func TestBuildGuestWhatsappMessage(t *testing.T) {
 			},
 		}
 
-		message := domain.BuildGuestWhatsappMessage(transaction, domain.PaymentMethodQris, "https://order.example/orders/ORD1?k=abc")
+		message := domain.BuildGuestWhatsappMessage(transaction, domain.Payment{Method: domain.PaymentMethodQris}, "https://order.example/orders/ORD1?k=abc")
 
 		expected := "Halo *Citra*, pesanan Anda sudah siap diambil! 🎉\n" +
 			"\n" +

@@ -6,6 +6,7 @@ import (
 	"apps/api/presentation/restapi"
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	apiContract "libs/api-contract"
 	"net/http"
@@ -21,6 +22,10 @@ import (
 
 const paymentHandlerOrderPaymentWalletId = 9
 
+// fakeJpegBytes sniffs as image/jpeg (http.DetectContentType only looks at the magic bytes) so
+// ValidateVerificationPhoto accepts it without a real photo.
+var fakeJpegBytes = []byte{0xFF, 0xD8, 0xFF, 0, 0, 0}
+
 type paymentHandlerMocks struct {
 	paymentRepo               *mock.MockPaymentRepository
 	gatewayRepo               *mock.MockPaymentGatewayRepository
@@ -32,6 +37,7 @@ type paymentHandlerMocks struct {
 	availabilityRepo          *mock.MockAvailabilityReservationRepository
 	kdsNotificationRepo       *mock.MockKdsNotificationRepository
 	kdsNotificationDispatcher *mock.MockKdsNotificationDispatcher
+	paymentVerificationRepo   *mock.MockPaymentVerificationRepository
 }
 
 func newPaymentHandlerMocks(ctrl *gomock.Controller) paymentHandlerMocks {
@@ -40,6 +46,8 @@ func newPaymentHandlerMocks(ctrl *gomock.Controller) paymentHandlerMocks {
 	kdsNotificationRepo.EXPECT().HasNotificationForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil).AnyTimes()
 	kdsNotificationDispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
 	kdsNotificationDispatcher.EXPECT().TriggerDispatch().AnyTimes()
+	paymentVerificationRepo := mock.NewMockPaymentVerificationRepository(ctrl)
+	paymentVerificationRepo.EXPECT().DeleteByPaymentId(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	return paymentHandlerMocks{
 		paymentRepo:               mock.NewMockPaymentRepository(ctrl),
 		gatewayRepo:               mock.NewMockPaymentGatewayRepository(ctrl),
@@ -51,6 +59,7 @@ func newPaymentHandlerMocks(ctrl *gomock.Controller) paymentHandlerMocks {
 		availabilityRepo:          mock.NewMockAvailabilityReservationRepository(ctrl),
 		kdsNotificationRepo:       kdsNotificationRepo,
 		kdsNotificationDispatcher: kdsNotificationDispatcher,
+		paymentVerificationRepo:   paymentVerificationRepo,
 	}
 }
 
@@ -59,8 +68,18 @@ func (m paymentHandlerMocks) handler() restapi.PaymentHandler {
 }
 
 func (m paymentHandlerMocks) handlerWithCancelEnabled(orderPaymentCancelEnabled bool) restapi.PaymentHandler {
+	return m.handlerWithCancelAndCodEnabled(orderPaymentCancelEnabled, false)
+}
+
+// handlerWithCodEnabled builds the handler with ORDER_COD_PAYMENT_ENABLED on, for Checkout's cod
+// branch tests (FR-2/D12).
+func (m paymentHandlerMocks) handlerWithCodEnabled() restapi.PaymentHandler {
+	return m.handlerWithCancelAndCodEnabled(false, true)
+}
+
+func (m paymentHandlerMocks) handlerWithCancelAndCodEnabled(orderPaymentCancelEnabled bool, orderCodPaymentEnabled bool) restapi.PaymentHandler {
 	availabilityReservation := domain.NewAvailabilityReservation(m.availabilityRepo)
-	usecase := domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, availabilityReservation, m.kdsNotificationRepo, m.kdsNotificationDispatcher, domain.NoopWhatsappNumberVerifier{}, 300, 600, paymentHandlerOrderPaymentWalletId, orderPaymentCancelEnabled)
+	usecase := domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, availabilityReservation, m.kdsNotificationRepo, m.kdsNotificationDispatcher, domain.NoopWhatsappNumberVerifier{}, m.paymentVerificationRepo, 300, 600, 900, paymentHandlerOrderPaymentWalletId, orderPaymentCancelEnabled, orderCodPaymentEnabled)
 	return restapi.NewPaymentHandler(usecase)
 }
 
@@ -251,6 +270,113 @@ func TestPaymentHandler_Checkout(t *testing.T) {
 		m.handler().Checkout(w, req)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("cod without a verificationPhoto is a 400, with no wallet or cart lookup", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentHandlerMocks(ctrl)
+
+		req := httptest.NewRequest(http.MethodPost, "/carts/current/checkout", checkoutRequestBodyWithMethod("Budi", "cod"))
+		req.Header.Set("X-Session-Id", testSessionId)
+		w := httptest.NewRecorder()
+		m.handler().Checkout(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("qris with a verificationPhoto is a 400, with no wallet or cart lookup", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentHandlerMocks(ctrl)
+
+		method := "qris"
+		photo := "ZmFrZS1qcGVn"
+		body, _ := json.Marshal(apiContract.PaymentCheckoutRequest{CustomerName: "Budi", Method: &method, VerificationPhoto: &photo})
+		req := httptest.NewRequest(http.MethodPost, "/carts/current/checkout", bytes.NewBuffer(body))
+		req.Header.Set("X-Session-Id", testSessionId)
+		w := httptest.NewRecorder()
+		m.handler().Checkout(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("cod with a verificationPhoto is a 400 while ORDER_COD_PAYMENT_ENABLED is off, with no wallet or cart lookup", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentHandlerMocks(ctrl)
+
+		method := "cod"
+		photo := "ZmFrZS1qcGVn"
+		body, _ := json.Marshal(apiContract.PaymentCheckoutRequest{CustomerName: "Budi", Method: &method, VerificationPhoto: &photo})
+		req := httptest.NewRequest(http.MethodPost, "/carts/current/checkout", bytes.NewBuffer(body))
+		req.Header.Set("X-Session-Id", testSessionId)
+		w := httptest.NewRecorder()
+		m.handler().Checkout(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+
+		var apiErr apiContract.Error
+		assert.NoError(t, json.NewDecoder(bytes.NewBufferString(w.Body.String())).Decode(&apiErr))
+		assert.Equal(t, "payment method is not available", apiErr.Message)
+	})
+
+	t.Run("a cod checkout succeeds without ever calling the gateway, once the flag is on", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newPaymentHandlerMocks(ctrl)
+		withPaymentHandlerTransactionMock(m.paymentRepo)
+		expectValidPaymentWallet(m)
+
+		m.customerRepo.EXPECT().UpsertCustomerBySessionId(gomock.Any(), testSessionId, "Budi", nil).
+			Return(domain.Customer{Id: 1, SessionId: testSessionId, Name: "Budi"}, nil)
+
+		tableId := int64(5)
+		m.cartRepo.EXPECT().GetActiveCartBySessionId(gomock.Any(), testSessionId).Return(domain.Cart{
+			Id: 1, TableId: &tableId, Status: domain.CartStatusActive,
+			Items: []domain.CartItem{{Id: 1, VariantId: 10, Amount: 1}},
+		}, nil)
+		m.paymentRepo.EXPECT().GetPendingPaymentByCartId(gomock.Any(), int64(1)).Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
+		m.variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(10)).Return(domain.Variant{
+			Id: 10, Price: 15000, Product: domain.Product{Name: "Kopi Susu"},
+		}, nil)
+		expectAvailableHandlerVariant(m, 10)
+
+		m.transactionRepo.EXPECT().CreateTransaction(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(_ context.Context, transaction domain.Transaction) (domain.Transaction, *domain.Error) {
+				transaction.Id = 200
+				transaction.Cart = &domain.Cart{Table: &domain.Table{Label: "Meja 1"}}
+				return transaction, nil
+			})
+		m.paymentRepo.EXPECT().CreatePayment(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(_ context.Context, payment domain.Payment) (domain.Payment, *domain.Error) {
+				payment.Id = 300
+				return payment, nil
+			})
+		m.paymentVerificationRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
+		m.gatewayRepo.EXPECT().GenerateQris(gomock.Any(), gomock.Any()).Times(0)
+
+		method := "cod"
+		photo := base64.StdEncoding.EncodeToString(fakeJpegBytes)
+		body, _ := json.Marshal(apiContract.PaymentCheckoutRequest{CustomerName: "Budi", Method: &method, VerificationPhoto: &photo})
+		req := httptest.NewRequest(http.MethodPost, "/carts/current/checkout", bytes.NewBuffer(body))
+		req.Header.Set("X-Session-Id", testSessionId)
+		w := httptest.NewRecorder()
+		m.handlerWithCodEnabled().Checkout(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var resp apiContract.PaymentResponse
+		assert.NoError(t, json.NewDecoder(bytes.NewBufferString(w.Body.String())).Decode(&resp))
+		assert.Equal(t, "", resp.Data.QrContent)
+		assert.Equal(t, "pending", resp.Data.Status)
+		assert.Equal(t, "cod", resp.Data.Method)
+		require.NotNil(t, resp.Data.VerificationStatus)
+		assert.Equal(t, "awaiting", *resp.Data.VerificationStatus)
 	})
 
 	t.Run("an invalid customerWhatsappNumber is a 400", func(t *testing.T) {

@@ -5,7 +5,15 @@ import {
   TransactionFulfillmentFilter,
   TransactionSourceFilter,
   TransactionStatistic,
+  TransactionVerification,
 } from '../entities';
+
+export class TransactionVerificationNotFoundError extends Error {
+  constructor() {
+    super('Transaction verification not found');
+    this.name = 'TransactionVerificationNotFoundError';
+  }
+}
 
 export interface TransactionRepository {
   getTransactionList: (params: {
@@ -62,6 +70,14 @@ export interface TransactionRepository {
   completeTransaction: (transactionId: number) => Promise<void>;
 
   uncompleteTransaction: (transactionId: number) => Promise<void>;
+
+  fetchTransactionVerification: (
+    transactionId: number
+  ) => Promise<TransactionVerification>;
+
+  approveTransactionVerification: (transactionId: number) => Promise<void>;
+
+  rejectTransactionVerification: (transactionId: number) => Promise<void>;
 
   getTransactionStatisticList: (params: {
     groupBy: 'date' | 'month';

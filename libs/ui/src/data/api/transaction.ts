@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { QueryClient } from '@tanstack/react-query';
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import {
@@ -17,14 +18,23 @@ import {
   transactionUnpayById,
   transactionCompleteById,
   transactionUncompleteById,
+  getTransactionVerification,
+  approveTransactionVerification as apiApproveTransactionVerification,
+  rejectTransactionVerification as apiRejectTransactionVerification,
 } from '../../../../api-contract/src';
 import {
   Transaction,
   TransactionRepository,
   TransactionStatistic,
+  TransactionVerificationNotFoundError,
 } from '../../domain';
 import { RequestConfig } from '@kubb/swagger-client/client';
-import { toApiTransaction, toTransaction, toTransactionStatistic } from './transaction.transformer';
+import {
+  toApiTransaction,
+  toTransaction,
+  toTransactionStatistic,
+  toTransactionVerification,
+} from './transaction.transformer';
 
 export class ApiTransactionRepository implements TransactionRepository {
   client: QueryClient;
@@ -97,6 +107,28 @@ export class ApiTransactionRepository implements TransactionRepository {
   ) => {
     return transactionUncompleteById(transactionId).then();
   };
+
+  fetchTransactionVerification: TransactionRepository['fetchTransactionVerification'] =
+    (transactionId) => {
+      return getTransactionVerification(transactionId)
+        .then(({ data }) => toTransactionVerification(data))
+        .catch((error) => {
+          if (axios.isAxiosError(error) && error.response?.status === 404) {
+            throw new TransactionVerificationNotFoundError();
+          }
+          throw error;
+        });
+    };
+
+  approveTransactionVerification: TransactionRepository['approveTransactionVerification'] =
+    (transactionId) => {
+      return apiApproveTransactionVerification(transactionId).then();
+    };
+
+  rejectTransactionVerification: TransactionRepository['rejectTransactionVerification'] =
+    (transactionId) => {
+      return apiRejectTransactionVerification(transactionId).then();
+    };
 
   fetchTransactionById = (
     transactionId: number,

@@ -245,6 +245,29 @@ export async function payTransaction(
   await apiPut(`/transactions/${id}/pay`, { walletId, paidAmount });
 }
 
+// Staff-only COD verification (docs/prd-order-cod-payment.md FR-4) — the
+// guest's own session can never call these; the spec stands in for the
+// barista's POS action.
+export async function approveTransactionVerification(id: number): Promise<void> {
+  const context = await getContext();
+  const response = await context.put(`/transactions/${id}/verification/approve`);
+  if (!response.ok()) {
+    throw new Error(
+      `PUT /transactions/${id}/verification/approve failed: ${response.status()} ${await response.text()}`
+    );
+  }
+}
+
+export async function rejectTransactionVerification(id: number): Promise<void> {
+  const context = await getContext();
+  const response = await context.put(`/transactions/${id}/verification/reject`);
+  if (!response.ok()) {
+    throw new Error(
+      `PUT /transactions/${id}/verification/reject failed: ${response.status()} ${await response.text()}`
+    );
+  }
+}
+
 // Unlike payTransaction, this doesn't throw on a non-2xx response — for
 // asserting the D8 guard (cashier pays a guest-cancelled order) returns 400
 // rather than merely failing.

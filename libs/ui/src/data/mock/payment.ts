@@ -19,6 +19,7 @@ const initialPaymentSummaries = (): PaymentSummary[] => [
     createdAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
     paidAt: new Date(Date.now() - 4 * 60 * 1000).toISOString(),
     diningOption: 'dine_in',
+    verificationStatus: null,
   },
   {
     reference: 'ORD0000000000001',
@@ -33,6 +34,7 @@ const initialPaymentSummaries = (): PaymentSummary[] => [
     createdAt: new Date(Date.now() - 65 * 60 * 1000).toISOString(),
     paidAt: new Date(Date.now() - 64 * 60 * 1000).toISOString(),
     diningOption: 'dine_in',
+    verificationStatus: null,
   },
 ];
 
@@ -50,6 +52,7 @@ const initialPayment = (): Payment => ({
   fulfillmentStatus: 'preparing',
   canCancel: true,
   cancelReason: null,
+  verificationStatus: null,
   items: [
     {
       name: 'Es Kopi Susu - Regular',
@@ -69,6 +72,16 @@ const cashPayment = (): Payment => ({
   qrContent: '',
   expiredAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
   transactionNumber: 3,
+});
+
+const codPayment = (): Payment => ({
+  ...initialPayment(),
+  reference: 'ORD0000000000004',
+  method: 'cod',
+  qrContent: '',
+  expiredAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+  transactionNumber: 4,
+  verificationStatus: 'awaiting',
 });
 
 export class MockPaymentRepository implements PaymentRepository {
@@ -114,7 +127,11 @@ export class MockPaymentRepository implements PaymentRepository {
       throw new WhatsappNumberRejectedError('not_registered');
     }
     this.payment = {
-      ...(method === 'cash' ? cashPayment() : initialPayment()),
+      ...(method === 'cash'
+        ? cashPayment()
+        : method === 'cod'
+          ? codPayment()
+          : initialPayment()),
       customerName,
     };
     return { ...this.payment };

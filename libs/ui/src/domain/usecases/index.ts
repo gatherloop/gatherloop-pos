@@ -56,6 +56,7 @@ export * from './transactionUnpay';
 export * from './transactionComplete';
 export * from './transactionDetail';
 export * from './transactionStatisticList';
+export * from './transactionVerification';
 export * from './calculationList';
 export * from './calculationDelete';
 export * from './calculationUpdate';

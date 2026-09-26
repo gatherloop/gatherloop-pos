@@ -21,11 +21,13 @@ export type QrisPaymentStatus =
   | 'failed'
   | 'cancelled';
 
-export type PaymentMethod = 'qris' | 'cash';
+export type PaymentMethod = 'qris' | 'cash' | 'cod';
 
 export type PaymentDiningOption = 'dine_in' | 'takeaway';
 
-export type PaymentCancelReason = 'guest' | 'superseded';
+export type PaymentCancelReason = 'guest' | 'superseded' | 'rejected';
+
+export type PaymentVerificationStatus = 'awaiting' | 'approved';
 
 export type Payment = {
   reference: string;
@@ -42,6 +44,7 @@ export type Payment = {
   fulfillmentStatus: TransactionFulfillmentStatus;
   canCancel: boolean;
   cancelReason: PaymentCancelReason | null;
+  verificationStatus: PaymentVerificationStatus | null;
 };
 
 export type PaymentSummary = {
@@ -57,4 +60,5 @@ export type PaymentSummary = {
   createdAt: string;
   paidAt: string | null;
   diningOption: PaymentDiningOption;
+  verificationStatus: PaymentVerificationStatus | null;
 };

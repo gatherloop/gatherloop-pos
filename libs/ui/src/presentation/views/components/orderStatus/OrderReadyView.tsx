@@ -2,6 +2,7 @@ import { CheckCircle2 } from '@tamagui/lucide-icons';
 import { ScrollView, SizableText, Text, XStack, YStack } from 'tamagui';
 import { PaymentItem } from '../../../../domain/entities/Payment';
 import { OrderItemsSummary } from './OrderItemsSummary';
+import { PayAtPickupBanner } from './PayAtPickupBanner';
 
 const NUMBER_BADGE_SIZE = 140;
 
@@ -38,12 +39,14 @@ export type OrderReadyViewProps = {
   transactionNumber: number;
   items: PaymentItem[];
   amount: number;
+  payAtPickupAmount?: number | null;
 };
 
 export const OrderReadyView = ({
   transactionNumber,
   items,
   amount,
+  payAtPickupAmount,
 }: OrderReadyViewProps) => (
   <YStack flex={1} gap="$4" alignItems="center">
     <ReadyNumberBadge value={transactionNumber} />
@@ -57,6 +60,9 @@ export const OrderReadyView = ({
     <Text textAlign="center" color="$color10">
       Silakan ambil di kasir
     </Text>
+    {payAtPickupAmount != null && (
+      <PayAtPickupBanner amount={payAtPickupAmount} />
+    )}
     <ScrollView flex={1}>
       <OrderItemsSummary items={items} amount={amount} />
     </ScrollView>

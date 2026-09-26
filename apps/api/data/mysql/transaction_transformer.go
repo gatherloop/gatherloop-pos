@@ -57,27 +57,34 @@ func ToTransactionDomain(dbTransaction Transaction) domain.Transaction {
 		paymentMethod = &m
 	}
 
+	var paymentVerificationStatus *domain.PaymentVerificationStatus
+	if dbTransaction.PaymentVerificationStatus != nil {
+		s := domain.PaymentVerificationStatus(*dbTransaction.PaymentVerificationStatus)
+		paymentVerificationStatus = &s
+	}
+
 	return domain.Transaction{
-		Id:                 dbTransaction.Id,
-		Name:               dbTransaction.Name,
-		Source:             domain.TransactionSource(dbTransaction.Source),
-		DiningOption:       domain.DiningOption(dbTransaction.DiningOption),
-		CartId:             dbTransaction.CartId,
-		Cart:               cart,
-		PagerNumber:        dbTransaction.PagerNumber,
-		TransactionNumber:  dbTransaction.TransactionNumber,
-		WalletId:           dbTransaction.WalletId,
-		Wallet:             wallet,
-		Total:              dbTransaction.Total,
-		TotalIncome:        dbTransaction.TotalIncome,
-		PaidAmount:         dbTransaction.PaidAmount,
-		PaidAt:             dbTransaction.PaidAt,
-		CompletedAt:        dbTransaction.CompletedAt,
-		DeletedAt:          dbTransaction.DeletedAt,
-		CreatedAt:          dbTransaction.CreatedAt,
-		TransactionItems:   ToTransactionItemsListDomain(dbTransaction.TransactionItems),
-		TransactionCoupons: ToTransactionCouponsListDomain(dbTransaction.TransactionCoupons),
-		PaymentMethod:      paymentMethod,
+		Id:                        dbTransaction.Id,
+		Name:                      dbTransaction.Name,
+		Source:                    domain.TransactionSource(dbTransaction.Source),
+		DiningOption:              domain.DiningOption(dbTransaction.DiningOption),
+		CartId:                    dbTransaction.CartId,
+		Cart:                      cart,
+		PagerNumber:               dbTransaction.PagerNumber,
+		TransactionNumber:         dbTransaction.TransactionNumber,
+		WalletId:                  dbTransaction.WalletId,
+		Wallet:                    wallet,
+		Total:                     dbTransaction.Total,
+		TotalIncome:               dbTransaction.TotalIncome,
+		PaidAmount:                dbTransaction.PaidAmount,
+		PaidAt:                    dbTransaction.PaidAt,
+		CompletedAt:               dbTransaction.CompletedAt,
+		DeletedAt:                 dbTransaction.DeletedAt,
+		CreatedAt:                 dbTransaction.CreatedAt,
+		TransactionItems:          ToTransactionItemsListDomain(dbTransaction.TransactionItems),
+		TransactionCoupons:        ToTransactionCouponsListDomain(dbTransaction.TransactionCoupons),
+		PaymentMethod:             paymentMethod,
+		PaymentVerificationStatus: paymentVerificationStatus,
 	}
 }
 

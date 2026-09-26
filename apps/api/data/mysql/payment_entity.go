@@ -19,6 +19,8 @@ type Payment struct {
 	PaidAt                 *time.Time
 	CancelledAt            *time.Time
 	CancelReason           *string
+	VerificationStatus     *string
+	VerifiedAt             *time.Time
 	StatusCheckedAt        *time.Time
 	CreatedAt              time.Time
 	UpdatedAt              time.Time

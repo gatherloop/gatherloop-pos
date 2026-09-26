@@ -23,9 +23,10 @@ const KdsNotificationMaxAttempts = 5
 type KdsNotificationKind string
 
 const (
-	KdsNotificationKindOrderPaid     KdsNotificationKind = "order_paid"
-	KdsNotificationKindCashPending   KdsNotificationKind = "cash_pending"
-	KdsNotificationKindCashCancelled KdsNotificationKind = "cash_cancelled"
+	KdsNotificationKindOrderPaid       KdsNotificationKind = "order_paid"
+	KdsNotificationKindCashPending     KdsNotificationKind = "cash_pending"
+	KdsNotificationKindCashCancelled   KdsNotificationKind = "cash_cancelled"
+	KdsNotificationKindCodVerification KdsNotificationKind = "cod_verification"
 )
 
 type KdsStation string
@@ -58,8 +59,9 @@ const kdsNotificationBodyItemLimit = 4
 
 // BuildKdsPushMessage is pure and re-derived at send time (FR-6): a paid transaction cannot be
 // edited, so there is nothing to snapshot against. The kind picks the title/body pair (FR-7):
-// order_paid is unchanged, cash_pending leads with the amount to collect, cash_cancelled retracts
-// it.
+// order_paid gains a pay-at-pickup line for an unpaid COD transaction (FR-9) but is otherwise
+// unchanged, cash_pending leads with the amount to collect, cash_cancelled retracts it, and
+// cod_verification asks a barista to look at the photo before anything is made.
 func BuildKdsPushMessage(transaction Transaction, kind KdsNotificationKind, sound string) KdsPushMessage {
 	lines := StationLines(transaction)
 
@@ -69,7 +71,7 @@ func BuildKdsPushMessage(transaction Transaction, kind KdsNotificationKind, soun
 	}
 
 	title := buildKdsNotificationTitle(transaction)
-	body := buildKdsNotificationBody(lines)
+	body := buildOrderPaidNotificationBody(transaction, lines)
 	switch kind {
 	case KdsNotificationKindCashPending:
 		title = buildCashPendingNotificationTitle(transaction)
@@ -77,6 +79,9 @@ func BuildKdsPushMessage(transaction Transaction, kind KdsNotificationKind, soun
 	case KdsNotificationKindCashCancelled:
 		title = buildCashCancelledNotificationTitle(transaction)
 		body = cashCancelledNotificationBody
+	case KdsNotificationKindCodVerification:
+		title = buildCodVerificationNotificationTitle(transaction)
+		body = buildCodVerificationNotificationBody(transaction)
 	}
 
 	return KdsPushMessage{
@@ -123,6 +128,37 @@ func buildCashCancelledNotificationTitle(transaction Transaction) string {
 // cashCancelledNotificationBody is a fixed retraction, not a description of items (D16): its only
 // job is telling a barista who may already be walking to the till to stand down.
 const cashCancelledNotificationBody = "Guest cancelled. Don't wait at the till."
+
+func buildCodVerificationNotificationTitle(transaction Transaction) string {
+	return fmt.Sprintf("Verify COD order #%d — %s", transaction.TransactionNumber, kdsOrderSubject(transaction))
+}
+
+// buildCodVerificationNotificationBody leads with the instruction to check the photo, not the
+// items (D15): this push asks for a presence decision, not preparation — nothing is made until
+// order_paid follows approval.
+func buildCodVerificationNotificationBody(transaction Transaction) string {
+	return fmt.Sprintf("Check the photo in the POS · %s", formatRupiah(transaction.Total))
+}
+
+// buildOrderPaidNotificationBody appends a pay-at-pickup reminder for a still-unpaid COD
+// transaction (FR-9): order_paid is the "start making it" signal for every method, but COD is the
+// only one where approval, not payment, triggers it.
+func buildOrderPaidNotificationBody(transaction Transaction, lines []KdsStationLine) string {
+	body := buildKdsNotificationBody(lines)
+	if !isUnpaidCod(transaction) {
+		return body
+	}
+
+	pickupLine := fmt.Sprintf("COD — collect %s at pickup", formatRupiah(transaction.Total))
+	if body == "" {
+		return pickupLine
+	}
+	return body + " · " + pickupLine
+}
+
+func isUnpaidCod(transaction Transaction) bool {
+	return transaction.PaymentMethod != nil && *transaction.PaymentMethod == PaymentMethodCod && transaction.PaidAt == nil
+}
 
 func kdsOrderSubject(transaction Transaction) string {
 	if transaction.Source == TransactionSourceOrder && transaction.Cart != nil && transaction.Cart.Table != nil {

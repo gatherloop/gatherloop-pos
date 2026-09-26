@@ -37,6 +37,22 @@ func (handler PaymentHandler) Checkout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// FR-1: the use case must never see an inconsistent (method, verificationPhoto) pair.
+	hasVerificationPhoto := request.VerificationPhoto != nil && *request.VerificationPhoto != ""
+	if method == domain.PaymentMethodCod && !hasVerificationPhoto {
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: "verificationPhoto is required for cod checkout"})
+		return
+	}
+	if method != domain.PaymentMethodCod && hasVerificationPhoto {
+		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: "verificationPhoto is only allowed for cod checkout"})
+		return
+	}
+
+	var verificationPhoto string
+	if request.VerificationPhoto != nil {
+		verificationPhoto = *request.VerificationPhoto
+	}
+
 	var customerWhatsappNumber string
 	if request.CustomerWhatsappNumber != nil {
 		customerWhatsappNumber = *request.CustomerWhatsappNumber
@@ -47,7 +63,7 @@ func (handler PaymentHandler) Checkout(w http.ResponseWriter, r *http.Request) {
 		diningOption = domain.DiningOption(*request.DiningOption)
 	}
 
-	payment, transaction, usecaseErr := handler.usecase.Checkout(ctx, sessionId, request.CustomerName, customerWhatsappNumber, method, diningOption)
+	payment, transaction, usecaseErr := handler.usecase.Checkout(ctx, sessionId, request.CustomerName, customerWhatsappNumber, method, diningOption, verificationPhoto)
 	if usecaseErr != nil {
 		apiError := apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message, Reason: ToErrorReason(usecaseErr.Reason)}
 		if usecaseErr.Type == domain.BadGateway {

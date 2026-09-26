@@ -399,4 +399,108 @@ describe('CheckoutUsecase', () => {
     expect(checkout.state.type).toBe('created');
     expect(checkout.state.payment).toEqual(payment);
   });
+
+  describe('cod verification photo', () => {
+    it('should ignore SUBMIT_DETAILS when method is cod and there is no photo', () => {
+      const repository = new MockPaymentRepository();
+      const checkout = createTester(repository, {
+        customerName: 'Budi',
+        customerWhatsappNumber: '081234567890',
+      });
+
+      checkout.dispatch({ type: 'ASK_DETAILS' });
+      checkout.dispatch({ type: 'CHANGE_METHOD', method: 'cod' });
+      checkout.dispatch({ type: 'SUBMIT_DETAILS' });
+
+      expect(checkout.state.type).toBe('askingDetails');
+      expect(checkout.state.verificationPhoto).toBeNull();
+      expect(checkout.state.nameErrorMessage).toBeNull();
+    });
+
+    it('should submit a cod checkout with the captured photo', async () => {
+      const repository = new MockPaymentRepository();
+      const checkoutSpy = jest.spyOn(repository, 'checkout');
+      const checkout = createTester(repository, {
+        customerName: 'Budi',
+        customerWhatsappNumber: '081234567890',
+      });
+
+      checkout.dispatch({ type: 'ASK_DETAILS' });
+      checkout.dispatch({ type: 'CHANGE_METHOD', method: 'cod' });
+      checkout.dispatch({ type: 'CAPTURE_PHOTO', photo: 'base64jpeg' });
+      checkout.dispatch({ type: 'SUBMIT_DETAILS' });
+      expect(checkout.state.type).toBe('creatingPayment');
+
+      await flushMicrotasks();
+
+      expect(checkoutSpy).toHaveBeenCalledWith({
+        customerName: 'Budi',
+        whatsappNumber: '6281234567890',
+        method: 'cod',
+        diningOption: 'dine_in',
+        verificationPhoto: 'base64jpeg',
+      });
+      expect(checkout.state.type).toBe('created');
+      expect(checkout.state.payment?.method).toBe('cod');
+    });
+
+    it('should clear the captured photo on RETAKE_PHOTO', () => {
+      const repository = new MockPaymentRepository();
+      const checkout = createTester(repository);
+
+      checkout.dispatch({ type: 'ASK_DETAILS' });
+      checkout.dispatch({ type: 'CHANGE_METHOD', method: 'cod' });
+      checkout.dispatch({ type: 'CAPTURE_PHOTO', photo: 'base64jpeg' });
+      checkout.dispatch({ type: 'RETAKE_PHOTO' });
+
+      expect(checkout.state.verificationPhoto).toBeNull();
+    });
+
+    it('should clear the captured photo when the method changes away from cod', () => {
+      const repository = new MockPaymentRepository();
+      const checkout = createTester(repository);
+
+      checkout.dispatch({ type: 'ASK_DETAILS' });
+      checkout.dispatch({ type: 'CHANGE_METHOD', method: 'cod' });
+      checkout.dispatch({ type: 'CAPTURE_PHOTO', photo: 'base64jpeg' });
+      checkout.dispatch({ type: 'CHANGE_METHOD', method: 'qris' });
+
+      expect(checkout.state.verificationPhoto).toBeNull();
+    });
+
+    it('should not send a photo when checking out with qris or cash', async () => {
+      const repository = new MockPaymentRepository();
+      const checkoutSpy = jest.spyOn(repository, 'checkout');
+      const checkout = createTester(repository, {
+        customerName: 'Budi',
+        customerWhatsappNumber: '081234567890',
+      });
+
+      checkout.dispatch({ type: 'ASK_DETAILS' });
+      checkout.dispatch({ type: 'SUBMIT_DETAILS' });
+      await flushMicrotasks();
+
+      expect(checkoutSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ verificationPhoto: undefined })
+      );
+    });
+
+    it('should transition creatingPayment → error for a failed cod checkout', async () => {
+      const repository = new MockPaymentRepository();
+      repository.setShouldFailCheckout(true);
+      const checkout = createTester(repository, {
+        customerName: 'Budi',
+        customerWhatsappNumber: '081234567890',
+      });
+
+      checkout.dispatch({ type: 'ASK_DETAILS' });
+      checkout.dispatch({ type: 'CHANGE_METHOD', method: 'cod' });
+      checkout.dispatch({ type: 'CAPTURE_PHOTO', photo: 'base64jpeg' });
+      checkout.dispatch({ type: 'SUBMIT_DETAILS' });
+      await flushMicrotasks();
+
+      expect(checkout.state.type).toBe('error');
+      expect(checkout.state.errorMessage).toBe('Failed to create payment');
+    });
+  });
 });

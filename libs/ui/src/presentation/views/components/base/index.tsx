@@ -15,6 +15,7 @@ export * from './Chart';
 export * from './Markdown';
 export * from './Tabs';
 export * from './ConfirmationAlert';
+export * from './CameraCapture';
 export * from './SkeletonView';
 export * from './useIsCompactLayout';
 export * from './FloatingCartButton';

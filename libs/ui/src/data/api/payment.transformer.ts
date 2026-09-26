@@ -37,6 +37,7 @@ export function toPayment(payment: ApiPayment): Payment {
     fulfillmentStatus: payment.fulfillmentStatus,
     canCancel: payment.canCancel,
     cancelReason: payment.cancelReason ?? null,
+    verificationStatus: payment.verificationStatus ?? null,
   };
 }
 
@@ -54,5 +55,6 @@ export function toPaymentSummary(payment: ApiPaymentSummary): PaymentSummary {
     createdAt: payment.createdAt,
     paidAt: payment.paidAt ?? null,
     diningOption: payment.diningOption,
+    verificationStatus: payment.verificationStatus ?? null,
   };
 }

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { match, P } from 'ts-pattern';
 import { useRouter } from 'solito/router';
 import { Cart } from '../../../domain/entities/Cart';
+import { PaymentMethod } from '../../../domain/entities/Payment';
 import { PaymentRepository } from '../../../domain/repositories/payment';
 import { SessionRepository } from '../../../domain/repositories/session';
 import { CartState, CartUsecase } from '../../../domain/usecases/cart';
@@ -27,7 +28,7 @@ export type CartHandlerProps = {
   paymentRepository: PaymentRepository;
   sessionRepository: SessionRepository;
   enabled: boolean;
-  isCashPaymentEnabled?: boolean;
+  enabledMethods?: PaymentMethod[];
   cashierLocation?: string;
   tableCode: string;
   preparingCount?: number;
@@ -70,7 +71,7 @@ export const CartHandler = ({
   paymentRepository,
   sessionRepository,
   enabled,
-  isCashPaymentEnabled = false,
+  enabledMethods = ['qris'],
   cashierLocation = 'Lantai 1',
   tableCode,
   preparingCount,
@@ -231,7 +232,7 @@ export const CartHandler = ({
             }),
           onSubmitPress: () => checkout.dispatch({ type: 'SUBMIT_DETAILS' }),
           onCancelPress: () => checkout.dispatch({ type: 'CANCEL_DETAILS' }),
-          isCashPaymentEnabled,
+          enabledMethods,
           method: checkout.state.method,
           onMethodChange: (method) =>
             checkout.dispatch({ type: 'CHANGE_METHOD', method }),
@@ -239,6 +240,10 @@ export const CartHandler = ({
           onDiningOptionChange: (diningOption) =>
             checkout.dispatch({ type: 'CHANGE_DINING_OPTION', diningOption }),
           cashierLocation,
+          verificationPhoto: checkout.state.verificationPhoto,
+          onCapturePhoto: (photo) =>
+            checkout.dispatch({ type: 'CAPTURE_PHOTO', photo }),
+          onRetakePhoto: () => checkout.dispatch({ type: 'RETAKE_PHOTO' }),
           isSubmitting: isSubmittingDetails,
         }
       : null;

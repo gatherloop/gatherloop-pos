@@ -106,7 +106,7 @@ func TestTransactionRepository_GetTransactionList_Fulfillment(t *testing.T) {
 		{
 			name:          "all applies no fulfillment predicate",
 			fulfillment:   nil,
-			expectedQuery: "SELECT transactions\\.\\*, payments\\.method AS payment_method FROM `transactions` LEFT JOIN payments ON payments\\.transaction_id = transactions\\.id AND payments\\.deleted_at IS NULL WHERE transactions\\.deleted_at is NULL",
+			expectedQuery: "SELECT transactions\\.\\*, payments\\.method AS payment_method, payments\\.verification_status AS payment_verification_status FROM `transactions` LEFT JOIN payments ON payments\\.transaction_id = transactions\\.id AND payments\\.deleted_at IS NULL WHERE transactions\\.deleted_at is NULL",
 			expectedArgs:  nil,
 		},
 	}
@@ -137,7 +137,7 @@ func TestTransactionRepository_GetTransactionList_Fulfillment(t *testing.T) {
 func TestTransactionRepository_GetTransactionById_JoinsPaymentMethod(t *testing.T) {
 	repo, mock := newMockTransactionRepository(t)
 
-	mock.ExpectQuery("SELECT transactions\\.\\*, payments\\.method AS payment_method FROM `transactions` LEFT JOIN payments ON payments\\.transaction_id = transactions\\.id AND payments\\.deleted_at IS NULL WHERE transactions\\.id = \\?").
+	mock.ExpectQuery("SELECT transactions\\.\\*, payments\\.method AS payment_method, payments\\.verification_status AS payment_verification_status FROM `transactions` LEFT JOIN payments ON payments\\.transaction_id = transactions\\.id AND payments\\.deleted_at IS NULL WHERE transactions\\.id = \\?").
 		WithArgs(int64(7), 1).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}))
 
