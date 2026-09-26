@@ -12,6 +12,15 @@ export class PaymentNotFoundError extends Error {
   }
 }
 
+export type WhatsappNumberRejectionReason = 'invalid' | 'not_registered';
+
+export class WhatsappNumberRejectedError extends Error {
+  constructor(public readonly reason: WhatsappNumberRejectionReason) {
+    super('WhatsApp number rejected');
+    this.name = 'WhatsappNumberRejectedError';
+  }
+}
+
 export interface PaymentRepository {
   checkout: (params: {
     customerName: string;

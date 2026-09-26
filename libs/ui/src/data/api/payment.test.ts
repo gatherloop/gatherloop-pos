@@ -1,3 +1,4 @@
+import { WhatsappNumberRejectedError } from '../../domain/repositories/payment';
 import { SessionRepository } from '../../domain/repositories/session';
 import { ApiPaymentRepository } from './payment';
 
@@ -192,4 +193,63 @@ describe('ApiPaymentRepository', () => {
       })
     );
   });
+
+  it('throws WhatsappNumberRejectedError with reason "invalid" on a 400 whatsapp_number_invalid', async () => {
+    paymentCheckout.mockRejectedValueOnce(
+      axiosErrorWithReason('whatsapp_number_invalid')
+    );
+    const repository = new ApiPaymentRepository(mockSessionRepository);
+
+    const promise = repository.checkout({
+      customerName: 'Andi',
+      method: 'qris',
+      whatsappNumber: '08abc',
+    });
+
+    await expect(promise).rejects.toThrow(WhatsappNumberRejectedError);
+    await expect(promise).rejects.toMatchObject({ reason: 'invalid' });
+  });
+
+  it('throws WhatsappNumberRejectedError with reason "not_registered" on a 400 whatsapp_number_not_registered', async () => {
+    paymentCheckout.mockRejectedValueOnce(
+      axiosErrorWithReason('whatsapp_number_not_registered')
+    );
+    const repository = new ApiPaymentRepository(mockSessionRepository);
+
+    const promise = repository.checkout({
+      customerName: 'Andi',
+      method: 'qris',
+      whatsappNumber: '6281234567890',
+    });
+
+    await expect(promise).rejects.toThrow(WhatsappNumberRejectedError);
+    await expect(promise).rejects.toMatchObject({ reason: 'not_registered' });
+  });
+
+  it('rethrows a 400 with an unrecognized reason as-is', async () => {
+    const error = axiosErrorWithReason('something_else');
+    paymentCheckout.mockRejectedValueOnce(error);
+    const repository = new ApiPaymentRepository(mockSessionRepository);
+
+    await expect(
+      repository.checkout({ customerName: 'Andi', method: 'qris' })
+    ).rejects.toBe(error);
+  });
+
+  it('rethrows a non-400 error as-is', async () => {
+    const error = new Error('network error');
+    paymentCheckout.mockRejectedValueOnce(error);
+    const repository = new ApiPaymentRepository(mockSessionRepository);
+
+    await expect(
+      repository.checkout({ customerName: 'Andi', method: 'qris' })
+    ).rejects.toBe(error);
+  });
 });
+
+function axiosErrorWithReason(reason: string) {
+  return Object.assign(new Error('Request failed with status code 400'), {
+    isAxiosError: true,
+    response: { status: 400, data: { reason } },
+  });
+}

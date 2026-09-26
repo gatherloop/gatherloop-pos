@@ -11,6 +11,8 @@ import { RequestConfig } from '../../../../api-contract/src/client';
 import {
   PaymentNotFoundError,
   PaymentRepository,
+  WhatsappNumberRejectedError,
+  WhatsappNumberRejectionReason,
 } from '../../domain/repositories/payment';
 import { SessionRepository } from '../../domain/repositories/session';
 import { toPayment, toPaymentSummary } from './payment.transformer';
@@ -42,7 +44,13 @@ export class ApiPaymentRepository implements PaymentRepository {
         diningOption,
       },
       this.sessionRequestConfig()
-    ).then(({ data }) => toPayment(data));
+    )
+      .then(({ data }) => toPayment(data))
+      .catch((error) => {
+        const reason = toWhatsappNumberRejectionReason(error);
+        if (reason) throw new WhatsappNumberRejectedError(reason);
+        throw error;
+      });
   };
 
   fetchPayment: PaymentRepository['fetchPayment'] = (reference) => {
@@ -74,4 +82,17 @@ export class ApiPaymentRepository implements PaymentRepository {
       ({ data }) => toPayment(data)
     );
   };
+}
+
+function toWhatsappNumberRejectionReason(
+  error: unknown
+): WhatsappNumberRejectionReason | undefined {
+  if (!axios.isAxiosError(error) || error.response?.status !== 400) {
+    return undefined;
+  }
+  const reason = (error.response.data as { reason?: string } | undefined)
+    ?.reason;
+  if (reason === 'whatsapp_number_invalid') return 'invalid';
+  if (reason === 'whatsapp_number_not_registered') return 'not_registered';
+  return undefined;
 }
