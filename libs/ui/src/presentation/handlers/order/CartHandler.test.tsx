@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, within, act } from '@testing-library/react';
+import { render, screen, within, act, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CartHandler } from './CartHandler';
 import {
@@ -13,6 +13,7 @@ import {
   CartUsecase,
   CheckoutUsecase,
   Payment,
+  PaymentMethod,
   PendingPayment,
   TableResolveUsecase,
 } from '../../../domain';
@@ -31,7 +32,7 @@ const TABLE_CODE = '3F7H9K2M5P';
 
 const renderHandler = ({
   enabled = true,
-  isCashPaymentEnabled = false,
+  enabledMethods = ['qris'],
   cashierLocation,
   cartRepository = new MockCartRepository(),
   paymentRepository = new MockPaymentRepository(),
@@ -43,7 +44,7 @@ const renderHandler = ({
   preparingCount,
 }: {
   enabled?: boolean;
-  isCashPaymentEnabled?: boolean;
+  enabledMethods?: PaymentMethod[];
   cashierLocation?: string;
   cartRepository?: MockCartRepository;
   paymentRepository?: MockPaymentRepository;
@@ -76,7 +77,7 @@ const renderHandler = ({
         paymentRepository={paymentRepository}
         sessionRepository={sessionRepository}
         enabled={enabled}
-        isCashPaymentEnabled={isCashPaymentEnabled}
+        enabledMethods={enabledMethods}
         cashierLocation={cashierLocation}
         tableCode={TABLE_CODE}
         preparingCount={preparingCount}
@@ -489,7 +490,7 @@ describe('CartHandler', () => {
     renderHandler({
       cartRepository,
       customerName: 'Budi',
-      isCashPaymentEnabled: true,
+      enabledMethods: ['qris', 'cash'],
       cashierLocation: 'Lantai 2',
     });
     await settle();
@@ -514,7 +515,7 @@ describe('CartHandler', () => {
       paymentRepository,
       customerName: 'Budi',
       customerWhatsappNumber: '081234567890',
-      isCashPaymentEnabled: true,
+      enabledMethods: ['qris', 'cash'],
     });
     await settle();
 
@@ -535,6 +536,131 @@ describe('CartHandler', () => {
     expect(mockPush).toHaveBeenCalledWith(
       `/orders/${paymentRepository.payment.reference}`
     );
+  });
+
+  describe('COD payment method', () => {
+    const originalMediaDevices = navigator.mediaDevices;
+
+    const stubCamera = () => {
+      const stream = {
+        getTracks: () => [{ stop: jest.fn() }],
+      } as unknown as MediaStream;
+      Object.defineProperty(navigator, 'mediaDevices', {
+        configurable: true,
+        value: { getUserMedia: jest.fn(() => Promise.resolve(stream)) },
+      });
+      HTMLMediaElement.prototype.play = jest
+        .fn()
+        .mockResolvedValue(undefined) as unknown as () => Promise<void>;
+      HTMLCanvasElement.prototype.getContext = jest.fn().mockReturnValue({
+        drawImage: jest.fn(),
+      }) as unknown as typeof HTMLCanvasElement.prototype.getContext;
+      HTMLCanvasElement.prototype.toBlob = jest.fn(function toBlob(
+        this: HTMLCanvasElement,
+        callback: BlobCallback
+      ) {
+        callback(new Blob(['x'.repeat(256)], { type: 'image/jpeg' }));
+      }) as unknown as typeof HTMLCanvasElement.prototype.toBlob;
+    };
+
+    const capturePhoto = async (
+      user: ReturnType<typeof userEvent.setup>,
+      container: HTMLElement
+    ) => {
+      const shutterButton = (await screen.findByRole('button', {
+        name: 'Ambil foto',
+      })) as HTMLButtonElement;
+      await waitFor(() => expect(shutterButton.disabled).toBe(false));
+      const video = container.querySelector('video') as HTMLVideoElement;
+      Object.defineProperty(video, 'videoWidth', {
+        value: 800,
+        configurable: true,
+      });
+      Object.defineProperty(video, 'videoHeight', {
+        value: 600,
+        configurable: true,
+      });
+      await user.click(shutterButton);
+      const confirmButton = await screen.findByRole('button', {
+        name: 'Pakai foto ini',
+      });
+      await user.click(confirmButton);
+    };
+
+    afterEach(() => {
+      Object.defineProperty(navigator, 'mediaDevices', {
+        configurable: true,
+        value: originalMediaDevices,
+      });
+    });
+
+    it('shows COD but not cash with [qris, cod]', async () => {
+      const user = userEvent.setup();
+      const cartRepository = new MockCartRepository();
+      await addItemToCart(cartRepository);
+      renderHandler({
+        cartRepository,
+        customerName: 'Budi',
+        enabledMethods: ['qris', 'cod'],
+      });
+      await settle();
+
+      await user.click(screen.getByRole('button', { name: payButtonName }));
+
+      expect(screen.getByLabelText('Bayar dengan COD')).toBeTruthy();
+      expect(screen.queryByLabelText('Bayar dengan Cash di Kasir')).toBeNull();
+    });
+
+    it('disables submit with "Ambil foto dulu" until a photo is captured, then checks out with method cod and the photo', async () => {
+      stubCamera();
+      const user = userEvent.setup();
+      const cartRepository = new MockCartRepository();
+      await addItemToCart(cartRepository);
+      const paymentRepository = new MockPaymentRepository();
+      const checkoutSpy = jest.spyOn(paymentRepository, 'checkout');
+      const { container } = renderHandler({
+        cartRepository,
+        paymentRepository,
+        customerName: 'Budi',
+        customerWhatsappNumber: '081234567890',
+        enabledMethods: ['qris', 'cod'],
+      });
+      await settle();
+
+      await user.click(screen.getByRole('button', { name: payButtonName }));
+      await user.click(screen.getByLabelText('Bayar dengan COD'));
+
+      expect(
+        (
+          screen.getByRole('button', {
+            name: 'Ambil foto dulu',
+          }) as HTMLButtonElement
+        ).disabled
+      ).toBe(true);
+
+      await capturePhoto(user, container);
+
+      const submitButton = screen.getByRole('button', {
+        name: 'Pesan dengan COD',
+      });
+      expect((submitButton as HTMLButtonElement).disabled).toBe(false);
+
+      await user.click(submitButton);
+      await settle();
+
+      expect(checkoutSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          customerName: 'Budi',
+          whatsappNumber: '6281234567890',
+          method: 'cod',
+          diningOption: 'dine_in',
+          verificationPhoto: expect.any(String),
+        })
+      );
+      expect(mockPush).toHaveBeenCalledWith(
+        `/orders/${paymentRepository.payment.reference}`
+      );
+    });
   });
 
   it('submits directly when the sheet opens prefilled with a valid name and WhatsApp number', async () => {
@@ -629,8 +755,7 @@ describe('CartHandler', () => {
       )
     ).toBeTruthy();
     expect(
-      (screen.getByPlaceholderText('0812 3456 7890') as HTMLInputElement)
-        .value
+      (screen.getByPlaceholderText('0812 3456 7890') as HTMLInputElement).value
     ).toBe('081234567890');
     expect(
       (screen.getByPlaceholderText('Nama Anda') as HTMLInputElement).disabled
