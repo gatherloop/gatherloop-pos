@@ -1,8 +1,21 @@
 # PRD: Order App — Cash on Delivery (COD), Verified by a Photo
 
-**Status:** Draft for review
+**Status:** Draft for review — all open questions resolved (see [Resolved questions](#resolved-questions))
 **Scope:** a third order-app payment method — **Cash on Delivery (COD)**: the guest proves they are in the café with a live camera photo, a barista verifies it, the order is made *before* payment, and the guest pays at the counter when they pick it up. Shipped behind a trial feature flag, with the existing cash-at-the-cashier method hidden so the guest sees exactly two options: **QRIS** or **COD**.
 **Extends, does not supersede:** `docs/prd-order-cash-payment.md` (cited as *Cash D<n>*), `docs/prd-order-checkout-qris-doku.md` (*QRIS D<n>*), `docs/prd-order-payment-cancellation.md` (*Cancel D<n>*), `docs/prd-order-fulfillment-status.md` (*Fulfil D<n>*), `docs/prd-kds-order-notifications.md` (*KDS D<n>*), `docs/prd-order-whatsapp-notifications.md` (*WA D<n>*).
+
+---
+
+## Revision note (first review pass)
+
+All four open questions were answered in review. They are recorded as new decisions (D17–D20) and a [Resolved questions](#resolved-questions) section rather than edited into the originals:
+
+1. **An approved COD order the guest never collects is delivered to their table, and paid there** (D17). No new "abandon" path and no change to `DeleteTransactionById` — the first draft's recommended follow-up PR is dropped.
+2. **No order-value cap for the trial** (D18).
+3. **The verification window is 15 minutes, not 10** (D19, amending D8's default): `COD_VERIFICATION_EXPIRY_SECONDS=900`.
+4. **No WhatsApp message on rejection** (D20) — the guest's status page is the only channel.
+
+None of the four changes the phase count, the dependency graph, or any phase's file list; only phase 4's default value, phase 11's copy and phase 14's production env move.
 
 ---
 
@@ -150,7 +163,7 @@ The staff routes hang off `/transactions/{id}` because that is the only identifi
 | `ORDER_COD_PAYMENT_ENABLED` | `apps/api/.env` | `false` | Server-side gate: a `cod` checkout is `400` when off. Verify / approve / reject stay available so orders in flight can drain after the flag is flipped off (D12). |
 | `NEXT_PUBLIC_ORDER_COD_PAYMENT_ENABLED` | `apps/order-web` | `false` | Shows the COD option in the details sheet. |
 | `NEXT_PUBLIC_ORDER_CASH_PAYMENT_ENABLED` | `apps/order-web` | *(existing)* | Set to `false` for the trial — this is how cash is hidden (D11). |
-| `COD_VERIFICATION_EXPIRY_SECONDS` | `apps/api/.env` | `600` | How long an unverified COD order waits for a barista before the sweeper expires it (D8). |
+| `COD_VERIFICATION_EXPIRY_SECONDS` | `apps/api/.env` | `900` | How long an unverified COD order waits for a barista before the sweeper expires it (D8, D19). |
 
 Trial configuration: API `ORDER_COD_PAYMENT_ENABLED=true`; order-web `NEXT_PUBLIC_ORDER_COD_PAYMENT_ENABLED=true`, `NEXT_PUBLIC_ORDER_CASH_PAYMENT_ENABLED=false` → the sheet shows **QRIS** and **COD**, nothing else.
 
@@ -224,7 +237,7 @@ Café staff already know how to make an unpaid order safely — they do it every
 - **Delivery COD** (GoFood / GrabFood cash) verifies the *customer's account history* and caps order value; the courier bears the no-show risk.
 - **Proof-of-presence by photo** is used by attendance and field-sales apps (a selfie or surroundings photo taken in-app, never from the gallery), reviewed by a human or by geofencing.
 
-This design combines the first and third: the table QR already implies presence, and the live photo plus a human decision closes the gap the table QR leaves open (a QR photographed and used from outside, or a guest who left). A value cap, borrowed from delivery COD, is raised as an Open Question rather than assumed.
+This design combines the first and third: the table QR already implies presence, and the live photo plus a human decision closes the gap the table QR leaves open (a QR photographed and used from outside, or a guest who left). A value cap, borrowed from delivery COD, was considered and deliberately left out of the trial (D18).
 
 > **Verification note.** As in Cash PRD's equivalent section, no vendor documentation was fetched while writing this; the paragraph is general familiarity with the category and the design does not depend on it describing any specific product accurately. No Sources section is offered rather than a fabricated one.
 
@@ -456,7 +469,7 @@ Driven by `TransactionVerificationUsecase` (`hidden → loading → shown → ap
 
 | Payment | New state / variant | Copy |
 |---|---|---|
-| `pending`, `cod`, `awaiting` | **`awaitingVerification`** → `CodVerificationView`, polls every 3 s | *"Menunggu konfirmasi barista…"* · transaction number · items · *"Pesanan akan dibuat setelah barista mengonfirmasi. Jika tidak dikonfirmasi dalam 10 menit, pesanan dibatalkan otomatis."* · Cancel button (existing, when the cancel flag is on) |
+| `pending`, `cod`, `awaiting` | **`awaitingVerification`** → `CodVerificationView`, polls every 3 s | *"Menunggu konfirmasi barista…"* · transaction number · items · *"Pesanan akan dibuat setelah barista mengonfirmasi. Jika tidak dikonfirmasi dalam 15 menit, pesanan dibatalkan otomatis."* (the minutes rendered from the payment's `expiredAt`, not hard-coded) · Cancel button (existing, when the cancel flag is on) |
 | `pending`, `cod`, `approved` | `preparing` / `ready` by `fulfillmentStatus` (existing views) | plus a banner: *"Bayar Rp 45.000 di kasir saat mengambil pesanan"* |
 | `paid`, `cod` | `preparing` / `ready` (unchanged) | no banner |
 | `cancelled`, reason `rejected` | `cancelled` variant | *"Pesanan ditolak"* / *"Barista tidak dapat memastikan Anda berada di kafe. Silakan pesan ulang dengan QRIS atau hubungi kasir."* · **Kembali ke keranjang** |
@@ -476,7 +489,7 @@ The existing `ready` terminal rule (Fulfil D10) holds: the page stops polling on
 | **D5** | **Invariant:** a photo exists iff its payment is `cod` + `pending` + `awaiting`. Every exit deletes it; a sweeper backstop logs any orphan at `warn`. | States the storage promise as something a test can assert and an operator can monitor, instead of a hope. |
 | **D6** | **Approval** enqueues the existing `order_paid` KDS kind; payment's later enqueue is then a no-op via the `(transaction_id, kind)` unique key. | `order_paid` is, operationally, "the bar may start" — for QRIS/cash that moment is payment, for COD it is approval. Reusing the kind means one bar notification per order, the station and staleness rules apply unchanged, and `payTransaction` needs no COD branch. **Rejected:** a new `cod_approved` kind — `payTransaction` would then also send `order_paid`, buzzing the bar twice for one drink unless it grew a COD special case. **Accepted:** the stored name `order_paid` is now slightly inaccurate for COD; renaming a stored enum value across history buys nothing. |
 | **D7** | "Rejected … payment and transaction deleted" means **soft-delete of the transaction + terminal `cancelled`/`rejected` payment** — the photo is the only thing hard-deleted. | Matches every other terminal path (expiry, guest cancel, supersede) and keeps the guest's status page able to say "rejected". Hard-deleting the transaction would also orphan its `transaction_number` and `kds_notifications` rows. |
-| **D8** | An unverified COD order **expires** after `COD_VERIFICATION_EXPIRY_SECONDS` (default 600 s), via the existing sweeper. An approved one **never** expires. | Without it, a busy bar that never looks leaves a guest waiting on a frozen cart and a photo in storage indefinitely. After approval, the order is being made — expiring it would delete food in progress. |
+| **D8** | *Default amended by D19 (600 s → 900 s); the rule itself stands.* An unverified COD order **expires** after `COD_VERIFICATION_EXPIRY_SECONDS`, via the existing sweeper. An approved one **never** expires. | Without it, a busy bar that never looks leaves a guest waiting on a frozen cart and a photo in storage indefinitely. After approval, the order is being made — expiring it would delete food in progress. |
 | **D9** | Payment and Mark-as-Ready are **refused while `awaiting`**, in the use case, and hidden in the menu. | Paying first would skip the decision and leave the photo stored (breaking D5); making it first is exactly the risk verification exists to prevent. Server-side because the menu is an affordance, the use case is the rule (Cash D24's pattern). |
 | **D10** | The guest **cannot cancel** once approved; they can while `awaiting`. | Before approval nothing has been made (Cancel PRD's reasoning holds). After approval the bar is making it; a cancel would be a free no-show. |
 | **D11** | Cash is hidden by **config** (`NEXT_PUBLIC_ORDER_CASH_PAYMENT_ENABLED=false`); the sheet renders whatever `enabledMethods` contains. | The AC wants two methods shown for the trial, not cash deleted. Generalising the picker to a list is smaller than special-casing "COD replaces cash", and either trial outcome is an env change. |
@@ -485,6 +498,10 @@ The existing `ready` terminal rule (Fulfil D10) holds: the page stops polling on
 | **D14** | Staff verification routes hang off **`/transactions/{id}`**, under `CheckAuth`; the photo is **never** in a guest-facing or list response. | The POS only knows transaction ids (same as `/pay`, `/complete`). A photo of the room can include other guests — it is staff-only, fetched on demand, and gone after the decision. |
 | **D15** | A COD checkout buzzes the KDS (`cod_verification`), bypassing the station rule. | The decision has to be made quickly or the guest waits; the barista is the one who has to look at the POS. Same reasoning as Cash D9. |
 | **D16** | Approval **converts the cart**. | The guest can add a second order while the first is made, and the idempotency rule (QRIS D11) stops finding a payment that is no longer the cart's live attempt. `settleOrderPayment` tolerates an already-converted cart. |
+| **D17** | *Settled in review.* An approved COD order the guest does not come to collect is **delivered to their table by staff, and paid there** through the existing Pay flow. There is no "abandon" path for an approved order. | The guest was verified as being in the café, the table is on the POS row (`TransactionListItem`'s table footer) and the order is already made — walking it over is cheaper than any system path, and it turns the worst COD outcome (made, never paid) into an ordinary table-service moment. Pay is the same `TransactionPaymentAlert` whether the barista presses it at the counter or on `pos-mobile` at the table, so it needs no code. **Rejected:** routing `Delete` on an order transaction through `finalizeUncollectedPayment` with a `staff` cancel reason (the first draft's recommendation) — unnecessary once uncollected orders are delivered rather than written off. |
+| **D18** | *Settled in review.* **No order-value cap** for COD during the trial. | Verification plus table delivery (D17) already bound the no-show risk; a cap would add a rule and a rejection message before there is any data showing it is needed. Success metric 3 is the trigger to revisit. |
+| **D19** | *Settled in review; amends D8's default.* `COD_VERIFICATION_EXPIRY_SECONDS` defaults to **900 s (15 minutes)**. | The window measures how long a barista takes to look at the POS during a rush, not a walk to the counter (Cash D5's 600 s). Expiry here cancels an order the guest is patiently waiting on at their table, so it errs long; the cost is a cart frozen and a photo stored for up to 5 minutes more. |
+| **D20** | *Settled in review.* A rejection sends **no WhatsApp message**. | The guest's status page polls every 3 s and already renders *"Pesanan ditolak"* (FR-13). A WhatsApp "rejected" adds nothing for a guest in the café and invites an argument from one who is not. `CompleteTransaction` remains the only WhatsApp trigger, as today. |
 
 ---
 
@@ -652,7 +669,7 @@ A dependency means **the later phase does not compile, or has nothing to test, w
 ### Phase 14 — Enable, verify, document
 
 **Depends on:** every other phase.
-**Deliver:** an `order-web-e2e` spec (cart → COD → camera capture → awaiting screen → API-side approve → preparing → ready) run with Chromium's `--use-fake-ui-for-media-stream --use-fake-device-for-media-stream`; a `pos-web-e2e` spec (verify → approve → mark ready → pay → paid; and verify → reject → row gone); `docs-site/sales/order-checkout.md`, `transactions.md` and `kds.md` updated; README setup pointed at the new variables; production env: API `ORDER_COD_PAYMENT_ENABLED=true`, order-web `NEXT_PUBLIC_ORDER_COD_PAYMENT_ENABLED=true` and `NEXT_PUBLIC_ORDER_CASH_PAYMENT_ENABLED=false`; `MIGRATIONS_DIR=data/mysql/migrations make migrate-up` on the API host before the binary that needs `000044`.
+**Deliver:** an `order-web-e2e` spec (cart → COD → camera capture → awaiting screen → API-side approve → preparing → ready) run with Chromium's `--use-fake-ui-for-media-stream --use-fake-device-for-media-stream`; a `pos-web-e2e` spec (verify → approve → mark ready → pay → paid; and verify → reject → row gone); `docs-site/sales/order-checkout.md`, `transactions.md` and `kds.md` updated; README setup pointed at the new variables; production env: API `ORDER_COD_PAYMENT_ENABLED=true` and `COD_VERIFICATION_EXPIRY_SECONDS=900`, order-web `NEXT_PUBLIC_ORDER_COD_PAYMENT_ENABLED=true` and `NEXT_PUBLIC_ORDER_CASH_PAYMENT_ENABLED=false`; `MIGRATIONS_DIR=data/mysql/migrations make migrate-up` on the API host before the binary that needs `000044`.
 **Done when:** a real guest at a table orders by COD with a camera photo, the KDS buzzes, a barista verifies from the POS, the bar gets "New order", the guest gets the WhatsApp ready message, pays at the counter into the chosen wallet, and `SELECT COUNT(*) FROM payment_verification_photos` returns 0.
 
 Both e2e suites run post-merge only in CI (`.github/workflows/e2e-main.yml`), so each must pass locally before its PR merges.
@@ -663,10 +680,10 @@ Both e2e suites run post-merge only in CI (`.github/workflows/e2e-main.yml`), so
 
 | Risk | Mitigation |
 |---|---|
-| **No-show after approval** — the order is made and the guest never pays. The inherent cost of COD. | Verification is the control; the photo plus the table QR make "not in the café" the unlikely case. The order stays in the POS as `Ready · COD · unpaid`, which is findable. An order-value cap is Open Question 2. Success metric 3 measures it. |
+| **No-show after approval** — the order is made and the guest never pays. The inherent cost of COD. | Verification is the control; the photo plus the table QR make "not in the café" the unlikely case. A guest who does not come to collect gets the order delivered to their table and pays there (D17) — the row shows the table and stays `Ready · COD · unpaid` until paid. No value cap for the trial (D18); success metric 3 measures whether one is needed. |
 | **The photo is spoofed** — a photo of a screen showing the café, or taken just before leaving. | Accepted: no browser API proves location. The barista's judgement — "is that *this* room, *today*, *that* table?" — is the control the AC specifies. Canvas re-encoding means no EXIF is trusted anyway. |
 | **Privacy** — photos include other guests' faces. | Staff-only route (D14), never logged, never in list or guest responses, deleted at the decision or within the verification window (D4, D5, D8). The guest is told so in the capture copy (FR-7). |
-| **Barista too busy to verify** → the guest waits. | The KDS push (D15), the amber badge, and the 10-minute expiry that frees the cart and the storage (D8). If expiry becomes common, shorten the window or add a POS nav badge count (Deferred). |
+| **Barista too busy to verify** → the guest waits. | The KDS push (D15), the amber badge, and the 15-minute expiry that frees the cart and the storage (D8, D19). If expiry becomes common, shorten the window or add a POS nav badge count (Deferred). |
 | **Camera unavailable** (permission denied, in-app browser, desktop). | FR-7 degrades to "use QRIS", never to a file picker. Metric 4 tracks COD attempts that stop at the camera step. |
 | **Large request bodies** — the first endpoint to accept ~0.5 MB. | `MaxBytesReader` on the checkout route (D13); the server re-validates size and type regardless of the client. |
 | **Photo storage grows** if a path forgets to delete. | D5's invariant is tested in phase 6 and backstopped by `DeleteOrphaned` with a `warn`. Worst case is bounded by orders created within the sweeper interval. |
@@ -684,15 +701,20 @@ Both e2e suites run post-merge only in CI (`.github/workflows/e2e-main.yml`), so
 | Guest re-taking a photo after rejection | A rejected order is terminal; the guest checks out again. |
 | Keeping photos for dispute or audit | The AC requires deletion; storing them longer would reverse the privacy posture. |
 | Removing the cash-at-the-cashier code | Hidden by config for the trial (D11); a decision for after the trial. |
+| A system path to abandon an approved, uncollected COD order | Resolved question 1: staff deliver it to the table and take payment there (D17). |
+| An order-value cap | Resolved question 2 (D18). |
+| A WhatsApp message on rejection | Resolved question 4 (D20). |
 
 ---
 
-## Open questions
+## Resolved questions
 
-1. **What happens to an approved COD order that is never collected?** Today staff can Delete an unpaid transaction (`DeleteTransactionById`), but that does not finalise its payment row — the guest page would keep showing "ready". *Recommendation:* for the trial, leave it as `Ready · COD · unpaid` and handle by hand; if it happens more than rarely, route `Delete` on an order transaction through `finalizeUncollectedPayment` with a `staff` cancel reason (a small, separate PR).
-2. **Should COD have a maximum order value** (e.g. Rp 150.000), as delivery COD does, to bound the no-show loss? *Recommendation:* start without one and decide from metric 3 after two weeks.
-3. **Is 10 minutes the right verification window?** Default mirrors the cash window; a busy bar may need 15.
-4. **Should rejection also message the guest on WhatsApp?** *Recommendation:* no — the page they are looking at updates within 3 s, and a WhatsApp "rejected" to someone possibly not in the café invites an argument.
+All four are answered; none blocks any phase.
+
+1. **An approved COD order that is never collected → staff deliver it to the table, and the guest pays there** (D17). It is an operational rule, not code: the POS row already shows the table, and Pay is the existing flow wherever the barista presses it. The first draft's proposed follow-up — routing `Delete` on an order transaction through `finalizeUncollectedPayment` — is dropped. **Consequence accepted:** an approved COD order is never written off by the system; it stays `Ready · COD · unpaid` on the POS list until paid, which is exactly the list staff work from when delivering.
+2. **No order-value cap for the trial** (D18). Revisit only if success metric 3 says so.
+3. **Verification window — 15 minutes** (`COD_VERIFICATION_EXPIRY_SECONDS=900`, D19). Longer than the cash window because it waits on a busy barista, not on a guest's walk, and the guest is waiting at their table rather than standing at a till.
+4. **No WhatsApp message on rejection** (D20). The status page is the only channel for a rejection.
 
 ---
 
@@ -700,6 +722,6 @@ Both e2e suites run post-merge only in CI (`.github/workflows/e2e-main.yml`), so
 
 1. **COD share of order-app checkouts**, compared with cash's share before the trial — the number the trial exists to measure.
 2. **Verification latency** — `verified_at − created_at`, median and p90. Above ~3 minutes means the bar needs a louder signal.
-3. **No-show rate** — approved COD orders not paid by end of day. The number that decides whether the trial continues, gets a value cap, or ends.
+3. **Uncollected and unpaid rates** — approved COD orders that had to be delivered to the table (D17), and those still unpaid at end of day. The second number decides whether the trial continues, gets a value cap (D18), or ends.
 4. **Camera drop-off** — COD selected but no photo captured (permission denied / unsupported). High numbers point at in-app browsers.
 5. **Zero stored photos for decided payments** — `payment_verification_photos` rows whose payment is not `pending`/`awaiting`, and zero `DeleteOrphaned` warnings. Any occurrence is a bug against D5.
