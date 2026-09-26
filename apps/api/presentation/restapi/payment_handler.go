@@ -49,7 +49,7 @@ func (handler PaymentHandler) Checkout(w http.ResponseWriter, r *http.Request) {
 
 	payment, transaction, usecaseErr := handler.usecase.Checkout(ctx, sessionId, request.CustomerName, customerWhatsappNumber, method, diningOption)
 	if usecaseErr != nil {
-		apiError := apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message}
+		apiError := apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message, Reason: ToErrorReason(usecaseErr.Reason)}
 		if usecaseErr.Type == domain.BadGateway {
 			WriteErrorWithStatus(ctx, w, apiError, http.StatusBadGateway)
 			return

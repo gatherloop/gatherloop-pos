@@ -50,5 +50,9 @@ func isDigitsOnly(s string) bool {
 }
 
 func invalidWhatsappNumberError() *Error {
-	return &Error{Type: BadRequest, Message: "customerWhatsappNumber must be a valid WhatsApp number"}
+	return &Error{
+		Type:    BadRequest,
+		Message: "customerWhatsappNumber must be a valid WhatsApp number",
+		Reason:  ErrorReasonWhatsappNumberInvalid,
+	}
 }
