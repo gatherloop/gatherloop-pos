@@ -25,6 +25,7 @@ const meta: Meta<typeof TransactionListItem> = {
     onDeleteMenuPress: fn(),
     onPrintInvoiceMenuPress: fn(),
     onPrintOrderSlipMenuPress: fn(),
+    onVerifyMenuPress: fn(),
   },
 };
 
@@ -104,6 +105,60 @@ export const QrisPaid: Story = {
     table: { id: 1, label: 'A1', floorNumber: 1 },
     pagerNumber: 0,
     completedAt: null,
+  },
+};
+
+export const CodNeedsConfirmation: Story = {
+  args: {
+    name: 'Budi',
+    source: 'order',
+    paymentMethod: 'cod',
+    paymentVerificationStatus: 'awaiting',
+    table: { id: 1, label: 'A1', floorNumber: 1 },
+    pagerNumber: 0,
+    completedAt: null,
+    paidAt: undefined,
+    walletName: undefined,
+  },
+};
+
+export const CodPreparingUnpaid: Story = {
+  args: {
+    name: 'Budi',
+    source: 'order',
+    paymentMethod: 'cod',
+    paymentVerificationStatus: 'approved',
+    table: { id: 1, label: 'A1', floorNumber: 1 },
+    pagerNumber: 0,
+    completedAt: null,
+    paidAt: undefined,
+    walletName: undefined,
+  },
+};
+
+export const CodReadyUnpaid: Story = {
+  args: {
+    name: 'Budi',
+    source: 'order',
+    paymentMethod: 'cod',
+    paymentVerificationStatus: 'approved',
+    table: { id: 1, label: 'A1', floorNumber: 1 },
+    pagerNumber: 0,
+    completedAt: '2024-01-20T10:45:00.000Z',
+    paidAt: undefined,
+    walletName: undefined,
+  },
+};
+
+export const CodPaid: Story = {
+  args: {
+    name: 'Budi',
+    source: 'order',
+    paymentMethod: 'cod',
+    paymentVerificationStatus: 'approved',
+    table: { id: 1, label: 'A1', floorNumber: 1 },
+    pagerNumber: 0,
+    completedAt: '2024-01-20T10:45:00.000Z',
   },
 };
 

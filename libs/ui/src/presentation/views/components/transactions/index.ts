@@ -9,6 +9,7 @@ export * from './TransactionList';
 export * from './TransactionListItem';
 export * from './TransactionPaymentAlert';
 export * from './TransactionUnpayAlert';
+export * from './TransactionVerificationSheet';
 export * from './TransactionPrintEmployee';
 export * from './TransactionPrintCustomer';
 export * from './TransactionStatistic';

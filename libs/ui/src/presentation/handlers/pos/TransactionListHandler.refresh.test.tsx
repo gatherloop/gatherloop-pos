@@ -15,6 +15,7 @@ import {
   TransactionListUsecase,
   TransactionPayUsecase,
   TransactionUnpayUsecase,
+  TransactionVerificationUsecase,
 } from '../../../domain';
 
 jest.mock('solito/router', () => ({
@@ -54,6 +55,9 @@ const createProps = (
   ),
   transactionUnpayUsecase: new TransactionUnpayUsecase(transactionRepository),
   transactionCompleteUsecase: new TransactionCompleteUsecase(
+    transactionRepository
+  ),
+  transactionVerificationUsecase: new TransactionVerificationUsecase(
     transactionRepository
   ),
 });

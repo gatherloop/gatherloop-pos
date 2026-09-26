@@ -3,6 +3,7 @@ import {
   CheckCircle,
   ConciergeBell,
   DollarSign,
+  Eye,
   MapPin,
   Pencil,
   Printer,
@@ -20,6 +21,7 @@ import {
   PaymentMethod,
   PublicTable,
   TransactionDiningOption,
+  TransactionPaymentVerificationStatus,
   TransactionSource,
 } from '../../../../domain';
 
@@ -28,6 +30,7 @@ export type TransactionListItemProps = {
   source: TransactionSource;
   diningOption: TransactionDiningOption;
   paymentMethod?: PaymentMethod | null;
+  paymentVerificationStatus?: TransactionPaymentVerificationStatus | null;
   table?: PublicTable | null;
   pagerNumber: number;
   transactionNumber: number;
@@ -44,6 +47,7 @@ export type TransactionListItemProps = {
   onDeleteMenuPress: () => void;
   onPrintInvoiceMenuPress: () => void;
   onPrintOrderSlipMenuPress: () => void;
+  onVerifyMenuPress: () => void;
 } & XStackProps;
 
 const OrderBadge = () => (
@@ -84,6 +88,34 @@ const QrisAwaitingPaymentBadge = () => (
   >
     <Paragraph size="$1" color="$cyan11">
       QRIS · awaiting payment
+    </Paragraph>
+  </XStack>
+);
+
+const CodUnpaidBadge = () => (
+  <XStack
+    backgroundColor="$cyan5"
+    paddingHorizontal="$2"
+    paddingVertical="$1"
+    borderRadius="$10"
+    alignSelf="flex-start"
+  >
+    <Paragraph size="$1" color="$cyan11">
+      COD · unpaid
+    </Paragraph>
+  </XStack>
+);
+
+const NeedsConfirmationBadge = () => (
+  <XStack
+    backgroundColor="$yellow5"
+    paddingHorizontal="$2"
+    paddingVertical="$1"
+    borderRadius="$10"
+    alignSelf="flex-start"
+  >
+    <Paragraph size="$1" color="$yellow11">
+      Needs confirmation
     </Paragraph>
   </XStack>
 );
@@ -167,6 +199,7 @@ export const TransactionListItem = ({
   source,
   diningOption,
   paymentMethod,
+  paymentVerificationStatus,
   table,
   pagerNumber,
   transactionNumber,
@@ -183,8 +216,12 @@ export const TransactionListItem = ({
   onDeleteMenuPress,
   onPrintInvoiceMenuPress,
   onPrintOrderSlipMenuPress,
+  onVerifyMenuPress,
   ...xStackProps
 }: TransactionListItemProps) => {
+  const isAwaitingCodVerification =
+    paymentMethod === 'cod' && paymentVerificationStatus === 'awaiting';
+
   return (
     <ListItem
       title={name}
@@ -199,12 +236,21 @@ export const TransactionListItem = ({
               {source === 'order' && (
                 <>
                   <OrderBadge />
-                  <FulfillmentBadge completedAt={completedAt} />
-                  {paymentMethod === 'cash' && paidAt === undefined && (
-                    <CashAwaitingPaymentBadge />
-                  )}
-                  {paymentMethod === 'qris' && paidAt === undefined && (
-                    <QrisAwaitingPaymentBadge />
+                  {isAwaitingCodVerification ? (
+                    <NeedsConfirmationBadge />
+                  ) : (
+                    <>
+                      <FulfillmentBadge completedAt={completedAt} />
+                      {paymentMethod === 'cash' && paidAt === undefined && (
+                        <CashAwaitingPaymentBadge />
+                      )}
+                      {paymentMethod === 'qris' && paidAt === undefined && (
+                        <QrisAwaitingPaymentBadge />
+                      )}
+                      {paymentMethod === 'cod' && paidAt === undefined && (
+                        <CodUnpaidBadge />
+                      )}
+                    </>
                   )}
                 </>
               )}
@@ -219,10 +265,16 @@ export const TransactionListItem = ({
       theme={paidAt ? 'gray' : 'red'}
       menus={[
         {
+          title: 'Verify',
+          icon: Eye,
+          onPress: onVerifyMenuPress,
+          isShown: isAwaitingCodVerification,
+        },
+        {
           title: 'Pay',
           icon: DollarSign,
           onPress: onPayMenuPress,
-          isShown: paidAt === undefined,
+          isShown: paidAt === undefined && !isAwaitingCodVerification,
         },
         {
           title: 'Unpay',
@@ -241,13 +293,14 @@ export const TransactionListItem = ({
           title: 'Print Order Slip',
           icon: Printer,
           onPress: onPrintOrderSlipMenuPress,
-          isShown: Platform.OS === 'web',
+          isShown: Platform.OS === 'web' && !isAwaitingCodVerification,
         },
         {
           title: 'Mark as Ready',
           icon: CheckCircle,
           onPress: onCompleteMenuPress,
-          isShown: source === 'order' && !completedAt,
+          isShown:
+            source === 'order' && !completedAt && !isAwaitingCodVerification,
         },
         {
           title: 'Mark as Preparing',
@@ -265,7 +318,7 @@ export const TransactionListItem = ({
           title: 'Delete',
           icon: Trash,
           onPress: onDeleteMenuPress,
-          isShown: paidAt === undefined,
+          isShown: paidAt === undefined && !isAwaitingCodVerification,
         },
       ]}
       footerItems={[
