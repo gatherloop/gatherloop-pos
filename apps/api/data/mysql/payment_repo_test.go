@@ -144,3 +144,30 @@ func TestPaymentRepository_GetExpirablePayments_NoLimitFetchesEverything(t *test
 	require.Nil(t, err)
 	require.NoError(t, mock.ExpectationsWereMet())
 }
+
+// FR-4/D2: approving a COD payment writes verification_status and verified_at through the same
+// UpdatePaymentById every other payment transition uses.
+func TestPaymentRepository_UpdatePaymentById_PersistsVerificationStatusAndVerifiedAt(t *testing.T) {
+	repo, mock := newMockPaymentRepository(t)
+	verifiedAt := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
+	verificationStatus := domain.PaymentVerificationStatusApproved
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE `payments` SET .*`verification_status`=\\?.*`verified_at`=\\?.* WHERE id = \\?").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectCommit()
+	mock.ExpectQuery("SELECT \\* FROM `payments` WHERE id = \\? AND deleted_at IS NULL ORDER BY `payments`.`id` LIMIT \\?").
+		WithArgs(int64(1), 1).
+		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(int64(1)))
+
+	_, err := repo.UpdatePaymentById(context.Background(), domain.Payment{
+		Id:                 1,
+		Method:             domain.PaymentMethodCod,
+		Status:             domain.PaymentStatePending,
+		VerificationStatus: &verificationStatus,
+		VerifiedAt:         &verifiedAt,
+	}, 1)
+
+	require.Nil(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
