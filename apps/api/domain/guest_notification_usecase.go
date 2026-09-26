@@ -98,7 +98,7 @@ func (usecase GuestNotificationUsecase) dispatchOne(ctx context.Context, notific
 		accessKey = *payment.AccessKey
 	}
 	orderUrl := BuildOrderStatusUrl(usecase.orderWebBaseURL, payment.PartnerReferenceNo, accessKey)
-	message := BuildGuestWhatsappMessage(transaction, payment.Method, orderUrl)
+	message := BuildGuestWhatsappMessage(transaction, payment, orderUrl)
 
 	result, sendErr := usecase.whatsappGateway.Send(ctx, WhatsAppMessage{To: *notification.WhatsappNumber, Body: message})
 	if sendErr != nil {
