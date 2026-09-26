@@ -3,6 +3,7 @@ package domain_test
 import (
 	"apps/api/domain"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -226,5 +227,123 @@ func TestBuildKdsPushMessage(t *testing.T) {
 
 		assert.Equal(t, "New order #12 — Meja 4", message.Title)
 		assert.Equal(t, "BAR: 1× Kopi Susu", message.Body)
+	})
+
+	t.Run("a cod_verification title and body ask for a decision, table included", func(t *testing.T) {
+		transaction := domain.Transaction{
+			TransactionNumber: 12,
+			Source:            domain.TransactionSourceOrder,
+			Cart:              &domain.Cart{Table: &domain.Table{Label: "Meja 4"}},
+			Total:             45000,
+			TransactionItems: []domain.TransactionItem{
+				kdsItem("BAR", 1, "Kopi Susu"),
+			},
+		}
+
+		message := domain.BuildKdsPushMessage(transaction, domain.KdsNotificationKindCodVerification, "default")
+
+		assert.Equal(t, "Verify COD order #12 — Meja 4", message.Title)
+		assert.Equal(t, "Check the photo in the POS · Rp 45.000", message.Body)
+		assert.Equal(t, "cod_verification", message.Data["kind"])
+	})
+
+	t.Run("a cod_verification notification with no station items still names the amount", func(t *testing.T) {
+		transaction := domain.Transaction{
+			TransactionNumber: 12,
+			Source:            domain.TransactionSourceOrder,
+			Cart:              &domain.Cart{Table: &domain.Table{Label: "Meja 4"}},
+			Total:             25000,
+			TransactionItems: []domain.TransactionItem{
+				{
+					Amount:      1,
+					ProductName: "Board Game Ticket",
+					Variant:     domain.Variant{Product: domain.Product{Category: domain.Category{Station: "NONE"}}},
+				},
+			},
+		}
+
+		message := domain.BuildKdsPushMessage(transaction, domain.KdsNotificationKindCodVerification, "default")
+
+		assert.Equal(t, "Check the photo in the POS · Rp 25.000", message.Body)
+	})
+
+	t.Run("order_paid for an unpaid COD transaction gains a pay-at-pickup line", func(t *testing.T) {
+		codMethod := domain.PaymentMethodCod
+		transaction := domain.Transaction{
+			TransactionNumber: 12,
+			Source:            domain.TransactionSourceOrder,
+			Cart:              &domain.Cart{Table: &domain.Table{Label: "Meja 4"}},
+			Total:             45000,
+			PaymentMethod:     &codMethod,
+			TransactionItems: []domain.TransactionItem{
+				kdsItem("BAR", 1, "Kopi Susu"),
+			},
+		}
+
+		message := domain.BuildKdsPushMessage(transaction, domain.KdsNotificationKindOrderPaid, "default")
+
+		assert.Equal(t, "BAR: 1× Kopi Susu · COD — collect Rp 45.000 at pickup", message.Body)
+	})
+
+	t.Run("order_paid for an unpaid COD transaction with no station items still names the pickup amount", func(t *testing.T) {
+		codMethod := domain.PaymentMethodCod
+		transaction := domain.Transaction{
+			TransactionNumber: 12,
+			Source:            domain.TransactionSourceOrder,
+			Cart:              &domain.Cart{Table: &domain.Table{Label: "Meja 4"}},
+			Total:             25000,
+			PaymentMethod:     &codMethod,
+			TransactionItems: []domain.TransactionItem{
+				{
+					Amount:      1,
+					ProductName: "Board Game Ticket",
+					Variant:     domain.Variant{Product: domain.Product{Category: domain.Category{Station: "NONE"}}},
+				},
+			},
+		}
+
+		message := domain.BuildKdsPushMessage(transaction, domain.KdsNotificationKindOrderPaid, "default")
+
+		assert.Equal(t, "COD — collect Rp 25.000 at pickup", message.Body)
+	})
+
+	t.Run("order_paid for a paid COD transaction carries no pickup line", func(t *testing.T) {
+		codMethod := domain.PaymentMethodCod
+		paidAt := time.Now()
+		transaction := domain.Transaction{
+			TransactionNumber: 12,
+			Source:            domain.TransactionSourceOrder,
+			Cart:              &domain.Cart{Table: &domain.Table{Label: "Meja 4"}},
+			Total:             45000,
+			PaymentMethod:     &codMethod,
+			PaidAt:            &paidAt,
+			TransactionItems: []domain.TransactionItem{
+				kdsItem("BAR", 1, "Kopi Susu"),
+			},
+		}
+
+		message := domain.BuildKdsPushMessage(transaction, domain.KdsNotificationKindOrderPaid, "default")
+
+		assert.Equal(t, "BAR: 1× Kopi Susu", message.Body)
+	})
+
+	t.Run("order_paid for QRIS and cash is unchanged by the COD pickup-line addition", func(t *testing.T) {
+		for _, method := range []domain.PaymentMethod{domain.PaymentMethodQris, domain.PaymentMethodCash} {
+			method := method
+			transaction := domain.Transaction{
+				TransactionNumber: 12,
+				Source:            domain.TransactionSourceOrder,
+				Cart:              &domain.Cart{Table: &domain.Table{Label: "Meja 4"}},
+				Total:             45000,
+				PaymentMethod:     &method,
+				TransactionItems: []domain.TransactionItem{
+					kdsItem("BAR", 1, "Kopi Susu"),
+				},
+			}
+
+			message := domain.BuildKdsPushMessage(transaction, domain.KdsNotificationKindOrderPaid, "default")
+
+			assert.Equal(t, "BAR: 1× Kopi Susu", message.Body)
+		}
 	})
 }
