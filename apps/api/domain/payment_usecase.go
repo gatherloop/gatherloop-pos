@@ -14,22 +14,28 @@ const statusRequeryFloor = 1 * time.Second
 // kdsDispatchBatchSize.
 const paymentExpiryBatchSize = 50
 
+// FR-6/D5: the DeleteOrphaned backstop's own bound, so one sweeper tick cannot run unbounded
+// either — it should always delete zero rows, so the bound only matters when the invariant has
+// already broken.
+const paymentVerificationOrphanBatchSize = 50
+
 type PaymentUsecase struct {
-	paymentRepository         PaymentRepository
-	paymentGatewayRepository  PaymentGatewayRepository
-	customerRepository        CustomerRepository
-	cartRepository            CartRepository
-	transactionRepository     TransactionRepository
-	variantRepository         VariantRepository
-	walletRepository          WalletRepository
-	availabilityReservation   AvailabilityReservation
-	kdsNotificationRepository KdsNotificationRepository
-	kdsNotificationDispatcher KdsNotificationDispatcher
-	whatsappNumberVerifier    WhatsappNumberVerifier
-	qrisExpirySeconds         int
-	cashExpirySeconds         int
-	orderPaymentWalletId      int64
-	orderPaymentCancelEnabled bool
+	paymentRepository             PaymentRepository
+	paymentGatewayRepository      PaymentGatewayRepository
+	customerRepository            CustomerRepository
+	cartRepository                CartRepository
+	transactionRepository         TransactionRepository
+	variantRepository             VariantRepository
+	walletRepository              WalletRepository
+	availabilityReservation       AvailabilityReservation
+	kdsNotificationRepository     KdsNotificationRepository
+	kdsNotificationDispatcher     KdsNotificationDispatcher
+	whatsappNumberVerifier        WhatsappNumberVerifier
+	paymentVerificationRepository PaymentVerificationRepository
+	qrisExpirySeconds             int
+	cashExpirySeconds             int
+	orderPaymentWalletId          int64
+	orderPaymentCancelEnabled     bool
 }
 
 func NewPaymentUsecase(
@@ -44,27 +50,29 @@ func NewPaymentUsecase(
 	kdsNotificationRepository KdsNotificationRepository,
 	kdsNotificationDispatcher KdsNotificationDispatcher,
 	whatsappNumberVerifier WhatsappNumberVerifier,
+	paymentVerificationRepository PaymentVerificationRepository,
 	qrisExpirySeconds int,
 	cashExpirySeconds int,
 	orderPaymentWalletId int64,
 	orderPaymentCancelEnabled bool,
 ) PaymentUsecase {
 	return PaymentUsecase{
-		paymentRepository:         paymentRepository,
-		paymentGatewayRepository:  paymentGatewayRepository,
-		customerRepository:        customerRepository,
-		cartRepository:            cartRepository,
-		transactionRepository:     transactionRepository,
-		variantRepository:         variantRepository,
-		walletRepository:          walletRepository,
-		availabilityReservation:   availabilityReservation,
-		kdsNotificationRepository: kdsNotificationRepository,
-		kdsNotificationDispatcher: kdsNotificationDispatcher,
-		whatsappNumberVerifier:    whatsappNumberVerifier,
-		qrisExpirySeconds:         qrisExpirySeconds,
-		cashExpirySeconds:         cashExpirySeconds,
-		orderPaymentWalletId:      orderPaymentWalletId,
-		orderPaymentCancelEnabled: orderPaymentCancelEnabled,
+		paymentRepository:             paymentRepository,
+		paymentGatewayRepository:      paymentGatewayRepository,
+		customerRepository:            customerRepository,
+		cartRepository:                cartRepository,
+		transactionRepository:         transactionRepository,
+		variantRepository:             variantRepository,
+		walletRepository:              walletRepository,
+		availabilityReservation:       availabilityReservation,
+		kdsNotificationRepository:     kdsNotificationRepository,
+		kdsNotificationDispatcher:     kdsNotificationDispatcher,
+		whatsappNumberVerifier:        whatsappNumberVerifier,
+		paymentVerificationRepository: paymentVerificationRepository,
+		qrisExpirySeconds:             qrisExpirySeconds,
+		cashExpirySeconds:             cashExpirySeconds,
+		orderPaymentWalletId:          orderPaymentWalletId,
+		orderPaymentCancelEnabled:     orderPaymentCancelEnabled,
 	}
 }
 
@@ -382,7 +390,7 @@ func (usecase PaymentUsecase) applyQrisStatus(ctxWithTx context.Context, payment
 		// D7: the guest may have checked out again on this cart while the first payment sat
 		// cancelled or expired — finalise that newer attempt so the cart never ends up with two
 		// paid orders.
-		if supersedeErr := supersedeLivePayments(ctxWithTx, payment.CartId, payment.Id, usecase.paymentRepository, usecase.transactionRepository, usecase.availabilityReservation, usecase.kdsNotificationRepository); supersedeErr != nil {
+		if supersedeErr := supersedeLivePayments(ctxWithTx, payment.CartId, payment.Id, usecase.paymentRepository, usecase.transactionRepository, usecase.availabilityReservation, usecase.kdsNotificationRepository, usecase.paymentVerificationRepository); supersedeErr != nil {
 			return payment, "", supersedeErr
 		}
 
@@ -397,7 +405,7 @@ func (usecase PaymentUsecase) applyQrisStatus(ctxWithTx context.Context, payment
 			outcome = ConfirmPaymentOutcomeFailed
 		}
 
-		updatedPayment, finalizeErr := finalizeUncollectedPayment(ctxWithTx, payment, terminalStatus, nil, usecase.paymentRepository, usecase.transactionRepository, usecase.availabilityReservation, usecase.kdsNotificationRepository)
+		updatedPayment, finalizeErr := finalizeUncollectedPayment(ctxWithTx, payment, terminalStatus, nil, usecase.paymentRepository, usecase.transactionRepository, usecase.availabilityReservation, usecase.kdsNotificationRepository, usecase.paymentVerificationRepository)
 		if finalizeErr != nil {
 			return payment, "", finalizeErr
 		}
@@ -414,8 +422,10 @@ func (usecase PaymentUsecase) applyQrisStatus(ctxWithTx context.Context, payment
 // reason is non-nil only when terminalStatus is PaymentStateCancelled (D9); it is a free function,
 // not a PaymentUsecase method, so TransactionUsecase's settleOrderPayment can share it too. A cash
 // payment that lands in cancelled — whether the guest's own cancel or a supersede (D7) — also gets
-// the KDS retraction (D16/FR-7).
-func finalizeUncollectedPayment(ctxWithTx context.Context, payment Payment, terminalStatus PaymentState, reason *PaymentCancelReason, paymentRepository PaymentRepository, transactionRepository TransactionRepository, availabilityReservation AvailabilityReservation, kdsNotificationRepository KdsNotificationRepository) (Payment, *Error) {
+// the KDS retraction (D16/FR-7). FR-6/D5: the verification photo delete is unconditional — a
+// no-op for every method but cod, and for a cod payment that already lost its photo — so every
+// exit from "cod, pending, awaiting" keeps the storage invariant without a method check here.
+func finalizeUncollectedPayment(ctxWithTx context.Context, payment Payment, terminalStatus PaymentState, reason *PaymentCancelReason, paymentRepository PaymentRepository, transactionRepository TransactionRepository, availabilityReservation AvailabilityReservation, kdsNotificationRepository KdsNotificationRepository, paymentVerificationRepository PaymentVerificationRepository) (Payment, *Error) {
 	now := time.Now()
 	payment.Status = terminalStatus
 	payment.StatusCheckedAt = &now
@@ -427,6 +437,10 @@ func finalizeUncollectedPayment(ctxWithTx context.Context, payment Payment, term
 	updatedPayment, updateErr := paymentRepository.UpdatePaymentById(ctxWithTx, payment, payment.Id)
 	if updateErr != nil {
 		return payment, updateErr
+	}
+
+	if deleteErr := paymentVerificationRepository.DeleteByPaymentId(ctxWithTx, payment.Id); deleteErr != nil {
+		return payment, deleteErr
 	}
 
 	if payment.TransactionId != nil {
@@ -473,7 +487,7 @@ func enqueueCashCancelledNotification(ctxWithTx context.Context, transaction Tra
 // one that was just paid late: a cart becomes exactly one paid order, so its current pending
 // payment — if there is one, and it isn't the payment just paid — is finalised as
 // cancelled/superseded instead of staying collectable.
-func supersedeLivePayments(ctxWithTx context.Context, cartId int64, exceptPaymentId int64, paymentRepository PaymentRepository, transactionRepository TransactionRepository, availabilityReservation AvailabilityReservation, kdsNotificationRepository KdsNotificationRepository) *Error {
+func supersedeLivePayments(ctxWithTx context.Context, cartId int64, exceptPaymentId int64, paymentRepository PaymentRepository, transactionRepository TransactionRepository, availabilityReservation AvailabilityReservation, kdsNotificationRepository KdsNotificationRepository, paymentVerificationRepository PaymentVerificationRepository) *Error {
 	pending, err := paymentRepository.GetPendingPaymentByCartId(ctxWithTx, cartId)
 	if err != nil {
 		if err.Type == NotFound {
@@ -491,7 +505,7 @@ func supersedeLivePayments(ctxWithTx context.Context, cartId int64, exceptPaymen
 	)
 
 	reason := PaymentCancelReasonSuperseded
-	if _, finalizeErr := finalizeUncollectedPayment(ctxWithTx, pending, PaymentStateCancelled, &reason, paymentRepository, transactionRepository, availabilityReservation, kdsNotificationRepository); finalizeErr != nil {
+	if _, finalizeErr := finalizeUncollectedPayment(ctxWithTx, pending, PaymentStateCancelled, &reason, paymentRepository, transactionRepository, availabilityReservation, kdsNotificationRepository, paymentVerificationRepository); finalizeErr != nil {
 		return finalizeErr
 	}
 
@@ -501,7 +515,7 @@ func supersedeLivePayments(ctxWithTx context.Context, cartId int64, exceptPaymen
 // expirePayment is FR-4's entry point for giving up on a payment on the clock alone (D7) — used
 // directly by ExpireStalePayments for cash, and by applyQrisStatus's expired branch for QRIS.
 func (usecase PaymentUsecase) expirePayment(ctxWithTx context.Context, payment Payment) (Payment, *Error) {
-	return finalizeUncollectedPayment(ctxWithTx, payment, PaymentStateExpired, nil, usecase.paymentRepository, usecase.transactionRepository, usecase.availabilityReservation, usecase.kdsNotificationRepository)
+	return finalizeUncollectedPayment(ctxWithTx, payment, PaymentStateExpired, nil, usecase.paymentRepository, usecase.transactionRepository, usecase.availabilityReservation, usecase.kdsNotificationRepository, usecase.paymentVerificationRepository)
 }
 
 // ExpireStalePayments claims up to paymentExpiryBatchSize pending payments past their expired_at,
@@ -524,6 +538,23 @@ func (usecase PaymentUsecase) ExpireStalePayments(ctx context.Context) *Error {
 	return nil
 }
 
+// DeleteOrphanedVerificationPhotos is the D5 backstop, run on the same maintenance sweeper tick
+// as ExpireStalePayments: every terminal path already deletes its own photo inside
+// finalizeUncollectedPayment, so this should always delete zero rows. A non-zero count means some
+// path broke the invariant, which is worth an operator's attention rather than a silent fix.
+func (usecase PaymentUsecase) DeleteOrphanedVerificationPhotos(ctx context.Context) *Error {
+	deleted, err := usecase.paymentVerificationRepository.DeleteOrphaned(ctx, paymentVerificationOrphanBatchSize)
+	if err != nil {
+		return err
+	}
+
+	if deleted > 0 {
+		slog.WarnContext(ctx, "deleted orphaned COD verification photos", slog.Int64("count", deleted))
+	}
+
+	return nil
+}
+
 func (usecase PaymentUsecase) expireOne(ctx context.Context, payment Payment, now time.Time) {
 	logger := slog.With(
 		slog.String("partnerReferenceNo", payment.PartnerReferenceNo),
@@ -537,13 +568,14 @@ func (usecase PaymentUsecase) expireOne(ctx context.Context, payment Payment, no
 
 	err := usecase.paymentRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 		// D6: the batch read above is a stale snapshot by the time this per-payment transaction
-		// opens — a guest may have cancelled it, or another tick may already have expired it.
-		// Re-read under lock and stand down if it has already left pending.
+		// opens — a guest may have cancelled it, another tick may already have expired it, or a
+		// barista may have approved it (FR-5: approved is never expirable, however late a tick
+		// gets to it). Re-read under lock and stand down if it has left pending or expirability.
 		locked, lockErr := usecase.paymentRepository.GetPaymentByPartnerReferenceNoForUpdate(ctxWithTx, payment.PartnerReferenceNo)
 		if lockErr != nil {
 			return lockErr
 		}
-		if locked.Status != PaymentStatePending {
+		if locked.Status != PaymentStatePending || !locked.IsExpirable() {
 			return nil
 		}
 		payment = locked
@@ -622,6 +654,13 @@ func (usecase PaymentUsecase) CancelPayment(ctx context.Context, sessionId strin
 			return usecase.loadPaymentTransaction(ctxWithTx, payment, &resultTransaction)
 		}
 
+		// FR-5/D10: an approved COD order is being made — the guest may no longer cancel it
+		// themselves. Session ownership and pending-ness are already established above, so this
+		// is exactly CanBeCancelledBy's remaining condition.
+		if !payment.CanBeCancelledBy(sessionId, time.Now()) {
+			return &Error{Type: BadRequest, Message: "order cannot be cancelled once approved"}
+		}
+
 		if payment.RequiresGateway() {
 			gatewayStatus, gatewayErr := usecase.paymentGatewayRepository.QueryQris(ctxWithTx, QueryQrisInput{
 				PartnerReferenceNo: payment.PartnerReferenceNo,
@@ -656,7 +695,7 @@ func (usecase PaymentUsecase) CancelPayment(ctx context.Context, sessionId strin
 		}
 
 		reason := PaymentCancelReasonGuest
-		updatedPayment, finalizeErr := finalizeUncollectedPayment(ctxWithTx, payment, PaymentStateCancelled, &reason, usecase.paymentRepository, usecase.transactionRepository, usecase.availabilityReservation, usecase.kdsNotificationRepository)
+		updatedPayment, finalizeErr := finalizeUncollectedPayment(ctxWithTx, payment, PaymentStateCancelled, &reason, usecase.paymentRepository, usecase.transactionRepository, usecase.availabilityReservation, usecase.kdsNotificationRepository, usecase.paymentVerificationRepository)
 		if finalizeErr != nil {
 			return finalizeErr
 		}
@@ -828,8 +867,14 @@ func (usecase PaymentUsecase) refreshPendingPaymentStatus(ctxWithTx context.Cont
 
 // refreshPendingCashPaymentStatus is FR-3/D7: cash has no gateway to ask, so the server clock is
 // the whole truth. Past expired_at it shares expirePayment with applyQrisStatus's expired branch
-// and the sweeper (FR-4) — one definition of what giving up on a payment does.
+// and the sweeper (FR-4) — one definition of what giving up on a payment does. FR-5: an approved
+// COD payment is left untouched, even past its own expired_at — the guest's own status poll must
+// never expire an order the bar has started making.
 func (usecase PaymentUsecase) refreshPendingCashPaymentStatus(ctxWithTx context.Context, payment Payment, now time.Time) (Payment, ConfirmPaymentOutcome, *Error) {
+	if !payment.IsExpirable() {
+		return payment, ConfirmPaymentOutcomeIgnored, nil
+	}
+
 	if now.Before(payment.ExpiredAt) {
 		payment.StatusCheckedAt = &now
 		updated, err := usecase.paymentRepository.UpdatePaymentById(ctxWithTx, payment, payment.Id)

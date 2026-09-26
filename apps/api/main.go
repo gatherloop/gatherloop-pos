@@ -133,6 +133,7 @@ func main() {
 	kdsDeviceRepository := mysql.NewKdsDeviceRepository(db)
 	kdsNotificationRepository := mysql.NewKdsNotificationRepository(db)
 	guestNotificationRepository := mysql.NewGuestNotificationRepository(db)
+	paymentVerificationRepository := mysql.NewPaymentVerificationRepository(db)
 
 	orderPaymentWalletId, _ := strconv.ParseInt(env.OrderPaymentWalletId, 10, 64)
 
@@ -141,7 +142,7 @@ func main() {
 
 	availabilityReservation := domain.NewAvailabilityReservation(availabilityReservationRepository)
 	walletUsecase := domain.NewWalletUsecase(walletRepository)
-	transactionUsecase := domain.NewTransactionUsecase(transactionRepository, variantRepository, couponRepository, walletRepository, availabilityReservation, kdsNotificationRepository, kdsNotificationUsecase, paymentRepository, guestNotificationRepository, guestNotificationUsecase, cartRepository)
+	transactionUsecase := domain.NewTransactionUsecase(transactionRepository, variantRepository, couponRepository, walletRepository, availabilityReservation, kdsNotificationRepository, kdsNotificationUsecase, paymentRepository, guestNotificationRepository, guestNotificationUsecase, cartRepository, paymentVerificationRepository)
 	variantUsecase := domain.NewVariantUsecase(variantRepository, productRepository)
 	productUsecase := domain.NewProductUsecase(productRepository, variantRepository)
 	materialUsecase := domain.NewMaterialUsecase(materialRepository, supplierRepository)
@@ -153,7 +154,7 @@ func main() {
 	tableUsecase := domain.NewTableUsecase(tableRepository)
 	cartUsecase := domain.NewCartUsecase(cartRepository, variantRepository, tableRepository, paymentRepository)
 	customerUsecase := domain.NewCustomerUsecase(customerRepository)
-	paymentUsecase := domain.NewPaymentUsecase(paymentRepository, paymentGatewayRepository, customerRepository, cartRepository, transactionRepository, variantRepository, walletRepository, availabilityReservation, kdsNotificationRepository, kdsNotificationUsecase, whatsappNumberVerifier, env.DokuQrisExpirySeconds, env.CashPaymentExpirySeconds, orderPaymentWalletId, env.OrderPaymentCancelEnabled)
+	paymentUsecase := domain.NewPaymentUsecase(paymentRepository, paymentGatewayRepository, customerRepository, cartRepository, transactionRepository, variantRepository, walletRepository, availabilityReservation, kdsNotificationRepository, kdsNotificationUsecase, whatsappNumberVerifier, paymentVerificationRepository, env.DokuQrisExpirySeconds, env.CashPaymentExpirySeconds, orderPaymentWalletId, env.OrderPaymentCancelEnabled)
 	budgetUsecase := domain.NewBudgetUsecase(budgetRepository)
 	authUsecase := domain.NewAuthUsecase(authRepository)
 	calculationUsecase := domain.NewCalculationUsecase(calculationRepository, walletRepository)
@@ -277,6 +278,9 @@ func runMaintenanceSweeper(ctx context.Context, kdsNotificationUsecase domain.Kd
 			}
 			if err := paymentUsecase.ExpireStalePayments(context.Background()); err != nil {
 				logger.Error("payment expiry sweep failed", slog.Any("error", err))
+			}
+			if err := paymentUsecase.DeleteOrphanedVerificationPhotos(context.Background()); err != nil {
+				logger.Error("COD verification photo orphan sweep failed", slog.Any("error", err))
 			}
 		}
 	}
