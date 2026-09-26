@@ -235,6 +235,7 @@ export const CartHandler = ({
           onDiningOptionChange: (diningOption) =>
             checkout.dispatch({ type: 'CHANGE_DINING_OPTION', diningOption }),
           cashierLocation,
+          isSubmitting: false,
         }
       : null;
 
