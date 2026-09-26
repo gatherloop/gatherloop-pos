@@ -225,6 +225,7 @@ jobs:
           FONNTE_BASE_URL: http://127.0.0.1:${{ env.FONNTESTUB_PORT }}
           WHATSAPP_NUMBER_VALIDATION_ENABLED: 'true'
           ORDER_WEB_BASE_URL: http://localhost:3000
+          ORDER_COD_PAYMENT_ENABLED: 'true'
         run: |
           nohup ./dist/apps/api > "$RUNNER_TEMP/api.log" 2>&1 &
           # Any HTTP response means the server is listening (GET on the
