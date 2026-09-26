@@ -29,12 +29,25 @@ export default defineConfig({
       API_INTERNAL_BASE_URL: apiBaseURL,
       NEXT_PUBLIC_ORDER_CHECKOUT_ENABLED: 'true',
       NEXT_PUBLIC_ORDER_CASH_PAYMENT_ENABLED: 'true',
+      NEXT_PUBLIC_ORDER_COD_PAYMENT_ENABLED: 'true',
     },
   },
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        // cod.spec.ts drives CameraCapture's real getUserMedia viewfinder
+        // (docs/prd-order-cod-payment.md FR-7/phase 14) against a fake
+        // device instead of real camera hardware; --use-fake-ui-for-media-stream
+        // auto-accepts the permission prompt so no dialog blocks the page.
+        launchOptions: {
+          args: [
+            '--use-fake-ui-for-media-stream',
+            '--use-fake-device-for-media-stream',
+          ],
+        },
+      },
     },
 
     ...(process.env['FULL_BROWSER_MATRIX']

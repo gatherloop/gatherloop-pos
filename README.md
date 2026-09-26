@@ -79,6 +79,20 @@ order-app guest gets to pay cash at the till before the order is cancelled autom
 at all; `NEXT_PUBLIC_ORDER_CASHIER_LOCATION` (default `Lantai 1`) is the till location shown to the
 guest in both the checkout sheet and the cash instruction screen.
 
+`apps/api/.env`'s `ORDER_COD_PAYMENT_ENABLED` (default `false`) is the server-side gate for the
+Cash on Delivery trial — the authoritative one, since it is what stops an old tab, a curl, or a
+cached bundle from creating a COD order (and the verification photo that comes with it) once the
+trial is off (`docs/prd-order-cod-payment.md`, D12). `COD_VERIFICATION_EXPIRY_SECONDS` (default
+`900`) is how long an unverified COD order waits for a barista before the sweeper cancels it and
+frees the guest's cart. `apps/order-web/.env.local`'s `NEXT_PUBLIC_ORDER_COD_PAYMENT_ENABLED` is
+the method's own client-side kill switch, off by default and only ever an affordance — the API flag
+above is what actually matters. Migration `000044_add_payment_verification` must be applied
+(`MIGRATIONS_DIR=data/mysql/migrations make migrate-up` from `apps/api`) before the API binary that
+expects the `payment_verification_photos` table starts. In production, turning the trial on is
+`ORDER_COD_PAYMENT_ENABLED=true` on the API and `NEXT_PUBLIC_ORDER_COD_PAYMENT_ENABLED=true` on
+`order-web`, alongside `NEXT_PUBLIC_ORDER_CASH_PAYMENT_ENABLED=false` — COD is a superset of cash
+from the guest's point of view, so the two trial flags are meant to be flipped together.
+
 `apps/api/.env`'s `FONNTE_TOKEN`, `FONNTE_BASE_URL` and `ORDER_WEB_BASE_URL` configure the
 WhatsApp order-ready notification sent when a barista marks an order-app order ready
 (`docs/prd-order-whatsapp-notifications.md`) — leaving `FONNTE_TOKEN` or `ORDER_WEB_BASE_URL`
