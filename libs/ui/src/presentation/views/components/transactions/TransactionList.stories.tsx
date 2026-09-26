@@ -30,6 +30,7 @@ const defaultArgs = {
   onUncompleteMenuPress: fn(),
   onPrintInvoiceMenuPress: fn(),
   onPrintOrderSlipMenuPress: fn(),
+  onVerifyMenuPress: fn(),
   onItemPress: fn(),
   wallets: mockWallets,
   walletId: null,

@@ -15,6 +15,7 @@ import {
   TransactionListUsecase,
   TransactionPayUsecase,
   TransactionUnpayUsecase,
+  TransactionVerificationUsecase,
 } from '../../../domain';
 import type { TransactionListScreenProps } from '../../views/screens/pos/TransactionListScreen';
 
@@ -139,6 +140,15 @@ const transactionCompleteCtrl = {
   },
   dispatch: jest.fn(),
 };
+const transactionVerificationCtrl = {
+  state: {
+    type: 'hidden' as string,
+    transactionId: null as number | null,
+    verification: null as { photo: string; capturedAt: string } | null,
+    errorMessage: null as string | null,
+  },
+  dispatch: jest.fn(),
+};
 const authLogoutCtrl = {
   state: { type: 'idle' as string },
   dispatch: jest.fn(),
@@ -174,6 +184,11 @@ jest.mock('../hooks', () => ({
           state: transactionUnpayCtrl.state,
           dispatch: transactionUnpayCtrl.dispatch,
         };
+      case 'TransactionVerificationUsecase':
+        return {
+          state: transactionVerificationCtrl.state,
+          dispatch: transactionVerificationCtrl.dispatch,
+        };
       default:
         throw new Error(`Unexpected usecase: ${usecase.constructor.name}`);
     }
@@ -196,6 +211,9 @@ const createProps = () => ({
   ),
   transactionUnpayUsecase: new TransactionUnpayUsecase(new MockTransactionRepository()),
   transactionCompleteUsecase: new TransactionCompleteUsecase(new MockTransactionRepository()),
+  transactionVerificationUsecase: new TransactionVerificationUsecase(
+    new MockTransactionRepository()
+  ),
 });
 
 describe('TransactionListHandler', () => {
@@ -227,6 +245,12 @@ describe('TransactionListHandler', () => {
       type: 'hidden',
       transactionId: null,
       action: null,
+    };
+    transactionVerificationCtrl.state = {
+      type: 'hidden',
+      transactionId: null,
+      verification: null,
+      errorMessage: null,
     };
     authLogoutCtrl.state = { type: 'idle' };
   });
@@ -358,6 +382,184 @@ describe('TransactionListHandler', () => {
       });
 
       expect(transactionListCtrl.dispatch).not.toHaveBeenCalledWith({ type: 'FETCH' });
+    });
+  });
+
+  describe('COD verification', () => {
+    it('dispatches SHOW with the transaction id when Verify is pressed', async () => {
+      await act(async () => {
+        render(<TransactionListHandler {...createProps()} />);
+      });
+
+      latestScreenProps.onVerifyMenuPress(buildTransaction([]));
+
+      expect(transactionVerificationCtrl.dispatch).toHaveBeenCalledWith({
+        type: 'SHOW',
+        transactionId: 1,
+      });
+    });
+
+    it('keeps the sheet closed while the usecase is hidden', async () => {
+      await act(async () => {
+        render(<TransactionListHandler {...createProps()} />);
+      });
+
+      expect(latestScreenProps.isVerificationSheetOpen).toBe(false);
+    });
+
+    it('opens the sheet and passes the photo through once shown', async () => {
+      transactionVerificationCtrl.state = {
+        type: 'shown',
+        transactionId: 1,
+        verification: {
+          photo: 'data:image/jpeg;base64,mock',
+          capturedAt: '2024-01-20T10:00:00.000Z',
+        },
+        errorMessage: null,
+      };
+
+      await act(async () => {
+        render(<TransactionListHandler {...createProps()} />);
+      });
+
+      expect(latestScreenProps.isVerificationSheetOpen).toBe(true);
+      expect(latestScreenProps.verificationVariant).toBe('shown');
+      expect(latestScreenProps.verificationPhoto).toBe(
+        'data:image/jpeg;base64,mock'
+      );
+      expect(latestScreenProps.verificationCapturedAt).toBe(
+        '2024-01-20T10:00:00.000Z'
+      );
+    });
+
+    it('resolves the verifying transaction from the current list', async () => {
+      transactionListCtrl.state = {
+        ...transactionListCtrl.state,
+        transactions: [buildTransaction([])],
+      };
+      transactionVerificationCtrl.state = {
+        type: 'shown',
+        transactionId: 1,
+        verification: {
+          photo: 'data:image/jpeg;base64,mock',
+          capturedAt: '2024-01-20T10:00:00.000Z',
+        },
+        errorMessage: null,
+      };
+
+      await act(async () => {
+        render(<TransactionListHandler {...createProps()} />);
+      });
+
+      expect(latestScreenProps.verifyingTransaction).toEqual(
+        buildTransaction([])
+      );
+    });
+
+    it('dispatches APPROVE when the approve action is pressed', async () => {
+      transactionVerificationCtrl.state = {
+        type: 'shown',
+        transactionId: 1,
+        verification: null,
+        errorMessage: null,
+      };
+
+      await act(async () => {
+        render(<TransactionListHandler {...createProps()} />);
+      });
+
+      latestScreenProps.onVerificationApprove();
+
+      expect(transactionVerificationCtrl.dispatch).toHaveBeenCalledWith({
+        type: 'APPROVE',
+      });
+    });
+
+    it('dispatches CONFIRM_REJECT then REJECT through the confirm step', async () => {
+      transactionVerificationCtrl.state = {
+        type: 'shown',
+        transactionId: 1,
+        verification: null,
+        errorMessage: null,
+      };
+
+      await act(async () => {
+        render(<TransactionListHandler {...createProps()} />);
+      });
+
+      latestScreenProps.onVerificationRejectPress();
+      expect(transactionVerificationCtrl.dispatch).toHaveBeenCalledWith({
+        type: 'CONFIRM_REJECT',
+      });
+
+      latestScreenProps.onVerificationRejectConfirm();
+      expect(transactionVerificationCtrl.dispatch).toHaveBeenCalledWith({
+        type: 'REJECT',
+      });
+    });
+
+    it('refetches the list when approval or rejection succeeds', async () => {
+      transactionVerificationCtrl.state = {
+        type: 'success',
+        transactionId: 1,
+        verification: null,
+        errorMessage: null,
+      };
+
+      await act(async () => {
+        render(<TransactionListHandler {...createProps()} />);
+      });
+
+      expect(transactionListCtrl.dispatch).toHaveBeenCalledWith({ type: 'FETCH' });
+    });
+
+    it('refetches the list when the photo is gone', async () => {
+      transactionVerificationCtrl.state = {
+        type: 'gone',
+        transactionId: 1,
+        verification: null,
+        errorMessage: null,
+      };
+
+      await act(async () => {
+        render(<TransactionListHandler {...createProps()} />);
+      });
+
+      expect(transactionListCtrl.dispatch).toHaveBeenCalledWith({ type: 'FETCH' });
+    });
+
+    it('does not refetch while the sheet is merely loading', async () => {
+      transactionVerificationCtrl.state = {
+        type: 'loading',
+        transactionId: 1,
+        verification: null,
+        errorMessage: null,
+      };
+
+      await act(async () => {
+        render(<TransactionListHandler {...createProps()} />);
+      });
+
+      expect(transactionListCtrl.dispatch).not.toHaveBeenCalledWith({ type: 'FETCH' });
+    });
+
+    it('closes the sheet through HIDE', async () => {
+      transactionVerificationCtrl.state = {
+        type: 'shown',
+        transactionId: 1,
+        verification: null,
+        errorMessage: null,
+      };
+
+      await act(async () => {
+        render(<TransactionListHandler {...createProps()} />);
+      });
+
+      latestScreenProps.onVerificationClose();
+
+      expect(transactionVerificationCtrl.dispatch).toHaveBeenCalledWith({
+        type: 'HIDE',
+      });
     });
   });
 

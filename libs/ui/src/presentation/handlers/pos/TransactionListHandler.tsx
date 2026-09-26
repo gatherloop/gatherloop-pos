@@ -1,5 +1,5 @@
 import { useRouter } from 'solito/router';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { match, P } from 'ts-pattern';
 import dayjs from 'dayjs';
 import { useToastController } from '@tamagui/toast';
@@ -19,6 +19,7 @@ import {
   TransactionPayForm,
   TransactionPayUsecase,
   TransactionUnpayUsecase,
+  TransactionVerificationUsecase,
 } from '../../../domain';
 import {
   buildOrderSlipPayload,
@@ -30,6 +31,7 @@ import {
   TransactionListScreen,
   TransactionListScreenProps,
 } from '../../views/screens/pos/TransactionListScreen';
+import { TransactionVerificationSheetVariant } from '../../views/components';
 
 const getTransactionPath = (transaction: Transaction) =>
   transaction.paidAt || transaction.source === 'order'
@@ -43,6 +45,7 @@ export type TransactionListHandlerProps = {
   transactionPayUsecase: TransactionPayUsecase;
   transactionUnpayUsecase: TransactionUnpayUsecase;
   transactionCompleteUsecase: TransactionCompleteUsecase;
+  transactionVerificationUsecase: TransactionVerificationUsecase;
 };
 
 export const TransactionListHandler = ({
@@ -52,6 +55,7 @@ export const TransactionListHandler = ({
   transactionPayUsecase,
   transactionUnpayUsecase,
   transactionCompleteUsecase,
+  transactionVerificationUsecase,
 }: TransactionListHandlerProps) => {
   const authLogout = useAuthLogout(authLogoutUsecase);
   const transactionList = useUsecase(transactionListUsecase);
@@ -59,6 +63,8 @@ export const TransactionListHandler = ({
   const transactionPay = useTransactionPay(transactionPayUsecase);
   const transactionUnpay = useUsecase(transactionUnpayUsecase);
   const transactionComplete = useTransactionComplete(transactionCompleteUsecase);
+  const transactionVerification = useUsecase(transactionVerificationUsecase);
+  const lastVerificationActionRef = useRef<'approve' | 'reject' | null>(null);
   const router = useRouter();
   const { print } = usePrinter();
   const toast = useToastController();
@@ -116,6 +122,27 @@ export const TransactionListHandler = ({
         // Default case, do nothing
       });
   }, [transactionComplete.state, transactionList]);
+
+  useEffect(() => {
+    match(transactionVerification.state)
+      .with({ type: 'success' }, () => {
+        toast.show(
+          lastVerificationActionRef.current === 'reject'
+            ? 'Order Rejected'
+            : 'Order Approved'
+        );
+        transactionList.dispatch({ type: 'FETCH' });
+      })
+      .with({ type: 'gone' }, () => {
+        transactionList.dispatch({ type: 'FETCH' });
+      })
+      .with({ type: 'error' }, ({ errorMessage }) => {
+        toast.show(errorMessage ?? 'Something went wrong');
+      })
+      .otherwise(() => {
+        // Default case, do nothing
+      });
+  }, [transactionVerification.state, transactionList, toast]);
 
   const buildPrintTransaction = (
     transaction: Transaction
@@ -212,6 +239,12 @@ export const TransactionListHandler = ({
         );
         if (payload) print(payload);
       }}
+      onVerifyMenuPress={(transaction) =>
+        transactionVerification.dispatch({
+          type: 'SHOW',
+          transactionId: transaction.id,
+        })
+      }
       onEmptyActionPress={() => router.push('/transactions/create')}
       onRetryButtonPress={() => transactionList.dispatch({ type: 'FETCH' })}
       onRefreshPress={() => transactionList.dispatch({ type: 'FETCH' })}
@@ -358,6 +391,49 @@ export const TransactionListHandler = ({
       onCompleteConfirm={() =>
         transactionComplete.dispatch({ type: 'COMPLETE' })
       }
+      isVerificationSheetOpen={transactionVerification.state.type !== 'hidden'}
+      verificationVariant={match(transactionVerification.state.type)
+        .returnType<TransactionVerificationSheetVariant>()
+        .with('success', () => 'loading')
+        .with(
+          P.union(
+            'loading',
+            'shown',
+            'approving',
+            'confirmingReject',
+            'rejecting',
+            'gone',
+            'error'
+          ),
+          (type) => type
+        )
+        .otherwise(() => 'loading')}
+      verifyingTransaction={
+        transactionList.state.transactions.find(
+          (transaction: Transaction) =>
+            transaction.id === transactionVerification.state.transactionId
+        ) ?? null
+      }
+      verificationPhoto={transactionVerification.state.verification?.photo ?? null}
+      verificationCapturedAt={
+        transactionVerification.state.verification?.capturedAt ?? null
+      }
+      verificationErrorMessage={transactionVerification.state.errorMessage}
+      onVerificationClose={() => transactionVerification.dispatch({ type: 'HIDE' })}
+      onVerificationApprove={() => {
+        lastVerificationActionRef.current = 'approve';
+        transactionVerification.dispatch({ type: 'APPROVE' });
+      }}
+      onVerificationRejectPress={() =>
+        transactionVerification.dispatch({ type: 'CONFIRM_REJECT' })
+      }
+      onVerificationRejectCancel={() =>
+        transactionVerification.dispatch({ type: 'CANCEL_REJECT' })
+      }
+      onVerificationRejectConfirm={() => {
+        lastVerificationActionRef.current = 'reject';
+        transactionVerification.dispatch({ type: 'REJECT' });
+      }}
     />
   );
 };

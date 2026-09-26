@@ -23,6 +23,7 @@ const defaultProps: TransactionListItemProps = {
   onDeleteMenuPress: jest.fn(),
   onPrintInvoiceMenuPress: jest.fn(),
   onPrintOrderSlipMenuPress: jest.fn(),
+  onVerifyMenuPress: jest.fn(),
 };
 
 describe('TransactionListItem', () => {
@@ -158,5 +159,88 @@ describe('TransactionListItem', () => {
     render(<TransactionListItem {...defaultProps} diningOption="dine_in" />);
 
     expect(screen.queryByText('Takeaway')).toBeNull();
+  });
+
+  describe('COD verification', () => {
+    it('shows the needs confirmation badge for an awaiting COD order', () => {
+      render(
+        <TransactionListItem
+          {...defaultProps}
+          paymentMethod="cod"
+          paymentVerificationStatus="awaiting"
+        />
+      );
+
+      expect(screen.getByText('Needs confirmation')).toBeTruthy();
+    });
+
+    it('does not show the fulfillment badge for an awaiting COD order', () => {
+      render(
+        <TransactionListItem
+          {...defaultProps}
+          paymentMethod="cod"
+          paymentVerificationStatus="awaiting"
+        />
+      );
+
+      expect(screen.queryByText('Preparing')).toBeNull();
+    });
+
+    it('shows only the Verify menu item for an awaiting COD order', () => {
+      render(
+        <TransactionListItem
+          {...defaultProps}
+          paymentMethod="cod"
+          paymentVerificationStatus="awaiting"
+        />
+      );
+
+      expect(screen.getByText('Verify')).toBeTruthy();
+      expect(screen.queryByText('Pay')).toBeNull();
+      expect(screen.queryByText('Mark as Ready')).toBeNull();
+      expect(screen.queryByText('Delete')).toBeNull();
+      expect(screen.queryByText('Print Order Slip')).toBeNull();
+    });
+
+    it('shows the COD unpaid badge alongside the fulfillment badge once approved', () => {
+      render(
+        <TransactionListItem
+          {...defaultProps}
+          paymentMethod="cod"
+          paymentVerificationStatus="approved"
+        />
+      );
+
+      expect(screen.getByText('COD · unpaid')).toBeTruthy();
+      expect(screen.getByText('Preparing')).toBeTruthy();
+      expect(screen.queryByText('Needs confirmation')).toBeNull();
+    });
+
+    it('does not show the Verify menu item once approved', () => {
+      render(
+        <TransactionListItem
+          {...defaultProps}
+          paymentMethod="cod"
+          paymentVerificationStatus="approved"
+        />
+      );
+
+      expect(screen.queryByText('Verify')).toBeNull();
+      expect(screen.getByText('Pay')).toBeTruthy();
+    });
+
+    it('does not show the COD unpaid badge once paid', () => {
+      render(
+        <TransactionListItem
+          {...defaultProps}
+          paymentMethod="cod"
+          paymentVerificationStatus="approved"
+          paidAt="2024-01-20T10:30:00.000Z"
+          walletName="Cash"
+        />
+      );
+
+      expect(screen.queryByText('COD · unpaid')).toBeNull();
+    });
   });
 });
