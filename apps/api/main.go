@@ -133,6 +133,7 @@ func main() {
 	kdsDeviceRepository := mysql.NewKdsDeviceRepository(db)
 	kdsNotificationRepository := mysql.NewKdsNotificationRepository(db)
 	guestNotificationRepository := mysql.NewGuestNotificationRepository(db)
+	paymentVerificationRepository := mysql.NewPaymentVerificationRepository(db)
 
 	orderPaymentWalletId, _ := strconv.ParseInt(env.OrderPaymentWalletId, 10, 64)
 
@@ -153,7 +154,7 @@ func main() {
 	tableUsecase := domain.NewTableUsecase(tableRepository)
 	cartUsecase := domain.NewCartUsecase(cartRepository, variantRepository, tableRepository, paymentRepository)
 	customerUsecase := domain.NewCustomerUsecase(customerRepository)
-	paymentUsecase := domain.NewPaymentUsecase(paymentRepository, paymentGatewayRepository, customerRepository, cartRepository, transactionRepository, variantRepository, walletRepository, availabilityReservation, kdsNotificationRepository, kdsNotificationUsecase, whatsappNumberVerifier, env.DokuQrisExpirySeconds, env.CashPaymentExpirySeconds, orderPaymentWalletId, env.OrderPaymentCancelEnabled)
+	paymentUsecase := domain.NewPaymentUsecase(paymentRepository, paymentGatewayRepository, customerRepository, cartRepository, transactionRepository, variantRepository, walletRepository, availabilityReservation, kdsNotificationRepository, kdsNotificationUsecase, whatsappNumberVerifier, paymentVerificationRepository, env.DokuQrisExpirySeconds, env.CashPaymentExpirySeconds, env.CodVerificationExpirySeconds, orderPaymentWalletId, env.OrderPaymentCancelEnabled, env.OrderCodPaymentEnabled)
 	budgetUsecase := domain.NewBudgetUsecase(budgetRepository)
 	authUsecase := domain.NewAuthUsecase(authRepository)
 	calculationUsecase := domain.NewCalculationUsecase(calculationRepository, walletRepository)
