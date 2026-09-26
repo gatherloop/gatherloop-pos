@@ -27,6 +27,7 @@ export interface PaymentRepository {
     method: PaymentMethod;
     whatsappNumber?: string;
     diningOption?: PaymentDiningOption;
+    verificationPhoto?: string;
   }) => Promise<Payment>;
 
   fetchPayment: (reference: string) => Promise<Payment>;

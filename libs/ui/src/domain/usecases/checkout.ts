@@ -20,6 +20,7 @@ type Context = {
   whatsappNumber: string;
   method: PaymentMethod;
   diningOption: PaymentDiningOption;
+  verificationPhoto: string | null;
   nameErrorMessage: string | null;
   whatsappNumberErrorMessage: string | null;
   errorMessage: string | null;
@@ -40,6 +41,8 @@ export type CheckoutAction =
   | { type: 'CHANGE_WHATSAPP_NUMBER'; whatsappNumber: string }
   | { type: 'CHANGE_METHOD'; method: PaymentMethod }
   | { type: 'CHANGE_DINING_OPTION'; diningOption: PaymentDiningOption }
+  | { type: 'CAPTURE_PHOTO'; photo: string }
+  | { type: 'RETAKE_PHOTO' }
   | { type: 'CANCEL_DETAILS' }
   | { type: 'SUBMIT_DETAILS' }
   | { type: 'CHECKOUT_SUCCESS'; payment: Payment }
@@ -117,6 +120,7 @@ export class CheckoutUsecase extends Usecase<
       whatsappNumber: this.params.customerWhatsappNumber ?? '',
       method: 'qris',
       diningOption: 'dine_in',
+      verificationPhoto: null,
       nameErrorMessage: null,
       whatsappNumberErrorMessage: null,
       errorMessage: null,
@@ -146,11 +150,23 @@ export class CheckoutUsecase extends Usecase<
       )
       .with(
         [{ type: 'askingDetails' }, { type: 'CHANGE_METHOD' }],
-        ([state, { method }]) => ({ ...state, method })
+        ([state, { method }]) => ({
+          ...state,
+          method,
+          verificationPhoto: null,
+        })
       )
       .with(
         [{ type: 'askingDetails' }, { type: 'CHANGE_DINING_OPTION' }],
         ([state, { diningOption }]) => ({ ...state, diningOption })
+      )
+      .with(
+        [{ type: 'askingDetails' }, { type: 'CAPTURE_PHOTO' }],
+        ([state, { photo }]) => ({ ...state, verificationPhoto: photo })
+      )
+      .with(
+        [{ type: 'askingDetails' }, { type: 'RETAKE_PHOTO' }],
+        ([state]) => ({ ...state, verificationPhoto: null })
       )
       .with(
         [{ type: 'askingDetails' }, { type: 'CANCEL_DETAILS' }],
@@ -160,6 +176,17 @@ export class CheckoutUsecase extends Usecase<
           nameErrorMessage: null,
           whatsappNumberErrorMessage: null,
         })
+      )
+      .with(
+        [
+          {
+            type: P.union('askingDetails', 'error'),
+            method: 'cod',
+            verificationPhoto: null,
+          },
+          { type: 'SUBMIT_DETAILS' },
+        ],
+        ([state]) => state
       )
       .with(
         [
@@ -222,7 +249,13 @@ export class CheckoutUsecase extends Usecase<
     match(state)
       .with(
         { type: 'creatingPayment' },
-        ({ customerName, whatsappNumber, method, diningOption }) => {
+        ({
+          customerName,
+          whatsappNumber,
+          method,
+          diningOption,
+          verificationPhoto,
+        }) => {
           const normalizedWhatsappNumber =
             normalizeWhatsappNumber(whatsappNumber.trim()) ??
             whatsappNumber.trim();
@@ -232,6 +265,8 @@ export class CheckoutUsecase extends Usecase<
               whatsappNumber: normalizedWhatsappNumber,
               method,
               diningOption,
+              verificationPhoto:
+                method === 'cod' ? (verificationPhoto ?? undefined) : undefined,
             })
             .then((payment) => dispatch({ type: 'CHECKOUT_SUCCESS', payment }))
             .catch((error) =>

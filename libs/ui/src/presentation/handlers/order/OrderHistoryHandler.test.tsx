@@ -83,6 +83,7 @@ describe('OrderHistoryHandler', () => {
         createdAt: new Date().toISOString(),
         paidAt: null,
         diningOption: 'dine_in',
+        verificationStatus: null,
       },
     ];
     renderHandler({ paymentRepository });

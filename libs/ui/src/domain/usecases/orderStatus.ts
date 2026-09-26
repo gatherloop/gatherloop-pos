@@ -18,6 +18,7 @@ export type OrderStatusState = (
   | { type: 'loading' }
   | { type: 'awaitingPayment' }
   | { type: 'awaitingCashPayment' }
+  | { type: 'awaitingVerification' }
   | { type: 'preparing' }
   | { type: 'ready' }
   | { type: 'expired' }
@@ -48,10 +49,17 @@ function stateTypeForPayment(
 ):
   | 'awaitingPayment'
   | 'awaitingCashPayment'
+  | 'awaitingVerification'
   | 'preparing'
   | 'ready'
   | 'expired'
   | 'cancelled' {
+  if (payment.status === 'pending' && payment.method === 'cod') {
+    if (payment.verificationStatus !== 'approved') {
+      return 'awaitingVerification';
+    }
+    return payment.fulfillmentStatus === 'ready' ? 'ready' : 'preparing';
+  }
   return match(payment.status)
     .with('pending', () =>
       payment.method === 'cash'
@@ -116,6 +124,7 @@ export class OrderStatusUsecase extends Usecase<
         [{ type: 'error' }, { type: 'FETCH' }],
         [{ type: 'awaitingPayment' }, { type: 'FETCH' }],
         [{ type: 'awaitingCashPayment' }, { type: 'FETCH' }],
+        [{ type: 'awaitingVerification' }, { type: 'FETCH' }],
         ([state]) => ({ ...state, type: 'loading', errorMessage: null })
       )
       .with(
@@ -144,7 +153,11 @@ export class OrderStatusUsecase extends Usecase<
       .with(
         [
           {
-            type: P.union('awaitingPayment', 'awaitingCashPayment'),
+            type: P.union(
+              'awaitingPayment',
+              'awaitingCashPayment',
+              'awaitingVerification'
+            ),
             isPolling: false,
           },
           { type: P.union('POLL', 'COUNTDOWN_ELAPSED') },
@@ -153,29 +166,44 @@ export class OrderStatusUsecase extends Usecase<
       )
       .with(
         [
-          { type: P.union('awaitingPayment', 'awaitingCashPayment') },
+          {
+            type: P.union(
+              'awaitingPayment',
+              'awaitingCashPayment',
+              'awaitingVerification'
+            ),
+          },
           { type: 'POLL_SUCCESS' },
         ],
         ([state, { payment }]) => ({
           ...state,
-          type:
-            payment.status === 'paid'
-              ? stateTypeForPayment(payment)
-              : state.type,
+          type: stateTypeForPayment(payment),
           payment,
           isPolling: false,
         })
       )
       .with(
         [
-          { type: P.union('awaitingPayment', 'awaitingCashPayment') },
+          {
+            type: P.union(
+              'awaitingPayment',
+              'awaitingCashPayment',
+              'awaitingVerification'
+            ),
+          },
           { type: 'POLL_ERROR' },
         ],
         ([state]) => ({ ...state, isPolling: false })
       )
       .with(
         [
-          { type: P.union('awaitingPayment', 'awaitingCashPayment') },
+          {
+            type: P.union(
+              'awaitingPayment',
+              'awaitingCashPayment',
+              'awaitingVerification'
+            ),
+          },
           { type: 'EXPIRE' },
         ],
         ([state]) => ({
@@ -226,7 +254,13 @@ export class OrderStatusUsecase extends Usecase<
           });
       })
       .with(
-        { type: P.union('awaitingPayment', 'awaitingCashPayment') },
+        {
+          type: P.union(
+            'awaitingPayment',
+            'awaitingCashPayment',
+            'awaitingVerification'
+          ),
+        },
         (state) => {
           this.ensurePollTimer(AWAITING_PAYMENT_POLL_INTERVAL_MS, dispatch);
 

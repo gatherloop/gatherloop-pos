@@ -52,6 +52,7 @@ const sourceLabel: Record<TransactionSource, string> = {
 const paymentMethodLabel: Record<PaymentMethod, string> = {
   qris: 'QRIS',
   cash: 'Cash',
+  cod: 'COD',
 };
 
 export const TransactionDetail = ({

@@ -540,6 +540,120 @@ describe('OrderStatusUsecase', () => {
     });
   });
 
+  describe('awaitingVerification', () => {
+    const codPayment = (repository: MockPaymentRepository): Payment => ({
+      ...repository.payment,
+      method: 'cod',
+      verificationStatus: 'awaiting',
+    });
+
+    const enterAwaitingVerification = (repository: MockPaymentRepository) => {
+      repository.payment = codPayment(repository);
+      return createSeededTester(repository, repository.payment);
+    };
+
+    it('should transition idle → loading → awaitingVerification on a known cod reference awaiting verification', async () => {
+      const repository = new MockPaymentRepository();
+      repository.payment = codPayment(repository);
+      const orderStatus = createTester(repository, repository.payment.reference);
+
+      await flushMicrotasks();
+      expect(orderStatus.state).toEqual({
+        type: 'awaitingVerification',
+        reference: repository.payment.reference,
+        payment: repository.payment,
+        errorMessage: null,
+        isPolling: false,
+      });
+    });
+
+    it('should transition to preparing on a POLL that reports approved but not yet ready', async () => {
+      const repository = new MockPaymentRepository();
+      const orderStatus = enterAwaitingVerification(repository);
+
+      repository.payment = {
+        ...repository.payment,
+        verificationStatus: 'approved',
+        fulfillmentStatus: 'preparing',
+      };
+      orderStatus.dispatch({ type: 'POLL' });
+      await flushMicrotasks();
+
+      expect(orderStatus.state.type).toBe('preparing');
+      expect(orderStatus.state.payment?.status).toBe('pending');
+      expect(orderStatus.state.payment?.verificationStatus).toBe('approved');
+    });
+
+    it('should transition straight to ready on a POLL that reports approved and already ready', async () => {
+      const repository = new MockPaymentRepository();
+      const orderStatus = enterAwaitingVerification(repository);
+
+      repository.payment = {
+        ...repository.payment,
+        verificationStatus: 'approved',
+        fulfillmentStatus: 'ready',
+      };
+      orderStatus.dispatch({ type: 'POLL' });
+      await flushMicrotasks();
+
+      expect(orderStatus.state.type).toBe('ready');
+    });
+
+    it('should transition to cancelled on a POLL that reports the order was rejected', async () => {
+      const repository = new MockPaymentRepository();
+      const orderStatus = enterAwaitingVerification(repository);
+
+      repository.payment = {
+        ...repository.payment,
+        status: 'cancelled',
+        cancelReason: 'rejected',
+      };
+      orderStatus.dispatch({ type: 'POLL' });
+      await flushMicrotasks();
+
+      expect(orderStatus.state.type).toBe('cancelled');
+      expect(orderStatus.state.payment?.cancelReason).toBe('rejected');
+    });
+
+    it('should transition to expired when the verification window elapses', async () => {
+      const repository = new MockPaymentRepository();
+      const orderStatus = enterAwaitingVerification(repository);
+
+      repository.payment = { ...repository.payment, status: 'expired' };
+      orderStatus.dispatch({ type: 'POLL' });
+      await flushMicrotasks();
+
+      expect(orderStatus.state.type).toBe('expired');
+    });
+
+    it('should keep waiting for a barista on a poll error', async () => {
+      const repository = new MockPaymentRepository();
+      const orderStatus = enterAwaitingVerification(repository);
+
+      repository.setShouldFailFetch(true);
+      orderStatus.dispatch({ type: 'POLL' });
+      expect(orderStatus.state.isPolling).toBe(true);
+
+      await flushMicrotasks();
+      expect(orderStatus.state.type).toBe('awaitingVerification');
+      expect(orderStatus.state.isPolling).toBe(false);
+    });
+
+    it('should poll again automatically after 3s while awaiting verification', async () => {
+      const repository = new MockPaymentRepository();
+      const orderStatus = enterAwaitingVerification(repository);
+
+      repository.payment = {
+        ...repository.payment,
+        verificationStatus: 'approved',
+        fulfillmentStatus: 'preparing',
+      };
+      await jest.advanceTimersByTimeAsync(3000);
+
+      expect(orderStatus.state.type).toBe('preparing');
+    });
+  });
+
   describe('preparing', () => {
     const enterPreparing = (repository: MockPaymentRepository) => {
       repository.payment = {

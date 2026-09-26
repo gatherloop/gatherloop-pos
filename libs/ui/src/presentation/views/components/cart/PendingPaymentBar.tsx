@@ -14,6 +14,7 @@ export type PendingPaymentBarProps = {
 const METHOD_LABEL: Record<PaymentMethod, string> = {
   qris: 'QRIS',
   cash: 'tunai',
+  cod: 'COD',
 };
 
 function secondsUntil(expiredAt: string): number {
