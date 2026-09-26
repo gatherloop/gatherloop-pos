@@ -19,7 +19,7 @@ func (repo Repository) GetTransactionList(ctx context.Context, query string, sor
 
 	var transactionResults []Transaction
 	result := db.Table("transactions").
-		Select("transactions.*, payments.method AS payment_method").
+		Select("transactions.*, payments.method AS payment_method, payments.verification_status AS payment_verification_status").
 		Joins("LEFT JOIN payments ON payments.transaction_id = transactions.id AND payments.deleted_at IS NULL").
 		Where("transactions.deleted_at is NULL").
 		Preload("TransactionItems").Preload("TransactionItems.Values").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").Preload("TransactionItems.Variant.Product.Category").Preload("TransactionCoupons").Preload("TransactionCoupons.Coupon").Preload("Wallet").Preload("Cart").Preload("Cart.Table").Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
@@ -120,7 +120,7 @@ func (repo Repository) GetTransactionById(ctx context.Context, id int64) (domain
 
 	var transaction Transaction
 	result := db.Table("transactions").
-		Select("transactions.*, payments.method AS payment_method").
+		Select("transactions.*, payments.method AS payment_method, payments.verification_status AS payment_verification_status").
 		Joins("LEFT JOIN payments ON payments.transaction_id = transactions.id AND payments.deleted_at IS NULL").
 		Where("transactions.id = ?", id).
 		Preload("TransactionItems").Preload("TransactionItems.Values").Preload("Wallet").Preload("Cart").Preload("Cart.Table").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.Materials").Preload("TransactionItems.Variant.Materials.Material").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").Preload("TransactionItems.Variant.Product.Category").Preload("TransactionCoupons").Preload("TransactionCoupons.Coupon").First(&transaction)

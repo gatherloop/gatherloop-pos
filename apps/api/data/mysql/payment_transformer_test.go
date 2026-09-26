@@ -16,6 +16,8 @@ func TestPaymentTransformerRoundTrip(t *testing.T) {
 	cancelledAt := time.Date(2026, 9, 10, 12, 4, 0, 0, time.UTC)
 	cancelReason := domain.PaymentCancelReasonGuest
 	statusCheckedAt := time.Date(2026, 9, 10, 12, 2, 55, 0, time.UTC)
+	verifiedAt := time.Date(2026, 9, 10, 12, 1, 30, 0, time.UTC)
+	verificationStatus := domain.PaymentVerificationStatusApproved
 
 	payment := domain.Payment{
 		Id:                     7,
@@ -33,6 +35,8 @@ func TestPaymentTransformerRoundTrip(t *testing.T) {
 		PaidAt:                 &paidAt,
 		CancelledAt:            &cancelledAt,
 		CancelReason:           &cancelReason,
+		VerificationStatus:     &verificationStatus,
+		VerifiedAt:             &verifiedAt,
 		StatusCheckedAt:        &statusCheckedAt,
 		CreatedAt:              time.Date(2026, 9, 10, 12, 0, 0, 0, time.UTC),
 		UpdatedAt:              time.Date(2026, 9, 10, 12, 3, 0, 0, time.UTC),
@@ -53,4 +57,12 @@ func TestPaymentTransformerMapsNilCancelReasonToNull(t *testing.T) {
 
 	assert.Nil(t, db.CancelReason)
 	assert.Nil(t, mysql.ToPaymentDomain(db).CancelReason)
+}
+
+// VerificationStatus is nil for QRIS and cash (D2); only a COD payment ever sets it.
+func TestPaymentTransformerMapsNilVerificationStatusToNull(t *testing.T) {
+	db := mysql.ToPaymentDB(domain.Payment{VerificationStatus: nil})
+
+	assert.Nil(t, db.VerificationStatus)
+	assert.Nil(t, mysql.ToPaymentDomain(db).VerificationStatus)
 }

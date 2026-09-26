@@ -148,6 +148,8 @@ func (repo Repository) UpdatePaymentById(ctx context.Context, payment domain.Pay
 		"status":                   payload.Status,
 		"qr_content":               payload.QrContent,
 		"paid_at":                  payload.PaidAt,
+		"verification_status":      payload.VerificationStatus,
+		"verified_at":              payload.VerifiedAt,
 		"status_checked_at":        payload.StatusCheckedAt,
 	}); result.Error != nil {
 		return domain.Payment{}, ToErrorCtx(ctx, result.Error, "UpdatePaymentById")
