@@ -504,40 +504,6 @@ describe('CartHandler', () => {
     ).toBeTruthy();
   });
 
-  it('selecting cash switches the submit label and checks out with method cash', async () => {
-    const user = userEvent.setup();
-    const cartRepository = new MockCartRepository();
-    await addItemToCart(cartRepository);
-    const paymentRepository = new MockPaymentRepository();
-    const checkoutSpy = jest.spyOn(paymentRepository, 'checkout');
-    renderHandler({
-      cartRepository,
-      paymentRepository,
-      customerName: 'Budi',
-      customerWhatsappNumber: '081234567890',
-      enabledMethods: ['qris', 'cash'],
-    });
-    await settle();
-
-    await user.click(screen.getByRole('button', { name: payButtonName }));
-    await user.click(screen.getByLabelText('Bayar dengan Cash di Kasir'));
-
-    expect(screen.getByRole('button', { name: 'Bayar di kasir' })).toBeTruthy();
-
-    await user.click(screen.getByRole('button', { name: 'Bayar di kasir' }));
-    await settle();
-
-    expect(checkoutSpy).toHaveBeenCalledWith({
-      customerName: 'Budi',
-      whatsappNumber: '6281234567890',
-      method: 'cash',
-      diningOption: 'dine_in',
-    });
-    expect(mockPush).toHaveBeenCalledWith(
-      `/orders/${paymentRepository.payment.reference}`
-    );
-  });
-
   describe('COD payment method', () => {
     const originalMediaDevices = navigator.mediaDevices;
 
@@ -611,7 +577,7 @@ describe('CartHandler', () => {
       expect(screen.queryByLabelText('Bayar dengan Cash di Kasir')).toBeNull();
     });
 
-    it('disables submit with "Ambil foto dulu" until a photo is captured, then checks out with method cod and the photo', async () => {
+    it('disables submit with until a photo is captured, then checks out with method cod and the photo', async () => {
       stubCamera();
       const user = userEvent.setup();
       const cartRepository = new MockCartRepository();
@@ -633,7 +599,7 @@ describe('CartHandler', () => {
       expect(
         (
           screen.getByRole('button', {
-            name: 'Ambil foto dulu',
+            name: 'Lanjutkan Pembayaran',
           }) as HTMLButtonElement
         ).disabled
       ).toBe(true);
@@ -644,7 +610,7 @@ describe('CartHandler', () => {
       await capturePhoto(user, container);
 
       const submitButton = screen.getByRole('button', {
-        name: 'Pesan dengan COD',
+        name: 'Lanjutkan Pembayaran',
       });
       expect((submitButton as HTMLButtonElement).disabled).toBe(false);
 

@@ -13,13 +13,13 @@ type CameraState =
   | { type: 'denied' }
   | { type: 'unsupported' };
 
-const VIEWFINDER_ASPECT_RATIO = 3 / 4;
+const VIEWFINDER_ASPECT_RATIO = 1 / 1;
 const MAX_CAPTURE_DIMENSION = 1280;
 const JPEG_QUALITY = 0.7;
 
 const GUIDANCE_TEXT =
-  'Foto suasana sekitar Anda untuk memastikan Anda berada di kafe';
-const DENIED_TEXT = 'Izinkan akses kamera untuk memakai COD, atau pilih QRIS.';
+  'Foto suasana di sekitar Anda untuk memastikan Anda berada di Gatherloop';
+const DENIED_TEXT = 'Izinkan akses kamera untuk memakai Cash, atau pilih QRIS.';
 const UNSUPPORTED_TEXT =
   'Browser ini tidak mendukung kamera. Silakan pilih QRIS.';
 

@@ -30,9 +30,9 @@ describe('CameraCapture', () => {
     HTMLMediaElement.prototype.play = jest
       .fn()
       .mockResolvedValue(undefined) as unknown as () => Promise<void>;
-    HTMLCanvasElement.prototype.getContext = jest
-      .fn()
-      .mockReturnValue({ drawImage: jest.fn() }) as unknown as typeof HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = jest.fn().mockReturnValue({
+      drawImage: jest.fn(),
+    }) as unknown as typeof HTMLCanvasElement.prototype.getContext;
     HTMLCanvasElement.prototype.toBlob = jest.fn(function toBlob(
       this: HTMLCanvasElement,
       callback: BlobCallback
@@ -55,7 +55,9 @@ describe('CameraCapture', () => {
     render(<CameraCapture onCapture={jest.fn()} />);
 
     expect(
-      screen.getByText('Browser ini tidak mendukung kamera. Silakan pilih QRIS.')
+      screen.getByText(
+        'Browser ini tidak mendukung kamera. Silakan pilih QRIS.'
+      )
     ).toBeTruthy();
   });
 
@@ -65,7 +67,9 @@ describe('CameraCapture', () => {
     render(<CameraCapture onCapture={jest.fn()} />);
 
     expect(
-      await screen.findByText('Izinkan akses kamera untuk memakai COD, atau pilih QRIS.')
+      await screen.findByText(
+        'Izinkan akses kamera untuk memakai Cash, atau pilih QRIS.'
+      )
     ).toBeTruthy();
   });
 
@@ -107,7 +111,9 @@ describe('CameraCapture', () => {
     const [photo] = onCapture.mock.calls[0];
     expect(typeof photo).toBe('string');
     expect(photo.startsWith('data:')).toBe(false);
-    expect(Buffer.from(photo, 'base64').length).toBeLessThanOrEqual(1024 * 1024);
+    expect(Buffer.from(photo, 'base64').length).toBeLessThanOrEqual(
+      1024 * 1024
+    );
   });
 
   it('lets the guest retake the photo before confirming', async () => {
@@ -123,17 +129,21 @@ describe('CameraCapture', () => {
     })) as HTMLButtonElement;
     await waitFor(() => expect(shutterButton.disabled).toBe(false));
     const video = container.querySelector('video') as HTMLVideoElement;
-    Object.defineProperty(video, 'videoWidth', { value: 800, configurable: true });
-    Object.defineProperty(video, 'videoHeight', { value: 600, configurable: true });
+    Object.defineProperty(video, 'videoWidth', {
+      value: 800,
+      configurable: true,
+    });
+    Object.defineProperty(video, 'videoHeight', {
+      value: 600,
+      configurable: true,
+    });
     await user.click(shutterButton);
 
     const retakeButton = await screen.findByRole('button', { name: 'Ulangi' });
     await user.click(retakeButton);
 
     await screen.findByRole('button', { name: 'Ambil foto' });
-    expect(
-      screen.queryByRole('button', { name: 'Pakai foto ini' })
-    ).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Pakai foto ini' })).toBeNull();
     expect(onCapture).not.toHaveBeenCalled();
   });
 

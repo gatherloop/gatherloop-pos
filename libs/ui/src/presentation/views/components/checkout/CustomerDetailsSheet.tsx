@@ -72,12 +72,7 @@ const diningOptionLabel = (diningOption: PaymentDiningOption) =>
     .with('takeaway', () => 'Bawa pulang')
     .exhaustive();
 
-const submitLabel = (method: PaymentMethod) =>
-  match(method)
-    .with('qris', () => 'Lanjutkan Pembayaran')
-    .with('cash', () => 'Bayar di kasir')
-    .with('cod', () => 'Pesan dengan COD')
-    .exhaustive();
+const submitLabel = 'Lanjutkan Pembayaran';
 
 export const CustomerDetailsSheet = ({
   isOpen,
@@ -99,11 +94,7 @@ export const CustomerDetailsSheet = ({
   isSubmitting,
 }: CustomerDetailsSheetProps) => {
   const isCodPhotoMissing = method === 'cod' && !verificationPhoto;
-  const primaryLabel = isSubmitting
-    ? 'Memproses…'
-    : isCodPhotoMissing
-    ? 'Ambil foto dulu'
-    : submitLabel(method);
+  const primaryLabel = isSubmitting ? 'Memproses…' : submitLabel;
 
   return (
     <Sheet
@@ -229,8 +220,8 @@ export const CustomerDetailsSheet = ({
                   <XStack gap="$3" alignItems="center">
                     <Image
                       src={`data:image/jpeg;base64,${verificationPhoto}`}
-                      width={72}
-                      height={96}
+                      width={80}
+                      height={80}
                       borderRadius="$3"
                     />
                     <Button
