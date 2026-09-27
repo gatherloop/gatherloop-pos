@@ -8,6 +8,7 @@ export * from './useCouponList';
 export * from './useMaterialList';
 export * from './useOrderStatus';
 export * from './usePaymentCancel';
+export * from './usePaymentCancelSyncedTo';
 export * from './useRentalList';
 export * from './useSupplierList';
 export * from './useTableResolve';

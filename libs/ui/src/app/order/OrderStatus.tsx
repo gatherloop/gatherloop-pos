@@ -2,6 +2,7 @@ import { ApiPaymentRepository } from '../../data/api/payment';
 import { CookieSessionRepository } from '../../data/session/CookieSessionRepository';
 import { Payment } from '../../domain/entities/Payment';
 import { OrderStatusUsecase } from '../../domain/usecases/orderStatus';
+import { PaymentCancelUsecase } from '../../domain/usecases/paymentCancel';
 import { OrderStatusHandler } from '../../presentation/handlers/order/OrderStatusHandler';
 
 export type OrderStatusProps = {
@@ -30,11 +31,15 @@ export function OrderStatus({
     { reference, payment, cashierLocation },
     { sessionRepository }
   );
+  const paymentCancelUsecase = new PaymentCancelUsecase(paymentRepository, {
+    reference: payment?.reference ?? '',
+    method: payment?.method ?? 'qris',
+  });
 
   return (
     <OrderStatusHandler
       orderStatusUsecase={orderStatusUsecase}
-      paymentRepository={paymentRepository}
+      paymentCancelUsecase={paymentCancelUsecase}
     />
   );
 }

@@ -13,6 +13,7 @@ import { Variant } from '../../domain/entities/Variant';
 import { CartUsecase } from '../../domain/usecases/cart';
 import { MenuItemDetailUsecase } from '../../domain/usecases/menuItemDetail';
 import { MenuListUsecase } from '../../domain/usecases/menuList';
+import { PaymentCancelUsecase } from '../../domain/usecases/paymentCancel';
 import { TableResolveUsecase } from '../../domain/usecases/tableResolve';
 import { MenuListHandler } from '../../presentation/handlers/order/MenuListHandler';
 
@@ -64,6 +65,10 @@ export function MenuList({
     product: selectedProduct,
   });
   const cartUsecase = new CartUsecase(cartRepository, new UrlCartQueryRepository());
+  const paymentCancelUsecase = new PaymentCancelUsecase(paymentRepository, {
+    reference: '',
+    method: 'qris',
+  });
 
   return (
     <MenuListHandler
@@ -71,7 +76,7 @@ export function MenuList({
       menuListUsecase={menuListUsecase}
       menuItemDetailUsecase={menuItemDetailUsecase}
       cartUsecase={cartUsecase}
-      paymentRepository={paymentRepository}
+      paymentCancelUsecase={paymentCancelUsecase}
       preparingCount={preparingCount}
     />
   );

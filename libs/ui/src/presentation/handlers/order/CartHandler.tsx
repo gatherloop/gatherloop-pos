@@ -2,14 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { match, P } from 'ts-pattern';
 import { useRouter } from 'solito/router';
 import { Cart } from '../../../domain/entities/Cart';
-import { PaymentRepository } from '../../../domain/repositories/payment';
 import { CartState, CartUsecase } from '../../../domain/usecases/cart';
 import { CheckoutUsecase } from '../../../domain/usecases/checkout';
 import { PaymentCancelUsecase } from '../../../domain/usecases/paymentCancel';
 import { TableResolveUsecase } from '../../../domain/usecases/tableResolve';
 import { useCart } from '../hooks/useCart';
 import { useCheckout } from '../hooks/useCheckout';
-import { usePaymentCancel } from '../hooks/usePaymentCancel';
+import { usePaymentCancelSyncedTo } from '../hooks/usePaymentCancelSyncedTo';
 import { useTableResolve } from '../hooks/useTableResolve';
 import { CodPhotoCaptureSheetProps } from '../../views/components/checkout/CodPhotoCaptureSheet';
 import { CustomerDetailsSheetProps } from '../../views/components/checkout/CustomerDetailsSheet';
@@ -24,7 +23,7 @@ export type CartHandlerProps = {
   tableResolveUsecase: TableResolveUsecase;
   cartUsecase: CartUsecase;
   checkoutUsecase: CheckoutUsecase;
-  paymentRepository: PaymentRepository;
+  paymentCancelUsecase: PaymentCancelUsecase;
   preparingCount?: number;
 };
 
@@ -62,7 +61,7 @@ export const CartHandler = ({
   tableResolveUsecase,
   cartUsecase,
   checkoutUsecase,
-  paymentRepository,
+  paymentCancelUsecase,
   preparingCount,
 }: CartHandlerProps) => {
   const tableResolve = useTableResolve(tableResolveUsecase);
@@ -85,29 +84,13 @@ export const CartHandler = ({
   const mutating = isMutating(cart.state);
   const pendingPayment = cart.state.cart?.pendingPayment ?? null;
 
-  const [paymentCancelUsecase, setPaymentCancelUsecase] = useState(
-    () =>
-      new PaymentCancelUsecase(paymentRepository, {
-        reference: pendingPayment?.partnerReferenceNo ?? '',
-        method: pendingPayment?.method ?? 'qris',
-      })
+  const paymentCancel = usePaymentCancelSyncedTo(
+    paymentCancelUsecase,
+    pendingPayment && {
+      reference: pendingPayment.partnerReferenceNo,
+      method: pendingPayment.method,
+    }
   );
-
-  if (
-    pendingPayment &&
-    (pendingPayment.partnerReferenceNo !==
-      paymentCancelUsecase.params.reference ||
-      pendingPayment.method !== paymentCancelUsecase.params.method)
-  ) {
-    setPaymentCancelUsecase(
-      new PaymentCancelUsecase(paymentRepository, {
-        reference: pendingPayment.partnerReferenceNo,
-        method: pendingPayment.method,
-      })
-    );
-  }
-
-  const paymentCancel = usePaymentCancel(paymentCancelUsecase);
   const handledCancelResultRef =
     useRef<typeof paymentCancel.state.result>(null);
 

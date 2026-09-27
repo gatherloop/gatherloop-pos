@@ -1,13 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { match, P } from 'ts-pattern';
 import { useRouter } from 'solito/router';
 import { Payment } from '../../../domain/entities/Payment';
-import { PaymentRepository } from '../../../domain/repositories/payment';
 import { OrderStatusUsecase } from '../../../domain/usecases/orderStatus';
 import { PaymentCancelUsecase } from '../../../domain/usecases/paymentCancel';
 import { useBackNavigationGuard } from '../hooks/useBackNavigationGuard';
 import { useOrderStatus } from '../hooks/useOrderStatus';
-import { usePaymentCancel } from '../hooks/usePaymentCancel';
+import { usePaymentCancelSyncedTo } from '../hooks/usePaymentCancelSyncedTo';
 import {
   OrderStatusCancelConfirmation,
   OrderStatusScreen,
@@ -22,12 +21,12 @@ function payAtPickupAmount(payment: Payment): number | null {
 
 export type OrderStatusHandlerProps = {
   orderStatusUsecase: OrderStatusUsecase;
-  paymentRepository: PaymentRepository;
+  paymentCancelUsecase: PaymentCancelUsecase;
 };
 
 export const OrderStatusHandler = ({
   orderStatusUsecase,
-  paymentRepository,
+  paymentCancelUsecase,
 }: OrderStatusHandlerProps) => {
   const orderStatus = useOrderStatus(orderStatusUsecase);
   const router = useRouter();
@@ -38,24 +37,13 @@ export const OrderStatusHandler = ({
 
   const payment = orderStatus.state.payment;
 
-  const [paymentCancelUsecase, setPaymentCancelUsecase] = useState(
-    () =>
-      new PaymentCancelUsecase(paymentRepository, {
-        reference: orderStatusUsecase.params.reference,
-        method: payment?.method ?? 'qris',
-      })
+  const paymentCancel = usePaymentCancelSyncedTo(
+    paymentCancelUsecase,
+    payment && {
+      reference: orderStatusUsecase.params.reference,
+      method: payment.method,
+    }
   );
-
-  if (payment && payment.method !== paymentCancelUsecase.params.method) {
-    setPaymentCancelUsecase(
-      new PaymentCancelUsecase(paymentRepository, {
-        reference: orderStatusUsecase.params.reference,
-        method: payment.method,
-      })
-    );
-  }
-
-  const paymentCancel = usePaymentCancel(paymentCancelUsecase);
 
   useEffect(() => {
     if (paymentCancel.state.type !== 'settled' || !paymentCancel.state.result) {

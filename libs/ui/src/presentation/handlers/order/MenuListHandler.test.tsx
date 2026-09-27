@@ -16,6 +16,7 @@ import {
   MenuItemDetailUsecase,
   MenuListParams,
   MenuListUsecase,
+  PaymentCancelUsecase,
   PendingPayment,
   TableResolveUsecase,
 } from '../../../domain';
@@ -76,6 +77,10 @@ const renderHandler = ({
     cartRepository,
     new MockCartQueryRepository()
   );
+  const paymentCancelUsecase = new PaymentCancelUsecase(paymentRepository, {
+    reference: '',
+    method: 'qris',
+  });
 
   return {
     menuRepository,
@@ -89,7 +94,7 @@ const renderHandler = ({
         menuListUsecase={menuListUsecase}
         menuItemDetailUsecase={menuItemDetailUsecase}
         cartUsecase={cartUsecase}
-        paymentRepository={paymentRepository}
+        paymentCancelUsecase={paymentCancelUsecase}
         preparingCount={preparingCount}
       />
     ),

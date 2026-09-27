@@ -13,6 +13,7 @@ import {
   CartUsecase,
   CheckoutUsecase,
   Payment,
+  PaymentCancelUsecase,
   PaymentMethod,
   PendingPayment,
   TableResolveUsecase,
@@ -68,6 +69,10 @@ const renderHandler = ({
     enabledMethods,
     cashierLocation,
   });
+  const paymentCancelUsecase = new PaymentCancelUsecase(paymentRepository, {
+    reference: '',
+    method: 'qris',
+  });
 
   return {
     cartRepository,
@@ -79,7 +84,7 @@ const renderHandler = ({
         tableResolveUsecase={tableResolveUsecase}
         cartUsecase={cartUsecase}
         checkoutUsecase={checkoutUsecase}
-        paymentRepository={paymentRepository}
+        paymentCancelUsecase={paymentCancelUsecase}
         preparingCount={preparingCount}
       />
     ),

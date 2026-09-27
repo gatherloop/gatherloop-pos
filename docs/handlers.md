@@ -47,6 +47,23 @@ export const AuthLoginHandler = ({ authLoginUsecase }: AuthLoginHandlerProps) =>
 Note the effects that fire on the same state end up in the same `useEffect`, instead of split
 across a handler and a controller in two files.
 
+## A handler's props are usecases, not repositories (D-order-boundary)
+
+Per `docs/trd-order-handler-usecase-boundary.md`: a handler's props are usecases, plus rarely a
+single documented pure display value (e.g. `MenuListHandler`'s SSR-seeded `preparingCount` — a
+read-only integer with no repository call or state transition behind it, see that TRD's D6). A
+repository never appears in a Handler's prop list. If a handler needs one more side effect or
+value than its usecases already expose, that's a usecase missing the responsibility, not a reason
+to hand the handler a repository:
+
+- Build the usecase that needs the repository in the composition root (`app/{pos,order}/<X>.tsx`),
+  the same place every other usecase in the codebase is constructed, and pass the *usecase* down.
+- If a usecase must be reconstructed later once a value becomes known (e.g. a payment reference
+  discovered only after another usecase's fetch resolves), don't rebuild it inline in the handler.
+  Construct it once in the composition root and re-sync it via a dispatched action instead — see
+  `usePaymentCancelSyncedTo` (`presentation/handlers/hooks/usePaymentCancelSyncedTo.ts`) and
+  `PaymentCancelUsecase`'s `SYNC_PARAMS` action for the reference shape.
+
 ## Browser-lifecycle guards live in `utils/`, not `handlers/hooks/`
 
 `beforeunload` and Next's `router.events` are browser/Next-only APIs, and `.eslintrc.json` bans
