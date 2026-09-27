@@ -45,10 +45,11 @@ export function MenuList({
   const paymentRepository = new ApiPaymentRepository(sessionRepository);
   const menuListQueryRepository = new UrlMenuListQueryRepository();
 
-  const tableResolveUsecase = new TableResolveUsecase(publicTableRepository, {
-    code,
-    table,
-  });
+  const tableResolveUsecase = new TableResolveUsecase(
+    publicTableRepository,
+    { code, table },
+    { sessionRepository, cartRepository }
+  );
   const menuListUsecase = new MenuListUsecase(
     menuRepository,
     menuListQueryRepository,
@@ -70,10 +71,7 @@ export function MenuList({
       menuListUsecase={menuListUsecase}
       menuItemDetailUsecase={menuItemDetailUsecase}
       cartUsecase={cartUsecase}
-      cartRepository={cartRepository}
       paymentRepository={paymentRepository}
-      sessionRepository={sessionRepository}
-      tableCode={code}
       preparingCount={preparingCount}
     />
   );

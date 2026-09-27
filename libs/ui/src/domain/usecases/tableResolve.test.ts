@@ -4,7 +4,11 @@ import {
   TableResolveAction,
   TableResolveParams,
 } from './tableResolve';
-import { MockPublicTableRepository } from '../../data/mock';
+import {
+  MockCartRepository,
+  MockPublicTableRepository,
+  MockSessionRepository,
+} from '../../data/mock';
 import { UsecaseTester, flushPromises } from '../../utils/usecase';
 
 const createTester = (
@@ -145,5 +149,45 @@ describe('TableResolveUsecase', () => {
 
     await flushPromises();
     expect(resolveSpy).not.toHaveBeenCalled();
+  });
+
+  it('binds the resolved table to the session and cart once, and re-sets the session table code on every resolved state', async () => {
+    const repository = new MockPublicTableRepository();
+    const sessionRepository = new MockSessionRepository();
+    const cartRepository = new MockCartRepository();
+    const setTableCodeSpy = jest.spyOn(sessionRepository, 'setTableCode');
+    const updateTableSpy = jest.spyOn(cartRepository, 'updateTable');
+    const code = repository.codes[0];
+
+    const usecase = new TableResolveUsecase(
+      repository,
+      { code, table: repository.tables[code] },
+      { sessionRepository, cartRepository }
+    );
+    const state = usecase.getInitialState();
+    expect(state.type).toEqual('resolved');
+
+    usecase.onStateChange(state, jest.fn());
+    usecase.onStateChange(state, jest.fn());
+    await flushPromises();
+
+    expect(setTableCodeSpy).toHaveBeenCalledTimes(2);
+    expect(setTableCodeSpy).toHaveBeenCalledWith(code);
+    expect(updateTableSpy).toHaveBeenCalledTimes(1);
+    expect(updateTableSpy).toHaveBeenCalledWith(code);
+  });
+
+  it('does not touch the session or cart repository when neither dependency is provided', async () => {
+    const repository = new MockPublicTableRepository();
+    const code = repository.codes[0];
+
+    const usecase = new TableResolveUsecase(repository, {
+      code,
+      table: repository.tables[code],
+    });
+    const state = usecase.getInitialState();
+
+    expect(() => usecase.onStateChange(state, jest.fn())).not.toThrow();
+    await flushPromises();
   });
 });

@@ -33,10 +33,11 @@ export function Cart({
   const cartQueryRepository = new UrlCartQueryRepository();
   const paymentRepository = new ApiPaymentRepository(sessionRepository);
 
-  const tableResolveUsecase = new TableResolveUsecase(publicTableRepository, {
-    code,
-    table,
-  });
+  const tableResolveUsecase = new TableResolveUsecase(
+    publicTableRepository,
+    { code, table },
+    { sessionRepository }
+  );
   const cartUsecase = new CartUsecase(cartRepository, cartQueryRepository);
   const checkoutUsecase = new CheckoutUsecase(paymentRepository, {
     customerName,
@@ -60,12 +61,10 @@ export function Cart({
       tableResolveUsecase={tableResolveUsecase}
       cartUsecase={cartUsecase}
       checkoutUsecase={checkoutUsecase}
-      sessionRepository={sessionRepository}
       paymentRepository={paymentRepository}
       enabled={enabled}
       enabledMethods={enabledMethods}
       cashierLocation={cashierLocation}
-      tableCode={code}
       preparingCount={preparingCount}
     />
   );
