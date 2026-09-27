@@ -60,9 +60,11 @@ const renderHandler = ({
   sessionRepository?: MockSessionRepository;
   cashierLocation?: string;
 }) => {
-  const orderStatusUsecase = new OrderStatusUsecase(paymentRepository, {
-    reference,
-  });
+  const orderStatusUsecase = new OrderStatusUsecase(
+    paymentRepository,
+    { reference, cashierLocation },
+    { sessionRepository }
+  );
 
   return {
     paymentRepository,
@@ -71,8 +73,6 @@ const renderHandler = ({
       <OrderStatusHandler
         orderStatusUsecase={orderStatusUsecase}
         paymentRepository={paymentRepository}
-        sessionRepository={sessionRepository}
-        cashierLocation={cashierLocation}
       />
     ),
   };
