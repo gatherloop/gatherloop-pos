@@ -7,6 +7,7 @@ import { PaymentMethod } from '../../domain/entities/Payment';
 import { PublicTable } from '../../domain/entities/PublicTable';
 import { CartUsecase } from '../../domain/usecases/cart';
 import { CheckoutUsecase } from '../../domain/usecases/checkout';
+import { PaymentCancelUsecase } from '../../domain/usecases/paymentCancel';
 import { TableResolveUsecase } from '../../domain/usecases/tableResolve';
 import { CartHandler } from '../../presentation/handlers/order/CartHandler';
 
@@ -58,13 +59,17 @@ export function Cart({
     enabledMethods,
     cashierLocation,
   });
+  const paymentCancelUsecase = new PaymentCancelUsecase(paymentRepository, {
+    reference: '',
+    method: 'qris',
+  });
 
   return (
     <CartHandler
       tableResolveUsecase={tableResolveUsecase}
       cartUsecase={cartUsecase}
       checkoutUsecase={checkoutUsecase}
-      paymentRepository={paymentRepository}
+      paymentCancelUsecase={paymentCancelUsecase}
       preparingCount={preparingCount}
     />
   );

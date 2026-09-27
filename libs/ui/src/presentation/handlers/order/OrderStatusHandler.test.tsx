@@ -5,7 +5,11 @@ import {
   MockPaymentRepository,
   MockSessionRepository,
 } from '../../../data/mock';
-import { OrderStatusUsecase } from '../../../domain';
+import {
+  OrderStatusUsecase,
+  Payment,
+  PaymentCancelUsecase,
+} from '../../../domain';
 import { PaymentRepository } from '../../../domain/repositories/payment';
 import { formatRupiah } from '../../../utils/currency';
 import { flushPromises } from '../../../utils/testUtils';
@@ -51,20 +55,26 @@ const createSessionRepositoryWithTableCode = () => {
 
 const renderHandler = ({
   reference,
+  payment,
   paymentRepository = new MockPaymentRepository(),
   sessionRepository = createSessionRepositoryWithTableCode(),
   cashierLocation = CASHIER_LOCATION,
 }: {
   reference: string;
+  payment?: Payment | null;
   paymentRepository?: MockPaymentRepository;
   sessionRepository?: MockSessionRepository;
   cashierLocation?: string;
 }) => {
   const orderStatusUsecase = new OrderStatusUsecase(
     paymentRepository,
-    { reference, cashierLocation },
+    { reference, payment, cashierLocation },
     { sessionRepository }
   );
+  const paymentCancelUsecase = new PaymentCancelUsecase(paymentRepository, {
+    reference: payment?.reference ?? '',
+    method: payment?.method ?? 'qris',
+  });
 
   return {
     paymentRepository,
@@ -72,7 +82,7 @@ const renderHandler = ({
     ...render(
       <OrderStatusHandler
         orderStatusUsecase={orderStatusUsecase}
-        paymentRepository={paymentRepository}
+        paymentCancelUsecase={paymentCancelUsecase}
       />
     ),
   };
@@ -504,6 +514,30 @@ describe('OrderStatusHandler', () => {
   });
 
   describe('cancelling a pending payment', () => {
+    it('cancels using the seeded payment reference from the first render, with no fetch needed first', async () => {
+      const paymentRepository = new MockPaymentRepository();
+      const seededPayment: Payment = {
+        ...paymentRepository.payment,
+        canCancel: true,
+      };
+      const cancelSpy = jest.spyOn(paymentRepository, 'cancelPayment');
+
+      const { getByRole } = renderHandler({
+        reference: seededPayment.reference,
+        payment: seededPayment,
+        paymentRepository,
+      });
+
+      await act(async () => {
+        getByRole('button', { name: 'Batalkan pembayaran' }).click();
+      });
+      await act(async () => {
+        getByRole('button', { name: 'Ya' }).click();
+      });
+
+      expect(cancelSpy).toHaveBeenCalledWith(seededPayment.reference);
+    });
+
     it('hides the cancel button when the payment cannot be cancelled', async () => {
       const paymentRepository = new MockPaymentRepository();
       paymentRepository.payment = {

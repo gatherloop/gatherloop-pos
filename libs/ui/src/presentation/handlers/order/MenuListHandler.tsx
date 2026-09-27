@@ -4,7 +4,6 @@ import { useRouter } from 'solito/router';
 import { Category } from '../../../domain/entities/Category';
 import { Product } from '../../../domain/entities/Product';
 import { Variant } from '../../../domain/entities/Variant';
-import { PaymentRepository } from '../../../domain/repositories/payment';
 import { CartUsecase } from '../../../domain/usecases/cart';
 import {
   MenuItemDetailState,
@@ -21,7 +20,7 @@ import { CartBar } from '../../views/components/cart/CartBar';
 import { PendingPaymentBar } from '../../views/components/cart/PendingPaymentBar';
 import { useUsecase } from '../hooks/useUsecase';
 import { useCart } from '../hooks/useCart';
-import { usePaymentCancel } from '../hooks/usePaymentCancel';
+import { usePaymentCancelSyncedTo } from '../hooks/usePaymentCancelSyncedTo';
 import { useTableResolve } from '../hooks/useTableResolve';
 import { MenuItemDetailScreenProps } from '../../views/screens/order/MenuItemDetailScreen';
 import {
@@ -35,7 +34,7 @@ export type MenuListHandlerProps = {
   menuListUsecase: MenuListUsecase;
   menuItemDetailUsecase: MenuItemDetailUsecase;
   cartUsecase: CartUsecase;
-  paymentRepository: PaymentRepository;
+  paymentCancelUsecase: PaymentCancelUsecase;
   preparingCount?: number;
 };
 
@@ -184,7 +183,7 @@ export const MenuListHandler = ({
   menuListUsecase,
   menuItemDetailUsecase,
   cartUsecase,
-  paymentRepository,
+  paymentCancelUsecase,
   preparingCount,
 }: MenuListHandlerProps) => {
   const tableResolve = useTableResolve(tableResolveUsecase);
@@ -199,29 +198,13 @@ export const MenuListHandler = ({
   const currentCart = cart.state.cart;
   const pendingPayment = currentCart?.pendingPayment ?? null;
 
-  const [paymentCancelUsecase, setPaymentCancelUsecase] = useState(
-    () =>
-      new PaymentCancelUsecase(paymentRepository, {
-        reference: pendingPayment?.partnerReferenceNo ?? '',
-        method: pendingPayment?.method ?? 'qris',
-      })
+  const paymentCancel = usePaymentCancelSyncedTo(
+    paymentCancelUsecase,
+    pendingPayment && {
+      reference: pendingPayment.partnerReferenceNo,
+      method: pendingPayment.method,
+    }
   );
-
-  if (
-    pendingPayment &&
-    (pendingPayment.partnerReferenceNo !==
-      paymentCancelUsecase.params.reference ||
-      pendingPayment.method !== paymentCancelUsecase.params.method)
-  ) {
-    setPaymentCancelUsecase(
-      new PaymentCancelUsecase(paymentRepository, {
-        reference: pendingPayment.partnerReferenceNo,
-        method: pendingPayment.method,
-      })
-    );
-  }
-
-  const paymentCancel = usePaymentCancel(paymentCancelUsecase);
   const handledCancelResultRef = useRef<
     typeof paymentCancel.state.result
   >(null);
