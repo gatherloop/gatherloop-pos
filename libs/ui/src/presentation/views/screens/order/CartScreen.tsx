@@ -12,6 +12,10 @@ import {
   PendingPaymentNoticeProps,
 } from '../../components/cart/PendingPaymentNotice';
 import {
+  CodPhotoCaptureSheet,
+  CodPhotoCaptureSheetProps,
+} from '../../components/checkout/CodPhotoCaptureSheet';
+import {
   CustomerDetailsSheet,
   CustomerDetailsSheetProps,
 } from '../../components/checkout/CustomerDetailsSheet';
@@ -56,6 +60,7 @@ export type CartScreenProps = {
   onCheckoutPress: () => void;
   onCheckoutRetryPress: () => void;
   detailsSheet: (CustomerDetailsSheetProps & { isOpen: true }) | null;
+  photoCapture: (CodPhotoCaptureSheetProps & { isOpen: true }) | null;
   lockedNotice: PendingPaymentNoticeProps | null;
   cancelConfirmation: PaymentCancelAlertProps;
 };
@@ -82,6 +87,7 @@ export const CartScreen = ({
   onCheckoutPress,
   onCheckoutRetryPress,
   detailsSheet,
+  photoCapture,
   lockedNotice,
   cancelConfirmation,
 }: CartScreenProps) => {
@@ -240,6 +246,7 @@ export const CartScreen = ({
 
       {itemEdit && <CartItemEditScreen {...itemEdit} />}
       {detailsSheet && <CustomerDetailsSheet {...detailsSheet} />}
+      {photoCapture && <CodPhotoCaptureSheet {...photoCapture} />}
     </TableResolveScreen>
   );
 };

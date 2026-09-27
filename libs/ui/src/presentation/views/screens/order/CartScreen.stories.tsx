@@ -95,6 +95,7 @@ const meta: Meta<typeof CartScreen> = {
     isCheckoutEnabled: true,
     checkoutErrorMessage: null,
     detailsSheet: null,
+    photoCapture: null,
     lockedNotice: null,
     cancelConfirmation: {
       isOpen: false,

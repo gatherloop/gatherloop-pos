@@ -13,6 +13,7 @@ import { useCart } from '../hooks/useCart';
 import { useCheckout } from '../hooks/useCheckout';
 import { usePaymentCancel } from '../hooks/usePaymentCancel';
 import { useTableResolve } from '../hooks/useTableResolve';
+import { CodPhotoCaptureSheetProps } from '../../views/components/checkout/CodPhotoCaptureSheet';
 import { CustomerDetailsSheetProps } from '../../views/components/checkout/CustomerDetailsSheet';
 import { CartItemEditScreenProps } from '../../views/screens/order/CartItemEditScreen';
 import {
@@ -241,10 +242,19 @@ export const CartHandler = ({
             checkout.dispatch({ type: 'CHANGE_DINING_OPTION', diningOption }),
           cashierLocation,
           verificationPhoto: checkout.state.verificationPhoto,
+          onOpenPhotoCapture: () =>
+            checkout.dispatch({ type: 'OPEN_PHOTO_CAPTURE' }),
+          isSubmitting: isSubmittingDetails,
+        }
+      : null;
+
+  const photoCapture: (CodPhotoCaptureSheetProps & { isOpen: true }) | null =
+    checkout.state.type === 'capturingPhoto'
+      ? {
+          isOpen: true,
           onCapturePhoto: (photo) =>
             checkout.dispatch({ type: 'CAPTURE_PHOTO', photo }),
-          onRetakePhoto: () => checkout.dispatch({ type: 'RETAKE_PHOTO' }),
-          isSubmitting: isSubmittingDetails,
+          onBackPress: () => checkout.dispatch({ type: 'BACK_TO_DETAILS' }),
         }
       : null;
 
@@ -311,6 +321,7 @@ export const CartHandler = ({
       onCheckoutPress={() => checkout.dispatch({ type: 'ASK_DETAILS' })}
       onCheckoutRetryPress={() => checkout.dispatch({ type: 'SUBMIT_DETAILS' })}
       detailsSheet={detailsSheet}
+      photoCapture={photoCapture}
       lockedNotice={lockedNotice}
       cancelConfirmation={cancelConfirmation}
     />

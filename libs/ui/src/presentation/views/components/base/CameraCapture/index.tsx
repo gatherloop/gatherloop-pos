@@ -13,7 +13,7 @@ type CameraState =
   | { type: 'denied' }
   | { type: 'unsupported' };
 
-const VIEWFINDER_SIZE = 280;
+const VIEWFINDER_ASPECT_RATIO = 3 / 4;
 const MAX_CAPTURE_DIMENSION = 1280;
 const JPEG_QUALITY = 0.7;
 
@@ -144,8 +144,8 @@ export const CameraCapture = ({ onCapture }: CameraCaptureProps) => {
       <YStack gap="$3" alignItems="center">
         <Image
           src={`data:image/jpeg;base64,${state.photo}`}
-          width={VIEWFINDER_SIZE}
-          height={VIEWFINDER_SIZE * 0.75}
+          width="100%"
+          aspectRatio={VIEWFINDER_ASPECT_RATIO}
           borderRadius="$4"
         />
         <XStack gap="$3">
@@ -164,8 +164,8 @@ export const CameraCapture = ({ onCapture }: CameraCaptureProps) => {
     <YStack gap="$3" alignItems="center">
       <Paragraph textAlign="center">{GUIDANCE_TEXT}</Paragraph>
       <YStack
-        width={VIEWFINDER_SIZE}
-        height={VIEWFINDER_SIZE * 0.75}
+        width="100%"
+        aspectRatio={VIEWFINDER_ASPECT_RATIO}
         borderRadius="$4"
         overflow="hidden"
         backgroundColor="$color2"

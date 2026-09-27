@@ -638,6 +638,9 @@ describe('CartHandler', () => {
         ).disabled
       ).toBe(true);
 
+      await user.click(
+        screen.getByRole('button', { name: 'Ambil foto verifikasi' })
+      );
       await capturePhoto(user, container);
 
       const submitButton = screen.getByRole('button', {
@@ -660,6 +663,36 @@ describe('CartHandler', () => {
       expect(mockPush).toHaveBeenCalledWith(
         `/orders/${paymentRepository.payment.reference}`
       );
+    });
+
+    it('opens a dedicated photo capture step, and going back leaves the details sheet without a photo', async () => {
+      stubCamera();
+      const user = userEvent.setup();
+      const cartRepository = new MockCartRepository();
+      await addItemToCart(cartRepository);
+      renderHandler({
+        cartRepository,
+        customerName: 'Budi',
+        customerWhatsappNumber: '081234567890',
+        enabledMethods: ['qris', 'cod'],
+      });
+      await settle();
+
+      await user.click(screen.getByRole('button', { name: payButtonName }));
+      await user.click(screen.getByLabelText('Bayar dengan COD'));
+      await user.click(
+        screen.getByRole('button', { name: 'Ambil foto verifikasi' })
+      );
+
+      expect(screen.getByText('Foto verifikasi')).toBeTruthy();
+      expect(screen.queryByPlaceholderText('Nama Anda')).toBeNull();
+
+      await user.click(screen.getByRole('button', { name: 'Kembali' }));
+
+      expect(screen.getByPlaceholderText('Nama Anda')).toBeTruthy();
+      expect(
+        screen.getByRole('button', { name: 'Ambil foto verifikasi' })
+      ).toBeTruthy();
     });
   });
 

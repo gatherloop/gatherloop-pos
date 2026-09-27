@@ -33,10 +33,7 @@ const meta: Meta<typeof CustomerDetailsSheet> = {
     },
     cashierLocation: 'Lantai 1',
     verificationPhoto: null,
-    onCapturePhoto: () => {
-      // Storybook action stand-in
-    },
-    onRetakePhoto: () => {
+    onOpenPhotoCapture: () => {
       // Storybook action stand-in
     },
     isSubmitting: false,
