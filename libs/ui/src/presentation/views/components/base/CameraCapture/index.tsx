@@ -18,7 +18,7 @@ const MAX_CAPTURE_DIMENSION = 1280;
 const JPEG_QUALITY = 0.7;
 
 const GUIDANCE_TEXT =
-  'Foto suasana di sekitar meja Anda agar barista bisa memastikan Anda berada di kafe. Foto hanya dipakai untuk verifikasi dan langsung dihapus setelah dikonfirmasi.';
+  'Foto suasana sekitar Anda untuk memastikan Anda berada di kafe';
 const DENIED_TEXT = 'Izinkan akses kamera untuk memakai COD, atau pilih QRIS.';
 const UNSUPPORTED_TEXT =
   'Browser ini tidak mendukung kamera. Silakan pilih QRIS.';
@@ -36,7 +36,8 @@ function stopAllTracks(stream: MediaStream | null): void {
 
 function captureFrameAsJpeg(video: HTMLVideoElement): Promise<string> {
   const longEdge = Math.max(video.videoWidth, video.videoHeight);
-  const scale = longEdge > 0 ? Math.min(1, MAX_CAPTURE_DIMENSION / longEdge) : 1;
+  const scale =
+    longEdge > 0 ? Math.min(1, MAX_CAPTURE_DIMENSION / longEdge) : 1;
   const canvas = document.createElement('canvas');
   canvas.width = Math.round(video.videoWidth * scale);
   canvas.height = Math.round(video.videoHeight * scale);
@@ -77,7 +78,10 @@ export const CameraCapture = ({ onCapture }: CameraCaptureProps) => {
     let cancelled = false;
 
     navigator.mediaDevices
-      .getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false })
+      .getUserMedia({
+        video: { facingMode: { ideal: 'environment' } },
+        audio: false,
+      })
       .then((stream) => {
         if (cancelled) {
           stopAllTracks(stream);
@@ -98,7 +102,8 @@ export const CameraCapture = ({ onCapture }: CameraCaptureProps) => {
   }, [streamAttempt]);
 
   useEffect(() => {
-    if (state.type !== 'live' || !videoRef.current || !streamRef.current) return;
+    if (state.type !== 'live' || !videoRef.current || !streamRef.current)
+      return;
     videoRef.current.srcObject = streamRef.current;
     // Some browsers (and jsdom) reject or omit the play() promise; either way there is
     // nothing actionable to do beyond letting the live view stay silent.
