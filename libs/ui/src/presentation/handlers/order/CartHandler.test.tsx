@@ -55,9 +55,11 @@ const renderHandler = ({
   customerWhatsappNumber?: string;
   preparingCount?: number;
 } = {}) => {
-  const tableResolveUsecase = new TableResolveUsecase(tableRepository, {
-    code: TABLE_CODE,
-  });
+  const tableResolveUsecase = new TableResolveUsecase(
+    tableRepository,
+    { code: TABLE_CODE },
+    { sessionRepository }
+  );
   const cartUsecase = new CartUsecase(cartRepository, cartQueryRepository);
   const checkoutUsecase = new CheckoutUsecase(paymentRepository, {
     customerName,
@@ -75,11 +77,9 @@ const renderHandler = ({
         cartUsecase={cartUsecase}
         checkoutUsecase={checkoutUsecase}
         paymentRepository={paymentRepository}
-        sessionRepository={sessionRepository}
         enabled={enabled}
         enabledMethods={enabledMethods}
         cashierLocation={cashierLocation}
-        tableCode={TABLE_CODE}
         preparingCount={preparingCount}
       />
     ),

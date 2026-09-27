@@ -4,9 +4,7 @@ import { useRouter } from 'solito/router';
 import { Category } from '../../../domain/entities/Category';
 import { Product } from '../../../domain/entities/Product';
 import { Variant } from '../../../domain/entities/Variant';
-import { CartRepository } from '../../../domain/repositories/cart';
 import { PaymentRepository } from '../../../domain/repositories/payment';
-import { SessionRepository } from '../../../domain/repositories/session';
 import { CartUsecase } from '../../../domain/usecases/cart';
 import {
   MenuItemDetailState,
@@ -37,10 +35,7 @@ export type MenuListHandlerProps = {
   menuListUsecase: MenuListUsecase;
   menuItemDetailUsecase: MenuItemDetailUsecase;
   cartUsecase: CartUsecase;
-  cartRepository: CartRepository;
   paymentRepository: PaymentRepository;
-  sessionRepository: SessionRepository;
-  tableCode: string;
   preparingCount?: number;
 };
 
@@ -189,10 +184,7 @@ export const MenuListHandler = ({
   menuListUsecase,
   menuItemDetailUsecase,
   cartUsecase,
-  cartRepository,
   paymentRepository,
-  sessionRepository,
-  tableCode,
   preparingCount,
 }: MenuListHandlerProps) => {
   const tableResolve = useTableResolve(tableResolveUsecase);
@@ -267,25 +259,6 @@ export const MenuListHandler = ({
   }, [cart.state.type, cart.dispatch, menuItemDetail.state, menuList.dispatch]);
 
   useEffect(() => {
-    if (tableResolve.state.type === 'resolved' && tableResolve.state.code) {
-      sessionRepository.setTableCode(tableResolve.state.code);
-    }
-  }, [tableResolve.state, sessionRepository]);
-
-  const boundTableCodeRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (tableResolve.state.type !== 'resolved' || !tableResolve.state.code) {
-      return;
-    }
-    const code = tableResolve.state.code;
-    if (boundTableCodeRef.current === code) return;
-    boundTableCodeRef.current = code;
-    cartRepository.updateTable(code).catch(() => {
-      boundTableCodeRef.current = null;
-    });
-  }, [tableResolve.state, cartRepository]);
-
-  useEffect(() => {
     const { selectedProductId, query } = menuList.state;
     if (selectedProductId !== null) {
       const product = menuList.state.products.find(
@@ -343,7 +316,9 @@ export const MenuListHandler = ({
   ) : currentCart && currentCart.itemCount > 0 ? (
     <CartBar
       itemCount={currentCart.itemCount}
-      onPress={() => router.push(`/t/${tableCode}/cart`)}
+      onPress={() =>
+        router.push(`/t/${tableResolveUsecase.params.code}/cart`)
+      }
     />
   ) : null;
 

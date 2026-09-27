@@ -1,6 +1,11 @@
 import { match } from 'ts-pattern';
 import { PublicTable } from '../entities';
-import { PublicTableRepository, TableNotFoundError } from '../repositories';
+import {
+  CartRepository,
+  PublicTableRepository,
+  SessionRepository,
+  TableNotFoundError,
+} from '../repositories';
 import { Usecase } from './IUsecase';
 
 type Context = {
@@ -37,11 +42,23 @@ export class TableResolveUsecase extends Usecase<
 > {
   params: TableResolveParams;
   repository: PublicTableRepository;
+  private sessionRepository?: SessionRepository;
+  private cartRepository?: CartRepository;
+  private boundTableCode: string | null = null;
 
-  constructor(repository: PublicTableRepository, params: TableResolveParams) {
+  constructor(
+    repository: PublicTableRepository,
+    params: TableResolveParams,
+    dependencies: {
+      sessionRepository?: SessionRepository;
+      cartRepository?: CartRepository;
+    } = {}
+  ) {
     super();
     this.repository = repository;
     this.params = params;
+    this.sessionRepository = dependencies.sessionRepository;
+    this.cartRepository = dependencies.cartRepository;
   }
 
   getInitialState(): TableResolveState {
@@ -120,6 +137,15 @@ export class TableResolveUsecase extends Usecase<
               });
             }
           });
+      })
+      .with({ type: 'resolved' }, ({ code }) => {
+        if (!code) return;
+        this.sessionRepository?.setTableCode(code);
+        if (this.boundTableCode === code) return;
+        this.boundTableCode = code;
+        this.cartRepository?.updateTable(code).catch(() => {
+          this.boundTableCode = null;
+        });
       })
       .otherwise(() => {
         // No action needed for other states

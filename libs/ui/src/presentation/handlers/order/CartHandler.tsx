@@ -4,7 +4,6 @@ import { useRouter } from 'solito/router';
 import { Cart } from '../../../domain/entities/Cart';
 import { PaymentMethod } from '../../../domain/entities/Payment';
 import { PaymentRepository } from '../../../domain/repositories/payment';
-import { SessionRepository } from '../../../domain/repositories/session';
 import { CartState, CartUsecase } from '../../../domain/usecases/cart';
 import { CheckoutUsecase } from '../../../domain/usecases/checkout';
 import { PaymentCancelUsecase } from '../../../domain/usecases/paymentCancel';
@@ -27,11 +26,9 @@ export type CartHandlerProps = {
   cartUsecase: CartUsecase;
   checkoutUsecase: CheckoutUsecase;
   paymentRepository: PaymentRepository;
-  sessionRepository: SessionRepository;
   enabled: boolean;
   enabledMethods?: PaymentMethod[];
   cashierLocation?: string;
-  tableCode: string;
   preparingCount?: number;
 };
 
@@ -70,11 +67,9 @@ export const CartHandler = ({
   cartUsecase,
   checkoutUsecase,
   paymentRepository,
-  sessionRepository,
   enabled,
   enabledMethods = ['qris'],
   cashierLocation = 'Lantai 1',
-  tableCode,
   preparingCount,
 }: CartHandlerProps) => {
   const tableResolve = useTableResolve(tableResolveUsecase);
@@ -82,12 +77,6 @@ export const CartHandler = ({
   const checkout = useCheckout(checkoutUsecase);
   const router = useRouter();
   const [isClearConfirmationOpen, setIsClearConfirmationOpen] = useState(false);
-
-  useEffect(() => {
-    if (tableResolve.state.type === 'resolved' && tableResolve.state.code) {
-      sessionRepository.setTableCode(tableResolve.state.code);
-    }
-  }, [tableResolve.state, sessionRepository]);
 
   useEffect(() => {
     if (checkout.state.type !== 'created' || !checkout.state.payment) return;
@@ -311,7 +300,9 @@ export const CartHandler = ({
       }}
       onClearCancel={() => setIsClearConfirmationOpen(false)}
       onClearConfirmationOpenChange={setIsClearConfirmationOpen}
-      onAddMoreItemsPress={() => router.push(`/t/${tableCode}`)}
+      onAddMoreItemsPress={() =>
+        router.push(`/t/${tableResolveUsecase.params.code}`)
+      }
       onRetryButtonPress={() => cart.dispatch({ type: 'FETCH' })}
       itemEdit={itemEdit}
       isCheckoutEnabled={enabled && !hasUnavailableItems(cart.state.cart)}
