@@ -39,10 +39,6 @@ export function Cart({
     { sessionRepository }
   );
   const cartUsecase = new CartUsecase(cartRepository, cartQueryRepository);
-  const checkoutUsecase = new CheckoutUsecase(paymentRepository, {
-    customerName,
-    customerWhatsappNumber,
-  });
   const enabled = process.env['NEXT_PUBLIC_ORDER_CHECKOUT_ENABLED'] === 'true';
   const isCashPaymentEnabled =
     process.env['NEXT_PUBLIC_ORDER_CASH_PAYMENT_ENABLED'] === 'true';
@@ -55,6 +51,13 @@ export function Cart({
   ];
   const cashierLocation =
     process.env['NEXT_PUBLIC_ORDER_CASHIER_LOCATION'] || 'Lantai 1';
+  const checkoutUsecase = new CheckoutUsecase(paymentRepository, {
+    customerName,
+    customerWhatsappNumber,
+    enabled,
+    enabledMethods,
+    cashierLocation,
+  });
 
   return (
     <CartHandler
@@ -62,9 +65,6 @@ export function Cart({
       cartUsecase={cartUsecase}
       checkoutUsecase={checkoutUsecase}
       paymentRepository={paymentRepository}
-      enabled={enabled}
-      enabledMethods={enabledMethods}
-      cashierLocation={cashierLocation}
       preparingCount={preparingCount}
     />
   );

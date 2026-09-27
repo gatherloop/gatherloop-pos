@@ -64,6 +64,9 @@ const renderHandler = ({
   const checkoutUsecase = new CheckoutUsecase(paymentRepository, {
     customerName,
     customerWhatsappNumber,
+    enabled,
+    enabledMethods,
+    cashierLocation,
   });
 
   return {
@@ -77,9 +80,6 @@ const renderHandler = ({
         cartUsecase={cartUsecase}
         checkoutUsecase={checkoutUsecase}
         paymentRepository={paymentRepository}
-        enabled={enabled}
-        enabledMethods={enabledMethods}
-        cashierLocation={cashierLocation}
         preparingCount={preparingCount}
       />
     ),

@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { match, P } from 'ts-pattern';
 import { useRouter } from 'solito/router';
 import { Cart } from '../../../domain/entities/Cart';
-import { PaymentMethod } from '../../../domain/entities/Payment';
 import { PaymentRepository } from '../../../domain/repositories/payment';
 import { CartState, CartUsecase } from '../../../domain/usecases/cart';
 import { CheckoutUsecase } from '../../../domain/usecases/checkout';
@@ -26,9 +25,6 @@ export type CartHandlerProps = {
   cartUsecase: CartUsecase;
   checkoutUsecase: CheckoutUsecase;
   paymentRepository: PaymentRepository;
-  enabled: boolean;
-  enabledMethods?: PaymentMethod[];
-  cashierLocation?: string;
   preparingCount?: number;
 };
 
@@ -67,9 +63,6 @@ export const CartHandler = ({
   cartUsecase,
   checkoutUsecase,
   paymentRepository,
-  enabled,
-  enabledMethods = ['qris'],
-  cashierLocation = 'Lantai 1',
   preparingCount,
 }: CartHandlerProps) => {
   const tableResolve = useTableResolve(tableResolveUsecase);
@@ -222,14 +215,14 @@ export const CartHandler = ({
             }),
           onSubmitPress: () => checkout.dispatch({ type: 'SUBMIT_DETAILS' }),
           onCancelPress: () => checkout.dispatch({ type: 'CANCEL_DETAILS' }),
-          enabledMethods,
+          enabledMethods: checkout.state.enabledMethods,
           method: checkout.state.method,
           onMethodChange: (method) =>
             checkout.dispatch({ type: 'CHANGE_METHOD', method }),
           diningOption: checkout.state.diningOption,
           onDiningOptionChange: (diningOption) =>
             checkout.dispatch({ type: 'CHANGE_DINING_OPTION', diningOption }),
-          cashierLocation,
+          cashierLocation: checkout.state.cashierLocation,
           verificationPhoto: checkout.state.verificationPhoto,
           onOpenPhotoCapture: () =>
             checkout.dispatch({ type: 'OPEN_PHOTO_CAPTURE' }),
@@ -305,7 +298,9 @@ export const CartHandler = ({
       }
       onRetryButtonPress={() => cart.dispatch({ type: 'FETCH' })}
       itemEdit={itemEdit}
-      isCheckoutEnabled={enabled && !hasUnavailableItems(cart.state.cart)}
+      isCheckoutEnabled={
+        checkout.state.enabled && !hasUnavailableItems(cart.state.cart)
+      }
       checkoutErrorMessage={
         checkout.state.type === 'error' ? checkout.state.errorMessage : null
       }
