@@ -3,6 +3,7 @@ import {
   Image,
   Input,
   Paragraph,
+  ScrollView,
   Spinner,
   XStack,
   YStack,
@@ -13,8 +14,7 @@ import {
   PaymentMethod,
 } from '../../../../domain/entities/Payment';
 import { Sheet } from '../base/Sheet';
-import { CameraCapture } from '../base/CameraCapture';
-import { QrCode, RotateCcw, Wallet } from '@tamagui/lucide-icons';
+import { Camera, QrCode, RotateCcw, Wallet } from '@tamagui/lucide-icons';
 
 export type CustomerDetailsSheetProps = {
   isOpen: boolean;
@@ -33,8 +33,7 @@ export type CustomerDetailsSheetProps = {
   onDiningOptionChange: (diningOption: PaymentDiningOption) => void;
   cashierLocation: string;
   verificationPhoto: string | null;
-  onCapturePhoto: (photo: string) => void;
-  onRetakePhoto: () => void;
+  onOpenPhotoCapture: () => void;
   isSubmitting: boolean;
 };
 
@@ -96,8 +95,7 @@ export const CustomerDetailsSheet = ({
   diningOption,
   onDiningOptionChange,
   verificationPhoto,
-  onCapturePhoto,
-  onRetakePhoto,
+  onOpenPhotoCapture,
   isSubmitting,
 }: CustomerDetailsSheetProps) => {
   const isCodPhotoMissing = method === 'cod' && !verificationPhoto;
@@ -112,140 +110,154 @@ export const CustomerDetailsSheet = ({
       isOpen={isOpen}
       onOpenChange={(open) => !open && !isSubmitting && onCancelPress()}
     >
-      <YStack padding="$4" gap="$3">
-        <Paragraph fontWeight="bold" fontSize="$6">
-          Data pemesan
-        </Paragraph>
+      <YStack flex={1}>
+        <ScrollView flex={1}>
+          <YStack padding="$4" gap="$3">
+            <Paragraph fontWeight="bold" fontSize="$6">
+              Data pemesan
+            </Paragraph>
 
-        <YStack gap="$2">
-          <Input
-            value={name}
-            placeholder="Nama Anda"
-            onChangeText={onNameChange}
-            onSubmitEditing={onSubmitPress}
-            accessibilityLabel="Nama Anda"
-            autoFocus
-            disabled={isSubmitting}
-          />
-          {nameErrorMessage ? (
-            <Paragraph color="$red10">{nameErrorMessage}</Paragraph>
-          ) : null}
-        </YStack>
-
-        <YStack gap="$2">
-          <Input
-            value={whatsappNumber}
-            placeholder="0812 3456 7890"
-            onChangeText={onWhatsappNumberChange}
-            onSubmitEditing={onSubmitPress}
-            accessibilityLabel="Nomor WhatsApp"
-            inputMode="tel"
-            autoComplete="tel"
-            disabled={isSubmitting}
-          />
-          {whatsappNumberErrorMessage ? (
-            <Paragraph color="$red10">{whatsappNumberErrorMessage}</Paragraph>
-          ) : null}
-          <Paragraph fontSize="$2" color="$color10">
-            Nomor ini akan digunakan untuk mengabari Anda apabila pesanan siap
-            diambil.
-          </Paragraph>
-        </YStack>
-
-        <YStack gap="$2">
-          <Paragraph fontWeight="bold">
-            Makan di sini atau bawa pulang?
-          </Paragraph>
-          <XStack gap="$2">
-            {(['dine_in', 'takeaway'] as const).map((option) => (
-              <Button
-                key={option}
-                flex={1}
-                theme={diningOption === option ? 'blue' : undefined}
-                variant={diningOption === option ? undefined : 'outlined'}
-                minHeight={44}
-                accessibilityLabel={diningOptionLabel(option)}
-                onPress={() => onDiningOptionChange(option)}
+            <YStack gap="$2">
+              <Input
+                value={name}
+                placeholder="Nama Anda"
+                onChangeText={onNameChange}
+                onSubmitEditing={onSubmitPress}
+                accessibilityLabel="Nama Anda"
+                autoFocus
                 disabled={isSubmitting}
-              >
-                {diningOptionLabel(option)}
-              </Button>
-            ))}
-          </XStack>
-        </YStack>
+              />
+              {nameErrorMessage ? (
+                <Paragraph color="$red10">{nameErrorMessage}</Paragraph>
+              ) : null}
+            </YStack>
 
-        {enabledMethods.length > 1 ? (
-          <YStack gap="$2">
-            <Paragraph fontWeight="bold">Metode Pembayaran</Paragraph>
-            <XStack gap="$2" flexWrap="wrap">
-              {enabledMethods.map((option) => {
-                const {
-                  icon: Icon,
-                  accessibilityLabel,
-                  label,
-                  description,
-                } = methodOptions[option];
-                return (
+            <YStack gap="$2">
+              <Input
+                value={whatsappNumber}
+                placeholder="0812 3456 7890"
+                onChangeText={onWhatsappNumberChange}
+                onSubmitEditing={onSubmitPress}
+                accessibilityLabel="Nomor WhatsApp"
+                inputMode="tel"
+                autoComplete="tel"
+                disabled={isSubmitting}
+              />
+              {whatsappNumberErrorMessage ? (
+                <Paragraph color="$red10">
+                  {whatsappNumberErrorMessage}
+                </Paragraph>
+              ) : null}
+              <Paragraph fontSize="$2" color="$color10">
+                Nomor ini akan digunakan untuk mengabari Anda apabila pesanan
+                siap diambil.
+              </Paragraph>
+            </YStack>
+
+            <YStack gap="$2">
+              <Paragraph fontWeight="bold">
+                Makan di sini atau bawa pulang?
+              </Paragraph>
+              <XStack gap="$2">
+                {(['dine_in', 'takeaway'] as const).map((option) => (
                   <Button
                     key={option}
-                    theme={method === option ? 'blue' : undefined}
-                    variant={method === option ? undefined : 'outlined'}
-                    minHeight={44}
-                    height="auto"
-                    paddingVertical="$3"
-                    justifyContent="flex-start"
-                    accessibilityLabel={accessibilityLabel}
-                    onPress={() => onMethodChange(option)}
-                    scaleIcon={1}
                     flex={1}
+                    theme={diningOption === option ? 'blue' : undefined}
+                    variant={diningOption === option ? undefined : 'outlined'}
+                    minHeight={44}
+                    accessibilityLabel={diningOptionLabel(option)}
+                    onPress={() => onDiningOptionChange(option)}
                     disabled={isSubmitting}
                   >
-                    <YStack alignItems="flex-start" gap="$1">
-                      <XStack gap="$2" alignItems="center">
-                        <Icon size="$1" />
-                        <Paragraph fontWeight="bold">{label}</Paragraph>
-                      </XStack>
-                      <Paragraph
-                        fontSize="$2"
-                        color="$color10"
-                        flex={1}
-                        textWrap="wrap"
-                      >
-                        {description}
-                      </Paragraph>
-                    </YStack>
+                    {diningOptionLabel(option)}
                   </Button>
-                );
-              })}
-            </XStack>
-          </YStack>
-        ) : null}
+                ))}
+              </XStack>
+            </YStack>
 
-        {method === 'cod' ? (
-          <YStack gap="$2">
-            {verificationPhoto ? (
-              <YStack gap="$3" alignItems="center">
-                <Image
-                  src={`data:image/jpeg;base64,${verificationPhoto}`}
-                  width={280}
-                  height={210}
-                  borderRadius="$4"
-                />
-                <Button
-                  icon={RotateCcw}
-                  onPress={onRetakePhoto}
-                  disabled={isSubmitting}
-                >
-                  Ambil ulang
-                </Button>
+            {enabledMethods.length > 1 ? (
+              <YStack gap="$2">
+                <Paragraph fontWeight="bold">Metode Pembayaran</Paragraph>
+                <XStack gap="$2" flexWrap="wrap">
+                  {enabledMethods.map((option) => {
+                    const {
+                      icon: Icon,
+                      accessibilityLabel,
+                      label,
+                      description,
+                    } = methodOptions[option];
+                    return (
+                      <Button
+                        key={option}
+                        theme={method === option ? 'blue' : undefined}
+                        variant={method === option ? undefined : 'outlined'}
+                        minHeight={44}
+                        height="auto"
+                        paddingVertical="$3"
+                        justifyContent="flex-start"
+                        accessibilityLabel={accessibilityLabel}
+                        onPress={() => onMethodChange(option)}
+                        scaleIcon={1}
+                        flex={1}
+                        disabled={isSubmitting}
+                      >
+                        <YStack alignItems="flex-start" gap="$1">
+                          <XStack gap="$2" alignItems="center">
+                            <Icon size="$1" />
+                            <Paragraph fontWeight="bold">{label}</Paragraph>
+                          </XStack>
+                          <Paragraph
+                            fontSize="$2"
+                            color="$color10"
+                            flex={1}
+                            textWrap="wrap"
+                          >
+                            {description}
+                          </Paragraph>
+                        </YStack>
+                      </Button>
+                    );
+                  })}
+                </XStack>
               </YStack>
-            ) : (
-              <CameraCapture onCapture={onCapturePhoto} />
-            )}
-          </YStack>
-        ) : null}
+            ) : null}
 
-        <YStack gap="$2">
+            {method === 'cod' ? (
+              <YStack gap="$2">
+                {verificationPhoto ? (
+                  <XStack gap="$3" alignItems="center">
+                    <Image
+                      src={`data:image/jpeg;base64,${verificationPhoto}`}
+                      width={72}
+                      height={96}
+                      borderRadius="$3"
+                    />
+                    <Button
+                      icon={RotateCcw}
+                      variant="outlined"
+                      onPress={onOpenPhotoCapture}
+                      disabled={isSubmitting}
+                    >
+                      Ambil ulang
+                    </Button>
+                  </XStack>
+                ) : (
+                  <Button
+                    icon={Camera}
+                    theme="active"
+                    onPress={onOpenPhotoCapture}
+                    disabled={isSubmitting}
+                  >
+                    Ambil foto verifikasi
+                  </Button>
+                )}
+              </YStack>
+            ) : null}
+          </YStack>
+        </ScrollView>
+
+        <YStack padding="$4" paddingTop="$2" gap="$2">
           <Button
             theme="blue"
             size="$5"

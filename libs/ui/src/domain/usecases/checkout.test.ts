@@ -427,6 +427,7 @@ describe('CheckoutUsecase', () => {
 
       checkout.dispatch({ type: 'ASK_DETAILS' });
       checkout.dispatch({ type: 'CHANGE_METHOD', method: 'cod' });
+      checkout.dispatch({ type: 'OPEN_PHOTO_CAPTURE' });
       checkout.dispatch({ type: 'CAPTURE_PHOTO', photo: 'base64jpeg' });
       checkout.dispatch({ type: 'SUBMIT_DETAILS' });
       expect(checkout.state.type).toBe('creatingPayment');
@@ -444,16 +445,24 @@ describe('CheckoutUsecase', () => {
       expect(checkout.state.payment?.method).toBe('cod');
     });
 
-    it('should clear the captured photo on RETAKE_PHOTO', () => {
+    it('should move to a dedicated capturingPhoto step and back, keeping the photo already taken', () => {
       const repository = new MockPaymentRepository();
       const checkout = createTester(repository);
 
       checkout.dispatch({ type: 'ASK_DETAILS' });
       checkout.dispatch({ type: 'CHANGE_METHOD', method: 'cod' });
-      checkout.dispatch({ type: 'CAPTURE_PHOTO', photo: 'base64jpeg' });
-      checkout.dispatch({ type: 'RETAKE_PHOTO' });
+      checkout.dispatch({ type: 'OPEN_PHOTO_CAPTURE' });
+      expect(checkout.state.type).toBe('capturingPhoto');
 
-      expect(checkout.state.verificationPhoto).toBeNull();
+      checkout.dispatch({ type: 'CAPTURE_PHOTO', photo: 'base64jpeg' });
+      expect(checkout.state.type).toBe('askingDetails');
+      expect(checkout.state.verificationPhoto).toBe('base64jpeg');
+
+      checkout.dispatch({ type: 'OPEN_PHOTO_CAPTURE' });
+      checkout.dispatch({ type: 'BACK_TO_DETAILS' });
+
+      expect(checkout.state.type).toBe('askingDetails');
+      expect(checkout.state.verificationPhoto).toBe('base64jpeg');
     });
 
     it('should clear the captured photo when the method changes away from cod', () => {
@@ -462,6 +471,7 @@ describe('CheckoutUsecase', () => {
 
       checkout.dispatch({ type: 'ASK_DETAILS' });
       checkout.dispatch({ type: 'CHANGE_METHOD', method: 'cod' });
+      checkout.dispatch({ type: 'OPEN_PHOTO_CAPTURE' });
       checkout.dispatch({ type: 'CAPTURE_PHOTO', photo: 'base64jpeg' });
       checkout.dispatch({ type: 'CHANGE_METHOD', method: 'qris' });
 
@@ -495,6 +505,7 @@ describe('CheckoutUsecase', () => {
 
       checkout.dispatch({ type: 'ASK_DETAILS' });
       checkout.dispatch({ type: 'CHANGE_METHOD', method: 'cod' });
+      checkout.dispatch({ type: 'OPEN_PHOTO_CAPTURE' });
       checkout.dispatch({ type: 'CAPTURE_PHOTO', photo: 'base64jpeg' });
       checkout.dispatch({ type: 'SUBMIT_DETAILS' });
       await flushMicrotasks();

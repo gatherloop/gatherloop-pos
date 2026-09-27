@@ -29,6 +29,7 @@ type Context = {
 export type CheckoutState = (
   | { type: 'idle' }
   | { type: 'askingDetails' }
+  | { type: 'capturingPhoto' }
   | { type: 'creatingPayment' }
   | { type: 'created' }
   | { type: 'error' }
@@ -41,8 +42,9 @@ export type CheckoutAction =
   | { type: 'CHANGE_WHATSAPP_NUMBER'; whatsappNumber: string }
   | { type: 'CHANGE_METHOD'; method: PaymentMethod }
   | { type: 'CHANGE_DINING_OPTION'; diningOption: PaymentDiningOption }
+  | { type: 'OPEN_PHOTO_CAPTURE' }
   | { type: 'CAPTURE_PHOTO'; photo: string }
-  | { type: 'RETAKE_PHOTO' }
+  | { type: 'BACK_TO_DETAILS' }
   | { type: 'CANCEL_DETAILS' }
   | { type: 'SUBMIT_DETAILS' }
   | { type: 'CHECKOUT_SUCCESS'; payment: Payment }
@@ -161,12 +163,20 @@ export class CheckoutUsecase extends Usecase<
         ([state, { diningOption }]) => ({ ...state, diningOption })
       )
       .with(
-        [{ type: 'askingDetails' }, { type: 'CAPTURE_PHOTO' }],
-        ([state, { photo }]) => ({ ...state, verificationPhoto: photo })
+        [{ type: 'askingDetails' }, { type: 'OPEN_PHOTO_CAPTURE' }],
+        ([state]) => ({ ...state, type: 'capturingPhoto' })
       )
       .with(
-        [{ type: 'askingDetails' }, { type: 'RETAKE_PHOTO' }],
-        ([state]) => ({ ...state, verificationPhoto: null })
+        [{ type: 'capturingPhoto' }, { type: 'CAPTURE_PHOTO' }],
+        ([state, { photo }]) => ({
+          ...state,
+          type: 'askingDetails',
+          verificationPhoto: photo,
+        })
+      )
+      .with(
+        [{ type: 'capturingPhoto' }, { type: 'BACK_TO_DETAILS' }],
+        ([state]) => ({ ...state, type: 'askingDetails' })
       )
       .with(
         [{ type: 'askingDetails' }, { type: 'CANCEL_DETAILS' }],
