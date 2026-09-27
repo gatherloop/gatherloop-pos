@@ -183,7 +183,7 @@ app/order/MenuList.tsx
   new MenuListUsecase(...)
   new MenuItemDetailUsecase(...)
   new CartUsecase(...)
-  new PaymentCancelUsecase(paymentRepository, { reference: '', method: 'qris' })  // D4
+  new PaymentCancelUsecase(paymentRepository, { reference: '', method: 'qris' })  // D4 — pendingPayment is never SSR-known here
   → <MenuListHandler
        tableResolveUsecase menuListUsecase menuItemDetailUsecase
        cartUsecase paymentCancelUsecase
@@ -281,17 +281,44 @@ which is `null` before resolution) is exactly the intended use of a usecase's `p
 (`OrderStatusHandler` already reads `orderStatusUsecase.params.reference` this way,
 `OrderStatusHandler.tsx:49`).
 
-**D4 — the composition root constructs `paymentCancelUsecase` once, and a new shared hook
-re-syncs it — the handler never sees `paymentRepository`.**
+**D4 — the composition root constructs `paymentCancelUsecase` once, seeded from whatever it already
+knows, and a new shared hook re-syncs it — the handler never sees `paymentRepository`.**
+
+The two order-affected roots are not in the same position. `OrderStatus.tsx` is handed an
+already-known `payment` on the common path — its loader (`apps/order-web/src/pages/orders/[reference]
+.tsx:23-27`) fetches it server-side before the composition root ever runs — so it can seed the real
+`reference`/`method` immediately and never dispatch a startup `SYNC_PARAMS` at all:
 
 ```ts
-// app/order/MenuList.tsx, Cart.tsx, OrderStatus.tsx
+// app/order/OrderStatus.tsx
+const paymentCancelUsecase = new PaymentCancelUsecase(paymentRepository, {
+  reference: payment?.reference ?? '',
+  method: payment?.method ?? 'qris',
+});
+```
+
+`MenuList.tsx`/`Cart.tsx` cannot do the same for `pendingPayment`, and not because anyone forgot to
+wire it through: `pendingPayment` lives on the cart, and `docs/trd-order-app-composition-and-ssr.md`
+D5 deliberately keeps the cart **out** of server rendering (a session-specific cart in the response
+would make it private and uncacheable). There is no server-side moment on those two routes where a
+pending payment could be known, so they fall back to the placeholder:
+
+```ts
+// app/order/MenuList.tsx, Cart.tsx
 const paymentCancelUsecase = new PaymentCancelUsecase(paymentRepository, {
   reference: '', method: 'qris',
 });
 ```
 
-New hook, `presentation/handlers/hooks/usePaymentCancelSyncedTo.ts`:
+Either way, the sync hook is still required, for three reasons that don't go away just because
+`OrderStatus.tsx` starts with the right values in the common case: (a) `OrderStatus.tsx`'s loader can
+still hand back `payment: undefined` (a non-"not found" fetch error, same file, line 26), in which
+case the real value is only known after the client-side fetch that follows; (b) `MenuList.tsx`/
+`Cart.tsx` need it on every load, unconditionally, per D5 above; and (c) even a correctly-seeded
+`OrderStatus.tsx` can see a *second*, different pending payment appear later in the same page
+session — cancel one QRIS payment, check out again, and the new payment has a new `reference` that
+no server-side seed could have anticipated. New hook,
+`presentation/handlers/hooks/usePaymentCancelSyncedTo.ts`:
 
 ```ts
 export function usePaymentCancelSyncedTo(
@@ -425,7 +452,9 @@ COD cashier-location copy, checkout-button enablement) pass unmodified.
 the hook in isolation: dispatches `SYNC_PARAMS` exactly once per distinct `{reference, method}`, not
 on every render); `presentation/handlers/hooks/index.ts` (barrel);
 `app/order/{MenuList,Cart,OrderStatus}.tsx` (construct `paymentCancelUsecase` alongside every other
-usecase, pass it as a handler prop instead of `paymentRepository`);
+usecase, pass it as a handler prop instead of `paymentRepository`; `OrderStatus.tsx` seeds it from
+`payment?.reference`/`payment?.method` where known, per D4, instead of the empty placeholder
+`MenuList.tsx`/`Cart.tsx` use);
 `presentation/handlers/order/{MenuList,Cart,OrderStatus}Handler.tsx` (delete the three duplicated
 `useState`/conditional-`setState` blocks, call `usePaymentCancelSyncedTo` instead, drop the
 `paymentRepository` prop) + their `.test.tsx` (mock/real `PaymentCancelUsecase` is now constructed
@@ -434,7 +463,10 @@ by the test's composition helper, same as the other four usecases already are).
 **Check:** the payment-cancel flows in all three handler tests (request → confirm → cancelled/paid,
 dismiss) pass unmodified; `rg -n "paymentRepository" libs/ui/src/presentation/handlers/order`
 returns nothing; `rg -n "Repository" libs/ui/src/presentation/handlers/order/*.tsx` (excluding
-`.test.tsx`) returns nothing at all — the acceptance check for G1.
+`.test.tsx`) returns nothing at all — the acceptance check for G1. A new `OrderStatusHandler.test.tsx`
+case seeds `payment` with a `pending`/cancellable status and asserts no `SYNC_PARAMS`-driven state
+change is observable before the cancel button is even pressed — i.e. the seeded value, not the
+placeholder, is what's live from first render.
 
 **Also in this phase:** update `docs/handlers.md` — add the rule this TRD establishes ("a handler's
 props are usecases, plus rarely a single documented pure display value (D6); a repository never
@@ -482,4 +514,6 @@ repository interface, a migration, or a build config, so a revert restores the p
 
 ## 10. Settled in review
 
-None yet — this is the first draft.
+| Question | Outcome |
+| --- | --- |
+| Why not seed `paymentCancelUsecase.params.reference`/`method` from the server instead of a `SYNC_PARAMS` dispatch after mount? | Do both — `OrderStatus.tsx` seeds from its already-known `payment` where the loader has it (D4, updated), which was a real gap in the first draft. The hook stays regardless: `MenuList.tsx`/`Cart.tsx` never have a server-known `pendingPayment` at all (cart is deliberately not SSR'd, per D5 of `trd-order-app-composition-and-ssr.md`), `OrderStatus.tsx`'s loader can itself return `payment: undefined` on a non-"not found" error, and even a correctly-seeded value can be superseded by a second pending payment later in the same page session. |
