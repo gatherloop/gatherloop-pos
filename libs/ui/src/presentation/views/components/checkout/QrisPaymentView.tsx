@@ -9,8 +9,11 @@ import {
   XStack,
   YStack,
 } from 'tamagui';
+import { ORDER_BRAND_NAME } from '../../../../utils/brand';
 import { formatRupiah } from '../../../../utils/currency';
 import {
+  type ComposedQrImage,
+  composeQrDownloadImage,
   downloadQrImage,
   isQrDownloadSupported,
   qrImageDataUrl,
@@ -54,7 +57,7 @@ export const QrisPaymentView = ({
   } | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(() => secondsUntil(expiredAt));
   const hasElapsed = useRef(false);
-  const [fallbackImageBase64, setFallbackImageBase64] = useState<string | null>(
+  const [fallbackImage, setFallbackImage] = useState<ComposedQrImage | null>(
     null
   );
 
@@ -73,11 +76,16 @@ export const QrisPaymentView = ({
   }, [secondsLeft, onCountdownElapsed]);
 
   const handleSavePress = () => {
-    qrRef.current?.toDataURL((base64) => {
+    qrRef.current?.toDataURL(async (base64) => {
+      const composedImage = await composeQrDownloadImage(
+        base64,
+        ORDER_BRAND_NAME,
+        formatRupiah(amount)
+      );
       if (isQrDownloadSupported()) {
-        downloadQrImage(base64, reference);
+        downloadQrImage(composedImage.base64, reference);
       } else {
-        setFallbackImageBase64(base64);
+        setFallbackImage(composedImage);
       }
     });
   };
@@ -114,15 +122,15 @@ export const QrisPaymentView = ({
       </Paragraph>
 
       <Sheet
-        isOpen={fallbackImageBase64 !== null}
-        onOpenChange={(isOpen) => !isOpen && setFallbackImageBase64(null)}
+        isOpen={fallbackImage !== null}
+        onOpenChange={(isOpen) => !isOpen && setFallbackImage(null)}
       >
         <YStack padding="$4" gap="$3" alignItems="center">
-          {fallbackImageBase64 ? (
+          {fallbackImage ? (
             <Image
-              src={qrImageDataUrl(fallbackImageBase64)}
+              src={qrImageDataUrl(fallbackImage.base64)}
               width={QR_SIZE}
-              height={QR_SIZE}
+              height={(fallbackImage.height / fallbackImage.width) * QR_SIZE}
             />
           ) : null}
           <Paragraph textAlign="center">
