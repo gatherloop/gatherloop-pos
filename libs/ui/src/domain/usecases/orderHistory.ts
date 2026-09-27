@@ -1,6 +1,6 @@
 import { match, P } from 'ts-pattern';
 import { PaymentSummary } from '../entities';
-import { PaymentRepository } from '../repositories';
+import { PaymentRepository, SessionRepository } from '../repositories';
 import { Usecase } from './IUsecase';
 
 export const ORDER_HISTORY_LIMIT = 20;
@@ -8,6 +8,7 @@ export const ORDER_HISTORY_LIMIT = 20;
 type Context = {
   payments: PaymentSummary[];
   errorMessage: string | null;
+  tableCode: string | null;
 };
 
 export type OrderHistoryState = (
@@ -36,11 +37,17 @@ export class OrderHistoryUsecase extends Usecase<
 > {
   params: OrderHistoryParams;
   repository: PaymentRepository;
+  private sessionRepository?: SessionRepository;
 
-  constructor(repository: PaymentRepository, params: OrderHistoryParams) {
+  constructor(
+    repository: PaymentRepository,
+    params: OrderHistoryParams,
+    dependencies: { sessionRepository?: SessionRepository } = {}
+  ) {
     super();
     this.repository = repository;
     this.params = params;
+    this.sessionRepository = dependencies.sessionRepository;
   }
 
   getInitialState() {
@@ -48,6 +55,7 @@ export class OrderHistoryUsecase extends Usecase<
       type: this.params.payments.length >= 1 ? 'loaded' : 'idle',
       errorMessage: null,
       payments: this.params.payments,
+      tableCode: this.sessionRepository?.getTableCode() ?? null,
     };
     return state;
   }

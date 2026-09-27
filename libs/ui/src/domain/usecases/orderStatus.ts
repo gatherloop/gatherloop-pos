@@ -1,6 +1,10 @@
 import { match, P } from 'ts-pattern';
 import { Payment } from '../entities';
-import { PaymentNotFoundError, PaymentRepository } from '../repositories';
+import {
+  PaymentNotFoundError,
+  PaymentRepository,
+  SessionRepository,
+} from '../repositories';
 import { Usecase } from './IUsecase';
 
 const AWAITING_PAYMENT_POLL_INTERVAL_MS = 3000;
@@ -11,6 +15,8 @@ type Context = {
   payment: Payment | null;
   errorMessage: string | null;
   isPolling: boolean;
+  tableCode: string | null;
+  cashierLocation: string;
 };
 
 export type OrderStatusState = (
@@ -42,6 +48,7 @@ export type OrderStatusAction =
 export type OrderStatusParams = {
   reference: string;
   payment?: Payment | null;
+  cashierLocation: string;
 };
 
 function stateTypeForPayment(
@@ -83,13 +90,19 @@ export class OrderStatusUsecase extends Usecase<
 > {
   params: OrderStatusParams;
   private repository: PaymentRepository;
+  private sessionRepository?: SessionRepository;
   private pollTimerId: ReturnType<typeof setInterval> | null = null;
   private pollIntervalMs: number | null = null;
 
-  constructor(repository: PaymentRepository, params: OrderStatusParams) {
+  constructor(
+    repository: PaymentRepository,
+    params: OrderStatusParams,
+    dependencies: { sessionRepository?: SessionRepository } = {}
+  ) {
     super();
     this.repository = repository;
     this.params = params;
+    this.sessionRepository = dependencies.sessionRepository;
   }
 
   getInitialState(): OrderStatusState {
@@ -98,6 +111,8 @@ export class OrderStatusUsecase extends Usecase<
       payment: this.params.payment ?? null,
       errorMessage: null,
       isPolling: false,
+      tableCode: this.sessionRepository?.getTableCode() ?? null,
+      cashierLocation: this.params.cashierLocation,
     };
 
     if (this.params.payment !== undefined) {

@@ -23,19 +23,18 @@ export function OrderStatus({
     accessKey
   );
 
-  const orderStatusUsecase = new OrderStatusUsecase(paymentRepository, {
-    reference,
-    payment,
-  });
   const cashierLocation =
     process.env['NEXT_PUBLIC_ORDER_CASHIER_LOCATION'] || 'Lantai 1';
+  const orderStatusUsecase = new OrderStatusUsecase(
+    paymentRepository,
+    { reference, payment, cashierLocation },
+    { sessionRepository }
+  );
 
   return (
     <OrderStatusHandler
       orderStatusUsecase={orderStatusUsecase}
       paymentRepository={paymentRepository}
-      sessionRepository={sessionRepository}
-      cashierLocation={cashierLocation}
     />
   );
 }

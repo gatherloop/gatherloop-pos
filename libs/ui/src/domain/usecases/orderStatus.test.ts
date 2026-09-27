@@ -4,9 +4,11 @@ import {
   OrderStatusAction,
   OrderStatusParams,
 } from './orderStatus';
-import { MockPaymentRepository } from '../../data/mock';
+import { MockPaymentRepository, MockSessionRepository } from '../../data/mock';
 import { Payment } from '../entities';
 import { UsecaseTester } from '../../utils/usecase';
+
+const CASHIER_LOCATION = 'Lantai 1';
 
 const flushMicrotasks = () => jest.advanceTimersByTimeAsync(0);
 
@@ -16,7 +18,12 @@ const createTester = (repository: MockPaymentRepository, reference: string) =>
     OrderStatusState,
     OrderStatusAction,
     OrderStatusParams
-  >(new OrderStatusUsecase(repository, { reference }));
+  >(
+    new OrderStatusUsecase(repository, {
+      reference,
+      cashierLocation: CASHIER_LOCATION,
+    })
+  );
 
 const createSeededTester = (
   repository: MockPaymentRepository,
@@ -31,6 +38,7 @@ const createSeededTester = (
     new OrderStatusUsecase(repository, {
       reference: payment?.reference ?? 'UNKNOWNREF',
       payment,
+      cashierLocation: CASHIER_LOCATION,
     })
   );
 
@@ -53,6 +61,8 @@ describe('OrderStatusUsecase', () => {
       payment: null,
       errorMessage: null,
       isPolling: false,
+      tableCode: null,
+      cashierLocation: CASHIER_LOCATION,
     });
 
     await flushMicrotasks();
@@ -62,6 +72,8 @@ describe('OrderStatusUsecase', () => {
       payment: repository.payment,
       errorMessage: null,
       isPolling: false,
+      tableCode: null,
+      cashierLocation: CASHIER_LOCATION,
     });
   });
 
@@ -77,6 +89,8 @@ describe('OrderStatusUsecase', () => {
       payment: repository.payment,
       errorMessage: null,
       isPolling: false,
+      tableCode: null,
+      cashierLocation: CASHIER_LOCATION,
     });
   });
 
@@ -91,6 +105,8 @@ describe('OrderStatusUsecase', () => {
       payment: null,
       errorMessage: null,
       isPolling: false,
+      tableCode: null,
+      cashierLocation: CASHIER_LOCATION,
     });
   });
 
@@ -106,6 +122,8 @@ describe('OrderStatusUsecase', () => {
       payment: null,
       errorMessage: 'Failed to fetch order status',
       isPolling: false,
+      tableCode: null,
+      cashierLocation: CASHIER_LOCATION,
     });
 
     repository.setShouldFailFetch(false);
@@ -116,6 +134,8 @@ describe('OrderStatusUsecase', () => {
       payment: null,
       errorMessage: null,
       isPolling: false,
+      tableCode: null,
+      cashierLocation: CASHIER_LOCATION,
     });
 
     await flushMicrotasks();
@@ -125,6 +145,8 @@ describe('OrderStatusUsecase', () => {
       payment: repository.payment,
       errorMessage: null,
       isPolling: false,
+      tableCode: null,
+      cashierLocation: CASHIER_LOCATION,
     });
   });
 
@@ -162,6 +184,8 @@ describe('OrderStatusUsecase', () => {
       payment: repository.payment,
       errorMessage: null,
       isPolling: false,
+      tableCode: null,
+      cashierLocation: CASHIER_LOCATION,
     });
 
     await flushMicrotasks();
@@ -181,6 +205,8 @@ describe('OrderStatusUsecase', () => {
       payment: repository.payment,
       errorMessage: null,
       isPolling: false,
+      tableCode: null,
+      cashierLocation: CASHIER_LOCATION,
     });
 
     await flushMicrotasks();
@@ -204,6 +230,8 @@ describe('OrderStatusUsecase', () => {
       payment: repository.payment,
       errorMessage: null,
       isPolling: false,
+      tableCode: null,
+      cashierLocation: CASHIER_LOCATION,
     });
 
     await flushMicrotasks();
@@ -227,6 +255,8 @@ describe('OrderStatusUsecase', () => {
       payment: repository.payment,
       errorMessage: null,
       isPolling: false,
+      tableCode: null,
+      cashierLocation: CASHIER_LOCATION,
     });
 
     await flushMicrotasks();
@@ -246,6 +276,8 @@ describe('OrderStatusUsecase', () => {
       payment: repository.payment,
       errorMessage: null,
       isPolling: false,
+      tableCode: null,
+      cashierLocation: CASHIER_LOCATION,
     });
 
     await flushMicrotasks();
@@ -268,6 +300,8 @@ describe('OrderStatusUsecase', () => {
       payment: repository.payment,
       errorMessage: null,
       isPolling: false,
+      tableCode: null,
+      cashierLocation: CASHIER_LOCATION,
     });
   });
 
@@ -288,6 +322,8 @@ describe('OrderStatusUsecase', () => {
       payment: repository.payment,
       errorMessage: null,
       isPolling: false,
+      tableCode: null,
+      cashierLocation: CASHIER_LOCATION,
     });
 
     await flushMicrotasks();
@@ -306,6 +342,8 @@ describe('OrderStatusUsecase', () => {
       payment: null,
       errorMessage: null,
       isPolling: false,
+      tableCode: null,
+      cashierLocation: CASHIER_LOCATION,
     });
 
     await flushMicrotasks();
@@ -564,6 +602,8 @@ describe('OrderStatusUsecase', () => {
         payment: repository.payment,
         errorMessage: null,
         isPolling: false,
+        tableCode: null,
+        cashierLocation: CASHIER_LOCATION,
       });
     });
 
@@ -730,6 +770,34 @@ describe('OrderStatusUsecase', () => {
       const fetchSpy = jest.spyOn(repository, 'fetchPayment');
       await jest.advanceTimersByTimeAsync(10_000);
       expect(fetchSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('tableCode and cashierLocation', () => {
+    it('reads the table code from the injected session repository', () => {
+      const repository = new MockPaymentRepository();
+      const sessionRepository = new MockSessionRepository();
+      sessionRepository.setTableCode('3F7H9K2M5P');
+
+      const usecase = new OrderStatusUsecase(
+        repository,
+        { reference: repository.payment.reference, cashierLocation: CASHIER_LOCATION },
+        { sessionRepository }
+      );
+
+      expect(usecase.getInitialState().tableCode).toBe('3F7H9K2M5P');
+      expect(usecase.getInitialState().cashierLocation).toBe(CASHIER_LOCATION);
+    });
+
+    it('is null when no session repository dependency is provided', () => {
+      const repository = new MockPaymentRepository();
+
+      const usecase = new OrderStatusUsecase(repository, {
+        reference: repository.payment.reference,
+        cashierLocation: CASHIER_LOCATION,
+      });
+
+      expect(usecase.getInitialState().tableCode).toBeNull();
     });
   });
 });
