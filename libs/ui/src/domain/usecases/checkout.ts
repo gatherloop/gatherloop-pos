@@ -24,6 +24,9 @@ type Context = {
   nameErrorMessage: string | null;
   whatsappNumberErrorMessage: string | null;
   errorMessage: string | null;
+  enabled: boolean;
+  enabledMethods: PaymentMethod[];
+  cashierLocation: string;
 };
 
 export type CheckoutState = (
@@ -57,6 +60,9 @@ export type CheckoutAction =
 export type CheckoutParams = {
   customerName?: string;
   customerWhatsappNumber?: string;
+  enabled?: boolean;
+  enabledMethods?: PaymentMethod[];
+  cashierLocation?: string;
 };
 
 function validateName(name: string): string | null {
@@ -126,6 +132,9 @@ export class CheckoutUsecase extends Usecase<
       nameErrorMessage: null,
       whatsappNumberErrorMessage: null,
       errorMessage: null,
+      enabled: this.params.enabled ?? false,
+      enabledMethods: this.params.enabledMethods ?? ['qris'],
+      cashierLocation: this.params.cashierLocation ?? 'Lantai 1',
     };
   }
 

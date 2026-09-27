@@ -158,6 +158,28 @@ describe('CheckoutUsecase', () => {
     expect(checkout.state.whatsappNumber).toBe('0812345678');
   });
 
+  it('should default enabled to false, enabledMethods to [qris], and cashierLocation to Lantai 1', () => {
+    const repository = new MockPaymentRepository();
+    const checkout = createTester(repository);
+
+    expect(checkout.state.enabled).toBe(false);
+    expect(checkout.state.enabledMethods).toEqual(['qris']);
+    expect(checkout.state.cashierLocation).toBe('Lantai 1');
+  });
+
+  it('should seed enabled, enabledMethods, and cashierLocation from params', () => {
+    const repository = new MockPaymentRepository();
+    const checkout = createTester(repository, {
+      enabled: true,
+      enabledMethods: ['qris', 'cash', 'cod'],
+      cashierLocation: 'Lantai 2',
+    });
+
+    expect(checkout.state.enabled).toBe(true);
+    expect(checkout.state.enabledMethods).toEqual(['qris', 'cash', 'cod']);
+    expect(checkout.state.cashierLocation).toBe('Lantai 2');
+  });
+
   it('should reach creatingPayment keeping the raw number as typed, and submit the normalized number', async () => {
     const repository = new MockPaymentRepository();
     const checkoutSpy = jest.spyOn(repository, 'checkout');
