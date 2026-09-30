@@ -1,7 +1,6 @@
 import { match, P } from 'ts-pattern';
 import { useRouter } from 'solito/router';
 import { PaymentSummary } from '../../../domain/entities/Payment';
-import { SessionRepository } from '../../../domain/repositories/session';
 import { OrderHistoryUsecase } from '../../../domain/usecases/orderHistory';
 import { useUsecase } from '../hooks/useUsecase';
 import {
@@ -11,12 +10,10 @@ import {
 
 export type OrderHistoryHandlerProps = {
   orderHistoryUsecase: OrderHistoryUsecase;
-  sessionRepository: SessionRepository;
 };
 
 export const OrderHistoryHandler = ({
   orderHistoryUsecase,
-  sessionRepository,
 }: OrderHistoryHandlerProps) => {
   const orderHistory = useUsecase(orderHistoryUsecase);
   const router = useRouter();
@@ -35,7 +32,7 @@ export const OrderHistoryHandler = ({
     )
     .exhaustive();
 
-  const tableCode = sessionRepository.getTableCode();
+  const tableCode = orderHistory.state.tableCode;
   const menuPath = tableCode ? `/t/${tableCode}` : '/';
 
   return (

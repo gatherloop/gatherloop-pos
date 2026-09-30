@@ -1,14 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { match, P } from 'ts-pattern';
 import { useRouter } from 'solito/router';
 import { Payment } from '../../../domain/entities/Payment';
-import { PaymentRepository } from '../../../domain/repositories/payment';
-import { SessionRepository } from '../../../domain/repositories/session';
 import { OrderStatusUsecase } from '../../../domain/usecases/orderStatus';
 import { PaymentCancelUsecase } from '../../../domain/usecases/paymentCancel';
 import { useBackNavigationGuard } from '../hooks/useBackNavigationGuard';
 import { useOrderStatus } from '../hooks/useOrderStatus';
-import { usePaymentCancel } from '../hooks/usePaymentCancel';
+import { usePaymentCancelSyncedTo } from '../hooks/usePaymentCancelSyncedTo';
 import {
   OrderStatusCancelConfirmation,
   OrderStatusScreen,
@@ -23,44 +21,29 @@ function payAtPickupAmount(payment: Payment): number | null {
 
 export type OrderStatusHandlerProps = {
   orderStatusUsecase: OrderStatusUsecase;
-  paymentRepository: PaymentRepository;
-  sessionRepository: SessionRepository;
-  cashierLocation: string;
+  paymentCancelUsecase: PaymentCancelUsecase;
 };
 
 export const OrderStatusHandler = ({
   orderStatusUsecase,
-  paymentRepository,
-  sessionRepository,
-  cashierLocation,
+  paymentCancelUsecase,
 }: OrderStatusHandlerProps) => {
   const orderStatus = useOrderStatus(orderStatusUsecase);
   const router = useRouter();
 
-  const tableCode = sessionRepository.getTableCode();
+  const tableCode = orderStatus.state.tableCode;
   const menuPath = tableCode ? `/t/${tableCode}` : '/';
   const cartPath = tableCode ? `/t/${tableCode}/cart` : '/';
 
   const payment = orderStatus.state.payment;
 
-  const [paymentCancelUsecase, setPaymentCancelUsecase] = useState(
-    () =>
-      new PaymentCancelUsecase(paymentRepository, {
-        reference: orderStatusUsecase.params.reference,
-        method: payment?.method ?? 'qris',
-      })
+  const paymentCancel = usePaymentCancelSyncedTo(
+    paymentCancelUsecase,
+    payment && {
+      reference: orderStatusUsecase.params.reference,
+      method: payment.method,
+    }
   );
-
-  if (payment && payment.method !== paymentCancelUsecase.params.method) {
-    setPaymentCancelUsecase(
-      new PaymentCancelUsecase(paymentRepository, {
-        reference: orderStatusUsecase.params.reference,
-        method: payment.method,
-      })
-    );
-  }
-
-  const paymentCancel = usePaymentCancel(paymentCancelUsecase);
 
   useEffect(() => {
     if (paymentCancel.state.type !== 'settled' || !paymentCancel.state.result) {
@@ -136,7 +119,7 @@ export const OrderStatusHandler = ({
         ? {
             type: 'awaitingCashPayment',
             payment: state.payment,
-            cashierLocation,
+            cashierLocation: state.cashierLocation,
             onCountdownElapsed: () =>
               orderStatus.dispatch({ type: 'COUNTDOWN_ELAPSED' }),
             canCancel: state.payment.canCancel,

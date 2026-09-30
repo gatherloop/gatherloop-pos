@@ -2,16 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { match, P } from 'ts-pattern';
 import { useRouter } from 'solito/router';
 import { Cart } from '../../../domain/entities/Cart';
-import { PaymentMethod } from '../../../domain/entities/Payment';
-import { PaymentRepository } from '../../../domain/repositories/payment';
-import { SessionRepository } from '../../../domain/repositories/session';
 import { CartState, CartUsecase } from '../../../domain/usecases/cart';
 import { CheckoutUsecase } from '../../../domain/usecases/checkout';
 import { PaymentCancelUsecase } from '../../../domain/usecases/paymentCancel';
 import { TableResolveUsecase } from '../../../domain/usecases/tableResolve';
 import { useCart } from '../hooks/useCart';
 import { useCheckout } from '../hooks/useCheckout';
-import { usePaymentCancel } from '../hooks/usePaymentCancel';
+import { usePaymentCancelSyncedTo } from '../hooks/usePaymentCancelSyncedTo';
 import { useTableResolve } from '../hooks/useTableResolve';
 import { CodPhotoCaptureSheetProps } from '../../views/components/checkout/CodPhotoCaptureSheet';
 import { CustomerDetailsSheetProps } from '../../views/components/checkout/CustomerDetailsSheet';
@@ -26,12 +23,7 @@ export type CartHandlerProps = {
   tableResolveUsecase: TableResolveUsecase;
   cartUsecase: CartUsecase;
   checkoutUsecase: CheckoutUsecase;
-  paymentRepository: PaymentRepository;
-  sessionRepository: SessionRepository;
-  enabled: boolean;
-  enabledMethods?: PaymentMethod[];
-  cashierLocation?: string;
-  tableCode: string;
+  paymentCancelUsecase: PaymentCancelUsecase;
   preparingCount?: number;
 };
 
@@ -69,12 +61,7 @@ export const CartHandler = ({
   tableResolveUsecase,
   cartUsecase,
   checkoutUsecase,
-  paymentRepository,
-  sessionRepository,
-  enabled,
-  enabledMethods = ['qris'],
-  cashierLocation = 'Lantai 1',
-  tableCode,
+  paymentCancelUsecase,
   preparingCount,
 }: CartHandlerProps) => {
   const tableResolve = useTableResolve(tableResolveUsecase);
@@ -82,12 +69,6 @@ export const CartHandler = ({
   const checkout = useCheckout(checkoutUsecase);
   const router = useRouter();
   const [isClearConfirmationOpen, setIsClearConfirmationOpen] = useState(false);
-
-  useEffect(() => {
-    if (tableResolve.state.type === 'resolved' && tableResolve.state.code) {
-      sessionRepository.setTableCode(tableResolve.state.code);
-    }
-  }, [tableResolve.state, sessionRepository]);
 
   useEffect(() => {
     if (checkout.state.type !== 'created' || !checkout.state.payment) return;
@@ -103,29 +84,13 @@ export const CartHandler = ({
   const mutating = isMutating(cart.state);
   const pendingPayment = cart.state.cart?.pendingPayment ?? null;
 
-  const [paymentCancelUsecase, setPaymentCancelUsecase] = useState(
-    () =>
-      new PaymentCancelUsecase(paymentRepository, {
-        reference: pendingPayment?.partnerReferenceNo ?? '',
-        method: pendingPayment?.method ?? 'qris',
-      })
+  const paymentCancel = usePaymentCancelSyncedTo(
+    paymentCancelUsecase,
+    pendingPayment && {
+      reference: pendingPayment.partnerReferenceNo,
+      method: pendingPayment.method,
+    }
   );
-
-  if (
-    pendingPayment &&
-    (pendingPayment.partnerReferenceNo !==
-      paymentCancelUsecase.params.reference ||
-      pendingPayment.method !== paymentCancelUsecase.params.method)
-  ) {
-    setPaymentCancelUsecase(
-      new PaymentCancelUsecase(paymentRepository, {
-        reference: pendingPayment.partnerReferenceNo,
-        method: pendingPayment.method,
-      })
-    );
-  }
-
-  const paymentCancel = usePaymentCancel(paymentCancelUsecase);
   const handledCancelResultRef =
     useRef<typeof paymentCancel.state.result>(null);
 
@@ -233,14 +198,14 @@ export const CartHandler = ({
             }),
           onSubmitPress: () => checkout.dispatch({ type: 'SUBMIT_DETAILS' }),
           onCancelPress: () => checkout.dispatch({ type: 'CANCEL_DETAILS' }),
-          enabledMethods,
+          enabledMethods: checkout.state.enabledMethods,
           method: checkout.state.method,
           onMethodChange: (method) =>
             checkout.dispatch({ type: 'CHANGE_METHOD', method }),
           diningOption: checkout.state.diningOption,
           onDiningOptionChange: (diningOption) =>
             checkout.dispatch({ type: 'CHANGE_DINING_OPTION', diningOption }),
-          cashierLocation,
+          cashierLocation: checkout.state.cashierLocation,
           verificationPhoto: checkout.state.verificationPhoto,
           onOpenPhotoCapture: () =>
             checkout.dispatch({ type: 'OPEN_PHOTO_CAPTURE' }),
@@ -311,10 +276,14 @@ export const CartHandler = ({
       }}
       onClearCancel={() => setIsClearConfirmationOpen(false)}
       onClearConfirmationOpenChange={setIsClearConfirmationOpen}
-      onAddMoreItemsPress={() => router.push(`/t/${tableCode}`)}
+      onAddMoreItemsPress={() =>
+        router.push(`/t/${tableResolveUsecase.params.code}`)
+      }
       onRetryButtonPress={() => cart.dispatch({ type: 'FETCH' })}
       itemEdit={itemEdit}
-      isCheckoutEnabled={enabled && !hasUnavailableItems(cart.state.cart)}
+      isCheckoutEnabled={
+        checkout.state.enabled && !hasUnavailableItems(cart.state.cart)
+      }
       checkoutErrorMessage={
         checkout.state.type === 'error' ? checkout.state.errorMessage : null
       }

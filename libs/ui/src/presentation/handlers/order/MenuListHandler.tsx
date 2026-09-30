@@ -4,9 +4,6 @@ import { useRouter } from 'solito/router';
 import { Category } from '../../../domain/entities/Category';
 import { Product } from '../../../domain/entities/Product';
 import { Variant } from '../../../domain/entities/Variant';
-import { CartRepository } from '../../../domain/repositories/cart';
-import { PaymentRepository } from '../../../domain/repositories/payment';
-import { SessionRepository } from '../../../domain/repositories/session';
 import { CartUsecase } from '../../../domain/usecases/cart';
 import {
   MenuItemDetailState,
@@ -23,7 +20,7 @@ import { CartBar } from '../../views/components/cart/CartBar';
 import { PendingPaymentBar } from '../../views/components/cart/PendingPaymentBar';
 import { useUsecase } from '../hooks/useUsecase';
 import { useCart } from '../hooks/useCart';
-import { usePaymentCancel } from '../hooks/usePaymentCancel';
+import { usePaymentCancelSyncedTo } from '../hooks/usePaymentCancelSyncedTo';
 import { useTableResolve } from '../hooks/useTableResolve';
 import { MenuItemDetailScreenProps } from '../../views/screens/order/MenuItemDetailScreen';
 import {
@@ -37,10 +34,7 @@ export type MenuListHandlerProps = {
   menuListUsecase: MenuListUsecase;
   menuItemDetailUsecase: MenuItemDetailUsecase;
   cartUsecase: CartUsecase;
-  cartRepository: CartRepository;
-  paymentRepository: PaymentRepository;
-  sessionRepository: SessionRepository;
-  tableCode: string;
+  paymentCancelUsecase: PaymentCancelUsecase;
   preparingCount?: number;
 };
 
@@ -189,10 +183,7 @@ export const MenuListHandler = ({
   menuListUsecase,
   menuItemDetailUsecase,
   cartUsecase,
-  cartRepository,
-  paymentRepository,
-  sessionRepository,
-  tableCode,
+  paymentCancelUsecase,
   preparingCount,
 }: MenuListHandlerProps) => {
   const tableResolve = useTableResolve(tableResolveUsecase);
@@ -207,29 +198,13 @@ export const MenuListHandler = ({
   const currentCart = cart.state.cart;
   const pendingPayment = currentCart?.pendingPayment ?? null;
 
-  const [paymentCancelUsecase, setPaymentCancelUsecase] = useState(
-    () =>
-      new PaymentCancelUsecase(paymentRepository, {
-        reference: pendingPayment?.partnerReferenceNo ?? '',
-        method: pendingPayment?.method ?? 'qris',
-      })
+  const paymentCancel = usePaymentCancelSyncedTo(
+    paymentCancelUsecase,
+    pendingPayment && {
+      reference: pendingPayment.partnerReferenceNo,
+      method: pendingPayment.method,
+    }
   );
-
-  if (
-    pendingPayment &&
-    (pendingPayment.partnerReferenceNo !==
-      paymentCancelUsecase.params.reference ||
-      pendingPayment.method !== paymentCancelUsecase.params.method)
-  ) {
-    setPaymentCancelUsecase(
-      new PaymentCancelUsecase(paymentRepository, {
-        reference: pendingPayment.partnerReferenceNo,
-        method: pendingPayment.method,
-      })
-    );
-  }
-
-  const paymentCancel = usePaymentCancel(paymentCancelUsecase);
   const handledCancelResultRef = useRef<
     typeof paymentCancel.state.result
   >(null);
@@ -265,25 +240,6 @@ export const MenuListHandler = ({
     }
     menuList.dispatch({ type: 'CLEAR_ITEM' });
   }, [cart.state.type, cart.dispatch, menuItemDetail.state, menuList.dispatch]);
-
-  useEffect(() => {
-    if (tableResolve.state.type === 'resolved' && tableResolve.state.code) {
-      sessionRepository.setTableCode(tableResolve.state.code);
-    }
-  }, [tableResolve.state, sessionRepository]);
-
-  const boundTableCodeRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (tableResolve.state.type !== 'resolved' || !tableResolve.state.code) {
-      return;
-    }
-    const code = tableResolve.state.code;
-    if (boundTableCodeRef.current === code) return;
-    boundTableCodeRef.current = code;
-    cartRepository.updateTable(code).catch(() => {
-      boundTableCodeRef.current = null;
-    });
-  }, [tableResolve.state, cartRepository]);
 
   useEffect(() => {
     const { selectedProductId, query } = menuList.state;
@@ -343,7 +299,9 @@ export const MenuListHandler = ({
   ) : currentCart && currentCart.itemCount > 0 ? (
     <CartBar
       itemCount={currentCart.itemCount}
-      onPress={() => router.push(`/t/${tableCode}/cart`)}
+      onPress={() =>
+        router.push(`/t/${tableResolveUsecase.params.code}/cart`)
+      }
     />
   ) : null;
 

@@ -7,6 +7,7 @@ import { PaymentMethod } from '../../domain/entities/Payment';
 import { PublicTable } from '../../domain/entities/PublicTable';
 import { CartUsecase } from '../../domain/usecases/cart';
 import { CheckoutUsecase } from '../../domain/usecases/checkout';
+import { PaymentCancelUsecase } from '../../domain/usecases/paymentCancel';
 import { TableResolveUsecase } from '../../domain/usecases/tableResolve';
 import { CartHandler } from '../../presentation/handlers/order/CartHandler';
 
@@ -33,15 +34,12 @@ export function Cart({
   const cartQueryRepository = new UrlCartQueryRepository();
   const paymentRepository = new ApiPaymentRepository(sessionRepository);
 
-  const tableResolveUsecase = new TableResolveUsecase(publicTableRepository, {
-    code,
-    table,
-  });
+  const tableResolveUsecase = new TableResolveUsecase(
+    publicTableRepository,
+    { code, table },
+    { sessionRepository }
+  );
   const cartUsecase = new CartUsecase(cartRepository, cartQueryRepository);
-  const checkoutUsecase = new CheckoutUsecase(paymentRepository, {
-    customerName,
-    customerWhatsappNumber,
-  });
   const enabled = process.env['NEXT_PUBLIC_ORDER_CHECKOUT_ENABLED'] === 'true';
   const isCashPaymentEnabled =
     process.env['NEXT_PUBLIC_ORDER_CASH_PAYMENT_ENABLED'] === 'true';
@@ -54,18 +52,24 @@ export function Cart({
   ];
   const cashierLocation =
     process.env['NEXT_PUBLIC_ORDER_CASHIER_LOCATION'] || 'Lantai 1';
+  const checkoutUsecase = new CheckoutUsecase(paymentRepository, {
+    customerName,
+    customerWhatsappNumber,
+    enabled,
+    enabledMethods,
+    cashierLocation,
+  });
+  const paymentCancelUsecase = new PaymentCancelUsecase(paymentRepository, {
+    reference: '',
+    method: 'qris',
+  });
 
   return (
     <CartHandler
       tableResolveUsecase={tableResolveUsecase}
       cartUsecase={cartUsecase}
       checkoutUsecase={checkoutUsecase}
-      sessionRepository={sessionRepository}
-      paymentRepository={paymentRepository}
-      enabled={enabled}
-      enabledMethods={enabledMethods}
-      cashierLocation={cashierLocation}
-      tableCode={code}
+      paymentCancelUsecase={paymentCancelUsecase}
       preparingCount={preparingCount}
     />
   );

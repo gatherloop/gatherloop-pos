@@ -13,14 +13,11 @@ export function OrderHistory({ sessionId, payments }: OrderHistoryProps) {
   const sessionRepository = new CookieSessionRepository(sessionId);
   const paymentRepository = new ApiPaymentRepository(sessionRepository);
 
-  const orderHistoryUsecase = new OrderHistoryUsecase(paymentRepository, {
-    payments,
-  });
-
-  return (
-    <OrderHistoryHandler
-      orderHistoryUsecase={orderHistoryUsecase}
-      sessionRepository={sessionRepository}
-    />
+  const orderHistoryUsecase = new OrderHistoryUsecase(
+    paymentRepository,
+    { payments },
+    { sessionRepository }
   );
+
+  return <OrderHistoryHandler orderHistoryUsecase={orderHistoryUsecase} />;
 }

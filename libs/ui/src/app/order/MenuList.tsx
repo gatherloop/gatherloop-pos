@@ -13,6 +13,7 @@ import { Variant } from '../../domain/entities/Variant';
 import { CartUsecase } from '../../domain/usecases/cart';
 import { MenuItemDetailUsecase } from '../../domain/usecases/menuItemDetail';
 import { MenuListUsecase } from '../../domain/usecases/menuList';
+import { PaymentCancelUsecase } from '../../domain/usecases/paymentCancel';
 import { TableResolveUsecase } from '../../domain/usecases/tableResolve';
 import { MenuListHandler } from '../../presentation/handlers/order/MenuListHandler';
 
@@ -45,10 +46,11 @@ export function MenuList({
   const paymentRepository = new ApiPaymentRepository(sessionRepository);
   const menuListQueryRepository = new UrlMenuListQueryRepository();
 
-  const tableResolveUsecase = new TableResolveUsecase(publicTableRepository, {
-    code,
-    table,
-  });
+  const tableResolveUsecase = new TableResolveUsecase(
+    publicTableRepository,
+    { code, table },
+    { sessionRepository, cartRepository }
+  );
   const menuListUsecase = new MenuListUsecase(
     menuRepository,
     menuListQueryRepository,
@@ -63,6 +65,10 @@ export function MenuList({
     product: selectedProduct,
   });
   const cartUsecase = new CartUsecase(cartRepository, new UrlCartQueryRepository());
+  const paymentCancelUsecase = new PaymentCancelUsecase(paymentRepository, {
+    reference: '',
+    method: 'qris',
+  });
 
   return (
     <MenuListHandler
@@ -70,10 +76,7 @@ export function MenuList({
       menuListUsecase={menuListUsecase}
       menuItemDetailUsecase={menuItemDetailUsecase}
       cartUsecase={cartUsecase}
-      cartRepository={cartRepository}
-      paymentRepository={paymentRepository}
-      sessionRepository={sessionRepository}
-      tableCode={code}
+      paymentCancelUsecase={paymentCancelUsecase}
       preparingCount={preparingCount}
     />
   );

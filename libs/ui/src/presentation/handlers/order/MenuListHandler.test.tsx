@@ -16,6 +16,7 @@ import {
   MenuItemDetailUsecase,
   MenuListParams,
   MenuListUsecase,
+  PaymentCancelUsecase,
   PendingPayment,
   TableResolveUsecase,
 } from '../../../domain';
@@ -59,9 +60,11 @@ const renderHandler = ({
   sessionRepository?: MockSessionRepository;
   preparingCount?: number;
 } = {}) => {
-  const tableResolveUsecase = new TableResolveUsecase(tableRepository, {
-    code: TABLE_CODE,
-  });
+  const tableResolveUsecase = new TableResolveUsecase(
+    tableRepository,
+    { code: TABLE_CODE },
+    { sessionRepository, cartRepository }
+  );
   const menuListUsecase = new MenuListUsecase(
     menuRepository,
     menuListQueryRepository,
@@ -74,6 +77,10 @@ const renderHandler = ({
     cartRepository,
     new MockCartQueryRepository()
   );
+  const paymentCancelUsecase = new PaymentCancelUsecase(paymentRepository, {
+    reference: '',
+    method: 'qris',
+  });
 
   return {
     menuRepository,
@@ -87,10 +94,7 @@ const renderHandler = ({
         menuListUsecase={menuListUsecase}
         menuItemDetailUsecase={menuItemDetailUsecase}
         cartUsecase={cartUsecase}
-        cartRepository={cartRepository}
-        paymentRepository={paymentRepository}
-        sessionRepository={sessionRepository}
-        tableCode={TABLE_CODE}
+        paymentCancelUsecase={paymentCancelUsecase}
         preparingCount={preparingCount}
       />
     ),

@@ -13,6 +13,7 @@ import {
   CartUsecase,
   CheckoutUsecase,
   Payment,
+  PaymentCancelUsecase,
   PaymentMethod,
   PendingPayment,
   TableResolveUsecase,
@@ -55,13 +56,22 @@ const renderHandler = ({
   customerWhatsappNumber?: string;
   preparingCount?: number;
 } = {}) => {
-  const tableResolveUsecase = new TableResolveUsecase(tableRepository, {
-    code: TABLE_CODE,
-  });
+  const tableResolveUsecase = new TableResolveUsecase(
+    tableRepository,
+    { code: TABLE_CODE },
+    { sessionRepository }
+  );
   const cartUsecase = new CartUsecase(cartRepository, cartQueryRepository);
   const checkoutUsecase = new CheckoutUsecase(paymentRepository, {
     customerName,
     customerWhatsappNumber,
+    enabled,
+    enabledMethods,
+    cashierLocation,
+  });
+  const paymentCancelUsecase = new PaymentCancelUsecase(paymentRepository, {
+    reference: '',
+    method: 'qris',
   });
 
   return {
@@ -74,12 +84,7 @@ const renderHandler = ({
         tableResolveUsecase={tableResolveUsecase}
         cartUsecase={cartUsecase}
         checkoutUsecase={checkoutUsecase}
-        paymentRepository={paymentRepository}
-        sessionRepository={sessionRepository}
-        enabled={enabled}
-        enabledMethods={enabledMethods}
-        cashierLocation={cashierLocation}
-        tableCode={TABLE_CODE}
+        paymentCancelUsecase={paymentCancelUsecase}
         preparingCount={preparingCount}
       />
     ),

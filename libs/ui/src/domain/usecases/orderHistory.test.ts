@@ -4,7 +4,7 @@ import {
   OrderHistoryState,
   OrderHistoryParams,
 } from './orderHistory';
-import { MockPaymentRepository } from '../../data/mock';
+import { MockPaymentRepository, MockSessionRepository } from '../../data/mock';
 import { UsecaseTester, flushPromises } from '../../utils/usecase';
 
 const createTester = (
@@ -28,6 +28,7 @@ describe('OrderHistoryUsecase', () => {
         type: 'loading',
         payments: [],
         errorMessage: null,
+        tableCode: null,
       });
 
       await flushPromises();
@@ -35,6 +36,7 @@ describe('OrderHistoryUsecase', () => {
         type: 'loaded',
         payments: repository.payments,
         errorMessage: null,
+        tableCode: null,
       });
 
       orderHistory.dispatch({ type: 'FETCH' });
@@ -42,6 +44,7 @@ describe('OrderHistoryUsecase', () => {
         type: 'revalidating',
         payments: repository.payments,
         errorMessage: null,
+        tableCode: null,
       });
 
       await flushPromises();
@@ -49,6 +52,7 @@ describe('OrderHistoryUsecase', () => {
         type: 'loaded',
         payments: repository.payments,
         errorMessage: null,
+        tableCode: null,
       });
     });
   });
@@ -63,6 +67,7 @@ describe('OrderHistoryUsecase', () => {
         type: 'loading',
         payments: [],
         errorMessage: null,
+        tableCode: null,
       });
 
       await flushPromises();
@@ -70,6 +75,7 @@ describe('OrderHistoryUsecase', () => {
         type: 'error',
         payments: [],
         errorMessage: 'Failed to fetch orders',
+        tableCode: null,
       });
 
       repository.setShouldFailFetchPayments(false);
@@ -78,6 +84,7 @@ describe('OrderHistoryUsecase', () => {
         type: 'loading',
         payments: [],
         errorMessage: null,
+        tableCode: null,
       });
 
       await flushPromises();
@@ -85,6 +92,7 @@ describe('OrderHistoryUsecase', () => {
         type: 'loaded',
         payments: repository.payments,
         errorMessage: null,
+        tableCode: null,
       });
     });
 
@@ -97,6 +105,7 @@ describe('OrderHistoryUsecase', () => {
         type: 'loaded',
         payments: repository.payments,
         errorMessage: null,
+        tableCode: null,
       });
 
       repository.setShouldFailFetchPayments(true);
@@ -105,6 +114,7 @@ describe('OrderHistoryUsecase', () => {
         type: 'revalidating',
         payments: repository.payments,
         errorMessage: null,
+        tableCode: null,
       });
 
       await flushPromises();
@@ -112,6 +122,7 @@ describe('OrderHistoryUsecase', () => {
         type: 'loaded',
         payments: repository.payments,
         errorMessage: null,
+        tableCode: null,
       });
     });
   });
@@ -126,6 +137,7 @@ describe('OrderHistoryUsecase', () => {
       type: 'loaded',
       payments,
       errorMessage: null,
+      tableCode: null,
     });
   });
 
@@ -139,6 +151,7 @@ describe('OrderHistoryUsecase', () => {
       type: 'loading',
       payments: [],
       errorMessage: null,
+      tableCode: null,
     });
 
     await flushPromises();
@@ -146,6 +159,31 @@ describe('OrderHistoryUsecase', () => {
       type: 'loaded',
       payments: [],
       errorMessage: null,
+      tableCode: null,
+    });
+  });
+
+  describe('tableCode', () => {
+    it('reads the table code from the injected session repository', () => {
+      const repository = new MockPaymentRepository();
+      const sessionRepository = new MockSessionRepository();
+      sessionRepository.setTableCode('3F7H9K2M5P');
+
+      const usecase = new OrderHistoryUsecase(
+        repository,
+        { payments: [] },
+        { sessionRepository }
+      );
+
+      expect(usecase.getInitialState().tableCode).toBe('3F7H9K2M5P');
+    });
+
+    it('is null when no session repository dependency is provided', () => {
+      const repository = new MockPaymentRepository();
+
+      const usecase = new OrderHistoryUsecase(repository, { payments: [] });
+
+      expect(usecase.getInitialState().tableCode).toBeNull();
     });
   });
 });

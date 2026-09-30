@@ -26,18 +26,17 @@ const renderHandler = ({
   paymentRepository?: MockPaymentRepository;
   sessionRepository?: MockSessionRepository;
 } = {}) => {
-  const orderHistoryUsecase = new OrderHistoryUsecase(paymentRepository, {
-    payments: [],
-  });
+  const orderHistoryUsecase = new OrderHistoryUsecase(
+    paymentRepository,
+    { payments: [] },
+    { sessionRepository }
+  );
 
   return {
     paymentRepository,
     sessionRepository,
     ...render(
-      <OrderHistoryHandler
-        orderHistoryUsecase={orderHistoryUsecase}
-        sessionRepository={sessionRepository}
-      />
+      <OrderHistoryHandler orderHistoryUsecase={orderHistoryUsecase} />
     ),
   };
 };
