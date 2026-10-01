@@ -7,12 +7,14 @@ import (
 type VariantUsecase struct {
 	repository        VariantRepository
 	productRepository ProductRepository
+	tagRepository     TagRepository
 }
 
-func NewVariantUsecase(repository VariantRepository, productRepository ProductRepository) VariantUsecase {
+func NewVariantUsecase(repository VariantRepository, productRepository ProductRepository, tagRepository TagRepository) VariantUsecase {
 	return VariantUsecase{
 		repository:        repository,
 		productRepository: productRepository,
+		tagRepository:     tagRepository,
 	}
 }
 
@@ -53,7 +55,32 @@ func (usecase VariantUsecase) CreateVariant(ctx context.Context, variant Variant
 		return Variant{}, err
 	}
 
-	created, err := usecase.repository.CreateVariant(ctx, variant)
+	if variant.TagIds == nil {
+		created, err := usecase.repository.CreateVariant(ctx, variant)
+		if err != nil {
+			return Variant{}, err
+		}
+		return resolveVariantAvailability(created, product), nil
+	}
+
+	var created Variant
+	err = usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		if err := usecase.validateTagIds(ctxWithTx, variant.TagIds); err != nil {
+			return err
+		}
+
+		createdVariant, err := usecase.repository.CreateVariant(ctxWithTx, variant)
+		if err != nil {
+			return err
+		}
+
+		if err := usecase.replaceVariantTags(ctxWithTx, createdVariant.Id, variant.TagIds); err != nil {
+			return err
+		}
+
+		created, err = usecase.repository.GetVariantById(ctxWithTx, createdVariant.Id)
+		return err
+	})
 	if err != nil {
 		return Variant{}, err
 	}
@@ -80,6 +107,15 @@ func (usecase VariantUsecase) UpdateVariantById(ctx context.Context, variant Var
 			return err
 		}
 
+		if variant.TagIds != nil {
+			if err := usecase.validateTagIds(ctxWithTx, variant.TagIds); err != nil {
+				return err
+			}
+			if err := usecase.replaceVariantTags(ctxWithTx, id, variant.TagIds); err != nil {
+				return err
+			}
+		}
+
 		updated, err := usecase.repository.UpdateVariantById(ctxWithTx, variant, id)
 		if err != nil {
 			return err
@@ -93,6 +129,40 @@ func (usecase VariantUsecase) UpdateVariantById(ctx context.Context, variant Var
 	}
 
 	return resolveVariantAvailability(updateResult, product), nil
+}
+
+func (usecase VariantUsecase) validateTagIds(ctx context.Context, tagIds []int64) *Error {
+	tags, err := usecase.tagRepository.GetTagList(ctx)
+	if err != nil {
+		return err
+	}
+	knownTagIds := map[int64]bool{}
+	for _, tag := range tags {
+		knownTagIds[tag.Id] = true
+	}
+	for _, tagId := range tagIds {
+		if !knownTagIds[tagId] {
+			return &Error{Type: BadRequest, Message: "tag ids contain unknown tags"}
+		}
+	}
+	return nil
+}
+
+func (usecase VariantUsecase) replaceVariantTags(ctx context.Context, variantId int64, tagIds []int64) *Error {
+	existingTagIds, err := usecase.tagRepository.GetVariantTagIds(ctx, variantId)
+	if err != nil {
+		return err
+	}
+
+	toVariantPairs := func(ids []int64) []VariantTagPair {
+		pairs := []VariantTagPair{}
+		for _, tagId := range uniqueInt64s(ids) {
+			pairs = append(pairs, VariantTagPair{VariantId: variantId, TagId: tagId})
+		}
+		return pairs
+	}
+
+	return applyVariantTagPairs(ctx, usecase.tagRepository, toVariantPairs(existingTagIds), toVariantPairs(tagIds))
 }
 
 func resolveVariantAvailability(variant Variant, product Product) Variant {

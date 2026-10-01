@@ -19,5 +19,6 @@ func (tagRouter TagRouter) AddRouter(router *mux.Router) {
 	router.HandleFunc("/tags/{tagId}", CheckAuth(tagRouter.handler.GetTagById)).Methods(http.MethodGet)
 	router.HandleFunc("/tags/{tagId}", CheckAuth(tagRouter.handler.DeleteTagById)).Methods(http.MethodDelete)
 	router.HandleFunc("/tags/{tagId}", CheckAuth(tagRouter.handler.UpdateTagById)).Methods(http.MethodPut, http.MethodOptions)
+	router.HandleFunc("/tags/{tagId}/variants", CheckAuth(tagRouter.handler.SetTagVariants)).Methods(http.MethodPut, http.MethodOptions)
 	router.HandleFunc("/tags", CheckAuth(tagRouter.handler.CreateTag)).Methods(http.MethodPost, http.MethodOptions)
 }

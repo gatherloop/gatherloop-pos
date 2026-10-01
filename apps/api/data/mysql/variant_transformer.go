@@ -73,6 +73,7 @@ func ToVariantDomain(dbVariant Variant) domain.Variant {
 		Materials:         ToVariantMaterialListDomain(dbVariant.Materials),
 		VariantValues:     ToVariantValueListDomain(dbVariant.VariantValues),
 		PricingTiers:      ToPricingTierListDomain(dbVariant.PricingTiers),
+		Tags:              ToVariantTagListDomain(dbVariant.Tags),
 		IsAvailable:       dbVariant.IsAvailable,
 		AvailableQuantity: dbVariant.AvailableQuantity,
 	}

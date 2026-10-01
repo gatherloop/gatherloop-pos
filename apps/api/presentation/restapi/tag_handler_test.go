@@ -5,6 +5,7 @@ import (
 	"apps/api/domain"
 	"apps/api/presentation/restapi"
 	"bytes"
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -271,6 +272,84 @@ func TestTagHandler_DeleteTagById(t *testing.T) {
 			req = mux.SetURLVars(req, map[string]string{"tagId": tt.tagId})
 			w := httptest.NewRecorder()
 			handler.DeleteTagById(w, req)
+			assert.Equal(t, tt.expectedStatus, w.Code)
+		})
+	}
+}
+
+func TestTagHandler_SetTagVariants(t *testing.T) {
+	tests := []struct {
+		name           string
+		tagId          string
+		body           string
+		setupMock      func(r *mock.MockTagRepository)
+		expectedStatus int
+	}{
+		{
+			name:  "success returns the tag with its new variant count",
+			tagId: "1",
+			body:  `{"variantIds": [2, 3]}`,
+			setupMock: func(r *mock.MockTagRepository) {
+				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				r.EXPECT().GetTagById(gomock.Any(), int64(1)).Return(domain.Tag{Id: 1, Name: "New", Color: domain.TagColorGreen, VariantCount: 2}, nil).Times(2)
+				r.EXPECT().GetLiveVariantIds(gomock.Any(), []int64{2, 3}).Return([]int64{2, 3}, nil)
+				r.EXPECT().GetTagVariantIds(gomock.Any(), int64(1)).Return([]int64{}, nil)
+				r.EXPECT().InsertVariantTags(gomock.Any(), []domain.VariantTagPair{{VariantId: 2, TagId: 1}, {VariantId: 3, TagId: 1}}).Return(nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:  "unknown variant is a validation error",
+			tagId: "1",
+			body:  `{"variantIds": [99]}`,
+			setupMock: func(r *mock.MockTagRepository) {
+				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				r.EXPECT().GetTagById(gomock.Any(), int64(1)).Return(domain.Tag{Id: 1}, nil)
+				r.EXPECT().GetLiveVariantIds(gomock.Any(), []int64{99}).Return([]int64{}, nil)
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:  "tag not found",
+			tagId: "9",
+			body:  `{"variantIds": []}`,
+			setupMock: func(r *mock.MockTagRepository) {
+				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+				r.EXPECT().GetTagById(gomock.Any(), int64(9)).Return(domain.Tag{}, &domain.Error{Type: domain.NotFound})
+			},
+			expectedStatus: http.StatusNotFound,
+		},
+		{
+			name:           "invalid id",
+			tagId:          "abc",
+			body:           `{"variantIds": []}`,
+			setupMock:      func(r *mock.MockTagRepository) {},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "malformed body",
+			tagId:          "1",
+			body:           `{`,
+			setupMock:      func(r *mock.MockTagRepository) {},
+			expectedStatus: http.StatusBadRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			mockRepo := mock.NewMockTagRepository(ctrl)
+			tt.setupMock(mockRepo)
+			handler := restapi.NewTagHandler(domain.NewTagUsecase(mockRepo))
+			req := httptest.NewRequest(http.MethodPut, "/tags/"+tt.tagId+"/variants", bytes.NewBufferString(tt.body))
+			req.Header.Set("Content-Type", "application/json")
+			req = mux.SetURLVars(req, map[string]string{"tagId": tt.tagId})
+			w := httptest.NewRecorder()
+			handler.SetTagVariants(w, req)
 			assert.Equal(t, tt.expectedStatus, w.Code)
 		})
 	}

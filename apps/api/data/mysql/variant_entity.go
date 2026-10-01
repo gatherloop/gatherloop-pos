@@ -41,6 +41,7 @@ type Variant struct {
 	CreatedAt         time.Time
 	VariantValues     []VariantValue
 	PricingTiers      []PricingTier
+	Tags              []VariantTag
 	IsAvailable       bool `gorm:"default:1"`
 	AvailableQuantity *int
 }

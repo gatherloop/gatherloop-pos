@@ -88,6 +88,11 @@ func ToApiVariant(variant domain.Variant) apiContract.Variant {
 		apiPricingTiers = append(apiPricingTiers, ToApiPricingTier(tier))
 	}
 
+	apiTags := []apiContract.VariantTag{}
+	for _, variantTag := range variant.Tags {
+		apiTags = append(apiTags, ToApiVariantTag(variantTag))
+	}
+
 	return apiContract.Variant{
 		Id:                variant.Id,
 		Name:              variant.Name,
@@ -102,6 +107,7 @@ func ToApiVariant(variant domain.Variant) apiContract.Variant {
 		ImageUrl:          variant.ImageUrl,
 		Values:            apiVariantValues,
 		PricingTiers:      apiPricingTiers,
+		Tags:              apiTags,
 		IsAvailable:       variant.IsAvailable,
 		AvailableQuantity: ToApiQuantity(variant.AvailableQuantity),
 		IsSellable:        variant.IsSellable,
@@ -153,5 +159,6 @@ func ToVariant(variantRequest apiContract.VariantRequest) domain.Variant {
 		ImageUrl:      variantRequest.ImageUrl,
 		VariantValues: variantValues,
 		PricingTiers:  pricingTiers,
+		TagIds:        variantRequest.TagIds,
 	}
 }

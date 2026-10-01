@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
@@ -17,7 +18,7 @@ import (
 )
 
 func newTestVariantHandler(ctrl *gomock.Controller, variantRepo *mock.MockVariantRepository, productRepo *mock.MockProductRepository) restapi.VariantHandler {
-	return restapi.NewVariantHandler(domain.NewVariantUsecase(variantRepo, productRepo))
+	return restapi.NewVariantHandler(domain.NewVariantUsecase(variantRepo, productRepo, mock.NewMockTagRepository(ctrl)))
 }
 
 func TestVariantHandler_GetVariantList(t *testing.T) {
@@ -323,6 +324,81 @@ func TestVariantHandler_DeleteVariantById(t *testing.T) {
 			w := httptest.NewRecorder()
 			handler.DeleteVariantById(w, req)
 			assert.Equal(t, tt.expectedStatus, w.Code)
+		})
+	}
+}
+
+func TestVariantHandler_UpdateVariantById_TagIds(t *testing.T) {
+	tests := []struct {
+		name           string
+		body           string
+		expectedTagIds []int64
+	}{
+		{
+			name:           "omitted tagIds stay nil",
+			body:           `{"productId": 1, "name": "Hot", "price": 20000, "materials": [], "values": []}`,
+			expectedTagIds: nil,
+		},
+		{
+			name:           "empty tagIds stay empty",
+			body:           `{"productId": 1, "name": "Hot", "price": 20000, "materials": [], "values": [], "tagIds": []}`,
+			expectedTagIds: []int64{},
+		},
+		{
+			name:           "tagIds are passed through",
+			body:           `{"productId": 1, "name": "Hot", "price": 20000, "materials": [], "values": [], "tagIds": [1, 2]}`,
+			expectedTagIds: []int64{1, 2},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			variantRepo := mock.NewMockVariantRepository(ctrl)
+			productRepo := mock.NewMockProductRepository(ctrl)
+			tagRepo := mock.NewMockTagRepository(ctrl)
+			variantRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+				func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+			variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(1)).Return(domain.Variant{Id: 1, ProductId: 1}, nil)
+			productRepo.EXPECT().GetProductById(gomock.Any(), int64(1)).Return(domain.Product{Id: 1, SaleType: domain.SaleTypePurchase}, nil)
+			if tt.expectedTagIds != nil {
+				tagRepo.EXPECT().GetTagList(gomock.Any()).Return([]domain.Tag{{Id: 1}, {Id: 2}}, nil)
+				tagRepo.EXPECT().GetVariantTagIds(gomock.Any(), int64(1)).Return([]int64{}, nil)
+				if len(tt.expectedTagIds) > 0 {
+					tagRepo.EXPECT().InsertVariantTags(gomock.Any(), gomock.Any()).Return(nil)
+				}
+			}
+			taggedAt := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
+			variantRepo.EXPECT().UpdateVariantById(gomock.Any(), gomock.Any(), int64(1)).DoAndReturn(
+				func(ctx context.Context, variant domain.Variant, id int64) (domain.Variant, *domain.Error) {
+					assert.Equal(t, tt.expectedTagIds, variant.TagIds)
+					variant.Tags = []domain.VariantTag{{Tag: domain.Tag{Id: 1, Name: "New", Color: domain.TagColorGreen}, TaggedAt: taggedAt}}
+					return variant, nil
+				})
+
+			handler := restapi.NewVariantHandler(domain.NewVariantUsecase(variantRepo, productRepo, tagRepo))
+			req := httptest.NewRequest(http.MethodPut, "/variants/1", bytes.NewBufferString(tt.body))
+			req.Header.Set("Content-Type", "application/json")
+			req = mux.SetURLVars(req, map[string]string{"variantId": "1"})
+			w := httptest.NewRecorder()
+			handler.UpdateVariantById(w, req)
+
+			assert.Equal(t, http.StatusOK, w.Code)
+			var response struct {
+				Data struct {
+					Tags []struct {
+						Tag struct {
+							Name string `json:"name"`
+						} `json:"tag"`
+						TaggedAt time.Time `json:"taggedAt"`
+					} `json:"tags"`
+				} `json:"data"`
+			}
+			assert.NoError(t, json.Unmarshal(w.Body.Bytes(), &response))
+			assert.Len(t, response.Data.Tags, 1)
+			assert.Equal(t, "New", response.Data.Tags[0].Tag.Name)
+			assert.True(t, taggedAt.Equal(response.Data.Tags[0].TaggedAt))
 		})
 	}
 }

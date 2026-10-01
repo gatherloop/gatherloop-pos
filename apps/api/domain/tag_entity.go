@@ -30,5 +30,16 @@ type Tag struct {
 	Color         TagColor
 	IsHighlighted bool
 	SortOrder     int
+	VariantCount  int64
 	CreatedAt     time.Time
+}
+
+type VariantTag struct {
+	Tag      Tag
+	TaggedAt time.Time
+}
+
+type VariantTagPair struct {
+	VariantId int64
+	TagId     int64
 }
